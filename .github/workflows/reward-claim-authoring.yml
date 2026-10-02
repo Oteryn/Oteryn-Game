@@ -1,0 +1,57 @@
+name: RewardClaim Authoring
+
+on:
+  pull_request:
+    paths:
+      - tools/content-schema/reward-claim-authoring/**
+      - tools/content-schema/monster-authoring/requirements.txt
+      - tools/content-schema/quest-authoring/samples/chests/**
+      - content/items/**
+      - content/interactions/**
+      - content/project.json
+      - content/manifest.json
+      - content/content.lock.json
+      - .github/workflows/reward-claim-authoring.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: reward-claim-authoring-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  reward-claim-authoring:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      PYTHONDONTWRITEBYTECODE: '1'
+    steps:
+      - name: Check out exact candidate
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Verify exact head
+        env:
+          EXPECTED_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.12'
+          check-latest: false
+      - name: Install pinned schema requirements
+        run: python -m pip install -r tools/content-schema/monster-authoring/requirements.txt
+      - name: Test RewardClaim variants
+        run: python tools/content-schema/reward-claim-authoring/test_reward_claim_variant_migration.py
+      - name: Verify typed source variant packet
+        run: python tools/content-schema/reward-claim-authoring/reward_claim_variant_migration.py --check
+      - name: Test RewardClaim authoring
+        run: python tools/content-schema/reward-claim-authoring/test_reward_claim_authoring.py
+      - name: Verify deterministic RewardClaim content
+        run: python tools/content-schema/reward-claim-authoring/reward_claim_authoring.py content --check
+      - name: Verify the checkout stayed clean
+        if: ${{ always() }}
+        run: test -z "$(git status --short --untracked-files=all)"

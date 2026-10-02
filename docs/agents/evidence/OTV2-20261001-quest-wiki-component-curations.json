@@ -1,0 +1,1357 @@
+{
+  "schema": "OTERYN_BOUNDED_SOURCE_CURATION_EVIDENCE/v1",
+  "source_bank": {
+    "afflictedC": {
+      "source": "canary",
+      "repository": "opentibiabr/canary",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "path": "data/scripts/actions/items/usable_afflicted_outfit_items.lua",
+      "blob_sha256": "d4a9f639be295771cf2d6f5c19c21435e0ec0ca0cb1684682ce4ad09717cb391",
+      "blob_sha1": "30c92194655e40236eebafbcc119c72730872734",
+      "access_method": "normal_web"
+    },
+    "afflictedR": {
+      "source": "crystalserver",
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "path": "data/scripts/actions/items/usable_afflicted_outfit_items.lua",
+      "blob_sha256": "d4a9f639be295771cf2d6f5c19c21435e0ec0ca0cb1684682ce4ad09717cb391",
+      "blob_sha1": "30c92194655e40236eebafbcc119c72730872734",
+      "access_method": "normal_web"
+    },
+    "aucar": {
+      "source": "canary",
+      "repository": "opentibiabr/canary",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "path": "data-otservbr-global/scripts/quests/adventures_of_galthen/actions_idol_of_tukh.lua",
+      "blob_sha256": "944dfe3c80292a4bfe6bae209634f8a94c885cdef5db2285954e2ff1442b52ac",
+      "blob_sha1": "e48a5a477d43ce6a2c38e2f23fc130004662205a",
+      "access_method": "normal_web"
+    },
+    "feralShop": {
+      "source": "crystalserver",
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "path": "data/scripts/lib/task_board_shop.lua",
+      "blob_sha256": "715e289d7b9670bd1793638e0157bae4bbf96e73b54065eb96ad2feebe8cbcdd",
+      "blob_sha1": "b31bea5b194fa112f7a000cc90086f986d265726",
+      "access_method": "normal_web"
+    },
+    "feralCpp": {
+      "source": "crystalserver",
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "path": "src/io/ioweeklytasks.cpp",
+      "blob_sha256": "1666824a53e86c0c3e6b88e2ee4c4e0e6b38572e22e5471a0cada9ea2440a1c8",
+      "blob_sha1": "9748b30a96d0dae3689d42851301d3bd2db54eea",
+      "access_method": "normal_web"
+    },
+    "timira": {
+      "source": "canary",
+      "repository": "opentibiabr/canary",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "path": "data-otservbr-global/scripts/quests/marapur/actions_boss_timira_fight.lua",
+      "blob_sha256": "49604399bcd3bd22e62b62babc48b6ad72d61dc0f8ec889ee218ba7654b1ed68",
+      "blob_sha1": "dacd862aa244562f198999877b29c0d88791291b",
+      "access_method": "normal_web"
+    },
+    "thawing": {
+      "source": "crystalserver",
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "path": "data-global/scripts/world_changes/thawing.lua",
+      "blob_sha256": "d4cd1c58e91c2358b2846d73f30253f5514292347a50cca9103859f58688699a",
+      "blob_sha1": "ddc7d9fb24cd059a84d5e01c1ba461848ca3df63",
+      "access_method": "normal_web"
+    },
+    "palomino": {
+      "source": "crystalserver",
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "path": "data-global/npc/palomino.lua",
+      "blob_sha256": "595387918194d62554ba02e66c381e945fc065a0c0b3b2658ce773fe52f293da",
+      "blob_sha1": "a1f24e42e5d36ceaee4388c87858b7e949bfe56e",
+      "access_method": "normal_web"
+    },
+    "appaloosa": {
+      "source": "crystalserver",
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "path": "data-global/npc/appaloosa.lua",
+      "blob_sha256": "2972dcf9913edd16f693bf265a97acbdec9acde1de8487141ee776ed98efce19",
+      "blob_sha1": "ee82482aa1e0fec73c66b0e08cb4e7b9b9a0c77d",
+      "access_method": "normal_web"
+    },
+    "horseStartup": {
+      "source": "crystalserver",
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "path": "data-global/scripts/globalevents/spawn/horse_station_world_change.lua",
+      "blob_sha256": "631b28ccc0120d2f8d9d74c1f9540b40989065b6785d7d4331f495389c92e07b",
+      "blob_sha1": "6927277b292b1d41da6c27523c2bf7a32f64d68d",
+      "access_method": "normal_web"
+    },
+    "horseReturn": {
+      "source": "crystalserver",
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "path": "data-global/scripts/globalevents/others/horse_station.lua",
+      "blob_sha256": "0d6615155766a3ccd21a5ba8519a687dcca1ff5314ed57d07600dbe021c863f0",
+      "blob_sha1": "0368a37794eefc18f2800c863d3dac4745489b8e",
+      "access_method": "normal_web"
+    },
+    "taming": {
+      "source": "crystalserver",
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "path": "data-global/scripts/actions/mounts/mounts.lua",
+      "blob_sha256": "bf241ac7938e044199b989a8c46a4b1ba787328dc44aab5d382fcb0ea7ec100f",
+      "blob_sha1": "02dcfecd75b7d3bbb55e886885779ddad7487c33",
+      "access_method": "normal_web"
+    },
+    "bucket": {
+      "source": "crystalserver",
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "path": "data/scripts/actions/tools/prepared_bucket.lua",
+      "blob_sha256": "5e0d0253f913cb788a7fcbd6be41ad465b56ab1026c68226f80f79c31cefe01f",
+      "blob_sha1": "e15c68ef0c9ffa79360838aa5d6ff1261adc30f7",
+      "access_method": "normal_web"
+    },
+    "thornWolf": {
+      "source": "crystalserver",
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "path": "data/scripts/movements/thornfire_wolf.lua",
+      "blob_sha256": "010270cc7a3ad1ecdd960b645d1013bc61f24feace4df38092295b91aca2b7cf",
+      "blob_sha1": "87aa1443ef176c65b2264d3bd9afd6c8f6600c46",
+      "access_method": "normal_web"
+    }
+  },
+  "line_hash_bank": {
+    "afflictedC:3": "18808dd68e739848b849afb80c874bad811c4dad437c0f1d9c40411ae999d017",
+    "afflictedC:4": "758ffe7fd2368f8157b75ad0df44e8dada0b538da375ea47c887d47ac9fc52b3",
+    "afflictedC:37": "7aae1c5cbb0b7479051d930c4bcd89ce7fd86ad2a22679502c0c18bf64eac14d",
+    "afflictedC:44": "72b706ddaa14c229412c0f7188dbe33dc38cf5df144133400ab89d5d0236bac4",
+    "afflictedC:45": "3ee3e4f25263999b62aba3ae4e79be624385c9c12cd195e3421fcf77f738f16b",
+    "afflictedC:48": "0e90d8979505a3027cefabed535e506be1bc9757f71438a27706e158aa73e44a",
+    "afflictedC:49": "5f2cfe3a631f949f0456a7519781802327fe73a2c4db7dd910b50ccae2d9e774",
+    "afflictedC:56": "964c3ed7ffcd22dae6a7d212a0db1ef87d979ef19b986dfbf7dfc63daf09c1f0",
+    "afflictedC:57": "c1bd93d66c2deaeab5ea7a7939d0f1d3b6f1dd975bcf09fa8038c2b769315381",
+    "afflictedR:3": "18808dd68e739848b849afb80c874bad811c4dad437c0f1d9c40411ae999d017",
+    "afflictedR:4": "758ffe7fd2368f8157b75ad0df44e8dada0b538da375ea47c887d47ac9fc52b3",
+    "afflictedR:37": "7aae1c5cbb0b7479051d930c4bcd89ce7fd86ad2a22679502c0c18bf64eac14d",
+    "afflictedR:44": "72b706ddaa14c229412c0f7188dbe33dc38cf5df144133400ab89d5d0236bac4",
+    "afflictedR:45": "3ee3e4f25263999b62aba3ae4e79be624385c9c12cd195e3421fcf77f738f16b",
+    "afflictedR:48": "0e90d8979505a3027cefabed535e506be1bc9757f71438a27706e158aa73e44a",
+    "afflictedR:49": "5f2cfe3a631f949f0456a7519781802327fe73a2c4db7dd910b50ccae2d9e774",
+    "afflictedR:56": "964c3ed7ffcd22dae6a7d212a0db1ef87d979ef19b986dfbf7dfc63daf09c1f0",
+    "afflictedR:57": "c1bd93d66c2deaeab5ea7a7939d0f1d3b6f1dd975bcf09fa8038c2b769315381",
+    "aucar:2": "342b9a799e73a4cebbdcb453f56ca4b12503e0d2df2c08cd5f836c0a41ee91cb",
+    "aucar:3": "3b31572cdfe9f25b3d3f4079f3096ebd746e245dfd13ed8676a58d589e94cd8a",
+    "aucar:4": "a25dd145e5ff748f0a364ec3383aefbd3ba9642a7cd02691fcceba04c7f62ea7",
+    "aucar:16": "e305fcb46c81b7e8a661ba35c9e262e189f72c44626abb379026c663c900854c",
+    "aucar:17": "31c25de3da4060237ab05d6c133cc2bcc54c9972cd8d321e9d5bb1b5d93d5bfd",
+    "aucar:18": "b800d30425a1fd04ba1dca07a2fc2fe9b86a35cc7b4cb4aa120cd46447254913",
+    "aucar:21": "b91bfba6fd0c0698afd26235dd13233a88b928892a98166a9b336b92bda4a88f",
+    "aucar:29": "d92b18d55a35132704020ac871496b6ab332c8625712cf71345db6a8a0841b4e",
+    "aucar:31": "ba15136c657af4dbd1fb228374e72100c4b6c4764840a579298768ed52a2e0c2",
+    "feralShop:42": "71d43ddfb5d3dc1266e55104f75997575e138f867a2381892b0d4c41d844c5bb",
+    "feralShop:44": "1fe8348fb4ad0a7a391378bac7581bda894515c25b976d67854d428c2aeb9245",
+    "feralShop:51": "71d43ddfb5d3dc1266e55104f75997575e138f867a2381892b0d4c41d844c5bb",
+    "feralShop:53": "94762d25aa9b941fdcdd96dc94452dca78f3e76e910903719f3662720e53ef37",
+    "feralShop:60": "71d43ddfb5d3dc1266e55104f75997575e138f867a2381892b0d4c41d844c5bb",
+    "feralShop:62": "94762d25aa9b941fdcdd96dc94452dca78f3e76e910903719f3662720e53ef37",
+    "feralCpp:561": "962d69ce38f528e4ec59cb504a2dec685f5a11ee7112bae90514d066260283d0",
+    "feralCpp:592": "af94e00d9383dfd7c668fb43895ed466b1169a35ef7e36da7035f6d1f7210de7",
+    "feralCpp:671": "210989e9f551cf3dbb0b6363d36f62a26c92a07707189620523add69b391c1e4",
+    "feralCpp:673": "013e974dc0e7a77fdc0fdd94e55397dad1e565705c0b0a8c1790ecdcc45dfe39",
+    "timira:175": "26401c4a4bfc1dbdd9d639f595ba9c8fdb4a6c542f96a71151b9889dacbe05e4",
+    "thawing:1": "a89eb59aca3452722cbcb3d682a5ebfb538bd8b8593efbccefef15e1bbd991c7",
+    "thawing:2": "f3415b446b5ce36cfb80e78f65646d96c7aff1c4b881315edbb58dbe7a7fdbf4",
+    "thawing:29": "027a4fe0b490a336c380043f641e14ff35299c106f432563c3f5f49fa3f57282",
+    "thawing:31": "89800f99ace5ba17c68de7711f84e3dcae2416d1a62f77e0c0d1004d7bead320",
+    "thawing:32": "500f0564ff5cee3bb268592196754ffd8afc8876bbb682fc872b228bfdd496c9",
+    "thawing:33": "b7864e8d5ccead96d64d546d946dfa49f293b2c3e7123a7f51baf0a77451ec32",
+    "thawing:35": "51a298de0b7eb767fe3e498af6e5612ed9ecf343db6d8198d1624c1c75295848",
+    "thawing:38": "c444b02eaee1010d6a4719df4580510011d63c412be464ac65b8b4493af480d5",
+    "thawing:47": "6ae9962cabb42a09f05346f320d8669cd46660d20a7c5fa3cccd0693f37dab05",
+    "palomino:175": "d1b7f6ff37fdabaf8171f1783efc8755c9d633ec32620eaaf02252520424f921",
+    "palomino:231": "2d785714f91c504a1fa0dae45c4e6d30465925c94789f744a1b604af3edd5d41",
+    "appaloosa:175": "d1b7f6ff37fdabaf8171f1783efc8755c9d633ec32620eaaf02252520424f921",
+    "horseStartup:55": "c8c4970d9ea28d14e6b3c15debe4ae0d7e7828f75dcc9f3977876c0569a957a2",
+    "horseReturn:44": "5fe73273e06c7272f00222c827eb02f27cb68c2bc716b458bdee5d3804fef5c8",
+    "horseReturn:75": "284e2979429c644044e817362b0a862e39aaed2bbd0fde42c713e006936f62d1",
+    "taming:12": "3204d5c9982946309a91523312d0902e5438ea764367714318342c24279c56d9",
+    "taming:71": "0a72b5be9ab0e58e651f29d466ee6c21eb5a4e1db5025e8d8acce652dcc1adb3",
+    "taming:142": "efd7f5b272991263c8366bdc917a81c5c5ebadcd7ad7376ea05c313e4d902e93",
+    "taming:291": "2a537e8942fb7ddbd0261ebec75e3f7c220651d95c79e7e2a98bfc1d813a20a6",
+    "bucket:34": "4396599b48170e08897b07507995e6761d7cb13fa17e044b7327794bff3851eb",
+    "bucket:52": "6aef53768c721c2024641f1ae46ccc0f620f13f18fb6f2235a420859b8f59737",
+    "bucket:59": "9bd5508257f1e06afeb663ee7332ae17b91cacd65571dcf07f29b60792f775d8",
+    "bucket:67": "4d0cb00c1a2dd925817c23d1809fd1539a4d5488af009f4549636a374c308efd",
+    "thornWolf:3": "3d36ced58f235ea6f69016055ec5717ede9d1b4ebd68cdba60d3c929b9106e06",
+    "thornWolf:17": "c51dfd972508a8ea13044ee674ce4b679fbe955859e1701f34a8032c10b0865e"
+  },
+  "entries": [
+    {
+      "title": "Afflicted Outfits Quest",
+      "wiki": {
+        "pageid": 54472,
+        "revid": 844677
+      },
+      "wiki_source": {
+        "relation": "base",
+        "mapping_basis": "Exact pinned revision",
+        "provider": "tibia_fandom",
+        "title": "Afflicted Outfits Quest",
+        "pageid": 54472,
+        "revid": 844677,
+        "revision_timestamp": "2021-05-26T21:04:46Z",
+        "content_sha256": "c653b289fb37772cbabb0672fa955380ee4ae6b24e0f18beba777280d7fe16d4",
+        "available": true,
+        "redirect_target": null,
+        "source_fields": {
+          "premium": "Yes",
+          "level": "0",
+          "recommended_level": "25+",
+          "level_note": null,
+          "quest_log": null,
+          "implemented": "9.10",
+          "team": null,
+          "reward_entity_references": [
+            {
+              "entity": "Afflicted Outfits",
+              "quantity": null
+            },
+            {
+              "entity": "Achievements",
+              "quantity": null
+            },
+            {
+              "entity": "Beak Doctor",
+              "quantity": null
+            }
+          ],
+          "reward_selection": "UNKNOWN",
+          "location_entity_references": [
+            "Venore"
+          ],
+          "quest_entity_references": [],
+          "requirement_entity_references": [],
+          "mission_heading_references": [],
+          "listing_complete": false,
+          "semantic_enrichment": {
+            "level": {
+              "source_value": "0",
+              "kind": "plain_integer",
+              "plain_integer": 0,
+              "mentioned_numbers": [
+                0
+              ]
+            },
+            "reward_entity_references": [
+              {
+                "entity": "Afflicted Outfits",
+                "quantity": null,
+                "binding_status": "UNKNOWN",
+                "source_namespace": "mediawiki/page_title"
+              },
+              {
+                "entity": "Achievements",
+                "quantity": null,
+                "binding_status": "UNKNOWN",
+                "source_namespace": "mediawiki/page_title"
+              },
+              {
+                "entity": "Beak Doctor",
+                "quantity": null,
+                "binding_status": "UNKNOWN",
+                "source_namespace": "mediawiki/page_title"
+              }
+            ],
+            "reward_groups": [],
+            "reward_declared_none": false,
+            "reward_selection": "UNKNOWN",
+            "reward_modes": [
+              "outfit",
+              "addon",
+              "achievement"
+            ],
+            "removed_media_refs": [
+              "Image:Outfit Afflicted Male.gif",
+              "Image:Outfit Afflicted Male Addon 3.gif"
+            ],
+            "prerequisite_expressions": [],
+            "unparsed_requirements": [],
+            "source_field_listing_complete": false,
+            "unresolved_templates": [],
+            "source_revision_sha256": "c653b289fb37772cbabb0672fa955380ee4ae6b24e0f18beba777280d7fe16d4",
+            "extractor": "structured-wiki-enrichment/v2",
+            "runtime_promotion": false,
+            "reward_quantitative_facts": [],
+            "semantic_sha256": "e5e7bc210bf8534cdd83691f6f0f065e7647ba6857944fcb09f0b48637f31389"
+          }
+        },
+        "target_cut": "2026-09-27",
+        "target_continuity": "DERIVED",
+        "access_method": "remote_desktop_browser",
+        "url": "https://tibia.fandom.com/index.php?curid=54472&oldid=844677",
+        "classification": "DERIVED",
+        "evidence_role": "STRUCTURED_REFERENCE_DATA",
+        "confidence": "MEDIUM",
+        "source_dependency_possible": true,
+        "scope": "source-scoped references; lists not complete; no narrative text or runtime promotion"
+      },
+      "source_kind": "script_only",
+      "scope": "partial_source_component",
+      "existing_curator_record": false,
+      "aliases": [],
+      "native_alias_admission": "UNKNOWN",
+      "definition_complete": false,
+      "runtime_readiness": "UNKNOWN",
+      "proof_locations": [
+        {
+          "source_id": "afflictedC",
+          "line": 3
+        },
+        {
+          "source_id": "afflictedC",
+          "line": 4
+        },
+        {
+          "source_id": "afflictedC",
+          "line": 37
+        },
+        {
+          "source_id": "afflictedC",
+          "line": 44
+        },
+        {
+          "source_id": "afflictedC",
+          "line": 45
+        },
+        {
+          "source_id": "afflictedC",
+          "line": 48
+        },
+        {
+          "source_id": "afflictedC",
+          "line": 49
+        },
+        {
+          "source_id": "afflictedC",
+          "line": 56
+        },
+        {
+          "source_id": "afflictedC",
+          "line": 57
+        },
+        {
+          "source_id": "afflictedR",
+          "line": 3
+        },
+        {
+          "source_id": "afflictedR",
+          "line": 4
+        },
+        {
+          "source_id": "afflictedR",
+          "line": 37
+        },
+        {
+          "source_id": "afflictedR",
+          "line": 44
+        },
+        {
+          "source_id": "afflictedR",
+          "line": 45
+        },
+        {
+          "source_id": "afflictedR",
+          "line": 48
+        },
+        {
+          "source_id": "afflictedR",
+          "line": 49
+        },
+        {
+          "source_id": "afflictedR",
+          "line": 56
+        },
+        {
+          "source_id": "afflictedR",
+          "line": 57
+        }
+      ]
+    },
+    {
+      "title": "Ancient Aucar Outfits Quest",
+      "wiki": {
+        "pageid": 101462,
+        "revid": 1045730
+      },
+      "wiki_source": {
+        "relation": "base",
+        "mapping_basis": "Exact pinned revision",
+        "provider": "tibia_fandom",
+        "title": "Ancient Aucar Outfits Quest",
+        "pageid": 101462,
+        "revid": 1045730,
+        "revision_timestamp": "2023-11-17T12:08:36Z",
+        "content_sha256": "91881b8de45024abf48dda1c8079d66d81bb8f3819848bd9e948cbcc60a371ed",
+        "available": true,
+        "redirect_target": null,
+        "source_fields": {
+          "premium": "yes",
+          "level": "0",
+          "recommended_level": "250+",
+          "level_note": null,
+          "quest_log": null,
+          "implemented": "13.10.12852",
+          "team": null,
+          "reward_entity_references": [
+            {
+              "entity": "Ancient Aucar Outfits",
+              "quantity": null
+            },
+            {
+              "entity": "Warrior of the Iks",
+              "quantity": null
+            }
+          ],
+          "reward_selection": "UNKNOWN",
+          "location_entity_references": [
+            "Tiquanda",
+            "Iksupan"
+          ],
+          "quest_entity_references": [],
+          "requirement_entity_references": [],
+          "mission_heading_references": [],
+          "listing_complete": false,
+          "semantic_enrichment": {
+            "level": {
+              "source_value": "0",
+              "kind": "plain_integer",
+              "plain_integer": 0,
+              "mentioned_numbers": [
+                0
+              ]
+            },
+            "reward_entity_references": [
+              {
+                "entity": "Ancient Aucar Outfits",
+                "quantity": null,
+                "binding_status": "UNKNOWN",
+                "source_namespace": "mediawiki/page_title"
+              },
+              {
+                "entity": "Warrior of the Iks",
+                "quantity": null,
+                "binding_status": "UNKNOWN",
+                "source_namespace": "mediawiki/page_title"
+              }
+            ],
+            "reward_groups": [],
+            "reward_declared_none": false,
+            "reward_selection": "UNKNOWN",
+            "reward_modes": [
+              "outfit",
+              "addon",
+              "achievement"
+            ],
+            "removed_media_refs": [
+              "Image:Outfit_Ancient_Aucar_Male_Addon_3.gif",
+              "Image:Outfit_Ancient_Aucar_Female_Addon_3.gif"
+            ],
+            "prerequisite_expressions": [],
+            "unparsed_requirements": [],
+            "source_field_listing_complete": false,
+            "unresolved_templates": [],
+            "source_revision_sha256": "91881b8de45024abf48dda1c8079d66d81bb8f3819848bd9e948cbcc60a371ed",
+            "extractor": "structured-wiki-enrichment/v2",
+            "runtime_promotion": false,
+            "reward_quantitative_facts": [],
+            "semantic_sha256": "52888f68618a2e4dabde050c8db85c7f4b375655397a7835bb7c17982f256e5a"
+          }
+        },
+        "target_cut": "2026-09-27",
+        "target_continuity": "DERIVED",
+        "access_method": "remote_desktop_browser",
+        "url": "https://tibia.fandom.com/index.php?curid=101462&oldid=1045730",
+        "classification": "DERIVED",
+        "evidence_role": "STRUCTURED_REFERENCE_DATA",
+        "confidence": "MEDIUM",
+        "source_dependency_possible": true,
+        "scope": "source-scoped references; lists not complete; no narrative text or runtime promotion"
+      },
+      "source_kind": "script_only",
+      "scope": "partial_source_component",
+      "existing_curator_record": false,
+      "aliases": [],
+      "native_alias_admission": "UNKNOWN",
+      "definition_complete": false,
+      "runtime_readiness": "UNKNOWN",
+      "proof_locations": [
+        {
+          "source_id": "aucar",
+          "line": 2
+        },
+        {
+          "source_id": "aucar",
+          "line": 3
+        },
+        {
+          "source_id": "aucar",
+          "line": 4
+        },
+        {
+          "source_id": "aucar",
+          "line": 16
+        },
+        {
+          "source_id": "aucar",
+          "line": 17
+        },
+        {
+          "source_id": "aucar",
+          "line": 18
+        },
+        {
+          "source_id": "aucar",
+          "line": 21
+        },
+        {
+          "source_id": "aucar",
+          "line": 29
+        },
+        {
+          "source_id": "aucar",
+          "line": 31
+        }
+      ]
+    },
+    {
+      "title": "Feral Trappers Quest",
+      "wiki": {
+        "pageid": 110524,
+        "revid": 1187332
+      },
+      "wiki_source": {
+        "relation": "base",
+        "mapping_basis": "Exact pinned revision",
+        "provider": "tibia_fandom",
+        "title": "Feral Trappers Quest",
+        "pageid": 110524,
+        "revid": 1187332,
+        "revision_timestamp": "2026-05-26T19:21:55Z",
+        "content_sha256": "af574f7d373895179789f98191e329a571a8e35d9a0633944598191848938711",
+        "available": true,
+        "redirect_target": null,
+        "source_fields": {
+          "premium": "no",
+          "level": null,
+          "recommended_level": null,
+          "level_note": null,
+          "quest_log": null,
+          "implemented": "15.20.7a5cc9",
+          "team": null,
+          "reward_entity_references": [
+            {
+              "entity": "Feral Trapper Outfits",
+              "quantity": null
+            },
+            {
+              "entity": "achievement",
+              "quantity": null
+            },
+            {
+              "entity": "Feral Trapper",
+              "quantity": null
+            }
+          ],
+          "reward_selection": "UNKNOWN",
+          "location_entity_references": [],
+          "quest_entity_references": [],
+          "requirement_entity_references": [],
+          "mission_heading_references": [],
+          "listing_complete": false,
+          "semantic_enrichment": {
+            "level": {
+              "source_value": null,
+              "kind": "not_stated",
+              "plain_integer": null,
+              "mentioned_numbers": []
+            },
+            "reward_entity_references": [
+              {
+                "entity": "Feral Trapper Outfits",
+                "quantity": null,
+                "binding_status": "UNKNOWN",
+                "source_namespace": "mediawiki/page_title"
+              },
+              {
+                "entity": "achievement",
+                "quantity": null,
+                "binding_status": "UNKNOWN",
+                "source_namespace": "mediawiki/page_title"
+              },
+              {
+                "entity": "Feral Trapper",
+                "quantity": null,
+                "binding_status": "UNKNOWN",
+                "source_namespace": "mediawiki/page_title"
+              }
+            ],
+            "reward_groups": [],
+            "reward_declared_none": false,
+            "reward_selection": "UNKNOWN",
+            "reward_modes": [
+              "outfit",
+              "addon",
+              "achievement"
+            ],
+            "removed_media_refs": [],
+            "prerequisite_expressions": [],
+            "unparsed_requirements": [],
+            "source_field_listing_complete": false,
+            "unresolved_templates": [],
+            "source_revision_sha256": "af574f7d373895179789f98191e329a571a8e35d9a0633944598191848938711",
+            "extractor": "structured-wiki-enrichment/v2",
+            "runtime_promotion": false,
+            "reward_quantitative_facts": [],
+            "semantic_sha256": "54f5f27c45dfc1e05c34d8c34f36fa52058a2ecd0a2d08979afa8257efe4cace"
+          }
+        },
+        "target_cut": "2026-09-27",
+        "target_continuity": "DERIVED",
+        "access_method": "remote_desktop_browser",
+        "url": "https://tibia.fandom.com/index.php?curid=110524&oldid=1187332",
+        "classification": "DERIVED",
+        "evidence_role": "STRUCTURED_REFERENCE_DATA",
+        "confidence": "MEDIUM",
+        "source_dependency_possible": true,
+        "scope": "source-scoped references; lists not complete; no narrative text or runtime promotion"
+      },
+      "source_kind": "script_only",
+      "scope": "partial_source_component",
+      "existing_curator_record": false,
+      "aliases": [],
+      "native_alias_admission": "UNKNOWN",
+      "definition_complete": false,
+      "runtime_readiness": "UNKNOWN",
+      "proof_locations": [
+        {
+          "source_id": "feralShop",
+          "line": 42
+        },
+        {
+          "source_id": "feralShop",
+          "line": 44
+        },
+        {
+          "source_id": "feralShop",
+          "line": 51
+        },
+        {
+          "source_id": "feralShop",
+          "line": 53
+        },
+        {
+          "source_id": "feralShop",
+          "line": 60
+        },
+        {
+          "source_id": "feralShop",
+          "line": 62
+        },
+        {
+          "source_id": "feralCpp",
+          "line": 561
+        },
+        {
+          "source_id": "feralCpp",
+          "line": 592
+        },
+        {
+          "source_id": "feralCpp",
+          "line": 671
+        },
+        {
+          "source_id": "feralCpp",
+          "line": 673
+        }
+      ]
+    },
+    {
+      "title": "Within the Tides Quest",
+      "wiki": {
+        "pageid": 98526,
+        "revid": 1036406
+      },
+      "wiki_source": {
+        "relation": "base",
+        "mapping_basis": "Exact pinned revision",
+        "provider": "tibia_fandom",
+        "title": "Within the Tides Quest",
+        "pageid": 98526,
+        "revid": 1036406,
+        "revision_timestamp": "2023-08-21T16:17:03Z",
+        "content_sha256": "1bd9be3be8a20d34e6bafbae58b931644c1048fcd2f47449cc51c0d2d8c9ee70",
+        "available": true,
+        "redirect_target": null,
+        "source_fields": {
+          "premium": "yes",
+          "level": null,
+          "recommended_level": "150",
+          "level_note": null,
+          "quest_log": "yes",
+          "implemented": "12.90.12182",
+          "team": null,
+          "reward_entity_references": [
+            {
+              "entity": "Marapur",
+              "quantity": null
+            },
+            {
+              "entity": "Colourful Water Lily",
+              "quantity": null
+            },
+            {
+              "entity": "Giant Beaver (Mount)",
+              "quantity": null
+            },
+            {
+              "entity": "Lilypad Backpack",
+              "quantity": null
+            },
+            {
+              "entity": "Naga Nest",
+              "quantity": null
+            },
+            {
+              "entity": "Wedding Planner",
+              "quantity": null
+            }
+          ],
+          "reward_selection": "UNKNOWN",
+          "location_entity_references": [
+            "Asura Palace",
+            "Marapur"
+          ],
+          "quest_entity_references": [],
+          "requirement_entity_references": [],
+          "mission_heading_references": [],
+          "listing_complete": false,
+          "semantic_enrichment": {
+            "level": {
+              "source_value": null,
+              "kind": "not_stated",
+              "plain_integer": null,
+              "mentioned_numbers": []
+            },
+            "reward_entity_references": [
+              {
+                "entity": "Marapur",
+                "quantity": null,
+                "binding_status": "UNKNOWN",
+                "source_namespace": "mediawiki/page_title"
+              },
+              {
+                "entity": "Colourful Water Lily",
+                "quantity": null,
+                "binding_status": "UNKNOWN",
+                "source_namespace": "mediawiki/page_title"
+              },
+              {
+                "entity": "Giant Beaver (Mount)",
+                "quantity": null,
+                "binding_status": "UNKNOWN",
+                "source_namespace": "mediawiki/page_title"
+              },
+              {
+                "entity": "Lilypad Backpack",
+                "quantity": null,
+                "binding_status": "UNKNOWN",
+                "source_namespace": "mediawiki/page_title"
+              },
+              {
+                "entity": "Naga Nest",
+                "quantity": null,
+                "binding_status": "UNKNOWN",
+                "source_namespace": "mediawiki/page_title"
+              },
+              {
+                "entity": "Wedding Planner",
+                "quantity": null,
+                "binding_status": "UNKNOWN",
+                "source_namespace": "mediawiki/page_title"
+              }
+            ],
+            "reward_groups": [],
+            "reward_declared_none": false,
+            "reward_selection": "UNKNOWN",
+            "reward_modes": [
+              "mount",
+              "achievement",
+              "access"
+            ],
+            "removed_media_refs": [],
+            "prerequisite_expressions": [],
+            "unparsed_requirements": [],
+            "source_field_listing_complete": false,
+            "unresolved_templates": [],
+            "source_revision_sha256": "1bd9be3be8a20d34e6bafbae58b931644c1048fcd2f47449cc51c0d2d8c9ee70",
+            "extractor": "structured-wiki-enrichment/v2",
+            "runtime_promotion": false,
+            "reward_quantitative_facts": [],
+            "semantic_sha256": "c738b8567250b8f84366a8c9bd067f9c040629421abd8d17f80b68862034f61c"
+          }
+        },
+        "target_cut": "2026-09-27",
+        "target_continuity": "DERIVED",
+        "access_method": "remote_desktop_browser",
+        "url": "https://tibia.fandom.com/index.php?curid=98526&oldid=1036406",
+        "classification": "DERIVED",
+        "evidence_role": "STRUCTURED_REFERENCE_DATA",
+        "confidence": "MEDIUM",
+        "source_dependency_possible": true,
+        "scope": "source-scoped references; lists not complete; no narrative text or runtime promotion"
+      },
+      "source_kind": "script_only",
+      "scope": "partial_source_component",
+      "existing_curator_record": false,
+      "aliases": [],
+      "native_alias_admission": "UNKNOWN",
+      "definition_complete": false,
+      "runtime_readiness": "UNKNOWN",
+      "proof_locations": [
+        {
+          "source_id": "timira",
+          "line": 175
+        }
+      ]
+    },
+    {
+      "title": "Thawing Mini World Change",
+      "wiki": {
+        "pageid": 76267,
+        "revid": 845260
+      },
+      "wiki_source": {
+        "relation": "base",
+        "mapping_basis": "Exact pinned revision",
+        "provider": "tibia_fandom",
+        "title": "Thawing Mini World Change",
+        "pageid": 76267,
+        "revid": 845260,
+        "revision_timestamp": "2021-05-26T21:37:15Z",
+        "content_sha256": "84a2c6828d6e90fbc821d9ff34c64f7ce21d81223479d81c8d9fd9654c3e3710",
+        "available": true,
+        "redirect_target": null,
+        "source_fields": {
+          "premium": "yes",
+          "level": "0",
+          "recommended_level": "8",
+          "level_note": null,
+          "quest_log": null,
+          "implemented": "9.40",
+          "team": null,
+          "reward_entity_references": [
+            {
+              "entity": "Achievement",
+              "quantity": null
+            },
+            {
+              "entity": "Ice Harvester",
+              "quantity": null
+            },
+            {
+              "entity": "Ice Flower Seeds",
+              "quantity": null
+            }
+          ],
+          "reward_selection": "UNKNOWN",
+          "location_entity_references": [
+            "Svargrond"
+          ],
+          "quest_entity_references": [],
+          "requirement_entity_references": [],
+          "mission_heading_references": [],
+          "listing_complete": false,
+          "semantic_enrichment": {
+            "level": {
+              "source_value": "0",
+              "kind": "plain_integer",
+              "plain_integer": 0,
+              "mentioned_numbers": [
+                0
+              ]
+            },
+            "reward_entity_references": [
+              {
+                "entity": "Achievement",
+                "quantity": null,
+                "binding_status": "UNKNOWN",
+                "source_namespace": "mediawiki/page_title"
+              },
+              {
+                "entity": "Ice Harvester",
+                "quantity": null,
+                "binding_status": "UNKNOWN",
+                "source_namespace": "mediawiki/page_title"
+              },
+              {
+                "entity": "Ice Flower Seeds",
+                "quantity": null,
+                "binding_status": "UNKNOWN",
+                "source_namespace": "mediawiki/page_title"
+              }
+            ],
+            "reward_groups": [],
+            "reward_declared_none": false,
+            "reward_selection": "UNKNOWN",
+            "reward_modes": [
+              "achievement"
+            ],
+            "removed_media_refs": [],
+            "prerequisite_expressions": [],
+            "unparsed_requirements": [],
+            "source_field_listing_complete": false,
+            "unresolved_templates": [],
+            "source_revision_sha256": "84a2c6828d6e90fbc821d9ff34c64f7ce21d81223479d81c8d9fd9654c3e3710",
+            "extractor": "structured-wiki-enrichment/v2",
+            "runtime_promotion": false,
+            "reward_quantitative_facts": [],
+            "semantic_sha256": "2971456ef2eb3f2eb6e3eb916f864d6696bd973c98c559c80f2ed6fbbd853c76"
+          }
+        },
+        "target_cut": "2026-09-27",
+        "target_continuity": "DERIVED",
+        "access_method": "remote_desktop_browser",
+        "url": "https://tibia.fandom.com/index.php?curid=76267&oldid=845260",
+        "classification": "DERIVED",
+        "evidence_role": "STRUCTURED_REFERENCE_DATA",
+        "confidence": "MEDIUM",
+        "source_dependency_possible": true,
+        "scope": "source-scoped references; lists not complete; no narrative text or runtime promotion"
+      },
+      "source_kind": "script_only",
+      "scope": "partial_source_component",
+      "existing_curator_record": false,
+      "aliases": [],
+      "native_alias_admission": "UNKNOWN",
+      "definition_complete": false,
+      "runtime_readiness": "UNKNOWN",
+      "proof_locations": [
+        {
+          "source_id": "thawing",
+          "line": 1
+        },
+        {
+          "source_id": "thawing",
+          "line": 2
+        },
+        {
+          "source_id": "thawing",
+          "line": 29
+        },
+        {
+          "source_id": "thawing",
+          "line": 31
+        },
+        {
+          "source_id": "thawing",
+          "line": 32
+        },
+        {
+          "source_id": "thawing",
+          "line": 33
+        },
+        {
+          "source_id": "thawing",
+          "line": 35
+        },
+        {
+          "source_id": "thawing",
+          "line": 38
+        },
+        {
+          "source_id": "thawing",
+          "line": 47
+        }
+      ]
+    },
+    {
+      "title": "Horse Station World Change",
+      "wiki": {
+        "pageid": 54701,
+        "revid": 844780
+      },
+      "wiki_source": {
+        "relation": "base",
+        "mapping_basis": "Exact pinned revision",
+        "provider": "tibia_fandom",
+        "title": "Horse Station World Change",
+        "pageid": 54701,
+        "revid": 844780,
+        "revision_timestamp": "2021-05-26T21:07:22Z",
+        "content_sha256": "6c0e7c98da932f9ff0f0bce836ed06d41cb158cb060bb983ff46f3ee57f3d465",
+        "available": true,
+        "redirect_target": null,
+        "source_fields": {
+          "premium": "no",
+          "level": "0",
+          "recommended_level": "8",
+          "level_note": null,
+          "quest_log": null,
+          "implemented": "9.10",
+          "team": null,
+          "reward_entity_references": [
+            {
+              "entity": "Rented Horse",
+              "quantity": null
+            },
+            {
+              "entity": "War Horse",
+              "quantity": null
+            }
+          ],
+          "reward_selection": "UNKNOWN",
+          "location_entity_references": [
+            "Thais",
+            "Venore"
+          ],
+          "quest_entity_references": [],
+          "requirement_entity_references": [],
+          "mission_heading_references": [],
+          "listing_complete": false,
+          "semantic_enrichment": {
+            "level": {
+              "source_value": "0",
+              "kind": "plain_integer",
+              "plain_integer": 0,
+              "mentioned_numbers": [
+                0
+              ]
+            },
+            "reward_entity_references": [
+              {
+                "entity": "Rented Horse",
+                "quantity": null,
+                "binding_status": "UNKNOWN",
+                "source_namespace": "mediawiki/page_title"
+              },
+              {
+                "entity": "War Horse",
+                "quantity": null,
+                "binding_status": "UNKNOWN",
+                "source_namespace": "mediawiki/page_title"
+              }
+            ],
+            "reward_groups": [],
+            "reward_declared_none": false,
+            "reward_selection": "UNKNOWN",
+            "reward_modes": [],
+            "removed_media_refs": [],
+            "prerequisite_expressions": [],
+            "unparsed_requirements": [],
+            "source_field_listing_complete": false,
+            "unresolved_templates": [],
+            "source_revision_sha256": "6c0e7c98da932f9ff0f0bce836ed06d41cb158cb060bb983ff46f3ee57f3d465",
+            "extractor": "structured-wiki-enrichment/v2",
+            "runtime_promotion": false,
+            "reward_quantitative_facts": [],
+            "semantic_sha256": "214055681feb7dae5ac6a5f6b8e8cf65dd7c559d34efd89e9981241b778d4ade"
+          }
+        },
+        "target_cut": "2026-09-27",
+        "target_continuity": "DERIVED",
+        "access_method": "remote_desktop_browser",
+        "url": "https://tibia.fandom.com/index.php?curid=54701&oldid=844780",
+        "classification": "DERIVED",
+        "evidence_role": "STRUCTURED_REFERENCE_DATA",
+        "confidence": "MEDIUM",
+        "source_dependency_possible": true,
+        "scope": "source-scoped references; lists not complete; no narrative text or runtime promotion"
+      },
+      "source_kind": "script_only",
+      "scope": "partial_source_component",
+      "existing_curator_record": false,
+      "aliases": [],
+      "native_alias_admission": "UNKNOWN",
+      "definition_complete": false,
+      "runtime_readiness": "UNKNOWN",
+      "proof_locations": [
+        {
+          "source_id": "palomino",
+          "line": 175
+        },
+        {
+          "source_id": "palomino",
+          "line": 231
+        },
+        {
+          "source_id": "appaloosa",
+          "line": 175
+        },
+        {
+          "source_id": "horseStartup",
+          "line": 55
+        },
+        {
+          "source_id": "horseReturn",
+          "line": 44
+        },
+        {
+          "source_id": "horseReturn",
+          "line": 75
+        },
+        {
+          "source_id": "taming",
+          "line": 71
+        },
+        {
+          "source_id": "taming",
+          "line": 291
+        }
+      ]
+    },
+    {
+      "title": "Thornfire World Change",
+      "wiki": {
+        "pageid": 54125,
+        "revid": 844903
+      },
+      "wiki_source": {
+        "relation": "base",
+        "mapping_basis": "Exact pinned revision",
+        "provider": "tibia_fandom",
+        "title": "Thornfire World Change",
+        "pageid": 54125,
+        "revid": 844903,
+        "revision_timestamp": "2021-05-26T21:10:26Z",
+        "content_sha256": "ed180a2b2511526aa24dc1f1e291546eae3ddfa2da94b42ddbebe18a1beb9e29",
+        "available": true,
+        "redirect_target": null,
+        "source_fields": {
+          "premium": "no",
+          "level": "None",
+          "recommended_level": "30",
+          "level_note": null,
+          "quest_log": null,
+          "implemented": "9.10",
+          "team": null,
+          "reward_entity_references": [
+            {
+              "entity": "Crystal Wolf (Mount)",
+              "quantity": null
+            },
+            {
+              "entity": "Firefighter",
+              "quantity": null
+            },
+            {
+              "entity": "Coal",
+              "quantity": null
+            },
+            {
+              "entity": "Flintstone",
+              "quantity": null
+            }
+          ],
+          "reward_selection": "UNKNOWN",
+          "location_entity_references": [
+            "Shadowthorn"
+          ],
+          "quest_entity_references": [],
+          "requirement_entity_references": [],
+          "mission_heading_references": [],
+          "listing_complete": false,
+          "semantic_enrichment": {
+            "level": {
+              "source_value": "None",
+              "kind": "explicit_none",
+              "plain_integer": null,
+              "mentioned_numbers": []
+            },
+            "reward_entity_references": [
+              {
+                "entity": "Crystal Wolf (Mount)",
+                "quantity": null,
+                "binding_status": "UNKNOWN",
+                "source_namespace": "mediawiki/page_title"
+              },
+              {
+                "entity": "Firefighter",
+                "quantity": null,
+                "binding_status": "UNKNOWN",
+                "source_namespace": "mediawiki/page_title"
+              },
+              {
+                "entity": "Coal",
+                "quantity": null,
+                "binding_status": "UNKNOWN",
+                "source_namespace": "mediawiki/page_title"
+              },
+              {
+                "entity": "Flintstone",
+                "quantity": null,
+                "binding_status": "UNKNOWN",
+                "source_namespace": "mediawiki/page_title"
+              }
+            ],
+            "reward_groups": [],
+            "reward_declared_none": false,
+            "reward_selection": "UNKNOWN",
+            "reward_modes": [
+              "mount",
+              "achievement"
+            ],
+            "removed_media_refs": [],
+            "prerequisite_expressions": [],
+            "unparsed_requirements": [],
+            "source_field_listing_complete": false,
+            "unresolved_templates": [],
+            "source_revision_sha256": "ed180a2b2511526aa24dc1f1e291546eae3ddfa2da94b42ddbebe18a1beb9e29",
+            "extractor": "structured-wiki-enrichment/v2",
+            "runtime_promotion": false,
+            "reward_quantitative_facts": [],
+            "semantic_sha256": "2f6d3a0363b1d544b4468a2c2edbd8dc65c6ff04dcf427c9a0f1ab13797e5f40"
+          }
+        },
+        "target_cut": "2026-09-27",
+        "target_continuity": "DERIVED",
+        "access_method": "remote_desktop_browser",
+        "url": "https://tibia.fandom.com/index.php?curid=54125&oldid=844903",
+        "classification": "DERIVED",
+        "evidence_role": "STRUCTURED_REFERENCE_DATA",
+        "confidence": "MEDIUM",
+        "source_dependency_possible": true,
+        "scope": "source-scoped references; lists not complete; no narrative text or runtime promotion"
+      },
+      "source_kind": "script_only",
+      "scope": "partial_source_component",
+      "existing_curator_record": false,
+      "aliases": [],
+      "native_alias_admission": "UNKNOWN",
+      "definition_complete": false,
+      "runtime_readiness": "UNKNOWN",
+      "proof_locations": [
+        {
+          "source_id": "bucket",
+          "line": 34
+        },
+        {
+          "source_id": "bucket",
+          "line": 52
+        },
+        {
+          "source_id": "bucket",
+          "line": 59
+        },
+        {
+          "source_id": "bucket",
+          "line": 67
+        },
+        {
+          "source_id": "thornWolf",
+          "line": 3
+        },
+        {
+          "source_id": "thornWolf",
+          "line": 17
+        },
+        {
+          "source_id": "taming",
+          "line": 12
+        },
+        {
+          "source_id": "taming",
+          "line": 142
+        }
+      ]
+    }
+  ],
+  "canonical_admission_ref": {
+    "path": "docs/agents/evidence/OTV2-20261001-quest-reward-item-admission.json",
+    "revision": "503bba9e9a6a96f807c40c519bd3c83ed40a9ded",
+    "blob_sha1": "a20fdb374867810bfb60a997506cedf616454ac8",
+    "sha256": "3974a9e1ef9062fa2c75e67cd95b80c62d829cba9d19c280861752313f1b5754",
+    "url": "https://github.com/Oteryn/Oteryn-Game/blob/503bba9e9a6a96f807c40c519bd3c83ed40a9ded/docs/agents/evidence/OTV2-20261001-quest-reward-item-admission.json"
+  },
+  "scope": "source references only; no whole-quest completeness or runtime admission",
+  "historical_component_handoff": {
+    "schema": "OTERYN_BOUNDED_WIKI_COMPLETION_HANDOFF/v1",
+    "owned_directory": "/tmp/quest-completion-round2/wiki-completion-final",
+    "files": [
+      {
+        "path": "build_package.py",
+        "sha256": "7b0bd9761f0f0b8302e50d5053a3d65107c8dda85bd83d8fbfdd8762e6714843",
+        "bytes": 17104
+      },
+      {
+        "path": "test_build_package.py",
+        "sha256": "60e2b4fb8c357b83d35788259f531da006eed2bb2511b50c9ce7f60d9fb1399a",
+        "bytes": 6710
+      },
+      {
+        "path": "README.md",
+        "sha256": "e07530364ef105d6a127d866f3e84c1080fad0b696d89b23e89fcff50a2659f5",
+        "bytes": 3988
+      },
+      {
+        "path": "curation-patch.json",
+        "sha256": "322fddd80d0ceb2ac3dda8f4a3fd869cc02430d9801480484319d8aead67e51f",
+        "bytes": 103113
+      },
+      {
+        "path": "source-curation-evidence.json",
+        "sha256": "882e9ecc24847b6c2edf50c401231bf736ecc0992c399924123163820a895eb2",
+        "bytes": 45619
+      },
+      {
+        "path": "wiki-only-migration-specs.enriched.json",
+        "sha256": "62a31eb620a8ae8b9d60efddceeb71baf9214c66e0876e11c4330f8adfce8f1a",
+        "bytes": 435417
+      },
+      {
+        "path": "source-rule-facts.json",
+        "sha256": "87dd79e5fb066cae02b1d2184f3fbc4d3056d75e1d347eb66a403f7ee6b3448c",
+        "bytes": 3257
+      },
+      {
+        "path": "verified-wiki-conditions.json",
+        "sha256": "977e2dc3e2644614e3f4ad1abe6afda6edab3aad36805260616c41579e831876",
+        "bytes": 2019
+      }
+    ],
+    "quantity_receipt": {
+      "path": "/tmp/quest-container-source-quantity-wiki.json",
+      "sha256": "8ca3fea6ef2c3ea3fec2030660208bc6e3a99c1cd58d7e604a51ee16959871c1"
+    },
+    "local_only_input_not_for_publication": "source-witness-ioweeklytasks.cpp",
+    "tests": {
+      "command": "PYTHONDONTWRITEBYTECODE=1 python -B -m unittest test_build_package.py",
+      "passed": 13,
+      "existing_source_curation_guard": "All7PASS; negativeunprovenWithinTidespath rejected"
+    },
+    "counts": {
+      "new_partial_source_curations": 7,
+      "original_wiki_only_specs": 25,
+      "field_sets": 63,
+      "quest_references": 17,
+      "item_references": 28,
+      "distinct_admitted_item_ids": 21,
+      "source_line_proofs": 63
+    },
+    "no_repo_writes": true,
+    "definition_complete": false,
+    "runtime_promotion": false,
+    "review_repair": {
+      "within_tides": "Only proven encounter path declared",
+      "cpp": "Verified exact public blob in temporary readonly source verification root; not published; outside Lua coverage"
+    }
+  },
+  "qualification_scope": "Exact historical source component facts; root generated children qualified separately."
+}

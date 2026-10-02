@@ -1,0 +1,641 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "oteryn:schema/quest-source-bundle/v1",
+  "title": "Complete offline source quest migration bundle",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "classification",
+    "scope",
+    "canonical_admission",
+    "runtime_readiness",
+    "input_provenance",
+    "tool_provenance",
+    "schema_provenance",
+    "sources",
+    "quests",
+    "progress",
+    "interactions",
+    "gates",
+    "claims",
+    "wiki_catalogue",
+    "interaction_source_conflicts",
+    "gap_evidence",
+    "quest_gaps",
+    "reference_gaps",
+    "unassigned_gaps",
+    "summary",
+    "source_texts"
+  ],
+  "properties": {
+    "schema": {
+      "const": "OTERYN_QUEST_SOURCE_BUNDLE/v1"
+    },
+    "classification": {
+      "const": "OTS_HYPOTHESIS_ONLY"
+    },
+    "scope": {
+      "const": "source_inventory_only; no native or runtime authority"
+    },
+    "canonical_admission": {
+      "const": "NOT_ASSESSED"
+    },
+    "runtime_readiness": {
+      "const": "UNKNOWN"
+    },
+    "input_provenance": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "role",
+          "path",
+          "sha256"
+        ],
+        "properties": {
+          "role": {
+            "type": "string",
+            "minLength": 1
+          },
+          "path": {
+            "type": "string",
+            "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))[^\\\\\\r\\n]+$"
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          }
+        }
+      }
+    },
+    "tool_provenance": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "path",
+          "sha256"
+        ],
+        "properties": {
+          "path": {
+            "type": "string",
+            "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))[^\\\\\\r\\n]+$"
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          }
+        }
+      }
+    },
+    "schema_provenance": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "path",
+          "sha256"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "path": {
+            "type": "string",
+            "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))[^\\\\\\r\\n]+$"
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          }
+        }
+      }
+    },
+    "sources": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "repository",
+          "revision"
+        ],
+        "properties": {
+          "repository": {
+            "type": "string",
+            "minLength": 1
+          },
+          "revision": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{40}$"
+          }
+        }
+      }
+    },
+    "quests": {
+      "type": "array",
+      "items": {
+        "$ref": "oteryn:schema/quest-content/v1#/$defs/quest"
+      }
+    },
+    "progress": {
+      "type": "array",
+      "items": {
+        "$ref": "oteryn:schema/quest-progress-source/v1#/$defs/progress"
+      }
+    },
+    "interactions": {
+      "type": "array",
+      "items": {
+        "$ref": "oteryn:schema/interaction/v1#/$defs/interaction"
+      }
+    },
+    "gates": {
+      "type": "array",
+      "items": {
+        "$ref": "oteryn:schema/quest-content/v1#/$defs/gate"
+      }
+    },
+    "claims": {
+      "type": "array",
+      "items": {
+        "$ref": "oteryn:schema/quest-content/v1#/$defs/claim"
+      }
+    },
+    "wiki_catalogue": {
+      "$ref": "oteryn:schema/quest-catalogue/v1"
+    },
+    "interaction_source_conflicts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "interaction",
+          "classification",
+          "source_witnesses",
+          "alternatives"
+        ],
+        "properties": {
+          "interaction": {
+            "type": "string",
+            "minLength": 1
+          },
+          "classification": {
+            "const": "CONFLICT"
+          },
+          "source_witnesses": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "source",
+                "path",
+                "callback_line",
+                "blob_sha1"
+              ],
+              "properties": {
+                "source": {
+                  "enum": [
+                    "canary",
+                    "crystalserver"
+                  ]
+                },
+                "path": {
+                  "type": "string",
+                  "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))[^\\\\\\r\\n]+$"
+                },
+                "callback_line": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "blob_sha1": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{40}$"
+                }
+              }
+            }
+          },
+          "alternatives": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "source",
+                "interaction"
+              ],
+              "properties": {
+                "source": {
+                  "enum": [
+                    "canary",
+                    "crystalserver"
+                  ]
+                },
+                "interaction": {
+                  "$ref": "oteryn:schema/interaction/v1#/$defs/interaction"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "gap_evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "reported_readiness",
+        "coverage_holds",
+        "deferred_owners"
+      ],
+      "properties": {
+        "reported_readiness": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "quest",
+              "kind",
+              "features",
+              "interactions",
+              "data_gaps"
+            ],
+            "properties": {
+              "quest": {
+                "$ref": "oteryn:schema/quest-content/v1#/$defs/identity/properties/key"
+              },
+              "kind": {
+                "$ref": "oteryn:schema/quest-content/v1#/$defs/quest/properties/kind"
+              },
+              "features": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "interactions": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "data_gaps": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "interactions_with_gaps",
+                  "unresolved_items"
+                ],
+                "properties": {
+                  "interactions_with_gaps": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "unresolved_items": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                }
+              }
+            }
+          }
+        },
+        "coverage_holds": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "quest",
+              "record",
+              "reason"
+            ],
+            "properties": {
+              "quest": {
+                "$ref": "oteryn:schema/quest-content/v1#/$defs/identity/properties/key"
+              },
+              "record": {
+                "type": "string",
+                "minLength": 1
+              },
+              "reason": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        },
+        "deferred_owners": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "record",
+              "quest",
+              "reason"
+            ],
+            "properties": {
+              "record": {
+                "type": "string",
+                "minLength": 1
+              },
+              "quest": {
+                "oneOf": [
+                  {
+                    "$ref": "oteryn:schema/quest-content/v1#/$defs/identity/properties/key"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "reason": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        }
+      }
+    },
+    "quest_gaps": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "quest",
+          "runtime_readiness",
+          "coverage_completeness",
+          "reported_source_readiness",
+          "gaps"
+        ],
+        "properties": {
+          "quest": {
+            "$ref": "oteryn:schema/quest-content/v1#/$defs/identity/properties/key"
+          },
+          "runtime_readiness": {
+            "const": "UNKNOWN"
+          },
+          "coverage_completeness": {
+            "const": "NOT_ASSESSED"
+          },
+          "reported_source_readiness": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "quest",
+                  "kind",
+                  "features",
+                  "interactions",
+                  "data_gaps"
+                ],
+                "properties": {
+                  "quest": {
+                    "$ref": "oteryn:schema/quest-content/v1#/$defs/identity/properties/key"
+                  },
+                  "kind": {
+                    "$ref": "oteryn:schema/quest-content/v1#/$defs/quest/properties/kind"
+                  },
+                  "features": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  },
+                  "interactions": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "data_gaps": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "interactions_with_gaps",
+                      "unresolved_items"
+                    ],
+                    "properties": {
+                      "interactions_with_gaps": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "unresolved_items": {
+                        "type": "integer",
+                        "minimum": 0
+                      }
+                    }
+                  }
+                }
+              }
+            ]
+          },
+          "gaps": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "kind",
+                "record",
+                "reason"
+              ],
+              "properties": {
+                "kind": {
+                  "enum": [
+                    "source_write_evidence_gap",
+                    "source_progress_unknown",
+                    "source_effect_not_closed",
+                    "source_interaction_gap",
+                    "source_coverage_hold",
+                    "source_owner_deferred",
+                    "source_readiness_missing",
+                    "reported_source_gap",
+                    "source_reference_gap",
+                    "wiki_source_conflict",
+                    "source_text_unknown"
+                  ]
+                },
+                "record": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "reason": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "reference_gaps": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "record_type",
+          "record_key",
+          "field",
+          "target_type",
+          "target_key",
+          "reason"
+        ],
+        "properties": {
+          "record_type": {
+            "enum": [
+              "Quest",
+              "Progress",
+              "Interaction",
+              "Gate",
+              "RewardClaim"
+            ]
+          },
+          "record_key": {
+            "type": "string",
+            "minLength": 1
+          },
+          "field": {
+            "type": "string",
+            "minLength": 1
+          },
+          "target_type": {
+            "enum": [
+              "Quest",
+              "Progress",
+              "Interaction",
+              "Gate",
+              "RewardClaim"
+            ]
+          },
+          "target_key": {
+            "type": "string",
+            "minLength": 1
+          },
+          "reason": {
+            "const": "reference not declared in this source bundle"
+          }
+        }
+      }
+    },
+    "unassigned_gaps": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "kind",
+          "record",
+          "reason"
+        ],
+        "properties": {
+          "kind": {
+            "enum": [
+              "source_write_evidence_gap",
+              "source_progress_unknown",
+              "source_effect_not_closed",
+              "source_interaction_gap",
+              "source_coverage_hold",
+              "source_owner_deferred",
+              "source_readiness_missing",
+              "reported_source_gap",
+              "source_reference_gap",
+              "wiki_source_conflict",
+              "source_text_unknown"
+            ]
+          },
+          "record": {
+            "type": "string",
+            "minLength": 1
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "quests",
+        "progress",
+        "interactions",
+        "gates",
+        "claims",
+        "wiki_quests",
+        "quests_with_reported_gaps",
+        "reference_gaps",
+        "unassigned_gaps",
+        "progress_source_transitions",
+        "source_write_occurrences"
+      ],
+      "properties": {
+        "quests": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "progress": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "interactions": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "gates": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "claims": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "wiki_quests": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "quests_with_reported_gaps": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "reference_gaps": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "unassigned_gaps": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "progress_source_transitions": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "source_write_occurrences": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "source_texts": {
+      "$ref": "oteryn:schema/source-text/v1#/$defs/registry"
+    }
+  }
+}

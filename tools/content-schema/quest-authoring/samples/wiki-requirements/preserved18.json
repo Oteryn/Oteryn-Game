@@ -1,0 +1,751 @@
+[
+  {
+    "wiki_title": "Dragon Slayer Outfits Quest",
+    "historical_hold_sha256": "e9be20e1f371a4e9f8660e2ac99e542b3bd9e73d63f72f0d04b1ba81bcf63fd7",
+    "historical_evidence": {
+      "provider": "tibiawiki_br",
+      "pageid": 61047,
+      "revid": 408914,
+      "content_sha256": "5c510703fd449afdc0b9dfb2ce794978ca6c70bed0114709a929e0a376170361",
+      "url": "https://www.tibiawiki.com.br/index.php?curid=61047&oldid=408914",
+      "relation": "crosscheck",
+      "line": 28,
+      "line_sha256": "a85552ba09551b2a1add9d2583b7fc3aa69342b5bad79fdc05d43a2f97066d22"
+    },
+    "execution_semantics": "UNKNOWN",
+    "canonical_binding_status": "UNKNOWN",
+    "prerequisite_expressions": [
+      {
+        "line": 28,
+        "line_sha256": "a85552ba09551b2a1add9d2583b7fc3aa69342b5bad79fdc05d43a2f97066d22",
+        "section": "Requerimentos",
+        "scope": "source_requirement_list",
+        "scope_anchor": null,
+        "operator": "references",
+        "execution_semantics": "UNKNOWN",
+        "declaration_strength": "reference_only",
+        "nodes": [
+          {
+            "kind": "entity_reference",
+            "entity": "Hoard of the Dragon",
+            "quantity": null,
+            "binding_status": "UNKNOWN",
+            "source_namespace": "mediawiki/page_title"
+          },
+          {
+            "kind": "entity_reference",
+            "entity": "Reason to Celebrate",
+            "quantity": null,
+            "binding_status": "UNKNOWN",
+            "source_namespace": "mediawiki/page_title"
+          },
+          {
+            "kind": "entity_reference",
+            "entity": "Treasure Hunter",
+            "quantity": null,
+            "binding_status": "UNKNOWN",
+            "source_namespace": "mediawiki/page_title"
+          }
+        ]
+      }
+    ],
+    "source_fact_entries": []
+  },
+  {
+    "wiki_title": "Dragon Slayer Outfits Quest",
+    "historical_hold_sha256": "4297b2cf39f4febb25eab34235bd12677eda7544e34e2b42c5e0f940bd20acd8",
+    "historical_evidence": {
+      "provider": "tibiawiki_br",
+      "pageid": 61047,
+      "revid": 408914,
+      "content_sha256": "5c510703fd449afdc0b9dfb2ce794978ca6c70bed0114709a929e0a376170361",
+      "url": "https://www.tibiawiki.com.br/index.php?curid=61047&oldid=408914",
+      "relation": "crosscheck",
+      "line": 83,
+      "line_sha256": "7044371588c52550e86b948000d938735b93d680931dae1b3ab9eae17057021e"
+    },
+    "execution_semantics": "UNKNOWN",
+    "canonical_binding_status": "UNKNOWN",
+    "prerequisite_expressions": [],
+    "source_fact_entries": [
+      {
+        "kind": "curated_source_fact",
+        "source_order": 83,
+        "execution_semantics": "UNKNOWN",
+        "binding_status": "UNKNOWN",
+        "classification": "DERIVED",
+        "scope": "Requerimentos",
+        "facts": {
+          "required_title_literal": "Competent Beastslayer"
+        },
+        "evidence": [
+          {
+            "line": 83,
+            "line_sha256": "7044371588c52550e86b948000d938735b93d680931dae1b3ab9eae17057021e",
+            "byte_offset": 3974,
+            "byte_length": 44,
+            "span_sha256": "7044371588c52550e86b948000d938735b93d680931dae1b3ab9eae17057021e"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "wiki_title": "Insectoid Outfits Quest",
+    "historical_hold_sha256": "ac339170c5c80954217c1936526352788d6f3416df0be040831a48656f284a13",
+    "historical_evidence": {
+      "provider": "tibiawiki_br",
+      "pageid": 45931,
+      "revid": 401315,
+      "content_sha256": "43322727d890e1e66fa3e2bf5c06a02a68a8c85f8422b1ba1211edefd7360984",
+      "url": "https://www.tibiawiki.com.br/index.php?curid=45931&oldid=401315",
+      "relation": "crosscheck",
+      "line": 43,
+      "line_sha256": "bb3ce02083561e6f5da55af0713220ea7297c567c15ebaab08e865a10568e669"
+    },
+    "execution_semantics": "UNKNOWN",
+    "canonical_binding_status": "UNKNOWN",
+    "prerequisite_expressions": [],
+    "source_fact_entries": [
+      {
+        "kind": "curated_source_fact",
+        "source_order": 43,
+        "execution_semantics": "UNKNOWN",
+        "binding_status": "UNKNOWN",
+        "classification": "DERIVED",
+        "scope": "Requerimentos",
+        "facts": {
+          "required_amount_literal": 500,
+          "unit_literal": "War Exp pontos",
+          "scope_literal": "primeiro addon",
+          "cumulative_declared": true,
+          "excluded_additive_terms": [
+            300,
+            500
+          ]
+        },
+        "evidence": [
+          {
+            "line": 43,
+            "line_sha256": "bb3ce02083561e6f5da55af0713220ea7297c567c15ebaab08e865a10568e669",
+            "byte_offset": 2257,
+            "byte_length": 140,
+            "span_sha256": "bb3ce02083561e6f5da55af0713220ea7297c567c15ebaab08e865a10568e669"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "wiki_title": "Insectoid Outfits Quest",
+    "historical_hold_sha256": "660de68b615cff3c43ff82ec6e207af92b8fa25723cd169b57cb1b49453706be",
+    "historical_evidence": {
+      "provider": "tibiawiki_br",
+      "pageid": 45931,
+      "revid": 401315,
+      "content_sha256": "43322727d890e1e66fa3e2bf5c06a02a68a8c85f8422b1ba1211edefd7360984",
+      "url": "https://www.tibiawiki.com.br/index.php?curid=45931&oldid=401315",
+      "relation": "crosscheck",
+      "line": 59,
+      "line_sha256": "1a9aa5155d0ba85072c92185c3228f1ce1d00caf243c97048d8cfca287ff8792"
+    },
+    "execution_semantics": "UNKNOWN",
+    "canonical_binding_status": "UNKNOWN",
+    "prerequisite_expressions": [],
+    "source_fact_entries": [
+      {
+        "kind": "curated_source_fact",
+        "source_order": 59,
+        "execution_semantics": "UNKNOWN",
+        "binding_status": "UNKNOWN",
+        "classification": "DERIVED",
+        "scope": "Requerimentos",
+        "facts": {
+          "required_amount_literal": 1000,
+          "unit_literal": "War Exp pontos",
+          "scope_literal": "segundo addon",
+          "cumulative_declared": true,
+          "excluded_additive_terms": [
+            300,
+            500,
+            1000
+          ]
+        },
+        "evidence": [
+          {
+            "line": 59,
+            "line_sha256": "1a9aa5155d0ba85072c92185c3228f1ce1d00caf243c97048d8cfca287ff8792",
+            "byte_offset": 3272,
+            "byte_length": 148,
+            "span_sha256": "1a9aa5155d0ba85072c92185c3228f1ce1d00caf243c97048d8cfca287ff8792"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "wiki_title": "Insectoid Outfits Quest",
+    "historical_hold_sha256": "55f00bd6ba4e9015f6efba58a699a6bbfee7f27ef83dd4e8ee7a7095d8166a76",
+    "historical_evidence": {
+      "provider": "tibiawiki_br",
+      "pageid": 45931,
+      "revid": 401315,
+      "content_sha256": "43322727d890e1e66fa3e2bf5c06a02a68a8c85f8422b1ba1211edefd7360984",
+      "url": "https://www.tibiawiki.com.br/index.php?curid=45931&oldid=401315",
+      "relation": "crosscheck",
+      "line": 43,
+      "line_sha256": "bb3ce02083561e6f5da55af0713220ea7297c567c15ebaab08e865a10568e669"
+    },
+    "execution_semantics": "UNKNOWN",
+    "canonical_binding_status": "UNKNOWN",
+    "prerequisite_expressions": [],
+    "source_fact_entries": [
+      {
+        "kind": "curated_source_fact",
+        "source_order": 43,
+        "execution_semantics": "UNKNOWN",
+        "binding_status": "UNKNOWN",
+        "classification": "DERIVED",
+        "scope": "Requerimentos",
+        "facts": {
+          "required_amount_literal": 500,
+          "unit_literal": "War Exp pontos",
+          "scope_literal": "primeiro addon",
+          "cumulative_declared": true,
+          "excluded_additive_terms": [
+            300,
+            500
+          ]
+        },
+        "evidence": [
+          {
+            "line": 43,
+            "line_sha256": "bb3ce02083561e6f5da55af0713220ea7297c567c15ebaab08e865a10568e669",
+            "byte_offset": 2257,
+            "byte_length": 140,
+            "span_sha256": "bb3ce02083561e6f5da55af0713220ea7297c567c15ebaab08e865a10568e669"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "wiki_title": "Insectoid Outfits Quest",
+    "historical_hold_sha256": "b34d8a5a59da39761c907b413bada4c12e69c57b91cca05dc0f0d9ba08a5ac75",
+    "historical_evidence": {
+      "provider": "tibiawiki_br",
+      "pageid": 45931,
+      "revid": 401315,
+      "content_sha256": "43322727d890e1e66fa3e2bf5c06a02a68a8c85f8422b1ba1211edefd7360984",
+      "url": "https://www.tibiawiki.com.br/index.php?curid=45931&oldid=401315",
+      "relation": "crosscheck",
+      "line": 59,
+      "line_sha256": "1a9aa5155d0ba85072c92185c3228f1ce1d00caf243c97048d8cfca287ff8792"
+    },
+    "execution_semantics": "UNKNOWN",
+    "canonical_binding_status": "UNKNOWN",
+    "prerequisite_expressions": [],
+    "source_fact_entries": [
+      {
+        "kind": "curated_source_fact",
+        "source_order": 59,
+        "execution_semantics": "UNKNOWN",
+        "binding_status": "UNKNOWN",
+        "classification": "DERIVED",
+        "scope": "Requerimentos",
+        "facts": {
+          "required_amount_literal": 1000,
+          "unit_literal": "War Exp pontos",
+          "scope_literal": "segundo addon",
+          "cumulative_declared": true,
+          "excluded_additive_terms": [
+            300,
+            500,
+            1000
+          ]
+        },
+        "evidence": [
+          {
+            "line": 59,
+            "line_sha256": "1a9aa5155d0ba85072c92185c3228f1ce1d00caf243c97048d8cfca287ff8792",
+            "byte_offset": 3272,
+            "byte_length": 148,
+            "span_sha256": "1a9aa5155d0ba85072c92185c3228f1ce1d00caf243c97048d8cfca287ff8792"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "wiki_title": "Pilgrimage of Ashes Quest",
+    "historical_hold_sha256": "35e578fdd8ea59f154601e09eeb1fa02878740d0c8d19e0f9b95b17765654c15",
+    "historical_evidence": {
+      "provider": "tibiawiki_br",
+      "pageid": 4492,
+      "revid": 432012,
+      "content_sha256": "75bb21b6c3c7ab179f49ae364d4577be7fa337e34aa19f1c8a355e879f0a55c4",
+      "url": "https://www.tibiawiki.com.br/index.php?curid=4492&oldid=432012",
+      "relation": "crosscheck",
+      "line": 26,
+      "line_sha256": "260c36e0c69c7ddfb2aad5a5dbbf55ec792b724418a140f02e48642133ea6267"
+    },
+    "execution_semantics": "UNKNOWN",
+    "canonical_binding_status": "UNKNOWN",
+    "prerequisite_expressions": [],
+    "source_fact_entries": [
+      {
+        "kind": "curated_source_fact",
+        "source_order": 26,
+        "execution_semantics": "UNKNOWN",
+        "binding_status": "UNKNOWN",
+        "classification": "DERIVED",
+        "scope": "Requerimentos",
+        "facts": {
+          "required_amount_literal": 500,
+          "unit_literal": "gps",
+          "scope_literal": "viagens"
+        },
+        "evidence": [
+          {
+            "line": 26,
+            "line_sha256": "260c36e0c69c7ddfb2aad5a5dbbf55ec792b724418a140f02e48642133ea6267",
+            "byte_offset": 1112,
+            "byte_length": 37,
+            "span_sha256": "260c36e0c69c7ddfb2aad5a5dbbf55ec792b724418a140f02e48642133ea6267"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "wiki_title": "Pilgrimage of Ashes Quest",
+    "historical_hold_sha256": "7b151e28b6743900833ff79b30bc52c4f7dd91f1af227dd9f681cdf8e3b55e39",
+    "historical_evidence": {
+      "provider": "tibiawiki_br",
+      "pageid": 4492,
+      "revid": 432012,
+      "content_sha256": "75bb21b6c3c7ab179f49ae364d4577be7fa337e34aa19f1c8a355e879f0a55c4",
+      "url": "https://www.tibiawiki.com.br/index.php?curid=4492&oldid=432012",
+      "relation": "crosscheck",
+      "line": 26,
+      "line_sha256": "260c36e0c69c7ddfb2aad5a5dbbf55ec792b724418a140f02e48642133ea6267"
+    },
+    "execution_semantics": "UNKNOWN",
+    "canonical_binding_status": "UNKNOWN",
+    "prerequisite_expressions": [],
+    "source_fact_entries": [
+      {
+        "kind": "curated_source_fact",
+        "source_order": 26,
+        "execution_semantics": "UNKNOWN",
+        "binding_status": "UNKNOWN",
+        "classification": "DERIVED",
+        "scope": "Requerimentos",
+        "facts": {
+          "required_amount_literal": 500,
+          "unit_literal": "gps",
+          "scope_literal": "viagens"
+        },
+        "evidence": [
+          {
+            "line": 26,
+            "line_sha256": "260c36e0c69c7ddfb2aad5a5dbbf55ec792b724418a140f02e48642133ea6267",
+            "byte_offset": 1112,
+            "byte_length": 37,
+            "span_sha256": "260c36e0c69c7ddfb2aad5a5dbbf55ec792b724418a140f02e48642133ea6267"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "wiki_title": "The Great Expedition",
+    "historical_hold_sha256": "28ad883fecd0ca7bc980071d76004d3206f1b7c321a3bb27a2f35c07d1f71ae2",
+    "historical_evidence": {
+      "provider": "tibia_fandom",
+      "pageid": 111212,
+      "revid": 1200358,
+      "content_sha256": "ff2ce43f182f6d339c9fcc6d6ba307a283e19814e7c1e144743e9c8b2ff0a572",
+      "url": "https://tibia.fandom.com/index.php?curid=111212&oldid=1200358",
+      "relation": "spoiler",
+      "line": 5,
+      "line_sha256": "216a13a08164457ee10dc89cc218ec1fdfa255b1dcf1148fdeb71514ece5e384"
+    },
+    "execution_semantics": "UNKNOWN",
+    "canonical_binding_status": "UNKNOWN",
+    "prerequisite_expressions": [
+      {
+        "line": 5,
+        "line_sha256": "216a13a08164457ee10dc89cc218ec1fdfa255b1dcf1148fdeb71514ece5e384",
+        "section": "Individual Requirements",
+        "scope": "source_requirement_list",
+        "scope_anchor": null,
+        "operator": "references",
+        "execution_semantics": "UNKNOWN",
+        "declaration_strength": "reference_only",
+        "nodes": [
+          {
+            "kind": "level_at_least",
+            "value": 20,
+            "binding_status": "SOURCE_DECLARED",
+            "applies_to": "source_requirement_list"
+          }
+        ]
+      }
+    ],
+    "source_fact_entries": []
+  },
+  {
+    "wiki_title": "The Great Expedition",
+    "historical_hold_sha256": "3cb4f2031ad7464db24483729f41cb7f50b7bfb010c1a66c2bcce8598beb3452",
+    "historical_evidence": {
+      "provider": "tibia_fandom",
+      "pageid": 111212,
+      "revid": 1200358,
+      "content_sha256": "ff2ce43f182f6d339c9fcc6d6ba307a283e19814e7c1e144743e9c8b2ff0a572",
+      "url": "https://tibia.fandom.com/index.php?curid=111212&oldid=1200358",
+      "relation": "spoiler",
+      "line": 7,
+      "line_sha256": "9a34dc5e09bbe9a85ad09c0a21f10de02885eb5324e9222a986594112c95928d"
+    },
+    "execution_semantics": "UNKNOWN",
+    "canonical_binding_status": "UNKNOWN",
+    "prerequisite_expressions": [],
+    "source_fact_entries": [
+      {
+        "kind": "curated_source_fact",
+        "source_order": 7,
+        "execution_semantics": "UNKNOWN",
+        "binding_status": "UNKNOWN",
+        "classification": "DERIVED",
+        "scope": "World Requirements",
+        "facts": {
+          "required_amount_literal": 35000000,
+          "unit_literal": "gold coins",
+          "scope_literal": "donations"
+        },
+        "evidence": [
+          {
+            "line": 7,
+            "line_sha256": "9a34dc5e09bbe9a85ad09c0a21f10de02885eb5324e9222a986594112c95928d",
+            "byte_offset": 137,
+            "byte_length": 38,
+            "span_sha256": "9a34dc5e09bbe9a85ad09c0a21f10de02885eb5324e9222a986594112c95928d"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "wiki_title": "The Order of the Stag Quest",
+    "historical_hold_sha256": "db1a3cc4939e27b6f78eb20afe405096eeb9bbbee4d336374ea5788e0401bb89",
+    "historical_evidence": {
+      "provider": "tibia_fandom",
+      "pageid": 109439,
+      "revid": 1173312,
+      "content_sha256": "d9963f4774674fcf02eee7b451dfa72c4bcc15bf08bf4f18b08d0b185a644f32",
+      "url": "https://tibia.fandom.com/index.php?curid=109439&oldid=1173312",
+      "relation": "spoiler",
+      "line": 6,
+      "line_sha256": "da472f9b277ee5ff9e8e5f9751155bc2d3b6cff895338a8983776d8e2754c0a7"
+    },
+    "execution_semantics": "UNKNOWN",
+    "canonical_binding_status": "UNKNOWN",
+    "prerequisite_expressions": [],
+    "source_fact_entries": [
+      {
+        "kind": "curated_source_fact",
+        "source_order": 6,
+        "execution_semantics": "UNKNOWN",
+        "binding_status": "UNKNOWN",
+        "classification": "DERIVED",
+        "scope": "Requirements",
+        "facts": {
+          "optional_mission_heading": "Supplies for the Steadfast"
+        },
+        "evidence": [
+          {
+            "line": 6,
+            "line_sha256": "da472f9b277ee5ff9e8e5f9751155bc2d3b6cff895338a8983776d8e2754c0a7",
+            "byte_offset": 207,
+            "byte_length": 64,
+            "span_sha256": "da472f9b277ee5ff9e8e5f9751155bc2d3b6cff895338a8983776d8e2754c0a7"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "wiki_title": "The Order of the Stag Quest",
+    "historical_hold_sha256": "f00fe4a79443a2c34b872283b8aa7d88cc43f463f9804cfc3c574e46c173b2a2",
+    "historical_evidence": {
+      "provider": "tibia_fandom",
+      "pageid": 109439,
+      "revid": 1173312,
+      "content_sha256": "d9963f4774674fcf02eee7b451dfa72c4bcc15bf08bf4f18b08d0b185a644f32",
+      "url": "https://tibia.fandom.com/index.php?curid=109439&oldid=1173312",
+      "relation": "spoiler",
+      "line": 8,
+      "line_sha256": "978a7085ef1c8d1f13b4e3fcda39840cb7a67bb664db2e2a219403c635173935"
+    },
+    "execution_semantics": "UNKNOWN",
+    "canonical_binding_status": "UNKNOWN",
+    "prerequisite_expressions": [],
+    "source_fact_entries": [
+      {
+        "kind": "curated_source_fact",
+        "source_order": 8,
+        "execution_semantics": "UNKNOWN",
+        "binding_status": "UNKNOWN",
+        "classification": "DERIVED",
+        "scope": "Requirements",
+        "facts": {
+          "optional_mission_heading": "Emmanuelle's Boat Repair"
+        },
+        "evidence": [
+          {
+            "line": 8,
+            "line_sha256": "978a7085ef1c8d1f13b4e3fcda39840cb7a67bb664db2e2a219403c635173935",
+            "byte_offset": 323,
+            "byte_length": 63,
+            "span_sha256": "978a7085ef1c8d1f13b4e3fcda39840cb7a67bb664db2e2a219403c635173935"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "wiki_title": "The Order of the Stag Quest",
+    "historical_hold_sha256": "042cee8e0db664088f1b0c93534bed9bffe237cc4fc578833b1992d92eedaaee",
+    "historical_evidence": {
+      "provider": "tibiawiki_br",
+      "pageid": 65908,
+      "revid": 443997,
+      "content_sha256": "e4006bc7f3ed38622dcf985728b448e6ecce23049b9ec8993b3e303a7a3252ae",
+      "url": "https://www.tibiawiki.com.br/index.php?curid=65908&oldid=443997",
+      "relation": "crosscheck",
+      "line": 29,
+      "line_sha256": "1d3c044c4c71c4ac6d51793b1ae3b07bd7c5881e56519d0217417537ee4de8e1"
+    },
+    "execution_semantics": "UNKNOWN",
+    "canonical_binding_status": "UNKNOWN",
+    "prerequisite_expressions": [],
+    "source_fact_entries": [
+      {
+        "kind": "curated_source_fact",
+        "source_order": 29,
+        "execution_semantics": "UNKNOWN",
+        "binding_status": "UNKNOWN",
+        "classification": "DERIVED",
+        "scope": "Requerimentos",
+        "facts": {
+          "optional_mission_heading": "Supplies for the Steadfast"
+        },
+        "evidence": [
+          {
+            "line": 29,
+            "line_sha256": "1d3c044c4c71c4ac6d51793b1ae3b07bd7c5881e56519d0217417537ee4de8e1",
+            "byte_offset": 1396,
+            "byte_length": 61,
+            "span_sha256": "1d3c044c4c71c4ac6d51793b1ae3b07bd7c5881e56519d0217417537ee4de8e1"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "wiki_title": "The Order of the Stag Quest",
+    "historical_hold_sha256": "ae37152be74ffe164c749eef133c03b9f63903719510397777230146c1c9bb8a",
+    "historical_evidence": {
+      "provider": "tibiawiki_br",
+      "pageid": 65908,
+      "revid": 443997,
+      "content_sha256": "e4006bc7f3ed38622dcf985728b448e6ecce23049b9ec8993b3e303a7a3252ae",
+      "url": "https://www.tibiawiki.com.br/index.php?curid=65908&oldid=443997",
+      "relation": "crosscheck",
+      "line": 31,
+      "line_sha256": "0fc329b7d8f2449213a56420052f20b11bc0ef2812db613e591e91de1ec61b2a"
+    },
+    "execution_semantics": "UNKNOWN",
+    "canonical_binding_status": "UNKNOWN",
+    "prerequisite_expressions": [],
+    "source_fact_entries": [
+      {
+        "kind": "curated_source_fact",
+        "source_order": 31,
+        "execution_semantics": "UNKNOWN",
+        "binding_status": "UNKNOWN",
+        "classification": "DERIVED",
+        "scope": "Requerimentos",
+        "facts": {
+          "optional_mission_heading": "Reparo do barco Emmanuelle"
+        },
+        "evidence": [
+          {
+            "line": 31,
+            "line_sha256": "0fc329b7d8f2449213a56420052f20b11bc0ef2812db613e591e91de1ec61b2a",
+            "byte_offset": 1520,
+            "byte_length": 61,
+            "span_sha256": "0fc329b7d8f2449213a56420052f20b11bc0ef2812db613e591e91de1ec61b2a"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "wiki_title": "The Order of the Stag Quest",
+    "historical_hold_sha256": "0808176f471f138b3c22dafbe123bb8977e8fee81c3647059e67229b2ad27d8b",
+    "historical_evidence": {
+      "provider": "tibia_fandom",
+      "pageid": 109439,
+      "revid": 1173312,
+      "content_sha256": "d9963f4774674fcf02eee7b451dfa72c4bcc15bf08bf4f18b08d0b185a644f32",
+      "url": "https://tibia.fandom.com/index.php?curid=109439&oldid=1173312",
+      "relation": "spoiler",
+      "line": 6,
+      "line_sha256": "da472f9b277ee5ff9e8e5f9751155bc2d3b6cff895338a8983776d8e2754c0a7"
+    },
+    "execution_semantics": "UNKNOWN",
+    "canonical_binding_status": "UNKNOWN",
+    "prerequisite_expressions": [],
+    "source_fact_entries": [
+      {
+        "kind": "curated_source_fact",
+        "source_order": 6,
+        "execution_semantics": "UNKNOWN",
+        "binding_status": "UNKNOWN",
+        "classification": "DERIVED",
+        "scope": "Requirements",
+        "facts": {
+          "optional_mission_heading": "Supplies for the Steadfast"
+        },
+        "evidence": [
+          {
+            "line": 6,
+            "line_sha256": "da472f9b277ee5ff9e8e5f9751155bc2d3b6cff895338a8983776d8e2754c0a7",
+            "byte_offset": 207,
+            "byte_length": 64,
+            "span_sha256": "da472f9b277ee5ff9e8e5f9751155bc2d3b6cff895338a8983776d8e2754c0a7"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "wiki_title": "The Order of the Stag Quest",
+    "historical_hold_sha256": "80ab3666b57ff02ef30c6f8c7ac7c068836fa67271b7759335fa388e9464ab6e",
+    "historical_evidence": {
+      "provider": "tibia_fandom",
+      "pageid": 109439,
+      "revid": 1173312,
+      "content_sha256": "d9963f4774674fcf02eee7b451dfa72c4bcc15bf08bf4f18b08d0b185a644f32",
+      "url": "https://tibia.fandom.com/index.php?curid=109439&oldid=1173312",
+      "relation": "spoiler",
+      "line": 8,
+      "line_sha256": "978a7085ef1c8d1f13b4e3fcda39840cb7a67bb664db2e2a219403c635173935"
+    },
+    "execution_semantics": "UNKNOWN",
+    "canonical_binding_status": "UNKNOWN",
+    "prerequisite_expressions": [],
+    "source_fact_entries": [
+      {
+        "kind": "curated_source_fact",
+        "source_order": 8,
+        "execution_semantics": "UNKNOWN",
+        "binding_status": "UNKNOWN",
+        "classification": "DERIVED",
+        "scope": "Requirements",
+        "facts": {
+          "optional_mission_heading": "Emmanuelle's Boat Repair"
+        },
+        "evidence": [
+          {
+            "line": 8,
+            "line_sha256": "978a7085ef1c8d1f13b4e3fcda39840cb7a67bb664db2e2a219403c635173935",
+            "byte_offset": 323,
+            "byte_length": 63,
+            "span_sha256": "978a7085ef1c8d1f13b4e3fcda39840cb7a67bb664db2e2a219403c635173935"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "wiki_title": "The Order of the Stag Quest",
+    "historical_hold_sha256": "ff793c5a878747b7f6fba88aa0871e84e204b66a34b875446f0d894d3719cf8d",
+    "historical_evidence": {
+      "provider": "tibiawiki_br",
+      "pageid": 65908,
+      "revid": 443997,
+      "content_sha256": "e4006bc7f3ed38622dcf985728b448e6ecce23049b9ec8993b3e303a7a3252ae",
+      "url": "https://www.tibiawiki.com.br/index.php?curid=65908&oldid=443997",
+      "relation": "crosscheck",
+      "line": 29,
+      "line_sha256": "1d3c044c4c71c4ac6d51793b1ae3b07bd7c5881e56519d0217417537ee4de8e1"
+    },
+    "execution_semantics": "UNKNOWN",
+    "canonical_binding_status": "UNKNOWN",
+    "prerequisite_expressions": [],
+    "source_fact_entries": [
+      {
+        "kind": "curated_source_fact",
+        "source_order": 29,
+        "execution_semantics": "UNKNOWN",
+        "binding_status": "UNKNOWN",
+        "classification": "DERIVED",
+        "scope": "Requerimentos",
+        "facts": {
+          "optional_mission_heading": "Supplies for the Steadfast"
+        },
+        "evidence": [
+          {
+            "line": 29,
+            "line_sha256": "1d3c044c4c71c4ac6d51793b1ae3b07bd7c5881e56519d0217417537ee4de8e1",
+            "byte_offset": 1396,
+            "byte_length": 61,
+            "span_sha256": "1d3c044c4c71c4ac6d51793b1ae3b07bd7c5881e56519d0217417537ee4de8e1"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "wiki_title": "The Order of the Stag Quest",
+    "historical_hold_sha256": "f14814e4447d62928cb2372ce7dd7df3f69edccfdf5b13ef67090e24875aec0a",
+    "historical_evidence": {
+      "provider": "tibiawiki_br",
+      "pageid": 65908,
+      "revid": 443997,
+      "content_sha256": "e4006bc7f3ed38622dcf985728b448e6ecce23049b9ec8993b3e303a7a3252ae",
+      "url": "https://www.tibiawiki.com.br/index.php?curid=65908&oldid=443997",
+      "relation": "crosscheck",
+      "line": 31,
+      "line_sha256": "0fc329b7d8f2449213a56420052f20b11bc0ef2812db613e591e91de1ec61b2a"
+    },
+    "execution_semantics": "UNKNOWN",
+    "canonical_binding_status": "UNKNOWN",
+    "prerequisite_expressions": [],
+    "source_fact_entries": [
+      {
+        "kind": "curated_source_fact",
+        "source_order": 31,
+        "execution_semantics": "UNKNOWN",
+        "binding_status": "UNKNOWN",
+        "classification": "DERIVED",
+        "scope": "Requerimentos",
+        "facts": {
+          "optional_mission_heading": "Reparo do barco Emmanuelle"
+        },
+        "evidence": [
+          {
+            "line": 31,
+            "line_sha256": "0fc329b7d8f2449213a56420052f20b11bc0ef2812db613e591e91de1ec61b2a",
+            "byte_offset": 1520,
+            "byte_length": 61,
+            "span_sha256": "0fc329b7d8f2449213a56420052f20b11bc0ef2812db613e591e91de1ec61b2a"
+          }
+        ]
+      }
+    ]
+  }
+]

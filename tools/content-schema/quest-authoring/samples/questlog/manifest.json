@@ -379,6 +379,10 @@
       "canary": 51,
       "crystalserver": 59
     },
+    "quest_log_selected_entries": {
+      "canary": 51,
+      "crystalserver": 58
+    },
     "storyline_quests": 58,
     "quest_log_entries_only_crystalserver": 7,
     "missions": 529,
@@ -387,60 +391,66 @@
       "per_stage": 468,
       "fixed": 38
     },
-    "progress_tracks": 1001,
-    "tracks_written_by_both_servers": 704,
-    "tracks_without_a_writer": 109,
-    "transitions": 1832,
+    "progress_tracks": 1491,
+    "tracks_written_by_both_servers": 1048,
+    "tracks_without_a_writer": 197,
+    "transitions": 1746,
     "transitions_by_owner": {
-      "action": 182,
-      "creature_event": 31,
+      "action": 181,
+      "creature_event": 30,
       "event_callback": 3,
       "library": 40,
-      "movement": 78,
-      "npc": 1442,
+      "movement": 76,
+      "npc": 1360,
       "other": 56
     },
     "transitions_by_effect": {
       "computed": 42,
-      "increment": 63,
-      "to": 1727
+      "increment": 61,
+      "to": 1643
     },
-    "transitions_with_known_from": 441,
+    "transitions_with_known_from": 428,
     "npc_transitions": {
-      "total": 1442,
-      "with_keywords": 1240,
-      "with_topics": 739,
-      "npc_in_npc_census": 1442
+      "total": 1360,
+      "with_keywords": 1161,
+      "with_topics": 713,
+      "npc_in_npc_census": 1360
     },
-    "transitions_in_both_servers": 1371,
+    "transitions_in_both_servers": 1345,
     "storyline_quests_linked_to_wiki": 52,
-    "reward_only_quests_absorbed": 24,
-    "script_only_quests": 35,
-    "catalogue_quests": 204,
+    "reward_only_quests_absorbed": 30,
+    "script_only_quests": 121,
+    "catalogue_quests": 284,
     "by_status": {
       "mapped": 529
     },
     "requirements_parsed": {
-      "quests_with_wiki_requirements": 198,
+      "quests_with_wiki_requirements": 278,
       "premium": {
-        "parsed": 196,
+        "parsed": 276,
         "partial": 2
       },
       "min_level": {
-        "note": 4,
-        "parsed": 184,
+        "note": 9,
+        "parsed": 252,
         "range": 5,
-        "uncertain": 3,
+        "uncertain": 4,
         "varies": 1
       }
     }
   },
   "reward_only_absorbed": [
+    "canary:quest/barbarian_arena_quest",
     "canary:quest/children_of_the_revolution_quest",
     "canary:quest/cults_of_tibia_quest",
     "canary:quest/dawnport_quest",
+    "canary:quest/desert_dungeon_quest",
+    "canary:quest/dreamer_s_challenge_quest",
     "canary:quest/forgotten_knowledge_quest",
+    "canary:quest/life_ring_quest",
+    "canary:quest/oriental_outfits_quest",
     "canary:quest/secret_service_quest",
+    "canary:quest/serpentine_tower_quest",
     "canary:quest/shadows_of_yalahar_quest",
     "canary:quest/thais_lighthouse_quest",
     "canary:quest/the_ape_city_quest",
@@ -461,6 +471,2564 @@
     "canary:quest/wrath_of_the_emperor_quest",
     "crystalserver:quest/targuna_quest"
   ],
+  "quest_source_aliases": [],
+  "source_checks": {
+    "quest_log_primary_selection": [
+      {
+        "quest_name": "The Ultimate Challenges",
+        "source": "crystalserver",
+        "primary_path": "data-global/lib/core/quests.lua",
+        "primary_line": 4345,
+        "conditional_fallbacks": [
+          {
+            "server": "crystalserver",
+            "path": "data-crystal/lib/core/quests.lua",
+            "line": 3,
+            "name": "The Ultimate Challenges",
+            "start": {
+              "expr": "Storage.Quest.U8_0.BarbarianArena.QuestLogGreenhorn"
+            },
+            "start_value": 1,
+            "missions": [],
+            "classification": "OTS_HYPOTHESIS_ONLY",
+            "source_sha256": "ec82c49d3c3d76e2156076a399ca1f5c357277db2a2a873f49d66d868796efb0",
+            "condition": {
+              "expression": "not Quests",
+              "line_start": 1,
+              "line_end": 30
+            },
+            "dynamic_missions": {
+              "declared_modes": [
+                {
+                  "name": "Greenhorn",
+                  "storage": {
+                    "expr": "Storage.Quest.U8_0.BarbarianArena.QuestLogGreenhorn"
+                  },
+                  "missionId": 10312
+                },
+                {
+                  "name": "Scrapper",
+                  "storage": {
+                    "expr": "Storage.Quest.U8_0.BarbarianArena.QuestLogScrapper"
+                  },
+                  "missionId": 10313
+                },
+                {
+                  "name": "Warlord",
+                  "storage": {
+                    "expr": "Storage.Quest.U8_0.BarbarianArena.QuestLogWarlord"
+                  },
+                  "missionId": 10314
+                }
+              ],
+              "mode_table_lines": [
+                11,
+                15
+              ],
+              "loop_line": 17,
+              "assignment_line": 18,
+              "loop_end_line": 29,
+              "execution_semantics": "UNKNOWN_SOURCE_ONLY_NOT_EVALUATED"
+            },
+            "selection_basis": "configured primary data-global; exact pinned conditional fallback retained"
+          }
+        ]
+      }
+    ],
+    "quest_requirement_interpretations": [
+      {
+        "quest": "canary:quest/dawnport_quest",
+        "wiki": {
+          "provider": "tibia_fandom",
+          "title": "Dawnport Quest",
+          "pageid": 68640,
+          "revid": 683819,
+          "content_sha256": "1d6763776297dcfb722619efc4e7d194cf7f508856ddd198c3018e9c65bcdfa1"
+        },
+        "level_raw": "2 - 20",
+        "min_level": 2,
+        "max_level": 20,
+        "classification": "DERIVED",
+        "coverage_gap": "Source maximum level is preserved but not lowered into Native Quest requirements"
+      },
+      {
+        "quest": "canary:quest/sanctuary_of_the_lizard_god",
+        "wiki": {
+          "provider": "tibia_fandom",
+          "title": "Sanctuary of the Lizard God Quest",
+          "pageid": 68839,
+          "revid": 1198612,
+          "content_sha256": "fe8e2d3b054078252c7436ab7641612a69f3299d6cf076626c835d06aa497c93"
+        },
+        "level_raw": "2 - 20",
+        "min_level": 2,
+        "max_level": 20,
+        "classification": "DERIVED",
+        "coverage_gap": "Source maximum level is preserved but not lowered into Native Quest requirements"
+      },
+      {
+        "quest": "canary:quest/the_rookie_guard_quest",
+        "wiki": {
+          "provider": "tibia_fandom",
+          "title": "The Rookie Guard Quest",
+          "pageid": 53931,
+          "revid": 891816,
+          "content_sha256": "96f3268be16e7faf36153fd7d3f3fcb381e508043ab442397f861d1fef6bdc4f"
+        },
+        "level_raw": "0 - 5",
+        "min_level": 0,
+        "max_level": 5,
+        "classification": "DERIVED",
+        "coverage_gap": "Source maximum level is preserved but not lowered into Native Quest requirements"
+      },
+      {
+        "quest": "canary:quest/their_masters_voice",
+        "wiki": {
+          "provider": "tibia_fandom",
+          "title": "Their Master's Voice World Change",
+          "pageid": 54568,
+          "revid": 1110635,
+          "content_sha256": "66360bb61c4e6268979fbf42f1e1f1d4e7b2d8f9c91b7365d5b342634aa138d4"
+        },
+        "level_raw": "8+",
+        "min_level": 8,
+        "max_level": null,
+        "classification": "DERIVED",
+        "coverage_gap": null
+      },
+      {
+        "quest": "canary:quest/awash_world_change",
+        "wiki": {
+          "provider": "tibia_fandom",
+          "title": "Awash World Change",
+          "pageid": 54563,
+          "revid": 1149363,
+          "content_sha256": "c14e8dc57b44eafe1820f287e215c8a9024d8734570c45fbea82f49f092e55ef"
+        },
+        "level_raw": "None",
+        "min_level": 0,
+        "max_level": null,
+        "classification": "DERIVED",
+        "coverage_gap": null,
+        "source_literal": "None",
+        "interpretation": "explicit_no_level_requirement"
+      },
+      {
+        "quest": "canary:quest/the_mummys_curse_world_change",
+        "wiki": {
+          "provider": "tibia_fandom",
+          "title": "The Mummy's Curse World Change",
+          "pageid": 54567,
+          "revid": 844898,
+          "content_sha256": "e93af90ea7e5149427b168a2591808ca53d1d25e9de262376969ed86c997e22f"
+        },
+        "level_raw": "None",
+        "min_level": 0,
+        "max_level": null,
+        "classification": "DERIVED",
+        "coverage_gap": null,
+        "source_literal": "None",
+        "interpretation": "explicit_no_level_requirement"
+      },
+      {
+        "quest": "canary:quest/thornfire_world_change",
+        "wiki": {
+          "provider": "tibia_fandom",
+          "title": "Thornfire World Change",
+          "pageid": 54125,
+          "revid": 844903,
+          "content_sha256": "ed180a2b2511526aa24dc1f1e291546eae3ddfa2da94b42ddbebe18a1beb9e29"
+        },
+        "level_raw": "None",
+        "min_level": 0,
+        "max_level": null,
+        "classification": "DERIVED",
+        "coverage_gap": null,
+        "source_literal": "None",
+        "interpretation": "explicit_no_level_requirement"
+      },
+      {
+        "quest": "canary:quest/adventures_of_galthen_quest",
+        "wiki": {
+          "provider": "tibia_fandom",
+          "title": "Adventures of Galthen Quest",
+          "pageid": 94718,
+          "revid": 1085045,
+          "content_sha256": "3c01565d120562456726b16350407ab031e866e39137265c9bfa42318841b165"
+        },
+        "level_raw": "0",
+        "min_level": 0,
+        "max_level": null,
+        "classification": "DERIVED",
+        "coverage_gap": "Source level scope note preserved but mission-level requirement is not lowered into Native Quest requirements",
+        "scope_note": "250 for the Lost Queen mission",
+        "interpretation": "scoped_level_requirement"
+      },
+      {
+        "quest": "canary:quest/in_service_of_yalahar_quest",
+        "wiki": {
+          "provider": "tibia_fandom",
+          "title": "In Service of Yalahar Quest",
+          "pageid": 30601,
+          "revid": 1178479,
+          "content_sha256": "b5f61eef59f6afdfd1bfe8258bc801daa0cdbb8699c5ec8fca6c0d50a42b5e4c"
+        },
+        "level_raw": "80",
+        "min_level": 80,
+        "max_level": null,
+        "classification": "DERIVED",
+        "coverage_gap": "Source level scope note preserved but mission-level requirement is not lowered into Native Quest requirements",
+        "scope_note": "Required after mission 9",
+        "interpretation": "scoped_level_requirement"
+      },
+      {
+        "quest": "canary:quest/the_inquisition_quest",
+        "wiki": {
+          "provider": "tibia_fandom",
+          "title": "The Inquisition Quest",
+          "pageid": 25383,
+          "revid": 1188871,
+          "content_sha256": "412a7f6702e10447889cd27c0b52931abd06aa71e259aa6561e68f6e8999a51b"
+        },
+        "level_raw": "100",
+        "min_level": 100,
+        "max_level": null,
+        "classification": "DERIVED",
+        "coverage_gap": "Source level scope note preserved but mission-level requirement is not lowered into Native Quest requirements",
+        "scope_note": "(for the last mission only)",
+        "interpretation": "scoped_level_requirement"
+      },
+      {
+        "quest": "canary:quest/the_way_of_the_monk_quest",
+        "wiki": {
+          "provider": "tibia_fandom",
+          "title": "The Way of the Monk Quest",
+          "pageid": 108376,
+          "revid": 1169052,
+          "content_sha256": "185cf25556b5b5db245e7fced3a61fe74963717249a140ffe0b770c9013ebebb"
+        },
+        "level_raw": "275",
+        "min_level": 275,
+        "max_level": null,
+        "classification": "DERIVED",
+        "coverage_gap": "Source level scope note preserved but mission-level requirement is not lowered into Native Quest requirements",
+        "scope_note": "no requirement for starting, increases with each mission",
+        "interpretation": "scoped_level_requirement"
+      }
+    ],
+    "source_reference_readers": [
+      {
+        "key": "canary:quest-progress/dwarven_legs",
+        "reason": "SOURCE reader/declaration retained; ownership remains UNKNOWN",
+        "readers": [
+          {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/scripts/quests/the_hidden_city_of_beregar/actions_ladder.lua",
+            "line": 3,
+            "blob_sha256": "1c0b1e89ecee8c86254249964755970e7393e91826e64e80a82bd45558bdf011",
+            "line_sha256": "f85eb2aed439d43b9c4560863631421ab7f2a491547ebdf6608890de42f18602",
+            "expression": "Storage.DwarvenLegs",
+            "receiver_expression": "player"
+          }
+        ]
+      },
+      {
+        "key": "canary:quest-progress/hero_rathleton/fast_way",
+        "reason": "SOURCE undeclared symbolic caller retained; nil-key source defect, declaration, ownership and complete writer inventory remain UNKNOWN",
+        "readers": [
+          {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/scripts/quests/hero_of_rathleton/movements_fast_way.lua",
+            "line": 20,
+            "blob_sha256": "37067588014bc82b6a1db33ccb70d8e879ddc1545c719f1b0494a8605894297a",
+            "line_sha256": "f44fb7d0f58bbca3a91323525769baabe173fd33552082b066621f65c0ef24b4",
+            "expression": "Storage.HeroRathleton.FastWay",
+            "receiver_expression": "player"
+          }
+        ]
+      },
+      {
+        "key": "canary:quest-progress/quest/u10_10/the_gravedigger_of_drefia/mission08",
+        "reason": "SOURCE reader/declaration retained; ownership remains UNKNOWN",
+        "readers": [
+          {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/scripts/quests/the_gravedigger_of_drefia/actions_brain.lua",
+            "line": 5,
+            "blob_sha256": "fe8b95a11166bb3b791630e83a23b736109187d3138e125a2e52b2c16d7fcdca",
+            "line_sha256": "1a4a480cdf1676c707b8040ed205a5623698632747edf01b5c85f0528137d395",
+            "expression": "Storage.Quest.U10_10.TheGravediggerOfDrefia.Mission08",
+            "receiver_expression": "player"
+          }
+        ]
+      },
+      {
+        "key": "canary:quest-progress/quest/u10_10/the_gravedigger_of_drefia/mission11",
+        "reason": "SOURCE reader/declaration retained; ownership remains UNKNOWN",
+        "readers": [
+          {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/scripts/quests/the_gravedigger_of_drefia/actions_flask.lua",
+            "line": 8,
+            "blob_sha256": "2585c5cceef458072e95a5195d7733555654d6cb5fbffc2446ec9fe4e4ff8617",
+            "line_sha256": "08e2f609a53e51f8c96a752f539212fe7918a763343e6524d643dedfe954c4a6",
+            "expression": "Storage.Quest.U10_10.TheGravediggerOfDrefia.Mission11",
+            "receiver_expression": "player"
+          }
+        ]
+      },
+      {
+        "key": "canary:quest-progress/quest/u10_10/the_gravedigger_of_drefia/mission14",
+        "reason": "SOURCE reader/declaration retained; ownership remains UNKNOWN",
+        "readers": [
+          {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/scripts/quests/the_gravedigger_of_drefia/actions_tears.lua",
+            "line": 7,
+            "blob_sha256": "b23efd86a9aaf0129a21499f0af61cb0efe095707801a66d2c0eabae739c3618",
+            "line_sha256": "a36ff21d77decb9b913418e65f5839310a3e9f4fc16c762d108f79da156b39dd",
+            "expression": "Storage.Quest.U10_10.TheGravediggerOfDrefia.Mission14",
+            "receiver_expression": "player"
+          }
+        ]
+      },
+      {
+        "key": "canary:quest-progress/quest/u10_10/the_gravedigger_of_drefia/mission17",
+        "reason": "SOURCE reader/declaration retained; ownership remains UNKNOWN",
+        "readers": [
+          {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/scripts/quests/the_gravedigger_of_drefia/actions_bones.lua",
+            "line": 7,
+            "blob_sha256": "8d44ae9f333a630de299a6bd226c618cb26a3a3629b134c80e1c3e2b7779426f",
+            "line_sha256": "c4e20db7feddf89c7a007f06e354d34132627da10d769d36771a5aab4396d50a",
+            "expression": "Storage.Quest.U10_10.TheGravediggerOfDrefia.Mission17",
+            "receiver_expression": "player"
+          }
+        ]
+      },
+      {
+        "key": "canary:quest-progress/quest/u10_10/the_gravedigger_of_drefia/mission23",
+        "reason": "SOURCE reader/declaration retained; ownership remains UNKNOWN",
+        "readers": [
+          {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/scripts/quests/the_gravedigger_of_drefia/actions_tincture.lua",
+            "line": 7,
+            "blob_sha256": "bbd764e8c5ba1a3f7c83d8ca978054f51a0efda8e529a8270dea0cf89464b7df",
+            "line_sha256": "8e191ce0c4adad9d5e5794a4252264002367abab3fae794e81afb64c23c1c6e4",
+            "expression": "Storage.Quest.U10_10.TheGravediggerOfDrefia.Mission23",
+            "receiver_expression": "player"
+          }
+        ]
+      },
+      {
+        "key": "canary:quest-progress/quest/u10_10/the_gravedigger_of_drefia/mission27",
+        "reason": "SOURCE reader/declaration retained; ownership remains UNKNOWN",
+        "readers": [
+          {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/scripts/quests/the_gravedigger_of_drefia/actions_chalk.lua",
+            "line": 7,
+            "blob_sha256": "e34c20d6ce018766abd914e725fd3cc5b9813ba74315b9e6a9a67e2b400b92cc",
+            "line_sha256": "16f90b40205d597475957958d8eb7ba84a3ab1133d69afdd98b3bc4a72246898",
+            "expression": "Storage.Quest.U10_10.TheGravediggerOfDrefia.Mission27",
+            "receiver_expression": "player"
+          }
+        ]
+      },
+      {
+        "key": "canary:quest-progress/quest/u10_10/the_gravedigger_of_drefia/mission31",
+        "reason": "SOURCE reader/declaration retained; ownership remains UNKNOWN",
+        "readers": [
+          {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/scripts/quests/the_gravedigger_of_drefia/actions_candles.lua",
+            "line": 7,
+            "blob_sha256": "ee5173f6a48c22377d48739417939f4598415dba78ffbdbc6405405d138fc99b",
+            "line_sha256": "2c1808353147557d1586f23a1525a4915c5153cc9c8537eb9a41739205dca3bf",
+            "expression": "Storage.Quest.U10_10.TheGravediggerOfDrefia.Mission31",
+            "receiver_expression": "player"
+          },
+          {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/scripts/quests/the_gravedigger_of_drefia/actions_key1.lua",
+            "line": 7,
+            "blob_sha256": "a26afe920e7304805e27341ec37b3fe3f2c53e5aa9b99697a0ac956d9bb32828",
+            "line_sha256": "8c925e5bbfefa7168d7c289db0ac201b71e16834e37f2f0d04888d96e9a08999",
+            "expression": "Storage.Quest.U10_10.TheGravediggerOfDrefia.Mission31",
+            "receiver_expression": "player"
+          }
+        ]
+      },
+      {
+        "key": "canary:quest-progress/quest/u10_10/the_gravedigger_of_drefia/mission39",
+        "reason": "SOURCE reader/declaration retained; ownership remains UNKNOWN",
+        "readers": [
+          {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/scripts/quests/the_gravedigger_of_drefia/actions_palanca.lua",
+            "line": 4,
+            "blob_sha256": "4afcdbed98d5ecca8fb3502c9c51de0feb6eb805030c5889a1548715237a9891",
+            "line_sha256": "30fef0e17cdb0bcc635b87d9471be48ddcf084a856b1e93707b29bbc01faefcf",
+            "expression": "Storage.Quest.U10_10.TheGravediggerOfDrefia.Mission39",
+            "receiver_expression": "player"
+          }
+        ]
+      },
+      {
+        "key": "canary:quest-progress/quest/u10_10/the_gravedigger_of_drefia/mission45",
+        "reason": "SOURCE reader/declaration retained; ownership remains UNKNOWN",
+        "readers": [
+          {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/scripts/quests/the_gravedigger_of_drefia/actions_inscriptions.lua",
+            "line": 3,
+            "blob_sha256": "0873c6a2219692282cde3b8617c5f8264cab9a38a66298e4a77dd69682171a47",
+            "line_sha256": "2876a3f7d94fb2cbd9955bf485c4e71f5a6fb55e838989140ce927c214b884da",
+            "expression": "Storage.Quest.U10_10.TheGravediggerOfDrefia.Mission45",
+            "receiver_expression": "player"
+          }
+        ]
+      },
+      {
+        "key": "canary:quest-progress/quest/u10_10/the_gravedigger_of_drefia/mission52",
+        "reason": "SOURCE reader/declaration retained; ownership remains UNKNOWN",
+        "readers": [
+          {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/scripts/quests/the_gravedigger_of_drefia/actions_key2.lua",
+            "line": 7,
+            "blob_sha256": "afcb586c96c3ca57397c241577c4796aa7270e6d64f34ef44e8e45a8b80ad16e",
+            "line_sha256": "71d808808f2125875e89dd57639de1f2aebf9595aa63a9f87c9640824a59e279",
+            "expression": "Storage.Quest.U10_10.TheGravediggerOfDrefia.Mission52",
+            "receiver_expression": "player"
+          }
+        ]
+      },
+      {
+        "key": "canary:quest-progress/quest/u10_10/the_gravedigger_of_drefia/mission59",
+        "reason": "SOURCE reader/declaration retained; ownership remains UNKNOWN",
+        "readers": [
+          {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/scripts/quests/the_gravedigger_of_drefia/actions_cape.lua",
+            "line": 3,
+            "blob_sha256": "97c970691247f8f60c546eba8f9666eb0e0419904e1af55a67273870597dbbb6",
+            "line_sha256": "4a3d88b96c88e22db1a9ffa33749c836c22e5e7836c0058e719d1251af8af49c",
+            "expression": "Storage.Quest.U10_10.TheGravediggerOfDrefia.Mission59",
+            "receiver_expression": "player"
+          }
+        ]
+      },
+      {
+        "key": "canary:quest-progress/quest/u10_10/the_gravedigger_of_drefia/mission67",
+        "reason": "SOURCE reader/declaration retained; ownership remains UNKNOWN",
+        "readers": [
+          {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/scripts/quests/the_gravedigger_of_drefia/actions_caixa.lua",
+            "line": 3,
+            "blob_sha256": "bde2fa4f4f9bcb490c4f3322f0329de1efdf9c9690239cddfd999760df10dad1",
+            "line_sha256": "f84fe7a176b2729864f7df856ef81f138fd234fd4a96f74c7341751d37d62064",
+            "expression": "Storage.Quest.U10_10.TheGravediggerOfDrefia.Mission67",
+            "receiver_expression": "player"
+          }
+        ]
+      },
+      {
+        "key": "canary:quest-progress/quest/u10_10/the_gravedigger_of_drefia/mission74",
+        "reason": "SOURCE reader/declaration retained; ownership remains UNKNOWN",
+        "readers": [
+          {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/scripts/quests/the_gravedigger_of_drefia/actions_sacrifice.lua",
+            "line": 3,
+            "blob_sha256": "19cd493553c35aaa614703dad4a620ebd88673e46b1ff5c8d7a1b1e3995dc36d",
+            "line_sha256": "92a1302e6c70aabbe87972ffba83a633470e55749bb894fa881e76567db891c8",
+            "expression": "Storage.Quest.U10_10.TheGravediggerOfDrefia.Mission74",
+            "receiver_expression": "player"
+          }
+        ]
+      },
+      {
+        "key": "canary:quest-progress/quest/u10_55/sanctuary_of_the_lizard_god/lizard_god_teleport",
+        "reason": "SOURCE reader/declaration retained; ownership remains UNKNOWN",
+        "readers": [
+          {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/scripts/quests/dawnport/movements_legion_helmet.lua",
+            "line": 9,
+            "blob_sha256": "a7cf7c209db46901532df0685d5d2cb744995f264c1e2938ebf79f4a3540ef1d",
+            "line_sha256": "4ce5a226915d44c1594f712b568b3f1eebc21da50e29b3646facaaaf80db0767",
+            "expression": "Storage.Quest.U10_55.SanctuaryOfTheLizardGod.LizardGodTeleport",
+            "receiver_expression": "player"
+          }
+        ]
+      },
+      {
+        "key": "canary:quest-progress/quest/u10_80/grimvale_quest/ancient_feud_shortcut",
+        "reason": "SOURCE reader/declaration retained; ownership remains UNKNOWN",
+        "readers": [
+          {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/scripts/quests/grimvale/actions_ancient_feud_entrances.lua",
+            "line": 14,
+            "blob_sha256": "3570f68f69848c0176703c72cb35a6316c5986bdf1ce4214272fd659b608a1ef",
+            "line_sha256": "c272338dd726b9c7d50fb50cef6fea9656a7a9ddcc77327c4dbd18a6727e732c",
+            "expression": "Storage.Quest.U10_80.GrimvaleQuest.AncientFeudShortcut",
+            "receiver_expression": "player"
+          }
+        ]
+      },
+      {
+        "key": "canary:quest-progress/quest/u10_90/ferumbras_ascension/access",
+        "reason": "SOURCE reader/declaration retained; ownership remains UNKNOWN",
+        "readers": [
+          {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/scripts/quests/ferumbras_ascension/movements_entrance.lua",
+            "line": 46,
+            "blob_sha256": "39ba5182b22c0881bd4dd88bfaffa317d2460fb8effe6b354fe37964afcb60ba",
+            "line_sha256": "e6e2897d777d3a4496c8c3dee741111e54ddcb310fa5bf61968fc12582360f7b",
+            "expression": "Storage.Quest.U10_90.FerumbrasAscension.Access",
+            "receiver_expression": "player"
+          }
+        ]
+      },
+      {
+        "key": "canary:quest-progress/quest/u10_90/ferumbras_ascension/the_lord_of_the_lice_access",
+        "reason": "SOURCE reader/declaration retained; ownership remains UNKNOWN",
+        "readers": [
+          {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/scripts/quests/ferumbras_ascension/movements_plagirath_access.lua",
+            "line": 9,
+            "blob_sha256": "c9500efa1ebb820754812c53a4d8ce23d54afad275cee74f0ccf63552e5864a3",
+            "line_sha256": "28ec9c3da00b87f27019d4093a660c654519416ee79c9213424953f3dd54b572",
+            "expression": "Storage.Quest.U10_90.FerumbrasAscension.TheLordOfTheLiceAccess",
+            "receiver_expression": "player"
+          }
+        ]
+      },
+      {
+        "key": "canary:quest-progress/quest/u11_02/forgotten_knowledge/diamond_servant_counter",
+        "reason": "SOURCE reader/declaration retained; ownership remains UNKNOWN",
+        "readers": [
+          {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/scripts/quests/forgotten_knowledge/movements_servant_teleport.lua",
+            "line": 16,
+            "blob_sha256": "19e626c8ab695ba350366451bcf824098d5518f8cd1b9b6ec77abcabfb88445e",
+            "line_sha256": "8bf53ee3c24780f928cac567c690a6e84591bd1b584c189110ff5f05232db10f",
+            "expression": "Storage.Quest.U11_02.ForgottenKnowledge.DiamondServantCounter",
+            "receiver_expression": "player"
+          }
+        ]
+      },
+      {
+        "key": "canary:quest-progress/quest/u11_02/forgotten_knowledge/golden_servant_counter",
+        "reason": "SOURCE reader/declaration retained; ownership remains UNKNOWN",
+        "readers": [
+          {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/scripts/quests/forgotten_knowledge/movements_servant_teleport.lua",
+            "line": 16,
+            "blob_sha256": "19e626c8ab695ba350366451bcf824098d5518f8cd1b9b6ec77abcabfb88445e",
+            "line_sha256": "8bf53ee3c24780f928cac567c690a6e84591bd1b584c189110ff5f05232db10f",
+            "expression": "Storage.Quest.U11_02.ForgottenKnowledge.GoldenServantCounter",
+            "receiver_expression": "player"
+          }
+        ]
+      },
+      {
+        "key": "canary:quest-progress/quest/u11_40/cults_of_tibia/barkless/sulphur",
+        "reason": "SOURCE reader/declaration retained; ownership remains UNKNOWN",
+        "readers": [
+          {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/scripts/quests/cults_of_tibia/movements_ice.lua",
+            "line": 23,
+            "blob_sha256": "ca1fc4bd255f7b0f8f3d463a7430894006ffcaeb4efe91e8a832f36952628e83",
+            "line_sha256": "f90cf0ed96284a42701cb0d4cb1aa0c399150cd83b237e850a84a914fc49811f",
+            "expression": "Storage.Quest.U11_40.CultsOfTibia.Barkless.Sulphur",
+            "receiver_expression": "player"
+          },
+          {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/scripts/quests/cults_of_tibia/movements_tar.lua",
+            "line": 108,
+            "blob_sha256": "d70e48686633aad7583a3ecb3fdb99404a040d9f4cf5a34b0aecfdfa837c75c1",
+            "line_sha256": "ad3509d7bf81d91590fe520d8001018b285a84636af3d25f33dca7b977c369ce",
+            "expression": "Storage.Quest.U11_40.CultsOfTibia.Barkless.Sulphur",
+            "receiver_expression": "player"
+          },
+          {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/scripts/quests/cults_of_tibia/movements_tar.lua",
+            "line": 144,
+            "blob_sha256": "d70e48686633aad7583a3ecb3fdb99404a040d9f4cf5a34b0aecfdfa837c75c1",
+            "line_sha256": "929345b5665111e03a0a5e109a62f38c50a0f2e5be418f444d95b123b9c4d46f",
+            "expression": "Storage.Quest.U11_40.CultsOfTibia.Barkless.Sulphur",
+            "receiver_expression": "player"
+          }
+        ]
+      },
+      {
+        "key": "canary:quest-progress/quest/u11_40/cults_of_tibia/barkless/tar",
+        "reason": "SOURCE reader/declaration retained; ownership remains UNKNOWN",
+        "readers": [
+          {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/scripts/quests/cults_of_tibia/movements_ice.lua",
+            "line": 23,
+            "blob_sha256": "ca1fc4bd255f7b0f8f3d463a7430894006ffcaeb4efe91e8a832f36952628e83",
+            "line_sha256": "f90cf0ed96284a42701cb0d4cb1aa0c399150cd83b237e850a84a914fc49811f",
+            "expression": "Storage.Quest.U11_40.CultsOfTibia.Barkless.Tar",
+            "receiver_expression": "player"
+          },
+          {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/scripts/quests/cults_of_tibia/movements_tar.lua",
+            "line": 55,
+            "blob_sha256": "d70e48686633aad7583a3ecb3fdb99404a040d9f4cf5a34b0aecfdfa837c75c1",
+            "line_sha256": "01e458338c328d8ec6b75efbfa0be98c27394064a65003d6b545e42f26ee05b0",
+            "expression": "Storage.Quest.U11_40.CultsOfTibia.Barkless.Tar",
+            "receiver_expression": "player"
+          },
+          {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/scripts/quests/cults_of_tibia/movements_tar.lua",
+            "line": 108,
+            "blob_sha256": "d70e48686633aad7583a3ecb3fdb99404a040d9f4cf5a34b0aecfdfa837c75c1",
+            "line_sha256": "ad3509d7bf81d91590fe520d8001018b285a84636af3d25f33dca7b977c369ce",
+            "expression": "Storage.Quest.U11_40.CultsOfTibia.Barkless.Tar",
+            "receiver_expression": "player"
+          },
+          {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/scripts/quests/cults_of_tibia/movements_tar.lua",
+            "line": 133,
+            "blob_sha256": "d70e48686633aad7583a3ecb3fdb99404a040d9f4cf5a34b0aecfdfa837c75c1",
+            "line_sha256": "14223eebe00be8bb3efffa38e0acc11e123b5812d9709c90a6ef176fdb15de93",
+            "expression": "Storage.Quest.U11_40.CultsOfTibia.Barkless.Tar",
+            "receiver_expression": "player"
+          }
+        ]
+      },
+      {
+        "key": "canary:quest-progress/quest/u11_40/cults_of_tibia/humans/decaying",
+        "reason": "SOURCE reader/declaration retained; ownership remains UNKNOWN",
+        "readers": [
+          {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/scripts/quests/cults_of_tibia/movements_energy_fence.lua",
+            "line": 38,
+            "blob_sha256": "e796b970e3571c24f0e02c00c237bb6b6dda0c3a4109c1d34804b45d3883aca8",
+            "line_sha256": "edf6f9762bd027d8bb5a513371d129efcd74e697f6528ce539fc1e969eb72f59",
+            "expression": "Storage.Quest.U11_40.CultsOfTibia.Humans.Decaying",
+            "receiver_expression": "player"
+          }
+        ]
+      },
+      {
+        "key": "canary:quest-progress/quest/u11_40/cults_of_tibia/humans/vaporized",
+        "reason": "SOURCE reader/declaration retained; ownership remains UNKNOWN",
+        "readers": [
+          {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/scripts/quests/cults_of_tibia/movements_energy_fence.lua",
+            "line": 30,
+            "blob_sha256": "e796b970e3571c24f0e02c00c237bb6b6dda0c3a4109c1d34804b45d3883aca8",
+            "line_sha256": "f4df6ab060d5f161346eca0503c32708416207591194ae27e983e72540ed69e7",
+            "expression": "Storage.Quest.U11_40.CultsOfTibia.Humans.Vaporized",
+            "receiver_expression": "player"
+          }
+        ]
+      },
+      {
+        "key": "canary:quest-progress/quest/u11_80/the_secret_library/asuras/flamming_orchid",
+        "reason": "SOURCE reader/declaration retained; ownership remains UNKNOWN",
+        "readers": [
+          {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/scripts/quests/the_secret_library_quest/the_lament_asuras/actions_mirror.lua",
+            "line": 6,
+            "blob_sha256": "a2e9dc9e730e7d2a5d89fdf70e15db5ff8af32663c045252349af75cb8a35109",
+            "line_sha256": "6430eaeac72fcb90c4aaea94f328b89f065042e27bdc5d32afa102fc227350b0",
+            "expression": "Storage.Quest.U11_80.TheSecretLibrary.Asuras.FlammingOrchid",
+            "receiver_expression": "player"
+          }
+        ]
+      },
+      {
+        "key": "canary:quest-progress/quest/u11_80/the_secret_library/falcon_bastion/killing_bosses",
+        "reason": "SOURCE reader/declaration retained; ownership remains UNKNOWN",
+        "readers": [
+          {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/scripts/quests/the_secret_library_quest/the_order_of_the_falcon/actions_doors.lua",
+            "line": 43,
+            "blob_sha256": "445f310e775ca6cc43a86709bd2e3c02f4ad028b2790a836147e9e45c7bfba7f",
+            "line_sha256": "6560df89cb7417d9bb6d6eb46a6fbf4b58efa458a7c7a41cbd5f0c1d124cb022",
+            "expression": "Storage.Quest.U11_80.TheSecretLibrary.FalconBastion.KillingBosses",
+            "receiver_expression": "player"
+          },
+          {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/scripts/quests/the_secret_library_quest/the_order_of_the_falcon/actions_doors.lua",
+            "line": 58,
+            "blob_sha256": "445f310e775ca6cc43a86709bd2e3c02f4ad028b2790a836147e9e45c7bfba7f",
+            "line_sha256": "6560df89cb7417d9bb6d6eb46a6fbf4b58efa458a7c7a41cbd5f0c1d124cb022",
+            "expression": "Storage.Quest.U11_80.TheSecretLibrary.FalconBastion.KillingBosses",
+            "receiver_expression": "player"
+          },
+          {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/scripts/quests/the_secret_library_quest/the_order_of_the_falcon/movements_bossEntrance.lua",
+            "line": 19,
+            "blob_sha256": "e5f681c39383238367b64f90439b652a7417dd0f5367d0e2b927c59c52f1a4b6",
+            "line_sha256": "79a5888bdbaca431bd54b66d34024fde61645665d55f89df39b17fd68857bc8c",
+            "expression": "Storage.Quest.U11_80.TheSecretLibrary.FalconBastion.KillingBosses",
+            "receiver_expression": "creature"
+          }
+        ]
+      },
+      {
+        "key": "canary:quest-progress/quest/u11_80/the_secret_library/mo_ta/green_gem",
+        "reason": "SOURCE reader/declaration retained; ownership remains UNKNOWN",
+        "readers": [
+          {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/scripts/quests/the_secret_library_quest/bursting_at_the_seams_museum/movements_teleportTo.lua",
+            "line": 42,
+            "blob_sha256": "a7682e379695d09985da831c965b943f996ec42ccfbadc88df2c5c7a5fc5aac0",
+            "line_sha256": "5b00584b23be5269d6f4f806d8f4f5c5e5604491c7cdeebe7bd20b397e52bb7c",
+            "expression": "Storage.Quest.U11_80.TheSecretLibrary.MoTA.GreenGem",
+            "receiver_expression": "player"
+          }
+        ]
+      },
+      {
+        "key": "canary:quest-progress/quest/u11_80/the_secret_library/mo_ta/red_gem",
+        "reason": "SOURCE reader/declaration retained; ownership remains UNKNOWN",
+        "readers": [
+          {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/scripts/quests/the_secret_library_quest/bursting_at_the_seams_museum/movements_teleportTo.lua",
+            "line": 42,
+            "blob_sha256": "a7682e379695d09985da831c965b943f996ec42ccfbadc88df2c5c7a5fc5aac0",
+            "line_sha256": "5b00584b23be5269d6f4f806d8f4f5c5e5604491c7cdeebe7bd20b397e52bb7c",
+            "expression": "Storage.Quest.U11_80.TheSecretLibrary.MoTA.RedGem",
+            "receiver_expression": "player"
+          }
+        ]
+      },
+      {
+        "key": "canary:quest-progress/quest/u11_80/the_secret_library/mo_ta/yellow_gem",
+        "reason": "SOURCE reader/declaration retained; ownership remains UNKNOWN",
+        "readers": [
+          {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/scripts/quests/the_secret_library_quest/bursting_at_the_seams_museum/movements_teleportTo.lua",
+            "line": 42,
+            "blob_sha256": "a7682e379695d09985da831c965b943f996ec42ccfbadc88df2c5c7a5fc5aac0",
+            "line_sha256": "5b00584b23be5269d6f4f806d8f4f5c5e5604491c7cdeebe7bd20b397e52bb7c",
+            "expression": "Storage.Quest.U11_80.TheSecretLibrary.MoTA.YellowGem",
+            "receiver_expression": "player"
+          }
+        ]
+      },
+      {
+        "key": "canary:quest-progress/quest/u11_80/the_secret_library/small_islands/hawser",
+        "reason": "SOURCE reader/declaration retained; ownership remains UNKNOWN",
+        "readers": [
+          {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/scripts/quests/the_secret_library_quest/high_and_dry_isles/movements_boat_puzzle.lua",
+            "line": 20,
+            "blob_sha256": "7a21f65a8db2b9e1d8b3a2f67c6cc0b25cc4be0cab6c17f6b0cf94c73db1df0b",
+            "line_sha256": "48b6b19d5a32ffa315da17bbe99b341a2ae7ad1e658df15d154207b0eb88f3ae",
+            "expression": "Storage.Quest.U11_80.TheSecretLibrary.SmallIslands.Hawser",
+            "receiver_expression": "player"
+          }
+        ]
+      },
+      {
+        "key": "canary:quest-progress/quest/u12_00/the_dream_courts/dream_scar/boss_count",
+        "reason": "SOURCE reader/declaration retained; ownership remains UNKNOWN",
+        "readers": [
+          {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/scripts/quests/the_dream_courts_quest/movements_acessTeleports.lua",
+            "line": 79,
+            "blob_sha256": "8280dccd1a2082dc3f4105cfe80529f685eddbbce1c832d533ae52605e969cc6",
+            "line_sha256": "aaff991711ab26cd9ee190b86fd38d5ffcc6c48e260af7cc5839486151f71677",
+            "expression": "Storage.Quest.U12_00.TheDreamCourts.DreamScar.BossCount",
+            "receiver_expression": "player"
+          }
+        ]
+      },
+      {
+        "key": "canary:quest-progress/quest/u12_00/the_dream_courts/dream_scar/permission",
+        "reason": "SOURCE reader/declaration retained; ownership remains UNKNOWN",
+        "readers": [
+          {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/scripts/quests/the_dream_courts_quest/movements_acessTeleports.lua",
+            "line": 107,
+            "blob_sha256": "8280dccd1a2082dc3f4105cfe80529f685eddbbce1c832d533ae52605e969cc6",
+            "line_sha256": "a5ec0b5df5bf9768582edb153f61a90f8627ac211746ddd3cf83ddf5fba5bd53",
+            "expression": "Storage.Quest.U12_00.TheDreamCourts.DreamScar.Permission",
+            "receiver_expression": "player"
+          }
+        ]
+      },
+      {
+        "key": "canary:quest-progress/quest/u12_20/grave_danger/custodian_killed",
+        "reason": "SOURCE reader/declaration retained; ownership remains UNKNOWN",
+        "readers": [
+          {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/scripts/quests/grave_danger_quest/cobra_bastion/actions_scarlett.lua",
+            "line": 76,
+            "blob_sha256": "2668499e368585861eeea1cced9043a3571de7dd9f92fd5e8bd4b5d14bba7f17",
+            "line_sha256": "39c89a3e2e0f7d0c0360c4563ab91df1e934d043dffcaa13a8aac904a8f5c3ac",
+            "expression": "Storage.Quest.U12_20.GraveDanger.CustodianKilled",
+            "receiver_expression": "player"
+          },
+          {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/scripts/quests/grave_danger_quest/movements_cobra_mini_bosses.lua",
+            "line": 17,
+            "blob_sha256": "4b8e85648ca0245adaa9b1618dcfffede1c31452695d5a37cd67b22d32642ea9",
+            "line_sha256": "fdb3e0c323c88c3d26936af729d97638266804667b767bd1742e959b247d1dad",
+            "expression": "Storage.Quest.U12_20.GraveDanger.CustodianKilled",
+            "receiver_expression": "creature"
+          },
+          {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/scripts/quests/grave_danger_quest/movements_quaidDen.lua",
+            "line": 8,
+            "blob_sha256": "503ecafb732318d51fb9e3729975a29a1472d2c24c7f631c7aca248808200cdc",
+            "line_sha256": "1a531eebe6ce50932f03c563f7c1b8aef2d96ea7f776bf8223ca4bd8498ff406",
+            "expression": "Storage.Quest.U12_20.GraveDanger.CustodianKilled",
+            "receiver_expression": "creature"
+          }
+        ]
+      },
+      {
+        "key": "canary:quest-progress/quest/u12_20/grave_danger/gaffir_killed",
+        "reason": "SOURCE reader/declaration retained; ownership remains UNKNOWN",
+        "readers": [
+          {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/scripts/quests/grave_danger_quest/actions_custodian_door.lua",
+            "line": 4,
+            "blob_sha256": "0a60345ca02ef08adca70d74c44a632338c2b15ddf1e5bd7f3db4fc232840006",
+            "line_sha256": "14efcbb5d686eba943d6fc6a46813c57652a1ed8673ccb961bfd29ca5deeb903",
+            "expression": "Storage.Quest.U12_20.GraveDanger.GaffirKilled",
+            "receiver_expression": "player"
+          },
+          {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/scripts/quests/grave_danger_quest/cobra_bastion/actions_scarlett.lua",
+            "line": 76,
+            "blob_sha256": "2668499e368585861eeea1cced9043a3571de7dd9f92fd5e8bd4b5d14bba7f17",
+            "line_sha256": "39c89a3e2e0f7d0c0360c4563ab91df1e934d043dffcaa13a8aac904a8f5c3ac",
+            "expression": "Storage.Quest.U12_20.GraveDanger.GaffirKilled",
+            "receiver_expression": "player"
+          }
+        ]
+      },
+      {
+        "key": "canary:quest-progress/quest/u12_20/grave_danger/quaid_killed",
+        "reason": "SOURCE reader/declaration retained; ownership remains UNKNOWN",
+        "readers": [
+          {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/scripts/quests/grave_danger_quest/cobra_bastion/actions_scarlett.lua",
+            "line": 76,
+            "blob_sha256": "2668499e368585861eeea1cced9043a3571de7dd9f92fd5e8bd4b5d14bba7f17",
+            "line_sha256": "39c89a3e2e0f7d0c0360c4563ab91df1e934d043dffcaa13a8aac904a8f5c3ac",
+            "expression": "Storage.Quest.U12_20.GraveDanger.QuaidKilled",
+            "receiver_expression": "player"
+          }
+        ]
+      },
+      {
+        "key": "canary:quest-progress/quest/u12_20/kilmaresh_quest/eighth/narsai",
+        "reason": "SOURCE reader/declaration retained; ownership remains UNKNOWN",
+        "readers": [
+          {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/scripts/quests/kilmaresh_quest/actions_augerfun.lua",
+            "line": 4,
+            "blob_sha256": "d3eeb4879e4b306d4a46fc92c8c2b860796e2811d6995ff9ceafa58b7a3e5698",
+            "line_sha256": "7dd90d68db7fcad1e6e1c32ef44ea541e69d0f9a2a27b28e0076afc793af1c72",
+            "expression": "Storage.Quest.U12_20.KilmareshQuest.Eighth.Narsai",
+            "receiver_expression": "player"
+          },
+          {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/scripts/quests/kilmaresh_quest/actions_glasshoneyfun.lua",
+            "line": 4,
+            "blob_sha256": "3d1facb697b36751c6d010e48403dccf09ab89531697ad469c4ea5e5c1934004",
+            "line_sha256": "7dd90d68db7fcad1e6e1c32ef44ea541e69d0f9a2a27b28e0076afc793af1c72",
+            "expression": "Storage.Quest.U12_20.KilmareshQuest.Eighth.Narsai",
+            "receiver_expression": "player"
+          }
+        ]
+      },
+      {
+        "key": "canary:quest-progress/quest/u12_20/kilmaresh_quest/eighth/tefrit",
+        "reason": "SOURCE reader/declaration retained; ownership remains UNKNOWN",
+        "readers": [
+          {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/scripts/quests/kilmaresh_quest/actions_peelerfun.lua",
+            "line": 4,
+            "blob_sha256": "ec0a332a6b78a00ba6555d81527fbee846b09fd91470d3d9bb14ba4fdff6c060",
+            "line_sha256": "a1c7a50b651b60ad40e9ccfd5b291499de32426dbaa7d7e6d1823440ab9f2a35",
+            "expression": "Storage.Quest.U12_20.KilmareshQuest.Eighth.Tefrit",
+            "receiver_expression": "player"
+          }
+        ]
+      },
+      {
+        "key": "canary:quest-progress/quest/u12_20/kilmaresh_quest/eighth/yonan",
+        "reason": "SOURCE reader/declaration retained; ownership remains UNKNOWN",
+        "readers": [
+          {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/scripts/quests/kilmaresh_quest/actions_pickenchanted.lua",
+            "line": 4,
+            "blob_sha256": "811a9d7b28669a2ebba45f45f2ca619047a3b18e7b2e7a28c3c7ecc100614408",
+            "line_sha256": "c87fdcb8067d3b08c2e7c5943c55c03816b8959daa8e1478f7bb5127da50a8f9",
+            "expression": "Storage.Quest.U12_20.KilmareshQuest.Eighth.Yonan",
+            "receiver_expression": "player"
+          }
+        ]
+      },
+      {
+        "key": "canary:quest-progress/quest/u7_4/the_ancient_tombs/ashmunrah_switches_global_storage",
+        "reason": "SOURCE reader/declaration retained; ownership remains UNKNOWN",
+        "readers": [
+          {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/scripts/quests/the_ancient_tombs/movements_enter_ashmunrah_teleport_switche_done.lua",
+            "line": 9,
+            "blob_sha256": "fc8e58daaaf8f15d273a25b0f994fcb7b6e3b10997683788abec071cf9cc6ad9",
+            "line_sha256": "49952a8b938947945a9032430fa6c6349e24678b711d989061b0f44787a119bc",
+            "expression": "Storage.Quest.U7_4.TheAncientTombs.AshmunrahSwitchesGlobalStorage",
+            "receiver_expression": "player"
+          }
+        ]
+      },
+      {
+        "key": "canary:quest-progress/quest/u7_4/the_ancient_tombs/diprath_sign8",
+        "reason": "SOURCE reader/declaration retained; ownership remains UNKNOWN",
+        "readers": [
+          {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/scripts/quests/the_ancient_tombs/movements_enter_diprath_room.lua",
+            "line": 11,
+            "blob_sha256": "b272e8cbc89c8ef15a1d9c154470c4ebc35c119c0f0bee93b5d996b8bff695eb",
+            "line_sha256": "2d7a68ef7c8ea7ea39c49ffcb42fe12fedbefb19983900d038dd7c10d635e690",
+            "expression": "Storage.Quest.U7_4.TheAncientTombs.Diprath_sign8",
+            "receiver_expression": "player"
+          }
+        ]
+      },
+      {
+        "key": "canary:quest-progress/quest/u7_4/the_ancient_tombs/diprath_switches_global_storage",
+        "reason": "SOURCE reader/declaration retained; ownership remains UNKNOWN",
+        "readers": [
+          {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/scripts/quests/the_ancient_tombs/movements_enter_diprath_room.lua",
+            "line": 11,
+            "blob_sha256": "b272e8cbc89c8ef15a1d9c154470c4ebc35c119c0f0bee93b5d996b8bff695eb",
+            "line_sha256": "2d7a68ef7c8ea7ea39c49ffcb42fe12fedbefb19983900d038dd7c10d635e690",
+            "expression": "Storage.Quest.U7_4.TheAncientTombs.DiprathSwitchesGlobalStorage",
+            "receiver_expression": "player"
+          },
+          {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/scripts/quests/the_ancient_tombs/movements_enter_diprath_teleport_switche_done.lua",
+            "line": 10,
+            "blob_sha256": "25618d071421b0a7b6282ac16cd891764ecd7b35272e137ae98e32567bc0778a",
+            "line_sha256": "609b4df113c0dc3c84f6294c99fb4e6ab6330f1a1757e81f54c9988e17239f9f",
+            "expression": "Storage.Quest.U7_4.TheAncientTombs.DiprathSwitchesGlobalStorage",
+            "receiver_expression": "player"
+          }
+        ]
+      },
+      {
+        "key": "canary:quest-progress/quest/u7_6/explorer_society/spectral_stone",
+        "reason": "SOURCE reader/declaration retained; ownership remains UNKNOWN",
+        "readers": [
+          {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/scripts/quests/the_explorer_society/actions_stone.lua",
+            "line": 3,
+            "blob_sha256": "307131a419d8570dd1646ca1d33cf8a3535d03f4f9a0817849aaa76bfc96c6fe",
+            "line_sha256": "02768d9be3b81f3cd9574ce8b41bd6b03eec7d94f945a9d684f3f5f06efe782b",
+            "expression": "Storage.Quest.U7_6.ExplorerSociety.SpectralStone",
+            "receiver_expression": "player"
+          },
+          {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/scripts/quests/the_explorer_society/actions_stone.lua",
+            "line": 7,
+            "blob_sha256": "307131a419d8570dd1646ca1d33cf8a3535d03f4f9a0817849aaa76bfc96c6fe",
+            "line_sha256": "fe1f78fc3870bb7f4deb35f8a0996b8934c1859eb6150b19b13c9346b4f461b1",
+            "expression": "Storage.Quest.U7_6.ExplorerSociety.SpectralStone",
+            "receiver_expression": "player"
+          },
+          {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/scripts/quests/the_explorer_society/actions_stone.lua",
+            "line": 12,
+            "blob_sha256": "307131a419d8570dd1646ca1d33cf8a3535d03f4f9a0817849aaa76bfc96c6fe",
+            "line_sha256": "bf60744c261902d672c6717da98c750f337a04e28b7e7be2f762a4b56fb5bd04",
+            "expression": "Storage.Quest.U7_6.ExplorerSociety.SpectralStone",
+            "receiver_expression": "player"
+          },
+          {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/scripts/quests/the_explorer_society/actions_stone.lua",
+            "line": 16,
+            "blob_sha256": "307131a419d8570dd1646ca1d33cf8a3535d03f4f9a0817849aaa76bfc96c6fe",
+            "line_sha256": "bb61be71e5db3ad7cf403f5626de384d02814d9cef378ecdbb80df16dd012b2d",
+            "expression": "Storage.Quest.U7_6.ExplorerSociety.SpectralStone",
+            "receiver_expression": "player"
+          }
+        ]
+      },
+      {
+        "key": "canary:quest-progress/quest/u7_8/hunter_outfits/hunter_music_sheet01",
+        "reason": "SOURCE reader/declaration retained; ownership remains UNKNOWN",
+        "readers": [
+          {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/scripts/quests/hunter_outfits_quest/action_all_hymn_piano_teleport.lua",
+            "line": 5,
+            "blob_sha256": "6e6cf99c2e21b32450c251bc584bf6ce4eac9f89f1043d059f9090bf962e5ebc",
+            "line_sha256": "8febda30e4b9fbdbf76f03b4c06845f103b6f652ccb910a3ce07ed513e3477e5",
+            "expression": "Storage.Quest.U7_8.HunterOutfits.HunterMusicSheet01",
+            "receiver_expression": "player"
+          }
+        ]
+      },
+      {
+        "key": "canary:quest-progress/quest/u7_8/hunter_outfits/hunter_music_sheet02",
+        "reason": "SOURCE reader/declaration retained; ownership remains UNKNOWN",
+        "readers": [
+          {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/scripts/quests/hunter_outfits_quest/action_all_hymn_piano_teleport.lua",
+            "line": 5,
+            "blob_sha256": "6e6cf99c2e21b32450c251bc584bf6ce4eac9f89f1043d059f9090bf962e5ebc",
+            "line_sha256": "8febda30e4b9fbdbf76f03b4c06845f103b6f652ccb910a3ce07ed513e3477e5",
+            "expression": "Storage.Quest.U7_8.HunterOutfits.HunterMusicSheet02",
+            "receiver_expression": "player"
+          }
+        ]
+      },
+      {
+        "key": "canary:quest-progress/quest/u7_8/hunter_outfits/hunter_music_sheet03",
+        "reason": "SOURCE reader/declaration retained; ownership remains UNKNOWN",
+        "readers": [
+          {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/scripts/quests/hunter_outfits_quest/action_all_hymn_piano_teleport.lua",
+            "line": 5,
+            "blob_sha256": "6e6cf99c2e21b32450c251bc584bf6ce4eac9f89f1043d059f9090bf962e5ebc",
+            "line_sha256": "8febda30e4b9fbdbf76f03b4c06845f103b6f652ccb910a3ce07ed513e3477e5",
+            "expression": "Storage.Quest.U7_8.HunterOutfits.HunterMusicSheet03",
+            "receiver_expression": "player"
+          }
+        ]
+      },
+      {
+        "key": "canary:quest-progress/quest/u7_8/hunter_outfits/hunter_music_sheet04",
+        "reason": "SOURCE reader/declaration retained; ownership remains UNKNOWN",
+        "readers": [
+          {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/scripts/quests/hunter_outfits_quest/action_all_hymn_piano_teleport.lua",
+            "line": 5,
+            "blob_sha256": "6e6cf99c2e21b32450c251bc584bf6ce4eac9f89f1043d059f9090bf962e5ebc",
+            "line_sha256": "8febda30e4b9fbdbf76f03b4c06845f103b6f652ccb910a3ce07ed513e3477e5",
+            "expression": "Storage.Quest.U7_8.HunterOutfits.HunterMusicSheet04",
+            "receiver_expression": "player"
+          }
+        ]
+      },
+      {
+        "key": "canary:quest-progress/quest/u7_9/the_pits_of_inferno/throne_pumin",
+        "reason": "SOURCE reader/declaration retained; ownership remains UNKNOWN",
+        "readers": [
+          {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/scripts/quests/the_pits_of_inferno_quest/movements_pumin_teleport.lua",
+            "line": 9,
+            "blob_sha256": "4558fdf20d86e16b308d384b614e7c084f7f854844fb8cfede5e8bbda33b3428",
+            "line_sha256": "54933f94c8f2e305ded350e505f95f22c726225cae9271047a5aed68bd53efb5",
+            "expression": "Storage.Quest.U7_9.ThePitsOfInferno.ThronePumin",
+            "receiver_expression": "player"
+          }
+        ]
+      },
+      {
+        "key": "canary:quest-progress/quest/u8_0/the_ice_islands/formorgar_mines_hoist_chest",
+        "reason": "SOURCE reader/declaration retained; ownership remains UNKNOWN",
+        "readers": [
+          {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/scripts/quests/formogar_mine_hoist/movements_hoist.lua",
+            "line": 9,
+            "blob_sha256": "f8dbf2dc33f7165f45e8f0c0a834ed5ee9224941db690b0197051ea06552a30c",
+            "line_sha256": "93015d8a756c4764af6965b5f29e5b078ae2513ee58a12e93261d72c7515bd59",
+            "expression": "Storage.Quest.U8_0.TheIceIslands.FormorgarMinesHoistChest",
+            "receiver_expression": "player"
+          }
+        ]
+      },
+      {
+        "key": "canary:quest-progress/quest/u8_0/the_ice_islands/formorgar_mines_hoist_skeleton",
+        "reason": "SOURCE reader/declaration retained; ownership remains UNKNOWN",
+        "readers": [
+          {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/scripts/quests/formogar_mine_hoist/movements_hoist.lua",
+            "line": 9,
+            "blob_sha256": "f8dbf2dc33f7165f45e8f0c0a834ed5ee9224941db690b0197051ea06552a30c",
+            "line_sha256": "93015d8a756c4764af6965b5f29e5b078ae2513ee58a12e93261d72c7515bd59",
+            "expression": "Storage.Quest.U8_0.TheIceIslands.FormorgarMinesHoistSkeleton",
+            "receiver_expression": "player"
+          }
+        ]
+      },
+      {
+        "key": "canary:quest-progress/quest/u8_54/the_new_frontier/corruption_hole",
+        "reason": "SOURCE reader/declaration retained; ownership remains UNKNOWN",
+        "readers": [
+          {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/scripts/quests/the_new_frontier/movement_corruption_hole.lua",
+            "line": 9,
+            "blob_sha256": "b87afe825efad41fb8a79d29372d699b8d6aa0b48f942a7cca5c97776d90d2a3",
+            "line_sha256": "c5372bf75a64ae1ecd34c37fd182591e3e2d2be914d82d85d6cc432f791a45c0",
+            "expression": "Storage.Quest.U8_54.TheNewFrontier.CorruptionHole",
+            "receiver_expression": "player"
+          }
+        ]
+      },
+      {
+        "key": "canary:quest-progress/quest/u8_54/the_new_frontier/snake_head_teleport",
+        "reason": "SOURCE reader/declaration retained; ownership remains UNKNOWN",
+        "readers": [
+          {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/scripts/quests/the_new_frontier/movements_snake_head_teleport.lua",
+            "line": 15,
+            "blob_sha256": "fce9cb638aed8eef5307460e0a075c1f477f546efac101af871ce7a2bc0f2783",
+            "line_sha256": "2092d2fc54229fec724c569478999fbd54cb1dc8c6478ff8eb44ff04ac5b0679",
+            "expression": "Storage.Quest.U8_54.TheNewFrontier.SnakeHeadTeleport",
+            "receiver_expression": "player"
+          }
+        ]
+      },
+      {
+        "key": "canary:quest-progress/quest/u8_6/wrath_of_the_emperor/teleport_access/wote10",
+        "reason": "SOURCE reader/declaration retained; ownership remains UNKNOWN",
+        "readers": [
+          {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/scripts/quests/wrath_of_the_emperor/movements_boss_teleport.lua",
+            "line": 33,
+            "blob_sha256": "0498ecdf5ee808e569385db8779f213acba4b574a1815ae2f4f1080151f7a293",
+            "line_sha256": "40a967a5adfb0ef13cf92f72bb2373137e3dd8a5626d69168bd38c87eb5bba11",
+            "expression": "Storage.Quest.U8_6.WrathOfTheEmperor.TeleportAccess.Wote10",
+            "receiver_expression": "player"
+          }
+        ]
+      },
+      {
+        "key": "canary:quest-progress/storage/14330",
+        "reason": "SOURCE literal caller retained; declaration, ownership and complete numeric writer inventory remain UNKNOWN",
+        "readers": [
+          {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/scripts/quests/heart_of_destruction/movements_teleport_heart.lua",
+            "line": 89,
+            "blob_sha256": "4b36ad4315a63493fc5f7b78c6052333108d3e4baa5c4b25472ca6c8cd33fb5c",
+            "line_sha256": "088616d6a0eee87561d67545df1a0ce53437e62054d20e4106b942a8920e4352",
+            "expression": "14330",
+            "receiver_expression": "player"
+          }
+        ]
+      },
+      {
+        "key": "canary:quest-progress/storage/14332",
+        "reason": "SOURCE literal caller retained; declaration, ownership and complete numeric writer inventory remain UNKNOWN",
+        "readers": [
+          {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/scripts/quests/heart_of_destruction/movements_teleport_heart.lua",
+            "line": 89,
+            "blob_sha256": "4b36ad4315a63493fc5f7b78c6052333108d3e4baa5c4b25472ca6c8cd33fb5c",
+            "line_sha256": "088616d6a0eee87561d67545df1a0ce53437e62054d20e4106b942a8920e4352",
+            "expression": "14332",
+            "receiver_expression": "player"
+          }
+        ]
+      },
+      {
+        "key": "canary:quest-progress/storage/23734",
+        "reason": "SOURCE literal caller retained; declaration, ownership and complete numeric writer inventory remain UNKNOWN",
+        "readers": [
+          {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/scripts/quests/forgotten_knowledge/actions_lantern.lua",
+            "line": 13,
+            "blob_sha256": "647fe78d049857451da5bb32e1d928e730bc8b29ee8355db68289930b2fc6a2a",
+            "line_sha256": "a2c152a3e76aca59d17b2c66455c4b7af6fa9272acdf1c303e6cca1757cb6ec8",
+            "expression": "23734",
+            "receiver_expression": "player"
+          }
+        ]
+      },
+      {
+        "key": "canary:quest-progress/storage/483293",
+        "reason": "SOURCE literal caller retained; declaration, ownership and complete numeric writer inventory remain UNKNOWN",
+        "readers": [
+          {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/scripts/quests/koshei_the_deathless_quest/action_bag.lua",
+            "line": 14,
+            "blob_sha256": "8632ed26f2555668132feb7ecb39bb5b8b19cede73844853061eaacdbbf08593",
+            "line_sha256": "1c3d82742d5c51ea96308549a41a22cc1d5817d7fb9d8044b2eb0c8cac569b35",
+            "expression": "483293",
+            "receiver_expression": "player"
+          }
+        ]
+      },
+      {
+        "key": "canary:quest-progress/sweety_cyclops/amulet_status",
+        "reason": "SOURCE reader/declaration retained; ownership remains UNKNOWN",
+        "readers": [
+          {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/scripts/quests/koshei_the_deathless_quest/action_boss.lua",
+            "line": 8,
+            "blob_sha256": "51fcd5ae35a454ec512110da43b67d50837464abd7af3ddf3d752c623e96588a",
+            "line_sha256": "d05e100cae71be4912f90be43e1ed4cbf2d8efbc3be225a4761f640cb784649b",
+            "expression": "Storage.SweetyCyclops.AmuletStatus",
+            "receiver_expression": "player"
+          }
+        ]
+      },
+      {
+        "key": "crystalserver:quest-progress/kilmaresh/eighth/narsai",
+        "reason": "SOURCE reader/declaration retained; ownership remains UNKNOWN",
+        "readers": [
+          {
+            "source": "crystalserver",
+            "repository": "zimbadev/crystalserver",
+            "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+            "path": "data-global/scripts/quests/kilmaresh/actions_augerfun.lua",
+            "line": 4,
+            "blob_sha256": "9ac5f387e919e89af9157bab5b5dd54b19e83f3d9eb97a2f5ecc3c5ef177a3c4",
+            "line_sha256": "04eb8a09e98ee2f028e02be2e6adbccc6503af249f5af89517c6ccbad7a3e5db",
+            "expression": "Storage.Kilmaresh.Eighth.Narsai",
+            "receiver_expression": "player"
+          },
+          {
+            "source": "crystalserver",
+            "repository": "zimbadev/crystalserver",
+            "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+            "path": "data-global/scripts/quests/kilmaresh/actions_glasshoneyfun.lua",
+            "line": 4,
+            "blob_sha256": "81046ebbc0006c88e70059294845a81138faa38a13850e3c9f231717ed67bdab",
+            "line_sha256": "04eb8a09e98ee2f028e02be2e6adbccc6503af249f5af89517c6ccbad7a3e5db",
+            "expression": "Storage.Kilmaresh.Eighth.Narsai",
+            "receiver_expression": "player"
+          }
+        ]
+      },
+      {
+        "key": "crystalserver:quest-progress/kilmaresh/eighth/tefrit",
+        "reason": "SOURCE reader/declaration retained; ownership remains UNKNOWN",
+        "readers": [
+          {
+            "source": "crystalserver",
+            "repository": "zimbadev/crystalserver",
+            "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+            "path": "data-global/scripts/quests/kilmaresh/actions_peelerfun.lua",
+            "line": 4,
+            "blob_sha256": "218747274ee6deb6925c26ee1b2d5d4002d14164434f95139526ff682173c84e",
+            "line_sha256": "a5608dba5bef61e4aee85a69aab03b36f07a95ed8acd3c381ccbf8622cde4ca6",
+            "expression": "Storage.Kilmaresh.Eighth.Tefrit",
+            "receiver_expression": "player"
+          }
+        ]
+      },
+      {
+        "key": "crystalserver:quest-progress/kilmaresh/eighth/yonan",
+        "reason": "SOURCE reader/declaration retained; ownership remains UNKNOWN",
+        "readers": [
+          {
+            "source": "crystalserver",
+            "repository": "zimbadev/crystalserver",
+            "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+            "path": "data-global/scripts/quests/kilmaresh/actions_pickenchanted.lua",
+            "line": 4,
+            "blob_sha256": "21df3ebb82c2cf0fa89ecd95121162018a458ffbb61cef599f286f4a9a13118f",
+            "line_sha256": "e260ee55f8f364cb05515a66780458218296283f861a45eb222a5163c4fc707f",
+            "expression": "Storage.Kilmaresh.Eighth.Yonan",
+            "receiver_expression": "player"
+          }
+        ]
+      },
+      {
+        "key": "crystalserver:quest-progress/quest/u11_40/threatened_dreams/mission03/an_unlikely_couple",
+        "reason": "SOURCE reader/declaration retained; ownership remains UNKNOWN",
+        "readers": [
+          {
+            "source": "crystalserver",
+            "repository": "zimbadev/crystalserver",
+            "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+            "path": "data-global/scripts/quests/threatened_dreams_quest/actions_swan_spots.lua",
+            "line": 25,
+            "blob_sha256": "afaf451e06be68606c94f8d999a81d76dcebd51cf1d8d4babbf26176fd81810b",
+            "line_sha256": "1a2e6a925a2818e723426d6b92c8ac9273dcce06f84577be0d2fe37420af7a25",
+            "expression": "Storage.Quest.U11_40.ThreatenedDreams.Mission03.AnUnlikelyCouple",
+            "receiver_expression": "player"
+          }
+        ]
+      },
+      {
+        "key": "crystalserver:quest-progress/quest/u12_00/the_dream_courts/dream_scar/boss_count",
+        "reason": "SOURCE exact-symbolic alias retained; no native identity inferred",
+        "readers": [
+          {
+            "source": "crystalserver",
+            "repository": "zimbadev/crystalserver",
+            "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+            "path": "data-global/scripts/quests/the_dream_courts/actions_portal_nightmare_beast.lua",
+            "line": 16,
+            "blob_sha256": "19594ea9d64976d1027ff743b7c6b4d1f78ec41daa3785eed9c0f0c20368fc22",
+            "line_sha256": "7d1e546b04930ca51f8eb058f3045bca48a35766ac4ed10bc1cf182de1798173",
+            "expression": "Storage.Quest.U12_00.TheDreamCourts.DreamScar.BossCount",
+            "receiver_expression": "player"
+          }
+        ]
+      },
+      {
+        "key": "crystalserver:quest-progress/quest/u12_00/the_dream_courts/unsafe_release/has_bait",
+        "reason": "SOURCE exact-symbolic alias retained; no native identity inferred",
+        "readers": [
+          {
+            "source": "crystalserver",
+            "repository": "zimbadev/crystalserver",
+            "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+            "path": "data-global/scripts/quests/the_dream_courts/movements_spider_summon.lua",
+            "line": 20,
+            "blob_sha256": "0b94978c249af5f838391bc23249ae15622ca74d9d839ea284170e44211d52f5",
+            "line_sha256": "d2e189e58fd77be9a1830e4c96bc0edd76b9101a48ba35109812632662c2a965",
+            "expression": "Storage.Quest.U12_00.TheDreamCourts.UnsafeRelease.HasBait",
+            "receiver_expression": "player"
+          }
+        ]
+      },
+      {
+        "key": "crystalserver:quest-progress/quest/u8_4/blood_brothers/vengoth_access",
+        "reason": "SOURCE exact-symbolic alias retained; no native identity inferred",
+        "readers": [
+          {
+            "source": "crystalserver",
+            "repository": "zimbadev/crystalserver",
+            "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+            "path": "data-global/scripts/quests/blood_brothers_quest/actions_julius_map.lua",
+            "line": 77,
+            "blob_sha256": "2417a6ff13513d589a3d629fdaa0c8c555378a79cb4b4f3dc8f0738ede047b1f",
+            "line_sha256": "dff42f5d1cff641c1cc992a2bedc09edb0ba77e0456ba344fd056f08b15e285c",
+            "expression": "Storage.Quest.U8_4.BloodBrothers.VengothAccess",
+            "receiver_expression": "player"
+          }
+        ]
+      }
+    ],
+    "progress_track_unknowns": [
+      {
+        "key": "crystalserver:quest-progress/quest/u12_00/the_dream_courts/dream_scar_access",
+        "storage_declaration": "UNKNOWN: no exact Storage declaration for crystalserver:quest-progress/quest/u12_00/the_dream_courts/dream_scar_access"
+      },
+      {
+        "key": "crystalserver:quest-progress/quest/u15_10/bloody_tusks/into_the_vampires_lair",
+        "storage_declaration": "UNKNOWN: no exact Storage declaration for crystalserver:quest-progress/quest/u15_10/bloody_tusks/into_the_vampires_lair"
+      },
+      {
+        "key": "crystalserver:quest-progress/quest/u15_10/bloody_tusks/the_blood_ritual",
+        "storage_declaration": "UNKNOWN: no exact Storage declaration for crystalserver:quest-progress/quest/u15_10/bloody_tusks/the_blood_ritual"
+      },
+      {
+        "key": "canary:quest-progress/quest/u7_8/druid_outfits/default_start",
+        "storage_declaration": "UNKNOWN: no exact Storage declaration for canary:quest-progress/quest/u7_8/druid_outfits/default_start"
+      },
+      {
+        "key": "canary:quest-progress/quest/u7_9/nightmare_outfits/knightwatch_tower_door",
+        "owner": "UNKNOWN: Shared KnightwatchTowerDoor41014 is written by both Nightmare DreamMaster and Brotherhood BoneMaster source branches (Canary NPC writerL124/L128 and CrystalL94/L99). Distinct BR/Fandom quest pages; unique quest owner UNKNOWN. No collapse into Nightmare merely from Storage namespace."
+      },
+      {
+        "key": "canary:quest-progress/storage/775558",
+        "owner": "UNKNOWN: Unknown quest owner: literal playerDoubleMageKill=775558 alias at Canary04b83b512114bfd888000d6e1433ed8ecaec7c5b data-otservbr-global/scripts/quests/raging_mage_tower/creaturescripts_raging_mage_1.lua:3, writerL10; source callback/value retained, no initial/bounds inferred."
+      },
+      {
+        "key": "canary:quest-progress/dwarven_legs",
+        "owner": "UNKNOWN: exact source reader/declaration retained; owning quest, initial value, bounds and native Character policy are not inferred"
+      },
+      {
+        "key": "canary:quest-progress/hero_rathleton/fast_way",
+        "owner": "UNKNOWN: caller-only symbolic SOURCE identity; owning quest, initial value, bounds, complete writer inventory and native Character policy are not inferred",
+        "storage_declaration": "UNKNOWN: exact symbolic getter has no proven named Storage declaration; an undeclared lookup may supply nil; never repaired through GlobalStorage or numeric coincidence"
+      },
+      {
+        "key": "canary:quest-progress/quest/u10_10/the_gravedigger_of_drefia/mission08",
+        "owner": "UNKNOWN: exact source reader/declaration retained; owning quest, initial value, bounds and native Character policy are not inferred"
+      },
+      {
+        "key": "canary:quest-progress/quest/u10_10/the_gravedigger_of_drefia/mission11",
+        "owner": "UNKNOWN: exact source reader/declaration retained; owning quest, initial value, bounds and native Character policy are not inferred"
+      },
+      {
+        "key": "canary:quest-progress/quest/u10_10/the_gravedigger_of_drefia/mission14",
+        "owner": "UNKNOWN: exact source reader/declaration retained; owning quest, initial value, bounds and native Character policy are not inferred"
+      },
+      {
+        "key": "canary:quest-progress/quest/u10_10/the_gravedigger_of_drefia/mission17",
+        "owner": "UNKNOWN: exact source reader/declaration retained; owning quest, initial value, bounds and native Character policy are not inferred"
+      },
+      {
+        "key": "canary:quest-progress/quest/u10_10/the_gravedigger_of_drefia/mission23",
+        "owner": "UNKNOWN: exact source reader/declaration retained; owning quest, initial value, bounds and native Character policy are not inferred"
+      },
+      {
+        "key": "canary:quest-progress/quest/u10_10/the_gravedigger_of_drefia/mission27",
+        "owner": "UNKNOWN: exact source reader/declaration retained; owning quest, initial value, bounds and native Character policy are not inferred"
+      },
+      {
+        "key": "canary:quest-progress/quest/u10_10/the_gravedigger_of_drefia/mission31",
+        "owner": "UNKNOWN: exact source reader/declaration retained; owning quest, initial value, bounds and native Character policy are not inferred"
+      },
+      {
+        "key": "canary:quest-progress/quest/u10_10/the_gravedigger_of_drefia/mission39",
+        "owner": "UNKNOWN: exact source reader/declaration retained; owning quest, initial value, bounds and native Character policy are not inferred"
+      },
+      {
+        "key": "canary:quest-progress/quest/u10_10/the_gravedigger_of_drefia/mission45",
+        "owner": "UNKNOWN: exact source reader/declaration retained; owning quest, initial value, bounds and native Character policy are not inferred"
+      },
+      {
+        "key": "canary:quest-progress/quest/u10_10/the_gravedigger_of_drefia/mission52",
+        "owner": "UNKNOWN: exact source reader/declaration retained; owning quest, initial value, bounds and native Character policy are not inferred"
+      },
+      {
+        "key": "canary:quest-progress/quest/u10_10/the_gravedigger_of_drefia/mission59",
+        "owner": "UNKNOWN: exact source reader/declaration retained; owning quest, initial value, bounds and native Character policy are not inferred"
+      },
+      {
+        "key": "canary:quest-progress/quest/u10_10/the_gravedigger_of_drefia/mission67",
+        "owner": "UNKNOWN: exact source reader/declaration retained; owning quest, initial value, bounds and native Character policy are not inferred"
+      },
+      {
+        "key": "canary:quest-progress/quest/u10_10/the_gravedigger_of_drefia/mission74",
+        "owner": "UNKNOWN: exact source reader/declaration retained; owning quest, initial value, bounds and native Character policy are not inferred"
+      },
+      {
+        "key": "canary:quest-progress/quest/u10_55/sanctuary_of_the_lizard_god/lizard_god_teleport",
+        "owner": "UNKNOWN: exact source reader/declaration retained; owning quest, initial value, bounds and native Character policy are not inferred"
+      },
+      {
+        "key": "canary:quest-progress/quest/u10_80/grimvale_quest/ancient_feud_shortcut",
+        "owner": "UNKNOWN: exact source reader/declaration retained; owning quest, initial value, bounds and native Character policy are not inferred"
+      },
+      {
+        "key": "canary:quest-progress/quest/u10_90/ferumbras_ascension/access",
+        "owner": "UNKNOWN: exact source reader/declaration retained; owning quest, initial value, bounds and native Character policy are not inferred"
+      },
+      {
+        "key": "canary:quest-progress/quest/u10_90/ferumbras_ascension/the_lord_of_the_lice_access",
+        "owner": "UNKNOWN: exact source reader/declaration retained; owning quest, initial value, bounds and native Character policy are not inferred"
+      },
+      {
+        "key": "canary:quest-progress/quest/u11_02/forgotten_knowledge/diamond_servant_counter",
+        "owner": "UNKNOWN: exact source reader/declaration retained; owning quest, initial value, bounds and native Character policy are not inferred"
+      },
+      {
+        "key": "canary:quest-progress/quest/u11_02/forgotten_knowledge/golden_servant_counter",
+        "owner": "UNKNOWN: exact source reader/declaration retained; owning quest, initial value, bounds and native Character policy are not inferred"
+      },
+      {
+        "key": "canary:quest-progress/quest/u11_40/cults_of_tibia/barkless/sulphur",
+        "owner": "UNKNOWN: exact source reader/declaration retained; owning quest, initial value, bounds and native Character policy are not inferred"
+      },
+      {
+        "key": "canary:quest-progress/quest/u11_40/cults_of_tibia/barkless/tar",
+        "owner": "UNKNOWN: exact source reader/declaration retained; owning quest, initial value, bounds and native Character policy are not inferred"
+      },
+      {
+        "key": "canary:quest-progress/quest/u11_40/cults_of_tibia/humans/decaying",
+        "owner": "UNKNOWN: exact source reader/declaration retained; owning quest, initial value, bounds and native Character policy are not inferred"
+      },
+      {
+        "key": "canary:quest-progress/quest/u11_40/cults_of_tibia/humans/vaporized",
+        "owner": "UNKNOWN: exact source reader/declaration retained; owning quest, initial value, bounds and native Character policy are not inferred"
+      },
+      {
+        "key": "canary:quest-progress/quest/u11_80/the_secret_library/asuras/flamming_orchid",
+        "owner": "UNKNOWN: exact source reader/declaration retained; owning quest, initial value, bounds and native Character policy are not inferred"
+      },
+      {
+        "key": "canary:quest-progress/quest/u11_80/the_secret_library/falcon_bastion/killing_bosses",
+        "owner": "UNKNOWN: exact source reader/declaration retained; owning quest, initial value, bounds and native Character policy are not inferred"
+      },
+      {
+        "key": "canary:quest-progress/quest/u11_80/the_secret_library/mo_ta/green_gem",
+        "owner": "UNKNOWN: exact source reader/declaration retained; owning quest, initial value, bounds and native Character policy are not inferred"
+      },
+      {
+        "key": "canary:quest-progress/quest/u11_80/the_secret_library/mo_ta/red_gem",
+        "owner": "UNKNOWN: exact source reader/declaration retained; owning quest, initial value, bounds and native Character policy are not inferred"
+      },
+      {
+        "key": "canary:quest-progress/quest/u11_80/the_secret_library/mo_ta/yellow_gem",
+        "owner": "UNKNOWN: exact source reader/declaration retained; owning quest, initial value, bounds and native Character policy are not inferred"
+      },
+      {
+        "key": "canary:quest-progress/quest/u11_80/the_secret_library/small_islands/hawser",
+        "owner": "UNKNOWN: exact source reader/declaration retained; owning quest, initial value, bounds and native Character policy are not inferred"
+      },
+      {
+        "key": "canary:quest-progress/quest/u12_00/the_dream_courts/dream_scar/boss_count",
+        "owner": "UNKNOWN: exact source reader/declaration retained; owning quest, initial value, bounds and native Character policy are not inferred"
+      },
+      {
+        "key": "canary:quest-progress/quest/u12_00/the_dream_courts/dream_scar/permission",
+        "owner": "UNKNOWN: exact source reader/declaration retained; owning quest, initial value, bounds and native Character policy are not inferred"
+      },
+      {
+        "key": "canary:quest-progress/quest/u12_20/grave_danger/custodian_killed",
+        "owner": "UNKNOWN: exact source reader/declaration retained; owning quest, initial value, bounds and native Character policy are not inferred"
+      },
+      {
+        "key": "canary:quest-progress/quest/u12_20/grave_danger/gaffir_killed",
+        "owner": "UNKNOWN: exact source reader/declaration retained; owning quest, initial value, bounds and native Character policy are not inferred"
+      },
+      {
+        "key": "canary:quest-progress/quest/u12_20/grave_danger/quaid_killed",
+        "owner": "UNKNOWN: exact source reader/declaration retained; owning quest, initial value, bounds and native Character policy are not inferred"
+      },
+      {
+        "key": "canary:quest-progress/quest/u12_20/kilmaresh_quest/eighth/narsai",
+        "owner": "UNKNOWN: exact source reader/declaration retained; owning quest, initial value, bounds and native Character policy are not inferred"
+      },
+      {
+        "key": "canary:quest-progress/quest/u12_20/kilmaresh_quest/eighth/tefrit",
+        "owner": "UNKNOWN: exact source reader/declaration retained; owning quest, initial value, bounds and native Character policy are not inferred"
+      },
+      {
+        "key": "canary:quest-progress/quest/u12_20/kilmaresh_quest/eighth/yonan",
+        "owner": "UNKNOWN: exact source reader/declaration retained; owning quest, initial value, bounds and native Character policy are not inferred"
+      },
+      {
+        "key": "canary:quest-progress/quest/u7_4/the_ancient_tombs/ashmunrah_switches_global_storage",
+        "owner": "UNKNOWN: exact source reader/declaration retained; owning quest, initial value, bounds and native Character policy are not inferred"
+      },
+      {
+        "key": "canary:quest-progress/quest/u7_4/the_ancient_tombs/diprath_sign8",
+        "owner": "UNKNOWN: exact source reader/declaration retained; owning quest, initial value, bounds and native Character policy are not inferred"
+      },
+      {
+        "key": "canary:quest-progress/quest/u7_4/the_ancient_tombs/diprath_switches_global_storage",
+        "owner": "UNKNOWN: exact source reader/declaration retained; owning quest, initial value, bounds and native Character policy are not inferred"
+      },
+      {
+        "key": "canary:quest-progress/quest/u7_6/explorer_society/spectral_stone",
+        "owner": "UNKNOWN: exact source reader/declaration retained; owning quest, initial value, bounds and native Character policy are not inferred"
+      },
+      {
+        "key": "canary:quest-progress/quest/u7_8/hunter_outfits/hunter_music_sheet01",
+        "owner": "UNKNOWN: exact source reader/declaration retained; owning quest, initial value, bounds and native Character policy are not inferred"
+      },
+      {
+        "key": "canary:quest-progress/quest/u7_8/hunter_outfits/hunter_music_sheet02",
+        "owner": "UNKNOWN: exact source reader/declaration retained; owning quest, initial value, bounds and native Character policy are not inferred"
+      },
+      {
+        "key": "canary:quest-progress/quest/u7_8/hunter_outfits/hunter_music_sheet03",
+        "owner": "UNKNOWN: exact source reader/declaration retained; owning quest, initial value, bounds and native Character policy are not inferred"
+      },
+      {
+        "key": "canary:quest-progress/quest/u7_8/hunter_outfits/hunter_music_sheet04",
+        "owner": "UNKNOWN: exact source reader/declaration retained; owning quest, initial value, bounds and native Character policy are not inferred"
+      },
+      {
+        "key": "canary:quest-progress/quest/u7_9/the_pits_of_inferno/throne_pumin",
+        "owner": "UNKNOWN: exact source reader/declaration retained; owning quest, initial value, bounds and native Character policy are not inferred"
+      },
+      {
+        "key": "canary:quest-progress/quest/u8_0/the_ice_islands/formorgar_mines_hoist_chest",
+        "owner": "UNKNOWN: exact source reader/declaration retained; owning quest, initial value, bounds and native Character policy are not inferred"
+      },
+      {
+        "key": "canary:quest-progress/quest/u8_0/the_ice_islands/formorgar_mines_hoist_skeleton",
+        "owner": "UNKNOWN: exact source reader/declaration retained; owning quest, initial value, bounds and native Character policy are not inferred"
+      },
+      {
+        "key": "canary:quest-progress/quest/u8_54/the_new_frontier/corruption_hole",
+        "owner": "UNKNOWN: exact source reader/declaration retained; owning quest, initial value, bounds and native Character policy are not inferred"
+      },
+      {
+        "key": "canary:quest-progress/quest/u8_54/the_new_frontier/snake_head_teleport",
+        "owner": "UNKNOWN: exact source reader/declaration retained; owning quest, initial value, bounds and native Character policy are not inferred"
+      },
+      {
+        "key": "canary:quest-progress/quest/u8_6/wrath_of_the_emperor/teleport_access/wote10",
+        "owner": "UNKNOWN: exact source reader/declaration retained; owning quest, initial value, bounds and native Character policy are not inferred"
+      },
+      {
+        "key": "canary:quest-progress/storage/14330",
+        "owner": "UNKNOWN: caller-only numeric SOURCE identity; owning quest, initial value, bounds, numeric writer inventory and native Character policy are not inferred",
+        "storage_declaration": "UNKNOWN: literal getter has no proven named Storage declaration; never joined by numeric coincidence"
+      },
+      {
+        "key": "canary:quest-progress/storage/14332",
+        "owner": "UNKNOWN: caller-only numeric SOURCE identity; owning quest, initial value, bounds, numeric writer inventory and native Character policy are not inferred",
+        "storage_declaration": "UNKNOWN: literal getter has no proven named Storage declaration; never joined by numeric coincidence"
+      },
+      {
+        "key": "canary:quest-progress/storage/23734",
+        "owner": "UNKNOWN: caller-only numeric SOURCE identity; owning quest, initial value, bounds, numeric writer inventory and native Character policy are not inferred",
+        "storage_declaration": "UNKNOWN: literal getter has no proven named Storage declaration; never joined by numeric coincidence"
+      },
+      {
+        "key": "canary:quest-progress/storage/483293",
+        "owner": "UNKNOWN: caller-only numeric SOURCE identity; owning quest, initial value, bounds, numeric writer inventory and native Character policy are not inferred",
+        "storage_declaration": "UNKNOWN: literal getter has no proven named Storage declaration; never joined by numeric coincidence"
+      },
+      {
+        "key": "canary:quest-progress/sweety_cyclops/amulet_status",
+        "owner": "UNKNOWN: exact source reader/declaration retained; owning quest, initial value, bounds and native Character policy are not inferred"
+      },
+      {
+        "key": "crystalserver:quest-progress/kilmaresh/eighth/narsai",
+        "owner": "UNKNOWN: exact source reader/declaration retained; owning quest, initial value, bounds and native Character policy are not inferred"
+      },
+      {
+        "key": "crystalserver:quest-progress/kilmaresh/eighth/tefrit",
+        "owner": "UNKNOWN: exact source reader/declaration retained; owning quest, initial value, bounds and native Character policy are not inferred"
+      },
+      {
+        "key": "crystalserver:quest-progress/kilmaresh/eighth/yonan",
+        "owner": "UNKNOWN: exact source reader/declaration retained; owning quest, initial value, bounds and native Character policy are not inferred"
+      },
+      {
+        "key": "crystalserver:quest-progress/quest/u11_40/threatened_dreams/mission03/an_unlikely_couple",
+        "owner": "UNKNOWN: exact source reader/declaration retained; owning quest, initial value, bounds and native Character policy are not inferred"
+      },
+      {
+        "key": "crystalserver:quest-progress/quest/u12_00/the_dream_courts/dream_scar/boss_count",
+        "owner": "UNKNOWN: exact source reader/declaration retained; owning quest, initial value, bounds and native Character policy are not inferred"
+      }
+    ],
+    "deferred_track_owners": {
+      "storage/673003": {
+        "owner_evidence": {
+          "note": "Unknown quest owner: literal yielothaxKillStorage=673003 alias at Canary04b83b512114bfd888000d6e1433ed8ecaec7c5b data-otservbr-global/scripts/quests/raging_mage_tower/creaturescripts_raging_mage_1.lua:4; setStorageValue receiver/effects retained. Shared/global versus character scope needs an owning contract; no initial/bounds inferred."
+        },
+        "reason": "PROVEN GLOBAL/WORLD: pinned Game.setStorageValue(yielothaxKillStorage,0), not character progress. Source alias and owning-scope uncertainty retained; no character track, initial value or bounds invented."
+      },
+      "quest/u10_50/dark_trails/mission18": {
+        "owner_evidence": {
+          "quest": "canary:quest/dark_trails_quest",
+          "note": "Exact DarkTrails Mission storage namespace and pinned executable source writes; journal mapping, initial value and bounds remain UNKNOWN.",
+          "owner_evidence": [
+            {
+              "source": "canary",
+              "repository": "opentibiabr/canary",
+              "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+              "path": "data-otservbr-global/lib/core/storages.lua",
+              "line": 2007,
+              "storage_id": 44569,
+              "expression": "Storage.Quest.U10_50.DarkTrails.Mission18",
+              "classification": "OTS_HYPOTHESIS_ONLY",
+              "role": "exact_storage_declaration"
+            },
+            {
+              "source": "crystal",
+              "repository": "zimbadev/crystalserver",
+              "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+              "path": "data-global/lib/core/storages.lua",
+              "line": 2146,
+              "storage_id": 44569,
+              "expression": "Storage.Quest.U10_50.DarkTrails.Mission18",
+              "classification": "OTS_HYPOTHESIS_ONLY",
+              "role": "exact_storage_declaration"
+            },
+            {
+              "source": "crystal-summer",
+              "repository": "zimbadev/crystalserver",
+              "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+              "path": "data-global/lib/core/storages.lua",
+              "line": 2146,
+              "storage_id": 44569,
+              "expression": "Storage.Quest.U10_50.DarkTrails.Mission18",
+              "classification": "OTS_HYPOTHESIS_ONLY",
+              "role": "exact_storage_declaration"
+            }
+          ]
+        },
+        "reason": "Exact storage declaration exists; no observed source writer in accepted executable inventory. No transition or journal stage invented."
+      }
+    },
+    "script_coverage_holds": [
+      {
+        "quest": "canary:quest/primal_ordeal_quest",
+        "source_paths": [
+          "scripts/quests/the_primal_ordeal/creaturescripts_magma_bubble_death.lua",
+          "scripts/quests/the_primal_ordeal/creaturescripts_the_primal_menace_killed.lua"
+        ],
+        "coverage_gap": "Full quest journey, callback/monster attachments and alternate source consistency remain UNKNOWN.",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "canary:quest/fury_gates_mini_world_change",
+        "source_paths": [
+          "scripts/world_changes/fury_gates.lua"
+        ],
+        "coverage_gap": "Source activity side effects outside the quest-directory transcription are not fully converted; runtime/world-state/NPC effects require separate closed contracts.",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "canary:quest/nightmare_isles_mini_world_change",
+        "source_paths": [
+          "scripts/world_changes/nightmare_isles.lua"
+        ],
+        "coverage_gap": "Source activity side effects outside the quest-directory transcription are not fully converted; runtime/world-state/NPC effects require separate closed contracts.",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "canary:quest/oriental_trader_mini_world_change",
+        "source_paths": [
+          "scripts/world_changes/oriental_trader.lua"
+        ],
+        "coverage_gap": "Source activity side effects outside the quest-directory transcription are not fully converted; runtime/world-state/NPC effects require separate closed contracts.",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "canary:quest/rapier_quest",
+        "source_paths": [
+          "scripts/actions/rookgaard/rapier_quest.lua"
+        ],
+        "coverage_gap": "Source activity side effects outside the quest-directory transcription are not fully converted; runtime/world-state/NPC effects require separate closed contracts.",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "canary:quest/chayenne_realm",
+        "source_paths": [
+          "scripts/quests/chayenne_realm/movements_enter_realm.lua"
+        ],
+        "coverage_gap": "Source activity side effects outside the quest-directory transcription are not fully converted; runtime/world-state/NPC effects require separate closed contracts.",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "canary:quest/steal_from_thieves_quest",
+        "source_paths": [
+          "scripts/quests/others/actions_steal_from_thieves.lua",
+          "npc/ahmet.lua"
+        ],
+        "coverage_gap": "Source activity side effects outside the quest-directory transcription are not fully converted; runtime/world-state/NPC effects require separate closed contracts.",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "canary:quest/the_mummys_curse_world_change",
+        "source_paths": [
+          "scripts/actions/worldchanges/the_mummys_curse/horestis_jars.lua"
+        ],
+        "coverage_gap": "Source activity side effects outside the quest-directory transcription are not fully converted; runtime/world-state/NPC effects require separate closed contracts.",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "canary:quest/citizen_outfits_quest_on_rook",
+        "source_paths": [
+          "npc/amber.lua",
+          "npc/norma.lua"
+        ],
+        "coverage_gap": "Outfit entitlement, item consumption, NPC dialogue and achievement effects have not been transcribed into quest Interaction data. Canonical playability is UNKNOWN.",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "canary:quest/crystal_warlord_outfits_quest",
+        "source_paths": [
+          "data/scripts/actions/items/usable_outfit_items.lua",
+          "npc/gnomally.lua"
+        ],
+        "coverage_gap": "Outfit entitlement, item consumption, NPC dialogue and achievement effects have not been transcribed into quest Interaction data. Canonical playability is UNKNOWN.",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "canary:quest/decaying_defender_outfits_quest",
+        "source_paths": [
+          "data/scripts/actions/items/usable_outfit_items.lua",
+          "scripts/quests/rotten_blood_quest/creaturescripts_bosses_killed.lua"
+        ],
+        "coverage_gap": "Outfit entitlement, item consumption, NPC dialogue and achievement effects have not been transcribed into quest Interaction data. Canonical playability is UNKNOWN.",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "crystalserver:quest/dream_warrior_outfits_quest",
+        "source_paths": [
+          "npc/undal.lua",
+          "npc/vanys.lua",
+          "scripts/quests/the_dream_courts/creaturescripts_dream_courts_death.lua"
+        ],
+        "coverage_gap": "Outfit entitlement, item consumption, NPC dialogue and achievement effects have not been transcribed into quest Interaction data. Canonical playability is UNKNOWN.",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "canary:quest/falconer_outfits_quest",
+        "source_paths": [
+          "data/scripts/lib/task_board_shop.lua",
+          "npc/walter_jaeger.lua"
+        ],
+        "coverage_gap": "Outfit entitlement, item consumption, NPC dialogue and achievement effects have not been transcribed into quest Interaction data. Canonical playability is UNKNOWN.",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "canary:quest/fiend_slayer_outfits_quest",
+        "source_paths": [
+          "data/scripts/actions/items/usable_outfit_items.lua",
+          "scripts/quests/no_rest_for_the_wicked/arbaziloth_death.lua"
+        ],
+        "coverage_gap": "Outfit entitlement, item consumption, NPC dialogue and achievement effects have not been transcribed into quest Interaction data. Canonical playability is UNKNOWN.",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "canary:quest/fire_fighter_outfits_quest",
+        "source_paths": [
+          "data/scripts/actions/items/usable_outfit_items.lua",
+          "scripts/quests/the_primal_ordeal/creaturescripts_magma_bubble_death.lua"
+        ],
+        "coverage_gap": "Outfit entitlement, item consumption, NPC dialogue and achievement effects have not been transcribed into quest Interaction data. Canonical playability is UNKNOWN.",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "crystalserver:quest/formal_dress_outfits_quest",
+        "source_paths": [
+          "data/scripts/actions/items/usable_outfit_items.lua",
+          "scripts/quests/25_years_of _tibia_quest/lord_retro_death.lua"
+        ],
+        "coverage_gap": "Outfit entitlement, item consumption, NPC dialogue and achievement effects have not been transcribed into quest Interaction data. Canonical playability is UNKNOWN.",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "canary:quest/golden_outfits_quest",
+        "source_paths": [
+          "npc/emperor_kruzak.lua",
+          "npc/king_tibianus.lua",
+          "npc/queen_eloise.lua"
+        ],
+        "coverage_gap": "Outfit entitlement, item consumption, NPC dialogue and achievement effects have not been transcribed into quest Interaction data. Canonical playability is UNKNOWN.",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "canary:quest/hand_of_the_inquisition_outfits_quest",
+        "source_paths": [
+          "data/scripts/actions/items/usable_outfit_items.lua",
+          "npc/jack_springer.lua",
+          "scripts/quests/grave_danger/creaturescripts_zelosDeath.lua"
+        ],
+        "coverage_gap": "Outfit entitlement, item consumption, NPC dialogue and achievement effects have not been transcribed into quest Interaction data. Canonical playability is UNKNOWN.",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "crystalserver:quest/illuminator_outfit_quest",
+        "source_paths": [
+          "data/scripts/actions/items/usable_outfit_items.lua"
+        ],
+        "coverage_gap": "Outfit entitlement, item consumption, NPC dialogue and achievement effects have not been transcribed into quest Interaction data. Canonical playability is UNKNOWN.",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "canary:quest/makeshift_warrior_outfits_quest",
+        "source_paths": [
+          "data/scripts/actions/items/usable_outfit_items.lua"
+        ],
+        "coverage_gap": "Outfit entitlement, item consumption, NPC dialogue and achievement effects have not been transcribed into quest Interaction data. Canonical playability is UNKNOWN.",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "canary:quest/rascoohan_outfits_quest",
+        "source_paths": [
+          "data/scripts/actions/items/usable_outfit_items.lua",
+          "scripts/quests/a_pirates_tail/creaturescripts_ratmiral_death.lua"
+        ],
+        "coverage_gap": "Outfit entitlement, item consumption, NPC dialogue and achievement effects have not been transcribed into quest Interaction data. Canonical playability is UNKNOWN.",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "canary:quest/revenant_outfits_quest",
+        "source_paths": [
+          "data/scripts/actions/items/usable_outfit_items.lua",
+          "npc/flickering_soul.lua"
+        ],
+        "coverage_gap": "Outfit entitlement, item consumption, NPC dialogue and achievement effects have not been transcribed into quest Interaction data. Canonical playability is UNKNOWN.",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "canary:quest/rift_warrior_outfits_quest",
+        "source_paths": [
+          "npc/cledwyn.lua",
+          "scripts/quests/ferumbras_ascension/actions_reward.lua"
+        ],
+        "coverage_gap": "Outfit entitlement, item consumption, NPC dialogue and achievement effects have not been transcribed into quest Interaction data. Canonical playability is UNKNOWN.",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "canary:quest/soil_guardian_outfits_quest",
+        "source_paths": [
+          "data/scripts/actions/items/usable_outfit_items.lua",
+          "npc/gnomally.lua"
+        ],
+        "coverage_gap": "Outfit entitlement, item consumption, NPC dialogue and achievement effects have not been transcribed into quest Interaction data. Canonical playability is UNKNOWN.",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "canary:quest/warmaster_outfits_quest",
+        "source_paths": [
+          "npc/cael.lua",
+          "scripts/quests/the_new_frontier/action_outfit.lua"
+        ],
+        "coverage_gap": "Outfit entitlement, item consumption, NPC dialogue and achievement effects have not been transcribed into quest Interaction data. Canonical playability is UNKNOWN.",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "canary:quest/wayfarer_outfits_quest",
+        "source_paths": [
+          "npc/cranky_lizard_crone.lua",
+          "scripts/quests/wrath_of_the_emperor/actions_mission12_just_rewards.lua"
+        ],
+        "coverage_gap": "Outfit entitlement, item consumption, NPC dialogue and achievement effects have not been transcribed into quest Interaction data. Canonical playability is UNKNOWN.",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "canary:quest/yalaharian_outfits_quest",
+        "source_paths": [
+          "npc/palimuth.lua",
+          "npc/yalahari.lua"
+        ],
+        "coverage_gap": "Outfit entitlement, item consumption, NPC dialogue and achievement effects have not been transcribed into quest Interaction data. Canonical playability is UNKNOWN.",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "crystalserver:quest/afflicted_outfits_quest",
+        "source_paths": [
+          "data/scripts/actions/items/usable_afflicted_outfit_items.lua"
+        ],
+        "coverage_gap": "Canonical item/outfit/achievement admission, acquisition routes, native quest state and runtime remain unassessed.",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "crystalserver:quest/ancient_aucar_outfits_quest",
+        "source_paths": [
+          "scripts/quests/adventures_of_galthen/actions_idol_of_tukh.lua"
+        ],
+        "coverage_gap": "Acquisition, addons, achievement, whole quest and native/runtime admission remain unassessed. Shared Galthen path does not establish exclusive mission or interaction ownership.",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "crystalserver:quest/feral_trappers_quest",
+        "source_paths": [
+          "data/scripts/lib/task_board_shop.lua"
+        ],
+        "coverage_gap": "CPP grant lies outside Lua Interaction transcription. Configured looktype1907 is granted; female delivery, complete activity and achievement semantics remain unknown.",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "crystalserver:quest/within_the_tides_quest",
+        "source_paths": [
+          "scripts/quests/marapur/actions_boss_timira_fight.lua",
+          "scripts/quests/marapur/actions_teleports_timira.lua"
+        ],
+        "coverage_gap": "Other NPC missions, access prerequisites, encounter completeness, map bindings and native/runtime admission remain UNKNOWN.",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "canary:quest/thawing_mini_world_change",
+        "source_paths": [
+          "scripts/world_changes/thawing.lua"
+        ],
+        "coverage_gap": "Lifecycle/reset, flower pickup/use and NPC exchange are not fully transcribed.",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "canary:quest/horse_station_world_change",
+        "source_paths": [
+          "npc/palomino.lua",
+          "npc/appaloosa.lua",
+          "scripts/globalevents/spawn/horse_station_world_change.lua",
+          "scripts/globalevents/others/horse_station.lua",
+          "scripts/actions/mounts/mounts.lua"
+        ],
+        "coverage_gap": "Rental expiry, stable locality and independent NPC wave-event cancellation remain unestablished; shared taming only covers a reward component.",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "canary:quest/thornfire_world_change",
+        "source_paths": [
+          "data/scripts/actions/tools/prepared_bucket.lua",
+          "data/scripts/movements/thornfire_wolf.lua",
+          "scripts/actions/mounts/mounts.lua"
+        ],
+        "coverage_gap": "World scheduler/lifecycle/locality are unbound. Firefighter check is nested in wolf-spawn branch; Coal and Flintstone reward delivery remain unknown.",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "canary:quest/bored_mini_world_change",
+        "source_paths": [
+          "data/scripts/creaturescripts/monster/giant_spider_wyda_death.lua",
+          "npc/wyda.lua"
+        ],
+        "coverage_gap": "The registered death handler has no accepted-source monster attachment found. World activation/schedule and BloodHerb collection remain unbound; these are separate reward components, not a proven complete event.",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "canary:quest/hunting_for_tokens",
+        "source_paths": [
+          "npc/jorge.lua"
+        ],
+        "coverage_gap": "Token acquisition/hunting activities and full reward branches remain untranscribed. The exchange is shared NPC behavior, not proof of every quest prerequisite.",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "canary:quest/tutorial",
+        "source_paths": [
+          "npc/menesto.lua"
+        ],
+        "coverage_gap": "Initial guard reads Storage.Tutorial while writes use Storage.Dawnport.Tutorial; preserve separate keys and source behavior. Full starter equipment/tutorial graph and all rewards remain unbound.",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "canary:quest/chyllfroest_mini_world_change",
+        "source_paths": [
+          "scripts/quests/tinder_box_quest_chyllfroest/actions_ursagrodon.lua"
+        ],
+        "coverage_gap": "Seasonal world activation, map access, creature population and complete event lifecycle remain unbound. Shared Tinder Box quest component must not be treated as a complete independent quest.",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "canary:quest/sanctuary_of_the_lizard_god",
+        "source_paths": [
+          "scripts/quests/dawnport/movements_legion_helmet.lua"
+        ],
+        "coverage_gap": "Sacrifice/storage writer, full rewards, map binding and quest prerequisites remain untranscribed; presence of entry gate proves only this component.",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "canary:quest/skull_of_ratha",
+        "source_paths": [
+          "npc/mortimer.lua"
+        ],
+        "coverage_gap": "Full acquisition/chest and reward graph remain unbound to this new source slice. Shared Explorer Society NPC file is not exclusive quest ownership.",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "canary:quest/pilgrimage_of_ashes",
+        "source_paths": [
+          "npc/edala.lua",
+          "npc/eremo.lua",
+          "npc/humphrey.lua",
+          "npc/norf.lua",
+          "npc/pydar.lua"
+        ],
+        "coverage_gap": "Blessing module implementation/admission, Kawill prerequisite, global pilgrimage ordering and costs/discounts are not fully transcribed. Source blessing IDs stay source-qualified; no canonical blessing binding is inferred.",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "canary:quest/swamp_fever_world_change",
+        "source_paths": [
+          "npc/ottokar.lua"
+        ],
+        "coverage_gap": "World scheduler/state and medicine acquisition remain unbound. Achievement call argument100 is preserved source API data, not an invented quest count or completion condition.",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "canary:quest/small_health_potion",
+        "source_paths": [
+          "npc/billy.lua"
+        ],
+        "coverage_gap": "Pan acquisition and all quest/map prerequisites remain unbound. This component is Billy's exchange; historical coverage Hyacinth references point to Rookie Guard and are not reused as this quest identity.",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "canary:quest/stampede_mini_world_change",
+        "source_paths": [
+          "data/scripts/creaturescripts/monster/terrified_elephant_death.lua",
+          "monster/mammals/terrified_elephant.lua"
+        ],
+        "coverage_gap": "Only Crystal has the accepted death handler and attachment. World-change activation, spawn/raid lifecycle and map localization remain unbound. Preserve historical Canary IMPLEMENTED flag as a separate unverified baseline; do not infer its attachment or substitute Water Buffalo/Swamp Beast.",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "canary:quest/the_mages_tower_world_change",
+        "source_paths": [
+          "scripts/quests/raging_mage_tower/creaturescripts_energized_raging_mage_kill.lua",
+          "scripts/quests/raging_mage_tower/creaturescripts_raging_mage_1.lua",
+          "scripts/quests/raging_mage_tower/creaturescripts_raging_mage_2.lua",
+          "scripts/quests/raging_mage_tower/creaturescripts_raging_mage_kill.lua",
+          "scripts/quests/raging_mage_tower/creaturescripts_yielothax_kill.lua"
+        ],
+        "coverage_gap": "World scheduler/activation, attachment, eligibility and native world-state admission remain UNKNOWN; existing source defects remain source behavior.",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "canary:quest/dreamer_s_challenge_quest",
+        "source_paths": [
+          "scripts/quests/dreamers_challenge_quest/actions_stone_teleport.lua",
+          "scripts/quests/dreamers_challenge_quest/actions_tic_tac.lua",
+          "scripts/quests/dreamers_challenge_quest/actions_tic_tac_teleport.lua",
+          "scripts/quests/dreamers_challenge_quest/actions_walls.lua",
+          "scripts/quests/dreamers_challenge_quest/movement_carrot.lua",
+          "scripts/quests/dreamers_challenge_quest/movement_clock_tile.lua",
+          "scripts/quests/dreamers_challenge_quest/movement_court_teleport.lua",
+          "scripts/quests/dreamers_challenge_quest/movement_death_ring.lua",
+          "scripts/quests/dreamers_challenge_quest/movement_death_ring_teleport.lua",
+          "scripts/quests/dreamers_challenge_quest/movement_fire_bug_teleport.lua",
+          "scripts/quests/dreamers_challenge_quest/movement_riddle.lua",
+          "scripts/quests/dreamers_challenge_quest/movement_riddle_teleport.lua",
+          "scripts/quests/dreamers_challenge_quest/movement_stone_teleport.lua",
+          "scripts/quests/dreamers_challenge_quest/movement_teleport.lua",
+          "scripts/quests/dreamers_challenge_quest/movement_tic_teleport.lua",
+          "scripts/quests/dreamers_challenge_quest/movement_tower.lua",
+          "scripts/quests/dreamers_challenge_quest/movement_wall_teleport.lua"
+        ],
+        "coverage_gap": "NPC storyline, full puzzle ordering, map bindings and runtime execution remain UNKNOWN.",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "canary:quest/barbarian_arena_quest",
+        "source_paths": [
+          "scripts/quests/svargrond_arena/movements_arena_trophy.lua"
+        ],
+        "coverage_gap": "Complete arena rounds, monster lifecycle, difficulty progression, map bindings and runtime admission remain UNKNOWN.",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "canary:quest/life_ring_quest",
+        "source_paths": [
+          "scripts/quests/thais_quest/actions_life_ring_lever.lua"
+        ],
+        "coverage_gap": "Complete chest access/journey, switch-map placement linkage and native/runtime admission remain UNKNOWN.",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "canary:quest/serpentine_tower_quest",
+        "source_paths": [
+          "scripts/quests/others/actions_serpentine_tower_lever.lua",
+          "scripts/quests/others/actions_serpentine_tower_torch.lua",
+          "scripts/quests/white_pearl/movements_white_pearl.lua"
+        ],
+        "coverage_gap": "The unsolved/full tower quest, global puzzle ordering and map/runtime bindings remain UNKNOWN.",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "canary:quest/oriental_outfits_quest",
+        "source_paths": [
+          "scripts/quests/others/actions_calassa_comb_door.lua"
+        ],
+        "coverage_gap": "Full outfit acquisition/NPC missions, Calassa map access and native/runtime admission remain UNKNOWN.",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "canary:quest/hydra_egg_quest",
+        "source_paths": [
+          "scripts/actions/other/others/quest_system2.lua"
+        ],
+        "coverage_gap": "Generic table selection/control flow, full acquisition/map placement and typed reward/runtime admission remain UNKNOWN.",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "canary:quest/the_spirit_will_get_you_quest",
+        "source_paths": [
+          "npc/cranky_lizard_crone.lua"
+        ],
+        "coverage_gap": "Full journey/acquisition, NPC dialogue graph, additive second storage semantics and native/runtime admission remain UNKNOWN.",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "canary:quest/treasure_hunt_quest",
+        "source_paths": [
+          "npc/captain_waverider.lua"
+        ],
+        "coverage_gap": "Other missions, quest-exclusive eligibility, full rewards/map bindings and runtime admission remain UNKNOWN.",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "crystalserver:quest/treasure_island_quest",
+        "source_paths": [
+          "npc/captain_waverider.lua"
+        ],
+        "coverage_gap": "Island chest acquisition, full rewards/map bindings and native/runtime admission remain UNKNOWN.",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "canary:quest/goblin_merchant_quest",
+        "source_paths": [
+          "npc/rafzan.lua"
+        ],
+        "coverage_gap": "NPC task implementation, progress writers, all rewards/acquisition and runtime readiness remain UNKNOWN; the source responses do not implement the six tasks.",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "canary:quest/the_scatterbrained_sorcerer_quest",
+        "source_paths": [
+          "npc/eclesius.lua"
+        ],
+        "coverage_gap": "All daily mission effects, task eligibility, progress/rewards and runtime readiness remain UNKNOWN; the assistant response is not their implementation.",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "crystalserver:quest/the_roost_of_the_graveborn_quest",
+        "source_paths": [
+          "monster/winter_update_2025/bosses/bone_overlord.lua"
+        ],
+        "coverage_gap": "Quest-to-boss attachment, all mission/storage/journal/event mechanics, rewards and native/runtime readiness remain UNKNOWN.",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "canary:quest/opticording_sphere_quest",
+        "source_paths": [
+          "scripts/quests/mysterious_ornate/actions_mysterious_metal_egg.lua"
+        ],
+        "coverage_gap": "Actual egg contents/puzzle/rewards, full quest journey and runtime readiness remain UNKNOWN; accepted callback explicitly reports content not implemented.",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "canary:quest/steamship_world_change",
+        "source_paths": [
+          "npc/junkar_thais.lua"
+        ],
+        "coverage_gap": "Coal collection/200-server-total threshold, schedule and service activation, repeat/state/world lifecycle, source graph attachment, rewards and runtime readiness remain UNKNOWN. Donor travel is unconditional; do not import wiki activation semantics as implemented.",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "canary:quest/awash_world_change",
+        "source_paths": [
+          "npc/junkar_mines.lua"
+        ],
+        "coverage_gap": "Dronk/water pumps, 202-coal drainage, Deepling kill/server-save lifecycle, mine access activation, Groam encounter attachment, achievements, source graph attachment and runtime readiness remain UNKNOWN. No shared transport storage owner is assigned.",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "canary:quest/machinery_of_war_quest",
+        "source_paths": [
+          "npc/baxter.lua"
+        ],
+        "coverage_gap": "Orc-war task acceptance, construction/sabotage/war-plans targets, timers, ranks, task completion/experience, quest log, source graph attachment and runtime readiness remain UNKNOWN. Generic bricklayer action has a different fixed construction target and is not attached to this quest.",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "canary:quest/twenty_miles_beneath_the_sea_quest",
+        "source_paths": [
+          "scripts/movements/oramond/seacrest.lua"
+        ],
+        "coverage_gap": "Mr Brandon/Guardian mission acceptance, skull/altar/coin/ring/slab/Sea Ear/Time Compass journey, region-specific access flags, source graph attachment, rewards, world-change coupling and runtime readiness remain UNKNOWN. Donor entrance does not enforce the wiki mission chain.",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "canary:quest/winterlight_solstice",
+        "source_paths": [
+          "npc/frosty.lua"
+        ],
+        "coverage_gap": "Only the legacy regular-mount exchange component is covered. Event participation guards, annual progression, upgraded mounts, world activation, queen encounter, NPC graph/API compatibility and Native/runtime admission remain UNKNOWN. Source table.maxn/legacy API calls and potentially uninitialised talkState are preserved, not repaired.",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "canary:quest/overhunting_world_change",
+        "source_paths": [
+          "npc/benevola.lua"
+        ],
+        "coverage_gap": "Partial Crystal NPC exchange/raid request only. Trap capture, deer/wolf lifecycle, raid attachment/state/scheduling, global restoration, NPC graph and Native/runtime admission remain UNKNOWN. Historical Canary IMPLEMENTED flag is retained as unverified historical coverage; no equivalent Canary exchange is asserted.",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "crystalserver:quest/the_order_of_the_stag_quest",
+        "source_paths": [
+          "npc/captain_marie-denise_banner.lua"
+        ],
+        "coverage_gap": "Full mission gates/writers, Court Warlock encounter, actual wall-button/teleport implementation, other NPCs/rewards and Native/runtime admission remain UNKNOWN. No boss identity or generic NPC registration substitutes for the quest journey.",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "crystalserver:quest/illuminator_outfits_quest",
+        "source_paths": [
+          "scripts/actions/items/usable_outfit_items.lua"
+        ],
+        "coverage_gap": "Base outfit/world-book/boss progression and acquisition of addon items, complete journal missions, source graph attachment and Native/runtime admission remain UNKNOWN. Crystal addon-use guards require premium and base outfit and deny owned parts; no corresponding Canary callback is asserted. Numeric source item/outfit IDs remain SOURCE witnesses, not newly chosen Oteryn bindings.",
+        "classification": "UNKNOWN"
+      }
+    ],
+    "npc_only_quests": [
+      {
+        "quest": "canary:quest/battle_mage_outfits_quest",
+        "npc_source": "npc/dedoras.lua",
+        "coverage_gap": "NPC item/achievement/dialogue side effects have not been transcribed as quest interactions",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "canary:quest/brotherhood_outfits_quest",
+        "npc_source": "npc/the_bone_master.lua",
+        "coverage_gap": "NPC item/achievement/dialogue side effects have not been transcribed as quest interactions",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "canary:quest/cave_explorer_outfits_quest",
+        "npc_source": "npc/gnommander.lua",
+        "coverage_gap": "NPC item/achievement/dialogue side effects have not been transcribed as quest interactions",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "canary:quest/demon_outfits_quest",
+        "npc_source": "npc/avar_tar.lua",
+        "coverage_gap": "NPC item/achievement/dialogue side effects have not been transcribed as quest interactions",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "canary:quest/dream_warden_outfits_quest",
+        "npc_source": "npc/eruaran.lua",
+        "coverage_gap": "NPC item/achievement/dialogue side effects have not been transcribed as quest interactions",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "canary:quest/druid_outfits_quest_on_rook",
+        "npc_source": "npc/tom.lua",
+        "coverage_gap": "NPC item/achievement/dialogue side effects have not been transcribed as quest interactions",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "canary:quest/elementalist_outfits_quest",
+        "npc_source": "npc/broken_servant_sentry.lua",
+        "coverage_gap": "NPC item/achievement/dialogue side effects have not been transcribed as quest interactions",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "canary:quest/festive_outfits_quest",
+        "npc_source": "npc/muriel.lua",
+        "coverage_gap": "NPC item/achievement/dialogue side effects have not been transcribed as quest interactions",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "canary:quest/glooth_engineer_outfits_quest",
+        "npc_source": "npc/ezebeth.lua",
+        "coverage_gap": "NPC item/achievement/dialogue side effects have not been transcribed as quest interactions",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "canary:quest/marlin_trophy_quest",
+        "npc_source": "npc/pemaret.lua",
+        "coverage_gap": "NPC item/achievement/dialogue side effects have not been transcribed as quest interactions",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "canary:quest/nightmare_outfits_quest",
+        "npc_source": "npc/the_dream_master.lua",
+        "coverage_gap": "NPC item/achievement/dialogue side effects have not been transcribed as quest interactions",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "canary:quest/nobleman_outfits_quest",
+        "npc_source": "npc/irmana.lua",
+        "coverage_gap": "NPC item/achievement/dialogue side effects have not been transcribed as quest interactions",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "canary:quest/obsidian_knife_quest",
+        "npc_source": "npc/uzgod.lua",
+        "coverage_gap": "NPC item/achievement/dialogue side effects have not been transcribed as quest interactions",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "canary:quest/pick_quest",
+        "npc_source": "npc/al_dee.lua",
+        "coverage_gap": "NPC item/achievement/dialogue side effects have not been transcribed as quest interactions",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "canary:quest/royal_costume_outfits_quest",
+        "npc_source": "npc/percybald.lua",
+        "coverage_gap": "NPC item/achievement/dialogue side effects have not been transcribed as quest interactions",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "canary:quest/sinatuki_quest",
+        "npc_source": "npc/sinatuki.lua",
+        "coverage_gap": "NPC item/achievement/dialogue side effects have not been transcribed as quest interactions",
+        "classification": "UNKNOWN"
+      }
+    ]
+  },
   "entries": [
     {
       "quest": "canary:quest/grave_danger_quest",
@@ -996,7 +3564,7 @@
       "quest": "canary:quest/the_ultimate_challenges",
       "mission": "barbarian_arena_greenhorn_mode",
       "status": "mapped",
-      "resolution": "mission present only in canary",
+      "resolution": "present in both servers and identical",
       "sources": [
         {
           "source": "canary",
@@ -1005,8 +3573,8 @@
         },
         {
           "source": "crystalserver",
-          "path": "data-crystal/lib/core/quests.lua",
-          "quest_line": 3
+          "path": "data-global/lib/core/quests.lua",
+          "quest_line": 4345
         }
       ]
     },
@@ -1014,7 +3582,7 @@
       "quest": "canary:quest/the_ultimate_challenges",
       "mission": "barbarian_arena_scrapper_mode",
       "status": "mapped",
-      "resolution": "mission present only in canary",
+      "resolution": "present in both servers and identical",
       "sources": [
         {
           "source": "canary",
@@ -1023,8 +3591,8 @@
         },
         {
           "source": "crystalserver",
-          "path": "data-crystal/lib/core/quests.lua",
-          "quest_line": 3
+          "path": "data-global/lib/core/quests.lua",
+          "quest_line": 4345
         }
       ]
     },
@@ -1032,7 +3600,7 @@
       "quest": "canary:quest/the_ultimate_challenges",
       "mission": "barbarian_arena_warlord_mode",
       "status": "mapped",
-      "resolution": "mission present only in canary",
+      "resolution": "present in both servers and identical",
       "sources": [
         {
           "source": "canary",
@@ -1041,8 +3609,8 @@
         },
         {
           "source": "crystalserver",
-          "path": "data-crystal/lib/core/quests.lua",
-          "quest_line": 3
+          "path": "data-global/lib/core/quests.lua",
+          "quest_line": 4345
         }
       ]
     },

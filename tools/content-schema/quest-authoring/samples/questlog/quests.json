@@ -564,6 +564,9 @@
       "requirements": {
         "premium": true,
         "min_level": 0
+      },
+      "requirements_unparsed": {
+        "min_level": "note"
       }
     },
     {
@@ -685,11 +688,35 @@
     },
     {
       "identity": {
+        "key": "canary:quest/awash_world_change",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Awash World Change",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Awash World Change",
+        "pageid": 54563,
+        "revid": 1149363
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "no",
+        "lvl": "None"
+      },
+      "requirements": {
+        "premium": false,
+        "min_level": 0
+      },
+      "requirements_unparsed": {}
+    },
+    {
+      "identity": {
         "key": "canary:quest/barbarian_arena_quest",
         "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "display_name": "Barbarian Arena Quest",
-      "kind": "reward_only",
+      "kind": "script_only",
       "shown_in_quest_log": false,
       "wiki": {
         "title": "Barbarian Arena Quest",
@@ -783,6 +810,29 @@
     },
     {
       "identity": {
+        "key": "canary:quest/barbarian_test",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Barbarian Test Quest",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Barbarian Test Quest",
+        "pageid": 16981,
+        "revid": 1101865
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "0"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 0
+      }
+    },
+    {
+      "identity": {
         "key": "canary:quest/battle_axe_quest",
         "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
@@ -808,6 +858,27 @@
       "requirements": {
         "premium": false,
         "min_level": 0
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/battle_mage_outfits_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Battle Mage Outfits Quest",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Battle Mage Outfits Quest",
+        "pageid": 85574,
+        "revid": 848685
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "yes"
+      },
+      "requirements": {
+        "premium": true
       }
     },
     {
@@ -6641,6 +6712,52 @@
     },
     {
       "identity": {
+        "key": "canary:quest/bored_mini_world_change",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Bored Mini World Change",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Bored Mini World Change",
+        "pageid": 76210,
+        "revid": 845015
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "no",
+        "lvl": "0"
+      },
+      "requirements": {
+        "premium": false,
+        "min_level": 0
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/brotherhood_outfits_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Brotherhood Outfits Quest",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Brotherhood Outfits Quest",
+        "pageid": 19797,
+        "revid": 842661
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "0"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 0
+      }
+    },
+    {
+      "identity": {
         "key": "canary:quest/captain_iglues_treasure_quest",
         "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
@@ -6666,6 +6783,52 @@
       "requirements": {
         "premium": false,
         "min_level": 0
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/cave_explorer_outfits_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Cave Explorer Outfits Quest",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Cave Explorer Outfits Quest",
+        "pageid": 65476,
+        "revid": 846116
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "80"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 80
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/chayenne_realm",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Realm of Dreams Quest",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Realm of Dreams Quest",
+        "pageid": 61230,
+        "revid": 683951
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "40"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 40
       }
     },
     {
@@ -7359,6 +7522,29 @@
     },
     {
       "identity": {
+        "key": "canary:quest/chyllfroest_mini_world_change",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Chyllfroest Mini World Change",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Chyllfroest Mini World Change",
+        "pageid": 76214,
+        "revid": 797728
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "0"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 0
+      }
+    },
+    {
+      "identity": {
         "key": "canary:quest/circle_room_quest",
         "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
@@ -7389,6 +7575,29 @@
       "requirements": {
         "premium": false,
         "min_level": 32
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/citizen_outfits_quest_on_rook",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Citizen Outfits Quest on Rook",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Citizen Outfits Quest on Rook",
+        "pageid": 9741,
+        "revid": 683811
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "0"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 0
       }
     },
     {
@@ -7504,6 +7713,29 @@
       "requirements": {
         "premium": false,
         "min_level": 60
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/crystal_warlord_outfits_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Crystal Warlord Outfits Quest",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Crystal Warlord Outfits Quest",
+        "pageid": 60684,
+        "revid": 845400
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "0"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 0
       }
     },
     {
@@ -10138,7 +10370,7 @@
       },
       "requirements": {
         "premium": false,
-        "min_level": null
+        "min_level": 2
       },
       "requirements_unparsed": {
         "min_level": "range"
@@ -10171,6 +10403,29 @@
       "requirements": {
         "premium": false,
         "min_level": 0
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/decaying_defender_outfits_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Decaying Defender Outfits Quest",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Decaying Defender Outfits Quest",
+        "pageid": 103191,
+        "revid": 1010579
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "250"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 250
       }
     },
     {
@@ -10314,6 +10569,29 @@
     },
     {
       "identity": {
+        "key": "canary:quest/demon_outfits_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Demon Outfits Quest",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Demon Outfits Quest",
+        "pageid": 62985,
+        "revid": 845741
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "100"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 100
+      }
+    },
+    {
+      "identity": {
         "key": "canary:quest/demona_ring_quest",
         "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
@@ -10359,7 +10637,18 @@
         "pageid": 2496,
         "revid": 1103387
       },
-      "claims": [],
+      "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/kv/desert1",
+          "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/kv/desert2",
+          "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+        }
+      ],
       "requirements_from_wiki": {
         "premium": "no",
         "lvl": "20"
@@ -10590,11 +10879,34 @@
     },
     {
       "identity": {
+        "key": "canary:quest/dream_warden_outfits_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Dream Warden Outfits Quest",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Dream Warden Outfits Quest",
+        "pageid": 66771,
+        "revid": 846247
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "0"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 0
+      }
+    },
+    {
+      "identity": {
         "key": "canary:quest/dreamer_s_challenge_quest",
         "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "display_name": "Dreamer's Challenge Quest",
-      "kind": "reward_only",
+      "kind": "script_only",
       "shown_in_quest_log": false,
       "wiki": {
         "title": "Dreamer's Challenge Quest",
@@ -10663,6 +10975,29 @@
     },
     {
       "identity": {
+        "key": "canary:quest/druid_outfits_quest_on_rook",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Druid Outfits Quest on Rook",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Druid Outfits Quest on Rook",
+        "pageid": 9744,
+        "revid": 683839
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "0"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 0
+      }
+    },
+    {
+      "identity": {
         "key": "canary:quest/edron_goblin_quest",
         "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
@@ -10716,6 +11051,29 @@
       "requirements": {
         "premium": true,
         "min_level": 80
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/elementalist_outfits_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Elementalist Outfits Quest",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Elementalist Outfits Quest",
+        "pageid": 54199,
+        "revid": 844737
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "8"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 8
       }
     },
     {
@@ -11042,6 +11400,27 @@
     },
     {
       "identity": {
+        "key": "canary:quest/falconer_outfits_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Falconer Outfits Quest",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Falconer Outfits Quest",
+        "pageid": 96699,
+        "revid": 909040
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "no"
+      },
+      "requirements": {
+        "premium": false
+      }
+    },
+    {
+      "identity": {
         "key": "canary:quest/fanfare_quest",
         "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
@@ -11138,6 +11517,52 @@
     },
     {
       "identity": {
+        "key": "canary:quest/festive_outfits_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Festive Outfits Quest",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Festive Outfits Quest",
+        "pageid": 83163,
+        "revid": 849791
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "40"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 40
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/fiend_slayer_outfits_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Fiend Slayer Outfits Quest",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Fiend Slayer Outfits Quest",
+        "pageid": 107656,
+        "revid": 1177418
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "250"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 250
+      }
+    },
+    {
+      "identity": {
         "key": "canary:quest/fire_axe_quest",
         "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
@@ -11168,6 +11593,29 @@
       "requirements": {
         "premium": true,
         "min_level": 60
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/fire_fighter_outfits_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Fire-Fighter Outfits Quest",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Fire-Fighter Outfits Quest",
+        "pageid": 98824,
+        "revid": 938141
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "250"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 250
       }
     },
     {
@@ -12066,6 +12514,29 @@
     },
     {
       "identity": {
+        "key": "canary:quest/fury_gates_mini_world_change",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Fury Gates Mini World Change",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Fury Gates Mini World Change",
+        "pageid": 76237,
+        "revid": 1099676
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "60"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 60
+      }
+    },
+    {
+      "identity": {
         "key": "canary:quest/geomancer_quest",
         "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
@@ -12157,6 +12628,52 @@
     },
     {
       "identity": {
+        "key": "canary:quest/glooth_engineer_outfits_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Glooth Engineer Outfits Quest",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Glooth Engineer Outfits Quest",
+        "pageid": 67748,
+        "revid": 846508
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "0"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 0
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/goblin_merchant_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Goblin Merchant Quest",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Goblin Merchant Quest",
+        "pageid": 61804,
+        "revid": 845754
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "no",
+        "lvl": "0"
+      },
+      "requirements": {
+        "premium": false,
+        "min_level": 0
+      }
+    },
+    {
+      "identity": {
         "key": "canary:quest/goblin_temple_quest",
         "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
@@ -12186,6 +12703,29 @@
       },
       "requirements": {
         "premium": true,
+        "min_level": 0
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/golden_outfits_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Golden Outfits Quest",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Golden Outfits Quest",
+        "pageid": 88407,
+        "revid": 892279
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "no",
+        "lvl": "0"
+      },
+      "requirements": {
+        "premium": false,
         "min_level": 0
       }
     },
@@ -13036,6 +13576,29 @@
     },
     {
       "identity": {
+        "key": "canary:quest/hand_of_the_inquisition_outfits_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Hand of the Inquisition Outfits Quest",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Hand of the Inquisition Outfits Quest",
+        "pageid": 89178,
+        "revid": 848187
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "250"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 250
+      }
+    },
+    {
+      "identity": {
         "key": "canary:quest/heart_of_destruction_quest",
         "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
@@ -13142,6 +13705,29 @@
           "revision": "canary-04b83b51+crystalserver-9f5a72c6"
         }
       ],
+      "requirements_from_wiki": {
+        "premium": "no",
+        "lvl": "0"
+      },
+      "requirements": {
+        "premium": false,
+        "min_level": 0
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/horse_station_world_change",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Horse Station World Change",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Horse Station World Change",
+        "pageid": 54701,
+        "revid": 844780
+      },
+      "claims": [],
       "requirements_from_wiki": {
         "premium": "no",
         "lvl": "0"
@@ -13677,6 +14263,52 @@
           "revision": "canary-04b83b51+crystalserver-9f5a72c6"
         }
       ],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "0"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 0
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/hunting_for_tokens",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Hunting for Tokens Quest",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Hunting for Tokens Quest",
+        "pageid": 64417,
+        "revid": 885774
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "no",
+        "lvl": "0"
+      },
+      "requirements": {
+        "premium": false,
+        "min_level": 0
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/hydra_egg_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Hydra Egg Quest",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Hydra Egg Quest",
+        "pageid": 4964,
+        "revid": 692493
+      },
+      "claims": [],
       "requirements_from_wiki": {
         "premium": "yes",
         "lvl": "0"
@@ -15391,6 +16023,9 @@
       "requirements": {
         "premium": true,
         "min_level": 80
+      },
+      "requirements_unparsed": {
+        "min_level": "note"
       }
     },
     {
@@ -20380,7 +21015,7 @@
         "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "display_name": "Life Ring Quest",
-      "kind": "reward_only",
+      "kind": "script_only",
       "shown_in_quest_log": false,
       "wiki": {
         "title": "Life Ring Quest",
@@ -20423,6 +21058,29 @@
           "revision": "canary-04b83b51+crystalserver-9f5a72c6"
         }
       ],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "0"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 0
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/lions_rock",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Lion's Rock Quest",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Lion's Rock Quest",
+        "pageid": 69459,
+        "revid": 846852
+      },
+      "claims": [],
       "requirements_from_wiki": {
         "premium": "yes",
         "lvl": "0"
@@ -20525,6 +21183,29 @@
     },
     {
       "identity": {
+        "key": "canary:quest/machinery_of_war_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Machinery of War Quest",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Machinery of War Quest",
+        "pageid": 25543,
+        "revid": 843158
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "no",
+        "lvl": "50"
+      },
+      "requirements": {
+        "premium": false,
+        "min_level": 50
+      }
+    },
+    {
+      "identity": {
         "key": "canary:quest/mad_mage_room_quest",
         "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
@@ -20560,6 +21241,50 @@
       "requirements": {
         "premium": false,
         "min_level": 40
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/makeshift_warrior_outfits_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Makeshift Warrior Outfits Quest",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Makeshift Warrior Outfits Quest",
+        "pageid": 83854,
+        "revid": 849124
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "yes"
+      },
+      "requirements": {
+        "premium": true
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/marlin_trophy_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Marlin Trophy Quest",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Marlin Trophy Quest",
+        "pageid": 21716,
+        "revid": 683910
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "0"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 0
       }
     },
     {
@@ -20742,6 +21467,52 @@
       },
       "requirements": {
         "premium": false
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/nightmare_isles_mini_world_change",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Nightmare Isles Mini World Change",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Nightmare Isles Mini World Change",
+        "pageid": 76248,
+        "revid": 891482
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "0"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 0
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/nightmare_outfits_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Nightmare Outfits Quest",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Nightmare Outfits Quest",
+        "pageid": 19796,
+        "revid": 842861
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "0"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 0
       }
     },
     {
@@ -20983,6 +21754,75 @@
     },
     {
       "identity": {
+        "key": "canary:quest/nobleman_outfits_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Nobleman Outfits Quest",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Nobleman Outfits Quest",
+        "pageid": 8768,
+        "revid": 683922
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "0"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 0
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/obsidian_knife_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Obsidian Knife Quest",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Obsidian Knife Quest",
+        "pageid": 9098,
+        "revid": 683928
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "no",
+        "lvl": "0"
+      },
+      "requirements": {
+        "premium": false,
+        "min_level": 0
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/opticording_sphere_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Opticording Sphere Quest",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Opticording Sphere Quest",
+        "pageid": 65056,
+        "revid": 1035096
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "100"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 100
+      }
+    },
+    {
+      "identity": {
         "key": "canary:quest/oramond_quest",
         "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
@@ -21171,7 +22011,7 @@
         "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "display_name": "Oriental Outfits Quest",
-      "kind": "reward_only",
+      "kind": "script_only",
       "shown_in_quest_log": false,
       "wiki": {
         "title": "Oriental Outfits Quest",
@@ -21185,6 +22025,29 @@
           "revision": "canary-04b83b51+crystalserver-9f5a72c6"
         }
       ],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "0"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 0
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/oriental_trader_mini_world_change",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Oriental Trader Mini World Change",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Oriental Trader Mini World Change",
+        "pageid": 76255,
+        "revid": 845183
+      },
+      "claims": [],
       "requirements_from_wiki": {
         "premium": "yes",
         "lvl": "0"
@@ -24439,6 +25302,29 @@
     },
     {
       "identity": {
+        "key": "canary:quest/overhunting_world_change",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Overhunting World Change",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Overhunting World Change",
+        "pageid": 54569,
+        "revid": 844823
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "no",
+        "lvl": "0"
+      },
+      "requirements": {
+        "premium": false,
+        "min_level": 0
+      }
+    },
+    {
+      "identity": {
         "key": "canary:quest/panpipe_quest",
         "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
@@ -24491,6 +25377,52 @@
           "revision": "canary-04b83b51+crystalserver-9f5a72c6"
         }
       ],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "0"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 0
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/pick_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Pick Quest",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Pick Quest",
+        "pageid": 3180,
+        "revid": 1044889
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "no",
+        "lvl": "0"
+      },
+      "requirements": {
+        "premium": false,
+        "min_level": 0
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/pilgrimage_of_ashes",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Pilgrimage of Ashes Quest",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Pilgrimage of Ashes Quest",
+        "pageid": 37207,
+        "revid": 843918
+      },
+      "claims": [],
       "requirements_from_wiki": {
         "premium": "yes",
         "lvl": "0"
@@ -24738,6 +25670,101 @@
       "requirements": {
         "premium": false,
         "min_level": 60
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/rapier_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Rapier Quest",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Rapier Quest",
+        "pageid": 3334,
+        "revid": 1043841
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "no",
+        "lvl": "0"
+      },
+      "requirements": {
+        "premium": false,
+        "min_level": 0
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/rascoohan_outfits_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Rascoohan Outfits Quest",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Rascoohan Outfits Quest",
+        "pageid": 93016,
+        "revid": 895793
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "?"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": null
+      },
+      "requirements_unparsed": {
+        "min_level": "uncertain"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/revenant_outfits_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Revenant Outfits Quest",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Revenant Outfits Quest",
+        "pageid": 92416,
+        "revid": 1008240
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "250"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 250
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/rift_warrior_outfits_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Rift Warrior Outfits Quest",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Rift Warrior Outfits Quest",
+        "pageid": 77049,
+        "revid": 683954
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "0"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 0
       }
     },
     {
@@ -25027,14 +26054,15 @@
               "owner": "npc",
               "callback": null,
               "from": null,
-              "to": 2,
+              "to": -1,
               "servers": [
-                "crystalserver"
+                "canary"
               ],
               "requested_by": {
-                "npc": "crystal:npc/rottin_wood",
+                "npc": "canary:npc/rottin_wood",
                 "keywords": [
-                  "mission"
+                  "mission",
+                  "task"
                 ],
                 "topics": []
               }
@@ -25044,12 +26072,90 @@
               "owner": "npc",
               "callback": null,
               "from": null,
-              "to": 1,
+              "to": 2,
               "servers": [
+                "canary",
                 "crystalserver"
               ],
               "requested_by": {
-                "npc": "crystal:npc/rottin_wood",
+                "npc": "canary:npc/rottin_wood",
+                "keywords": [
+                  "yes"
+                ],
+                "topics": [
+                  3
+                ]
+              }
+            },
+            {
+              "key": "npc_3",
+              "owner": "npc",
+              "callback": null,
+              "from": null,
+              "to": 1,
+              "servers": [
+                "canary",
+                "crystalserver"
+              ],
+              "requested_by": {
+                "npc": "canary:npc/rottin_wood",
+                "keywords": [
+                  "yes"
+                ],
+                "topics": [
+                  2
+                ]
+              }
+            },
+            {
+              "key": "npc_4",
+              "owner": "npc",
+              "callback": null,
+              "from": null,
+              "to": 3,
+              "servers": [
+                "canary"
+              ],
+              "requested_by": {
+                "npc": "canary:npc/rottin_wood",
+                "keywords": [
+                  "yes"
+                ],
+                "topics": [
+                  4
+                ]
+              }
+            },
+            {
+              "key": "npc_5",
+              "owner": "npc",
+              "callback": null,
+              "from": null,
+              "to": 4,
+              "servers": [
+                "canary"
+              ],
+              "requested_by": {
+                "npc": "canary:npc/rottin_wood",
+                "keywords": [
+                  "yes"
+                ],
+                "topics": [
+                  5
+                ]
+              }
+            },
+            {
+              "key": "npc_6",
+              "owner": "npc",
+              "callback": null,
+              "from": null,
+              "to": 5,
+              "servers": [
+                "canary"
+              ],
+              "requested_by": {
+                "npc": "canary:npc/rottin_wood",
                 "keywords": [
                   "yes"
                 ],
@@ -25227,6 +26333,29 @@
     },
     {
       "identity": {
+        "key": "canary:quest/royal_costume_outfits_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Royal Costume Outfits Quest",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Royal Costume Outfits Quest",
+        "pageid": 95554,
+        "revid": 892593
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "no",
+        "lvl": "0"
+      },
+      "requirements": {
+        "premium": false,
+        "min_level": 0
+      }
+    },
+    {
+      "identity": {
         "key": "canary:quest/sam_s_old_backpack_quest",
         "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
@@ -25349,6 +26478,32 @@
       "requirements": {
         "premium": false,
         "min_level": 35
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/sanctuary_of_the_lizard_god",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Sanctuary of the Lizard God Quest",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Sanctuary of the Lizard God Quest",
+        "pageid": 68839,
+        "revid": 1198612
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "no",
+        "lvl": "2 - 20"
+      },
+      "requirements": {
+        "premium": false,
+        "min_level": 2
+      },
+      "requirements_unparsed": {
+        "min_level": "range"
       }
     },
     {
@@ -27504,7 +28659,7 @@
         "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "display_name": "Serpentine Tower Quest",
-      "kind": "reward_only",
+      "kind": "script_only",
       "shown_in_quest_log": false,
       "wiki": {
         "title": "Serpentine Tower Quest",
@@ -27568,42 +28723,7 @@
               }
             ]
           },
-          "transitions": [
-            {
-              "key": "npc_1",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 1,
-              "servers": [
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "crystal:npc/telas",
-                "keywords": [
-                  "mission"
-                ],
-                "topics": []
-              }
-            },
-            {
-              "key": "npc_2",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 2,
-              "servers": [
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "crystal:npc/telas",
-                "keywords": [
-                  "mission"
-                ],
-                "topics": []
-              }
-            }
-          ]
+          "transitions": []
         },
         {
           "key": "mission_02_a_vital_part",
@@ -27632,42 +28752,7 @@
               }
             ]
           },
-          "transitions": [
-            {
-              "key": "npc_1",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 1,
-              "servers": [
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "crystal:npc/telas",
-                "keywords": [
-                  "mission"
-                ],
-                "topics": []
-              }
-            },
-            {
-              "key": "npc_2",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 2,
-              "servers": [
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "crystal:npc/telas",
-                "keywords": [
-                  "mission"
-                ],
-                "topics": []
-              }
-            }
-          ]
+          "transitions": []
         },
         {
           "key": "mission_03_the_core_problem",
@@ -27696,42 +28781,7 @@
               }
             ]
           },
-          "transitions": [
-            {
-              "key": "npc_1",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 1,
-              "servers": [
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "crystal:npc/telas",
-                "keywords": [
-                  "mission"
-                ],
-                "topics": []
-              }
-            },
-            {
-              "key": "npc_2",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 2,
-              "servers": [
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "crystal:npc/telas",
-                "keywords": [
-                  "mission"
-                ],
-                "topics": []
-              }
-            }
-          ]
+          "transitions": []
         },
         {
           "key": "mission_04_gathering_golem_parts",
@@ -27760,42 +28810,7 @@
               }
             ]
           },
-          "transitions": [
-            {
-              "key": "npc_1",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 1,
-              "servers": [
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "crystal:npc/telas",
-                "keywords": [
-                  "mission"
-                ],
-                "topics": []
-              }
-            },
-            {
-              "key": "npc_2",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 2,
-              "servers": [
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "crystal:npc/telas",
-                "keywords": [
-                  "mission"
-                ],
-                "topics": []
-              }
-            }
-          ]
+          "transitions": []
         },
         {
           "key": "mission_05_charged_to_charge",
@@ -27862,42 +28877,7 @@
               }
             ]
           },
-          "transitions": [
-            {
-              "key": "npc_1",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 1,
-              "servers": [
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "crystal:npc/telas",
-                "keywords": [
-                  "mission"
-                ],
-                "topics": []
-              }
-            },
-            {
-              "key": "npc_2",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 2,
-              "servers": [
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "crystal:npc/telas",
-                "keywords": [
-                  "mission"
-                ],
-                "topics": []
-              }
-            }
-          ]
+          "transitions": []
         },
         {
           "key": "mission_06_out_of_the_blue",
@@ -27926,42 +28906,7 @@
               }
             ]
           },
-          "transitions": [
-            {
-              "key": "npc_1",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 1,
-              "servers": [
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "crystal:npc/telas",
-                "keywords": [
-                  "mission"
-                ],
-                "topics": []
-              }
-            },
-            {
-              "key": "npc_2",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 2,
-              "servers": [
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "crystal:npc/telas",
-                "keywords": [
-                  "mission"
-                ],
-                "topics": []
-              }
-            }
-          ]
+          "transitions": []
         },
         {
           "key": "mission_07_powering_up",
@@ -27990,42 +28935,7 @@
               }
             ]
           },
-          "transitions": [
-            {
-              "key": "npc_1",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 1,
-              "servers": [
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "crystal:npc/telas",
-                "keywords": [
-                  "mission"
-                ],
-                "topics": []
-              }
-            },
-            {
-              "key": "npc_2",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 2,
-              "servers": [
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "crystal:npc/telas",
-                "keywords": [
-                  "mission"
-                ],
-                "topics": []
-              }
-            }
-          ]
+          "transitions": []
         },
         {
           "key": "mission_08_getting_things_stable",
@@ -28054,42 +28964,7 @@
               }
             ]
           },
-          "transitions": [
-            {
-              "key": "npc_1",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 1,
-              "servers": [
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "crystal:npc/telas",
-                "keywords": [
-                  "mission"
-                ],
-                "topics": []
-              }
-            },
-            {
-              "key": "npc_2",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 2,
-              "servers": [
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "crystal:npc/telas",
-                "keywords": [
-                  "mission"
-                ],
-                "topics": []
-              }
-            }
-          ]
+          "transitions": []
         },
         {
           "key": "mission_09_researching_the_ritual",
@@ -28140,44 +29015,6 @@
               "servers": [
                 "crystalserver"
               ]
-            },
-            {
-              "key": "npc_1",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 1,
-              "servers": [
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "crystal:npc/telas",
-                "keywords": [
-                  "mission"
-                ],
-                "topics": []
-              }
-            },
-            {
-              "key": "npc_2",
-              "owner": "npc",
-              "callback": null,
-              "from": {
-                "op": "==",
-                "value": 2,
-                "exact": true
-              },
-              "to": 3,
-              "servers": [
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "crystal:npc/telas",
-                "keywords": [
-                  "mission"
-                ],
-                "topics": []
-              }
             }
           ]
         },
@@ -28240,42 +29077,7 @@
               }
             ]
           },
-          "transitions": [
-            {
-              "key": "npc_1",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 1,
-              "servers": [
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "crystal:npc/telas",
-                "keywords": [
-                  "mission"
-                ],
-                "topics": []
-              }
-            },
-            {
-              "key": "npc_2",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 2,
-              "servers": [
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "crystal:npc/telas",
-                "keywords": [
-                  "mission"
-                ],
-                "topics": []
-              }
-            }
-          ]
+          "transitions": []
         },
         {
           "key": "mission_11_take_a_shower",
@@ -28326,46 +29128,6 @@
               "servers": [
                 "crystalserver"
               ]
-            },
-            {
-              "key": "npc_1",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 1,
-              "servers": [
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "crystal:npc/telas",
-                "keywords": [
-                  "mission"
-                ],
-                "topics": []
-              }
-            },
-            {
-              "key": "npc_2",
-              "owner": "npc",
-              "callback": null,
-              "from": {
-                "op": "==",
-                "value": 2,
-                "exact": true
-              },
-              "to": 3,
-              "servers": [
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "crystal:npc/telas",
-                "keywords": [
-                  "yes"
-                ],
-                "topics": [
-                  4
-                ]
-              }
             }
           ]
         },
@@ -28396,44 +29158,7 @@
               }
             ]
           },
-          "transitions": [
-            {
-              "key": "npc_1",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 2,
-              "servers": [
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "crystal:npc/telas",
-                "keywords": [
-                  "mission"
-                ],
-                "topics": []
-              }
-            },
-            {
-              "key": "npc_2",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 1,
-              "servers": [
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "crystal:npc/telas",
-                "keywords": [
-                  "yes"
-                ],
-                "topics": [
-                  4
-                ]
-              }
-            }
-          ]
+          "transitions": []
         },
         {
           "key": "mission_13_fruits_of_success",
@@ -28462,42 +29187,7 @@
               }
             ]
           },
-          "transitions": [
-            {
-              "key": "npc_1",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 1,
-              "servers": [
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "crystal:npc/telas",
-                "keywords": [
-                  "mission"
-                ],
-                "topics": []
-              }
-            },
-            {
-              "key": "npc_2",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 2,
-              "servers": [
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "crystal:npc/telas",
-                "keywords": [
-                  "mission"
-                ],
-                "topics": []
-              }
-            }
-          ]
+          "transitions": []
         }
       ],
       "claims": [
@@ -28736,6 +29426,29 @@
     },
     {
       "identity": {
+        "key": "canary:quest/sinatuki_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Sinatuki Quest",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Sinatuki Quest",
+        "pageid": 67095,
+        "revid": 842457
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "0"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 0
+      }
+    },
+    {
+      "identity": {
         "key": "canary:quest/six_rubies_quest",
         "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
@@ -28760,6 +29473,75 @@
       },
       "requirements": {
         "premium": false,
+        "min_level": 0
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/skull_of_ratha",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Skull of Ratha Quest",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Skull of Ratha Quest",
+        "pageid": 3782,
+        "revid": 756266
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "no",
+        "lvl": "0"
+      },
+      "requirements": {
+        "premium": false,
+        "min_level": 0
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/small_health_potion",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Small Health Potion Quest",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Small Health Potion Quest",
+        "pageid": 3154,
+        "revid": 1043985
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "0"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 0
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/soil_guardian_outfits_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Soil Guardian Outfits Quest",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Soil Guardian Outfits Quest",
+        "pageid": 60686,
+        "revid": 845628
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "0"
+      },
+      "requirements": {
+        "premium": true,
         "min_level": 0
       }
     },
@@ -29385,6 +30167,52 @@
     },
     {
       "identity": {
+        "key": "canary:quest/stampede_mini_world_change",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Stampede Mini World Change",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Stampede Mini World Change",
+        "pageid": 76265,
+        "revid": 845239
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "0"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 0
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/steal_from_thieves_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Steal From Thieves Quest",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Steal From Thieves Quest",
+        "pageid": 20034,
+        "revid": 842913
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "0"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 0
+      }
+    },
+    {
+      "identity": {
         "key": "canary:quest/stealth_ring_quest",
         "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
@@ -29414,6 +30242,29 @@
       },
       "requirements": {
         "premium": true,
+        "min_level": 0
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/steamship_world_change",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Steamship World Change",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Steamship World Change",
+        "pageid": 54705,
+        "revid": 891478
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "no",
+        "lvl": "0"
+      },
+      "requirements": {
+        "premium": false,
         "min_level": 0
       }
     },
@@ -29526,6 +30377,29 @@
     },
     {
       "identity": {
+        "key": "canary:quest/swamp_fever_world_change",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Swamp Fever World Change",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Swamp Fever World Change",
+        "pageid": 54559,
+        "revid": 844892
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "no",
+        "lvl": "0"
+      },
+      "requirements": {
+        "premium": false,
+        "min_level": 0
+      }
+    },
+    {
+      "identity": {
         "key": "canary:quest/thais_lighthouse_quest",
         "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
@@ -29555,6 +30429,29 @@
       },
       "requirements": {
         "premium": false,
+        "min_level": 0
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/thawing_mini_world_change",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Thawing Mini World Change",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Thawing Mini World Change",
+        "pageid": 76267,
+        "revid": 845260
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "0"
+      },
+      "requirements": {
+        "premium": true,
         "min_level": 0
       }
     },
@@ -31337,36 +32234,25 @@
     },
     {
       "identity": {
-        "key": "canary:quest/the_desert_dungeon_quest",
+        "key": "canary:quest/the_cursed_crystal",
         "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
-      "display_name": "The Desert Dungeon Quest",
-      "kind": "reward_only",
-      "shown_in_quest_log": true,
+      "display_name": "The Cursed Crystal Quest",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
       "wiki": {
-        "title": "The Desert Dungeon Quest",
-        "pageid": 2496,
-        "revid": 1103387
+        "title": "The Cursed Crystal Quest",
+        "pageid": 69489,
+        "revid": 846958
       },
-      "claims": [
-        {
-          "family": "RewardClaim",
-          "key": "canary:reward-claim/kv/desert1",
-          "revision": "canary-04b83b51+crystalserver-9f5a72c6"
-        },
-        {
-          "family": "RewardClaim",
-          "key": "canary:reward-claim/kv/desert2",
-          "revision": "canary-04b83b51+crystalserver-9f5a72c6"
-        }
-      ],
+      "claims": [],
       "requirements_from_wiki": {
-        "premium": "no",
-        "lvl": "20"
+        "premium": "yes",
+        "lvl": "0"
       },
       "requirements": {
-        "premium": false,
-        "min_level": 20
+        "premium": true,
+        "min_level": 0
       }
     },
     {
@@ -36064,6 +36950,29 @@
     },
     {
       "identity": {
+        "key": "canary:quest/the_hunt_for_the_sea_serpent",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "The Hunt for the Sea Serpent Quest",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "The Hunt for the Sea Serpent Quest",
+        "pageid": 25541,
+        "revid": 843261
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "61"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 61
+      }
+    },
+    {
+      "identity": {
         "key": "canary:quest/the_ice_islands_quest",
         "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
@@ -38831,6 +39740,9 @@
       "requirements": {
         "premium": true,
         "min_level": 100
+      },
+      "requirements_unparsed": {
+        "min_level": "note"
       }
     },
     {
@@ -38861,42 +39773,7 @@
               "placeholders": []
             }
           },
-          "transitions": [
-            {
-              "key": "npc_1",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 1,
-              "servers": [
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "crystal:npc/telas",
-                "keywords": [
-                  "mission"
-                ],
-                "topics": []
-              }
-            },
-            {
-              "key": "npc_2",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 2,
-              "servers": [
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "crystal:npc/telas",
-                "keywords": [
-                  "mission"
-                ],
-                "topics": []
-              }
-            }
-          ]
+          "transitions": []
         },
         {
           "key": "mission_01_just_a_fishing_trip",
@@ -39554,6 +40431,53 @@
     },
     {
       "identity": {
+        "key": "canary:quest/the_mages_tower_world_change",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "The Mage's Tower World Change",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "The Mage's Tower World Change",
+        "pageid": 54564,
+        "revid": 844897
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "0"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 0
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/the_mummys_curse_world_change",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "The Mummy's Curse World Change",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "The Mummy's Curse World Change",
+        "pageid": 54567,
+        "revid": 844898
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "None"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 0
+      },
+      "requirements_unparsed": {}
+    },
+    {
+      "identity": {
         "key": "canary:quest/the_new_frontier_quest",
         "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
@@ -39612,44 +40536,6 @@
                 "canary",
                 "crystalserver"
               ]
-            },
-            {
-              "key": "npc_1",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 1,
-              "servers": [
-                "canary",
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/ongulf",
-                "keywords": [
-                  "mission"
-                ],
-                "topics": [
-                  2
-                ]
-              }
-            },
-            {
-              "key": "npc_2",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 3,
-              "servers": [
-                "canary",
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/ongulf",
-                "keywords": [
-                  "mission"
-                ],
-                "topics": []
-              }
             }
           ]
         },
@@ -39696,82 +40582,7 @@
               }
             ]
           },
-          "transitions": [
-            {
-              "key": "npc_1",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 3,
-              "servers": [
-                "canary",
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/melfar",
-                "keywords": [
-                  "mission"
-                ],
-                "topics": []
-              }
-            },
-            {
-              "key": "npc_2",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 2,
-              "servers": [
-                "canary",
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/melfar",
-                "keywords": [
-                  "yes"
-                ],
-                "topics": [
-                  1
-                ]
-              }
-            },
-            {
-              "key": "npc_3",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 1,
-              "servers": [
-                "canary",
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/ongulf",
-                "keywords": [
-                  "mission"
-                ],
-                "topics": []
-              }
-            },
-            {
-              "key": "npc_4",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 4,
-              "servers": [
-                "canary",
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/ongulf",
-                "keywords": [
-                  "mission"
-                ],
-                "topics": []
-              }
-            }
-          ]
+          "transitions": []
         },
         {
           "key": "mission_03_strangers_in_the_night",
@@ -39828,42 +40639,6 @@
                   10
                 ]
               }
-            },
-            {
-              "key": "npc_2",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 1,
-              "servers": [
-                "canary",
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/ongulf",
-                "keywords": [
-                  "mission"
-                ],
-                "topics": []
-              }
-            },
-            {
-              "key": "npc_3",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 3,
-              "servers": [
-                "canary",
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/ongulf",
-                "keywords": [
-                  "mission"
-                ],
-                "topics": []
-              }
             }
           ]
         },
@@ -39894,44 +40669,7 @@
               }
             ]
           },
-          "transitions": [
-            {
-              "key": "npc_1",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 1,
-              "servers": [
-                "canary",
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/ongulf",
-                "keywords": [
-                  "mission"
-                ],
-                "topics": []
-              }
-            },
-            {
-              "key": "npc_2",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 2,
-              "servers": [
-                "canary",
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/ongulf",
-                "keywords": [
-                  "mission"
-                ],
-                "topics": []
-              }
-            }
-          ]
+          "transitions": []
         },
         {
           "key": "mission_05_getting_things_busy",
@@ -39960,63 +40698,7 @@
               }
             ]
           },
-          "transitions": [
-            {
-              "key": "npc_1",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "increment": 1,
-              "servers": [
-                "canary"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/mortimer",
-                "keywords": [
-                  "bluff"
-                ],
-                "topics": [
-                  30
-                ]
-              }
-            },
-            {
-              "key": "npc_2",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 1,
-              "servers": [
-                "canary",
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/ongulf",
-                "keywords": [
-                  "mission"
-                ],
-                "topics": []
-              }
-            },
-            {
-              "key": "npc_3",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 2,
-              "servers": [
-                "canary",
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/ongulf",
-                "keywords": [
-                  "mission"
-                ],
-                "topics": []
-              }
-            }
-          ]
+          "transitions": []
         },
         {
           "key": "mission_5_support_of_kazordoon_s_worm_tamer",
@@ -40172,24 +40854,6 @@
                   1
                 ]
               }
-            },
-            {
-              "key": "npc_7",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 1,
-              "servers": [
-                "canary",
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/ongulf",
-                "keywords": [
-                  "mission"
-                ],
-                "topics": []
-              }
             }
           ]
         },
@@ -40228,24 +40892,6 @@
               "from": null,
               "to": 1,
               "servers": [
-                "canary",
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/ongulf",
-                "keywords": [
-                  "mission"
-                ],
-                "topics": []
-              }
-            },
-            {
-              "key": "npc_2",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 1,
-              "servers": [
                 "crystalserver"
               ],
               "requested_by": {
@@ -40259,7 +40905,7 @@
               }
             },
             {
-              "key": "npc_3",
+              "key": "npc_2",
               "owner": "npc",
               "callback": null,
               "from": null,
@@ -40278,7 +40924,7 @@
               }
             },
             {
-              "key": "npc_4",
+              "key": "npc_3",
               "owner": "npc",
               "callback": null,
               "from": {
@@ -40301,7 +40947,7 @@
               }
             },
             {
-              "key": "npc_5",
+              "key": "npc_4",
               "owner": "npc",
               "callback": null,
               "from": null,
@@ -40321,7 +40967,7 @@
               }
             },
             {
-              "key": "npc_6",
+              "key": "npc_5",
               "owner": "npc",
               "callback": null,
               "from": {
@@ -40373,30 +41019,6 @@
               "key": "npc_1",
               "owner": "npc",
               "callback": null,
-              "from": {
-                "op": "==",
-                "value": 1,
-                "exact": true
-              },
-              "to": 3,
-              "servers": [
-                "canary"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/angus",
-                "keywords": [
-                  "bluff"
-                ],
-                "topics": [
-                  1,
-                  2
-                ]
-              }
-            },
-            {
-              "key": "npc_2",
-              "owner": "npc",
-              "callback": null,
               "from": null,
               "to": 1,
               "servers": [
@@ -40413,7 +41035,7 @@
               }
             },
             {
-              "key": "npc_3",
+              "key": "npc_2",
               "owner": "npc",
               "callback": null,
               "from": null,
@@ -40432,7 +41054,7 @@
               }
             },
             {
-              "key": "npc_4",
+              "key": "npc_3",
               "owner": "npc",
               "callback": null,
               "from": null,
@@ -40453,132 +41075,6 @@
                 "topics": [
                   37
                 ]
-              }
-            },
-            {
-              "key": "npc_5",
-              "owner": "npc",
-              "callback": null,
-              "from": {
-                "op": "==",
-                "value": 2,
-                "exact": false
-              },
-              "to": 1,
-              "servers": [
-                "canary"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/angus",
-                "keywords": [
-                  "yes"
-                ],
-                "topics": [
-                  35
-                ]
-              }
-            },
-            {
-              "key": "npc_6",
-              "owner": "npc",
-              "callback": null,
-              "from": {
-                "op": "==",
-                "value": 1,
-                "exact": false
-              },
-              "to": 2,
-              "servers": [
-                "canary"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/angus",
-                "keywords": [],
-                "topics": []
-              }
-            },
-            {
-              "key": "npc_7",
-              "owner": "npc",
-              "callback": null,
-              "from": {
-                "op": "==",
-                "value": 1,
-                "exact": true
-              },
-              "to": 3,
-              "servers": [
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "crystal:npc/mortimer",
-                "keywords": [
-                  "bluff"
-                ],
-                "topics": [
-                  1,
-                  2
-                ]
-              }
-            },
-            {
-              "key": "npc_8",
-              "owner": "npc",
-              "callback": null,
-              "from": {
-                "op": "==",
-                "value": 2,
-                "exact": false
-              },
-              "to": 1,
-              "servers": [
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "crystal:npc/mortimer",
-                "keywords": [
-                  "yes"
-                ],
-                "topics": [
-                  35
-                ]
-              }
-            },
-            {
-              "key": "npc_9",
-              "owner": "npc",
-              "callback": null,
-              "from": {
-                "op": "==",
-                "value": 1,
-                "exact": false
-              },
-              "to": 2,
-              "servers": [
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "crystal:npc/mortimer",
-                "keywords": [],
-                "topics": []
-              }
-            },
-            {
-              "key": "npc_10",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 1,
-              "servers": [
-                "canary",
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/ongulf",
-                "keywords": [
-                  "mission"
-                ],
-                "topics": []
               }
             }
           ]
@@ -40616,24 +41112,6 @@
               "owner": "npc",
               "callback": null,
               "from": null,
-              "to": 1,
-              "servers": [
-                "canary",
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/ongulf",
-                "keywords": [
-                  "mission"
-                ],
-                "topics": []
-              }
-            },
-            {
-              "key": "npc_2",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
               "to": 3,
               "servers": [
                 "canary",
@@ -40643,8 +41121,7 @@
                 "npc": "canary:npc/telas",
                 "keywords": [
                   "reason",
-                  "flatter",
-                  "reason"
+                  "flatter"
                 ],
                 "topics": [
                   1
@@ -40652,7 +41129,7 @@
               }
             },
             {
-              "key": "npc_3",
+              "key": "npc_2",
               "owner": "npc",
               "callback": null,
               "from": {
@@ -40675,7 +41152,7 @@
               }
             },
             {
-              "key": "npc_4",
+              "key": "npc_3",
               "owner": "npc",
               "callback": null,
               "from": {
@@ -40694,7 +41171,7 @@
               }
             },
             {
-              "key": "npc_5",
+              "key": "npc_4",
               "owner": "npc",
               "callback": null,
               "from": null,
@@ -40713,7 +41190,7 @@
               }
             },
             {
-              "key": "npc_6",
+              "key": "npc_5",
               "owner": "npc",
               "callback": null,
               "from": null,
@@ -40860,24 +41337,6 @@
                 "keywords": [],
                 "topics": []
               }
-            },
-            {
-              "key": "npc_6",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 1,
-              "servers": [
-                "canary",
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/ongulf",
-                "keywords": [
-                  "mission"
-                ],
-                "topics": []
-              }
             }
           ]
         },
@@ -41011,24 +41470,6 @@
                 "keywords": [],
                 "topics": []
               }
-            },
-            {
-              "key": "npc_6",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 1,
-              "servers": [
-                "canary",
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/ongulf",
-                "keywords": [
-                  "mission"
-                ],
-                "topics": []
-              }
             }
           ]
         },
@@ -41123,42 +41564,6 @@
               }
             },
             {
-              "key": "npc_3",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 1,
-              "servers": [
-                "canary",
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/ongulf",
-                "keywords": [
-                  "mission"
-                ],
-                "topics": []
-              }
-            },
-            {
-              "key": "npc_4",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 5,
-              "servers": [
-                "canary",
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/ongulf",
-                "keywords": [
-                  "mission"
-                ],
-                "topics": []
-              }
-            },
-            {
               "key": "other_1",
               "owner": "other",
               "callback": null,
@@ -41213,24 +41618,6 @@
                 "canary",
                 "crystalserver"
               ]
-            },
-            {
-              "key": "npc_1",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 1,
-              "servers": [
-                "canary",
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/ongulf",
-                "keywords": [
-                  "mission"
-                ],
-                "topics": []
-              }
             }
           ]
         },
@@ -41276,26 +41663,6 @@
                 "canary",
                 "crystalserver"
               ]
-            },
-            {
-              "key": "npc_1",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 2,
-              "servers": [
-                "canary",
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/ztiss",
-                "keywords": [
-                  "yes"
-                ],
-                "topics": [
-                  4
-                ]
-              }
             }
           ]
         },
@@ -41371,44 +41738,6 @@
                 "canary",
                 "crystalserver"
               ]
-            },
-            {
-              "key": "npc_1",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 3,
-              "servers": [
-                "canary",
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/chrak",
-                "keywords": [
-                  "mission"
-                ],
-                "topics": []
-              }
-            },
-            {
-              "key": "npc_2",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 1,
-              "servers": [
-                "canary",
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/ztiss",
-                "keywords": [
-                  "yes"
-                ],
-                "topics": [
-                  4
-                ]
-              }
             }
           ]
         },
@@ -41439,44 +41768,7 @@
               }
             ]
           },
-          "transitions": [
-            {
-              "key": "npc_1",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 1,
-              "servers": [
-                "canary",
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/chrak",
-                "keywords": [
-                  "mission"
-                ],
-                "topics": []
-              }
-            },
-            {
-              "key": "npc_2",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 2,
-              "servers": [
-                "canary",
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/ongulf",
-                "keywords": [
-                  "mission"
-                ],
-                "topics": []
-              }
-            }
-          ]
+          "transitions": []
         },
         {
           "key": "tome_of_knowledge_counter",
@@ -41585,46 +41877,7 @@
               }
             ]
           },
-          "transitions": [
-            {
-              "key": "npc_1",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 1,
-              "servers": [
-                "canary",
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/cael",
-                "keywords": [
-                  "yes"
-                ],
-                "topics": [
-                  1
-                ]
-              }
-            },
-            {
-              "key": "npc_2",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "increment": 1,
-              "servers": [
-                "canary",
-                "crystalserver"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/cael",
-                "keywords": [
-                  "yes"
-                ],
-                "topics": []
-              }
-            }
-          ]
+          "transitions": []
         }
       ],
       "claims": [
@@ -46940,10 +47193,33 @@
       },
       "requirements": {
         "premium": false,
-        "min_level": null
+        "min_level": 0
       },
       "requirements_unparsed": {
         "min_level": "range"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/the_scatterbrained_sorcerer_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "The Scatterbrained Sorcerer Quest",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "The Scatterbrained Sorcerer Quest",
+        "pageid": 36950,
+        "revid": 843982
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "no",
+        "lvl": "0"
+      },
+      "requirements": {
+        "premium": false,
+        "min_level": 0
       }
     },
     {
@@ -51608,6 +51884,29 @@
     },
     {
       "identity": {
+        "key": "canary:quest/the_spirit_will_get_you_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "The Spirit Will Get You Quest",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "The Spirit Will Get You Quest",
+        "pageid": 46745,
+        "revid": 844389
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "0"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 0
+      }
+    },
+    {
+      "identity": {
         "key": "canary:quest/the_tainted_soul",
         "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
@@ -54134,6 +54433,9 @@
       "requirements": {
         "premium": true,
         "min_level": 275
+      },
+      "requirements_unparsed": {
+        "min_level": "note"
       }
     },
     {
@@ -54337,11 +54639,33 @@
       },
       "requirements": {
         "premium": true,
-        "min_level": null
+        "min_level": 8
       },
-      "requirements_unparsed": {
-        "min_level": "range"
-      }
+      "requirements_unparsed": {}
+    },
+    {
+      "identity": {
+        "key": "canary:quest/thornfire_world_change",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Thornfire World Change",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Thornfire World Change",
+        "pageid": 54125,
+        "revid": 844903
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "no",
+        "lvl": "None"
+      },
+      "requirements": {
+        "premium": false,
+        "min_level": 0
+      },
+      "requirements_unparsed": {}
     },
     {
       "identity": {
@@ -54540,224 +54864,7 @@
               ]
             },
             {
-              "key": "movement_2",
-              "owner": "movement",
-              "callback": "onStepIn",
-              "from": {
-                "op": "==",
-                "value": 13,
-                "exact": true
-              },
-              "to": 14,
-              "servers": [
-                "canary"
-              ]
-            },
-            {
               "key": "npc_1",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 15,
-              "servers": [
-                "canary"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/a_swan",
-                "keywords": [
-                  "mission"
-                ],
-                "topics": []
-              }
-            },
-            {
-              "key": "npc_2",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 12,
-              "servers": [
-                "canary"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/a_swan",
-                "keywords": [
-                  "yes"
-                ],
-                "topics": [
-                  1
-                ]
-              }
-            },
-            {
-              "key": "npc_3",
-              "owner": "npc",
-              "callback": null,
-              "from": {
-                "op": "==",
-                "value": 1,
-                "exact": false
-              },
-              "to": 2,
-              "servers": [
-                "canary"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/ahmet",
-                "keywords": [
-                  "yes"
-                ],
-                "topics": [
-                  5
-                ]
-              }
-            },
-            {
-              "key": "npc_4",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 16,
-              "servers": [
-                "canary"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/alkestios",
-                "keywords": [
-                  "mission"
-                ],
-                "topics": []
-              }
-            },
-            {
-              "key": "npc_5",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 1,
-              "servers": [
-                "canary"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/alkestios",
-                "keywords": [
-                  "yes"
-                ],
-                "topics": [
-                  1
-                ]
-              }
-            },
-            {
-              "key": "npc_6",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 4,
-              "servers": [
-                "canary"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/alkestios",
-                "keywords": [
-                  "yes"
-                ],
-                "topics": [
-                  2
-                ]
-              }
-            },
-            {
-              "key": "npc_7",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 10,
-              "servers": [
-                "canary"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/ghostly_wolf",
-                "keywords": [
-                  "mission"
-                ],
-                "topics": []
-              }
-            },
-            {
-              "key": "npc_8",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 6,
-              "servers": [
-                "canary"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/ghostly_wolf",
-                "keywords": [
-                  "yes"
-                ],
-                "topics": [
-                  1
-                ]
-              }
-            },
-            {
-              "key": "npc_9",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 11,
-              "servers": [
-                "canary"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/ikassis",
-                "keywords": [
-                  "mission"
-                ],
-                "topics": []
-              }
-            },
-            {
-              "key": "npc_10",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 5,
-              "servers": [
-                "canary"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/ikassis",
-                "keywords": [
-                  "yes"
-                ],
-                "topics": [
-                  1
-                ]
-              }
-            },
-            {
-              "key": "npc_11",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 8,
-              "servers": [
-                "canary"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/irmana",
-                "keywords": [],
-                "topics": [
-                  8
-                ]
-              }
-            },
-            {
-              "key": "npc_12",
               "owner": "npc",
               "callback": null,
               "from": {
@@ -54866,178 +54973,7 @@
               }
             ]
           },
-          "transitions": [
-            {
-              "key": "creature_event_1",
-              "owner": "creature_event",
-              "callback": "onDeath",
-              "from": {
-                "op": "==",
-                "value": 1,
-                "exact": true
-              },
-              "to": 1,
-              "servers": [
-                "canary"
-              ]
-            },
-            {
-              "key": "npc_1",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 1,
-              "servers": [
-                "canary"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/maelyrra",
-                "keywords": [
-                  "yes"
-                ],
-                "topics": [
-                  1
-                ]
-              }
-            },
-            {
-              "key": "npc_2",
-              "owner": "npc",
-              "callback": null,
-              "from": {
-                "op": "==",
-                "value": 1,
-                "exact": false
-              },
-              "to": 2,
-              "servers": [
-                "canary"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/maelyrra",
-                "keywords": [
-                  "yes"
-                ],
-                "topics": [
-                  2
-                ]
-              }
-            },
-            {
-              "key": "npc_3",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 3,
-              "servers": [
-                "canary"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/maelyrra",
-                "keywords": [
-                  "yes"
-                ],
-                "topics": [
-                  3
-                ]
-              }
-            },
-            {
-              "key": "npc_4",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 4,
-              "servers": [
-                "canary"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/maelyrra",
-                "keywords": [
-                  "yes"
-                ],
-                "topics": [
-                  4
-                ]
-              }
-            },
-            {
-              "key": "npc_5",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 5,
-              "servers": [
-                "canary"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/maelyrra",
-                "keywords": [
-                  "yes"
-                ],
-                "topics": [
-                  5
-                ]
-              }
-            },
-            {
-              "key": "npc_6",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 6,
-              "servers": [
-                "canary"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/maelyrra",
-                "keywords": [
-                  "yes"
-                ],
-                "topics": [
-                  6
-                ]
-              }
-            },
-            {
-              "key": "npc_7",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 7,
-              "servers": [
-                "canary"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/maelyrra",
-                "keywords": [
-                  "yes"
-                ],
-                "topics": [
-                  7
-                ]
-              }
-            },
-            {
-              "key": "npc_8",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 8,
-              "servers": [
-                "canary"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/maelyrra",
-                "keywords": [
-                  "yes"
-                ],
-                "topics": [
-                  8
-                ]
-              }
-            }
-          ]
+          "transitions": []
         },
         {
           "key": "an_unlikely_couple",
@@ -55082,92 +55018,7 @@
               }
             ]
           },
-          "transitions": [
-            {
-              "key": "action_1",
-              "owner": "action",
-              "callback": "onUse",
-              "from": null,
-              "to": 2,
-              "servers": [
-                "canary"
-              ]
-            },
-            {
-              "key": "npc_1",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 1,
-              "servers": [
-                "canary"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/aurita",
-                "keywords": [
-                  "yes"
-                ],
-                "topics": [
-                  1
-                ]
-              }
-            },
-            {
-              "key": "npc_2",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 3,
-              "servers": [
-                "canary"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/taegen",
-                "keywords": [
-                  "mission"
-                ],
-                "topics": []
-              }
-            },
-            {
-              "key": "npc_3",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 1,
-              "servers": [
-                "canary"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/taegen",
-                "keywords": [
-                  "yes"
-                ],
-                "topics": [
-                  1
-                ]
-              }
-            },
-            {
-              "key": "npc_4",
-              "owner": "npc",
-              "callback": null,
-              "from": null,
-              "to": 4,
-              "servers": [
-                "canary"
-              ],
-              "requested_by": {
-                "npc": "canary:npc/taegen",
-                "keywords": [
-                  "yes"
-                ],
-                "topics": [
-                  2
-                ]
-              }
-            }
-          ]
+          "transitions": []
         },
         {
           "key": "the_fairy_treasure",
@@ -57897,6 +57748,29 @@
     },
     {
       "identity": {
+        "key": "canary:quest/too_hot_to_handle_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Too Hot to Handle Quest",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Too Hot to Handle Quest",
+        "pageid": 94741,
+        "revid": 1107074
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "80"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 80
+      }
+    },
+    {
+      "identity": {
         "key": "canary:quest/tower_defence_quest",
         "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
@@ -57916,6 +57790,32 @@
       "requirements": {
         "premium": false,
         "min_level": 0
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/treasure_hunt_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Treasure Hunt Quest",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Treasure Hunt Quest",
+        "pageid": 37108,
+        "revid": 843992
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "35 (The Shattered Isles Quest)"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": null
+      },
+      "requirements_unparsed": {
+        "min_level": "note"
       }
     },
     {
@@ -57988,6 +57888,52 @@
         "title": "Troll Sabotage Quest",
         "pageid": 25544,
         "revid": 1095877
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "0"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 0
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/tutorial",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Tutorial",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Tutorial",
+        "pageid": 66614,
+        "revid": 791148
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "no",
+        "lvl": "0"
+      },
+      "requirements": {
+        "premium": false,
+        "min_level": 0
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/twenty_miles_beneath_the_sea_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Twenty Miles Beneath the Sea Quest",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Twenty Miles Beneath the Sea Quest",
+        "pageid": 69582,
+        "revid": 1023387
       },
       "claims": [],
       "requirements_from_wiki": {
@@ -58702,6 +58648,29 @@
     },
     {
       "identity": {
+        "key": "canary:quest/warmaster_outfits_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Warmaster Outfits Quest",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Warmaster Outfits Quest",
+        "pageid": 42269,
+        "revid": 795619
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "80"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 80
+      }
+    },
+    {
+      "identity": {
         "key": "canary:quest/waterfall_quest",
         "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
@@ -58727,6 +58696,29 @@
       "requirements": {
         "premium": true,
         "min_level": 0
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/wayfarer_outfits_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Wayfarer Outfits Quest",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Wayfarer Outfits Quest",
+        "pageid": 46398,
+        "revid": 844411
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "80"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 80
       }
     },
     {
@@ -59317,6 +59309,27 @@
       },
       "requirements_unparsed": {
         "min_level": "note"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/winterlight_solstice",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Winterlight Solstice",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Winterlight Solstice",
+        "pageid": 87276,
+        "revid": 1048344
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "yes"
+      },
+      "requirements": {
+        "premium": true
       }
     },
     {
@@ -60485,6 +60498,29 @@
     },
     {
       "identity": {
+        "key": "canary:quest/yalaharian_outfits_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Yalaharian Outfits Quest",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Yalaharian Outfits Quest",
+        "pageid": 68910,
+        "revid": 843726
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "80"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 80
+      }
+    },
+    {
+      "identity": {
         "key": "crystalserver:quest/25_years_of_tibia_quest",
         "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
@@ -60518,6 +60554,52 @@
         "title": "A Piece of Cake",
         "pageid": 50850,
         "revid": 1090661
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "0"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 0
+      }
+    },
+    {
+      "identity": {
+        "key": "crystalserver:quest/afflicted_outfits_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Afflicted Outfits Quest",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Afflicted Outfits Quest",
+        "pageid": 54472,
+        "revid": 844677
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "0"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 0
+      }
+    },
+    {
+      "identity": {
+        "key": "crystalserver:quest/ancient_aucar_outfits_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Ancient Aucar Outfits Quest",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Ancient Aucar Outfits Quest",
+        "pageid": 101462,
+        "revid": 1045730
       },
       "claims": [],
       "requirements_from_wiki": {
@@ -60883,6 +60965,73 @@
     },
     {
       "identity": {
+        "key": "crystalserver:quest/dream_warrior_outfits_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Dream Warrior Outfits Quest",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Dream Warrior Outfits Quest",
+        "pageid": 87004,
+        "revid": 848563
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "250"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 250
+      }
+    },
+    {
+      "identity": {
+        "key": "crystalserver:quest/feral_trappers_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Feral Trappers Quest",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Feral Trappers Quest",
+        "pageid": 110524,
+        "revid": 1187332
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "no"
+      },
+      "requirements": {
+        "premium": false
+      }
+    },
+    {
+      "identity": {
+        "key": "crystalserver:quest/formal_dress_outfits_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Formal Dress Outfits Quest",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Formal Dress Outfits Quest",
+        "pageid": 96197,
+        "revid": 898654
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "20"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 20
+      }
+    },
+    {
+      "identity": {
         "key": "crystalserver:quest/frost_dragon_quest",
         "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
@@ -60908,6 +61057,52 @@
       "requirements": {
         "premium": true,
         "min_level": 0
+      }
+    },
+    {
+      "identity": {
+        "key": "crystalserver:quest/illuminator_outfit_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Illuminator Outfit Quest",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Illuminator Outfit Quest",
+        "pageid": 108929,
+        "revid": 1111818
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "250"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 250
+      }
+    },
+    {
+      "identity": {
+        "key": "crystalserver:quest/illuminator_outfits_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Illuminator Outfits Quest",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Illuminator Outfits Quest",
+        "pageid": 109146,
+        "revid": 1119520
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "200"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 200
       }
     },
     {
@@ -61205,20 +61400,6 @@
             ]
           },
           "transitions": [
-            {
-              "key": "movement_1",
-              "owner": "movement",
-              "callback": "onStepIn",
-              "from": {
-                "op": "<",
-                "value": 1,
-                "exact": true
-              },
-              "to": 1,
-              "servers": [
-                "crystalserver"
-              ]
-            },
             {
               "key": "npc_1",
               "owner": "npc",
@@ -61660,6 +61841,96 @@
       },
       "requirements_unparsed": {
         "min_level": "range"
+      }
+    },
+    {
+      "identity": {
+        "key": "crystalserver:quest/the_order_of_the_stag_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "The Order of the Stag Quest",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "The Order of the Stag Quest",
+        "pageid": 109438,
+        "revid": 1194880
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "250"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 250
+      }
+    },
+    {
+      "identity": {
+        "key": "crystalserver:quest/the_roost_of_the_graveborn_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "The Roost of the Graveborn Quest",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "The Roost of the Graveborn Quest",
+        "pageid": 109735,
+        "revid": 1195314
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "450"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 450
+      }
+    },
+    {
+      "identity": {
+        "key": "crystalserver:quest/treasure_island_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Treasure Island Quest",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Treasure Island Quest",
+        "pageid": 9265,
+        "revid": 684052
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "0"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 0
+      }
+    },
+    {
+      "identity": {
+        "key": "crystalserver:quest/within_the_tides_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Within the Tides Quest",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Within the Tides Quest",
+        "pageid": 98526,
+        "revid": 1036406
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "yes"
+      },
+      "requirements": {
+        "premium": true
       }
     }
   ]

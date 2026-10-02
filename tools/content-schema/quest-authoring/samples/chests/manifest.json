@@ -68,6 +68,14 @@
       }
     }
   },
+  "quest_source_aliases": [
+    {
+      "source": "canary:quest/the_desert_dungeon_quest",
+      "target": "canary:quest/desert_dungeon_quest",
+      "wiki_pageid": 2496,
+      "basis": "exact script_quests.json curator title/key"
+    }
+  ],
   "entries": [
     {
       "position": [

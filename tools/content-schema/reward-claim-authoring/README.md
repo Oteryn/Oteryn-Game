@@ -15,7 +15,7 @@ tree (ADR-0021), and the Rust `RewardClaim` kind (#1334) receives the claims fro
 
 ## Scope and rules
 
-The family holds **plain `once` claims only**. That means a per-character `once` claim whose
+The original native profile holds **plain `once` claims only**. That means a per-character `once` claim whose
 placements reward `items` only, with no achievement. Cooldown claims, containers, keys, written
 texts, random choices and achievements are later children.
 
@@ -32,7 +32,33 @@ texts, random choices and achievements are later children.
   class and the count fits it. Otherwise it is `waiting_item_semantics`: the MINT fails closed
   on it (D82) until ITEM-SEM covers the Item.
 - **Source checks.** A count that contradicts a known stack class is listed in the index under
-  `source_checks`. It is not guessed.
+  `source_checks`. StackCapable counts must fit a proven `semantics.stack.value.stack_max`,
+  or D82's maximum of 100 when no smaller maximum is known. Unsupported maxima never become ready.
+  Duplicate legacy unique ids are server-scoped and recorded with every claim/position;
+  validation rejects missing or stale collision diagnostics. Position bindings remain authoritative.
+
+## D277 charged source rewards
+
+Architect ruling [5933264015](https://github.com/Oteryn/Oteryn-Game/issues/162#issuecomment-5933264015)
+closes the architecture for charged rewards: one ItemInstance, quantity1, charges
+from the Item definition. The raw reward argument never creates an Item charges fact.
+`source_charge_evidence.json` binds the historical two-argument chest helper calls
+by source claim, position, Item and raw argument, with pinned source and ruling evidence.
+Only an exact binding with known NonStackable semantics and positive
+`charges.count` is normalized to physical quantity1. Source/default charge
+disagreement remains an independent diagnostic. The original pilot stays unchanged;
+`source_checks` preserves the raw argument and the derived canonical quantity.
+
+A default-matching reward stays held as `NATIVE_INSTANCE_LOWERING_NOT_IMPLEMENTED`:
+current native MINT request/after-state have no charge initialization or persistence.
+This is an implementation gap under covered architecture. Source/default disagreement
+stays `SOURCE_CHARGE_MISMATCH` (CONFLICT), notably Banshee3081 raw1 versus definition5.
+Unproved source arguments and unknown definition charges remain UNKNOWN without
+normalization. Stackable rune charge definitions retain quantity as piece count.
+Build and committed validation recompute quantity and exact source diagnostics;
+forged normalization, missing diagnostics and false ready status are rejected.
+An explicit source list must contain the original reward binding; an empty, removed
+or moved binding is an error. Optional `None` is fixture consistency mode only.
 
 ```sh
 cd tools/content-schema/reward-claim-authoring
@@ -41,8 +67,53 @@ python reward_claim_authoring.py content --check  # CI
 python test_reward_claim_authoring.py
 ```
 
+The RewardClaim Authoring workflow runs both commands on tool, chest-source, Item,
+interaction and shared-registration changes, including stacked pull requests.
+
 **A change to `content/items`,** for example ITEM-SEM adding stack facts:
 - It never breaks this family. Only a claim marked `ready` that its Items no longer support is
   an error.
 - A stale `waiting_item_semantics` is safe, because the MINT itself fails closed.
 - Rebuild with `content` to promote newly ready claims.
+
+The separate source variant packet preserves all105 non-plain claims and their
+UID/position witnesses, exact Item references, source arguments and typed grants.
+D277 ruling5933264015 marks key/text/random/cooldown formats COVERED. Container
+contents wait for a content child; Achievement requests carry exact references
+while runtime ownership remains deferred. Native lowering is waiting implementation.
+Medusa text carrier and actual charge/default discrepancies remain CONFLICT.
+
+```sh
+python tools/content-schema/reward-claim-authoring/reward_claim_variant_migration.py --check
+python tools/content-schema/reward-claim-authoring/test_reward_claim_variant_migration.py
+```
+
+## Canonical variant DATA under D277
+
+`reward_claim_variant_authoring.py` extends the same family with strict
+`authored_variant_v1` definition/shard profiles. All105 existing source variants
+retain actual repeat/key/text/random/container payloads, canonical Item references,
+typed Achievement requests, position/UID bindings and full source dispositions.
+The null Medusa carrier stays null with a source hold. Source/default charge
+conflicts remain explicit; physical quantities use only proved definition facts.
+
+These definitions resolve Quest references but **never admit native execution**:
+`native_admission` is `WAITING_IMPLEMENTATION`. Readiness is
+`waiting_implementation` or `waiting_data` with separate source/Item holds.
+The original231 definitions and their219/12 readiness are unchanged. The family
+index counts plain and variant profiles separately and includes whole-family UID
+collision diagnostics. Registration counts all336 DATA definitions.
+
+The ordinary `reward_claim_authoring.py content` command regenerates both profiles;
+then regenerate the source variant packet so its input hashes bind the new shards.
+`committed_errors()` validates both profiles against current sources and Items.
+`native_lowering_errors()` provides explicit unsupported-profile diagnostics before
+any consumer attempts the existing plain native model; this is not a runtime implementation.
+
+```sh
+python tools/content-schema/reward-claim-authoring/test_reward_claim_variant_authoring.py
+python tools/content-schema/reward-claim-authoring/reward_claim_authoring.py content
+python tools/content-schema/reward-claim-authoring/reward_claim_variant_migration.py
+python tools/content-schema/reward-claim-authoring/reward_claim_authoring.py content --check
+python tools/content-schema/reward-claim-authoring/reward_claim_variant_migration.py --check
+```

@@ -1,0 +1,3648 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "legacy_witness": {
+      "type": "object",
+      "properties": {
+        "line": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "line_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "byte_offset": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "byte_length": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "span_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "end_line": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "required": [
+        "line",
+        "line_sha256",
+        "byte_offset",
+        "byte_length",
+        "span_sha256"
+      ],
+      "additionalProperties": false
+    },
+    "legacy_source_ref": {
+      "type": "object",
+      "properties": {
+        "provider": {
+          "enum": [
+            "tibia_fandom",
+            "tibiawiki_br"
+          ]
+        },
+        "relation": {
+          "enum": [
+            "base",
+            "spoiler",
+            "crosscheck"
+          ]
+        },
+        "pageid": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "revid": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "content_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "url": {
+          "type": "string",
+          "pattern": "^https://(?:tibia\\.fandom\\.com|www\\.tibiawiki\\.com\\.br)/"
+        }
+      },
+      "required": [
+        "provider",
+        "relation",
+        "pageid",
+        "revid",
+        "content_sha256",
+        "url"
+      ],
+      "additionalProperties": false
+    },
+    "legacy_entity": {
+      "type": "object",
+      "properties": {
+        "entity": {
+          "type": "string"
+        },
+        "quantity": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "binding_status": {
+          "const": "UNKNOWN"
+        },
+        "source_namespace": {
+          "const": "mediawiki/page_title"
+        }
+      },
+      "required": [
+        "entity",
+        "quantity",
+        "binding_status",
+        "source_namespace"
+      ],
+      "additionalProperties": false
+    },
+    "legacy_requirement_node": {
+      "type": "object",
+      "properties": {
+        "entity": {
+          "type": "string"
+        },
+        "quantity": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "binding_status": {
+          "const": "UNKNOWN"
+        },
+        "source_namespace": {
+          "const": "mediawiki/page_title"
+        },
+        "kind": {
+          "const": "entity_reference"
+        }
+      },
+      "required": [
+        "entity",
+        "quantity",
+        "binding_status",
+        "source_namespace",
+        "kind"
+      ],
+      "additionalProperties": false
+    },
+    "legacy_reward_group": {
+      "type": "object",
+      "properties": {
+        "scope_anchor": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "entities": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/legacy_entity"
+          }
+        },
+        "evidence": {
+          "$ref": "#/$defs/legacy_witness"
+        }
+      },
+      "required": [
+        "scope_anchor",
+        "entities",
+        "evidence"
+      ],
+      "additionalProperties": false
+    },
+    "legacy_quantitative_reward": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "enum": [
+            "experience",
+            "gold"
+          ]
+        },
+        "amount": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "scope": {
+          "type": "string"
+        },
+        "evidence": {
+          "$ref": "#/$defs/legacy_witness"
+        }
+      },
+      "required": [
+        "kind",
+        "amount",
+        "scope",
+        "evidence"
+      ],
+      "additionalProperties": false
+    },
+    "legacy_prerequisite": {
+      "type": "object",
+      "properties": {
+        "line": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "line_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "byte_offset": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "byte_length": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "span_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "section": {
+          "type": "string"
+        },
+        "scope": {
+          "type": "string"
+        },
+        "scope_anchor": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "execution_semantics": {
+          "const": "UNKNOWN"
+        },
+        "operator": {
+          "enum": [
+            "references",
+            "any_of_references"
+          ]
+        },
+        "nodes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/legacy_requirement_node"
+          }
+        },
+        "declaration_strength": {
+          "const": "reference_only"
+        },
+        "end_line": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "required": [
+        "line",
+        "line_sha256",
+        "byte_offset",
+        "byte_length",
+        "span_sha256",
+        "section",
+        "scope",
+        "scope_anchor",
+        "execution_semantics",
+        "operator",
+        "nodes",
+        "declaration_strength"
+      ],
+      "additionalProperties": false
+    },
+    "legacy_unparsed": {
+      "type": "object",
+      "properties": {
+        "line": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "line_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "byte_offset": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "byte_length": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "span_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "reason": {
+          "type": "string"
+        },
+        "end_line": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "required": [
+        "line",
+        "line_sha256",
+        "byte_offset",
+        "byte_length",
+        "span_sha256",
+        "reason"
+      ],
+      "additionalProperties": false
+    },
+    "legacy_delta": {
+      "type": "object",
+      "properties": {
+        "reward_entity_references": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/legacy_entity"
+          }
+        },
+        "reward_groups": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/legacy_reward_group"
+          }
+        },
+        "reward_quantitative_facts": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/legacy_quantitative_reward"
+          }
+        },
+        "prerequisite_expressions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/legacy_prerequisite"
+          }
+        },
+        "unparsed_requirements": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/legacy_unparsed"
+          }
+        },
+        "reward_declared_none": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "reward_entity_references",
+        "reward_groups",
+        "reward_quantitative_facts",
+        "prerequisite_expressions",
+        "unparsed_requirements",
+        "reward_declared_none"
+      ],
+      "additionalProperties": false
+    },
+    "legacy_span": {
+      "type": "object",
+      "properties": {
+        "line": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "line_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "byte_offset": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "byte_length": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "span_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "field": {
+          "type": "string"
+        },
+        "section": {
+          "type": "string"
+        },
+        "source_order": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "classification": {
+          "const": "DERIVED"
+        },
+        "end_line": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "required": [
+        "line",
+        "line_sha256",
+        "byte_offset",
+        "byte_length",
+        "span_sha256",
+        "field",
+        "section",
+        "source_order",
+        "classification"
+      ],
+      "additionalProperties": false
+    },
+    "legacy_heading": {
+      "type": "object",
+      "properties": {
+        "line": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "line_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "byte_offset": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "byte_length": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "span_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "heading": {
+          "type": "string"
+        },
+        "level": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 6
+        },
+        "source_order": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "execution_order": {
+          "const": "UNKNOWN"
+        },
+        "end_line": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "required": [
+        "line",
+        "line_sha256",
+        "byte_offset",
+        "byte_length",
+        "span_sha256",
+        "heading",
+        "level",
+        "source_order",
+        "execution_order"
+      ],
+      "additionalProperties": false
+    },
+    "legacy_journal": {
+      "type": "object",
+      "properties": {
+        "line": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "line_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "byte_offset": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "byte_length": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "span_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "value": {
+          "const": "REFERENCE_ONLY"
+        },
+        "section": {
+          "type": "string"
+        },
+        "source_order": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "journal_text_ref": {
+          "$ref": "#/$defs/legacy_witness"
+        },
+        "end_line": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "required": [
+        "line",
+        "line_sha256",
+        "byte_offset",
+        "byte_length",
+        "span_sha256",
+        "value",
+        "section",
+        "source_order",
+        "journal_text_ref"
+      ],
+      "additionalProperties": false
+    },
+    "legacy_counter": {
+      "type": "object",
+      "properties": {
+        "amount": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "unit": {
+          "type": "string"
+        },
+        "scope": {
+          "type": "string"
+        },
+        "interpretation": {
+          "const": "LITERAL_ONLY"
+        }
+      },
+      "required": [
+        "amount",
+        "unit",
+        "scope",
+        "interpretation"
+      ],
+      "additionalProperties": false
+    },
+    "legacy_table_cell": {
+      "type": "object",
+      "properties": {
+        "entity_references": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/legacy_entity"
+          }
+        },
+        "numeric_literals": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "evidence": {
+          "$ref": "#/$defs/legacy_witness"
+        },
+        "header": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "entity_references",
+        "numeric_literals",
+        "evidence",
+        "header"
+      ],
+      "additionalProperties": false
+    },
+    "legacy_json_value": {
+      "anyOf": [
+        {
+          "type": [
+            "string",
+            "number",
+            "boolean",
+            "null"
+          ]
+        },
+        {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/legacy_json_value"
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/legacy_json_value"
+          }
+        }
+      ]
+    },
+    "legacy_fact": {
+      "type": "object",
+      "properties": {
+        "line": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "line_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "byte_offset": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "byte_length": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "span_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "kind": {
+          "enum": [
+            "source_reference",
+            "reward_reference",
+            "recommendation",
+            "source_requirement_list",
+            "exchange_reference",
+            "source_table",
+            "curated_source_fact"
+          ]
+        },
+        "section": {
+          "type": "string"
+        },
+        "source_order": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "entity_references": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/legacy_entity"
+          }
+        },
+        "counters": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/legacy_counter"
+          }
+        },
+        "execution_semantics": {
+          "const": "UNKNOWN"
+        },
+        "headers": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "header_witnesses": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/legacy_witness"
+          }
+        },
+        "rows": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/legacy_table_cell"
+            }
+          }
+        },
+        "scope": {
+          "type": "string"
+        },
+        "facts": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/legacy_json_value"
+          }
+        },
+        "field": {
+          "type": "string"
+        },
+        "value": {
+          "$ref": "#/$defs/legacy_json_value"
+        },
+        "evidence": {
+          "oneOf": [
+            {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/legacy_witness"
+              }
+            },
+            {
+              "$ref": "#/$defs/legacy_witness"
+            }
+          ]
+        },
+        "classification": {
+          "const": "DERIVED"
+        },
+        "binding_status": {
+          "const": "UNKNOWN"
+        },
+        "end_line": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "required": [
+        "kind",
+        "source_order",
+        "execution_semantics"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "curated_source_fact"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "evidence",
+              "binding_status"
+            ],
+            "oneOf": [
+              {
+                "required": [
+                  "scope",
+                  "facts",
+                  "classification"
+                ],
+                "properties": {
+                  "evidence": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/legacy_witness"
+                    },
+                    "minItems": 1
+                  }
+                }
+              },
+              {
+                "required": [
+                  "field",
+                  "value"
+                ],
+                "properties": {
+                  "evidence": {
+                    "$ref": "#/$defs/legacy_witness"
+                  }
+                }
+              }
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "source_table"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "section",
+              "headers",
+              "header_witnesses",
+              "rows"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "not": {
+                  "enum": [
+                    "curated_source_fact",
+                    "source_table"
+                  ]
+                }
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "line",
+              "line_sha256",
+              "byte_offset",
+              "byte_length",
+              "span_sha256",
+              "section",
+              "entity_references",
+              "counters"
+            ]
+          }
+        }
+      ]
+    },
+    "legacy_source": {
+      "type": "object",
+      "properties": {
+        "provider": {
+          "enum": [
+            "tibia_fandom",
+            "tibiawiki_br"
+          ]
+        },
+        "relation": {
+          "enum": [
+            "base",
+            "spoiler",
+            "crosscheck"
+          ]
+        },
+        "pageid": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "revid": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "content_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "url": {
+          "type": "string",
+          "pattern": "^https://(?:tibia\\.fandom\\.com|www\\.tibiawiki\\.com\\.br)/"
+        },
+        "semantic_enrichment_delta": {
+          "$ref": "#/$defs/legacy_delta"
+        },
+        "source_spans": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/legacy_span"
+          }
+        },
+        "heading_witnesses": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/legacy_heading"
+          }
+        },
+        "journal_field_witnesses": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/legacy_journal"
+          }
+        },
+        "source_fact_entries": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/legacy_fact"
+          }
+        },
+        "source_fields": {
+          "type": "object",
+          "properties": {
+            "lvl": {
+              "type": "object",
+              "properties": {
+                "line": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "line_sha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "byte_offset": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "byte_length": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "span_sha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "value": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "meaning": {
+                  "enum": [
+                    "recommendation",
+                    "source_field_only"
+                  ]
+                }
+              },
+              "required": [
+                "line",
+                "line_sha256",
+                "byte_offset",
+                "byte_length",
+                "span_sha256",
+                "value",
+                "meaning"
+              ],
+              "additionalProperties": false
+            },
+            "lvlrec": {
+              "type": "object",
+              "properties": {
+                "line": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "line_sha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "byte_offset": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "byte_length": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "span_sha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "value": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "meaning": {
+                  "enum": [
+                    "recommendation",
+                    "source_field_only"
+                  ]
+                }
+              },
+              "required": [
+                "line",
+                "line_sha256",
+                "byte_offset",
+                "byte_length",
+                "span_sha256",
+                "value",
+                "meaning"
+              ],
+              "additionalProperties": false
+            },
+            "lvlreq": {
+              "type": "object",
+              "properties": {
+                "line": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "line_sha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "byte_offset": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "byte_length": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "span_sha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "value": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "meaning": {
+                  "enum": [
+                    "recommendation",
+                    "source_field_only"
+                  ]
+                }
+              },
+              "required": [
+                "line",
+                "line_sha256",
+                "byte_offset",
+                "byte_length",
+                "span_sha256",
+                "value",
+                "meaning"
+              ],
+              "additionalProperties": false
+            },
+            "lvlmax": {
+              "type": "object",
+              "properties": {
+                "line": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "line_sha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "byte_offset": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "byte_length": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "span_sha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "value": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "meaning": {
+                  "enum": [
+                    "recommendation",
+                    "source_field_only"
+                  ]
+                }
+              },
+              "required": [
+                "line",
+                "line_sha256",
+                "byte_offset",
+                "byte_length",
+                "span_sha256",
+                "value",
+                "meaning"
+              ],
+              "additionalProperties": false
+            },
+            "premium": {
+              "type": "object",
+              "properties": {
+                "line": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "line_sha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "byte_offset": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "byte_length": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "span_sha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "value": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "meaning": {
+                  "enum": [
+                    "recommendation",
+                    "source_field_only"
+                  ]
+                }
+              },
+              "required": [
+                "line",
+                "line_sha256",
+                "byte_offset",
+                "byte_length",
+                "span_sha256",
+                "value",
+                "meaning"
+              ],
+              "additionalProperties": false
+            },
+            "questlog": {
+              "type": "object",
+              "properties": {
+                "line": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "line_sha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "byte_offset": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "byte_length": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "span_sha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "value": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "meaning": {
+                  "enum": [
+                    "recommendation",
+                    "source_field_only"
+                  ]
+                }
+              },
+              "required": [
+                "line",
+                "line_sha256",
+                "byte_offset",
+                "byte_length",
+                "span_sha256",
+                "value",
+                "meaning"
+              ],
+              "additionalProperties": false
+            },
+            "quest_log": {
+              "type": "object",
+              "properties": {
+                "line": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "line_sha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "byte_offset": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "byte_length": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "span_sha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "value": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "meaning": {
+                  "enum": [
+                    "recommendation",
+                    "source_field_only"
+                  ]
+                }
+              },
+              "required": [
+                "line",
+                "line_sha256",
+                "byte_offset",
+                "byte_length",
+                "span_sha256",
+                "value",
+                "meaning"
+              ],
+              "additionalProperties": false
+            },
+            "log": {
+              "type": "object",
+              "properties": {
+                "line": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "line_sha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "byte_offset": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "byte_length": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "span_sha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "value": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "meaning": {
+                  "enum": [
+                    "recommendation",
+                    "source_field_only"
+                  ]
+                }
+              },
+              "required": [
+                "line",
+                "line_sha256",
+                "byte_offset",
+                "byte_length",
+                "span_sha256",
+                "value",
+                "meaning"
+              ],
+              "additionalProperties": false
+            },
+            "team": {
+              "type": "object",
+              "properties": {
+                "line": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "line_sha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "byte_offset": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "byte_length": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "span_sha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "value": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "meaning": {
+                  "enum": [
+                    "recommendation",
+                    "source_field_only"
+                  ]
+                }
+              },
+              "required": [
+                "line",
+                "line_sha256",
+                "byte_offset",
+                "byte_length",
+                "span_sha256",
+                "value",
+                "meaning"
+              ],
+              "additionalProperties": false
+            },
+            "levelnote": {
+              "type": "object",
+              "properties": {
+                "line": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "line_sha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "byte_offset": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "byte_length": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "span_sha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "value": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "meaning": {
+                  "enum": [
+                    "recommendation",
+                    "source_field_only"
+                  ]
+                }
+              },
+              "required": [
+                "line",
+                "line_sha256",
+                "byte_offset",
+                "byte_length",
+                "span_sha256",
+                "value",
+                "meaning"
+              ],
+              "additionalProperties": false
+            },
+            "lvlnote": {
+              "type": "object",
+              "properties": {
+                "line": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "line_sha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "byte_offset": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "byte_length": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "span_sha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "value": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "meaning": {
+                  "enum": [
+                    "recommendation",
+                    "source_field_only"
+                  ]
+                }
+              },
+              "required": [
+                "line",
+                "line_sha256",
+                "byte_offset",
+                "byte_length",
+                "span_sha256",
+                "value",
+                "meaning"
+              ],
+              "additionalProperties": false
+            },
+            "time": {
+              "type": "object",
+              "properties": {
+                "line": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "line_sha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "byte_offset": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "byte_length": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "span_sha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "value": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "meaning": {
+                  "enum": [
+                    "recommendation",
+                    "source_field_only"
+                  ]
+                }
+              },
+              "required": [
+                "line",
+                "line_sha256",
+                "byte_offset",
+                "byte_length",
+                "span_sha256",
+                "value",
+                "meaning"
+              ],
+              "additionalProperties": false
+            },
+            "timealloc": {
+              "type": "object",
+              "properties": {
+                "line": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "line_sha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "byte_offset": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "byte_length": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "span_sha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "value": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "meaning": {
+                  "enum": [
+                    "recommendation",
+                    "source_field_only"
+                  ]
+                }
+              },
+              "required": [
+                "line",
+                "line_sha256",
+                "byte_offset",
+                "byte_length",
+                "span_sha256",
+                "value",
+                "meaning"
+              ],
+              "additionalProperties": false
+            },
+            "duration": {
+              "type": "object",
+              "properties": {
+                "line": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "line_sha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "byte_offset": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "byte_length": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "span_sha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "value": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "meaning": {
+                  "enum": [
+                    "recommendation",
+                    "source_field_only"
+                  ]
+                }
+              },
+              "required": [
+                "line",
+                "line_sha256",
+                "byte_offset",
+                "byte_length",
+                "span_sha256",
+                "value",
+                "meaning"
+              ],
+              "additionalProperties": false
+            },
+            "removed": {
+              "type": "object",
+              "properties": {
+                "line": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "line_sha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "byte_offset": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "byte_length": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "span_sha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "value": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "meaning": {
+                  "enum": [
+                    "recommendation",
+                    "source_field_only"
+                  ]
+                }
+              },
+              "required": [
+                "line",
+                "line_sha256",
+                "byte_offset",
+                "byte_length",
+                "span_sha256",
+                "value",
+                "meaning"
+              ],
+              "additionalProperties": false
+            },
+            "requirements": {
+              "type": "object",
+              "properties": {
+                "line": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "line_sha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "byte_offset": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "byte_length": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "span_sha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "value": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "meaning": {
+                  "enum": [
+                    "recommendation",
+                    "source_field_only"
+                  ]
+                }
+              },
+              "required": [
+                "line",
+                "line_sha256",
+                "byte_offset",
+                "byte_length",
+                "span_sha256",
+                "value",
+                "meaning"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [],
+          "additionalProperties": false
+        },
+        "source_field_listing_complete": {
+          "const": false
+        },
+        "access_method": {
+          "const": "remote_desktop_browser"
+        },
+        "processing_method": {
+          "const": "offline_pinned_capture"
+        },
+        "target_cut": {
+          "enum": [
+            "2026-09-27",
+            "2026-10-01"
+          ]
+        },
+        "revision_timestamp": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z$"
+        },
+        "raw_capture": {
+          "type": "object",
+          "properties": {
+            "body_path": {
+              "type": "string"
+            },
+            "bytes": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "sha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "publication": {
+              "const": "REFERENCE_ONLY_SCRATCH"
+            }
+          },
+          "required": [
+            "body_path",
+            "bytes",
+            "sha256",
+            "publication"
+          ],
+          "additionalProperties": false
+        },
+        "source_revision_verified": {
+          "const": false
+        },
+        "historical_acquisition_verified": {
+          "const": true
+        },
+        "proof_verification": {
+          "const": "RECORDED_ACQUISITION_ONLY"
+        },
+        "classification": {
+          "const": "DERIVED"
+        },
+        "runtime_promotion": {
+          "const": false
+        },
+        "unclosed_table": {
+          "const": true
+        },
+        "bounded_scope_corrections": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "provider",
+        "relation",
+        "pageid",
+        "revid",
+        "content_sha256",
+        "url",
+        "semantic_enrichment_delta",
+        "source_spans",
+        "heading_witnesses",
+        "journal_field_witnesses",
+        "source_fact_entries",
+        "source_fields",
+        "source_field_listing_complete",
+        "access_method",
+        "processing_method",
+        "target_cut",
+        "revision_timestamp",
+        "raw_capture",
+        "source_revision_verified",
+        "historical_acquisition_verified",
+        "proof_verification",
+        "classification",
+        "runtime_promotion"
+      ],
+      "additionalProperties": false
+    },
+    "legacy_entry": {
+      "type": "object",
+      "properties": {
+        "historical_donor_status": {
+          "type": "object"
+        },
+        "source_identity_overlap": {
+          "type": "object"
+        },
+        "source_field_completeness": {
+          "type": "string"
+        },
+        "canonical_binding_readiness": {
+          "type": "string"
+        },
+        "source_specification": {
+          "type": "array"
+        },
+        "unresolved": {
+          "type": "array"
+        },
+        "item_name_review_candidates": {
+          "type": "array"
+        },
+        "source_fields_with_provenance": {
+          "type": "array"
+        },
+        "source_identity_links": {
+          "type": "array"
+        },
+        "source_item_identity_bindings": {
+          "type": "array"
+        },
+        "verified_source_conditions": {
+          "type": "array"
+        },
+        "wiki_title": {
+          "type": "string"
+        },
+        "source_refs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/legacy_source_ref"
+          }
+        },
+        "migration_status": {
+          "const": "BLOCKED_UNKNOWN_BINDINGS"
+        },
+        "definition_complete": {
+          "const": false
+        },
+        "runtime_readiness": {
+          "const": "UNKNOWN"
+        },
+        "available_model_projection": {
+          "type": "string"
+        },
+        "baseline_entry_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "source_fact_supplements": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/legacy_source"
+          }
+        },
+        "source_capture_complete_for_selected_revisions": {
+          "const": true
+        },
+        "source_field_listing_complete": {
+          "const": false
+        }
+      },
+      "required": [
+        "wiki_title",
+        "source_refs",
+        "source_specification",
+        "unresolved",
+        "migration_status",
+        "definition_complete",
+        "runtime_readiness",
+        "baseline_entry_sha256",
+        "source_fact_supplements",
+        "source_capture_complete_for_selected_revisions",
+        "source_field_listing_complete"
+      ],
+      "additionalProperties": false
+    },
+    "legacy_authored_supplement": {
+      "type": "object",
+      "properties": {
+        "schema": {
+          "const": "OTERYN_BOUNDED_WIKI_FACT_SUPPLEMENT/v1"
+        },
+        "chunk": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 5
+        },
+        "entries": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "wiki_title": {
+                "type": "string"
+              },
+              "sources": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/legacy_source"
+                }
+              },
+              "definition_complete": {
+                "const": false
+              },
+              "runtime_promotion": {
+                "const": false
+              }
+            },
+            "required": [
+              "wiki_title",
+              "sources",
+              "definition_complete",
+              "runtime_promotion"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "definition_complete": {
+          "const": false
+        },
+        "runtime_promotion": {
+          "const": false
+        },
+        "source_field_listing_complete": {
+          "const": false
+        }
+      },
+      "required": [
+        "schema",
+        "chunk",
+        "entries",
+        "definition_complete",
+        "runtime_promotion",
+        "source_field_listing_complete"
+      ],
+      "additionalProperties": false
+    },
+    "legacy_acquisition_receipt": {
+      "type": "object",
+      "properties": {
+        "schema": {
+          "const": "OTERYN_RECORDED_WIKI_ACQUISITION/v1"
+        },
+        "qualification": {
+          "const": "RAW_BODIES_VERIFIED_IN_PRIOR_ACQUISITION_ONLY"
+        },
+        "frozen_handoff_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "frozen_output_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "raw_capture_manifest_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "baseline_inventory_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "selection_receipt_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "source_records": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "provider": {
+                "enum": [
+                  "tibia_fandom",
+                  "tibiawiki_br"
+                ]
+              },
+              "relation": {
+                "enum": [
+                  "base",
+                  "spoiler",
+                  "crosscheck"
+                ]
+              },
+              "pageid": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "revid": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "content_sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              "url": {
+                "type": "string",
+                "pattern": "^https://(?:tibia\\.fandom\\.com|www\\.tibiawiki\\.com\\.br)/"
+              },
+              "wiki_title": {
+                "type": "string"
+              },
+              "source_fact_sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              "frozen_source_fact_sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              }
+            },
+            "required": [
+              "provider",
+              "relation",
+              "pageid",
+              "revid",
+              "content_sha256",
+              "url",
+              "wiki_title",
+              "source_fact_sha256",
+              "frozen_source_fact_sha256"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "runtime_promotion": {
+          "const": false
+        }
+      },
+      "required": [
+        "schema",
+        "qualification",
+        "frozen_handoff_sha256",
+        "frozen_output_sha256",
+        "raw_capture_manifest_sha256",
+        "baseline_inventory_sha256",
+        "selection_receipt_sha256",
+        "source_records",
+        "runtime_promotion"
+      ],
+      "additionalProperties": false
+    },
+    "legacy_input_manifest": {
+      "type": "object",
+      "properties": {
+        "schema": {
+          "const": "OTERYN_PORTABLE_SOURCE_INPUT_MANIFEST/v1"
+        },
+        "inputs": {
+          "type": "object",
+          "patternProperties": {
+            "^[a-z0-9-]+\\.json$": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "schema",
+        "inputs"
+      ],
+      "additionalProperties": false
+    },
+    "fresh_quest": {
+      "type": "object",
+      "required": [
+        "wiki_title",
+        "source",
+        "source_facts",
+        "coverage_state",
+        "authored_candidates",
+        "source_checks",
+        "global_rewards",
+        "global_prerequisites_beyond_cached_fields",
+        "fresh_sources"
+      ],
+      "properties": {
+        "wiki_title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source": {
+          "type": "object",
+          "required": [
+            "provider",
+            "pageid",
+            "revid",
+            "revision_timestamp",
+            "retrieved_at",
+            "url",
+            "classification",
+            "target_cut",
+            "target_continuity"
+          ],
+          "properties": {
+            "provider": {
+              "const": "tibia_fandom"
+            },
+            "pageid": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "revid": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "classification": {
+              "const": "DERIVED"
+            },
+            "target_continuity": {
+              "const": "DERIVED"
+            }
+          }
+        },
+        "source_facts": {
+          "type": "object",
+          "required": [
+            "in_quest_log",
+            "premium",
+            "lvl",
+            "implemented"
+          ],
+          "properties": {
+            "in_quest_log": {
+              "type": "boolean"
+            },
+            "premium": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "lvl": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "implemented": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        "coverage_state": {
+          "enum": [
+            "directly_authored",
+            "represented_by_family",
+            "unrepresented",
+            "conflict"
+          ]
+        },
+        "authored_candidates": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "identity",
+              "kind",
+              "ots_shown_in_quest_log",
+              "readiness_data"
+            ],
+            "properties": {
+              "readiness_data": {
+                "type": "object",
+                "required": [
+                  "classification",
+                  "features",
+                  "data_gaps",
+                  "runtime_readiness"
+                ],
+                "properties": {
+                  "runtime_readiness": {
+                    "const": "UNKNOWN"
+                  },
+                  "classification": {
+                    "enum": [
+                      "DERIVED",
+                      "UNKNOWN"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "family_representation": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "properties": {
+            "scope": {
+              "const": "partial_named_missions"
+            }
+          }
+        },
+        "source_checks": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "kind"
+            ],
+            "properties": {
+              "kind": {
+                "enum": [
+                  "duplicate_title",
+                  "quest_log_conflict",
+                  "structured_source_difference",
+                  "source_identity_overlap"
+                ]
+              },
+              "keys": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 300
+                }
+              },
+              "key": {
+                "type": "string"
+              },
+              "wiki_reference_in_quest_log": {
+                "type": "boolean"
+              },
+              "ots_shown_in_quest_log": {
+                "type": "boolean"
+              },
+              "field": {
+                "enum": [
+                  "level",
+                  "premium"
+                ]
+              },
+              "fandom_value": {
+                "type": "string"
+              },
+              "br_value": {
+                "type": "string"
+              },
+              "fandom_target_cut": {
+                "const": "2026-09-27"
+              },
+              "br_target_cut": {
+                "type": "string"
+              },
+              "classification": {
+                "const": "CONFLICT"
+              },
+              "resolution": {
+                "type": "string"
+              },
+              "titles": {
+                "type": "array",
+                "minItems": 2,
+                "items": {
+                  "type": "string"
+                }
+              },
+              "basis": {
+                "type": "string"
+              },
+              "evidence": {
+                "type": "array",
+                "minItems": 2,
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "provider",
+                    "pageid",
+                    "revid",
+                    "content_sha256",
+                    "url"
+                  ]
+                }
+              }
+            },
+            "additionalProperties": false,
+            "allOf": [
+              {
+                "if": {
+                  "properties": {
+                    "kind": {
+                      "const": "duplicate_title"
+                    }
+                  }
+                },
+                "then": {
+                  "required": [
+                    "keys"
+                  ]
+                }
+              },
+              {
+                "if": {
+                  "properties": {
+                    "kind": {
+                      "const": "quest_log_conflict"
+                    }
+                  }
+                },
+                "then": {
+                  "required": [
+                    "key",
+                    "wiki_reference_in_quest_log",
+                    "ots_shown_in_quest_log"
+                  ]
+                }
+              },
+              {
+                "if": {
+                  "properties": {
+                    "kind": {
+                      "const": "structured_source_difference"
+                    }
+                  }
+                },
+                "then": {
+                  "required": [
+                    "field",
+                    "fandom_value",
+                    "br_value",
+                    "fandom_target_cut",
+                    "br_target_cut",
+                    "classification",
+                    "resolution"
+                  ]
+                }
+              },
+              {
+                "if": {
+                  "properties": {
+                    "kind": {
+                      "const": "source_identity_overlap"
+                    }
+                  }
+                },
+                "then": {
+                  "required": [
+                    "titles",
+                    "basis",
+                    "evidence",
+                    "classification",
+                    "resolution"
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        "source_backed_authoring": {
+          "type": [
+            "object",
+            "null"
+          ]
+        },
+        "global_rewards": {
+          "const": {
+            "classification": "UNKNOWN"
+          }
+        },
+        "global_prerequisites_beyond_cached_fields": {
+          "const": {
+            "classification": "UNKNOWN"
+          }
+        },
+        "fresh_sources": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/fresh_freshSource"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "fresh_hash": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "fresh_entityQuantity": {
+      "type": "object",
+      "required": [
+        "entity",
+        "quantity"
+      ],
+      "properties": {
+        "entity": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 300
+        },
+        "quantity": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false
+    },
+    "fresh_requirementReferences": {
+      "type": "object",
+      "required": [
+        "referenced_entities",
+        "quantity",
+        "scope",
+        "alternative_documented"
+      ],
+      "properties": {
+        "referenced_entities": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 300
+          }
+        },
+        "quantity": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "scope": {
+          "enum": [
+            "mission_only",
+            "daily_task",
+            "source_list_unclassified"
+          ]
+        },
+        "alternative_documented": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "fresh_freshFields": {
+      "type": "object",
+      "required": [
+        "premium",
+        "level",
+        "recommended_level",
+        "level_note",
+        "quest_log",
+        "implemented",
+        "team",
+        "reward_entity_references",
+        "reward_selection",
+        "location_entity_references",
+        "quest_entity_references",
+        "requirement_entity_references",
+        "mission_heading_references",
+        "listing_complete"
+      ],
+      "properties": {
+        "premium": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "level": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "recommended_level": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "level_note": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "quest_log": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "implemented": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "team": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "reward_entity_references": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/fresh_entityQuantity"
+          }
+        },
+        "reward_selection": {
+          "enum": [
+            "choice_documented",
+            "UNKNOWN"
+          ]
+        },
+        "location_entity_references": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 300
+          }
+        },
+        "quest_entity_references": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 300
+          }
+        },
+        "requirement_entity_references": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/fresh_requirementReferences"
+          }
+        },
+        "mission_heading_references": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 300
+          }
+        },
+        "listing_complete": {
+          "const": false
+        },
+        "semantic_enrichment": {
+          "$ref": "#/$defs/fresh_semanticEnrichment"
+        }
+      },
+      "additionalProperties": false
+    },
+    "fresh_freshSource": {
+      "type": "object",
+      "required": [
+        "provider",
+        "title",
+        "pageid",
+        "revid",
+        "revision_timestamp",
+        "content_sha256",
+        "available",
+        "redirect_target",
+        "source_fields",
+        "target_cut",
+        "target_continuity",
+        "access_method",
+        "url",
+        "classification",
+        "evidence_role",
+        "confidence",
+        "source_dependency_possible",
+        "scope",
+        "relation",
+        "mapping_basis"
+      ],
+      "properties": {
+        "provider": {
+          "enum": [
+            "tibia_fandom",
+            "tibiawiki_br"
+          ]
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "pageid": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "revid": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "revision_timestamp": {
+          "type": "string",
+          "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T"
+        },
+        "content_sha256": {
+          "$ref": "#/$defs/fresh_hash"
+        },
+        "available": {
+          "const": true
+        },
+        "redirect_target": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "source_fields": {
+          "$ref": "#/$defs/fresh_freshFields"
+        },
+        "target_cut": {
+          "enum": [
+            "2026-09-27",
+            "2026-10-01"
+          ]
+        },
+        "target_continuity": {
+          "enum": [
+            "DERIVED",
+            "UNKNOWN"
+          ]
+        },
+        "access_method": {
+          "enum": [
+            "remote_desktop_browser",
+            "normal_web"
+          ]
+        },
+        "url": {
+          "type": "string",
+          "pattern": "^https://"
+        },
+        "classification": {
+          "const": "DERIVED"
+        },
+        "evidence_role": {
+          "const": "STRUCTURED_REFERENCE_DATA"
+        },
+        "confidence": {
+          "const": "MEDIUM"
+        },
+        "source_dependency_possible": {
+          "const": true
+        },
+        "scope": {
+          "const": "source-scoped references; lists not complete; no narrative text or runtime promotion"
+        },
+        "relation": {
+          "enum": [
+            "base",
+            "spoiler",
+            "crosscheck"
+          ]
+        },
+        "mapping_basis": {
+          "type": "string",
+          "minLength": 1
+        },
+        "target_revision_selected": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "fresh_semanticEnrichment": {
+      "type": "object",
+      "required": [
+        "level",
+        "reward_entity_references",
+        "reward_groups",
+        "prerequisite_expressions",
+        "source_revision_sha256",
+        "semantic_sha256",
+        "source_field_listing_complete",
+        "runtime_promotion"
+      ],
+      "properties": {
+        "source_revision_sha256": {
+          "$ref": "#/$defs/fresh_hash"
+        },
+        "semantic_sha256": {
+          "$ref": "#/$defs/fresh_hash"
+        },
+        "extractor": {
+          "const": "structured-wiki-enrichment/v2"
+        },
+        "runtime_promotion": {
+          "const": false
+        },
+        "source_field_listing_complete": {
+          "const": false
+        },
+        "level": {
+          "type": "object",
+          "required": [
+            "source_value",
+            "kind",
+            "plain_integer",
+            "mentioned_numbers"
+          ],
+          "properties": {
+            "source_value": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "kind": {
+              "enum": [
+                "plain_integer",
+                "explicit_none",
+                "varies",
+                "not_stated",
+                "uncertain",
+                "scoped_or_range"
+              ]
+            },
+            "plain_integer": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "mentioned_numbers": {
+              "type": "array",
+              "items": {
+                "type": "integer",
+                "minimum": 0
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        "reward_entity_references": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/fresh_scopedEntity"
+          }
+        },
+        "reward_groups": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "scope_anchor",
+              "entities"
+            ],
+            "properties": {
+              "scope_anchor": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "scope_kind": {
+                "enum": [
+                  "vocation"
+                ]
+              },
+              "entities": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/fresh_scopedEntity"
+                }
+              },
+              "evidence": {
+                "$ref": "#/$defs/fresh_lineEvidence"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "prerequisite_expressions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/fresh_sourceExpression"
+          }
+        },
+        "unparsed_requirements": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "line",
+              "line_sha256",
+              "reason"
+            ],
+            "properties": {
+              "line": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "line_sha256": {
+                "$ref": "#/$defs/fresh_hash"
+              },
+              "reason": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "reward_quantitative_facts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "kind",
+              "amount",
+              "scope",
+              "evidence"
+            ],
+            "properties": {
+              "kind": {
+                "enum": [
+                  "experience",
+                  "experience_rate_bonus_percent"
+                ]
+              },
+              "amount": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "scope": {
+                "enum": [
+                  "each_mission",
+                  "highest_rank",
+                  "npc_talks",
+                  "event"
+                ]
+              },
+              "evidence": {
+                "$ref": "#/$defs/fresh_lineEvidence"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "reward_declared_none": {
+          "type": "boolean"
+        },
+        "reward_selection": {
+          "enum": [
+            "choice_documented",
+            "UNKNOWN"
+          ]
+        },
+        "reward_modes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "removed_media_refs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "unresolved_templates": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "fresh_lineEvidence": {
+      "type": "object",
+      "required": [
+        "line",
+        "line_sha256"
+      ],
+      "properties": {
+        "line": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "line_sha256": {
+          "$ref": "#/$defs/fresh_hash"
+        }
+      },
+      "additionalProperties": false
+    },
+    "fresh_scopedEntity": {
+      "type": "object",
+      "required": [
+        "entity",
+        "quantity",
+        "binding_status"
+      ],
+      "properties": {
+        "entity": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 300,
+          "not": {
+            "pattern": "^(?:[Ii]mage|[Ff]ile|[Aa]rquivo|[Ff]icheiro):"
+          }
+        },
+        "quantity": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "binding_status": {
+          "const": "UNKNOWN"
+        },
+        "source_namespace": {
+          "const": "mediawiki/page_title"
+        }
+      },
+      "additionalProperties": false
+    },
+    "fresh_sourceExpression": {
+      "type": "object",
+      "required": [
+        "line",
+        "line_sha256",
+        "section",
+        "scope",
+        "scope_anchor",
+        "operator",
+        "execution_semantics",
+        "declaration_strength",
+        "nodes"
+      ],
+      "properties": {
+        "line": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "line_sha256": {
+          "$ref": "#/$defs/fresh_hash"
+        },
+        "section": {
+          "type": "string"
+        },
+        "scope": {
+          "enum": [
+            "mission_only",
+            "daily_task",
+            "recommendation",
+            "source_requirement_list",
+            "optional",
+            "entity_only",
+            "completion_only"
+          ]
+        },
+        "scope_anchor": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "operator": {
+          "enum": [
+            "references",
+            "any_of_references"
+          ]
+        },
+        "execution_semantics": {
+          "const": "UNKNOWN"
+        },
+        "declaration_strength": {
+          "enum": [
+            "reference_only",
+            "explicit",
+            "uncertain"
+          ]
+        },
+        "nodes": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/fresh_sourceNode"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "fresh_sourceNode": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "kind",
+            "value",
+            "binding_status",
+            "applies_to"
+          ],
+          "properties": {
+            "kind": {
+              "const": "level_at_least"
+            },
+            "value": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "binding_status": {
+              "const": "SOURCE_DECLARED"
+            },
+            "applies_to": {
+              "enum": [
+                "alternative_entity",
+                "mission_or_addon",
+                "full_completion",
+                "world",
+                "source_requirement_list"
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "kind",
+            "entity",
+            "quantity",
+            "binding_status",
+            "source_namespace"
+          ],
+          "properties": {
+            "kind": {
+              "enum": [
+                "entity_reference",
+                "entity_use_reference",
+                "quest_completion_reference",
+                "quest_stage_reference"
+              ]
+            },
+            "entity": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 300,
+              "not": {
+                "pattern": "^(?:[Ii]mage|[Ff]ile|[Aa]rquivo|[Ff]icheiro):"
+              }
+            },
+            "quantity": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "binding_status": {
+              "const": "UNKNOWN"
+            },
+            "source_namespace": {
+              "const": "mediawiki/page_title"
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    }
+  },
+  "type": "object",
+  "properties": {
+    "schema": {
+      "const": "OTERYN_UNBOUND_QUEST_SOURCE_FACTS/v1"
+    },
+    "entries": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "wiki_title": {
+            "type": "string",
+            "minLength": 1
+          },
+          "parent_entry_sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "source_refs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/legacy_source_ref"
+            }
+          },
+          "objective_entity_references": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "provider": {
+                  "enum": [
+                    "tibia_fandom",
+                    "tibiawiki_br"
+                  ]
+                },
+                "relation": {
+                  "enum": [
+                    "base",
+                    "spoiler",
+                    "crosscheck"
+                  ]
+                },
+                "pageid": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "revid": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "content_sha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "line": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "line_sha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "entity_references": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "execution_order": {
+                  "const": "UNKNOWN"
+                },
+                "binding_status": {
+                  "const": "UNKNOWN"
+                },
+                "classification": {
+                  "const": "LEXICAL_REFERENCE_ONLY"
+                }
+              },
+              "required": [
+                "provider",
+                "relation",
+                "pageid",
+                "revid",
+                "content_sha256",
+                "line",
+                "line_sha256",
+                "entity_references",
+                "execution_order",
+                "binding_status",
+                "classification"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "source_directive_references": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "provider": {
+                  "enum": [
+                    "tibia_fandom",
+                    "tibiawiki_br"
+                  ]
+                },
+                "relation": {
+                  "enum": [
+                    "base",
+                    "spoiler",
+                    "crosscheck"
+                  ]
+                },
+                "pageid": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "revid": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "content_sha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "line": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "line_sha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "entity_references": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "execution_order": {
+                  "const": "UNKNOWN"
+                },
+                "binding_status": {
+                  "const": "UNKNOWN"
+                },
+                "classification": {
+                  "const": "LEXICAL_REFERENCE_ONLY"
+                },
+                "action_keywords": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              },
+              "required": [
+                "provider",
+                "relation",
+                "pageid",
+                "revid",
+                "content_sha256",
+                "line",
+                "line_sha256",
+                "entity_references",
+                "execution_order",
+                "binding_status",
+                "classification",
+                "action_keywords"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "source_heading_references": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "provider": {
+                  "enum": [
+                    "tibia_fandom",
+                    "tibiawiki_br"
+                  ]
+                },
+                "relation": {
+                  "enum": [
+                    "base",
+                    "spoiler",
+                    "crosscheck"
+                  ]
+                },
+                "value": {
+                  "$ref": "#/$defs/legacy_heading"
+                }
+              },
+              "required": [
+                "provider",
+                "relation",
+                "value"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "source_requirement_expressions": {
+            "type": "array",
+            "items": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "provider": {
+                      "enum": [
+                        "tibia_fandom",
+                        "tibiawiki_br"
+                      ]
+                    },
+                    "relation": {
+                      "enum": [
+                        "base",
+                        "spoiler",
+                        "crosscheck"
+                      ]
+                    },
+                    "origin": {
+                      "const": "source_specification"
+                    },
+                    "value": {
+                      "anyOf": [
+                        {
+                          "$ref": "#/$defs/legacy_prerequisite"
+                        },
+                        {
+                          "$ref": "#/$defs/fresh_sourceExpression"
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "provider",
+                    "relation",
+                    "origin",
+                    "value"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "provider": {
+                      "enum": [
+                        "tibia_fandom",
+                        "tibiawiki_br"
+                      ]
+                    },
+                    "relation": {
+                      "enum": [
+                        "base",
+                        "spoiler",
+                        "crosscheck"
+                      ]
+                    },
+                    "origin": {
+                      "const": "source_fact_supplements"
+                    },
+                    "value": {
+                      "$ref": "#/$defs/legacy_prerequisite"
+                    }
+                  },
+                  "required": [
+                    "provider",
+                    "relation",
+                    "origin",
+                    "value"
+                  ],
+                  "additionalProperties": false
+                }
+              ]
+            }
+          },
+          "source_reward_references": {
+            "type": "array",
+            "items": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "provider": {
+                      "enum": [
+                        "tibia_fandom",
+                        "tibiawiki_br"
+                      ]
+                    },
+                    "relation": {
+                      "enum": [
+                        "base",
+                        "spoiler",
+                        "crosscheck"
+                      ]
+                    },
+                    "origin": {
+                      "const": "source_specification"
+                    },
+                    "value": {
+                      "anyOf": [
+                        {
+                          "$ref": "#/$defs/legacy_entity"
+                        },
+                        {
+                          "$ref": "#/$defs/fresh_scopedEntity"
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "provider",
+                    "relation",
+                    "origin",
+                    "value"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "provider": {
+                      "enum": [
+                        "tibia_fandom",
+                        "tibiawiki_br"
+                      ]
+                    },
+                    "relation": {
+                      "enum": [
+                        "base",
+                        "spoiler",
+                        "crosscheck"
+                      ]
+                    },
+                    "origin": {
+                      "const": "source_fact_supplements"
+                    },
+                    "value": {
+                      "$ref": "#/$defs/legacy_entity"
+                    }
+                  },
+                  "required": [
+                    "provider",
+                    "relation",
+                    "origin",
+                    "value"
+                  ],
+                  "additionalProperties": false
+                }
+              ]
+            }
+          },
+          "source_reward_groups": {
+            "type": "array",
+            "items": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "provider": {
+                      "enum": [
+                        "tibia_fandom",
+                        "tibiawiki_br"
+                      ]
+                    },
+                    "relation": {
+                      "enum": [
+                        "base",
+                        "spoiler",
+                        "crosscheck"
+                      ]
+                    },
+                    "origin": {
+                      "const": "source_specification"
+                    },
+                    "value": {
+                      "anyOf": [
+                        {
+                          "$ref": "#/$defs/legacy_reward_group"
+                        },
+                        {
+                          "type": "object",
+                          "required": [
+                            "scope_anchor",
+                            "entities"
+                          ],
+                          "properties": {
+                            "scope_anchor": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "scope_kind": {
+                              "enum": [
+                                "vocation"
+                              ]
+                            },
+                            "entities": {
+                              "type": "array",
+                              "items": {
+                                "$ref": "#/$defs/fresh_scopedEntity"
+                              }
+                            },
+                            "evidence": {
+                              "$ref": "#/$defs/fresh_lineEvidence"
+                            }
+                          },
+                          "additionalProperties": false
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "provider",
+                    "relation",
+                    "origin",
+                    "value"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "provider": {
+                      "enum": [
+                        "tibia_fandom",
+                        "tibiawiki_br"
+                      ]
+                    },
+                    "relation": {
+                      "enum": [
+                        "base",
+                        "spoiler",
+                        "crosscheck"
+                      ]
+                    },
+                    "origin": {
+                      "const": "source_fact_supplements"
+                    },
+                    "value": {
+                      "$ref": "#/$defs/legacy_reward_group"
+                    }
+                  },
+                  "required": [
+                    "provider",
+                    "relation",
+                    "origin",
+                    "value"
+                  ],
+                  "additionalProperties": false
+                }
+              ]
+            }
+          },
+          "source_reward_quantitative_facts": {
+            "type": "array",
+            "items": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "provider": {
+                      "enum": [
+                        "tibia_fandom",
+                        "tibiawiki_br"
+                      ]
+                    },
+                    "relation": {
+                      "enum": [
+                        "base",
+                        "spoiler",
+                        "crosscheck"
+                      ]
+                    },
+                    "origin": {
+                      "const": "source_specification"
+                    },
+                    "value": {
+                      "anyOf": [
+                        {
+                          "$ref": "#/$defs/legacy_quantitative_reward"
+                        },
+                        {
+                          "type": "object",
+                          "required": [
+                            "kind",
+                            "amount",
+                            "scope",
+                            "evidence"
+                          ],
+                          "properties": {
+                            "kind": {
+                              "enum": [
+                                "experience",
+                                "experience_rate_bonus_percent"
+                              ]
+                            },
+                            "amount": {
+                              "type": "integer",
+                              "minimum": 0
+                            },
+                            "scope": {
+                              "enum": [
+                                "each_mission",
+                                "highest_rank",
+                                "npc_talks",
+                                "event"
+                              ]
+                            },
+                            "evidence": {
+                              "$ref": "#/$defs/fresh_lineEvidence"
+                            }
+                          },
+                          "additionalProperties": false
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "provider",
+                    "relation",
+                    "origin",
+                    "value"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "provider": {
+                      "enum": [
+                        "tibia_fandom",
+                        "tibiawiki_br"
+                      ]
+                    },
+                    "relation": {
+                      "enum": [
+                        "base",
+                        "spoiler",
+                        "crosscheck"
+                      ]
+                    },
+                    "origin": {
+                      "const": "source_fact_supplements"
+                    },
+                    "value": {
+                      "$ref": "#/$defs/legacy_quantitative_reward"
+                    }
+                  },
+                  "required": [
+                    "provider",
+                    "relation",
+                    "origin",
+                    "value"
+                  ],
+                  "additionalProperties": false
+                }
+              ]
+            }
+          },
+          "source_fields": {
+            "type": "array"
+          },
+          "known_source_ids": {
+            "type": "array",
+            "maxItems": 0
+          },
+          "unresolved": {
+            "type": "array"
+          },
+          "source_binding_status": {
+            "const": "UNKNOWN"
+          },
+          "full_walkthrough_complete": {
+            "const": false
+          },
+          "definition_complete": {
+            "const": false
+          },
+          "runtime_readiness": {
+            "const": "UNKNOWN"
+          }
+        },
+        "required": [
+          "wiki_title",
+          "parent_entry_sha256",
+          "source_refs",
+          "objective_entity_references",
+          "source_directive_references",
+          "source_heading_references",
+          "source_requirement_expressions",
+          "source_reward_references",
+          "source_reward_groups",
+          "source_reward_quantitative_facts",
+          "source_fields",
+          "known_source_ids",
+          "unresolved",
+          "source_binding_status",
+          "full_walkthrough_complete",
+          "definition_complete",
+          "runtime_readiness"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "proof_mode": {
+      "const": "RECORDED_LOCAL_PINNED_WITNESSES"
+    },
+    "raw_body_rechecked": {
+      "const": false
+    },
+    "definition_complete": {
+      "const": false
+    },
+    "runtime_promotion": {
+      "const": false
+    }
+  },
+  "required": [
+    "schema",
+    "entries",
+    "proof_mode",
+    "raw_body_rechecked",
+    "definition_complete",
+    "runtime_promotion"
+  ],
+  "additionalProperties": false
+}
