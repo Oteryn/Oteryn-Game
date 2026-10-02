@@ -33,8 +33,14 @@ def build(catalogue, bundle, definitions, source_specs, approximations=None):
     if (source_specs['titles'] != len(titles) or source_specs['no_runtime_promotion'] is not True
             or source_specs['source_definition_complete'] is not False or source_specs['runtime_readiness'] != 'UNKNOWN'):
         raise ValueError('SOURCE specification count or authority mismatch')
-    native = {}
+    native, authored = {}, {}
     for definition in definitions:
+        if definition.get('definition_profile') == 'oteryn_authored_v1':
+            title = definition['recipe']['wiki_title']
+            if title in authored or title not in titles or definition['runtime_enabled'] is not False:
+                raise ValueError('invalid authored title or admission')
+            authored[title] = definition
+            continue
         ref = definition['source_refs']['quest']['key']
         if ref in native:
             raise ValueError('duplicate canonical source binding: ' + ref)
@@ -88,9 +94,19 @@ def build(catalogue, bundle, definitions, source_specs, approximations=None):
             flags.append('imported')
         if missing:
             flags.append('partial')
-        if not keys:
+        if not keys and title not in authored:
             flags.append('needs_source')
         flags.append('needs_runtime')
+        recipe_definition = authored.get(title)
+        if recipe_definition:
+            if keys:
+                raise ValueError('authored recipe must not replace a donor binding')
+            scope = 'authored'
+            canonical = [recipe_definition]
+            flags.append('authored')
+            missing = [gap for gap in missing if gap['code'] != 'canonical_definition_missing']
+            missing.extend({'code': 'definition_gap', 'canonical_key': recipe_definition['identity']['key'],
+                            'detail': issue} for issue in recipe_definition['missing_data'])
         ready = bool(keys) and len(canonical) == len(keys) and all(d['readiness'] == 'definition_ready' for d in canonical)
         records.append({
             'wiki_title': title, 'wiki_source': row['source'],
@@ -102,11 +118,16 @@ def build(catalogue, bundle, definitions, source_specs, approximations=None):
             'binding_scope': scope, 'source_quest_keys': keys,
             'canonical_quest_refs': [d['identity'] for d in canonical],
             'definition_fields_ready': ready,
+            'authored_recipe_complete': recipe_definition is not None,
             'flags': flags, 'known_gaps': missing,
             'source_page_count': len(row.get('fresh_sources', [])),
             'fidelity_policy': 'pragmatic_oteryn',
-            'approximation_applied': any(approximations.get(key) for key in keys),
-            'approximation_evidence': [copy.deepcopy(e) for key in keys for e in approximations.get(key, [])],
+            'approximation_applied': recipe_definition is not None or any(approximations.get(key) for key in keys),
+            'approximation_evidence': ([{'authored_quest': recipe_definition['identity']['key'],
+                'proof_path': recipe_definition['provenance']['path'],
+                'proof_sha256': recipe_definition['provenance']['sha256'],
+                'source_behavior': 'CHOSEN_OTERYN_RECIPE'}] if recipe_definition else
+                [copy.deepcopy(e) for key in keys for e in approximations.get(key, [])]),
             'runtime_enabled': False,
             'smoke_verification': {'start': 'NOT_RUN', 'progress': 'NOT_RUN',
                                    'finish': 'NOT_RUN', 'reward': 'NOT_RUN',

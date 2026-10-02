@@ -205,7 +205,7 @@ def tree_validator():
     from referencing import Registry, Resource
     here = Path(__file__).parent
     registry = Registry()
-    for name in ('quest_content', 'quest_progress', 'interaction', 'quest_bundle'):
+    for name in ('quest_content', 'quest_progress', 'interaction', 'quest_bundle', 'quest_authored'):
         schema = json.loads((here / (name + '.schema.json')).read_text(encoding='utf-8'))
         registry = registry.with_resource(schema['$id'], Resource.from_contents(schema))
     schema = json.loads((here / 'quest_tree.schema.json').read_text(encoding='utf-8'))
@@ -218,6 +218,8 @@ def expected_files(root, include_registration=False):
     reports = {q['quest']: q for q in read(root, READINESS)['quests']}
     gates = read(root, GATES)['gates']
     records = build_records(quests, claims, reports, gates, read(root, GATE_MANIFEST)['entries'], bound_source_data(root, quests, gates))
+    from authored_quest_authoring import build_records as authored_records
+    records.extend(authored_records(root))
     files, shards = {}, []
     for number, start in enumerate(range(0, len(records), SHARD_SIZE)):
         chunk = records[start:start + SHARD_SIZE]
@@ -229,11 +231,13 @@ def expected_files(root, include_registration=False):
     by_kind = Counter(q['kind'] for q in quests)
     files[DIRECTORY + 'index.json'] = compact({
         'schema': 'OTERYN_FAMILY_INDEX/v1', 'family': 'Quest', 'population_state': 'POPULATED',
-        'record_count': len(records), 'shards': shards, 'scope': 'all_authored_source_quests',
-        'classification': 'OTS_HYPOTHESIS_ONLY',
+        'record_count': len(records), 'shards': shards, 'scope': 'source_quests_and_explicit_oteryn_recipes',
+        'classification': 'SOURCE_AND_CHOSEN_OTERYN_DATA',
+        'source_classification': 'OTS_HYPOTHESIS_ONLY',
         'readiness': dict(sorted(Counter(row['definition']['readiness'] for row in records).items())),
         'missing_data': dict(sorted(missing.items())),
-        'catalogue_coverage': {'source_records': len(quests), 'included_records': len(records), 'excluded_by_kind': {}, 'included_by_kind': dict(sorted(by_kind.items())), 'complete': True},
+        'definition_profiles': {'donor_source': len(quests), 'oteryn_authored_v1': len(records) - len(quests)},
+        'catalogue_coverage': {'source_records': len(quests), 'included_records': len(quests), 'excluded_by_kind': {}, 'included_by_kind': dict(sorted(by_kind.items())), 'complete': True},
         'runtime_readiness': 'NOT_ASSESSED',
         'readiness_scope': 'definition_fields_and_known_source_gaps_only',
         'quest_completeness': 'NOT_ASSESSED',
@@ -242,7 +246,14 @@ def expected_files(root, include_registration=False):
             'tools/content-schema/quest-authoring/ots_readiness.py',
             'tools/content-schema/quest-authoring/quest_tree_authoring.py',
             *[f'tools/content-schema/quest-authoring/{n}.schema.json' for n in ('quest_tree', 'quest_content', 'quest_progress', 'interaction', 'quest_bundle')],
-            *read(root, CLAIM_INDEX)['shards'])],
+            *read(root, CLAIM_INDEX)['shards'],
+            'tools/content-schema/quest-authoring/quest_authored.schema.json',
+            'tools/content-schema/quest-authoring/authored_quest_authoring.py',
+            'tools/content-schema/quest-authoring/samples/authored68/selection.json',
+            'tools/content-schema/quest-authoring/samples/authored68/baseline-rollout.json',
+            'tools/content-schema/quest-authoring/samples/authored68/recipes.json',
+            'tools/content-schema/quest-authoring/samples/authored68/wiki-access.json',
+            'tools/content-schema/quest-authoring/samples/wiki-source-all373/source-specs-373.json')],
         'source_refs': read(root, MANIFEST)['sources'],
         'contract': 'docs/architecture/OTERYN_FULL_GAME_CONTENT_AND_RULESET_TREE_V1.md',
     })

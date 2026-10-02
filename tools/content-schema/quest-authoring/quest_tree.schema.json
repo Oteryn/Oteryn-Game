@@ -33,6 +33,7 @@
     }
   },
   "$defs": {
+    "quest": {"oneOf": [{"$ref": "#/$defs/sourceQuest"}, {"$ref": "oteryn:schema/quest-authored/v1"}]},
     "sourceRef": {
       "type": "object",
       "additionalProperties": false,
@@ -122,7 +123,7 @@
         }
       ]
     },
-    "quest": {
+    "sourceQuest": {
       "type": "object",
       "additionalProperties": false,
       "required": [

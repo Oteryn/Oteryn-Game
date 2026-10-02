@@ -186,10 +186,12 @@ class QuestTreeTests(unittest.TestCase):
         data = tool.bound_source_data(root, quests, gates)
         rows = tool.build_records(quests, claims, reports, gates, checks, data)
         index = tool.read(root, tool.DIRECTORY + 'index.json')
-        old = [row for path in index['shards'] for row in tool.read(root, path)['records']]
-        self.assertEqual(rows[:len(old)], old)
+        committed = [row for path in index['shards'] for row in tool.read(root, path)['records']]
+        old = [r for r in committed if r['definition'].get('definition_profile') != 'oteryn_authored_v1']
+        self.assertEqual(rows, old)
+        self.assertEqual(len(committed) - len(old), 68)
         self.assertEqual(len(rows), len(quests))
-        for row in rows[len(old):]:
+        for row in [r for r in rows if 'source_data' in r['definition']]:
             q = row['definition']; source = next(v for v in quests if v['identity'] == {k: q['source_refs']['quest'][k] for k in ('key', 'revision')})
             self.assertEqual(q['source_data']['quest'], source)
             self.assertEqual(q['native_lowering']['state'], 'WAITING_IMPLEMENTATION')
@@ -242,7 +244,7 @@ class QuestTreeTests(unittest.TestCase):
         schema = json.loads(Path(__file__).with_name('quest_tree.schema.json').read_text())
         jsonschema.Draft202012Validator.check_schema(schema)
         index = json.loads(files[tool.DIRECTORY + 'index.json'])
-        expected_count = len(tool.read(root, tool.SOURCE)['quests'])
+        expected_count = len(tool.read(root, tool.SOURCE)['quests']) + 68
         self.assertEqual(index['record_count'], expected_count)
         self.assertEqual(index['catalogue_coverage']['source_records'], len(tool.read(root, tool.SOURCE)['quests']))
         self.assertTrue(index['catalogue_coverage']['complete'])
