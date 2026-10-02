@@ -98,7 +98,12 @@ def build_records(quests, claims, readiness_reports=None, gates=None, gate_check
             if not owner or owner['family'] != 'Quest' or source_identity(owner) != source_identity(quest['identity']):
                 raise ValueError(f'{key}: committed claim owner does not match source quest: {ref["key"]}')
             canonical.append({'family': 'RewardClaim', **copy.deepcopy(claim['identity'])})
-            if claim['readiness'] != 'ready':
+            if claim.get('definition_profile') == 'authored_variant_v1':
+                issues.append({'code': 'claim_native_lowering_missing', 'source_key': ref['key']})
+                for category in sorted({h['category'] for h in claim['data_holds']}):
+                    code = 'claim_source_data_missing' if category == 'source' else 'claim_item_semantics_missing'
+                    issues.append({'code': code, 'source_key': ref['key']})
+            elif claim['readiness'] != 'ready':
                 issues.append({'code': 'claim_item_semantics_missing', 'source_key': ref['key']})
         requirements = copy.deepcopy(quest.get('requirements', {}))
         for field in ('premium', 'min_level'):

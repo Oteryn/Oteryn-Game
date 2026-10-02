@@ -384,7 +384,7 @@ def directory_index(current: dict, count: int) -> dict:
     updated = dict(current)
     updated["population_state"] = "POPULATED"
     updated["notes"] = (
-        f"Typed interaction definitions. reward_claims/: {count} plain once RewardClaim records "
+        f"Typed interaction definitions. reward_claims/: {count} RewardClaim DATA records "
         "from the chest pilot, built by tools/content-schema/reward-claim-authoring/"
         "reward_claim_authoring.py (CHEST-CONTENT part 2b)."
     )
@@ -515,7 +515,14 @@ def committed_errors() -> list[str]:
         row for shard in index["shards"] for row in load_json(ROOT / shard)["records"]
     ]
     source_claims = load_json(ROOT / CLAIMS_REL)["claims"]
-    errors = validate(records, load_items(), index["source_checks"], source_claims)
+    from reward_claim_variant_authoring import PROFILE, validate as validate_variants
+    plain = [r for r in records if r['definition'].get('definition_profile') != PROFILE]
+    variants = [r for r in records if r['definition'].get('definition_profile') == PROFILE]
+    items = load_items()
+    errors = validate(plain, items, index["source_checks"], source_claims)
+    errors += validate_variants(variants, ROOT, items, stack_problem)
+    if index.get('variant_source_checks') != legacy_uid_checks(records):
+        errors.append('variant legacy UID diagnostics are missing or stale')
     if len(records) != index["record_count"]:
         errors.append(
             f"index record_count {index['record_count']} != {len(records)} records"
@@ -535,6 +542,13 @@ def generate() -> dict[str, str]:
     if errors:
         raise ValueError("\n".join(errors))
     outputs = content_files(claims_bytes, records, source_checks)
+    from reward_claim_variant_authoring import derive, extend_outputs
+    variants = derive(ROOT, items, stack_problem)
+    extend_outputs(ROOT, outputs, variants, compact, CONTENT_DIR)
+    records += variants
+    family_index = json.loads(outputs[INDEX_PATH])
+    family_index['variant_source_checks'] = legacy_uid_checks(records)
+    outputs[INDEX_PATH] = compact(family_index)
     names = ("project", "manifest", "content.lock")
     docs = [load_json(ROOT / f"content/{name}.json") for name in names]
     for name, doc in zip(

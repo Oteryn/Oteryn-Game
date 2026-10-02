@@ -68,7 +68,7 @@
     },
     "RewardClaim": {
       "index": "content/interactions/reward_claims/index.json",
-      "records": 231
+      "records": 336
     },
     "Service.Trade": {
       "index": "content/services/trade/index.json",
@@ -254,6 +254,12 @@
     },
     {
       "path": "content/interactions/reward_claims/index.json"
+    },
+    {
+      "path": "content/interactions/reward_claims/reward-claim-variants-00000-00099.json"
+    },
+    {
+      "path": "content/interactions/reward_claims/reward-claim-variants-00100-00104.json"
     },
     {
       "path": "content/interactions/reward_claims/reward-claims-00000-00099.json"

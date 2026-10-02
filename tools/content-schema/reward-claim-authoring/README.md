@@ -15,7 +15,7 @@ tree (ADR-0021), and the Rust `RewardClaim` kind (#1334) receives the claims fro
 
 ## Scope and rules
 
-The family holds **plain `once` claims only**. That means a per-character `once` claim whose
+The original native profile holds **plain `once` claims only**. That means a per-character `once` claim whose
 placements reward `items` only, with no achievement. Cooldown claims, containers, keys, written
 texts, random choices and achievements are later children.
 
@@ -86,4 +86,34 @@ Medusa text carrier and actual charge/default discrepancies remain CONFLICT.
 ```sh
 python tools/content-schema/reward-claim-authoring/reward_claim_variant_migration.py --check
 python tools/content-schema/reward-claim-authoring/test_reward_claim_variant_migration.py
+```
+
+## Canonical variant DATA under D277
+
+`reward_claim_variant_authoring.py` extends the same family with strict
+`authored_variant_v1` definition/shard profiles. All105 existing source variants
+retain actual repeat/key/text/random/container payloads, canonical Item references,
+typed Achievement requests, position/UID bindings and full source dispositions.
+The null Medusa carrier stays null with a source hold. Source/default charge
+conflicts remain explicit; physical quantities use only proved definition facts.
+
+These definitions resolve Quest references but **never admit native execution**:
+`native_admission` is `WAITING_IMPLEMENTATION`. Readiness is
+`waiting_implementation` or `waiting_data` with separate source/Item holds.
+The original231 definitions and their219/12 readiness are unchanged. The family
+index counts plain and variant profiles separately and includes whole-family UID
+collision diagnostics. Registration counts all336 DATA definitions.
+
+The ordinary `reward_claim_authoring.py content` command regenerates both profiles;
+then regenerate the source variant packet so its input hashes bind the new shards.
+`committed_errors()` validates both profiles against current sources and Items.
+`native_lowering_errors()` provides explicit unsupported-profile diagnostics before
+any consumer attempts the existing plain native model; this is not a runtime implementation.
+
+```sh
+python tools/content-schema/reward-claim-authoring/test_reward_claim_variant_authoring.py
+python tools/content-schema/reward-claim-authoring/reward_claim_authoring.py content
+python tools/content-schema/reward-claim-authoring/reward_claim_variant_migration.py
+python tools/content-schema/reward-claim-authoring/reward_claim_authoring.py content --check
+python tools/content-schema/reward-claim-authoring/reward_claim_variant_migration.py --check
 ```

@@ -29,6 +29,9 @@ def main():
         parser.error('required Quest check inputs missing: ' + ', '.join(missing))
     commands = [
         ['verify_quest_schema.py'],
+        ['../reward-claim-authoring/test_reward_claim_variant_authoring.py'],
+        ['../reward-claim-authoring/reward_claim_authoring.py', 'content', '--check'],
+        ['../reward-claim-authoring/reward_claim_variant_migration.py', '--check'],
         ['-m', 'unittest', 'discover', '-s', '.', '-p', 'test_*.py'],
         ['validate_quest_content.py', 'samples/chests/claims.json', 'samples/questlog/quests.json',
          '--catalog', 'samples/chests/catalog.json', '--manifest', 'samples/chests/manifest.json',

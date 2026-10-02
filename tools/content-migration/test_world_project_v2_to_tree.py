@@ -6,6 +6,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
+source_claim_count = len(json.loads((ROOT / "tools/content-schema/quest-authoring/samples/chests/claims.json").read_text())["claims"])
 project = json.loads((ROOT / "content/project.json").read_text(encoding="utf-8"))
 manifest = json.loads((ROOT / "content/manifest.json").read_text(encoding="utf-8"))
 lock = json.loads((ROOT / "content/content.lock.json").read_text(encoding="utf-8"))
@@ -26,7 +27,7 @@ assert lock["family_counts"] == {
     "Item": 34031, "Mount": 252,
     "Creature": 1503, "Presentation": 2613, "Behavior": 2613, "Loot": 1056, "Ability": 6000, "Effect": 4599, "Formula": 4905,
     "NPC": 1110, "Dialogue": 694, "Service.Trade": 324, "Service.Travel": 56, "Encounter": 61, "Charm": 25,
-    "Proficiency": 443, "RewardClaim": 231, "StarterKit": 1,
+    "Proficiency": 443, "RewardClaim": source_claim_count, "StarterKit": 1,
     **{family: value["records"] for family, value in quest_families.items()},
 }
 assert lock["source_binding_counts"] == {"Item": 165, "Mount": 252, "Creature": 1503, "Encounter": 61, "NPC": 2376}
@@ -62,7 +63,7 @@ assert manifest["families"]["Proficiency"] == {"records": 443, "index": "content
 assert "Proficiency" in project["migrated_families"] and "Proficiency" not in project["next_population_families"]
 assert sum(path.startswith("content/proficiencies/proficiencies-") for path in paths) == 3
 assert "content/proficiencies/index.json" in paths and "content/proficiencies/bindings.json" in paths
-assert manifest["families"]["RewardClaim"] == {"records": 231, "index": "content/interactions/reward_claims/index.json"}
+assert manifest["families"]["RewardClaim"] == {"records": source_claim_count, "index": "content/interactions/reward_claims/index.json"}
 assert "RewardClaim" in project["migrated_families"]
 assert sum(path.startswith("content/interactions/reward_claims/reward-claims-") for path in paths) == 3
 assert "content/interactions/reward_claims/index.json" in paths
@@ -81,7 +82,7 @@ subprocess.run([sys.executable, str(ROOT / "tools/content-migration/quest_reward
 
 # The RewardClaim family has no legacy source: its own authoring tool must reproduce it exactly.
 reward_claim_tool = ROOT / "tools" / "content-schema" / "reward-claim-authoring"
-for script in ("test_reward_claim_authoring.py",):
+for script in ("test_reward_claim_authoring.py", "test_reward_claim_variant_authoring.py"):
     subprocess.run([sys.executable, script], cwd=reward_claim_tool, check=True)
 # StarterKit likewise.
 starter_kit_tool = ROOT / "tools" / "content-schema" / "starter-kit-authoring"

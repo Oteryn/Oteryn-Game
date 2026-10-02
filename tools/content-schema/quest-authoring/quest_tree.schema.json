@@ -69,7 +69,9 @@
             "code": {
               "enum": [
                 "claim_content_missing",
-                "claim_item_semantics_missing"
+                "claim_item_semantics_missing",
+                "claim_native_lowering_missing",
+                "claim_source_data_missing"
               ]
             },
             "source_key": {"type": "string", "minLength": 1}

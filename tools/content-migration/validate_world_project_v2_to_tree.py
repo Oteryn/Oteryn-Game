@@ -35,7 +35,8 @@ CHARM_COUNT = 25
 PROFICIENCY_COUNT = 443
 PROFICIENCY_BINDING_COUNT = 664  # 642 + 22 bound by the ITEM-ADD-1 donor epoch-2 Items
 # RewardClaim likewise (tools/content-schema/reward-claim-authoring).
-REWARD_CLAIM_COUNT = 231
+REWARD_CLAIM_COUNT = len(json.loads(
+    (ROOT / "tools/content-schema/quest-authoring/samples/chests/claims.json").read_text())["claims"])
 # StarterKit likewise (tools/content-schema/starter-kit-authoring).
 STARTER_KIT_COUNT = 1
 SERVICE_FAMILY_COUNTS = {"Service.Trade": 324, "Service.Travel": 56}

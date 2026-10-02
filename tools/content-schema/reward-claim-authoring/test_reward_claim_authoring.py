@@ -379,7 +379,7 @@ def test_stackable_rune_charge_definition_keeps_piece_quantity():
 def test_committed_content_is_valid() -> None:
     assert rca.committed_errors() == []
     index = json.loads((rca.ROOT / rca.INDEX_PATH).read_text(encoding="utf-8"))
-    assert index["record_count"] == 231
+    assert index.get("plain_record_count", index["record_count"]) == 231
     records = [r["definition"] for p in index["shards"]
                for r in json.loads((rca.ROOT / p).read_text())["records"]]
     assert index["readiness"] == dict(Counter(r["readiness"] for r in records))
