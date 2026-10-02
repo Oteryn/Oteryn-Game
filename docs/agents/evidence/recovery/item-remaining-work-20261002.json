@@ -1,0 +1,2778 @@
+{
+  "schema": "OTERYN_ITEM_REMAINING_WORK_LEDGER/v1",
+  "created_at_utc": "2026-10-02T07:06:20.384253+00:00",
+  "scope": "Read-only checkpoint overlay; not integrated/main readiness inventory",
+  "classification": {
+    "candidate_pool": 12487,
+    "classified": 12252,
+    "remaining": 235,
+    "completion_percent": 98.12,
+    "snapshot_heads": {
+      "taxonomy": "88edf552b323cef8cb68cef5b10949fbf0c85424",
+      "native": "8257ba68d449a4975345897823d8282393e5bae2"
+    },
+    "remaining_by_reason": {
+      "NO_EXPLICIT_PRIMARYTYPE": {
+        "count": 2,
+        "item_ids": [
+          26947,
+          31964
+        ]
+      },
+      "NO_RETAINED_WIKI_ITEM_OBSERVATION": {
+        "count": 170,
+        "item_ids": [
+          2557,
+          4023,
+          4653,
+          5952,
+          9044,
+          9118,
+          9203,
+          10134,
+          10135,
+          10136,
+          10137,
+          10138,
+          10139,
+          12078,
+          12259,
+          12261,
+          12303,
+          12574,
+          12723,
+          12793,
+          12798,
+          16259,
+          16260,
+          16261,
+          17345,
+          17970,
+          19125,
+          19126,
+          19127,
+          19128,
+          19394,
+          19477,
+          19478,
+          20028,
+          20889,
+          21786,
+          21788,
+          21789,
+          21790,
+          21793,
+          21807,
+          21938,
+          22065,
+          22173,
+          23361,
+          23577,
+          23583,
+          23589,
+          23596,
+          23605,
+          23609,
+          23619,
+          23624,
+          23638,
+          23641,
+          23644,
+          23656,
+          23659,
+          23662,
+          23665,
+          24441,
+          24508,
+          24514,
+          24515,
+          24530,
+          24531,
+          24532,
+          24533,
+          24534,
+          24535,
+          24536,
+          24545,
+          24578,
+          24636,
+          24637,
+          24638,
+          24642,
+          24646,
+          24648,
+          24695,
+          24750,
+          24752,
+          24766,
+          24767,
+          24768,
+          24769,
+          24770,
+          24771,
+          24774,
+          24775,
+          24782,
+          24870,
+          24871,
+          24912,
+          25197,
+          25577,
+          25578,
+          25579,
+          25583,
+          25584,
+          25585,
+          25590,
+          25591,
+          25592,
+          25593,
+          25594,
+          25595,
+          25596,
+          25597,
+          25598,
+          25599,
+          25600,
+          25601,
+          25602,
+          25603,
+          25604,
+          25605,
+          25606,
+          25607,
+          25608,
+          25609,
+          25610,
+          25611,
+          25612,
+          25613,
+          25614,
+          25615,
+          25616,
+          25617,
+          25618,
+          25619,
+          25620,
+          25621,
+          25622,
+          25623,
+          25624,
+          25626,
+          25628,
+          25755,
+          25799,
+          27952,
+          27953,
+          28185,
+          28186,
+          28711,
+          28712,
+          31322,
+          31424,
+          31425,
+          31426,
+          31427,
+          31429,
+          31430,
+          31491,
+          31727,
+          31728,
+          31729,
+          31730,
+          31731,
+          31912,
+          31928,
+          32267,
+          32577,
+          32695,
+          32696,
+          39003,
+          42306,
+          42307,
+          42308,
+          51222
+        ]
+      },
+      "UNADMITTED_PRIMARYTYPE": {
+        "count": 59,
+        "item_ids": [
+          134,
+          470,
+          2669,
+          2670,
+          2671,
+          2672,
+          2673,
+          2674,
+          2675,
+          2676,
+          2677,
+          2678,
+          2679,
+          2680,
+          2683,
+          2684,
+          2685,
+          2686,
+          3257,
+          6407,
+          6408,
+          6409,
+          6410,
+          6411,
+          7772,
+          7856,
+          7916,
+          7917,
+          7918,
+          7919,
+          7920,
+          7921,
+          7922,
+          7923,
+          8587,
+          12656,
+          14847,
+          14855,
+          15689,
+          16249,
+          17318,
+          22093,
+          22094,
+          22095,
+          22096,
+          22097,
+          22098,
+          22310,
+          22319,
+          22323,
+          24492,
+          34237,
+          35502,
+          39547,
+          51526,
+          52634,
+          52745,
+          52785,
+          52789
+        ]
+      },
+      "WIKI_FAMILY_DISAGREEMENT": {
+        "count": 4,
+        "item_ids": [
+          2984,
+          3639,
+          6523,
+          14670
+        ]
+      }
+    },
+    "world_exclusion": 21544,
+    "unbound_candidate_items": 17
+  },
+  "catalog_coverage": {
+    "accepted_profiles": 22,
+    "template_files": 23,
+    "distinct_template_profiles": 22,
+    "missing_profiles": [],
+    "storage": "One shared content/items/definitions directory with69 shards; family association is taxonomy/profile metadata, not separate per-family native directories",
+    "profile_ids": [
+      "container",
+      "container_equipment",
+      "decoration",
+      "document",
+      "equipment_armor",
+      "equipment_offhand",
+      "event_collectible",
+      "fluid",
+      "food",
+      "key",
+      "light_source",
+      "material_valuable",
+      "plant",
+      "progression_material",
+      "quest_item",
+      "rune",
+      "tool",
+      "transformation_item",
+      "trash",
+      "weapon_distance",
+      "weapon_magic",
+      "weapon_melee"
+    ],
+    "per_profile": [
+      {
+        "profile": "container",
+        "classified_items": 237,
+        "schema_profile_exists": true,
+        "template_files": [
+          "tools/content-schema/item-authoring/templates/container.json"
+        ],
+        "missing_templates": 0,
+        "native_directory": "content/items/definitions/",
+        "independent_family_native_directory": false
+      },
+      {
+        "profile": "container_equipment",
+        "classified_items": 8,
+        "schema_profile_exists": true,
+        "template_files": [
+          "tools/content-schema/item-authoring/templates/container-equipment.json"
+        ],
+        "missing_templates": 0,
+        "native_directory": "content/items/definitions/",
+        "independent_family_native_directory": false
+      },
+      {
+        "profile": "decoration",
+        "classified_items": 3316,
+        "schema_profile_exists": true,
+        "template_files": [
+          "tools/content-schema/item-authoring/templates/portable-decoration-kit.json"
+        ],
+        "missing_templates": 0,
+        "native_directory": "content/items/definitions/",
+        "independent_family_native_directory": false
+      },
+      {
+        "profile": "document",
+        "classified_items": 446,
+        "schema_profile_exists": true,
+        "template_files": [
+          "tools/content-schema/item-authoring/templates/document.json"
+        ],
+        "missing_templates": 0,
+        "native_directory": "content/items/definitions/",
+        "independent_family_native_directory": false
+      },
+      {
+        "profile": "equipment_armor",
+        "classified_items": 459,
+        "schema_profile_exists": true,
+        "template_files": [
+          "tools/content-schema/item-authoring/templates/equipment-armor.json"
+        ],
+        "missing_templates": 0,
+        "native_directory": "content/items/definitions/",
+        "independent_family_native_directory": false
+      },
+      {
+        "profile": "equipment_offhand",
+        "classified_items": 337,
+        "schema_profile_exists": true,
+        "template_files": [
+          "tools/content-schema/item-authoring/templates/equipment-accessory.json"
+        ],
+        "missing_templates": 0,
+        "native_directory": "content/items/definitions/",
+        "independent_family_native_directory": false
+      },
+      {
+        "profile": "event_collectible",
+        "classified_items": 192,
+        "schema_profile_exists": true,
+        "template_files": [
+          "tools/content-schema/item-authoring/templates/event-collectible.json"
+        ],
+        "missing_templates": 0,
+        "native_directory": "content/items/definitions/",
+        "independent_family_native_directory": false
+      },
+      {
+        "profile": "fluid",
+        "classified_items": 87,
+        "schema_profile_exists": true,
+        "template_files": [
+          "tools/content-schema/item-authoring/templates/fluid.json"
+        ],
+        "missing_templates": 0,
+        "native_directory": "content/items/definitions/",
+        "independent_family_native_directory": false
+      },
+      {
+        "profile": "food",
+        "classified_items": 195,
+        "schema_profile_exists": true,
+        "template_files": [
+          "tools/content-schema/item-authoring/templates/food.json"
+        ],
+        "missing_templates": 0,
+        "native_directory": "content/items/definitions/",
+        "independent_family_native_directory": false
+      },
+      {
+        "profile": "key",
+        "classified_items": 13,
+        "schema_profile_exists": true,
+        "template_files": [
+          "tools/content-schema/item-authoring/templates/key.json"
+        ],
+        "missing_templates": 0,
+        "native_directory": "content/items/definitions/",
+        "independent_family_native_directory": false
+      },
+      {
+        "profile": "light_source",
+        "classified_items": 166,
+        "schema_profile_exists": true,
+        "template_files": [
+          "tools/content-schema/item-authoring/templates/light-source.json"
+        ],
+        "missing_templates": 0,
+        "native_directory": "content/items/definitions/",
+        "independent_family_native_directory": false
+      },
+      {
+        "profile": "material_valuable",
+        "classified_items": 3140,
+        "schema_profile_exists": true,
+        "template_files": [
+          "tools/content-schema/item-authoring/templates/generic-portable.json"
+        ],
+        "missing_templates": 0,
+        "native_directory": "content/items/definitions/",
+        "independent_family_native_directory": false
+      },
+      {
+        "profile": "plant",
+        "classified_items": 906,
+        "schema_profile_exists": true,
+        "template_files": [
+          "tools/content-schema/item-authoring/templates/plant.json"
+        ],
+        "missing_templates": 0,
+        "native_directory": "content/items/definitions/",
+        "independent_family_native_directory": false
+      },
+      {
+        "profile": "progression_material",
+        "classified_items": 11,
+        "schema_profile_exists": true,
+        "template_files": [
+          "tools/content-schema/item-authoring/templates/progression-material.json"
+        ],
+        "missing_templates": 0,
+        "native_directory": "content/items/definitions/",
+        "independent_family_native_directory": false
+      },
+      {
+        "profile": "quest_item",
+        "classified_items": 1108,
+        "schema_profile_exists": true,
+        "template_files": [
+          "tools/content-schema/item-authoring/templates/quest-item.json"
+        ],
+        "missing_templates": 0,
+        "native_directory": "content/items/definitions/",
+        "independent_family_native_directory": false
+      },
+      {
+        "profile": "rune",
+        "classified_items": 41,
+        "schema_profile_exists": true,
+        "template_files": [
+          "tools/content-schema/item-authoring/templates/rune.json"
+        ],
+        "missing_templates": 0,
+        "native_directory": "content/items/definitions/",
+        "independent_family_native_directory": false
+      },
+      {
+        "profile": "tool",
+        "classified_items": 354,
+        "schema_profile_exists": true,
+        "template_files": [
+          "tools/content-schema/item-authoring/templates/tool.json"
+        ],
+        "missing_templates": 0,
+        "native_directory": "content/items/definitions/",
+        "independent_family_native_directory": false
+      },
+      {
+        "profile": "transformation_item",
+        "classified_items": 30,
+        "schema_profile_exists": true,
+        "template_files": [
+          "tools/content-schema/item-authoring/templates/transformation-item.json"
+        ],
+        "missing_templates": 0,
+        "native_directory": "content/items/definitions/",
+        "independent_family_native_directory": false
+      },
+      {
+        "profile": "trash",
+        "classified_items": 206,
+        "schema_profile_exists": true,
+        "template_files": [
+          "tools/content-schema/item-authoring/templates/trash.json"
+        ],
+        "missing_templates": 0,
+        "native_directory": "content/items/definitions/",
+        "independent_family_native_directory": false
+      },
+      {
+        "profile": "weapon_distance",
+        "classified_items": 177,
+        "schema_profile_exists": true,
+        "template_files": [
+          "tools/content-schema/item-authoring/templates/ammunition.json",
+          "tools/content-schema/item-authoring/templates/weapon-distance.json"
+        ],
+        "missing_templates": 0,
+        "native_directory": "content/items/definitions/",
+        "independent_family_native_directory": false
+      },
+      {
+        "profile": "weapon_magic",
+        "classified_items": 128,
+        "schema_profile_exists": true,
+        "template_files": [
+          "tools/content-schema/item-authoring/templates/weapon-magic.json"
+        ],
+        "missing_templates": 0,
+        "native_directory": "content/items/definitions/",
+        "independent_family_native_directory": false
+      },
+      {
+        "profile": "weapon_melee",
+        "classified_items": 695,
+        "schema_profile_exists": true,
+        "template_files": [
+          "tools/content-schema/item-authoring/templates/weapon-melee.json"
+        ],
+        "missing_templates": 0,
+        "native_directory": "content/items/definitions/",
+        "independent_family_native_directory": false
+      }
+    ]
+  },
+  "published_compatibility": {
+    "pr": 1531,
+    "phase": "VALIDATE",
+    "sha": "488e80b68160a02486fa764cb911788a71dc0516",
+    "original_default_count": 1487,
+    "original_historical_count": 7,
+    "new_fields_applied": 0
+  },
+  "narrow_actual_owner_overlay": {
+    "native_root": "/workspace/pr1437-native-publish",
+    "local_head_before_and_after": "488e80b68160a02486fa764cb911788a71dc0516",
+    "scope": "Actual working data, includes Name139; not claimed remote frozen release/main",
+    "mod26": {
+      "vectors": 26,
+      "atoms": 63,
+      "item_ids": [
+        36664,
+        36665,
+        37611,
+        39152,
+        39154,
+        39182,
+        39185,
+        39188,
+        40594,
+        43881,
+        43884,
+        43886,
+        43887,
+        44622,
+        44623,
+        44624,
+        49534,
+        51263,
+        51264,
+        52348,
+        52353,
+        53219,
+        53220,
+        53221,
+        53222,
+        53230
+      ],
+      "packet": {
+        "path": "/workspace/pr1437-native-publish/docs/agents/evidence/OTV2-20261002-item-elemental-magic-modifier-promotion-v1.json",
+        "sha256": "fd3a302fae411c71c71bea7aebe6d8d95b0fbc3ac503e88b6844be6017233a9f",
+        "bytes": 28410
+      },
+      "compiler_check": "PASS exact sealed26/63/23 packet fd3a302fae411c71c71bea7aebe6d8d95b0fbc3ac503e88b6844be6017233a9f",
+      "all_actual_native_identity_and_whole_ordered_vector_values_match": true
+    },
+    "name139": {
+      "names": 139,
+      "item_ids": [
+        23223,
+        23224,
+        23225,
+        23226,
+        23227,
+        23228,
+        23229,
+        23230,
+        23231,
+        23232,
+        23233,
+        23234,
+        23235,
+        23236,
+        23237,
+        23238,
+        23239,
+        23240,
+        23241,
+        23242,
+        23243,
+        23244,
+        23245,
+        23246,
+        23247,
+        23248,
+        23249,
+        23250,
+        23251,
+        23252,
+        23253,
+        23254,
+        23255,
+        23256,
+        23257,
+        23258,
+        23259,
+        23260,
+        23261,
+        23262,
+        23263,
+        23264,
+        23265,
+        23266,
+        23267,
+        23268,
+        23269,
+        23270,
+        23271,
+        23272,
+        23273,
+        23274,
+        23275,
+        23276,
+        23277,
+        23278,
+        23279,
+        23280,
+        23281,
+        23282,
+        23283,
+        23284,
+        23285,
+        23286,
+        23287,
+        23288,
+        23289,
+        23290,
+        23291,
+        23292,
+        23293,
+        23294,
+        23295,
+        23296,
+        23297,
+        23298,
+        23299,
+        23300,
+        23301,
+        23302,
+        23303,
+        23304,
+        23305,
+        23306,
+        23307,
+        23308,
+        23309,
+        23310,
+        23311,
+        23312,
+        23313,
+        23314,
+        23315,
+        23316,
+        23317,
+        23318,
+        23319,
+        23320,
+        23321,
+        23322,
+        23323,
+        23324,
+        23325,
+        23326,
+        23327,
+        23328,
+        23329,
+        23330,
+        23331,
+        23332,
+        23333,
+        23334,
+        23335,
+        23336,
+        23337,
+        23338,
+        23339,
+        23340,
+        23341,
+        23342,
+        31966,
+        31968,
+        31970,
+        31972,
+        31974,
+        31976,
+        31978,
+        31980,
+        31982,
+        31984,
+        31986,
+        31988,
+        31990,
+        31992,
+        31994,
+        31996,
+        31998,
+        32000,
+        32002
+      ],
+      "packet": {
+        "path": "/workspace/pr1437-native-publish/docs/agents/evidence/OTV2-20261002-item-name-promotion-v1.json",
+        "sha256": "f2f8f266a53fca4de2ed114c011a2c18dd3ac2557b4c25a8c11584d01902846b",
+        "bytes": 27656
+      },
+      "compiler_check": "PASS closed139 names/139Items",
+      "all_actual_native_identity_and_KNOWN_name_values_match": true,
+      "published_sha": "1945520b41fc1c71856ba52b282c3f4171e083b6",
+      "published_full_readback": "ROOT_CONFIRMED_ALL_26_FILES",
+      "phase": "VALIDATE"
+    },
+    "native_shard_digests": [
+      {
+        "path": "/workspace/pr1437-native-publish/content/items/definitions/items-00000-00499.json",
+        "sha256": "922c99211097bf7e44ae79562bf4f4b51beeb7606bd7d013d20df1438ecdde72",
+        "bytes": 290320
+      },
+      {
+        "path": "/workspace/pr1437-native-publish/content/items/definitions/items-00500-00999.json",
+        "sha256": "6f6923e9754d04dc59eff38306a2a5c24d4b4f8919a8e0e21cbfdcf35304d6d5",
+        "bytes": 169489
+      },
+      {
+        "path": "/workspace/pr1437-native-publish/content/items/definitions/items-01000-01499.json",
+        "sha256": "a9ed1fb71e39e663922df741cd36c57ced4c6c99c14b86da57944f43ad258f8c",
+        "bytes": 215807
+      },
+      {
+        "path": "/workspace/pr1437-native-publish/content/items/definitions/items-01500-01999.json",
+        "sha256": "45950e5d3dc0b16d1e2088d6e42fb99693d4bbce68688ac28330d8a7f9e449c4",
+        "bytes": 250732
+      },
+      {
+        "path": "/workspace/pr1437-native-publish/content/items/definitions/items-02000-02499.json",
+        "sha256": "66c00bf0d1b069b57cda0dce9e5ec7ea90c84c7ae084b57a1b5f039c002477bf",
+        "bytes": 238549
+      },
+      {
+        "path": "/workspace/pr1437-native-publish/content/items/definitions/items-02500-02999.json",
+        "sha256": "423d2277fc7156289942265863b24c59fa230cae9e45cf33a0f5a95c1217265c",
+        "bytes": 236798
+      },
+      {
+        "path": "/workspace/pr1437-native-publish/content/items/definitions/items-03000-03499.json",
+        "sha256": "982ccbf4036a5533160fb48afad4bff6d139e75b85f79622a37e0fa01b584782",
+        "bytes": 125814
+      },
+      {
+        "path": "/workspace/pr1437-native-publish/content/items/definitions/items-03500-03999.json",
+        "sha256": "48d6652cfae62dd50aead86b3ce461042a41ee7dd92738748b24a9ce209897b8",
+        "bytes": 226468
+      },
+      {
+        "path": "/workspace/pr1437-native-publish/content/items/definitions/items-04000-04499.json",
+        "sha256": "55d4d75899d1abecc34211e6d0eef2e927ab53bd4de1fda6ad8764a01d8939d7",
+        "bytes": 271883
+      },
+      {
+        "path": "/workspace/pr1437-native-publish/content/items/definitions/items-04500-04999.json",
+        "sha256": "00ea8d2d63f9f605a0227d5057965cbd8199d8a0796d7247f198b29d6108e6ed",
+        "bytes": 227609
+      },
+      {
+        "path": "/workspace/pr1437-native-publish/content/items/definitions/items-05000-05499.json",
+        "sha256": "8935f65391fdf7ee9fc6a6ddc4ac43d9a63c174358d627a89652c4e0bc996c7e",
+        "bytes": 217665
+      },
+      {
+        "path": "/workspace/pr1437-native-publish/content/items/definitions/items-05500-05999.json",
+        "sha256": "021ad3ce04921831ac04b84afdaa4cb55f4eb7d2d4c7a563ae95f21d5d98bac9",
+        "bytes": 232269
+      },
+      {
+        "path": "/workspace/pr1437-native-publish/content/items/definitions/items-06000-06499.json",
+        "sha256": "dfc4801285ffff9769c377a41c78505f24e7829316b31b649e8c5e059371d2db",
+        "bytes": 123359
+      },
+      {
+        "path": "/workspace/pr1437-native-publish/content/items/definitions/items-06500-06999.json",
+        "sha256": "6f7a4c8897abb260f948f872c512c8817dce78ef12b1f790b243d4f4566f6bfa",
+        "bytes": 212092
+      },
+      {
+        "path": "/workspace/pr1437-native-publish/content/items/definitions/items-07000-07499.json",
+        "sha256": "a8e0de215cfcab75c0cc76074adf3845f4d24c5b9aa662d27b8053ef0ea721a9",
+        "bytes": 194921
+      },
+      {
+        "path": "/workspace/pr1437-native-publish/content/items/definitions/items-07500-07999.json",
+        "sha256": "db4cf9473a2949fc3f368cc1f78ffd0a1a30f5b2c658541ee08a0d156c9241e8",
+        "bytes": 190779
+      },
+      {
+        "path": "/workspace/pr1437-native-publish/content/items/definitions/items-08000-08499.json",
+        "sha256": "daccbf17aaf55d5e04bc502993296b4ff7f015bbec09c0641e0cca8b18a02b8a",
+        "bytes": 206631
+      },
+      {
+        "path": "/workspace/pr1437-native-publish/content/items/definitions/items-08500-08999.json",
+        "sha256": "0793d1747fbece983b32c2984a451cdec1d2848b6ef0a9c618e774058d575d22",
+        "bytes": 153895
+      },
+      {
+        "path": "/workspace/pr1437-native-publish/content/items/definitions/items-09000-09499.json",
+        "sha256": "c9f1646262b7e9002acd3ee710a6958e3a9da887e463e32693746cda85a64d07",
+        "bytes": 282649
+      },
+      {
+        "path": "/workspace/pr1437-native-publish/content/items/definitions/items-09500-09999.json",
+        "sha256": "feef4842b17824723b62878a0590f3def5f4f2c2aa1158b5a81e54844a5e3eb2",
+        "bytes": 157127
+      },
+      {
+        "path": "/workspace/pr1437-native-publish/content/items/definitions/items-10000-10499.json",
+        "sha256": "50a16db50d1464584723a8f1383722276622eed5c0230c3178a4fad03251d684",
+        "bytes": 215686
+      },
+      {
+        "path": "/workspace/pr1437-native-publish/content/items/definitions/items-10500-10999.json",
+        "sha256": "14127930bab9aaebc1bfecf7239f1db1ece1d3fb298cfee0b99f7a85a2d9c7e0",
+        "bytes": 201378
+      },
+      {
+        "path": "/workspace/pr1437-native-publish/content/items/definitions/items-11000-11499.json",
+        "sha256": "afe555335d72dd94f9b86a2f3bf2edfbcd1effdf05b6749b9a1b20ff205f7c44",
+        "bytes": 251709
+      },
+      {
+        "path": "/workspace/pr1437-native-publish/content/items/definitions/items-11500-11999.json",
+        "sha256": "dc642833cc37bda824f85df0bd8fa011cd741499dfdae405d30b9392850bcb3a",
+        "bytes": 272349
+      },
+      {
+        "path": "/workspace/pr1437-native-publish/content/items/definitions/items-12000-12499.json",
+        "sha256": "d7d6acb2dafa79c4da338dcd4ef9d3bfd1ea1ffe811e8c619a4a8f452aecd944",
+        "bytes": 512607
+      },
+      {
+        "path": "/workspace/pr1437-native-publish/content/items/definitions/items-12500-12999.json",
+        "sha256": "0529fd6782a92e14fdede5d5cc9152cfcbf90e7de5cf415d817d18ef87dc4145",
+        "bytes": 264141
+      },
+      {
+        "path": "/workspace/pr1437-native-publish/content/items/definitions/items-13000-13499.json",
+        "sha256": "ea164bac12663c0693297f59dc73e71610903c5febd9751186a74ddae2ca58de",
+        "bytes": 220701
+      },
+      {
+        "path": "/workspace/pr1437-native-publish/content/items/definitions/items-13500-13999.json",
+        "sha256": "328e184dae67300295b5a20f9af7af71b435537f7b4b3c2efc21bcf800b09561",
+        "bytes": 182935
+      },
+      {
+        "path": "/workspace/pr1437-native-publish/content/items/definitions/items-14000-14499.json",
+        "sha256": "449bf8a5132075627c5609f7e3739d17c2b79f572896b48563f8ab9f6dcbcec6",
+        "bytes": 219111
+      },
+      {
+        "path": "/workspace/pr1437-native-publish/content/items/definitions/items-14500-14999.json",
+        "sha256": "a69b7a6681275e4b1afb28e8e877bf7485a027685018cf53a5a1496ab498e223",
+        "bytes": 522773
+      },
+      {
+        "path": "/workspace/pr1437-native-publish/content/items/definitions/items-15000-15499.json",
+        "sha256": "77293a176980b47eb07984159df5e1e50e4347687b67f538456982adb7ec8318",
+        "bytes": 213547
+      },
+      {
+        "path": "/workspace/pr1437-native-publish/content/items/definitions/items-15500-15999.json",
+        "sha256": "9383e75dc6f988da11f40a4ab5aacd80f8d8629a9d31db5cf3607d74a4bddaf7",
+        "bytes": 264850
+      },
+      {
+        "path": "/workspace/pr1437-native-publish/content/items/definitions/items-16000-16499.json",
+        "sha256": "8256842f6090bc1bcbf1e7a582eefbaa1d546fb14317c8713a9e7d5f96902f41",
+        "bytes": 199686
+      },
+      {
+        "path": "/workspace/pr1437-native-publish/content/items/definitions/items-16500-16999.json",
+        "sha256": "67d59cda5c78ff75c5dc430fb082a2fd4a34fc0586a643814f878f426e330571",
+        "bytes": 297089
+      },
+      {
+        "path": "/workspace/pr1437-native-publish/content/items/definitions/items-17000-17499.json",
+        "sha256": "b185ee2913db20386e3b7d9b4cddcb8550d1991e8399eaa7f007ffea11b061ee",
+        "bytes": 273716
+      },
+      {
+        "path": "/workspace/pr1437-native-publish/content/items/definitions/items-17500-17999.json",
+        "sha256": "4626319c840fc999a06b72a189ebe275cd26f9c979fa98d47f4da23fb28f7fa6",
+        "bytes": 367347
+      },
+      {
+        "path": "/workspace/pr1437-native-publish/content/items/definitions/items-18000-18499.json",
+        "sha256": "c4b7f95a5107d76e1895d62c99402ffcab8730fb6f4d8651e0aee400cc6cbe8d",
+        "bytes": 190494
+      },
+      {
+        "path": "/workspace/pr1437-native-publish/content/items/definitions/items-18500-18999.json",
+        "sha256": "1f183157d010f8d9ab78787fd761d12ca904796d61a961d9d9f167628db7949d",
+        "bytes": 285252
+      },
+      {
+        "path": "/workspace/pr1437-native-publish/content/items/definitions/items-19000-19499.json",
+        "sha256": "be24926c81587b621b12fde89c2d326da5553b3a310ed1b773517da3fb324844",
+        "bytes": 335239
+      },
+      {
+        "path": "/workspace/pr1437-native-publish/content/items/definitions/items-19500-19999.json",
+        "sha256": "f60efdb1d6fdb4f5a58eb1965cbe50b7a1801097dbedad956d06bcafef9a050c",
+        "bytes": 342099
+      },
+      {
+        "path": "/workspace/pr1437-native-publish/content/items/definitions/items-20000-20499.json",
+        "sha256": "5d3f64922a662edbf20ef88ce9603d9be040a50c068b22e033bd019c6ede135a",
+        "bytes": 355094
+      },
+      {
+        "path": "/workspace/pr1437-native-publish/content/items/definitions/items-20500-20999.json",
+        "sha256": "089de418a252507ab7f8977f17a8f4acd5e3bae9fc6f34fc4f4f69b974cff8d1",
+        "bytes": 378064
+      },
+      {
+        "path": "/workspace/pr1437-native-publish/content/items/definitions/items-21000-21499.json",
+        "sha256": "4d34136aa631d1e04c4664865fdebd19310d0e61d42b4631147b588c0b48f2ea",
+        "bytes": 457502
+      },
+      {
+        "path": "/workspace/pr1437-native-publish/content/items/definitions/items-21500-21999.json",
+        "sha256": "9a7aa6f180aca224ae95fa691a44e19868b87235ee62f522dfa4d8976d7bc622",
+        "bytes": 331947
+      },
+      {
+        "path": "/workspace/pr1437-native-publish/content/items/definitions/items-22000-22499.json",
+        "sha256": "452ffe7501e3e00ca01ce3d6c66fee003b66fa17e5d7f89f85f4ffe1ef2ad4fa",
+        "bytes": 315568
+      },
+      {
+        "path": "/workspace/pr1437-native-publish/content/items/definitions/items-22500-22999.json",
+        "sha256": "980df1a5b94ca19a45863bab7a0e9a493c01ad9395885aa24e940b6f7b791e70",
+        "bytes": 338995
+      },
+      {
+        "path": "/workspace/pr1437-native-publish/content/items/definitions/items-23000-23499.json",
+        "sha256": "a0421c193504ffb0e259af9a7b31643ec198743109cee8ae40192e58a9b3d713",
+        "bytes": 107135
+      },
+      {
+        "path": "/workspace/pr1437-native-publish/content/items/definitions/items-23500-23999.json",
+        "sha256": "4b96890055eb8c0526eafb8bc78aea9367e1d7961e7b391e8e4dcc5a3ccf8a3e",
+        "bytes": 198231
+      },
+      {
+        "path": "/workspace/pr1437-native-publish/content/items/definitions/items-24000-24499.json",
+        "sha256": "e91b0965c47fd9c932c2c55ea9749928ebee0494cac1f91583f0f13e60baf5e5",
+        "bytes": 343793
+      },
+      {
+        "path": "/workspace/pr1437-native-publish/content/items/definitions/items-24500-24999.json",
+        "sha256": "8b907a2a400407b22e01c810b83453d96b5f836d8902e048cfde3f5338018966",
+        "bytes": 220951
+      },
+      {
+        "path": "/workspace/pr1437-native-publish/content/items/definitions/items-25000-25499.json",
+        "sha256": "69bd75e234ce776e40dab3ff1243872e87ea56385f9ce1658ffc935eadfe9e56",
+        "bytes": 240384
+      },
+      {
+        "path": "/workspace/pr1437-native-publish/content/items/definitions/items-25500-25999.json",
+        "sha256": "0b0708bd656370b3f4231865b89b70e0d5d0d5e2d51365a459a79eeb481f6b6f",
+        "bytes": 285961
+      },
+      {
+        "path": "/workspace/pr1437-native-publish/content/items/definitions/items-26000-26499.json",
+        "sha256": "70b32940112313e3c00cebbbb22f840c5a757949ee8868d48b79352a0401c46e",
+        "bytes": 427159
+      },
+      {
+        "path": "/workspace/pr1437-native-publish/content/items/definitions/items-26500-26999.json",
+        "sha256": "788a6409d007af7133384852d13e9905dae208c1c1f7a99cd647026e7bc18b65",
+        "bytes": 466506
+      },
+      {
+        "path": "/workspace/pr1437-native-publish/content/items/definitions/items-27000-27499.json",
+        "sha256": "25f41c34fa2b786db0d1b694242ba8de479759b0916312c7ad76b6f38f5ab7b5",
+        "bytes": 303203
+      },
+      {
+        "path": "/workspace/pr1437-native-publish/content/items/definitions/items-27500-27999.json",
+        "sha256": "2d3c79158d35b3efbaf799459365961c506f07ebb3618a63c97bc7b81f34e863",
+        "bytes": 368667
+      },
+      {
+        "path": "/workspace/pr1437-native-publish/content/items/definitions/items-28000-28499.json",
+        "sha256": "3189cfa40ddbeecbe604c06cbfb6298865bad7201a21bac003cec9639ba8a18a",
+        "bytes": 334549
+      },
+      {
+        "path": "/workspace/pr1437-native-publish/content/items/definitions/items-28500-28999.json",
+        "sha256": "fd397ede80bae1baeefa192f5afa721c7065c429cdebe3c7d634765f510b643d",
+        "bytes": 345105
+      },
+      {
+        "path": "/workspace/pr1437-native-publish/content/items/definitions/items-29000-29499.json",
+        "sha256": "69069dcb29a5e310fe2ffb98a915295619bcdf822d5a45137ab7147d9f977c02",
+        "bytes": 222579
+      },
+      {
+        "path": "/workspace/pr1437-native-publish/content/items/definitions/items-29500-29999.json",
+        "sha256": "a945879b2fd5cdfbfac8b065e3f6d47d9f4344b52a993d70af26d8bef37ba5f7",
+        "bytes": 243464
+      },
+      {
+        "path": "/workspace/pr1437-native-publish/content/items/definitions/items-30000-30499.json",
+        "sha256": "6f88a2e4025e28dc4992a995adfb274ae6d19fc57184c340555dc62326a774e6",
+        "bytes": 275402
+      },
+      {
+        "path": "/workspace/pr1437-native-publish/content/items/definitions/items-30500-30999.json",
+        "sha256": "3a031b3bb4ece179c3de49230d79239e3d2dad1a823be32d2c7ee872941a2cb1",
+        "bytes": 167738
+      },
+      {
+        "path": "/workspace/pr1437-native-publish/content/items/definitions/items-31000-31499.json",
+        "sha256": "97aa01b0bea27c554f68ab9b18c3d09e474b090d624f1617f45b7fbb64253e19",
+        "bytes": 374483
+      },
+      {
+        "path": "/workspace/pr1437-native-publish/content/items/definitions/items-31500-31999.json",
+        "sha256": "7bc462138ade4c753c1c827ba0e70e043f331bbc913b4b785e28738c455fb46a",
+        "bytes": 367864
+      },
+      {
+        "path": "/workspace/pr1437-native-publish/content/items/definitions/items-32000-32499.json",
+        "sha256": "b39b08167b2c3990a77f6fa3b299895e656d13b8b70a368d63535d41f8ff27fa",
+        "bytes": 226982
+      },
+      {
+        "path": "/workspace/pr1437-native-publish/content/items/definitions/items-32500-32999.json",
+        "sha256": "3658cf4b7d02654faded49f3323265d5d1acf5fd66c8b201ac96fe51f0b9ed90",
+        "bytes": 231895
+      },
+      {
+        "path": "/workspace/pr1437-native-publish/content/items/definitions/items-33000-33499.json",
+        "sha256": "ac337fdbe67307a843408f889d2663fd05c0e8e5ec47f044af21ac393afd7b6e",
+        "bytes": 344744
+      },
+      {
+        "path": "/workspace/pr1437-native-publish/content/items/definitions/items-33500-33999.json",
+        "sha256": "fbfa2d51248bdc87797ec88c1315d1ba57b5878cd11a965626f237b07fa48f20",
+        "bytes": 227917
+      },
+      {
+        "path": "/workspace/pr1437-native-publish/content/items/definitions/items-34000-34030.json",
+        "sha256": "f5e12f8a41d930c2c1c777287587bd646aeaa5d83a3bdcfd39fb0816effa8ef1",
+        "bytes": 10821
+      }
+    ]
+  },
+  "remaining_batches": [
+    {
+      "lane": "HitML67",
+      "pr": 1528,
+      "counts": {
+        "relative_hit_modifier_fields": 28,
+        "required_magic_level_fields": 39,
+        "fields": 67,
+        "items": 67
+      },
+      "ids": [
+        3148,
+        3149,
+        3152,
+        3153,
+        3155,
+        3156,
+        3158,
+        3160,
+        3161,
+        3164,
+        3165,
+        3166,
+        3172,
+        3173,
+        3174,
+        3175,
+        3176,
+        3177,
+        3178,
+        3179,
+        3180,
+        3182,
+        3188,
+        3189,
+        3190,
+        3191,
+        3192,
+        3195,
+        3197,
+        3198,
+        3200,
+        3202,
+        3203,
+        17112,
+        17113,
+        17511,
+        17512,
+        21351,
+        21352,
+        23229,
+        23230,
+        23239,
+        23240,
+        23249,
+        23250,
+        23259,
+        23260,
+        23287,
+        23288,
+        23289,
+        23290,
+        23291,
+        23292,
+        23293,
+        23294,
+        23327,
+        23328,
+        23329,
+        23330,
+        23331,
+        23332,
+        23333,
+        23334,
+        53225,
+        53226,
+        53227,
+        53228
+      ],
+      "stage": "WHOLE_NAME139_CARRIED_IMPLEMENTATION_PRE_CARGO",
+      "work": "Published whole Name139 predecessor1945520b carried; implementation/final source and serialized Cargo/native generation/validation remain",
+      "current_predecessor": "1945520b41fc1c71856ba52b282c3f4171e083b6"
+    },
+    {
+      "lane": "Mantra49",
+      "pr": 1526,
+      "counts": {
+        "whole_vectors": 49,
+        "modifier_atoms": 114,
+        "items": 49
+      },
+      "ids": [
+        3289,
+        10391,
+        50146,
+        50154,
+        50160,
+        50166,
+        50167,
+        50176,
+        50182,
+        50183,
+        50184,
+        50185,
+        50186,
+        50187,
+        50188,
+        50189,
+        50190,
+        50193,
+        50194,
+        50195,
+        50250,
+        50254,
+        50255,
+        50257,
+        50258,
+        50260,
+        50261,
+        50262,
+        50263,
+        50264,
+        50268,
+        50270,
+        50271,
+        50272,
+        50274,
+        50275,
+        50276,
+        50277,
+        50278,
+        50279,
+        50280,
+        50289,
+        50291,
+        51267,
+        51294,
+        52349,
+        53223,
+        53224,
+        53233
+      ],
+      "stage": "SOURCE_PREPARED_PREDECESSOR_CARRY_PENDING",
+      "work": "Carry whole HitML successor, generate existing native ordered whole vectors; preserve13 source holds and8 separate Physical carrier holds"
+    },
+    {
+      "lane": "Use345",
+      "pr": 1527,
+      "counts": {
+        "damage_observations": 111,
+        "damage_type_observations": 138,
+        "mana_cost_observations": 96,
+        "source_observation_fields": 345,
+        "items": 139
+      },
+      "ids": [
+        3065,
+        3066,
+        3067,
+        3069,
+        3070,
+        3071,
+        3072,
+        3073,
+        3074,
+        3075,
+        3149,
+        3155,
+        3158,
+        3161,
+        3164,
+        3165,
+        3166,
+        3172,
+        3173,
+        3174,
+        3175,
+        3176,
+        3179,
+        3182,
+        3188,
+        3189,
+        3190,
+        3191,
+        3192,
+        3195,
+        3198,
+        3200,
+        3202,
+        8082,
+        8083,
+        8084,
+        8092,
+        8093,
+        8094,
+        12603,
+        12732,
+        12741,
+        16096,
+        16115,
+        16117,
+        16118,
+        17111,
+        17112,
+        17512,
+        21351,
+        21352,
+        22183,
+        22765,
+        22766,
+        23231,
+        23232,
+        23241,
+        23242,
+        23251,
+        23252,
+        23261,
+        23262,
+        23295,
+        23296,
+        23297,
+        23298,
+        23299,
+        23300,
+        23301,
+        23302,
+        23335,
+        23336,
+        23337,
+        23338,
+        23339,
+        23340,
+        23341,
+        23342,
+        25700,
+        25760,
+        26007,
+        26008,
+        26009,
+        26010,
+        26011,
+        26012,
+        26038,
+        26039,
+        26040,
+        26041,
+        26042,
+        26043,
+        26068,
+        26069,
+        26070,
+        26071,
+        26072,
+        26073,
+        27457,
+        27458,
+        28716,
+        28717,
+        28825,
+        28826,
+        29425,
+        30399,
+        30400,
+        34090,
+        34091,
+        34151,
+        34152,
+        35521,
+        35522,
+        36668,
+        36669,
+        36674,
+        36675,
+        39162,
+        39163,
+        43882,
+        43883,
+        43885,
+        43886,
+        47372,
+        47373,
+        49528,
+        49529,
+        49882,
+        49883,
+        49884,
+        49885,
+        49886,
+        49887,
+        52336,
+        52337,
+        53219,
+        53220,
+        53221,
+        53222
+      ],
+      "stage": "SOURCE_PREPARED_PREDECESSOR_CARRY_PENDING",
+      "work": "Carry whole Mantra successor including Name139/ML, atomically merge existing use_observation owners and validate exact345; this is SOURCE-ONLY metadata, no runtime/Rune mana consumption or intrinsic attack claim"
+    },
+    {
+      "lane": "Forge1",
+      "pr": 1529,
+      "counts": {
+        "classification_maximum_pairs": 1,
+        "pair_fields": 2,
+        "items": 1
+      },
+      "ids": [
+        3332
+      ],
+      "stage": "SOURCE_PREPARED_PREDECESSOR_CARRY_PENDING",
+      "work": "Merge independently retained Hammer3332 class2/max2 into existing authoring.forge; preserve immutable146 old selector and all other owners"
+    },
+    {
+      "lane": "Weapon79",
+      "pr": 1530,
+      "counts": {
+        "signed_attack_modifier_fields": 54,
+        "absolute_hit_percent_fields": 25,
+        "fields": 79,
+        "items": 79
+      },
+      "ids": [
+        761,
+        762,
+        763,
+        774,
+        3446,
+        3447,
+        3448,
+        3449,
+        3450,
+        5803,
+        6528,
+        7363,
+        7364,
+        7365,
+        8022,
+        8023,
+        8026,
+        8027,
+        8030,
+        12733,
+        14246,
+        14247,
+        14251,
+        14252,
+        14768,
+        15793,
+        16141,
+        16142,
+        16143,
+        16163,
+        16164,
+        19356,
+        19362,
+        20082,
+        20083,
+        20084,
+        20085,
+        20086,
+        20087,
+        21470,
+        22866,
+        22867,
+        27455,
+        27456,
+        28718,
+        29417,
+        30393,
+        31581,
+        34088,
+        34089,
+        34150,
+        35518,
+        36664,
+        36665,
+        39159,
+        43877,
+        43878,
+        43879,
+        43880,
+        47371,
+        47377,
+        49520,
+        49522,
+        49858,
+        49859,
+        49860,
+        49861,
+        49862,
+        49863,
+        52332,
+        53168,
+        53169,
+        53170,
+        53171,
+        53172,
+        53225,
+        53226,
+        53227,
+        53228
+      ],
+      "stage": "SOURCE_PREPARED_PREDECESSOR_CARRY_PENDING",
+      "work": "Complete accepted optional ItemAuthoring property carrier plus source aliases, compiler/writer, atomic setter and exact79 checks; absoluteHit is separate from relative hit modifier; no V4 ABI change"
+    },
+    {
+      "lane": "Physical8",
+      "pr": null,
+      "counts": {
+        "whole_vectors": 8,
+        "modifier_atoms": 16,
+        "items": 8
+      },
+      "ids": [
+        10389,
+        17828,
+        50164,
+        50165,
+        50181,
+        50239,
+        50273,
+        52335
+      ],
+      "stage": "NATIVE_CARRIER_COMPATIBILITY_HOLD",
+      "work": "Resolve accepted representation/version compatibility for Physical Bond whole vectors; native closed enum lacks Physical. No silent byte7/ABI extension and no dropping Physical atom"
+    },
+    {
+      "lane": "DefaultFalse8",
+      "pr": null,
+      "counts": {
+        "stackable_false_fields": 8,
+        "items": 8
+      },
+      "ids": [
+        23229,
+        23230,
+        23231,
+        23232,
+        23295,
+        23299,
+        23335,
+        23339
+      ],
+      "stage": "CURRENT_DIAGNOSTIC_ELIGIBLE_NEW_CLOSED_PACKET_REQUIRED",
+      "work": "New separate guarded source qualification/packet after actual Name139; original1487+7 artifacts stay unchanged. Existing compatibility checker only reports these eight; zero facts applied"
+    }
+  ],
+  "pending_cohort_overlap": {
+    "distinct_item_ids": 312,
+    "item_ids": [
+      761,
+      762,
+      763,
+      774,
+      3065,
+      3066,
+      3067,
+      3069,
+      3070,
+      3071,
+      3072,
+      3073,
+      3074,
+      3075,
+      3148,
+      3149,
+      3152,
+      3153,
+      3155,
+      3156,
+      3158,
+      3160,
+      3161,
+      3164,
+      3165,
+      3166,
+      3172,
+      3173,
+      3174,
+      3175,
+      3176,
+      3177,
+      3178,
+      3179,
+      3180,
+      3182,
+      3188,
+      3189,
+      3190,
+      3191,
+      3192,
+      3195,
+      3197,
+      3198,
+      3200,
+      3202,
+      3203,
+      3289,
+      3332,
+      3446,
+      3447,
+      3448,
+      3449,
+      3450,
+      5803,
+      6528,
+      7363,
+      7364,
+      7365,
+      8022,
+      8023,
+      8026,
+      8027,
+      8030,
+      8082,
+      8083,
+      8084,
+      8092,
+      8093,
+      8094,
+      10389,
+      10391,
+      12603,
+      12732,
+      12733,
+      12741,
+      14246,
+      14247,
+      14251,
+      14252,
+      14768,
+      15793,
+      16096,
+      16115,
+      16117,
+      16118,
+      16141,
+      16142,
+      16143,
+      16163,
+      16164,
+      17111,
+      17112,
+      17113,
+      17511,
+      17512,
+      17828,
+      19356,
+      19362,
+      20082,
+      20083,
+      20084,
+      20085,
+      20086,
+      20087,
+      21351,
+      21352,
+      21470,
+      22183,
+      22765,
+      22766,
+      22866,
+      22867,
+      23229,
+      23230,
+      23231,
+      23232,
+      23239,
+      23240,
+      23241,
+      23242,
+      23249,
+      23250,
+      23251,
+      23252,
+      23259,
+      23260,
+      23261,
+      23262,
+      23287,
+      23288,
+      23289,
+      23290,
+      23291,
+      23292,
+      23293,
+      23294,
+      23295,
+      23296,
+      23297,
+      23298,
+      23299,
+      23300,
+      23301,
+      23302,
+      23327,
+      23328,
+      23329,
+      23330,
+      23331,
+      23332,
+      23333,
+      23334,
+      23335,
+      23336,
+      23337,
+      23338,
+      23339,
+      23340,
+      23341,
+      23342,
+      25700,
+      25760,
+      26007,
+      26008,
+      26009,
+      26010,
+      26011,
+      26012,
+      26038,
+      26039,
+      26040,
+      26041,
+      26042,
+      26043,
+      26068,
+      26069,
+      26070,
+      26071,
+      26072,
+      26073,
+      27455,
+      27456,
+      27457,
+      27458,
+      28716,
+      28717,
+      28718,
+      28825,
+      28826,
+      29417,
+      29425,
+      30393,
+      30399,
+      30400,
+      31581,
+      34088,
+      34089,
+      34090,
+      34091,
+      34150,
+      34151,
+      34152,
+      35518,
+      35521,
+      35522,
+      36664,
+      36665,
+      36668,
+      36669,
+      36674,
+      36675,
+      39159,
+      39162,
+      39163,
+      43877,
+      43878,
+      43879,
+      43880,
+      43882,
+      43883,
+      43885,
+      43886,
+      47371,
+      47372,
+      47373,
+      47377,
+      49520,
+      49522,
+      49528,
+      49529,
+      49858,
+      49859,
+      49860,
+      49861,
+      49862,
+      49863,
+      49882,
+      49883,
+      49884,
+      49885,
+      49886,
+      49887,
+      50146,
+      50154,
+      50160,
+      50164,
+      50165,
+      50166,
+      50167,
+      50176,
+      50181,
+      50182,
+      50183,
+      50184,
+      50185,
+      50186,
+      50187,
+      50188,
+      50189,
+      50190,
+      50193,
+      50194,
+      50195,
+      50239,
+      50250,
+      50254,
+      50255,
+      50257,
+      50258,
+      50260,
+      50261,
+      50262,
+      50263,
+      50264,
+      50268,
+      50270,
+      50271,
+      50272,
+      50273,
+      50274,
+      50275,
+      50276,
+      50277,
+      50278,
+      50279,
+      50280,
+      50289,
+      50291,
+      51267,
+      51294,
+      52332,
+      52335,
+      52336,
+      52337,
+      52349,
+      53168,
+      53169,
+      53170,
+      53171,
+      53172,
+      53219,
+      53220,
+      53221,
+      53222,
+      53223,
+      53224,
+      53225,
+      53226,
+      53227,
+      53228,
+      53233
+    ],
+    "pairwise_overlaps": [
+      {
+        "lanes": [
+          "HitML67",
+          "Use345"
+        ],
+        "items": 27
+      },
+      {
+        "lanes": [
+          "HitML67",
+          "Weapon79"
+        ],
+        "items": 4
+      },
+      {
+        "lanes": [
+          "DefaultFalse8",
+          "HitML67"
+        ],
+        "items": 2
+      },
+      {
+        "lanes": [
+          "DefaultFalse8",
+          "Use345"
+        ],
+        "items": 6
+      }
+    ],
+    "meaning": "Distinct planned-touch IDs in seven unpublished prepared/held lanes only; not all incomplete Items. Name139 is now published and excluded as its own pending lane; some same IDs still require other fields. Atom, field and Item counts must not be summed."
+  },
+  "source_only_forge_blocker": {
+    "existing_typed_profiles": 146,
+    "official_class_agreement": 145,
+    "official_flag_absent_existing_profile": 1,
+    "profile_absent_official_positive_items": 871,
+    "one_closed_pair_ready": 3332,
+    "independent_per_item_maximum_not_retained": 870,
+    "global_class_to_tier_table_allowed_as_per_item_maximum": false
+  },
+  "residual_census": {
+    "final_complete_item_count": null,
+    "final_incomplete_item_count": null,
+    "final_source_supported_unknown_items": null,
+    "old_snapshot_count": 2521,
+    "old_snapshot_heads": {
+      "taxonomy": "88edf552b323cef8cb68cef5b10949fbf0c85424",
+      "native": "8257ba68d449a4975345897823d8282393e5bae2"
+    },
+    "old_selected_packet_mapper_missing": [
+      "Modifier26",
+      "Name139"
+    ],
+    "refresh_scope": "This ledger adds independently verified26/139 owners only; does not regenerate full collector or claim updated unknown residual",
+    "why_not_subtract": "Item-level unions overlap: an Item with a filled modifier/name may still have stack/max/source/routing holds. Existing old classifier also conflates some field-owner paths. Qualified source-observation metadata does not complete intrinsic/runtime facts.",
+    "required_next": "After serial native sourceowner chain integration, refresh whole per-ID collector with actual closed packet/owner paths for all new lanes, applicability/dependencies/units/holds and one pinned integrated candidate.",
+    "old_external_context_item_union": 986,
+    "old_snapshot_raw_candidate_field_counts": {
+      "stackable": 2493,
+      "upgradeclass": 865,
+      "damagetype": 140,
+      "damagerange": 113,
+      "manacost": 101,
+      "atk_mod": 80,
+      "augments": 62,
+      "mlrequired": 39,
+      "mantra": 38,
+      "elementalbond": 32,
+      "hit_chance": 29,
+      "hit_mod": 28
+    },
+    "source_scope_difference": "865 raw upgradeclass unresolved candidates is old Wiki/collector path disposition; 870 independently missing per-Item maxima is a distinct official-positive Forge-owner census. Neither may be summed or substituted for the other. 2521 and986 are overlapping Item unions, not field totals."
+  },
+  "source_access": {
+    "this_task": "Local retained source/packet/checkpoint/code reads only; no new external HTTP or RemoteDesktop calls",
+    "inherited_wiki_capture": "Retained anonymous Chrome/CDP public same-origin MediaWiki API after normal HTTP blocking, as packet provenance declares",
+    "current_public_continuity": "UNKNOWN; retained captures are cutoff-bound evidence, not current article continuity"
+  },
+  "input_witnesses": [
+    {
+      "path": "/workspace/audit-continuation/item-closure-inventory-88edf552-8257ba68-world3ed537c8.compact.json",
+      "sha256": "6467269bfb3b64c867d04e71e37a2a4ffe09c5605979656c054af2ffa2b48416",
+      "bytes": 586727
+    },
+    {
+      "path": "/workspace/audit-continuation/frozen-taxonomy-88edf552/tools/content-schema/item-authoring/profile-catalog.json",
+      "sha256": "1e5536b31eabbccd94ceb52ae7c8f18fc3e10e4701f98f01985da707464041fc",
+      "bytes": 11293
+    },
+    {
+      "path": "/workspace/audit-continuation/frozen-taxonomy-88edf552/tools/content-schema/item-authoring/templates/trash.json",
+      "sha256": "6517409582e80f9b01a00660bc7f72fa5dae0505fdaee2a8aedc9178b6ce8f98",
+      "bytes": 414
+    },
+    {
+      "path": "/workspace/audit-continuation/frozen-taxonomy-88edf552/tools/content-schema/item-authoring/templates/progression-material.json",
+      "sha256": "ccc89a1de9ad92fa2e554dce6256ec2f689e3944aa9fca12b8e5af03ea0235b5",
+      "bytes": 542
+    },
+    {
+      "path": "/workspace/audit-continuation/frozen-taxonomy-88edf552/tools/content-schema/item-authoring/templates/document.json",
+      "sha256": "44bf1c4df876e886ed15edec79fc865f3bb252d1ad89e0f90d4dd306fdfaca5a",
+      "bytes": 717
+    },
+    {
+      "path": "/workspace/audit-continuation/frozen-taxonomy-88edf552/tools/content-schema/item-authoring/templates/portable-decoration-kit.json",
+      "sha256": "d290cbabd0d46bcebc07b26b5d2e9cdac4368c4bd180a55e7d291dfe1f10a611",
+      "bytes": 687
+    },
+    {
+      "path": "/workspace/audit-continuation/frozen-taxonomy-88edf552/tools/content-schema/item-authoring/templates/weapon-magic.json",
+      "sha256": "4c094aed7fce0eb57f16cecd095240ca2518b8a14b22fdd4ea6988c679b47fce",
+      "bytes": 964
+    },
+    {
+      "path": "/workspace/audit-continuation/frozen-taxonomy-88edf552/tools/content-schema/item-authoring/templates/rune.json",
+      "sha256": "44bbe6daacfdd9737a362d58f527c12cb4dabddc4b94a40f4ed27f2363ae4f0c",
+      "bytes": 776
+    },
+    {
+      "path": "/workspace/audit-continuation/frozen-taxonomy-88edf552/tools/content-schema/item-authoring/templates/light-source.json",
+      "sha256": "4c688d0c8310c8f45d8f5b822fb3f1932285c5c62b80a0fe6e3b247bcae7a90f",
+      "bytes": 492
+    },
+    {
+      "path": "/workspace/audit-continuation/frozen-taxonomy-88edf552/tools/content-schema/item-authoring/templates/ammunition.json",
+      "sha256": "ca1dce9a00d45932af3c4e60f15ce161a79a68113966e7e84e0f366415ddd8dc",
+      "bytes": 811
+    },
+    {
+      "path": "/workspace/audit-continuation/frozen-taxonomy-88edf552/tools/content-schema/item-authoring/templates/weapon-distance.json",
+      "sha256": "0961ddc8c9e3dd0edf3d0e07640aa19375f9f6209a5f64e61ad81552b8d1a885",
+      "bytes": 908
+    },
+    {
+      "path": "/workspace/audit-continuation/frozen-taxonomy-88edf552/tools/content-schema/item-authoring/templates/tool.json",
+      "sha256": "d56001e1dc337a786361e6c83b16d495978335d5dfae30a8679e43606f698d4c",
+      "bytes": 531
+    },
+    {
+      "path": "/workspace/audit-continuation/frozen-taxonomy-88edf552/tools/content-schema/item-authoring/templates/equipment-accessory.json",
+      "sha256": "7cac9039773dcbd4cd72864d135dce262c1c43fdfd12690b6897c3c0f4366be6",
+      "bytes": 666
+    },
+    {
+      "path": "/workspace/audit-continuation/frozen-taxonomy-88edf552/tools/content-schema/item-authoring/templates/container.json",
+      "sha256": "01a429d06e511482d59d29c250ae8ecb482233d988618077d66d47a77b829e3f",
+      "bytes": 587
+    },
+    {
+      "path": "/workspace/audit-continuation/frozen-taxonomy-88edf552/tools/content-schema/item-authoring/templates/fluid.json",
+      "sha256": "f21246cd4cf69e53cd6eb35ef0308257bd736288ef609ba38d015eb2ecebc2e2",
+      "bytes": 661
+    },
+    {
+      "path": "/workspace/audit-continuation/frozen-taxonomy-88edf552/tools/content-schema/item-authoring/templates/container-equipment.json",
+      "sha256": "bb4ee4f414165e03f3f23b90d9925f37978f5dca5c2fad5ead14952902199327",
+      "bytes": 729
+    },
+    {
+      "path": "/workspace/audit-continuation/frozen-taxonomy-88edf552/tools/content-schema/item-authoring/templates/weapon-melee.json",
+      "sha256": "d2e60a6a9add4be1152d942007fcc01cacf4314c2bc3620099451977e3222a59",
+      "bytes": 713
+    },
+    {
+      "path": "/workspace/audit-continuation/frozen-taxonomy-88edf552/tools/content-schema/item-authoring/templates/plant.json",
+      "sha256": "b1cf978bdfc15e5efb5ab14d043c0970e6b9219a10765f8271744b60be742438",
+      "bytes": 479
+    },
+    {
+      "path": "/workspace/audit-continuation/frozen-taxonomy-88edf552/tools/content-schema/item-authoring/templates/equipment-armor.json",
+      "sha256": "ce34655698f133c04c10331dd7c9404716f252872b75250ebdf0698323c30762",
+      "bytes": 689
+    },
+    {
+      "path": "/workspace/audit-continuation/frozen-taxonomy-88edf552/tools/content-schema/item-authoring/templates/transformation-item.json",
+      "sha256": "055c04ecea213e733bb88e589efbc702403f3d052e87b2b1ce39f638fdd18b76",
+      "bytes": 579
+    },
+    {
+      "path": "/workspace/audit-continuation/frozen-taxonomy-88edf552/tools/content-schema/item-authoring/templates/quest-item.json",
+      "sha256": "368282df8857745fd671b6222c3e7165df4b778bb08423b5909211fb6f9285b8",
+      "bytes": 439
+    },
+    {
+      "path": "/workspace/audit-continuation/frozen-taxonomy-88edf552/tools/content-schema/item-authoring/templates/generic-portable.json",
+      "sha256": "6a2a04aca20fdf05e5aa4f9c4b982184d95605eb7116937c706ded2b86cac601",
+      "bytes": 505
+    },
+    {
+      "path": "/workspace/audit-continuation/frozen-taxonomy-88edf552/tools/content-schema/item-authoring/templates/event-collectible.json",
+      "sha256": "a18d543e2c3b59e2c57c316474257f2f10b8f435611fbb23672bea402d3da8ab",
+      "bytes": 555
+    },
+    {
+      "path": "/workspace/audit-continuation/frozen-taxonomy-88edf552/tools/content-schema/item-authoring/templates/key.json",
+      "sha256": "e6a9b017828dc1f1ecb36257b5c97c8938277bd7f06079b381a58232b6423a16",
+      "bytes": 461
+    },
+    {
+      "path": "/workspace/audit-continuation/frozen-taxonomy-88edf552/tools/content-schema/item-authoring/templates/food.json",
+      "sha256": "f19088b9312292c8fdc8d3ef12e2fc547a74f6a100cde98fcac7a9f4208eb43c",
+      "bytes": 697
+    },
+    {
+      "path": "/workspace/pr1437-native-publish/content/items/index.json",
+      "sha256": "464b79484f5d0b1479789a549b631d485b1005cb11c4e774d3d4021e6fe02fc3",
+      "bytes": 3985
+    },
+    {
+      "path": "/workspace/pr1437-native-publish/content/items/definitions/items-00000-00499.json",
+      "sha256": "922c99211097bf7e44ae79562bf4f4b51beeb7606bd7d013d20df1438ecdde72",
+      "bytes": 290320
+    },
+    {
+      "path": "/workspace/pr1437-native-publish/content/items/definitions/items-00500-00999.json",
+      "sha256": "6f6923e9754d04dc59eff38306a2a5c24d4b4f8919a8e0e21cbfdcf35304d6d5",
+      "bytes": 169489
+    },
+    {
+      "path": "/workspace/pr1437-native-publish/content/items/definitions/items-01000-01499.json",
+      "sha256": "a9ed1fb71e39e663922df741cd36c57ced4c6c99c14b86da57944f43ad258f8c",
+      "bytes": 215807
+    },
+    {
+      "path": "/workspace/pr1437-native-publish/content/items/definitions/items-01500-01999.json",
+      "sha256": "45950e5d3dc0b16d1e2088d6e42fb99693d4bbce68688ac28330d8a7f9e449c4",
+      "bytes": 250732
+    },
+    {
+      "path": "/workspace/pr1437-native-publish/content/items/definitions/items-02000-02499.json",
+      "sha256": "66c00bf0d1b069b57cda0dce9e5ec7ea90c84c7ae084b57a1b5f039c002477bf",
+      "bytes": 238549
+    },
+    {
+      "path": "/workspace/pr1437-native-publish/content/items/definitions/items-02500-02999.json",
+      "sha256": "423d2277fc7156289942265863b24c59fa230cae9e45cf33a0f5a95c1217265c",
+      "bytes": 236798
+    },
+    {
+      "path": "/workspace/pr1437-native-publish/content/items/definitions/items-03000-03499.json",
+      "sha256": "982ccbf4036a5533160fb48afad4bff6d139e75b85f79622a37e0fa01b584782",
+      "bytes": 125814
+    },
+    {
+      "path": "/workspace/pr1437-native-publish/content/items/definitions/items-03500-03999.json",
+      "sha256": "48d6652cfae62dd50aead86b3ce461042a41ee7dd92738748b24a9ce209897b8",
+      "bytes": 226468
+    },
+    {
+      "path": "/workspace/pr1437-native-publish/content/items/definitions/items-04000-04499.json",
+      "sha256": "55d4d75899d1abecc34211e6d0eef2e927ab53bd4de1fda6ad8764a01d8939d7",
+      "bytes": 271883
+    },
+    {
+      "path": "/workspace/pr1437-native-publish/content/items/definitions/items-04500-04999.json",
+      "sha256": "00ea8d2d63f9f605a0227d5057965cbd8199d8a0796d7247f198b29d6108e6ed",
+      "bytes": 227609
+    },
+    {
+      "path": "/workspace/pr1437-native-publish/content/items/definitions/items-05000-05499.json",
+      "sha256": "8935f65391fdf7ee9fc6a6ddc4ac43d9a63c174358d627a89652c4e0bc996c7e",
+      "bytes": 217665
+    },
+    {
+      "path": "/workspace/pr1437-native-publish/content/items/definitions/items-05500-05999.json",
+      "sha256": "021ad3ce04921831ac04b84afdaa4cb55f4eb7d2d4c7a563ae95f21d5d98bac9",
+      "bytes": 232269
+    },
+    {
+      "path": "/workspace/pr1437-native-publish/content/items/definitions/items-06000-06499.json",
+      "sha256": "dfc4801285ffff9769c377a41c78505f24e7829316b31b649e8c5e059371d2db",
+      "bytes": 123359
+    },
+    {
+      "path": "/workspace/pr1437-native-publish/content/items/definitions/items-06500-06999.json",
+      "sha256": "6f7a4c8897abb260f948f872c512c8817dce78ef12b1f790b243d4f4566f6bfa",
+      "bytes": 212092
+    },
+    {
+      "path": "/workspace/pr1437-native-publish/content/items/definitions/items-07000-07499.json",
+      "sha256": "a8e0de215cfcab75c0cc76074adf3845f4d24c5b9aa662d27b8053ef0ea721a9",
+      "bytes": 194921
+    },
+    {
+      "path": "/workspace/pr1437-native-publish/content/items/definitions/items-07500-07999.json",
+      "sha256": "db4cf9473a2949fc3f368cc1f78ffd0a1a30f5b2c658541ee08a0d156c9241e8",
+      "bytes": 190779
+    },
+    {
+      "path": "/workspace/pr1437-native-publish/content/items/definitions/items-08000-08499.json",
+      "sha256": "daccbf17aaf55d5e04bc502993296b4ff7f015bbec09c0641e0cca8b18a02b8a",
+      "bytes": 206631
+    },
+    {
+      "path": "/workspace/pr1437-native-publish/content/items/definitions/items-08500-08999.json",
+      "sha256": "0793d1747fbece983b32c2984a451cdec1d2848b6ef0a9c618e774058d575d22",
+      "bytes": 153895
+    },
+    {
+      "path": "/workspace/pr1437-native-publish/content/items/definitions/items-09000-09499.json",
+      "sha256": "c9f1646262b7e9002acd3ee710a6958e3a9da887e463e32693746cda85a64d07",
+      "bytes": 282649
+    },
+    {
+      "path": "/workspace/pr1437-native-publish/content/items/definitions/items-09500-09999.json",
+      "sha256": "feef4842b17824723b62878a0590f3def5f4f2c2aa1158b5a81e54844a5e3eb2",
+      "bytes": 157127
+    },
+    {
+      "path": "/workspace/pr1437-native-publish/content/items/definitions/items-10000-10499.json",
+      "sha256": "50a16db50d1464584723a8f1383722276622eed5c0230c3178a4fad03251d684",
+      "bytes": 215686
+    },
+    {
+      "path": "/workspace/pr1437-native-publish/content/items/definitions/items-10500-10999.json",
+      "sha256": "14127930bab9aaebc1bfecf7239f1db1ece1d3fb298cfee0b99f7a85a2d9c7e0",
+      "bytes": 201378
+    },
+    {
+      "path": "/workspace/pr1437-native-publish/content/items/definitions/items-11000-11499.json",
+      "sha256": "afe555335d72dd94f9b86a2f3bf2edfbcd1effdf05b6749b9a1b20ff205f7c44",
+      "bytes": 251709
+    },
+    {
+      "path": "/workspace/pr1437-native-publish/content/items/definitions/items-11500-11999.json",
+      "sha256": "dc642833cc37bda824f85df0bd8fa011cd741499dfdae405d30b9392850bcb3a",
+      "bytes": 272349
+    },
+    {
+      "path": "/workspace/pr1437-native-publish/content/items/definitions/items-12000-12499.json",
+      "sha256": "d7d6acb2dafa79c4da338dcd4ef9d3bfd1ea1ffe811e8c619a4a8f452aecd944",
+      "bytes": 512607
+    },
+    {
+      "path": "/workspace/pr1437-native-publish/content/items/definitions/items-12500-12999.json",
+      "sha256": "0529fd6782a92e14fdede5d5cc9152cfcbf90e7de5cf415d817d18ef87dc4145",
+      "bytes": 264141
+    },
+    {
+      "path": "/workspace/pr1437-native-publish/content/items/definitions/items-13000-13499.json",
+      "sha256": "ea164bac12663c0693297f59dc73e71610903c5febd9751186a74ddae2ca58de",
+      "bytes": 220701
+    },
+    {
+      "path": "/workspace/pr1437-native-publish/content/items/definitions/items-13500-13999.json",
+      "sha256": "328e184dae67300295b5a20f9af7af71b435537f7b4b3c2efc21bcf800b09561",
+      "bytes": 182935
+    },
+    {
+      "path": "/workspace/pr1437-native-publish/content/items/definitions/items-14000-14499.json",
+      "sha256": "449bf8a5132075627c5609f7e3739d17c2b79f572896b48563f8ab9f6dcbcec6",
+      "bytes": 219111
+    },
+    {
+      "path": "/workspace/pr1437-native-publish/content/items/definitions/items-14500-14999.json",
+      "sha256": "a69b7a6681275e4b1afb28e8e877bf7485a027685018cf53a5a1496ab498e223",
+      "bytes": 522773
+    },
+    {
+      "path": "/workspace/pr1437-native-publish/content/items/definitions/items-15000-15499.json",
+      "sha256": "77293a176980b47eb07984159df5e1e50e4347687b67f538456982adb7ec8318",
+      "bytes": 213547
+    },
+    {
+      "path": "/workspace/pr1437-native-publish/content/items/definitions/items-15500-15999.json",
+      "sha256": "9383e75dc6f988da11f40a4ab5aacd80f8d8629a9d31db5cf3607d74a4bddaf7",
+      "bytes": 264850
+    },
+    {
+      "path": "/workspace/pr1437-native-publish/content/items/definitions/items-16000-16499.json",
+      "sha256": "8256842f6090bc1bcbf1e7a582eefbaa1d546fb14317c8713a9e7d5f96902f41",
+      "bytes": 199686
+    },
+    {
+      "path": "/workspace/pr1437-native-publish/content/items/definitions/items-16500-16999.json",
+      "sha256": "67d59cda5c78ff75c5dc430fb082a2fd4a34fc0586a643814f878f426e330571",
+      "bytes": 297089
+    },
+    {
+      "path": "/workspace/pr1437-native-publish/content/items/definitions/items-17000-17499.json",
+      "sha256": "b185ee2913db20386e3b7d9b4cddcb8550d1991e8399eaa7f007ffea11b061ee",
+      "bytes": 273716
+    },
+    {
+      "path": "/workspace/pr1437-native-publish/content/items/definitions/items-17500-17999.json",
+      "sha256": "4626319c840fc999a06b72a189ebe275cd26f9c979fa98d47f4da23fb28f7fa6",
+      "bytes": 367347
+    },
+    {
+      "path": "/workspace/pr1437-native-publish/content/items/definitions/items-18000-18499.json",
+      "sha256": "c4b7f95a5107d76e1895d62c99402ffcab8730fb6f4d8651e0aee400cc6cbe8d",
+      "bytes": 190494
+    },
+    {
+      "path": "/workspace/pr1437-native-publish/content/items/definitions/items-18500-18999.json",
+      "sha256": "1f183157d010f8d9ab78787fd761d12ca904796d61a961d9d9f167628db7949d",
+      "bytes": 285252
+    },
+    {
+      "path": "/workspace/pr1437-native-publish/content/items/definitions/items-19000-19499.json",
+      "sha256": "be24926c81587b621b12fde89c2d326da5553b3a310ed1b773517da3fb324844",
+      "bytes": 335239
+    },
+    {
+      "path": "/workspace/pr1437-native-publish/content/items/definitions/items-19500-19999.json",
+      "sha256": "f60efdb1d6fdb4f5a58eb1965cbe50b7a1801097dbedad956d06bcafef9a050c",
+      "bytes": 342099
+    },
+    {
+      "path": "/workspace/pr1437-native-publish/content/items/definitions/items-20000-20499.json",
+      "sha256": "5d3f64922a662edbf20ef88ce9603d9be040a50c068b22e033bd019c6ede135a",
+      "bytes": 355094
+    },
+    {
+      "path": "/workspace/pr1437-native-publish/content/items/definitions/items-20500-20999.json",
+      "sha256": "089de418a252507ab7f8977f17a8f4acd5e3bae9fc6f34fc4f4f69b974cff8d1",
+      "bytes": 378064
+    },
+    {
+      "path": "/workspace/pr1437-native-publish/content/items/definitions/items-21000-21499.json",
+      "sha256": "4d34136aa631d1e04c4664865fdebd19310d0e61d42b4631147b588c0b48f2ea",
+      "bytes": 457502
+    },
+    {
+      "path": "/workspace/pr1437-native-publish/content/items/definitions/items-21500-21999.json",
+      "sha256": "9a7aa6f180aca224ae95fa691a44e19868b87235ee62f522dfa4d8976d7bc622",
+      "bytes": 331947
+    },
+    {
+      "path": "/workspace/pr1437-native-publish/content/items/definitions/items-22000-22499.json",
+      "sha256": "452ffe7501e3e00ca01ce3d6c66fee003b66fa17e5d7f89f85f4ffe1ef2ad4fa",
+      "bytes": 315568
+    },
+    {
+      "path": "/workspace/pr1437-native-publish/content/items/definitions/items-22500-22999.json",
+      "sha256": "980df1a5b94ca19a45863bab7a0e9a493c01ad9395885aa24e940b6f7b791e70",
+      "bytes": 338995
+    },
+    {
+      "path": "/workspace/pr1437-native-publish/content/items/definitions/items-23000-23499.json",
+      "sha256": "a0421c193504ffb0e259af9a7b31643ec198743109cee8ae40192e58a9b3d713",
+      "bytes": 107135
+    },
+    {
+      "path": "/workspace/pr1437-native-publish/content/items/definitions/items-23500-23999.json",
+      "sha256": "4b96890055eb8c0526eafb8bc78aea9367e1d7961e7b391e8e4dcc5a3ccf8a3e",
+      "bytes": 198231
+    },
+    {
+      "path": "/workspace/pr1437-native-publish/content/items/definitions/items-24000-24499.json",
+      "sha256": "e91b0965c47fd9c932c2c55ea9749928ebee0494cac1f91583f0f13e60baf5e5",
+      "bytes": 343793
+    },
+    {
+      "path": "/workspace/pr1437-native-publish/content/items/definitions/items-24500-24999.json",
+      "sha256": "8b907a2a400407b22e01c810b83453d96b5f836d8902e048cfde3f5338018966",
+      "bytes": 220951
+    },
+    {
+      "path": "/workspace/pr1437-native-publish/content/items/definitions/items-25000-25499.json",
+      "sha256": "69bd75e234ce776e40dab3ff1243872e87ea56385f9ce1658ffc935eadfe9e56",
+      "bytes": 240384
+    },
+    {
+      "path": "/workspace/pr1437-native-publish/content/items/definitions/items-25500-25999.json",
+      "sha256": "0b0708bd656370b3f4231865b89b70e0d5d0d5e2d51365a459a79eeb481f6b6f",
+      "bytes": 285961
+    },
+    {
+      "path": "/workspace/pr1437-native-publish/content/items/definitions/items-26000-26499.json",
+      "sha256": "70b32940112313e3c00cebbbb22f840c5a757949ee8868d48b79352a0401c46e",
+      "bytes": 427159
+    },
+    {
+      "path": "/workspace/pr1437-native-publish/content/items/definitions/items-26500-26999.json",
+      "sha256": "788a6409d007af7133384852d13e9905dae208c1c1f7a99cd647026e7bc18b65",
+      "bytes": 466506
+    },
+    {
+      "path": "/workspace/pr1437-native-publish/content/items/definitions/items-27000-27499.json",
+      "sha256": "25f41c34fa2b786db0d1b694242ba8de479759b0916312c7ad76b6f38f5ab7b5",
+      "bytes": 303203
+    },
+    {
+      "path": "/workspace/pr1437-native-publish/content/items/definitions/items-27500-27999.json",
+      "sha256": "2d3c79158d35b3efbaf799459365961c506f07ebb3618a63c97bc7b81f34e863",
+      "bytes": 368667
+    },
+    {
+      "path": "/workspace/pr1437-native-publish/content/items/definitions/items-28000-28499.json",
+      "sha256": "3189cfa40ddbeecbe604c06cbfb6298865bad7201a21bac003cec9639ba8a18a",
+      "bytes": 334549
+    },
+    {
+      "path": "/workspace/pr1437-native-publish/content/items/definitions/items-28500-28999.json",
+      "sha256": "fd397ede80bae1baeefa192f5afa721c7065c429cdebe3c7d634765f510b643d",
+      "bytes": 345105
+    },
+    {
+      "path": "/workspace/pr1437-native-publish/content/items/definitions/items-29000-29499.json",
+      "sha256": "69069dcb29a5e310fe2ffb98a915295619bcdf822d5a45137ab7147d9f977c02",
+      "bytes": 222579
+    },
+    {
+      "path": "/workspace/pr1437-native-publish/content/items/definitions/items-29500-29999.json",
+      "sha256": "a945879b2fd5cdfbfac8b065e3f6d47d9f4344b52a993d70af26d8bef37ba5f7",
+      "bytes": 243464
+    },
+    {
+      "path": "/workspace/pr1437-native-publish/content/items/definitions/items-30000-30499.json",
+      "sha256": "6f88a2e4025e28dc4992a995adfb274ae6d19fc57184c340555dc62326a774e6",
+      "bytes": 275402
+    },
+    {
+      "path": "/workspace/pr1437-native-publish/content/items/definitions/items-30500-30999.json",
+      "sha256": "3a031b3bb4ece179c3de49230d79239e3d2dad1a823be32d2c7ee872941a2cb1",
+      "bytes": 167738
+    },
+    {
+      "path": "/workspace/pr1437-native-publish/content/items/definitions/items-31000-31499.json",
+      "sha256": "97aa01b0bea27c554f68ab9b18c3d09e474b090d624f1617f45b7fbb64253e19",
+      "bytes": 374483
+    },
+    {
+      "path": "/workspace/pr1437-native-publish/content/items/definitions/items-31500-31999.json",
+      "sha256": "7bc462138ade4c753c1c827ba0e70e043f331bbc913b4b785e28738c455fb46a",
+      "bytes": 367864
+    },
+    {
+      "path": "/workspace/pr1437-native-publish/content/items/definitions/items-32000-32499.json",
+      "sha256": "b39b08167b2c3990a77f6fa3b299895e656d13b8b70a368d63535d41f8ff27fa",
+      "bytes": 226982
+    },
+    {
+      "path": "/workspace/pr1437-native-publish/content/items/definitions/items-32500-32999.json",
+      "sha256": "3658cf4b7d02654faded49f3323265d5d1acf5fd66c8b201ac96fe51f0b9ed90",
+      "bytes": 231895
+    },
+    {
+      "path": "/workspace/pr1437-native-publish/content/items/definitions/items-33000-33499.json",
+      "sha256": "ac337fdbe67307a843408f889d2663fd05c0e8e5ec47f044af21ac393afd7b6e",
+      "bytes": 344744
+    },
+    {
+      "path": "/workspace/pr1437-native-publish/content/items/definitions/items-33500-33999.json",
+      "sha256": "fbfa2d51248bdc87797ec88c1315d1ba57b5878cd11a965626f237b07fa48f20",
+      "bytes": 227917
+    },
+    {
+      "path": "/workspace/pr1437-native-publish/content/items/definitions/items-34000-34030.json",
+      "sha256": "f5e12f8a41d930c2c1c777287587bd646aeaa5d83a3bdcfd39fb0816effa8ef1",
+      "bytes": 10821
+    },
+    {
+      "path": "/workspace/pr1437-native-publish/docs/agents/evidence/OTV2-20261002-item-elemental-magic-modifier-promotion-v1.json",
+      "sha256": "fd3a302fae411c71c71bea7aebe6d8d95b0fbc3ac503e88b6844be6017233a9f",
+      "bytes": 28410
+    },
+    {
+      "path": "/workspace/pr1437-native-publish/docs/agents/evidence/OTV2-20261002-item-name-promotion-v1.json",
+      "sha256": "f2f8f266a53fca4de2ed114c011a2c18dd3ac2557b4c25a8c11584d01902846b",
+      "bytes": 27656
+    },
+    {
+      "path": "/workspace/pr1437-native-publish/docs/agents/evidence/OTV2-20261002-item-elemental-magic-modifier-source-qualification-v1.json",
+      "sha256": "3fd080375c2187ff6b2bef26514488816f3c096e68bbe34aaaab1aef985c7226",
+      "bytes": 581845
+    },
+    {
+      "path": "/workspace/pr1437-native-publish/docs/agents/evidence/OTV2-20261002-item-name-source-qualification-v1.json",
+      "sha256": "5650ab936c222a3771dec95c7bd058c3d398883f14b6ecb7e982e10f2592482c",
+      "bytes": 448810
+    },
+    {
+      "path": "/workspace/pr1437-stack-publish/docs/agents/evidence/OTV2-20261002-item-hit-magic-source-qualification-v1.json",
+      "sha256": "cc86385588101584a2940af7e71ab8db6550e30d9fa28b912fd1c449c9145210",
+      "bytes": 181579
+    },
+    {
+      "path": "/workspace/audit-continuation/mantra-bond49-source-only-checkpoint/docs/agents/evidence/OTV2-20261002-item-mantra-bond-promotion-v1.json",
+      "sha256": "eecfca5562dbe8f1cbb271061b58ca20b883b9c751368dd3fd0cfac9119ef2bf",
+      "bytes": 48711
+    },
+    {
+      "path": "/workspace/pr1437-timed-fields/docs/agents/evidence/OTV2-20261002-item-use-observation-promotion-v1.json",
+      "sha256": "fbbb6e191da097ceaae3059a55259ef7fe55ed5c56397f2e0f178b9ea66b7f56",
+      "bytes": 34703
+    },
+    {
+      "path": "/workspace/pr1437-resistances/docs/agents/evidence/OTV2-20261001-item-forge3332-promotion-v1.json",
+      "sha256": "295cc4749294ef487593f5e3f3e4d33a9f8812db7447fa5d40a4674bdf2545c9",
+      "bytes": 7250
+    },
+    {
+      "path": "/workspace/audit-continuation/weapon79-source-packet-checkpoint.json",
+      "sha256": "0d87f5a4183e92a71f7e52f2f9274626aee81a91c2d7c0d5e103057b8133a19f",
+      "bytes": 20116
+    },
+    {
+      "path": "/workspace/audit-continuation/physical8-native-schema-abi-read-only-proposal.json",
+      "sha256": "ab11dc92cab546efcdd547d19dcdbd3b8db5d2d158e24550a4896bddb1e65226",
+      "bytes": 21614
+    },
+    {
+      "path": "/workspace/audit-continuation/name139-default8-source-unlock-diagnostic.json",
+      "sha256": "1d4aa6177b754928d7e4e97e1e1f158ad5bb058a0e40d7bb41ba2f0521a10129",
+      "bytes": 19736
+    },
+    {
+      "path": "/workspace/audit-continuation/stack-max-bounded-current-verdict.json",
+      "bytes": 10320,
+      "sha256": "aca0353d93199cf243ffc8c2836726d6654800020ba91fdc655832d7d9977371"
+    },
+    {
+      "path": "/workspace/audit-continuation/movable4091-negative-readonly-qualification.json",
+      "bytes": 6360872,
+      "sha256": "605087864781530042642a4af512f671381d63a0565c9d459976182c51d28ae4"
+    },
+    {
+      "path": "/workspace/audit-continuation/augment62-owned-target-discovery-readonly.json",
+      "bytes": 22195,
+      "sha256": "9539c791dd3e8b134b8d0b4de86a414771d5938fb29f32a7a9d4683e488dcad3"
+    },
+    {
+      "path": "/workspace/audit-continuation/remaining-weight-literal-conflicts-four.json",
+      "bytes": 8145,
+      "sha256": "5f676fda686f950e9b51522891b19aa2c0738abb991bb0ec4660b3ac883f45fd"
+    },
+    {
+      "path": "/workspace/pr1437-native-publish/docs/agents/evidence/OTV2-20260930-item-stats-promotion-v2.json",
+      "bytes": 3744320,
+      "sha256": "f833bc32bfc8762dbece8a7c2abe2985946fd153da4915e163c81e94f91c7bcc"
+    }
+  ],
+  "published_scope_heads": {
+    "taxonomy": "88edf552b323cef8cb68cef5b10949fbf0c85424",
+    "prior_native_document208": "8257ba68d449a4975345897823d8282393e5bae2",
+    "published_modifier26": "2ec1f34f05fd89abbb041f313b0852c331ae2b53",
+    "published_compatibility1531": "488e80b68160a02486fa764cb911788a71dc0516",
+    "world_overlay": "3ed537c8 prefix, full source input retained in old compact; overlay not integrated/main",
+    "published_name139": "1945520b41fc1c71856ba52b282c3f4171e083b6"
+  },
+  "published_name139": {
+    "lane": "Name139",
+    "pr": 1525,
+    "counts": {
+      "name_corrections": 139,
+      "items": 139
+    },
+    "ids": [
+      23223,
+      23224,
+      23225,
+      23226,
+      23227,
+      23228,
+      23229,
+      23230,
+      23231,
+      23232,
+      23233,
+      23234,
+      23235,
+      23236,
+      23237,
+      23238,
+      23239,
+      23240,
+      23241,
+      23242,
+      23243,
+      23244,
+      23245,
+      23246,
+      23247,
+      23248,
+      23249,
+      23250,
+      23251,
+      23252,
+      23253,
+      23254,
+      23255,
+      23256,
+      23257,
+      23258,
+      23259,
+      23260,
+      23261,
+      23262,
+      23263,
+      23264,
+      23265,
+      23266,
+      23267,
+      23268,
+      23269,
+      23270,
+      23271,
+      23272,
+      23273,
+      23274,
+      23275,
+      23276,
+      23277,
+      23278,
+      23279,
+      23280,
+      23281,
+      23282,
+      23283,
+      23284,
+      23285,
+      23286,
+      23287,
+      23288,
+      23289,
+      23290,
+      23291,
+      23292,
+      23293,
+      23294,
+      23295,
+      23296,
+      23297,
+      23298,
+      23299,
+      23300,
+      23301,
+      23302,
+      23303,
+      23304,
+      23305,
+      23306,
+      23307,
+      23308,
+      23309,
+      23310,
+      23311,
+      23312,
+      23313,
+      23314,
+      23315,
+      23316,
+      23317,
+      23318,
+      23319,
+      23320,
+      23321,
+      23322,
+      23323,
+      23324,
+      23325,
+      23326,
+      23327,
+      23328,
+      23329,
+      23330,
+      23331,
+      23332,
+      23333,
+      23334,
+      23335,
+      23336,
+      23337,
+      23338,
+      23339,
+      23340,
+      23341,
+      23342,
+      31966,
+      31968,
+      31970,
+      31972,
+      31974,
+      31976,
+      31978,
+      31980,
+      31982,
+      31984,
+      31986,
+      31988,
+      31990,
+      31992,
+      31994,
+      31996,
+      31998,
+      32000,
+      32002
+    ],
+    "stage": "PUBLISHED_VALIDATE",
+    "work": "Published full26-file readback; exact-head CI/protected review/integration remains pending, not counted among unpublished data batches",
+    "published_sha": "1945520b41fc1c71856ba52b282c3f4171e083b6"
+  },
+  "status_update_basis": {
+    "method": "Root publication full26readback and wholeHit67 carry confirmation",
+    "Name139": "VALIDATE1945520b41fc1c71856ba52b282c3f4171e083b6",
+    "compatibility1531": "VALIDATE488e80b68160a02486fa764cb911788a71dc0516"
+  },
+  "significant_source_blockers": [
+    {
+      "lane": "positive_stack_max",
+      "diagnostic_candidate_items": 2493,
+      "scope": "Retained bounded current research source census2026-10-01; not refreshed final Item-readiness residual",
+      "source_maximum_state": "UNKNOWN",
+      "qualified_new_values": 0,
+      "blocker": "No own per-Item or explicitly exception-free universal applicable stack maximum retained. Market arithmetic/stash increments or historical ammunition stacks do not establish maximum; do not default100.",
+      "bounded_source_not_exhaustive_absence_proof": true
+    },
+    {
+      "lane": "movable_negative",
+      "diagnostic_candidate_items": 4091,
+      "source_frame_scope": "EXPLICIT_UNMOVE_TRUE_CURRENT_MOVABLE_UNKNOWN_ONLY",
+      "take_flag_states": {
+        "ABSENT_NOT_INFERRED_FALSE": 4091
+      },
+      "qualified_portable_negative_candidates": 0,
+      "all_present_disagreement_items": 4,
+      "overlapping_guard_hold_counts": {
+        "PORTABLE_CURRENT_TAKE_TRUE_DOMAIN_NOT_AFFIRMED": 4091,
+        "NO_INDEPENDENT_OWN_WIKI_IMMOBILE_YES": 2933,
+        "OWN_ID_OR_PARAMETER_AMBIGUITY": 1133,
+        "IMMOBILE_EXPLICIT_EMPTY_OR_MALFORMED": 370,
+        "ALL_PRESENT_IMMOBILE_DISAGREEMENT": 4
+      },
+      "blocker": "Take ABSENT is UNKNOWN, notFalse; unmoveTrue/Wiki immobileYes do not affirm portable Item-domain applicability versus World geometry. No safe automatic movableFalse batch."
+    },
+    {
+      "lane": "forge_independent_maximum",
+      "diagnostic_official_positive_items_missing_independent_maximum": 870,
+      "scope": "Existing Forge-owner census separate from Wiki upgradeclass865. Hammer3332 closed class2/max2 excluded from this870.",
+      "blocker": "Require independently retained per-Item classification/max_tier pairs; global classification tables cannot supply per-Item maxima."
+    },
+    {
+      "lane": "augment_target_crosswalk",
+      "source_annotation_items": 62,
+      "named_clauses": 77,
+      "distinct_source_spell_labels": 47,
+      "literal_key_discovery_matches": 3,
+      "labels_without_literal_key_match": 44,
+      "labels_without_literal_key_match_list": [
+        "Avatar of Steel",
+        "Fierce Berserk",
+        "Avatar of Light",
+        "Divine Caldera",
+        "Avatar of Storm",
+        "Hell's Core",
+        "Avatar of Nature",
+        "Eternal Winter",
+        "Terra Wave",
+        "Wrath of Nature",
+        "Great Energy Beam",
+        "Great Death Beam",
+        "Intense Wound Cleansing",
+        "Front Sweep",
+        "Strong Ethereal Spear",
+        "Ultimate Flame Strike",
+        "Ultimate Ice Strike",
+        "Wound Cleansing",
+        "Flurry of Blows",
+        "Avatar of Balance",
+        "Chained Penance",
+        "Spirit Mend",
+        "Greater Flurry of Blows",
+        "Forceful Uppercut",
+        "Greater Tiger Clash",
+        "Brutal Strike",
+        "Ultimate Energy Strike",
+        "Ultimate Terra Strike",
+        "Etheral Spear",
+        "Ethereal Spear",
+        "Summon Knight Familiar",
+        "Summon Paladin Familiar",
+        "Summon Sorcerer Familiar",
+        "Summon Druid Familiar",
+        "Summon Monk Familiar",
+        "Great Fire Wave",
+        "Spiritual Outburst",
+        "Divine Grenade",
+        "Groundshaker",
+        "Forked Glacier",
+        "Thousand Fist Blows",
+        "Restore Balance",
+        "Divine Barrage",
+        "Death Echo"
+      ],
+      "qualified_typed_bindings": 0,
+      "blocker": "Source-own spell identities/augment property and effect mapping required. Three lexical matches are discovery only, not typedbindings; typo Etheral vsEthereal not auto-corrected."
+    },
+    {
+      "lane": "weight_source_conflict",
+      "current_packet_report_conflicts": 4,
+      "item_ids": [
+        39699,
+        39700,
+        39701,
+        39702
+      ],
+      "scope": "Exact current retained stats-v2 report conflict counter +four RainbowTorch own-page conflicts; not generic all unknown weights",
+      "blocker": "Opposing own source weights require variant/lifecycle applicability; no overwrite frompage majority"
+    },
+    {
+      "lane": "weapon_range_cells_malformed",
+      "current_packet_report_malformed": 3,
+      "scope": "Exact current retained stats-v2 malformed.weapon.range_cells counter; not UseObservation.damage_range or all unknown attack ranges",
+      "blocker": "Source literal syntax/units must be qualified before native range_cells admission"
+    }
+  ],
+  "blocker_counts_do_not_sum": "These source/domain/binding/field counts have different source scopes and overlap each other plus family/pending lanes. They are not additive complete/incomplete Item counts."
+}
