@@ -241,3 +241,18 @@ Three explicit `None` level requirements normalize to0; blanks, recommendations 
 ## Explicit reward quantity adaptation
 
 Two exact variant rewards now select the declared Oteryn total200 as two known admitted stacks100+100. This differs deliberately from the recorded donor container execution100. Original source/raw facts stay unchanged in `source_variant`; the companion `reward_stack_normalization.json` preserves the exact choice and code witnesses. Rollout `approximation_applied` and `approximation_evidence` identify affected titles through exact source Quest ownership, without enabling runtime or asserting a successful smoke. Variant native lowering remains WAITING_IMPLEMENTATION.
+
+## Chosen completion of the existing 242 SOURCE definitions
+
+`quest_completion_authoring.py --check` validates the exact selected 242 identities
+and attaches an `oteryn_recipe` supplement to each existing record. Their original
+SOURCE fields, diagnostic holds and readiness remain unchanged, bound by immutable
+core digests. The chosen supplements provide 1597 ordered stages and 518 reward
+intents; all behavior is explicitly `CHOSEN_OTERYN_APPROXIMATION`. Per-title stage
+maps describe concrete family routes. No duplicate Quest identities are introduced.
+
+The canonical family remains 352 definitions (284 donor-derived and 68 authored).
+Chosen completeness and original SOURCE fidelity/readiness are separate fields.
+Rollout marks the chosen proof without asserting `definition_fields_ready` or
+runtime admission. All game smoke journeys remain `NOT_RUN`. Historical wiki pins
+and donor references are evidence; this does not certify exhaustive official fidelity.

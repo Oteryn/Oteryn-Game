@@ -188,7 +188,11 @@ class QuestTreeTests(unittest.TestCase):
         index = tool.read(root, tool.DIRECTORY + 'index.json')
         committed = [row for path in index['shards'] for row in tool.read(root, path)['records']]
         old = [r for r in committed if r['definition'].get('definition_profile') != 'oteryn_authored_v1']
-        self.assertEqual(rows, old)
+        stripped = copy.deepcopy(old)
+        for r in stripped:
+            r['definition'].pop('oteryn_recipe', None)
+        self.assertEqual(rows, stripped)
+        self.assertEqual(sum('oteryn_recipe' in r['definition'] for r in old), 242)
         self.assertEqual(len(committed) - len(old), 68)
         self.assertEqual(len(rows), len(quests))
         for row in [r for r in rows if 'source_data' in r['definition']]:

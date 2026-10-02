@@ -98,6 +98,8 @@ def build(catalogue, bundle, definitions, source_specs, approximations=None):
             flags.append('needs_source')
         flags.append('needs_runtime')
         recipe_definition = authored.get(title)
+        source_choices = [d for d in canonical if d.get('oteryn_recipe')
+                          and title in d['oteryn_recipe']['payload']['covered_wiki_titles']]
         if recipe_definition:
             if keys:
                 raise ValueError('authored recipe must not replace a donor binding')
@@ -119,15 +121,20 @@ def build(catalogue, bundle, definitions, source_specs, approximations=None):
             'canonical_quest_refs': [d['identity'] for d in canonical],
             'definition_fields_ready': ready,
             'authored_recipe_complete': recipe_definition is not None,
+            'chosen_source_recipe_complete': bool(source_choices),
             'flags': flags, 'known_gaps': missing,
             'source_page_count': len(row.get('fresh_sources', [])),
             'fidelity_policy': 'pragmatic_oteryn',
-            'approximation_applied': recipe_definition is not None or any(approximations.get(key) for key in keys),
+            'approximation_applied': recipe_definition is not None or bool(source_choices) or any(approximations.get(key) for key in keys),
             'approximation_evidence': ([{'authored_quest': recipe_definition['identity']['key'],
                 'proof_path': recipe_definition['provenance']['path'],
                 'proof_sha256': recipe_definition['provenance']['sha256'],
                 'source_behavior': 'CHOSEN_OTERYN_RECIPE'}] if recipe_definition else
-                [copy.deepcopy(e) for key in keys for e in approximations.get(key, [])]),
+                [copy.deepcopy(e) for key in keys for e in approximations.get(key, [])]) +
+                [{'quest': d['identity']['key'],
+                  'proof_path': d['oteryn_recipe']['provenance']['path'],
+                  'proof_sha256': d['oteryn_recipe']['provenance']['sha256'],
+                  'source_behavior': 'CHOSEN_SOURCE_COMPLETION'} for d in source_choices],
             'runtime_enabled': False,
             'smoke_verification': {'start': 'NOT_RUN', 'progress': 'NOT_RUN',
                                    'finish': 'NOT_RUN', 'reward': 'NOT_RUN',

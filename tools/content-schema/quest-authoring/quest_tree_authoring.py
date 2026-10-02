@@ -205,7 +205,7 @@ def tree_validator():
     from referencing import Registry, Resource
     here = Path(__file__).parent
     registry = Registry()
-    for name in ('quest_content', 'quest_progress', 'interaction', 'quest_bundle', 'quest_authored'):
+    for name in ('quest_content', 'quest_progress', 'interaction', 'quest_bundle', 'quest_authored', 'quest_completion'):
         schema = json.loads((here / (name + '.schema.json')).read_text(encoding='utf-8'))
         registry = registry.with_resource(schema['$id'], Resource.from_contents(schema))
     schema = json.loads((here / 'quest_tree.schema.json').read_text(encoding='utf-8'))
@@ -218,6 +218,8 @@ def expected_files(root, include_registration=False):
     reports = {q['quest']: q for q in read(root, READINESS)['quests']}
     gates = read(root, GATES)['gates']
     records = build_records(quests, claims, reports, gates, read(root, GATE_MANIFEST)['entries'], bound_source_data(root, quests, gates))
+    from quest_completion_authoring import attach
+    records = attach(root, records)
     from authored_quest_authoring import build_records as authored_records
     records.extend(authored_records(root))
     files, shards = {}, []
@@ -236,6 +238,7 @@ def expected_files(root, include_registration=False):
         'source_classification': 'OTS_HYPOTHESIS_ONLY',
         'readiness': dict(sorted(Counter(row['definition']['readiness'] for row in records).items())),
         'missing_data': dict(sorted(missing.items())),
+        'chosen_source_completion': {'records': 242, 'scope': 'CHOSEN_OTERYN_RECIPE_ONLY', 'native_admission': 'WAITING_IMPLEMENTATION'},
         'definition_profiles': {'donor_source': len(quests), 'oteryn_authored_v1': len(records) - len(quests)},
         'catalogue_coverage': {'source_records': len(quests), 'included_records': len(quests), 'excluded_by_kind': {}, 'included_by_kind': dict(sorted(by_kind.items())), 'complete': True},
         'runtime_readiness': 'NOT_ASSESSED',
@@ -253,6 +256,11 @@ def expected_files(root, include_registration=False):
             'tools/content-schema/quest-authoring/samples/authored68/baseline-rollout.json',
             'tools/content-schema/quest-authoring/samples/authored68/recipes.json',
             'tools/content-schema/quest-authoring/samples/authored68/wiki-access.json',
+            'tools/content-schema/quest-authoring/quest_completion_authoring.py',
+            'tools/content-schema/quest-authoring/quest_completion.schema.json',
+            'tools/content-schema/quest-authoring/samples/completion242/selection.json',
+            'tools/content-schema/quest-authoring/samples/completion242/baseline-core-digests.json',
+            'tools/content-schema/quest-authoring/samples/completion242/recipes.json',
             'tools/content-schema/quest-authoring/samples/wiki-source-all373/source-specs-373.json')],
         'source_refs': read(root, MANIFEST)['sources'],
         'contract': 'docs/architecture/OTERYN_FULL_GAME_CONTENT_AND_RULESET_TREE_V1.md',
