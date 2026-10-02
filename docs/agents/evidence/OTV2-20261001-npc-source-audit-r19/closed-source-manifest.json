@@ -1,0 +1,400 @@
+{
+  "active_packet": "/workspace/npc-r19-research/batch1/structural-eight-definition-bridge.json",
+  "counts": {
+    "generic_records": 16,
+    "new_imports": 5,
+    "new_sources": 5,
+    "npc_definitions": 8,
+    "profiles": 16,
+    "source_bindings": 25
+  },
+  "held_actors": [
+    "Agostina"
+  ],
+  "inputs": [
+    {
+      "bytes": 17437,
+      "path": "/workspace/Oteryn-Game/tools/content-migration/npc_admission_stage.py",
+      "sha256": "4b1569375cb675f31fb64a00d94e97c73719b9224eff9569dd38d0ee01a362ff"
+    },
+    {
+      "bytes": 18269,
+      "path": "/workspace/Oteryn-Game/tools/content-schema/npc-authoring/class_profile_bridge.py",
+      "sha256": "f72858ae987c885ae0312f9598af5a745f10262f9a695f7c89a8e0a9ed289ba0"
+    },
+    {
+      "bytes": 59835,
+      "path": "/workspace/Oteryn-Game/tools/content-schema/npc-authoring/promotion_candidates.py",
+      "sha256": "672a16fa63b9335e96860a4cfd0323dfa1c226738d34693f3ee122fa30eacc78"
+    },
+    {
+      "bytes": 31271,
+      "path": "/workspace/npc-r14-research/identity/raw/otg-br/global-11x/engine/src/npc.cpp",
+      "sha256": "dbaed529953cd09b8847feda15392eb9b3c9680aa03135a1445f6197077ff815"
+    },
+    {
+      "bytes": 2297,
+      "path": "/workspace/npc-r16-research/dialogue/raw/dakotaotserver-glitch/dakbugs/data-otservbr-global/npc/Gerib.lua",
+      "sha256": "1b0059f1522a1838858b77e21a2e4ec63c5f0b9ed583d0eb3f8702fe2d38f148"
+    },
+    {
+      "bytes": 211,
+      "path": "/workspace/npc-r16-research/identity/raw/adrunkhuman/tibia-playerbots-project/1afc43cf7efbf4ccc32df28ff45b726617050fa0/server/data/npc/Ben.xml",
+      "sha256": "4479d39811fa3f9715174f6c5f752669c940d87d5469bc9f717ca64b6595c029"
+    },
+    {
+      "bytes": 464,
+      "path": "/workspace/npc-r16-research/identity/raw/adrunkhuman/tibia-playerbots-project/1afc43cf7efbf4ccc32df28ff45b726617050fa0/server/data/npc/scripts/default.lua",
+      "sha256": "f742152138aef2145f32a3ce7569bf8ac546588ffc99800e677b850a6aa2556b"
+    },
+    {
+      "bytes": 36119,
+      "path": "/workspace/npc-r16-research/identity/raw/adrunkhuman/tibia-playerbots-project/1afc43cf7efbf4ccc32df28ff45b726617050fa0/server/src/npc.cpp",
+      "sha256": "e9c7c2b29d63908287f6dcbea6b4a771ae452702b9b1e1c88eee9f3d703b73aa"
+    },
+    {
+      "bytes": 178,
+      "path": "/workspace/npc-r16-research/identity/raw/otg-br/global-11x/9a585bdbcb00c11dbcd4f75dcbd310f0a5352640/data/npc/Arenamaster.xml",
+      "sha256": "257c1d2360bd918cc5afe365e4b510d7bd4662265607e962dc12fd9836949fec"
+    },
+    {
+      "bytes": 3058,
+      "path": "/workspace/npc-r16-research/presentation/dakbugs-zero-walk-qualification.json",
+      "sha256": "df0a0b864c0c2da037993a00bdb74cceec439532711c5255fcfb61a8016055ee"
+    },
+    {
+      "bytes": 19360,
+      "path": "/workspace/npc-r17-research/definitions/build_definition_bridge.py",
+      "sha256": "e0e892a98a88a6c6c14872d4f5211ee4002674beffc1dda98f78db8f4645a9ed"
+    },
+    {
+      "bytes": 25586,
+      "path": "/workspace/npc-r18-research/definitions/build_nine_definition_bridge.py",
+      "sha256": "eee39beed27c1b5fad1f7e0beaaea9d3978834752d3dbe85586f03ddb7600066"
+    },
+    {
+      "bytes": 7163,
+      "path": "/workspace/npc-r18-work/final-exact-head-review.json",
+      "sha256": "715d219f0b0d323b7123d66a9b9adec0a12eca1bfe1928899d61989dc50ff77f"
+    },
+    {
+      "bytes": 586,
+      "path": "/workspace/npc-r18-work/freeze.json",
+      "sha256": "81ff97e003c7bf0b46a472d18f54d9465b8154901c9994326d00cffc58b75587"
+    },
+    {
+      "bytes": 425,
+      "path": "/workspace/npc-r18-work/frozen-check-results.json",
+      "sha256": "43267eabeaf651a7b9ca79470e63a70fcc82d17b3e85b1b1ec46d5fe821c5867"
+    },
+    {
+      "bytes": 56,
+      "path": "/workspace/npc-r18-work/generated/assets/catalog.json",
+      "sha256": "fa61df1076ef66e8c69b6182db1b13fe2ccb92653ab16a148d1fbaf773adb344"
+    },
+    {
+      "bytes": 17072472,
+      "path": "/workspace/npc-r18-work/generated/definitions/declarations.json",
+      "sha256": "4068e0abf18068b75b682d2d554c36e7a31d0aa306110a50e09de32c6cc0a1d3"
+    },
+    {
+      "bytes": 22547705,
+      "path": "/workspace/npc-r18-work/generated/definitions/reference.json",
+      "sha256": "0b1a1af3ab3fb2b1cd187b557e59796039a9f350af5c0a902a8b1c6303497cb7"
+    },
+    {
+      "bytes": 411,
+      "path": "/workspace/npc-r18-work/generated/project.json",
+      "sha256": "b18524b97eb9768e494d98d7415f0bf1b8071e0655d4559fa84fad267222dc9d"
+    },
+    {
+      "bytes": 38098,
+      "path": "/workspace/npc-r18-work/generated/provenance/imports.json",
+      "sha256": "c015ab4c1ca66af80b14ca452982fde3319039dbd2013508cf6076a7bc59a9c6"
+    },
+    {
+      "bytes": 1342271,
+      "path": "/workspace/npc-r18-work/generated/provenance/sources.json",
+      "sha256": "e38622b1c1f906f3a751b46125d3e0825bfd878c259ba187fecc901f4c0e9177"
+    },
+    {
+      "bytes": 1972,
+      "path": "/workspace/npc-r19-research/arenamaster-source-arbitration.json",
+      "sha256": "4632df7e803abe1833d74266e684624921051874cc63c7f3b98e59e4f789e8c1"
+    },
+    {
+      "bytes": 63298,
+      "path": "/workspace/npc-r19-research/batch1/batch1-source-coverage.json",
+      "sha256": "303f38631dc45fded1aa3b5505c8ee2fde07427e835401a46bd55cc1985af108"
+    },
+    {
+      "bytes": 37205,
+      "path": "/workspace/npc-r19-research/batch1/current-tibiopedia-access-and-identity.json",
+      "sha256": "cb6dc368ff54c29de5005b2b30b31abd2017882b157fe1f1de0fffc90a6919d7"
+    },
+    {
+      "bytes": 32573,
+      "path": "/workspace/npc-r19-research/batch1/own28-novel-body-catalogue.json",
+      "sha256": "149c3c677bb944ebca75ada07674228e37fd94d03d0ab195de60c4fef324913a"
+    },
+    {
+      "bytes": 542,
+      "path": "/workspace/npc-r19-research/batch1/raw/otg-default.lua",
+      "sha256": "11bd1add4150794fb00d82235a7ea6602a2edb746e278c0650980b89241ed1ce"
+    },
+    {
+      "bytes": 277842,
+      "path": "/workspace/npc-r19-research/batch1/raw/rme-creatures.xml",
+      "sha256": "4e6c4957f878058e2768ea7a302f078ca41ab1c7e264abb1a5e9c4baa72440f9"
+    },
+    {
+      "bytes": 3174,
+      "path": "/workspace/npc-r19-research/batch1/rme-all-batches-exact-hits.json",
+      "sha256": "74b321b7aad2fc6f53ca2101b582c3cb93900d047aa334392623223421be2d8b"
+    },
+    {
+      "bytes": 824,
+      "path": "/workspace/npc-r19-research/batch1/rme-exact-actor-hits.json",
+      "sha256": "ccfa13d9f4032d83a1e649d977150af69e87b6c4bf9b40b9751f5591851d80f7"
+    },
+    {
+      "bytes": 9010,
+      "path": "/workspace/npc-r19-research/batch1/two-actor-movement-qualification.json",
+      "sha256": "94eba2d7cdb5d39893fcc285e2e904cc1962938b2f6c7d5f83a7e48693a27fd5"
+    },
+    {
+      "bytes": 5189079,
+      "path": "/workspace/npc-r19-research/batch1/valeria-five-program-qualification.json",
+      "sha256": "ee50a5c38c08351f07bf7f74d0402ef4df8d4c6dfca9ee7ce25b05c181e20818"
+    },
+    {
+      "bytes": 6602,
+      "path": "/workspace/npc-r19-research/batch1/valeria-positive-walk-qualification.json",
+      "sha256": "05936b29522024ccc7298bd0610861dee9ca71d3a3713bd99523d85668096c70"
+    },
+    {
+      "bytes": 12501,
+      "path": "/workspace/npc-r19-research/batch2/gerib-fresh-role-structural-facts.json",
+      "sha256": "575fdb86495ec6f032e9af2968c2b4a234b5eb45d6ff22704d33b5bf212ac38d"
+    },
+    {
+      "bytes": 10390,
+      "path": "/workspace/npc-r19-research/batch3/raw-new-catalogues/00ee632fa4db98a19c45f6b36914e44a27c97104",
+      "sha256": "4d64011e7c00e76fc7651052e6775d69df7f8c3edb99388cf02513364bd2a53b"
+    },
+    {
+      "bytes": 10390,
+      "path": "/workspace/npc-r19-research/batch3/raw-new-catalogues/26a5ffb5ab5cddb13cd7ef3a303cc292c612ab0b",
+      "sha256": "d64596a7922b6a9aef7a8cb9426e7acd27a58ff75a50c020414f2112703ee27c"
+    },
+    {
+      "bytes": 10391,
+      "path": "/workspace/npc-r19-research/batch3/raw-new-catalogues/3335a138942170976cd231f3cc192930b63e6867",
+      "sha256": "489bfbb5640ede492c51fa796c35c14c4231df9a4f1b56dd5a1821bfc5e26c03"
+    },
+    {
+      "bytes": 10390,
+      "path": "/workspace/npc-r19-research/batch3/raw-new-catalogues/68e1f46e6473789dbc0f10cabbf537a8bcde1510",
+      "sha256": "2306bc4d8ca01b8ee2b536410983d61b1877a3ee1f09be746dfc2b958ad5e694"
+    },
+    {
+      "bytes": 10390,
+      "path": "/workspace/npc-r19-research/batch3/raw-new-catalogues/cbb366b217ea8a4515f9280e1cacb8d06492c4d9",
+      "sha256": "33585692e2f7de6873b7a37c3da1090bf78041956e79fb14c8977f1ff26fa307"
+    },
+    {
+      "bytes": 26479,
+      "path": "/workspace/npc-r19-research/batch4/arenamaster-two-source-ids-all-native-poses.json",
+      "sha256": "80f314357da9cf813087194eae9113034d8f3eb7f3512fbe65befc238af04abc"
+    },
+    {
+      "bytes": 13735,
+      "path": "/workspace/npc-r19-research/batch4/lai-current-br-qualified-presentation-proposal.json",
+      "sha256": "0bf1ec80b6e67f4c2a1afa30132109bb6e544ad2a88c6fb75f0b82c8ea6bd78a"
+    },
+    {
+      "bytes": 3880,
+      "path": "/workspace/npc-r19-research/batch4/raw/lai.lua",
+      "sha256": "47d8836949fd8f2b8aeb77f94ba48fa4947ffc85f16fadf1b09d25ff3d59d3b6"
+    },
+    {
+      "bytes": 20906,
+      "path": "/workspace/npc-r19-research/batch4/three-source-ready-presentations.json",
+      "sha256": "50ffea986d31972da47e139c90ba90c7adff9162d22a4022d03f23f0d1bf54ea"
+    },
+    {
+      "bytes": 18459,
+      "path": "/workspace/npc-r19-research/batch4/two-single-layer-and-gerib-current-br-fits.json",
+      "sha256": "4a4f0e9ffd33f060992c4d3109d2d0e64c8db63c252535fd13766f6ef31053bc"
+    },
+    {
+      "bytes": 53923,
+      "path": "/workspace/npc-r19-research/batch4/valeria-five/agostina-current-tp-all-source-poses.json",
+      "sha256": "f6aacc6365c9d9c5dd85d17a2931d310feeb4b52d574d27689b6027cb43bb161"
+    },
+    {
+      "bytes": 21916,
+      "path": "/workspace/npc-r19-research/batch4/valeria-five/agostina-current-tp-valid-selector-phase0-probes.json",
+      "sha256": "65856eb397b0b83ecdadfb781c2354d06f7b19e256e3f15609a12c98c8b151df"
+    },
+    {
+      "bytes": 6841,
+      "path": "/workspace/npc-r19-research/batch4/valeria-five/current-tibiopedia/alberto.gif",
+      "sha256": "84e589f3524de207f11d0455170213d57b74cdaa4d32ad71fbc0527dd3cb0df5"
+    },
+    {
+      "bytes": 6876,
+      "path": "/workspace/npc-r19-research/batch4/valeria-five/current-tibiopedia/emilio.gif",
+      "sha256": "768fad0015281e370c3cc2b5a8d2b5e92b5af0317463fb8d0981929f353f52a8"
+    },
+    {
+      "bytes": 7855,
+      "path": "/workspace/npc-r19-research/batch4/valeria-five/current-tibiopedia/fabiana.gif",
+      "sha256": "9efef9fe2a950759d1b417da7d62a5ab4120f3d46c233092467c8068d2557445"
+    },
+    {
+      "bytes": 752,
+      "path": "/workspace/npc-r19-research/batch4/valeria-five/current-tibiopedia/lorenzo.gif",
+      "sha256": "28c0a901250ec2988b74af52814348419d4cc1e23ebebc4a7632534f01199309"
+    },
+    {
+      "bytes": 12297,
+      "path": "/workspace/npc-r19-research/batch4/valeria-five/five-current-tibiopedia-actor-image-custody.json",
+      "sha256": "36ea61ac49877ea6735f54961a1b93d4bd6df7b554b4f6599d07b8fc5c38604b"
+    },
+    {
+      "bytes": 43963,
+      "path": "/workspace/npc-r19-research/batch4/valeria-five/five-current-tibiopedia-source-bound-fits.json",
+      "sha256": "3bd115a8b0e598c1bda70178db3b729d8898402f8479bfcbd4ef4cd195093f14"
+    },
+    {
+      "bytes": 38827,
+      "path": "/workspace/npc-r19-research/batch4/valeria-five/four-source-ready-current-tibiopedia-presentations.json",
+      "sha256": "2bddd971b710b90c8dace8418595f2b4955b4f7b00391d7885c3221f7d406476"
+    },
+    {
+      "bytes": 6223,
+      "path": "/workspace/npc-r19-research/batch5/browser-captures/arenamaster.gif",
+      "sha256": "d10e6acf9d4ec956bb2d0b4c1096c243ce66a9235381ec81817381dbf4002d58"
+    },
+    {
+      "bytes": 9393,
+      "path": "/workspace/npc-r19-research/batch5/browser-captures/ben.gif",
+      "sha256": "a9ba6d6fdb757fac1a421f5674ce412868655c24a10db3c46fda7ac03c513dda"
+    },
+    {
+      "bytes": 18615,
+      "path": "/workspace/npc-r19-research/batch5/browser-captures/gerib.gif",
+      "sha256": "baad24d6370cc1ba09faf7c550d3689e9ce5ba099876dcd419470484b2654988"
+    },
+    {
+      "bytes": 12853,
+      "path": "/workspace/npc-r19-research/batch5/browser-captures/lai.gif",
+      "sha256": "ee6e452c8b486e67b8cc39fcb25303d6d9bf14a4bba79a35587697c95bec255b"
+    },
+    {
+      "bytes": 30646,
+      "path": "/workspace/npc-r19-research/batch5/current-br-actionable-actor-image-custody.json",
+      "sha256": "c69dde83df9d14604890391faabac195421415dbe45a3f5c0219809412bb08e1"
+    },
+    {
+      "bytes": 15081,
+      "path": "/workspace/npc-r19-research/batch5/current-br-queued-actor-image-custody.json",
+      "sha256": "0763f25eb5a02508662500571e1e62aed47b4267ad46b63fd10978ba6c5f9c2d"
+    },
+    {
+      "bytes": 1392,
+      "path": "/workspace/npc-r19-research/lai-source-arbitration.json",
+      "sha256": "ffbca7a8792181d62ef068fb23b57228a06101e8dd23a6796cc6eaebe307d39c"
+    },
+    {
+      "bytes": 755,
+      "path": "/workspace/npc-r19-research/published1141-predecessor.json",
+      "sha256": "0340081d30d1753b1fa78324f305bce59966834647ac2051a4d0ba7a01ec92ec"
+    },
+    {
+      "bytes": 11936,
+      "path": "/workspace/npc-r19-research/shared-review/rme-ten-independent-review.json",
+      "sha256": "5e9401abb4768487a6cfb6730715a6ccf53bcd6450288b5e50133b92be3a8792"
+    },
+    {
+      "bytes": 5441,
+      "path": "/workspace/npc-r19-research/shared-review/tibiopedia-actor-pixels-independent-review.json",
+      "sha256": "8241ced2aec8846aedfa7ead02d083b86f141f0eb1b0ab5f18847b6e90a80a2d"
+    },
+    {
+      "bytes": 2295,
+      "path": "/workspace/npc-r19-research/shared-review/two-actor-movement-independent-review.json",
+      "sha256": "5bd34435a808d30dbda06680692136e35e8e7357619b4642542583fe97887512"
+    }
+  ],
+  "native_repository_writes": false,
+  "outputs": [
+    {
+      "bytes": 34370,
+      "path": "/workspace/npc-r19-research/batch1/build_structural_bridge.py",
+      "sha256": "3f98bbdd656be5a4e3ee0a0f9bcfaad050605cfbdf5aaa537d6c66518edc8492"
+    },
+    {
+      "bytes": 9301,
+      "path": "/workspace/npc-r19-research/batch1/test_structural_bridge.py",
+      "sha256": "4545db1d825bfe6cb0a4e9a1b3ca53510b9378d93daa24a7ad0c2f2b6c2cf99f"
+    },
+    {
+      "bytes": 2675318,
+      "path": "/workspace/npc-r19-research/batch1/structural-eight-definition-bridge.json",
+      "sha256": "c1935ff30c2c61cd7ba5ef0a800d31d41d8295295f48a7be93361193f69ea21d"
+    },
+    {
+      "bytes": 19822,
+      "path": "/workspace/npc-r19-research/batch1/structural-native-additions.json",
+      "sha256": "acdc243cc6b9be18cf40632db2ef51d772bd6fef4bd6b5a511288d4325fc06dc"
+    },
+    {
+      "bytes": 2610,
+      "path": "/workspace/npc-r19-research/batch1/source-tests.log",
+      "sha256": "793e92ffbfd4fcb3e8af384711d05ab2d016f66d440b1ad04bd5633de8759e2b"
+    },
+    {
+      "bytes": 3730,
+      "path": "/workspace/npc-r19-research/batch1/README.md",
+      "sha256": "7abb1751f83ddb06058b4909c2637fadfa4dc70c96759a3af9b5fda5aeb6669c"
+    },
+    {
+      "bytes": 5194,
+      "path": "/workspace/npc-r19-research/batch1/tibia_playerbots_project-qualified-source-facts.json",
+      "sha256": "24ea516b447781bd5acf914544ba46580eddf2ac71945450fa8af3458c15f762"
+    },
+    {
+      "bytes": 6389,
+      "path": "/workspace/npc-r19-research/batch1/otg_br_global_11x-qualified-source-facts.json",
+      "sha256": "edaf99beb22fe65b578b8792f5e4ea80d8d4ef79c77fd997469061a121522130"
+    },
+    {
+      "bytes": 81274,
+      "path": "/workspace/npc-r19-research/batch1/dakbugs-qualified-source-facts.json",
+      "sha256": "f750ebace2d53e911515ad6d18d0a3c8b4c431d7a4db31e45222ee72f641733c"
+    },
+    {
+      "bytes": 782,
+      "path": "/workspace/npc-r19-research/batch1/nexa_map_editor-qualified-source-facts.json",
+      "sha256": "caaac8ba60b7dffcb1b049bd42a35cfe568b8186d2bf0de6914beb97f697e73f"
+    },
+    {
+      "bytes": 1091577,
+      "path": "/workspace/npc-r19-research/batch1/valeria_ot-qualified-source-facts.json",
+      "sha256": "57ae5b848ff72f02d35b49556c6e210a2b4f57b339785284be5852c8b229f9c3"
+    }
+  ],
+  "rejected_history_disposition": {
+    "bytes": 336,
+    "path": "/workspace/npc-r19-research/batch1/rejected-production-key-history/disposition.json",
+    "sha256": "918e1f9c89cd749704573b6363ce62bcbd33f1a238bba71a7b5bac4b5c6eadee"
+  },
+  "repaired_production_source_key": "oteryn:source.valeria_ot",
+  "runtime_execution": false,
+  "schema": "NPC_R19_CLOSED_EIGHT_SOURCE_CUSTODY/v1",
+  "source_documents_are_evidence_only": true,
+  "source_test_count": 16,
+  "status": "READY_REPAIRED_SOURCE_ONLY_PENDING_FINAL_INDEPENDENT_REVIEW"
+}

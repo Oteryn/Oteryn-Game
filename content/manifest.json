@@ -12,7 +12,7 @@
     },
     "Behavior": {
       "index": "content/behaviors/index.json",
-      "records": 2644
+      "records": 2652
     },
     "Charm": {
       "index": "content/charms/index.json",
@@ -52,11 +52,11 @@
     },
     "NPC": {
       "index": "content/npcs/definitions/index.json",
-      "records": 1141
+      "records": 1149
     },
     "Presentation": {
       "index": "content/presentations/definitions/index.json",
-      "records": 2644
+      "records": 2652
     },
     "Proficiency": {
       "index": "content/proficiencies/index.json",
@@ -201,7 +201,7 @@
       "path": "content/behaviors/behaviors-02000-02499.json"
     },
     {
-      "path": "content/behaviors/behaviors-02500-02643.json"
+      "path": "content/behaviors/behaviors-02500-02651.json"
     },
     {
       "path": "content/behaviors/index.json"
@@ -498,7 +498,7 @@
       "path": "content/npcs/definitions/npcs-00500-00999.json"
     },
     {
-      "path": "content/npcs/definitions/npcs-01000-01140.json"
+      "path": "content/npcs/definitions/npcs-01000-01148.json"
     },
     {
       "path": "content/presentations/definitions/index.json"
@@ -519,7 +519,7 @@
       "path": "content/presentations/definitions/presentations-02000-02499.json"
     },
     {
-      "path": "content/presentations/definitions/presentations-02500-02643.json"
+      "path": "content/presentations/definitions/presentations-02500-02651.json"
     },
     {
       "path": "content/proficiencies/bindings.json"

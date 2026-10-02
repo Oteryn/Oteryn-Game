@@ -16,28 +16,28 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "content.lock.json",
-        427,
-        "d4969c33132d8dab8f6b98d2d507944e0583ab4f025a57016e21dad488437360",
+        436,
+        "5d325114e43ec5ba1e14466aae0721c3d70f90d38b90e41bdb53e51632df7365",
     ),
     (
         "definitions/declarations.json",
-        17_072_472,
-        "4068e0abf18068b75b682d2d554c36e7a31d0aa306110a50e09de32c6cc0a1d3",
+        17082661,
+        "b5c6cb1c4ad4b836d599d374d346a75e0caf67bc70e31f87245be9018adbf02b",
     ),
     (
         "definitions/reference.json",
-        22_547_705,
-        "0b1a1af3ab3fb2b1cd187b557e59796039a9f350af5c0a902a8b1c6303497cb7",
+        22550123,
+        "26d8fbfbfc21844fb75456311569c742c9b871695f3254af8a6f372b978a45fa",
     ),
     (
         "editor/author.json",
-        120_557,
+        120557,
         "14c6e3163baf17096545daa897a866df0b5ee23721c26312867ffa73447bbfdb",
     ),
     (
         "manifest.json",
-        1_958,
-        "70ab871f7494e8b388aabee56e2cb6257a4102e263339cb3cfc6c7de5797c806",
+        1961,
+        "585302de29e71bc78045c16deafdb63d4d952396e81ffb2e75e432c6e95cc2da",
     ),
     (
         "presentations/bindings.json",
@@ -46,18 +46,18 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "project.json",
-        411,
-        "b18524b97eb9768e494d98d7415f0bf1b8071e0655d4559fa84fad267222dc9d",
+        414,
+        "9c767a21c2a0f1016447d1ad9a3560b5fbc56edf31af36594f3616e1a9b45a5e",
     ),
     (
         "provenance/imports.json",
-        38_098,
-        "c015ab4c1ca66af80b14ca452982fde3319039dbd2013508cf6076a7bc59a9c6",
+        41360,
+        "27cb79a06ac9ade63e9a447dc35e44b4267510c0d5fca0bccb40c383ac31e595",
     ),
     (
         "provenance/sources.json",
-        1_342_271,
-        "e38622b1c1f906f3a751b46125d3e0825bfd878c259ba187fecc901f4c0e9177",
+        1350669,
+        "66f6f5ebe2f294564cd53d0cf7df052268d5ac5cc177406c65e89e4f1f9dc1df",
     ),
     (
         "worlds/world.json",
@@ -114,7 +114,7 @@ const WORLD_CATALOGUE_SHARDS: [(&str, &str); 4] = [
 const TREE_CONTRACT: &str =
     "docs/agents/evidence/OTV2-20260925-full-game-content-ruleset-tree-v1.json";
 const TREE_DIRECTORY_NODES: usize = 97;
-const TREE_SHA256: &str = "e3cd78fc9002cd127e5066aaf379408bc118c884f23ece7d8bcafa91bfa7681c";
+const TREE_SHA256: &str = "a91bd820d8ea96044ec456bce9264a103d8ae1e8fe9b40c3cd7bd6e50360b4b6";
 /// A12 (ITEM-ID-1b): the protected Item family less the 4,590 D149 records, on Tibia keys,
 /// plus the 404 donor epoch-2 records and the 60 appearance-only records (ITEM-ADD-1).
 const ITEMS: usize = 34_031;
@@ -125,11 +125,11 @@ const CREATURES: usize = 1503;
 const CREATURE_RECORDS: usize = 21069;
 const CREATURE_PROFILES: usize = 20097;
 /// NPC admission wave A (OTERYN_WORLD_PROJECT_V2_NPC_ADMISSION_V1 §7 slice 4).
-const NPCS: usize = 1141;
-const NPC_RECORDS: usize = 2282;
-const NPC_DECLARATIONS: usize = 2224;
+const NPCS: usize = 1149;
+const NPC_RECORDS: usize = 2298;
+const NPC_DECLARATIONS: usize = 2232;
 const NPC_DIALOGUES: usize = 703;
-const NPC_BINDINGS: usize = 2457;
+const NPC_BINDINGS: usize = 2482;
 /// Encounter admission (OTERYN_WORLD_PROJECT_V2_ENCOUNTER_ADMISSION_V1 §5 slice 4).
 const ENCOUNTERS: usize = 61;
 
@@ -152,7 +152,7 @@ fn limits() -> ProjectEvidenceLimits {
         max_locator_bytes: 160,
         max_locator_segments: 8,
         max_reference_records: CW2_B1_FULL_ITEM_FAMILY_COUNT + CREATURE_RECORDS + NPC_RECORDS,
-        max_import_records: 20,
+        max_import_records: 24,
         max_reimport_states: ENCOUNTERS,
     }
 }
@@ -323,9 +323,9 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     .expect("capture tracked canonical package");
     assert_eq!(
         project.project_revision(),
-        "g4-npc-qualified-nine-definitions-r17"
+        "g4-npc-qualified-bounded-definitions-r18"
     );
-    assert_eq!(project.imports().len(), 20);
+    assert_eq!(project.imports().len(), 25);
     let import_for = |batch: &str| {
         project
             .imports()
@@ -571,7 +571,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     assert!(v2.placements.is_empty());
     assert!(v2.appearance_bindings.is_empty());
     assert!(v2.assets.is_empty());
-    assert_eq!(v2.sources.len(), 19);
+    assert_eq!(v2.sources.len(), 24);
     let source_for = |batch: &str| {
         v2.sources
             .iter()
@@ -953,6 +953,16 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
                     )
                     | ("oteryn:source.happen", "happen/npc-source-file")
                     | ("oteryn:source.fencore", "fencore/npc-source-file")
+                    | (
+                        "oteryn:source.tibia_playerbots_project",
+                        "tibia_playerbots_project/npc-source-file"
+                    )
+                    | ("oteryn:source.nexa_map_editor", "rme/npc-name")
+                    | (
+                        "oteryn:source.otg_br_global_11x",
+                        "otg_br_global_11x/npc-source-file"
+                    )
+                    | ("oteryn:source.valeria_ot", "valeria_ot/npc-source-file")
             ));
             npc_bindings += 1;
             continue;
