@@ -387,9 +387,9 @@
       "per_stage": 468,
       "fixed": 38
     },
-    "progress_tracks": 1490,
+    "progress_tracks": 1491,
     "tracks_written_by_both_servers": 1048,
-    "tracks_without_a_writer": 196,
+    "tracks_without_a_writer": 197,
     "transitions": 1746,
     "transitions_by_owner": {
       "action": 181,
@@ -415,22 +415,22 @@
     "transitions_in_both_servers": 1345,
     "storyline_quests_linked_to_wiki": 52,
     "reward_only_quests_absorbed": 30,
-    "script_only_quests": 113,
-    "catalogue_quests": 276,
+    "script_only_quests": 120,
+    "catalogue_quests": 283,
     "by_status": {
       "mapped": 529
     },
     "requirements_parsed": {
-      "quests_with_wiki_requirements": 270,
+      "quests_with_wiki_requirements": 277,
       "premium": {
-        "parsed": 268,
+        "parsed": 275,
         "partial": 2
       },
       "min_level": {
-        "none": 2,
+        "none": 3,
         "note": 5,
-        "parsed": 246,
-        "range": 6,
+        "parsed": 252,
+        "range": 5,
         "uncertain": 4,
         "varies": 1
       }
@@ -470,6 +470,68 @@
   ],
   "quest_source_aliases": [],
   "source_checks": {
+    "quest_requirement_interpretations": [
+      {
+        "quest": "canary:quest/dawnport_quest",
+        "wiki": {
+          "provider": "tibia_fandom",
+          "title": "Dawnport Quest",
+          "pageid": 68640,
+          "revid": 683819,
+          "content_sha256": "1d6763776297dcfb722619efc4e7d194cf7f508856ddd198c3018e9c65bcdfa1"
+        },
+        "level_raw": "2 - 20",
+        "min_level": 2,
+        "max_level": 20,
+        "classification": "DERIVED",
+        "coverage_gap": "Source maximum level is preserved but not lowered into Native Quest requirements"
+      },
+      {
+        "quest": "canary:quest/sanctuary_of_the_lizard_god",
+        "wiki": {
+          "provider": "tibia_fandom",
+          "title": "Sanctuary of the Lizard God Quest",
+          "pageid": 68839,
+          "revid": 1198612,
+          "content_sha256": "fe8e2d3b054078252c7436ab7641612a69f3299d6cf076626c835d06aa497c93"
+        },
+        "level_raw": "2 - 20",
+        "min_level": 2,
+        "max_level": 20,
+        "classification": "DERIVED",
+        "coverage_gap": "Source maximum level is preserved but not lowered into Native Quest requirements"
+      },
+      {
+        "quest": "canary:quest/the_rookie_guard_quest",
+        "wiki": {
+          "provider": "tibia_fandom",
+          "title": "The Rookie Guard Quest",
+          "pageid": 53931,
+          "revid": 891816,
+          "content_sha256": "96f3268be16e7faf36153fd7d3f3fcb381e508043ab442397f861d1fef6bdc4f"
+        },
+        "level_raw": "0 - 5",
+        "min_level": 0,
+        "max_level": 5,
+        "classification": "DERIVED",
+        "coverage_gap": "Source maximum level is preserved but not lowered into Native Quest requirements"
+      },
+      {
+        "quest": "canary:quest/their_masters_voice",
+        "wiki": {
+          "provider": "tibia_fandom",
+          "title": "Their Master's Voice World Change",
+          "pageid": 54568,
+          "revid": 1110635,
+          "content_sha256": "66360bb61c4e6268979fbf42f1e1f1d4e7b2d8f9c91b7365d5b342634aa138d4"
+        },
+        "level_raw": "8+",
+        "min_level": 8,
+        "max_level": null,
+        "classification": "DERIVED",
+        "coverage_gap": null
+      }
+    ],
     "source_reference_readers": [
       {
         "key": "canary:quest-progress/dwarven_legs",
@@ -490,7 +552,7 @@
       },
       {
         "key": "canary:quest-progress/hero_rathleton/fast_way",
-        "reason": "UNKNOWN: no unambiguous exact Storage declaration",
+        "reason": "SOURCE undeclared symbolic caller retained; nil-key source defect, declaration, ownership and complete writer inventory remain UNKNOWN",
         "readers": [
           {
             "source": "canary",
@@ -1811,6 +1873,11 @@
         "owner": "UNKNOWN: exact source reader/declaration retained; owning quest, initial value, bounds and native Character policy are not inferred"
       },
       {
+        "key": "canary:quest-progress/hero_rathleton/fast_way",
+        "owner": "UNKNOWN: caller-only symbolic SOURCE identity; owning quest, initial value, bounds, complete writer inventory and native Character policy are not inferred",
+        "storage_declaration": "UNKNOWN: exact symbolic getter has no proven named Storage declaration; an undeclared lookup may supply nil; never repaired through GlobalStorage or numeric coincidence"
+      },
+      {
         "key": "canary:quest-progress/quest/u10_10/the_gravedigger_of_drefia/mission05",
         "owner": "UNKNOWN: exact source reader/declaration retained; owning quest, initial value, bounds and native Character policy are not inferred"
       },
@@ -2632,6 +2699,62 @@
           "scripts/quests/mysterious_ornate/actions_mysterious_metal_egg.lua"
         ],
         "coverage_gap": "Actual egg contents/puzzle/rewards, full quest journey and runtime readiness remain UNKNOWN; accepted callback explicitly reports content not implemented.",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "canary:quest/steamship_world_change",
+        "source_paths": [
+          "npc/junkar_thais.lua"
+        ],
+        "coverage_gap": "Coal collection/200-server-total threshold, schedule and service activation, repeat/state/world lifecycle, source graph attachment, rewards and runtime readiness remain UNKNOWN. Donor travel is unconditional; do not import wiki activation semantics as implemented.",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "canary:quest/awash_world_change",
+        "source_paths": [
+          "npc/junkar_mines.lua"
+        ],
+        "coverage_gap": "Dronk/water pumps, 202-coal drainage, Deepling kill/server-save lifecycle, mine access activation, Groam encounter attachment, achievements, source graph attachment and runtime readiness remain UNKNOWN. No shared transport storage owner is assigned.",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "canary:quest/machinery_of_war_quest",
+        "source_paths": [
+          "npc/baxter.lua"
+        ],
+        "coverage_gap": "Orc-war task acceptance, construction/sabotage/war-plans targets, timers, ranks, task completion/experience, quest log, source graph attachment and runtime readiness remain UNKNOWN. Generic bricklayer action has a different fixed construction target and is not attached to this quest.",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "canary:quest/twenty_miles_beneath_the_sea_quest",
+        "source_paths": [
+          "scripts/movements/oramond/seacrest.lua"
+        ],
+        "coverage_gap": "Mr Brandon/Guardian mission acceptance, skull/altar/coin/ring/slab/Sea Ear/Time Compass journey, region-specific access flags, source graph attachment, rewards, world-change coupling and runtime readiness remain UNKNOWN. Donor entrance does not enforce the wiki mission chain.",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "canary:quest/winterlight_solstice",
+        "source_paths": [
+          "npc/frosty.lua"
+        ],
+        "coverage_gap": "Only the legacy regular-mount exchange component is covered. Event participation guards, annual progression, upgraded mounts, world activation, queen encounter, NPC graph/API compatibility and Native/runtime admission remain UNKNOWN. Source table.maxn/legacy API calls and potentially uninitialised talkState are preserved, not repaired.",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "canary:quest/overhunting_world_change",
+        "source_paths": [
+          "npc/benevola.lua"
+        ],
+        "coverage_gap": "Partial Crystal NPC exchange/raid request only. Trap capture, deer/wolf lifecycle, raid attachment/state/scheduling, global restoration, NPC graph and Native/runtime admission remain UNKNOWN. Historical Canary IMPLEMENTED flag is retained as unverified historical coverage; no equivalent Canary exchange is asserted.",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "crystalserver:quest/the_order_of_the_stag_quest",
+        "source_paths": [
+          "npc/captain_marie-denise_banner.lua"
+        ],
+        "coverage_gap": "Full mission gates/writers, Court Warlock encounter, actual wall-button/teleport implementation, other NPCs/rewards and Native/runtime admission remain UNKNOWN. No boss identity or generic NPC registration substitutes for the quest journey.",
         "classification": "UNKNOWN"
       }
     ],

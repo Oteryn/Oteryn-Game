@@ -9,11 +9,11 @@
     },
     {
       "path": "tools/content-schema/quest-authoring/samples/questlog/quests.json",
-      "sha256": "d6666c1a5ea969de588d0389c571229f178407151884276c0782d33e774237f1"
+      "sha256": "c1f278fa79575b7d26dec8250df53a9720da362f6abe6bffdeafd021f4157311"
     },
     {
       "path": "tools/content-schema/quest-authoring/samples/readiness/readiness.json",
-      "sha256": "da8c2d2c7123cfd2e2ea1e539b15865ae4e1a06781bc7d00fb9bd2befde6700b"
+      "sha256": "9bf34cc0b37bfdfa618e7646b1ae9eb14d60a1f5df734b79802aa70e7483a717"
     },
     {
       "path": "tools/content-schema/quest-authoring/wiki_quest_links.json",
@@ -21,11 +21,11 @@
     },
     {
       "path": "tools/content-schema/quest-authoring/wiki_quest_facts.json",
-      "sha256": "40e0c1a21f058c03aa99889ee9f6a4c0b30fac0f9b7aa5c066c0f3bf37f77757"
+      "sha256": "2935039aa363918e53d2c21c114a61ecabd0e58933de12f22806589a3eac601a"
     },
     {
       "path": "tools/content-schema/quest-authoring/samples/questlog/manifest.json",
-      "sha256": "ce83375511ee9f6bf6f4f319d7bf88b3e25024db665605e81193c809ffbc1f08"
+      "sha256": "4632218a7dd57004b037cdfb9595332fb47f748f437568ec923dbb2a3bc3bb2e"
     }
   ],
   "historical_coverage_ots_sources": {
@@ -40,14 +40,14 @@
   },
   "summary": {
     "source_titles": 373,
-    "authored_records": 276,
+    "authored_records": 283,
     "coverage_states": {
-      "conflict": 95,
-      "directly_authored": 187,
+      "conflict": 97,
+      "directly_authored": 192,
       "represented_by_family": 23,
-      "unrepresented": 68
+      "unrepresented": 61
     },
-    "quest_log_conflicts": 29,
+    "quest_log_conflicts": 31,
     "duplicate_title_checks": 0
   },
   "fresh_acquisition_summary": {
@@ -11537,8 +11537,26 @@
         "lvl": "None",
         "implemented": "9.10"
       },
-      "coverage_state": "unrepresented",
-      "authored_candidates": [],
+      "coverage_state": "directly_authored",
+      "authored_candidates": [
+        {
+          "identity": {
+            "key": "canary:quest/awash_world_change",
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+          },
+          "kind": "script_only",
+          "ots_shown_in_quest_log": false,
+          "readiness_data": {
+            "classification": "DERIVED",
+            "features": [],
+            "data_gaps": {
+              "interactions_with_gaps": 0,
+              "unresolved_items": 1
+            },
+            "runtime_readiness": "UNKNOWN"
+          }
+        }
+      ],
       "family_representation": null,
       "source_checks": [],
       "source_backed_authoring": null,
@@ -31930,7 +31948,7 @@
             ],
             "data_gaps": {
               "interactions_with_gaps": 7,
-              "unresolved_items": 18
+              "unresolved_items": 19
             },
             "runtime_readiness": "UNKNOWN"
           }
@@ -81699,8 +81717,26 @@
         "lvl": "50",
         "implemented": "8.20"
       },
-      "coverage_state": "unrepresented",
-      "authored_candidates": [],
+      "coverage_state": "directly_authored",
+      "authored_candidates": [
+        {
+          "identity": {
+            "key": "canary:quest/machinery_of_war_quest",
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+          },
+          "kind": "script_only",
+          "ots_shown_in_quest_log": false,
+          "readiness_data": {
+            "classification": "DERIVED",
+            "features": [],
+            "data_gaps": {
+              "interactions_with_gaps": 0,
+              "unresolved_items": 1
+            },
+            "runtime_readiness": "UNKNOWN"
+          }
+        }
+      ],
       "family_representation": null,
       "source_checks": [],
       "source_backed_authoring": null,
@@ -98020,11 +98056,311 @@
         "lvl": "0",
         "implemented": "9.10"
       },
-      "coverage_state": "unrepresented",
-      "authored_candidates": [],
+      "coverage_state": "directly_authored",
+      "authored_candidates": [
+        {
+          "identity": {
+            "key": "canary:quest/overhunting_world_change",
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+          },
+          "kind": "script_only",
+          "ots_shown_in_quest_log": false,
+          "readiness_data": {
+            "classification": "DERIVED",
+            "features": [],
+            "data_gaps": {
+              "interactions_with_gaps": 0,
+              "unresolved_items": 1
+            },
+            "runtime_readiness": "UNKNOWN"
+          }
+        }
+      ],
       "family_representation": null,
       "source_checks": [],
-      "source_backed_authoring": null,
+      "source_backed_authoring": {
+        "wiki": {
+          "title": "Overhunting World Change",
+          "pageid": 54569,
+          "revid": 844823,
+          "rev_timestamp": "2021-05-26T21:08:25Z",
+          "in_quest_log": false
+        },
+        "curator_entry": {
+          "title": "Overhunting World Change",
+          "key": "overhunting_world_change",
+          "source_paths": [
+            "npc/benevola.lua"
+          ],
+          "basis": "Pinned Overhunting spoiler explicitly directs Captured Wolf delivery to Benevola. Crystal registers the dialogue that consumes source Item12369 and conditionally requests the abdendriel.whitedeers raid. Canary has a registered Benevola NPC but lacks this exchange handler in its accepted body.",
+          "coverage_scope": "partial_registered_captured_wolf_exchange",
+          "coverage_gap": "Partial Crystal NPC exchange/raid request only. Trap capture, deer/wolf lifecycle, raid attachment/state/scheduling, global restoration, NPC graph and Native/runtime admission remain UNKNOWN. Historical Canary IMPLEMENTED flag is retained as unverified historical coverage; no equivalent Canary exchange is asserted.",
+          "source_evidence": [
+            {
+              "source": "crystalserver",
+              "repository": "zimbadev/crystalserver",
+              "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+              "path": "data-global/npc/benevola.lua",
+              "blob_sha256": "cdc852e9469d0afe12f4f15294f4f22659454359b5da667358b4e5a4c3115422",
+              "line": 142,
+              "line_sha256": "8a9682f2ce44ca04de0d044f98fea39d3aac8d6b9190335b8a745ae94c7f9aec",
+              "role": "executable",
+              "classification": "OTS_HYPOTHESIS_ONLY"
+            },
+            {
+              "source": "crystalserver",
+              "repository": "zimbadev/crystalserver",
+              "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+              "path": "data-global/npc/benevola.lua",
+              "blob_sha256": "cdc852e9469d0afe12f4f15294f4f22659454359b5da667358b4e5a4c3115422",
+              "line": 143,
+              "line_sha256": "1174415679f3dcc5da0b02717e6020aa8546bb9ac2ccbb7df7d16ab86abb7bc5",
+              "role": "executable",
+              "classification": "OTS_HYPOTHESIS_ONLY"
+            },
+            {
+              "source": "crystalserver",
+              "repository": "zimbadev/crystalserver",
+              "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+              "path": "data-global/npc/benevola.lua",
+              "blob_sha256": "cdc852e9469d0afe12f4f15294f4f22659454359b5da667358b4e5a4c3115422",
+              "line": 144,
+              "line_sha256": "724607201901e2f2d06a45b9aca7823775331ac7dd7a0b9fef70674d1d692826",
+              "role": "executable",
+              "classification": "OTS_HYPOTHESIS_ONLY"
+            },
+            {
+              "source": "crystalserver",
+              "repository": "zimbadev/crystalserver",
+              "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+              "path": "data-global/npc/benevola.lua",
+              "blob_sha256": "cdc852e9469d0afe12f4f15294f4f22659454359b5da667358b4e5a4c3115422",
+              "line": 146,
+              "line_sha256": "9c6876edb9753cb05d7fb27c359f3e97454710fbeb8e9d9f4c3772ec15231c88",
+              "role": "executable",
+              "classification": "OTS_HYPOTHESIS_ONLY"
+            },
+            {
+              "source": "crystalserver",
+              "repository": "zimbadev/crystalserver",
+              "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+              "path": "data-global/npc/benevola.lua",
+              "blob_sha256": "cdc852e9469d0afe12f4f15294f4f22659454359b5da667358b4e5a4c3115422",
+              "line": 159,
+              "line_sha256": "9c6876edb9753cb05d7fb27c359f3e97454710fbeb8e9d9f4c3772ec15231c88",
+              "role": "executable",
+              "classification": "OTS_HYPOTHESIS_ONLY"
+            },
+            {
+              "source": "crystalserver",
+              "repository": "zimbadev/crystalserver",
+              "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+              "path": "data-global/npc/benevola.lua",
+              "blob_sha256": "cdc852e9469d0afe12f4f15294f4f22659454359b5da667358b4e5a4c3115422",
+              "line": 147,
+              "line_sha256": "5702582e091d411e71aa050d6f43065b6ce1adf61c13ae3a4f72abaa68e7397c",
+              "role": "executable",
+              "classification": "OTS_HYPOTHESIS_ONLY"
+            },
+            {
+              "source": "crystalserver",
+              "repository": "zimbadev/crystalserver",
+              "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+              "path": "data-global/npc/benevola.lua",
+              "blob_sha256": "cdc852e9469d0afe12f4f15294f4f22659454359b5da667358b4e5a4c3115422",
+              "line": 150,
+              "line_sha256": "b85f8947d46f07c96d2465a568c722fcbbcf790c57d28c75452e1c346c207f88",
+              "role": "executable",
+              "classification": "OTS_HYPOTHESIS_ONLY"
+            },
+            {
+              "source": "crystalserver",
+              "repository": "zimbadev/crystalserver",
+              "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+              "path": "data-global/npc/benevola.lua",
+              "blob_sha256": "cdc852e9469d0afe12f4f15294f4f22659454359b5da667358b4e5a4c3115422",
+              "line": 152,
+              "line_sha256": "4662d8ef2fe8b8e621da7ae223d2b0d107d4392f014d0a28d6dd8afbee5496af",
+              "role": "executable",
+              "classification": "OTS_HYPOTHESIS_ONLY"
+            },
+            {
+              "source": "crystalserver",
+              "repository": "zimbadev/crystalserver",
+              "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+              "path": "data-global/npc/benevola.lua",
+              "blob_sha256": "cdc852e9469d0afe12f4f15294f4f22659454359b5da667358b4e5a4c3115422",
+              "line": 174,
+              "line_sha256": "5b52223c82cef7c73fbf4beee8844b1530e579bfd0d273fbdf7c4a78ab79271e",
+              "role": "executable",
+              "classification": "OTS_HYPOTHESIS_ONLY"
+            },
+            {
+              "source": "crystalserver",
+              "repository": "zimbadev/crystalserver",
+              "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+              "path": "data-global/npc/benevola.lua",
+              "blob_sha256": "cdc852e9469d0afe12f4f15294f4f22659454359b5da667358b4e5a4c3115422",
+              "line": 181,
+              "line_sha256": "88dfb19b92872d6e1c79978f5e07910c4e130472268fed24b5ba6f33910e016d",
+              "role": "executable",
+              "classification": "OTS_HYPOTHESIS_ONLY"
+            }
+          ],
+          "source_component_facts": {
+            "classification": "SOURCE",
+            "binding_status": "UNKNOWN",
+            "consume_source_item_id": 12369,
+            "count": 1,
+            "raid_name": "abdendriel.whitedeers",
+            "source_random_guard": {
+              "primitive": "math.random",
+              "arguments": [
+                100
+              ],
+              "operator": ">=",
+              "threshold": 95
+            },
+            "canonical_probability": "UNKNOWN",
+            "supported_donors": [
+              "crystalserver"
+            ],
+            "source_definition_complete": false,
+            "runtime_promotion": false
+          }
+        },
+        "sources": [
+          {
+            "source": "crystalserver",
+            "repository": "zimbadev/crystalserver",
+            "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+            "path": "data-global/npc/benevola.lua",
+            "blob_sha256": "cdc852e9469d0afe12f4f15294f4f22659454359b5da667358b4e5a4c3115422",
+            "line": 142,
+            "line_sha256": "8a9682f2ce44ca04de0d044f98fea39d3aac8d6b9190335b8a745ae94c7f9aec",
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "crystalserver",
+            "repository": "zimbadev/crystalserver",
+            "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+            "path": "data-global/npc/benevola.lua",
+            "blob_sha256": "cdc852e9469d0afe12f4f15294f4f22659454359b5da667358b4e5a4c3115422",
+            "line": 143,
+            "line_sha256": "1174415679f3dcc5da0b02717e6020aa8546bb9ac2ccbb7df7d16ab86abb7bc5",
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "crystalserver",
+            "repository": "zimbadev/crystalserver",
+            "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+            "path": "data-global/npc/benevola.lua",
+            "blob_sha256": "cdc852e9469d0afe12f4f15294f4f22659454359b5da667358b4e5a4c3115422",
+            "line": 144,
+            "line_sha256": "724607201901e2f2d06a45b9aca7823775331ac7dd7a0b9fef70674d1d692826",
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "crystalserver",
+            "repository": "zimbadev/crystalserver",
+            "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+            "path": "data-global/npc/benevola.lua",
+            "blob_sha256": "cdc852e9469d0afe12f4f15294f4f22659454359b5da667358b4e5a4c3115422",
+            "line": 146,
+            "line_sha256": "9c6876edb9753cb05d7fb27c359f3e97454710fbeb8e9d9f4c3772ec15231c88",
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "crystalserver",
+            "repository": "zimbadev/crystalserver",
+            "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+            "path": "data-global/npc/benevola.lua",
+            "blob_sha256": "cdc852e9469d0afe12f4f15294f4f22659454359b5da667358b4e5a4c3115422",
+            "line": 159,
+            "line_sha256": "9c6876edb9753cb05d7fb27c359f3e97454710fbeb8e9d9f4c3772ec15231c88",
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "crystalserver",
+            "repository": "zimbadev/crystalserver",
+            "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+            "path": "data-global/npc/benevola.lua",
+            "blob_sha256": "cdc852e9469d0afe12f4f15294f4f22659454359b5da667358b4e5a4c3115422",
+            "line": 147,
+            "line_sha256": "5702582e091d411e71aa050d6f43065b6ce1adf61c13ae3a4f72abaa68e7397c",
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "crystalserver",
+            "repository": "zimbadev/crystalserver",
+            "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+            "path": "data-global/npc/benevola.lua",
+            "blob_sha256": "cdc852e9469d0afe12f4f15294f4f22659454359b5da667358b4e5a4c3115422",
+            "line": 150,
+            "line_sha256": "b85f8947d46f07c96d2465a568c722fcbbcf790c57d28c75452e1c346c207f88",
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "crystalserver",
+            "repository": "zimbadev/crystalserver",
+            "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+            "path": "data-global/npc/benevola.lua",
+            "blob_sha256": "cdc852e9469d0afe12f4f15294f4f22659454359b5da667358b4e5a4c3115422",
+            "line": 152,
+            "line_sha256": "4662d8ef2fe8b8e621da7ae223d2b0d107d4392f014d0a28d6dd8afbee5496af",
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "crystalserver",
+            "repository": "zimbadev/crystalserver",
+            "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+            "path": "data-global/npc/benevola.lua",
+            "blob_sha256": "cdc852e9469d0afe12f4f15294f4f22659454359b5da667358b4e5a4c3115422",
+            "line": 174,
+            "line_sha256": "5b52223c82cef7c73fbf4beee8844b1530e579bfd0d273fbdf7c4a78ab79271e",
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "crystalserver",
+            "repository": "zimbadev/crystalserver",
+            "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+            "path": "data-global/npc/benevola.lua",
+            "blob_sha256": "cdc852e9469d0afe12f4f15294f4f22659454359b5da667358b4e5a4c3115422",
+            "line": 181,
+            "line_sha256": "88dfb19b92872d6e1c79978f5e07910c4e130472268fed24b5ba6f33910e016d",
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          }
+        ],
+        "action": "add exact partial registered SOURCE quest component; not complete/playable assertion",
+        "remaining_global_fields": [
+          "Partial Crystal NPC exchange/raid request only. Trap capture, deer/wolf lifecycle, raid attachment/state/scheduling, global restoration, NPC graph and Native/runtime admission remain UNKNOWN. Historical Canary IMPLEMENTED flag is retained as unverified historical coverage; no equivalent Canary exchange is asserted."
+        ],
+        "field_classification": "DERIVED identity mapping; OTS_HYPOTHESIS_ONLY source behavior",
+        "wiki_component_witnesses": [
+          {
+            "provider": "tibia_fandom",
+            "relation": "spoiler",
+            "pageid": 54864,
+            "revid": 1084984,
+            "content_sha256": "238b00d78e9dc5dfb6760b32f8de6252d358520a370db0509c03a847835899b8",
+            "url": "https://tibia.fandom.com/index.php?curid=54864&oldid=1084984",
+            "line": 8,
+            "line_sha256": "41bc8220fb84d66054f2b203305201ad924b308b130de19f24a9eb9d3edbadd1",
+            "access_method": "offline_pinned_normal_web_capture",
+            "classification": "SOURCE"
+          }
+        ]
+      },
       "fresh_sources": [
         {
           "relation": "base",
@@ -113471,7 +113807,7 @@
             "features": [],
             "data_gaps": {
               "interactions_with_gaps": 0,
-              "unresolved_items": 1
+              "unresolved_items": 2
             },
             "runtime_readiness": "UNKNOWN"
           }
@@ -126208,8 +126544,26 @@
         "lvl": "0",
         "implemented": "9.10"
       },
-      "coverage_state": "unrepresented",
-      "authored_candidates": [],
+      "coverage_state": "directly_authored",
+      "authored_candidates": [
+        {
+          "identity": {
+            "key": "canary:quest/steamship_world_change",
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+          },
+          "kind": "script_only",
+          "ots_shown_in_quest_log": false,
+          "readiness_data": {
+            "classification": "DERIVED",
+            "features": [],
+            "data_gaps": {
+              "interactions_with_gaps": 0,
+              "unresolved_items": 1
+            },
+            "runtime_readiness": "UNKNOWN"
+          }
+        }
+      ],
       "family_representation": null,
       "source_checks": [],
       "source_backed_authoring": null,
@@ -151209,11 +151563,282 @@
         "lvl": "250",
         "implemented": "15.20.7a5cc9"
       },
-      "coverage_state": "unrepresented",
-      "authored_candidates": [],
+      "coverage_state": "conflict",
+      "authored_candidates": [
+        {
+          "identity": {
+            "key": "crystalserver:quest/the_order_of_the_stag_quest",
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+          },
+          "kind": "script_only",
+          "ots_shown_in_quest_log": false,
+          "readiness_data": {
+            "classification": "DERIVED",
+            "features": [],
+            "data_gaps": {
+              "interactions_with_gaps": 0,
+              "unresolved_items": 1
+            },
+            "runtime_readiness": "UNKNOWN"
+          }
+        }
+      ],
       "family_representation": null,
-      "source_checks": [],
-      "source_backed_authoring": null,
+      "source_checks": [
+        {
+          "kind": "quest_log_conflict",
+          "key": "crystalserver:quest/the_order_of_the_stag_quest",
+          "wiki_reference_in_quest_log": true,
+          "ots_shown_in_quest_log": false
+        }
+      ],
+      "source_backed_authoring": {
+        "wiki": {
+          "title": "The Order of the Stag Quest",
+          "pageid": 109438,
+          "revid": 1194880,
+          "rev_timestamp": "2026-07-07T23:06:52Z",
+          "in_quest_log": true
+        },
+        "curator_entry": {
+          "title": "The Order of the Stag Quest",
+          "key": "the_order_of_the_stag_quest",
+          "source_paths": [
+            "npc/captain_marie-denise_banner.lua"
+          ],
+          "basis": "Pinned Order of the Stag spoiler Court Warlock stage explicitly names Captain Marie-Denise Banner and the wall keyword. Crystal registers this NPC's wall-puzzle dialogue with the source button sequence upper/upper/lower/lower/left/right. This is the dialogue clue component; no wall-state effect is inferred from the spoken clue.",
+          "coverage_scope": "partial_registered_wall_puzzle_dialogue",
+          "coverage_gap": "Full mission gates/writers, Court Warlock encounter, actual wall-button/teleport implementation, other NPCs/rewards and Native/runtime admission remain UNKNOWN. No boss identity or generic NPC registration substitutes for the quest journey.",
+          "source_evidence": [
+            {
+              "source": "crystalserver",
+              "repository": "zimbadev/crystalserver",
+              "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+              "path": "data-global/npc/captain_marie-denise_banner.lua",
+              "blob_sha256": "b80ff550aa3e7c971d3d9a0a95f4ca921530801e81dae99d9467523e920cea0c",
+              "line": 50,
+              "line_sha256": "00886b9074bc851635c476ed84080a64b95bcf5eab07091556dfd8784370a036",
+              "role": "executable",
+              "classification": "OTS_HYPOTHESIS_ONLY"
+            },
+            {
+              "source": "crystalserver",
+              "repository": "zimbadev/crystalserver",
+              "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+              "path": "data-global/npc/captain_marie-denise_banner.lua",
+              "blob_sha256": "b80ff550aa3e7c971d3d9a0a95f4ca921530801e81dae99d9467523e920cea0c",
+              "line": 55,
+              "line_sha256": "36bff8fc00bfdfdcccd41a5ba39442c0b512d8684806a54afe764a28864db0ec",
+              "role": "executable",
+              "classification": "OTS_HYPOTHESIS_ONLY"
+            },
+            {
+              "source": "crystalserver",
+              "repository": "zimbadev/crystalserver",
+              "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+              "path": "data-global/npc/captain_marie-denise_banner.lua",
+              "blob_sha256": "b80ff550aa3e7c971d3d9a0a95f4ca921530801e81dae99d9467523e920cea0c",
+              "line": 79,
+              "line_sha256": "88dfb19b92872d6e1c79978f5e07910c4e130472268fed24b5ba6f33910e016d",
+              "role": "executable",
+              "classification": "OTS_HYPOTHESIS_ONLY"
+            }
+          ],
+          "source_component_facts": {
+            "classification": "SOURCE",
+            "binding_status": "UNKNOWN",
+            "dialogue_keyword": "wall",
+            "button_sequence_source_hint": [
+              "upper",
+              "upper",
+              "lower",
+              "lower",
+              "left",
+              "right"
+            ],
+            "sequence_execution_semantics": "UNKNOWN",
+            "supported_donors": [
+              "crystalserver"
+            ],
+            "source_definition_complete": false,
+            "runtime_promotion": false
+          }
+        },
+        "sources": [
+          {
+            "source": "crystalserver",
+            "repository": "zimbadev/crystalserver",
+            "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+            "path": "data-global/npc/captain_marie-denise_banner.lua",
+            "blob_sha256": "b80ff550aa3e7c971d3d9a0a95f4ca921530801e81dae99d9467523e920cea0c",
+            "line": 50,
+            "line_sha256": "00886b9074bc851635c476ed84080a64b95bcf5eab07091556dfd8784370a036",
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "crystalserver",
+            "repository": "zimbadev/crystalserver",
+            "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+            "path": "data-global/npc/captain_marie-denise_banner.lua",
+            "blob_sha256": "b80ff550aa3e7c971d3d9a0a95f4ca921530801e81dae99d9467523e920cea0c",
+            "line": 55,
+            "line_sha256": "36bff8fc00bfdfdcccd41a5ba39442c0b512d8684806a54afe764a28864db0ec",
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "crystalserver",
+            "repository": "zimbadev/crystalserver",
+            "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+            "path": "data-global/npc/captain_marie-denise_banner.lua",
+            "blob_sha256": "b80ff550aa3e7c971d3d9a0a95f4ca921530801e81dae99d9467523e920cea0c",
+            "line": 79,
+            "line_sha256": "88dfb19b92872d6e1c79978f5e07910c4e130472268fed24b5ba6f33910e016d",
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          }
+        ],
+        "action": "add exact partial registered SOURCE quest component; not complete/playable assertion",
+        "remaining_global_fields": [
+          "Full mission gates/writers, Court Warlock encounter, actual wall-button/teleport implementation, other NPCs/rewards and Native/runtime admission remain UNKNOWN. No boss identity or generic NPC registration substitutes for the quest journey."
+        ],
+        "field_classification": "DERIVED identity mapping; OTS_HYPOTHESIS_ONLY source behavior",
+        "wiki_component_witnesses": [
+          {
+            "provider": "tibia_fandom",
+            "relation": "spoiler",
+            "pageid": 109439,
+            "revid": 1173312,
+            "content_sha256": "d9963f4774674fcf02eee7b451dfa72c4bcc15bf08bf4f18b08d0b185a644f32",
+            "url": "https://tibia.fandom.com/index.php?curid=109439&oldid=1173312",
+            "line": 47,
+            "line_sha256": "c7d8dd2ade0c7542510e9917064824a5858c0c2c09f2f2011aa2b669193221a0",
+            "access_method": "offline_pinned_normal_web_capture",
+            "classification": "SOURCE"
+          },
+          {
+            "provider": "tibiawiki_br",
+            "relation": "crosscheck",
+            "pageid": 65908,
+            "revid": 443997,
+            "content_sha256": "e4006bc7f3ed38622dcf985728b448e6ecce23049b9ec8993b3e303a7a3252ae",
+            "url": "https://www.tibiawiki.com.br/index.php?curid=65908&oldid=443997",
+            "line": 257,
+            "line_sha256": "aee4a38db9a20b8856bfdd1ecc109a682137d465af3ea07a3126a886f47d1aba",
+            "access_method": "offline_pinned_normal_web_capture",
+            "classification": "SOURCE"
+          },
+          {
+            "provider": "tibiawiki_br",
+            "relation": "crosscheck",
+            "pageid": 65908,
+            "revid": 443997,
+            "content_sha256": "e4006bc7f3ed38622dcf985728b448e6ecce23049b9ec8993b3e303a7a3252ae",
+            "url": "https://www.tibiawiki.com.br/index.php?curid=65908&oldid=443997",
+            "line": 261,
+            "line_sha256": "75594857ba8bfe54c86e3d254875d4f05c0b3d988e2748f0503b56804d408057",
+            "access_method": "offline_pinned_normal_web_capture",
+            "classification": "SOURCE"
+          },
+          {
+            "provider": "tibiawiki_br",
+            "relation": "crosscheck",
+            "pageid": 65908,
+            "revid": 443997,
+            "content_sha256": "e4006bc7f3ed38622dcf985728b448e6ecce23049b9ec8993b3e303a7a3252ae",
+            "url": "https://www.tibiawiki.com.br/index.php?curid=65908&oldid=443997",
+            "line": 265,
+            "line_sha256": "0201f144d6a11ce86c530abf1518a66fcfaddceeb5ee7c20cd3f9f9d79ccfff8",
+            "access_method": "offline_pinned_normal_web_capture",
+            "classification": "SOURCE"
+          },
+          {
+            "provider": "tibiawiki_br",
+            "relation": "crosscheck",
+            "pageid": 65908,
+            "revid": 443997,
+            "content_sha256": "e4006bc7f3ed38622dcf985728b448e6ecce23049b9ec8993b3e303a7a3252ae",
+            "url": "https://www.tibiawiki.com.br/index.php?curid=65908&oldid=443997",
+            "line": 267,
+            "line_sha256": "b62ba0f7d671fbc1f1f26d5716979785b8f1dece419c69bd4be15399493b5424",
+            "access_method": "offline_pinned_normal_web_capture",
+            "classification": "SOURCE"
+          },
+          {
+            "provider": "tibiawiki_br",
+            "relation": "crosscheck",
+            "pageid": 65908,
+            "revid": 443997,
+            "content_sha256": "e4006bc7f3ed38622dcf985728b448e6ecce23049b9ec8993b3e303a7a3252ae",
+            "url": "https://www.tibiawiki.com.br/index.php?curid=65908&oldid=443997",
+            "line": 269,
+            "line_sha256": "112882d6e07a2a1bf8526154dd8e48b4e65f0399e7bebd6518b7f6ec3884b22a",
+            "access_method": "offline_pinned_normal_web_capture",
+            "classification": "SOURCE"
+          },
+          {
+            "provider": "tibiawiki_br",
+            "relation": "crosscheck",
+            "pageid": 65908,
+            "revid": 443997,
+            "content_sha256": "e4006bc7f3ed38622dcf985728b448e6ecce23049b9ec8993b3e303a7a3252ae",
+            "url": "https://www.tibiawiki.com.br/index.php?curid=65908&oldid=443997",
+            "line": 270,
+            "line_sha256": "f2fb3cfb56c7f56e7dd70d8f1547865220564e9c934a126cdc435b4edd8cfa23",
+            "access_method": "offline_pinned_normal_web_capture",
+            "classification": "SOURCE"
+          },
+          {
+            "provider": "tibiawiki_br",
+            "relation": "crosscheck",
+            "pageid": 65908,
+            "revid": 443997,
+            "content_sha256": "e4006bc7f3ed38622dcf985728b448e6ecce23049b9ec8993b3e303a7a3252ae",
+            "url": "https://www.tibiawiki.com.br/index.php?curid=65908&oldid=443997",
+            "line": 271,
+            "line_sha256": "bbb9c8a918dabbed9444517617e83f93883244d62bf3d2b1df7f0f3cb29ec775",
+            "access_method": "offline_pinned_normal_web_capture",
+            "classification": "SOURCE"
+          },
+          {
+            "provider": "tibiawiki_br",
+            "relation": "crosscheck",
+            "pageid": 65908,
+            "revid": 443997,
+            "content_sha256": "e4006bc7f3ed38622dcf985728b448e6ecce23049b9ec8993b3e303a7a3252ae",
+            "url": "https://www.tibiawiki.com.br/index.php?curid=65908&oldid=443997",
+            "line": 272,
+            "line_sha256": "f6209ba1b0a2d40dba9043754f7f1e60155f37b7ee826f4e94ef253071f58ab9",
+            "access_method": "offline_pinned_normal_web_capture",
+            "classification": "SOURCE"
+          },
+          {
+            "provider": "tibiawiki_br",
+            "relation": "crosscheck",
+            "pageid": 65908,
+            "revid": 443997,
+            "content_sha256": "e4006bc7f3ed38622dcf985728b448e6ecce23049b9ec8993b3e303a7a3252ae",
+            "url": "https://www.tibiawiki.com.br/index.php?curid=65908&oldid=443997",
+            "line": 275,
+            "line_sha256": "40d1a1579d1bffce20d75e6de3e8b18f12195676ca2da11379998c7628d7fd87",
+            "access_method": "offline_pinned_normal_web_capture",
+            "classification": "SOURCE"
+          },
+          {
+            "provider": "tibiawiki_br",
+            "relation": "crosscheck",
+            "pageid": 65908,
+            "revid": 443997,
+            "content_sha256": "e4006bc7f3ed38622dcf985728b448e6ecce23049b9ec8993b3e303a7a3252ae",
+            "url": "https://www.tibiawiki.com.br/index.php?curid=65908&oldid=443997",
+            "line": 379,
+            "line_sha256": "2f0b111aadf7bbe41fdf9203219cbbb484b47feab7d1753232ae492ea325725f",
+            "access_method": "offline_pinned_normal_web_capture",
+            "classification": "SOURCE"
+          }
+        ]
+      },
       "fresh_sources": [
         {
           "relation": "base",
@@ -156955,7 +157580,7 @@
             ],
             "data_gaps": {
               "interactions_with_gaps": 38,
-              "unresolved_items": 105
+              "unresolved_items": 106
             },
             "runtime_readiness": "UNKNOWN"
           }
@@ -183910,10 +184535,35 @@
         "lvl": "0",
         "implemented": "10.70"
       },
-      "coverage_state": "unrepresented",
-      "authored_candidates": [],
+      "coverage_state": "conflict",
+      "authored_candidates": [
+        {
+          "identity": {
+            "key": "canary:quest/twenty_miles_beneath_the_sea_quest",
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+          },
+          "kind": "script_only",
+          "ots_shown_in_quest_log": false,
+          "readiness_data": {
+            "classification": "DERIVED",
+            "features": [],
+            "data_gaps": {
+              "interactions_with_gaps": 0,
+              "unresolved_items": 1
+            },
+            "runtime_readiness": "UNKNOWN"
+          }
+        }
+      ],
       "family_representation": null,
-      "source_checks": [],
+      "source_checks": [
+        {
+          "kind": "quest_log_conflict",
+          "key": "canary:quest/twenty_miles_beneath_the_sea_quest",
+          "wiki_reference_in_quest_log": true,
+          "ots_shown_in_quest_log": false
+        }
+      ],
       "source_backed_authoring": null,
       "fresh_sources": [
         {
@@ -191267,11 +191917,491 @@
         "lvl": "",
         "implemented": "12.02.7746"
       },
-      "coverage_state": "unrepresented",
-      "authored_candidates": [],
+      "coverage_state": "directly_authored",
+      "authored_candidates": [
+        {
+          "identity": {
+            "key": "canary:quest/winterlight_solstice",
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+          },
+          "kind": "script_only",
+          "ots_shown_in_quest_log": false,
+          "readiness_data": {
+            "classification": "DERIVED",
+            "features": [],
+            "data_gaps": {
+              "interactions_with_gaps": 0,
+              "unresolved_items": 1
+            },
+            "runtime_readiness": "UNKNOWN"
+          }
+        }
+      ],
       "family_representation": null,
       "source_checks": [],
-      "source_backed_authoring": null,
+      "source_backed_authoring": {
+        "wiki": {
+          "title": "Winterlight Solstice",
+          "pageid": 87276,
+          "revid": 1048344,
+          "rev_timestamp": "2023-12-15T08:44:18Z",
+          "in_quest_log": false
+        },
+        "curator_entry": {
+          "title": "Winterlight Solstice",
+          "key": "winterlight_solstice",
+          "source_paths": [
+            "npc/frosty.lua"
+          ],
+          "basis": "Pinned Winterlight Solstice base names Frosty; spoiler documents Percht Skull exchanges for regular Bright/Cold/Dark Percht Sleigh mounts. Both accepted donors register Frosty's three source-qualified exchange configurations and confirmation callback.",
+          "coverage_scope": "partial_registered_mount_exchange",
+          "coverage_gap": "Only the legacy regular-mount exchange component is covered. Event participation guards, annual progression, upgraded mounts, world activation, queen encounter, NPC graph/API compatibility and Native/runtime admission remain UNKNOWN. Source table.maxn/legacy API calls and potentially uninitialised talkState are preserved, not repaired.",
+          "source_evidence": [
+            {
+              "source": "canary",
+              "repository": "opentibiabr/canary",
+              "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+              "path": "data-otservbr-global/npc/frosty.lua",
+              "blob_sha256": "7c91825d57b066b68d9eaa7f4882172e35fd78a513fc83372fbc7d4c5a6e9e77",
+              "line": 49,
+              "line_sha256": "bc78a17a70aa7064890fbe7c165e3eb06241d4ec69301bc5bacbdd63c847b144",
+              "role": "executable",
+              "classification": "OTS_HYPOTHESIS_ONLY"
+            },
+            {
+              "source": "canary",
+              "repository": "opentibiabr/canary",
+              "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+              "path": "data-otservbr-global/npc/frosty.lua",
+              "blob_sha256": "7c91825d57b066b68d9eaa7f4882172e35fd78a513fc83372fbc7d4c5a6e9e77",
+              "line": 50,
+              "line_sha256": "8e83ac50faa32f71cf1c39da754dc24a68267b9ff8a2a842faceaad779edc9f1",
+              "role": "executable",
+              "classification": "OTS_HYPOTHESIS_ONLY"
+            },
+            {
+              "source": "canary",
+              "repository": "opentibiabr/canary",
+              "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+              "path": "data-otservbr-global/npc/frosty.lua",
+              "blob_sha256": "7c91825d57b066b68d9eaa7f4882172e35fd78a513fc83372fbc7d4c5a6e9e77",
+              "line": 51,
+              "line_sha256": "fc2500bc2db6f038acb2ab8cca81c9e77bef26cb57ac88c475604f6c0658a649",
+              "role": "executable",
+              "classification": "OTS_HYPOTHESIS_ONLY"
+            },
+            {
+              "source": "canary",
+              "repository": "opentibiabr/canary",
+              "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+              "path": "data-otservbr-global/npc/frosty.lua",
+              "blob_sha256": "7c91825d57b066b68d9eaa7f4882172e35fd78a513fc83372fbc7d4c5a6e9e77",
+              "line": 106,
+              "line_sha256": "3b9159d5fad78b031ccabcbe9c7aa001131aecec0412ee51580b3a78405535c6",
+              "role": "executable",
+              "classification": "OTS_HYPOTHESIS_ONLY"
+            },
+            {
+              "source": "canary",
+              "repository": "opentibiabr/canary",
+              "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+              "path": "data-otservbr-global/npc/frosty.lua",
+              "blob_sha256": "7c91825d57b066b68d9eaa7f4882172e35fd78a513fc83372fbc7d4c5a6e9e77",
+              "line": 109,
+              "line_sha256": "ae40edf75be1ebade5ea0adbcc893bbd349b079361cf04de1788bc3f41016ec0",
+              "role": "executable",
+              "classification": "OTS_HYPOTHESIS_ONLY"
+            },
+            {
+              "source": "canary",
+              "repository": "opentibiabr/canary",
+              "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+              "path": "data-otservbr-global/npc/frosty.lua",
+              "blob_sha256": "7c91825d57b066b68d9eaa7f4882172e35fd78a513fc83372fbc7d4c5a6e9e77",
+              "line": 110,
+              "line_sha256": "dde826ed0107afb96f45932ec4dcb1198615a704a9e7ac91ec641bdd4720909f",
+              "role": "executable",
+              "classification": "OTS_HYPOTHESIS_ONLY"
+            },
+            {
+              "source": "canary",
+              "repository": "opentibiabr/canary",
+              "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+              "path": "data-otservbr-global/npc/frosty.lua",
+              "blob_sha256": "7c91825d57b066b68d9eaa7f4882172e35fd78a513fc83372fbc7d4c5a6e9e77",
+              "line": 152,
+              "line_sha256": "5b52223c82cef7c73fbf4beee8844b1530e579bfd0d273fbdf7c4a78ab79271e",
+              "role": "executable",
+              "classification": "OTS_HYPOTHESIS_ONLY"
+            },
+            {
+              "source": "canary",
+              "repository": "opentibiabr/canary",
+              "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+              "path": "data-otservbr-global/npc/frosty.lua",
+              "blob_sha256": "7c91825d57b066b68d9eaa7f4882172e35fd78a513fc83372fbc7d4c5a6e9e77",
+              "line": 156,
+              "line_sha256": "88dfb19b92872d6e1c79978f5e07910c4e130472268fed24b5ba6f33910e016d",
+              "role": "executable",
+              "classification": "OTS_HYPOTHESIS_ONLY"
+            },
+            {
+              "source": "crystalserver",
+              "repository": "zimbadev/crystalserver",
+              "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+              "path": "data-global/npc/frosty.lua",
+              "blob_sha256": "848198d00753795b34d6309a207b9e2539d522b0dd7b0e3c1375525826bb8757",
+              "line": 47,
+              "line_sha256": "bc78a17a70aa7064890fbe7c165e3eb06241d4ec69301bc5bacbdd63c847b144",
+              "role": "executable",
+              "classification": "OTS_HYPOTHESIS_ONLY"
+            },
+            {
+              "source": "crystalserver",
+              "repository": "zimbadev/crystalserver",
+              "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+              "path": "data-global/npc/frosty.lua",
+              "blob_sha256": "848198d00753795b34d6309a207b9e2539d522b0dd7b0e3c1375525826bb8757",
+              "line": 48,
+              "line_sha256": "8e83ac50faa32f71cf1c39da754dc24a68267b9ff8a2a842faceaad779edc9f1",
+              "role": "executable",
+              "classification": "OTS_HYPOTHESIS_ONLY"
+            },
+            {
+              "source": "crystalserver",
+              "repository": "zimbadev/crystalserver",
+              "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+              "path": "data-global/npc/frosty.lua",
+              "blob_sha256": "848198d00753795b34d6309a207b9e2539d522b0dd7b0e3c1375525826bb8757",
+              "line": 49,
+              "line_sha256": "fc2500bc2db6f038acb2ab8cca81c9e77bef26cb57ac88c475604f6c0658a649",
+              "role": "executable",
+              "classification": "OTS_HYPOTHESIS_ONLY"
+            },
+            {
+              "source": "crystalserver",
+              "repository": "zimbadev/crystalserver",
+              "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+              "path": "data-global/npc/frosty.lua",
+              "blob_sha256": "848198d00753795b34d6309a207b9e2539d522b0dd7b0e3c1375525826bb8757",
+              "line": 104,
+              "line_sha256": "3b9159d5fad78b031ccabcbe9c7aa001131aecec0412ee51580b3a78405535c6",
+              "role": "executable",
+              "classification": "OTS_HYPOTHESIS_ONLY"
+            },
+            {
+              "source": "crystalserver",
+              "repository": "zimbadev/crystalserver",
+              "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+              "path": "data-global/npc/frosty.lua",
+              "blob_sha256": "848198d00753795b34d6309a207b9e2539d522b0dd7b0e3c1375525826bb8757",
+              "line": 107,
+              "line_sha256": "ae40edf75be1ebade5ea0adbcc893bbd349b079361cf04de1788bc3f41016ec0",
+              "role": "executable",
+              "classification": "OTS_HYPOTHESIS_ONLY"
+            },
+            {
+              "source": "crystalserver",
+              "repository": "zimbadev/crystalserver",
+              "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+              "path": "data-global/npc/frosty.lua",
+              "blob_sha256": "848198d00753795b34d6309a207b9e2539d522b0dd7b0e3c1375525826bb8757",
+              "line": 108,
+              "line_sha256": "dde826ed0107afb96f45932ec4dcb1198615a704a9e7ac91ec641bdd4720909f",
+              "role": "executable",
+              "classification": "OTS_HYPOTHESIS_ONLY"
+            },
+            {
+              "source": "crystalserver",
+              "repository": "zimbadev/crystalserver",
+              "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+              "path": "data-global/npc/frosty.lua",
+              "blob_sha256": "848198d00753795b34d6309a207b9e2539d522b0dd7b0e3c1375525826bb8757",
+              "line": 150,
+              "line_sha256": "5b52223c82cef7c73fbf4beee8844b1530e579bfd0d273fbdf7c4a78ab79271e",
+              "role": "executable",
+              "classification": "OTS_HYPOTHESIS_ONLY"
+            },
+            {
+              "source": "crystalserver",
+              "repository": "zimbadev/crystalserver",
+              "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+              "path": "data-global/npc/frosty.lua",
+              "blob_sha256": "848198d00753795b34d6309a207b9e2539d522b0dd7b0e3c1375525826bb8757",
+              "line": 154,
+              "line_sha256": "88dfb19b92872d6e1c79978f5e07910c4e130472268fed24b5ba6f33910e016d",
+              "role": "executable",
+              "classification": "OTS_HYPOTHESIS_ONLY"
+            }
+          ],
+          "source_component_facts": {
+            "classification": "SOURCE",
+            "binding_status": "UNKNOWN",
+            "selection": "named_sleigh_dialogue_choice",
+            "exchange_alternatives": [
+              {
+                "keyword": "bright percht sleigh",
+                "consume_source_item_id": 30192,
+                "count": 1,
+                "cost_gold": 0,
+                "grant_source_mount_id": 133,
+                "source_storage": "Storage.Percht1"
+              },
+              {
+                "keyword": "cold percht sleigh",
+                "consume_source_item_id": 30192,
+                "count": 1,
+                "cost_gold": 0,
+                "grant_source_mount_id": 132,
+                "source_storage": "Storage.Percht2"
+              },
+              {
+                "keyword": "dark percht sleigh",
+                "consume_source_item_id": 30192,
+                "count": 1,
+                "cost_gold": 0,
+                "grant_source_mount_id": 134,
+                "source_storage": "Storage.Percht3"
+              }
+            ],
+            "source_definition_complete": false,
+            "runtime_promotion": false
+          }
+        },
+        "sources": [
+          {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/npc/frosty.lua",
+            "blob_sha256": "7c91825d57b066b68d9eaa7f4882172e35fd78a513fc83372fbc7d4c5a6e9e77",
+            "line": 49,
+            "line_sha256": "bc78a17a70aa7064890fbe7c165e3eb06241d4ec69301bc5bacbdd63c847b144",
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/npc/frosty.lua",
+            "blob_sha256": "7c91825d57b066b68d9eaa7f4882172e35fd78a513fc83372fbc7d4c5a6e9e77",
+            "line": 50,
+            "line_sha256": "8e83ac50faa32f71cf1c39da754dc24a68267b9ff8a2a842faceaad779edc9f1",
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/npc/frosty.lua",
+            "blob_sha256": "7c91825d57b066b68d9eaa7f4882172e35fd78a513fc83372fbc7d4c5a6e9e77",
+            "line": 51,
+            "line_sha256": "fc2500bc2db6f038acb2ab8cca81c9e77bef26cb57ac88c475604f6c0658a649",
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/npc/frosty.lua",
+            "blob_sha256": "7c91825d57b066b68d9eaa7f4882172e35fd78a513fc83372fbc7d4c5a6e9e77",
+            "line": 106,
+            "line_sha256": "3b9159d5fad78b031ccabcbe9c7aa001131aecec0412ee51580b3a78405535c6",
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/npc/frosty.lua",
+            "blob_sha256": "7c91825d57b066b68d9eaa7f4882172e35fd78a513fc83372fbc7d4c5a6e9e77",
+            "line": 109,
+            "line_sha256": "ae40edf75be1ebade5ea0adbcc893bbd349b079361cf04de1788bc3f41016ec0",
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/npc/frosty.lua",
+            "blob_sha256": "7c91825d57b066b68d9eaa7f4882172e35fd78a513fc83372fbc7d4c5a6e9e77",
+            "line": 110,
+            "line_sha256": "dde826ed0107afb96f45932ec4dcb1198615a704a9e7ac91ec641bdd4720909f",
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/npc/frosty.lua",
+            "blob_sha256": "7c91825d57b066b68d9eaa7f4882172e35fd78a513fc83372fbc7d4c5a6e9e77",
+            "line": 152,
+            "line_sha256": "5b52223c82cef7c73fbf4beee8844b1530e579bfd0d273fbdf7c4a78ab79271e",
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/npc/frosty.lua",
+            "blob_sha256": "7c91825d57b066b68d9eaa7f4882172e35fd78a513fc83372fbc7d4c5a6e9e77",
+            "line": 156,
+            "line_sha256": "88dfb19b92872d6e1c79978f5e07910c4e130472268fed24b5ba6f33910e016d",
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "crystalserver",
+            "repository": "zimbadev/crystalserver",
+            "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+            "path": "data-global/npc/frosty.lua",
+            "blob_sha256": "848198d00753795b34d6309a207b9e2539d522b0dd7b0e3c1375525826bb8757",
+            "line": 47,
+            "line_sha256": "bc78a17a70aa7064890fbe7c165e3eb06241d4ec69301bc5bacbdd63c847b144",
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "crystalserver",
+            "repository": "zimbadev/crystalserver",
+            "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+            "path": "data-global/npc/frosty.lua",
+            "blob_sha256": "848198d00753795b34d6309a207b9e2539d522b0dd7b0e3c1375525826bb8757",
+            "line": 48,
+            "line_sha256": "8e83ac50faa32f71cf1c39da754dc24a68267b9ff8a2a842faceaad779edc9f1",
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "crystalserver",
+            "repository": "zimbadev/crystalserver",
+            "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+            "path": "data-global/npc/frosty.lua",
+            "blob_sha256": "848198d00753795b34d6309a207b9e2539d522b0dd7b0e3c1375525826bb8757",
+            "line": 49,
+            "line_sha256": "fc2500bc2db6f038acb2ab8cca81c9e77bef26cb57ac88c475604f6c0658a649",
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "crystalserver",
+            "repository": "zimbadev/crystalserver",
+            "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+            "path": "data-global/npc/frosty.lua",
+            "blob_sha256": "848198d00753795b34d6309a207b9e2539d522b0dd7b0e3c1375525826bb8757",
+            "line": 104,
+            "line_sha256": "3b9159d5fad78b031ccabcbe9c7aa001131aecec0412ee51580b3a78405535c6",
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "crystalserver",
+            "repository": "zimbadev/crystalserver",
+            "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+            "path": "data-global/npc/frosty.lua",
+            "blob_sha256": "848198d00753795b34d6309a207b9e2539d522b0dd7b0e3c1375525826bb8757",
+            "line": 107,
+            "line_sha256": "ae40edf75be1ebade5ea0adbcc893bbd349b079361cf04de1788bc3f41016ec0",
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "crystalserver",
+            "repository": "zimbadev/crystalserver",
+            "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+            "path": "data-global/npc/frosty.lua",
+            "blob_sha256": "848198d00753795b34d6309a207b9e2539d522b0dd7b0e3c1375525826bb8757",
+            "line": 108,
+            "line_sha256": "dde826ed0107afb96f45932ec4dcb1198615a704a9e7ac91ec641bdd4720909f",
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "crystalserver",
+            "repository": "zimbadev/crystalserver",
+            "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+            "path": "data-global/npc/frosty.lua",
+            "blob_sha256": "848198d00753795b34d6309a207b9e2539d522b0dd7b0e3c1375525826bb8757",
+            "line": 150,
+            "line_sha256": "5b52223c82cef7c73fbf4beee8844b1530e579bfd0d273fbdf7c4a78ab79271e",
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          },
+          {
+            "source": "crystalserver",
+            "repository": "zimbadev/crystalserver",
+            "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+            "path": "data-global/npc/frosty.lua",
+            "blob_sha256": "848198d00753795b34d6309a207b9e2539d522b0dd7b0e3c1375525826bb8757",
+            "line": 154,
+            "line_sha256": "88dfb19b92872d6e1c79978f5e07910c4e130472268fed24b5ba6f33910e016d",
+            "role": "executable",
+            "classification": "OTS_HYPOTHESIS_ONLY"
+          }
+        ],
+        "action": "add exact partial registered SOURCE quest component; not complete/playable assertion",
+        "remaining_global_fields": [
+          "Only the legacy regular-mount exchange component is covered. Event participation guards, annual progression, upgraded mounts, world activation, queen encounter, NPC graph/API compatibility and Native/runtime admission remain UNKNOWN. Source table.maxn/legacy API calls and potentially uninitialised talkState are preserved, not repaired."
+        ],
+        "field_classification": "DERIVED identity mapping; OTS_HYPOTHESIS_ONLY source behavior",
+        "wiki_component_witnesses": [
+          {
+            "provider": "tibia_fandom",
+            "relation": "base",
+            "pageid": 87276,
+            "revid": 1048344,
+            "content_sha256": "dce31ff7bd4999029b234b59e98cb3e518342c1e6e793be30404965ab243f9a1",
+            "url": "https://tibia.fandom.com/index.php?curid=87276&oldid=1048344",
+            "line": 23,
+            "line_sha256": "6696a6e4601f38c0c4d8876079d88fcd081c44b0732f27672b2f2dae2955e1e6",
+            "access_method": "offline_pinned_normal_web_capture",
+            "classification": "SOURCE"
+          },
+          {
+            "provider": "tibia_fandom",
+            "relation": "spoiler",
+            "pageid": 87280,
+            "revid": 1086717,
+            "content_sha256": "aa722ef0f185dd1a3d721948e4e8a52dfb9073b28e3530c91b9056ffad977735",
+            "url": "https://tibia.fandom.com/index.php?curid=87280&oldid=1086717",
+            "line": 84,
+            "line_sha256": "b2e3ecbf0e3c870ee1e9b9c09a50553562c3a3f574ee48d99a648e9a79b331a3",
+            "access_method": "offline_pinned_normal_web_capture",
+            "classification": "SOURCE"
+          },
+          {
+            "provider": "tibia_fandom",
+            "relation": "spoiler",
+            "pageid": 87280,
+            "revid": 1086717,
+            "content_sha256": "aa722ef0f185dd1a3d721948e4e8a52dfb9073b28e3530c91b9056ffad977735",
+            "url": "https://tibia.fandom.com/index.php?curid=87280&oldid=1086717",
+            "line": 85,
+            "line_sha256": "773c69f640c80d638773836f851e58716a5261d71a8fb1b4bfbe40b2afafc1a9",
+            "access_method": "offline_pinned_normal_web_capture",
+            "classification": "SOURCE"
+          },
+          {
+            "provider": "tibia_fandom",
+            "relation": "spoiler",
+            "pageid": 87280,
+            "revid": 1086717,
+            "content_sha256": "aa722ef0f185dd1a3d721948e4e8a52dfb9073b28e3530c91b9056ffad977735",
+            "url": "https://tibia.fandom.com/index.php?curid=87280&oldid=1086717",
+            "line": 86,
+            "line_sha256": "bdc467b7aeb48b392980bdd092b040d55935e5091f95733b136e94b94f0403db",
+            "access_method": "offline_pinned_normal_web_capture",
+            "classification": "SOURCE"
+          }
+        ]
+      },
       "fresh_sources": [
         {
           "relation": "base",

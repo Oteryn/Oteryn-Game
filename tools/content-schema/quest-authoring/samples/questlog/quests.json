@@ -685,6 +685,32 @@
     },
     {
       "identity": {
+        "key": "canary:quest/awash_world_change",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Awash World Change",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Awash World Change",
+        "pageid": 54563,
+        "revid": 1149363
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "no",
+        "lvl": "None"
+      },
+      "requirements": {
+        "premium": false,
+        "min_level": null
+      },
+      "requirements_unparsed": {
+        "min_level": "none"
+      }
+    },
+    {
+      "identity": {
         "key": "canary:quest/barbarian_arena_quest",
         "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
@@ -10343,7 +10369,7 @@
       },
       "requirements": {
         "premium": false,
-        "min_level": null
+        "min_level": 2
       },
       "requirements_unparsed": {
         "min_level": "range"
@@ -21153,6 +21179,29 @@
     },
     {
       "identity": {
+        "key": "canary:quest/machinery_of_war_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Machinery of War Quest",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Machinery of War Quest",
+        "pageid": 25543,
+        "revid": 843158
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "no",
+        "lvl": "50"
+      },
+      "requirements": {
+        "premium": false,
+        "min_level": 50
+      }
+    },
+    {
+      "identity": {
         "key": "canary:quest/mad_mage_room_quest",
         "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
@@ -25249,6 +25298,29 @@
     },
     {
       "identity": {
+        "key": "canary:quest/overhunting_world_change",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Overhunting World Change",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Overhunting World Change",
+        "pageid": 54569,
+        "revid": 844823
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "no",
+        "lvl": "0"
+      },
+      "requirements": {
+        "premium": false,
+        "min_level": 0
+      }
+    },
+    {
+      "identity": {
         "key": "canary:quest/panpipe_quest",
         "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
@@ -26424,7 +26496,7 @@
       },
       "requirements": {
         "premium": false,
-        "min_level": null
+        "min_level": 2
       },
       "requirements_unparsed": {
         "min_level": "range"
@@ -30166,6 +30238,29 @@
       },
       "requirements": {
         "premium": true,
+        "min_level": 0
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/steamship_world_change",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Steamship World Change",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Steamship World Change",
+        "pageid": 54705,
+        "revid": 891478
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "no",
+        "lvl": "0"
+      },
+      "requirements": {
+        "premium": false,
         "min_level": 0
       }
     },
@@ -47093,7 +47188,7 @@
       },
       "requirements": {
         "premium": false,
-        "min_level": null
+        "min_level": 0
       },
       "requirements_unparsed": {
         "min_level": "range"
@@ -54536,11 +54631,9 @@
       },
       "requirements": {
         "premium": true,
-        "min_level": null
+        "min_level": 8
       },
-      "requirements_unparsed": {
-        "min_level": "range"
-      }
+      "requirements_unparsed": {}
     },
     {
       "identity": {
@@ -57825,6 +57918,29 @@
     },
     {
       "identity": {
+        "key": "canary:quest/twenty_miles_beneath_the_sea_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Twenty Miles Beneath the Sea Quest",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Twenty Miles Beneath the Sea Quest",
+        "pageid": 69582,
+        "revid": 1023387
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "0"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 0
+      }
+    },
+    {
+      "identity": {
         "key": "canary:quest/unnatural_selection_quest",
         "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
@@ -59187,6 +59303,27 @@
       },
       "requirements_unparsed": {
         "min_level": "note"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/winterlight_solstice",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Winterlight Solstice",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Winterlight Solstice",
+        "pageid": 87276,
+        "revid": 1048344
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "yes"
+      },
+      "requirements": {
+        "premium": true
       }
     },
     {
@@ -61675,6 +61812,29 @@
       },
       "requirements_unparsed": {
         "min_level": "range"
+      }
+    },
+    {
+      "identity": {
+        "key": "crystalserver:quest/the_order_of_the_stag_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "The Order of the Stag Quest",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "The Order of the Stag Quest",
+        "pageid": 109438,
+        "revid": 1194880
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "250"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 250
       }
     },
     {

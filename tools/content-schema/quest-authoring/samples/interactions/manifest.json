@@ -22073,12 +22073,5 @@
       ]
     }
   ],
-  "source_checks": [
-    {
-      "field": "condition.quest_stage.progress",
-      "key": "canary:quest-progress/hero_rathleton/fast_way",
-      "reason": "progress track not declared",
-      "record": "canary:interaction/hero_of_rathleton/movements_fast_way"
-    }
-  ]
+  "source_checks": []
 }

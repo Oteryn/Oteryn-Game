@@ -214,7 +214,7 @@ arguments retain literal Item evidence with explicit unsupported-argument holds;
 raw quantities are not interpreted as charges. Donor alternatives remain conflict
 evidence, including the extra Crystal Inquisition reward.
 
-Canonical Quest DATA now includes276 pinned donor definitions, including explicitly partial components. Storyline/script_only records retain typed `source_data` missions, progress, interactions and source gaps; `quest_native_lowering_missing` prevents treating these imported records as executable Native quests. Regenerate with `quest_tree_authoring.py content` and qualify with `run_checks.py`.
+Canonical Quest DATA now includes283 pinned donor definitions, including explicitly partial components. Storyline/script_only records retain typed `source_data` missions, progress, interactions and source gaps; `quest_native_lowering_missing` prevents treating these imported records as executable Native quests. Regenerate with `quest_tree_authoring.py content` and qualify with `run_checks.py`.
 
 ## Complete373-title wiki SOURCE inventory
 
@@ -227,3 +227,11 @@ Round5 SOURCE coverage resolves35 exact registered callback associations (path/l
 ## All-title completion and rollout flags
 
 `quest_rollout_authoring.py` generates `samples/rollout/quest-rollout.json` for all373 exact wiki catalogue titles from current source bundle, canonical Quest definitions and complete wiki SOURCE specs. It retains direct/family/unbound joins, proof levels, source refs and all known holds. `needs_source` means missing executable donor Quest binding even when wiki facts exist. `definition_fields_ready` is separate from completeness and runtime. Flags imported/partial/needs_source/needs_runtime are planning metadata; runtime_enabled=false, actual approximation_applied=false and all quest smoke steps NOT_RUN. The closed schema and exact input hashes prevent stale/invented promotions. Required CI executes --check and regression discovery.
+
+## Round6 source completion
+
+Seven additional registered partial components cover Steamship, Awash, Machinery of War, Twenty Miles Beneath the Sea, Winterlight Solstice, Overhunting and Order of the Stag. Exact source pins and coverage limits remain in curations; no fragment claims a complete quest.
+
+Four provenance-bound level interpretations retain minima8/2/2/0. The three interval maxima remain explicit source/readiness gaps; no default zero or Native-ready promotion. Missing symbolic SOURCE readers are retained as UNKNOWN caller references only, with no namespace/numeric alias, initial value or native ownership.
+
+`wiki_requirement_interpretations.py --check` validates a separate current interpretation projection:18 interpreted occurrences,187 remaining syntax holds. Historical205 holds and all105 detailed entries remain unchanged. Optional mission headings are scopes rather than gates; cumulative WarExp thresholds are not added together. This portable check validates pinned historical acquisition facts, not new raw-body retrieval. The required offline runner includes it and its six regressions.

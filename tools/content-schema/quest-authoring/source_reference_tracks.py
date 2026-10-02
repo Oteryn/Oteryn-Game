@@ -1,4 +1,4 @@
-"""Retain exact declared SOURCE readers; no initial value, bounds or native policy."""
+"""Retain exact SOURCE readers; no initial value, bounds or native policy."""
 from collections import Counter
 import copy
 import hashlib
@@ -76,7 +76,25 @@ def retain_reader_tracks(progress, readers, declarations, writer_index, key_for,
             checks.append({'key': key, 'reason': 'SOURCE literal caller retained; declaration, ownership and complete numeric writer inventory remain UNKNOWN', 'readers': proofs})
             continue
         declaration = declarations.get(key)
-        if not declaration or declaration.get('state') == 'CONFLICT':
+        if declaration is None:
+            expressions = {p['expression'] for p in proofs}
+            if (len(expressions) != 1 or not re.fullmatch(r'Storage(?:\.[A-Za-z_]\w*)+', next(iter(expressions), ''))
+                    or any(key_for(p['expression']) != path for p in proofs)):
+                checks.append({'key': key, 'reason': 'UNKNOWN: undeclared symbolic reader path is not exact and unambiguous', 'readers': proofs})
+                continue
+            if writers.get(path):
+                checks.append({'key': key, 'reason': 'UNKNOWN: undeclared symbolic reader has observed writer evidence; never replace writes with an empty inventory', 'readers': proofs})
+                continue
+            record = {'key': key, 'missions': [], 'start_of': [], 'read_by_gates': [],
+                'auxiliary_of': [], 'owner_basis': 'UNKNOWN',
+                'source_checks': {'owner': 'UNKNOWN: caller-only symbolic SOURCE identity; owning quest, initial value, bounds, complete writer inventory and native Character policy are not inferred',
+                    'storage_declaration': 'UNKNOWN: exact symbolic getter has no proven named Storage declaration; an undeclared lookup may supply nil; never repaired through GlobalStorage or numeric coincidence'},
+                'note': 'Undeclared SOURCE getter expression retained: ' + next(iter(expressions)),
+                'writes': {'canary': 0, 'crystalserver': 0}, 'transitions': []}
+            added.append(record); existing[key] = record
+            checks.append({'key': key, 'reason': 'SOURCE undeclared symbolic caller retained; nil-key source defect, declaration, ownership and complete writer inventory remain UNKNOWN', 'readers': proofs})
+            continue
+        if declaration.get('state') == 'CONFLICT':
             checks.append({'key': key, 'reason': 'UNKNOWN: no unambiguous exact Storage declaration', 'readers': proofs})
             continue
         if any(p['expression'] != declaration['expression'] for p in proofs):

@@ -26,10 +26,10 @@
   "scheduler": "owner for delayed callbacks (none yet)"
  },
  "counts": {
-  "quests": 276,
+  "quests": 283,
   "by_kind": {
    "reward_only": 105,
-   "script_only": 113,
+   "script_only": 120,
    "storyline": 58
   },
   "quests_needing_feature": {
@@ -63,127 +63,127 @@
   {
    "feature": "trigger_use",
    "owner": "GAME-INTERACTION-01 USE edge",
-   "quests_complete_on_engine_side": 55,
+   "quests_complete_on_engine_side": 62,
    "of_which_without_data_gaps": 2
   },
   {
    "feature": "reward_claim",
    "owner": "DUR-03 inventory mint and RewardClaim (D39-D42)",
-   "quests_complete_on_engine_side": 137,
+   "quests_complete_on_engine_side": 144,
    "of_which_without_data_gaps": 84
   },
   {
    "feature": "world_object",
    "owner": "world-object overlay (D38)",
-   "quests_complete_on_engine_side": 141,
+   "quests_complete_on_engine_side": 148,
    "of_which_without_data_gaps": 84
   },
   {
    "feature": "teleport",
    "owner": "relocation owner (D37)",
-   "quests_complete_on_engine_side": 145,
+   "quests_complete_on_engine_side": 152,
    "of_which_without_data_gaps": 85
   },
   {
    "feature": "trigger_step",
    "owner": "GAME-INTERACTION-01 step edges",
-   "quests_complete_on_engine_side": 153,
+   "quests_complete_on_engine_side": 160,
    "of_which_without_data_gaps": 85
   },
   {
    "feature": "item_consume",
    "owner": "DUR-03 consumption",
-   "quests_complete_on_engine_side": 156,
+   "quests_complete_on_engine_side": 163,
    "of_which_without_data_gaps": 87
   },
   {
    "feature": "trigger_kill",
    "owner": "GAME-INTERACTION-01 death/kill edges",
-   "quests_complete_on_engine_side": 159,
+   "quests_complete_on_engine_side": 166,
    "of_which_without_data_gaps": 88
   },
   {
    "feature": "quest_state",
    "owner": "quest-state store (D35)",
-   "quests_complete_on_engine_side": 160,
+   "quests_complete_on_engine_side": 167,
    "of_which_without_data_gaps": 88
   },
   {
    "feature": "npc_dialogue",
    "owner": "NPC dialogue runtime",
-   "quests_complete_on_engine_side": 183,
+   "quests_complete_on_engine_side": 190,
    "of_which_without_data_gaps": 94
   },
   {
    "feature": "door_progress",
    "owner": "door gate: quest progress",
-   "quests_complete_on_engine_side": 197,
+   "quests_complete_on_engine_side": 204,
    "of_which_without_data_gaps": 102
   },
   {
    "feature": "scheduler",
    "owner": "owner for delayed callbacks (none yet)",
-   "quests_complete_on_engine_side": 203,
+   "quests_complete_on_engine_side": 210,
    "of_which_without_data_gaps": 102
   },
   {
    "feature": "item_hand_out",
    "owner": "DUR-03 inventory mint",
-   "quests_complete_on_engine_side": 215,
+   "quests_complete_on_engine_side": 222,
    "of_which_without_data_gaps": 103
   },
   {
    "feature": "summon",
    "owner": "GAME-AI-01 spawn",
-   "quests_complete_on_engine_side": 225,
+   "quests_complete_on_engine_side": 232,
    "of_which_without_data_gaps": 103
   },
   {
    "feature": "achievement",
    "owner": "Achievement owner",
-   "quests_complete_on_engine_side": 232,
+   "quests_complete_on_engine_side": 239,
    "of_which_without_data_gaps": 103
   },
   {
    "feature": "condition",
    "owner": "owner for player conditions (none yet)",
-   "quests_complete_on_engine_side": 245,
+   "quests_complete_on_engine_side": 252,
    "of_which_without_data_gaps": 103
   },
   {
    "feature": "creature_removal",
    "owner": "owner for creature removal (none yet)",
-   "quests_complete_on_engine_side": 251,
+   "quests_complete_on_engine_side": 258,
    "of_which_without_data_gaps": 103
   },
   {
    "feature": "boss_cooldown",
    "owner": "boss cooldown owner (none yet)",
-   "quests_complete_on_engine_side": 261,
+   "quests_complete_on_engine_side": 268,
    "of_which_without_data_gaps": 103
   },
   {
    "feature": "kv_state",
    "owner": "owner for key-value writes (none yet)",
-   "quests_complete_on_engine_side": 268,
+   "quests_complete_on_engine_side": 275,
    "of_which_without_data_gaps": 103
   },
   {
    "feature": "outfit",
    "owner": "Outfit grant owner",
-   "quests_complete_on_engine_side": 271,
+   "quests_complete_on_engine_side": 278,
    "of_which_without_data_gaps": 103
   },
   {
    "feature": "mount",
    "owner": "Mount grant owner",
-   "quests_complete_on_engine_side": 274,
+   "quests_complete_on_engine_side": 281,
    "of_which_without_data_gaps": 103
   },
   {
    "feature": "experience",
    "owner": "Character XP award from an interaction",
-   "quests_complete_on_engine_side": 276,
+   "quests_complete_on_engine_side": 283,
    "of_which_without_data_gaps": 103
   }
  ],
@@ -333,6 +333,16 @@
    "interactions": 1,
    "data_gaps": {
     "interactions_with_gaps": 1,
+    "unresolved_items": 1
+   }
+  },
+  {
+   "quest": "canary:quest/awash_world_change",
+   "kind": "script_only",
+   "features": [],
+   "interactions": 0,
+   "data_gaps": {
+    "interactions_with_gaps": 0,
     "unresolved_items": 1
    }
   },
@@ -852,7 +862,7 @@
    "interactions": 7,
    "data_gaps": {
     "interactions_with_gaps": 7,
-    "unresolved_items": 18
+    "unresolved_items": 19
    }
   },
   {
@@ -2013,6 +2023,16 @@
    }
   },
   {
+   "quest": "canary:quest/machinery_of_war_quest",
+   "kind": "script_only",
+   "features": [],
+   "interactions": 0,
+   "data_gaps": {
+    "interactions_with_gaps": 0,
+    "unresolved_items": 1
+   }
+  },
+  {
    "quest": "canary:quest/mad_mage_room_quest",
    "kind": "reward_only",
    "features": [
@@ -2343,6 +2363,16 @@
    }
   },
   {
+   "quest": "canary:quest/overhunting_world_change",
+   "kind": "script_only",
+   "features": [],
+   "interactions": 0,
+   "data_gaps": {
+    "interactions_with_gaps": 0,
+    "unresolved_items": 1
+   }
+  },
+  {
    "quest": "canary:quest/panpipe_quest",
    "kind": "reward_only",
    "features": [
@@ -2644,7 +2674,7 @@
    "interactions": 0,
    "data_gaps": {
     "interactions_with_gaps": 0,
-    "unresolved_items": 1
+    "unresolved_items": 2
    }
   },
   {
@@ -2947,6 +2977,16 @@
    "data_gaps": {
     "interactions_with_gaps": 0,
     "unresolved_items": 0
+   }
+  },
+  {
+   "quest": "canary:quest/steamship_world_change",
+   "kind": "script_only",
+   "features": [],
+   "interactions": 0,
+   "data_gaps": {
+    "interactions_with_gaps": 0,
+    "unresolved_items": 1
    }
   },
   {
@@ -3539,7 +3579,7 @@
    "interactions": 48,
    "data_gaps": {
     "interactions_with_gaps": 38,
-    "unresolved_items": 105
+    "unresolved_items": 106
    }
   },
   {
@@ -3967,6 +4007,16 @@
    }
   },
   {
+   "quest": "canary:quest/twenty_miles_beneath_the_sea_quest",
+   "kind": "script_only",
+   "features": [],
+   "interactions": 0,
+   "data_gaps": {
+    "interactions_with_gaps": 0,
+    "unresolved_items": 1
+   }
+  },
+  {
    "quest": "canary:quest/unnatural_selection_quest",
    "kind": "storyline",
    "features": [
@@ -4081,6 +4131,16 @@
    "data_gaps": {
     "interactions_with_gaps": 3,
     "unresolved_items": 7
+   }
+  },
+  {
+   "quest": "canary:quest/winterlight_solstice",
+   "kind": "script_only",
+   "features": [],
+   "interactions": 0,
+   "data_gaps": {
+    "interactions_with_gaps": 0,
+    "unresolved_items": 1
    }
   },
   {
@@ -4324,6 +4384,16 @@
    "data_gaps": {
     "interactions_with_gaps": 12,
     "unresolved_items": 38
+   }
+  },
+  {
+   "quest": "crystalserver:quest/the_order_of_the_stag_quest",
+   "kind": "script_only",
+   "features": [],
+   "interactions": 0,
+   "data_gaps": {
+    "interactions_with_gaps": 0,
+    "unresolved_items": 1
    }
   },
   {

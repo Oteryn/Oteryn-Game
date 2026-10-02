@@ -64,7 +64,7 @@
     },
     "Quest": {
       "index": "content/quests/definitions/index.json",
-      "records": 276
+      "records": 283
     },
     "RewardClaim": {
       "index": "content/interactions/reward_claims/index.json",
@@ -556,7 +556,7 @@
       "path": "content/quests/definitions/quests-00100-00199.json"
     },
     {
-      "path": "content/quests/definitions/quests-00200-00275.json"
+      "path": "content/quests/definitions/quests-00200-00282.json"
     },
     {
       "path": "content/services/trade/index.json"

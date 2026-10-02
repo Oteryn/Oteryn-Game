@@ -1,0 +1,49 @@
+{
+  "schema": "OTERYN_QUEST_REQUIREMENT_CURATIONS/v1",
+  "entries": [
+    {
+      "quest": "canary:quest/dawnport_quest",
+      "wiki": {
+        "provider": "tibia_fandom",
+        "title": "Dawnport Quest",
+        "pageid": 68640,
+        "revid": 683819,
+        "content_sha256": "1d6763776297dcfb722619efc4e7d194cf7f508856ddd198c3018e9c65bcdfa1"
+      },
+      "level_raw": "2 - 20"
+    },
+    {
+      "quest": "canary:quest/sanctuary_of_the_lizard_god",
+      "wiki": {
+        "provider": "tibia_fandom",
+        "title": "Sanctuary of the Lizard God Quest",
+        "pageid": 68839,
+        "revid": 1198612,
+        "content_sha256": "fe8e2d3b054078252c7436ab7641612a69f3299d6cf076626c835d06aa497c93"
+      },
+      "level_raw": "2 - 20"
+    },
+    {
+      "quest": "canary:quest/the_rookie_guard_quest",
+      "wiki": {
+        "provider": "tibia_fandom",
+        "title": "The Rookie Guard Quest",
+        "pageid": 53931,
+        "revid": 891816,
+        "content_sha256": "96f3268be16e7faf36153fd7d3f3fcb381e508043ab442397f861d1fef6bdc4f"
+      },
+      "level_raw": "0 - 5"
+    },
+    {
+      "quest": "canary:quest/their_masters_voice",
+      "wiki": {
+        "provider": "tibia_fandom",
+        "title": "Their Master's Voice World Change",
+        "pageid": 54568,
+        "revid": 1110635,
+        "content_sha256": "66360bb61c4e6268979fbf42f1e1f1d4e7b2d8f9c91b7365d5b342634aa138d4"
+      },
+      "level_raw": "8+"
+    }
+  ]
+}

@@ -397420,6 +397420,24 @@
       "transitions": []
     },
     {
+      "key": "canary:quest-progress/hero_rathleton/fast_way",
+      "missions": [],
+      "start_of": [],
+      "read_by_gates": [],
+      "auxiliary_of": [],
+      "owner_basis": "UNKNOWN",
+      "source_checks": {
+        "owner": "UNKNOWN: caller-only symbolic SOURCE identity; owning quest, initial value, bounds, complete writer inventory and native Character policy are not inferred",
+        "storage_declaration": "UNKNOWN: exact symbolic getter has no proven named Storage declaration; an undeclared lookup may supply nil; never repaired through GlobalStorage or numeric coincidence"
+      },
+      "note": "Undeclared SOURCE getter expression retained: Storage.HeroRathleton.FastWay",
+      "writes": {
+        "canary": 0,
+        "crystalserver": 0
+      },
+      "transitions": []
+    },
+    {
       "key": "canary:quest-progress/quest/u10_10/the_gravedigger_of_drefia/mission05",
       "missions": [],
       "start_of": [],

@@ -20,6 +20,7 @@ a missing runtime owner (key-value writes, conditions, boss cooldowns, creature
 removal, delayed callbacks) counts as a needed feature, not as a data gap.
 """
 import collections
+from quest_requirement_interpretations import requirement_holds
 import functools
 import json
 import pathlib
@@ -260,6 +261,8 @@ def join_interactions(quests, progress, interactions, curated_entries=None, mani
 def quest_coverage_holds(manifest, quest_keys):
     """NPC source presence does not imply its non-storage effects were converted."""
     holds, seen = collections.Counter(), set()
+    holds.update(requirement_holds(
+        manifest.get('source_checks', {}).get('quest_requirement_interpretations', []), quest_keys))
     for check in manifest.get('source_checks', {}).get('npc_only_quests', []):
         identity = (check['quest'], check['npc_source'])
         if check['quest'] not in quest_keys or identity in seen or not check.get('coverage_gap'):

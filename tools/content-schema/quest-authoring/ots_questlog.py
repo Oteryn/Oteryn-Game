@@ -18,6 +18,7 @@ import glob
 import hashlib
 import json
 import source_reference_tracks
+from quest_requirement_interpretations import interpret_requirements
 import re
 from collections import Counter, defaultdict
 from pathlib import Path
@@ -618,6 +619,9 @@ def build(repos, chests_dir, doors_dir, coverage):
             raise SystemExit(f'script_quests.json: {key} collides with an existing quest')
         catalogue.append(quest)
     catalogue.sort(key=lambda q: q['identity']['key'])
+    catalogue, requirement_checks = interpret_requirements(
+        catalogue, json.loads((ROOT / 'wiki_quest_facts.json').read_text()),
+        json.loads((ROOT / 'quest_requirement_curations.json').read_text())['entries'])
 
     progress = []
     for track, info in sorted(tracks.items()):
@@ -674,7 +678,8 @@ def build(repos, chests_dir, doors_dir, coverage):
         },
         'reward_only_absorbed': absorbed,
         'quest_source_aliases': source_aliases,
-        'source_checks': {'source_reference_readers': reader_checks, 'progress_track_unknowns': [
+        'source_checks': {'quest_requirement_interpretations': requirement_checks,
+                          'source_reference_readers': reader_checks, 'progress_track_unknowns': [
             {'key': p['key'], **p['source_checks']} for p in progress if p.get('source_checks')],
             'deferred_track_owners': DEFERRED_TRACKS,
             'script_coverage_holds': curation_coverage_holds(catalogue, SCRIPT_QUESTS),

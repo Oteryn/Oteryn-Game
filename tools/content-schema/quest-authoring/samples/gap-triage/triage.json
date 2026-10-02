@@ -67,14 +67,14 @@
   "unresolved_lines": 1937,
   "unresolved_conditions": 1752,
   "blocked_children": 486,
-  "reference_gaps": 1,
-  "total_unresolved_items": 4176,
+  "reference_gaps": 0,
+  "total_unresolved_items": 4175,
   "by_bucket": {
    "owner_pending": 467,
    "shared_mechanism": 145,
-   "bespoke": 3564
+   "bespoke": 3563
   },
-  "quests_triaged": 276,
+  "quests_triaged": 283,
   "quests_with_bespoke_work": 109,
   "quests_fully_covered_by_owners_and_mechanisms": 1,
   "interactions_unlinked_to_a_quest": 12
@@ -318,6 +318,18 @@
    "to_finish": [
     "bespoke:1"
    ]
+  },
+  {
+   "quest": "canary:quest/awash_world_change",
+   "kind": "script_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
   },
   {
    "quest": "canary:quest/barbarian_arena_quest",
@@ -1549,7 +1561,7 @@
    "counts": {
     "owner_pending": 21,
     "shared_mechanism": 0,
-    "bespoke": 17
+    "bespoke": 16
    },
    "owners_needed": [
     "scheduler"
@@ -1557,7 +1569,7 @@
    "mechanisms_needed": [],
    "to_finish": [
     "owner:scheduler",
-    "bespoke:17"
+    "bespoke:16"
    ]
   },
   {
@@ -1908,6 +1920,18 @@
    "to_finish": []
   },
   {
+   "quest": "canary:quest/machinery_of_war_quest",
+   "kind": "script_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
    "quest": "canary:quest/mad_mage_room_quest",
    "kind": "reward_only",
    "counts": {
@@ -2205,6 +2229,18 @@
   {
    "quest": "canary:quest/outfit_and_addon_quests",
    "kind": "storyline",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
+   "quest": "canary:quest/overhunting_world_change",
+   "kind": "script_only",
    "counts": {
     "owner_pending": 0,
     "shared_mechanism": 0,
@@ -2809,6 +2845,18 @@
   {
    "quest": "canary:quest/stealth_ring_quest",
    "kind": "reward_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
+   "quest": "canary:quest/steamship_world_change",
+   "kind": "script_only",
    "counts": {
     "owner_pending": 0,
     "shared_mechanism": 0,
@@ -3748,6 +3796,18 @@
    "to_finish": []
   },
   {
+   "quest": "canary:quest/twenty_miles_beneath_the_sea_quest",
+   "kind": "script_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
    "quest": "canary:quest/unnatural_selection_quest",
    "kind": "storyline",
    "counts": {
@@ -3853,6 +3913,18 @@
     "owner:scheduler",
     "bespoke:7"
    ]
+  },
+  {
+   "quest": "canary:quest/winterlight_solstice",
+   "kind": "script_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
   },
   {
    "quest": "canary:quest/wrath_of_the_emperor_quest",
@@ -4100,6 +4172,18 @@
     "mechanism:kill_reward_fanout",
     "bespoke:35"
    ]
+  },
+  {
+   "quest": "crystalserver:quest/the_order_of_the_stag_quest",
+   "kind": "script_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
   },
   {
    "quest": "crystalserver:quest/the_roost_of_the_graveborn_quest",

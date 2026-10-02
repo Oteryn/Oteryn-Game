@@ -1,0 +1,4131 @@
+{
+  "schema": "OTERYN_WIKI_REQUIREMENT_INTERPRETATIONS/v1",
+  "scope": "SOURCE syntax only; historical holds preserved",
+  "historical_specifications_sha256": "8f0f9b5a86d0d07542172d59019860c21a385c7b7a15e7abc671b0166f9bd9fd",
+  "raw_body_rechecked": false,
+  "proof_mode": "AUTHORED_FACTS_AND_RECORDED_OFFLINE_BODY_WITNESSES",
+  "runtime_readiness": "UNKNOWN",
+  "definition_complete": false,
+  "historical_unparsed_holds": 205,
+  "interpreted_holds": 18,
+  "current_unparsed_holds": 187,
+  "interpretations": [
+    {
+      "wiki_title": "Dragon Slayer Outfits Quest",
+      "historical_hold_sha256": "e9be20e1f371a4e9f8660e2ac99e542b3bd9e73d63f72f0d04b1ba81bcf63fd7",
+      "historical_evidence": {
+        "provider": "tibiawiki_br",
+        "pageid": 61047,
+        "revid": 408914,
+        "content_sha256": "5c510703fd449afdc0b9dfb2ce794978ca6c70bed0114709a929e0a376170361",
+        "url": "https://www.tibiawiki.com.br/index.php?curid=61047&oldid=408914",
+        "relation": "crosscheck",
+        "line": 28,
+        "line_sha256": "a85552ba09551b2a1add9d2583b7fc3aa69342b5bad79fdc05d43a2f97066d22"
+      },
+      "execution_semantics": "UNKNOWN",
+      "canonical_binding_status": "UNKNOWN",
+      "prerequisite_expressions": [
+        {
+          "line": 28,
+          "line_sha256": "a85552ba09551b2a1add9d2583b7fc3aa69342b5bad79fdc05d43a2f97066d22",
+          "section": "Requerimentos",
+          "scope": "source_requirement_list",
+          "scope_anchor": null,
+          "operator": "references",
+          "execution_semantics": "UNKNOWN",
+          "declaration_strength": "reference_only",
+          "nodes": [
+            {
+              "kind": "entity_reference",
+              "entity": "Hoard of the Dragon",
+              "quantity": null,
+              "binding_status": "UNKNOWN",
+              "source_namespace": "mediawiki/page_title"
+            },
+            {
+              "kind": "entity_reference",
+              "entity": "Reason to Celebrate",
+              "quantity": null,
+              "binding_status": "UNKNOWN",
+              "source_namespace": "mediawiki/page_title"
+            },
+            {
+              "kind": "entity_reference",
+              "entity": "Treasure Hunter",
+              "quantity": null,
+              "binding_status": "UNKNOWN",
+              "source_namespace": "mediawiki/page_title"
+            }
+          ]
+        }
+      ],
+      "source_fact_entries": []
+    },
+    {
+      "wiki_title": "Dragon Slayer Outfits Quest",
+      "historical_hold_sha256": "4297b2cf39f4febb25eab34235bd12677eda7544e34e2b42c5e0f940bd20acd8",
+      "historical_evidence": {
+        "provider": "tibiawiki_br",
+        "pageid": 61047,
+        "revid": 408914,
+        "content_sha256": "5c510703fd449afdc0b9dfb2ce794978ca6c70bed0114709a929e0a376170361",
+        "url": "https://www.tibiawiki.com.br/index.php?curid=61047&oldid=408914",
+        "relation": "crosscheck",
+        "line": 83,
+        "line_sha256": "7044371588c52550e86b948000d938735b93d680931dae1b3ab9eae17057021e"
+      },
+      "execution_semantics": "UNKNOWN",
+      "canonical_binding_status": "UNKNOWN",
+      "prerequisite_expressions": [],
+      "source_fact_entries": [
+        {
+          "kind": "curated_source_fact",
+          "source_order": 83,
+          "execution_semantics": "UNKNOWN",
+          "binding_status": "UNKNOWN",
+          "classification": "DERIVED",
+          "scope": "Requerimentos",
+          "facts": {
+            "required_title_literal": "Competent Beastslayer"
+          },
+          "evidence": [
+            {
+              "line": 83,
+              "line_sha256": "7044371588c52550e86b948000d938735b93d680931dae1b3ab9eae17057021e",
+              "byte_offset": 3974,
+              "byte_length": 44,
+              "span_sha256": "7044371588c52550e86b948000d938735b93d680931dae1b3ab9eae17057021e"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "wiki_title": "Insectoid Outfits Quest",
+      "historical_hold_sha256": "ac339170c5c80954217c1936526352788d6f3416df0be040831a48656f284a13",
+      "historical_evidence": {
+        "provider": "tibiawiki_br",
+        "pageid": 45931,
+        "revid": 401315,
+        "content_sha256": "43322727d890e1e66fa3e2bf5c06a02a68a8c85f8422b1ba1211edefd7360984",
+        "url": "https://www.tibiawiki.com.br/index.php?curid=45931&oldid=401315",
+        "relation": "crosscheck",
+        "line": 43,
+        "line_sha256": "bb3ce02083561e6f5da55af0713220ea7297c567c15ebaab08e865a10568e669"
+      },
+      "execution_semantics": "UNKNOWN",
+      "canonical_binding_status": "UNKNOWN",
+      "prerequisite_expressions": [],
+      "source_fact_entries": [
+        {
+          "kind": "curated_source_fact",
+          "source_order": 43,
+          "execution_semantics": "UNKNOWN",
+          "binding_status": "UNKNOWN",
+          "classification": "DERIVED",
+          "scope": "Requerimentos",
+          "facts": {
+            "required_amount_literal": 500,
+            "unit_literal": "War Exp pontos",
+            "scope_literal": "primeiro addon",
+            "cumulative_declared": true,
+            "excluded_additive_terms": [
+              300,
+              500
+            ]
+          },
+          "evidence": [
+            {
+              "line": 43,
+              "line_sha256": "bb3ce02083561e6f5da55af0713220ea7297c567c15ebaab08e865a10568e669",
+              "byte_offset": 2257,
+              "byte_length": 140,
+              "span_sha256": "bb3ce02083561e6f5da55af0713220ea7297c567c15ebaab08e865a10568e669"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "wiki_title": "Insectoid Outfits Quest",
+      "historical_hold_sha256": "660de68b615cff3c43ff82ec6e207af92b8fa25723cd169b57cb1b49453706be",
+      "historical_evidence": {
+        "provider": "tibiawiki_br",
+        "pageid": 45931,
+        "revid": 401315,
+        "content_sha256": "43322727d890e1e66fa3e2bf5c06a02a68a8c85f8422b1ba1211edefd7360984",
+        "url": "https://www.tibiawiki.com.br/index.php?curid=45931&oldid=401315",
+        "relation": "crosscheck",
+        "line": 59,
+        "line_sha256": "1a9aa5155d0ba85072c92185c3228f1ce1d00caf243c97048d8cfca287ff8792"
+      },
+      "execution_semantics": "UNKNOWN",
+      "canonical_binding_status": "UNKNOWN",
+      "prerequisite_expressions": [],
+      "source_fact_entries": [
+        {
+          "kind": "curated_source_fact",
+          "source_order": 59,
+          "execution_semantics": "UNKNOWN",
+          "binding_status": "UNKNOWN",
+          "classification": "DERIVED",
+          "scope": "Requerimentos",
+          "facts": {
+            "required_amount_literal": 1000,
+            "unit_literal": "War Exp pontos",
+            "scope_literal": "segundo addon",
+            "cumulative_declared": true,
+            "excluded_additive_terms": [
+              300,
+              500,
+              1000
+            ]
+          },
+          "evidence": [
+            {
+              "line": 59,
+              "line_sha256": "1a9aa5155d0ba85072c92185c3228f1ce1d00caf243c97048d8cfca287ff8792",
+              "byte_offset": 3272,
+              "byte_length": 148,
+              "span_sha256": "1a9aa5155d0ba85072c92185c3228f1ce1d00caf243c97048d8cfca287ff8792"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "wiki_title": "Insectoid Outfits Quest",
+      "historical_hold_sha256": "55f00bd6ba4e9015f6efba58a699a6bbfee7f27ef83dd4e8ee7a7095d8166a76",
+      "historical_evidence": {
+        "provider": "tibiawiki_br",
+        "pageid": 45931,
+        "revid": 401315,
+        "content_sha256": "43322727d890e1e66fa3e2bf5c06a02a68a8c85f8422b1ba1211edefd7360984",
+        "url": "https://www.tibiawiki.com.br/index.php?curid=45931&oldid=401315",
+        "relation": "crosscheck",
+        "line": 43,
+        "line_sha256": "bb3ce02083561e6f5da55af0713220ea7297c567c15ebaab08e865a10568e669"
+      },
+      "execution_semantics": "UNKNOWN",
+      "canonical_binding_status": "UNKNOWN",
+      "prerequisite_expressions": [],
+      "source_fact_entries": [
+        {
+          "kind": "curated_source_fact",
+          "source_order": 43,
+          "execution_semantics": "UNKNOWN",
+          "binding_status": "UNKNOWN",
+          "classification": "DERIVED",
+          "scope": "Requerimentos",
+          "facts": {
+            "required_amount_literal": 500,
+            "unit_literal": "War Exp pontos",
+            "scope_literal": "primeiro addon",
+            "cumulative_declared": true,
+            "excluded_additive_terms": [
+              300,
+              500
+            ]
+          },
+          "evidence": [
+            {
+              "line": 43,
+              "line_sha256": "bb3ce02083561e6f5da55af0713220ea7297c567c15ebaab08e865a10568e669",
+              "byte_offset": 2257,
+              "byte_length": 140,
+              "span_sha256": "bb3ce02083561e6f5da55af0713220ea7297c567c15ebaab08e865a10568e669"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "wiki_title": "Insectoid Outfits Quest",
+      "historical_hold_sha256": "b34d8a5a59da39761c907b413bada4c12e69c57b91cca05dc0f0d9ba08a5ac75",
+      "historical_evidence": {
+        "provider": "tibiawiki_br",
+        "pageid": 45931,
+        "revid": 401315,
+        "content_sha256": "43322727d890e1e66fa3e2bf5c06a02a68a8c85f8422b1ba1211edefd7360984",
+        "url": "https://www.tibiawiki.com.br/index.php?curid=45931&oldid=401315",
+        "relation": "crosscheck",
+        "line": 59,
+        "line_sha256": "1a9aa5155d0ba85072c92185c3228f1ce1d00caf243c97048d8cfca287ff8792"
+      },
+      "execution_semantics": "UNKNOWN",
+      "canonical_binding_status": "UNKNOWN",
+      "prerequisite_expressions": [],
+      "source_fact_entries": [
+        {
+          "kind": "curated_source_fact",
+          "source_order": 59,
+          "execution_semantics": "UNKNOWN",
+          "binding_status": "UNKNOWN",
+          "classification": "DERIVED",
+          "scope": "Requerimentos",
+          "facts": {
+            "required_amount_literal": 1000,
+            "unit_literal": "War Exp pontos",
+            "scope_literal": "segundo addon",
+            "cumulative_declared": true,
+            "excluded_additive_terms": [
+              300,
+              500,
+              1000
+            ]
+          },
+          "evidence": [
+            {
+              "line": 59,
+              "line_sha256": "1a9aa5155d0ba85072c92185c3228f1ce1d00caf243c97048d8cfca287ff8792",
+              "byte_offset": 3272,
+              "byte_length": 148,
+              "span_sha256": "1a9aa5155d0ba85072c92185c3228f1ce1d00caf243c97048d8cfca287ff8792"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "wiki_title": "Pilgrimage of Ashes Quest",
+      "historical_hold_sha256": "35e578fdd8ea59f154601e09eeb1fa02878740d0c8d19e0f9b95b17765654c15",
+      "historical_evidence": {
+        "provider": "tibiawiki_br",
+        "pageid": 4492,
+        "revid": 432012,
+        "content_sha256": "75bb21b6c3c7ab179f49ae364d4577be7fa337e34aa19f1c8a355e879f0a55c4",
+        "url": "https://www.tibiawiki.com.br/index.php?curid=4492&oldid=432012",
+        "relation": "crosscheck",
+        "line": 26,
+        "line_sha256": "260c36e0c69c7ddfb2aad5a5dbbf55ec792b724418a140f02e48642133ea6267"
+      },
+      "execution_semantics": "UNKNOWN",
+      "canonical_binding_status": "UNKNOWN",
+      "prerequisite_expressions": [],
+      "source_fact_entries": [
+        {
+          "kind": "curated_source_fact",
+          "source_order": 26,
+          "execution_semantics": "UNKNOWN",
+          "binding_status": "UNKNOWN",
+          "classification": "DERIVED",
+          "scope": "Requerimentos",
+          "facts": {
+            "required_amount_literal": 500,
+            "unit_literal": "gps",
+            "scope_literal": "viagens"
+          },
+          "evidence": [
+            {
+              "line": 26,
+              "line_sha256": "260c36e0c69c7ddfb2aad5a5dbbf55ec792b724418a140f02e48642133ea6267",
+              "byte_offset": 1112,
+              "byte_length": 37,
+              "span_sha256": "260c36e0c69c7ddfb2aad5a5dbbf55ec792b724418a140f02e48642133ea6267"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "wiki_title": "Pilgrimage of Ashes Quest",
+      "historical_hold_sha256": "7b151e28b6743900833ff79b30bc52c4f7dd91f1af227dd9f681cdf8e3b55e39",
+      "historical_evidence": {
+        "provider": "tibiawiki_br",
+        "pageid": 4492,
+        "revid": 432012,
+        "content_sha256": "75bb21b6c3c7ab179f49ae364d4577be7fa337e34aa19f1c8a355e879f0a55c4",
+        "url": "https://www.tibiawiki.com.br/index.php?curid=4492&oldid=432012",
+        "relation": "crosscheck",
+        "line": 26,
+        "line_sha256": "260c36e0c69c7ddfb2aad5a5dbbf55ec792b724418a140f02e48642133ea6267"
+      },
+      "execution_semantics": "UNKNOWN",
+      "canonical_binding_status": "UNKNOWN",
+      "prerequisite_expressions": [],
+      "source_fact_entries": [
+        {
+          "kind": "curated_source_fact",
+          "source_order": 26,
+          "execution_semantics": "UNKNOWN",
+          "binding_status": "UNKNOWN",
+          "classification": "DERIVED",
+          "scope": "Requerimentos",
+          "facts": {
+            "required_amount_literal": 500,
+            "unit_literal": "gps",
+            "scope_literal": "viagens"
+          },
+          "evidence": [
+            {
+              "line": 26,
+              "line_sha256": "260c36e0c69c7ddfb2aad5a5dbbf55ec792b724418a140f02e48642133ea6267",
+              "byte_offset": 1112,
+              "byte_length": 37,
+              "span_sha256": "260c36e0c69c7ddfb2aad5a5dbbf55ec792b724418a140f02e48642133ea6267"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "wiki_title": "The Great Expedition",
+      "historical_hold_sha256": "28ad883fecd0ca7bc980071d76004d3206f1b7c321a3bb27a2f35c07d1f71ae2",
+      "historical_evidence": {
+        "provider": "tibia_fandom",
+        "pageid": 111212,
+        "revid": 1200358,
+        "content_sha256": "ff2ce43f182f6d339c9fcc6d6ba307a283e19814e7c1e144743e9c8b2ff0a572",
+        "url": "https://tibia.fandom.com/index.php?curid=111212&oldid=1200358",
+        "relation": "spoiler",
+        "line": 5,
+        "line_sha256": "216a13a08164457ee10dc89cc218ec1fdfa255b1dcf1148fdeb71514ece5e384"
+      },
+      "execution_semantics": "UNKNOWN",
+      "canonical_binding_status": "UNKNOWN",
+      "prerequisite_expressions": [
+        {
+          "line": 5,
+          "line_sha256": "216a13a08164457ee10dc89cc218ec1fdfa255b1dcf1148fdeb71514ece5e384",
+          "section": "Individual Requirements",
+          "scope": "source_requirement_list",
+          "scope_anchor": null,
+          "operator": "references",
+          "execution_semantics": "UNKNOWN",
+          "declaration_strength": "reference_only",
+          "nodes": [
+            {
+              "kind": "level_at_least",
+              "value": 20,
+              "binding_status": "SOURCE_DECLARED",
+              "applies_to": "source_requirement_list"
+            }
+          ]
+        }
+      ],
+      "source_fact_entries": []
+    },
+    {
+      "wiki_title": "The Great Expedition",
+      "historical_hold_sha256": "3cb4f2031ad7464db24483729f41cb7f50b7bfb010c1a66c2bcce8598beb3452",
+      "historical_evidence": {
+        "provider": "tibia_fandom",
+        "pageid": 111212,
+        "revid": 1200358,
+        "content_sha256": "ff2ce43f182f6d339c9fcc6d6ba307a283e19814e7c1e144743e9c8b2ff0a572",
+        "url": "https://tibia.fandom.com/index.php?curid=111212&oldid=1200358",
+        "relation": "spoiler",
+        "line": 7,
+        "line_sha256": "9a34dc5e09bbe9a85ad09c0a21f10de02885eb5324e9222a986594112c95928d"
+      },
+      "execution_semantics": "UNKNOWN",
+      "canonical_binding_status": "UNKNOWN",
+      "prerequisite_expressions": [],
+      "source_fact_entries": [
+        {
+          "kind": "curated_source_fact",
+          "source_order": 7,
+          "execution_semantics": "UNKNOWN",
+          "binding_status": "UNKNOWN",
+          "classification": "DERIVED",
+          "scope": "World Requirements",
+          "facts": {
+            "required_amount_literal": 35000000,
+            "unit_literal": "gold coins",
+            "scope_literal": "donations"
+          },
+          "evidence": [
+            {
+              "line": 7,
+              "line_sha256": "9a34dc5e09bbe9a85ad09c0a21f10de02885eb5324e9222a986594112c95928d",
+              "byte_offset": 137,
+              "byte_length": 38,
+              "span_sha256": "9a34dc5e09bbe9a85ad09c0a21f10de02885eb5324e9222a986594112c95928d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "wiki_title": "The Order of the Stag Quest",
+      "historical_hold_sha256": "db1a3cc4939e27b6f78eb20afe405096eeb9bbbee4d336374ea5788e0401bb89",
+      "historical_evidence": {
+        "provider": "tibia_fandom",
+        "pageid": 109439,
+        "revid": 1173312,
+        "content_sha256": "d9963f4774674fcf02eee7b451dfa72c4bcc15bf08bf4f18b08d0b185a644f32",
+        "url": "https://tibia.fandom.com/index.php?curid=109439&oldid=1173312",
+        "relation": "spoiler",
+        "line": 6,
+        "line_sha256": "da472f9b277ee5ff9e8e5f9751155bc2d3b6cff895338a8983776d8e2754c0a7"
+      },
+      "execution_semantics": "UNKNOWN",
+      "canonical_binding_status": "UNKNOWN",
+      "prerequisite_expressions": [],
+      "source_fact_entries": [
+        {
+          "kind": "curated_source_fact",
+          "source_order": 6,
+          "execution_semantics": "UNKNOWN",
+          "binding_status": "UNKNOWN",
+          "classification": "DERIVED",
+          "scope": "Requirements",
+          "facts": {
+            "optional_mission_heading": "Supplies for the Steadfast"
+          },
+          "evidence": [
+            {
+              "line": 6,
+              "line_sha256": "da472f9b277ee5ff9e8e5f9751155bc2d3b6cff895338a8983776d8e2754c0a7",
+              "byte_offset": 207,
+              "byte_length": 64,
+              "span_sha256": "da472f9b277ee5ff9e8e5f9751155bc2d3b6cff895338a8983776d8e2754c0a7"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "wiki_title": "The Order of the Stag Quest",
+      "historical_hold_sha256": "f00fe4a79443a2c34b872283b8aa7d88cc43f463f9804cfc3c574e46c173b2a2",
+      "historical_evidence": {
+        "provider": "tibia_fandom",
+        "pageid": 109439,
+        "revid": 1173312,
+        "content_sha256": "d9963f4774674fcf02eee7b451dfa72c4bcc15bf08bf4f18b08d0b185a644f32",
+        "url": "https://tibia.fandom.com/index.php?curid=109439&oldid=1173312",
+        "relation": "spoiler",
+        "line": 8,
+        "line_sha256": "978a7085ef1c8d1f13b4e3fcda39840cb7a67bb664db2e2a219403c635173935"
+      },
+      "execution_semantics": "UNKNOWN",
+      "canonical_binding_status": "UNKNOWN",
+      "prerequisite_expressions": [],
+      "source_fact_entries": [
+        {
+          "kind": "curated_source_fact",
+          "source_order": 8,
+          "execution_semantics": "UNKNOWN",
+          "binding_status": "UNKNOWN",
+          "classification": "DERIVED",
+          "scope": "Requirements",
+          "facts": {
+            "optional_mission_heading": "Emmanuelle's Boat Repair"
+          },
+          "evidence": [
+            {
+              "line": 8,
+              "line_sha256": "978a7085ef1c8d1f13b4e3fcda39840cb7a67bb664db2e2a219403c635173935",
+              "byte_offset": 323,
+              "byte_length": 63,
+              "span_sha256": "978a7085ef1c8d1f13b4e3fcda39840cb7a67bb664db2e2a219403c635173935"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "wiki_title": "The Order of the Stag Quest",
+      "historical_hold_sha256": "042cee8e0db664088f1b0c93534bed9bffe237cc4fc578833b1992d92eedaaee",
+      "historical_evidence": {
+        "provider": "tibiawiki_br",
+        "pageid": 65908,
+        "revid": 443997,
+        "content_sha256": "e4006bc7f3ed38622dcf985728b448e6ecce23049b9ec8993b3e303a7a3252ae",
+        "url": "https://www.tibiawiki.com.br/index.php?curid=65908&oldid=443997",
+        "relation": "crosscheck",
+        "line": 29,
+        "line_sha256": "1d3c044c4c71c4ac6d51793b1ae3b07bd7c5881e56519d0217417537ee4de8e1"
+      },
+      "execution_semantics": "UNKNOWN",
+      "canonical_binding_status": "UNKNOWN",
+      "prerequisite_expressions": [],
+      "source_fact_entries": [
+        {
+          "kind": "curated_source_fact",
+          "source_order": 29,
+          "execution_semantics": "UNKNOWN",
+          "binding_status": "UNKNOWN",
+          "classification": "DERIVED",
+          "scope": "Requerimentos",
+          "facts": {
+            "optional_mission_heading": "Supplies for the Steadfast"
+          },
+          "evidence": [
+            {
+              "line": 29,
+              "line_sha256": "1d3c044c4c71c4ac6d51793b1ae3b07bd7c5881e56519d0217417537ee4de8e1",
+              "byte_offset": 1396,
+              "byte_length": 61,
+              "span_sha256": "1d3c044c4c71c4ac6d51793b1ae3b07bd7c5881e56519d0217417537ee4de8e1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "wiki_title": "The Order of the Stag Quest",
+      "historical_hold_sha256": "ae37152be74ffe164c749eef133c03b9f63903719510397777230146c1c9bb8a",
+      "historical_evidence": {
+        "provider": "tibiawiki_br",
+        "pageid": 65908,
+        "revid": 443997,
+        "content_sha256": "e4006bc7f3ed38622dcf985728b448e6ecce23049b9ec8993b3e303a7a3252ae",
+        "url": "https://www.tibiawiki.com.br/index.php?curid=65908&oldid=443997",
+        "relation": "crosscheck",
+        "line": 31,
+        "line_sha256": "0fc329b7d8f2449213a56420052f20b11bc0ef2812db613e591e91de1ec61b2a"
+      },
+      "execution_semantics": "UNKNOWN",
+      "canonical_binding_status": "UNKNOWN",
+      "prerequisite_expressions": [],
+      "source_fact_entries": [
+        {
+          "kind": "curated_source_fact",
+          "source_order": 31,
+          "execution_semantics": "UNKNOWN",
+          "binding_status": "UNKNOWN",
+          "classification": "DERIVED",
+          "scope": "Requerimentos",
+          "facts": {
+            "optional_mission_heading": "Reparo do barco Emmanuelle"
+          },
+          "evidence": [
+            {
+              "line": 31,
+              "line_sha256": "0fc329b7d8f2449213a56420052f20b11bc0ef2812db613e591e91de1ec61b2a",
+              "byte_offset": 1520,
+              "byte_length": 61,
+              "span_sha256": "0fc329b7d8f2449213a56420052f20b11bc0ef2812db613e591e91de1ec61b2a"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "wiki_title": "The Order of the Stag Quest",
+      "historical_hold_sha256": "0808176f471f138b3c22dafbe123bb8977e8fee81c3647059e67229b2ad27d8b",
+      "historical_evidence": {
+        "provider": "tibia_fandom",
+        "pageid": 109439,
+        "revid": 1173312,
+        "content_sha256": "d9963f4774674fcf02eee7b451dfa72c4bcc15bf08bf4f18b08d0b185a644f32",
+        "url": "https://tibia.fandom.com/index.php?curid=109439&oldid=1173312",
+        "relation": "spoiler",
+        "line": 6,
+        "line_sha256": "da472f9b277ee5ff9e8e5f9751155bc2d3b6cff895338a8983776d8e2754c0a7"
+      },
+      "execution_semantics": "UNKNOWN",
+      "canonical_binding_status": "UNKNOWN",
+      "prerequisite_expressions": [],
+      "source_fact_entries": [
+        {
+          "kind": "curated_source_fact",
+          "source_order": 6,
+          "execution_semantics": "UNKNOWN",
+          "binding_status": "UNKNOWN",
+          "classification": "DERIVED",
+          "scope": "Requirements",
+          "facts": {
+            "optional_mission_heading": "Supplies for the Steadfast"
+          },
+          "evidence": [
+            {
+              "line": 6,
+              "line_sha256": "da472f9b277ee5ff9e8e5f9751155bc2d3b6cff895338a8983776d8e2754c0a7",
+              "byte_offset": 207,
+              "byte_length": 64,
+              "span_sha256": "da472f9b277ee5ff9e8e5f9751155bc2d3b6cff895338a8983776d8e2754c0a7"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "wiki_title": "The Order of the Stag Quest",
+      "historical_hold_sha256": "80ab3666b57ff02ef30c6f8c7ac7c068836fa67271b7759335fa388e9464ab6e",
+      "historical_evidence": {
+        "provider": "tibia_fandom",
+        "pageid": 109439,
+        "revid": 1173312,
+        "content_sha256": "d9963f4774674fcf02eee7b451dfa72c4bcc15bf08bf4f18b08d0b185a644f32",
+        "url": "https://tibia.fandom.com/index.php?curid=109439&oldid=1173312",
+        "relation": "spoiler",
+        "line": 8,
+        "line_sha256": "978a7085ef1c8d1f13b4e3fcda39840cb7a67bb664db2e2a219403c635173935"
+      },
+      "execution_semantics": "UNKNOWN",
+      "canonical_binding_status": "UNKNOWN",
+      "prerequisite_expressions": [],
+      "source_fact_entries": [
+        {
+          "kind": "curated_source_fact",
+          "source_order": 8,
+          "execution_semantics": "UNKNOWN",
+          "binding_status": "UNKNOWN",
+          "classification": "DERIVED",
+          "scope": "Requirements",
+          "facts": {
+            "optional_mission_heading": "Emmanuelle's Boat Repair"
+          },
+          "evidence": [
+            {
+              "line": 8,
+              "line_sha256": "978a7085ef1c8d1f13b4e3fcda39840cb7a67bb664db2e2a219403c635173935",
+              "byte_offset": 323,
+              "byte_length": 63,
+              "span_sha256": "978a7085ef1c8d1f13b4e3fcda39840cb7a67bb664db2e2a219403c635173935"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "wiki_title": "The Order of the Stag Quest",
+      "historical_hold_sha256": "ff793c5a878747b7f6fba88aa0871e84e204b66a34b875446f0d894d3719cf8d",
+      "historical_evidence": {
+        "provider": "tibiawiki_br",
+        "pageid": 65908,
+        "revid": 443997,
+        "content_sha256": "e4006bc7f3ed38622dcf985728b448e6ecce23049b9ec8993b3e303a7a3252ae",
+        "url": "https://www.tibiawiki.com.br/index.php?curid=65908&oldid=443997",
+        "relation": "crosscheck",
+        "line": 29,
+        "line_sha256": "1d3c044c4c71c4ac6d51793b1ae3b07bd7c5881e56519d0217417537ee4de8e1"
+      },
+      "execution_semantics": "UNKNOWN",
+      "canonical_binding_status": "UNKNOWN",
+      "prerequisite_expressions": [],
+      "source_fact_entries": [
+        {
+          "kind": "curated_source_fact",
+          "source_order": 29,
+          "execution_semantics": "UNKNOWN",
+          "binding_status": "UNKNOWN",
+          "classification": "DERIVED",
+          "scope": "Requerimentos",
+          "facts": {
+            "optional_mission_heading": "Supplies for the Steadfast"
+          },
+          "evidence": [
+            {
+              "line": 29,
+              "line_sha256": "1d3c044c4c71c4ac6d51793b1ae3b07bd7c5881e56519d0217417537ee4de8e1",
+              "byte_offset": 1396,
+              "byte_length": 61,
+              "span_sha256": "1d3c044c4c71c4ac6d51793b1ae3b07bd7c5881e56519d0217417537ee4de8e1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "wiki_title": "The Order of the Stag Quest",
+      "historical_hold_sha256": "f14814e4447d62928cb2372ce7dd7df3f69edccfdf5b13ef67090e24875aec0a",
+      "historical_evidence": {
+        "provider": "tibiawiki_br",
+        "pageid": 65908,
+        "revid": 443997,
+        "content_sha256": "e4006bc7f3ed38622dcf985728b448e6ecce23049b9ec8993b3e303a7a3252ae",
+        "url": "https://www.tibiawiki.com.br/index.php?curid=65908&oldid=443997",
+        "relation": "crosscheck",
+        "line": 31,
+        "line_sha256": "0fc329b7d8f2449213a56420052f20b11bc0ef2812db613e591e91de1ec61b2a"
+      },
+      "execution_semantics": "UNKNOWN",
+      "canonical_binding_status": "UNKNOWN",
+      "prerequisite_expressions": [],
+      "source_fact_entries": [
+        {
+          "kind": "curated_source_fact",
+          "source_order": 31,
+          "execution_semantics": "UNKNOWN",
+          "binding_status": "UNKNOWN",
+          "classification": "DERIVED",
+          "scope": "Requerimentos",
+          "facts": {
+            "optional_mission_heading": "Reparo do barco Emmanuelle"
+          },
+          "evidence": [
+            {
+              "line": 31,
+              "line_sha256": "0fc329b7d8f2449213a56420052f20b11bc0ef2812db613e591e91de1ec61b2a",
+              "byte_offset": 1520,
+              "byte_length": 61,
+              "span_sha256": "0fc329b7d8f2449213a56420052f20b11bc0ef2812db613e591e91de1ec61b2a"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "remaining_holds": [
+    {
+      "wiki_title": "A Father's Burden Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibia_fandom",
+          "pageid": 46606,
+          "revid": 1023660,
+          "content_sha256": "1b3c06c0c3ec743688d007fbf3385345f4520b5191cd6fe2da6c940021da6073",
+          "url": "https://tibia.fandom.com/index.php?curid=46606&oldid=1023660",
+          "relation": "spoiler",
+          "line": 7,
+          "line_sha256": "33d5dbb3ed1e1a1cc1c6fd69c2d553faf1da0d8fdad8ad78a972e7d761e2dbaf"
+        }
+      }
+    },
+    {
+      "wiki_title": "A Father's Burden Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibia_fandom",
+          "pageid": 46606,
+          "revid": 1023660,
+          "content_sha256": "1b3c06c0c3ec743688d007fbf3385345f4520b5191cd6fe2da6c940021da6073",
+          "url": "https://tibia.fandom.com/index.php?curid=46606&oldid=1023660",
+          "relation": "spoiler",
+          "line": 11,
+          "line_sha256": "c21e63473fb7c90c032ad21a06cf13fe24b33fe04d80a4f0f6f64bdd6fe0e726"
+        }
+      }
+    },
+    {
+      "wiki_title": "Adventures of Galthen Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibia_fandom",
+          "pageid": 94719,
+          "revid": 1199250,
+          "content_sha256": "ef96bc7770fe48f3fc17591891654e957e650832ab84b86b1d24ca53de5702b6",
+          "url": "https://tibia.fandom.com/index.php?curid=94719&oldid=1199250",
+          "relation": "spoiler",
+          "line": 4,
+          "line_sha256": "360f293f5a4a3509d6b73fd9aa6e5f356f6e8ab6caad3d5b4be7514ffd6f4ef0"
+        }
+      }
+    },
+    {
+      "wiki_title": "Adventures of Galthen Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibia_fandom",
+          "pageid": 94719,
+          "revid": 1199250,
+          "content_sha256": "ef96bc7770fe48f3fc17591891654e957e650832ab84b86b1d24ca53de5702b6",
+          "url": "https://tibia.fandom.com/index.php?curid=94719&oldid=1199250",
+          "relation": "spoiler",
+          "line": 12,
+          "line_sha256": "4827593de315220b23bba4ca531936ce69182b2b48b6a8cd6c1286773d540425"
+        }
+      }
+    },
+    {
+      "wiki_title": "Adventures of Galthen Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibia_fandom",
+          "pageid": 94719,
+          "revid": 1199250,
+          "content_sha256": "ef96bc7770fe48f3fc17591891654e957e650832ab84b86b1d24ca53de5702b6",
+          "url": "https://tibia.fandom.com/index.php?curid=94719&oldid=1199250",
+          "relation": "spoiler",
+          "line": 14,
+          "line_sha256": "dd963504408486d5ab4df8fa1e6fdd98d79ba165578dd58ee79a7ba7e4675712"
+        }
+      }
+    },
+    {
+      "wiki_title": "Adventures of Galthen Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibiawiki_br",
+          "pageid": 51823,
+          "revid": 417131,
+          "content_sha256": "7529616d292c7ac16b44ad5e93c6d483874d29ccee6fbe5bd5f5c238dbf38ef9",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=51823&oldid=417131",
+          "relation": "crosscheck",
+          "line": 25,
+          "line_sha256": "8548ac52e958d015aa09b4fe3041a94c68f69af7631f80efb8c94452a2c0633e"
+        }
+      }
+    },
+    {
+      "wiki_title": "Against the Spider Cult Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibiawiki_br",
+          "pageid": 3083,
+          "revid": 405069,
+          "content_sha256": "4887d28e054391dbe53e452b20e55ead20153c75639f35a8869051e19f2a2857",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=3083&oldid=405069",
+          "relation": "crosscheck",
+          "line": 26,
+          "line_sha256": "663a15d92458f39e590793d02fac81d03792acaf9ab2e1a616bd519e46910f85"
+        }
+      }
+    },
+    {
+      "wiki_title": "An Uneasy Alliance Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibia_fandom",
+          "pageid": 41957,
+          "revid": 891001,
+          "content_sha256": "2788b3c0b943e0b71687494a5e7bc5aa81542e0b1407793c165cd64e00fc2dfd",
+          "url": "https://tibia.fandom.com/index.php?curid=41957&oldid=891001",
+          "relation": "spoiler",
+          "line": 6,
+          "line_sha256": "bc48f595c834ad84126d09833073204307238c17dfbf646ea21a657be3fa9240"
+        }
+      }
+    },
+    {
+      "wiki_title": "Barbarian Arena Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibia_fandom",
+          "pageid": 34102,
+          "revid": 668035,
+          "content_sha256": "41e3c0c534ea1d0d06681a2b5cfa696012dcbdb9aa6fc1d4570b8a3d8bcbeed3",
+          "url": "https://tibia.fandom.com/index.php?curid=34102&oldid=668035",
+          "relation": "spoiler",
+          "line": 19,
+          "line_sha256": "952185775505fdb1b3426b7690c499cde04bdc346fd8481cce9fb12d312a9cf7"
+        }
+      }
+    },
+    {
+      "wiki_title": "Barbarian Arena Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibia_fandom",
+          "pageid": 34102,
+          "revid": 668035,
+          "content_sha256": "41e3c0c534ea1d0d06681a2b5cfa696012dcbdb9aa6fc1d4570b8a3d8bcbeed3",
+          "url": "https://tibia.fandom.com/index.php?curid=34102&oldid=668035",
+          "relation": "spoiler",
+          "line": 20,
+          "line_sha256": "d58f4a669777426529160425d6145aa1a92b3dfbb19bfc69915bcabf2fc06bbc"
+        }
+      }
+    },
+    {
+      "wiki_title": "Barbarian Outfits Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibia_fandom",
+          "pageid": 8574,
+          "revid": 826165,
+          "content_sha256": "566b5637d23bc3c59d620de7ef2e2e2683d4717e854e811c44d1a5eb418d3192",
+          "url": "https://tibia.fandom.com/index.php?curid=8574&oldid=826165",
+          "relation": "spoiler",
+          "line": 157,
+          "line_sha256": "cd877ef4886e779ddc24bea8ebfcd05e968eecaea42282b9a66e60397d511b9b"
+        }
+      }
+    },
+    {
+      "wiki_title": "Between the Lines Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibiawiki_br",
+          "pageid": 64963,
+          "revid": 433565,
+          "content_sha256": "b5172d3a01d22ee834b5c2c77a516efa7397bbcbc85d61708fe34de2b5601e79",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=64963&oldid=433565",
+          "relation": "crosscheck",
+          "line": 25,
+          "line_sha256": "c65d1572b36cf548982b89fba926bd50a2454944fb35b0cb6de37ecb578700e6"
+        }
+      }
+    },
+    {
+      "wiki_title": "Bigfoot's Burden Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibiawiki_br",
+          "pageid": 25499,
+          "revid": 416182,
+          "content_sha256": "44a17a0e39742a78d327fb3c02a78a79b924391b9d3f39897172b60ecf2c43fb",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=25499&oldid=416182",
+          "relation": "crosscheck",
+          "line": 30,
+          "line_sha256": "b54085fcc1e2f15c21d90c025dd523cc80ce448e5268c6ef979cc73d3bd79056"
+        }
+      }
+    },
+    {
+      "wiki_title": "Black Knight Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibiawiki_br",
+          "pageid": 3214,
+          "revid": 401045,
+          "content_sha256": "4d99837cc33621a4ea8a431bab032d0ae1c9269e5690b97e360d342ddac4966a",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=3214&oldid=401045",
+          "relation": "crosscheck",
+          "line": 22,
+          "line_sha256": "f8f9c14bf7b9498885dc306b9ff1ffe7fcacd19ea2c4747a5d4827653e81a24f"
+        }
+      }
+    },
+    {
+      "wiki_title": "Black Knight Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibiawiki_br",
+          "pageid": 3214,
+          "revid": 401045,
+          "content_sha256": "4d99837cc33621a4ea8a431bab032d0ae1c9269e5690b97e360d342ddac4966a",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=3214&oldid=401045",
+          "relation": "crosscheck",
+          "line": 23,
+          "line_sha256": "a40e656af2a66396e123a2645e69f4faf63d95a8724ce7cf89c4036f4672b7ba"
+        }
+      }
+    },
+    {
+      "wiki_title": "Blood Brothers Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibia_fandom",
+          "pageid": 30703,
+          "revid": 1132612,
+          "content_sha256": "8b9e6640bcb047807ed307ee25c4e9a252e0630f6f37ebfa700cc7ad2bd506dd",
+          "url": "https://tibia.fandom.com/index.php?curid=30703&oldid=1132612",
+          "relation": "spoiler",
+          "line": 18,
+          "line_sha256": "0721529abaed29b6c6842b966a342ffae6d8a956a57543ea5c98db1996eca70a"
+        }
+      }
+    },
+    {
+      "wiki_title": "Blood Brothers Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibiawiki_br",
+          "pageid": 3222,
+          "revid": 428470,
+          "content_sha256": "ee1d574e70aca008cceb63bd27d64a3d5442108be1967cbcb0a9fe15da6f05c8",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=3222&oldid=428470",
+          "relation": "crosscheck",
+          "line": 30,
+          "line_sha256": "aaef32251463ebbd21fd831b0a1ac78f5b260d1ff488c1bf68ce674f74229d86"
+        }
+      }
+    },
+    {
+      "wiki_title": "Blood Brothers Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibiawiki_br",
+          "pageid": 3222,
+          "revid": 428470,
+          "content_sha256": "ee1d574e70aca008cceb63bd27d64a3d5442108be1967cbcb0a9fe15da6f05c8",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=3222&oldid=428470",
+          "relation": "crosscheck",
+          "line": 37,
+          "line_sha256": "07829ff337e52f4f5730906d6cb1dfe5194f32e59fdf9a256692a6b9f5649897"
+        }
+      }
+    },
+    {
+      "wiki_title": "Cartography 101 Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibiawiki_br",
+          "pageid": 36271,
+          "revid": 431843,
+          "content_sha256": "0041714fdc69d4da2e2cc38b1b5fe14422d0823d9bdcc5cb50eeef3adb447213",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=36271&oldid=431843",
+          "relation": "crosscheck",
+          "line": 68,
+          "line_sha256": "3c1a57e51f90d2b54146d8a52502de7010e8f67f51a1214a101de8c4586b7911"
+        }
+      }
+    },
+    {
+      "wiki_title": "Cartography 101 Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Narrative requirement referenced only; not lowered",
+        "evidence": {
+          "provider": "tibiawiki_br",
+          "pageid": 36271,
+          "revid": 431843,
+          "content_sha256": "0041714fdc69d4da2e2cc38b1b5fe14422d0823d9bdcc5cb50eeef3adb447213",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=36271&oldid=431843",
+          "relation": "crosscheck",
+          "line": 68,
+          "line_sha256": "3c1a57e51f90d2b54146d8a52502de7010e8f67f51a1214a101de8c4586b7911"
+        }
+      }
+    },
+    {
+      "wiki_title": "Children of the Revolution Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibiawiki_br",
+          "pageid": 3487,
+          "revid": 408123,
+          "content_sha256": "ee677ec030ff7809e660ba39ee1c9d4597cf8758cb077278cb702a6e3d5530d6",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=3487&oldid=408123",
+          "relation": "crosscheck",
+          "line": 24,
+          "line_sha256": "f66e1aeaa1b27f961d2fd3a17f93b32a04aa898f99b457c7dabeeeced408b32a"
+        }
+      }
+    },
+    {
+      "wiki_title": "Children of the Revolution Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibiawiki_br",
+          "pageid": 3487,
+          "revid": 408123,
+          "content_sha256": "ee677ec030ff7809e660ba39ee1c9d4597cf8758cb077278cb702a6e3d5530d6",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=3487&oldid=408123",
+          "relation": "crosscheck",
+          "line": 26,
+          "line_sha256": "4f76648aee6ddc69be6b1e920edab119ad54c587c799f08ab8df1e96bb79b245"
+        }
+      }
+    },
+    {
+      "wiki_title": "Circle Room Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibiawiki_br",
+          "pageid": 3834,
+          "revid": 415801,
+          "content_sha256": "c3002b80c2d6b1b20914180d1c377f8249c66a375e14de2767a10e7a6b57f103",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=3834&oldid=415801",
+          "relation": "crosscheck",
+          "line": 20,
+          "line_sha256": "221291780d299cfec644ca3c0b2026f02bf71ffa9434675e612893835974e1cd"
+        }
+      }
+    },
+    {
+      "wiki_title": "Crusader Helmet Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibiawiki_br",
+          "pageid": 3846,
+          "revid": 415808,
+          "content_sha256": "35ffed38523ea68501a320a1e93111ae8ec35816554af67adecefd8f78cc8631",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=3846&oldid=415808",
+          "relation": "crosscheck",
+          "line": 21,
+          "line_sha256": "221291780d299cfec644ca3c0b2026f02bf71ffa9434675e612893835974e1cd"
+        }
+      }
+    },
+    {
+      "wiki_title": "Cults of Tibia Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibia_fandom",
+          "pageid": 81513,
+          "revid": 1162736,
+          "content_sha256": "2455495d2d0c13edfd64eac6985ba80efb8039afac6a4c3c7f2df2bfaf2b42a3",
+          "url": "https://tibia.fandom.com/index.php?curid=81513&oldid=1162736",
+          "relation": "spoiler",
+          "line": 5,
+          "line_sha256": "33d5dbb3ed1e1a1cc1c6fd69c2d553faf1da0d8fdad8ad78a972e7d761e2dbaf"
+        }
+      }
+    },
+    {
+      "wiki_title": "Cults of Tibia Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibia_fandom",
+          "pageid": 81513,
+          "revid": 1162736,
+          "content_sha256": "2455495d2d0c13edfd64eac6985ba80efb8039afac6a4c3c7f2df2bfaf2b42a3",
+          "url": "https://tibia.fandom.com/index.php?curid=81513&oldid=1162736",
+          "relation": "spoiler",
+          "line": 6,
+          "line_sha256": "9f0d5ab2e2564d739b6c287def400965c8495987f5f4beda1a49e5526481e900"
+        }
+      }
+    },
+    {
+      "wiki_title": "Cults of Tibia Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibiawiki_br",
+          "pageid": 40964,
+          "revid": 423919,
+          "content_sha256": "686d793cd773f2f0a2783c15ac51ccf083857702e385eb4d7b74b3993f3d61eb",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=40964&oldid=423919",
+          "relation": "crosscheck",
+          "line": 26,
+          "line_sha256": "221291780d299cfec644ca3c0b2026f02bf71ffa9434675e612893835974e1cd"
+        }
+      }
+    },
+    {
+      "wiki_title": "Cults of Tibia Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibiawiki_br",
+          "pageid": 40964,
+          "revid": 423919,
+          "content_sha256": "686d793cd773f2f0a2783c15ac51ccf083857702e385eb4d7b74b3993f3d61eb",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=40964&oldid=423919",
+          "relation": "crosscheck",
+          "line": 27,
+          "line_sha256": "c05dd587c24c01d835d758a35697f7f9063bcf9a8768cd856dd32d138a04ba8f"
+        }
+      }
+    },
+    {
+      "wiki_title": "Cults of Tibia Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibiawiki_br",
+          "pageid": 40964,
+          "revid": 423919,
+          "content_sha256": "686d793cd773f2f0a2783c15ac51ccf083857702e385eb4d7b74b3993f3d61eb",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=40964&oldid=423919",
+          "relation": "crosscheck",
+          "line": 28,
+          "line_sha256": "1915318a31f2ac5021802189c85a6818972d65e5d01634e3a7a6ded229c4339f"
+        }
+      }
+    },
+    {
+      "wiki_title": "Dangerous Depths Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibiawiki_br",
+          "pageid": 42669,
+          "revid": 431532,
+          "content_sha256": "95678b5f1164a79e398e9febc4fefa61021eb43bc99df90d8586993c15f07147",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=42669&oldid=431532",
+          "relation": "crosscheck",
+          "line": 27,
+          "line_sha256": "221291780d299cfec644ca3c0b2026f02bf71ffa9434675e612893835974e1cd"
+        }
+      }
+    },
+    {
+      "wiki_title": "Dark Trails Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibia_fandom",
+          "pageid": 67963,
+          "revid": 1186618,
+          "content_sha256": "90bf4809dc3ccf0e8527a41eeb04a81a1fc86581afbf6d09b9c60f8ee5044922",
+          "url": "https://tibia.fandom.com/index.php?curid=67963&oldid=1186618",
+          "relation": "spoiler",
+          "line": 14,
+          "line_sha256": "faeb7a03d74d83f33432947a706112a7a3a21ab48f2af4296b3224d0ceda2e23"
+        }
+      }
+    },
+    {
+      "wiki_title": "Deeper Fibula Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibiawiki_br",
+          "pageid": 4047,
+          "revid": 401050,
+          "content_sha256": "a422f9b801b9065ebbbf39bc621f3ca6b76c1f9a0e6c43a6a0caf3eb416e12d7",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=4047&oldid=401050",
+          "relation": "crosscheck",
+          "line": 23,
+          "line_sha256": "221291780d299cfec644ca3c0b2026f02bf71ffa9434675e612893835974e1cd"
+        }
+      }
+    },
+    {
+      "wiki_title": "Draconia Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibiawiki_br",
+          "pageid": 4287,
+          "revid": 401051,
+          "content_sha256": "3b6877acf9ed37121b5d0c29ec6499beb34a37a9f6ab6e759f0dbc9b846a8705",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=4287&oldid=401051",
+          "relation": "crosscheck",
+          "line": 30,
+          "line_sha256": "8a2ae8e6cfa85af8725bde7f74b00e9ab08e0cee377ed39adf3d33968de9f167"
+        }
+      }
+    },
+    {
+      "wiki_title": "Draconia Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibiawiki_br",
+          "pageid": 4287,
+          "revid": 401051,
+          "content_sha256": "3b6877acf9ed37121b5d0c29ec6499beb34a37a9f6ab6e759f0dbc9b846a8705",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=4287&oldid=401051",
+          "relation": "crosscheck",
+          "line": 31,
+          "line_sha256": "ad8ea3b32f55de367cb149376ebceb697d11fe7ccdb8682e16e5525ba36da20a"
+        }
+      }
+    },
+    {
+      "wiki_title": "Draconia Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibiawiki_br",
+          "pageid": 4287,
+          "revid": 401051,
+          "content_sha256": "3b6877acf9ed37121b5d0c29ec6499beb34a37a9f6ab6e759f0dbc9b846a8705",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=4287&oldid=401051",
+          "relation": "crosscheck",
+          "line": 33,
+          "line_sha256": "b30b9bc4971a3a0fe32bbd3160fe40f89eb3951eebcd1fcd7550a56f6335c33a"
+        }
+      }
+    },
+    {
+      "wiki_title": "Draconia Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibiawiki_br",
+          "pageid": 4287,
+          "revid": 401051,
+          "content_sha256": "3b6877acf9ed37121b5d0c29ec6499beb34a37a9f6ab6e759f0dbc9b846a8705",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=4287&oldid=401051",
+          "relation": "crosscheck",
+          "line": 34,
+          "line_sha256": "b98edfcc6f4c3fe893961eff87abd156f38dc00ad38515fd70efd3ea7bd1f822"
+        }
+      }
+    },
+    {
+      "wiki_title": "Dragon Slayer Outfits Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Narrative requirement referenced only; not lowered",
+        "evidence": {
+          "provider": "tibiawiki_br",
+          "pageid": 61047,
+          "revid": 408914,
+          "content_sha256": "5c510703fd449afdc0b9dfb2ce794978ca6c70bed0114709a929e0a376170361",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=61047&oldid=408914",
+          "relation": "crosscheck",
+          "line": 55,
+          "line_sha256": "2d2c271e51e75fc27183da6d05f9a9a384606849da8258d0184efc3095b15d3f"
+        }
+      }
+    },
+    {
+      "wiki_title": "Dragon Slayer Outfits Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Narrative requirement referenced only; not lowered",
+        "evidence": {
+          "provider": "tibiawiki_br",
+          "pageid": 61047,
+          "revid": 408914,
+          "content_sha256": "5c510703fd449afdc0b9dfb2ce794978ca6c70bed0114709a929e0a376170361",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=61047&oldid=408914",
+          "relation": "crosscheck",
+          "line": 80,
+          "line_sha256": "f8937853c7e875ef3703682d08ce2ad26c155f0d472d20faca9b3a4753767bd0"
+        }
+      }
+    },
+    {
+      "wiki_title": "Dream Warden Outfits Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibia_fandom",
+          "pageid": 66772,
+          "revid": 975024,
+          "content_sha256": "3e83ff809aaf1af8a9a3e04a18897c1a93365e210138f4e21e5f7d238322495d",
+          "url": "https://tibia.fandom.com/index.php?curid=66772&oldid=975024",
+          "relation": "spoiler",
+          "line": 6,
+          "line_sha256": "b2ac3d693f245312463edb6b6e427fcb0796c07f3a1e29665b9cc215a97881d3"
+        }
+      }
+    },
+    {
+      "wiki_title": "Dreamer's Challenge Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibiawiki_br",
+          "pageid": 4445,
+          "revid": 423437,
+          "content_sha256": "103b375fb684b51a9894f7d826bb19a7daceb840ee976d1877dd8aee0edd3f5f",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=4445&oldid=423437",
+          "relation": "crosscheck",
+          "line": 34,
+          "line_sha256": "ad02a65fe4bd680ef57a648efb7754db43970282b7ebf1a5139130e0abbf1606"
+        }
+      }
+    },
+    {
+      "wiki_title": "Elemental Spheres Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibia_fandom",
+          "pageid": 25641,
+          "revid": 1179410,
+          "content_sha256": "d97df2cf9ea863af0e0be00c4271a1d769065f164a8e40bbf2ca59befb0e1dc5",
+          "url": "https://tibia.fandom.com/index.php?curid=25641&oldid=1179410",
+          "relation": "spoiler",
+          "line": 4,
+          "line_sha256": "bfae1c8383965974aa22817b9eab158110f2255cc0c3e941317bc758cde0d7e4"
+        }
+      }
+    },
+    {
+      "wiki_title": "Feaster of Souls Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibiawiki_br",
+          "pageid": 47956,
+          "revid": 421868,
+          "content_sha256": "5f2d2512e2087e82277ea79ace7dcfc65ed4b6da7e52733186517a467456ec24",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=47956&oldid=421868",
+          "relation": "crosscheck",
+          "line": 38,
+          "line_sha256": "f2655dfb95e799d398e2883bb53b8f6f808bf80fce41f567405ad1f9093ea6f0"
+        }
+      }
+    },
+    {
+      "wiki_title": "Forgotten Knowledge Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibia_fandom",
+          "pageid": 79437,
+          "revid": 1200256,
+          "content_sha256": "57767c1da1d45bd45c45b3dc1003378e59a4f72094e6b70de48ada733b20452f",
+          "url": "https://tibia.fandom.com/index.php?curid=79437&oldid=1200256",
+          "relation": "spoiler",
+          "line": 14,
+          "line_sha256": "a20eeafae9f515785ac754d2025631edaf6ad3cc59214c35d6d2af091f7ca5ba"
+        }
+      }
+    },
+    {
+      "wiki_title": "Forgotten Knowledge Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibiawiki_br",
+          "pageid": 39513,
+          "revid": 445526,
+          "content_sha256": "e2d04e2b3f957515cfb3507cdb2435dd0af3da77036fe2e85dbef2808f672b98",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=39513&oldid=445526",
+          "relation": "crosscheck",
+          "line": 34,
+          "line_sha256": "388ac756d0fa1d922f9851e50013fb43a922351b1febc92126264c73edfb5dd7"
+        }
+      }
+    },
+    {
+      "wiki_title": "Grave Danger Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibia_fandom",
+          "pageid": 88737,
+          "revid": 1176165,
+          "content_sha256": "d4ca138b9af8fec70b6c136eb4f64098e08ea9ca6b7d12b10fc4c33dc3309242",
+          "url": "https://tibia.fandom.com/index.php?curid=88737&oldid=1176165",
+          "relation": "spoiler",
+          "line": 6,
+          "line_sha256": "33d5dbb3ed1e1a1cc1c6fd69c2d553faf1da0d8fdad8ad78a972e7d761e2dbaf"
+        }
+      }
+    },
+    {
+      "wiki_title": "Grave Danger Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibia_fandom",
+          "pageid": 88737,
+          "revid": 1176165,
+          "content_sha256": "d4ca138b9af8fec70b6c136eb4f64098e08ea9ca6b7d12b10fc4c33dc3309242",
+          "url": "https://tibia.fandom.com/index.php?curid=88737&oldid=1176165",
+          "relation": "spoiler",
+          "line": 7,
+          "line_sha256": "cd7448507f1a0c64365d1988ba4976ac1c874b9193f7b361cc55e28459235c60"
+        }
+      }
+    },
+    {
+      "wiki_title": "Grave Danger Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibiawiki_br",
+          "pageid": 46706,
+          "revid": 423920,
+          "content_sha256": "1e72cf22e695c688663bb070c6b95ff5fa23bc08e112e044b955635cbbddd5a6",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=46706&oldid=423920",
+          "relation": "crosscheck",
+          "line": 29,
+          "line_sha256": "f2655dfb95e799d398e2883bb53b8f6f808bf80fce41f567405ad1f9093ea6f0"
+        }
+      }
+    },
+    {
+      "wiki_title": "Grimvale Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibia_fandom",
+          "pageid": 75274,
+          "revid": 1103828,
+          "content_sha256": "37225215a29c3df1de2507b083260947f86594db536426415ad3bd238ed7f20c",
+          "url": "https://tibia.fandom.com/index.php?curid=75274&oldid=1103828",
+          "relation": "spoiler",
+          "line": 5,
+          "line_sha256": "8421525203aae6ba7bc75e2b99fba81abad2a77a456a4f390ef80f070c45d8f4"
+        }
+      }
+    },
+    {
+      "wiki_title": "Grimvale Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibia_fandom",
+          "pageid": 75274,
+          "revid": 1103828,
+          "content_sha256": "37225215a29c3df1de2507b083260947f86594db536426415ad3bd238ed7f20c",
+          "url": "https://tibia.fandom.com/index.php?curid=75274&oldid=1103828",
+          "relation": "spoiler",
+          "line": 7,
+          "line_sha256": "f07cabcd3a22d6840d781d725c40c359a8eac5eedfa189166a70420568890f1e"
+        }
+      }
+    },
+    {
+      "wiki_title": "Grimvale Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibiawiki_br",
+          "pageid": 36272,
+          "revid": 440767,
+          "content_sha256": "f71edbb51d96040e1c9602568318a2dfa275780a0e9ba416b16a1b01e37e0e85",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=36272&oldid=440767",
+          "relation": "crosscheck",
+          "line": 30,
+          "line_sha256": "dfb9763f3082b4cf48e117d7c0e50b997fb387b11c920e7b0e11b20c5281b1c4"
+        }
+      }
+    },
+    {
+      "wiki_title": "Grimvale Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibiawiki_br",
+          "pageid": 36272,
+          "revid": 440767,
+          "content_sha256": "f71edbb51d96040e1c9602568318a2dfa275780a0e9ba416b16a1b01e37e0e85",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=36272&oldid=440767",
+          "relation": "crosscheck",
+          "line": 31,
+          "line_sha256": "221291780d299cfec644ca3c0b2026f02bf71ffa9434675e612893835974e1cd"
+        }
+      }
+    },
+    {
+      "wiki_title": "Grimvale Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibiawiki_br",
+          "pageid": 36272,
+          "revid": 440767,
+          "content_sha256": "f71edbb51d96040e1c9602568318a2dfa275780a0e9ba416b16a1b01e37e0e85",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=36272&oldid=440767",
+          "relation": "crosscheck",
+          "line": 40,
+          "line_sha256": "7427c95f718cfb3ab16f156a965063002a63586e89b854402c60211ab2335a6d"
+        }
+      }
+    },
+    {
+      "wiki_title": "Grimvale Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibiawiki_br",
+          "pageid": 36272,
+          "revid": 440767,
+          "content_sha256": "f71edbb51d96040e1c9602568318a2dfa275780a0e9ba416b16a1b01e37e0e85",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=36272&oldid=440767",
+          "relation": "crosscheck",
+          "line": 44,
+          "line_sha256": "221291780d299cfec644ca3c0b2026f02bf71ffa9434675e612893835974e1cd"
+        }
+      }
+    },
+    {
+      "wiki_title": "Grimvale Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibiawiki_br",
+          "pageid": 36272,
+          "revid": 440767,
+          "content_sha256": "f71edbb51d96040e1c9602568318a2dfa275780a0e9ba416b16a1b01e37e0e85",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=36272&oldid=440767",
+          "relation": "crosscheck",
+          "line": 45,
+          "line_sha256": "b514cde7feaa4f3d5894f5d35b0ee0d1a887c3f60b048911f71a423f3f4efdec"
+        }
+      }
+    },
+    {
+      "wiki_title": "Grimvale Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibiawiki_br",
+          "pageid": 36272,
+          "revid": 440767,
+          "content_sha256": "f71edbb51d96040e1c9602568318a2dfa275780a0e9ba416b16a1b01e37e0e85",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=36272&oldid=440767",
+          "relation": "crosscheck",
+          "line": 56,
+          "line_sha256": "221291780d299cfec644ca3c0b2026f02bf71ffa9434675e612893835974e1cd"
+        }
+      }
+    },
+    {
+      "wiki_title": "Grimvale Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibiawiki_br",
+          "pageid": 36272,
+          "revid": 440767,
+          "content_sha256": "f71edbb51d96040e1c9602568318a2dfa275780a0e9ba416b16a1b01e37e0e85",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=36272&oldid=440767",
+          "relation": "crosscheck",
+          "line": 57,
+          "line_sha256": "e798ed632093a99127d61d3b8cecc72bb5c626df136a874d01510bc03012cd29"
+        }
+      }
+    },
+    {
+      "wiki_title": "Heart of Destruction Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibia_fandom",
+          "pageid": 78245,
+          "revid": 1176143,
+          "content_sha256": "230e33aaa9725f1a83b690ce289d081637680947d8693ab8da3b5bd45f2fdfaa",
+          "url": "https://tibia.fandom.com/index.php?curid=78245&oldid=1176143",
+          "relation": "spoiler",
+          "line": 4,
+          "line_sha256": "fd971938d79ca4cf545feead8e8454230712b8ad975bca121511c21a99f028ef"
+        }
+      }
+    },
+    {
+      "wiki_title": "Heart of Destruction Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibia_fandom",
+          "pageid": 78245,
+          "revid": 1176143,
+          "content_sha256": "230e33aaa9725f1a83b690ce289d081637680947d8693ab8da3b5bd45f2fdfaa",
+          "url": "https://tibia.fandom.com/index.php?curid=78245&oldid=1176143",
+          "relation": "spoiler",
+          "line": 5,
+          "line_sha256": "4e21cb674ea9cea704e862547f55d2b50b2afeadf948ed071e0ec6ed15801307"
+        }
+      }
+    },
+    {
+      "wiki_title": "Hero of Rathleton Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibiawiki_br",
+          "pageid": 35229,
+          "revid": 398690,
+          "content_sha256": "8b9341f3e56b2639722691901ca5a96c90bd6a09d7de13d20ff4d3ec78ae6a2b",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=35229&oldid=398690",
+          "relation": "crosscheck",
+          "line": 24,
+          "line_sha256": "221291780d299cfec644ca3c0b2026f02bf71ffa9434675e612893835974e1cd"
+        }
+      }
+    },
+    {
+      "wiki_title": "Hidden Threats Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibiawiki_br",
+          "pageid": 42843,
+          "revid": 428297,
+          "content_sha256": "2cfb9e718edf87242536850bf0d3d1c7d2dd83ae124531441ea5a771ce036068",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=42843&oldid=428297",
+          "relation": "crosscheck",
+          "line": 25,
+          "line_sha256": "c05dd587c24c01d835d758a35697f7f9063bcf9a8768cd856dd32d138a04ba8f"
+        }
+      }
+    },
+    {
+      "wiki_title": "Hidden Threats Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibiawiki_br",
+          "pageid": 42843,
+          "revid": 428297,
+          "content_sha256": "2cfb9e718edf87242536850bf0d3d1c7d2dd83ae124531441ea5a771ce036068",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=42843&oldid=428297",
+          "relation": "crosscheck",
+          "line": 27,
+          "line_sha256": "221291780d299cfec644ca3c0b2026f02bf71ffa9434675e612893835974e1cd"
+        }
+      }
+    },
+    {
+      "wiki_title": "In Service of Yalahar Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibia_fandom",
+          "pageid": 30602,
+          "revid": 1179146,
+          "content_sha256": "3f1c476c82cb6c9b457fdb5ae182708791e1d8b955219c9b4e36c3f757fb156c",
+          "url": "https://tibia.fandom.com/index.php?curid=30602&oldid=1179146",
+          "relation": "spoiler",
+          "line": 4,
+          "line_sha256": "33d5dbb3ed1e1a1cc1c6fd69c2d553faf1da0d8fdad8ad78a972e7d761e2dbaf"
+        }
+      }
+    },
+    {
+      "wiki_title": "In Service of Yalahar Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibia_fandom",
+          "pageid": 30602,
+          "revid": 1179146,
+          "content_sha256": "3f1c476c82cb6c9b457fdb5ae182708791e1d8b955219c9b4e36c3f757fb156c",
+          "url": "https://tibia.fandom.com/index.php?curid=30602&oldid=1179146",
+          "relation": "spoiler",
+          "line": 10,
+          "line_sha256": "7c04c591595f4aa34072cc71a89a79d8252822c5a631b870abef9772010508ec"
+        }
+      }
+    },
+    {
+      "wiki_title": "In Service of Yalahar Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibiawiki_br",
+          "pageid": 4464,
+          "revid": 431713,
+          "content_sha256": "b96b5b4c8a6aea8f48947d6459a8ea9cf9f5f518572342a744233e6e2f888b92",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=4464&oldid=431713",
+          "relation": "crosscheck",
+          "line": 25,
+          "line_sha256": "46de03a2b26d683c99a18f0e9c71edf764174c7166fd171e57e81ec5884028c2"
+        }
+      }
+    },
+    {
+      "wiki_title": "In Service of Yalahar Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibiawiki_br",
+          "pageid": 4464,
+          "revid": 431713,
+          "content_sha256": "b96b5b4c8a6aea8f48947d6459a8ea9cf9f5f518572342a744233e6e2f888b92",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=4464&oldid=431713",
+          "relation": "crosscheck",
+          "line": 27,
+          "line_sha256": "034e7f696d152047377f92aefa282030c4aaed5213511baa8adc0fd4011bbf08"
+        }
+      }
+    },
+    {
+      "wiki_title": "In Service of Yalahar Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibiawiki_br",
+          "pageid": 4464,
+          "revid": 431713,
+          "content_sha256": "b96b5b4c8a6aea8f48947d6459a8ea9cf9f5f518572342a744233e6e2f888b92",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=4464&oldid=431713",
+          "relation": "crosscheck",
+          "line": 31,
+          "line_sha256": "dfb9763f3082b4cf48e117d7c0e50b997fb387b11c920e7b0e11b20c5281b1c4"
+        }
+      }
+    },
+    {
+      "wiki_title": "In Service of Yalahar Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibiawiki_br",
+          "pageid": 4464,
+          "revid": 431713,
+          "content_sha256": "b96b5b4c8a6aea8f48947d6459a8ea9cf9f5f518572342a744233e6e2f888b92",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=4464&oldid=431713",
+          "relation": "crosscheck",
+          "line": 32,
+          "line_sha256": "ac2b04c36029aaf2140d3b2cc5934e95b771942a385e12529c08e49270b74429"
+        }
+      }
+    },
+    {
+      "wiki_title": "In Service of Yalahar Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibiawiki_br",
+          "pageid": 4464,
+          "revid": 431713,
+          "content_sha256": "b96b5b4c8a6aea8f48947d6459a8ea9cf9f5f518572342a744233e6e2f888b92",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=4464&oldid=431713",
+          "relation": "crosscheck",
+          "line": 45,
+          "line_sha256": "dfb9763f3082b4cf48e117d7c0e50b997fb387b11c920e7b0e11b20c5281b1c4"
+        }
+      }
+    },
+    {
+      "wiki_title": "Kilmaresh Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibiawiki_br",
+          "pageid": 46925,
+          "revid": 443994,
+          "content_sha256": "9ee5951111700ab8628639ec2521cdf01eafa96cf10b36f62d6d698cce33192a",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=46925&oldid=443994",
+          "relation": "crosscheck",
+          "line": 32,
+          "line_sha256": "221291780d299cfec644ca3c0b2026f02bf71ffa9434675e612893835974e1cd"
+        }
+      }
+    },
+    {
+      "wiki_title": "Koshei the Deathless Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibia_fandom",
+          "pageid": 22841,
+          "revid": 1037072,
+          "content_sha256": "9e8d546b8a6c5821fa934111c6f2f88bc92646a201d03b2757b8490bf3360615",
+          "url": "https://tibia.fandom.com/index.php?curid=22841&oldid=1037072",
+          "relation": "spoiler",
+          "line": 6,
+          "line_sha256": "2119ebf0089253ceb3fce73853ce465fc92a46e7c16dd9db69a92041536dcf06"
+        }
+      }
+    },
+    {
+      "wiki_title": "Lion's Rock Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibiawiki_br",
+          "pageid": 34999,
+          "revid": 417414,
+          "content_sha256": "d5768d98077c94a6acbc1351e81b4d1a64373697a61c1980a6640feffabadede",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=34999&oldid=417414",
+          "relation": "crosscheck",
+          "line": 22,
+          "line_sha256": "221291780d299cfec644ca3c0b2026f02bf71ffa9434675e612893835974e1cd"
+        }
+      }
+    },
+    {
+      "wiki_title": "Measuring Tibia Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibiawiki_br",
+          "pageid": 44517,
+          "revid": 443653,
+          "content_sha256": "143318ffbd5df154feae65ba3d31e4ee0638139813f1127e685c352cbcc49f45",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=44517&oldid=443653",
+          "relation": "crosscheck",
+          "line": 20,
+          "line_sha256": "9082fee79e15b38d5265b91f736f1dbe21a883668d662a45f9ed4e15741aca3e"
+        }
+      }
+    },
+    {
+      "wiki_title": "Measuring Tibia Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibiawiki_br",
+          "pageid": 44517,
+          "revid": 443653,
+          "content_sha256": "143318ffbd5df154feae65ba3d31e4ee0638139813f1127e685c352cbcc49f45",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=44517&oldid=443653",
+          "relation": "crosscheck",
+          "line": 21,
+          "line_sha256": "3633ba5c6c707984a4b8ceb427b6934a323cec2de0b1bc55711139febc1b9564"
+        }
+      }
+    },
+    {
+      "wiki_title": "Measuring Tibia Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Narrative requirement referenced only; not lowered",
+        "evidence": {
+          "provider": "tibiawiki_br",
+          "pageid": 44517,
+          "revid": 443653,
+          "content_sha256": "143318ffbd5df154feae65ba3d31e4ee0638139813f1127e685c352cbcc49f45",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=44517&oldid=443653",
+          "relation": "crosscheck",
+          "line": 20,
+          "line_sha256": "9082fee79e15b38d5265b91f736f1dbe21a883668d662a45f9ed4e15741aca3e"
+        }
+      }
+    },
+    {
+      "wiki_title": "Measuring Tibia Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Narrative requirement referenced only; not lowered",
+        "evidence": {
+          "provider": "tibiawiki_br",
+          "pageid": 44517,
+          "revid": 443653,
+          "content_sha256": "143318ffbd5df154feae65ba3d31e4ee0638139813f1127e685c352cbcc49f45",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=44517&oldid=443653",
+          "relation": "crosscheck",
+          "line": 21,
+          "line_sha256": "3633ba5c6c707984a4b8ceb427b6934a323cec2de0b1bc55711139febc1b9564"
+        }
+      }
+    },
+    {
+      "wiki_title": "Minotaur Leather Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibia_fandom",
+          "pageid": 55521,
+          "revid": 395260,
+          "content_sha256": "0786e96d56e05821e19ea12ff2c3ffa8c21802866ebd6e83c6dc1d2d4e350228",
+          "url": "https://tibia.fandom.com/index.php?curid=55521&oldid=395260",
+          "relation": "spoiler",
+          "line": 4,
+          "line_sha256": "cad93f279416ecd86dcd575ccc90fffbe1a8c4739dc04235e33d2dc09f6c4695"
+        }
+      }
+    },
+    {
+      "wiki_title": "Mystery of the Valley Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Narrative requirement referenced only; not lowered",
+        "evidence": {
+          "provider": "tibiawiki_br",
+          "pageid": 63794,
+          "revid": 423926,
+          "content_sha256": "7050ebabedeeb8b2206ff7a5eb97a905f16c99551e3bf8e8e54dd9d451c2391b",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=63794&oldid=423926",
+          "relation": "crosscheck",
+          "line": 26,
+          "line_sha256": "71d5f8132c1e100b519f4ebe7c267b44622c9380fb97f98bb8d426f9d43aa21c"
+        }
+      }
+    },
+    {
+      "wiki_title": "Newhaven Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibia_fandom",
+          "pageid": 111294,
+          "revid": 1205117,
+          "content_sha256": "837f576077ab7a857948b18489fba93645f0ce58a178afa7bd89f728ed5413ac",
+          "url": "https://tibia.fandom.com/index.php?curid=111294&oldid=1205117",
+          "relation": "spoiler",
+          "line": 5,
+          "line_sha256": "0e6c62753142fe6749f1a172c743662381c764d4c9c61f8ac2950e21530c22f9"
+        }
+      }
+    },
+    {
+      "wiki_title": "No Rest for the Wicked Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibiawiki_br",
+          "pageid": 63211,
+          "revid": 423914,
+          "content_sha256": "baf4333b4810cf981b2b519515090abab24da8db3a7f59d87fccec7539f1ae65",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=63211&oldid=423914",
+          "relation": "crosscheck",
+          "line": 25,
+          "line_sha256": "e8c5ed5f3519f5c8ba8f116f97fd6c868c9e67abec467b62a439971797798fb5"
+        }
+      }
+    },
+    {
+      "wiki_title": "No Rest for the Wicked Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibiawiki_br",
+          "pageid": 63211,
+          "revid": 423914,
+          "content_sha256": "baf4333b4810cf981b2b519515090abab24da8db3a7f59d87fccec7539f1ae65",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=63211&oldid=423914",
+          "relation": "crosscheck",
+          "line": 27,
+          "line_sha256": "a38a9a6a9cfdd4f954caeeabe1d121e4138e77226083f08db33a9ef2fded808e"
+        }
+      }
+    },
+    {
+      "wiki_title": "No Rest for the Wicked Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibiawiki_br",
+          "pageid": 63211,
+          "revid": 423914,
+          "content_sha256": "baf4333b4810cf981b2b519515090abab24da8db3a7f59d87fccec7539f1ae65",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=63211&oldid=423914",
+          "relation": "crosscheck",
+          "line": 29,
+          "line_sha256": "083aff0a0665782d8206f7762e7a1edd096a5c5f83d705daa6baf6e1475a26eb"
+        }
+      }
+    },
+    {
+      "wiki_title": "No Rest for the Wicked Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibiawiki_br",
+          "pageid": 63211,
+          "revid": 423914,
+          "content_sha256": "baf4333b4810cf981b2b519515090abab24da8db3a7f59d87fccec7539f1ae65",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=63211&oldid=423914",
+          "relation": "crosscheck",
+          "line": 31,
+          "line_sha256": "472daf7d81a040b9accf42c79f0cfbbfd544c98e413ac97b1a94f8bed85d0695"
+        }
+      }
+    },
+    {
+      "wiki_title": "Oramond Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibia_fandom",
+          "pageid": 67965,
+          "revid": 1186935,
+          "content_sha256": "95e4876bfa38bd0aea7f426914cbe3a8488b1c085d2d2ac638937407d786d33b",
+          "url": "https://tibia.fandom.com/index.php?curid=67965&oldid=1186935",
+          "relation": "spoiler",
+          "line": 14,
+          "line_sha256": "329e87bfd30a1a0544eb03644be4a7bf21f1da719fd4084e9a4ecfd04678eeab"
+        }
+      }
+    },
+    {
+      "wiki_title": "Oramond Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibia_fandom",
+          "pageid": 67965,
+          "revid": 1186935,
+          "content_sha256": "95e4876bfa38bd0aea7f426914cbe3a8488b1c085d2d2ac638937407d786d33b",
+          "url": "https://tibia.fandom.com/index.php?curid=67965&oldid=1186935",
+          "relation": "spoiler",
+          "line": 15,
+          "line_sha256": "e754c27b90381ab4f67cc32914654c671ff2d89f86454063e9e4187c3f16d9ce"
+        }
+      }
+    },
+    {
+      "wiki_title": "Oramond Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibia_fandom",
+          "pageid": 67965,
+          "revid": 1186935,
+          "content_sha256": "95e4876bfa38bd0aea7f426914cbe3a8488b1c085d2d2ac638937407d786d33b",
+          "url": "https://tibia.fandom.com/index.php?curid=67965&oldid=1186935",
+          "relation": "spoiler",
+          "line": 16,
+          "line_sha256": "001bf45c7e86c8f08ffe372cf2174c3ae84382d2e223237c5d1cf970c2d041f6"
+        }
+      }
+    },
+    {
+      "wiki_title": "Oramond Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibia_fandom",
+          "pageid": 67965,
+          "revid": 1186935,
+          "content_sha256": "95e4876bfa38bd0aea7f426914cbe3a8488b1c085d2d2ac638937407d786d33b",
+          "url": "https://tibia.fandom.com/index.php?curid=67965&oldid=1186935",
+          "relation": "spoiler",
+          "line": 17,
+          "line_sha256": "5fde340b37814c701ec5a0c7bfc2925e15dee0d460a278527545c2c3666de07e"
+        }
+      }
+    },
+    {
+      "wiki_title": "Oramond Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibia_fandom",
+          "pageid": 67965,
+          "revid": 1186935,
+          "content_sha256": "95e4876bfa38bd0aea7f426914cbe3a8488b1c085d2d2ac638937407d786d33b",
+          "url": "https://tibia.fandom.com/index.php?curid=67965&oldid=1186935",
+          "relation": "spoiler",
+          "line": 18,
+          "line_sha256": "65022d68f63300a2c45ddf39646f831e113e77502933b97c675cf51628b785da"
+        }
+      }
+    },
+    {
+      "wiki_title": "Oramond Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibia_fandom",
+          "pageid": 67965,
+          "revid": 1186935,
+          "content_sha256": "95e4876bfa38bd0aea7f426914cbe3a8488b1c085d2d2ac638937407d786d33b",
+          "url": "https://tibia.fandom.com/index.php?curid=67965&oldid=1186935",
+          "relation": "spoiler",
+          "line": 19,
+          "line_sha256": "3fdd2f0295b3c79a94243e801ae051909e62af372d98c72ef49b1599b8a72624"
+        }
+      }
+    },
+    {
+      "wiki_title": "Oramond Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibia_fandom",
+          "pageid": 67965,
+          "revid": 1186935,
+          "content_sha256": "95e4876bfa38bd0aea7f426914cbe3a8488b1c085d2d2ac638937407d786d33b",
+          "url": "https://tibia.fandom.com/index.php?curid=67965&oldid=1186935",
+          "relation": "spoiler",
+          "line": 20,
+          "line_sha256": "c72fe32a57552076ced612d5ccbcef97800cfab3800e1c3eb40e0610531b2663"
+        }
+      }
+    },
+    {
+      "wiki_title": "Oramond Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibia_fandom",
+          "pageid": 67965,
+          "revid": 1186935,
+          "content_sha256": "95e4876bfa38bd0aea7f426914cbe3a8488b1c085d2d2ac638937407d786d33b",
+          "url": "https://tibia.fandom.com/index.php?curid=67965&oldid=1186935",
+          "relation": "spoiler",
+          "line": 21,
+          "line_sha256": "ed4a446e82a3163fe614e6066d1dc4a608548dae88965b5c63bf921746e5ea60"
+        }
+      }
+    },
+    {
+      "wiki_title": "Oramond Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibia_fandom",
+          "pageid": 67965,
+          "revid": 1186935,
+          "content_sha256": "95e4876bfa38bd0aea7f426914cbe3a8488b1c085d2d2ac638937407d786d33b",
+          "url": "https://tibia.fandom.com/index.php?curid=67965&oldid=1186935",
+          "relation": "spoiler",
+          "line": 22,
+          "line_sha256": "d1a70d5fd9aa176d1b1a03c7bd006165ba689313b385e99901c2ab43092343cf"
+        }
+      }
+    },
+    {
+      "wiki_title": "Oramond Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibia_fandom",
+          "pageid": 67965,
+          "revid": 1186935,
+          "content_sha256": "95e4876bfa38bd0aea7f426914cbe3a8488b1c085d2d2ac638937407d786d33b",
+          "url": "https://tibia.fandom.com/index.php?curid=67965&oldid=1186935",
+          "relation": "spoiler",
+          "line": 23,
+          "line_sha256": "1a32330526dcfe48a5c8f477d71f56c04d3790a0988efab9e325640ec65013a0"
+        }
+      }
+    },
+    {
+      "wiki_title": "Orc Fortress Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibia_fandom",
+          "pageid": 4909,
+          "revid": 331267,
+          "content_sha256": "3d6643ab911cfb5a7c9dcad50d0ec0bc42afa0728d37c78235c2942b225dae83",
+          "url": "https://tibia.fandom.com/index.php?curid=4909&oldid=331267",
+          "relation": "spoiler",
+          "line": 3,
+          "line_sha256": "c1d1d1ceedb06f5e67f4e5d46ee88fc2f5f6873dcab69653939c184f9cc5abfe"
+        }
+      }
+    },
+    {
+      "wiki_title": "Orc Fortress Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibiawiki_br",
+          "pageid": 4487,
+          "revid": 401055,
+          "content_sha256": "757f206ead924b23699f7e605bb073838f45905c5f5b138175d9aaebff2e008f",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=4487&oldid=401055",
+          "relation": "crosscheck",
+          "line": 21,
+          "line_sha256": "8548ac52e958d015aa09b4fe3041a94c68f69af7631f80efb8c94452a2c0633e"
+        }
+      }
+    },
+    {
+      "wiki_title": "Pilgrimage of Ashes Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibiawiki_br",
+          "pageid": 4492,
+          "revid": 432012,
+          "content_sha256": "75bb21b6c3c7ab179f49ae364d4577be7fa337e34aa19f1c8a355e879f0a55c4",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=4492&oldid=432012",
+          "relation": "crosscheck",
+          "line": 27,
+          "line_sha256": "3faad3620f665e4838bb4046aa57f64cd13081b36d7658c549412b796bb3e3f0"
+        }
+      }
+    },
+    {
+      "wiki_title": "Pilgrimage of Ashes Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Narrative requirement referenced only; not lowered",
+        "evidence": {
+          "provider": "tibiawiki_br",
+          "pageid": 4492,
+          "revid": 432012,
+          "content_sha256": "75bb21b6c3c7ab179f49ae364d4577be7fa337e34aa19f1c8a355e879f0a55c4",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=4492&oldid=432012",
+          "relation": "crosscheck",
+          "line": 27,
+          "line_sha256": "3faad3620f665e4838bb4046aa57f64cd13081b36d7658c549412b796bb3e3f0"
+        }
+      }
+    },
+    {
+      "wiki_title": "Realm of Dreams Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibia_fandom",
+          "pageid": 61232,
+          "revid": 999253,
+          "content_sha256": "0c4c3d1437d22d8935c39dbde480238a47903c9bbc992c294818931edbfc027a",
+          "url": "https://tibia.fandom.com/index.php?curid=61232&oldid=999253",
+          "relation": "spoiler",
+          "line": 6,
+          "line_sha256": "e8f2a285e7d214edb1f87302c75c80349f70653602ec7c44327ab067ec0b0936"
+        }
+      }
+    },
+    {
+      "wiki_title": "Rest in Hallowed Ground Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibia_fandom",
+          "pageid": 22843,
+          "revid": 749092,
+          "content_sha256": "2fc1066e8058423031c413bcd846075387fc0f4239665f320a6bbc574659853f",
+          "url": "https://tibia.fandom.com/index.php?curid=22843&oldid=749092",
+          "relation": "spoiler",
+          "line": 4,
+          "line_sha256": "33d5dbb3ed1e1a1cc1c6fd69c2d553faf1da0d8fdad8ad78a972e7d761e2dbaf"
+        }
+      }
+    },
+    {
+      "wiki_title": "Ring Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibia_fandom",
+          "pageid": 21744,
+          "revid": 749093,
+          "content_sha256": "5f91954f22b34899bc5d96d0325922b1a79247d758ed1c4e9d5a9e3aba4a8ded",
+          "url": "https://tibia.fandom.com/index.php?curid=21744&oldid=749093",
+          "relation": "spoiler",
+          "line": 4,
+          "line_sha256": "1404914c68298c2821a0cac90c73971e61f2950e9a6bc72a3f4c735fb3dee8ed"
+        }
+      }
+    },
+    {
+      "wiki_title": "Rise of Devovorga",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibia_fandom",
+          "pageid": 48437,
+          "revid": 1204791,
+          "content_sha256": "2238955635ed5fb74b0ecc1e6af9fb6ccdf220dd210221ac2b17258adcae855e",
+          "url": "https://tibia.fandom.com/index.php?curid=48437&oldid=1204791",
+          "relation": "spoiler",
+          "line": 5,
+          "line_sha256": "3301ac46931759cabc3c560d735734674cb76ba9e7981da4ea9a6c49c8e062ed"
+        }
+      }
+    },
+    {
+      "wiki_title": "Rise of Devovorga",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibia_fandom",
+          "pageid": 48437,
+          "revid": 1204791,
+          "content_sha256": "2238955635ed5fb74b0ecc1e6af9fb6ccdf220dd210221ac2b17258adcae855e",
+          "url": "https://tibia.fandom.com/index.php?curid=48437&oldid=1204791",
+          "relation": "spoiler",
+          "line": 6,
+          "line_sha256": "3f9cdd10b1a7757bd69bc9e764b7e0bea8c69a72987a537a113aaf763cea448f"
+        }
+      }
+    },
+    {
+      "wiki_title": "Rise of Devovorga",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Narrative requirement referenced only; not lowered",
+        "evidence": {
+          "provider": "tibia_fandom",
+          "pageid": 48437,
+          "revid": 1204791,
+          "content_sha256": "2238955635ed5fb74b0ecc1e6af9fb6ccdf220dd210221ac2b17258adcae855e",
+          "url": "https://tibia.fandom.com/index.php?curid=48437&oldid=1204791",
+          "relation": "spoiler",
+          "line": 5,
+          "line_sha256": "3301ac46931759cabc3c560d735734674cb76ba9e7981da4ea9a6c49c8e062ed"
+        }
+      }
+    },
+    {
+      "wiki_title": "Rise of Devovorga",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Narrative requirement referenced only; not lowered",
+        "evidence": {
+          "provider": "tibia_fandom",
+          "pageid": 48437,
+          "revid": 1204791,
+          "content_sha256": "2238955635ed5fb74b0ecc1e6af9fb6ccdf220dd210221ac2b17258adcae855e",
+          "url": "https://tibia.fandom.com/index.php?curid=48437&oldid=1204791",
+          "relation": "spoiler",
+          "line": 6,
+          "line_sha256": "3f9cdd10b1a7757bd69bc9e764b7e0bea8c69a72987a537a113aaf763cea448f"
+        }
+      }
+    },
+    {
+      "wiki_title": "Rotten Blood Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibiawiki_br",
+          "pageid": 59648,
+          "revid": 437254,
+          "content_sha256": "4840c678a6075a24d11cc34a9bb4e7171b0d867fcd58e92cca74ddc2e2a20995",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=59648&oldid=437254",
+          "relation": "crosscheck",
+          "line": 27,
+          "line_sha256": "221291780d299cfec644ca3c0b2026f02bf71ffa9434675e612893835974e1cd"
+        }
+      }
+    },
+    {
+      "wiki_title": "Sam's Old Backpack Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibiawiki_br",
+          "pageid": 4502,
+          "revid": 428041,
+          "content_sha256": "bfc649e9009027b0622f73982317f29553a048f057fed1335e457f5c27f3edd9",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=4502&oldid=428041",
+          "relation": "crosscheck",
+          "line": 23,
+          "line_sha256": "221291780d299cfec644ca3c0b2026f02bf71ffa9434675e612893835974e1cd"
+        }
+      }
+    },
+    {
+      "wiki_title": "Sea of Light Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibia_fandom",
+          "pageid": 41840,
+          "revid": 855981,
+          "content_sha256": "22adece520f7da64f2e0e7e93e51ad7e4a5158678eaf4a368b76b3c850858633",
+          "url": "https://tibia.fandom.com/index.php?curid=41840&oldid=855981",
+          "relation": "spoiler",
+          "line": 8,
+          "line_sha256": "33d5dbb3ed1e1a1cc1c6fd69c2d553faf1da0d8fdad8ad78a972e7d761e2dbaf"
+        }
+      }
+    },
+    {
+      "wiki_title": "Secret Service Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibia_fandom",
+          "pageid": 20260,
+          "revid": 1078374,
+          "content_sha256": "feada553d4a4ccb79df32231f04e6bef02cadabab13dcdfdcab6c9342f9e37c3",
+          "url": "https://tibia.fandom.com/index.php?curid=20260&oldid=1078374",
+          "relation": "spoiler",
+          "line": 79,
+          "line_sha256": "8694eec2a8f2e2246d30405bdb7925bead141fdbce34bb76dca31914dd5dc2b3"
+        }
+      }
+    },
+    {
+      "wiki_title": "Shadows of Yalahar Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibia_fandom",
+          "pageid": 37118,
+          "revid": 1106237,
+          "content_sha256": "f1d0f4ed5c4a2c886a6e217a7e059d8160bd5680ee8aae31a5ded619206a5daa",
+          "url": "https://tibia.fandom.com/index.php?curid=37118&oldid=1106237",
+          "relation": "spoiler",
+          "line": 7,
+          "line_sha256": "fcc5f59132ac908b30220935ddb98145b2e5891ad918316f91d2b4e2acd4e793"
+        }
+      }
+    },
+    {
+      "wiki_title": "Shadows of Yalahar Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibiawiki_br",
+          "pageid": 4508,
+          "revid": 414414,
+          "content_sha256": "f7015623a7686b4d1074b4ef83a02f8ba2009c17a030b2dbcfaa11403e13b7e9",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=4508&oldid=414414",
+          "relation": "crosscheck",
+          "line": 28,
+          "line_sha256": "6cab101a59bbd4ea821587dc3873fe51d9aac0fd4e457cdc11864125a89b8732"
+        }
+      }
+    },
+    {
+      "wiki_title": "Shaman Outfits Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibia_fandom",
+          "pageid": 8588,
+          "revid": 796696,
+          "content_sha256": "18b617156cdbb8a270b94d4169aebfb6d552a3279f8d4aaa4f44cffe15c59662",
+          "url": "https://tibia.fandom.com/index.php?curid=8588&oldid=796696",
+          "relation": "spoiler",
+          "line": 72,
+          "line_sha256": "7cca082b8450585cdc0d192cb01f32b8d670d70b7bbd27cdb0b62e396d9d832b"
+        }
+      }
+    },
+    {
+      "wiki_title": "Soul War Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibiawiki_br",
+          "pageid": 49334,
+          "revid": 442001,
+          "content_sha256": "cd4464ab07487a0465c02ff4e6cb906d1134f67e29862d7d566e59086368ad25",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=49334&oldid=442001",
+          "relation": "crosscheck",
+          "line": 27,
+          "line_sha256": "221291780d299cfec644ca3c0b2026f02bf71ffa9434675e612893835974e1cd"
+        }
+      }
+    },
+    {
+      "wiki_title": "Spirithunters Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibia_fandom",
+          "pageid": 50763,
+          "revid": 999110,
+          "content_sha256": "f9a5a819559da44d3642d97ff9bf0f48de3e6dd8bd10d9e8de387a215c3c48af",
+          "url": "https://tibia.fandom.com/index.php?curid=50763&oldid=999110",
+          "relation": "spoiler",
+          "line": 5,
+          "line_sha256": "cce8147452ed3827e21f6c86eafd337570b5bf3956f8f68d875ac0c28b9ca63a"
+        }
+      }
+    },
+    {
+      "wiki_title": "Targuna Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibia_fandom",
+          "pageid": 110238,
+          "revid": 1206876,
+          "content_sha256": "63e2cf1b5055520b37771d9b5a719b37c90c80707dd6cfd7c706e331e8e602f7",
+          "url": "https://tibia.fandom.com/index.php?curid=110238&oldid=1206876",
+          "relation": "spoiler",
+          "line": 4,
+          "line_sha256": "0e25224406771a8c6370e333cfe0b29553c618fdf6f7dab5c751c4bf2c5465f1"
+        }
+      }
+    },
+    {
+      "wiki_title": "Targuna Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibiawiki_br",
+          "pageid": 66819,
+          "revid": 440768,
+          "content_sha256": "7b99481568cfb3fc7481f87c1f7e1d14ec4466d70cf91aabdf131f70eac364b5",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=66819&oldid=440768",
+          "relation": "crosscheck",
+          "line": 24,
+          "line_sha256": "0521439bd7cf3d9d96b8831b7694659b284d73d4f58c3d29bbafcbaedc6e1c95"
+        }
+      }
+    },
+    {
+      "wiki_title": "The Ancient Tombs Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibia_fandom",
+          "pageid": 5073,
+          "revid": 1174796,
+          "content_sha256": "8b781b28afb77cce96162c0dfe50ef33bec21652862055e3c4d5913ec22cb748",
+          "url": "https://tibia.fandom.com/index.php?curid=5073&oldid=1174796",
+          "relation": "spoiler",
+          "line": 4,
+          "line_sha256": "0bd3396b86899b0e0edc208e963da4da8eed5ae1cbd72f46d426ba50726df2ee"
+        }
+      }
+    },
+    {
+      "wiki_title": "The Ancient Tombs Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibiawiki_br",
+          "pageid": 4521,
+          "revid": 417247,
+          "content_sha256": "1d7b07efe4213f369283bb10175256edf053e6c293cdfe7f53d489944cfd30ee",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=4521&oldid=417247",
+          "relation": "crosscheck",
+          "line": 25,
+          "line_sha256": "147c24e9c7b767e26e75115707fd137b13f39cb8fb3568f6305b0a56190d9817"
+        }
+      }
+    },
+    {
+      "wiki_title": "The Annihilator Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibia_fandom",
+          "pageid": 2527,
+          "revid": 1090718,
+          "content_sha256": "13b6b72fb45440a78ce939b864849e2007a6bf7af5c689635c53c9681dbe0db1",
+          "url": "https://tibia.fandom.com/index.php?curid=2527&oldid=1090718",
+          "relation": "spoiler",
+          "line": 4,
+          "line_sha256": "deda19f158144973c327c1cb2e91244f76d6a42e872545d63b367f23e8ad7020"
+        }
+      }
+    },
+    {
+      "wiki_title": "The Annihilator Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibiawiki_br",
+          "pageid": 4522,
+          "revid": 401062,
+          "content_sha256": "c6a2031c15ea5dcff260de36adc5338377ca4512f0326032efb32969f2d57e37",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=4522&oldid=401062",
+          "relation": "crosscheck",
+          "line": 21,
+          "line_sha256": "6a745a662b2b00599992a3dc21e8ff7499be1031be2427496cf513ebf4919a74"
+        }
+      }
+    },
+    {
+      "wiki_title": "The Annihilator Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibiawiki_br",
+          "pageid": 4522,
+          "revid": 401062,
+          "content_sha256": "c6a2031c15ea5dcff260de36adc5338377ca4512f0326032efb32969f2d57e37",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=4522&oldid=401062",
+          "relation": "crosscheck",
+          "line": 24,
+          "line_sha256": "27e23be1e1695dc26d5555713b1a563267dcb3eecf5ec72a480b8c41fa06514e"
+        }
+      }
+    },
+    {
+      "wiki_title": "The Annihilator Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibiawiki_br",
+          "pageid": 4522,
+          "revid": 401062,
+          "content_sha256": "c6a2031c15ea5dcff260de36adc5338377ca4512f0326032efb32969f2d57e37",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=4522&oldid=401062",
+          "relation": "crosscheck",
+          "line": 33,
+          "line_sha256": "686c8af8188e6d46fc160ba9211b5626cf3d994b87482c9f0a8d7423dffe1296"
+        }
+      }
+    },
+    {
+      "wiki_title": "The Ape City Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibia_fandom",
+          "pageid": 5846,
+          "revid": 1023981,
+          "content_sha256": "3442f34e1b2d807b2860179ee1bf8e190638fa12bfa5939de4b3c29539ac2739",
+          "url": "https://tibia.fandom.com/index.php?curid=5846&oldid=1023981",
+          "relation": "spoiler",
+          "line": 12,
+          "line_sha256": "c7b98f0e457721856dda3418502d17d590c835f23b3bf172da9555919e77890d"
+        }
+      }
+    },
+    {
+      "wiki_title": "The Ape City Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibiawiki_br",
+          "pageid": 4523,
+          "revid": 424118,
+          "content_sha256": "6696df43326672c436ef393f93dd7f9731ebd65e268ce9174bce3fe7951e3508",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=4523&oldid=424118",
+          "relation": "crosscheck",
+          "line": 31,
+          "line_sha256": "dfb9763f3082b4cf48e117d7c0e50b997fb387b11c920e7b0e11b20c5281b1c4"
+        }
+      }
+    },
+    {
+      "wiki_title": "The Blessed Stake Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibia_fandom",
+          "pageid": 27472,
+          "revid": 1004505,
+          "content_sha256": "6abbe551fd4c2b4935b2f08fc67c1a8857bc2752d00bbd77b5544da8b5ad95e6",
+          "url": "https://tibia.fandom.com/index.php?curid=27472&oldid=1004505",
+          "relation": "spoiler",
+          "line": 9,
+          "line_sha256": "777df06a22877fe7e10b79d004ef8c3d1331ba829c695be1a290070e9ae8b003"
+        }
+      }
+    },
+    {
+      "wiki_title": "The Blessed Stake Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibia_fandom",
+          "pageid": 27472,
+          "revid": 1004505,
+          "content_sha256": "6abbe551fd4c2b4935b2f08fc67c1a8857bc2752d00bbd77b5544da8b5ad95e6",
+          "url": "https://tibia.fandom.com/index.php?curid=27472&oldid=1004505",
+          "relation": "spoiler",
+          "line": 10,
+          "line_sha256": "4cda4f22cf459e33f822a9dde5b62e12bf588a27dc8e432e139b9db5af17ae36"
+        }
+      }
+    },
+    {
+      "wiki_title": "The Blessed Stake Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibia_fandom",
+          "pageid": 27472,
+          "revid": 1004505,
+          "content_sha256": "6abbe551fd4c2b4935b2f08fc67c1a8857bc2752d00bbd77b5544da8b5ad95e6",
+          "url": "https://tibia.fandom.com/index.php?curid=27472&oldid=1004505",
+          "relation": "spoiler",
+          "line": 11,
+          "line_sha256": "93508bd1956baa71b9c0e0723fd6af57a4d551bedf65d541f407bfa492244e71"
+        }
+      }
+    },
+    {
+      "wiki_title": "The Blessed Stake Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibiawiki_br",
+          "pageid": 4524,
+          "revid": 416603,
+          "content_sha256": "2c41189764a2d11f59d5c502d01b878ec790f0e90fae9bc24af328280d6b0330",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=4524&oldid=416603",
+          "relation": "crosscheck",
+          "line": 27,
+          "line_sha256": "07829ff337e52f4f5730906d6cb1dfe5194f32e59fdf9a256692a6b9f5649897"
+        }
+      }
+    },
+    {
+      "wiki_title": "The Colours of Magic",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibia_fandom",
+          "pageid": 50860,
+          "revid": 1128664,
+          "content_sha256": "091c6cc595f9b1f53038fc731356da79ad161ec4415f8139b1555b5717e651b9",
+          "url": "https://tibia.fandom.com/index.php?curid=50860&oldid=1128664",
+          "relation": "spoiler",
+          "line": 10,
+          "line_sha256": "2255d63333db818c21fd12319657a894c1c6886bd229bc7c70408be9cb7b98f5"
+        }
+      }
+    },
+    {
+      "wiki_title": "The Colours of Magic",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Narrative requirement referenced only; not lowered",
+        "evidence": {
+          "provider": "tibia_fandom",
+          "pageid": 50860,
+          "revid": 1128664,
+          "content_sha256": "091c6cc595f9b1f53038fc731356da79ad161ec4415f8139b1555b5717e651b9",
+          "url": "https://tibia.fandom.com/index.php?curid=50860&oldid=1128664",
+          "relation": "spoiler",
+          "line": 10,
+          "line_sha256": "2255d63333db818c21fd12319657a894c1c6886bd229bc7c70408be9cb7b98f5"
+        }
+      }
+    },
+    {
+      "wiki_title": "The Cursed Crystal Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibiawiki_br",
+          "pageid": 35102,
+          "revid": 393508,
+          "content_sha256": "d4ef5a43d7659266df2702a98593a83cec7f39ee8f995a1942705f0cac8de31c",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=35102&oldid=393508",
+          "relation": "crosscheck",
+          "line": 27,
+          "line_sha256": "8548ac52e958d015aa09b4fe3041a94c68f69af7631f80efb8c94452a2c0633e"
+        }
+      }
+    },
+    {
+      "wiki_title": "The Demon Oak Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibiawiki_br",
+          "pageid": 4525,
+          "revid": 401061,
+          "content_sha256": "e686aac704efc8b5314589fa70f133f98a44de6ea74181414658152b66cea341",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=4525&oldid=401061",
+          "relation": "crosscheck",
+          "line": 23,
+          "line_sha256": "221291780d299cfec644ca3c0b2026f02bf71ffa9434675e612893835974e1cd"
+        }
+      }
+    },
+    {
+      "wiki_title": "The Desert Dungeon Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibia_fandom",
+          "pageid": 2510,
+          "revid": 1103386,
+          "content_sha256": "222909b76b1843b52a1f2e0f612524dffc8bc8a2e4c330326bb0cea964ea3dd1",
+          "url": "https://tibia.fandom.com/index.php?curid=2510&oldid=1103386",
+          "relation": "spoiler",
+          "line": 6,
+          "line_sha256": "4ab19d79f48afbeb5df60a116e1ee473f725a8a61c4fca77f362cc0b7b8bc85e"
+        }
+      }
+    },
+    {
+      "wiki_title": "The Dream Courts Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibiawiki_br",
+          "pageid": 45023,
+          "revid": 433512,
+          "content_sha256": "7e9f9c86c662de570a266f298d13436ef4f2b57411dc9f89ecff3f8ffc5b4bb1",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=45023&oldid=433512",
+          "relation": "crosscheck",
+          "line": 27,
+          "line_sha256": "221291780d299cfec644ca3c0b2026f02bf71ffa9434675e612893835974e1cd"
+        }
+      }
+    },
+    {
+      "wiki_title": "The Explorer Society Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibiawiki_br",
+          "pageid": 4530,
+          "revid": 435645,
+          "content_sha256": "71f0c63c56f68ebbddfbe0c97ac9d2754805de6b50addd3dfbbfabf0cb2a32fd",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=4530&oldid=435645",
+          "relation": "crosscheck",
+          "line": 27,
+          "line_sha256": "b8ac9c913a44f4ce851e0def1089da3290e24ee1333661e91888a51de6b55043"
+        }
+      }
+    },
+    {
+      "wiki_title": "The Hidden City of Beregar Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibiawiki_br",
+          "pageid": 4532,
+          "revid": 431615,
+          "content_sha256": "f2aebb5cd99f4392aaba1c42796ec2ceecf460db1200c3ff843c8ba2db6c4591",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=4532&oldid=431615",
+          "relation": "crosscheck",
+          "line": 32,
+          "line_sha256": "3c1a57e51f90d2b54146d8a52502de7010e8f67f51a1214a101de8c4586b7911"
+        }
+      }
+    },
+    {
+      "wiki_title": "The Hunt for the Sea Serpent Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibiawiki_br",
+          "pageid": 4533,
+          "revid": 393496,
+          "content_sha256": "3680ce1482492cff2fd09993ad30a14393bc77b1d7770e8861f62374a51e20d2",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=4533&oldid=393496",
+          "relation": "crosscheck",
+          "line": 29,
+          "line_sha256": "1b92a163f67b2540bc4f4bd04ce9cb0ce29d1d21b37ed4e8a6695cb4cf3242cc"
+        }
+      }
+    },
+    {
+      "wiki_title": "The Ice Islands Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibiawiki_br",
+          "pageid": 4534,
+          "revid": 431584,
+          "content_sha256": "24dcb4fc4f25c0f6499f577ce1b735ac5d05f206eada8f5fcbdd394924f3d6bc",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=4534&oldid=431584",
+          "relation": "crosscheck",
+          "line": 42,
+          "line_sha256": "d2754f8558dc0eeb0188d051805683b7ef6f456d1b4cec5fa563cafd17862857"
+        }
+      }
+    },
+    {
+      "wiki_title": "The Inquisition Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibia_fandom",
+          "pageid": 34108,
+          "revid": 1092599,
+          "content_sha256": "5d83fb117d063a6b69db5560f6fe77d18d34f5119a6ff9618504f7451bbcd92b",
+          "url": "https://tibia.fandom.com/index.php?curid=34108&oldid=1092599",
+          "relation": "spoiler",
+          "line": 10,
+          "line_sha256": "8694eec2a8f2e2246d30405bdb7925bead141fdbce34bb76dca31914dd5dc2b3"
+        }
+      }
+    },
+    {
+      "wiki_title": "The Inquisition Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibiawiki_br",
+          "pageid": 3048,
+          "revid": 428785,
+          "content_sha256": "cb267d45ec8ab557fdd8cd90957f8d27e7f659dd34b9c2a4e8e7eb9560c20719",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=3048&oldid=428785",
+          "relation": "crosscheck",
+          "line": 32,
+          "line_sha256": "dfb9763f3082b4cf48e117d7c0e50b997fb387b11c920e7b0e11b20c5281b1c4"
+        }
+      }
+    },
+    {
+      "wiki_title": "The Inquisition Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibiawiki_br",
+          "pageid": 3048,
+          "revid": 428785,
+          "content_sha256": "cb267d45ec8ab557fdd8cd90957f8d27e7f659dd34b9c2a4e8e7eb9560c20719",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=3048&oldid=428785",
+          "relation": "crosscheck",
+          "line": 37,
+          "line_sha256": "58209cc7b7c59017e3f0ef6b1d7e249df4d2292d172275ddfee340917ca473e9"
+        }
+      }
+    },
+    {
+      "wiki_title": "The Isle of Evil Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibia_fandom",
+          "pageid": 36717,
+          "revid": 855959,
+          "content_sha256": "6614320647a29ec07fb666c31d04072269a9d01bd8f9114b7849fd3eb5d257b1",
+          "url": "https://tibia.fandom.com/index.php?curid=36717&oldid=855959",
+          "relation": "spoiler",
+          "line": 10,
+          "line_sha256": "cce8147452ed3827e21f6c86eafd337570b5bf3956f8f68d875ac0c28b9ca63a"
+        }
+      }
+    },
+    {
+      "wiki_title": "The Isle of Evil Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibiawiki_br",
+          "pageid": 4535,
+          "revid": 432244,
+          "content_sha256": "0a3c9f178386500929497f10bd2fe18b62d4a430132d791ad1ddb262a6994845",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=4535&oldid=432244",
+          "relation": "crosscheck",
+          "line": 27,
+          "line_sha256": "07829ff337e52f4f5730906d6cb1dfe5194f32e59fdf9a256692a6b9f5649897"
+        }
+      }
+    },
+    {
+      "wiki_title": "The Lost Brother Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibiawiki_br",
+          "pageid": 36273,
+          "revid": 394103,
+          "content_sha256": "01ad4eff6d2ede95b3f243d14a01f37529a0e5cfc46cb78105fce2ea308eef76",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=36273&oldid=394103",
+          "relation": "crosscheck",
+          "line": 24,
+          "line_sha256": "221291780d299cfec644ca3c0b2026f02bf71ffa9434675e612893835974e1cd"
+        }
+      }
+    },
+    {
+      "wiki_title": "The New Frontier Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibiawiki_br",
+          "pageid": 4536,
+          "revid": 437241,
+          "content_sha256": "4acb9a937bc33bb64c5b8e897ad5ed55fb9d5d7ca217f8c63a91d8396607da5d",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=4536&oldid=437241",
+          "relation": "crosscheck",
+          "line": 25,
+          "line_sha256": "07829ff337e52f4f5730906d6cb1dfe5194f32e59fdf9a256692a6b9f5649897"
+        }
+      }
+    },
+    {
+      "wiki_title": "The Order of the Stag Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibiawiki_br",
+          "pageid": 65908,
+          "revid": 443997,
+          "content_sha256": "e4006bc7f3ed38622dcf985728b448e6ecce23049b9ec8993b3e303a7a3252ae",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=65908&oldid=443997",
+          "relation": "crosscheck",
+          "line": 28,
+          "line_sha256": "61a4deb938b62a583721847119dd787dc47ea5d6bbd6b193906f050fc90eccd7"
+        }
+      }
+    },
+    {
+      "wiki_title": "The Order of the Stag Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Narrative requirement referenced only; not lowered",
+        "evidence": {
+          "provider": "tibiawiki_br",
+          "pageid": 65908,
+          "revid": 443997,
+          "content_sha256": "e4006bc7f3ed38622dcf985728b448e6ecce23049b9ec8993b3e303a7a3252ae",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=65908&oldid=443997",
+          "relation": "crosscheck",
+          "line": 28,
+          "line_sha256": "61a4deb938b62a583721847119dd787dc47ea5d6bbd6b193906f050fc90eccd7"
+        }
+      }
+    },
+    {
+      "wiki_title": "The Pits of Inferno Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibia_fandom",
+          "pageid": 12226,
+          "revid": 1154024,
+          "content_sha256": "d4f5499f24d7f6a29a19ffa6a8897ccb2ca4d8b398e42d0f9cfbf0526b3351b8",
+          "url": "https://tibia.fandom.com/index.php?curid=12226&oldid=1154024",
+          "relation": "spoiler",
+          "line": 13,
+          "line_sha256": "9c99a6e57c9fcbdbf05f26ebfd58e353ca31f71f08287e389dd4fffa27c609df"
+        }
+      }
+    },
+    {
+      "wiki_title": "The Pits of Inferno Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibiawiki_br",
+          "pageid": 4539,
+          "revid": 429025,
+          "content_sha256": "12408382685dfd3ad3d59b086e0f7ca4c136a7254332f3b859579f6791894d94",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=4539&oldid=429025",
+          "relation": "crosscheck",
+          "line": 24,
+          "line_sha256": "975b0a9933754553b7dfc0d2c2a5d118e5c01c106bbb811ae5f02a59b5a7dc9f"
+        }
+      }
+    },
+    {
+      "wiki_title": "The Pits of Inferno Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibiawiki_br",
+          "pageid": 4539,
+          "revid": 429025,
+          "content_sha256": "12408382685dfd3ad3d59b086e0f7ca4c136a7254332f3b859579f6791894d94",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=4539&oldid=429025",
+          "relation": "crosscheck",
+          "line": 36,
+          "line_sha256": "08d32aee607c24918afcca50783b719050c86bc154da2a6b185bc56f74609ac6"
+        }
+      }
+    },
+    {
+      "wiki_title": "The Postman Missions Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibiawiki_br",
+          "pageid": 4540,
+          "revid": 419399,
+          "content_sha256": "27aaab0773c778ac11f548565480c6cfed55106d5f71e0ef9f6e42b5a5aba481",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=4540&oldid=419399",
+          "relation": "crosscheck",
+          "line": 33,
+          "line_sha256": "96333afb7db6089adf04281d09d973679c69039dd71965396efbad723e5c9623"
+        }
+      }
+    },
+    {
+      "wiki_title": "The Postman Missions Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibiawiki_br",
+          "pageid": 4540,
+          "revid": 419399,
+          "content_sha256": "27aaab0773c778ac11f548565480c6cfed55106d5f71e0ef9f6e42b5a5aba481",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=4540&oldid=419399",
+          "relation": "crosscheck",
+          "line": 46,
+          "line_sha256": "2ebf42e0317c4e5d979d59b0250e1033646c052877afc58489e37e1be450c376"
+        }
+      }
+    },
+    {
+      "wiki_title": "The Rookie Guard Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibiawiki_br",
+          "pageid": 16993,
+          "revid": 433575,
+          "content_sha256": "9420ae711c8a602634294c00bbf35dcd296f2f56e1313c8073db3105a1c06c6b",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=16993&oldid=433575",
+          "relation": "crosscheck",
+          "line": 24,
+          "line_sha256": "e500ffb93490921488f6b85f85600099e6f09e84c0e7bb3aabb6668ee5871404"
+        }
+      }
+    },
+    {
+      "wiki_title": "The Roost of the Graveborn Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibia_fandom",
+          "pageid": 109746,
+          "revid": 1195315,
+          "content_sha256": "055a1067f2bfcffe32285e06d496f41cd68cde954a43b2f2dac8ba8b1f5c67ad",
+          "url": "https://tibia.fandom.com/index.php?curid=109746&oldid=1195315",
+          "relation": "spoiler",
+          "line": 229,
+          "line_sha256": "ba79f898c3f924cdb6a16357b9f09ee7efb9b7f445bc1a31766e4a153770a8b8"
+        }
+      }
+    },
+    {
+      "wiki_title": "The Roost of the Graveborn Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Narrative requirement referenced only; not lowered",
+        "evidence": {
+          "provider": "tibia_fandom",
+          "pageid": 109746,
+          "revid": 1195315,
+          "content_sha256": "055a1067f2bfcffe32285e06d496f41cd68cde954a43b2f2dac8ba8b1f5c67ad",
+          "url": "https://tibia.fandom.com/index.php?curid=109746&oldid=1195315",
+          "relation": "spoiler",
+          "line": 229,
+          "line_sha256": "ba79f898c3f924cdb6a16357b9f09ee7efb9b7f445bc1a31766e4a153770a8b8"
+        }
+      }
+    },
+    {
+      "wiki_title": "The Scatterbrained Sorcerer Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibiawiki_br",
+          "pageid": 4542,
+          "revid": 433619,
+          "content_sha256": "fa234cca504377a4cbb0be0fa4416d69372cc10b67e310ad4027b4deda139703",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=4542&oldid=433619",
+          "relation": "crosscheck",
+          "line": 23,
+          "line_sha256": "c7b784cb4fdb218a23f8b50820dd53ff59d2086bcf65ff696c7293f71320320c"
+        }
+      }
+    },
+    {
+      "wiki_title": "The Scatterbrained Sorcerer Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Narrative requirement referenced only; not lowered",
+        "evidence": {
+          "provider": "tibiawiki_br",
+          "pageid": 4542,
+          "revid": 433619,
+          "content_sha256": "fa234cca504377a4cbb0be0fa4416d69372cc10b67e310ad4027b4deda139703",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=4542&oldid=433619",
+          "relation": "crosscheck",
+          "line": 23,
+          "line_sha256": "c7b784cb4fdb218a23f8b50820dd53ff59d2086bcf65ff696c7293f71320320c"
+        }
+      }
+    },
+    {
+      "wiki_title": "The Shattered Isles Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibia_fandom",
+          "pageid": 8826,
+          "revid": 1205805,
+          "content_sha256": "132c7704e829013b845970b6ac43468e80aaf82dce76c0ffe18029727a79a976",
+          "url": "https://tibia.fandom.com/index.php?curid=8826&oldid=1205805",
+          "relation": "spoiler",
+          "line": 12,
+          "line_sha256": "26f5255e5a6396d784c5d1fc73d84830142490d60c5bf42ef0d90e31fade3efe"
+        }
+      }
+    },
+    {
+      "wiki_title": "The Shattered Isles Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibia_fandom",
+          "pageid": 8826,
+          "revid": 1205805,
+          "content_sha256": "132c7704e829013b845970b6ac43468e80aaf82dce76c0ffe18029727a79a976",
+          "url": "https://tibia.fandom.com/index.php?curid=8826&oldid=1205805",
+          "relation": "spoiler",
+          "line": 34,
+          "line_sha256": "394f059fe4dbec9985880f78228f4853e62d0dfa79c7ee2cbd8a384fcaa239f2"
+        }
+      }
+    },
+    {
+      "wiki_title": "The Shattered Isles Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibia_fandom",
+          "pageid": 8826,
+          "revid": 1205805,
+          "content_sha256": "132c7704e829013b845970b6ac43468e80aaf82dce76c0ffe18029727a79a976",
+          "url": "https://tibia.fandom.com/index.php?curid=8826&oldid=1205805",
+          "relation": "spoiler",
+          "line": 35,
+          "line_sha256": "c7aecce7aeeae693086ec57607e3bb212c6ec215d7328eb3227c287dcec96564"
+        }
+      }
+    },
+    {
+      "wiki_title": "The Shattered Isles Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibia_fandom",
+          "pageid": 8826,
+          "revid": 1205805,
+          "content_sha256": "132c7704e829013b845970b6ac43468e80aaf82dce76c0ffe18029727a79a976",
+          "url": "https://tibia.fandom.com/index.php?curid=8826&oldid=1205805",
+          "relation": "spoiler",
+          "line": 45,
+          "line_sha256": "4bb156a2d6c93c5eacdd1a35a912d75309c06d6dcc9df2f246a6553a32c372c5"
+        }
+      }
+    },
+    {
+      "wiki_title": "The Shattered Isles Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibiawiki_br",
+          "pageid": 4543,
+          "revid": 431740,
+          "content_sha256": "0a319e944c5d03d86275d02e0ac8aae8686610073dcbb46816ee6f380ce434c4",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=4543&oldid=431740",
+          "relation": "crosscheck",
+          "line": 29,
+          "line_sha256": "0e6e7a78232fea638ad159b7bba07e582290756f47ee903251fc95d29f8f678b"
+        }
+      }
+    },
+    {
+      "wiki_title": "The Shattered Isles Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibiawiki_br",
+          "pageid": 4543,
+          "revid": 431740,
+          "content_sha256": "0a319e944c5d03d86275d02e0ac8aae8686610073dcbb46816ee6f380ce434c4",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=4543&oldid=431740",
+          "relation": "crosscheck",
+          "line": 30,
+          "line_sha256": "dfb9763f3082b4cf48e117d7c0e50b997fb387b11c920e7b0e11b20c5281b1c4"
+        }
+      }
+    },
+    {
+      "wiki_title": "The Spirit Will Get You Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibiawiki_br",
+          "pageid": 4544,
+          "revid": 393497,
+          "content_sha256": "3e4989b62cde79c7f5b0d39c760ec80abc016c9e8ee0973e47b4529233c1d0dc",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=4544&oldid=393497",
+          "relation": "crosscheck",
+          "line": 24,
+          "line_sha256": "221291780d299cfec644ca3c0b2026f02bf71ffa9434675e612893835974e1cd"
+        }
+      }
+    },
+    {
+      "wiki_title": "The Spirit Will Get You Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Narrative requirement referenced only; not lowered",
+        "evidence": {
+          "provider": "tibiawiki_br",
+          "pageid": 4544,
+          "revid": 393497,
+          "content_sha256": "3e4989b62cde79c7f5b0d39c760ec80abc016c9e8ee0973e47b4529233c1d0dc",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=4544&oldid=393497",
+          "relation": "crosscheck",
+          "line": 24,
+          "line_sha256": "221291780d299cfec644ca3c0b2026f02bf71ffa9434675e612893835974e1cd"
+        }
+      }
+    },
+    {
+      "wiki_title": "The Thieves Guild Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibiawiki_br",
+          "pageid": 4545,
+          "revid": 433590,
+          "content_sha256": "6c18a0198abc2099422cd8b078ba8d8b475ae983a285c3279fcd2078793aa0d6",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=4545&oldid=433590",
+          "relation": "crosscheck",
+          "line": 26,
+          "line_sha256": "c65d1572b36cf548982b89fba926bd50a2454944fb35b0cb6de37ecb578700e6"
+        }
+      }
+    },
+    {
+      "wiki_title": "The Travelling Trader Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibiawiki_br",
+          "pageid": 4546,
+          "revid": 431579,
+          "content_sha256": "420afdaff6132e47614dd37086a773a5b19d36c83327806505ffbc5228464d62",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=4546&oldid=431579",
+          "relation": "crosscheck",
+          "line": 42,
+          "line_sha256": "a6dc1e9fa8b3e84b08ae73c2ff04cd2e48df7209448437145b25b039ce8e0ff8"
+        }
+      }
+    },
+    {
+      "wiki_title": "The Travelling Trader Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibiawiki_br",
+          "pageid": 4546,
+          "revid": 431579,
+          "content_sha256": "420afdaff6132e47614dd37086a773a5b19d36c83327806505ffbc5228464d62",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=4546&oldid=431579",
+          "relation": "crosscheck",
+          "line": 45,
+          "line_sha256": "7e366faa0628ec9d4de05a6aa6966312d38464d6345596aeb60d9359c5690382"
+        }
+      }
+    },
+    {
+      "wiki_title": "Threatened Dreams Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibia_fandom",
+          "pageid": 81363,
+          "revid": 1202454,
+          "content_sha256": "b893b50fa5b6831a01fd70ce7178cf2f79af5de813f955a382a4bd8ecd3bca2f",
+          "url": "https://tibia.fandom.com/index.php?curid=81363&oldid=1202454",
+          "relation": "spoiler",
+          "line": 4,
+          "line_sha256": "9ed87e7bd35ce9b1e4ba1c703a7d28620f3d793197460ccdfd307b5643576448"
+        }
+      }
+    },
+    {
+      "wiki_title": "Threatened Dreams Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibia_fandom",
+          "pageid": 81363,
+          "revid": 1202454,
+          "content_sha256": "b893b50fa5b6831a01fd70ce7178cf2f79af5de813f955a382a4bd8ecd3bca2f",
+          "url": "https://tibia.fandom.com/index.php?curid=81363&oldid=1202454",
+          "relation": "spoiler",
+          "line": 6,
+          "line_sha256": "bf349e9f691dc0a4f4b620935796f10324ad97fd29b69920641dcb18559bd7ee"
+        }
+      }
+    },
+    {
+      "wiki_title": "Threatened Dreams Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibia_fandom",
+          "pageid": 81363,
+          "revid": 1202454,
+          "content_sha256": "b893b50fa5b6831a01fd70ce7178cf2f79af5de813f955a382a4bd8ecd3bca2f",
+          "url": "https://tibia.fandom.com/index.php?curid=81363&oldid=1202454",
+          "relation": "spoiler",
+          "line": 12,
+          "line_sha256": "8daa7455219e4e42161570dc15adea13de81857dcc7e7345da80e4c564d0a4d3"
+        }
+      }
+    },
+    {
+      "wiki_title": "Threatened Dreams Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibia_fandom",
+          "pageid": 81363,
+          "revid": 1202454,
+          "content_sha256": "b893b50fa5b6831a01fd70ce7178cf2f79af5de813f955a382a4bd8ecd3bca2f",
+          "url": "https://tibia.fandom.com/index.php?curid=81363&oldid=1202454",
+          "relation": "spoiler",
+          "line": 14,
+          "line_sha256": "b69e8ed4922746d23bd9aead609093e0cf25b2069915953e769b42e9e03e386d"
+        }
+      }
+    },
+    {
+      "wiki_title": "Threatened Dreams Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibia_fandom",
+          "pageid": 81363,
+          "revid": 1202454,
+          "content_sha256": "b893b50fa5b6831a01fd70ce7178cf2f79af5de813f955a382a4bd8ecd3bca2f",
+          "url": "https://tibia.fandom.com/index.php?curid=81363&oldid=1202454",
+          "relation": "spoiler",
+          "line": 15,
+          "line_sha256": "21b19bfef68ad40a4d0653af8db7049cb939bf03eba2d6e29b42bd4b00ab35bb"
+        }
+      }
+    },
+    {
+      "wiki_title": "Threatened Dreams Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibia_fandom",
+          "pageid": 81363,
+          "revid": 1202454,
+          "content_sha256": "b893b50fa5b6831a01fd70ce7178cf2f79af5de813f955a382a4bd8ecd3bca2f",
+          "url": "https://tibia.fandom.com/index.php?curid=81363&oldid=1202454",
+          "relation": "spoiler",
+          "line": 16,
+          "line_sha256": "fe5f5bbcbb9d6d7d10fc59ed1b0c68ff09c9691d97ae2778544335be9668375b"
+        }
+      }
+    },
+    {
+      "wiki_title": "Threatened Dreams Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibia_fandom",
+          "pageid": 81363,
+          "revid": 1202454,
+          "content_sha256": "b893b50fa5b6831a01fd70ce7178cf2f79af5de813f955a382a4bd8ecd3bca2f",
+          "url": "https://tibia.fandom.com/index.php?curid=81363&oldid=1202454",
+          "relation": "spoiler",
+          "line": 17,
+          "line_sha256": "21b19bfef68ad40a4d0653af8db7049cb939bf03eba2d6e29b42bd4b00ab35bb"
+        }
+      }
+    },
+    {
+      "wiki_title": "Threatened Dreams Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibiawiki_br",
+          "pageid": 40987,
+          "revid": 432696,
+          "content_sha256": "093088673e80ed5954b5d3c11dbec13500d0497e5e409582fc2ec9d6b5be494f",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=40987&oldid=432696",
+          "relation": "crosscheck",
+          "line": 31,
+          "line_sha256": "2069a6d555f6d162fd8f3c7659d10715f7822bd4b0f76c6c9929da3b47a6691b"
+        }
+      }
+    },
+    {
+      "wiki_title": "Threatened Dreams Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibiawiki_br",
+          "pageid": 40987,
+          "revid": 432696,
+          "content_sha256": "093088673e80ed5954b5d3c11dbec13500d0497e5e409582fc2ec9d6b5be494f",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=40987&oldid=432696",
+          "relation": "crosscheck",
+          "line": 32,
+          "line_sha256": "863868c351f3aa17a0fef0f99656a13b202dbb6874af6ce6b9369469c8605b49"
+        }
+      }
+    },
+    {
+      "wiki_title": "Too Hot to Handle Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibiawiki_br",
+          "pageid": 51796,
+          "revid": 424113,
+          "content_sha256": "a25d847c8c7f66fe0d3e9f6ff03132a476f0e016b64e2d0a415a1a69f930a831",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=51796&oldid=424113",
+          "relation": "crosscheck",
+          "line": 24,
+          "line_sha256": "a87e4cf09d3968813e106865e021c58ebe870ca75e3efd43c32c7a8565b1c6f7"
+        }
+      }
+    },
+    {
+      "wiki_title": "Treasure Hunt Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibiawiki_br",
+          "pageid": 4558,
+          "revid": 431833,
+          "content_sha256": "2ee71acc465aa386a903b6d1dc385f898bad79d5f1d4cdc4bfc557096e2a49c8",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=4558&oldid=431833",
+          "relation": "crosscheck",
+          "line": 24,
+          "line_sha256": "cd5865d45e6e23f5f7a0d046de61c5d2e83024a6cbc14084a72aece12e33dcd3"
+        }
+      }
+    },
+    {
+      "wiki_title": "Treasure Hunt Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Narrative requirement referenced only; not lowered",
+        "evidence": {
+          "provider": "tibiawiki_br",
+          "pageid": 4558,
+          "revid": 431833,
+          "content_sha256": "2ee71acc465aa386a903b6d1dc385f898bad79d5f1d4cdc4bfc557096e2a49c8",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=4558&oldid=431833",
+          "relation": "crosscheck",
+          "line": 24,
+          "line_sha256": "cd5865d45e6e23f5f7a0d046de61c5d2e83024a6cbc14084a72aece12e33dcd3"
+        }
+      }
+    },
+    {
+      "wiki_title": "Twenty Miles Beneath the Sea Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibiawiki_br",
+          "pageid": 35190,
+          "revid": 385745,
+          "content_sha256": "149c03d277ea51ad446bb98f68eec317ee301e9f961cd4833ebef1172919c412",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=35190&oldid=385745",
+          "relation": "crosscheck",
+          "line": 21,
+          "line_sha256": "a87e4cf09d3968813e106865e021c58ebe870ca75e3efd43c32c7a8565b1c6f7"
+        }
+      }
+    },
+    {
+      "wiki_title": "Twenty Miles Beneath the Sea Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Narrative requirement referenced only; not lowered",
+        "evidence": {
+          "provider": "tibiawiki_br",
+          "pageid": 35190,
+          "revid": 385745,
+          "content_sha256": "149c03d277ea51ad446bb98f68eec317ee301e9f961cd4833ebef1172919c412",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=35190&oldid=385745",
+          "relation": "crosscheck",
+          "line": 21,
+          "line_sha256": "a87e4cf09d3968813e106865e021c58ebe870ca75e3efd43c32c7a8565b1c6f7"
+        }
+      }
+    },
+    {
+      "wiki_title": "Unnatural Selection Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibiawiki_br",
+          "pageid": 4563,
+          "revid": 422828,
+          "content_sha256": "fc3352f84c3ee4f433ec52bab3d3a8f7d2d8a2d813e35c0e2344d9355963627d",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=4563&oldid=422828",
+          "relation": "crosscheck",
+          "line": 24,
+          "line_sha256": "42aa9704596dec1c6058b81a0c6c4cf3030cb1735ec69d02402a372191fb5125"
+        }
+      }
+    },
+    {
+      "wiki_title": "What a Foolish Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibiawiki_br",
+          "pageid": 2309,
+          "revid": 428356,
+          "content_sha256": "0deab44aa93b4863f8a9fc963f062f21c238526310d151638bfd21dc684f5182",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=2309&oldid=428356",
+          "relation": "crosscheck",
+          "line": 30,
+          "line_sha256": "c05dd587c24c01d835d758a35697f7f9063bcf9a8768cd856dd32d138a04ba8f"
+        }
+      }
+    },
+    {
+      "wiki_title": "What a Foolish Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibiawiki_br",
+          "pageid": 2309,
+          "revid": 428356,
+          "content_sha256": "0deab44aa93b4863f8a9fc963f062f21c238526310d151638bfd21dc684f5182",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=2309&oldid=428356",
+          "relation": "crosscheck",
+          "line": 35,
+          "line_sha256": "c05dd587c24c01d835d758a35697f7f9063bcf9a8768cd856dd32d138a04ba8f"
+        }
+      }
+    },
+    {
+      "wiki_title": "What a Foolish Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibiawiki_br",
+          "pageid": 2309,
+          "revid": 428356,
+          "content_sha256": "0deab44aa93b4863f8a9fc963f062f21c238526310d151638bfd21dc684f5182",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=2309&oldid=428356",
+          "relation": "crosscheck",
+          "line": 39,
+          "line_sha256": "def2ca9c36d8d05a824192963b01609cfe838a105d50b69fdea80328a41844c2"
+        }
+      }
+    },
+    {
+      "wiki_title": "Wizard Outfits Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibia_fandom",
+          "pageid": 8580,
+          "revid": 1056851,
+          "content_sha256": "3a10ea8ef1eee4f9323a4e2c8a6d58c5a277f65cba6b34d7b8419d9d08028b50",
+          "url": "https://tibia.fandom.com/index.php?curid=8580&oldid=1056851",
+          "relation": "spoiler",
+          "line": 59,
+          "line_sha256": "534fbd119d2576a9bdb9d7b10535d400cb706e903259ac04b1cf59b90ba94919"
+        }
+      }
+    },
+    {
+      "wiki_title": "Wrath of the Emperor Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibia_fandom",
+          "pageid": 46608,
+          "revid": 1103771,
+          "content_sha256": "e46f6e3cc3e9776be1cfe4f0e0c44938e40e2578065316f266a4f919bda84933",
+          "url": "https://tibia.fandom.com/index.php?curid=46608&oldid=1103771",
+          "relation": "spoiler",
+          "line": 13,
+          "line_sha256": "f024f35fb25cb5fb0bf154ff24925c12e501fafb8e75e7bb9d8ce7367ebc7bee"
+        }
+      }
+    },
+    {
+      "wiki_title": "Wrath of the Emperor Quest",
+      "hold": {
+        "field_group": "Source requirement not parsed",
+        "classification": "UNKNOWN",
+        "reason": "Requirement not expressed as an explicit number or named entity; narrative omitted",
+        "evidence": {
+          "provider": "tibiawiki_br",
+          "pageid": 4572,
+          "revid": 435773,
+          "content_sha256": "0d83c5b70cc71609804c97ff04517cdab5bca7ac7e6f7971fc2f21bc54beb92b",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=4572&oldid=435773",
+          "relation": "crosscheck",
+          "line": 27,
+          "line_sha256": "0b8de65690dc6d0e3d4f91011d768cf1dd27b5ce9c01275452a8192948bcba1f"
+        }
+      }
+    }
+  ]
+}

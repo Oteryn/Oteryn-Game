@@ -53,6 +53,50 @@ class ReferenceTrackTests(unittest.TestCase):
         self.readers[literal][0]['expression']='Storage.Quest.Test.Flag'
         self.assertEqual(self.retain()[0],[])
 
+    def test_undeclared_symbolic_reader_retains_source_only_and_consumer_hold(self):
+        self.declarations={}
+        record,checks=self.retain();record=record[0]
+        self.assertEqual(record['key'],self.key)
+        self.assertEqual(record['owner_basis'],'UNKNOWN')
+        self.assertEqual(record['transitions'],[])
+        self.assertEqual(record['writes'],{'canary':0,'crystalserver':0})
+        self.assertFalse({'source_storage','alias_of','initial','bounds','storage_id'} & record.keys())
+        self.assertIn('nil',record['source_checks']['storage_declaration'])
+        self.assertIn('complete writer inventory',record['source_checks']['owner'])
+        self.assertEqual(checks[0]['readers'],self.readers[self.key])
+        jsonschema.validate({'progress':[record]},json.loads(Path(__file__).with_name('quest_progress.schema.json').read_text()))
+        self.assertEqual(ots_readiness.uncertain_progress_keys([record]),{self.key})
+        inter={'source':{'edge':'USE'},'rules':[{'branch':[{'when':{'quest_stage':{'progress':self.key,'op':'==','value':1}},'then':[]}]}],'unresolved':[]}
+        self.assertEqual(ots_readiness.interaction_facts(inter,{self.key},{self.key})[2],1)
+        data={'quests':[],'progress':[record],'gates':[],'interactions':[dict(inter,identity={'key':'canary:interaction/test/action'})],'claims':[]}
+        self.assertEqual(bundle_semantics.reference_gaps(data),[])
+
+    def test_undeclared_reader_never_aliases_other_namespace_or_global_symbol(self):
+        other={'key':self.key.replace('canary:','crystalserver:'),'missions':[],'start_of':[],
+               'read_by_gates':[],'writes':{'canary':0,'crystalserver':0},'transitions':[]}
+        self.declarations={other['key']:{'storage_id':7,'expression':self.expression}}
+        record=self.retain(progress=[other])[0][0]
+        self.assertNotIn('alias_of',record)
+        self.assertNotIn('source_storage',record)
+        self.readers[self.key][0]['expression']='GlobalStorage.Quest.Test.Flag'
+        self.assertEqual(self.retain()[0],[])
+
+    def test_undeclared_reader_collision_or_changed_requested_path_remains_unretained(self):
+        self.declarations={}
+        self.readers[self.key].append({'expression':'Storage.Quest.Test.FLAG'})
+        self.assertEqual(self.retain()[0],[])
+        self.readers={self.key:[{'expression':'Storage.Quest.Other.Flag'}]}
+        self.assertEqual(self.retain()[0],[])
+
+    def test_undeclared_reader_does_not_fabricate_zero_for_observed_writer(self):
+        self.declarations={}
+        found={'paths':[('canary','quest/test/flag')],'count':Counter(canary=1),
+            'transitions':{'write':{'source_occurrences':[{'source':'canary','target':self.expression}]}}}
+        before=copy.deepcopy(found);added,checks=self.retain({'identity':found})
+        self.assertEqual(added,[])
+        self.assertIn('observed writer evidence',checks[0]['reason'])
+        self.assertEqual(found,before)
+
     def test_existing_track_is_never_duplicated_or_changed(self):
         original={'key':self.key,'writes':{'canary':3}}
         snapshot=copy.deepcopy(original)
@@ -76,7 +120,10 @@ class ReferenceTrackTests(unittest.TestCase):
         self.declarations[self.key]={'state':'CONFLICT','candidates':[{'storage_id':7}]}
         self.assertEqual(self.retain()[0],[])
         self.declarations={self.key.replace('/quest/test/flag','/world/flag'):{'storage_id':7}}
-        self.assertEqual(self.retain()[0],[])
+        record=self.retain()[0][0]
+        self.assertNotIn('source_storage',record)
+        self.assertNotIn('alias_of',record)
+        self.assertEqual(record['owner_basis'],'UNKNOWN')
 
     def test_normalized_writer_name_collision_remains_unknown(self):
         found={'paths':[('canary','quest/test/flag')],'count':Counter(canary=1),
