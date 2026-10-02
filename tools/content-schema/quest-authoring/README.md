@@ -273,3 +273,20 @@ exact input/compiler/proof hashes in the derived receipt. Changed supplements ke
 both original and current Source digests. Original donor ownership, requirements,
 claims, progress, gates and Native holds survive. This offline authored approval is
 not a signature or runtime authority; all actual game journeys remain NOT_RUN.
+
+## Scoped enrichment and reviewed recipe refinements
+
+The portable `samples/enrichment242/` packet retains242 selected quest groups and
+5418 witnessed facts. Of these,3828 are candidates for additional facts and1590
+confirm existing data; this does not certify novelty against every other family.
+Local acquisition paths and3365 source text values are replaced by digest references.
+The receipt preserves historical wiki browser acquisition and pinned donor evidence;
+offline replay does not fetch pages or independently recheck source bodies/spans.
+Every original Source hold and Native non-admission remains explicit.
+
+`quest_recipe_refinements.py` applies21 separately reviewed corrections in13 of
+the242 chosen recipes, preserving the immutable original packet. It fences each
+old value and all identities, counts, stage links, source references and approximation
+basis. Canonical supplements carry both original and refinement provenance plus
+the scoped evidence receipt. Run `run_checks.py` for portable replay, schema and
+negative controls; actual server journeys remain `NOT_RUN`.

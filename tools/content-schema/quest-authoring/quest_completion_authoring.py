@@ -120,6 +120,17 @@ def completion_records(root, source_records):
                 source_fidelity='REVIEWED_TRANSCRIPTION_CORRECTIONS_OTHER_HOLDS_PRESERVED',
                 original_source_definition_sha256=baseline[key],
                 source_change_provenance=source_change)
+    from quest_enrichment_authoring import load_enrichment
+    from quest_recipe_refinements import apply_refinements
+    enrichment = load_enrichment(root)
+    refined, refinement_provenance = apply_refinements(root, payload)
+    for row in refined:
+        validator.validate(row)
+        key = row['identity']['key']
+        completed[key]['payload'] = copy.deepcopy(row)
+        completed[key]['source_evidence_provenance'] = enrichment[key]
+        if refinement_provenance:
+            completed[key]['recipe_refinement_provenance'] = refinement_provenance
     return completed
 
 

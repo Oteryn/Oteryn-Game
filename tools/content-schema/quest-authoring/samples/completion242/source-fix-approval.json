@@ -164,11 +164,11 @@
     },
     {
       "path": "tools/content-schema/quest-authoring/quest_completion_authoring.py",
-      "sha256": "779f2c72c5026a9338eb533232af128f76331731840af48f102fb6dccd4f8708"
+      "sha256": "9212f1f923fa7667138d13db5fe5f78e2c44ade6f8fd82af6a263329d6aa4993"
     },
     {
       "path": "tools/content-schema/quest-authoring/quest_completion.schema.json",
-      "sha256": "c24044f6fefa5c6c0999fcb3bfb1e060b067ef5344a4f8d0ce90d837bb574741"
+      "sha256": "195149e31bae898e55367c479f9515a32b4e23f3431349fac800bc9e2910f06f"
     },
     {
       "path": "tools/content-schema/quest-authoring/source_fix_guard.py",

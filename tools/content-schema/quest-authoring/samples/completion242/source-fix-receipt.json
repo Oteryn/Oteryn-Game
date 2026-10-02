@@ -1,7 +1,7 @@
 {
   "approval": {
     "path": "tools/content-schema/quest-authoring/samples/completion242/source-fix-approval.json",
-    "sha256": "227f07453be0de24396ed66fb0da7ec762b9c938ff6eaf96766ed51432d10543"
+    "sha256": "001ee5a5b9e46cc9be41565a266a4ee4d8ea6070d9333a8b5a541e9f6f2951b2"
   },
   "changes": [
     {
@@ -1092,7 +1092,7 @@
                       "otherwise": [
                         {
                           "owner": "Movement",
-                          "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
+                          "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 \u00a719.3; D37 owner accepted)",
                           "repeated": true,
                           "status": "blocked",
                           "to_source_line": 20
@@ -1411,7 +1411,7 @@
                     },
                     {
                       "owner": "Movement",
-                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
+                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 \u00a719.3; D37 owner accepted)",
                       "repeated": true,
                       "status": "blocked",
                       "to_source_line": 150
@@ -1480,7 +1480,7 @@
                         },
                         {
                           "owner": "Movement",
-                          "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
+                          "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 \u00a719.3; D37 owner accepted)",
                           "repeated": true,
                           "status": "blocked",
                           "to_source_line": 67
@@ -1548,7 +1548,7 @@
                         },
                         {
                           "owner": "Movement",
-                          "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
+                          "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 \u00a719.3; D37 owner accepted)",
                           "repeated": true,
                           "status": "blocked",
                           "to_source_line": 99
@@ -1633,7 +1633,7 @@
                       "otherwise": [
                         {
                           "owner": "Movement",
-                          "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
+                          "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 \u00a719.3; D37 owner accepted)",
                           "repeated": true,
                           "status": "blocked",
                           "to_source_line": 20
@@ -4092,7 +4092,7 @@
                       "otherwise": [
                         {
                           "owner": "Movement",
-                          "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
+                          "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 \u00a719.3; D37 owner accepted)",
                           "repeated": true,
                           "status": "blocked",
                           "to_source_line": 20
@@ -4411,7 +4411,7 @@
                     },
                     {
                       "owner": "Movement",
-                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
+                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 \u00a719.3; D37 owner accepted)",
                       "repeated": true,
                       "status": "blocked",
                       "to_source_line": 150
@@ -4480,7 +4480,7 @@
                         },
                         {
                           "owner": "Movement",
-                          "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
+                          "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 \u00a719.3; D37 owner accepted)",
                           "repeated": true,
                           "status": "blocked",
                           "to_source_line": 67
@@ -4548,7 +4548,7 @@
                         },
                         {
                           "owner": "Movement",
-                          "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
+                          "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 \u00a719.3; D37 owner accepted)",
                           "repeated": true,
                           "status": "blocked",
                           "to_source_line": 99
@@ -4633,7 +4633,7 @@
                       "otherwise": [
                         {
                           "owner": "Movement",
-                          "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
+                          "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 \u00a719.3; D37 owner accepted)",
                           "repeated": true,
                           "status": "blocked",
                           "to_source_line": 20
@@ -8816,7 +8816,7 @@
                     },
                     {
                       "owner": "Movement",
-                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
+                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 \u00a719.3; D37 owner accepted)",
                       "repeated": true,
                       "status": "blocked",
                       "to_source_line": 69
@@ -8923,7 +8923,7 @@
                     },
                     {
                       "owner": "Movement",
-                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
+                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 \u00a719.3; D37 owner accepted)",
                       "repeated": true,
                       "status": "blocked",
                       "to_source_line": 102
@@ -9123,7 +9123,7 @@
                                   "then": [
                                     {
                                       "owner": "Movement",
-                                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
+                                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 \u00a719.3; D37 owner accepted)",
                                       "status": "blocked",
                                       "to_source_line": 23
                                     }
@@ -9781,7 +9781,7 @@
                               "otherwise": [
                                 {
                                   "owner": "Movement",
-                                  "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
+                                  "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 \u00a719.3; D37 owner accepted)",
                                   "status": "blocked",
                                   "to_source_line": 47
                                 },
@@ -9909,7 +9909,7 @@
                     },
                     {
                       "owner": "Movement",
-                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
+                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 \u00a719.3; D37 owner accepted)",
                       "repeated": true,
                       "status": "blocked",
                       "to_source_line": 37
@@ -30968,7 +30968,7 @@
                     },
                     {
                       "owner": "Movement",
-                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
+                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 \u00a719.3; D37 owner accepted)",
                       "repeated": true,
                       "status": "blocked",
                       "to_source_line": 69
@@ -31075,7 +31075,7 @@
                     },
                     {
                       "owner": "Movement",
-                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
+                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 \u00a719.3; D37 owner accepted)",
                       "repeated": true,
                       "status": "blocked",
                       "to_source_line": 102
@@ -31275,7 +31275,7 @@
                                   "then": [
                                     {
                                       "owner": "Movement",
-                                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
+                                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 \u00a719.3; D37 owner accepted)",
                                       "status": "blocked",
                                       "to_source_line": 23
                                     }
@@ -31933,7 +31933,7 @@
                               "otherwise": [
                                 {
                                   "owner": "Movement",
-                                  "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
+                                  "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 \u00a719.3; D37 owner accepted)",
                                   "status": "blocked",
                                   "to_source_line": 47
                                 },
@@ -32061,7 +32061,7 @@
                     },
                     {
                       "owner": "Movement",
-                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
+                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 \u00a719.3; D37 owner accepted)",
                       "repeated": true,
                       "status": "blocked",
                       "to_source_line": 37
@@ -55856,7 +55856,7 @@
                   "otherwise": [
                     {
                       "owner": "Movement",
-                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
+                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 \u00a719.3; D37 owner accepted)",
                       "repeated": true,
                       "status": "blocked",
                       "to_source_line": 18
@@ -56395,7 +56395,7 @@
                   "otherwise": [
                     {
                       "owner": "Movement",
-                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
+                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 \u00a719.3; D37 owner accepted)",
                       "status": "blocked",
                       "to_source_line": 18
                     },
@@ -56544,7 +56544,7 @@
                               "then": [
                                 {
                                   "owner": "Movement",
-                                  "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
+                                  "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 \u00a719.3; D37 owner accepted)",
                                   "status": "blocked",
                                   "to_source_line": 27
                                 }
@@ -58829,7 +58829,7 @@
                   "otherwise": [
                     {
                       "owner": "Movement",
-                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
+                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 \u00a719.3; D37 owner accepted)",
                       "repeated": true,
                       "status": "blocked",
                       "to_source_line": 18
@@ -59368,7 +59368,7 @@
                   "otherwise": [
                     {
                       "owner": "Movement",
-                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
+                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 \u00a719.3; D37 owner accepted)",
                       "status": "blocked",
                       "to_source_line": 18
                     },
@@ -59517,7 +59517,7 @@
                               "then": [
                                 {
                                   "owner": "Movement",
-                                  "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
+                                  "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 \u00a719.3; D37 owner accepted)",
                                   "status": "blocked",
                                   "to_source_line": 27
                                 }
@@ -61025,7 +61025,7 @@
                             },
                             {
                               "owner": "Movement",
-                              "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
+                              "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 \u00a719.3; D37 owner accepted)",
                               "repeated": true,
                               "status": "blocked",
                               "to_source_line": 44
@@ -62502,7 +62502,7 @@
                                     },
                                     {
                                       "owner": "Movement",
-                                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
+                                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 \u00a719.3; D37 owner accepted)",
                                       "repeated": true,
                                       "status": "blocked",
                                       "to_source_line": 62
@@ -64198,7 +64198,7 @@
                                               "then": [
                                                 {
                                                   "owner": "Movement",
-                                                  "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
+                                                  "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 \u00a719.3; D37 owner accepted)",
                                                   "status": "blocked",
                                                   "to_source_line": 49
                                                 },
@@ -64245,7 +64245,7 @@
                                 },
                                 {
                                   "owner": "Movement",
-                                  "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
+                                  "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 \u00a719.3; D37 owner accepted)",
                                   "status": "blocked",
                                   "to_source_line": 56
                                 },
@@ -64265,7 +64265,7 @@
                           "otherwise": [
                             {
                               "owner": "Movement",
-                              "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
+                              "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 \u00a719.3; D37 owner accepted)",
                               "status": "blocked",
                               "to_source_line": 60
                             },
@@ -64559,7 +64559,7 @@
                                 },
                                 {
                                   "owner": "Movement",
-                                  "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
+                                  "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 \u00a719.3; D37 owner accepted)",
                                   "status": "blocked",
                                   "to_source_line": 102
                                 },
@@ -64619,7 +64619,7 @@
                               "otherwise": [
                                 {
                                   "owner": "Movement",
-                                  "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
+                                  "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 \u00a719.3; D37 owner accepted)",
                                   "status": "blocked",
                                   "to_source_line": 114
                                 },
@@ -64802,7 +64802,7 @@
                                 },
                                 {
                                   "owner": "Movement",
-                                  "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
+                                  "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 \u00a719.3; D37 owner accepted)",
                                   "status": "blocked",
                                   "to_source_line": 23
                                 },
@@ -64827,7 +64827,7 @@
                             },
                             {
                               "owner": "Movement",
-                              "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
+                              "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 \u00a719.3; D37 owner accepted)",
                               "status": "blocked",
                               "to_source_line": 29
                             },
@@ -64905,7 +64905,7 @@
                                 },
                                 {
                                   "owner": "Movement",
-                                  "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
+                                  "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 \u00a719.3; D37 owner accepted)",
                                   "status": "blocked",
                                   "to_source_line": 23
                                 },
@@ -64930,7 +64930,7 @@
                             },
                             {
                               "owner": "Movement",
-                              "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
+                              "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 \u00a719.3; D37 owner accepted)",
                               "status": "blocked",
                               "to_source_line": 29
                             },
@@ -70723,7 +70723,7 @@
                             },
                             {
                               "owner": "Movement",
-                              "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
+                              "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 \u00a719.3; D37 owner accepted)",
                               "repeated": true,
                               "status": "blocked",
                               "to_source_line": 44
@@ -72200,7 +72200,7 @@
                                     },
                                     {
                                       "owner": "Movement",
-                                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
+                                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 \u00a719.3; D37 owner accepted)",
                                       "repeated": true,
                                       "status": "blocked",
                                       "to_source_line": 62
@@ -73879,7 +73879,7 @@
                                               "then": [
                                                 {
                                                   "owner": "Movement",
-                                                  "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
+                                                  "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 \u00a719.3; D37 owner accepted)",
                                                   "status": "blocked",
                                                   "to_source_line": 49
                                                 },
@@ -73926,7 +73926,7 @@
                                 },
                                 {
                                   "owner": "Movement",
-                                  "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
+                                  "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 \u00a719.3; D37 owner accepted)",
                                   "status": "blocked",
                                   "to_source_line": 56
                                 },
@@ -73946,7 +73946,7 @@
                           "otherwise": [
                             {
                               "owner": "Movement",
-                              "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
+                              "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 \u00a719.3; D37 owner accepted)",
                               "status": "blocked",
                               "to_source_line": 60
                             },
@@ -74240,7 +74240,7 @@
                                 },
                                 {
                                   "owner": "Movement",
-                                  "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
+                                  "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 \u00a719.3; D37 owner accepted)",
                                   "status": "blocked",
                                   "to_source_line": 102
                                 },
@@ -74300,7 +74300,7 @@
                               "otherwise": [
                                 {
                                   "owner": "Movement",
-                                  "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
+                                  "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 \u00a719.3; D37 owner accepted)",
                                   "status": "blocked",
                                   "to_source_line": 114
                                 },
@@ -74483,7 +74483,7 @@
                                 },
                                 {
                                   "owner": "Movement",
-                                  "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
+                                  "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 \u00a719.3; D37 owner accepted)",
                                   "status": "blocked",
                                   "to_source_line": 23
                                 },
@@ -74508,7 +74508,7 @@
                             },
                             {
                               "owner": "Movement",
-                              "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
+                              "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 \u00a719.3; D37 owner accepted)",
                               "status": "blocked",
                               "to_source_line": 29
                             },
@@ -74586,7 +74586,7 @@
                                 },
                                 {
                                   "owner": "Movement",
-                                  "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
+                                  "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 \u00a719.3; D37 owner accepted)",
                                   "status": "blocked",
                                   "to_source_line": 23
                                 },
@@ -74611,7 +74611,7 @@
                             },
                             {
                               "owner": "Movement",
-                              "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
+                              "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 \u00a719.3; D37 owner accepted)",
                               "status": "blocked",
                               "to_source_line": 29
                             },
@@ -80393,7 +80393,7 @@
                       "then": [
                         {
                           "owner": "Movement",
-                          "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
+                          "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 \u00a719.3; D37 owner accepted)",
                           "repeated": true,
                           "status": "blocked",
                           "to_source_line": 27
@@ -81341,7 +81341,7 @@
                   "otherwise": [
                     {
                       "owner": "Movement",
-                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
+                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 \u00a719.3; D37 owner accepted)",
                       "repeated": true,
                       "status": "blocked",
                       "to_source_line": 66
@@ -81420,7 +81420,7 @@
                     },
                     {
                       "owner": "Movement",
-                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
+                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 \u00a719.3; D37 owner accepted)",
                       "repeated": true,
                       "status": "blocked",
                       "to_source_line": 98
@@ -82254,7 +82254,7 @@
                           "then": [
                             {
                               "owner": "Movement",
-                              "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
+                              "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 \u00a719.3; D37 owner accepted)",
                               "status": "blocked",
                               "to_source_line": 22
                             }
@@ -82335,7 +82335,7 @@
                               "then": [
                                 {
                                   "owner": "Movement",
-                                  "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
+                                  "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 \u00a719.3; D37 owner accepted)",
                                   "status": "blocked",
                                   "to_source_line": 34
                                 },
@@ -82770,7 +82770,7 @@
                       "then": [
                         {
                           "owner": "Movement",
-                          "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
+                          "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 \u00a719.3; D37 owner accepted)",
                           "repeated": true,
                           "status": "blocked",
                           "to_source_line": 27
@@ -83670,7 +83670,7 @@
                   "otherwise": [
                     {
                       "owner": "Movement",
-                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
+                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 \u00a719.3; D37 owner accepted)",
                       "repeated": true,
                       "status": "blocked",
                       "to_source_line": 66
@@ -83749,7 +83749,7 @@
                     },
                     {
                       "owner": "Movement",
-                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
+                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 \u00a719.3; D37 owner accepted)",
                       "repeated": true,
                       "status": "blocked",
                       "to_source_line": 98
@@ -84583,7 +84583,7 @@
                           "then": [
                             {
                               "owner": "Movement",
-                              "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
+                              "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 \u00a719.3; D37 owner accepted)",
                               "status": "blocked",
                               "to_source_line": 22
                             }
@@ -84664,7 +84664,7 @@
                               "then": [
                                 {
                                   "owner": "Movement",
-                                  "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
+                                  "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 \u00a719.3; D37 owner accepted)",
                                   "status": "blocked",
                                   "to_source_line": 34
                                 },
@@ -89476,7 +89476,7 @@
                       "then": [
                         {
                           "owner": "Movement",
-                          "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
+                          "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 \u00a719.3; D37 owner accepted)",
                           "repeated": true,
                           "status": "blocked",
                           "to_source_line": 27
@@ -90424,7 +90424,7 @@
                   "otherwise": [
                     {
                       "owner": "Movement",
-                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
+                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 \u00a719.3; D37 owner accepted)",
                       "repeated": true,
                       "status": "blocked",
                       "to_source_line": 66
@@ -90503,7 +90503,7 @@
                     },
                     {
                       "owner": "Movement",
-                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
+                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 \u00a719.3; D37 owner accepted)",
                       "repeated": true,
                       "status": "blocked",
                       "to_source_line": 98
@@ -91321,7 +91321,7 @@
                           "then": [
                             {
                               "owner": "Movement",
-                              "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
+                              "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 \u00a719.3; D37 owner accepted)",
                               "status": "blocked",
                               "to_source_line": 22
                             }
@@ -91402,7 +91402,7 @@
                               "then": [
                                 {
                                   "owner": "Movement",
-                                  "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
+                                  "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 \u00a719.3; D37 owner accepted)",
                                   "status": "blocked",
                                   "to_source_line": 34
                                 },
@@ -91837,7 +91837,7 @@
                       "then": [
                         {
                           "owner": "Movement",
-                          "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
+                          "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 \u00a719.3; D37 owner accepted)",
                           "repeated": true,
                           "status": "blocked",
                           "to_source_line": 27
@@ -92737,7 +92737,7 @@
                   "otherwise": [
                     {
                       "owner": "Movement",
-                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
+                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 \u00a719.3; D37 owner accepted)",
                       "repeated": true,
                       "status": "blocked",
                       "to_source_line": 66
@@ -92816,7 +92816,7 @@
                     },
                     {
                       "owner": "Movement",
-                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
+                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 \u00a719.3; D37 owner accepted)",
                       "repeated": true,
                       "status": "blocked",
                       "to_source_line": 98
@@ -93634,7 +93634,7 @@
                           "then": [
                             {
                               "owner": "Movement",
-                              "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
+                              "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 \u00a719.3; D37 owner accepted)",
                               "status": "blocked",
                               "to_source_line": 22
                             }
@@ -93715,7 +93715,7 @@
                               "then": [
                                 {
                                   "owner": "Movement",
-                                  "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
+                                  "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 \u00a719.3; D37 owner accepted)",
                                   "status": "blocked",
                                   "to_source_line": 34
                                 },
@@ -98509,7 +98509,7 @@
                   "otherwise": [
                     {
                       "owner": "Movement",
-                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
+                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 \u00a719.3; D37 owner accepted)",
                       "status": "blocked",
                       "to_source_line": 48
                     },
@@ -98938,7 +98938,7 @@
                   "otherwise": [
                     {
                       "owner": "Movement",
-                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
+                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 \u00a719.3; D37 owner accepted)",
                       "status": "blocked",
                       "to_source_line": 34
                     },
@@ -103028,7 +103028,7 @@
                   "otherwise": [
                     {
                       "owner": "Movement",
-                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
+                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 \u00a719.3; D37 owner accepted)",
                       "status": "blocked",
                       "to_source_line": 48
                     },
@@ -103457,7 +103457,7 @@
                   "otherwise": [
                     {
                       "owner": "Movement",
-                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
+                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 \u00a719.3; D37 owner accepted)",
                       "status": "blocked",
                       "to_source_line": 34
                     },
@@ -106923,11 +106923,11 @@
     },
     {
       "path": "tools/content-schema/quest-authoring/quest_completion_authoring.py",
-      "sha256": "779f2c72c5026a9338eb533232af128f76331731840af48f102fb6dccd4f8708"
+      "sha256": "9212f1f923fa7667138d13db5fe5f78e2c44ade6f8fd82af6a263329d6aa4993"
     },
     {
       "path": "tools/content-schema/quest-authoring/quest_completion.schema.json",
-      "sha256": "c24044f6fefa5c6c0999fcb3bfb1e060b067ef5344a4f8d0ce90d837bb574741"
+      "sha256": "195149e31bae898e55367c479f9515a32b4e23f3431349fac800bc9e2910f06f"
     },
     {
       "path": "tools/content-schema/quest-authoring/source_fix_guard.py",
