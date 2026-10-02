@@ -1,0 +1,87 @@
+{
+  "schema": "FORGE865_SOURCE_RESEARCH_STOPPED_MANIFEST/v1",
+  "status": "SOURCE_DISCOVERY_PASS_NOT_FORMAL_BINDING_OR_IMPORT_QUALIFICATION",
+  "baseline": "4f690c1e8a8966a4d074dde94d5a884dbb34fb94",
+  "source_cutoff": "2026-09-27T23:59:59Z",
+  "transport": "Actual anonymous public Chrome/CDP same-origin MediaWiki API after normalBR HTTP403; existingChrome154, dedicated research tab only",
+  "source_counts": {
+    "read_raw_articles": 865,
+    "literal_positive_pairs": 859,
+    "precut_literal_pair_name_class_agreement": 858,
+    "postcut": 0,
+    "source_limited_hold_memberships": {
+      "NO_SINGLE_LITERAL_INDEPENDENT_MAXIMUM": 1,
+      "NO_SINGLE_LITERAL_CLASSIFICATION": 5,
+      "CLASSIFICATION_DIFFERS_CURRENT_OFFICIAL": 6
+    }
+  },
+  "owned_files": [
+    {
+      "path": "/workspace/audit-continuation/forge865-independent-raw-source-discovery-20261002.json",
+      "sha256": "4e849ce737b7d563b7dcf9329a0740a8e04ce5ca6d4cb97689c5c8e81de2ea5c",
+      "bytes": 1392687
+    },
+    {
+      "path": "/workspace/audit-continuation/stack-forge-maxima-public-20261002/forge865-current-raw-part-00-browser-cdp-source.json",
+      "sha256": "681d740f26f8880d9939bff98db7f0c719909e1ed313d6d6082e54e397cb31fe",
+      "bytes": 247766
+    },
+    {
+      "path": "/workspace/audit-continuation/stack-forge-maxima-public-20261002/forge865-current-raw-part-01-browser-cdp-source.json",
+      "sha256": "56e098b58c6f4c47bc2e18bc08a8322f4a44917d8af2dd6971090a5b93dfd484",
+      "bytes": 229863
+    },
+    {
+      "path": "/workspace/audit-continuation/stack-forge-maxima-public-20261002/forge865-current-raw-part-02-browser-cdp-source.json",
+      "sha256": "7ae2f356f26e9cdd19d3796a1efb0416a0a87c33af74c713d7bc10bbc3a9a116",
+      "bytes": 224242
+    },
+    {
+      "path": "/workspace/audit-continuation/stack-forge-maxima-public-20261002/forge865-current-raw-part-03-browser-cdp-source.json",
+      "sha256": "3ccd1218a0e975001770e292523ba40386228ff32055e701640eb6b697c7cbc7",
+      "bytes": 244531
+    },
+    {
+      "path": "/workspace/audit-continuation/stack-forge-maxima-public-20261002/forge865-current-raw-part-04-browser-cdp-source.json",
+      "sha256": "4da2d557448de4eda16403cda8255f756464c4f21b494aba6fcf9f235018568c",
+      "bytes": 306717
+    },
+    {
+      "path": "/workspace/audit-continuation/stack-forge-maxima-public-20261002/forge865-current-raw-part-05-browser-cdp-source.json",
+      "sha256": "2f8a4db5f20b6e10b2c89f64bcd61d8c7da5484c8e35f81a38d5a00296c8725c",
+      "bytes": 206263
+    },
+    {
+      "path": "/workspace/audit-continuation/stack-forge-maxima-public-20261002/forge-four-category-browser-cdp-source.json",
+      "sha256": "f64c08064e3fa098abe4880d22e85d096353b21198021ac5a9d0e22a8749c091",
+      "bytes": 61650
+    },
+    {
+      "path": "/workspace/audit-continuation/forge870-br-whole-cohort-raw-discovery-20261002.json",
+      "sha256": "7785ff8f9bf4724329ff54408387420a85ee1d709d8e8ee01fc4a5d4e6e39067",
+      "bytes": 276842
+    },
+    {
+      "path": "/workspace/audit-continuation/current-stack-forge-maxima-cohorts-20261002.json",
+      "sha256": "875c4256ba04bcdb286b27735bff1ab5873faffec00016f06e2674a6cbb7042b",
+      "bytes": 4254963
+    }
+  ],
+  "integrity": "All six retained fullraw API body strings include exactURLs,status200,UTC,bodySHA,latest pageIDs/revisionIDs/timestamps. PerItem raw article hashes independently calculated. All865 latest raw revisions at/beforecutoff. No missing fullbody reconstructs. Category pages are discovery only; explicit max_tier literal is independent ownarticle fact, not rendered template class mapping.",
+  "not_yet_qualified": [
+    "Formal exact BR sourceBinding/explicit identity evidence",
+    "Actual whole Native forward/reverse/alias/membership/name/World/admission guards",
+    "Full ownraw parameter parser/balanced/comment/duplicate/globalsource/variant agreement",
+    "Historical pre-cut selector for latest post-cut pages; current continuity recorded separately"
+  ],
+  "source_unqualified_five_ids": [
+    21348,
+    21350,
+    47370,
+    47376,
+    50166
+  ],
+  "no_project_changes": true,
+  "no_cargo_or_git_actions": true,
+  "native_imported_new_items": 0
+}
