@@ -20,7 +20,7 @@ from unittest.mock import patch
 ROOT = Path(__file__).resolve().parents[2]
 GATE = ROOT / ".github/workflows/merge-group-gate.yml"
 LIFECYCLE = ROOT / "tools/agents/tests/test_governance_lifecycle_discovery.py"
-APPROVED = "316241a1e0bc10b714410080f7003d6d35357704"
+APPROVED = "ed5975ba0fe74a9e0836eb492c55f3fa363b4d85"
 LIFECYCLE_COMMAND = "python tools/agents/tests/test_governance_lifecycle_discovery.py"
 REGISTERED_POSTGRES_TARGETS = (
     ("durability_postgres", "apps/game-server/tests/durability_postgres.rs"),
@@ -202,7 +202,7 @@ def main() -> int:
         "              expected = (pathlib.Path.cwd() / registered_path).resolve(strict=True)",
         "              observed = pathlib.Path(matches[0]['src_path']).resolve(strict=True)",
         '              verify_registered_target_binding "$name" "$path"',
-        '              cargo +1.94.0 test --locked -p oteryn-game-server --test "$name"',
+        '              cargo +1.94.0 test --locked --workspace --test "$name"',
     ):
         assert fragment in postgres, f"Merge Queue PostgreSQL routing missing: {fragment}"
     for name, target in REGISTERED_POSTGRES_TARGETS:
@@ -246,6 +246,8 @@ def main() -> int:
             )
 
         assert verify([package()]).returncode == 0
+        shadow = dict(package(), name="other-workspace-package")
+        assert verify([package(), shadow]).returncode != 0, "workspace target shadow must fail"
         rejected = verify([package(wrong_manifest)])
         assert rejected.returncode != 0 and "package manifest is" in rejected.stderr, rejected
         for packages in (
@@ -292,14 +294,14 @@ def main() -> int:
             assert changed != original and validate(changed) != 0, (job, key)
             mutations += 1
     for command in (
-        '              cargo +1.94.0 test --locked -p oteryn-game-server --test "$name"',
+        '              cargo +1.94.0 test --locked --workspace --test "$name"',
         "        run: cargo +1.94.0 test --locked -p oteryn-input-platform --target x86_64-pc-windows-msvc",
         "        run: cargo +1.94.0 test --locked -p oteryn-simulation-determinism --target x86_64-pc-windows-msvc",
     ):
         assert command in original
         for replacement in (
             command.replace("cargo", "echo cargo", 1),
-            command.replace("oteryn-", "mutated-", 1),
+            (command.replace("oteryn-", "mutated-", 1) if "oteryn-" in command else command.replace("--workspace", "-p oteryn-game-server", 1)),
         ):
             assert replacement != command
             assert validate(original.replace(command, replacement, 1)) != 0

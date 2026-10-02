@@ -52,8 +52,8 @@ EXPECTED_ROUTING_CONTRACT_VALIDATOR_BLOB = "ce2fc840f22fd75c0ccb067d9807698a8765
 EXPECTED_MERGE_GATE_ATLAS_FULLWORLD_JOB_SHA256 = "0910d3ef6afed2e689c687d1c6692963336c4b737def32fea41bbb5c4c08eb40"
 EXPECTED_MERGE_GATE_NODE_BOOT_JOB_SHA256 = "3f59ad249da2e820f23495120e88f7456a63a47655810adfcf3345764bf68d68"
 EXPECTED_MERGE_GATE_SERVER_SEAM_JOB_SHA256 = "a62f892daddbbaa96f764ecd22ab0c2edf0084c4d40415d46d1dc12f00ecff4e"
-EXPECTED_MERGE_GROUP_GATE_BLOB = "316241a1e0bc10b714410080f7003d6d35357704"
-EXPECTED_POST_MERGE_RUST_SHA256 = "cc52d9b664a21912a06b3408d5570fc4b3cbed013637685fae92ccde40a40256"
+EXPECTED_MERGE_GROUP_GATE_BLOB = "ed5975ba0fe74a9e0836eb492c55f3fa363b4d85"
+EXPECTED_POST_MERGE_RUST_SHA256 = "eb87752bc9e078865a2864118175fa8ccfa9f18a4eb577c5b9d8d777b7a9d8d1"
 EXPECTED_MERGE_GROUP_GATE_TOP_LEVEL_KEYS = [
     "name",
     "on",
@@ -529,7 +529,7 @@ def main() -> int:
                 "expected = (pathlib.Path.cwd() / registered_path).resolve(strict=True)",
                 "observed = pathlib.Path(matches[0]['src_path']).resolve(strict=True)",
                 'verify_registered_target_binding "$name" "$path"',
-                'cargo +1.94.0 test --locked -p oteryn-game-server --test "$name"',
+                'cargo +1.94.0 test --locked --workspace --test "$name"',
                 "run_registered_target durability_postgres apps/game-server/tests/durability_postgres.rs",
                 "run_registered_target character_authority_postgres apps/game-server/tests/character_authority_postgres.rs",
                 "run_registered_target runtime_scope_assignment_postgres apps/game-server/tests/runtime_scope_assignment_postgres.rs",

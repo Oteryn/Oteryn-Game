@@ -449,6 +449,9 @@ jobs:
               if not isinstance(targets, list):
                   raise ValueError('package targets is not a list')
               matches = [target for target in targets if target.get('name') == name]
+              global_matches = [target for package in packages for target in package.get('targets', []) if target.get('name') == name and target.get('kind') == ['test']]
+              if len(global_matches) != 1:
+                  raise ValueError('expected exactly one workspace integration-test target')
               if len(matches) != 1 or matches[0].get('kind') != ['test']:
                   raise ValueError('expected exactly one integration-test target')
               expected = (pathlib.Path.cwd() / registered_path).resolve(strict=True)
@@ -492,7 +495,7 @@ jobs:
               test -f "$path" && test ! -L "$path"
               test "$(git hash-object -- "$path")" = "$(git rev-parse "$HEAD_SHA:$path")"
               verify_registered_target_binding "$name" "$path"
-              cargo +1.94.0 test --locked -p oteryn-game-server --test "$name"
+              cargo +1.94.0 test --locked --workspace --test "$name"
             elif [[ -e "$path" ]]; then
               echo "Absent registered PostgreSQL target has unexpected checkout state: $name -> $path" >&2
               exit 1

@@ -291,6 +291,9 @@ jobs:
               if not isinstance(targets, list):
                   raise ValueError('package targets is not a list')
               matches = [target for target in targets if target.get('name') == name]
+              global_matches = [target for package in packages for target in package.get('targets', []) if target.get('name') == name and target.get('kind') == ['test']]
+              if len(global_matches) != 1:
+                  raise ValueError('expected exactly one workspace integration-test target')
               if len(matches) != 1 or matches[0].get('kind') != ['test']:
                   raise ValueError('expected exactly one integration-test target')
               expected = (pathlib.Path.cwd() / registered_path).resolve(strict=True)
@@ -304,7 +307,7 @@ jobs:
           }
           if [[ -f apps/game-server/tests/durability_postgres.rs && ! -L apps/game-server/tests/durability_postgres.rs ]]; then
             verify_registered_target_binding durability_postgres apps/game-server/tests/durability_postgres.rs
-            cargo +1.94.0 test --locked -p oteryn-game-server --test durability_postgres
+            cargo +1.94.0 test --locked --workspace --test durability_postgres
           elif [[ -e apps/game-server/tests/durability_postgres.rs ]]; then
             echo "Registered PostgreSQL target is not a regular file: durability_postgres -> apps/game-server/tests/durability_postgres.rs" >&2
             exit 1
@@ -316,7 +319,7 @@ jobs:
             local path="$2"
             if [[ -f "$path" && ! -L "$path" ]]; then
               verify_registered_target_binding "$name" "$path"
-              cargo +1.94.0 test --locked -p oteryn-game-server --test "$name"
+              cargo +1.94.0 test --locked --workspace --test "$name"
             elif [[ -e "$path" ]]; then
               echo "Registered PostgreSQL target is not a regular file: $name -> $path" >&2
               exit 1
