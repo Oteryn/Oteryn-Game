@@ -14,8 +14,13 @@ from engine_items import (
     qualified_navigation_supplement,
     resolve_wiki_family_value,
 )
+from item_engine_navigation import build_navigation as build_engine_navigation
+from item_navigation_source_supplement import (
+    build_seven,
+    load_alias_fallback,
+    name_agrees,
+)
 from item_official_navigation import build_official_navigation
-from item_navigation_source_supplement import build_seven, load_alias_fallback, name_agrees
 
 SNAPSHOT = "imports/tibiawiki/facts/items-stats.json"
 # The census omitted this BR navigation label; both the weapons and schema already
@@ -216,6 +221,13 @@ def build_taxonomy(
     ):
         key = tuple(row["target"][field] for field in ("family", "key", "revision"))
         rows[key] = row
+    for row in build_engine_navigation(
+        {key[1]: definition for key, definition in definitions.items()},
+        client or {},
+        routed_keys | {key[1] for key in rows},
+    ):
+        key = tuple(row["target"][field] for field in ("family", "key", "revision"))
+        rows[key] = row
     return [rows[key] for key in sorted(rows)]
 
 
@@ -290,7 +302,12 @@ def taxonomy_inputs(root=ROOT):
                     routed_keys.add(pointer["key"])
     identity = build_identity_index()
     fallback = load_taxonomy_fallback(
-        root, identity, bound_keys, routed_keys, snapshot, load_alias_fallback(root, identity)
+        root,
+        identity,
+        bound_keys,
+        routed_keys,
+        snapshot,
+        load_alias_fallback(root, identity),
     )
     client_bytes = (root / CLIENT_PATH).read_bytes()
     if hashlib.sha256(client_bytes).hexdigest() != CLIENT_DIGEST:

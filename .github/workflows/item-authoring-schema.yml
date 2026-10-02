@@ -26,6 +26,9 @@ on:
       - content/items/definitions/**
       - content/assets/files/appearances-*.dat
       - imports/official/appearance-membership/**
+      - tools/content-migration/item_engine_navigation.py
+      - tools/content-migration/test_item_engine_navigation.py
+      - tools/content-migration/samples/engine-family-navigation-265.json
       - .github/workflows/item-authoring-schema.yml
   workflow_dispatch:
 
@@ -178,6 +181,7 @@ jobs:
               -o "$DONOR_SRC/$path"
           done
           python build_catalogue.py --source "$SRC" --donor-source "$DONOR_SRC" --official-client --check
+          python ../../content-migration/item_engine_navigation.py --source "$SRC" --donor-source "$DONOR_SRC"
 
       - name: Item Master census
         working-directory: .
