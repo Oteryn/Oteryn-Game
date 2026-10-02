@@ -1,0 +1,44 @@
+{
+  "status": "SOURCE_QUALIFICATION_ONLY_PASS",
+  "baseline": "62c27da6bdad8ee22e5f8e5ea73c6f957133f640",
+  "owned_external_files": [
+    {
+      "path": "/workspace/audit-continuation/qualify-stack-default-successor8.py",
+      "sha256": "d228876762301a76c4d4d8b4200b209a823622ee9e8b1b47b8e0426920603ef0",
+      "bytes": 8880
+    },
+    {
+      "path": "/workspace/audit-continuation/stack-default-successor8-source-qualification.json",
+      "sha256": "5f9a767cee631c73cd2ce534c04787dc82091ab15b8ad65add15e8b7cbc67bd4",
+      "bytes": 152017
+    },
+    {
+      "path": "/workspace/audit-continuation/stack-default-successor8-source-packet.json",
+      "sha256": "a7e55dbd3c29153d1a06089d8626f677c05b6a9985c4c77aace8aec900ae056e",
+      "bytes": 15249
+    },
+    {
+      "path": "/workspace/audit-continuation/stack-default-successor8-compiler-integration-plan.md",
+      "sha256": "0d160daa30ccc3601d350fc7a644b152660866cfd744e3b9db5ce1b99d91eb24",
+      "bytes": 6888
+    }
+  ],
+  "qualified_ids": [
+    23229,
+    23230,
+    23231,
+    23232,
+    23295,
+    23299,
+    23335,
+    23339
+  ],
+  "source_qualified_items": 8,
+  "source_holds": 0,
+  "native_applied": 0,
+  "original_default1487_and_historical7": "UNCHANGED_BOTH_CONTEXT_CHECKS_PASS",
+  "source_own_refs": "8 exact full own-ID/cutoff/rawarticle/rawbox references verified",
+  "repo_edits": false,
+  "Cargo": false,
+  "publication": false
+}
