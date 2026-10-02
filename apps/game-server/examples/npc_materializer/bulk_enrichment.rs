@@ -236,7 +236,35 @@ fn visual_targets() -> Result<BTreeSet<String>> {
     }
     Ok(keys)
 }
-fn visual_scope(before: &ProjectV2Declaration, after: &ProjectV2Declaration) -> Result<bool> {
+fn visual_followup_targets() -> Result<BTreeSet<String>> {
+    let mut keys = visual_targets()?;
+    if hex_sha256(NPC_APPEARANCE_VISUAL) != NPC_APPEARANCE_VISUAL_SHA256 {
+        return Err("visual follow-up predecessor packet drifted".into());
+    }
+    let p: Packet = serde_json::from_slice(NPC_APPEARANCE_VISUAL)?;
+    if p.profile_repairs.len() != 98 {
+        return Err("visual follow-up original selection inventory drifted".into());
+    }
+    for repair in p.profile_repairs {
+        if !keys.remove(&repair.after.target.key) {
+            return Err("visual follow-up selected profile drifted".into());
+        }
+    }
+    if keys.len() != 12 {
+        return Err("visual follow-up held inventory drifted".into());
+    }
+    Ok(keys)
+}
+fn visual_scope(
+    before: &ProjectV2Declaration,
+    after: &ProjectV2Declaration,
+    from_revision: &str,
+) -> Result<bool> {
+    let child = if from_revision == "g4-npc-provisional-enrichment-r25" {
+        "r26_visual_mapping"
+    } else {
+        "r25_visual_mapping"
+    };
     let (ProjectV2Declaration::Npc { fields, .. }, ProjectV2Declaration::Npc { fields: next, .. }) =
         (before, after)
     else {
@@ -287,20 +315,35 @@ fn visual_scope(before: &ProjectV2Declaration, after: &ProjectV2Declaration) -> 
                 let (Some(a), Some(b)) = (a.as_object_mut(), b.as_object_mut()) else {
                     return Ok(false);
                 };
-                a.remove("r25_visual_mapping");
-                b.remove("r25_visual_mapping");
+                a.remove(child);
+                b.remove(child);
                 if a != b {
                     return Ok(false);
                 }
             }
             "oteryn:source.npc.bulk.appearance_selection" => {
-                if !matches!(
-                    b["classification"].as_str(),
-                    Some(
-                        "APPROXIMATE_WIKI_VISUAL_MAPPING"
-                            | "APPROXIMATE_WIKI_VISUAL_OBJECT_MAPPING"
-                    )
-                ) || b["actor_exact_match"] != false
+                let documented_invisible = from_revision == "g4-npc-provisional-enrichment-r25"
+                    && matches!(before,ProjectV2Declaration::Npc{identity,..}
+                        if identity.key=="oteryn:npc.opticorder_forge_npc")
+                    && b["classification"] == "APPROXIMATE_WIKI_DOCUMENTED_INVISIBLE_MAPPING"
+                    && b["visibility"] == "invisible"
+                    && b["outfit"].is_null();
+                let documentary_default = from_revision == "g4-npc-provisional-enrichment-r25"
+                    && matches!(before,ProjectV2Declaration::Npc{identity,..}
+                        if matches!(identity.key.as_str(),"oteryn:npc.mud"|"oteryn:npc.planestrider_npc"))
+                    && b["classification"] == "PROJECT_DEFAULT_NO_SOURCE_SPRITE"
+                    && b["source_completeness"] == "unknown"
+                    && b["visual_correspondence"] == "unknown";
+                if (!documented_invisible
+                    && !documentary_default
+                    && !matches!(
+                        b["classification"].as_str(),
+                        Some(
+                            "APPROXIMATE_WIKI_VISUAL_MAPPING"
+                                | "APPROXIMATE_WIKI_VISUAL_OBJECT_MAPPING"
+                        )
+                    ))
+                    || b["actor_exact_match"] != false
                     || b["canonical_tibia_fidelity_claim"] != false
                 {
                     return Ok(false);
@@ -331,7 +374,9 @@ pub(super) fn apply(
     {
         return Err("enrichment envelope drifted".into());
     }
-    let placeholders = if packet.from_project_revision == "g4-npc-provisional-enrichment-r24" {
+    let placeholders = if packet.from_project_revision == "g4-npc-provisional-enrichment-r25" {
+        Some(visual_followup_targets()?)
+    } else if packet.from_project_revision == "g4-npc-provisional-enrichment-r24" {
         Some(visual_targets()?)
     } else if matches!(
         packet.from_project_revision.as_str(),
@@ -346,8 +391,10 @@ pub(super) fn apply(
     let mut seen = BTreeSet::new();
     let mut npc_count = 0;
     for repair in &packet.repairs {
-        if packet.from_project_revision == "g4-npc-provisional-enrichment-r24"
-            && !visual_scope(&repair.before, &repair.after)?
+        if matches!(
+            packet.from_project_revision.as_str(),
+            "g4-npc-provisional-enrichment-r24" | "g4-npc-provisional-enrichment-r25"
+        ) && !visual_scope(&repair.before, &repair.after, &packet.from_project_revision)?
         {
             return Err("appearance-only successor cannot change dialogue/roles/history".into());
         }
@@ -405,6 +452,23 @@ pub(super) fn apply(
     }
     let mut seen = BTreeSet::new();
     for repair in &packet.profile_repairs {
+        if packet.from_project_revision == "g4-npc-provisional-enrichment-r25"
+            && matches!(
+                repair.after.target.key.as_str(),
+                "oteryn:presentation.npc.mud" | "oteryn:presentation.npc.planestrider_npc"
+            )
+        {
+            return Err("source-unknown neutral choices must preserve existing profiles".into());
+        }
+
+        if packet.from_project_revision == "g4-npc-provisional-enrichment-r25"
+            && matches!(&repair.after.data,ProjectV2AuthoringProfileData::Presentation(p)
+                if p.asset_binding.is_none())
+            && repair.after.target.key != "oteryn:presentation.npc.opticorder_forge_npc"
+        {
+            return Err("documented invisibility cannot hide another actor".into());
+        }
+
         if placeholders.as_ref().is_some_and(|keys| {
             !keys.contains(&repair.before.target.key)
                 || !matches!(
@@ -448,6 +512,7 @@ pub(super) fn reverse_for_fixture(
 ) -> Result<()> {
     let chain = if bytes == NPC_ENRICH {
         vec![
+            (NPC_APPEARANCE_FOLLOWUP, NPC_APPEARANCE_FOLLOWUP_SHA256),
             (NPC_APPEARANCE_VISUAL, NPC_APPEARANCE_VISUAL_SHA256),
             (NPC_ENRICH_UPGRADE, NPC_ENRICH_UPGRADE_SHA256),
             (NPC_ENRICH_FINAL, NPC_ENRICH_FINAL_SHA256),
@@ -456,6 +521,7 @@ pub(super) fn reverse_for_fixture(
         ]
     } else if bytes == NPC_ENRICH_MORE {
         vec![
+            (NPC_APPEARANCE_FOLLOWUP, NPC_APPEARANCE_FOLLOWUP_SHA256),
             (NPC_APPEARANCE_VISUAL, NPC_APPEARANCE_VISUAL_SHA256),
             (NPC_ENRICH_UPGRADE, NPC_ENRICH_UPGRADE_SHA256),
             (NPC_ENRICH_FINAL, NPC_ENRICH_FINAL_SHA256),
@@ -463,13 +529,20 @@ pub(super) fn reverse_for_fixture(
         ]
     } else if bytes == NPC_ENRICH_FINAL {
         vec![
+            (NPC_APPEARANCE_FOLLOWUP, NPC_APPEARANCE_FOLLOWUP_SHA256),
             (NPC_APPEARANCE_VISUAL, NPC_APPEARANCE_VISUAL_SHA256),
             (NPC_ENRICH_UPGRADE, NPC_ENRICH_UPGRADE_SHA256),
             (bytes, packet_sha256),
         ]
     } else if bytes == NPC_ENRICH_UPGRADE {
         vec![
+            (NPC_APPEARANCE_FOLLOWUP, NPC_APPEARANCE_FOLLOWUP_SHA256),
             (NPC_APPEARANCE_VISUAL, NPC_APPEARANCE_VISUAL_SHA256),
+            (bytes, packet_sha256),
+        ]
+    } else if bytes == NPC_APPEARANCE_VISUAL {
+        vec![
+            (NPC_APPEARANCE_FOLLOWUP, NPC_APPEARANCE_FOLLOWUP_SHA256),
             (bytes, packet_sha256),
         ]
     } else {
@@ -739,7 +812,7 @@ mod tests {
             .unwrap()
             .after
             .clone();
-        assert!(visual_scope(&before, &before).unwrap());
+        assert!(visual_scope(&before, &before, "g4-npc-provisional-enrichment-r24").unwrap());
         let mut after = before.clone();
         if let ProjectV2Declaration::Npc { fields, .. } = &mut after {
             let field = fields
@@ -753,12 +826,19 @@ mod tests {
             q["profession"] = serde_json::json!("foreign");
             *text = serde_json::to_string(&q).unwrap();
         }
-        assert!(!visual_scope(&before, &after).unwrap());
+        assert!(!visual_scope(&before, &after, "g4-npc-provisional-enrichment-r24").unwrap());
         let dialogue = p
             .repairs
             .iter()
             .find(|r| matches!(r.after, ProjectV2Declaration::Dialogue { .. }))
             .unwrap();
-        assert!(!visual_scope(&dialogue.before, &dialogue.after).unwrap());
+        assert!(
+            !visual_scope(
+                &dialogue.before,
+                &dialogue.after,
+                "g4-npc-provisional-enrichment-r24"
+            )
+            .unwrap()
+        );
     }
 }

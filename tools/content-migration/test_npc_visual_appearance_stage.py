@@ -8,6 +8,9 @@ class VisualStageTests(unittest.TestCase):
         packet=json.loads((ROOT/'docs/agents/evidence/OTV2-20261002-npc-appearance-r25/native-enrichment.json').read_text())
         records={r['identity']['key']:r for r in cls.baseline['records']}
         profiles={r['target']['key']:r for r in cls.baseline['authoring_profiles']}
+        followup=json.loads((ROOT/'docs/agents/evidence/OTV2-20261002-npc-appearance-r26/native-enrichment.json').read_text())
+        for repair in followup['repairs']:records[repair['before']['identity']['key']]=repair['before']
+        for repair in followup['profile_repairs']:profiles[repair['before']['target']['key']]=repair['before']
         for repair in packet['repairs']:records[repair['before']['identity']['key']]=repair['before']
         for repair in packet['profile_repairs']:profiles[repair['before']['target']['key']]=repair['before']
         cls.baseline['records']=list(records.values())
