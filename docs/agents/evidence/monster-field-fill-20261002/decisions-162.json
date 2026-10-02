@@ -1,0 +1,1312 @@
+{
+  "schema": "OTERYN_MONSTER_OWNER_RESIDUAL_PACKET/v1",
+  "baseline_index_sha256": "43cf343cba51a843ce6116260bfdedf9f8765fb79d030f9ef4b7ec61906538b1",
+  "known_source_rows_before": 80,
+  "restored_source_rows": 14,
+  "unconverted_core_rows": [
+    {
+      "monster": "a_greedy_eye",
+      "source_field": "attacks[1]",
+      "source_row": {
+        "source_index": 0,
+        "source_file": "data-otservbr-global/monster/quests/soul_war/normal_monsters/furious_crater/a_greedy_eye.lua",
+        "source_line": 64,
+        "source_field": "attacks[1]",
+        "kind": "field",
+        "status": "approved_omission",
+        "resolution": "OWNER_AUTHORIZED_FLAGGED_CORE: omitted source behavior; original debt retained in receipt. registered instant spell \"greedy eye beam\" (data-otservbr-global/scripts/quests/soul_war/spell-eye_beam.lua) has custom logic (per-target Lua combat callback: CALLBACK_PARAM_TARGETTILE); needs a native behaviour (D13). D18 pattern `area_damage_named_target` (samples/p4-behaviour-patterns-canary-47dfd51f.json). Probe: the tile callback hits nothing."
+      },
+      "owner_group": "QUEST_INTERACTION_STORAGE_OR_CORPSE",
+      "concrete_gap": "OWNER_AUTHORIZED_FLAGGED_CORE: omitted source behavior; original debt retained in receipt. registered instant spell \"greedy eye beam\" (data-otservbr-global/scripts/quests/soul_war/spell-eye_beam.lua) has custom logic (per-target Lua combat callback: CALLBACK_PARAM_TARGETTILE); needs a native behaviour (D13). D18 pattern `area_damage_named_target` (samples/p4-behaviour-patterns-canary-47dfd51f.json). Probe: the tile callback hits nothing.",
+      "source_file_operations_context": [],
+      "architecture_issue": 162,
+      "proposed_resolution": "Bind original callback to a source-specific encounter owner/roles and explicit predicates; retain practical actor core and flags until its exact contract is accepted.",
+      "current_source_core_restored": false
+    },
+    {
+      "monster": "angry_plant",
+      "source_field": "events=AngryPlantDeath",
+      "source_row": {
+        "source_index": 0,
+        "source_file": "data-otservbr-global/monster/quests/the_first_dragon/angry_plant.lua",
+        "source_line": 23,
+        "source_field": "events=AngryPlantDeath",
+        "kind": "script",
+        "status": "approved_omission",
+        "resolution": "OWNER_AUTHORIZED_FLAGGED_CORE: omitted source behavior; original debt retained in receipt. data-otservbr-global/scripts/quests/the_first_dragon/creaturescripts_death_angry_plant.lua: Tags the corpse with a unique id so it can later be searched/interacted with for the quest. Classified with low confidence in events-canary-47dfd51f.json; needs a manual read."
+      },
+      "owner_group": "QUEST_INTERACTION_STORAGE_OR_CORPSE",
+      "concrete_gap": "OWNER_AUTHORIZED_FLAGGED_CORE: omitted source behavior; original debt retained in receipt. data-otservbr-global/scripts/quests/the_first_dragon/creaturescripts_death_angry_plant.lua: Tags the corpse with a unique id so it can later be searched/interacted with for the quest. Classified with low confidence in events-canary-47dfd51f.json; needs a manual read.",
+      "source_file_operations_context": [],
+      "architecture_issue": 162,
+      "proposed_resolution": "Bind original callback to a source-specific encounter owner/roles and explicit predicates; retain practical actor core and flags until its exact contract is accepted.",
+      "current_source_core_restored": false
+    },
+    {
+      "monster": "azaram_s_soul",
+      "source_field": "events=soul_heal",
+      "source_row": {
+        "source_index": 0,
+        "source_file": "data-otservbr-global/monster/quests/grave_danger/azarams_soul.lua",
+        "source_line": 24,
+        "source_field": "events=soul_heal",
+        "kind": "script",
+        "status": "approved_omission",
+        "resolution": "OWNER_AUTHORIZED_FLAGGED_CORE: omitted source behavior; original debt retained in receipt. data-otservbr-global/scripts/quests/grave_danger_quest/creaturescripts_lord_azaram.lua After enough player healing, teleports the creature and the boss and removes tainted-soul adds. Combat-changing encounter mechanic (D9: Encounter); blocked until the Encounter models it."
+      },
+      "owner_group": "GRAVE_DANGER_SHARED_PHASE_COUNTERS_AND_LINKED_ACTORS",
+      "concrete_gap": "OWNER_AUTHORIZED_FLAGGED_CORE: omitted source behavior; original debt retained in receipt. data-otservbr-global/scripts/quests/grave_danger_quest/creaturescripts_lord_azaram.lua After enough player healing, teleports the creature and the boss and removes tainted-soul adds. Combat-changing encounter mechanic (D9: Encounter); blocked until the Encounter models it.",
+      "source_file_operations_context": [],
+      "architecture_issue": 162,
+      "proposed_resolution": "Bind original callback to a source-specific encounter owner/roles and explicit predicates; retain practical actor core and flags until its exact contract is accepted.",
+      "current_source_core_restored": false
+    },
+    {
+      "monster": "bound_astral_power",
+      "source_field": "events=BoundAstralPowerDeath",
+      "source_row": {
+        "source_index": 0,
+        "source_file": "data-otservbr-global/monster/quests/forgotten_knowledge/bound_astral_power.lua",
+        "source_line": 16,
+        "source_field": "events=BoundAstralPowerDeath",
+        "kind": "script",
+        "status": "approved_omission",
+        "resolution": "OWNER_AUTHORIZED_FLAGGED_CORE: omitted source behavior; original debt retained in receipt. data-otservbr-global/scripts/quests/forgotten_knowledge/creaturescripts_bound_astral_power.lua Spawns a replacement bound astral power monster and toggles a temporary glyph-power storage. Combat-changing encounter mechanic (D9: Encounter); blocked until the Encounter models it."
+      },
+      "owner_group": "QUEST_INTERACTION_STORAGE_OR_CORPSE",
+      "concrete_gap": "OWNER_AUTHORIZED_FLAGGED_CORE: omitted source behavior; original debt retained in receipt. data-otservbr-global/scripts/quests/forgotten_knowledge/creaturescripts_bound_astral_power.lua Spawns a replacement bound astral power monster and toggles a temporary glyph-power storage. Combat-changing encounter mechanic (D9: Encounter); blocked until the Encounter models it.",
+      "source_file_operations_context": [],
+      "architecture_issue": 162,
+      "proposed_resolution": "Bind original callback to a source-specific encounter owner/roles and explicit predicates; retain practical actor core and flags until its exact contract is accepted.",
+      "current_source_core_restored": false
+    },
+    {
+      "monster": "brother_worm",
+      "source_field": "events=BrotherWormDeath",
+      "source_row": {
+        "source_index": 0,
+        "source_file": "data-otservbr-global/monster/quests/feaster_of_souls/brother_worm.lua",
+        "source_line": 16,
+        "source_field": "events=BrotherWormDeath",
+        "kind": "script",
+        "status": "approved_omission",
+        "resolution": "OWNER_AUTHORIZED_FLAGGED_CORE: omitted source behavior; original debt retained in receipt. data-otservbr-global/scripts/quests/feaster_of_souls/creaturescripts_brother_worm_death.lua Finds a nearby 'the unwelcome' monster and instantly kills it by zeroing its health. Combat-changing encounter mechanic (D9: Encounter); blocked until the Encounter models it."
+      },
+      "owner_group": "QUEST_INTERACTION_STORAGE_OR_CORPSE",
+      "concrete_gap": "OWNER_AUTHORIZED_FLAGGED_CORE: omitted source behavior; original debt retained in receipt. data-otservbr-global/scripts/quests/feaster_of_souls/creaturescripts_brother_worm_death.lua Finds a nearby 'the unwelcome' monster and instantly kills it by zeroing its health. Combat-changing encounter mechanic (D9: Encounter); blocked until the Encounter models it.",
+      "source_file_operations_context": [],
+      "architecture_issue": 162,
+      "proposed_resolution": "Bind original callback to a source-specific encounter owner/roles and explicit predicates; retain practical actor core and flags until its exact contract is accepted.",
+      "current_source_core_restored": false
+    },
+    {
+      "monster": "doctor_marrow",
+      "source_field": "attacks[3]",
+      "source_row": {
+        "source_index": 0,
+        "source_file": "data-otservbr-global/monster/bosses/doctor_marrow.lua",
+        "source_line": 69,
+        "source_field": "attacks[3]",
+        "kind": "field",
+        "status": "approved_omission",
+        "resolution": "OWNER_AUTHORIZED_FLAGGED_CORE: omitted source behavior; original debt retained in receipt. registered instant spell \"doctor marrow explosion\" (data-otservbr-global/scripts/spells/monster/doctor_marrow_explosion.lua) has custom logic (onCastSpell: local target = Creature(var:getNumber()) if not target then return false end local targetPos = target:getPosition() target:say(\"You are being targeted by Doctor); needs a native behaviour (D13). D18 pattern `delayed_telegraphed_nuke` (samples/p4-behaviour-patterns-canary-47dfd51f.json)."
+      },
+      "owner_group": "TARGET_POSITION_RETENTION_DISTANCE_FALLOFF_AND_REPEATED_PARALYZE",
+      "concrete_gap": "OWNER_AUTHORIZED_FLAGGED_CORE: omitted source behavior; original debt retained in receipt. registered instant spell \"doctor marrow explosion\" (data-otservbr-global/scripts/spells/monster/doctor_marrow_explosion.lua) has custom logic (onCastSpell: local target = Creature(var:getNumber()) if not target then return false end local targetPos = target:getPosition() target:say(\"You are being targeted by Doctor); needs a native behaviour (D13). D18 pattern `delayed_telegraphed_nuke` (samples/p4-behaviour-patterns-canary-47dfd51f.json).",
+      "source_file_operations_context": [],
+      "architecture_issue": 162,
+      "proposed_resolution": "Bind original callback to a source-specific encounter owner/roles and explicit predicates; retain practical actor core and flags until its exact contract is accepted.",
+      "current_source_core_restored": false
+    },
+    {
+      "monster": "earl_osam",
+      "source_field": "events=earl_osam_transform",
+      "source_row": {
+        "source_index": 0,
+        "source_file": "data-otservbr-global/monster/quests/grave_danger/bosses/earl_osam.lua",
+        "source_line": 16,
+        "source_field": "events=earl_osam_transform",
+        "kind": "script",
+        "status": "approved_omission",
+        "resolution": "OWNER_AUTHORIZED_FLAGGED_CORE: omitted source behavior; original debt retained in receipt. data-otservbr-global/scripts/quests/grave_danger_quest/creaturescripts_earl_osam.lua Sets cooldown storages, occasionally spawns a Frozen Soul, and once damaged enough teleports/locks the boss and spawns guarding spheres. Combat-changing encounter mechanic (D9: Encounter); blocked until the Encounter models it."
+      },
+      "owner_group": "GRAVE_DANGER_SHARED_PHASE_COUNTERS_AND_LINKED_ACTORS",
+      "concrete_gap": "OWNER_AUTHORIZED_FLAGGED_CORE: omitted source behavior; original debt retained in receipt. data-otservbr-global/scripts/quests/grave_danger_quest/creaturescripts_earl_osam.lua Sets cooldown storages, occasionally spawns a Frozen Soul, and once damaged enough teleports/locks the boss and spawns guarding spheres. Combat-changing encounter mechanic (D9: Encounter); blocked until the Encounter models it.",
+      "source_file_operations_context": [],
+      "architecture_issue": 162,
+      "proposed_resolution": "Bind original callback to a source-specific encounter owner/roles and explicit predicates; retain practical actor core and flags until its exact contract is accepted.",
+      "current_source_core_restored": false
+    },
+    {
+      "monster": "energized_raging_mage",
+      "source_field": "events=EnergizedRagingMageDeath",
+      "source_row": {
+        "source_index": 0,
+        "source_file": "data-otservbr-global/monster/bosses/energized_raging_mage.lua",
+        "source_line": 16,
+        "source_field": "events=EnergizedRagingMageDeath",
+        "kind": "script",
+        "status": "approved_omission",
+        "resolution": "OWNER_AUTHORIZED_FLAGGED_CORE: omitted source behavior; original debt retained in receipt. data-otservbr-global/scripts/quests/raging_mage_tower/creaturescripts_energized_raging_mage_kill.lua Spawns a rewarded Raging Mage monster and resets a global storage counter once a threshold is met. Combat-changing encounter mechanic (D9: Encounter); blocked until the Encounter models it."
+      },
+      "owner_group": "QUEST_INTERACTION_STORAGE_OR_CORPSE",
+      "concrete_gap": "OWNER_AUTHORIZED_FLAGGED_CORE: omitted source behavior; original debt retained in receipt. data-otservbr-global/scripts/quests/raging_mage_tower/creaturescripts_energized_raging_mage_kill.lua Spawns a rewarded Raging Mage monster and resets a global storage counter once a threshold is met. Combat-changing encounter mechanic (D9: Encounter); blocked until the Encounter models it.",
+      "source_file_operations_context": [],
+      "architecture_issue": 162,
+      "proposed_resolution": "Bind original callback to a source-specific encounter owner/roles and explicit predicates; retain practical actor core and flags until its exact contract is accepted.",
+      "current_source_core_restored": false
+    },
+    {
+      "monster": "fallen_challenger",
+      "source_field": "events=FallenDeath",
+      "source_row": {
+        "source_index": 0,
+        "source_file": "data-otservbr-global/monster/quests/the_first_dragon/bosses/fallen_challenger.lua",
+        "source_line": 23,
+        "source_field": "events=FallenDeath",
+        "kind": "script",
+        "status": "approved_omission",
+        "resolution": "OWNER_AUTHORIZED_FLAGGED_CORE: omitted source behavior; original debt retained in receipt. data-otservbr-global/scripts/quests/the_first_dragon/creaturescripts_death_fallen.lua Sets the corpse's teleport destination and later removes a teleport item at that spot. Combat-changing encounter mechanic (D9: Encounter); blocked until the Encounter models it."
+      },
+      "owner_group": "QUEST_INTERACTION_STORAGE_OR_CORPSE",
+      "concrete_gap": "OWNER_AUTHORIZED_FLAGGED_CORE: omitted source behavior; original debt retained in receipt. data-otservbr-global/scripts/quests/the_first_dragon/creaturescripts_death_fallen.lua Sets the corpse's teleport destination and later removes a teleport item at that spot. Combat-changing encounter mechanic (D9: Encounter); blocked until the Encounter models it.",
+      "source_file_operations_context": [],
+      "architecture_issue": 162,
+      "proposed_resolution": "Bind original callback to a source-specific encounter owner/roles and explicit predicates; retain practical actor core and flags until its exact contract is accepted.",
+      "current_source_core_restored": false
+    },
+    {
+      "monster": "ghulosh",
+      "source_field": "events=ghuloshThink",
+      "source_row": {
+        "source_index": 0,
+        "source_file": "data-otservbr-global/monster/quests/the_secret_library/bosses/ghulosh.lua",
+        "source_line": 16,
+        "source_field": "events=ghuloshThink",
+        "kind": "script",
+        "status": "approved_omission",
+        "resolution": "OWNER_AUTHORIZED_FLAGGED_CORE: omitted source behavior; original debt retained in receipt. data-otservbr-global/scripts/quests/the_secret_library_quest/library_area/creaturescripts_ghulosh.lua: On low health removes the boss and spawns its next stage; on related deaths spawns further chained monsters. Classified with low confidence in events-canary-47dfd51f.json; needs a manual read."
+      },
+      "owner_group": "LINKED_BOSS_STAGES_AND_SHARED_FIGHT_OWNER",
+      "concrete_gap": "OWNER_AUTHORIZED_FLAGGED_CORE: omitted source behavior; original debt retained in receipt. data-otservbr-global/scripts/quests/the_secret_library_quest/library_area/creaturescripts_ghulosh.lua: On low health removes the boss and spawns its next stage; on related deaths spawns further chained monsters. Classified with low confidence in events-canary-47dfd51f.json; needs a manual read.",
+      "source_file_operations_context": [],
+      "architecture_issue": 162,
+      "proposed_resolution": "Bind original callback to a source-specific encounter owner/roles and explicit predicates; retain practical actor core and flags until its exact contract is accepted.",
+      "current_source_core_restored": false
+    },
+    {
+      "monster": "goshnar_s_cruelty",
+      "source_field": "events=GoshnarsCrueltyBuff",
+      "source_row": {
+        "source_index": 0,
+        "source_file": "data-otservbr-global/monster/quests/soul_war/goshnars_cruelty.lua",
+        "source_line": 16,
+        "source_field": "events=GoshnarsCrueltyBuff",
+        "kind": "script",
+        "status": "approved_omission",
+        "resolution": "OWNER_AUTHORIZED_FLAGGED_CORE: omitted source behavior; original debt retained in receipt. data-otservbr-global/scripts/quests/soul_war/soul_war_mechanics.lua Reduces incoming damage to Goshnar's Cruelty by a stored defense-drain percentage. Combat-changing encounter mechanic (D9: Encounter); blocked until the Encounter models it."
+      },
+      "owner_group": "SOUL_WAR_ZONE_TORMENT_AND_MUTABLE_BOSS_STATE",
+      "concrete_gap": "OWNER_AUTHORIZED_FLAGGED_CORE: omitted source behavior; original debt retained in receipt. data-otservbr-global/scripts/quests/soul_war/soul_war_mechanics.lua Reduces incoming damage to Goshnar's Cruelty by a stored defense-drain percentage. Combat-changing encounter mechanic (D9: Encounter); blocked until the Encounter models it.",
+      "source_file_operations_context": [],
+      "architecture_issue": 162,
+      "proposed_resolution": "Bind original callback to a source-specific encounter owner/roles and explicit predicates; retain practical actor core and flags until its exact contract is accepted.",
+      "current_source_core_restored": false
+    },
+    {
+      "monster": "goshnar_s_cruelty",
+      "source_field": "mType.onDisappear",
+      "source_row": {
+        "source_index": 0,
+        "source_file": "data-otservbr-global/monster/quests/soul_war/goshnars_cruelty.lua",
+        "source_line": 151,
+        "source_field": "mType.onDisappear",
+        "kind": "script",
+        "status": "approved_omission",
+        "resolution": "OWNER_AUTHORIZED_FLAGGED_CORE: omitted source behavior; original debt retained in receipt. Inline Lua callback; needs an explicit native behaviour resolution."
+      },
+      "owner_group": "SOUL_WAR_ZONE_TORMENT_AND_MUTABLE_BOSS_STATE",
+      "concrete_gap": "OWNER_AUTHORIZED_FLAGGED_CORE: omitted source behavior; original debt retained in receipt. Inline Lua callback; needs an explicit native behaviour resolution.",
+      "source_file_operations_context": [
+        "remove"
+      ],
+      "architecture_issue": 162,
+      "proposed_resolution": "Bind original callback to a source-specific encounter owner/roles and explicit predicates; retain practical actor core and flags until its exact contract is accepted.",
+      "current_source_core_restored": false
+    },
+    {
+      "monster": "goshnar_s_cruelty",
+      "source_field": "mType.onSpawn",
+      "source_row": {
+        "source_index": 0,
+        "source_file": "data-otservbr-global/monster/quests/soul_war/goshnars_cruelty.lua",
+        "source_line": 147,
+        "source_field": "mType.onSpawn",
+        "kind": "script",
+        "status": "approved_omission",
+        "resolution": "OWNER_AUTHORIZED_FLAGGED_CORE: omitted source behavior; original debt retained in receipt. Inline Lua callback; needs an explicit native behaviour resolution."
+      },
+      "owner_group": "SOUL_WAR_ZONE_TORMENT_AND_MUTABLE_BOSS_STATE",
+      "concrete_gap": "OWNER_AUTHORIZED_FLAGGED_CORE: omitted source behavior; original debt retained in receipt. Inline Lua callback; needs an explicit native behaviour resolution.",
+      "source_file_operations_context": [
+        "remove"
+      ],
+      "architecture_issue": 162,
+      "proposed_resolution": "Bind original callback to a source-specific encounter owner/roles and explicit predicates; retain practical actor core and flags until its exact contract is accepted.",
+      "current_source_core_restored": false
+    },
+    {
+      "monster": "goshnar_s_cruelty",
+      "source_field": "mType.onThink",
+      "source_row": {
+        "source_index": 0,
+        "source_file": "data-otservbr-global/monster/quests/soul_war/goshnars_cruelty.lua",
+        "source_line": 139,
+        "source_field": "mType.onThink",
+        "kind": "script",
+        "status": "approved_omission",
+        "resolution": "OWNER_AUTHORIZED_FLAGGED_CORE: omitted source behavior; original debt retained in receipt. Inline Lua callback; needs an explicit native behaviour resolution."
+      },
+      "owner_group": "SOUL_WAR_ZONE_TORMENT_AND_MUTABLE_BOSS_STATE",
+      "concrete_gap": "OWNER_AUTHORIZED_FLAGGED_CORE: omitted source behavior; original debt retained in receipt. Inline Lua callback; needs an explicit native behaviour resolution.",
+      "source_file_operations_context": [
+        "remove"
+      ],
+      "architecture_issue": 162,
+      "proposed_resolution": "Bind original callback to a source-specific encounter owner/roles and explicit predicates; retain practical actor core and flags until its exact contract is accepted.",
+      "current_source_core_restored": false
+    },
+    {
+      "monster": "goshnar_s_cruelty",
+      "source_field": "attacks[6]",
+      "source_row": {
+        "source_index": 0,
+        "source_file": "data-otservbr-global/monster/quests/soul_war/goshnars_cruelty.lua",
+        "source_line": 107,
+        "source_field": "attacks[6]",
+        "kind": "script",
+        "status": "approved_omission",
+        "resolution": "OWNER_AUTHORIZED_FLAGGED_CORE: World-dependent preparation/action excluded from declarative evaluation; no quest defaults guessed. All later numeric stat, loot and combat tables recovered from original source."
+      },
+      "owner_group": "SOUL_WAR_ZONE_TORMENT_AND_MUTABLE_BOSS_STATE",
+      "concrete_gap": "OWNER_AUTHORIZED_FLAGGED_CORE: World-dependent preparation/action excluded from declarative evaluation; no quest defaults guessed. All later numeric stat, loot and combat tables recovered from original source.",
+      "source_file_operations_context": [],
+      "architecture_issue": 162,
+      "proposed_resolution": "Bind original callback to a source-specific encounter owner/roles and explicit predicates; retain practical actor core and flags until its exact contract is accepted.",
+      "current_source_core_restored": false
+    },
+    {
+      "monster": "goshnar_s_greed",
+      "source_field": "mType.onDisappear",
+      "source_row": {
+        "source_index": 0,
+        "source_file": "data-otservbr-global/monster/quests/soul_war/goshnars_greed.lua",
+        "source_line": 175,
+        "source_field": "mType.onDisappear",
+        "kind": "script",
+        "status": "approved_omission",
+        "resolution": "OWNER_AUTHORIZED_FLAGGED_CORE: omitted source behavior; original debt retained in receipt. Inline Lua callback; needs an explicit native behaviour resolution."
+      },
+      "owner_group": "SOUL_WAR_ZONE_TORMENT_AND_MUTABLE_BOSS_STATE",
+      "concrete_gap": "OWNER_AUTHORIZED_FLAGGED_CORE: omitted source behavior; original debt retained in receipt. Inline Lua callback; needs an explicit native behaviour resolution.",
+      "source_file_operations_context": [
+        "createMonster",
+        "remove",
+        "setReward",
+        "teleportTo"
+      ],
+      "architecture_issue": 162,
+      "proposed_resolution": "Bind original callback to a source-specific encounter owner/roles and explicit predicates; retain practical actor core and flags until its exact contract is accepted.",
+      "current_source_core_restored": false
+    },
+    {
+      "monster": "goshnar_s_greed",
+      "source_field": "mType.onSpawn",
+      "source_row": {
+        "source_index": 0,
+        "source_file": "data-otservbr-global/monster/quests/soul_war/goshnars_greed.lua",
+        "source_line": 164,
+        "source_field": "mType.onSpawn",
+        "kind": "script",
+        "status": "approved_omission",
+        "resolution": "OWNER_AUTHORIZED_FLAGGED_CORE: omitted source behavior; original debt retained in receipt. Inline Lua callback; needs an explicit native behaviour resolution."
+      },
+      "owner_group": "SOUL_WAR_ZONE_TORMENT_AND_MUTABLE_BOSS_STATE",
+      "concrete_gap": "OWNER_AUTHORIZED_FLAGGED_CORE: omitted source behavior; original debt retained in receipt. Inline Lua callback; needs an explicit native behaviour resolution.",
+      "source_file_operations_context": [
+        "createMonster",
+        "remove",
+        "setReward",
+        "teleportTo"
+      ],
+      "architecture_issue": 162,
+      "proposed_resolution": "Bind original callback to a source-specific encounter owner/roles and explicit predicates; retain practical actor core and flags until its exact contract is accepted.",
+      "current_source_core_restored": false
+    },
+    {
+      "monster": "goshnar_s_greed",
+      "source_field": "mType.onThink",
+      "source_row": {
+        "source_index": 0,
+        "source_file": "data-otservbr-global/monster/quests/soul_war/goshnars_greed.lua",
+        "source_line": 140,
+        "source_field": "mType.onThink",
+        "kind": "script",
+        "status": "approved_omission",
+        "resolution": "OWNER_AUTHORIZED_FLAGGED_CORE: omitted source behavior; original debt retained in receipt. Inline Lua callback; needs an explicit native behaviour resolution."
+      },
+      "owner_group": "SOUL_WAR_ZONE_TORMENT_AND_MUTABLE_BOSS_STATE",
+      "concrete_gap": "OWNER_AUTHORIZED_FLAGGED_CORE: omitted source behavior; original debt retained in receipt. Inline Lua callback; needs an explicit native behaviour resolution.",
+      "source_file_operations_context": [
+        "createMonster",
+        "remove",
+        "setReward",
+        "teleportTo"
+      ],
+      "architecture_issue": 162,
+      "proposed_resolution": "Bind original callback to a source-specific encounter owner/roles and explicit predicates; retain practical actor core and flags until its exact contract is accepted.",
+      "current_source_core_restored": false
+    },
+    {
+      "monster": "goshnar_s_malice",
+      "source_field": "mType.onThink",
+      "source_row": {
+        "source_index": 0,
+        "source_file": "data-otservbr-global/monster/quests/soul_war/goshnars_malice.lua",
+        "source_line": 142,
+        "source_field": "mType.onThink",
+        "kind": "script",
+        "status": "approved_omission",
+        "resolution": "OWNER_AUTHORIZED_FLAGGED_CORE: omitted source behavior; original debt retained in receipt. Inline Lua callback; needs an explicit native behaviour resolution."
+      },
+      "owner_group": "SOUL_WAR_ZONE_TORMENT_AND_MUTABLE_BOSS_STATE",
+      "concrete_gap": "OWNER_AUTHORIZED_FLAGGED_CORE: omitted source behavior; original debt retained in receipt. Inline Lua callback; needs an explicit native behaviour resolution.",
+      "source_file_operations_context": [],
+      "architecture_issue": 162,
+      "proposed_resolution": "Bind original callback to a source-specific encounter owner/roles and explicit predicates; retain practical actor core and flags until its exact contract is accepted.",
+      "current_source_core_restored": false
+    },
+    {
+      "monster": "goshnar_s_malice",
+      "source_field": "zone preparation",
+      "source_row": {
+        "source_index": 0,
+        "source_file": "data-otservbr-global/monster/quests/soul_war/goshnars_malice.lua",
+        "source_line": 137,
+        "source_field": "zone preparation",
+        "kind": "script",
+        "status": "approved_omission",
+        "resolution": "OWNER_AUTHORIZED_FLAGGED_CORE: World-dependent preparation/action excluded from declarative evaluation; no quest defaults guessed. All later numeric stat, loot and combat tables recovered from original source."
+      },
+      "owner_group": "SOUL_WAR_ZONE_TORMENT_AND_MUTABLE_BOSS_STATE",
+      "concrete_gap": "OWNER_AUTHORIZED_FLAGGED_CORE: World-dependent preparation/action excluded from declarative evaluation; no quest defaults guessed. All later numeric stat, loot and combat tables recovered from original source.",
+      "source_file_operations_context": [],
+      "architecture_issue": 162,
+      "proposed_resolution": "Bind original callback to a source-specific encounter owner/roles and explicit predicates; retain practical actor core and flags until its exact contract is accepted.",
+      "current_source_core_restored": false
+    },
+    {
+      "monster": "grand_master_oberon",
+      "source_field": "mType.onSay",
+      "source_row": {
+        "source_index": 0,
+        "source_file": "data-otservbr-global/monster/quests/the_secret_library/bosses/grand_master_oberon.lua",
+        "source_line": 139,
+        "source_field": "mType.onSay",
+        "kind": "script",
+        "status": "approved_omission",
+        "resolution": "OWNER_AUTHORIZED_FLAGGED_CORE: omitted source behavior; original debt retained in receipt. Inline Lua callback; needs an explicit native behaviour resolution."
+      },
+      "owner_group": "OBERON_DIALOGUE_CHALLENGE_COOLDOWN_AND_IMMUNITY",
+      "concrete_gap": "OWNER_AUTHORIZED_FLAGGED_CORE: omitted source behavior; original debt retained in receipt. Inline Lua callback; needs an explicit native behaviour resolution.",
+      "source_file_operations_context": [
+        "getStorageValue",
+        "setStorageValue"
+      ],
+      "architecture_issue": 162,
+      "proposed_resolution": "Bind original callback to a source-specific encounter owner/roles and explicit predicates; retain practical actor core and flags until its exact contract is accepted.",
+      "current_source_core_restored": false
+    },
+    {
+      "monster": "grand_master_oberon",
+      "source_field": "mType.onSpawn",
+      "source_row": {
+        "source_index": 0,
+        "source_file": "data-otservbr-global/monster/quests/the_secret_library/bosses/grand_master_oberon.lua",
+        "source_line": 125,
+        "source_field": "mType.onSpawn",
+        "kind": "script",
+        "status": "approved_omission",
+        "resolution": "OWNER_AUTHORIZED_FLAGGED_CORE: omitted source behavior; original debt retained in receipt. Inline Lua callback; needs an explicit native behaviour resolution."
+      },
+      "owner_group": "OBERON_DIALOGUE_CHALLENGE_COOLDOWN_AND_IMMUNITY",
+      "concrete_gap": "OWNER_AUTHORIZED_FLAGGED_CORE: omitted source behavior; original debt retained in receipt. Inline Lua callback; needs an explicit native behaviour resolution.",
+      "source_file_operations_context": [
+        "getStorageValue",
+        "setStorageValue"
+      ],
+      "architecture_issue": 162,
+      "proposed_resolution": "Bind original callback to a source-specific encounter owner/roles and explicit predicates; retain practical actor core and flags until its exact contract is accepted.",
+      "current_source_core_restored": false
+    },
+    {
+      "monster": "grand_master_oberon",
+      "source_field": "mType.onThink",
+      "source_row": {
+        "source_index": 0,
+        "source_file": "data-otservbr-global/monster/quests/the_secret_library/bosses/grand_master_oberon.lua",
+        "source_line": 130,
+        "source_field": "mType.onThink",
+        "kind": "script",
+        "status": "approved_omission",
+        "resolution": "OWNER_AUTHORIZED_FLAGGED_CORE: omitted source behavior; original debt retained in receipt. Inline Lua callback; needs an explicit native behaviour resolution."
+      },
+      "owner_group": "OBERON_DIALOGUE_CHALLENGE_COOLDOWN_AND_IMMUNITY",
+      "concrete_gap": "OWNER_AUTHORIZED_FLAGGED_CORE: omitted source behavior; original debt retained in receipt. Inline Lua callback; needs an explicit native behaviour resolution.",
+      "source_file_operations_context": [
+        "getStorageValue",
+        "setStorageValue"
+      ],
+      "architecture_issue": 162,
+      "proposed_resolution": "Bind original callback to a source-specific encounter owner/roles and explicit predicates; retain practical actor core and flags until its exact contract is accepted.",
+      "current_source_core_restored": false
+    },
+    {
+      "monster": "icicle",
+      "source_field": "defenses[1]",
+      "source_row": {
+        "source_index": 0,
+        "source_file": "data-otservbr-global/monster/quests/forgotten_knowledge/icicle.lua",
+        "source_line": 73,
+        "source_field": "defenses[1]",
+        "kind": "field",
+        "status": "approved_omission",
+        "resolution": "OWNER_AUTHORIZED_FLAGGED_CORE: omitted source behavior; original debt retained in receipt. registered instant spell \"icicle heal\" (data-otservbr-global/scripts/spells/monster/icicle_heal.lua) has custom logic (per-target Lua combat callback: CALLBACK_PARAM_TARGETCREATURE); needs a native behaviour (D13). D18 pattern `area_damage_named_target` (samples/p4-behaviour-patterns-canary-47dfd51f.json). Probe: the target callback does more than change health (player)."
+      },
+      "owner_group": "TARGET_SELECTION_OR_FIGHT_OWNER_STATE",
+      "concrete_gap": "OWNER_AUTHORIZED_FLAGGED_CORE: omitted source behavior; original debt retained in receipt. registered instant spell \"icicle heal\" (data-otservbr-global/scripts/spells/monster/icicle_heal.lua) has custom logic (per-target Lua combat callback: CALLBACK_PARAM_TARGETCREATURE); needs a native behaviour (D13). D18 pattern `area_damage_named_target` (samples/p4-behaviour-patterns-canary-47dfd51f.json). Probe: the target callback does more than change health (player).",
+      "source_file_operations_context": [],
+      "architecture_issue": 162,
+      "proposed_resolution": "Bind original callback to a source-specific encounter owner/roles and explicit predicates; retain practical actor core and flags until its exact contract is accepted.",
+      "current_source_core_restored": false
+    },
+    {
+      "monster": "lisa",
+      "source_field": "attacks[7]",
+      "source_row": {
+        "source_index": 0,
+        "source_file": "data-otservbr-global/monster/bosses/lisa.lua",
+        "source_line": 101,
+        "source_field": "attacks[7]",
+        "kind": "field",
+        "status": "approved_omission",
+        "resolution": "OWNER_AUTHORIZED_FLAGGED_CORE: omitted source behavior; original debt retained in receipt. registered instant spell \"lisa skill reducer\" (data-otservbr-global/scripts/spells/monster/lisa_skill_reducer.lua) has custom logic (per-target Lua combat callback: CALLBACK_PARAM_TARGETTILE); needs a native behaviour (D13). D18 pattern `skill_or_attribute_debuff` (samples/p4-behaviour-patterns-canary-47dfd51f.json)."
+      },
+      "owner_group": "PER_TARGET_VOCATION_DISPATCH",
+      "concrete_gap": "OWNER_AUTHORIZED_FLAGGED_CORE: omitted source behavior; original debt retained in receipt. registered instant spell \"lisa skill reducer\" (data-otservbr-global/scripts/spells/monster/lisa_skill_reducer.lua) has custom logic (per-target Lua combat callback: CALLBACK_PARAM_TARGETTILE); needs a native behaviour (D13). D18 pattern `skill_or_attribute_debuff` (samples/p4-behaviour-patterns-canary-47dfd51f.json).",
+      "source_file_operations_context": [],
+      "architecture_issue": 162,
+      "proposed_resolution": "Bind original callback to a source-specific encounter owner/roles and explicit predicates; retain practical actor core and flags until its exact contract is accepted.",
+      "current_source_core_restored": false
+    },
+    {
+      "monster": "lisa",
+      "source_field": "defenses[1]",
+      "source_row": {
+        "source_index": 0,
+        "source_file": "data-otservbr-global/monster/bosses/lisa.lua",
+        "source_line": 109,
+        "source_field": "defenses[1]",
+        "kind": "script",
+        "status": "approved_omission",
+        "resolution": "OWNER_AUTHORIZED_FLAGGED_CORE: Lisa summon script references unregistered Glooth Anemone2; no invented alias. Entire invalid summon omitted; heal source index preserved."
+      },
+      "owner_group": "TARGET_SELECTION_OR_FIGHT_OWNER_STATE",
+      "concrete_gap": "OWNER_AUTHORIZED_FLAGGED_CORE: Lisa summon script references unregistered Glooth Anemone2; no invented alias. Entire invalid summon omitted; heal source index preserved.",
+      "source_file_operations_context": [],
+      "architecture_issue": 162,
+      "proposed_resolution": "Bind original callback to a source-specific encounter owner/roles and explicit predicates; retain practical actor core and flags until its exact contract is accepted.",
+      "current_source_core_restored": false
+    },
+    {
+      "monster": "lizard_commander",
+      "source_field": "events=TargunaLizardCommanderDeath",
+      "source_row": {
+        "source_index": 0,
+        "source_file": "data-global/monster/targuna/hidden_lizard_temple/lizard_commander.lua",
+        "source_line": 29,
+        "source_field": "events=TargunaLizardCommanderDeath",
+        "kind": "script",
+        "status": "approved_omission",
+        "resolution": "OWNER_AUTHORIZED_FLAGGED_CORE: omitted source behavior; original debt retained in receipt. Registered creature event whose script has not been verified."
+      },
+      "owner_group": "EVENT_REGISTRATION_AND_QUEST_PROGRESS_SOURCE_VERIFICATION",
+      "concrete_gap": "OWNER_AUTHORIZED_FLAGGED_CORE: omitted source behavior; original debt retained in receipt. Registered creature event whose script has not been verified.",
+      "source_file_operations_context": [],
+      "architecture_issue": 162,
+      "proposed_resolution": "Bind original callback to a source-specific encounter owner/roles and explicit predicates; retain practical actor core and flags until its exact contract is accepted.",
+      "current_source_core_restored": false
+    },
+    {
+      "monster": "lord_azaram",
+      "source_field": "events=azaram_health",
+      "source_row": {
+        "source_index": 0,
+        "source_file": "data-otservbr-global/monster/quests/grave_danger/bosses/lord_azaram.lua",
+        "source_line": 16,
+        "source_field": "events=azaram_health",
+        "kind": "script",
+        "status": "approved_omission",
+        "resolution": "OWNER_AUTHORIZED_FLAGGED_CORE: omitted source behavior; original debt retained in receipt. data-otservbr-global/scripts/quests/grave_danger_quest/creaturescripts_lord_azaram.lua Tracks damage taken; at threshold teleports the boss, spawns its soul, and creates tainted soul splinters. Combat-changing encounter mechanic (D9: Encounter); blocked until the Encounter models it."
+      },
+      "owner_group": "GRAVE_DANGER_SHARED_PHASE_COUNTERS_AND_LINKED_ACTORS",
+      "concrete_gap": "OWNER_AUTHORIZED_FLAGGED_CORE: omitted source behavior; original debt retained in receipt. data-otservbr-global/scripts/quests/grave_danger_quest/creaturescripts_lord_azaram.lua Tracks damage taken; at threshold teleports the boss, spawns its soul, and creates tainted soul splinters. Combat-changing encounter mechanic (D9: Encounter); blocked until the Encounter models it.",
+      "source_file_operations_context": [],
+      "architecture_issue": 162,
+      "proposed_resolution": "Bind original callback to a source-specific encounter owner/roles and explicit predicates; retain practical actor core and flags until its exact contract is accepted.",
+      "current_source_core_restored": false
+    },
+    {
+      "monster": "lord_azaram",
+      "source_field": "events=azaram_summon",
+      "source_row": {
+        "source_index": 0,
+        "source_file": "data-otservbr-global/monster/quests/grave_danger/bosses/lord_azaram.lua",
+        "source_line": 16,
+        "source_field": "events=azaram_summon",
+        "kind": "script",
+        "status": "approved_omission",
+        "resolution": "OWNER_AUTHORIZED_FLAGGED_CORE: omitted source behavior; original debt retained in receipt. data-otservbr-global/scripts/quests/grave_danger_quest/creaturescripts_lord_azaram.lua 10% chance per hit to spawn a Condensed Sin monster at a random position within the boss room. Combat-changing encounter mechanic (D9: Encounter); blocked until the Encounter models it."
+      },
+      "owner_group": "GRAVE_DANGER_SHARED_PHASE_COUNTERS_AND_LINKED_ACTORS",
+      "concrete_gap": "OWNER_AUTHORIZED_FLAGGED_CORE: omitted source behavior; original debt retained in receipt. data-otservbr-global/scripts/quests/grave_danger_quest/creaturescripts_lord_azaram.lua 10% chance per hit to spawn a Condensed Sin monster at a random position within the boss room. Combat-changing encounter mechanic (D9: Encounter); blocked until the Encounter models it.",
+      "source_file_operations_context": [],
+      "architecture_issue": 162,
+      "proposed_resolution": "Bind original callback to a source-specific encounter owner/roles and explicit predicates; retain practical actor core and flags until its exact contract is accepted.",
+      "current_source_core_restored": false
+    },
+    {
+      "monster": "magical_sphere",
+      "source_field": "events=sphere_death",
+      "source_row": {
+        "source_index": 0,
+        "source_file": "data-otservbr-global/monster/quests/grave_danger/magical_sphere.lua",
+        "source_line": 24,
+        "source_field": "events=sphere_death",
+        "kind": "script",
+        "status": "approved_omission",
+        "resolution": "OWNER_AUTHORIZED_FLAGGED_CORE: omitted source behavior; original debt retained in receipt. data-otservbr-global/scripts/quests/grave_danger_quest/creaturescripts_earl_osam.lua Decrements the boss's active-sphere counter and unlocks the boss's movement once all spheres are destroyed. Combat-changing encounter mechanic (D9: Encounter); blocked until the Encounter models it."
+      },
+      "owner_group": "GRAVE_DANGER_SHARED_PHASE_COUNTERS_AND_LINKED_ACTORS",
+      "concrete_gap": "OWNER_AUTHORIZED_FLAGGED_CORE: omitted source behavior; original debt retained in receipt. data-otservbr-global/scripts/quests/grave_danger_quest/creaturescripts_earl_osam.lua Decrements the boss's active-sphere counter and unlocks the boss's movement once all spheres are destroyed. Combat-changing encounter mechanic (D9: Encounter); blocked until the Encounter models it.",
+      "source_file_operations_context": [],
+      "architecture_issue": 162,
+      "proposed_resolution": "Bind original callback to a source-specific encounter owner/roles and explicit predicates; retain practical actor core and flags until its exact contract is accepted.",
+      "current_source_core_restored": false
+    },
+    {
+      "monster": "necromantic_focus",
+      "source_field": "events=NecromanticFocusDeath",
+      "source_row": {
+        "source_index": 0,
+        "source_file": "data-otservbr-global/monster/quests/soul_war/normal_monsters/megalomania_room/necromantic_focus.lua",
+        "source_line": 18,
+        "source_field": "events=NecromanticFocusDeath",
+        "kind": "script",
+        "status": "approved_omission",
+        "resolution": "OWNER_AUTHORIZED_FLAGGED_CORE: omitted source behavior; original debt retained in receipt. data-otservbr-global/scripts/quests/soul_war/soul_war_mechanics.lua: Schedules a delayed call that increases the Megalomania boss's strength at that position. Classified with low confidence in events-canary-47dfd51f.json; needs a manual read."
+      },
+      "owner_group": "SOUL_WAR_ZONE_TORMENT_AND_MUTABLE_BOSS_STATE",
+      "concrete_gap": "OWNER_AUTHORIZED_FLAGGED_CORE: omitted source behavior; original debt retained in receipt. data-otservbr-global/scripts/quests/soul_war/soul_war_mechanics.lua: Schedules a delayed call that increases the Megalomania boss's strength at that position. Classified with low confidence in events-canary-47dfd51f.json; needs a manual read.",
+      "source_file_operations_context": [],
+      "architecture_issue": 162,
+      "proposed_resolution": "Bind original callback to a source-specific encounter owner/roles and explicit predicates; retain practical actor core and flags until its exact contract is accepted.",
+      "current_source_core_restored": false
+    },
+    {
+      "monster": "omrafir",
+      "source_field": "attacks[3]",
+      "source_row": {
+        "source_index": 0,
+        "source_file": "data-otservbr-global/monster/quests/roshamuul/omrafir.lua",
+        "source_line": 114,
+        "source_field": "attacks[3]",
+        "kind": "field",
+        "status": "approved_omission",
+        "resolution": "OWNER_AUTHORIZED_FLAGGED_CORE: omitted source behavior; original debt retained in receipt. registered instant spell \"omrafir beam\" (data-otservbr-global/scripts/spells/monster/omrafir_beam.lua) has custom logic (onCastSpell: if not creature:getCondition(CONDITION_REGENERATION, CONDITIONID_DEFAULT, 88888) then creature:say(\"OMRAFIR INHALES DEEPLY!\", TALKTYPE_MONSTER_YELL) creature:ad); needs a native behaviour (D13). D18 pattern `delayed_telegraphed_nuke` (samples/p4-behaviour-patterns-canary-47dfd51f.json)."
+      },
+      "owner_group": "CASTER_FACING_DELAYED_AREA_AND_REGENERATION_SUBID",
+      "concrete_gap": "OWNER_AUTHORIZED_FLAGGED_CORE: omitted source behavior; original debt retained in receipt. registered instant spell \"omrafir beam\" (data-otservbr-global/scripts/spells/monster/omrafir_beam.lua) has custom logic (onCastSpell: if not creature:getCondition(CONDITION_REGENERATION, CONDITIONID_DEFAULT, 88888) then creature:say(\"OMRAFIR INHALES DEEPLY!\", TALKTYPE_MONSTER_YELL) creature:ad); needs a native behaviour (D13). D18 pattern `delayed_telegraphed_nuke` (samples/p4-behaviour-patterns-canary-47dfd51f.json).",
+      "source_file_operations_context": [],
+      "architecture_issue": 162,
+      "proposed_resolution": "Bind original callback to a source-specific encounter owner/roles and explicit predicates; retain practical actor core and flags until its exact contract is accepted.",
+      "current_source_core_restored": false
+    },
+    {
+      "monster": "omrafir",
+      "source_field": "defenses[3]",
+      "source_row": {
+        "source_index": 0,
+        "source_file": "data-otservbr-global/monster/quests/roshamuul/omrafir.lua",
+        "source_line": 128,
+        "source_field": "defenses[3]",
+        "kind": "field",
+        "status": "approved_omission",
+        "resolution": "OWNER_AUTHORIZED_FLAGGED_CORE: omitted source behavior; original debt retained in receipt. registered instant spell \"omrafir healing 2\" (data-otservbr-global/scripts/spells/monster/omrafir_healing_2.lua) has custom logic (onCastSpell: local health, hp, cpos = math.random(7500, 9000), (creature:getHealth() / creature:getMaxHealth()) * 100, creature:getPosition() if creature:getName() == \"Omraf); needs a native behaviour (D13). D18 pattern `heal_self_conditional` (samples/p4-behaviour-patterns-canary-47dfd51f.json)."
+      },
+      "owner_group": "GROUND_ITEM_PREDICATE",
+      "concrete_gap": "OWNER_AUTHORIZED_FLAGGED_CORE: omitted source behavior; original debt retained in receipt. registered instant spell \"omrafir healing 2\" (data-otservbr-global/scripts/spells/monster/omrafir_healing_2.lua) has custom logic (onCastSpell: local health, hp, cpos = math.random(7500, 9000), (creature:getHealth() / creature:getMaxHealth()) * 100, creature:getPosition() if creature:getName() == \"Omraf); needs a native behaviour (D13). D18 pattern `heal_self_conditional` (samples/p4-behaviour-patterns-canary-47dfd51f.json).",
+      "source_file_operations_context": [],
+      "architecture_issue": 162,
+      "proposed_resolution": "Bind original callback to a source-specific encounter owner/roles and explicit predicates; retain practical actor core and flags until its exact contract is accepted.",
+      "current_source_core_restored": false
+    },
+    {
+      "monster": "pirate_cook",
+      "source_field": "events=TargunaPirateDeath",
+      "source_row": {
+        "source_index": 0,
+        "source_file": "data-global/monster/targuna/aragonia/pirate_cook.lua",
+        "source_line": 29,
+        "source_field": "events=TargunaPirateDeath",
+        "kind": "script",
+        "status": "approved_omission",
+        "resolution": "OWNER_AUTHORIZED_FLAGGED_CORE: omitted source behavior; original debt retained in receipt. Registered creature event whose script has not been verified."
+      },
+      "owner_group": "EVENT_REGISTRATION_AND_QUEST_PROGRESS_SOURCE_VERIFICATION",
+      "concrete_gap": "OWNER_AUTHORIZED_FLAGGED_CORE: omitted source behavior; original debt retained in receipt. Registered creature event whose script has not been verified.",
+      "source_file_operations_context": [],
+      "architecture_issue": 162,
+      "proposed_resolution": "Bind original callback to a source-specific encounter owner/roles and explicit predicates; retain practical actor core and flags until its exact contract is accepted.",
+      "current_source_core_restored": false
+    },
+    {
+      "monster": "pirate_gunner",
+      "source_field": "events=TargunaPirateDeath",
+      "source_row": {
+        "source_index": 0,
+        "source_file": "data-global/monster/targuna/aragonia/pirate_gunner.lua",
+        "source_line": 29,
+        "source_field": "events=TargunaPirateDeath",
+        "kind": "script",
+        "status": "approved_omission",
+        "resolution": "OWNER_AUTHORIZED_FLAGGED_CORE: omitted source behavior; original debt retained in receipt. Registered creature event whose script has not been verified."
+      },
+      "owner_group": "EVENT_REGISTRATION_AND_QUEST_PROGRESS_SOURCE_VERIFICATION",
+      "concrete_gap": "OWNER_AUTHORIZED_FLAGGED_CORE: omitted source behavior; original debt retained in receipt. Registered creature event whose script has not been verified.",
+      "source_file_operations_context": [],
+      "architecture_issue": 162,
+      "proposed_resolution": "Bind original callback to a source-specific encounter owner/roles and explicit predicates; retain practical actor core and flags until its exact contract is accepted.",
+      "current_source_core_restored": false
+    },
+    {
+      "monster": "pirate_navigator",
+      "source_field": "events=TargunaPirateDeath",
+      "source_row": {
+        "source_index": 0,
+        "source_file": "data-global/monster/targuna/aragonia/pirate_navigator.lua",
+        "source_line": 29,
+        "source_field": "events=TargunaPirateDeath",
+        "kind": "script",
+        "status": "approved_omission",
+        "resolution": "OWNER_AUTHORIZED_FLAGGED_CORE: omitted source behavior; original debt retained in receipt. Registered creature event whose script has not been verified."
+      },
+      "owner_group": "EVENT_REGISTRATION_AND_QUEST_PROGRESS_SOURCE_VERIFICATION",
+      "concrete_gap": "OWNER_AUTHORIZED_FLAGGED_CORE: omitted source behavior; original debt retained in receipt. Registered creature event whose script has not been verified.",
+      "source_file_operations_context": [],
+      "architecture_issue": 162,
+      "proposed_resolution": "Bind original callback to a source-specific encounter owner/roles and explicit predicates; retain practical actor core and flags until its exact contract is accepted.",
+      "current_source_core_restored": false
+    },
+    {
+      "monster": "pirate_quartermaster",
+      "source_field": "events=TargunaPirateDeath",
+      "source_row": {
+        "source_index": 0,
+        "source_file": "data-global/monster/targuna/aragonia/pirate_quartermaster.lua",
+        "source_line": 29,
+        "source_field": "events=TargunaPirateDeath",
+        "kind": "script",
+        "status": "approved_omission",
+        "resolution": "OWNER_AUTHORIZED_FLAGGED_CORE: omitted source behavior; original debt retained in receipt. Registered creature event whose script has not been verified."
+      },
+      "owner_group": "EVENT_REGISTRATION_AND_QUEST_PROGRESS_SOURCE_VERIFICATION",
+      "concrete_gap": "OWNER_AUTHORIZED_FLAGGED_CORE: omitted source behavior; original debt retained in receipt. Registered creature event whose script has not been verified.",
+      "source_file_operations_context": [],
+      "architecture_issue": 162,
+      "proposed_resolution": "Bind original callback to a source-specific encounter owner/roles and explicit predicates; retain practical actor core and flags until its exact contract is accepted.",
+      "current_source_core_restored": false
+    },
+    {
+      "monster": "raging_mage",
+      "source_field": "events=RagingMageDeath",
+      "source_row": {
+        "source_index": 0,
+        "source_file": "data-otservbr-global/monster/bosses/raging_mage.lua",
+        "source_line": 16,
+        "source_field": "events=RagingMageDeath",
+        "kind": "script",
+        "status": "approved_omission",
+        "resolution": "OWNER_AUTHORIZED_FLAGGED_CORE: omitted source behavior; original debt retained in receipt. data-otservbr-global/scripts/quests/raging_mage_tower/creaturescripts_raging_mage_kill.lua Broadcasts messages and, after 5 minutes, removes a portal-collapse item from the tower floor. Combat-changing encounter mechanic (D9: Encounter); blocked until the Encounter models it."
+      },
+      "owner_group": "QUEST_INTERACTION_STORAGE_OR_CORPSE",
+      "concrete_gap": "OWNER_AUTHORIZED_FLAGGED_CORE: omitted source behavior; original debt retained in receipt. data-otservbr-global/scripts/quests/raging_mage_tower/creaturescripts_raging_mage_kill.lua Broadcasts messages and, after 5 minutes, removes a portal-collapse item from the tower floor. Combat-changing encounter mechanic (D9: Encounter); blocked until the Encounter models it.",
+      "source_file_operations_context": [],
+      "architecture_issue": 162,
+      "proposed_resolution": "Bind original callback to a source-specific encounter owner/roles and explicit predicates; retain practical actor core and flags until its exact contract is accepted.",
+      "current_source_core_restored": false
+    },
+    {
+      "monster": "rift_invader",
+      "source_field": "events=RiftInvaderDeath",
+      "source_row": {
+        "source_index": 0,
+        "source_file": "data-otservbr-global/monster/quests/ferumbras_ascension/summons/rift_invader.lua",
+        "source_line": 55,
+        "source_field": "events=RiftInvaderDeath",
+        "kind": "script",
+        "status": "approved_omission",
+        "resolution": "OWNER_AUTHORIZED_FLAGGED_CORE: omitted source behavior; original debt retained in receipt. data-otservbr-global/scripts/quests/ferumbras_ascension/creaturescripts_rift_invader_death.lua Respawns itself, may shatter a crystal into Ferumbras soul splinters, and spawns/removes a vortex item. Combat-changing encounter mechanic (D9: Encounter); blocked until the Encounter models it."
+      },
+      "owner_group": "QUEST_INTERACTION_STORAGE_OR_CORPSE",
+      "concrete_gap": "OWNER_AUTHORIZED_FLAGGED_CORE: omitted source behavior; original debt retained in receipt. data-otservbr-global/scripts/quests/ferumbras_ascension/creaturescripts_rift_invader_death.lua Respawns itself, may shatter a crystal into Ferumbras soul splinters, and spawns/removes a vortex item. Combat-changing encounter mechanic (D9: Encounter); blocked until the Encounter models it.",
+      "source_file_operations_context": [],
+      "architecture_issue": 162,
+      "proposed_resolution": "Bind original callback to a source-specific encounter owner/roles and explicit predicates; retain practical actor core and flags until its exact contract is accepted.",
+      "current_source_core_restored": false
+    },
+    {
+      "monster": "scarlett_etzel",
+      "source_field": "events=scarlettThink",
+      "source_row": {
+        "source_index": 0,
+        "source_file": "data-otservbr-global/monster/quests/grave_danger/bosses/scarlett_etzel.lua",
+        "source_line": 16,
+        "source_field": "events=scarlettThink",
+        "kind": "script",
+        "status": "approved_omission",
+        "resolution": "OWNER_AUTHORIZED_FLAGGED_CORE: omitted source behavior; original debt retained in receipt. data-otservbr-global/scripts/quests/grave_danger_quest/cobra_bastion/creaturescripts_scarlett.lua When mirrors are aligned, locks Scarlett's movement and flips global flags enabling her death/transform sequence. Combat-changing encounter mechanic (D9: Encounter); blocked until the Encounter models it."
+      },
+      "owner_group": "QUEST_INTERACTION_STORAGE_OR_CORPSE",
+      "concrete_gap": "OWNER_AUTHORIZED_FLAGGED_CORE: omitted source behavior; original debt retained in receipt. data-otservbr-global/scripts/quests/grave_danger_quest/cobra_bastion/creaturescripts_scarlett.lua When mirrors are aligned, locks Scarlett's movement and flips global flags enabling her death/transform sequence. Combat-changing encounter mechanic (D9: Encounter); blocked until the Encounter models it.",
+      "source_file_operations_context": [],
+      "architecture_issue": 162,
+      "proposed_resolution": "Bind original callback to a source-specific encounter owner/roles and explicit predicates; retain practical actor core and flags until its exact contract is accepted.",
+      "current_source_core_restored": false
+    },
+    {
+      "monster": "scarlett_etzel",
+      "source_field": "events=scarlettHealth",
+      "source_row": {
+        "source_index": 0,
+        "source_file": "data-otservbr-global/monster/quests/grave_danger/bosses/scarlett_etzel.lua",
+        "source_line": 16,
+        "source_field": "events=scarlettHealth",
+        "kind": "script",
+        "status": "approved_omission",
+        "resolution": "OWNER_AUTHORIZED_FLAGGED_CORE: omitted source behavior; original debt retained in receipt. data-otservbr-global/scripts/quests/grave_danger_quest/cobra_bastion/creaturescripts_scarlett.lua Cuts damage to near-zero unless frozen, then schedules a delayed AoE damage burst on the boss. Combat-changing encounter mechanic (D9: Encounter); blocked until the Encounter models it."
+      },
+      "owner_group": "QUEST_INTERACTION_STORAGE_OR_CORPSE",
+      "concrete_gap": "OWNER_AUTHORIZED_FLAGGED_CORE: omitted source behavior; original debt retained in receipt. data-otservbr-global/scripts/quests/grave_danger_quest/cobra_bastion/creaturescripts_scarlett.lua Cuts damage to near-zero unless frozen, then schedules a delayed AoE damage burst on the boss. Combat-changing encounter mechanic (D9: Encounter); blocked until the Encounter models it.",
+      "source_file_operations_context": [],
+      "architecture_issue": 162,
+      "proposed_resolution": "Bind original callback to a source-specific encounter owner/roles and explicit predicates; retain practical actor core and flags until its exact contract is accepted.",
+      "current_source_core_restored": false
+    },
+    {
+      "monster": "sea_captain",
+      "source_field": "events=TargunaPirateDeath",
+      "source_row": {
+        "source_index": 0,
+        "source_file": "data-global/monster/targuna/aragonia/sea_captain.lua",
+        "source_line": 29,
+        "source_field": "events=TargunaPirateDeath",
+        "kind": "script",
+        "status": "approved_omission",
+        "resolution": "OWNER_AUTHORIZED_FLAGGED_CORE: omitted source behavior; original debt retained in receipt. Registered creature event whose script has not been verified."
+      },
+      "owner_group": "EVENT_REGISTRATION_AND_QUEST_PROGRESS_SOURCE_VERIFICATION",
+      "concrete_gap": "OWNER_AUTHORIZED_FLAGGED_CORE: omitted source behavior; original debt retained in receipt. Registered creature event whose script has not been verified.",
+      "source_file_operations_context": [],
+      "architecture_issue": 162,
+      "proposed_resolution": "Bind original callback to a source-specific encounter owner/roles and explicit predicates; retain practical actor core and flags until its exact contract is accepted.",
+      "current_source_core_restored": false
+    },
+    {
+      "monster": "somewhat_beatable",
+      "source_field": "events=SomewhatBeatableDeath",
+      "source_row": {
+        "source_index": 0,
+        "source_file": "data-otservbr-global/monster/quests/the_first_dragon/somewhat_beatable.lua",
+        "source_line": 55,
+        "source_field": "events=SomewhatBeatableDeath",
+        "kind": "script",
+        "status": "approved_omission",
+        "resolution": "OWNER_AUTHORIZED_FLAGGED_CORE: omitted source behavior; original debt retained in receipt. data-otservbr-global/scripts/quests/the_first_dragon/creaturescripts_death_somewhat_beatable.lua Advances a nearby player's storage and, once it reaches 5, spawns six dragon essence monsters. Combat-changing encounter mechanic (D9: Encounter); blocked until the Encounter models it."
+      },
+      "owner_group": "QUEST_INTERACTION_STORAGE_OR_CORPSE",
+      "concrete_gap": "OWNER_AUTHORIZED_FLAGGED_CORE: omitted source behavior; original debt retained in receipt. data-otservbr-global/scripts/quests/the_first_dragon/creaturescripts_death_somewhat_beatable.lua Advances a nearby player's storage and, once it reaches 5, spawns six dragon essence monsters. Combat-changing encounter mechanic (D9: Encounter); blocked until the Encounter models it.",
+      "source_file_operations_context": [],
+      "architecture_issue": 162,
+      "proposed_resolution": "Bind original callback to a source-specific encounter owner/roles and explicit predicates; retain practical actor core and flags until its exact contract is accepted.",
+      "current_source_core_restored": false
+    },
+    {
+      "monster": "soul_sphere",
+      "source_field": "mType.onSpawn",
+      "source_row": {
+        "source_index": 0,
+        "source_file": "data-otservbr-global/monster/quests/soul_war/soul_sphere.lua",
+        "source_line": 117,
+        "source_field": "mType.onSpawn",
+        "kind": "script",
+        "status": "approved_omission",
+        "resolution": "OWNER_AUTHORIZED_FLAGGED_CORE: omitted source behavior; original debt retained in receipt. Inline Lua callback; needs an explicit native behaviour resolution."
+      },
+      "owner_group": "SOUL_WAR_ZONE_TORMENT_AND_MUTABLE_BOSS_STATE",
+      "concrete_gap": "OWNER_AUTHORIZED_FLAGGED_CORE: omitted source behavior; original debt retained in receipt. Inline Lua callback; needs an explicit native behaviour resolution.",
+      "source_file_operations_context": [
+        "setHealth",
+        "teleportTo"
+      ],
+      "architecture_issue": 162,
+      "proposed_resolution": "Bind original callback to a source-specific encounter owner/roles and explicit predicates; retain practical actor core and flags until its exact contract is accepted.",
+      "current_source_core_restored": false
+    },
+    {
+      "monster": "soul_sphere",
+      "source_field": "mType.onThink",
+      "source_row": {
+        "source_index": 0,
+        "source_file": "data-otservbr-global/monster/quests/soul_war/soul_sphere.lua",
+        "source_line": 88,
+        "source_field": "mType.onThink",
+        "kind": "script",
+        "status": "approved_omission",
+        "resolution": "OWNER_AUTHORIZED_FLAGGED_CORE: omitted source behavior; original debt retained in receipt. Inline Lua callback; needs an explicit native behaviour resolution."
+      },
+      "owner_group": "SOUL_WAR_ZONE_TORMENT_AND_MUTABLE_BOSS_STATE",
+      "concrete_gap": "OWNER_AUTHORIZED_FLAGGED_CORE: omitted source behavior; original debt retained in receipt. Inline Lua callback; needs an explicit native behaviour resolution.",
+      "source_file_operations_context": [
+        "setHealth",
+        "teleportTo"
+      ],
+      "architecture_issue": 162,
+      "proposed_resolution": "Bind original callback to a source-specific encounter owner/roles and explicit predicates; retain practical actor core and flags until its exact contract is accepted.",
+      "current_source_core_restored": false
+    },
+    {
+      "monster": "symbol_of_hatred",
+      "source_field": "mType.onThink",
+      "source_row": {
+        "source_index": 0,
+        "source_file": "data-otservbr-global/monster/quests/soul_war/normal_monsters/burning_hatred/symbol_of_hatred.lua",
+        "source_line": 79,
+        "source_field": "mType.onThink",
+        "kind": "script",
+        "status": "approved_omission",
+        "resolution": "OWNER_AUTHORIZED_FLAGGED_CORE: omitted source behavior; original debt retained in receipt. Inline Lua callback; needs an explicit native behaviour resolution."
+      },
+      "owner_group": "SOUL_WAR_ZONE_TORMENT_AND_MUTABLE_BOSS_STATE",
+      "concrete_gap": "OWNER_AUTHORIZED_FLAGGED_CORE: omitted source behavior; original debt retained in receipt. Inline Lua callback; needs an explicit native behaviour resolution.",
+      "source_file_operations_context": [],
+      "architecture_issue": 162,
+      "proposed_resolution": "Bind original callback to a source-specific encounter owner/roles and explicit predicates; retain practical actor core and flags until its exact contract is accepted.",
+      "current_source_core_restored": false
+    },
+    {
+      "monster": "the_astral_source",
+      "source_field": "events=AstralSource",
+      "source_row": {
+        "source_index": 0,
+        "source_file": "data-otservbr-global/monster/bosses/the_astral_source.lua",
+        "source_line": 49,
+        "source_field": "events=AstralSource",
+        "kind": "script",
+        "status": "approved_omission",
+        "resolution": "OWNER_AUTHORIZED_FLAGGED_CORE: omitted source behavior; original debt retained in receipt. data-otservbr-global/scripts/quests/forgotten_knowledge/creaturescripts_astral_source.lua Removes/teleports glyph creatures and transfers health between them, or heals itself when the glyph is inactive. Combat-changing encounter mechanic (D9: Encounter); blocked until the Encounter models it."
+      },
+      "owner_group": "QUEST_INTERACTION_STORAGE_OR_CORPSE",
+      "concrete_gap": "OWNER_AUTHORIZED_FLAGGED_CORE: omitted source behavior; original debt retained in receipt. data-otservbr-global/scripts/quests/forgotten_knowledge/creaturescripts_astral_source.lua Removes/teleports glyph creatures and transfers health between them, or heals itself when the glyph is inactive. Combat-changing encounter mechanic (D9: Encounter); blocked until the Encounter models it.",
+      "source_file_operations_context": [],
+      "architecture_issue": 162,
+      "proposed_resolution": "Bind original callback to a source-specific encounter owner/roles and explicit predicates; retain practical actor core and flags until its exact contract is accepted.",
+      "current_source_core_restored": false
+    },
+    {
+      "monster": "the_distorted_astral_source",
+      "source_field": "events=DistortedSource",
+      "source_row": {
+        "source_index": 0,
+        "source_file": "data-otservbr-global/monster/quests/forgotten_knowledge/the_distorted_astral_source.lua",
+        "source_line": 49,
+        "source_field": "events=DistortedSource",
+        "kind": "script",
+        "status": "approved_omission",
+        "resolution": "OWNER_AUTHORIZED_FLAGGED_CORE: omitted source behavior; original debt retained in receipt. data-otservbr-global/scripts/quests/forgotten_knowledge/creaturescripts_distorted_source.lua Heals itself at low health and teleports/transfers health with astral glyph creatures at high health. Combat-changing encounter mechanic (D9: Encounter); blocked until the Encounter models it."
+      },
+      "owner_group": "QUEST_INTERACTION_STORAGE_OR_CORPSE",
+      "concrete_gap": "OWNER_AUTHORIZED_FLAGGED_CORE: omitted source behavior; original debt retained in receipt. data-otservbr-global/scripts/quests/forgotten_knowledge/creaturescripts_distorted_source.lua Heals itself at low health and teleports/transfers health with astral glyph creatures at high health. Combat-changing encounter mechanic (D9: Encounter); blocked until the Encounter models it.",
+      "source_file_operations_context": [],
+      "architecture_issue": 162,
+      "proposed_resolution": "Bind original callback to a source-specific encounter owner/roles and explicit predicates; retain practical actor core and flags until its exact contract is accepted.",
+      "current_source_core_restored": false
+    },
+    {
+      "monster": "the_welter",
+      "source_field": "defenses[3]",
+      "source_row": {
+        "source_index": 0,
+        "source_file": "data-otservbr-global/monster/raids/the_welter.lua",
+        "source_line": 116,
+        "source_field": "defenses[3]",
+        "kind": "field",
+        "status": "approved_omission",
+        "resolution": "OWNER_AUTHORIZED_FLAGGED_CORE: omitted source behavior; original debt retained in receipt. registered instant spell \"the welter summon2\" (data-otservbr-global/scripts/spells/monster/the_welter_summon2.lua) has custom logic (onCastSpell: local t, spectator = Game.getSpectators(creature:getPosition(), false, false, 50, 50, 50, 50) local check = 0 if #t ~= nil then for i = 1, #t do spectator = t[i); needs a native behaviour (D13). D18 pattern `conditional_summon` (samples/p4-behaviour-patterns-canary-47dfd51f.json). Probe: onCastSpell needs more of the world than the stubs model."
+      },
+      "owner_group": "TARGET_SELECTION_OR_FIGHT_OWNER_STATE",
+      "concrete_gap": "OWNER_AUTHORIZED_FLAGGED_CORE: omitted source behavior; original debt retained in receipt. registered instant spell \"the welter summon2\" (data-otservbr-global/scripts/spells/monster/the_welter_summon2.lua) has custom logic (onCastSpell: local t, spectator = Game.getSpectators(creature:getPosition(), false, false, 50, 50, 50, 50) local check = 0 if #t ~= nil then for i = 1, #t do spectator = t[i); needs a native behaviour (D13). D18 pattern `conditional_summon` (samples/p4-behaviour-patterns-canary-47dfd51f.json). Probe: onCastSpell needs more of the world than the stubs model.",
+      "source_file_operations_context": [],
+      "architecture_issue": 162,
+      "proposed_resolution": "Bind original callback to a source-specific encounter owner/roles and explicit predicates; retain practical actor core and flags until its exact contract is accepted.",
+      "current_source_core_restored": false
+    },
+    {
+      "monster": "the_welter",
+      "source_field": "defenses[4]",
+      "source_row": {
+        "source_index": 0,
+        "source_file": "data-otservbr-global/monster/raids/the_welter.lua",
+        "source_line": 117,
+        "source_field": "defenses[4]",
+        "kind": "field",
+        "status": "approved_omission",
+        "resolution": "OWNER_AUTHORIZED_FLAGGED_CORE: omitted source behavior; original debt retained in receipt. registered instant spell \"the welter heal\" (data-otservbr-global/scripts/spells/monster/the_welter_heal.lua) has custom logic (onCastSpell: local spectators, spectator = Game.getSpectators(creature:getPosition(), false, false, 10, 10, 10, 10) for i = 1, #spectators do spectator = spectators[i] if sp); needs a native behaviour (D13). D18 pattern `heal_self_conditional` (samples/p4-behaviour-patterns-canary-47dfd51f.json)."
+      },
+      "owner_group": "TARGET_SELECTION_OR_FIGHT_OWNER_STATE",
+      "concrete_gap": "OWNER_AUTHORIZED_FLAGGED_CORE: omitted source behavior; original debt retained in receipt. registered instant spell \"the welter heal\" (data-otservbr-global/scripts/spells/monster/the_welter_heal.lua) has custom logic (onCastSpell: local spectators, spectator = Game.getSpectators(creature:getPosition(), false, false, 10, 10, 10, 10) for i = 1, #spectators do spectator = spectators[i] if sp); needs a native behaviour (D13). D18 pattern `heal_self_conditional` (samples/p4-behaviour-patterns-canary-47dfd51f.json).",
+      "source_file_operations_context": [],
+      "architecture_issue": 162,
+      "proposed_resolution": "Bind original callback to a source-specific encounter owner/roles and explicit predicates; retain practical actor core and flags until its exact contract is accepted.",
+      "current_source_core_restored": false
+    },
+    {
+      "monster": "versperoth",
+      "source_field": "events=VersperothDeath",
+      "source_row": {
+        "source_index": 0,
+        "source_file": "data-otservbr-global/monster/quests/bigfoots_burden/versperoth.lua",
+        "source_line": 16,
+        "source_field": "events=VersperothDeath",
+        "kind": "script",
+        "status": "approved_omission",
+        "resolution": "OWNER_AUTHORIZED_FLAGGED_CORE: omitted source behavior; original debt retained in receipt. data-otservbr-global/scripts/quests/bigfoot_burden/creaturescripts_versperoth_kill.lua Sets battle-state storage, replaces a teleport item, and schedules delayed boss respawn/room-reset events. Combat-changing encounter mechanic (D9: Encounter); blocked until the Encounter models it."
+      },
+      "owner_group": "QUEST_INTERACTION_STORAGE_OR_CORPSE",
+      "concrete_gap": "OWNER_AUTHORIZED_FLAGGED_CORE: omitted source behavior; original debt retained in receipt. data-otservbr-global/scripts/quests/bigfoot_burden/creaturescripts_versperoth_kill.lua Sets battle-state storage, replaces a teleport item, and schedules delayed boss respawn/room-reset events. Combat-changing encounter mechanic (D9: Encounter); blocked until the Encounter models it.",
+      "source_file_operations_context": [],
+      "architecture_issue": 162,
+      "proposed_resolution": "Bind original callback to a source-specific encounter owner/roles and explicit predicates; retain practical actor core and flags until its exact contract is accepted.",
+      "current_source_core_restored": false
+    },
+    {
+      "monster": "zamulosh3",
+      "source_field": "events=ZamuloshClone",
+      "source_row": {
+        "source_index": 0,
+        "source_file": "data-otservbr-global/monster/quests/ferumbras_ascension/bosses/zamulosh3.lua",
+        "source_line": 17,
+        "source_field": "events=ZamuloshClone",
+        "kind": "script",
+        "status": "approved_omission",
+        "resolution": "OWNER_AUTHORIZED_FLAGGED_CORE: omitted source behavior; original debt retained in receipt. data-otservbr-global/scripts/quests/ferumbras_ascension/creaturescripts_zamulosh_clone.lua: Attaches the clone creature as a summon to a full-health boss spectator found nearby. Classified with low confidence in events-canary-47dfd51f.json; needs a manual read."
+      },
+      "owner_group": "QUEST_INTERACTION_STORAGE_OR_CORPSE",
+      "concrete_gap": "OWNER_AUTHORIZED_FLAGGED_CORE: omitted source behavior; original debt retained in receipt. data-otservbr-global/scripts/quests/ferumbras_ascension/creaturescripts_zamulosh_clone.lua: Attaches the clone creature as a summon to a full-health boss spectator found nearby. Classified with low confidence in events-canary-47dfd51f.json; needs a manual read.",
+      "source_file_operations_context": [],
+      "architecture_issue": 162,
+      "proposed_resolution": "Bind original callback to a source-specific encounter owner/roles and explicit predicates; retain practical actor core and flags until its exact contract is accepted.",
+      "current_source_core_restored": false
+    },
+    {
+      "monster": "faceless_bane",
+      "source_field": "mType.onSpawn",
+      "source_row": {
+        "source_index": 0,
+        "source_file": "data-otservbr-global/monster/quests/the_dream_courts/bosses/faceless_bane.lua",
+        "source_line": 153,
+        "source_field": "mType.onSpawn",
+        "kind": "script",
+        "status": "approved_omission",
+        "resolution": "Explicit owner-authorized partial source actor: executable mechanic omitted; original source and unresolved row retained in completion receipt. Inline Lua callback; needs an explicit native behaviour resolution."
+      },
+      "owner_group": "QUEST_SHARED_STATE_OWNER",
+      "concrete_gap": "Cross-party/player/global quest state and reward/reset/wall locks need quest-domain authority; no local Encounter storage substitutes accepted shared state.",
+      "source_file_operations_context": [
+        "setReward",
+        "setStorageValue"
+      ],
+      "architecture_issue": 162,
+      "proposed_resolution": "Bind original callback to a source-specific encounter owner/roles and explicit predicates; retain practical actor core and flags until its exact contract is accepted.",
+      "current_source_core_restored": false
+    },
+    {
+      "monster": "ferumbras_mortal_shell",
+      "source_field": "events=AscendantBossesDeath",
+      "source_row": {
+        "source_index": 0,
+        "source_file": "data-otservbr-global/monster/quests/ferumbras_ascension/bosses/ferumbras_mortal_shell.lua",
+        "source_line": 16,
+        "source_field": "events=AscendantBossesDeath",
+        "kind": "script",
+        "status": "approved_omission",
+        "resolution": "Explicit owner-authorized partial source actor: executable mechanic omitted; original source and unresolved row retained in completion receipt. data-otservbr-global/scripts/quests/ferumbras_ascension/creaturescripts_bosses_kill.lua Sets boss respawn cooldown, transforms/teleports a map teleporter item, and later reverts crystal items. Combat-changing encounter mechanic (D9: Encounter); blocked until the Encounter models it."
+      },
+      "owner_group": "QUEST_SHARED_STATE_OWNER",
+      "concrete_gap": "Cross-party/player/global quest state and reward/reset/wall locks need quest-domain authority; no local Encounter storage substitutes accepted shared state.",
+      "source_file_operations_context": [],
+      "architecture_issue": 162,
+      "proposed_resolution": "Bind original callback to a source-specific encounter owner/roles and explicit predicates; retain practical actor core and flags until its exact contract is accepted.",
+      "current_source_core_restored": false
+    },
+    {
+      "monster": "goshnar_s_megalomania_blue",
+      "source_field": "attacks[2]",
+      "source_row": {
+        "source_index": 0,
+        "source_file": "data-otservbr-global/monster/quests/soul_war/goshnar's_megalomania_blue.lua",
+        "source_line": 101,
+        "source_field": "attacks[2]",
+        "kind": "field",
+        "status": "approved_omission",
+        "resolution": "Explicit owner-authorized partial source actor: executable mechanic omitted; original source and unresolved row retained in completion receipt. registered instant spell \"megalomania blue\" (data-otservbr-global/scripts/quests/soul_war/spell-megalomania_blue.lua) has custom logic (load: [string \"<python>\"]:24: attempt to call field 'getByName' (a nil value)); needs a native behaviour (D13)."
+      },
+      "owner_group": "MEGALOMANIA_MAP_PREDICATES",
+      "concrete_gap": "Callbacks depend on named zone tile enumeration, safe ground409, white-tile cycling, dynamically registered cleanup/torment and mutable defense. Existing closed Encounter vocabulary lacks arbitrary tile-ground predicates and zone-scoped callback ownership.",
+      "source_file_operations_context": [],
+      "architecture_issue": 162,
+      "proposed_resolution": "Bind original callback to a source-specific encounter owner/roles and explicit predicates; retain practical actor core and flags until its exact contract is accepted.",
+      "current_source_core_restored": false
+    },
+    {
+      "monster": "goshnar_s_megalomania_blue",
+      "source_field": "mType.onDisappear",
+      "source_row": {
+        "source_index": 0,
+        "source_file": "data-otservbr-global/monster/quests/soul_war/goshnar's_megalomania_blue.lua",
+        "source_line": 141,
+        "source_field": "mType.onDisappear",
+        "kind": "script",
+        "status": "approved_omission",
+        "resolution": "Explicit owner-authorized partial source actor: executable mechanic omitted; original source and unresolved row retained in completion receipt. Inline Lua callback; needs an explicit native behaviour resolution."
+      },
+      "owner_group": "MEGALOMANIA_MAP_PREDICATES",
+      "concrete_gap": "Callbacks depend on named zone tile enumeration, safe ground409, white-tile cycling, dynamically registered cleanup/torment and mutable defense. Existing closed Encounter vocabulary lacks arbitrary tile-ground predicates and zone-scoped callback ownership.",
+      "source_file_operations_context": [],
+      "architecture_issue": 162,
+      "proposed_resolution": "Bind original callback to a source-specific encounter owner/roles and explicit predicates; retain practical actor core and flags until its exact contract is accepted.",
+      "current_source_core_restored": false
+    },
+    {
+      "monster": "goshnar_s_megalomania_blue",
+      "source_field": "mType.onThink",
+      "source_row": {
+        "source_index": 0,
+        "source_file": "data-otservbr-global/monster/quests/soul_war/goshnar's_megalomania_blue.lua",
+        "source_line": 135,
+        "source_field": "mType.onThink",
+        "kind": "script",
+        "status": "approved_omission",
+        "resolution": "Explicit owner-authorized partial source actor: executable mechanic omitted; original source and unresolved row retained in completion receipt. Inline Lua callback; needs an explicit native behaviour resolution."
+      },
+      "owner_group": "MEGALOMANIA_MAP_PREDICATES",
+      "concrete_gap": "Callbacks depend on named zone tile enumeration, safe ground409, white-tile cycling, dynamically registered cleanup/torment and mutable defense. Existing closed Encounter vocabulary lacks arbitrary tile-ground predicates and zone-scoped callback ownership.",
+      "source_file_operations_context": [],
+      "architecture_issue": 162,
+      "proposed_resolution": "Bind original callback to a source-specific encounter owner/roles and explicit predicates; retain practical actor core and flags until its exact contract is accepted.",
+      "current_source_core_restored": false
+    },
+    {
+      "monster": "goshnar_s_megalomania_green",
+      "source_field": "attacks[8]",
+      "source_row": {
+        "source_index": 0,
+        "source_file": "data-otservbr-global/monster/quests/soul_war/goshnar's_megalomania_green.lua",
+        "source_line": 112,
+        "source_field": "attacks[8]",
+        "kind": "field",
+        "status": "approved_omission",
+        "resolution": "Explicit owner-authorized partial source actor: executable mechanic omitted; original source and unresolved row retained in completion receipt. registered instant spell \"megalomania transform elemental\" (data-otservbr-global/scripts/quests/soul_war/spell-fire_beam_megalomania.lua) has custom logic (onCastSpell: return creature:applyZoneEffect(var, combat, \"boss.goshnar's-megalomania-purple\")); needs a native behaviour (D13)."
+      },
+      "owner_group": "MEGALOMANIA_MAP_PREDICATES",
+      "concrete_gap": "Callbacks depend on named zone tile enumeration, safe ground409, white-tile cycling, dynamically registered cleanup/torment and mutable defense. Existing closed Encounter vocabulary lacks arbitrary tile-ground predicates and zone-scoped callback ownership.",
+      "source_file_operations_context": [],
+      "architecture_issue": 162,
+      "proposed_resolution": "Bind original callback to a source-specific encounter owner/roles and explicit predicates; retain practical actor core and flags until its exact contract is accepted.",
+      "current_source_core_restored": false
+    },
+    {
+      "monster": "goshnar_s_megalomania_green",
+      "source_field": "mType.onDisappear",
+      "source_row": {
+        "source_index": 0,
+        "source_file": "data-otservbr-global/monster/quests/soul_war/goshnar's_megalomania_green.lua",
+        "source_line": 152,
+        "source_field": "mType.onDisappear",
+        "kind": "script",
+        "status": "approved_omission",
+        "resolution": "Explicit owner-authorized partial source actor: executable mechanic omitted; original source and unresolved row retained in completion receipt. Inline Lua callback; needs an explicit native behaviour resolution."
+      },
+      "owner_group": "MEGALOMANIA_MAP_PREDICATES",
+      "concrete_gap": "Callbacks depend on named zone tile enumeration, safe ground409, white-tile cycling, dynamically registered cleanup/torment and mutable defense. Existing closed Encounter vocabulary lacks arbitrary tile-ground predicates and zone-scoped callback ownership.",
+      "source_file_operations_context": [],
+      "architecture_issue": 162,
+      "proposed_resolution": "Bind original callback to a source-specific encounter owner/roles and explicit predicates; retain practical actor core and flags until its exact contract is accepted.",
+      "current_source_core_restored": false
+    },
+    {
+      "monster": "goshnar_s_megalomania_green",
+      "source_field": "mType.onThink",
+      "source_row": {
+        "source_index": 0,
+        "source_file": "data-otservbr-global/monster/quests/soul_war/goshnar's_megalomania_green.lua",
+        "source_line": 146,
+        "source_field": "mType.onThink",
+        "kind": "script",
+        "status": "approved_omission",
+        "resolution": "Explicit owner-authorized partial source actor: executable mechanic omitted; original source and unresolved row retained in completion receipt. Inline Lua callback; needs an explicit native behaviour resolution."
+      },
+      "owner_group": "MEGALOMANIA_MAP_PREDICATES",
+      "concrete_gap": "Callbacks depend on named zone tile enumeration, safe ground409, white-tile cycling, dynamically registered cleanup/torment and mutable defense. Existing closed Encounter vocabulary lacks arbitrary tile-ground predicates and zone-scoped callback ownership.",
+      "source_file_operations_context": [],
+      "architecture_issue": 162,
+      "proposed_resolution": "Bind original callback to a source-specific encounter owner/roles and explicit predicates; retain practical actor core and flags until its exact contract is accepted.",
+      "current_source_core_restored": false
+    },
+    {
+      "monster": "goshnar_s_megalomania_purple",
+      "source_field": "attacks[8]",
+      "source_row": {
+        "source_index": 0,
+        "source_file": "data-otservbr-global/monster/quests/soul_war/goshnar's_megalomania_purple.lua",
+        "source_line": 71,
+        "source_field": "attacks[8]",
+        "kind": "field",
+        "status": "approved_omission",
+        "resolution": "Explicit owner-authorized partial source actor: executable mechanic omitted; original source and unresolved row retained in completion receipt. registered instant spell \"megalomania transform elemental\" (data-otservbr-global/scripts/quests/soul_war/spell-fire_beam_megalomania.lua) has custom logic (onCastSpell: return creature:applyZoneEffect(var, combat, \"boss.goshnar's-megalomania-purple\")); needs a native behaviour (D13)."
+      },
+      "owner_group": "MEGALOMANIA_MAP_PREDICATES",
+      "concrete_gap": "Callbacks depend on named zone tile enumeration, safe ground409, white-tile cycling, dynamically registered cleanup/torment and mutable defense. Existing closed Encounter vocabulary lacks arbitrary tile-ground predicates and zone-scoped callback ownership.",
+      "source_file_operations_context": [],
+      "architecture_issue": 162,
+      "proposed_resolution": "Bind original callback to a source-specific encounter owner/roles and explicit predicates; retain practical actor core and flags until its exact contract is accepted.",
+      "current_source_core_restored": false
+    },
+    {
+      "monster": "goshnar_s_megalomania_purple",
+      "source_field": "mType.onSpawn",
+      "source_row": {
+        "source_index": 0,
+        "source_file": "data-otservbr-global/monster/quests/soul_war/goshnar's_megalomania_purple.lua",
+        "source_line": 100,
+        "source_field": "mType.onSpawn",
+        "kind": "script",
+        "status": "approved_omission",
+        "resolution": "Explicit owner-authorized partial source actor: executable mechanic omitted; original source and unresolved row retained in completion receipt. Inline Lua callback; needs an explicit native behaviour resolution."
+      },
+      "owner_group": "MEGALOMANIA_MAP_PREDICATES",
+      "concrete_gap": "Callbacks depend on named zone tile enumeration, safe ground409, white-tile cycling, dynamically registered cleanup/torment and mutable defense. Existing closed Encounter vocabulary lacks arbitrary tile-ground predicates and zone-scoped callback ownership.",
+      "source_file_operations_context": [
+        "setReward"
+      ],
+      "architecture_issue": 162,
+      "proposed_resolution": "Bind original callback to a source-specific encounter owner/roles and explicit predicates; retain practical actor core and flags until its exact contract is accepted.",
+      "current_source_core_restored": false
+    },
+    {
+      "monster": "goshnar_s_megalomania_purple",
+      "source_field": "mType.onThink",
+      "source_row": {
+        "source_index": 0,
+        "source_file": "data-otservbr-global/monster/quests/soul_war/goshnar's_megalomania_purple.lua",
+        "source_line": 122,
+        "source_field": "mType.onThink",
+        "kind": "script",
+        "status": "approved_omission",
+        "resolution": "Explicit owner-authorized partial source actor: executable mechanic omitted; original source and unresolved row retained in completion receipt. Inline Lua callback; needs an explicit native behaviour resolution."
+      },
+      "owner_group": "MEGALOMANIA_MAP_PREDICATES",
+      "concrete_gap": "Callbacks depend on named zone tile enumeration, safe ground409, white-tile cycling, dynamically registered cleanup/torment and mutable defense. Existing closed Encounter vocabulary lacks arbitrary tile-ground predicates and zone-scoped callback ownership.",
+      "source_file_operations_context": [
+        "setReward"
+      ],
+      "architecture_issue": 162,
+      "proposed_resolution": "Bind original callback to a source-specific encounter owner/roles and explicit predicates; retain practical actor core and flags until its exact contract is accepted.",
+      "current_source_core_restored": false
+    },
+    {
+      "monster": "walker",
+      "source_field": "attacks[2]",
+      "source_row": {
+        "source_index": 0,
+        "source_file": "data-otservbr-global/monster/constructs/walker.lua",
+        "source_line": 97,
+        "source_field": "attacks[2]",
+        "kind": "field",
+        "status": "approved_omission",
+        "resolution": "Explicit owner-authorized partial source actor: executable mechanic omitted; original source and unresolved row retained in completion receipt. registered instant spell \"walker skill reducer\" (data-otservbr-global/scripts/spells/monster/walker_skill_reducer.lua) has custom logic (per-target Lua combat callback: CALLBACK_PARAM_TARGETTILE); needs a native behaviour (D13). D18 pattern `skill_or_attribute_debuff` (samples/p4-behaviour-patterns-canary-47dfd51f.json)."
+      },
+      "owner_group": "PER_TARGET_VOCATION_DISPATCH",
+      "concrete_gap": "Per-target vocation dispatch chooses melee/defense, distance/defense or magic-level debuffs for7s at45–60percent. Native effect predicates cannot dispatch these source callbacks per target vocation.",
+      "source_file_operations_context": [],
+      "architecture_issue": 162,
+      "proposed_resolution": "Bind original callback to a source-specific encounter owner/roles and explicit predicates; retain practical actor core and flags until its exact contract is accepted.",
+      "current_source_core_restored": false
+    },
+    {
+      "monster": "parasite",
+      "source_field": "events=ParasiteDeath",
+      "source_row": {
+        "source_index": 0,
+        "source_file": "data-otservbr-global/monster/vermins/parasite.lua",
+        "source_line": 16,
+        "source_field": "events=ParasiteDeath",
+        "kind": "script",
+        "status": "approved_omission",
+        "resolution": "FLAGGED_PLAYABLE_APPROXIMATION: source mechanic omitted; exact original row retained in preparation ledger. data-otservbr-global/scripts/quests/bigfoot_burden/creaturescripts_parasite.lua Removes/creates wall crystal items, teleports players, removes other creatures, and schedules the warzone boss spawn. Combat-changing encounter mechanic (D9: Encounter); blocked until the Encounter models it."
+      },
+      "owner_group": "QUEST_SHARED_STATE_OWNER",
+      "concrete_gap": "Cross-party/player/global quest state and reward/reset/wall locks need quest-domain authority; no local Encounter storage substitutes accepted shared state.",
+      "source_file_operations_context": [],
+      "architecture_issue": 162,
+      "proposed_resolution": "Bind original callback to a source-specific encounter owner/roles and explicit predicates; retain practical actor core and flags until its exact contract is accepted.",
+      "current_source_core_restored": false
+    },
+    {
+      "monster": "seacrest_serpent",
+      "source_field": "defenses[2]",
+      "source_row": {
+        "source_index": 0,
+        "source_file": "data-otservbr-global/monster/reptiles/seacrest_serpent.lua",
+        "source_line": 116,
+        "source_field": "defenses[2]",
+        "kind": "field",
+        "status": "approved_omission",
+        "resolution": "Flagged completion: native ProfileScheduleState rejects melee in defense schedules. Only this defensive action is omitted; attacks, stats, loot and original Ability definition are retained."
+      },
+      "owner_group": "SEACREST_DEFENSIVE_MELEE",
+      "concrete_gap": "Source damage0 can still consume target shield block budget in Creature::blockHit; native defensive-melee schedule/armor-shield block semantics are unavailable, so no no-op claim.",
+      "source_file_operations_context": [],
+      "architecture_issue": 162,
+      "proposed_resolution": "Bind original callback to a source-specific encounter owner/roles and explicit predicates; retain practical actor core and flags until its exact contract is accepted.",
+      "current_source_core_restored": false
+    }
+  ],
+  "separate_familiar_challenge_rows": 2,
+  "exact_parity_debt_retained_for_restored_rows": true,
+  "missing_dark_merudri_global_parameters": [
+    "damage range",
+    "exact rear-wave shape",
+    "range and schedule"
+  ]
+}
