@@ -1,3 +1,6 @@
+#[path = "support/item_fx_audio_raw_import.rs"]
+mod item_fx_audio_raw_import;
+
 use std::collections::{BTreeMap, BTreeSet};
 use std::env;
 use std::fs::{self, OpenOptions};
@@ -196,7 +199,7 @@ fn limits() -> ProjectEvidenceLimits {
         max_locator_segments: 8,
         max_reference_records: CW2_B1_FULL_ITEM_FAMILY_COUNT + CREATURE_RECORDS + NPC_RECORDS,
         max_import_records: 12,
-        max_reimport_states: ENCOUNTER_COUNT,
+        max_reimport_states: ENCOUNTER_COUNT + item_fx_audio_raw_import::STATE_COUNT,
     }
 }
 
@@ -1990,6 +1993,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     apply_item_description_wiki_promotion_v1(&mut draft)?;
     apply_item_stack_default_successor8_promotion_v1(&mut draft)?;
     apply_item_forge289_promotion_v1(&mut draft, limits())?;
+    item_fx_audio_raw_import::append(&mut draft.core.imports)?;
     let documents = CanonicalProjectDocuments::from_v2_draft(draft, limits())?;
     if documents.documents().len() != DOCUMENT_COUNT {
         return Err("canonical WorldProject/v2 document count drifted".into());

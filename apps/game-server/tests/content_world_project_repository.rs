@@ -17,7 +17,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "content.lock.json",
         364,
-        "0da232c6d662b68b0a50d19e6ab99191577cc2555c671f43a0b86a4378bac747",
+        "8969d57915ca365a2ee42fb6652baf5bdd22dfc12c55d9f25a846656fa676ed6",
     ),
     (
         "definitions/declarations.json",
@@ -36,8 +36,8 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "manifest.json",
-        1_937,
-        "f05a79f3c74d74132a82678a18c98305559791985510826f8bf35cfb5877c552",
+        1_939,
+        "fadbe6526a85cd57204f4df8e75b87fb1b31cf20917c077a4088cbb26539ae6c",
     ),
     (
         "presentations/bindings.json",
@@ -47,12 +47,12 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "project.json",
         390,
-        "ab30d2572e7243b9229c50e3a09f9cbea7f4e1c9773752fa00bffafbdeb699d0",
+        "df2b79ebd4b1cfdfef0324144fbe2d1603a6e1599e7a07de60cc83b9252af549",
     ),
     (
         "provenance/imports.json",
-        33_802,
-        "1f50c423b1acb046bc168cb167eeea70b5e2be55fa6a5c171ca32b7025782387",
+        6_739_919,
+        "d470a45628a7d2ec9e2112d997e75ddcc7a56438be07e2b5a0bab243b2adf5fe",
     ),
     (
         "provenance/sources.json",
@@ -114,7 +114,7 @@ const WORLD_CATALOGUE_SHARDS: [(&str, &str); 4] = [
 const TREE_CONTRACT: &str =
     "docs/agents/evidence/OTV2-20260925-full-game-content-ruleset-tree-v1.json";
 const TREE_DIRECTORY_NODES: usize = 97;
-const TREE_SHA256: &str = "084e047fcbf89afa50105c4a58653691eb4a5ec4cd48bceb95577a8ef74f2218";
+const TREE_SHA256: &str = "47f83501aa458a045146e03576501d46ec6c5fa5eca7af535ecadfdb31a9a611";
 /// A12 (ITEM-ID-1b): the protected Item family less the 4,590 D149 records, on Tibia keys,
 /// plus the 404 donor epoch-2 records and the 60 appearance-only records (ITEM-ADD-1).
 const ITEMS: usize = 34_031;
@@ -153,7 +153,7 @@ fn limits() -> ProjectEvidenceLimits {
         max_locator_segments: 8,
         max_reference_records: CW2_B1_FULL_ITEM_FAMILY_COUNT + CREATURE_RECORDS + NPC_RECORDS,
         max_import_records: 12,
-        max_reimport_states: ENCOUNTERS,
+        max_reimport_states: ENCOUNTERS + 296,
     }
 }
 
@@ -326,13 +326,36 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     )
     .expect("capture tracked canonical package");
     assert_eq!(project.project_revision(), "g4-npc-wave-a-r9");
-    assert_eq!(project.imports().len(), 13);
+    assert_eq!(project.imports().len(), 14);
     let legacy_imports: Vec<_> = project
         .imports()
         .iter()
-        .filter(|b| b.batch_id != "g4-item-forge289-br-r1")
+        .filter(|b| {
+            b.batch_id != "g4-item-forge289-br-r1"
+                && b.batch_id != "g4-item-fx-audio295-raw-evidence-r1"
+        })
         .collect();
     assert_eq!(legacy_imports.len(), 12);
+    let raw = project
+        .imports()
+        .iter()
+        .find(|b| b.batch_id == "g4-item-fx-audio295-raw-evidence-r1")
+        .expect("raw evidence batch");
+    assert!(raw.candidates.is_empty());
+    assert_eq!(raw.reimport_states.len(), 296);
+    let sealed_raw: ImportBatch = serde_json::from_slice(include_bytes!(
+        "../../../imports/ots-source-evidence/item-fx-audio295/import-batch.json"
+    ))
+    .expect("sealed raw evidence");
+    assert_eq!(raw, &sealed_raw);
+    assert_eq!(
+        project
+            .imports()
+            .iter()
+            .map(|b| b.reimport_states.len())
+            .sum::<usize>(),
+        357
+    );
     let provenance = &legacy_imports[1];
     assert_eq!(provenance.batch_id, "cw2-b1-full-item-family-registry-r1");
     assert_eq!(provenance.source_repository, "zimbadev/crystalserver");

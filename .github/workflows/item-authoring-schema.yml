@@ -14,6 +14,7 @@ on:
       - imports/tibiawiki/bindings/items.json
       - imports/crystalserver/bindings/items.json
       - imports/crystalserver/facts/**
+      - imports/ots-source-evidence/item-fx-audio295/**
       - imports/tibiawiki/facts/items-family-fallback.json
       - imports/tibiawiki/facts/items-stats.json
       - imports/tibiawiki/source-evidence/stack-default-successor8/**
@@ -106,6 +107,11 @@ jobs:
 
       - name: Converter fixture tests
         run: python check_tibiawiki165_historical_context.py --cohort engine
+
+      - name: Closed raw FX/audio source evidence replay
+        run: |
+          python test_raw_fx_audio_reimport.py
+          python ../../../imports/ots-source-evidence/item-fx-audio295/producer/raw_fx_audio_reimport.py --capture ../../../imports/ots-source-evidence/item-fx-audio295/raw-source-staging.json --sources ../../../imports/ots-source-evidence/item-fx-audio295/retained-source-files.json --batch ../../../imports/ots-source-evidence/item-fx-audio295/import-batch.json --check
 
       - name: Semantic promotion lowering fixture tests
         run: python test_lower_promotion_packet.py
