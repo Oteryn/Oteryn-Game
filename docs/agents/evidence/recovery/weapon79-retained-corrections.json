@@ -1,0 +1,79 @@
+{
+  "schema": "OTERYN_WEAPON79_RETAINED_CONSTRUCTION_CORRECTIONS/v1",
+  "fidelity": "RETAINED_VISIBLE_TOOL_ARGUMENT_FRAGMENTS; NOT A CLAIM OF FINAL FILE BYTE EQUALITY",
+  "original_workspace": "/workspace/pr1437-world-owner-completion",
+  "expected_predecessor": "2ec1f34f05fd89abbb041f313b0852c331ae2b53",
+  "instructions_as_evidence": true,
+  "known_changes": [
+    {
+      "file": "/workspace/audit-continuation/build-weapon79-source-proof.py",
+      "operation": "literal replacement",
+      "before": "w=g['competing_own_infobox_witnesses'][token];witnesses[token]=w",
+      "after": "w=g['competing_own_infobox_witnesses'][token] | {'source_capture_sha256':page['source_part_sha256'],'source_capture_name':page['source_part']};witnesses[token]=w"
+    },
+    {
+      "file": "tools/content-schema/item-authoring/lower_item_weapon_metadata_packet.py",
+      "operation": "proof pin changed after actual regenerated proof",
+      "before": "de0b84740007ea684342f8a789c26c3f8a9f78a09fb1d350bf1b98f711b7bff6",
+      "after": "dbe5e74c63a45cb169fb9557b8b98cb87582f8ba0fec274b372e78297242e78d"
+    },
+    {
+      "file": "tools/content-schema/item-authoring/lower_item_weapon_metadata_packet.py",
+      "operation": "literal replacement",
+      "before": "\"alias_catalog_sha256\": base.sha((root / ALIASES).read_bytes())",
+      "after": "\"alias_catalog_sha256\": base.sha((root / ALIASES).read_bytes()), \"alias_helper_sha256\": base.sha((root / \"tools/content-schema/item-authoring/weapon_metadata_source_aliases.py\").read_bytes())"
+    },
+    {
+      "file": "apps/game-server/src/content/item_weapon_metadata_promotion.rs",
+      "operation": "test fixture complete weapon fields added",
+      "before": "\"weapon_type\":{\"state\":\"KNOWN\",\"value\":\"DISTANCE\"}}}",
+      "after": "\"weapon_type\":{\"state\":\"KNOWN\",\"value\":\"DISTANCE\"},\"attack\":{\"state\":\"UNKNOWN\"},\"defense\":{\"state\":\"UNKNOWN\"},\"extra_defense\":{\"state\":\"UNKNOWN\"},\"range\":{\"state\":\"UNKNOWN\"},\"hit_chance\":{\"state\":\"UNKNOWN\"},\"max_hit_chance\":{\"state\":\"UNKNOWN\"},\"ammunition\":{\"state\":\"UNKNOWN\"},\"elemental\":{\"state\":\"UNKNOWN\"}}}"
+    },
+    {
+      "file": "apps/game-server/tests/content_world_project_v2.rs",
+      "operation": "avoid private WorldProject.reference access",
+      "before": "assert_eq!(parsed.reference.records, original.core.records);",
+      "intermediate": "assert_eq!(ProjectV2Draft::from_project(&parsed).core.records, original.core.records);",
+      "after": "assert_eq!(ProjectV2Draft::from_project(&parsed).core.records, ProjectV2Draft::from_project(&old_project).core.records);"
+    },
+    {
+      "file": "apps/game-server/tests/content_world_project_v2.rs",
+      "operation": "canonicalize old reference record order before preservation assertion",
+      "before": "let old = serde_json::to_value(&original.state.item_authoring[0]).expect(\"old source overlay\");",
+      "after": "let old_documents = CanonicalProjectDocuments::from_v2_draft(original.clone(), limits()).expect(\"old documents\");\n    let old_project = ProjectSnapshot::new(old_documents.documents().clone(), limits()).expect(\"old admit\").parse(limits()).expect(\"old parse\");\n    let old = serde_json::to_value(&original.state.item_authoring[0]).expect(\"old source overlay\");"
+    },
+    {
+      "file": "tools/content-schema/item-authoring/test_lower_item_weapon_metadata_packet.py",
+      "operation": "formal schema route check added with admitted vocabulary",
+      "additional_imports": "import json\nfrom pathlib import Path\nfrom jsonschema import Draft202012Validator\n",
+      "before": "self.assertEqual(formal_weapon({}), {})",
+      "after": "schema = json.loads((Path(__file__).parent / \"item.schema.json\").read_text())\n        weapon_schema = schema[\"properties\"][\"weapon\"] | {\"$defs\": schema[\"$defs\"]}\n        self.assertEqual(list(Draft202012Validator(weapon_schema).iter_errors({\"weapon_type\": \"distance_launcher\", **formal_weapon(author)})), [])\n        self.assertEqual(formal_weapon({}), {})"
+    }
+  ],
+  "reported_generated_outputs_not_recovered": [
+    {
+      "path": "/workspace/audit-continuation/weapon79-2ec-source-qualification-checkpoint.json",
+      "reported_bytes": 343200,
+      "reported_sha256": "dbe5e74c63a45cb169fb9557b8b98cb87582f8ba0fec274b372e78297242e78d",
+      "bytes_fidelity": "UNKNOWN_CURRENT_BYTES; reported historical successful generation only"
+    },
+    {
+      "path": "/workspace/audit-continuation/weapon79-source-packet-checkpoint.json",
+      "reported_bytes": 20116,
+      "reported_sha256": "0d87f5a4183e92a71f7e52f2f9274626aee81a91c2d7c0d5e103057b8133a19f",
+      "bytes_fidelity": "UNKNOWN_CURRENT_BYTES; external checkpoint only, never final published packet"
+    }
+  ],
+  "availability_limits": [
+    "Full raw source captures/proposal79/proof79/packet79/final authoring checkpoint bytes are not present in this recovery object.",
+    "Rust wrapper packet pin remained PENDING_PREDECESSOR_CARRY_AND_GENERATION; module export/materializer hookup not authored yet.",
+    "Cargo and finalgeneration had not been run; rustfmt command was unavailable. No final formatted source byte identity is asserted.",
+    "Legacy engine_items.py/source_field_catalogs.py/formal schema/catalog84/verifier unchanged in reported checkpoint."
+  ],
+  "validation_history": {
+    "python_regressions": "3 PASS at last recorded run",
+    "git_diff_check": "PASS at last recorded run",
+    "rust": "NOT_RUN",
+    "publication": "NONE_BY_WORKER"
+  }
+}

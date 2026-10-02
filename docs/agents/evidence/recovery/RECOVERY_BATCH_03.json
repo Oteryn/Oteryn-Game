@@ -1,0 +1,44 @@
+{
+  "schema": "RECOVERY_STAGED_TEXT_V1",
+  "original_file_restoration_complete": false,
+  "original_files_restored": 1,
+  "files": [
+    {
+      "path": "docs/agents/evidence/OTV2-20261002-stack-default-historical-native-context-v1.json",
+      "sha": "32859d2be0e5c351afbffd7cd13708a5d5b0ed3d",
+      "bytes": 2685926,
+      "sha256": "44143ceedbb00e843267d58d8463c7ec36dbb9886ea63f6e0d97b909465b574f",
+      "fidelity": "ORIGINAL_FINAL_CONTEXT_BYTES_RECOVERED_VERIFIED_SHA256"
+    },
+    {
+      "path": "docs/agents/evidence/recovery/weapon79-owner.creation.patch.txt",
+      "sha": "8beddf76adbcae394893a771863d0db4c25dd374",
+      "bytes": 4794,
+      "fidelity": "Exact retained apply_patch tool input; final formatted project source unknown",
+      "sha256": "8d3652c9f81e2d1dca7e6c3567fd3c6d307d22c6df8744e42fa131676cb76085"
+    },
+    {
+      "path": "docs/agents/evidence/recovery/weapon79-retained-corrections.json",
+      "sha": "86861f9d39f7dcd5200b3289a5d7fa44ac93d563",
+      "bytes": 5547,
+      "fidelity": "Retained correction and availability record; not original source/proof/packet bytes",
+      "sha256": "a9540f0153c78eb3f56e135735a7a2c8b44fc2e74f78a65b6c0f5b241634ef05"
+    },
+    {
+      "path": "docs/agents/evidence/recovery/coverage-lower_item_hit_magic_packet-preformat-tool-input.py.txt",
+      "sha": "457886135975f4ad8f8afdf48e92cc58cd4ca544",
+      "bytes": 5183,
+      "fidelity": "Exact retained preformat source-tool input; final formatted file bytes unknown",
+      "sha256": "6f4c913afc33853390591695f592f54ddc98b77f4124ed0841c40b0c1c322468"
+    },
+    {
+      "path": "docs/agents/evidence/recovery/coverage-test_lower_item_hit_magic_packet-preformat-tool-input.py.txt",
+      "sha": "e1f01b047a28f20e67d1127d051463e3e194bfba",
+      "bytes": 4261,
+      "fidelity": "Exact retained preformat source-tool input; final formatted file bytes unknown",
+      "sha256": "4b5d9f146bfc04feb8d55418211f0d03167a276ebb76a6370c4afb0cee7df29b"
+    }
+  ],
+  "checks": "Root independently read all staged blobs, checked exact UTF8 lengths/SHA256; context matches original final reported digest",
+  "use": "One complete original context input plus explicitly labeled retained construction/correction material. Does not recover all unpublished packets or generated native output."
+}
