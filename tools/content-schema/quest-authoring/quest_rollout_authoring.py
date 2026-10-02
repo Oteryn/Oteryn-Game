@@ -18,7 +18,7 @@ def read(path):
     return json.loads(path.read_text())
 
 
-def build(catalogue, bundle, definitions, source_specs):
+def build(catalogue, bundle, definitions, source_specs, approximations=None):
     """Join by exact source keys, including explicit family bindings only."""
     def indexed(rows, field):
         result = {row[field]: row for row in rows}
@@ -39,8 +39,11 @@ def build(catalogue, bundle, definitions, source_specs):
         if ref in native:
             raise ValueError('duplicate canonical source binding: ' + ref)
         native[ref] = definition
+    approximations = approximations or {}
     gaps = {row['quest']: row['gaps'] for row in bundle['quest_gaps']}
     source_keys = {row['identity']['key'] for row in bundle['quests']}
+    if set(approximations) - source_keys:
+        raise ValueError('approximation references absent source quest')
     records, seen = [], set()
     for row in catalogue['quests']:
         title = row['wiki_title']
@@ -102,7 +105,8 @@ def build(catalogue, bundle, definitions, source_specs):
             'flags': flags, 'known_gaps': missing,
             'source_page_count': len(row.get('fresh_sources', [])),
             'fidelity_policy': 'pragmatic_oteryn',
-            'approximation_applied': False,
+            'approximation_applied': any(approximations.get(key) for key in keys),
+            'approximation_evidence': [copy.deepcopy(e) for key in keys for e in approximations.get(key, [])],
             'runtime_enabled': False,
             'smoke_verification': {'start': 'NOT_RUN', 'progress': 'NOT_RUN',
                                    'finish': 'NOT_RUN', 'reward': 'NOT_RUN',
@@ -119,6 +123,34 @@ def build(catalogue, bundle, definitions, source_specs):
             'records': records}
 
 
+def selected_approximations(root, index, claims):
+    """Expose only exact authored stack choices; never infer runtime behavior."""
+    selected, paths = {}, []
+    by_source = {(c['provenance']['pilot_key'], c['provenance']['pilot_revision']): c for c in claims}
+    for check in index.get('variant_source_checks', []):
+        if check.get('code') != 'OTERYN_SELECTED_STACK_SERIALIZATION':
+            continue
+        path = root / check['proof_path']
+        if not path.resolve().is_relative_to(root.resolve()) or hashlib.sha256(path.read_bytes()).hexdigest() != check['proof_sha256']:
+            raise ValueError('approximation proof identity differs')
+        proof = read(path)
+        if check['selected_cases'] != proof['cases']:
+            raise ValueError('approximation selected cases differ from pinned proof')
+        paths.append(path)
+        for case in check['selected_cases']:
+            identity = case['source_identity']
+            claim = by_source[(identity['key'], identity['revision'])]
+            owner = claim.get('quest')
+            if owner != case['source_quest'] or owner is None or claim.get('native_admission') != 'WAITING_IMPLEMENTATION':
+                raise ValueError('approximation owner or native admission differs')
+            evidence = {'claim': claim['identity']['key'], 'proof_path': check['proof_path'],
+                        'proof_sha256': check['proof_sha256'], 'source_behavior': check['source_behavior']}
+            if evidence in selected.get(owner['key'], []):
+                raise ValueError('duplicate authored approximation')
+            selected.setdefault(owner['key'], []).append(evidence)
+    return selected, paths
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--check', action='store_true')
@@ -129,8 +161,13 @@ def main():
     index = read(index_path)
     definitions = [r['definition'] for name in index['shards']
                    for r in read(root / name)['records']]
-    payload = build(read(here / INPUTS[0]), read(here / INPUTS[1]), definitions, read(here / INPUTS[2]))
+    claim_index_path = root / 'content/interactions/reward_claims/index.json'
+    claim_index = read(claim_index_path)
+    claims = [r['definition'] for name in claim_index['shards'] for r in read(root / name)['records']]
+    approximations, proof_paths = selected_approximations(root, claim_index, claims)
+    payload = build(read(here / INPUTS[0]), read(here / INPUTS[1]), definitions, read(here / INPUTS[2]), approximations)
     paths = [here / name for name in INPUTS] + [index_path] + [root / name for name in index['shards']]
+    paths += [claim_index_path] + [root / name for name in claim_index['shards']] + proof_paths
     payload['input_provenance'] = [
         {'path': str(path.relative_to(root)), 'sha256': hashlib.sha256(path.read_bytes()).hexdigest()}
         for path in paths]

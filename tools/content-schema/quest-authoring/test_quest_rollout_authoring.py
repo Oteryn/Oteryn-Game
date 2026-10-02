@@ -34,6 +34,19 @@ class RolloutTests(unittest.TestCase):
         self.assertEqual(set(row['smoke_verification'].values()), {'NOT_RUN'})
         self.assertFalse(row['approximation_applied'])
 
+    def test_explicit_data_choice_is_flagged_without_runtime_promotion(self):
+        proof = {'claim': 'oteryn:reward-claim.example', 'proof_path': 'proof.json',
+                 'proof_sha256': 'a' * 64, 'source_behavior': 'RECORDED_DIVERGENCE'}
+        result = build({'quests': [self.row]}, self.bundle, [self.definition], self.specs,
+                       {'canary:quest/example': [proof]})['records'][0]
+        self.assertTrue(result['approximation_applied'])
+        self.assertEqual(result['approximation_evidence'], [proof])
+        self.assertFalse(result['runtime_enabled'])
+        self.assertEqual(set(result['smoke_verification'].values()), {'NOT_RUN'})
+        with self.assertRaisesRegex(ValueError, 'absent source quest'):
+            build({'quests': [self.row]}, self.bundle, [self.definition], self.specs,
+                  {'canary:quest/missing': [proof]})
+
     def test_unbound_title_retained_with_honest_gaps(self):
         row = copy.deepcopy(self.row)
         row['authored_candidates'] = []

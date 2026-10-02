@@ -1,5 +1,6 @@
 """Canonical variant DATA authoring under D277; native execution stays blocked."""
 import copy
+import hashlib
 import json
 from pathlib import Path
 
@@ -41,9 +42,55 @@ def canonical_schema(root):
         'required': sorted(set(props) - {'quest'}), 'properties': props}
 
 
+
+def serialized_item_stacks(reward, items, stack_problem):
+    """Serialize authored totals into known admitted stacks; never change random odds.
+
+    Original raw arguments and donor execution remain in source_variant. This
+    DATA representation stays blocked at the existing native variant boundary.
+    """
+    serialized = []
+    for quantity in reward.get('items', []):
+        item = items[quantity['item']['key']]
+        stack = item.get('semantics', {}).get('stack', {})
+        maximum = stack.get('value', {}).get('stack_max', {}) if stack.get('state') == 'KNOWN' else {}
+        limit = maximum.get('value') if maximum.get('state') == 'KNOWN' else None
+        if (item.get('stack_class') == 'StackCapable' and type(limit) is int
+                and 1 <= limit <= 100 and stack_problem(item, limit) is None):
+            count = quantity['count']
+            while count > limit:
+                serialized.append({'item': copy.deepcopy(quantity['item']), 'count': limit})
+                count -= limit
+            serialized.append({'item': copy.deepcopy(quantity['item']), 'count': count})
+        else:
+            serialized.append(copy.deepcopy(quantity))
+    reward['items'] = serialized
+
+
+
+def semantic_digest(value):
+    return hashlib.sha256(json.dumps(value, sort_keys=True, ensure_ascii=False, separators=(',', ':')).encode()).hexdigest()
+
+
+def stack_normalization_proof():
+    path = Path(__file__).with_name('reward_stack_normalization.json')
+    if hashlib.sha256(path.read_bytes()).hexdigest() != '962a6cde5932fb4e17f457474de721f52749c32a7626ad7cf6d505916949fc69':
+        raise ValueError('selected stack normalization proof changed')
+    return json.loads(path.read_text())
+
+
+def stack_normalization_checks():
+    proof = stack_normalization_proof()
+    return [{'code': 'OTERYN_SELECTED_STACK_SERIALIZATION', 'proof_path':
+        'tools/content-schema/reward-claim-authoring/reward_stack_normalization.json',
+        'proof_sha256': '962a6cde5932fb4e17f457474de721f52749c32a7626ad7cf6d505916949fc69', 'source_behavior': 'RECORDED_DIVERGENCE',
+        'native_admission': 'WAITING_IMPLEMENTATION', 'selected_cases': proof['cases']}]
+
+
 def derive_definitions(packet, items, stack_problem):
     """No dummy rewards, guessed carrier, or source count promoted to definition charges."""
     out, identities, positions = [], set(), set()
+    selected = {c['source_identity']['key']: c for c in stack_normalization_proof()['cases']}
     for row in packet['records']:
         source = row['source_claim']; bindings = {}
         for binding in row['item_bindings']:
@@ -81,11 +128,24 @@ def derive_definitions(packet, items, stack_problem):
                     reward[field]['item'] = copy.deepcopy(ref)
                 else:
                     reward[field] = copy.deepcopy(ref)
-                problem = stack_problem(item, count)
+                # Additive items are checked after canonical stack serialization.
+                problem = stack_problem(item, count) if field != 'items' else None
                 if problem:
                     holds.append({'category': 'item', 'code': 'ITEM_SEMANTICS_MISSING',
                         'placement_index': pi, 'reward_field': field, 'reward_index': qi,
                         'item': ref['key'], 'reason': problem})
+            case = selected.get(source['identity']['key'])
+            if case and pi == case['placement_index']:
+                if (semantic_digest(source) != case['source_claim_sha256']
+                        or semantic_digest(items[case['item_identity']['key']]) != case['item_definition_sha256']):
+                    raise ValueError('selected source/Item stack normalization inputs changed')
+                serialized_item_stacks(reward, items, stack_problem)
+            for qi, quantity in enumerate(reward.get('items', [])):
+                problem = stack_problem(items[quantity['item']['key']], quantity['count'])
+                if problem:
+                    holds.append({'category': 'item', 'code': 'ITEM_SEMANTICS_MISSING',
+                        'placement_index': pi, 'reward_field': 'items', 'reward_index': qi,
+                        'item': quantity['item']['key'], 'reason': problem})
             witnesses = row['placement_bindings'][pi]['manifest_entries']
             uids = sorted({(w['source'], w['uid']) for entry in witnesses for w in entry['sources']})
             if not uids:

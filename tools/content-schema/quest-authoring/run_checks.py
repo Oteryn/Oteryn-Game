@@ -30,6 +30,7 @@ def main():
     commands = [
         ['verify_quest_schema.py'],
         ['../reward-claim-authoring/test_reward_claim_variant_authoring.py'],
+        ['../reward-claim-authoring/test_variant_stack_serialization.py'],
         ['../reward-claim-authoring/reward_claim_authoring.py', 'content', '--check'],
         ['../reward-claim-authoring/reward_claim_variant_migration.py', '--check'],
         ['-m', 'unittest', 'discover', '-s', '.', '-p', 'test_*.py'],

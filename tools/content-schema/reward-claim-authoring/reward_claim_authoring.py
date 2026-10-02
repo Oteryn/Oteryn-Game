@@ -515,13 +515,13 @@ def committed_errors() -> list[str]:
         row for shard in index["shards"] for row in load_json(ROOT / shard)["records"]
     ]
     source_claims = load_json(ROOT / CLAIMS_REL)["claims"]
-    from reward_claim_variant_authoring import PROFILE, validate as validate_variants
+    from reward_claim_variant_authoring import PROFILE, validate as validate_variants, stack_normalization_checks
     plain = [r for r in records if r['definition'].get('definition_profile') != PROFILE]
     variants = [r for r in records if r['definition'].get('definition_profile') == PROFILE]
     items = load_items()
     errors = validate(plain, items, index["source_checks"], source_claims)
     errors += validate_variants(variants, ROOT, items, stack_problem)
-    if index.get('variant_source_checks') != legacy_uid_checks(records):
+    if index.get('variant_source_checks') != legacy_uid_checks(records) + stack_normalization_checks():
         errors.append('variant legacy UID diagnostics are missing or stale')
     if len(records) != index["record_count"]:
         errors.append(
@@ -542,12 +542,12 @@ def generate() -> dict[str, str]:
     if errors:
         raise ValueError("\n".join(errors))
     outputs = content_files(claims_bytes, records, source_checks)
-    from reward_claim_variant_authoring import derive, extend_outputs
+    from reward_claim_variant_authoring import derive, extend_outputs, stack_normalization_checks
     variants = derive(ROOT, items, stack_problem)
     extend_outputs(ROOT, outputs, variants, compact, CONTENT_DIR)
     records += variants
     family_index = json.loads(outputs[INDEX_PATH])
-    family_index['variant_source_checks'] = legacy_uid_checks(records)
+    family_index['variant_source_checks'] = legacy_uid_checks(records) + stack_normalization_checks()
     outputs[INDEX_PATH] = compact(family_index)
     names = ("project", "manifest", "content.lock")
     docs = [load_json(ROOT / f"content/{name}.json") for name in names]
