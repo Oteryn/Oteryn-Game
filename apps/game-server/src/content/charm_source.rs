@@ -33,6 +33,20 @@ pub(crate) struct CanonicalCharmCatalogue {
 }
 
 impl CanonicalCharmCatalogue {
+    /// Import the committed static data once at node boot, like the spell book and
+    /// Achievement catalogue. These are data, not an activated generation or capability.
+    pub(crate) fn embedded() -> Result<Self, ContentError> {
+        let limits = embedded_limits()?;
+        decode_canonical_charms(
+            include_bytes!("../../../../content/charms/index.json"),
+            &[(
+                SHARD_PATH,
+                include_bytes!("../../../../content/charms/charms-00000-00024.json"),
+            )],
+            &limits,
+        )
+    }
+
     pub(crate) fn catalogue(&self) -> &CharmCatalogue {
         &self.catalogue
     }
@@ -51,6 +65,31 @@ impl CharmCatalogueRead for CanonicalCharmCatalogue {
     fn charm(&self, key: &str) -> Option<&CharmDefinition> {
         self.effects.get(key)
     }
+}
+
+// Reuse existing Content resource ceilings for this read-only import. The evidence
+// profile does not extend the admitted production format or qualify this catalogue.
+fn embedded_limits() -> Result<EvidenceLimits, ContentError> {
+    use super::{
+        FIRST_PRODUCTION_MAX_ATOM_BYTES, FIRST_PRODUCTION_MAX_CELLS,
+        FIRST_PRODUCTION_MAX_DEFINITIONS, FIRST_PRODUCTION_MAX_KEY_BYTES,
+        FIRST_PRODUCTION_MAX_RECORD_BYTES, FIRST_PRODUCTION_MAX_REFERENCES,
+        FIRST_PRODUCTION_MAX_SECTION_BYTES, FIRST_PRODUCTION_MAX_SERVER_ARTIFACT_BYTES,
+        FIRST_PRODUCTION_MAX_SERVER_RECORDS,
+    };
+    EvidenceLimits::new(
+        "evidence:embedded-charm-catalogue",
+        FIRST_PRODUCTION_MAX_SERVER_ARTIFACT_BYTES,
+        2, // The registered source has exactly an index and one shard.
+        FIRST_PRODUCTION_MAX_SECTION_BYTES,
+        FIRST_PRODUCTION_MAX_SERVER_RECORDS,
+        FIRST_PRODUCTION_MAX_RECORD_BYTES,
+        FIRST_PRODUCTION_MAX_KEY_BYTES,
+        FIRST_PRODUCTION_MAX_ATOM_BYTES,
+        FIRST_PRODUCTION_MAX_DEFINITIONS,
+        FIRST_PRODUCTION_MAX_CELLS,
+        FIRST_PRODUCTION_MAX_REFERENCES,
+    )
 }
 
 /// Decode the actual registered, single-shard CHARM-1 source format. No filesystem or

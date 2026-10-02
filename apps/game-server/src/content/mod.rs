@@ -30,10 +30,6 @@
 
 mod activation;
 mod artifact;
-#[allow(
-    dead_code,
-    reason = "immutable Charm source projection awaits a separately qualified owning consumer"
-)]
 pub(crate) mod charm_source;
 pub(crate) mod charm_source_effect;
 pub(crate) mod charm_source_json;

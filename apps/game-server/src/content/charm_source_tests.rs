@@ -5,6 +5,26 @@ type TestResult = Result<(), Box<dyn std::error::Error>>;
 const INDEX: &[u8] = include_bytes!("../../../../content/charms/index.json");
 const SHARD: &[u8] = include_bytes!("../../../../content/charms/charms-00000-00024.json");
 
+#[test]
+fn embedded_server_import_retains_the_complete_canonical_catalogue() -> TestResult {
+    let imported = CanonicalCharmCatalogue::embedded()?;
+    let expected = decode(SHARD)?;
+    assert_eq!(imported.catalogue(), expected.catalogue());
+    assert_eq!(imported.source_bytes(), (INDEX, SHARD));
+    assert_eq!(imported.source_digest(), expected.source_digest());
+    for row in expected.catalogue().definitions() {
+        assert_eq!(
+            imported.charm(row.key.as_str()),
+            expected.charm(row.key.as_str())
+        );
+    }
+    // Missing gameplay consumers must not filter static imported definitions.
+    assert!(imported.charm("oteryn:charm.cleanse").is_some());
+    assert!(imported.charm("oteryn:charm.scavenge").is_some());
+    assert_eq!(imported.catalogue().definitions().count(), 25);
+    Ok(())
+}
+
 // Test budgets are measured from these input bytes, not a new production profile.
 fn budgets(shard: &[u8]) -> Result<[usize; 8], Box<dyn std::error::Error>> {
     fn maxima(value: &Value, key: &mut usize, text: &mut usize) {
