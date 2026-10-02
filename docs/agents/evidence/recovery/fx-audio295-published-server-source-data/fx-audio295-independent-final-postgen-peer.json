@@ -1,0 +1,99 @@
+{
+  "actual_runtime_checks_readback": {
+    "bytes": 5362,
+    "path": "/workspace/audit-continuation/fx-audio295-final-independent-check-evidence.json",
+    "sha256": "96fe1e8b782949b11114dc4f8f8193c76f2f8742c350809e5573c634cf3a2de4"
+  },
+  "all7856_parentdata_allowed_delta": {
+    "changed": [
+      "content/content.lock.json",
+      "content/world/content.lock.json",
+      "content/world/manifest.json",
+      "content/world/project.json",
+      "content/world/provenance/imports.json"
+    ],
+    "unchanged": 7851
+  },
+  "authority": "Inert raw source-data intake only; no Native/AssetKey/World/Item source-owner bindings or runtime readiness claim",
+  "baseline": "4151e3005daa41ed848533e45b63fadc5ed78fa3",
+  "budget": {
+    "decoded_string_bytes_including_keys": 6115100,
+    "decoded_values": 3642,
+    "depth": 7,
+    "document_bytes": 6739919
+  },
+  "current_counts_unchanged": {
+    "BR_Item_bindings": 454,
+    "Forge_profiles": 436,
+    "Item_authoring": 700,
+    "Native_records": 57320,
+    "canonical_Items": 34031,
+    "source_relation_refs": 752,
+    "source_relation_sources": 539
+  },
+  "double_live_owned_readback": "PASS",
+  "final_source_manifest": {
+    "bytes": 24473,
+    "path": "/workspace/audit-continuation/fx-audio295-source-repair-freeze-manifest-v2.json",
+    "sha256": "27f40179a44429238cef3c08992fe277114a2aa8155035ae06c81366853c2094"
+  },
+  "findings": [],
+  "frozen_final_manifest": {
+    "bytes": 38684,
+    "path": "/workspace/audit-continuation/fx-audio295-final-worker-manifest.json",
+    "sha256": "d35d3ac72d25714d593df1c7ec331e3a3e31bb79179577d9dd8afe131129b18a"
+  },
+  "last11929_beforemap_independent_live_readback": "PASS_Root_closeout_docs_separately_excluded",
+  "new_raw296_only14_batches357_states": "PASS",
+  "old13_full_batches61_states_preserved": "PASS",
+  "operations": "Read-only WT; no reviewer Cargo/generation/Git/ref. External reviewer report only.",
+  "original_d538_source_lineage_test_and_generated_fixture_delta": [
+    "apps/game-server/tests/content_item_fx_audio_raw.rs",
+    "apps/game-server/tests/content_world_project_repository.rs"
+  ],
+  "repair_source_peer": {
+    "bytes": 7484,
+    "path": "/workspace/audit-continuation/fx-audio295-independent-source-repair-peer-v2.json",
+    "sha256": "35f4caf44cd4e6a1119260f81d1849830edb4d7df0caf521c6a21a09c522f19c"
+  },
+  "schema": "OTERYN_FX_AUDIO295_FINAL_INDEPENDENT_POSTGEN_PEER/v1",
+  "source_local_historical_identity_partition": {
+    "CURRENT_BOUND_ITEM_STATIC_JOIN": 149,
+    "CURRENT_WORLD_OWNER": 141,
+    "IDENTITY_OR_MEMBERSHIP_HOLD": 5
+  },
+  "stable_owned_files": {
+    ".github/workflows/item-authoring-schema.yml": "345028b9f5c8a65696a0534727d3cb46f1845bc1d24ec9bd614bb691bd083c30",
+    "apps/game-server/examples/materialize_content_world_project_v2.rs": "f167224187747bbed7d5bb7eba3ff52bc7349224c1c182971b64e3b6ba437ba2",
+    "apps/game-server/examples/support/item_fx_audio_raw_import.rs": "3e4087bb01f726eb1268e96382f002af6d7be0f1cf1b8f41becbeaf5889ea54e",
+    "apps/game-server/tests/content_item_fx_audio_raw.rs": "a6f311c737da91733aee2119f81b99e0e67979b6a02a057b167ab90ca4975e25",
+    "apps/game-server/tests/content_world_project_repository.rs": "8fececf6ec81907dde09e65e9043731839d33a4bc9e01975aef8db3eba8f541c",
+    "content/content.lock.json": "b0ee205b642b558d29433d0d8724abd13d181066a5609dc7e9a890f729048a8e",
+    "content/world/content.lock.json": "8969d57915ca365a2ee42fb6652baf5bdd22dfc12c55d9f25a846656fa676ed6",
+    "content/world/manifest.json": "fadbe6526a85cd57204f4df8e75b87fb1b31cf20917c077a4088cbb26539ae6c",
+    "content/world/project.json": "df2b79ebd4b1cfdfef0324144fbe2d1603a6e1599e7a07de60cc83b9252af549",
+    "content/world/provenance/imports.json": "d470a45628a7d2ec9e2112d997e75ddcc7a56438be07e2b5a0bab243b2adf5fe",
+    "docs/architecture/OTERYN_ITEM_AUTHORING_MASTER_SCHEMA_V1.md": "350c67910fc743d853570885efaf6f922ce81a5269c676c7982b33545bb4de61",
+    "docs/architecture/OTERYN_WORLD_PROJECT_SOURCE_PROFILE_V2_DECISION.md": "eab646619d84d7ef2b6a2235cf3240b6f9d18d1c99da195c484a0c739292c28b",
+    "imports/ots-source-evidence/item-fx-audio295/import-batch.json": "1d1fa3465d5c3eb3c7c2188acc03334115aef4eb517dced66def17c483d9cd74",
+    "imports/ots-source-evidence/item-fx-audio295/producer/raw_fx_audio_reimport.py": "114582bc4058fbdeb458084163f1aa4efb3db206c6e96fd9cdad2e73f7332ada",
+    "imports/ots-source-evidence/item-fx-audio295/raw-source-staging.json": "755e9d4fddf76eb38acd68aeb9e457ddfebffde55c7f98de8f7e5a07b994258c",
+    "imports/ots-source-evidence/item-fx-audio295/retained-source-files.json": "3532de334350694797aa095df3d4a009ede18bee4121a01be804d07f93d42ae5",
+    "tools/content-schema/item-authoring/test_raw_fx_audio_reimport.py": "6b6c5de97b3816f7b6a754a4faa384ae91cdc208e2fd75374c108127273af212"
+  },
+  "stable_source12": {
+    ".github/workflows/item-authoring-schema.yml": "345028b9f5c8a65696a0534727d3cb46f1845bc1d24ec9bd614bb691bd083c30",
+    "apps/game-server/examples/materialize_content_world_project_v2.rs": "f167224187747bbed7d5bb7eba3ff52bc7349224c1c182971b64e3b6ba437ba2",
+    "apps/game-server/examples/support/item_fx_audio_raw_import.rs": "3e4087bb01f726eb1268e96382f002af6d7be0f1cf1b8f41becbeaf5889ea54e",
+    "apps/game-server/tests/content_item_fx_audio_raw.rs": "a6f311c737da91733aee2119f81b99e0e67979b6a02a057b167ab90ca4975e25",
+    "apps/game-server/tests/content_world_project_repository.rs": "8fececf6ec81907dde09e65e9043731839d33a4bc9e01975aef8db3eba8f541c",
+    "docs/architecture/OTERYN_ITEM_AUTHORING_MASTER_SCHEMA_V1.md": "350c67910fc743d853570885efaf6f922ce81a5269c676c7982b33545bb4de61",
+    "docs/architecture/OTERYN_WORLD_PROJECT_SOURCE_PROFILE_V2_DECISION.md": "eab646619d84d7ef2b6a2235cf3240b6f9d18d1c99da195c484a0c739292c28b",
+    "imports/ots-source-evidence/item-fx-audio295/import-batch.json": "1d1fa3465d5c3eb3c7c2188acc03334115aef4eb517dced66def17c483d9cd74",
+    "imports/ots-source-evidence/item-fx-audio295/producer/raw_fx_audio_reimport.py": "114582bc4058fbdeb458084163f1aa4efb3db206c6e96fd9cdad2e73f7332ada",
+    "imports/ots-source-evidence/item-fx-audio295/raw-source-staging.json": "755e9d4fddf76eb38acd68aeb9e457ddfebffde55c7f98de8f7e5a07b994258c",
+    "imports/ots-source-evidence/item-fx-audio295/retained-source-files.json": "3532de334350694797aa095df3d4a009ede18bee4121a01be804d07f93d42ae5",
+    "tools/content-schema/item-authoring/test_raw_fx_audio_reimport.py": "6b6c5de97b3816f7b6a754a4faa384ae91cdc208e2fd75374c108127273af212"
+  },
+  "status": "FINAL_POSTGEN_PEER_PASS"
+}

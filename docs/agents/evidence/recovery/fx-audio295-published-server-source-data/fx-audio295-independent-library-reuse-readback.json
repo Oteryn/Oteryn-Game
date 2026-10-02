@@ -1,0 +1,15 @@
+{
+  "actual_new_lib_run": false,
+  "ignored": 2,
+  "live_exact_input_readback": "PASS",
+  "original_log": {
+    "bytes": 148519,
+    "path": "/workspace/audit-continuation/combined-cargo-server-lib.log",
+    "sha256": "fd34c9e5807fe4faf1696fa9bad608f6f1e6d822be6443db14de64f445ea49ed"
+  },
+  "passed": 1344,
+  "receipt_sha256": "dcb013c8f3a0a5a457e4881fa8fbc3c88e27acb5f0b2cb8350dd7184be0632ad",
+  "scope": "No library code/dependency/proof changed; new helper and integration tests require actualcurrentcompiledchecks separately.",
+  "status": "REUSED_QUALIFIED_RECEIPT",
+  "verified_input_paths": 1330
+}

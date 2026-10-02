@@ -1,0 +1,550 @@
+{
+  "OTS_source_role": "HYPOTHESIS_ONLY_RAW_OBSERVATIONS_NO_TYPED_MEDIA_AUTHORITY",
+  "branch": "codex/item-fx-audio-raw-import-20261002",
+  "cargo_ran": true,
+  "checks": {
+    "Rustfmt_direct_edition2024_skipchildren_check": "PASS",
+    "all_existing_tracked_data_bytes": {
+      "files": 7856,
+      "mismatches": [],
+      "status": "PASS"
+    },
+    "all_unowned_parent_Git_blob_bytes": {
+      "declared_checkout_line_ending_exception": [
+        {
+          "Git_original_sha256": "fe9f52c2a0ccc777f8e5fbbedc6a85375fd7d83d077bad36da25b463b17d5df8",
+          "path": "experiments/world-vfx-prototype/run-matrix.ps1",
+          "scope": "EXISTING_CHECKOUT_CRLF_EQUIVALENT_GIT_CLEAN_NOT_EDITED",
+          "working_sha256": "d80d0b4f6f3965cdd764e279d530323e7118db8e27603853ae3cd56440aea40c"
+        }
+      ],
+      "files": 11917,
+      "mismatches": [],
+      "status": "PASS"
+    },
+    "current_and_historical_contexts": [
+      {
+        "cohort": "engine",
+        "command": [
+          "/workspace/audit-continuation/venv/bin/python",
+          "tools/content-schema/item-authoring/check_tibiawiki165_historical_context.py",
+          "--cohort",
+          "engine"
+        ],
+        "exit_code": 0,
+        "log": "/workspace/audit-continuation/fx-audio295-source-context-engine.log",
+        "sha256": "753f70607472ac3b5315f6945e32515288291bcf53aa0909802da4d3c5b71d6e"
+      },
+      {
+        "cohort": "formal",
+        "command": [
+          "/workspace/audit-continuation/venv/bin/python",
+          "tools/content-schema/item-authoring/check_tibiawiki165_historical_context.py",
+          "--cohort",
+          "formal"
+        ],
+        "exit_code": 0,
+        "log": "/workspace/audit-continuation/fx-audio295-source-context-formal.log",
+        "sha256": "fa60f710a49b53d46d275ddbd0b3a31154713cfb238039f8eeeb7cbaa7ce7bec"
+      }
+    ],
+    "focused_python_tests": {
+      "failed": 0,
+      "passed": 7
+    },
+    "git_diff_check": "PASS",
+    "prior_effective_packet_routes": [
+      {
+        "command": [
+          "/workspace/audit-continuation/venv/bin/python",
+          "/workspace/pr1437-world-owner-completion/tools/content-schema/item-authoring/lower_client_physical_packet.py",
+          "--check"
+        ],
+        "exit_code": 0,
+        "label": "lower_client_physical_packet",
+        "log": "/workspace/audit-continuation/fx-audio295-source-lower_client_physical_packet.log",
+        "sha256": "28362e07af342492aadeac12178de78bd7c53bd649237242cbdfa8c0b31a7b8b"
+      },
+      {
+        "command": [
+          "/workspace/audit-continuation/venv/bin/python",
+          "/workspace/pr1437-world-owner-completion/tools/content-schema/item-authoring/lower_wiki_capacity_packet.py",
+          "--check"
+        ],
+        "exit_code": 0,
+        "label": "lower_wiki_capacity_packet",
+        "log": "/workspace/audit-continuation/fx-audio295-source-lower_wiki_capacity_packet.log",
+        "sha256": "ccf0946630852fe1254849f52ec5a7b6bf2b22b00dcb25199a7d13f0bdaa2f35"
+      },
+      {
+        "command": [
+          "/workspace/audit-continuation/venv/bin/python",
+          "/workspace/pr1437-world-owner-completion/tools/content-schema/item-authoring/lower_wiki_stats_packet.py",
+          "--check"
+        ],
+        "exit_code": 0,
+        "label": "lower_wiki_stats_packet",
+        "log": "/workspace/audit-continuation/fx-audio295-source-lower_wiki_stats_packet.log",
+        "sha256": "cc316a1a90f3074391f02ead28ca0eb0420c9d1845cd3283779313e77b373dc0"
+      },
+      {
+        "command": [
+          "/workspace/audit-continuation/venv/bin/python",
+          "/workspace/pr1437-world-owner-completion/tools/content-schema/item-authoring/lower_wiki_stack_false_packet.py",
+          "--check"
+        ],
+        "exit_code": 0,
+        "label": "lower_wiki_stack_false_packet",
+        "log": "/workspace/audit-continuation/fx-audio295-source-lower_wiki_stack_false_packet.log",
+        "sha256": "e475959022683da7ab45b9a73184b1e9fdae246fff7868e78e0e74d3d556dedb"
+      },
+      {
+        "command": [
+          "/workspace/audit-continuation/venv/bin/python",
+          "/workspace/pr1437-world-owner-completion/tools/content-schema/item-authoring/lower_client_market_packet.py",
+          "--check"
+        ],
+        "exit_code": 0,
+        "label": "lower_client_market_packet",
+        "log": "/workspace/audit-continuation/fx-audio295-source-lower_client_market_packet.log",
+        "sha256": "20faae33d501ddb8c552ec612730d1fdf132a4c84c4369aacfeb53199b366cb9"
+      },
+      {
+        "command": [
+          "/workspace/audit-continuation/venv/bin/python",
+          "/workspace/pr1437-world-owner-completion/tools/content-schema/item-authoring/lower_wiki_movable_packet.py",
+          "--check"
+        ],
+        "exit_code": 0,
+        "label": "lower_wiki_movable_packet",
+        "log": "/workspace/audit-continuation/fx-audio295-source-lower_wiki_movable_packet.log",
+        "sha256": "9fc3c240b89c3544bce897e59a530d3f30e9213cd1bbd2b566bb663f9672b577"
+      },
+      {
+        "command": [
+          "/workspace/audit-continuation/venv/bin/python",
+          "/workspace/pr1437-world-owner-completion/tools/content-schema/item-authoring/lower_item_document_packet.py",
+          "--check"
+        ],
+        "exit_code": 0,
+        "label": "lower_item_document_packet",
+        "log": "/workspace/audit-continuation/fx-audio295-source-lower_item_document_packet.log",
+        "sha256": "7fbbc3ec2fa97bb654c55b2eb0edac2c37bcfa4a03e9af4c3b6124b946d2ae3d"
+      },
+      {
+        "command": [
+          "/workspace/audit-continuation/venv/bin/python",
+          "/workspace/pr1437-world-owner-completion/tools/content-schema/item-authoring/lower_elemental_magic_modifier_packet.py",
+          "--check"
+        ],
+        "exit_code": 0,
+        "label": "lower_elemental_magic_modifier_packet",
+        "log": "/workspace/audit-continuation/fx-audio295-source-lower_elemental_magic_modifier_packet.log",
+        "sha256": "431eb082264c540804bde8f6d213945e3ff8663ff6f2bacf18bc5d3aa559fe48"
+      },
+      {
+        "command": [
+          "/workspace/audit-continuation/venv/bin/python",
+          "/workspace/pr1437-world-owner-completion/tools/content-schema/item-authoring/lower_item_name_packet.py",
+          "--check"
+        ],
+        "exit_code": 0,
+        "label": "lower_item_name_packet",
+        "log": "/workspace/audit-continuation/fx-audio295-source-lower_item_name_packet.log",
+        "sha256": "305acf14547656f25ac56bc8e72a0d75567c71c66317cc50f88229e44a0c856d"
+      },
+      {
+        "command": [
+          "/workspace/audit-continuation/venv/bin/python",
+          "/workspace/pr1437-world-owner-completion/tools/content-schema/item-authoring/lower_item_hit_magic_packet.py",
+          "--check"
+        ],
+        "exit_code": 0,
+        "label": "lower_item_hit_magic_packet",
+        "log": "/workspace/audit-continuation/fx-audio295-source-lower_item_hit_magic_packet.log",
+        "sha256": "0705efb8e82f681421cc799893e11fec8ca5ed3b315113e9c955b3aa8aaa88b9"
+      },
+      {
+        "command": [
+          "/workspace/audit-continuation/venv/bin/python",
+          "/workspace/pr1437-world-owner-completion/tools/content-schema/item-authoring/lower_mantra_bond_modifier_packet.py",
+          "--check"
+        ],
+        "exit_code": 0,
+        "label": "lower_mantra_bond_modifier_packet",
+        "log": "/workspace/audit-continuation/fx-audio295-source-lower_mantra_bond_modifier_packet.log",
+        "sha256": "7bdd1e5f9956241e20fe77f4e5781d06a50971cb490d6e82f54c5e829c65064f"
+      },
+      {
+        "command": [
+          "/workspace/audit-continuation/venv/bin/python",
+          "/workspace/pr1437-world-owner-completion/tools/content-schema/item-authoring/lower_item_use_observation_packet.py",
+          "--check"
+        ],
+        "exit_code": 0,
+        "label": "lower_item_use_observation_packet",
+        "log": "/workspace/audit-continuation/fx-audio295-source-lower_item_use_observation_packet.log",
+        "sha256": "182def43eb5ba4d90c790f39ff463cf847b1582990f5d08043d5799ec14dfa5d"
+      },
+      {
+        "command": [
+          "/workspace/audit-continuation/venv/bin/python",
+          "/workspace/pr1437-world-owner-completion/tools/content-schema/item-authoring/lower_wiki_stack_default_successor8_packet.py",
+          "--check"
+        ],
+        "exit_code": 0,
+        "label": "lower_wiki_stack_default_successor8_packet",
+        "log": "/workspace/audit-continuation/fx-audio295-source-lower_wiki_stack_default_successor8_packet.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "command": [
+          "/workspace/audit-continuation/venv/bin/python",
+          "/workspace/pr1437-world-owner-completion/tools/content-schema/item-authoring/lower_item_forge289_packet.py",
+          "--check"
+        ],
+        "exit_code": 0,
+        "label": "lower_item_forge289_packet",
+        "log": "/workspace/audit-continuation/fx-audio295-source-lower_item_forge289_packet.log",
+        "sha256": "78cbe0714156db6a87e425b3ea8594500522dc76c0e66e016dc067ac377d7ac8"
+      },
+      {
+        "command": [
+          "/workspace/audit-continuation/venv/bin/python",
+          "/workspace/pr1437-world-owner-completion/tools/content-schema/item-authoring/lower_item_description_packet.py",
+          "--check"
+        ],
+        "exit_code": 0,
+        "label": "lower_item_description_packet",
+        "log": "/workspace/audit-continuation/fx-audio295-source-lower_item_description_packet.log",
+        "sha256": "88daf9182fd19902b06313c678b0f31a76a6147763d9b124b96be6f6915b35bd"
+      },
+      {
+        "command": [
+          "/workspace/audit-continuation/venv/bin/python",
+          "/workspace/pr1437-world-owner-completion/tools/content-schema/item-authoring/lower_item_description_wiki_packet.py",
+          "--check"
+        ],
+        "exit_code": 0,
+        "label": "lower_item_description_wiki_packet",
+        "log": "/workspace/audit-continuation/fx-audio295-source-lower_item_description_wiki_packet.log",
+        "sha256": "651e56caebf3a5991a54b9aced984c7b4477c24bb96874defb0c6d20f5b2618c"
+      },
+      {
+        "command": [
+          "/workspace/audit-continuation/venv/bin/python",
+          "/workspace/pr1437-world-owner-completion/tools/content-schema/item-authoring/lower_numeric_modifier17_packet.py",
+          "--check"
+        ],
+        "exit_code": 0,
+        "label": "lower_numeric_modifier17_packet",
+        "log": "/workspace/audit-continuation/fx-audio295-source-lower_numeric_modifier17_packet.log",
+        "sha256": "2e4159a5bed162cd0714a6fc2c3ab8dad2616c10566919a26e809fa9e77c924b"
+      },
+      {
+        "command": [
+          "/workspace/audit-continuation/venv/bin/python",
+          "/workspace/pr1437-world-owner-completion/tools/content-schema/item-authoring/lower_item_name15_packet.py",
+          "--check"
+        ],
+        "exit_code": 0,
+        "label": "lower_item_name15_packet",
+        "log": "/workspace/audit-continuation/fx-audio295-source-lower_item_name15_packet.log",
+        "sha256": "9b309fdf9760439a8cd88a631a4bb335b54a95f31dce396a9fa46d287ca12fac"
+      },
+      {
+        "command": [
+          "/workspace/audit-continuation/venv/bin/python",
+          "/workspace/pr1437-world-owner-completion/tools/content-schema/item-authoring/check_tibiawiki165_historical_context.py",
+          "--cohort",
+          "forge"
+        ],
+        "exit_code": 0,
+        "label": "forge",
+        "log": "/workspace/audit-continuation/fx-audio295-source-forge.log",
+        "sha256": "55907cec26bb7b8cfa7cf0896bd117e06329b79e3709738a09295bf6848097f3"
+      },
+      {
+        "command": [
+          "/workspace/audit-continuation/venv/bin/python",
+          "/workspace/pr1437-world-owner-completion/tools/content-schema/item-authoring/check_tibiawiki165_historical_context.py",
+          "--cohort",
+          "weapon"
+        ],
+        "exit_code": 0,
+        "label": "weapon",
+        "log": "/workspace/audit-continuation/fx-audio295-source-weapon.log",
+        "sha256": "d2d428e136c0d779315237d5940b173c4f5d80fc34862617a6d34ddbc80fba6b"
+      },
+      {
+        "command": [
+          "/workspace/audit-continuation/venv/bin/python",
+          "/workspace/pr1437-world-owner-completion/tools/content-schema/item-authoring/check_stack_default_historical_context.py",
+          "--cohort",
+          "default"
+        ],
+        "exit_code": 0,
+        "label": "stack-default",
+        "log": "/workspace/audit-continuation/fx-audio295-source-stack-default.log",
+        "sha256": "909e28fa97e1da9c2eff3c7b92718e25e604d6f1b572f3c8634c908b10489f25"
+      },
+      {
+        "command": [
+          "/workspace/audit-continuation/venv/bin/python",
+          "/workspace/pr1437-world-owner-completion/tools/content-schema/item-authoring/check_stack_default_historical_context.py",
+          "--cohort",
+          "historical"
+        ],
+        "exit_code": 0,
+        "label": "stack-historical",
+        "log": "/workspace/audit-continuation/fx-audio295-source-stack-historical.log",
+        "sha256": "909e28fa97e1da9c2eff3c7b92718e25e604d6f1b572f3c8634c908b10489f25"
+      }
+    ],
+    "producer_exact_lossless_replay_cli": "PASS",
+    "whole_package_original_Ruff_check_and_format": "PASS_NO_EXEMPTIONS"
+  },
+  "current_counts": {
+    "BR_Item_bindings": 454,
+    "Forge_profiles": 436,
+    "Item_authoring": 700,
+    "Native_records": 57320,
+    "canonical_Items": 34031,
+    "imports": 13,
+    "reimport_states": 61,
+    "source_relation_refs": 752,
+    "source_relation_sources": 539
+  },
+  "draft_pr": 1599,
+  "evidence": {
+    "original_proposal": {
+      "bytes": 2985,
+      "path": "/workspace/audit-continuation/fx-audio295-raw-server-import-proposal/source-only-checkpoint-manifest.json",
+      "sha256": "c75c525cc77ca574452e87ced36f9f1f9d7e1cafb72b629ea02f4756e6b60e04"
+    },
+    "parent": {
+      "bytes": 1738089,
+      "path": "/workspace/audit-continuation/fx-audio295-actual4151-parent-receipt.json",
+      "sha256": "d6b876cafb510bd049fb8dde896673f4ad287f7f8b91bf4fd82fc3281e59fb1f"
+    },
+    "proposal_peer": {
+      "bytes": 4908,
+      "path": "/workspace/audit-continuation/fx-audio295-raw-server-data-independent-source-peer.json",
+      "sha256": "657329a6043f8c18ef554beb40ecaccbabb72621e9bba34b5cacebe7e3f34e6e"
+    },
+    "protected_parent": {
+      "bytes": 3921922,
+      "path": "/workspace/audit-continuation/fx-audio295-source-parent-protected-files.json",
+      "sha256": "7bd19fab58095d7724efa7e7fc343f2334fc69fd409aa1ee3f54e13826d4b720"
+    }
+  },
+  "failed_attempt": {
+    "cause": "test-only project revision had reserved evidence marker",
+    "command": "cargo test --locked -p oteryn-game-server --test content_item_fx_audio_raw",
+    "exit_code": 101,
+    "failed": 1,
+    "log": {
+      "bytes": 1676,
+      "path": "/workspace/audit-continuation/fx-audio295-cargo-focused-raw.log",
+      "sha256": "4f7d6d80bd71ff0ec0676ca76c85a765074de813c141e223391126fd6228fcf2"
+    },
+    "passed": 2
+  },
+  "finite_parser_budget": {
+    "actual_Rust_parser_acceptance": "NOT_RUN",
+    "caller_max_import_records": 12,
+    "caller_max_reimport_states": 357,
+    "decoded_string_bytes_including_keys": 6115100,
+    "decoded_values": 3642,
+    "max_depth": 7,
+    "raw_import_document_bytes": 6739919
+  },
+  "first_original_generation": {
+    "exit_code": 0,
+    "full_preservation_receipt": {
+      "bytes": 898,
+      "path": "/workspace/audit-continuation/fx-audio295-first-generation-full-preservation.json",
+      "sha256": "207273aae7a622d4f7fdbfec909bea1c7e5e50a18675d712c859444f59222868"
+    },
+    "log": {
+      "bytes": 1905,
+      "path": "/workspace/audit-continuation/fx-audio295-first-original-generation.log",
+      "sha256": "794f4c7b9c1a1d22d93cae860991d256701e789aed5d510351865451b456f04a"
+    }
+  },
+  "fully_verified": null,
+  "generated_after_first": {
+    "content/content.lock.json": {
+      "bytes": 1411,
+      "mode": "100644",
+      "sha256": "b0ee205b642b558d29433d0d8724abd13d181066a5609dc7e9a890f729048a8e"
+    },
+    "content/world/content.lock.json": {
+      "bytes": 364,
+      "mode": "100644",
+      "sha256": "8969d57915ca365a2ee42fb6652baf5bdd22dfc12c55d9f25a846656fa676ed6"
+    },
+    "content/world/manifest.json": {
+      "bytes": 1939,
+      "mode": "100644",
+      "sha256": "fadbe6526a85cd57204f4df8e75b87fb1b31cf20917c077a4088cbb26539ae6c"
+    },
+    "content/world/project.json": {
+      "bytes": 390,
+      "mode": "100644",
+      "sha256": "df2b79ebd4b1cfdfef0324144fbe2d1603a6e1599e7a07de60cc83b9252af549"
+    },
+    "content/world/provenance/imports.json": {
+      "bytes": 6739919,
+      "mode": "100644",
+      "sha256": "d470a45628a7d2ec9e2112d997e75ddcc7a56438be07e2b5a0bab243b2adf5fe"
+    }
+  },
+  "generator_ran": true,
+  "git_mutations_by_worker": false,
+  "original_catalog_sha256": "8250880aaa89b7c5fa1593d5738a478b0d09e1ef9ef9cef630cb5da172d634bc",
+  "original_decoder_sha256": "28644c0fcc88f364992670489f7d458f827a9cd1db023b7f5ce0a9ae32d08c1a",
+  "original_generator_sha256": "d85cbceaf8324f2a859dddb1eb2a843de4fb07d078d4663cad0b8ccbd2f488d5",
+  "original_source_freeze": {
+    "bytes": 21586,
+    "path": "/workspace/audit-continuation/fx-audio295-source-authoring-freeze-manifest.json",
+    "sha256": "d538c7b9316249a34de89d4e140afe396b6e2fcd2f57637caff46765d4d32160"
+  },
+  "owned_files": {
+    ".github/workflows/item-authoring-schema.yml": {
+      "bytes": 15182,
+      "mode": "100644",
+      "sha256": "345028b9f5c8a65696a0534727d3cb46f1845bc1d24ec9bd614bb691bd083c30"
+    },
+    "apps/game-server/examples/materialize_content_world_project_v2.rs": {
+      "bytes": 88565,
+      "mode": "100644",
+      "sha256": "f167224187747bbed7d5bb7eba3ff52bc7349224c1c182971b64e3b6ba437ba2"
+    },
+    "apps/game-server/examples/support/item_fx_audio_raw_import.rs": {
+      "bytes": 1770,
+      "mode": "100644",
+      "sha256": "3e4087bb01f726eb1268e96382f002af6d7be0f1cf1b8f41becbeaf5889ea54e"
+    },
+    "apps/game-server/tests/content_item_fx_audio_raw.rs": {
+      "bytes": 4867,
+      "mode": "100644",
+      "sha256": "a6f311c737da91733aee2119f81b99e0e67979b6a02a057b167ab90ca4975e25"
+    },
+    "apps/game-server/tests/content_world_project_repository.rs": {
+      "bytes": 73414,
+      "mode": "100644",
+      "sha256": "8fececf6ec81907dde09e65e9043731839d33a4bc9e01975aef8db3eba8f541c"
+    },
+    "docs/architecture/OTERYN_ITEM_AUTHORING_MASTER_SCHEMA_V1.md": {
+      "bytes": 12211,
+      "mode": "100644",
+      "sha256": "350c67910fc743d853570885efaf6f922ce81a5269c676c7982b33545bb4de61"
+    },
+    "docs/architecture/OTERYN_WORLD_PROJECT_SOURCE_PROFILE_V2_DECISION.md": {
+      "bytes": 20565,
+      "mode": "100644",
+      "sha256": "eab646619d84d7ef2b6a2235cf3240b6f9d18d1c99da195c484a0c739292c28b"
+    },
+    "imports/ots-source-evidence/item-fx-audio295/import-batch.json": {
+      "bytes": 6731329,
+      "mode": "100644",
+      "sha256": "1d1fa3465d5c3eb3c7c2188acc03334115aef4eb517dced66def17c483d9cd74"
+    },
+    "imports/ots-source-evidence/item-fx-audio295/producer/raw_fx_audio_reimport.py": {
+      "bytes": 7331,
+      "mode": "100644",
+      "sha256": "114582bc4058fbdeb458084163f1aa4efb3db206c6e96fd9cdad2e73f7332ada"
+    },
+    "imports/ots-source-evidence/item-fx-audio295/raw-source-staging.json": {
+      "bytes": 7921304,
+      "mode": "100644",
+      "sha256": "755e9d4fddf76eb38acd68aeb9e457ddfebffde55c7f98de8f7e5a07b994258c"
+    },
+    "imports/ots-source-evidence/item-fx-audio295/retained-source-files.json": {
+      "bytes": 15917006,
+      "mode": "100644",
+      "sha256": "3532de334350694797aa095df3d4a009ede18bee4121a01be804d07f93d42ae5"
+    },
+    "tools/content-schema/item-authoring/test_raw_fx_audio_reimport.py": {
+      "bytes": 5139,
+      "mode": "100644",
+      "sha256": "6b6c5de97b3816f7b6a754a4faa384ae91cdc208e2fd75374c108127273af212"
+    }
+  },
+  "parent_commit": "4151e3005daa41ed848533e45b63fadc5ed78fa3",
+  "pending": [
+    "fresh_bounded_independent_source_repair_peer",
+    "Root_serial_Cargo_resume",
+    "actual_focused_Rust3_repaired",
+    "repository_actual3",
+    "appropriate_model_LIB_byteexact_reuse_or_cache_check",
+    "Clippy_all_targets_and_fmt",
+    "all_applicable_source_gates",
+    "second_original_generator_last_whole_byte_idempotence",
+    "final_stopped_manifest_independent_postgen_peers"
+  ],
+  "producer_location_witness": {
+    "bytes": 7331,
+    "capture_sha256": "755e9d4fddf76eb38acd68aeb9e457ddfebffde55c7f98de8f7e5a07b994258c",
+    "committed_replay_artifact": "imports/ots-source-evidence/item-fx-audio295/producer/raw_fx_audio_reimport.py",
+    "fidelity": "EXACT_BYTES_RELOCATED_CODE_AND_MAPPER_IDENTITY_UNCHANGED",
+    "original_proposal_path": "/workspace/audit-continuation/fx-audio295-raw-server-import-proposal/raw_fx_audio_reimport.py",
+    "payload_sha256": "1d1fa3465d5c3eb3c7c2188acc03334115aef4eb517dced66def17c483d9cd74",
+    "sha256": "114582bc4058fbdeb458084163f1aa4efb3db206c6e96fd9cdad2e73f7332ada"
+  },
+  "proposed_counts": {
+    "imports": 14,
+    "new_Item_authoring": 0,
+    "new_Native_records": 0,
+    "new_assets_events_World": 0,
+    "new_bindings": 0,
+    "new_candidates": 0,
+    "new_raw_states": 296,
+    "new_slots_or_admission": 0,
+    "raw_contexts": 1,
+    "reimport_states": 357,
+    "source_local_id_records": 295
+  },
+  "publication_owner": "root",
+  "repair": {
+    "changes": [
+      "fixture project_revision raw-evidence-r1 -> raw-intake-r1 (accepted production Atom)",
+      "positive canonical writer baseline before single-mutant negatives"
+    ],
+    "current_sha256": "a6f311c737da91733aee2119f81b99e0e67979b6a02a057b167ab90ca4975e25",
+    "inverse_reconstruction": "PASS_EXACT_ORIGINAL_TEST_BYTES",
+    "old_sha256": "3ffc9035673ae1c7661d5dacda37160714b283ce58fd6cc50d6f0e18662eca26",
+    "path": "apps/game-server/tests/content_item_fx_audio_raw.rs",
+    "production_or_raw_source_changes": false,
+    "scope": "TEST_ONLY_TWO_SPANS"
+  },
+  "repository": "/workspace/pr1437-world-owner-completion",
+  "root_closeout_docs_excluded": true,
+  "runtime_readiness": null,
+  "schema": "OTERYN_FX_AUDIO295_SERVER_RAW_SOURCE_REPAIR_FREEZE/v2",
+  "source_context_coordinate_semantics": "Original historical1b join/current labels retained immutable as observations, not requalified4151 bindings; no source-byte rewrite",
+  "source_file_count": 12,
+  "source_repository_auto_pin_change": {
+    "first_generation_only": true,
+    "path": "apps/game-server/tests/content_world_project_repository.rs",
+    "scope": "ORIGINAL_GENERATOR_DOCUMENT_LEN_DIGEST_AND_TREE_PINS_ONLY"
+  },
+  "stable_source": {
+    ".github/workflows/item-authoring-schema.yml": "345028b9f5c8a65696a0534727d3cb46f1845bc1d24ec9bd614bb691bd083c30",
+    "apps/game-server/examples/materialize_content_world_project_v2.rs": "f167224187747bbed7d5bb7eba3ff52bc7349224c1c182971b64e3b6ba437ba2",
+    "apps/game-server/examples/support/item_fx_audio_raw_import.rs": "3e4087bb01f726eb1268e96382f002af6d7be0f1cf1b8f41becbeaf5889ea54e",
+    "apps/game-server/tests/content_item_fx_audio_raw.rs": "a6f311c737da91733aee2119f81b99e0e67979b6a02a057b167ab90ca4975e25",
+    "apps/game-server/tests/content_world_project_repository.rs": "8fececf6ec81907dde09e65e9043731839d33a4bc9e01975aef8db3eba8f541c",
+    "docs/architecture/OTERYN_ITEM_AUTHORING_MASTER_SCHEMA_V1.md": "350c67910fc743d853570885efaf6f922ce81a5269c676c7982b33545bb4de61",
+    "docs/architecture/OTERYN_WORLD_PROJECT_SOURCE_PROFILE_V2_DECISION.md": "eab646619d84d7ef2b6a2235cf3240b6f9d18d1c99da195c484a0c739292c28b",
+    "imports/ots-source-evidence/item-fx-audio295/import-batch.json": "1d1fa3465d5c3eb3c7c2188acc03334115aef4eb517dced66def17c483d9cd74",
+    "imports/ots-source-evidence/item-fx-audio295/producer/raw_fx_audio_reimport.py": "114582bc4058fbdeb458084163f1aa4efb3db206c6e96fd9cdad2e73f7332ada",
+    "imports/ots-source-evidence/item-fx-audio295/raw-source-staging.json": "755e9d4fddf76eb38acd68aeb9e457ddfebffde55c7f98de8f7e5a07b994258c",
+    "imports/ots-source-evidence/item-fx-audio295/retained-source-files.json": "3532de334350694797aa095df3d4a009ede18bee4121a01be804d07f93d42ae5",
+    "tools/content-schema/item-authoring/test_raw_fx_audio_reimport.py": "6b6c5de97b3816f7b6a754a4faa384ae91cdc208e2fd75374c108127273af212"
+  },
+  "status": "SOURCE_REPAIR_STOPPED_COMPILED_REPAIR_AND_FINAL_GENERATION_PENDING",
+  "utc": "2026-10-02T18:50:17.532620+00:00",
+  "writes_stopped": true
+}

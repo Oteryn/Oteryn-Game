@@ -1,0 +1,1494 @@
+{
+  "schema": "OTERYN_SERVER_DATA_IMPORT_AFTER_RAW_FX_AUDIO_PUBLICATION/v1",
+  "status": "PASS",
+  "observed_UTC": "2026-10-02T19:07:43.163249+00:00",
+  "published_raw_head": "d8d449751b77dcdabdae3a44938472f058fcb14f",
+  "qualified_parent_head": "4151e3005daa41ed848533e45b63fadc5ed78fa3",
+  "Root_phase": "VALIDATE",
+  "PR": "https://github.com/Oteryn/Oteryn-Game/pull/1599",
+  "PR_draft": true,
+  "scope": "Prepared data imported in server canonical content repository",
+  "raw_import": {
+    "status": "PUBLISHED",
+    "batches": 14,
+    "reimport_states": 357,
+    "new_raw_source_ID_rows": 295,
+    "new_context_rows": 1,
+    "new_Text_states": 296,
+    "new_candidates": 0,
+    "new_Native_fields_assets_runtime_bindings": 0,
+    "authority": "OTS_HYPOTHESIS_ONLY_OPAQUE_SOURCE_OBSERVATIONS"
+  },
+  "qualified_import_counts_unchanged": {
+    "all_native_reference_records": 57320,
+    "native_Item_records": 34031,
+    "source_ItemAuthoring_owners": 700,
+    "source_forge_profiles": 436,
+    "BR_source_bindings": 454,
+    "relation_sources": 539,
+    "relation_refs": 752,
+    "native_known_descriptions": 1629,
+    "native_known_names": 12100,
+    "native_modifier_vectors": 511,
+    "native_modifier_atoms": 846,
+    "family_profiles": 22,
+    "formal_templates": 23,
+    "family_class_constraints": 22,
+    "canonical_Item_definitions": 34031,
+    "canonical_shards": 69,
+    "native_materializable_headers": {
+      "true": 66,
+      "false": 33965
+    },
+    "source_owner_property_counts": {
+      "taxonomy": 164,
+      "forge": 436,
+      "lifecycle": 136,
+      "source_lifecycle": 121,
+      "use_observation": 139,
+      "weapon_attack_modifier_points": 78,
+      "weapon_absolute_hit_chance_percent": 25,
+      "required_magic_level": 39
+    }
+  },
+  "qualified_changed_Native_targets": 1655,
+  "qualified_all_changed_fact_targets": 1859,
+  "runtime_readiness": null,
+  "running_server_process_loaded_data": null,
+  "fully_complete": null,
+  "all_incomplete_items": null,
+  "worker_checks": {
+    "Cargo_fmt_all_check": {
+      "receipt": {
+        "bytes": 0,
+        "command": [
+          "/workspace/audit-continuation/cargo/bin/cargo",
+          "+1.94.0",
+          "fmt",
+          "--all",
+          "--",
+          "--check"
+        ],
+        "exit_code": 0,
+        "label": "fmt",
+        "log": "/workspace/audit-continuation/fx-audio295-cargo-fmt.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "status": "PASS"
+    },
+    "Clippy_all_targets_deny_warnings": {
+      "receipt": {
+        "bytes": 625,
+        "command": [
+          "/workspace/audit-continuation/cargo/bin/cargo",
+          "+1.94.0",
+          "clippy",
+          "--locked",
+          "-p",
+          "oteryn-game-server",
+          "--all-targets",
+          "--",
+          "-D",
+          "warnings"
+        ],
+        "exit_code": 0,
+        "label": "clippy",
+        "log": "/workspace/audit-continuation/fx-audio295-cargo-clippy.log",
+        "sha256": "199862d56e14193378fca832f632e0d2225f6f90f91d167a0e8ba2187d38028e"
+      },
+      "status": "PASS"
+    },
+    "actual_postgen_content_source_gates": {
+      "commands": [
+        {
+          "bytes": 448,
+          "command": [
+            "/workspace/audit-continuation/venv/bin/python",
+            "tools/content-migration/validate_world_project_v2_to_tree.py"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/audit-continuation/fx-audio295-postgen-gate-00.log",
+          "sha256": "63f7d37d88b465a7b67f5ea2d69e8c68c8badcca488984c8cc396177f8b97f86"
+        },
+        {
+          "bytes": 648,
+          "command": [
+            "/workspace/audit-continuation/venv/bin/python",
+            "tools/content-migration/test_world_project_v2_to_tree.py"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/audit-continuation/fx-audio295-postgen-gate-01.log",
+          "sha256": "74184ab84f2713f7df1c9558260a1af42e7ae8d9a11d6e5a4391a510ea6dc526"
+        },
+        {
+          "bytes": 68,
+          "command": [
+            "/workspace/audit-continuation/venv/bin/python",
+            "tools/content-schema/validate_materialized_game_tree.py"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/audit-continuation/fx-audio295-postgen-gate-02.log",
+          "sha256": "aae937d4e7ec96b4c1eef5d1daaf5fdb5952ce0586e9142514fe3dcfb9ff223b"
+        },
+        {
+          "bytes": 83,
+          "command": [
+            "/workspace/audit-continuation/venv/bin/python",
+            "tools/content-census/item_key_references.py"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/audit-continuation/fx-audio295-postgen-gate-03.log",
+          "sha256": "b8f2b8104f2743097ac765aaad8add6848e001097e5d78931ed0b36309dc80f3"
+        },
+        {
+          "bytes": 24,
+          "command": [
+            "/workspace/audit-continuation/venv/bin/python",
+            "tools/content-schema/charm-authoring/charm_authoring.py",
+            "content",
+            "--check"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/audit-continuation/fx-audio295-postgen-gate-04.log",
+          "sha256": "0d7cfef78b72706b58192cb7fba2ba6c160e88b1cdc26fa3efb8b49d2166dfd4"
+        },
+        {
+          "bytes": 30,
+          "command": [
+            "/workspace/audit-continuation/venv/bin/python",
+            "tools/content-schema/proficiency-authoring/proficiency_authoring.py",
+            "content",
+            "--check"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/audit-continuation/fx-audio295-postgen-gate-05.log",
+          "sha256": "2dad938d34a047a6675c5518e9842becbb87598ab52bbdf4dfdf2c61258ab2d7"
+        },
+        {
+          "bytes": 31,
+          "command": [
+            "/workspace/audit-continuation/venv/bin/python",
+            "tools/content-schema/reward-claim-authoring/reward_claim_authoring.py",
+            "content",
+            "--check"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/audit-continuation/fx-audio295-postgen-gate-06.log",
+          "sha256": "766d44c371f8afd6aa34b7ab3a4359590d8a32fc3c37048ddb65c26958d261f0"
+        },
+        {
+          "bytes": 30,
+          "command": [
+            "/workspace/audit-continuation/venv/bin/python",
+            "tools/content-schema/starter-kit-authoring/starter_kit_authoring.py",
+            "content",
+            "--check"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/audit-continuation/fx-audio295-postgen-gate-07.log",
+          "sha256": "dcfe00e165162028c9a3917f8b30c9fda0c6f78db106e3deb7dea6a8023e9b8c"
+        },
+        {
+          "bytes": 141,
+          "command": [
+            "/workspace/audit-continuation/venv/bin/python",
+            "tools/content-schema/item-authoring/item_weapon_proficiency.py",
+            "--check"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/audit-continuation/fx-audio295-postgen-gate-08.log",
+          "sha256": "5746caf8f0354bb9eb5c6da3f78d1b06f79713707b47b7676715f1d128c2bc2e"
+        },
+        {
+          "bytes": 77,
+          "command": [
+            "/workspace/audit-continuation/venv/bin/python",
+            "tools/content-census/g4_item_crystal_binding_generator.py",
+            "--check"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/audit-continuation/fx-audio295-postgen-gate-09.log",
+          "sha256": "071a24ad0579b9477bcb54118178b6c2b76ef7ef24c89811d8a243011a59426e"
+        },
+        {
+          "bytes": 81,
+          "command": [
+            "/workspace/audit-continuation/venv/bin/python",
+            "tools/content-schema/validate_item_master_schema.py"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/audit-continuation/fx-audio295-postgen-gate-10.log",
+          "sha256": "c7dd5cd86083158cd48e35301c5907b32d4ce688d06fbc711a11cc7db98975bd"
+        },
+        {
+          "bytes": 27,
+          "command": [
+            "/workspace/audit-continuation/venv/bin/python",
+            "tools/content-schema/test_validate_item_master_schema.py"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/audit-continuation/fx-audio295-postgen-gate-11.log",
+          "sha256": "b427c3a892077b30efa49c88588c560f00da23fb5ea7302ca2b66394497ef99e"
+        },
+        {
+          "bytes": 259,
+          "command": [
+            "/workspace/audit-continuation/venv/bin/python",
+            "tools/content-schema/item-authoring/check_tibiawiki165_historical_context.py",
+            "--cohort",
+            "engine"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/audit-continuation/fx-audio295-postgen-gate-12.log",
+          "sha256": "a25fc72c91e7036af615c6b5b5688d49567e889016f93afbfbe44f2eafabe7a6"
+        },
+        {
+          "bytes": 343,
+          "command": [
+            "/workspace/audit-continuation/venv/bin/python",
+            "tools/content-schema/item-authoring/check_tibiawiki165_historical_context.py",
+            "--cohort",
+            "formal"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/audit-continuation/fx-audio295-postgen-gate-13.log",
+          "sha256": "fa60f710a49b53d46d275ddbd0b3a31154713cfb238039f8eeeb7cbaa7ce7bec"
+        },
+        {
+          "bytes": 250,
+          "command": [
+            "/workspace/audit-continuation/venv/bin/python",
+            "tools/content-schema/item-authoring/check_tibiawiki165_historical_context.py",
+            "--cohort",
+            "weapon-tests"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/audit-continuation/fx-audio295-postgen-gate-14.log",
+          "sha256": "9154afd976891afa702bcac97d6d60fbdae0a80db88d2e1fe2b17822ce536287"
+        },
+        {
+          "bytes": 19,
+          "command": [
+            "/workspace/audit-continuation/venv/bin/ruff",
+            "check",
+            "tools/content-schema/item-authoring",
+            "tools/content-schema/world-object-authoring"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/audit-continuation/fx-audio295-postgen-gate-15.log",
+          "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+        },
+        {
+          "bytes": 27,
+          "command": [
+            "/workspace/audit-continuation/venv/bin/ruff",
+            "format",
+            "--check",
+            "tools/content-schema/item-authoring",
+            "tools/content-schema/world-object-authoring"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/audit-continuation/fx-audio295-postgen-gate-16.log",
+          "sha256": "c0b753c0bfc7a70fc1f8c69d5afa1907a2fb41437df923ecb7ecac4d78676a19"
+        }
+      ],
+      "status": "PASS"
+    },
+    "all_data_preservation": {
+      "final_recheck": "PASS_7851_OTHER_DATA_FILES_EXACT",
+      "firstgen_receipt": {
+        "bytes": 898,
+        "path": "/workspace/audit-continuation/fx-audio295-first-generation-full-preservation.json",
+        "sha256": "207273aae7a622d4f7fdbfec909bea1c7e5e50a18675d712c859444f59222868"
+      },
+      "status": "PASS"
+    },
+    "earlier_22_effective_packet_routes": {
+      "reads_live_imports_file": false,
+      "receipts": [
+        {
+          "command": [
+            "/workspace/audit-continuation/venv/bin/python",
+            "/workspace/pr1437-world-owner-completion/tools/content-schema/item-authoring/lower_client_physical_packet.py",
+            "--check"
+          ],
+          "exit_code": 0,
+          "label": "lower_client_physical_packet",
+          "log": "/workspace/audit-continuation/fx-audio295-source-lower_client_physical_packet.log",
+          "sha256": "28362e07af342492aadeac12178de78bd7c53bd649237242cbdfa8c0b31a7b8b"
+        },
+        {
+          "command": [
+            "/workspace/audit-continuation/venv/bin/python",
+            "/workspace/pr1437-world-owner-completion/tools/content-schema/item-authoring/lower_wiki_capacity_packet.py",
+            "--check"
+          ],
+          "exit_code": 0,
+          "label": "lower_wiki_capacity_packet",
+          "log": "/workspace/audit-continuation/fx-audio295-source-lower_wiki_capacity_packet.log",
+          "sha256": "ccf0946630852fe1254849f52ec5a7b6bf2b22b00dcb25199a7d13f0bdaa2f35"
+        },
+        {
+          "command": [
+            "/workspace/audit-continuation/venv/bin/python",
+            "/workspace/pr1437-world-owner-completion/tools/content-schema/item-authoring/lower_wiki_stats_packet.py",
+            "--check"
+          ],
+          "exit_code": 0,
+          "label": "lower_wiki_stats_packet",
+          "log": "/workspace/audit-continuation/fx-audio295-source-lower_wiki_stats_packet.log",
+          "sha256": "cc316a1a90f3074391f02ead28ca0eb0420c9d1845cd3283779313e77b373dc0"
+        },
+        {
+          "command": [
+            "/workspace/audit-continuation/venv/bin/python",
+            "/workspace/pr1437-world-owner-completion/tools/content-schema/item-authoring/lower_wiki_stack_false_packet.py",
+            "--check"
+          ],
+          "exit_code": 0,
+          "label": "lower_wiki_stack_false_packet",
+          "log": "/workspace/audit-continuation/fx-audio295-source-lower_wiki_stack_false_packet.log",
+          "sha256": "e475959022683da7ab45b9a73184b1e9fdae246fff7868e78e0e74d3d556dedb"
+        },
+        {
+          "command": [
+            "/workspace/audit-continuation/venv/bin/python",
+            "/workspace/pr1437-world-owner-completion/tools/content-schema/item-authoring/lower_client_market_packet.py",
+            "--check"
+          ],
+          "exit_code": 0,
+          "label": "lower_client_market_packet",
+          "log": "/workspace/audit-continuation/fx-audio295-source-lower_client_market_packet.log",
+          "sha256": "20faae33d501ddb8c552ec612730d1fdf132a4c84c4369aacfeb53199b366cb9"
+        },
+        {
+          "command": [
+            "/workspace/audit-continuation/venv/bin/python",
+            "/workspace/pr1437-world-owner-completion/tools/content-schema/item-authoring/lower_wiki_movable_packet.py",
+            "--check"
+          ],
+          "exit_code": 0,
+          "label": "lower_wiki_movable_packet",
+          "log": "/workspace/audit-continuation/fx-audio295-source-lower_wiki_movable_packet.log",
+          "sha256": "9fc3c240b89c3544bce897e59a530d3f30e9213cd1bbd2b566bb663f9672b577"
+        },
+        {
+          "command": [
+            "/workspace/audit-continuation/venv/bin/python",
+            "/workspace/pr1437-world-owner-completion/tools/content-schema/item-authoring/lower_item_document_packet.py",
+            "--check"
+          ],
+          "exit_code": 0,
+          "label": "lower_item_document_packet",
+          "log": "/workspace/audit-continuation/fx-audio295-source-lower_item_document_packet.log",
+          "sha256": "7fbbc3ec2fa97bb654c55b2eb0edac2c37bcfa4a03e9af4c3b6124b946d2ae3d"
+        },
+        {
+          "command": [
+            "/workspace/audit-continuation/venv/bin/python",
+            "/workspace/pr1437-world-owner-completion/tools/content-schema/item-authoring/lower_elemental_magic_modifier_packet.py",
+            "--check"
+          ],
+          "exit_code": 0,
+          "label": "lower_elemental_magic_modifier_packet",
+          "log": "/workspace/audit-continuation/fx-audio295-source-lower_elemental_magic_modifier_packet.log",
+          "sha256": "431eb082264c540804bde8f6d213945e3ff8663ff6f2bacf18bc5d3aa559fe48"
+        },
+        {
+          "command": [
+            "/workspace/audit-continuation/venv/bin/python",
+            "/workspace/pr1437-world-owner-completion/tools/content-schema/item-authoring/lower_item_name_packet.py",
+            "--check"
+          ],
+          "exit_code": 0,
+          "label": "lower_item_name_packet",
+          "log": "/workspace/audit-continuation/fx-audio295-source-lower_item_name_packet.log",
+          "sha256": "305acf14547656f25ac56bc8e72a0d75567c71c66317cc50f88229e44a0c856d"
+        },
+        {
+          "command": [
+            "/workspace/audit-continuation/venv/bin/python",
+            "/workspace/pr1437-world-owner-completion/tools/content-schema/item-authoring/lower_item_hit_magic_packet.py",
+            "--check"
+          ],
+          "exit_code": 0,
+          "label": "lower_item_hit_magic_packet",
+          "log": "/workspace/audit-continuation/fx-audio295-source-lower_item_hit_magic_packet.log",
+          "sha256": "0705efb8e82f681421cc799893e11fec8ca5ed3b315113e9c955b3aa8aaa88b9"
+        },
+        {
+          "command": [
+            "/workspace/audit-continuation/venv/bin/python",
+            "/workspace/pr1437-world-owner-completion/tools/content-schema/item-authoring/lower_mantra_bond_modifier_packet.py",
+            "--check"
+          ],
+          "exit_code": 0,
+          "label": "lower_mantra_bond_modifier_packet",
+          "log": "/workspace/audit-continuation/fx-audio295-source-lower_mantra_bond_modifier_packet.log",
+          "sha256": "7bdd1e5f9956241e20fe77f4e5781d06a50971cb490d6e82f54c5e829c65064f"
+        },
+        {
+          "command": [
+            "/workspace/audit-continuation/venv/bin/python",
+            "/workspace/pr1437-world-owner-completion/tools/content-schema/item-authoring/lower_item_use_observation_packet.py",
+            "--check"
+          ],
+          "exit_code": 0,
+          "label": "lower_item_use_observation_packet",
+          "log": "/workspace/audit-continuation/fx-audio295-source-lower_item_use_observation_packet.log",
+          "sha256": "182def43eb5ba4d90c790f39ff463cf847b1582990f5d08043d5799ec14dfa5d"
+        },
+        {
+          "command": [
+            "/workspace/audit-continuation/venv/bin/python",
+            "/workspace/pr1437-world-owner-completion/tools/content-schema/item-authoring/lower_wiki_stack_default_successor8_packet.py",
+            "--check"
+          ],
+          "exit_code": 0,
+          "label": "lower_wiki_stack_default_successor8_packet",
+          "log": "/workspace/audit-continuation/fx-audio295-source-lower_wiki_stack_default_successor8_packet.log",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "command": [
+            "/workspace/audit-continuation/venv/bin/python",
+            "/workspace/pr1437-world-owner-completion/tools/content-schema/item-authoring/lower_item_forge289_packet.py",
+            "--check"
+          ],
+          "exit_code": 0,
+          "label": "lower_item_forge289_packet",
+          "log": "/workspace/audit-continuation/fx-audio295-source-lower_item_forge289_packet.log",
+          "sha256": "78cbe0714156db6a87e425b3ea8594500522dc76c0e66e016dc067ac377d7ac8"
+        },
+        {
+          "command": [
+            "/workspace/audit-continuation/venv/bin/python",
+            "/workspace/pr1437-world-owner-completion/tools/content-schema/item-authoring/lower_item_description_packet.py",
+            "--check"
+          ],
+          "exit_code": 0,
+          "label": "lower_item_description_packet",
+          "log": "/workspace/audit-continuation/fx-audio295-source-lower_item_description_packet.log",
+          "sha256": "88daf9182fd19902b06313c678b0f31a76a6147763d9b124b96be6f6915b35bd"
+        },
+        {
+          "command": [
+            "/workspace/audit-continuation/venv/bin/python",
+            "/workspace/pr1437-world-owner-completion/tools/content-schema/item-authoring/lower_item_description_wiki_packet.py",
+            "--check"
+          ],
+          "exit_code": 0,
+          "label": "lower_item_description_wiki_packet",
+          "log": "/workspace/audit-continuation/fx-audio295-source-lower_item_description_wiki_packet.log",
+          "sha256": "651e56caebf3a5991a54b9aced984c7b4477c24bb96874defb0c6d20f5b2618c"
+        },
+        {
+          "command": [
+            "/workspace/audit-continuation/venv/bin/python",
+            "/workspace/pr1437-world-owner-completion/tools/content-schema/item-authoring/lower_numeric_modifier17_packet.py",
+            "--check"
+          ],
+          "exit_code": 0,
+          "label": "lower_numeric_modifier17_packet",
+          "log": "/workspace/audit-continuation/fx-audio295-source-lower_numeric_modifier17_packet.log",
+          "sha256": "2e4159a5bed162cd0714a6fc2c3ab8dad2616c10566919a26e809fa9e77c924b"
+        },
+        {
+          "command": [
+            "/workspace/audit-continuation/venv/bin/python",
+            "/workspace/pr1437-world-owner-completion/tools/content-schema/item-authoring/lower_item_name15_packet.py",
+            "--check"
+          ],
+          "exit_code": 0,
+          "label": "lower_item_name15_packet",
+          "log": "/workspace/audit-continuation/fx-audio295-source-lower_item_name15_packet.log",
+          "sha256": "9b309fdf9760439a8cd88a631a4bb335b54a95f31dce396a9fa46d287ca12fac"
+        },
+        {
+          "command": [
+            "/workspace/audit-continuation/venv/bin/python",
+            "/workspace/pr1437-world-owner-completion/tools/content-schema/item-authoring/check_tibiawiki165_historical_context.py",
+            "--cohort",
+            "forge"
+          ],
+          "exit_code": 0,
+          "label": "forge",
+          "log": "/workspace/audit-continuation/fx-audio295-source-forge.log",
+          "sha256": "55907cec26bb7b8cfa7cf0896bd117e06329b79e3709738a09295bf6848097f3"
+        },
+        {
+          "command": [
+            "/workspace/audit-continuation/venv/bin/python",
+            "/workspace/pr1437-world-owner-completion/tools/content-schema/item-authoring/check_tibiawiki165_historical_context.py",
+            "--cohort",
+            "weapon"
+          ],
+          "exit_code": 0,
+          "label": "weapon",
+          "log": "/workspace/audit-continuation/fx-audio295-source-weapon.log",
+          "sha256": "d2d428e136c0d779315237d5940b173c4f5d80fc34862617a6d34ddbc80fba6b"
+        },
+        {
+          "command": [
+            "/workspace/audit-continuation/venv/bin/python",
+            "/workspace/pr1437-world-owner-completion/tools/content-schema/item-authoring/check_stack_default_historical_context.py",
+            "--cohort",
+            "default"
+          ],
+          "exit_code": 0,
+          "label": "stack-default",
+          "log": "/workspace/audit-continuation/fx-audio295-source-stack-default.log",
+          "sha256": "909e28fa97e1da9c2eff3c7b92718e25e604d6f1b572f3c8634c908b10489f25"
+        },
+        {
+          "command": [
+            "/workspace/audit-continuation/venv/bin/python",
+            "/workspace/pr1437-world-owner-completion/tools/content-schema/item-authoring/check_stack_default_historical_context.py",
+            "--cohort",
+            "historical"
+          ],
+          "exit_code": 0,
+          "label": "stack-historical",
+          "log": "/workspace/audit-continuation/fx-audio295-source-stack-historical.log",
+          "sha256": "909e28fa97e1da9c2eff3c7b92718e25e604d6f1b572f3c8634c908b10489f25"
+        }
+      ],
+      "status": "PASS_UNCHANGED_SOURCE_SCOPE_REUSE"
+    },
+    "focused_python": {
+      "exit_code": 0,
+      "log": {
+        "bytes": 105,
+        "path": "/workspace/audit-continuation/fx-audio295-postgen-python-tests.log",
+        "sha256": "f9ffa44e3d8843db3a33a75923c94db4f395737bff48857d6d9a06f418edda8e"
+      },
+      "passed": 7,
+      "status": "PASS"
+    },
+    "focused_raw_rust": {
+      "passed": 3,
+      "receipt": {
+        "bytes": 1116,
+        "command": [
+          "/workspace/audit-continuation/cargo/bin/cargo",
+          "+1.94.0",
+          "test",
+          "--locked",
+          "-p",
+          "oteryn-game-server",
+          "--test",
+          "content_item_fx_audio_raw"
+        ],
+        "exit_code": 0,
+        "label": "focused-raw-repaired",
+        "log": "/workspace/audit-continuation/fx-audio295-cargo-focused-raw-repaired.log",
+        "sha256": "8d94b3bad234c87f4e0372906152822902096494ff827cd3e23e2b7ea6b8f90a"
+      },
+      "status": "PASS"
+    },
+    "library": {
+      "fresh_run": false,
+      "ignored": 2,
+      "input_paths_verified": 1330,
+      "passed": 1344,
+      "prior_qualified_log": {
+        "bytes": 148519,
+        "path": "/workspace/audit-continuation/combined-cargo-server-lib.log",
+        "sha256": "fd34c9e5807fe4faf1696fa9bad608f6f1e6d822be6443db14de64f445ea49ed"
+      },
+      "status": "REUSED_QUALIFIED_RECEIPT",
+      "witness": {
+        "bytes": 79293,
+        "path": "/workspace/audit-continuation/fx-audio295-library-byteexact-validation-reuse.json",
+        "sha256": "dcb013c8f3a0a5a457e4881fa8fbc3c88e27acb5f0b2cb8350dd7184be0632ad"
+      }
+    },
+    "model_v2": {
+      "passed": 19,
+      "receipt": {
+        "bytes": 2337,
+        "command": [
+          "/workspace/audit-continuation/cargo/bin/cargo",
+          "+1.94.0",
+          "test",
+          "--locked",
+          "-p",
+          "oteryn-game-server",
+          "--test",
+          "content_world_project_v2"
+        ],
+        "exit_code": 0,
+        "label": "model-v2",
+        "log": "/workspace/audit-continuation/fx-audio295-cargo-model-v2.log",
+        "sha256": "714987e2850c2b51ed2385e14e086546e7742738f402d0c98794f56f23f249cb"
+      },
+      "status": "PASS"
+    },
+    "producer_exact_capture_replay": {
+      "exit_code": 0,
+      "log": {
+        "bytes": 0,
+        "path": "/workspace/audit-continuation/fx-audio295-postgen-producer-replay.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "status": "PASS"
+    },
+    "repository": {
+      "passed": 3,
+      "receipt": {
+        "bytes": 1159,
+        "command": [
+          "/workspace/audit-continuation/cargo/bin/cargo",
+          "+1.94.0",
+          "test",
+          "--locked",
+          "-p",
+          "oteryn-game-server",
+          "--test",
+          "content_world_project_repository"
+        ],
+        "exit_code": 0,
+        "label": "repository",
+        "log": "/workspace/audit-continuation/fx-audio295-cargo-repository.log",
+        "sha256": "eb2eeebff524172a0a328846db1d58b9e4180cd41266b93644a10190ef10565e"
+      },
+      "status": "PASS"
+    },
+    "second_original_generator_byte_idempotence": {
+      "receipt": {
+        "bytes": 767,
+        "path": "/workspace/audit-continuation/fx-audio295-second-original-generation-byte-idempotence.json",
+        "sha256": "4b2ee52a8caddcf2f42b6ca492ed90de9c83fdbd22925796778433cadd1e7cb1"
+      },
+      "status": "PASS"
+    }
+  },
+  "full_publication_blob_readback": {
+    ".github/workflows/item-authoring-schema.yml": {
+      "sha256": "345028b9f5c8a65696a0534727d3cb46f1845bc1d24ec9bd614bb691bd083c30",
+      "bytes": 15182,
+      "Git_blob": "617daf3d633234a07e1f8c2b1488a3f56fbb030f"
+    },
+    "apps/game-server/examples/materialize_content_world_project_v2.rs": {
+      "sha256": "f167224187747bbed7d5bb7eba3ff52bc7349224c1c182971b64e3b6ba437ba2",
+      "bytes": 88565,
+      "Git_blob": "75012d486078a33895bc276ce2b5ace29d3d6d25"
+    },
+    "apps/game-server/examples/support/item_fx_audio_raw_import.rs": {
+      "sha256": "3e4087bb01f726eb1268e96382f002af6d7be0f1cf1b8f41becbeaf5889ea54e",
+      "bytes": 1770,
+      "Git_blob": "396a942c60a21f0125819a06f4c2839221b0b43a"
+    },
+    "apps/game-server/tests/content_item_fx_audio_raw.rs": {
+      "sha256": "a6f311c737da91733aee2119f81b99e0e67979b6a02a057b167ab90ca4975e25",
+      "bytes": 4867,
+      "Git_blob": "78ecef4e14468e2704973722e91b7268e34d1af1"
+    },
+    "apps/game-server/tests/content_world_project_repository.rs": {
+      "sha256": "8fececf6ec81907dde09e65e9043731839d33a4bc9e01975aef8db3eba8f541c",
+      "bytes": 73414,
+      "Git_blob": "15018b80d49469f6aa9140e128b3f53cce3a0889"
+    },
+    "content/content.lock.json": {
+      "sha256": "b0ee205b642b558d29433d0d8724abd13d181066a5609dc7e9a890f729048a8e",
+      "bytes": 1411,
+      "Git_blob": "780595044e1053a2b4426cdad1918b1cd2b8a3f4"
+    },
+    "content/world/content.lock.json": {
+      "sha256": "8969d57915ca365a2ee42fb6652baf5bdd22dfc12c55d9f25a846656fa676ed6",
+      "bytes": 364,
+      "Git_blob": "5c6d0e7e7a461201fa7d4064e888753f883e4fca"
+    },
+    "content/world/manifest.json": {
+      "sha256": "fadbe6526a85cd57204f4df8e75b87fb1b31cf20917c077a4088cbb26539ae6c",
+      "bytes": 1939,
+      "Git_blob": "d3146541d2bafce20f44961e85aaba81cbaed9e6"
+    },
+    "content/world/project.json": {
+      "sha256": "df2b79ebd4b1cfdfef0324144fbe2d1603a6e1599e7a07de60cc83b9252af549",
+      "bytes": 390,
+      "Git_blob": "9a3a0d6bafb390e7fc069b720c9ecbf19d22d3d0"
+    },
+    "content/world/provenance/imports.json": {
+      "sha256": "d470a45628a7d2ec9e2112d997e75ddcc7a56438be07e2b5a0bab243b2adf5fe",
+      "bytes": 6739919,
+      "Git_blob": "442b5592294219d0909439f7e17c646898657867"
+    },
+    "docs/architecture/OTERYN_ITEM_AUTHORING_MASTER_SCHEMA_V1.md": {
+      "sha256": "350c67910fc743d853570885efaf6f922ce81a5269c676c7982b33545bb4de61",
+      "bytes": 12211,
+      "Git_blob": "e3b229619e1e4916a601ab3c1612aa16d94362fd"
+    },
+    "docs/architecture/OTERYN_WORLD_PROJECT_SOURCE_PROFILE_V2_DECISION.md": {
+      "sha256": "eab646619d84d7ef2b6a2235cf3240b6f9d18d1c99da195c484a0c739292c28b",
+      "bytes": 20565,
+      "Git_blob": "5666d67fb78ebcec670cff5350e0ddc86919256f"
+    },
+    "imports/ots-source-evidence/item-fx-audio295/import-batch.json": {
+      "sha256": "1d1fa3465d5c3eb3c7c2188acc03334115aef4eb517dced66def17c483d9cd74",
+      "bytes": 6731329,
+      "Git_blob": "2e5ab75c32e6b73385eaa194c9a66b9578b43261"
+    },
+    "imports/ots-source-evidence/item-fx-audio295/producer/raw_fx_audio_reimport.py": {
+      "sha256": "114582bc4058fbdeb458084163f1aa4efb3db206c6e96fd9cdad2e73f7332ada",
+      "bytes": 7331,
+      "Git_blob": "e5dc15f5add52136cf7a4bc476392c25e4865882"
+    },
+    "imports/ots-source-evidence/item-fx-audio295/raw-source-staging.json": {
+      "sha256": "755e9d4fddf76eb38acd68aeb9e457ddfebffde55c7f98de8f7e5a07b994258c",
+      "bytes": 7921304,
+      "Git_blob": "8a33922320a195ffcf28656f3f78e5e503479a5c"
+    },
+    "imports/ots-source-evidence/item-fx-audio295/retained-source-files.json": {
+      "sha256": "3532de334350694797aa095df3d4a009ede18bee4121a01be804d07f93d42ae5",
+      "bytes": 15917006,
+      "Git_blob": "468c765f6db932be0391e8b58af8c9e3d6bf67e0"
+    },
+    "tools/content-schema/item-authoring/test_raw_fx_audio_reimport.py": {
+      "sha256": "6b6c5de97b3816f7b6a754a4faa384ae91cdc208e2fd75374c108127273af212",
+      "bytes": 5139,
+      "Git_blob": "446b2a741da36516b4025cd151e35accc85a5a07"
+    },
+    "docs/agents/evidence/OTV2-20261002-item-fx-audio-source-import.md": {
+      "sha256": "ac3639b8ff78dcdc7ab2c684653e9e616dbc328b505ceece23a7304ccc9716b9",
+      "bytes": 19780,
+      "Git_blob": "20b6ca22e8881f68d81796e0c7b001191fb67d0f"
+    },
+    "docs/agents/tasks/archive/OTV2-20261002-item-fx-audio-source-import.md": {
+      "sha256": "3084815f5e230fc3f4ffab6dfcdc58ed405f9a39a022fa5898ffeb8fb1bca7eb",
+      "bytes": 2464,
+      "Git_blob": "49c19e0adf131eebf37325fc47338ec75a00d7b4"
+    }
+  },
+  "protected_qualified_data_byte_preservation": {
+    "content/world/definitions/reference.json": {
+      "sha256": "08d905512d61f9d909daa532e02c7f249e25ef1c8e48c1d9835b16ebd99f93cd",
+      "bytes": 25072677
+    },
+    "content/world/definitions/declarations.json": {
+      "sha256": "e553a2a894ea15f7743a94fac91b588994b3b36a80df8ca669a3b4fbde753ff9",
+      "bytes": 15225274
+    },
+    "content/items/index.json": {
+      "sha256": "2d311a5f0ed6022250fe061a1c4c23f6b37ac7797e30fc3c1b7fd6d72745ce3d",
+      "bytes": 3985
+    },
+    "content/items/relations/items.json": {
+      "sha256": "adac3bc61cd4aa1dcff3a2dae293f50d66359cc31818c89e22b4e46e040a253e",
+      "bytes": 133642
+    },
+    "imports/tibiawiki/bindings/items.json": {
+      "sha256": "9bce9d5a0bded656c8345109080a6d71dfe6bf7ce4d1c4b0bbb3c2ae62b9cfc3",
+      "bytes": 147613
+    },
+    "content/items/definitions/items-00000-00499.json": {
+      "sha256": "f4d9ab4cf12d5203ad828527b5d09ce8b31805b250e4fc0e2233d2912711325d",
+      "bytes": 292692
+    },
+    "content/items/definitions/items-00500-00999.json": {
+      "sha256": "e333ecff048c28a733bea4e82612428628d000b1f0796d7d899fd182c12006b4",
+      "bytes": 169691
+    },
+    "content/items/definitions/items-01000-01499.json": {
+      "sha256": "2524c38be89beb04de6736c1c94ea411a8836f4651885c883771ceccbd355434",
+      "bytes": 217513
+    },
+    "content/items/definitions/items-01500-01999.json": {
+      "sha256": "a484bc8bab4118e6f7da030156ac6bae0d294fc290fba0dcf89bfb1a7bd5018c",
+      "bytes": 254644
+    },
+    "content/items/definitions/items-02000-02499.json": {
+      "sha256": "9247e21b87c79a4cd613dc5a8d1e8085a6fd1dcefbd738f637f1c0ebba3130f9",
+      "bytes": 240369
+    },
+    "content/items/definitions/items-02500-02999.json": {
+      "sha256": "a7252759a8814b83d1706e8c8273f6fa3efdbba11d29f39212523d406571e6f3",
+      "bytes": 240383
+    },
+    "content/items/definitions/items-03000-03499.json": {
+      "sha256": "33112bff6041164d72af745f468dde0eb2e7907390aa347367ffcbc0c7f2734d",
+      "bytes": 126030
+    },
+    "content/items/definitions/items-03500-03999.json": {
+      "sha256": "b3a9699464a92722bae32b5f4c3d99e15363c839076d017e949c6393c70a8b16",
+      "bytes": 227341
+    },
+    "content/items/definitions/items-04000-04499.json": {
+      "sha256": "3c5dcfd0099723ce145e6262eddea4e75873f87f2aadafc984db3ae908a50f68",
+      "bytes": 275539
+    },
+    "content/items/definitions/items-04500-04999.json": {
+      "sha256": "73f2a0cebc75c82632824efaa915a690e7457276bf3d8a1ad75a99008603d159",
+      "bytes": 227685
+    },
+    "content/items/definitions/items-05000-05499.json": {
+      "sha256": "2b86f7351d77194117fca58bcb59ce07e33c6fd9c9e627ae67e157e526f20fd4",
+      "bytes": 218096
+    },
+    "content/items/definitions/items-05500-05999.json": {
+      "sha256": "d75b6860cfb0ebf587c3ee03a9450c0091cb59b504210a7ba92a26363d8775fe",
+      "bytes": 235674
+    },
+    "content/items/definitions/items-06000-06499.json": {
+      "sha256": "c3e6382f8b8b8c3400fae6968c6bf57683c94bf6c3ec9491df240c17e05f6a99",
+      "bytes": 123764
+    },
+    "content/items/definitions/items-06500-06999.json": {
+      "sha256": "41d2f989b190d75bba0a6fbb8da9be55be99f3426f0736dda4e0dc11d4a562e2",
+      "bytes": 212897
+    },
+    "content/items/definitions/items-07000-07499.json": {
+      "sha256": "da607c8610d1d326e8c759cf84087f4751e6725183b362e8e3cf69627a78c5f4",
+      "bytes": 197229
+    },
+    "content/items/definitions/items-07500-07999.json": {
+      "sha256": "39aaccd8435499e92f419ef68f7b8d202ba37561c9fc91d200c33b9465b87364",
+      "bytes": 190883
+    },
+    "content/items/definitions/items-08000-08499.json": {
+      "sha256": "6098632479b183c34fc906c9f19bf39424370d72114a1ea389e1fde1bd914ef1",
+      "bytes": 209841
+    },
+    "content/items/definitions/items-08500-08999.json": {
+      "sha256": "57fc8215a63cdf0a352fc6f42db6630a35e55c0393aaa511e1a2ac12b07e40fd",
+      "bytes": 154197
+    },
+    "content/items/definitions/items-09000-09499.json": {
+      "sha256": "b951c76c1678d7e8b7d9c722bedb764c73aad7c91cc3fd87ee668a3de5974f6e",
+      "bytes": 289665
+    },
+    "content/items/definitions/items-09500-09999.json": {
+      "sha256": "327c6539a88b99b378a2691b963e95ad56448b1ab397ed13442393ac6389f3ef",
+      "bytes": 157508
+    },
+    "content/items/definitions/items-10000-10499.json": {
+      "sha256": "2172697a2ec0884d229740589c0fbb175c0b63c23bf63c38f605fa641bb301f6",
+      "bytes": 217679
+    },
+    "content/items/definitions/items-10500-10999.json": {
+      "sha256": "28d0ac10dfb610792f750c77610605f688c5807703c6f461a937a4eacfcc079d",
+      "bytes": 203794
+    },
+    "content/items/definitions/items-11000-11499.json": {
+      "sha256": "9d8a5cb44ca7bb8c16f9c2425e39c82b2edb2e241307e5b9ad626d94cd9269d4",
+      "bytes": 254130
+    },
+    "content/items/definitions/items-11500-11999.json": {
+      "sha256": "9dbb414712dc152a3353909bbd00cac4a1f3962f357f713f9843e946763b7623",
+      "bytes": 276772
+    },
+    "content/items/definitions/items-12000-12499.json": {
+      "sha256": "34494367a93643be310245fda65dacdbb23aa9ea9d68a477b28d7064523b212e",
+      "bytes": 520584
+    },
+    "content/items/definitions/items-12500-12999.json": {
+      "sha256": "b3773232014b385a12e966078df6205d24bd2ec51f8f7276af120dcf2539803e",
+      "bytes": 265587
+    },
+    "content/items/definitions/items-13000-13499.json": {
+      "sha256": "fafbb95c272439e4fcf6f5da2d0d59542db5f3ef44c6dbb996139c7b41c2129c",
+      "bytes": 221211
+    },
+    "content/items/definitions/items-13500-13999.json": {
+      "sha256": "31f8e0666c279b42d00b015687894ba49c94aeca6254ff73602e5c08a481c3c9",
+      "bytes": 183788
+    },
+    "content/items/definitions/items-14000-14499.json": {
+      "sha256": "51d27fd8e7626154e4130a50fef8d02f369771e953669f70a9ef2b6c784ff6aa",
+      "bytes": 220189
+    },
+    "content/items/definitions/items-14500-14999.json": {
+      "sha256": "b205acc5142000e3e829d448e78efad38b40b7a52ee1c36e28a6db3cdc89bd2c",
+      "bytes": 574801
+    },
+    "content/items/definitions/items-15000-15499.json": {
+      "sha256": "70b94dbbc68072c16b443dab5f64bcd7f9f8825f8963e1c8a3b3db119c99a2f7",
+      "bytes": 216965
+    },
+    "content/items/definitions/items-15500-15999.json": {
+      "sha256": "85c5a22ccadb8cc64c30152b1302a3f00862e8093e35a7e71358a1b6b69f6fe4",
+      "bytes": 268139
+    },
+    "content/items/definitions/items-16000-16499.json": {
+      "sha256": "05144ab5438e9bf9c011cbebaca77114c91f4fdc5edb27f3194b42f4dc39041d",
+      "bytes": 201090
+    },
+    "content/items/definitions/items-16500-16999.json": {
+      "sha256": "d48eccdf17ec9bbc762acdb8c3531e98633c68f9000f48e1cb309c994531243f",
+      "bytes": 300644
+    },
+    "content/items/definitions/items-17000-17499.json": {
+      "sha256": "0eb8c1c65e7a0d240795f4f53fc24982d189d6e8674bbfdf7f0182309ee25ead",
+      "bytes": 276442
+    },
+    "content/items/definitions/items-17500-17999.json": {
+      "sha256": "d089ce7c7a93daf189a1fc26b6cf611e08b8beef11b8bd80ee47608d329d17ef",
+      "bytes": 371521
+    },
+    "content/items/definitions/items-18000-18499.json": {
+      "sha256": "000c0647e898f89db62947ece29b8c52a6a377c423dd6455bf083bd489b5daa5",
+      "bytes": 191693
+    },
+    "content/items/definitions/items-18500-18999.json": {
+      "sha256": "d173c97caf96ee627f11cd902944831422c96389ef5714edac6d99555cd4410b",
+      "bytes": 287327
+    },
+    "content/items/definitions/items-19000-19499.json": {
+      "sha256": "6e1aa8bc1202b414a7ce7751a1177ff102b9010467f6880b2b9579f976a01e92",
+      "bytes": 341191
+    },
+    "content/items/definitions/items-19500-19999.json": {
+      "sha256": "3e8be4c32656b71af9ba8d6eac547640ea44e082465b31bf44c96acd7c7d0678",
+      "bytes": 347918
+    },
+    "content/items/definitions/items-20000-20499.json": {
+      "sha256": "7aa222b5ff123a2f868db75eedce575e008925a06ea3a2ef235fdaa2d48816b0",
+      "bytes": 363760
+    },
+    "content/items/definitions/items-20500-20999.json": {
+      "sha256": "4b15525ddeb35d001c861aef44e83e77f2dcc9a0df37299b0fc716d59863347c",
+      "bytes": 383050
+    },
+    "content/items/definitions/items-21000-21499.json": {
+      "sha256": "665ac9cbaeac15adcdd6f3085a2d953eb2f769e6b134ec52902424cad06a21a2",
+      "bytes": 461129
+    },
+    "content/items/definitions/items-21500-21999.json": {
+      "sha256": "9750f7d5dacbe45c848e6e603fdce20fec24bf7cb5296fc6213d2ae9a9671b23",
+      "bytes": 342505
+    },
+    "content/items/definitions/items-22000-22499.json": {
+      "sha256": "3f6a42d208f2043ff6094b6baa6e2327c8c62a0278437a4069d71328214cbf59",
+      "bytes": 318950
+    },
+    "content/items/definitions/items-22500-22999.json": {
+      "sha256": "2edbcb26212d42031dbbd70feb71d54a315d862641ff2f3c5c67c2272b5b394c",
+      "bytes": 340123
+    },
+    "content/items/definitions/items-23000-23499.json": {
+      "sha256": "a0421c193504ffb0e259af9a7b31643ec198743109cee8ae40192e58a9b3d713",
+      "bytes": 107135
+    },
+    "content/items/definitions/items-23500-23999.json": {
+      "sha256": "d5b5d900deeb220f19d16a2a500f814fbf38f0870fb832cd430d3fd7d078a9c5",
+      "bytes": 198494
+    },
+    "content/items/definitions/items-24000-24499.json": {
+      "sha256": "61b396e97977f67862a92777d0548baf6c5577a295ce83d0883b53392c4ee4f0",
+      "bytes": 347967
+    },
+    "content/items/definitions/items-24500-24999.json": {
+      "sha256": "f6b575e6c8a5734cc827b2c398799f989e6881e82cff5e41ecfff86b34fb6783",
+      "bytes": 222510
+    },
+    "content/items/definitions/items-25000-25499.json": {
+      "sha256": "31ddb9214bdecab43c7b817ff8e2ff86c3dc502cfe1a83bf913fb1945b04c00d",
+      "bytes": 240939
+    },
+    "content/items/definitions/items-25500-25999.json": {
+      "sha256": "544a96797d8679216ed50e6f6e4df5eb8992aa3a9f851d748b21209b1fbb0325",
+      "bytes": 293906
+    },
+    "content/items/definitions/items-26000-26499.json": {
+      "sha256": "9197d0e8cad669c751276ad05f7b6307b2f2bd3693cb2d2095380612a4acb479",
+      "bytes": 427436
+    },
+    "content/items/definitions/items-26500-26999.json": {
+      "sha256": "7b608cf38b6f7b5f9cdef4b82b6894eacb97ee171f3e562a5cef7f5b7f1ffbcb",
+      "bytes": 467216
+    },
+    "content/items/definitions/items-27000-27499.json": {
+      "sha256": "cae844296c106b114ff7d533b0ec97df61a070029692deddc9ecd54cd5f6c0a4",
+      "bytes": 306465
+    },
+    "content/items/definitions/items-27500-27999.json": {
+      "sha256": "edfc6bf16c31ad8f23ce5e8e0d0a7665f90d5e92fe4e3cb09309ccfab24d826f",
+      "bytes": 408935
+    },
+    "content/items/definitions/items-28000-28499.json": {
+      "sha256": "a47507970d9f8bf70360fad10bbe6fd33e2f08b821708be34b768c7a5f9fc029",
+      "bytes": 340767
+    },
+    "content/items/definitions/items-28500-28999.json": {
+      "sha256": "386a0631086beb85e5f780b990ed388f3181b86ae969be9c074fc2288456cd1a",
+      "bytes": 351806
+    },
+    "content/items/definitions/items-29000-29499.json": {
+      "sha256": "a99f93e283157044af81a37046542321a2c6c1c4f568f92f0711db6505794c80",
+      "bytes": 222999
+    },
+    "content/items/definitions/items-29500-29999.json": {
+      "sha256": "49bada204674454cd49321cf43f7b96949c422a7ae382a61ea8c5035cab4235b",
+      "bytes": 247056
+    },
+    "content/items/definitions/items-30000-30499.json": {
+      "sha256": "a555a20839b8b75a267c64640d9baa5206331924698809bd550e68deed666383",
+      "bytes": 276729
+    },
+    "content/items/definitions/items-30500-30999.json": {
+      "sha256": "cae58d64dc6b3f698d2e555889369bfca61925855e81a1a4d47e8130c40815fb",
+      "bytes": 167792
+    },
+    "content/items/definitions/items-31000-31499.json": {
+      "sha256": "f9e1bb3a77da5a1cb6904e0dd3b7208584e4145e7f658f71e7f6ad0bbb5d5550",
+      "bytes": 388584
+    },
+    "content/items/definitions/items-31500-31999.json": {
+      "sha256": "7505a3c593ed9ee6d5859617ba1fb1ced32807c59690f9293c59a83429ce7f51",
+      "bytes": 372931
+    },
+    "content/items/definitions/items-32000-32499.json": {
+      "sha256": "357fc2e59faec6ae3a4825017c42de654d0f717a49cd82de0fdc404a3f731acc",
+      "bytes": 228329
+    },
+    "content/items/definitions/items-32500-32999.json": {
+      "sha256": "8e57177ee42e8a20d2abc8250f7c9c1514010a9a5d2e1b443b5c8a17718f7d30",
+      "bytes": 234635
+    },
+    "content/items/definitions/items-33000-33499.json": {
+      "sha256": "64e6906ef4832bcb0871c76d84f45e3a16b60843c993817fcb42acca96e87a7c",
+      "bytes": 351529
+    },
+    "content/items/definitions/items-33500-33999.json": {
+      "sha256": "858a826aa69add7ba4ece7e67cb793a2431d4772cb9c88f044fa7a8ab2f70740",
+      "bytes": 229022
+    },
+    "content/items/definitions/items-34000-34030.json": {
+      "sha256": "f5e12f8a41d930c2c1c777287587bd646aeaa5d83a3bdcfd39fb0816effa8ef1",
+      "bytes": 10821
+    }
+  },
+  "remaining_holds_unchanged": [
+    {
+      "lane": "positive_stack_max",
+      "count": 2493,
+      "unit": "retained source-positive stack Item targets, current-rejoined",
+      "current_typed_stack_unknown": 2491,
+      "current_identity_only": 2,
+      "source_qualified_new_maxima": 0,
+      "stage": "SOURCE_APPLICABLE_MAXIMUM_MISSING",
+      "needed": "Independent per-Item max or explicitly exception-free applicable accepted rule with variant bounds. No100default; market offer/stash/transfer capacities are different quantities."
+    },
+    {
+      "lane": "forge_missing_independent_maximum",
+      "unit": "named retained official-positive cohort targets without Source forge profile, rejoined actual1b owners",
+      "stage": "SOURCE_BINDING_AND_EXPLICIT_MAXIMUM",
+      "needed": "Complete independent per-Item pairs plus accepted exact identity/current source binding. 861 raw source agreements are discovery, not861 admitted targets; whole-source ambiguity/opposition and5 missing/empty ownmax remain holds.",
+      "published_parent_count": 870,
+      "generated_missing_profiles_count": 581,
+      "publication_pending": true
+    },
+    {
+      "lane": "regeneration14",
+      "count": 14,
+      "eligible": 0,
+      "unit": "whole per-Item modifier vectors",
+      "stage": "SOURCE_ID_PHASE_AND_VALUE_DISAGREEMENT",
+      "primary_partition": {
+        "OWN_BOUND_XML_TUPLE_ABSENT_EQUIP_TARGET_TRANSFER_PROHIBITED": 8,
+        "SHARED_OWN_ID_PHASE_UNQUALIFIED": 4,
+        "WIKI_XML_TICK_QUANTUM_DISAGREEMENT_NO_AVERAGE_RATE_SUBSTITUTION": 1,
+        "WIKI_XML_MANA_RATE_DISAGREEMENT_AND_PUBLIC_HEALTH_AMOUNT_ABSENT": 1
+      },
+      "needed": "Own equip/base phase qualification and exact gain/tick tuples; do not transfer equipTarget values, average differing tick quanta or infer runtime rest/activation. Existing typed parameter carriers suffice, setter whitelist needs closed lane after qualification."
+    },
+    {
+      "lane": "Physical8",
+      "count": 8,
+      "atoms": 16,
+      "unit": "whole modifier vectors",
+      "stage": "NATIVE_CODEC_PROFILE_VERSION_CONTRACT_NOT_ACCEPTED",
+      "needed": "Explicit accepted isolated profile5/new codec proof, measured actual artifact inputs/version disposition, full8 vectors, preservation of old profile4/lazy reader and enum1..6 reject cases. Prototype alone is not completion. Protected V4 fixture38157 is separate from canonical34031;4126 is not missing Items."
+    },
+    {
+      "lane": "imbuement_allowances656",
+      "count": 656,
+      "partial_positive_facts": 2,
+      "closed_native_vectors_qualified": 0,
+      "unit": "current Native positive-slot Item targets; allowed_family_tiers UNKNOWN",
+      "stage": "SOURCE_WHOLE_LIST_CLOSURE_MISSING",
+      "needed": "Whole applicable family/tier eligibility with exclusions/variants, not generic tier3. FalconCoif28715 max2 andDarkWhispers29427 max1 are independently positive only; cannot insert partial Native whitelist."
+    },
+    {
+      "lane": "imbuement_partial_source_owner2",
+      "count": 2,
+      "ids": [
+        28715,
+        29427
+      ],
+      "native_whole_vectors_completed": 0,
+      "stage": "EXPLICIT_SOURCE_METADATA_CONTRACT_SUPPLEMENT_PROPOSED_NOT_IMPLEMENTED",
+      "needed": "Optional partial-positive typed Source owner using existing family enum and max_tier1..3. Existing Use/augment/Native wholelist are not appropriate substitutes; no Native ABI/runtime change."
+    },
+    {
+      "lane": "Name15_BR3_followup",
+      "name_targets_corrected_in_generated_candidate": 15,
+      "name_targets_corrected_in_published_parent": 0,
+      "BR_bridge_targets": 3,
+      "BR_applied": 0,
+      "family15_NAV_applied": 0,
+      "stage": "NAME15_GENERATED_PENDING_PUBLICATION_BR3_AND_FAMILY15_NAV_SOURCE_POLICY_HELD",
+      "needed": "BR3 repaired own raw/source opposition has peer PASS, but category bridge still proposal; family15 requires accepted real fullarticle DISAMBIG/name join. Do not inherit sibling scalar values."
+    },
+    {
+      "lane": "family_assignment235",
+      "count": 235,
+      "unit": "remaining frozen-overlay navigation assignments within12487 pool",
+      "stage": "EXACT_SOURCE_FAMILY_AND_IDENTITY_OR_OWNER_INTEGRATION",
+      "needed": "Whole own-ID/category authority and current namespace/World scope. Frozen12252 classifications are not integrated Native classification/runtime readiness. New10 templates do not decrease235."
+    },
+    {
+      "lane": "movable_negative",
+      "scope": "RETAINED_4F_BOUNDED_SOURCE_DIAGNOSTIC_NOT_FRESH_GLOBAL_MISSING_COUNT",
+      "historical_diagnostic": {
+        "lane": "movable_negative",
+        "diagnostic_candidate_items": 4091,
+        "source_frame_scope": "EXPLICIT_UNMOVE_TRUE_CURRENT_MOVABLE_UNKNOWN_ONLY",
+        "take_flag_states": {
+          "ABSENT_NOT_INFERRED_FALSE": 4091
+        },
+        "qualified_portable_negative_candidates": 0,
+        "all_present_disagreement_items": 4,
+        "overlapping_guard_hold_counts": {
+          "PORTABLE_CURRENT_TAKE_TRUE_DOMAIN_NOT_AFFIRMED": 4091,
+          "NO_INDEPENDENT_OWN_WIKI_IMMOBILE_YES": 2933,
+          "OWN_ID_OR_PARAMETER_AMBIGUITY": 1133,
+          "IMMOBILE_EXPLICIT_EMPTY_OR_MALFORMED": 370,
+          "ALL_PRESENT_IMMOBILE_DISAGREEMENT": 4
+        },
+        "blocker": "Take ABSENT is UNKNOWN, notFalse; unmoveTrue/Wiki immobileYes do not affirm portable Item-domain applicability versus World geometry. No safe automatic movableFalse batch."
+      },
+      "stage": "DOMAIN_OR_SOURCE_AMBIGUITY_NOT_AUTO_DEFAULTABLE"
+    },
+    {
+      "lane": "augment_target_crosswalk",
+      "scope": "RETAINED_4F_BOUNDED_SOURCE_DIAGNOSTIC_NOT_FRESH_GLOBAL_MISSING_COUNT",
+      "historical_diagnostic": {
+        "lane": "augment_target_crosswalk",
+        "source_annotation_items": 62,
+        "named_clauses": 77,
+        "distinct_source_spell_labels": 47,
+        "literal_key_discovery_matches": 3,
+        "labels_without_literal_key_match": 44,
+        "labels_without_literal_key_match_list": [
+          "Avatar of Steel",
+          "Fierce Berserk",
+          "Avatar of Light",
+          "Divine Caldera",
+          "Avatar of Storm",
+          "Hell's Core",
+          "Avatar of Nature",
+          "Eternal Winter",
+          "Terra Wave",
+          "Wrath of Nature",
+          "Great Energy Beam",
+          "Great Death Beam",
+          "Intense Wound Cleansing",
+          "Front Sweep",
+          "Strong Ethereal Spear",
+          "Ultimate Flame Strike",
+          "Ultimate Ice Strike",
+          "Wound Cleansing",
+          "Flurry of Blows",
+          "Avatar of Balance",
+          "Chained Penance",
+          "Spirit Mend",
+          "Greater Flurry of Blows",
+          "Forceful Uppercut",
+          "Greater Tiger Clash",
+          "Brutal Strike",
+          "Ultimate Energy Strike",
+          "Ultimate Terra Strike",
+          "Etheral Spear",
+          "Ethereal Spear",
+          "Summon Knight Familiar",
+          "Summon Paladin Familiar",
+          "Summon Sorcerer Familiar",
+          "Summon Druid Familiar",
+          "Summon Monk Familiar",
+          "Great Fire Wave",
+          "Spiritual Outburst",
+          "Divine Grenade",
+          "Groundshaker",
+          "Forked Glacier",
+          "Thousand Fist Blows",
+          "Restore Balance",
+          "Divine Barrage",
+          "Death Echo"
+        ],
+        "qualified_typed_bindings": 0,
+        "blocker": "Source-own spell identities/augment property and effect mapping required. Three lexical matches are discovery only, not typedbindings; typo Etheral vsEthereal not auto-corrected."
+      },
+      "stage": "DOMAIN_OR_SOURCE_AMBIGUITY_NOT_AUTO_DEFAULTABLE"
+    },
+    {
+      "lane": "weight_source_conflict",
+      "scope": "RETAINED_4F_BOUNDED_SOURCE_DIAGNOSTIC_NOT_FRESH_GLOBAL_MISSING_COUNT",
+      "historical_diagnostic": {
+        "lane": "weight_source_conflict",
+        "current_packet_report_conflicts": 4,
+        "item_ids": [
+          39699,
+          39700,
+          39701,
+          39702
+        ],
+        "scope": "Exact current retained stats-v2 report conflict counter +four RainbowTorch own-page conflicts; not generic all unknown weights",
+        "blocker": "Opposing own source weights require variant/lifecycle applicability; no overwrite frompage majority"
+      },
+      "stage": "DOMAIN_OR_SOURCE_AMBIGUITY_NOT_AUTO_DEFAULTABLE"
+    },
+    {
+      "lane": "weapon_range_cells_malformed",
+      "scope": "RETAINED_4F_BOUNDED_SOURCE_DIAGNOSTIC_NOT_FRESH_GLOBAL_MISSING_COUNT",
+      "historical_diagnostic": {
+        "lane": "weapon_range_cells_malformed",
+        "current_packet_report_malformed": 3,
+        "scope": "Exact current retained stats-v2 malformed.weapon.range_cells counter; not UseObservation.damage_range or all unknown attack ranges",
+        "blocker": "Source literal syntax/units must be qualified before native range_cells admission"
+      },
+      "stage": "DOMAIN_OR_SOURCE_AMBIGUITY_NOT_AUTO_DEFAULTABLE"
+    },
+    {
+      "lane": "weapon_source_holds",
+      "scope": "RETAINED_4F_BOUNDED_SOURCE_DIAGNOSTIC_NOT_FRESH_GLOBAL_MISSING_COUNT",
+      "historical_diagnostic": {
+        "lane": "weapon_source_holds",
+        "attack_modifier_name_conflict_ids": [
+          8024,
+          8025
+        ],
+        "absolute_hit_own_id_variant_hold_ids": [
+          25757,
+          35901,
+          25758,
+          35902
+        ],
+        "scope": "Source hold evidence preserved; final future Weapon owner/member names not assumed",
+        "not_additive_global_unfinished_count": true
+      },
+      "stage": "DOMAIN_OR_SOURCE_AMBIGUITY_NOT_AUTO_DEFAULTABLE"
+    },
+    {
+      "lane": "FX_audio295",
+      "unit": "distinct numeric upstream source IDs, not295 qualified portable Items",
+      "source_ids": 295,
+      "xml_media_declarations_across3pins": 552,
+      "script_ids": 12,
+      "script_ids_subset_XML": true,
+      "static_partition": {
+        "CURRENT_BOUND_ITEM_STATIC_JOIN": 149,
+        "CURRENT_WORLD_OWNER": 141,
+        "IDENTITY_OR_MEMBERSHIP_HOLD": 5
+      },
+      "source_presence_difference_IDs": 46,
+      "explicit_present_value_oppositions": 0,
+      "new_asset_keys": 0,
+      "new_native_fields": 0,
+      "role": "OTS_HYPOTHESIS_ONLY",
+      "stage": "RAW_SOURCE_STAGED_UNQUALIFIED_ASSET_EVENT_AND_RUNTIME_BINDINGS_MISSING",
+      "capture_method": "Pinned public GitHub normal HTTP only; offline literal replay this inventory, no newHTTP/browser",
+      "source_bound_parent": "1b026969a8b2236737bff537b3eddb3c909781b2",
+      "source_native_admission": false
+    }
+  ],
+  "cohort_counts_must_not_be_summed": true,
+  "source_methods": [
+    {
+      "source": "CrystalServer ff7ede593c69d4c658b382c97443e8155926924a, donor00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "method": "Pinned public GitHub ordinaryHTTP retained fullsource; offline replay",
+      "authority": "Implementation/literal corroboration; OTS-only media stayshypothesis"
+    },
+    {
+      "source": "Canary47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "method": "Pinned public GitHub ordinaryHTTP retained fullsource; offline replay",
+      "authority": "No assumption that engine agreement grants official/GameOwned truth"
+    },
+    {
+      "source": "TibiaWikiBR admittedown Forge pages at recorded pageIDs/revisions",
+      "method": "NormalHTTPfirst; after actual403 Chrome/CDP anonymous public same-origin MediaWikiAPI; fullraw retained and boundedreplayed",
+      "uncertainty": "Specific pinnedraw facts qualified; allpages live continuity UNKNOWN"
+    },
+    {
+      "source": "Fandom own-ID cutoff corpus and retained Look67603/rev1131388 source",
+      "method": "Retained exact public API/capture bytes, including successful browserfallback after HTTP402/403 where explicitlyrecorded; local replay only now",
+      "uncertainty": "No fresh generalFandom availability/read claim; unretained/unavailable pages remain UNKNOWN/unavailable"
+    },
+    {
+      "source": "FX/audio295",
+      "method": "Public GitHub normalHTTP source captures only; no browserwiki needed",
+      "authority": "0 qualified NativeFX/audio/asset bindings"
+    },
+    {
+      "source": "Tavily",
+      "method": "Not called in this batch; quotaexhausted",
+      "uncertainty": "No successful Tavilyresearch claimed"
+    }
+  ],
+  "raw_source_access": "Pinned ordinary public GitHubHTTP retained captures; no new research",
+  "recovery_artifacts": {
+    "qualified": {
+      "combined-item-published-server-data-4151e300-exact-archive-receipt.json": {
+        "sha256": "25cc4c7313bc9df098ce7bd62ded2113098e68284f2e9342e16575d317a0c504",
+        "bytes": 440
+      },
+      "combined-item-final-worker-manifest.json": {
+        "sha256": "062e94af29cdf9850f3b457266d2156eefdf40a223cfe86a775bfe5d37be2c63",
+        "bytes": 77204
+      },
+      "combined-item-source-repair-freeze-manifest-v6.json": {
+        "sha256": "910eaf780b21edc21c54c9c47c991b9f9eb4338ee98beaa7b51144ba1e93ff38",
+        "bytes": 57203
+      },
+      "combined-item-independent-source-repair-peer-v6.json": {
+        "sha256": "f77be0be8983ea1454106bb69cbda04608a9466c57c62d2e81bba4c60a1d82ab",
+        "bytes": 20377
+      },
+      "combined-item-independent-final-candidate-peer.json": {
+        "sha256": "0ec467396d4ffcc06058977740b2017fe921188bdc720c067af6d8ee0e0adeee",
+        "bytes": 52257
+      },
+      "combined-item-independent-final-postgen-source-peer.json": {
+        "sha256": "0c26d2a7863fd36791285f3d6f5a5dc60569cdb68f5f9eaee84696097a6806cc",
+        "bytes": 75664
+      },
+      "combined-independent-postgen-final-data-replay.json": {
+        "sha256": "51d1c1f032439a6ab4802f313d1966ea8631d69d27a9a08d4b30ab25beea33fd",
+        "bytes": 82583
+      },
+      "item-combined1629-289-17-final-precommit-manifest.json": {
+        "sha256": "224f8768d64c94714bde2b257dee7bffea9c31e61eb0aa8140c610b6ee7f1237",
+        "bytes": 20218
+      },
+      "item-combined1629-289-17-pr-published-readback.json": {
+        "sha256": "83e3247b2a4ae08b86f245111872f8521c27237c7ef9aeb2906ed0720359085c",
+        "bytes": 17050
+      },
+      "item-combined-published4151-checkpoint-publication.state.json": {
+        "sha256": "1ac22496708ac50c4d8055dc52b853d5104ade5b2100a0f6d6885437d949583b",
+        "bytes": 5690
+      },
+      "item-remaining-work-published-combined-final-20261002.json": {
+        "sha256": "d897f84d0cbd36710dec40a2c934a2b9d6ded71d3eaf0ae87c0595ed484ac109",
+        "bytes": 234653
+      },
+      "item-remaining-work-published-combined-final-20261002.md": {
+        "sha256": "0c4de9051ef8b1ba85590c73c657a0ecd39a2e5a88ec0a0ac123255c57289c99",
+        "bytes": 5169
+      },
+      "item-remaining-work-published-combined-final-manifest-20261002.json": {
+        "sha256": "9f9cfb108ab8105a2a4b19c97500e3f9f1488a50d52624884e08d9362c8b17a9",
+        "bytes": 1141
+      },
+      "/workspace/audit-continuation/combined-item-published-server-data-4151e300-exact-checkpoint.tar.gz": {
+        "sha256": "d7b1cbf117c491f79ed2d04da8f29f9c07fc6cd8e9a3c24740477d589ffcdf0a",
+        "bytes": 4369736
+      }
+    },
+    "raw_archive": {
+      "archive": "/workspace/audit-continuation/item-fx-audio295-published-d8d44975-exact-checkpoint.tar.gz",
+      "sha256": "1d8dd89efbc9f63c49e36f8ecdb0d07fc7a129e4a1d160c6ff798cbf4806bf83",
+      "bytes": 3939277,
+      "published_head": "d8d449751b77dcdabdae3a44938472f058fcb14f",
+      "owned_files": 19,
+      "members": 23,
+      "full_members_readback": "PASS",
+      "publication_state": "VALIDATE",
+      "runtime_readiness": null
+    },
+    "raw_current_receipts": {
+      "/workspace/audit-continuation/fx-audio295-final-worker-manifest.json": {
+        "sha256": "d35d3ac72d25714d593df1c7ec331e3a3e31bb79179577d9dd8afe131129b18a",
+        "bytes": 38684
+      },
+      "/workspace/audit-continuation/item-fx-audio295-final-precommit-manifest.json": {
+        "sha256": "8a20c7ba43559e8f1dd764ab9b07275554967f741abe2fef71d958812f0e0bf2",
+        "bytes": 2439
+      },
+      "/workspace/audit-continuation/fx-audio295-publication.state.json": {
+        "sha256": "d39c211395141d52ee6f7bb6d2b20dc4f9014c57d5f6d85980ea9cbe6b3302e8",
+        "bytes": 29084
+      },
+      "/workspace/audit-continuation/fx-audio295-pr-published-readback.json": {
+        "sha256": "e188b4e82726cdb0fb5f77435afc302ff3d162b8ea09e8e85e9a7243f79ba452",
+        "bytes": 19988
+      }
+    }
+  },
+  "input_witnesses": {
+    "/workspace/audit-continuation/item-remaining-work-published-combined-final-20261002.json": {
+      "sha256": "d897f84d0cbd36710dec40a2c934a2b9d6ded71d3eaf0ae87c0595ed484ac109",
+      "bytes": 234653
+    },
+    "/workspace/audit-continuation/fx-audio295-publication.state.json": {
+      "sha256": "d39c211395141d52ee6f7bb6d2b20dc4f9014c57d5f6d85980ea9cbe6b3302e8",
+      "bytes": 29084
+    },
+    "/workspace/audit-continuation/fx-audio295-final-worker-manifest.json": {
+      "sha256": "d35d3ac72d25714d593df1c7ec331e3a3e31bb79179577d9dd8afe131129b18a",
+      "bytes": 38684
+    },
+    "/workspace/audit-continuation/item-fx-audio295-final-precommit-manifest.json": {
+      "sha256": "8a20c7ba43559e8f1dd764ab9b07275554967f741abe2fef71d958812f0e0bf2",
+      "bytes": 2439
+    },
+    "/workspace/audit-continuation/fx-audio295-pr-published-readback.json": {
+      "sha256": "e188b4e82726cdb0fb5f77435afc302ff3d162b8ea09e8e85e9a7243f79ba452",
+      "bytes": 19988
+    },
+    "/workspace/audit-continuation/combined-item-published-server-data-4151e300-exact-archive-receipt.json": {
+      "sha256": "25cc4c7313bc9df098ce7bd62ded2113098e68284f2e9342e16575d317a0c504",
+      "bytes": 440
+    },
+    "/workspace/audit-continuation/combined-item-final-worker-manifest.json": {
+      "sha256": "062e94af29cdf9850f3b457266d2156eefdf40a223cfe86a775bfe5d37be2c63",
+      "bytes": 77204
+    },
+    "/workspace/audit-continuation/combined-item-source-repair-freeze-manifest-v6.json": {
+      "sha256": "910eaf780b21edc21c54c9c47c991b9f9eb4338ee98beaa7b51144ba1e93ff38",
+      "bytes": 57203
+    },
+    "/workspace/audit-continuation/combined-item-independent-source-repair-peer-v6.json": {
+      "sha256": "f77be0be8983ea1454106bb69cbda04608a9466c57c62d2e81bba4c60a1d82ab",
+      "bytes": 20377
+    },
+    "/workspace/audit-continuation/combined-item-independent-final-candidate-peer.json": {
+      "sha256": "0ec467396d4ffcc06058977740b2017fe921188bdc720c067af6d8ee0e0adeee",
+      "bytes": 52257
+    },
+    "/workspace/audit-continuation/combined-item-independent-final-postgen-source-peer.json": {
+      "sha256": "0c26d2a7863fd36791285f3d6f5a5dc60569cdb68f5f9eaee84696097a6806cc",
+      "bytes": 75664
+    },
+    "/workspace/audit-continuation/combined-independent-postgen-final-data-replay.json": {
+      "sha256": "51d1c1f032439a6ab4802f313d1966ea8631d69d27a9a08d4b30ab25beea33fd",
+      "bytes": 82583
+    },
+    "/workspace/audit-continuation/item-combined1629-289-17-final-precommit-manifest.json": {
+      "sha256": "224f8768d64c94714bde2b257dee7bffea9c31e61eb0aa8140c610b6ee7f1237",
+      "bytes": 20218
+    },
+    "/workspace/audit-continuation/item-combined1629-289-17-pr-published-readback.json": {
+      "sha256": "83e3247b2a4ae08b86f245111872f8521c27237c7ef9aeb2906ed0720359085c",
+      "bytes": 17050
+    },
+    "/workspace/audit-continuation/item-combined-published4151-checkpoint-publication.state.json": {
+      "sha256": "1ac22496708ac50c4d8055dc52b853d5104ade5b2100a0f6d6885437d949583b",
+      "bytes": 5690
+    },
+    "/workspace/audit-continuation/item-remaining-work-published-combined-final-20261002.md": {
+      "sha256": "0c4de9051ef8b1ba85590c73c657a0ecd39a2e5a88ec0a0ac123255c57289c99",
+      "bytes": 5169
+    },
+    "/workspace/audit-continuation/item-remaining-work-published-combined-final-manifest-20261002.json": {
+      "sha256": "9f9cfb108ab8105a2a4b19c97500e3f9f1488a50d52624884e08d9362c8b17a9",
+      "bytes": 1141
+    },
+    "/workspace/audit-continuation/fx-audio295-published-exact-archive-receipt.json": {
+      "sha256": "119126fc6136d1537b26430456c2cc3e8730722a80555e31ba2863def8056cbe",
+      "bytes": 410
+    }
+  },
+  "CI": "Pending exact-head aggregate",
+  "integration": "Pending active control plane"
+}

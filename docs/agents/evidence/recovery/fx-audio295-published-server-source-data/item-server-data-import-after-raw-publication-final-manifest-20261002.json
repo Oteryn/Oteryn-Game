@@ -1,0 +1,21 @@
+{
+  "schema": "ITEM_RAW_IMPORT_FINAL_REPORT_STOPPED/v1",
+  "status": "PASS",
+  "published_head": "d8d449751b77dcdabdae3a44938472f058fcb14f",
+  "owned_files": {
+    "/workspace/audit-continuation/item-server-data-import-after-raw-publication-20261002.json": {
+      "sha256": "8fc5ac745ff6bb2b3f8fefd207907593840b90d8dde721b682d50439daf496b7",
+      "bytes": 63764
+    },
+    "/workspace/audit-continuation/item-server-data-import-after-raw-publication-20261002.md": {
+      "sha256": "40a3850a3782ff1695e8d50290a4da83e251a843ee3e45c9d893c5232c6bf796",
+      "bytes": 2171
+    }
+  },
+  "no_Git_mutations_Cargo_project_writes_or_new_research": true,
+  "qualified_reports_preserved": {
+    "item-remaining-work-published-combined-final-20261002.json": "d897f84d0cbd36710dec40a2c934a2b9d6ded71d3eaf0ae87c0595ed484ac109",
+    "item-remaining-work-published-combined-final-20261002.md": "0c4de9051ef8b1ba85590c73c657a0ecd39a2e5a88ec0a0ac123255c57289c99",
+    "item-remaining-work-published-combined-final-manifest-20261002.json": "9f9cfb108ab8105a2a4b19c97500e3f9f1488a50d52624884e08d9362c8b17a9"
+  }
+}

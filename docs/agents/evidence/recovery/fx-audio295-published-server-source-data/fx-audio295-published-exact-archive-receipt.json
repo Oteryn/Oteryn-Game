@@ -1,0 +1,11 @@
+{
+  "archive": "/workspace/audit-continuation/item-fx-audio295-published-d8d44975-exact-checkpoint.tar.gz",
+  "sha256": "1d8dd89efbc9f63c49e36f8ecdb0d07fc7a129e4a1d160c6ff798cbf4806bf83",
+  "bytes": 3939277,
+  "published_head": "d8d449751b77dcdabdae3a44938472f058fcb14f",
+  "owned_files": 19,
+  "members": 23,
+  "full_members_readback": "PASS",
+  "publication_state": "VALIDATE",
+  "runtime_readiness": null
+}

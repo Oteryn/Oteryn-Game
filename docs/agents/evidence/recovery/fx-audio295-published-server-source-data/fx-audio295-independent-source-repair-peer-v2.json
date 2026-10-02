@@ -1,0 +1,118 @@
+{
+  "schema": "OTERYN_FX_AUDIO295_INDEPENDENT_SOURCE_REPAIR_PEER/v2",
+  "status": "SOURCE_PASS",
+  "validation_status": "SOURCE_REPAIR_PASS",
+  "findings": [],
+  "utc": "2026-10-02T18:51:45.554730+00:00",
+  "repository": "/workspace/pr1437-world-owner-completion",
+  "actual_parent": "4151e3005daa41ed848533e45b63fadc5ed78fa3",
+  "frozen_manifest": {
+    "path": "/workspace/audit-continuation/fx-audio295-source-repair-freeze-manifest-v2.json",
+    "sha256": "27f40179a44429238cef3c08992fe277114a2aa8155035ae06c81366853c2094",
+    "bytes": 24473
+  },
+  "prior_source_peer": {
+    "path": "/workspace/audit-continuation/fx-audio295-independent-source-authoring-peer.json",
+    "sha256": "1aa061049c47fafba28a3088341888ae0fbc6e262fce8819b96b2ff9b4303ef8"
+  },
+  "stable_source12": {
+    ".github/workflows/item-authoring-schema.yml": "345028b9f5c8a65696a0534727d3cb46f1845bc1d24ec9bd614bb691bd083c30",
+    "apps/game-server/examples/materialize_content_world_project_v2.rs": "f167224187747bbed7d5bb7eba3ff52bc7349224c1c182971b64e3b6ba437ba2",
+    "apps/game-server/examples/support/item_fx_audio_raw_import.rs": "3e4087bb01f726eb1268e96382f002af6d7be0f1cf1b8f41becbeaf5889ea54e",
+    "apps/game-server/tests/content_item_fx_audio_raw.rs": "a6f311c737da91733aee2119f81b99e0e67979b6a02a057b167ab90ca4975e25",
+    "apps/game-server/tests/content_world_project_repository.rs": "8fececf6ec81907dde09e65e9043731839d33a4bc9e01975aef8db3eba8f541c",
+    "docs/architecture/OTERYN_ITEM_AUTHORING_MASTER_SCHEMA_V1.md": "350c67910fc743d853570885efaf6f922ce81a5269c676c7982b33545bb4de61",
+    "docs/architecture/OTERYN_WORLD_PROJECT_SOURCE_PROFILE_V2_DECISION.md": "eab646619d84d7ef2b6a2235cf3240b6f9d18d1c99da195c484a0c739292c28b",
+    "imports/ots-source-evidence/item-fx-audio295/import-batch.json": "1d1fa3465d5c3eb3c7c2188acc03334115aef4eb517dced66def17c483d9cd74",
+    "imports/ots-source-evidence/item-fx-audio295/producer/raw_fx_audio_reimport.py": "114582bc4058fbdeb458084163f1aa4efb3db206c6e96fd9cdad2e73f7332ada",
+    "imports/ots-source-evidence/item-fx-audio295/raw-source-staging.json": "755e9d4fddf76eb38acd68aeb9e457ddfebffde55c7f98de8f7e5a07b994258c",
+    "imports/ots-source-evidence/item-fx-audio295/retained-source-files.json": "3532de334350694797aa095df3d4a009ede18bee4121a01be804d07f93d42ae5",
+    "tools/content-schema/item-authoring/test_raw_fx_audio_reimport.py": "6b6c5de97b3816f7b6a754a4faa384ae91cdc208e2fd75374c108127273af212"
+  },
+  "stable_source": {
+    ".github/workflows/item-authoring-schema.yml": "345028b9f5c8a65696a0534727d3cb46f1845bc1d24ec9bd614bb691bd083c30",
+    "apps/game-server/examples/materialize_content_world_project_v2.rs": "f167224187747bbed7d5bb7eba3ff52bc7349224c1c182971b64e3b6ba437ba2",
+    "apps/game-server/examples/support/item_fx_audio_raw_import.rs": "3e4087bb01f726eb1268e96382f002af6d7be0f1cf1b8f41becbeaf5889ea54e",
+    "apps/game-server/tests/content_item_fx_audio_raw.rs": "a6f311c737da91733aee2119f81b99e0e67979b6a02a057b167ab90ca4975e25",
+    "apps/game-server/tests/content_world_project_repository.rs": "8fececf6ec81907dde09e65e9043731839d33a4bc9e01975aef8db3eba8f541c",
+    "docs/architecture/OTERYN_ITEM_AUTHORING_MASTER_SCHEMA_V1.md": "350c67910fc743d853570885efaf6f922ce81a5269c676c7982b33545bb4de61",
+    "docs/architecture/OTERYN_WORLD_PROJECT_SOURCE_PROFILE_V2_DECISION.md": "eab646619d84d7ef2b6a2235cf3240b6f9d18d1c99da195c484a0c739292c28b",
+    "imports/ots-source-evidence/item-fx-audio295/import-batch.json": "1d1fa3465d5c3eb3c7c2188acc03334115aef4eb517dced66def17c483d9cd74",
+    "imports/ots-source-evidence/item-fx-audio295/producer/raw_fx_audio_reimport.py": "114582bc4058fbdeb458084163f1aa4efb3db206c6e96fd9cdad2e73f7332ada",
+    "imports/ots-source-evidence/item-fx-audio295/raw-source-staging.json": "755e9d4fddf76eb38acd68aeb9e457ddfebffde55c7f98de8f7e5a07b994258c",
+    "imports/ots-source-evidence/item-fx-audio295/retained-source-files.json": "3532de334350694797aa095df3d4a009ede18bee4121a01be804d07f93d42ae5",
+    "tools/content-schema/item-authoring/test_raw_fx_audio_reimport.py": "6b6c5de97b3816f7b6a754a4faa384ae91cdc208e2fd75374c108127273af212"
+  },
+  "source_owned_count": 12,
+  "double_readback": "PASS",
+  "unchanged_source_files": 10,
+  "test_only_exact_two_spans": {
+    "path": "apps/game-server/tests/content_item_fx_audio_raw.rs",
+    "prior_hash": "3ffc9035673ae1c7661d5dacda37160714b283ce58fd6cc50d6f0e18662eca26",
+    "current_hash": "a6f311c737da91733aee2119f81b99e0e67979b6a02a057b167ab90ca4975e25",
+    "exact_inverse": "PASS",
+    "revision": "raw-evidence-r1 to raw-intake-r1; unchanged ProductionAtom rejection of evidence marker is root cause",
+    "positive_baseline": "CanonicalProjectDocuments::from_v2_draft(draft(),limits()) must be OK before false-decision and state295 mutants; prevents invalid root fixture masking intended rejection",
+    "production_payload_helper_source_lib_contract": "BYTE_IDENTICAL"
+  },
+  "repository_auto_pins": {
+    "changed_spans": 5,
+    "total_spans": 12,
+    "inverse_original_source_hash": "3b706db1bea41bf697b4f45deb2171cd6b31e5905fe79a4a1ea9dd9a2a088206",
+    "only_original_generator_document_sizes_hashes_tree": "PASS",
+    "actual11document_and_framed_tree": "PASS"
+  },
+  "first_generation_current_data": {
+    "five_generated_paths": {
+      "content/content.lock.json": {
+        "bytes": 1411,
+        "mode": "100644",
+        "sha256": "b0ee205b642b558d29433d0d8724abd13d181066a5609dc7e9a890f729048a8e"
+      },
+      "content/world/content.lock.json": {
+        "bytes": 364,
+        "mode": "100644",
+        "sha256": "8969d57915ca365a2ee42fb6652baf5bdd22dfc12c55d9f25a846656fa676ed6"
+      },
+      "content/world/manifest.json": {
+        "bytes": 1939,
+        "mode": "100644",
+        "sha256": "fadbe6526a85cd57204f4df8e75b87fb1b31cf20917c077a4088cbb26539ae6c"
+      },
+      "content/world/project.json": {
+        "bytes": 390,
+        "mode": "100644",
+        "sha256": "df2b79ebd4b1cfdfef0324144fbe2d1603a6e1599e7a07de60cc83b9252af549"
+      },
+      "content/world/provenance/imports.json": {
+        "bytes": 6739919,
+        "mode": "100644",
+        "sha256": "d470a45628a7d2ec9e2112d997e75ddcc7a56438be07e2b5a0bab243b2adf5fe"
+      }
+    },
+    "all_five_actual_hashes_unchanged": "PASS",
+    "all_other_old_data_Git_blob_equality": {
+      "files": 7851,
+      "status": "PASS"
+    },
+    "actualimports": 14,
+    "actualstates": 357,
+    "all13old_batches_61states_fullrows_preserved": "PASS"
+  },
+  "retained_failed_attempt": {
+    "cause": "test-only project revision had reserved evidence marker",
+    "command": "cargo test --locked -p oteryn-game-server --test content_item_fx_audio_raw",
+    "exit_code": 101,
+    "failed": 1,
+    "log": {
+      "bytes": 1676,
+      "path": "/workspace/audit-continuation/fx-audio295-cargo-focused-raw.log",
+      "sha256": "4f7d6d80bd71ff0ec0676ca76c85a765074de813c141e223391126fd6228fcf2"
+    },
+    "passed": 2
+  },
+  "actual_repaired_Rust_execution": "NOT_RUN pending Root exclusive grant; production generator succeeded before test-only repair",
+  "historical_source_guard_reuse": "All ten other sourcefiles identical initial accepted d538/1aa, no raw facts/payload/producer/source membership/runtime authority change",
+  "reviewer_Cargo_generator_Git_repo_mutations": "NONE",
+  "required_next": "Focused3Rust positive/negative/roundtrip tests, required Cargo/content gates and second unchanged original generator LAST; final data/source/hash peer still required"
+}
