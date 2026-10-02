@@ -8,7 +8,7 @@ status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: codex/charm-canonical-catalogue-20261001
 branch: codex/charm-server-data-import-20261002
-pr: null
+pr: 1600
 issue: 162
 base_sha: 704dcfb1e6338a2e3b9a6837c9a84522f133b92c
 head_sha: null
@@ -67,4 +67,4 @@ to the final freeze packet.
 Root publishes the guarded actual Git candidate on its exclusive new branch. Required external
 review, parent-first retarget/requalification and protected integration remain with the active
 control plane. A commit cannot contain its own final frozen SHA; this archive reaches main only
-if its own PR merges. There is no live deployment or complete combat/Platform/PostgreSQL E2E claim.
+if PR1600 merges. There is no live deployment or complete combat/Platform/PostgreSQL E2E claim.
