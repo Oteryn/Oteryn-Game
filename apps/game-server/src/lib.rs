@@ -85,6 +85,7 @@ pub mod premium;
     reason = "player spell core (P3a) awaits the cast protocol and runtime state contracts (P3b)"
 )]
 mod spell;
+pub mod wheel_gem_data;
 
 pub use gameplay_transport::{
     FreshEvidenceSource, GameplayListenerConfig, GameplaySeamOwners, GameplayServeError,
