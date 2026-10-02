@@ -100,9 +100,10 @@ d['behavior']=obj({
                              'chance_percent':use('percent')},('interval_ms','chance_percent')),
         'strategy_weights':obj({k:integer() for k in ('nearest','damage','health','random')},('nearest','damage','health','random')),
         'flee_health':integer()},('hostile','can_target','sense_invisible','target_distance_tiles','static_attack_chance_percent','flee_health')),
-    'attacks':array(use('schedule')),'defenses':array(use('schedule')),'voices':use('voices'),
-    'summons':obj({'max_summons':integer(1),'entries':array(obj({'creature':use('CreatureRef'),
-        'interval_ms':use('ms'),'chance_percent':use('percent'),'count':integer(1)},('creature','interval_ms','chance_percent','count')),1)},('max_summons','entries')),
+    # CREATUREAI0-RL-07/RL-08 are content limits, not runtime-only budgets.
+    'attacks':array(use('schedule'),maxItems=16),'defenses':array(use('schedule'),maxItems=8),'voices':use('voices'),
+    'summons':obj({'max_summons':integer(1,16),'entries':array(obj({'creature':use('CreatureRef'),
+        'interval_ms':use('ms'),'chance_percent':use('percent'),'count':integer(1,16)},('creature','interval_ms','chance_percent','count')),1,maxItems=8)},('max_summons','entries')),
     'periodic_audio':obj({'interval_ms':use('ms'),'chance_percent':use('percent'),'cue_ids':array(text(),1,True)},('interval_ms','chance_percent','cue_ids')),
     'faction_and_preferences':obj({'faction':text(),'enemy_factions':array(text(),unique=True),'prefer_player':use('bool'),
         'prefer_master':use('bool')},('faction','enemy_factions','prefer_player','prefer_master')),
@@ -183,7 +184,7 @@ d['damageOverTime']=obj({
                                                                'zero draw means the condition does not start (condition.cpp ConditionDamage::init).'),
                               'maximum':integer(1)},('minimum','maximum')),
     'tick_interval_ms':use('ms'),'initial_tick':use('initialTick'),
-    'geometric':obj({'base_range':obj({'minimum':integer(1),'maximum':integer(1)},('minimum','maximum')),'factor':use('ratio'),
+    'geometric':obj({'base_range':obj({'minimum':integer(1),'maximum':integer(1)},('minimum','maximum')),'factor':use('nonnegativeRatio'),
         'tick_counts':array(integer(1),1,True),'tick_interval_ms':use('ms')},('base_range','factor','tick_counts','tick_interval_ms'),
         description='D21: each cast draws an integer base uniformly from base_range and a tick count uniformly from tick_counts; '
             'tick k (from 0) deals the base multiplied k times by factor in double precision, truncated toward zero.'),
@@ -212,6 +213,7 @@ d['condition']=obj({'type':use('conditionType'),'lifetime':enum('fixed_duration'
     ('type','lifetime'),allOf=[
     {'if':{'properties':{'lifetime':{'const':'damage_schedule'}},'required':['lifetime']},
      'then':{'required':['damage_over_time'],**forbid('speed_formula','light','regeneration','buff_spell')},'else':forbid('damage_over_time')},
+    {'if':{'properties':{'type':{'const':'attributes'}},'required':['type']},'then':{'required':['attribute_modifiers']}},
     {'if':{'properties':{'type':{'const':'light'}},'required':['type']},'then':{'required':['light']},'else':forbid('light')},
     {'if':{'properties':{'type':{'const':'regeneration'}},'required':['type']},'then':{'required':['regeneration']},
      'else':forbid('regeneration')}])

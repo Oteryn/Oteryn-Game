@@ -19,7 +19,10 @@ use oteryn_game_server::content::{
     ReferenceItemTradeRestrictions, ReferenceItemWeapon, ReferenceRationalPercent,
     ReferenceSignedPoints, ReferenceWeaponType, ReimportDecision, ReimportFieldState,
     item_admission::apply_item_admission_v1,
-    item_identity::{ItemKeyAliasTable, apply_tibia_id_key_rule, tibia_item_key},
+    item_identity::{
+        APPEARANCE_ONLY_ITEM_IDS, ItemKeyAliasTable, apply_tibia_id_key_rule_with_appearance_items,
+        tibia_item_key,
+    },
     item_stats_promotion::apply_item_stats_promotion_v2,
     protected_cw2_b1_donor_identity_epoch_2_import, protected_r7_p04_gold_coin_item_family_import,
 };
@@ -42,15 +45,6 @@ const DONOR_EPOCH2_CENSUS: &[u8] = include_bytes!(
 const DONOR_EPOCH2_CROSSWALK: &[u8] = include_bytes!(
     "../../../docs/agents/evidence/OTV2-20260928-item-donor-identity-b1b-alias-crosswalk.json"
 );
-/// ITEM-ADD-1 (owner decision 2a): ids defined in no pinned items.xml whose CipSoft appearance is
-/// current in the newest admitted client. Each gets the A12 §4.1 key and no semantics beyond it.
-const APPEARANCE_ONLY_ITEM_IDS: [u64; 60] = [
-    21887, 35384, 35388, 35600, 35846, 36929, 39949, 40522, 43666, 43762, 43771, 43778, 43779,
-    43780, 43781, 43782, 43946, 43947, 43959, 44048, 44432, 44433, 44447, 44664, 44665, 44666,
-    44667, 44668, 44669, 44670, 44671, 44684, 44685, 44686, 44687, 44709, 44713, 44717, 48108,
-    48112, 48271, 48349, 48353, 48366, 48382, 48403, 48404, 48405, 48406, 48414, 48416, 49124,
-    51276, 51302, 51560, 53197, 53199, 53201, 53203, 53205,
-];
 const ITEM_KEYS: usize = ITEM_TIBIA_KEYS + APPEARANCE_ONLY_ITEM_IDS.len();
 const ADMITTED_APPEARANCES: &[u8] =
     include_bytes!("../../../imports/official/appearance-membership/admitted.json");
@@ -1685,7 +1679,6 @@ fn populate_npcs() -> Result<NpcPopulation, Box<dyn std::error::Error>> {
 /// semantics.
 fn appearance_only_items(
     source_ids: &BTreeMap<String, u64>,
-    canonical: &BTreeSet<String>,
 ) -> Result<Vec<ProjectReferenceRecord>, Box<dyn std::error::Error>> {
     if hex_sha256(ADMITTED_APPEARANCES) != ADMITTED_APPEARANCES_SHA256 {
         return Err("admitted appearance set digest drifted".into());
@@ -1717,7 +1710,7 @@ fn appearance_only_items(
     }
     for id in APPEARANCE_ONLY_ITEM_IDS {
         let key = tibia_item_key(id).ok_or("appearance-only id has no Tibia key")?;
-        if !current.contains(&id) || known_source_ids.contains(&id) || canonical.contains(&key) {
+        if !current.contains(&id) || known_source_ids.contains(&id) {
             return Err(format!("appearance-only id {id} is not a new current CipSoft id").into());
         }
         records.push(ProjectReferenceRecord::Item {
@@ -1914,24 +1907,18 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
     // A12 §4.1: every Item key becomes its Tibia key and the D149 records leave content.
     let aliases = ItemKeyAliasTable::parse(ITEM_KEY_ALIASES)?;
-    let switch = apply_tibia_id_key_rule(&mut draft, &aliases, &item_source_ids)?;
-    if switch.item_records != ITEM_TIBIA_KEYS
-        || switch.removed_without_successor != ITEM_D149_REMOVED
-    {
+    // ITEM-ADD-1 owner 2a: verify the minimal current appearance Items before reference
+    // closure, so newly admitted creatures may already reference these canonical identities.
+    let appearance_only = appearance_only_items(&item_source_ids)?;
+    let switch = apply_tibia_id_key_rule_with_appearance_items(
+        &mut draft,
+        &aliases,
+        &item_source_ids,
+        appearance_only,
+    )?;
+    if switch.item_records != ITEM_KEYS || switch.removed_without_successor != ITEM_D149_REMOVED {
         return Err(format!("Item key switch drifted: {switch:?}").into());
     }
-    // ITEM-ADD-1 (owner decision 2a): §4.1 keys need no alias entry, so they join after the switch.
-    let canonical = draft
-        .core
-        .records
-        .iter()
-        .filter_map(|record| match record {
-            ProjectReferenceRecord::Item { identity, .. } => Some(identity.key.clone()),
-            _ => None,
-        })
-        .collect::<BTreeSet<_>>();
-    let appearance_only = appearance_only_items(&item_source_ids, &canonical)?;
-    draft.core.records.extend(appearance_only);
     let item_keys = draft
         .core
         .records

@@ -657,8 +657,13 @@ pub struct ProjectV2FamiliarProfile {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(deny_unknown_fields)]
 pub struct ProjectV2CreatureAuthoring {
+    /// Maximum health (monster authoring D4), retained under the existing profile field name.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub health: Option<u64>,
+    /// Spawn health when explicitly authored; absence preserves the existing full-health default.
+    /// This candidate profile does not itself initialize runtime creature vitals.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub initial_health: Option<u64>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub experience: Option<u64>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -2265,6 +2270,14 @@ fn validate_v2_authoring_profile(
             if value.health == Some(0) {
                 return Err(ProjectError::InvalidProject(
                     "v2 Creature health must be positive when present",
+                ));
+            }
+            if let Some(initial_health) = value.initial_health
+                && (initial_health == 0
+                    || value.health.is_none_or(|maximum| initial_health > maximum))
+            {
+                return Err(ProjectError::InvalidProject(
+                    "v2 Creature initial health requires positive health and must be in 1..=health",
                 ));
             }
             if let Some(ratio) = value.mitigation {

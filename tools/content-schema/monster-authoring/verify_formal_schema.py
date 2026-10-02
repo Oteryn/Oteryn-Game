@@ -1,5 +1,6 @@
 """Focused verification requested by the owner; fixtures are synthetic, not imported content."""
 import copy
+import argparse
 import json
 from decimal import localcontext
 from tempfile import TemporaryDirectory
@@ -96,10 +97,32 @@ def manifest(status='mapped',kind='field',destination='/monster/creature/stats/m
         'source_field':'monster.maxHealth','kind':kind,'status':status,'destination':destination,'resolution':'Explicit source resolution for a synthetic validation case.'}]}
 
 if __name__=='__main__':
+    parser=argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--output-dir',type=Path,default=ROOT)
+    output=parser.parse_args().output_dir
+    output.mkdir(parents=True,exist_ok=True)
     for name,s in SCHEMAS.items():
         Draft202012Validator.check_schema(s)
         results.append({'name':'meta-schema '+name,'passed':True})
     case('minimal complete synthetic fixture',expected=True)
+    # CREATURE-AI-0 RL07/RL08: content validation, independent of runtime refusal.
+    for field,maximum in [('attacks',16),('defenses',8),('summon_entries',8),('max_summons',16),('summon_count',16)]:
+        def resource_limit(m,d,c,field=field,maximum=maximum,value=None):
+            value=maximum if value is None else value
+            if field in ('attacks','defenses'):
+                m['behavior'][field]=[copy.deepcopy(m['behavior']['attacks'][0]) for _ in range(value)]
+            else:
+                entry={'creature':ref('Creature','creature'),'interval_ms':1000,'chance_percent':100,'count':16}
+                m['behavior']['summons']={'max_summons':16,'entries':[entry]}
+                if field=='summon_entries':m['behavior']['summons']['entries']=[copy.deepcopy(entry) for _ in range(value)]
+                elif field=='max_summons':m['behavior']['summons']['max_summons']=value
+                else:m['behavior']['summons']['entries'][0]['count']=value
+        case('RL07/RL08 '+field+' exact maximum accepted',resource_limit,True)
+        m,d,c=fixture();resource_limit(m,d,c,value=maximum+1)
+        errors=structural('monster.schema.json',m)
+        results.append({'name':'RL07/RL08 '+field+' first excess rejected structurally','passed':bool(errors),
+                        'expected_valid':False,'error_count':len(errors),'first_error':errors[0] if errors else None})
+
     case('optional Bestiary notes accepted',set_value(['m','creature','bestiary','notes'],'A short Oteryn-authored account.'),True)
     case('empty Bestiary notes rejected',set_value(['m','creature','bestiary','notes'],''))
     case('condition with ticks',condition,True)
@@ -108,6 +131,15 @@ if __name__=='__main__':
             'maximum_multiplier':{'numerator':1,'denominator':2},'minimum_offset':40,'maximum_offset':40}}),
         d['effects'].append({'identity':ident('slow'),'operation':'condition','duration_ms':10000,
             'condition':{'type':'paralyze','lifetime':'fixed_duration','speed_formula':ref('Formula','speed')}})),True)
+    def paralysis_formula(formula):
+        def mutate(m,d,c):
+            d['formulas'].append({'identity':ident('paralysis'),**formula})
+            d['effects'].append({'identity':ident('slow'),'operation':'condition','duration_ms':10000,
+                'condition':{'type':'paralyze','lifetime':'fixed_duration','speed_formula':ref('Formula','paralysis')}})
+        return mutate
+    for kind,payload in [('range',{'magnitude':{'minimum':0,'maximum':100}}),
+                         ('melee_attack_skill',{'melee':{'attack':10,'skill':10}}),('caster_magnitude',{})]:
+        case('paralysis rejects '+kind+' Formula',paralysis_formula({'kind':kind,**payload}))
     case('speed formula mutually exclusive branches',lambda m,d,c:d['formulas'][0].update(kind='speed_modifier',speed={
         'minimum_multiplier':{'numerator':1,'denominator':2},'maximum_multiplier':{'numerator':1,'denominator':1},'minimum_offset':40,'maximum_offset':40}))
     case('familiar with required profile',familiar,True)
@@ -190,6 +222,15 @@ if __name__=='__main__':
     geometric={'tick_profile':'geometric','first_tick':'after_interval','geometric':{'base_range':{'minimum':40,'maximum':170},
         'factor':{'numerator':6,'denominator':5},'tick_counts':[5,6,7],'tick_interval_ms':4000}}
     case('geometric DoT accepted (D21)',dot(geometric),True)
+    def geometric_value(field,value):
+        changed=copy.deepcopy(geometric)
+        changed['geometric'][field]=value
+        return dot(changed)
+    case('geometric DoT rejects reversed base range',geometric_value('base_range',{'minimum':171,'maximum':170}))
+    case('geometric DoT accepts equal base bounds',geometric_value('base_range',{'minimum':40,'maximum':40}),True)
+    case('geometric DoT rejects negative factor',geometric_value('factor',{'numerator':-6,'denominator':5}))
+    case('geometric DoT accepts constant factor',geometric_value('factor',{'numerator':1,'denominator':1}),True)
+    case('geometric DoT accepts nonnegative decreasing factor',geometric_value('factor',{'numerator':1,'denominator':2}),True)
     case('geometric DoT forbids a total range',dot({**geometric,'total_damage_range':{'minimum':1,'maximum':2}}))
     case('geometric DoT needs tick counts',dot({**geometric,'geometric':{k:v for k,v in geometric['geometric'].items() if k!='tick_counts'}}))
     case('decreasing DoT forbids geometric ticks',dot({'tick_profile':'decreasing','first_tick':'immediate','geometric':geometric['geometric'],
@@ -201,6 +242,11 @@ if __name__=='__main__':
             d['abilities'][0]['effects'].append(ref('Effect','weak'))
         return mutate
     case('attribute modifiers accepted (D12)',attributes([{'attribute':'skill_shield','mode':'percent_of_base','value':40}]),True)
+    case('absolute attribute modifier accepted',attributes([{'attribute':'skill_shield','mode':'add','value':-10}]),True)
+    case('attributes condition rejects missing modifiers',lambda m,d,c:(
+        attributes([{'attribute':'skill_shield','mode':'add','value':-10}])(m,d,c),
+        d['effects'][-1]['condition'].pop('attribute_modifiers')))
+    case('attributes condition rejects empty modifiers',attributes([]))
     case('attribute modifier mode is closed',attributes([{'attribute':'skill_shield','mode':'multiply','value':40}]))
     case('damage mitigated by armor and shield accepted',set_value(('d','effects',0,'mitigated_by'),['armor','shield']),True)
     case('mitigation defence is closed',set_value(('d','effects',0,'mitigated_by'),['armor','magic_shield']))
@@ -352,6 +398,15 @@ if __name__=='__main__':
     case('obsolete separate summon cost rejected',set_value(['m','creature','summoning','summon_mana_cost'],490))
     case('original Bestiary location and stars',lambda m,d,c:m['creature']['bestiary'].update(stars=2,locations='Source location text.'),True)
     case('Bestiary stars outside profile rejected',set_value(['m','creature','bestiary','stars'],6))
+    def demon_infobox_fields(m,d,c):
+        # Synthetic schema compatibility case for the owner's screenshot; not imported lore or mechanics.
+        m['creature']['display_name']='Demon'
+        m['creature']['stats'].update(experience=6000,max_health=8200,initial_health=8200,armor=44,speed=128,
+                                     mitigation_percent={'numerator':69,'denominator':25})
+        m['creature']['summoning'].update(summonable=False,convinceable=False)
+        m['creature']['summoning'].pop('mana_cost')
+        m['creature']['bestiary'].update(difficulty='hard',occurrence='common',stars=4,charm_points=50)
+    case('Demon infobox fields represented exactly',demon_infobox_fields,True)
     case('direction required',lambda m,d,c:d['abilities'][0].pop('needs_direction'))
     case('mixed source geometry canonical circle with direction',lambda m,d,c:d['abilities'][0].update(
         cast_geometry(length=5,radius=2,target=False)),True)
@@ -458,11 +513,11 @@ if __name__=='__main__':
         results.append({'name':'empty placeholders are not ready data: '+name,'passed':count>0,'structural_errors':count})
     m,d,c=fixture()
     for name,value in [('synthetic-valid-monster.json',m),('synthetic-valid-dependencies.json',d),('synthetic-catalog.json',c)]:
-        (ROOT/name).write_text(json.dumps(value,ensure_ascii=False,indent=2)+'\n',encoding='utf-8',newline='\n')
+        (output/name).write_text(json.dumps(value,ensure_ascii=False,indent=2)+'\n',encoding='utf-8',newline='\n')
     report={'scope':'local authoring schemas and semantic validator, synthetic fixtures only; no Lua or Oteryn runtime executed',
       'jsonschema_version':version('jsonschema'),'checks':len(results),'passed':sum(x['passed'] for x in results),
       'failed':sum(not x['passed'] for x in results),'results':results}
-    (ROOT/'formal-schema-validation-report.json').write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n',encoding='utf-8',newline='\n')
+    (output/'formal-schema-validation-report.json').write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n',encoding='utf-8',newline='\n')
     print(json.dumps({k:v for k,v in report.items() if k!='results'},ensure_ascii=False))
     for r in results:
         if not r['passed']:print(json.dumps(r,ensure_ascii=False))

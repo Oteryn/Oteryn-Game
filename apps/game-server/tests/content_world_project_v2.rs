@@ -1164,6 +1164,7 @@ fn wiki_coverage_candidate() -> ProjectV2Draft {
             ),
             data: ProjectV2AuthoringProfileData::Creature(ProjectV2CreatureAuthoring {
                 health: Some(1_000),
+                initial_health: None,
                 experience: Some(500),
                 speed: Some(220),
                 armor: Some(30),

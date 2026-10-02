@@ -17,6 +17,7 @@ import argparse
 import hashlib
 import json
 import re
+import sys
 from decimal import Decimal
 from pathlib import Path
 from typing import Any
@@ -38,6 +39,13 @@ ITEM_REKEYS = (ROOT / 'docs/agents/evidence/OTV2-20260927-r7-p04-gold-coin.json'
 REFERENCE = ROOT / 'content/world/definitions/reference.json'
 # ITEM-ID-1b: content/world holds Tibia-id Item keys; the stage keeps the historical keys the materializer rewrites.
 ITEM_ALIASES = ROOT / 'content/items/aliases.json'
+ITEM_BINDINGS = ROOT / 'imports/crystalserver/bindings/items.json'
+# Reuse the A12 manifest verifier: numeric agreement alone is not identity evidence.
+sys.path.insert(0, str(ROOT / 'tools/content-schema/item-authoring'))
+from appearance_membership import load_admitted  # noqa: E402
+
+ITEM_SOURCE_REVISIONS = frozenset(('ff7ede593c69d4c658b382c97443e8155926924a',
+                                  '00ce02a57ca5a12e48f32a3476e37471167e4c3f'))
 # Admission §2: a pilot covering each profile shape (shared spell, inline condition, summons,
 # voices, variants, chain, invisible and familiar appearance, skipped loot entry, bosstiary).
 PILOT = ('rat', 'dragon', 'dragon_lord', 'demon', 'warlock', 'orc_shaman', 'bonebeast', 'hydra',
@@ -151,6 +159,10 @@ def condition(value: dict, mapper: Mapper) -> dict:
         result['attribute_modifiers'] = [{'attribute': modifier['attribute'],
                                           'mode': {'percent_of_base': 'PercentOfBase', 'add': 'Add'}[modifier['mode']],
                                           'value': modifier['value']} for modifier in value['attribute_modifiers']]
+    # S17: preserve declarative payloads; these do not activate condition execution.
+    for field in ('light', 'regeneration', 'buff_spell'):
+        if field in value:
+            result[field] = value[field]
     return result
 
 
@@ -345,8 +357,10 @@ class Stage:
         m = self.mapper
         creature, behavior = monster['creature'], monster['behavior']
         stats = creature['stats']
-        if stats['max_health'] != stats['initial_health']:
-            raise StageError(f"{creature['identity']['key']}: initial health differs from maximum health")
+        maximum, initial = stats['max_health'], stats['initial_health']
+        if (type(maximum) is not int or type(initial) is not int
+                or not 1 <= initial <= maximum <= 2**64 - 1):
+            raise StageError(f"{creature['identity']['key']}: initial health must be positive and at most maximum health")
         schedule_refs = {json.dumps(m.ref(s['ability']), sort_keys=True) for s in behavior['attacks'] + behavior['defenses']}
         result: dict[str, Any] = {
             'health': stats['max_health'], 'experience': stats['experience'], 'speed': stats['speed'], 'armor': stats['armor'],
@@ -355,6 +369,8 @@ class Stage:
             'immunities': sorted(creature['immunities']['damage_types']),
             'abilities': sorted((json.loads(ref) for ref in schedule_refs), key=lambda r: (r['family'], r['key'], r['revision'])),
         }
+        if initial != maximum:
+            result['initial_health'] = initial
         if 'mitigation_percent' in stats:
             result['mitigation'] = stats['mitigation_percent']
         bestiary = creature.get('bestiary')
@@ -395,6 +411,8 @@ class Stage:
                 if field in bestiary:
                     value = bestiary[field]
                     details['bestiary'][field] = value.strip() if isinstance(value, str) else value
+            if 'notes' in bestiary:
+                details['bestiary']['notes'] = bestiary['notes']
         if 'bosstiary' in creature:
             details['bosstiary'] = creature['bosstiary']
         for field in ('corpse_item', 'soul_core_item', 'reward_encounter'):
@@ -498,16 +516,54 @@ class Stage:
 
 def definition_refs(value: Any):
     """Yield every non-Item typed definition reference as (family, key)."""
+    for family, key, _ in exact_definition_refs(value):
+        yield family, key
+
+
+def exact_definition_refs(value: Any):
+    """Admission closure includes the revision; a different revision cannot satisfy a reference."""
     if isinstance(value, dict):
         if set(value) == {'family', 'key', 'revision'}:
             if value['family'] != 'Item':
-                yield value['family'], value['key']
+                yield value['family'], value['key'], value['revision']
             return
         for child in value.values():
-            yield from definition_refs(child)
+            yield from exact_definition_refs(child)
     elif isinstance(value, list):
         for child in value:
-            yield from definition_refs(child)
+            yield from exact_definition_refs(child)
+
+
+def resolve_reference_closure(candidates, encounters, waiting, covered_by, spells_need, mapper):
+    """Greatest closed candidate set (E4), including valid mutually dependent groups.
+
+    A greedy topological admission would incorrectly reject closed summoning/encounter cycles.
+    Only exact identities produced by remaining candidates satisfy references.
+    """
+    admitted = set(candidates)
+    admitted_encounters = set(encounters) - set(waiting)
+    creature_key = {name: candidates[name][1]['creature']['identity']['key'] for name in candidates}
+    unresolved = []
+    while True:
+        available = set().union(*(candidates[name][3] for name in admitted)) if admitted else set()
+        keys = {creature_key[name] for name in admitted}
+        dropped = {name: sorted(candidates[name][4] - available) for name in admitted
+                   if not candidates[name][4] <= available}
+        native = {(mapper.key('Encounter', encounters[name]['encounter']['identity']['key']), REVISION)
+                  for name in admitted_encounters}
+        unbound = {name for name in admitted - set(dropped)
+                   if not covered_by.get(creature_key[name], set()) <= admitted_encounters
+                   or not spells_need[name] <= native}
+        closed = {name for name in admitted_encounters
+                  if not set(encounters[name]['creatures']) <= keys
+                  or any(('Ability', mapper.key('Ability', key), REVISION) not in available
+                         for key in encounters[name]['abilities'])}
+        if not dropped and not unbound and not closed:
+            return admitted, admitted_encounters, sorted(unresolved, key=lambda row: row['monster'])
+        for name, refs in dropped.items():
+            unresolved.append({'monster': name, 'references': sorted({key for _, key, _ in refs})})
+        admitted -= set(dropped) | unbound
+        admitted_encounters -= closed
 
 
 # Encounter admission (OTERYN_WORLD_PROJECT_V2_ENCOUNTER_ADMISSION_V1 E1-E5): the authoring format v1
@@ -546,7 +602,7 @@ def encounter_position(value: Any) -> dict:
 def encounter_subject(value: dict) -> dict:
     if 'role' in value:
         return {'kind': 'role', 'role': value['role']}
-    return {'kind': next(kind for kind in ('killer', 'spawned', 'triggering') if kind in value)}
+    return {'kind': next(kind for kind in ('killer', 'spawned', 'triggering', 'picked', 'candidate') if kind in value)}
 
 
 def sorted_refs(values, m: Mapper) -> list:
@@ -570,8 +626,11 @@ def encounter_condition(value: dict, m: Mapper) -> dict:
         out['value_ppm'] = ppm(out.pop('value'))
     elif kind == 'has_condition':
         out['conditions'] = sorted(value['conditions'], key=CONDITION_ORDER.index)
-    elif kind == 'in_anchor':
+    elif kind in ('in_anchor', 'killer_progress') and 'subject' in value:
         out['subject'] = encounter_subject(value['subject'])
+    elif kind == 'creature_present':
+        if 'where' in value:
+            out['where'] = [encounter_condition(c, m) for c in value['where']]
     elif kind == 'attacker_wears':
         out['item'] = m.ref(value['item'])
     return out
@@ -618,11 +677,16 @@ def encounter_action(value: dict, m: Mapper) -> dict:
         who = value['who']
         out['who'] = ({'kind': 'role', 'role': who['role']} if 'role' in who else
                       {'kind': 'players_in', 'anchor': who['players_in']} if 'players_in' in who else {'kind': 'triggering'})
+        if isinstance(value['to'], dict) and value['to'].get('picked_position'):
+            out['to'] = {'kind': 'picked_position'}
     elif kind == 'map_item':
         if 'into' in value:
             out['into'] = m.ref(value['into'])
-        if out.pop('at', None) == 'death_position':
+        position = out.pop('at', None)
+        if position == 'death_position':
             out['at_death_position'] = True
+        elif position == 'subject_position':
+            out['at_subject_position'] = True
     elif kind == 'attribute' and 'value' in value:
         attribute = value['value']
         out['value'] = {'kind': 'fixed', 'value': attribute} if isinstance(attribute, int) else {'kind': 'counter', 'counter': attribute['counter']}
@@ -639,7 +703,7 @@ def encounter_action(value: dict, m: Mapper) -> dict:
 def encounter_location(anchor: dict) -> dict:
     location = anchor['location']
     if 'boxes' in location:
-        return {'kind': 'area', 'boxes': location['boxes']}
+        return {'kind': 'area', 'boxes': location['boxes'], **({'minus': location['minus']} if 'minus' in location else {})}
     return {'kind': 'point', 'x': location['x'], 'y': location['y'], 'floor': location['floor']}
 
 
@@ -692,6 +756,43 @@ def load_encounters(item_map: dict[int, str]) -> tuple[dict[str, dict], dict[str
     return encounters, waiting
 
 
+def resolve_admitted_item_map(item_map: dict[int, str], records: list[dict], aliases: list[dict],
+                             bindings: list[dict], current_appearance_ids: set[int]) -> dict[int, str]:
+    """Keep the protected allocation, adding only A12 identities backed by current evidence.
+
+    ITEM-ADD-1 admits donor-bound and appearance-only Items. Their canonical Tibia-id keys
+    need no historical allocation alias, but must name an admitted Item and a verified
+    appearance. Any Crystal binding for such an id must agree exactly with that identity.
+    """
+    admitted = {record['identity']['key'] for record in records if record['identity']['family'] == 'Item'}
+    registered = {entry['key'] for entry in aliases if entry['state'] == 'ALIAS' and entry['target'] in admitted}
+    retired = {entry['key'] for entry in aliases if entry['state'] == 'RETIRED_WITHOUT_SUCCESSOR'}
+    # D149 tombstones remain excluded even though the frozen allocation still names them.
+    resolved = {source_id: key for source_id, key in item_map.items() if key not in retired}
+    if not set(resolved.values()) <= registered:
+        raise StageError('Item identity map names keys absent from content/world')
+    by_id: dict[int, list[dict]] = {}
+    for binding in bindings:
+        if (binding['source_key'] == 'oteryn:source.crystalserver'
+                and binding['identity_namespace'] == 'ots/item_server_id'):
+            external_id = binding['external_id']
+            if not isinstance(external_id, str) or not re.fullmatch(r'[1-9][0-9]*', external_id):
+                raise StageError('Crystal Item binding has a noncanonical external id')
+            by_id.setdefault(int(external_id), []).append(binding)
+    for source_id in sorted(current_appearance_ids):
+        key = f'oteryn:item.tibia.i{source_id}'
+        if key not in admitted or key in retired:
+            continue
+        for binding in by_id.get(source_id, []):
+            if (binding['disposition'] != 'EXACT' or binding['source_revision'] not in ITEM_SOURCE_REVISIONS
+                    or binding['target'] != {'family': 'Item', 'key': key, 'revision': REVISION}):
+                raise StageError(f'Item {source_id}: ambiguous or unsupported Crystal identity binding')
+        # Preserve baseline keys/rekeys: the materializer still resolves their accepted aliases.
+        if source_id not in item_map:
+            resolved[source_id] = key
+    return resolved
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.split('\n')[0])
     parser.add_argument('--bundles', type=Path, required=True)
@@ -713,15 +814,12 @@ def main() -> None:
         item_map[source_id] = new
         rekeys.append({'source_item_id': source_id, 'from': old, 'to': new,
                        'evidence_sha256': hashlib.sha256(path.read_bytes()).hexdigest()})
-    admitted = {record['identity']['key'] for record in json.loads(REFERENCE.read_text(encoding='utf-8'))['records']
-                if record['identity']['family'] == 'Item'}
-    aliases = json.loads(ITEM_ALIASES.read_text(encoding='utf-8'))['entries']
-    registered = {entry['key'] for entry in aliases if entry['state'] == 'ALIAS' and entry['target'] in admitted}
-    retired = {entry['key'] for entry in aliases if entry['state'] == 'RETIRED_WITHOUT_SUCCESSOR'}
-    # A D149 item is not in content/world: a creature or encounter that names one waits as unregistered_items.
-    item_map = {source_id: key for source_id, key in item_map.items() if key not in retired}
-    if not set(item_map.values()) <= registered:
-        raise StageError('Item identity map names keys absent from content/world')
+    appearance_index, appearances = load_admitted()
+    current_ids = {entry[0] for entry in appearances[appearance_index['newest']]['entries']}
+    item_map = resolve_admitted_item_map(
+        item_map, json.loads(REFERENCE.read_text(encoding='utf-8'))['records'],
+        json.loads(ITEM_ALIASES.read_text(encoding='utf-8'))['entries'],
+        json.loads(ITEM_BINDINGS.read_text(encoding='utf-8'))['bindings'], current_ids)
     mapper = Mapper(item_map)
     index = json.loads(INDEX.read_text(encoding='utf-8'))
     encounters, waiting = load_encounters(mapper.item_map)
@@ -732,7 +830,7 @@ def main() -> None:
         for creature in item['covers']:
             covered_by.setdefault(creature, set()).add(name)
     candidates: dict[str, tuple[dict, dict, dict, set, set]] = {}
-    spells_need: dict[str, set[str]] = {}
+    spells_need: dict[str, set[tuple[str, str]]] = {}
     deferred: dict[str, list] = {'encounter': [], 'unregistered_items': [], 'reference_loot_contract': [],
                                  'unresolved_reference': [], 'encounters': [], 'initial_health': []}
     for row in index['monsters']:
@@ -752,46 +850,24 @@ def main() -> None:
         if any(entry['min_count'] < 1 for entry in (monster.get('loot') or {}).get('entries', [])):
             deferred['reference_loot_contract'].append(row['monster'])
             continue
-        # The Creature profile has one health value; a creature that spawns below its maximum waits for a field.
-        if monster['creature']['stats']['initial_health'] != monster['creature']['stats']['max_health']:
-            deferred['initial_health'].append(row['monster'])
-            continue
+        # D4: positive initial health is retained separately when below maximum health.
+        # The candidate profile does not activate runtime spawning.
         probe = Stage(mapper)
         probe.stage_dependencies(dependencies, key)
         probe.stage_monster(monster, row['file'], row.get('binding'))
-        produced = {(value['identity']['family'], value['identity']['key']) for value in probe.records.values()}
-        referenced = set(definition_refs([probe.records, probe.profiles])) - produced
+        produced = {(value['identity']['family'], value['identity']['key'], value['identity']['revision'])
+                    for value in probe.records.values()}
+        referenced = set(exact_definition_refs([probe.records, probe.profiles])) - produced
         # D45: an encounter-backed spell needs its encounter admitted, which the closure below checks.
-        spells_need[row['monster']] = {ref for family, ref in referenced if family == 'Encounter'}
+        spells_need[row['monster']] = {(ref, revision) for family, ref, revision in referenced if family == 'Encounter'}
         referenced = {ref for ref in referenced if ref[0] != 'Encounter'}
         candidates[row['monster']] = (row, monster, dependencies, produced, referenced)
 
     # Admit only a closed set (E4): every non-Item reference must resolve to a record of an admitted monster,
     # a monster covered by encounters needs all of them, and an encounter needs every creature and Ability it names.
-    admitted_set = set(candidates)
-    admitted_encounters = set(encounters) - set(waiting)
+    admitted_set, admitted_encounters, deferred['unresolved_reference'] = resolve_reference_closure(
+        candidates, encounters, waiting, covered_by, spells_need, mapper)
     creature_key = {name: candidates[name][1]['creature']['identity']['key'] for name in candidates}
-    while True:
-        available = set().union(*(candidates[name][3] for name in admitted_set)) if admitted_set else set()
-        admitted_keys = {creature_key[name] for name in admitted_set}
-        dropped = {name: sorted(candidates[name][4] - available) for name in admitted_set
-                   if not candidates[name][4] <= available}
-        admitted_native = {mapper.key('Encounter', encounters[name]['encounter']['identity']['key'])
-                           for name in admitted_encounters}
-        unbound = {name for name in admitted_set - set(dropped)
-                   if not covered_by.get(creature_key[name], set()) <= admitted_encounters
-                   or not spells_need[name] <= admitted_native}
-        closed = {name for name in admitted_encounters
-                  if not set(encounters[name]['creatures']) <= admitted_keys
-                  or any(('Ability', mapper.key('Ability', key)) not in available for key in encounters[name]['abilities'])}
-        if not dropped and not unbound and not closed:
-            break
-        for name, keys in dropped.items():
-            admitted_set.discard(name)
-            deferred['unresolved_reference'].append({'monster': name, 'references': [key for _, key in keys]})
-        admitted_set -= unbound
-        admitted_encounters -= closed
-    deferred['unresolved_reference'].sort(key=lambda value: value['monster'])
     admitted_keys = {creature_key[name] for name in admitted_set}
     deferred['encounter'] = sorted(name for name in candidates if name not in admitted_set
                                    and covered_by.get(creature_key[name])
@@ -801,7 +877,7 @@ def main() -> None:
         row = {'encounter': name, 'reason': waiting.get(name, 'unadmitted_reference')}
         if name not in waiting:
             row['references'] = missing + [key for key in encounters[name]['abilities']
-                                           if ('Ability', mapper.key('Ability', key)) not in set().union(
+                                           if ('Ability', mapper.key('Ability', key), REVISION) not in set().union(
                                                *(candidates[n][3] for n in admitted_set))]
         deferred['encounters'].append(row)
 

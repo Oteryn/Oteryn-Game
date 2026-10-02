@@ -1,0 +1,382 @@
+{
+  "schema": "OTERYN_FINAL_POPULATION_STATS_LOOT_BATCH_QUALIFICATION/v1",
+  "checked_at_utc": "2026-10-01T23:07:29.621911+00:00",
+  "status": "PASS_BOUNDED_FINAL_POPULATION_STAT_AND_LOOT_DATA_CHECKS",
+  "scope": "Newly computed final Round7 prepared/native-stage population. Preservation and qualified adoption are distinguished from complete Global enrichment and gameplay execution.",
+  "counts": {
+    "bundles": 1660,
+    "native_creatures": 1613,
+    "native_stat_comparisons": 12904,
+    "native_stat_mismatches": 0,
+    "loot_entries": 16927,
+    "loot_source_values_proven": 16927,
+    "loot_unpaired_entries": 0,
+    "loot_native_projection_statuses_effective_accepted_item_map": {
+      "PROVEN_CALLER_ITEM_MAP_AND_SOURCE_BINDING_PROJECTION": 1149,
+      "UNKNOWN_NOT_ADMITTED_OR_UNBOUND_SOURCE_ROOT": 28
+    },
+    "raw_allocation_map_statuses": {
+      "PROVEN_CALLER_ITEM_MAP_AND_SOURCE_BINDING_PROJECTION": 1082,
+      "UNKNOWN_ITEMS_ABSENT_FROM_CALLER_MAP": 67,
+      "UNKNOWN_NOT_ADMITTED_OR_UNBOUND_SOURCE_ROOT": 28
+    }
+  },
+  "stat_fields": {
+    "max_health": {
+      "present": 1660,
+      "native_present": 1613,
+      "missing": 0
+    },
+    "initial_health": {
+      "present": 1660,
+      "native_present": 1613,
+      "missing": 0
+    },
+    "experience": {
+      "present": 1660,
+      "native_present": 1613,
+      "missing": 0
+    },
+    "speed": {
+      "present": 1660,
+      "native_present": 1613,
+      "missing": 0
+    },
+    "armor": {
+      "present": 1660,
+      "native_present": 1613,
+      "missing": 0
+    },
+    "defense": {
+      "present": 1660,
+      "native_present": 1613,
+      "missing": 0
+    },
+    "critical_chance_percent": {
+      "present": 1660,
+      "native_present": 1613,
+      "missing": 0
+    },
+    "mitigation_percent": {
+      "present": 1041,
+      "native_present": 1022,
+      "missing": 619
+    }
+  },
+  "known_wiki_stat_difference_counts": {
+    "max_health": {
+      "APPLIED_EXACT_WIKI_VALUE": 56,
+      "SOURCE_ZERO_HP_OBSERVATION_NOT_ADOPTED_POSITIVE_HEALTH_CONTRACT": 1
+    },
+    "experience": {
+      "APPLIED_EXACT_WIKI_VALUE": 137,
+      "ACCEPTED_OFFICIAL_TIBIA_LIBRARY_PRIORITY_D47": 7
+    },
+    "armor": {
+      "APPLIED_EXACT_WIKI_VALUE": 59
+    },
+    "mitigation_percent": {
+      "APPLIED_EXACT_WIKI_VALUE": 802
+    },
+    "speed": {
+      "PRESERVED_RAW_ENGINE_SPEED_OBSERVED_WIKI_SPEED_DIFFERENT_UNIT_CONTRACT": 14
+    }
+  },
+  "loot_wiki_dispositions": {
+    "SOURCE_KEPT_NOT_OBSERVED": 2130,
+    "SOURCE_KEPT_DIFF": 703,
+    "SOURCE_KEPT_CONSISTENT": 1447,
+    "APPROVED_WIKI_ESTIMATE": 9822,
+    "SOURCE_KEPT_NO_STATISTICS": 856,
+    "APPROVED_WIKI_ADDITION": 729,
+    "LOW_CONFIDENCE_WIKI_ADDITION": 776,
+    "SOURCE_KEPT_MULTI_ENTRY": 458,
+    "SOURCE_KEPT_INVALID_STATISTICS": 6
+  },
+  "loot_structural_counts": {
+    "entries": 16927,
+    "roots_with_loot": 1177,
+    "roots_empty_loot": 483,
+    "roots_duplicate_item_keys": 183,
+    "success_gated_entries": 45,
+    "probability_sum_above_100_percent": 937
+  },
+  "source_value_consistency": true,
+  "source_full_semantics_status": "UNKNOWN",
+  "source_checker_passed_full_semantics": false,
+  "source_field_proof_counts": {
+    "defenses.armor": {
+      "VERIFIED_VALUE_PRESERVED": 1600,
+      "UNKNOWN_DOCUMENTED_SOURCE_OVERRIDE": 59
+    },
+    "defenses.defense": {
+      "VERIFIED_VALUE_PRESERVED": 1659
+    },
+    "experience": {
+      "VERIFIED_VALUE_PRESERVED": 1482,
+      "UNKNOWN_DOCUMENTED_SOURCE_OVERRIDE": 177
+    },
+    "health": {
+      "VERIFIED_VALUE_PRESERVED": 1547,
+      "UNKNOWN_DOCUMENTED_SOURCE_OVERRIDE": 112
+    },
+    "manaCost": {
+      "NOT_APPLICABLE_IN_SOURCE": 1493,
+      "VERIFIED_VALUE_PRESERVED": 151,
+      "UNKNOWN_DOCUMENTED_SOURCE_OVERRIDE": 9,
+      "UNKNOWN_SOURCE_DEFAULT_NORMALIZATION": 6
+    },
+    "maxHealth": {
+      "VERIFIED_VALUE_PRESERVED": 1547,
+      "UNKNOWN_DOCUMENTED_SOURCE_OVERRIDE": 112
+    },
+    "speed": {
+      "VERIFIED_VALUE_PRESERVED": 1659
+    },
+    "defenses.mitigation": {
+      "SOURCE_UNSPECIFIED": 701,
+      "UNKNOWN_DOCUMENTED_SOURCE_OVERRIDE": 725,
+      "VERIFIED_ACCEPTED_NORMALIZATION": 233
+    },
+    "Bestiary.CharmsPoints": {
+      "VERIFIED_VALUE_PRESERVED": 800,
+      "UNKNOWN_DOCUMENTED_SOURCE_OVERRIDE": 2
+    },
+    "Bestiary.FirstUnlock": {
+      "VERIFIED_VALUE_PRESERVED": 774,
+      "UNKNOWN_DOCUMENTED_SOURCE_OVERRIDE": 28
+    },
+    "Bestiary.Occurrence": {
+      "VERIFIED_ACCEPTED_NORMALIZATION": 762,
+      "UNKNOWN_DOCUMENTED_SOURCE_OVERRIDE": 40
+    },
+    "Bestiary.SecondUnlock": {
+      "VERIFIED_VALUE_PRESERVED": 775,
+      "UNKNOWN_DOCUMENTED_SOURCE_OVERRIDE": 27
+    },
+    "Bestiary.Stars": {
+      "VERIFIED_VALUE_PRESERVED": 780,
+      "UNKNOWN_DOCUMENTED_SOURCE_OVERRIDE": 22
+    },
+    "Bestiary.class": {
+      "VERIFIED_VALUE_PRESERVED": 802
+    },
+    "Bestiary.race": {
+      "VERIFIED_ACCEPTED_NORMALIZATION": 788,
+      "UNKNOWN_NORMALIZATION": 10
+    },
+    "Bestiary.toKill": {
+      "VERIFIED_VALUE_PRESERVED": 792,
+      "UNKNOWN_DOCUMENTED_SOURCE_OVERRIDE": 10
+    }
+  },
+  "remaining_completion": {
+    "mitigation_authoring_missing": 619,
+    "mitigation_native_missing": 591,
+    "bestiary_missing": 858,
+    "bestiary_missing_dispositions": {
+      "SOURCE_OMITS_BESTIARY_NO_BOSSTIARY": 629,
+      "SOURCE_OMITS_BESTIARY_HAS_BOSSTIARY": 229
+    },
+    "loot_dispositions": {
+      "EXPLICIT_DONOR_EMPTY_LOOT": 448,
+      "NONEMPTY_PREPARED_LOOT": 1177,
+      "DONOR_LOOT_OMITTED_ENGINE_EMPTY_DEFAULT": 35
+    },
+    "wiki_only_loot_missing_probability": {
+      "current_named_candidate_observation_rows": 685,
+      "malformed_non_item_quantity_tokens": 0,
+      "source_name_covered_id_observations_wiki_identity_not_confirmed": 2,
+      "unresolved_named_wiki_observations_without_prepared_source_id_or_latest_probability": 683,
+      "named_observations_are_not_all_proven_missing_items": true,
+      "exact_raw_replay_pending_comparisons": 51
+    },
+    "dark_merudri_fields_requiring_global_verification": [
+      "speed",
+      "armor",
+      "defense"
+    ],
+    "actual_enabled_summon_convince_missing_mana_cost": [],
+    "loot_presence_parse_unknown_comparisons": 51
+  },
+  "actual_written_native_qualification": {
+    "receipt": "/workspace/monster-round7-output/final-native-profile-qualification.json",
+    "sha256": "5989a8f8aab069637189e0eaef2c3792261a8b0035ca506e3c2ebeab8cc1e331",
+    "passed": true,
+    "findings": 0,
+    "stage_sha256": "bfbcd45bccf2730c8772c5d05c48091e4034a49f883dad582e873b26b855312e",
+    "index_sha256": "0c75d33c9f395faa6a7dcfa24afcb291ae01947e94613b10b505b20d86627df7"
+  },
+  "input_pins": {
+    "/workspace/monster-round7-output/population-bundles-canary-47dfd51f.json": "0c75d33c9f395faa6a7dcfa24afcb291ae01947e94613b10b505b20d86627df7",
+    "/workspace/monster-round7-output/creature-admission-stage.json": "bfbcd45bccf2730c8772c5d05c48091e4034a49f883dad582e873b26b855312e",
+    "/workspace/monster-round7/tools/content-schema/monster-authoring/samples/wiki-population-2026-09-27.json": "78a2923621c383cfde520e372807237b0cdf69e112c7c5a6fb02c16c1b64f66b",
+    "/workspace/monster-round7/tools/content-schema/monster-authoring/samples/wiki-population-crystal-00ce02a5-2026-09-27.json": "fae7d4c949e433b2e1deb16eacbb504f5c703c6db510a489125ea3e2610cb8e2"
+  },
+  "official_library_input_pins": {
+    "/workspace/monster-round7/tools/content-schema/monster-authoring/samples/official-library-crystal-extra-00ce02a5-2026-09-30.json": "c7647834bf5f0996d71fe05c2751bacab3b4fda643cbbb2a4814ae9d581d4b84",
+    "/workspace/monster-round7/tools/content-schema/monster-authoring/samples/official-library-crystal-00ce02a5-2026-09-28.json": "2a940a3db66a0d9140dabdc2e01d864fce69645d595c7774bdc9387dbbec4056",
+    "/workspace/monster-round7/tools/content-schema/monster-authoring/samples/official-library-2026-09-28.json": "2a45c6e4e71640d34f39bab776fcdeaffd12e7fd0d7947cdbf39a2d9ba48279d"
+  },
+  "helper_sha256": "0dc8b3a2a04a3948ce92f8df75bae63900ae8b75d5ffb2f0247b60c47e218d0e",
+  "checker_correction": "Qualified existing Item rekeys/aliases in caller map, no fake Item data additions.",
+  "actual_new_item_admissions": 0,
+  "project_mutations": 0,
+  "runtime_qualified": false,
+  "global_population_complete": false,
+  "qualification_files": {
+    "source-values.json": "bbb395255b074faf9ca1c477a891c02939567006d961178689f74a1bed289653",
+    "loot-values.json": "4595a0c3d1ea9ec00e51ecabffab38e0640d76924ba5bf3937e460c7f608ce9f",
+    "population-stat-loot-sweep.json": "21665bcbbf1c0aaaac35d00a3ac58cdd201a7686845c7ab3757ff4d2d4a8a2e6",
+    "native-stat-preservation.json": "c69ec0c5ca8aca6185cc96a17740dc08a4ef743459b037ab24c88b0281e9bc20",
+    "effective-native-loot-projection.json": "10ece6349107a626efe30571f8dbbac3d10d121eae528da2fc5c42d24bf82eb0",
+    "remaining-completion.json": "e81cf7d32a8a66506aa4df1b8be3a122efed4555f6223882b10e45abae46ed8f",
+    "item-projection/67-root-resolution.json": "35168183731116dee0aa5acad9ae3aef9c10f5957a2e0dd23127636fa90f6ba1",
+    "loot-observation-boundaries.json": "246df401431fa28e73a05376ca722f217eb93340b80084521cbe4ec304ae23fc",
+    "official-priority-seven-conflicts.json": "c2ec68fbac49db32cfa850cf035e71b5a81caef89fa3d68f79de8ffbdf3441d1",
+    "typed-stage-predecessor-equality.json": "0848d5eaf57a17c06f2c2d2b0aead90b82242bb3492d056006a5e9c88cf39b2c"
+  },
+  "all_observed_official_xp_conflicts": [
+    {
+      "monster": "iceplume_strider",
+      "field": "experience",
+      "wiki": 7500,
+      "actual": 8150,
+      "status": "ACCEPTED_OFFICIAL_TIBIA_LIBRARY_PRIORITY_D47",
+      "wiki_page": "Iceplume Strider",
+      "wiki_revision": 1198019,
+      "manifest_provenance": [
+        {
+          "source_index": 6,
+          "source_file": "Iceplume Striders",
+          "source_line": 1,
+          "source_field": "Library.experience",
+          "kind": "field",
+          "status": "mapped",
+          "destination": "/monster/creature/stats/experience",
+          "resolution": "Tibia.com library experience 8150 (Owner decision D47: the Tibia.com creature library, captured 2026-09-28 through TibiaData, is the reference-date state when no Tibia.com news item between the reference date and the capture changes the creature; its health and experience replace the Canary and reference-date wiki values)."
+        }
+      ],
+      "accepted_official_url": "https://www.tibia.com/library/?subtopic=creatures&race=iceplumestrider",
+      "accepted_official_content_sha256": "060c004d7505939b113c49fb1f239552b5ac89dbc9f3f4764154754f72d403dd"
+    },
+    {
+      "monster": "silverfrost_sentinel",
+      "field": "experience",
+      "wiki": 7700,
+      "actual": 8450,
+      "status": "ACCEPTED_OFFICIAL_TIBIA_LIBRARY_PRIORITY_D47",
+      "wiki_page": "Silverfrost Sentinel",
+      "wiki_revision": 1195702,
+      "manifest_provenance": [
+        {
+          "source_index": 6,
+          "source_file": "Silverfrost Sentinels",
+          "source_line": 1,
+          "source_field": "Library.experience",
+          "kind": "field",
+          "status": "mapped",
+          "destination": "/monster/creature/stats/experience",
+          "resolution": "Tibia.com library experience 8450 (Owner decision D47: the Tibia.com creature library, captured 2026-09-28 through TibiaData, is the reference-date state when no Tibia.com news item between the reference date and the capture changes the creature; its health and experience replace the Canary and reference-date wiki values)."
+        }
+      ],
+      "accepted_official_url": "https://www.tibia.com/library/?subtopic=creatures&race=silverfrostsentinel",
+      "accepted_official_content_sha256": "5d473b44c62a4a40830ad3aa971476cb676bf06c350e7fbf280ec6115ae2c4e2"
+    },
+    {
+      "monster": "winged_jaracal",
+      "field": "experience",
+      "wiki": 7200,
+      "actual": 7830,
+      "status": "ACCEPTED_OFFICIAL_TIBIA_LIBRARY_PRIORITY_D47",
+      "wiki_page": "Winged Jaracal",
+      "wiki_revision": 1204049,
+      "manifest_provenance": [
+        {
+          "source_index": 6,
+          "source_file": "Winged Jaracals",
+          "source_line": 1,
+          "source_field": "Library.experience",
+          "kind": "field",
+          "status": "mapped",
+          "destination": "/monster/creature/stats/experience",
+          "resolution": "Tibia.com library experience 7830 (Owner decision D47: the Tibia.com creature library, captured 2026-09-28 through TibiaData, is the reference-date state when no Tibia.com news item between the reference date and the capture changes the creature; its health and experience replace the Canary and reference-date wiki values)."
+        }
+      ],
+      "accepted_official_url": "https://www.tibia.com/library/?subtopic=creatures&race=wingedjaracal",
+      "accepted_official_content_sha256": "1b6334dda606dc1c900f1435907580adaa503fec9411e000bff79f1cf955119e"
+    },
+    {
+      "monster": "walking_pillar",
+      "field": "experience",
+      "wiki": 24300,
+      "actual": 22600,
+      "status": "ACCEPTED_OFFICIAL_TIBIA_LIBRARY_PRIORITY_D47",
+      "wiki_page": "Walking Pillar",
+      "wiki_revision": 1191648,
+      "wiki_content_sha256": "c9dc3eba81092ddefe225111cc7473c40fe93888307b7b510542fecc906e39ef",
+      "comparison_origin": "Separately pinned public dated raw Creature capture; current prepared values checked freshly, no primary sample rewrite.",
+      "race_identity_equal": true,
+      "accepted_official_url": "https://www.tibia.com/library/?subtopic=creatures&race=walkingpillar",
+      "accepted_official_content_sha256": "fae75aab51d5d0d71d9e03b4d8ba53065222f9dc87e710794314b131c02c58b3"
+    },
+    {
+      "monster": "darklight_striker",
+      "field": "experience",
+      "wiki": 22200,
+      "actual": 20650,
+      "status": "ACCEPTED_OFFICIAL_TIBIA_LIBRARY_PRIORITY_D47",
+      "wiki_page": "Darklight Striker",
+      "wiki_revision": 1203535,
+      "wiki_content_sha256": "988e8caa6caa413b6c8b38d6b17841b89799dc19ff063f52fda369b9db6773ab",
+      "comparison_origin": "Separately pinned public dated raw Creature capture; current prepared values checked freshly, no primary sample rewrite.",
+      "race_identity_equal": true,
+      "accepted_official_url": "https://www.tibia.com/library/?subtopic=creatures&race=darklightstriker",
+      "accepted_official_content_sha256": "52c4a1b3f6fbc17a1b4232fed7e1dab46d63a7ce6e2c5b598115a5225505a611"
+    },
+    {
+      "monster": "darklight_source",
+      "field": "experience",
+      "wiki": 22465,
+      "actual": 20870,
+      "status": "ACCEPTED_OFFICIAL_TIBIA_LIBRARY_PRIORITY_D47",
+      "wiki_page": "Darklight Source",
+      "wiki_revision": 1192301,
+      "wiki_content_sha256": "e9550b6cec74a85e85c0ee5699754f469896c34738f5d150e2d6bbb675e5ed5f",
+      "comparison_origin": "Separately pinned public dated raw Creature capture; current prepared values checked freshly, no primary sample rewrite.",
+      "race_identity_equal": true,
+      "accepted_official_url": "https://www.tibia.com/library/?subtopic=creatures&race=darklightsource",
+      "accepted_official_content_sha256": "f4b1f0585138e504b286acac71de1546f734ba92962089453e2b2bcde361e40e"
+    },
+    {
+      "monster": "darklight_matter",
+      "field": "experience",
+      "wiki": 22250,
+      "actual": 20680,
+      "status": "ACCEPTED_OFFICIAL_TIBIA_LIBRARY_PRIORITY_D47",
+      "wiki_page": "Darklight Matter",
+      "wiki_revision": 1206557,
+      "wiki_content_sha256": "cf546c91afc10442893655decf58219e17fc38003343201bc6fc3c25f828683c",
+      "comparison_origin": "Separately pinned public dated raw Creature capture; current prepared values checked freshly, no primary sample rewrite.",
+      "race_identity_equal": true,
+      "accepted_official_url": "https://www.tibia.com/library/?subtopic=creatures&race=darklightmatter",
+      "accepted_official_content_sha256": "9ef87d8c25641e3db8bf1228961d03e87a7275088c845a6f12c130175890ad34"
+    }
+  ],
+  "loot_parser_repair": {
+    "current_samples_false_item_tokens_removed": 82,
+    "affected_primary_records": 52,
+    "exact_raw_corrected_to_match": 1,
+    "derived_comparisons_not_raw_replayed": 51,
+    "prepared_population_observation_tokens_removed": 75,
+    "all_current_primary_quantity_tokens_remaining": 0,
+    "exact_raw_replay_is_not_invented": true,
+    "grammar_sweep_sha256": "695ad0c7dee7caef98ad5e18b2d8d461457c96c6b4d00a85fef1ac8b198233a6"
+  },
+  "fresh_audit_source_scope": "Every result in this qualification was newly executed on frozen Round7 v2 datasets; original pinned public raw captures are reused as source evidence, never as current execution receipts.",
+  "parser_data_qualification_files": {
+    "/workspace/monster-round7-output/loot-parser-population/scoped-loot-repair-final.json": "9e2f662a1e039c63f78f9cf19ac696642ee24594a3ef2cdfa12706d9b2abee4b",
+    "/workspace/monster-round7-output/loot-parser-population/scoped-data-preservation.json": "5748b9ac7de05534ced97f4afcf7c4f8a555b6c3cd00802df74bc9c66ef47483",
+    "/workspace/monster-round7-output/loot-parser-population/full-quantity-grammar-sweep.json": "695ad0c7dee7caef98ad5e18b2d8d461457c96c6b4d00a85fef1ac8b198233a6"
+  }
+}
