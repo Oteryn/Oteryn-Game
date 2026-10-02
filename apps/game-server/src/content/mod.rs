@@ -40,6 +40,7 @@ pub mod item_admission;
 pub mod item_identity;
 pub mod item_stats_promotion;
 mod model;
+mod npc_catalogue;
 mod production;
 mod project;
 mod project_fs;
@@ -62,6 +63,9 @@ pub use cw2_b1_import::*;
 pub use cw2_b4_import::*;
 pub use fixture::synthetic_vsl_fixture;
 pub use model::*;
+pub use npc_catalogue::{
+    NpcDataCatalogue, load_data_only_npc_catalogue, npc_catalogue_preproduction_limits,
+};
 pub use production::{
     CompiledFirstProductionContent, ContentLockBinding, ContentLockEntry, DurableMigrationClass,
     FIRST_PRODUCTION_ARTIFACT_PROFILE_ID, FIRST_PRODUCTION_CAPABILITY_PROFILE,
