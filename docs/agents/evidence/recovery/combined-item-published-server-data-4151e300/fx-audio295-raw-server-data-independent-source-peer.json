@@ -1,0 +1,115 @@
+{
+  "accepted_route_readback": {
+    "Source_record_requirement": "Source->batch exact reference check; no converse batch->Source requirement",
+    "authority": "Opaque source evidence only; no typed Item media or runtime",
+    "carrier": "ImportBatch.reimport_states -> CandidateValue::Text",
+    "max_import_records": "Counts candidate rows / Source records, not import batch count; remains12",
+    "max_reimport_states": "Must explicitly become357 at fresh generator/test caller bounds",
+    "no_follow": "Mapper only opens explicitly supplied capture/transport/payload paths; never capture absolute source paths",
+    "reproducibility": "New producer profile/real mapper SHA and complete committed replay inputs required"
+  },
+  "counts": {
+    "context_states": 1,
+    "full_context_texts": 49,
+    "full_transport_files": 64,
+    "new_candidates": 0,
+    "new_native_asset_world_or_itemauthoring_owners": 0,
+    "new_native_bindings": 0,
+    "new_reimport_states": 296,
+    "old_new_total_reimport_states": [
+      61,
+      357
+    ],
+    "raw_itemid_records": 295,
+    "sidecar_only_fullfiles": 15,
+    "static_historical_identity_partition": {
+      "CURRENT_BOUND_ITEM_STATIC_JOIN": 149,
+      "CURRENT_WORLD_OWNER": 141,
+      "IDENTITY_OR_MEMBERSHIP_HOLD": 5
+    },
+    "xml_literal_declarations": 552
+  },
+  "current_authoring_only_measurement": {
+    "batch_counts": [
+      13,
+      14
+    ],
+    "budget": {
+      "decoded_string_bytes_including_keys": 6115100,
+      "decoded_values": 3642,
+      "document_bytes": 6739919,
+      "max_json_depth": 7
+    },
+    "input": {
+      "bytes": 33802,
+      "path": "/workspace/pr1437-world-owner-completion/content/world/provenance/imports.json",
+      "sha256": "1f50c423b1acb046bc168cb167eeea70b5e2be55fa6a5c171ca32b7025782387"
+    },
+    "published_receipt": false
+  },
+  "current_model_contract_inputs": [
+    {
+      "bytes": 91240,
+      "path": "/workspace/pr1437-world-owner-completion/apps/game-server/src/content/project.rs",
+      "sha256": "6ae5abf9d1fdff56cf19ea532deccd4a05aef4a916ecf928bb19f6968ff188bc"
+    },
+    {
+      "bytes": 130982,
+      "path": "/workspace/pr1437-world-owner-completion/apps/game-server/src/content/project/v2.rs",
+      "sha256": "ae97426f36977abf5ae1bd2c2fc100960c93f3da80f3622a4cef7aaa1a40a69b"
+    },
+    {
+      "bytes": 19488,
+      "path": "/workspace/pr1437-world-owner-completion/docs/architecture/OTERYN_WORLD_PROJECT_SOURCE_PROFILE_V2_DECISION.md",
+      "sha256": "b12b90166750fe4f2854683ab947ad6ce69374de94cfb1d882cc693fc476b88f"
+    }
+  ],
+  "findings": [],
+  "frozen_manifest": {
+    "bytes": 2985,
+    "path": "/workspace/audit-continuation/fx-audio295-raw-server-import-proposal/source-only-checkpoint-manifest.json",
+    "sha256": "c75c525cc77ca574452e87ced36f9f1f9d7e1cafb72b629ea02f4756e6b60e04"
+  },
+  "historical_1b_measurement": {
+    "baseline": "1b026969a8b2236737bff537b3eddb3c909781b2",
+    "batch_counts": [
+      12,
+      13
+    ],
+    "budget": {
+      "decoded_string_bytes_including_keys": 6114449,
+      "decoded_values": 3629,
+      "document_bytes": 6739194,
+      "max_json_depth": 7
+    },
+    "input": {
+      "bytes": 33077,
+      "path": "/workspace/pr1437-stack-default-completion/content/world/provenance/imports.json",
+      "sha256": "a6865cf27269c6d3cabb80b9b7895aab202d11d829675e7fda17b1c2cda89763"
+    }
+  },
+  "independent_checks": {
+    "actual_Rust_parser_Cargo_native_generator": "NOT_RUN",
+    "all13_authoring_old_batches_preserved_in_memory": "PASS",
+    "all64_full_utf8_transport_sha_and_lengths": "PASS",
+    "atomic_append_idempotence_no_input_mutation": "PASS",
+    "exact295_source_local_plus_context296_namespace": "PASS",
+    "exact_capture_rebuild_reconstruct_bytes": "PASS",
+    "python_six_tests": "PASS",
+    "real_mapper_cli_check": "PASS",
+    "source8_and_manifest_sha_readback": "PASS",
+    "strict_JSON_budget_recomputed": "PASS",
+    "whole_original_context_and_raw_rows_preserved": "PASS"
+  },
+  "required_authoring_gates": [
+    "Actual compiled Rust parse/canonical roundtrip with357 finite bound",
+    "Fresh composed parent inventory14 and all old13 batch/source/state preservation",
+    "Thin original generator append committed sealed ImportBatch after full predecessor carry",
+    "Exact all Native/ItemAuthoring/World/bindings/assets unchanged and source-role-only canonical diff",
+    "Migration/source guard/strict parser malformed negatives; second original generation byte idempotence"
+  ],
+  "schema": "OTERYN_FX_AUDIO295_RAW_SERVER_DATA_PROPOSAL_INDEPENDENT_PEER/v1",
+  "scope_limit": "Historical source-local Item/World joins remain observations; full64 transport includes15 wholefiles not imported in296 Text states. No actual compiled parser/writer/current-parent generation claim.",
+  "source8_exact_unchanged_before_after": true,
+  "status": "SOURCE_ONLY_PROPOSAL_PEER_PASS_PRODUCTION_PARSE_GENERATION_PENDING"
+}

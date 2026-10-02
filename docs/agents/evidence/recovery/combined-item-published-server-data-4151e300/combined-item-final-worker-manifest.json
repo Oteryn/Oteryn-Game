@@ -1,0 +1,1996 @@
+{
+  "schema": "OTERYN_COMBINED_SERVER_ITEM_DATA_FINAL_WORKER_MANIFEST/v1",
+  "status": "PASS",
+  "utc": "2026-10-02T18:00:24.394380+00:00",
+  "repository": "/workspace/pr1437-world-owner-completion",
+  "parent_commit": "1b026969a8b2236737bff537b3eddb3c909781b2",
+  "branch": "codex/item-forge289-20261002",
+  "draft_pr": 1562,
+  "publication_owner": "/root",
+  "worker": "/root/client_assets",
+  "source_and_generation_writes_stopped": true,
+  "cargo_and_generator_finished": true,
+  "cargo_after_last_original_generator": false,
+  "git_mutations_by_worker": false,
+  "owned_file_count": 156,
+  "source_file_count": 64,
+  "generated_file_count": 92,
+  "owned_files": [
+    {
+      "path": ".github/workflows/item-authoring-schema.yml",
+      "sha256": "78c941a5cf3bcadad30fb45d59e928781c0a75d2d12d3664d9e553786b87d0a0",
+      "bytes": 14634,
+      "git_mode": "100644",
+      "role": "source"
+    },
+    {
+      "path": "apps/game-server/examples/materialize_content_world_project_v2.rs",
+      "sha256": "d34f750035eae980c378bc2f17e113acd3e331b21590fd4a578862514cd29eb1",
+      "bytes": 88382,
+      "git_mode": "100644",
+      "role": "source"
+    },
+    {
+      "path": "apps/game-server/src/content/item_description_promotion.rs",
+      "sha256": "e607742176ce62cde19f685daf65f8410e8583346e0eac252b6aeed5ff57d427",
+      "bytes": 10680,
+      "git_mode": "100644",
+      "role": "source"
+    },
+    {
+      "path": "apps/game-server/src/content/item_description_wiki_promotion.rs",
+      "sha256": "48d674e69fb86f77f6ca9c9b6f9d6667b5f4040809a572a0c6c1a420dc0baba2",
+      "bytes": 885,
+      "git_mode": "100644",
+      "role": "source"
+    },
+    {
+      "path": "apps/game-server/src/content/item_forge289_promotion.rs",
+      "sha256": "c4849937ab374fe165f0249c24450e6d2d6af34bcef239e249c660b8e1ca70f7",
+      "bytes": 14246,
+      "git_mode": "100644",
+      "role": "source"
+    },
+    {
+      "path": "apps/game-server/src/content/item_name15_promotion.rs",
+      "sha256": "547a2b87e1f41f80240c93f32d68236e0720fda52986a790a93d4023929fb7bc",
+      "bytes": 11086,
+      "git_mode": "100644",
+      "role": "source"
+    },
+    {
+      "path": "apps/game-server/src/content/item_numeric_modifier_promotion.rs",
+      "sha256": "a68240fb59f09748369ab1856aa3d9792d15c8a1951794d669fc41c73463f68e",
+      "bytes": 13712,
+      "git_mode": "100644",
+      "role": "source"
+    },
+    {
+      "path": "apps/game-server/src/content/mod.rs",
+      "sha256": "683d475a3eb8e439d682b0b6802a88ab98dd2ca1e3146d0b6bdc807a29bb6585",
+      "bytes": 5201,
+      "git_mode": "100644",
+      "role": "source"
+    },
+    {
+      "path": "apps/game-server/tests/content_world_project_repository.rs",
+      "sha256": "425b4e7ced1cbcc48c059fb1e6f1d5dbdb97c36f2e0d90456fb6596ed18cf9fe",
+      "bytes": 72654,
+      "git_mode": "100644",
+      "role": "source"
+    },
+    {
+      "path": "content/abilities/definitions/index.json",
+      "sha256": "195ae87f88b24d366f919885e259d16e1421b3eb64c79effd52484ec5a6f25c6",
+      "bytes": 1054,
+      "git_mode": "100644",
+      "role": "generated_server_content"
+    },
+    {
+      "path": "content/abilities/effects/index.json",
+      "sha256": "6488f76c3f2bcdfc99d39adf322c118286ab2d2a69e30c0f1072d55b2c779fba",
+      "bytes": 875,
+      "git_mode": "100644",
+      "role": "generated_server_content"
+    },
+    {
+      "path": "content/abilities/formulas/index.json",
+      "sha256": "672ad030b81bfccac5a1283cac273a8a944a20e1de2487b602848c7c35efdad3",
+      "bytes": 896,
+      "git_mode": "100644",
+      "role": "generated_server_content"
+    },
+    {
+      "path": "content/behaviors/index.json",
+      "sha256": "bedbfdb4058b361788cd4ffc37c13e3000751ec54c09cf846fa1f751c0fb1c93",
+      "bytes": 629,
+      "git_mode": "100644",
+      "role": "generated_server_content"
+    },
+    {
+      "path": "content/content.lock.json",
+      "sha256": "1be8e95b2f42691ea1cfede8268880f9b89805ced9675fac6bbb9dce2f9f9a0e",
+      "bytes": 1411,
+      "git_mode": "100644",
+      "role": "generated_server_content"
+    },
+    {
+      "path": "content/cosmetics/mounts/index.json",
+      "sha256": "6198e5f27eef2996602be01d9b21d0181c0c7f0c5ec9cf8830804cb594ee7b30",
+      "bytes": 372,
+      "git_mode": "100644",
+      "role": "generated_server_content"
+    },
+    {
+      "path": "content/creatures/definitions/index.json",
+      "sha256": "fcf88df788e637e2499fcb46483482fc23afe3eac51839a25b2c6cdadcd3d664",
+      "bytes": 586,
+      "git_mode": "100644",
+      "role": "generated_server_content"
+    },
+    {
+      "path": "content/dialogues/definitions/index.json",
+      "sha256": "9b225de73ad9518aa8d87587d3edebe9fc1f1c122b8629dce6af11d2a6a19d70",
+      "bytes": 398,
+      "git_mode": "100644",
+      "role": "generated_server_content"
+    },
+    {
+      "path": "content/encounters/definitions/index.json",
+      "sha256": "cdfe7e3e26a45841dce8b56fd03754190817a84d64148ad376c3c6aedf013deb",
+      "bytes": 404,
+      "git_mode": "100644",
+      "role": "generated_server_content"
+    },
+    {
+      "path": "content/items/definitions/items-00000-00499.json",
+      "sha256": "f4d9ab4cf12d5203ad828527b5d09ce8b31805b250e4fc0e2233d2912711325d",
+      "bytes": 292692,
+      "git_mode": "100644",
+      "role": "generated_server_content"
+    },
+    {
+      "path": "content/items/definitions/items-00500-00999.json",
+      "sha256": "e333ecff048c28a733bea4e82612428628d000b1f0796d7d899fd182c12006b4",
+      "bytes": 169691,
+      "git_mode": "100644",
+      "role": "generated_server_content"
+    },
+    {
+      "path": "content/items/definitions/items-01000-01499.json",
+      "sha256": "2524c38be89beb04de6736c1c94ea411a8836f4651885c883771ceccbd355434",
+      "bytes": 217513,
+      "git_mode": "100644",
+      "role": "generated_server_content"
+    },
+    {
+      "path": "content/items/definitions/items-01500-01999.json",
+      "sha256": "a484bc8bab4118e6f7da030156ac6bae0d294fc290fba0dcf89bfb1a7bd5018c",
+      "bytes": 254644,
+      "git_mode": "100644",
+      "role": "generated_server_content"
+    },
+    {
+      "path": "content/items/definitions/items-02000-02499.json",
+      "sha256": "9247e21b87c79a4cd613dc5a8d1e8085a6fd1dcefbd738f637f1c0ebba3130f9",
+      "bytes": 240369,
+      "git_mode": "100644",
+      "role": "generated_server_content"
+    },
+    {
+      "path": "content/items/definitions/items-02500-02999.json",
+      "sha256": "a7252759a8814b83d1706e8c8273f6fa3efdbba11d29f39212523d406571e6f3",
+      "bytes": 240383,
+      "git_mode": "100644",
+      "role": "generated_server_content"
+    },
+    {
+      "path": "content/items/definitions/items-03000-03499.json",
+      "sha256": "33112bff6041164d72af745f468dde0eb2e7907390aa347367ffcbc0c7f2734d",
+      "bytes": 126030,
+      "git_mode": "100644",
+      "role": "generated_server_content"
+    },
+    {
+      "path": "content/items/definitions/items-03500-03999.json",
+      "sha256": "b3a9699464a92722bae32b5f4c3d99e15363c839076d017e949c6393c70a8b16",
+      "bytes": 227341,
+      "git_mode": "100644",
+      "role": "generated_server_content"
+    },
+    {
+      "path": "content/items/definitions/items-04000-04499.json",
+      "sha256": "3c5dcfd0099723ce145e6262eddea4e75873f87f2aadafc984db3ae908a50f68",
+      "bytes": 275539,
+      "git_mode": "100644",
+      "role": "generated_server_content"
+    },
+    {
+      "path": "content/items/definitions/items-04500-04999.json",
+      "sha256": "73f2a0cebc75c82632824efaa915a690e7457276bf3d8a1ad75a99008603d159",
+      "bytes": 227685,
+      "git_mode": "100644",
+      "role": "generated_server_content"
+    },
+    {
+      "path": "content/items/definitions/items-05000-05499.json",
+      "sha256": "2b86f7351d77194117fca58bcb59ce07e33c6fd9c9e627ae67e157e526f20fd4",
+      "bytes": 218096,
+      "git_mode": "100644",
+      "role": "generated_server_content"
+    },
+    {
+      "path": "content/items/definitions/items-05500-05999.json",
+      "sha256": "d75b6860cfb0ebf587c3ee03a9450c0091cb59b504210a7ba92a26363d8775fe",
+      "bytes": 235674,
+      "git_mode": "100644",
+      "role": "generated_server_content"
+    },
+    {
+      "path": "content/items/definitions/items-06000-06499.json",
+      "sha256": "c3e6382f8b8b8c3400fae6968c6bf57683c94bf6c3ec9491df240c17e05f6a99",
+      "bytes": 123764,
+      "git_mode": "100644",
+      "role": "generated_server_content"
+    },
+    {
+      "path": "content/items/definitions/items-06500-06999.json",
+      "sha256": "41d2f989b190d75bba0a6fbb8da9be55be99f3426f0736dda4e0dc11d4a562e2",
+      "bytes": 212897,
+      "git_mode": "100644",
+      "role": "generated_server_content"
+    },
+    {
+      "path": "content/items/definitions/items-07000-07499.json",
+      "sha256": "da607c8610d1d326e8c759cf84087f4751e6725183b362e8e3cf69627a78c5f4",
+      "bytes": 197229,
+      "git_mode": "100644",
+      "role": "generated_server_content"
+    },
+    {
+      "path": "content/items/definitions/items-07500-07999.json",
+      "sha256": "39aaccd8435499e92f419ef68f7b8d202ba37561c9fc91d200c33b9465b87364",
+      "bytes": 190883,
+      "git_mode": "100644",
+      "role": "generated_server_content"
+    },
+    {
+      "path": "content/items/definitions/items-08000-08499.json",
+      "sha256": "6098632479b183c34fc906c9f19bf39424370d72114a1ea389e1fde1bd914ef1",
+      "bytes": 209841,
+      "git_mode": "100644",
+      "role": "generated_server_content"
+    },
+    {
+      "path": "content/items/definitions/items-08500-08999.json",
+      "sha256": "57fc8215a63cdf0a352fc6f42db6630a35e55c0393aaa511e1a2ac12b07e40fd",
+      "bytes": 154197,
+      "git_mode": "100644",
+      "role": "generated_server_content"
+    },
+    {
+      "path": "content/items/definitions/items-09000-09499.json",
+      "sha256": "b951c76c1678d7e8b7d9c722bedb764c73aad7c91cc3fd87ee668a3de5974f6e",
+      "bytes": 289665,
+      "git_mode": "100644",
+      "role": "generated_server_content"
+    },
+    {
+      "path": "content/items/definitions/items-09500-09999.json",
+      "sha256": "327c6539a88b99b378a2691b963e95ad56448b1ab397ed13442393ac6389f3ef",
+      "bytes": 157508,
+      "git_mode": "100644",
+      "role": "generated_server_content"
+    },
+    {
+      "path": "content/items/definitions/items-10000-10499.json",
+      "sha256": "2172697a2ec0884d229740589c0fbb175c0b63c23bf63c38f605fa641bb301f6",
+      "bytes": 217679,
+      "git_mode": "100644",
+      "role": "generated_server_content"
+    },
+    {
+      "path": "content/items/definitions/items-10500-10999.json",
+      "sha256": "28d0ac10dfb610792f750c77610605f688c5807703c6f461a937a4eacfcc079d",
+      "bytes": 203794,
+      "git_mode": "100644",
+      "role": "generated_server_content"
+    },
+    {
+      "path": "content/items/definitions/items-11000-11499.json",
+      "sha256": "9d8a5cb44ca7bb8c16f9c2425e39c82b2edb2e241307e5b9ad626d94cd9269d4",
+      "bytes": 254130,
+      "git_mode": "100644",
+      "role": "generated_server_content"
+    },
+    {
+      "path": "content/items/definitions/items-11500-11999.json",
+      "sha256": "9dbb414712dc152a3353909bbd00cac4a1f3962f357f713f9843e946763b7623",
+      "bytes": 276772,
+      "git_mode": "100644",
+      "role": "generated_server_content"
+    },
+    {
+      "path": "content/items/definitions/items-12000-12499.json",
+      "sha256": "34494367a93643be310245fda65dacdbb23aa9ea9d68a477b28d7064523b212e",
+      "bytes": 520584,
+      "git_mode": "100644",
+      "role": "generated_server_content"
+    },
+    {
+      "path": "content/items/definitions/items-12500-12999.json",
+      "sha256": "b3773232014b385a12e966078df6205d24bd2ec51f8f7276af120dcf2539803e",
+      "bytes": 265587,
+      "git_mode": "100644",
+      "role": "generated_server_content"
+    },
+    {
+      "path": "content/items/definitions/items-13000-13499.json",
+      "sha256": "fafbb95c272439e4fcf6f5da2d0d59542db5f3ef44c6dbb996139c7b41c2129c",
+      "bytes": 221211,
+      "git_mode": "100644",
+      "role": "generated_server_content"
+    },
+    {
+      "path": "content/items/definitions/items-13500-13999.json",
+      "sha256": "31f8e0666c279b42d00b015687894ba49c94aeca6254ff73602e5c08a481c3c9",
+      "bytes": 183788,
+      "git_mode": "100644",
+      "role": "generated_server_content"
+    },
+    {
+      "path": "content/items/definitions/items-14000-14499.json",
+      "sha256": "51d27fd8e7626154e4130a50fef8d02f369771e953669f70a9ef2b6c784ff6aa",
+      "bytes": 220189,
+      "git_mode": "100644",
+      "role": "generated_server_content"
+    },
+    {
+      "path": "content/items/definitions/items-14500-14999.json",
+      "sha256": "b205acc5142000e3e829d448e78efad38b40b7a52ee1c36e28a6db3cdc89bd2c",
+      "bytes": 574801,
+      "git_mode": "100644",
+      "role": "generated_server_content"
+    },
+    {
+      "path": "content/items/definitions/items-15000-15499.json",
+      "sha256": "70b94dbbc68072c16b443dab5f64bcd7f9f8825f8963e1c8a3b3db119c99a2f7",
+      "bytes": 216965,
+      "git_mode": "100644",
+      "role": "generated_server_content"
+    },
+    {
+      "path": "content/items/definitions/items-15500-15999.json",
+      "sha256": "85c5a22ccadb8cc64c30152b1302a3f00862e8093e35a7e71358a1b6b69f6fe4",
+      "bytes": 268139,
+      "git_mode": "100644",
+      "role": "generated_server_content"
+    },
+    {
+      "path": "content/items/definitions/items-16000-16499.json",
+      "sha256": "05144ab5438e9bf9c011cbebaca77114c91f4fdc5edb27f3194b42f4dc39041d",
+      "bytes": 201090,
+      "git_mode": "100644",
+      "role": "generated_server_content"
+    },
+    {
+      "path": "content/items/definitions/items-16500-16999.json",
+      "sha256": "d48eccdf17ec9bbc762acdb8c3531e98633c68f9000f48e1cb309c994531243f",
+      "bytes": 300644,
+      "git_mode": "100644",
+      "role": "generated_server_content"
+    },
+    {
+      "path": "content/items/definitions/items-17000-17499.json",
+      "sha256": "0eb8c1c65e7a0d240795f4f53fc24982d189d6e8674bbfdf7f0182309ee25ead",
+      "bytes": 276442,
+      "git_mode": "100644",
+      "role": "generated_server_content"
+    },
+    {
+      "path": "content/items/definitions/items-17500-17999.json",
+      "sha256": "d089ce7c7a93daf189a1fc26b6cf611e08b8beef11b8bd80ee47608d329d17ef",
+      "bytes": 371521,
+      "git_mode": "100644",
+      "role": "generated_server_content"
+    },
+    {
+      "path": "content/items/definitions/items-18000-18499.json",
+      "sha256": "000c0647e898f89db62947ece29b8c52a6a377c423dd6455bf083bd489b5daa5",
+      "bytes": 191693,
+      "git_mode": "100644",
+      "role": "generated_server_content"
+    },
+    {
+      "path": "content/items/definitions/items-18500-18999.json",
+      "sha256": "d173c97caf96ee627f11cd902944831422c96389ef5714edac6d99555cd4410b",
+      "bytes": 287327,
+      "git_mode": "100644",
+      "role": "generated_server_content"
+    },
+    {
+      "path": "content/items/definitions/items-19000-19499.json",
+      "sha256": "6e1aa8bc1202b414a7ce7751a1177ff102b9010467f6880b2b9579f976a01e92",
+      "bytes": 341191,
+      "git_mode": "100644",
+      "role": "generated_server_content"
+    },
+    {
+      "path": "content/items/definitions/items-19500-19999.json",
+      "sha256": "3e8be4c32656b71af9ba8d6eac547640ea44e082465b31bf44c96acd7c7d0678",
+      "bytes": 347918,
+      "git_mode": "100644",
+      "role": "generated_server_content"
+    },
+    {
+      "path": "content/items/definitions/items-20000-20499.json",
+      "sha256": "7aa222b5ff123a2f868db75eedce575e008925a06ea3a2ef235fdaa2d48816b0",
+      "bytes": 363760,
+      "git_mode": "100644",
+      "role": "generated_server_content"
+    },
+    {
+      "path": "content/items/definitions/items-20500-20999.json",
+      "sha256": "4b15525ddeb35d001c861aef44e83e77f2dcc9a0df37299b0fc716d59863347c",
+      "bytes": 383050,
+      "git_mode": "100644",
+      "role": "generated_server_content"
+    },
+    {
+      "path": "content/items/definitions/items-21000-21499.json",
+      "sha256": "665ac9cbaeac15adcdd6f3085a2d953eb2f769e6b134ec52902424cad06a21a2",
+      "bytes": 461129,
+      "git_mode": "100644",
+      "role": "generated_server_content"
+    },
+    {
+      "path": "content/items/definitions/items-21500-21999.json",
+      "sha256": "9750f7d5dacbe45c848e6e603fdce20fec24bf7cb5296fc6213d2ae9a9671b23",
+      "bytes": 342505,
+      "git_mode": "100644",
+      "role": "generated_server_content"
+    },
+    {
+      "path": "content/items/definitions/items-22000-22499.json",
+      "sha256": "3f6a42d208f2043ff6094b6baa6e2327c8c62a0278437a4069d71328214cbf59",
+      "bytes": 318950,
+      "git_mode": "100644",
+      "role": "generated_server_content"
+    },
+    {
+      "path": "content/items/definitions/items-22500-22999.json",
+      "sha256": "2edbcb26212d42031dbbd70feb71d54a315d862641ff2f3c5c67c2272b5b394c",
+      "bytes": 340123,
+      "git_mode": "100644",
+      "role": "generated_server_content"
+    },
+    {
+      "path": "content/items/definitions/items-23500-23999.json",
+      "sha256": "d5b5d900deeb220f19d16a2a500f814fbf38f0870fb832cd430d3fd7d078a9c5",
+      "bytes": 198494,
+      "git_mode": "100644",
+      "role": "generated_server_content"
+    },
+    {
+      "path": "content/items/definitions/items-24000-24499.json",
+      "sha256": "61b396e97977f67862a92777d0548baf6c5577a295ce83d0883b53392c4ee4f0",
+      "bytes": 347967,
+      "git_mode": "100644",
+      "role": "generated_server_content"
+    },
+    {
+      "path": "content/items/definitions/items-24500-24999.json",
+      "sha256": "f6b575e6c8a5734cc827b2c398799f989e6881e82cff5e41ecfff86b34fb6783",
+      "bytes": 222510,
+      "git_mode": "100644",
+      "role": "generated_server_content"
+    },
+    {
+      "path": "content/items/definitions/items-25000-25499.json",
+      "sha256": "31ddb9214bdecab43c7b817ff8e2ff86c3dc502cfe1a83bf913fb1945b04c00d",
+      "bytes": 240939,
+      "git_mode": "100644",
+      "role": "generated_server_content"
+    },
+    {
+      "path": "content/items/definitions/items-25500-25999.json",
+      "sha256": "544a96797d8679216ed50e6f6e4df5eb8992aa3a9f851d748b21209b1fbb0325",
+      "bytes": 293906,
+      "git_mode": "100644",
+      "role": "generated_server_content"
+    },
+    {
+      "path": "content/items/definitions/items-26500-26999.json",
+      "sha256": "7b608cf38b6f7b5f9cdef4b82b6894eacb97ee171f3e562a5cef7f5b7f1ffbcb",
+      "bytes": 467216,
+      "git_mode": "100644",
+      "role": "generated_server_content"
+    },
+    {
+      "path": "content/items/definitions/items-27000-27499.json",
+      "sha256": "cae844296c106b114ff7d533b0ec97df61a070029692deddc9ecd54cd5f6c0a4",
+      "bytes": 306465,
+      "git_mode": "100644",
+      "role": "generated_server_content"
+    },
+    {
+      "path": "content/items/definitions/items-27500-27999.json",
+      "sha256": "edfc6bf16c31ad8f23ce5e8e0d0a7665f90d5e92fe4e3cb09309ccfab24d826f",
+      "bytes": 408935,
+      "git_mode": "100644",
+      "role": "generated_server_content"
+    },
+    {
+      "path": "content/items/definitions/items-28000-28499.json",
+      "sha256": "a47507970d9f8bf70360fad10bbe6fd33e2f08b821708be34b768c7a5f9fc029",
+      "bytes": 340767,
+      "git_mode": "100644",
+      "role": "generated_server_content"
+    },
+    {
+      "path": "content/items/definitions/items-28500-28999.json",
+      "sha256": "386a0631086beb85e5f780b990ed388f3181b86ae969be9c074fc2288456cd1a",
+      "bytes": 351806,
+      "git_mode": "100644",
+      "role": "generated_server_content"
+    },
+    {
+      "path": "content/items/definitions/items-29000-29499.json",
+      "sha256": "a99f93e283157044af81a37046542321a2c6c1c4f568f92f0711db6505794c80",
+      "bytes": 222999,
+      "git_mode": "100644",
+      "role": "generated_server_content"
+    },
+    {
+      "path": "content/items/definitions/items-29500-29999.json",
+      "sha256": "49bada204674454cd49321cf43f7b96949c422a7ae382a61ea8c5035cab4235b",
+      "bytes": 247056,
+      "git_mode": "100644",
+      "role": "generated_server_content"
+    },
+    {
+      "path": "content/items/definitions/items-30000-30499.json",
+      "sha256": "a555a20839b8b75a267c64640d9baa5206331924698809bd550e68deed666383",
+      "bytes": 276729,
+      "git_mode": "100644",
+      "role": "generated_server_content"
+    },
+    {
+      "path": "content/items/definitions/items-30500-30999.json",
+      "sha256": "cae58d64dc6b3f698d2e555889369bfca61925855e81a1a4d47e8130c40815fb",
+      "bytes": 167792,
+      "git_mode": "100644",
+      "role": "generated_server_content"
+    },
+    {
+      "path": "content/items/definitions/items-31000-31499.json",
+      "sha256": "f9e1bb3a77da5a1cb6904e0dd3b7208584e4145e7f658f71e7f6ad0bbb5d5550",
+      "bytes": 388584,
+      "git_mode": "100644",
+      "role": "generated_server_content"
+    },
+    {
+      "path": "content/items/definitions/items-31500-31999.json",
+      "sha256": "7505a3c593ed9ee6d5859617ba1fb1ced32807c59690f9293c59a83429ce7f51",
+      "bytes": 372931,
+      "git_mode": "100644",
+      "role": "generated_server_content"
+    },
+    {
+      "path": "content/items/definitions/items-32000-32499.json",
+      "sha256": "357fc2e59faec6ae3a4825017c42de654d0f717a49cd82de0fdc404a3f731acc",
+      "bytes": 228329,
+      "git_mode": "100644",
+      "role": "generated_server_content"
+    },
+    {
+      "path": "content/items/definitions/items-32500-32999.json",
+      "sha256": "8e57177ee42e8a20d2abc8250f7c9c1514010a9a5d2e1b443b5c8a17718f7d30",
+      "bytes": 234635,
+      "git_mode": "100644",
+      "role": "generated_server_content"
+    },
+    {
+      "path": "content/items/definitions/items-33000-33499.json",
+      "sha256": "64e6906ef4832bcb0871c76d84f45e3a16b60843c993817fcb42acca96e87a7c",
+      "bytes": 351529,
+      "git_mode": "100644",
+      "role": "generated_server_content"
+    },
+    {
+      "path": "content/items/definitions/items-33500-33999.json",
+      "sha256": "858a826aa69add7ba4ece7e67cb793a2431d4772cb9c88f044fa7a8ab2f70740",
+      "bytes": 229022,
+      "git_mode": "100644",
+      "role": "generated_server_content"
+    },
+    {
+      "path": "content/items/index.json",
+      "sha256": "2d311a5f0ed6022250fe061a1c4c23f6b37ac7797e30fc3c1b7fd6d72745ce3d",
+      "bytes": 3985,
+      "git_mode": "100644",
+      "role": "generated_server_content"
+    },
+    {
+      "path": "content/items/relations/items.json",
+      "sha256": "adac3bc61cd4aa1dcff3a2dae293f50d66359cc31818c89e22b4e46e040a253e",
+      "bytes": 133642,
+      "git_mode": "100644",
+      "role": "generated_server_content"
+    },
+    {
+      "path": "content/loot/index.json",
+      "sha256": "0e3f6df03e0580f14bdad48c5b0c5346298cc6f25e935e4bc6fca6e61831ea87",
+      "bytes": 452,
+      "git_mode": "100644",
+      "role": "generated_server_content"
+    },
+    {
+      "path": "content/npcs/definitions/index.json",
+      "sha256": "5e671d0f67f4104d5c85324837bfd2c64803865225fadbd38cd4850fb68f19c1",
+      "bytes": 455,
+      "git_mode": "100644",
+      "role": "generated_server_content"
+    },
+    {
+      "path": "content/presentations/definitions/index.json",
+      "sha256": "199952c9318cbcb3c6cc163e7f019ad44b166eaabe7ec36db60c05cd90f30048",
+      "bytes": 753,
+      "git_mode": "100644",
+      "role": "generated_server_content"
+    },
+    {
+      "path": "content/services/trade/index.json",
+      "sha256": "70a48f8d109bbfe2bd8115fd4bf775dee10c4c9f7b2ec2038ba557dbe1d80fc9",
+      "bytes": 333,
+      "git_mode": "100644",
+      "role": "generated_server_content"
+    },
+    {
+      "path": "content/services/travel/index.json",
+      "sha256": "3ba025807cbddd11a5566e5a1bf939ba4b8f0e7bc52a931590f10f050bd505c8",
+      "bytes": 335,
+      "git_mode": "100644",
+      "role": "generated_server_content"
+    },
+    {
+      "path": "content/world/content.lock.json",
+      "sha256": "0da232c6d662b68b0a50d19e6ab99191577cc2555c671f43a0b86a4378bac747",
+      "bytes": 364,
+      "git_mode": "100644",
+      "role": "generated_server_content"
+    },
+    {
+      "path": "content/world/definitions/declarations.json",
+      "sha256": "e553a2a894ea15f7743a94fac91b588994b3b36a80df8ca669a3b4fbde753ff9",
+      "bytes": 15225274,
+      "git_mode": "100644",
+      "role": "generated_server_content"
+    },
+    {
+      "path": "content/world/definitions/reference.json",
+      "sha256": "08d905512d61f9d909daa532e02c7f249e25ef1c8e48c1d9835b16ebd99f93cd",
+      "bytes": 25072677,
+      "git_mode": "100644",
+      "role": "generated_server_content"
+    },
+    {
+      "path": "content/world/manifest.json",
+      "sha256": "f05a79f3c74d74132a82678a18c98305559791985510826f8bf35cfb5877c552",
+      "bytes": 1937,
+      "git_mode": "100644",
+      "role": "generated_server_content"
+    },
+    {
+      "path": "content/world/project.json",
+      "sha256": "ab30d2572e7243b9229c50e3a09f9cbea7f4e1c9773752fa00bffafbdeb699d0",
+      "bytes": 390,
+      "git_mode": "100644",
+      "role": "generated_server_content"
+    },
+    {
+      "path": "content/world/provenance/imports.json",
+      "sha256": "1f50c423b1acb046bc168cb167eeea70b5e2be55fa6a5c171ca32b7025782387",
+      "bytes": 33802,
+      "git_mode": "100644",
+      "role": "generated_server_content"
+    },
+    {
+      "path": "content/world/provenance/sources.json",
+      "sha256": "82dbf6d7133fd23818e0a248cee51a85ea977609bec732b81e730e55507f57c5",
+      "bytes": 1413029,
+      "git_mode": "100644",
+      "role": "generated_server_content"
+    },
+    {
+      "path": "docs/agents/evidence/OTV2-20261002-item-description-historical-source-proposal-v1.json",
+      "sha256": "328ada9dc206b4204bd61f463a5e21e70b473b0d20d4f1c48941aeff04336765",
+      "bytes": 1079275,
+      "git_mode": "100644",
+      "role": "source"
+    },
+    {
+      "path": "docs/agents/evidence/OTV2-20261002-item-description-promotion-v1.json",
+      "sha256": "ca37880074adf21e03e6890d8bf24e6b5d6bdc6e825f2025ae2ec52269040c1e",
+      "bytes": 42567,
+      "git_mode": "100644",
+      "role": "source"
+    },
+    {
+      "path": "docs/agents/evidence/OTV2-20261002-item-description-source-qualification-v1.json",
+      "sha256": "852f539ff3e496ecd35fa5751c9b6bb820167dd28b29377b0458a297befe2e31",
+      "bytes": 281990,
+      "git_mode": "100644",
+      "role": "source"
+    },
+    {
+      "path": "docs/agents/evidence/OTV2-20261002-item-description-wiki-historical-policy-proposal-v1.json",
+      "sha256": "c798c1cbce3f35d8b0ab9652cfa4f0fbc0cdc3cebcba863f940fe9923c269f6a",
+      "bytes": 14539414,
+      "git_mode": "100644",
+      "role": "source"
+    },
+    {
+      "path": "docs/agents/evidence/OTV2-20261002-item-description-wiki-promotion-v1.json",
+      "sha256": "6924c64a981a423e7648ff290a9ca2a5eebb89825bf2c1f29977eb98d2f73ca7",
+      "bytes": 451300,
+      "git_mode": "100644",
+      "role": "source"
+    },
+    {
+      "path": "docs/agents/evidence/OTV2-20261002-item-description-wiki-source-qualification-v1.json",
+      "sha256": "e914832a1b4a9cbb8ccddd7925d54541ff0fc48faadf797d106c04b60bd87757",
+      "bytes": 3739321,
+      "git_mode": "100644",
+      "role": "source"
+    },
+    {
+      "path": "docs/agents/evidence/OTV2-20261002-item-forge289-original-proposed-packet-v1.json",
+      "sha256": "0c934577617136c5af4fbd0bea4b454db1a6cec05dcee8ab281a1c1ef3c588f2",
+      "bytes": 186796,
+      "git_mode": "100644",
+      "role": "source"
+    },
+    {
+      "path": "docs/agents/evidence/OTV2-20261002-item-forge289-promotion-v1.json",
+      "sha256": "376d668b5148d9c5f7b85eb3ef7e2f747c08fdc10170f62ed22e49ce4c6157ab",
+      "bytes": 272587,
+      "git_mode": "100644",
+      "role": "source"
+    },
+    {
+      "path": "docs/agents/evidence/OTV2-20261002-item-forge289-provenance-basis-prospective-receipt-v1.json",
+      "sha256": "d0165ad26a0a8501c87856a747ccde67a5a9f59ce7257fa939aa5f17fa7c45a3",
+      "bytes": 3993,
+      "git_mode": "100644",
+      "role": "source"
+    },
+    {
+      "path": "docs/agents/evidence/OTV2-20261002-item-forge289-source-qualification-v1.json",
+      "sha256": "e76b35928af82b02cc60eea1904b343e88588bd6765436acde39b70370b499a1",
+      "bytes": 4460978,
+      "git_mode": "100644",
+      "role": "source"
+    },
+    {
+      "path": "docs/agents/evidence/OTV2-20261002-item-magic-capacity4-source-qualification-v1.json",
+      "sha256": "9aba058979f9376996377163964cbad2a9a20cd826c071ea40c9e1273213238f",
+      "bytes": 80888,
+      "git_mode": "100644",
+      "role": "source"
+    },
+    {
+      "path": "docs/agents/evidence/OTV2-20261002-item-name15-historical-source-v1.json",
+      "sha256": "7fd1bd8d99967942c9a2c7dbf29df4759eba8dbdfcbb31dbf8e31313a394a662",
+      "bytes": 237661,
+      "git_mode": "100644",
+      "role": "source"
+    },
+    {
+      "path": "docs/agents/evidence/OTV2-20261002-item-name15-promotion-v1.json",
+      "sha256": "096beca127481342cdf545131321102b460435ecdc97e7f10b9d4f9753228ca8",
+      "bytes": 9732,
+      "git_mode": "100644",
+      "role": "source"
+    },
+    {
+      "path": "docs/agents/evidence/OTV2-20261002-item-name15-source-qualification-v1.json",
+      "sha256": "d4b14233d8aa9b33bb35ade24ef2d0b42d2504d7991297eabfe160b16fc2fed4",
+      "bytes": 25168,
+      "git_mode": "100644",
+      "role": "source"
+    },
+    {
+      "path": "docs/agents/evidence/OTV2-20261002-item-numeric-modifier13-promotion-v1.json",
+      "sha256": "d8c89a733e28a1d437b9bacde7be3be791e7d408f9ff5d5fa4dd2d72046c163c",
+      "bytes": 16639,
+      "git_mode": "100644",
+      "role": "source"
+    },
+    {
+      "path": "docs/agents/evidence/OTV2-20261002-item-numeric-modifier13-source-proof-v2.json",
+      "sha256": "11b8a6a7f1f85765f2b9c99dabc7815405c2bf3b0c10bb78b39deebb741937c9",
+      "bytes": 196121,
+      "git_mode": "100644",
+      "role": "source"
+    },
+    {
+      "path": "docs/agents/evidence/OTV2-20261002-item-numeric-modifier17-current-receipt-v1.json",
+      "sha256": "5836649139a383fcb466b385b9dde32e754cb0af0ae13a4cf5685c2b297220a9",
+      "bytes": 4911,
+      "git_mode": "100644",
+      "role": "source"
+    },
+    {
+      "path": "docs/agents/evidence/OTV2-20261002-item-numeric-modifier17-promotion-v1.json",
+      "sha256": "1d384adbad5edfc1525d140d7f6757264a6b3a1ef82dda476d0337b7cdbaeb1b",
+      "bytes": 21474,
+      "git_mode": "100644",
+      "role": "source"
+    },
+    {
+      "path": "docs/agents/evidence/OTV2-20261002-item-numeric-modifier17-source-qualification-v1.json",
+      "sha256": "c950c0c89db442612b4822e857b86e70ac01056974f9752996aadda415f2d71f",
+      "bytes": 276142,
+      "git_mode": "100644",
+      "role": "source"
+    },
+    {
+      "path": "docs/agents/evidence/OTV2-20261002-tibiawiki165-historical-import-context-v1.json",
+      "sha256": "254675adf42a677eeefdb3ed18a42aee90ee8c5ec78d6ac08dff6a999181fb76",
+      "bytes": 63609,
+      "git_mode": "100644",
+      "role": "source"
+    },
+    {
+      "path": "docs/architecture/OTERYN_ITEM_AUTHORING_MASTER_SCHEMA_V1.md",
+      "sha256": "03f1d1b29b02fbf381f62cae27331ad9d42fb492068a0183b23263c3619ae799",
+      "bytes": 11789,
+      "git_mode": "100644",
+      "role": "source"
+    },
+    {
+      "path": "docs/architecture/OTERYN_WORLD_PROJECT_SOURCE_PROFILE_V2_DECISION.md",
+      "sha256": "b12b90166750fe4f2854683ab947ad6ce69374de94cfb1d882cc693fc476b88f",
+      "bytes": 19488,
+      "git_mode": "100644",
+      "role": "source"
+    },
+    {
+      "path": "imports/tibiawiki/batches.json",
+      "sha256": "1480b5272a4372acd1f3b3555f6fcbffdf900fda49736bc53a3225408529b569",
+      "bytes": 6341,
+      "git_mode": "100644",
+      "role": "generated_server_content"
+    },
+    {
+      "path": "imports/tibiawiki/bindings/items.json",
+      "sha256": "9bce9d5a0bded656c8345109080a6d71dfe6bf7ce4d1c4b0bbb3c2ae62b9cfc3",
+      "bytes": 147613,
+      "git_mode": "100644",
+      "role": "generated_server_content"
+    },
+    {
+      "path": "imports/tibiawiki/facts/forge289-source-snapshot.json",
+      "sha256": "cff4df43b6e38255656d56fd1f53a47cf30f6174f09c01e18450cf5e49db32c2",
+      "bytes": 569880,
+      "git_mode": "100644",
+      "role": "source"
+    },
+    {
+      "path": "imports/tibiawiki/sources.json",
+      "sha256": "fa915718c67ab135c4b1b72515aed680b6e3b5cdee466da99dfc1fb07d5bfdcc",
+      "bytes": 2699,
+      "git_mode": "100644",
+      "role": "generated_server_content"
+    },
+    {
+      "path": "tools/content-migration/test_world_project_v2_to_tree.py",
+      "sha256": "a113883e3563a6bac878b189786480819a53f35b948024fa28418974d9b8f108",
+      "bytes": 9162,
+      "git_mode": "100644",
+      "role": "source"
+    },
+    {
+      "path": "tools/content-migration/validate_world_project_v2_to_tree.py",
+      "sha256": "fd6d52bbc6c214f884063a3153228167d57ac3c91e441a759c2425576edfc2a4",
+      "bytes": 48583,
+      "git_mode": "100644",
+      "role": "source"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/README.md",
+      "sha256": "1edb0b30229b6ad838e3a5607d5f7d580cabec6e815061c5752929d3d9fad537",
+      "bytes": 42496,
+      "git_mode": "100644",
+      "role": "source"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/build_formal_schema.py",
+      "sha256": "e8e85092a09c259dabb5e70e5c58d33dd3cdaeebdba4be874c3e2a3d82d188af",
+      "bytes": 73496,
+      "git_mode": "100644",
+      "role": "source"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/check_tibiawiki165_historical_context.py",
+      "sha256": "93f843b666b1745b2208b318e3694e0867fc5842b0253629bc61400a8107581c",
+      "bytes": 13507,
+      "git_mode": "100644",
+      "role": "source"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/formal-schema-validation-report.json",
+      "sha256": "c819689c9eb056678f046d5c5ae6a26bf6a464ad912aaec6e906961df2201c02",
+      "bytes": 41655,
+      "git_mode": "100644",
+      "role": "source"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/item.schema.json",
+      "sha256": "3397985db826a44e33e5830e7d9651598148130657fe4b43c204eee848c4088d",
+      "bytes": 80092,
+      "git_mode": "100644",
+      "role": "source"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/lower_item_description_packet.py",
+      "sha256": "a15ee15bf2d8619302f2a74b1f49ff261d3d35d0f1ccfc27092d97b51357e1ea",
+      "bytes": 8007,
+      "git_mode": "100644",
+      "role": "source"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/lower_item_description_wiki_packet.py",
+      "sha256": "5d97281efeb9d34d054433e3e5b3d519a7cfb53ea490908b78f0b46096f571ae",
+      "bytes": 8078,
+      "git_mode": "100644",
+      "role": "source"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/lower_item_forge289_packet.py",
+      "sha256": "f37c9dfe98dba8c324746aac3ef9d359c8a477c9ac90745d907a342060427de6",
+      "bytes": 16643,
+      "git_mode": "100644",
+      "role": "source"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/lower_item_name15_packet.py",
+      "sha256": "e4f4943e1cd97718fbe4bf0c55a9e93f08c784d15bc6f741fbc74aaa86b0d0bf",
+      "bytes": 11541,
+      "git_mode": "100644",
+      "role": "source"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/lower_numeric_modifier17_packet.py",
+      "sha256": "06bd5da33045406dcadf049509ea1e09e68ae10313b241c8dc5de41ac63fcd01",
+      "bytes": 15434,
+      "git_mode": "100644",
+      "role": "source"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/templates/container-equipment.json",
+      "sha256": "bb4ee4f414165e03f3f23b90d9925f37978f5dca5c2fad5ead14952902199327",
+      "bytes": 729,
+      "git_mode": "100644",
+      "role": "source"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/templates/event-collectible.json",
+      "sha256": "a18d543e2c3b59e2c57c316474257f2f10b8f435611fbb23672bea402d3da8ab",
+      "bytes": 555,
+      "git_mode": "100644",
+      "role": "source"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/templates/key.json",
+      "sha256": "e6a9b017828dc1f1ecb36257b5c97c8938277bd7f06079b381a58232b6423a16",
+      "bytes": 461,
+      "git_mode": "100644",
+      "role": "source"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/templates/light-source.json",
+      "sha256": "4c688d0c8310c8f45d8f5b822fb3f1932285c5c62b80a0fe6e3b247bcae7a90f",
+      "bytes": 492,
+      "git_mode": "100644",
+      "role": "source"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/templates/plant.json",
+      "sha256": "b1cf978bdfc15e5efb5ab14d043c0970e6b9219a10765f8271744b60be742438",
+      "bytes": 479,
+      "git_mode": "100644",
+      "role": "source"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/templates/progression-material.json",
+      "sha256": "ccc89a1de9ad92fa2e554dce6256ec2f689e3944aa9fca12b8e5af03ea0235b5",
+      "bytes": 542,
+      "git_mode": "100644",
+      "role": "source"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/templates/quest-item.json",
+      "sha256": "368282df8857745fd671b6222c3e7165df4b778bb08423b5909211fb6f9285b8",
+      "bytes": 439,
+      "git_mode": "100644",
+      "role": "source"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/templates/tool.json",
+      "sha256": "d56001e1dc337a786361e6c83b16d495978335d5dfae30a8679e43606f698d4c",
+      "bytes": 531,
+      "git_mode": "100644",
+      "role": "source"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/templates/transformation-item.json",
+      "sha256": "055c04ecea213e733bb88e589efbc702403f3d052e87b2b1ce39f638fdd18b76",
+      "bytes": 579,
+      "git_mode": "100644",
+      "role": "source"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/templates/trash.json",
+      "sha256": "6517409582e80f9b01a00660bc7f72fa5dae0505fdaee2a8aedc9178b6ce8f98",
+      "bytes": 414,
+      "git_mode": "100644",
+      "role": "source"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/test_engine_items.py",
+      "sha256": "98d884ce084af81c8a75b3f69834b67a0b3cfe20a413b2cb2f51253884ff3bb4",
+      "bytes": 154399,
+      "git_mode": "100644",
+      "role": "source"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/test_lower_item_description_packet.py",
+      "sha256": "e02f206ae50305913b22c7b2dc4620f4fe7c4a1d9e84c9257b43bb9795303e6a",
+      "bytes": 5129,
+      "git_mode": "100644",
+      "role": "source"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/test_lower_item_description_wiki_packet.py",
+      "sha256": "eb15f76c1a265185ec0ea3a458f775986e37a75d652278ab54af7cc5b34bc975",
+      "bytes": 3628,
+      "git_mode": "100644",
+      "role": "source"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/test_lower_item_forge289_packet.py",
+      "sha256": "8e82c9d6efee938888d7cd235dbb3a26b039444ecc8d0b15b26e41d040f86fa6",
+      "bytes": 12440,
+      "git_mode": "100644",
+      "role": "source"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/test_lower_item_forge3332_packet.py",
+      "sha256": "7a9d91118bf22d8093c50af8514e00c98003aad266b228fe3b0c1be913ae0cea",
+      "bytes": 7689,
+      "git_mode": "100644",
+      "role": "source"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/test_lower_item_hit_magic_packet.py",
+      "sha256": "401f37e5c037869834d8f8f205ab35ae450b8acf3d7226034ea12a9fd0ad8608",
+      "bytes": 7803,
+      "git_mode": "100644",
+      "role": "source"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/test_lower_item_name15_packet.py",
+      "sha256": "ce72c5259bd4a0273c6df6f35a477de62034f235c4bed42378c1f9813575429f",
+      "bytes": 4472,
+      "git_mode": "100644",
+      "role": "source"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/test_lower_item_use_observation_packet.py",
+      "sha256": "cda149a18bb259dfeb515a647993a25926b63b336a815f032c224a8d6e02280c",
+      "bytes": 10178,
+      "git_mode": "100644",
+      "role": "source"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/test_lower_numeric_modifier17_packet.py",
+      "sha256": "5f2b23d6346bf85aa5fc991d5aa78a43ea05a6746a2709bfde559b8fd6cd1625",
+      "bytes": 7402,
+      "git_mode": "100644",
+      "role": "source"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/verify_formal_schema.py",
+      "sha256": "8cdf7aa58b4b3477a6e8b2c5c63e72f0e1be7a14ff74c88ea45a9dd8e04f2384",
+      "bytes": 110885,
+      "git_mode": "100644",
+      "role": "source"
+    }
+  ],
+  "source_freeze": {
+    "path": "/workspace/audit-continuation/combined-item-source-repair-freeze-manifest-v6.json",
+    "sha256": "910eaf780b21edc21c54c9c47c991b9f9eb4338ee98beaa7b51144ba1e93ff38",
+    "bytes": 57203
+  },
+  "data_import": {
+    "status": "VERIFIED_MATERIALIZED_SERVER_AND_CANONICAL_DATA",
+    "server_native_catalog": "content/world/definitions/reference.json",
+    "server_source_metadata_catalog": "content/world/definitions/declarations.json",
+    "server_source_provenance": [
+      "content/world/provenance/sources.json",
+      "content/world/provenance/imports.json"
+    ],
+    "canonical_item_data": "content/items/definitions/items-*.json",
+    "source_identity_bindings": "imports/tibiawiki/bindings/items.json",
+    "capability_governance_data": "content/items/relations/items.json",
+    "materializer": "apps/game-server/examples/materialize_content_world_project_v2.rs",
+    "materialized_package_documents": 11,
+    "native_records": 57320,
+    "canonical_items": 34031,
+    "qualified_distinct_item_union": 1859,
+    "native_distinct_changed_items": 1655,
+    "descriptions": 1629,
+    "native_modifier_vectors": 17,
+    "native_modifier_atoms": 50,
+    "native_known_name_corrections": 15,
+    "new_source_forge_profiles": 289,
+    "new_source_literal_forge_fields": 578,
+    "source_only_forge_does_not_mutate_native": true
+  },
+  "expected_and_materialized_counts": {
+    "source_qualified_distinct_item_union": 1859,
+    "native_distinct_changed_item_union": 1655,
+    "description_fields": 1629,
+    "modifier_vectors": 17,
+    "modifier_atoms": 50,
+    "known_name_corrections": 15,
+    "forge_source_items": 289,
+    "forge_source_fields": 578,
+    "old_authoring": 411,
+    "new_authoring": 289,
+    "expected_authoring": 700,
+    "old_forge_profiles": 147,
+    "expected_forge_profiles": 436,
+    "old_tibiawiki_bindings": 165,
+    "expected_tibiawiki_bindings": 454,
+    "old_relation_sources": 250,
+    "expected_relation_sources": 539,
+    "old_relation_refs": 325,
+    "expected_relation_refs": 752,
+    "new_existing_native_positive_slot_refs": 138,
+    "templates": 23,
+    "profiles": 22,
+    "native_records": 57320,
+    "canonical_item_definitions": 34031,
+    "baseline_known_descriptions": 0,
+    "expected_known_descriptions": 1629,
+    "baseline_known_modifier_vectors": 494,
+    "expected_known_modifier_vectors": 511,
+    "baseline_modifier_atoms": 796,
+    "expected_modifier_atoms": 846,
+    "known_name_cardinality_preserved": 12100
+  },
+  "native_full_preservation": {
+    "status": "PASS",
+    "parent": "1b026969a8b2236737bff537b3eddb3c909781b2",
+    "records": 57320,
+    "canonical_items": 34031,
+    "canonical_shards": 69,
+    "description_changed": 1629,
+    "known_name_value_corrections": 15,
+    "modifier_vectors_changed": 17,
+    "modifier_atoms": 50,
+    "distinct_changed_items": 1655,
+    "description_modifier_intersection": 6,
+    "name_other_intersection": 0,
+    "changed_shards": [
+      "content/items/definitions/items-00000-00499.json",
+      "content/items/definitions/items-00500-00999.json",
+      "content/items/definitions/items-01000-01499.json",
+      "content/items/definitions/items-01500-01999.json",
+      "content/items/definitions/items-02000-02499.json",
+      "content/items/definitions/items-02500-02999.json",
+      "content/items/definitions/items-03000-03499.json",
+      "content/items/definitions/items-03500-03999.json",
+      "content/items/definitions/items-04000-04499.json",
+      "content/items/definitions/items-04500-04999.json",
+      "content/items/definitions/items-05000-05499.json",
+      "content/items/definitions/items-05500-05999.json",
+      "content/items/definitions/items-06000-06499.json",
+      "content/items/definitions/items-06500-06999.json",
+      "content/items/definitions/items-07000-07499.json",
+      "content/items/definitions/items-07500-07999.json",
+      "content/items/definitions/items-08000-08499.json",
+      "content/items/definitions/items-08500-08999.json",
+      "content/items/definitions/items-09000-09499.json",
+      "content/items/definitions/items-09500-09999.json",
+      "content/items/definitions/items-10000-10499.json",
+      "content/items/definitions/items-10500-10999.json",
+      "content/items/definitions/items-11000-11499.json",
+      "content/items/definitions/items-11500-11999.json",
+      "content/items/definitions/items-12000-12499.json",
+      "content/items/definitions/items-12500-12999.json",
+      "content/items/definitions/items-13000-13499.json",
+      "content/items/definitions/items-13500-13999.json",
+      "content/items/definitions/items-14000-14499.json",
+      "content/items/definitions/items-14500-14999.json",
+      "content/items/definitions/items-15000-15499.json",
+      "content/items/definitions/items-15500-15999.json",
+      "content/items/definitions/items-16000-16499.json",
+      "content/items/definitions/items-16500-16999.json",
+      "content/items/definitions/items-17000-17499.json",
+      "content/items/definitions/items-17500-17999.json",
+      "content/items/definitions/items-18000-18499.json",
+      "content/items/definitions/items-18500-18999.json",
+      "content/items/definitions/items-19000-19499.json",
+      "content/items/definitions/items-19500-19999.json",
+      "content/items/definitions/items-20000-20499.json",
+      "content/items/definitions/items-20500-20999.json",
+      "content/items/definitions/items-21000-21499.json",
+      "content/items/definitions/items-21500-21999.json",
+      "content/items/definitions/items-22000-22499.json",
+      "content/items/definitions/items-22500-22999.json",
+      "content/items/definitions/items-23500-23999.json",
+      "content/items/definitions/items-24000-24499.json",
+      "content/items/definitions/items-24500-24999.json",
+      "content/items/definitions/items-25000-25499.json",
+      "content/items/definitions/items-25500-25999.json",
+      "content/items/definitions/items-26500-26999.json",
+      "content/items/definitions/items-27000-27499.json",
+      "content/items/definitions/items-27500-27999.json",
+      "content/items/definitions/items-28000-28499.json",
+      "content/items/definitions/items-28500-28999.json",
+      "content/items/definitions/items-29000-29499.json",
+      "content/items/definitions/items-29500-29999.json",
+      "content/items/definitions/items-30000-30499.json",
+      "content/items/definitions/items-30500-30999.json",
+      "content/items/definitions/items-31000-31499.json",
+      "content/items/definitions/items-31500-31999.json",
+      "content/items/definitions/items-32000-32499.json",
+      "content/items/definitions/items-32500-32999.json",
+      "content/items/definitions/items-33000-33499.json",
+      "content/items/definitions/items-33500-33999.json"
+    ],
+    "all_other_native_fields_headers_flags_identity_admission_World": "PRESERVED",
+    "fully_verified": null
+  },
+  "source_full_preservation": {
+    "status": "PASS",
+    "parent": "1b026969a8b2236737bff537b3eddb3c909781b2",
+    "source_authoring": 700,
+    "canonical_nonempty_authoring": 697,
+    "preexisting_taxonomy_only_owners": [
+      "oteryn:item.tibia.i3287",
+      "oteryn:item.tibia.i3298",
+      "oteryn:item.tibia.i3347"
+    ],
+    "old_full_authoring_preserved": 411,
+    "new_source_authoring": 289,
+    "source_forge_profiles": 436,
+    "tibiawiki_bindings": 454,
+    "old_bindings_preserved": 165,
+    "relation_sources": 539,
+    "relation_refs": 752,
+    "old_full_relation_rows_preserved": 250,
+    "old_full_relation_refs_preserved": 325,
+    "new_existing_native_positive_slot_refs": 138,
+    "no_import_candidates": true,
+    "native_semantics": "NOT_CHANGED_BY_SOURCE_BATCH; separate fullNative verifier required",
+    "fully_verified": null
+  },
+  "current_validation": {
+    "server_lib": {
+      "status": "PASS",
+      "passed": 1344,
+      "ignored": 2
+    },
+    "model_v2": {
+      "status": "PASS",
+      "passed": 19
+    },
+    "repository": {
+      "status": "PASS",
+      "passed": 3
+    },
+    "affected_test_only_lint_repair": {
+      "status": "PASS",
+      "passed": 8
+    },
+    "Clippy_all_targets_deny_warnings": "PASS",
+    "Cargo_fmt_all_check": "PASS",
+    "all_source_python_tests": {
+      "status": "PASS",
+      "passed": 93
+    },
+    "legacy_weapon_context_tests": {
+      "status": "PASS",
+      "passed": 4
+    },
+    "effective_packet_cohorts": 20,
+    "packet_and_default_historical_context_commands": [
+      {
+        "label": "lower_client_physical_packet",
+        "command": [
+          "/workspace/audit-continuation/venv/bin/python",
+          "/workspace/pr1437-world-owner-completion/tools/content-schema/item-authoring/lower_client_physical_packet.py",
+          "--check"
+        ],
+        "exit_code": 0,
+        "log": "/workspace/audit-continuation/combined-postgen-source-lower_client_physical_packet.log"
+      },
+      {
+        "label": "lower_wiki_capacity_packet",
+        "command": [
+          "/workspace/audit-continuation/venv/bin/python",
+          "/workspace/pr1437-world-owner-completion/tools/content-schema/item-authoring/lower_wiki_capacity_packet.py",
+          "--check"
+        ],
+        "exit_code": 0,
+        "log": "/workspace/audit-continuation/combined-postgen-source-lower_wiki_capacity_packet.log"
+      },
+      {
+        "label": "lower_wiki_stats_packet",
+        "command": [
+          "/workspace/audit-continuation/venv/bin/python",
+          "/workspace/pr1437-world-owner-completion/tools/content-schema/item-authoring/lower_wiki_stats_packet.py",
+          "--check"
+        ],
+        "exit_code": 0,
+        "log": "/workspace/audit-continuation/combined-postgen-source-lower_wiki_stats_packet.log"
+      },
+      {
+        "label": "lower_wiki_stack_false_packet",
+        "command": [
+          "/workspace/audit-continuation/venv/bin/python",
+          "/workspace/pr1437-world-owner-completion/tools/content-schema/item-authoring/lower_wiki_stack_false_packet.py",
+          "--check"
+        ],
+        "exit_code": 0,
+        "log": "/workspace/audit-continuation/combined-postgen-source-lower_wiki_stack_false_packet.log"
+      },
+      {
+        "label": "lower_client_market_packet",
+        "command": [
+          "/workspace/audit-continuation/venv/bin/python",
+          "/workspace/pr1437-world-owner-completion/tools/content-schema/item-authoring/lower_client_market_packet.py",
+          "--check"
+        ],
+        "exit_code": 0,
+        "log": "/workspace/audit-continuation/combined-postgen-source-lower_client_market_packet.log"
+      },
+      {
+        "label": "lower_wiki_movable_packet",
+        "command": [
+          "/workspace/audit-continuation/venv/bin/python",
+          "/workspace/pr1437-world-owner-completion/tools/content-schema/item-authoring/lower_wiki_movable_packet.py",
+          "--check"
+        ],
+        "exit_code": 0,
+        "log": "/workspace/audit-continuation/combined-postgen-source-lower_wiki_movable_packet.log"
+      },
+      {
+        "label": "lower_item_document_packet",
+        "command": [
+          "/workspace/audit-continuation/venv/bin/python",
+          "/workspace/pr1437-world-owner-completion/tools/content-schema/item-authoring/lower_item_document_packet.py",
+          "--check"
+        ],
+        "exit_code": 0,
+        "log": "/workspace/audit-continuation/combined-postgen-source-lower_item_document_packet.log"
+      },
+      {
+        "label": "lower_elemental_magic_modifier_packet",
+        "command": [
+          "/workspace/audit-continuation/venv/bin/python",
+          "/workspace/pr1437-world-owner-completion/tools/content-schema/item-authoring/lower_elemental_magic_modifier_packet.py",
+          "--check"
+        ],
+        "exit_code": 0,
+        "log": "/workspace/audit-continuation/combined-postgen-source-lower_elemental_magic_modifier_packet.log"
+      },
+      {
+        "label": "lower_item_name_packet",
+        "command": [
+          "/workspace/audit-continuation/venv/bin/python",
+          "/workspace/pr1437-world-owner-completion/tools/content-schema/item-authoring/lower_item_name_packet.py",
+          "--check"
+        ],
+        "exit_code": 0,
+        "log": "/workspace/audit-continuation/combined-postgen-source-lower_item_name_packet.log"
+      },
+      {
+        "label": "lower_item_hit_magic_packet",
+        "command": [
+          "/workspace/audit-continuation/venv/bin/python",
+          "/workspace/pr1437-world-owner-completion/tools/content-schema/item-authoring/lower_item_hit_magic_packet.py",
+          "--check"
+        ],
+        "exit_code": 0,
+        "log": "/workspace/audit-continuation/combined-postgen-source-lower_item_hit_magic_packet.log"
+      },
+      {
+        "label": "lower_mantra_bond_modifier_packet",
+        "command": [
+          "/workspace/audit-continuation/venv/bin/python",
+          "/workspace/pr1437-world-owner-completion/tools/content-schema/item-authoring/lower_mantra_bond_modifier_packet.py",
+          "--check"
+        ],
+        "exit_code": 0,
+        "log": "/workspace/audit-continuation/combined-postgen-source-lower_mantra_bond_modifier_packet.log"
+      },
+      {
+        "label": "lower_item_use_observation_packet",
+        "command": [
+          "/workspace/audit-continuation/venv/bin/python",
+          "/workspace/pr1437-world-owner-completion/tools/content-schema/item-authoring/lower_item_use_observation_packet.py",
+          "--check"
+        ],
+        "exit_code": 0,
+        "log": "/workspace/audit-continuation/combined-postgen-source-lower_item_use_observation_packet.log"
+      },
+      {
+        "label": "lower_wiki_stack_default_successor8_packet",
+        "command": [
+          "/workspace/audit-continuation/venv/bin/python",
+          "/workspace/pr1437-world-owner-completion/tools/content-schema/item-authoring/lower_wiki_stack_default_successor8_packet.py",
+          "--check"
+        ],
+        "exit_code": 0,
+        "log": "/workspace/audit-continuation/combined-postgen-source-lower_wiki_stack_default_successor8_packet.log"
+      },
+      {
+        "label": "lower_item_forge289_packet",
+        "command": [
+          "/workspace/audit-continuation/venv/bin/python",
+          "/workspace/pr1437-world-owner-completion/tools/content-schema/item-authoring/lower_item_forge289_packet.py",
+          "--check"
+        ],
+        "exit_code": 0,
+        "log": "/workspace/audit-continuation/combined-postgen-source-lower_item_forge289_packet.log"
+      },
+      {
+        "label": "lower_item_description_packet",
+        "command": [
+          "/workspace/audit-continuation/venv/bin/python",
+          "/workspace/pr1437-world-owner-completion/tools/content-schema/item-authoring/lower_item_description_packet.py",
+          "--check"
+        ],
+        "exit_code": 0,
+        "log": "/workspace/audit-continuation/combined-postgen-source-lower_item_description_packet.log"
+      },
+      {
+        "label": "lower_item_description_wiki_packet",
+        "command": [
+          "/workspace/audit-continuation/venv/bin/python",
+          "/workspace/pr1437-world-owner-completion/tools/content-schema/item-authoring/lower_item_description_wiki_packet.py",
+          "--check"
+        ],
+        "exit_code": 0,
+        "log": "/workspace/audit-continuation/combined-postgen-source-lower_item_description_wiki_packet.log"
+      },
+      {
+        "label": "lower_numeric_modifier17_packet",
+        "command": [
+          "/workspace/audit-continuation/venv/bin/python",
+          "/workspace/pr1437-world-owner-completion/tools/content-schema/item-authoring/lower_numeric_modifier17_packet.py",
+          "--check"
+        ],
+        "exit_code": 0,
+        "log": "/workspace/audit-continuation/combined-postgen-source-lower_numeric_modifier17_packet.log"
+      },
+      {
+        "label": "lower_item_name15_packet",
+        "command": [
+          "/workspace/audit-continuation/venv/bin/python",
+          "/workspace/pr1437-world-owner-completion/tools/content-schema/item-authoring/lower_item_name15_packet.py",
+          "--check"
+        ],
+        "exit_code": 0,
+        "log": "/workspace/audit-continuation/combined-postgen-source-lower_item_name15_packet.log"
+      },
+      {
+        "label": "forge",
+        "command": [
+          "/workspace/audit-continuation/venv/bin/python",
+          "/workspace/pr1437-world-owner-completion/tools/content-schema/item-authoring/check_tibiawiki165_historical_context.py",
+          "--cohort",
+          "forge"
+        ],
+        "exit_code": 0,
+        "log": "/workspace/audit-continuation/combined-postgen-source-forge.log"
+      },
+      {
+        "label": "weapon",
+        "command": [
+          "/workspace/audit-continuation/venv/bin/python",
+          "/workspace/pr1437-world-owner-completion/tools/content-schema/item-authoring/check_tibiawiki165_historical_context.py",
+          "--cohort",
+          "weapon"
+        ],
+        "exit_code": 0,
+        "log": "/workspace/audit-continuation/combined-postgen-source-weapon.log"
+      },
+      {
+        "label": "stack-default",
+        "command": [
+          "/workspace/audit-continuation/venv/bin/python",
+          "/workspace/pr1437-world-owner-completion/tools/content-schema/item-authoring/check_stack_default_historical_context.py",
+          "--cohort",
+          "default"
+        ],
+        "exit_code": 0,
+        "log": "/workspace/audit-continuation/combined-postgen-source-stack-default.log"
+      },
+      {
+        "label": "stack-historical",
+        "command": [
+          "/workspace/audit-continuation/venv/bin/python",
+          "/workspace/pr1437-world-owner-completion/tools/content-schema/item-authoring/check_stack_default_historical_context.py",
+          "--cohort",
+          "historical"
+        ],
+        "exit_code": 0,
+        "log": "/workspace/audit-continuation/combined-postgen-source-stack-historical.log"
+      }
+    ],
+    "legacy_engine_context": {
+      "checks": 599,
+      "leech_tests": 3,
+      "status": "PASS"
+    },
+    "current_family_formal_context": {
+      "checks": 274,
+      "templates": 23,
+      "profiles": 22,
+      "status": "PASS"
+    },
+    "content_gates": [
+      {
+        "command": [
+          "/workspace/audit-continuation/venv/bin/python",
+          "tools/content-migration/validate_world_project_v2_to_tree.py"
+        ],
+        "exit_code": 0,
+        "log": "/workspace/audit-continuation/combined-content-gate-00.log"
+      },
+      {
+        "command": [
+          "/workspace/audit-continuation/venv/bin/python",
+          "tools/content-migration/test_world_project_v2_to_tree.py"
+        ],
+        "exit_code": 0,
+        "log": "/workspace/audit-continuation/combined-migration-test-fixture-repair.log",
+        "historical_failed_attempt": {
+          "exit_code": 1,
+          "log": "/workspace/audit-continuation/combined-content-gate-01.log",
+          "finding": "stale165Item binding count/411fixture prior700 successor"
+        },
+        "resolution": "sealed700fixture+454counter; independentv4b repairpeer PASS"
+      },
+      {
+        "command": [
+          "/workspace/audit-continuation/venv/bin/python",
+          "tools/content-schema/validate_materialized_game_tree.py"
+        ],
+        "exit_code": 0,
+        "log": "/workspace/audit-continuation/combined-content-gate-02.log"
+      },
+      {
+        "command": [
+          "/workspace/audit-continuation/venv/bin/python",
+          "tools/content-census/item_key_references.py"
+        ],
+        "exit_code": 0,
+        "log": "/workspace/audit-continuation/combined-content-gate-03.log"
+      },
+      {
+        "command": [
+          "/workspace/audit-continuation/venv/bin/python",
+          "tools/content-schema/charm-authoring/charm_authoring.py",
+          "content",
+          "--check"
+        ],
+        "exit_code": 0,
+        "log": "/workspace/audit-continuation/combined-content-gate-04.log"
+      },
+      {
+        "command": [
+          "/workspace/audit-continuation/venv/bin/python",
+          "tools/content-schema/proficiency-authoring/proficiency_authoring.py",
+          "content",
+          "--check"
+        ],
+        "exit_code": 0,
+        "log": "/workspace/audit-continuation/combined-content-gate-05.log"
+      },
+      {
+        "command": [
+          "/workspace/audit-continuation/venv/bin/python",
+          "tools/content-schema/reward-claim-authoring/reward_claim_authoring.py",
+          "content",
+          "--check"
+        ],
+        "exit_code": 0,
+        "log": "/workspace/audit-continuation/combined-content-gate-06.log"
+      },
+      {
+        "command": [
+          "/workspace/audit-continuation/venv/bin/python",
+          "tools/content-schema/starter-kit-authoring/starter_kit_authoring.py",
+          "content",
+          "--check"
+        ],
+        "exit_code": 0,
+        "log": "/workspace/audit-continuation/combined-content-gate-07.log"
+      },
+      {
+        "command": [
+          "/workspace/audit-continuation/venv/bin/python",
+          "tools/content-schema/item-authoring/item_weapon_proficiency.py",
+          "--check"
+        ],
+        "exit_code": 0,
+        "log": "/workspace/audit-continuation/combined-content-gate-08.log"
+      },
+      {
+        "command": [
+          "/workspace/audit-continuation/venv/bin/python",
+          "tools/content-census/g4_item_crystal_binding_generator.py",
+          "--check"
+        ],
+        "exit_code": 0,
+        "log": "/workspace/audit-continuation/combined-content-gate-09.log"
+      },
+      {
+        "command": [
+          "/workspace/audit-continuation/venv/bin/python",
+          "tools/content-schema/validate_item_master_schema.py"
+        ],
+        "exit_code": 0,
+        "log": "/workspace/audit-continuation/combined-content-gate-10.log"
+      },
+      {
+        "command": [
+          "/workspace/audit-continuation/venv/bin/python",
+          "tools/content-schema/test_validate_item_master_schema.py"
+        ],
+        "exit_code": 0,
+        "log": "/workspace/audit-continuation/combined-content-gate-11.log"
+      },
+      {
+        "command": [
+          "/workspace/audit-continuation/venv/bin/python",
+          "tools/content-schema/item-authoring/check_tibiawiki165_historical_context.py",
+          "--cohort",
+          "engine"
+        ],
+        "exit_code": 0,
+        "log": "/workspace/audit-continuation/combined-content-gate-12.log"
+      },
+      {
+        "command": [
+          "/workspace/audit-continuation/venv/bin/python",
+          "tools/content-schema/item-authoring/check_tibiawiki165_historical_context.py",
+          "--cohort",
+          "formal"
+        ],
+        "exit_code": 0,
+        "log": "/workspace/audit-continuation/combined-content-gate-13.log"
+      },
+      {
+        "command": [
+          "/workspace/audit-continuation/venv/bin/python",
+          "tools/content-schema/item-authoring/check_tibiawiki165_historical_context.py",
+          "--cohort",
+          "weapon-tests"
+        ],
+        "exit_code": 0,
+        "log": "/workspace/audit-continuation/combined-content-gate-14.log"
+      },
+      {
+        "command": [
+          "/workspace/audit-continuation/venv/bin/ruff",
+          "check",
+          "tools/content-schema/item-authoring",
+          "tools/content-schema/world-object-authoring"
+        ],
+        "exit_code": 0,
+        "log": "/workspace/audit-continuation/combined-content-gate-15.log"
+      },
+      {
+        "command": [
+          "/workspace/audit-continuation/venv/bin/ruff",
+          "format",
+          "--check",
+          "tools/content-schema/item-authoring",
+          "tools/content-schema/world-object-authoring"
+        ],
+        "exit_code": 0,
+        "log": "/workspace/audit-continuation/combined-content-gate-16.log"
+      }
+    ],
+    "source_package_Ruff_check_and_format": "PASS",
+    "fullNative_and_canonical_records": "PASS",
+    "full_old_source_and_new_closed_source_rows": "PASS",
+    "second_unchanged_original_generator_byte_idempotence": {
+      "schema": "OTERYN_COMBINED_ORIGINAL_GENERATOR_BYTE_IDEMPOTENCE/v1",
+      "status": "PASS",
+      "utc": "2026-10-02T17:58:11.436135+00:00",
+      "parent": "1b026969a8b2236737bff537b3eddb3c909781b2",
+      "command": [
+        "/workspace/audit-continuation/venv/bin/python",
+        "tools/content-migration/regenerate_content.py",
+        "--skip-checks"
+      ],
+      "generator_sha256": "d85cbceaf8324f2a859dddb1eb2a843de4fb07d078d4663cad0b8ccbd2f488d5",
+      "all_tracked_and_new_owned_preexisting_files": 11920,
+      "after_file_count": 11920,
+      "content_files": 7723,
+      "source_owned_files": 64,
+      "different_files": [],
+      "exit_code": 0,
+      "before_snapshot": "/workspace/audit-continuation/combined-before-last-generation-all-file-hashes.json",
+      "before_snapshot_sha256": "913e742a243ee77597d5e758a31a88cae46c727f01f39602f71b1883989adc83",
+      "cargo_after": "NOT_RUN; this original materializer is LAST Cargo action"
+    },
+    "git_diff_check": "PASS"
+  },
+  "historical_failed_attempts_and_repairs": {
+    "production_compile": "typed ProjectV2Family comparison fixed and independently reviewed; current production materialization PASS",
+    "test_compile": "Name15 fixture explicit Vec<ProjectReferenceRecord> type; production unchanged; current fullLIB PASS",
+    "migration_test": "old165/411 fixture extended to exact454/sealed700; all previous negatives preserved; current test PASS",
+    "repository_test": "old live Forge aggregate147→436; old147/full289 assertions preserved; current repository3 PASS",
+    "test_lints": "only cfg(test) panic allowance and snake_case test identifiers; production and test bodies byte-identical; current Clippy PASS"
+  },
+  "immutable_historical_seals": {
+    "tools/content-schema/item-authoring/lower_item_weapon_metadata_packet.py": "da3646b445398bcdd86289d2927038c4ff9a827778ab33216863e6991b9ac25b",
+    "docs/agents/evidence/OTV2-20261002-item-weapon-metadata-source-qualification-v2.json": "92edd219079460e03ac3f792fc6c3bf849ed37e4191f07de72a69ca16b67806b",
+    "docs/agents/evidence/OTV2-20261002-item-weapon-metadata-promotion-v1.json": "33e95859691705e550a45458a64a15ddb04b6981834e66ce76a618f7efc66e1b",
+    "tools/content-schema/item-authoring/lower_item_forge3332_packet.py": "0c59dd9df73bf3f8b6411cb9241f1d1163a39bca27efffa50a80c2c1a8e6092e",
+    "docs/agents/evidence/OTV2-20261002-item-forge3332-source-qualification-v2.json": "a22405164b549aff06849db98ede92d48d0b72606a25a3d8685054c8b6b324c3",
+    "docs/agents/evidence/OTV2-20261001-item-forge3332-promotion-v1.json": "d6e300e571f1d2e8e6794d3875759fdd0b2cb1ee7872c8527d0f4019ec27b8c1",
+    "tools/content-schema/item-authoring/engine_items.py": "28644c0fcc88f364992670489f7d458f827a9cd1db023b7f5ce0a9ae32d08c1a",
+    "tools/content-schema/item-authoring/source_field_catalogs.py": "8250880aaa89b7c5fa1593d5738a478b0d09e1ef9ef9cef630cb5da172d634bc"
+  },
+  "source_component_lineages": [
+    {
+      "component": "Forge289",
+      "manifest": {
+        "path": "/workspace/audit-continuation/forge289-source-freeze-manifest-v2.json",
+        "sha256": "22357a2e328d66445c3d781b182b34cf658da2d9a78f2f6683fe83888e40297e"
+      },
+      "peer": {
+        "path": "/workspace/audit-continuation/forge289-independent-source-authoring-peer-v2.json",
+        "sha256": "6f8bbbc5ac1e758396f42cd4f6d6b12e9b724cf643ed90a67b37774cb75d3bc6"
+      }
+    },
+    {
+      "component": "Description1629",
+      "manifest": {
+        "path": "/workspace/audit-continuation/combined-item-source-component-checkpoints/description1629/ROOT_component_manifest.json",
+        "sha256": "09ac7211b046045d9943fae8b4c407f1b099c78d4302b2b4a5350ada6862a546"
+      },
+      "peer": "PREVIOUS_INDEPENDENT_PEER_PASSED_ROOT_VERIFIED_CHECKPOINT"
+    },
+    {
+      "component": "Family10",
+      "manifest": {
+        "path": "/workspace/audit-continuation/combined-item-source-component-checkpoints/family-composition/ROOT_component_manifest.json",
+        "sha256": "384f843fd85ede2babbb454ad6be52413dfce9b883c4a324b131d3c3cc4f161a"
+      },
+      "peer": "PREVIOUS_INDEPENDENT_PEER_PASSED_ROOT_VERIFIED_CHECKPOINT"
+    },
+    {
+      "component": "Modifier17",
+      "manifest": {
+        "path": "/workspace/audit-continuation/combined-item-source-component-checkpoints/numeric17/ROOT_component_manifest.json",
+        "sha256": "58854a7487016fb0c39d5a7964675d5a9e59f9c0b6a7a66fbf8a1c768604736e"
+      },
+      "peer": {
+        "path": "/workspace/audit-continuation/numeric17-independent-stopped-source-implementation-peer.json",
+        "sha256": "5e80cc43b3971ff05acdac5f44acd938df26029fb54c9cda7ad9fe08c696011c"
+      }
+    },
+    {
+      "component": "Name15",
+      "manifest": {
+        "path": "/workspace/audit-continuation/combined-item-source-component-checkpoints/name15/ROOT_component_manifest.json",
+        "sha256": "4aa5438bcd134ec890616fa0827a7c9b4b4b3caaae6c0916f754d957633dd8bf"
+      },
+      "peer": {
+        "path": "/workspace/audit-continuation/name15-independent-stopped-source-implementation-peer.json",
+        "sha256": "cbabe3f64ebafc488924fd45ab74e973042dba66941aa6a6ef14d41618e3c76c"
+      }
+    }
+  ],
+  "packets": [
+    {
+      "component": "Forge289",
+      "path": "docs/agents/evidence/OTV2-20261002-item-forge289-promotion-v1.json",
+      "sha256": "376d668b5148d9c5f7b85eb3ef7e2f747c08fdc10170f62ed22e49ce4c6157ab",
+      "items": 289
+    },
+    {
+      "component": "Description114",
+      "path": "docs/agents/evidence/OTV2-20261002-item-description-promotion-v1.json",
+      "sha256": "ca37880074adf21e03e6890d8bf24e6b5d6bdc6e825f2025ae2ec52269040c1e",
+      "items": 114
+    },
+    {
+      "component": "Description1515",
+      "path": "docs/agents/evidence/OTV2-20261002-item-description-wiki-promotion-v1.json",
+      "sha256": "6924c64a981a423e7648ff290a9ca2a5eebb89825bf2c1f29977eb98d2f73ca7",
+      "items": 1515
+    },
+    {
+      "component": "Modifier17",
+      "path": "docs/agents/evidence/OTV2-20261002-item-numeric-modifier17-promotion-v1.json",
+      "sha256": "1d384adbad5edfc1525d140d7f6757264a6b3a1ef82dda476d0337b7cdbaeb1b",
+      "items": 17
+    },
+    {
+      "component": "Name15",
+      "path": "docs/agents/evidence/OTV2-20261002-item-name15-promotion-v1.json",
+      "sha256": "096beca127481342cdf545131321102b460435ecdc97e7f10b9d4f9753228ca8",
+      "items": 15
+    }
+  ],
+  "original_generator_sha256": "d85cbceaf8324f2a859dddb1eb2a843de4fb07d078d4663cad0b8ccbd2f488d5",
+  "bounded_compatibility_contexts": {
+    "formal_isolation": "ENTIRE_WRITABLE_ITEM_AUTHORING_SUBTREE_DETACHED_COPIES; REAL_FORMAL274_REPLAY_SOURCE_BYTES_UNCHANGED",
+    "old3332": "ONLY_HISTORICAL165_BINDINGS_AND_HISTORICAL3332_DEFINITION_VIEW; LIVE_IDENTITY_HEADERS_NAME_DOMAIN_BINDINGS_PAIR_OWNER_GUARDS_INDEPENDENT",
+    "weapon103": "ONLY_HISTORICAL411_DECLARATIONS_VIEW; ACTUAL_CURRENT103_CANONICAL_NATIVE_SOURCE_RAW_BINDING_GUARDS_BY_UNCHANGED_COMPILER; LIVE_EXACT411_OR_SEALED700_FULLROWS; DUPLICATE_MISSING_EXTRA_UNSEALED_CONFLICT_BOOL_REJECT",
+    "future_source_owner_batch": "REQUIRES_NEW_EXPLICIT_SEALED_CONTEXT_NO_BLANKET_SUBSET_ADMISSION"
+  },
+  "runtime_readiness": null,
+  "fully_verified": null,
+  "runtime_activation_or_abi_changes": false,
+  "all_items_complete_claim": false,
+  "root_closeout_docs_excluded": true,
+  "evidence": [
+    {
+      "path": "/workspace/audit-continuation/combined-item-source-freeze-manifest.json",
+      "sha256": "f0575a0740e98beee4a712afb99bc27665cc3372ae4f0898bdf270a5abdc3361",
+      "bytes": 48072
+    },
+    {
+      "path": "/workspace/audit-continuation/combined-item-independent-source-authoring-peer.json",
+      "sha256": "80ba203675172880fd6c12a546b789518e73220bf1e5cb1bfeed6a85cc73cc93",
+      "bytes": 43096
+    },
+    {
+      "path": "/workspace/audit-continuation/combined-item-source-repair-freeze-manifest-v2.json",
+      "sha256": "fa06a0b7c94c128418eec75ef534da9d530ec5d2764eeadae275edc5640e5e54",
+      "bytes": 49591
+    },
+    {
+      "path": "/workspace/audit-continuation/combined-item-independent-source-repair-peer-v2.json",
+      "sha256": "8f236574441b4542d3e2820b7667d47035f7ecbd335224d990ff7f71265d7665",
+      "bytes": 22450
+    },
+    {
+      "path": "/workspace/audit-continuation/combined-item-source-repair-freeze-manifest-v4b.json",
+      "sha256": "a5eb8b3676d1f0f7a52d7fc2ebd4bdf40de63de4385670af28c1e5ab0a3dbe86",
+      "bytes": 54155
+    },
+    {
+      "path": "/workspace/audit-continuation/combined-item-independent-source-repair-peer-v4b.json",
+      "sha256": "e810e96b614ad7d0943a2c0714255026a100d403a5645655896b68d60395f5a8",
+      "bytes": 24715
+    },
+    {
+      "path": "/workspace/audit-continuation/combined-item-source-repair-freeze-manifest-v5.json",
+      "sha256": "9d3d82a43c01803c36bc1a8965e9ddb60bd4830c24b0dc33b6e5e5fd7c6ea4b2",
+      "bytes": 55622
+    },
+    {
+      "path": "/workspace/audit-continuation/combined-item-independent-source-repair-peer-v5.json",
+      "sha256": "f929b1df928702130374dc414c96feb528ecc738c3c43105914e49fc2bda83d6",
+      "bytes": 20843
+    },
+    {
+      "path": "/workspace/audit-continuation/combined-item-source-repair-freeze-manifest-v6.json",
+      "sha256": "910eaf780b21edc21c54c9c47c991b9f9eb4338ee98beaa7b51144ba1e93ff38",
+      "bytes": 57203
+    },
+    {
+      "path": "/workspace/audit-continuation/combined-item-independent-source-repair-peer-v6.json",
+      "sha256": "f77be0be8983ea1454106bb69cbda04608a9466c57c62d2e81bba4c60a1d82ab",
+      "bytes": 20377
+    },
+    {
+      "path": "/workspace/audit-continuation/combined-item-full-native-delta.json",
+      "sha256": "38efd6d69962a62611befc4831b51b8368bf5b630f8be5d34cbae9898a9e6f4a",
+      "bytes": 4217
+    },
+    {
+      "path": "/workspace/audit-continuation/combined-source-owner700-preservation.json",
+      "sha256": "51545b2ed600b29da9b49d5b9ae575682686317c93b59ea6c1450c0cb55524d9",
+      "bytes": 782
+    },
+    {
+      "path": "/workspace/audit-continuation/combined-final-content-gate-results.json",
+      "sha256": "ae7f56916e3dc5b0ce0875c9057c7134df5f0434c380f376f7b4ea1485a3fa20",
+      "bytes": 4950
+    },
+    {
+      "path": "/workspace/audit-continuation/combined-postgen-source-checks.json",
+      "sha256": "eda1ba2561bac9628b686770cf32f2329bc9bda49e01173fe79b11e246da79ac",
+      "bytes": 8534
+    },
+    {
+      "path": "/workspace/audit-continuation/combined-serial-cargo-results.json",
+      "sha256": "6b3ce1f8415a22b90aee8cf610953cd290bd98ffaae7493cf75bd403d1409eb8",
+      "bytes": 1082
+    },
+    {
+      "path": "/workspace/audit-continuation/combined-resumed-cargo-results.json",
+      "sha256": "2adac680089484cc285fcaa7c34b15ff7509ec5e337222d26c38599073c68c99",
+      "bytes": 779
+    },
+    {
+      "path": "/workspace/audit-continuation/combined-final-lint-cargo-results.json",
+      "sha256": "aa6e4f5a7986aac14c64eb0e749827bae7e209284cd265186bab479dad99347a",
+      "bytes": 1157
+    },
+    {
+      "path": "/workspace/audit-continuation/combined-second-original-generation-byte-idempotence.json",
+      "sha256": "d9452920b83f60d10f76bc0d5c936be3945d0a74010ce05aa11147e0b68920bb",
+      "bytes": 891
+    }
+  ],
+  "pending_root_actions": [
+    "Fresh independent final full-owned and last-generation peer",
+    "Root-only closeout evidence/archive",
+    "Guarded Root publication/exact-head verification"
+  ],
+  "final_cargo_generation_logs": [
+    {
+      "path": "/workspace/audit-continuation/combined-first-generation-repaired.log",
+      "sha256": "ca8577ca16d87a06256e2ed95bf0b4b3932712f89e4e741600837313e199ff13",
+      "bytes": 1905
+    },
+    {
+      "path": "/workspace/audit-continuation/combined-second-original-generation.log",
+      "sha256": "94a2478f12879d9b728a12e915ba38c6862302a706718c478e6f9e936f2edcf2",
+      "bytes": 1905
+    },
+    {
+      "path": "/workspace/audit-continuation/combined-cargo-server-lib.log",
+      "sha256": "fd34c9e5807fe4faf1696fa9bad608f6f1e6d822be6443db14de64f445ea49ed",
+      "bytes": 148519
+    },
+    {
+      "path": "/workspace/audit-continuation/combined-cargo-model-v2.log",
+      "sha256": "13171f4418afaa5896a0899b636be09a71feed7546758098949eeb698a2e7cb6",
+      "bytes": 2338
+    },
+    {
+      "path": "/workspace/audit-continuation/combined-cargo-repository-repaired.log",
+      "sha256": "a451be903d94c052a0d6adc7e3629e5bc9f5971bcbbd8c2aa2004c09a1a3e4ba",
+      "bytes": 1159
+    },
+    {
+      "path": "/workspace/audit-continuation/combined-cargo-affected-desc-name-tests.log",
+      "sha256": "5f326f34c7739d54de3e3d9b563086547dbcc30aec9e44940e6c4e0f29ea3895",
+      "bytes": 1794
+    },
+    {
+      "path": "/workspace/audit-continuation/combined-cargo-clippy-final.log",
+      "sha256": "bc573ba9c8b5c31d338826b50b3a2567317ce9c1b5221df370d9a920d2d32055",
+      "bytes": 626
+    },
+    {
+      "path": "/workspace/audit-continuation/combined-cargo-fmt.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "/workspace/audit-continuation/combined-postgen-all-source-unit-tests.log",
+      "sha256": "eca249cd8e15a0e3017cc6719eff2379acb0b5a23fbd7bd0da1120cca8ed90fd",
+      "bytes": 395
+    }
+  ]
+}

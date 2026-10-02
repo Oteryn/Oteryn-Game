@@ -1,0 +1,151 @@
+{
+  "schema": "OTERYN_FX_AUDIO295_INDEPENDENT_SOURCE_AUTHORING_PEER/v1",
+  "status": "SOURCE_PASS",
+  "findings": [],
+  "utc": "2026-10-02T18:39:19.396980+00:00",
+  "repository": "/workspace/pr1437-world-owner-completion",
+  "actual_parent": "4151e3005daa41ed848533e45b63fadc5ed78fa3",
+  "draft_pr": 1599,
+  "frozen_manifest": {
+    "path": "/workspace/audit-continuation/fx-audio295-source-authoring-freeze-manifest.json",
+    "sha256": "d538c7b9316249a34de89d4e140afe396b6e2fcd2f57637caff46765d4d32160",
+    "bytes": 21586
+  },
+  "stable_source12": {
+    ".github/workflows/item-authoring-schema.yml": "345028b9f5c8a65696a0534727d3cb46f1845bc1d24ec9bd614bb691bd083c30",
+    "apps/game-server/examples/materialize_content_world_project_v2.rs": "f167224187747bbed7d5bb7eba3ff52bc7349224c1c182971b64e3b6ba437ba2",
+    "apps/game-server/examples/support/item_fx_audio_raw_import.rs": "3e4087bb01f726eb1268e96382f002af6d7be0f1cf1b8f41becbeaf5889ea54e",
+    "apps/game-server/tests/content_item_fx_audio_raw.rs": "3ffc9035673ae1c7661d5dacda37160714b283ce58fd6cc50d6f0e18662eca26",
+    "apps/game-server/tests/content_world_project_repository.rs": "3b706db1bea41bf697b4f45deb2171cd6b31e5905fe79a4a1ea9dd9a2a088206",
+    "docs/architecture/OTERYN_ITEM_AUTHORING_MASTER_SCHEMA_V1.md": "350c67910fc743d853570885efaf6f922ce81a5269c676c7982b33545bb4de61",
+    "docs/architecture/OTERYN_WORLD_PROJECT_SOURCE_PROFILE_V2_DECISION.md": "eab646619d84d7ef2b6a2235cf3240b6f9d18d1c99da195c484a0c739292c28b",
+    "imports/ots-source-evidence/item-fx-audio295/import-batch.json": "1d1fa3465d5c3eb3c7c2188acc03334115aef4eb517dced66def17c483d9cd74",
+    "imports/ots-source-evidence/item-fx-audio295/producer/raw_fx_audio_reimport.py": "114582bc4058fbdeb458084163f1aa4efb3db206c6e96fd9cdad2e73f7332ada",
+    "imports/ots-source-evidence/item-fx-audio295/raw-source-staging.json": "755e9d4fddf76eb38acd68aeb9e457ddfebffde55c7f98de8f7e5a07b994258c",
+    "imports/ots-source-evidence/item-fx-audio295/retained-source-files.json": "3532de334350694797aa095df3d4a009ede18bee4121a01be804d07f93d42ae5",
+    "tools/content-schema/item-authoring/test_raw_fx_audio_reimport.py": "6b6c5de97b3816f7b6a754a4faa384ae91cdc208e2fd75374c108127273af212"
+  },
+  "stable_source": {
+    ".github/workflows/item-authoring-schema.yml": "345028b9f5c8a65696a0534727d3cb46f1845bc1d24ec9bd614bb691bd083c30",
+    "apps/game-server/examples/materialize_content_world_project_v2.rs": "f167224187747bbed7d5bb7eba3ff52bc7349224c1c182971b64e3b6ba437ba2",
+    "apps/game-server/examples/support/item_fx_audio_raw_import.rs": "3e4087bb01f726eb1268e96382f002af6d7be0f1cf1b8f41becbeaf5889ea54e",
+    "apps/game-server/tests/content_item_fx_audio_raw.rs": "3ffc9035673ae1c7661d5dacda37160714b283ce58fd6cc50d6f0e18662eca26",
+    "apps/game-server/tests/content_world_project_repository.rs": "3b706db1bea41bf697b4f45deb2171cd6b31e5905fe79a4a1ea9dd9a2a088206",
+    "docs/architecture/OTERYN_ITEM_AUTHORING_MASTER_SCHEMA_V1.md": "350c67910fc743d853570885efaf6f922ce81a5269c676c7982b33545bb4de61",
+    "docs/architecture/OTERYN_WORLD_PROJECT_SOURCE_PROFILE_V2_DECISION.md": "eab646619d84d7ef2b6a2235cf3240b6f9d18d1c99da195c484a0c739292c28b",
+    "imports/ots-source-evidence/item-fx-audio295/import-batch.json": "1d1fa3465d5c3eb3c7c2188acc03334115aef4eb517dced66def17c483d9cd74",
+    "imports/ots-source-evidence/item-fx-audio295/producer/raw_fx_audio_reimport.py": "114582bc4058fbdeb458084163f1aa4efb3db206c6e96fd9cdad2e73f7332ada",
+    "imports/ots-source-evidence/item-fx-audio295/raw-source-staging.json": "755e9d4fddf76eb38acd68aeb9e457ddfebffde55c7f98de8f7e5a07b994258c",
+    "imports/ots-source-evidence/item-fx-audio295/retained-source-files.json": "3532de334350694797aa095df3d4a009ede18bee4121a01be804d07f93d42ae5",
+    "tools/content-schema/item-authoring/test_raw_fx_audio_reimport.py": "6b6c5de97b3816f7b6a754a4faa384ae91cdc208e2fd75374c108127273af212"
+  },
+  "double_actual_readback": "PASS",
+  "dirty_set_exact12": "PASS",
+  "proposal_lineage": {
+    "original_proposal": {
+      "bytes": 2985,
+      "path": "/workspace/audit-continuation/fx-audio295-raw-server-import-proposal/source-only-checkpoint-manifest.json",
+      "sha256": "c75c525cc77ca574452e87ced36f9f1f9d7e1cafb72b629ea02f4756e6b60e04"
+    },
+    "parent": {
+      "bytes": 1738089,
+      "path": "/workspace/audit-continuation/fx-audio295-actual4151-parent-receipt.json",
+      "sha256": "d6b876cafb510bd049fb8dde896673f4ad287f7f8b91bf4fd82fc3281e59fb1f"
+    },
+    "proposal_peer": {
+      "bytes": 4908,
+      "path": "/workspace/audit-continuation/fx-audio295-raw-server-data-independent-source-peer.json",
+      "sha256": "657329a6043f8c18ef554beb40ecaccbabb72621e9bba34b5cacebe7e3f34e6e"
+    },
+    "protected_parent": {
+      "bytes": 3921922,
+      "path": "/workspace/audit-continuation/fx-audio295-source-parent-protected-files.json",
+      "sha256": "7bd19fab58095d7724efa7e7fc343f2334fc69fd409aa1ee3f54e13826d4b720"
+    }
+  },
+  "scope": "Raw data intake only. 295 source-local records plus one context as296 existing reimport Text states; no source identity or Item binding/semantic owner or executable Native/media authority. Historical1b raw coordinate labels retained immutable observations, not qualified4151 current owner evidence.",
+  "production_glue_review": {
+    "nested_example_helper": "40lines; sealed payloadSHA then typed ImportBatch; exactBatchId/emptycandidates/count296/nullbaseline/nullLocal/Text/AdoptUpstream/decide guards; appends once; identical replay0; any opposed/duplicate currentbatch rejects without mutation",
+    "materializer": "Only helper module, aggregate reimport allowance61+296=357, append after all previous cohort calls; same original generator and production library/type/schema/decoder/catalog bytes",
+    "caller_max_import_records12": "Actual generic limit counts candidate records and v2sources, not14 batch count; raw batchadds0candidates/0sources and retains existingcap12",
+    "repository_test": "Adds exact14batch/357state and sealedwholebatch equality; legacy12excluding existingForge289/newRaw retained; original13/61 covered separately; no old guard removed",
+    "public_inertness": "CandidateValueText cannot become NativeItemBinding; candidatesempty prevents BindNativeItem/LocalNonProduction proof or new sourcebinding. ContextSpell107/sourceLocalholds/World141/static149/identity5 stored verbatim. Lua/C++ text never interpreted.",
+    "producer": "Actual7331byte code artifact SHA114582bc retained unchanged at durable imports/producer path; Python tests gate codeSHA before moduleload; whole original tools Ruff safeguards byte-preserved, no path exemption",
+    "CI": "New rawartifact trigger and replay7/CLI step only; existing job working-directory/tools Ruff checks and all predecessor checks retained"
+  },
+  "independent_checks": {
+    "python_tests": {
+      "passed": 7,
+      "status": "PASS"
+    },
+    "producer_cli": "--check exit0",
+    "exact_lossless_whole_capture": "PASS",
+    "retained_sources": "All64completeUTF8 files hash/length reproduced by producer and existing acceptedproposal rawsource peer",
+    "old13_batches_61states": "Allfullrows preserved in mergedmemory; projected14/357",
+    "budget": {
+      "decoded_values": 3642,
+      "decoded_string_bytes_including_keys": 6115100,
+      "max_depth": 7,
+      "raw_import_document_bytes": 6739919
+    },
+    "all_unowned_parent_files": 11917,
+    "all_old_data_files": 7856,
+    "actual_git_blob_equality": "PASS",
+    "preexisting_crlf_equivalence": [
+      "experiments/world-vfx-prototype/run-matrix.ps1"
+    ],
+    "prior22_routes_and2contexts": "All retainedexit0 logdigests verified",
+    "git_diff_check": "PASS"
+  },
+  "rust_test_review": {
+    "count": 3,
+    "actual_execution": "NOT_RUN",
+    "coverage": [
+      "Bounded strict parser/canonicalwriter/rewrite; rawText296 noNativeRecords/noItemAuthoring",
+      "Actual13oldbatches/61states retained, replay0, lateopposed/duplicatebatch atomicreject",
+      "Unknown JSONfield/duplicatebatchmember/Textbool malformedreject, inconsistentdecisionreject, finite295limitreject"
+    ],
+    "test_limits": "max_string_bytes7M>actual6.115M; depth24>7; values10000>3642; raw296states; fullcaller357 aggregate. These are pending actual compiled checks."
+  },
+  "protected_sha": {
+    "generator": "d85cbceaf8324f2a859dddb1eb2a843de4fb07d078d4663cad0b8ccbd2f488d5",
+    "decoder": "28644c0fcc88f364992670489f7d458f827a9cd1db023b7f5ce0a9ae32d08c1a",
+    "catalog": "8250880aaa89b7c5fa1593d5738a478b0d09e1ef9ef9cef630cb5da172d634bc"
+  },
+  "retained_current_counts": {
+    "BR_Item_bindings": 454,
+    "Forge_profiles": 436,
+    "Item_authoring": 700,
+    "Native_records": 57320,
+    "canonical_Items": 34031,
+    "imports": 13,
+    "reimport_states": 61,
+    "source_relation_refs": 752,
+    "source_relation_sources": 539
+  },
+  "projected_counts": {
+    "imports": 14,
+    "new_Item_authoring": 0,
+    "new_Native_records": 0,
+    "new_assets_events_World": 0,
+    "new_bindings": 0,
+    "new_candidates": 0,
+    "new_raw_states": 296,
+    "new_slots_or_admission": 0,
+    "raw_contexts": 1,
+    "reimport_states": 357,
+    "source_local_id_records": 295
+  },
+  "source_only_owner_status": "OTS_HYPOTHESIS_ONLY_RAW_OBSERVATIONS_NO_TYPED_MEDIA_AUTHORITY",
+  "runtime_readiness": null,
+  "fully_verified": null,
+  "all_items_complete_claim": false,
+  "reviewer_operations": "No Cargo/build/generation/Git/ref/repository writes. External report only.",
+  "required_next_gates": [
+    "Root exclusive compiled strict parser/roundtrip/malformedbound tests",
+    "First unchanged original generation; actual14batches357states and old13/61 fullpreservation",
+    "All Native57320/Item34031/Source700/Forge436/454bindings/539relations752refs/assets/World unchanged",
+    "All required checks; second original generator LAST fullbyteidempotence",
+    "Final stopped worker/fullowned/source12/postgen peers before publication"
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "archive": "/workspace/audit-continuation/combined-item-published-server-data-4151e300-exact-checkpoint.tar.gz",
+  "sha256": "d7b1cbf117c491f79ed2d04da8f29f9c07fc6cd8e9a3c24740477d589ffcdf0a",
+  "bytes": 4369736,
+  "published_head": "4151e3005daa41ed848533e45b63fadc5ed78fa3",
+  "owned_files": 158,
+  "members": 162,
+  "full_members_readback": "PASS",
+  "publication_state": "VALIDATE full158remoteBytes",
+  "runtime_readiness": null
+}

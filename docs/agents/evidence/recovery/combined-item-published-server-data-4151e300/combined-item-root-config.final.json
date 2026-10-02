@@ -1,0 +1,36 @@
+{
+  "label": "item-combined1629-289-17",
+  "worktree": "/workspace/pr1437-world-owner-completion",
+  "worker_manifest": "/workspace/audit-continuation/combined-item-final-worker-publication-adapter.json",
+  "task": "OTV2-20261002-item-source-completion-batch",
+  "title": "Import prepared Item data into server catalogs",
+  "pr_title": "content: import prepared Item data into server catalogs",
+  "branch": "codex/item-forge289-20261002",
+  "pr": 1562,
+  "dependency": 1560,
+  "parent": "1b026969a8b2236737bff537b3eddb3c909781b2",
+  "description": "Import prepared Item data through the server materializer into canonical Item definitions and source declarations: 1,629 literal descriptions, 289 source profiles for Forge, 17 numeric modifier vectors (50 atoms), and 15 corrections to imported names. Include ten family templates with all 22 family-class constraints. The data covers 1,859 distinct Item targets, with Native field changes on 1,655. Preserve 57,320 records, 34,031 canonical Items, all other Native fields and World placement. Source profiles increase from 411 to 700; BR bindings from 165 to 454; source relations from 250 sources/325 references to 539/752. Data import does not establish runtime readiness or full per-Item completion.",
+  "provenance": "Descriptions114 agree with XML;1515 retain literal Wiki punctuation under explicit bounded authority policy and record differing XML. Forge289 uses exact own numeric-ID bindings and literal BR parameters with independent typed corroboration. Modifier17 uses existingNative37 units and Unknown contexts without inferred runtime formula. Ordinary HTTP and retained anonymous Chrome/CDP public research after access blocks. Historical source cohorts and evidence remain separately pinned.",
+  "review_scope": "Source-only qualification/data composition, existing typed Native leaves; no runtime implementation, ABI expansion, blanket schema/guard weakening, global stack maximum or full Item completion claim. Historical165 formal context must be isolated against write-through. Independent source and final post-generation peers required before guarded publication.",
+  "optional_name15_component": {
+    "include_only_after": "STOPPED_SOURCE_IMPLEMENTATION_AND_PEER_PASS",
+    "expected_known_names_count": "UNCHANGED12100",
+    "value_corrections": 15,
+    "original_known_literal": "weapon of mayhem",
+    "authority": "explicitclosedofficialnumeric/provenimportliteral15; noownWikiIDclaim; Name139unchanged",
+    "no_family_classification_or_NAV_lowering": true
+  },
+  "worker_manifest_sha256": "d0d633370066bc45e7a20ab6e9885eeac15f820176ef4279a3a919b4e7f332e7",
+  "worker_count": 156,
+  "state": "/workspace/audit-continuation/forge289-publication.state.json",
+  "message": "content: import prepared Item data into server catalogs",
+  "peer_report": "/workspace/audit-continuation/combined-item-independent-final-candidate-peer.json",
+  "peer_report_sha256": "0ec467396d4ffcc06058977740b2017fe921188bdc720c067af6d8ee0e0adeee",
+  "peer_status_key": "status",
+  "peer_status_value": "PASS",
+  "peer_source_key": "stable_owned_files",
+  "root_owned_paths": [
+    "docs/agents/evidence/OTV2-20261002-item-source-completion-batch.md",
+    "docs/agents/tasks/archive/OTV2-20261002-item-source-completion-batch.md"
+  ]
+}

@@ -1,0 +1,985 @@
+{
+  "schema": "OTERYN_COMBINED_ITEM_INDEPENDENT_FINAL_POSTGEN_SOURCE_PEER/v1",
+  "status": "PASS",
+  "validation_status": "FINAL_POSTGEN_SOURCE_AUTHORING_PEER_PASS",
+  "findings": [],
+  "utc": "2026-10-02T18:04:04.912167+00:00",
+  "repository": "/workspace/pr1437-world-owner-completion",
+  "actual_parent": "1b026969a8b2236737bff537b3eddb3c909781b2",
+  "worker_final_manifest": {
+    "path": "/workspace/audit-continuation/combined-item-final-worker-manifest.json",
+    "sha256": "062e94af29cdf9850f3b457266d2156eefdf40a223cfe86a775bfe5d37be2c63",
+    "bytes": 77204
+  },
+  "accepted_final_source_peer": {
+    "path": "/workspace/audit-continuation/combined-item-independent-source-repair-peer-v6.json",
+    "sha256": "f77be0be8983ea1454106bb69cbda04608a9466c57c62d2e81bba4c60a1d82ab"
+  },
+  "stable_source64": {
+    ".github/workflows/item-authoring-schema.yml": "78c941a5cf3bcadad30fb45d59e928781c0a75d2d12d3664d9e553786b87d0a0",
+    "apps/game-server/examples/materialize_content_world_project_v2.rs": "d34f750035eae980c378bc2f17e113acd3e331b21590fd4a578862514cd29eb1",
+    "apps/game-server/src/content/item_description_promotion.rs": "e607742176ce62cde19f685daf65f8410e8583346e0eac252b6aeed5ff57d427",
+    "apps/game-server/src/content/item_description_wiki_promotion.rs": "48d674e69fb86f77f6ca9c9b6f9d6667b5f4040809a572a0c6c1a420dc0baba2",
+    "apps/game-server/src/content/item_forge289_promotion.rs": "c4849937ab374fe165f0249c24450e6d2d6af34bcef239e249c660b8e1ca70f7",
+    "apps/game-server/src/content/item_name15_promotion.rs": "547a2b87e1f41f80240c93f32d68236e0720fda52986a790a93d4023929fb7bc",
+    "apps/game-server/src/content/item_numeric_modifier_promotion.rs": "a68240fb59f09748369ab1856aa3d9792d15c8a1951794d669fc41c73463f68e",
+    "apps/game-server/src/content/mod.rs": "683d475a3eb8e439d682b0b6802a88ab98dd2ca1e3146d0b6bdc807a29bb6585",
+    "apps/game-server/tests/content_world_project_repository.rs": "425b4e7ced1cbcc48c059fb1e6f1d5dbdb97c36f2e0d90456fb6596ed18cf9fe",
+    "docs/agents/evidence/OTV2-20261002-item-description-historical-source-proposal-v1.json": "328ada9dc206b4204bd61f463a5e21e70b473b0d20d4f1c48941aeff04336765",
+    "docs/agents/evidence/OTV2-20261002-item-description-promotion-v1.json": "ca37880074adf21e03e6890d8bf24e6b5d6bdc6e825f2025ae2ec52269040c1e",
+    "docs/agents/evidence/OTV2-20261002-item-description-source-qualification-v1.json": "852f539ff3e496ecd35fa5751c9b6bb820167dd28b29377b0458a297befe2e31",
+    "docs/agents/evidence/OTV2-20261002-item-description-wiki-historical-policy-proposal-v1.json": "c798c1cbce3f35d8b0ab9652cfa4f0fbc0cdc3cebcba863f940fe9923c269f6a",
+    "docs/agents/evidence/OTV2-20261002-item-description-wiki-promotion-v1.json": "6924c64a981a423e7648ff290a9ca2a5eebb89825bf2c1f29977eb98d2f73ca7",
+    "docs/agents/evidence/OTV2-20261002-item-description-wiki-source-qualification-v1.json": "e914832a1b4a9cbb8ccddd7925d54541ff0fc48faadf797d106c04b60bd87757",
+    "docs/agents/evidence/OTV2-20261002-item-forge289-original-proposed-packet-v1.json": "0c934577617136c5af4fbd0bea4b454db1a6cec05dcee8ab281a1c1ef3c588f2",
+    "docs/agents/evidence/OTV2-20261002-item-forge289-promotion-v1.json": "376d668b5148d9c5f7b85eb3ef7e2f747c08fdc10170f62ed22e49ce4c6157ab",
+    "docs/agents/evidence/OTV2-20261002-item-forge289-provenance-basis-prospective-receipt-v1.json": "d0165ad26a0a8501c87856a747ccde67a5a9f59ce7257fa939aa5f17fa7c45a3",
+    "docs/agents/evidence/OTV2-20261002-item-forge289-source-qualification-v1.json": "e76b35928af82b02cc60eea1904b343e88588bd6765436acde39b70370b499a1",
+    "docs/agents/evidence/OTV2-20261002-item-magic-capacity4-source-qualification-v1.json": "9aba058979f9376996377163964cbad2a9a20cd826c071ea40c9e1273213238f",
+    "docs/agents/evidence/OTV2-20261002-item-name15-historical-source-v1.json": "7fd1bd8d99967942c9a2c7dbf29df4759eba8dbdfcbb31dbf8e31313a394a662",
+    "docs/agents/evidence/OTV2-20261002-item-name15-promotion-v1.json": "096beca127481342cdf545131321102b460435ecdc97e7f10b9d4f9753228ca8",
+    "docs/agents/evidence/OTV2-20261002-item-name15-source-qualification-v1.json": "d4b14233d8aa9b33bb35ade24ef2d0b42d2504d7991297eabfe160b16fc2fed4",
+    "docs/agents/evidence/OTV2-20261002-item-numeric-modifier13-promotion-v1.json": "d8c89a733e28a1d437b9bacde7be3be791e7d408f9ff5d5fa4dd2d72046c163c",
+    "docs/agents/evidence/OTV2-20261002-item-numeric-modifier13-source-proof-v2.json": "11b8a6a7f1f85765f2b9c99dabc7815405c2bf3b0c10bb78b39deebb741937c9",
+    "docs/agents/evidence/OTV2-20261002-item-numeric-modifier17-current-receipt-v1.json": "5836649139a383fcb466b385b9dde32e754cb0af0ae13a4cf5685c2b297220a9",
+    "docs/agents/evidence/OTV2-20261002-item-numeric-modifier17-promotion-v1.json": "1d384adbad5edfc1525d140d7f6757264a6b3a1ef82dda476d0337b7cdbaeb1b",
+    "docs/agents/evidence/OTV2-20261002-item-numeric-modifier17-source-qualification-v1.json": "c950c0c89db442612b4822e857b86e70ac01056974f9752996aadda415f2d71f",
+    "docs/agents/evidence/OTV2-20261002-tibiawiki165-historical-import-context-v1.json": "254675adf42a677eeefdb3ed18a42aee90ee8c5ec78d6ac08dff6a999181fb76",
+    "docs/architecture/OTERYN_ITEM_AUTHORING_MASTER_SCHEMA_V1.md": "03f1d1b29b02fbf381f62cae27331ad9d42fb492068a0183b23263c3619ae799",
+    "docs/architecture/OTERYN_WORLD_PROJECT_SOURCE_PROFILE_V2_DECISION.md": "b12b90166750fe4f2854683ab947ad6ce69374de94cfb1d882cc693fc476b88f",
+    "imports/tibiawiki/facts/forge289-source-snapshot.json": "cff4df43b6e38255656d56fd1f53a47cf30f6174f09c01e18450cf5e49db32c2",
+    "tools/content-migration/test_world_project_v2_to_tree.py": "a113883e3563a6bac878b189786480819a53f35b948024fa28418974d9b8f108",
+    "tools/content-migration/validate_world_project_v2_to_tree.py": "fd6d52bbc6c214f884063a3153228167d57ac3c91e441a759c2425576edfc2a4",
+    "tools/content-schema/item-authoring/README.md": "1edb0b30229b6ad838e3a5607d5f7d580cabec6e815061c5752929d3d9fad537",
+    "tools/content-schema/item-authoring/build_formal_schema.py": "e8e85092a09c259dabb5e70e5c58d33dd3cdaeebdba4be874c3e2a3d82d188af",
+    "tools/content-schema/item-authoring/check_tibiawiki165_historical_context.py": "93f843b666b1745b2208b318e3694e0867fc5842b0253629bc61400a8107581c",
+    "tools/content-schema/item-authoring/formal-schema-validation-report.json": "c819689c9eb056678f046d5c5ae6a26bf6a464ad912aaec6e906961df2201c02",
+    "tools/content-schema/item-authoring/item.schema.json": "3397985db826a44e33e5830e7d9651598148130657fe4b43c204eee848c4088d",
+    "tools/content-schema/item-authoring/lower_item_description_packet.py": "a15ee15bf2d8619302f2a74b1f49ff261d3d35d0f1ccfc27092d97b51357e1ea",
+    "tools/content-schema/item-authoring/lower_item_description_wiki_packet.py": "5d97281efeb9d34d054433e3e5b3d519a7cfb53ea490908b78f0b46096f571ae",
+    "tools/content-schema/item-authoring/lower_item_forge289_packet.py": "f37c9dfe98dba8c324746aac3ef9d359c8a477c9ac90745d907a342060427de6",
+    "tools/content-schema/item-authoring/lower_item_name15_packet.py": "e4f4943e1cd97718fbe4bf0c55a9e93f08c784d15bc6f741fbc74aaa86b0d0bf",
+    "tools/content-schema/item-authoring/lower_numeric_modifier17_packet.py": "06bd5da33045406dcadf049509ea1e09e68ae10313b241c8dc5de41ac63fcd01",
+    "tools/content-schema/item-authoring/templates/container-equipment.json": "bb4ee4f414165e03f3f23b90d9925f37978f5dca5c2fad5ead14952902199327",
+    "tools/content-schema/item-authoring/templates/event-collectible.json": "a18d543e2c3b59e2c57c316474257f2f10b8f435611fbb23672bea402d3da8ab",
+    "tools/content-schema/item-authoring/templates/key.json": "e6a9b017828dc1f1ecb36257b5c97c8938277bd7f06079b381a58232b6423a16",
+    "tools/content-schema/item-authoring/templates/light-source.json": "4c688d0c8310c8f45d8f5b822fb3f1932285c5c62b80a0fe6e3b247bcae7a90f",
+    "tools/content-schema/item-authoring/templates/plant.json": "b1cf978bdfc15e5efb5ab14d043c0970e6b9219a10765f8271744b60be742438",
+    "tools/content-schema/item-authoring/templates/progression-material.json": "ccc89a1de9ad92fa2e554dce6256ec2f689e3944aa9fca12b8e5af03ea0235b5",
+    "tools/content-schema/item-authoring/templates/quest-item.json": "368282df8857745fd671b6222c3e7165df4b778bb08423b5909211fb6f9285b8",
+    "tools/content-schema/item-authoring/templates/tool.json": "d56001e1dc337a786361e6c83b16d495978335d5dfae30a8679e43606f698d4c",
+    "tools/content-schema/item-authoring/templates/transformation-item.json": "055c04ecea213e733bb88e589efbc702403f3d052e87b2b1ce39f638fdd18b76",
+    "tools/content-schema/item-authoring/templates/trash.json": "6517409582e80f9b01a00660bc7f72fa5dae0505fdaee2a8aedc9178b6ce8f98",
+    "tools/content-schema/item-authoring/test_engine_items.py": "98d884ce084af81c8a75b3f69834b67a0b3cfe20a413b2cb2f51253884ff3bb4",
+    "tools/content-schema/item-authoring/test_lower_item_description_packet.py": "e02f206ae50305913b22c7b2dc4620f4fe7c4a1d9e84c9257b43bb9795303e6a",
+    "tools/content-schema/item-authoring/test_lower_item_description_wiki_packet.py": "eb15f76c1a265185ec0ea3a458f775986e37a75d652278ab54af7cc5b34bc975",
+    "tools/content-schema/item-authoring/test_lower_item_forge289_packet.py": "8e82c9d6efee938888d7cd235dbb3a26b039444ecc8d0b15b26e41d040f86fa6",
+    "tools/content-schema/item-authoring/test_lower_item_forge3332_packet.py": "7a9d91118bf22d8093c50af8514e00c98003aad266b228fe3b0c1be913ae0cea",
+    "tools/content-schema/item-authoring/test_lower_item_hit_magic_packet.py": "401f37e5c037869834d8f8f205ab35ae450b8acf3d7226034ea12a9fd0ad8608",
+    "tools/content-schema/item-authoring/test_lower_item_name15_packet.py": "ce72c5259bd4a0273c6df6f35a477de62034f235c4bed42378c1f9813575429f",
+    "tools/content-schema/item-authoring/test_lower_item_use_observation_packet.py": "cda149a18bb259dfeb515a647993a25926b63b336a815f032c224a8d6e02280c",
+    "tools/content-schema/item-authoring/test_lower_numeric_modifier17_packet.py": "5f2b23d6346bf85aa5fc991d5aa78a43ea05a6746a2709bfde559b8fd6cd1625",
+    "tools/content-schema/item-authoring/verify_formal_schema.py": "8cdf7aa58b4b3477a6e8b2c5c63e72f0e1be7a14ff74c88ea45a9dd8e04f2384"
+  },
+  "stable_source": {
+    ".github/workflows/item-authoring-schema.yml": "78c941a5cf3bcadad30fb45d59e928781c0a75d2d12d3664d9e553786b87d0a0",
+    "apps/game-server/examples/materialize_content_world_project_v2.rs": "d34f750035eae980c378bc2f17e113acd3e331b21590fd4a578862514cd29eb1",
+    "apps/game-server/src/content/item_description_promotion.rs": "e607742176ce62cde19f685daf65f8410e8583346e0eac252b6aeed5ff57d427",
+    "apps/game-server/src/content/item_description_wiki_promotion.rs": "48d674e69fb86f77f6ca9c9b6f9d6667b5f4040809a572a0c6c1a420dc0baba2",
+    "apps/game-server/src/content/item_forge289_promotion.rs": "c4849937ab374fe165f0249c24450e6d2d6af34bcef239e249c660b8e1ca70f7",
+    "apps/game-server/src/content/item_name15_promotion.rs": "547a2b87e1f41f80240c93f32d68236e0720fda52986a790a93d4023929fb7bc",
+    "apps/game-server/src/content/item_numeric_modifier_promotion.rs": "a68240fb59f09748369ab1856aa3d9792d15c8a1951794d669fc41c73463f68e",
+    "apps/game-server/src/content/mod.rs": "683d475a3eb8e439d682b0b6802a88ab98dd2ca1e3146d0b6bdc807a29bb6585",
+    "apps/game-server/tests/content_world_project_repository.rs": "425b4e7ced1cbcc48c059fb1e6f1d5dbdb97c36f2e0d90456fb6596ed18cf9fe",
+    "docs/agents/evidence/OTV2-20261002-item-description-historical-source-proposal-v1.json": "328ada9dc206b4204bd61f463a5e21e70b473b0d20d4f1c48941aeff04336765",
+    "docs/agents/evidence/OTV2-20261002-item-description-promotion-v1.json": "ca37880074adf21e03e6890d8bf24e6b5d6bdc6e825f2025ae2ec52269040c1e",
+    "docs/agents/evidence/OTV2-20261002-item-description-source-qualification-v1.json": "852f539ff3e496ecd35fa5751c9b6bb820167dd28b29377b0458a297befe2e31",
+    "docs/agents/evidence/OTV2-20261002-item-description-wiki-historical-policy-proposal-v1.json": "c798c1cbce3f35d8b0ab9652cfa4f0fbc0cdc3cebcba863f940fe9923c269f6a",
+    "docs/agents/evidence/OTV2-20261002-item-description-wiki-promotion-v1.json": "6924c64a981a423e7648ff290a9ca2a5eebb89825bf2c1f29977eb98d2f73ca7",
+    "docs/agents/evidence/OTV2-20261002-item-description-wiki-source-qualification-v1.json": "e914832a1b4a9cbb8ccddd7925d54541ff0fc48faadf797d106c04b60bd87757",
+    "docs/agents/evidence/OTV2-20261002-item-forge289-original-proposed-packet-v1.json": "0c934577617136c5af4fbd0bea4b454db1a6cec05dcee8ab281a1c1ef3c588f2",
+    "docs/agents/evidence/OTV2-20261002-item-forge289-promotion-v1.json": "376d668b5148d9c5f7b85eb3ef7e2f747c08fdc10170f62ed22e49ce4c6157ab",
+    "docs/agents/evidence/OTV2-20261002-item-forge289-provenance-basis-prospective-receipt-v1.json": "d0165ad26a0a8501c87856a747ccde67a5a9f59ce7257fa939aa5f17fa7c45a3",
+    "docs/agents/evidence/OTV2-20261002-item-forge289-source-qualification-v1.json": "e76b35928af82b02cc60eea1904b343e88588bd6765436acde39b70370b499a1",
+    "docs/agents/evidence/OTV2-20261002-item-magic-capacity4-source-qualification-v1.json": "9aba058979f9376996377163964cbad2a9a20cd826c071ea40c9e1273213238f",
+    "docs/agents/evidence/OTV2-20261002-item-name15-historical-source-v1.json": "7fd1bd8d99967942c9a2c7dbf29df4759eba8dbdfcbb31dbf8e31313a394a662",
+    "docs/agents/evidence/OTV2-20261002-item-name15-promotion-v1.json": "096beca127481342cdf545131321102b460435ecdc97e7f10b9d4f9753228ca8",
+    "docs/agents/evidence/OTV2-20261002-item-name15-source-qualification-v1.json": "d4b14233d8aa9b33bb35ade24ef2d0b42d2504d7991297eabfe160b16fc2fed4",
+    "docs/agents/evidence/OTV2-20261002-item-numeric-modifier13-promotion-v1.json": "d8c89a733e28a1d437b9bacde7be3be791e7d408f9ff5d5fa4dd2d72046c163c",
+    "docs/agents/evidence/OTV2-20261002-item-numeric-modifier13-source-proof-v2.json": "11b8a6a7f1f85765f2b9c99dabc7815405c2bf3b0c10bb78b39deebb741937c9",
+    "docs/agents/evidence/OTV2-20261002-item-numeric-modifier17-current-receipt-v1.json": "5836649139a383fcb466b385b9dde32e754cb0af0ae13a4cf5685c2b297220a9",
+    "docs/agents/evidence/OTV2-20261002-item-numeric-modifier17-promotion-v1.json": "1d384adbad5edfc1525d140d7f6757264a6b3a1ef82dda476d0337b7cdbaeb1b",
+    "docs/agents/evidence/OTV2-20261002-item-numeric-modifier17-source-qualification-v1.json": "c950c0c89db442612b4822e857b86e70ac01056974f9752996aadda415f2d71f",
+    "docs/agents/evidence/OTV2-20261002-tibiawiki165-historical-import-context-v1.json": "254675adf42a677eeefdb3ed18a42aee90ee8c5ec78d6ac08dff6a999181fb76",
+    "docs/architecture/OTERYN_ITEM_AUTHORING_MASTER_SCHEMA_V1.md": "03f1d1b29b02fbf381f62cae27331ad9d42fb492068a0183b23263c3619ae799",
+    "docs/architecture/OTERYN_WORLD_PROJECT_SOURCE_PROFILE_V2_DECISION.md": "b12b90166750fe4f2854683ab947ad6ce69374de94cfb1d882cc693fc476b88f",
+    "imports/tibiawiki/facts/forge289-source-snapshot.json": "cff4df43b6e38255656d56fd1f53a47cf30f6174f09c01e18450cf5e49db32c2",
+    "tools/content-migration/test_world_project_v2_to_tree.py": "a113883e3563a6bac878b189786480819a53f35b948024fa28418974d9b8f108",
+    "tools/content-migration/validate_world_project_v2_to_tree.py": "fd6d52bbc6c214f884063a3153228167d57ac3c91e441a759c2425576edfc2a4",
+    "tools/content-schema/item-authoring/README.md": "1edb0b30229b6ad838e3a5607d5f7d580cabec6e815061c5752929d3d9fad537",
+    "tools/content-schema/item-authoring/build_formal_schema.py": "e8e85092a09c259dabb5e70e5c58d33dd3cdaeebdba4be874c3e2a3d82d188af",
+    "tools/content-schema/item-authoring/check_tibiawiki165_historical_context.py": "93f843b666b1745b2208b318e3694e0867fc5842b0253629bc61400a8107581c",
+    "tools/content-schema/item-authoring/formal-schema-validation-report.json": "c819689c9eb056678f046d5c5ae6a26bf6a464ad912aaec6e906961df2201c02",
+    "tools/content-schema/item-authoring/item.schema.json": "3397985db826a44e33e5830e7d9651598148130657fe4b43c204eee848c4088d",
+    "tools/content-schema/item-authoring/lower_item_description_packet.py": "a15ee15bf2d8619302f2a74b1f49ff261d3d35d0f1ccfc27092d97b51357e1ea",
+    "tools/content-schema/item-authoring/lower_item_description_wiki_packet.py": "5d97281efeb9d34d054433e3e5b3d519a7cfb53ea490908b78f0b46096f571ae",
+    "tools/content-schema/item-authoring/lower_item_forge289_packet.py": "f37c9dfe98dba8c324746aac3ef9d359c8a477c9ac90745d907a342060427de6",
+    "tools/content-schema/item-authoring/lower_item_name15_packet.py": "e4f4943e1cd97718fbe4bf0c55a9e93f08c784d15bc6f741fbc74aaa86b0d0bf",
+    "tools/content-schema/item-authoring/lower_numeric_modifier17_packet.py": "06bd5da33045406dcadf049509ea1e09e68ae10313b241c8dc5de41ac63fcd01",
+    "tools/content-schema/item-authoring/templates/container-equipment.json": "bb4ee4f414165e03f3f23b90d9925f37978f5dca5c2fad5ead14952902199327",
+    "tools/content-schema/item-authoring/templates/event-collectible.json": "a18d543e2c3b59e2c57c316474257f2f10b8f435611fbb23672bea402d3da8ab",
+    "tools/content-schema/item-authoring/templates/key.json": "e6a9b017828dc1f1ecb36257b5c97c8938277bd7f06079b381a58232b6423a16",
+    "tools/content-schema/item-authoring/templates/light-source.json": "4c688d0c8310c8f45d8f5b822fb3f1932285c5c62b80a0fe6e3b247bcae7a90f",
+    "tools/content-schema/item-authoring/templates/plant.json": "b1cf978bdfc15e5efb5ab14d043c0970e6b9219a10765f8271744b60be742438",
+    "tools/content-schema/item-authoring/templates/progression-material.json": "ccc89a1de9ad92fa2e554dce6256ec2f689e3944aa9fca12b8e5af03ea0235b5",
+    "tools/content-schema/item-authoring/templates/quest-item.json": "368282df8857745fd671b6222c3e7165df4b778bb08423b5909211fb6f9285b8",
+    "tools/content-schema/item-authoring/templates/tool.json": "d56001e1dc337a786361e6c83b16d495978335d5dfae30a8679e43606f698d4c",
+    "tools/content-schema/item-authoring/templates/transformation-item.json": "055c04ecea213e733bb88e589efbc702403f3d052e87b2b1ce39f638fdd18b76",
+    "tools/content-schema/item-authoring/templates/trash.json": "6517409582e80f9b01a00660bc7f72fa5dae0505fdaee2a8aedc9178b6ce8f98",
+    "tools/content-schema/item-authoring/test_engine_items.py": "98d884ce084af81c8a75b3f69834b67a0b3cfe20a413b2cb2f51253884ff3bb4",
+    "tools/content-schema/item-authoring/test_lower_item_description_packet.py": "e02f206ae50305913b22c7b2dc4620f4fe7c4a1d9e84c9257b43bb9795303e6a",
+    "tools/content-schema/item-authoring/test_lower_item_description_wiki_packet.py": "eb15f76c1a265185ec0ea3a458f775986e37a75d652278ab54af7cc5b34bc975",
+    "tools/content-schema/item-authoring/test_lower_item_forge289_packet.py": "8e82c9d6efee938888d7cd235dbb3a26b039444ecc8d0b15b26e41d040f86fa6",
+    "tools/content-schema/item-authoring/test_lower_item_forge3332_packet.py": "7a9d91118bf22d8093c50af8514e00c98003aad266b228fe3b0c1be913ae0cea",
+    "tools/content-schema/item-authoring/test_lower_item_hit_magic_packet.py": "401f37e5c037869834d8f8f205ab35ae450b8acf3d7226034ea12a9fd0ad8608",
+    "tools/content-schema/item-authoring/test_lower_item_name15_packet.py": "ce72c5259bd4a0273c6df6f35a477de62034f235c4bed42378c1f9813575429f",
+    "tools/content-schema/item-authoring/test_lower_item_use_observation_packet.py": "cda149a18bb259dfeb515a647993a25926b63b336a815f032c224a8d6e02280c",
+    "tools/content-schema/item-authoring/test_lower_numeric_modifier17_packet.py": "5f2b23d6346bf85aa5fc991d5aa78a43ea05a6746a2709bfde559b8fd6cd1625",
+    "tools/content-schema/item-authoring/verify_formal_schema.py": "8cdf7aa58b4b3477a6e8b2c5c63e72f0e1be7a14ff74c88ea45a9dd8e04f2384"
+  },
+  "stable_owned156": {
+    ".github/workflows/item-authoring-schema.yml": "78c941a5cf3bcadad30fb45d59e928781c0a75d2d12d3664d9e553786b87d0a0",
+    "apps/game-server/examples/materialize_content_world_project_v2.rs": "d34f750035eae980c378bc2f17e113acd3e331b21590fd4a578862514cd29eb1",
+    "apps/game-server/src/content/item_description_promotion.rs": "e607742176ce62cde19f685daf65f8410e8583346e0eac252b6aeed5ff57d427",
+    "apps/game-server/src/content/item_description_wiki_promotion.rs": "48d674e69fb86f77f6ca9c9b6f9d6667b5f4040809a572a0c6c1a420dc0baba2",
+    "apps/game-server/src/content/item_forge289_promotion.rs": "c4849937ab374fe165f0249c24450e6d2d6af34bcef239e249c660b8e1ca70f7",
+    "apps/game-server/src/content/item_name15_promotion.rs": "547a2b87e1f41f80240c93f32d68236e0720fda52986a790a93d4023929fb7bc",
+    "apps/game-server/src/content/item_numeric_modifier_promotion.rs": "a68240fb59f09748369ab1856aa3d9792d15c8a1951794d669fc41c73463f68e",
+    "apps/game-server/src/content/mod.rs": "683d475a3eb8e439d682b0b6802a88ab98dd2ca1e3146d0b6bdc807a29bb6585",
+    "apps/game-server/tests/content_world_project_repository.rs": "425b4e7ced1cbcc48c059fb1e6f1d5dbdb97c36f2e0d90456fb6596ed18cf9fe",
+    "content/abilities/definitions/index.json": "195ae87f88b24d366f919885e259d16e1421b3eb64c79effd52484ec5a6f25c6",
+    "content/abilities/effects/index.json": "6488f76c3f2bcdfc99d39adf322c118286ab2d2a69e30c0f1072d55b2c779fba",
+    "content/abilities/formulas/index.json": "672ad030b81bfccac5a1283cac273a8a944a20e1de2487b602848c7c35efdad3",
+    "content/behaviors/index.json": "bedbfdb4058b361788cd4ffc37c13e3000751ec54c09cf846fa1f751c0fb1c93",
+    "content/content.lock.json": "1be8e95b2f42691ea1cfede8268880f9b89805ced9675fac6bbb9dce2f9f9a0e",
+    "content/cosmetics/mounts/index.json": "6198e5f27eef2996602be01d9b21d0181c0c7f0c5ec9cf8830804cb594ee7b30",
+    "content/creatures/definitions/index.json": "fcf88df788e637e2499fcb46483482fc23afe3eac51839a25b2c6cdadcd3d664",
+    "content/dialogues/definitions/index.json": "9b225de73ad9518aa8d87587d3edebe9fc1f1c122b8629dce6af11d2a6a19d70",
+    "content/encounters/definitions/index.json": "cdfe7e3e26a45841dce8b56fd03754190817a84d64148ad376c3c6aedf013deb",
+    "content/items/definitions/items-00000-00499.json": "f4d9ab4cf12d5203ad828527b5d09ce8b31805b250e4fc0e2233d2912711325d",
+    "content/items/definitions/items-00500-00999.json": "e333ecff048c28a733bea4e82612428628d000b1f0796d7d899fd182c12006b4",
+    "content/items/definitions/items-01000-01499.json": "2524c38be89beb04de6736c1c94ea411a8836f4651885c883771ceccbd355434",
+    "content/items/definitions/items-01500-01999.json": "a484bc8bab4118e6f7da030156ac6bae0d294fc290fba0dcf89bfb1a7bd5018c",
+    "content/items/definitions/items-02000-02499.json": "9247e21b87c79a4cd613dc5a8d1e8085a6fd1dcefbd738f637f1c0ebba3130f9",
+    "content/items/definitions/items-02500-02999.json": "a7252759a8814b83d1706e8c8273f6fa3efdbba11d29f39212523d406571e6f3",
+    "content/items/definitions/items-03000-03499.json": "33112bff6041164d72af745f468dde0eb2e7907390aa347367ffcbc0c7f2734d",
+    "content/items/definitions/items-03500-03999.json": "b3a9699464a92722bae32b5f4c3d99e15363c839076d017e949c6393c70a8b16",
+    "content/items/definitions/items-04000-04499.json": "3c5dcfd0099723ce145e6262eddea4e75873f87f2aadafc984db3ae908a50f68",
+    "content/items/definitions/items-04500-04999.json": "73f2a0cebc75c82632824efaa915a690e7457276bf3d8a1ad75a99008603d159",
+    "content/items/definitions/items-05000-05499.json": "2b86f7351d77194117fca58bcb59ce07e33c6fd9c9e627ae67e157e526f20fd4",
+    "content/items/definitions/items-05500-05999.json": "d75b6860cfb0ebf587c3ee03a9450c0091cb59b504210a7ba92a26363d8775fe",
+    "content/items/definitions/items-06000-06499.json": "c3e6382f8b8b8c3400fae6968c6bf57683c94bf6c3ec9491df240c17e05f6a99",
+    "content/items/definitions/items-06500-06999.json": "41d2f989b190d75bba0a6fbb8da9be55be99f3426f0736dda4e0dc11d4a562e2",
+    "content/items/definitions/items-07000-07499.json": "da607c8610d1d326e8c759cf84087f4751e6725183b362e8e3cf69627a78c5f4",
+    "content/items/definitions/items-07500-07999.json": "39aaccd8435499e92f419ef68f7b8d202ba37561c9fc91d200c33b9465b87364",
+    "content/items/definitions/items-08000-08499.json": "6098632479b183c34fc906c9f19bf39424370d72114a1ea389e1fde1bd914ef1",
+    "content/items/definitions/items-08500-08999.json": "57fc8215a63cdf0a352fc6f42db6630a35e55c0393aaa511e1a2ac12b07e40fd",
+    "content/items/definitions/items-09000-09499.json": "b951c76c1678d7e8b7d9c722bedb764c73aad7c91cc3fd87ee668a3de5974f6e",
+    "content/items/definitions/items-09500-09999.json": "327c6539a88b99b378a2691b963e95ad56448b1ab397ed13442393ac6389f3ef",
+    "content/items/definitions/items-10000-10499.json": "2172697a2ec0884d229740589c0fbb175c0b63c23bf63c38f605fa641bb301f6",
+    "content/items/definitions/items-10500-10999.json": "28d0ac10dfb610792f750c77610605f688c5807703c6f461a937a4eacfcc079d",
+    "content/items/definitions/items-11000-11499.json": "9d8a5cb44ca7bb8c16f9c2425e39c82b2edb2e241307e5b9ad626d94cd9269d4",
+    "content/items/definitions/items-11500-11999.json": "9dbb414712dc152a3353909bbd00cac4a1f3962f357f713f9843e946763b7623",
+    "content/items/definitions/items-12000-12499.json": "34494367a93643be310245fda65dacdbb23aa9ea9d68a477b28d7064523b212e",
+    "content/items/definitions/items-12500-12999.json": "b3773232014b385a12e966078df6205d24bd2ec51f8f7276af120dcf2539803e",
+    "content/items/definitions/items-13000-13499.json": "fafbb95c272439e4fcf6f5da2d0d59542db5f3ef44c6dbb996139c7b41c2129c",
+    "content/items/definitions/items-13500-13999.json": "31f8e0666c279b42d00b015687894ba49c94aeca6254ff73602e5c08a481c3c9",
+    "content/items/definitions/items-14000-14499.json": "51d27fd8e7626154e4130a50fef8d02f369771e953669f70a9ef2b6c784ff6aa",
+    "content/items/definitions/items-14500-14999.json": "b205acc5142000e3e829d448e78efad38b40b7a52ee1c36e28a6db3cdc89bd2c",
+    "content/items/definitions/items-15000-15499.json": "70b94dbbc68072c16b443dab5f64bcd7f9f8825f8963e1c8a3b3db119c99a2f7",
+    "content/items/definitions/items-15500-15999.json": "85c5a22ccadb8cc64c30152b1302a3f00862e8093e35a7e71358a1b6b69f6fe4",
+    "content/items/definitions/items-16000-16499.json": "05144ab5438e9bf9c011cbebaca77114c91f4fdc5edb27f3194b42f4dc39041d",
+    "content/items/definitions/items-16500-16999.json": "d48eccdf17ec9bbc762acdb8c3531e98633c68f9000f48e1cb309c994531243f",
+    "content/items/definitions/items-17000-17499.json": "0eb8c1c65e7a0d240795f4f53fc24982d189d6e8674bbfdf7f0182309ee25ead",
+    "content/items/definitions/items-17500-17999.json": "d089ce7c7a93daf189a1fc26b6cf611e08b8beef11b8bd80ee47608d329d17ef",
+    "content/items/definitions/items-18000-18499.json": "000c0647e898f89db62947ece29b8c52a6a377c423dd6455bf083bd489b5daa5",
+    "content/items/definitions/items-18500-18999.json": "d173c97caf96ee627f11cd902944831422c96389ef5714edac6d99555cd4410b",
+    "content/items/definitions/items-19000-19499.json": "6e1aa8bc1202b414a7ce7751a1177ff102b9010467f6880b2b9579f976a01e92",
+    "content/items/definitions/items-19500-19999.json": "3e8be4c32656b71af9ba8d6eac547640ea44e082465b31bf44c96acd7c7d0678",
+    "content/items/definitions/items-20000-20499.json": "7aa222b5ff123a2f868db75eedce575e008925a06ea3a2ef235fdaa2d48816b0",
+    "content/items/definitions/items-20500-20999.json": "4b15525ddeb35d001c861aef44e83e77f2dcc9a0df37299b0fc716d59863347c",
+    "content/items/definitions/items-21000-21499.json": "665ac9cbaeac15adcdd6f3085a2d953eb2f769e6b134ec52902424cad06a21a2",
+    "content/items/definitions/items-21500-21999.json": "9750f7d5dacbe45c848e6e603fdce20fec24bf7cb5296fc6213d2ae9a9671b23",
+    "content/items/definitions/items-22000-22499.json": "3f6a42d208f2043ff6094b6baa6e2327c8c62a0278437a4069d71328214cbf59",
+    "content/items/definitions/items-22500-22999.json": "2edbcb26212d42031dbbd70feb71d54a315d862641ff2f3c5c67c2272b5b394c",
+    "content/items/definitions/items-23500-23999.json": "d5b5d900deeb220f19d16a2a500f814fbf38f0870fb832cd430d3fd7d078a9c5",
+    "content/items/definitions/items-24000-24499.json": "61b396e97977f67862a92777d0548baf6c5577a295ce83d0883b53392c4ee4f0",
+    "content/items/definitions/items-24500-24999.json": "f6b575e6c8a5734cc827b2c398799f989e6881e82cff5e41ecfff86b34fb6783",
+    "content/items/definitions/items-25000-25499.json": "31ddb9214bdecab43c7b817ff8e2ff86c3dc502cfe1a83bf913fb1945b04c00d",
+    "content/items/definitions/items-25500-25999.json": "544a96797d8679216ed50e6f6e4df5eb8992aa3a9f851d748b21209b1fbb0325",
+    "content/items/definitions/items-26500-26999.json": "7b608cf38b6f7b5f9cdef4b82b6894eacb97ee171f3e562a5cef7f5b7f1ffbcb",
+    "content/items/definitions/items-27000-27499.json": "cae844296c106b114ff7d533b0ec97df61a070029692deddc9ecd54cd5f6c0a4",
+    "content/items/definitions/items-27500-27999.json": "edfc6bf16c31ad8f23ce5e8e0d0a7665f90d5e92fe4e3cb09309ccfab24d826f",
+    "content/items/definitions/items-28000-28499.json": "a47507970d9f8bf70360fad10bbe6fd33e2f08b821708be34b768c7a5f9fc029",
+    "content/items/definitions/items-28500-28999.json": "386a0631086beb85e5f780b990ed388f3181b86ae969be9c074fc2288456cd1a",
+    "content/items/definitions/items-29000-29499.json": "a99f93e283157044af81a37046542321a2c6c1c4f568f92f0711db6505794c80",
+    "content/items/definitions/items-29500-29999.json": "49bada204674454cd49321cf43f7b96949c422a7ae382a61ea8c5035cab4235b",
+    "content/items/definitions/items-30000-30499.json": "a555a20839b8b75a267c64640d9baa5206331924698809bd550e68deed666383",
+    "content/items/definitions/items-30500-30999.json": "cae58d64dc6b3f698d2e555889369bfca61925855e81a1a4d47e8130c40815fb",
+    "content/items/definitions/items-31000-31499.json": "f9e1bb3a77da5a1cb6904e0dd3b7208584e4145e7f658f71e7f6ad0bbb5d5550",
+    "content/items/definitions/items-31500-31999.json": "7505a3c593ed9ee6d5859617ba1fb1ced32807c59690f9293c59a83429ce7f51",
+    "content/items/definitions/items-32000-32499.json": "357fc2e59faec6ae3a4825017c42de654d0f717a49cd82de0fdc404a3f731acc",
+    "content/items/definitions/items-32500-32999.json": "8e57177ee42e8a20d2abc8250f7c9c1514010a9a5d2e1b443b5c8a17718f7d30",
+    "content/items/definitions/items-33000-33499.json": "64e6906ef4832bcb0871c76d84f45e3a16b60843c993817fcb42acca96e87a7c",
+    "content/items/definitions/items-33500-33999.json": "858a826aa69add7ba4ece7e67cb793a2431d4772cb9c88f044fa7a8ab2f70740",
+    "content/items/index.json": "2d311a5f0ed6022250fe061a1c4c23f6b37ac7797e30fc3c1b7fd6d72745ce3d",
+    "content/items/relations/items.json": "adac3bc61cd4aa1dcff3a2dae293f50d66359cc31818c89e22b4e46e040a253e",
+    "content/loot/index.json": "0e3f6df03e0580f14bdad48c5b0c5346298cc6f25e935e4bc6fca6e61831ea87",
+    "content/npcs/definitions/index.json": "5e671d0f67f4104d5c85324837bfd2c64803865225fadbd38cd4850fb68f19c1",
+    "content/presentations/definitions/index.json": "199952c9318cbcb3c6cc163e7f019ad44b166eaabe7ec36db60c05cd90f30048",
+    "content/services/trade/index.json": "70a48f8d109bbfe2bd8115fd4bf775dee10c4c9f7b2ec2038ba557dbe1d80fc9",
+    "content/services/travel/index.json": "3ba025807cbddd11a5566e5a1bf939ba4b8f0e7bc52a931590f10f050bd505c8",
+    "content/world/content.lock.json": "0da232c6d662b68b0a50d19e6ab99191577cc2555c671f43a0b86a4378bac747",
+    "content/world/definitions/declarations.json": "e553a2a894ea15f7743a94fac91b588994b3b36a80df8ca669a3b4fbde753ff9",
+    "content/world/definitions/reference.json": "08d905512d61f9d909daa532e02c7f249e25ef1c8e48c1d9835b16ebd99f93cd",
+    "content/world/manifest.json": "f05a79f3c74d74132a82678a18c98305559791985510826f8bf35cfb5877c552",
+    "content/world/project.json": "ab30d2572e7243b9229c50e3a09f9cbea7f4e1c9773752fa00bffafbdeb699d0",
+    "content/world/provenance/imports.json": "1f50c423b1acb046bc168cb167eeea70b5e2be55fa6a5c171ca32b7025782387",
+    "content/world/provenance/sources.json": "82dbf6d7133fd23818e0a248cee51a85ea977609bec732b81e730e55507f57c5",
+    "docs/agents/evidence/OTV2-20261002-item-description-historical-source-proposal-v1.json": "328ada9dc206b4204bd61f463a5e21e70b473b0d20d4f1c48941aeff04336765",
+    "docs/agents/evidence/OTV2-20261002-item-description-promotion-v1.json": "ca37880074adf21e03e6890d8bf24e6b5d6bdc6e825f2025ae2ec52269040c1e",
+    "docs/agents/evidence/OTV2-20261002-item-description-source-qualification-v1.json": "852f539ff3e496ecd35fa5751c9b6bb820167dd28b29377b0458a297befe2e31",
+    "docs/agents/evidence/OTV2-20261002-item-description-wiki-historical-policy-proposal-v1.json": "c798c1cbce3f35d8b0ab9652cfa4f0fbc0cdc3cebcba863f940fe9923c269f6a",
+    "docs/agents/evidence/OTV2-20261002-item-description-wiki-promotion-v1.json": "6924c64a981a423e7648ff290a9ca2a5eebb89825bf2c1f29977eb98d2f73ca7",
+    "docs/agents/evidence/OTV2-20261002-item-description-wiki-source-qualification-v1.json": "e914832a1b4a9cbb8ccddd7925d54541ff0fc48faadf797d106c04b60bd87757",
+    "docs/agents/evidence/OTV2-20261002-item-forge289-original-proposed-packet-v1.json": "0c934577617136c5af4fbd0bea4b454db1a6cec05dcee8ab281a1c1ef3c588f2",
+    "docs/agents/evidence/OTV2-20261002-item-forge289-promotion-v1.json": "376d668b5148d9c5f7b85eb3ef7e2f747c08fdc10170f62ed22e49ce4c6157ab",
+    "docs/agents/evidence/OTV2-20261002-item-forge289-provenance-basis-prospective-receipt-v1.json": "d0165ad26a0a8501c87856a747ccde67a5a9f59ce7257fa939aa5f17fa7c45a3",
+    "docs/agents/evidence/OTV2-20261002-item-forge289-source-qualification-v1.json": "e76b35928af82b02cc60eea1904b343e88588bd6765436acde39b70370b499a1",
+    "docs/agents/evidence/OTV2-20261002-item-magic-capacity4-source-qualification-v1.json": "9aba058979f9376996377163964cbad2a9a20cd826c071ea40c9e1273213238f",
+    "docs/agents/evidence/OTV2-20261002-item-name15-historical-source-v1.json": "7fd1bd8d99967942c9a2c7dbf29df4759eba8dbdfcbb31dbf8e31313a394a662",
+    "docs/agents/evidence/OTV2-20261002-item-name15-promotion-v1.json": "096beca127481342cdf545131321102b460435ecdc97e7f10b9d4f9753228ca8",
+    "docs/agents/evidence/OTV2-20261002-item-name15-source-qualification-v1.json": "d4b14233d8aa9b33bb35ade24ef2d0b42d2504d7991297eabfe160b16fc2fed4",
+    "docs/agents/evidence/OTV2-20261002-item-numeric-modifier13-promotion-v1.json": "d8c89a733e28a1d437b9bacde7be3be791e7d408f9ff5d5fa4dd2d72046c163c",
+    "docs/agents/evidence/OTV2-20261002-item-numeric-modifier13-source-proof-v2.json": "11b8a6a7f1f85765f2b9c99dabc7815405c2bf3b0c10bb78b39deebb741937c9",
+    "docs/agents/evidence/OTV2-20261002-item-numeric-modifier17-current-receipt-v1.json": "5836649139a383fcb466b385b9dde32e754cb0af0ae13a4cf5685c2b297220a9",
+    "docs/agents/evidence/OTV2-20261002-item-numeric-modifier17-promotion-v1.json": "1d384adbad5edfc1525d140d7f6757264a6b3a1ef82dda476d0337b7cdbaeb1b",
+    "docs/agents/evidence/OTV2-20261002-item-numeric-modifier17-source-qualification-v1.json": "c950c0c89db442612b4822e857b86e70ac01056974f9752996aadda415f2d71f",
+    "docs/agents/evidence/OTV2-20261002-tibiawiki165-historical-import-context-v1.json": "254675adf42a677eeefdb3ed18a42aee90ee8c5ec78d6ac08dff6a999181fb76",
+    "docs/architecture/OTERYN_ITEM_AUTHORING_MASTER_SCHEMA_V1.md": "03f1d1b29b02fbf381f62cae27331ad9d42fb492068a0183b23263c3619ae799",
+    "docs/architecture/OTERYN_WORLD_PROJECT_SOURCE_PROFILE_V2_DECISION.md": "b12b90166750fe4f2854683ab947ad6ce69374de94cfb1d882cc693fc476b88f",
+    "imports/tibiawiki/batches.json": "1480b5272a4372acd1f3b3555f6fcbffdf900fda49736bc53a3225408529b569",
+    "imports/tibiawiki/bindings/items.json": "9bce9d5a0bded656c8345109080a6d71dfe6bf7ce4d1c4b0bbb3c2ae62b9cfc3",
+    "imports/tibiawiki/facts/forge289-source-snapshot.json": "cff4df43b6e38255656d56fd1f53a47cf30f6174f09c01e18450cf5e49db32c2",
+    "imports/tibiawiki/sources.json": "fa915718c67ab135c4b1b72515aed680b6e3b5cdee466da99dfc1fb07d5bfdcc",
+    "tools/content-migration/test_world_project_v2_to_tree.py": "a113883e3563a6bac878b189786480819a53f35b948024fa28418974d9b8f108",
+    "tools/content-migration/validate_world_project_v2_to_tree.py": "fd6d52bbc6c214f884063a3153228167d57ac3c91e441a759c2425576edfc2a4",
+    "tools/content-schema/item-authoring/README.md": "1edb0b30229b6ad838e3a5607d5f7d580cabec6e815061c5752929d3d9fad537",
+    "tools/content-schema/item-authoring/build_formal_schema.py": "e8e85092a09c259dabb5e70e5c58d33dd3cdaeebdba4be874c3e2a3d82d188af",
+    "tools/content-schema/item-authoring/check_tibiawiki165_historical_context.py": "93f843b666b1745b2208b318e3694e0867fc5842b0253629bc61400a8107581c",
+    "tools/content-schema/item-authoring/formal-schema-validation-report.json": "c819689c9eb056678f046d5c5ae6a26bf6a464ad912aaec6e906961df2201c02",
+    "tools/content-schema/item-authoring/item.schema.json": "3397985db826a44e33e5830e7d9651598148130657fe4b43c204eee848c4088d",
+    "tools/content-schema/item-authoring/lower_item_description_packet.py": "a15ee15bf2d8619302f2a74b1f49ff261d3d35d0f1ccfc27092d97b51357e1ea",
+    "tools/content-schema/item-authoring/lower_item_description_wiki_packet.py": "5d97281efeb9d34d054433e3e5b3d519a7cfb53ea490908b78f0b46096f571ae",
+    "tools/content-schema/item-authoring/lower_item_forge289_packet.py": "f37c9dfe98dba8c324746aac3ef9d359c8a477c9ac90745d907a342060427de6",
+    "tools/content-schema/item-authoring/lower_item_name15_packet.py": "e4f4943e1cd97718fbe4bf0c55a9e93f08c784d15bc6f741fbc74aaa86b0d0bf",
+    "tools/content-schema/item-authoring/lower_numeric_modifier17_packet.py": "06bd5da33045406dcadf049509ea1e09e68ae10313b241c8dc5de41ac63fcd01",
+    "tools/content-schema/item-authoring/templates/container-equipment.json": "bb4ee4f414165e03f3f23b90d9925f37978f5dca5c2fad5ead14952902199327",
+    "tools/content-schema/item-authoring/templates/event-collectible.json": "a18d543e2c3b59e2c57c316474257f2f10b8f435611fbb23672bea402d3da8ab",
+    "tools/content-schema/item-authoring/templates/key.json": "e6a9b017828dc1f1ecb36257b5c97c8938277bd7f06079b381a58232b6423a16",
+    "tools/content-schema/item-authoring/templates/light-source.json": "4c688d0c8310c8f45d8f5b822fb3f1932285c5c62b80a0fe6e3b247bcae7a90f",
+    "tools/content-schema/item-authoring/templates/plant.json": "b1cf978bdfc15e5efb5ab14d043c0970e6b9219a10765f8271744b60be742438",
+    "tools/content-schema/item-authoring/templates/progression-material.json": "ccc89a1de9ad92fa2e554dce6256ec2f689e3944aa9fca12b8e5af03ea0235b5",
+    "tools/content-schema/item-authoring/templates/quest-item.json": "368282df8857745fd671b6222c3e7165df4b778bb08423b5909211fb6f9285b8",
+    "tools/content-schema/item-authoring/templates/tool.json": "d56001e1dc337a786361e6c83b16d495978335d5dfae30a8679e43606f698d4c",
+    "tools/content-schema/item-authoring/templates/transformation-item.json": "055c04ecea213e733bb88e589efbc702403f3d052e87b2b1ce39f638fdd18b76",
+    "tools/content-schema/item-authoring/templates/trash.json": "6517409582e80f9b01a00660bc7f72fa5dae0505fdaee2a8aedc9178b6ce8f98",
+    "tools/content-schema/item-authoring/test_engine_items.py": "98d884ce084af81c8a75b3f69834b67a0b3cfe20a413b2cb2f51253884ff3bb4",
+    "tools/content-schema/item-authoring/test_lower_item_description_packet.py": "e02f206ae50305913b22c7b2dc4620f4fe7c4a1d9e84c9257b43bb9795303e6a",
+    "tools/content-schema/item-authoring/test_lower_item_description_wiki_packet.py": "eb15f76c1a265185ec0ea3a458f775986e37a75d652278ab54af7cc5b34bc975",
+    "tools/content-schema/item-authoring/test_lower_item_forge289_packet.py": "8e82c9d6efee938888d7cd235dbb3a26b039444ecc8d0b15b26e41d040f86fa6",
+    "tools/content-schema/item-authoring/test_lower_item_forge3332_packet.py": "7a9d91118bf22d8093c50af8514e00c98003aad266b228fe3b0c1be913ae0cea",
+    "tools/content-schema/item-authoring/test_lower_item_hit_magic_packet.py": "401f37e5c037869834d8f8f205ab35ae450b8acf3d7226034ea12a9fd0ad8608",
+    "tools/content-schema/item-authoring/test_lower_item_name15_packet.py": "ce72c5259bd4a0273c6df6f35a477de62034f235c4bed42378c1f9813575429f",
+    "tools/content-schema/item-authoring/test_lower_item_use_observation_packet.py": "cda149a18bb259dfeb515a647993a25926b63b336a815f032c224a8d6e02280c",
+    "tools/content-schema/item-authoring/test_lower_numeric_modifier17_packet.py": "5f2b23d6346bf85aa5fc991d5aa78a43ea05a6746a2709bfde559b8fd6cd1625",
+    "tools/content-schema/item-authoring/verify_formal_schema.py": "8cdf7aa58b4b3477a6e8b2c5c63e72f0e1be7a14ff74c88ea45a9dd8e04f2384"
+  },
+  "stable_generated92": {
+    "content/abilities/definitions/index.json": "195ae87f88b24d366f919885e259d16e1421b3eb64c79effd52484ec5a6f25c6",
+    "content/abilities/effects/index.json": "6488f76c3f2bcdfc99d39adf322c118286ab2d2a69e30c0f1072d55b2c779fba",
+    "content/abilities/formulas/index.json": "672ad030b81bfccac5a1283cac273a8a944a20e1de2487b602848c7c35efdad3",
+    "content/behaviors/index.json": "bedbfdb4058b361788cd4ffc37c13e3000751ec54c09cf846fa1f751c0fb1c93",
+    "content/content.lock.json": "1be8e95b2f42691ea1cfede8268880f9b89805ced9675fac6bbb9dce2f9f9a0e",
+    "content/cosmetics/mounts/index.json": "6198e5f27eef2996602be01d9b21d0181c0c7f0c5ec9cf8830804cb594ee7b30",
+    "content/creatures/definitions/index.json": "fcf88df788e637e2499fcb46483482fc23afe3eac51839a25b2c6cdadcd3d664",
+    "content/dialogues/definitions/index.json": "9b225de73ad9518aa8d87587d3edebe9fc1f1c122b8629dce6af11d2a6a19d70",
+    "content/encounters/definitions/index.json": "cdfe7e3e26a45841dce8b56fd03754190817a84d64148ad376c3c6aedf013deb",
+    "content/items/definitions/items-00000-00499.json": "f4d9ab4cf12d5203ad828527b5d09ce8b31805b250e4fc0e2233d2912711325d",
+    "content/items/definitions/items-00500-00999.json": "e333ecff048c28a733bea4e82612428628d000b1f0796d7d899fd182c12006b4",
+    "content/items/definitions/items-01000-01499.json": "2524c38be89beb04de6736c1c94ea411a8836f4651885c883771ceccbd355434",
+    "content/items/definitions/items-01500-01999.json": "a484bc8bab4118e6f7da030156ac6bae0d294fc290fba0dcf89bfb1a7bd5018c",
+    "content/items/definitions/items-02000-02499.json": "9247e21b87c79a4cd613dc5a8d1e8085a6fd1dcefbd738f637f1c0ebba3130f9",
+    "content/items/definitions/items-02500-02999.json": "a7252759a8814b83d1706e8c8273f6fa3efdbba11d29f39212523d406571e6f3",
+    "content/items/definitions/items-03000-03499.json": "33112bff6041164d72af745f468dde0eb2e7907390aa347367ffcbc0c7f2734d",
+    "content/items/definitions/items-03500-03999.json": "b3a9699464a92722bae32b5f4c3d99e15363c839076d017e949c6393c70a8b16",
+    "content/items/definitions/items-04000-04499.json": "3c5dcfd0099723ce145e6262eddea4e75873f87f2aadafc984db3ae908a50f68",
+    "content/items/definitions/items-04500-04999.json": "73f2a0cebc75c82632824efaa915a690e7457276bf3d8a1ad75a99008603d159",
+    "content/items/definitions/items-05000-05499.json": "2b86f7351d77194117fca58bcb59ce07e33c6fd9c9e627ae67e157e526f20fd4",
+    "content/items/definitions/items-05500-05999.json": "d75b6860cfb0ebf587c3ee03a9450c0091cb59b504210a7ba92a26363d8775fe",
+    "content/items/definitions/items-06000-06499.json": "c3e6382f8b8b8c3400fae6968c6bf57683c94bf6c3ec9491df240c17e05f6a99",
+    "content/items/definitions/items-06500-06999.json": "41d2f989b190d75bba0a6fbb8da9be55be99f3426f0736dda4e0dc11d4a562e2",
+    "content/items/definitions/items-07000-07499.json": "da607c8610d1d326e8c759cf84087f4751e6725183b362e8e3cf69627a78c5f4",
+    "content/items/definitions/items-07500-07999.json": "39aaccd8435499e92f419ef68f7b8d202ba37561c9fc91d200c33b9465b87364",
+    "content/items/definitions/items-08000-08499.json": "6098632479b183c34fc906c9f19bf39424370d72114a1ea389e1fde1bd914ef1",
+    "content/items/definitions/items-08500-08999.json": "57fc8215a63cdf0a352fc6f42db6630a35e55c0393aaa511e1a2ac12b07e40fd",
+    "content/items/definitions/items-09000-09499.json": "b951c76c1678d7e8b7d9c722bedb764c73aad7c91cc3fd87ee668a3de5974f6e",
+    "content/items/definitions/items-09500-09999.json": "327c6539a88b99b378a2691b963e95ad56448b1ab397ed13442393ac6389f3ef",
+    "content/items/definitions/items-10000-10499.json": "2172697a2ec0884d229740589c0fbb175c0b63c23bf63c38f605fa641bb301f6",
+    "content/items/definitions/items-10500-10999.json": "28d0ac10dfb610792f750c77610605f688c5807703c6f461a937a4eacfcc079d",
+    "content/items/definitions/items-11000-11499.json": "9d8a5cb44ca7bb8c16f9c2425e39c82b2edb2e241307e5b9ad626d94cd9269d4",
+    "content/items/definitions/items-11500-11999.json": "9dbb414712dc152a3353909bbd00cac4a1f3962f357f713f9843e946763b7623",
+    "content/items/definitions/items-12000-12499.json": "34494367a93643be310245fda65dacdbb23aa9ea9d68a477b28d7064523b212e",
+    "content/items/definitions/items-12500-12999.json": "b3773232014b385a12e966078df6205d24bd2ec51f8f7276af120dcf2539803e",
+    "content/items/definitions/items-13000-13499.json": "fafbb95c272439e4fcf6f5da2d0d59542db5f3ef44c6dbb996139c7b41c2129c",
+    "content/items/definitions/items-13500-13999.json": "31f8e0666c279b42d00b015687894ba49c94aeca6254ff73602e5c08a481c3c9",
+    "content/items/definitions/items-14000-14499.json": "51d27fd8e7626154e4130a50fef8d02f369771e953669f70a9ef2b6c784ff6aa",
+    "content/items/definitions/items-14500-14999.json": "b205acc5142000e3e829d448e78efad38b40b7a52ee1c36e28a6db3cdc89bd2c",
+    "content/items/definitions/items-15000-15499.json": "70b94dbbc68072c16b443dab5f64bcd7f9f8825f8963e1c8a3b3db119c99a2f7",
+    "content/items/definitions/items-15500-15999.json": "85c5a22ccadb8cc64c30152b1302a3f00862e8093e35a7e71358a1b6b69f6fe4",
+    "content/items/definitions/items-16000-16499.json": "05144ab5438e9bf9c011cbebaca77114c91f4fdc5edb27f3194b42f4dc39041d",
+    "content/items/definitions/items-16500-16999.json": "d48eccdf17ec9bbc762acdb8c3531e98633c68f9000f48e1cb309c994531243f",
+    "content/items/definitions/items-17000-17499.json": "0eb8c1c65e7a0d240795f4f53fc24982d189d6e8674bbfdf7f0182309ee25ead",
+    "content/items/definitions/items-17500-17999.json": "d089ce7c7a93daf189a1fc26b6cf611e08b8beef11b8bd80ee47608d329d17ef",
+    "content/items/definitions/items-18000-18499.json": "000c0647e898f89db62947ece29b8c52a6a377c423dd6455bf083bd489b5daa5",
+    "content/items/definitions/items-18500-18999.json": "d173c97caf96ee627f11cd902944831422c96389ef5714edac6d99555cd4410b",
+    "content/items/definitions/items-19000-19499.json": "6e1aa8bc1202b414a7ce7751a1177ff102b9010467f6880b2b9579f976a01e92",
+    "content/items/definitions/items-19500-19999.json": "3e8be4c32656b71af9ba8d6eac547640ea44e082465b31bf44c96acd7c7d0678",
+    "content/items/definitions/items-20000-20499.json": "7aa222b5ff123a2f868db75eedce575e008925a06ea3a2ef235fdaa2d48816b0",
+    "content/items/definitions/items-20500-20999.json": "4b15525ddeb35d001c861aef44e83e77f2dcc9a0df37299b0fc716d59863347c",
+    "content/items/definitions/items-21000-21499.json": "665ac9cbaeac15adcdd6f3085a2d953eb2f769e6b134ec52902424cad06a21a2",
+    "content/items/definitions/items-21500-21999.json": "9750f7d5dacbe45c848e6e603fdce20fec24bf7cb5296fc6213d2ae9a9671b23",
+    "content/items/definitions/items-22000-22499.json": "3f6a42d208f2043ff6094b6baa6e2327c8c62a0278437a4069d71328214cbf59",
+    "content/items/definitions/items-22500-22999.json": "2edbcb26212d42031dbbd70feb71d54a315d862641ff2f3c5c67c2272b5b394c",
+    "content/items/definitions/items-23500-23999.json": "d5b5d900deeb220f19d16a2a500f814fbf38f0870fb832cd430d3fd7d078a9c5",
+    "content/items/definitions/items-24000-24499.json": "61b396e97977f67862a92777d0548baf6c5577a295ce83d0883b53392c4ee4f0",
+    "content/items/definitions/items-24500-24999.json": "f6b575e6c8a5734cc827b2c398799f989e6881e82cff5e41ecfff86b34fb6783",
+    "content/items/definitions/items-25000-25499.json": "31ddb9214bdecab43c7b817ff8e2ff86c3dc502cfe1a83bf913fb1945b04c00d",
+    "content/items/definitions/items-25500-25999.json": "544a96797d8679216ed50e6f6e4df5eb8992aa3a9f851d748b21209b1fbb0325",
+    "content/items/definitions/items-26500-26999.json": "7b608cf38b6f7b5f9cdef4b82b6894eacb97ee171f3e562a5cef7f5b7f1ffbcb",
+    "content/items/definitions/items-27000-27499.json": "cae844296c106b114ff7d533b0ec97df61a070029692deddc9ecd54cd5f6c0a4",
+    "content/items/definitions/items-27500-27999.json": "edfc6bf16c31ad8f23ce5e8e0d0a7665f90d5e92fe4e3cb09309ccfab24d826f",
+    "content/items/definitions/items-28000-28499.json": "a47507970d9f8bf70360fad10bbe6fd33e2f08b821708be34b768c7a5f9fc029",
+    "content/items/definitions/items-28500-28999.json": "386a0631086beb85e5f780b990ed388f3181b86ae969be9c074fc2288456cd1a",
+    "content/items/definitions/items-29000-29499.json": "a99f93e283157044af81a37046542321a2c6c1c4f568f92f0711db6505794c80",
+    "content/items/definitions/items-29500-29999.json": "49bada204674454cd49321cf43f7b96949c422a7ae382a61ea8c5035cab4235b",
+    "content/items/definitions/items-30000-30499.json": "a555a20839b8b75a267c64640d9baa5206331924698809bd550e68deed666383",
+    "content/items/definitions/items-30500-30999.json": "cae58d64dc6b3f698d2e555889369bfca61925855e81a1a4d47e8130c40815fb",
+    "content/items/definitions/items-31000-31499.json": "f9e1bb3a77da5a1cb6904e0dd3b7208584e4145e7f658f71e7f6ad0bbb5d5550",
+    "content/items/definitions/items-31500-31999.json": "7505a3c593ed9ee6d5859617ba1fb1ced32807c59690f9293c59a83429ce7f51",
+    "content/items/definitions/items-32000-32499.json": "357fc2e59faec6ae3a4825017c42de654d0f717a49cd82de0fdc404a3f731acc",
+    "content/items/definitions/items-32500-32999.json": "8e57177ee42e8a20d2abc8250f7c9c1514010a9a5d2e1b443b5c8a17718f7d30",
+    "content/items/definitions/items-33000-33499.json": "64e6906ef4832bcb0871c76d84f45e3a16b60843c993817fcb42acca96e87a7c",
+    "content/items/definitions/items-33500-33999.json": "858a826aa69add7ba4ece7e67cb793a2431d4772cb9c88f044fa7a8ab2f70740",
+    "content/items/index.json": "2d311a5f0ed6022250fe061a1c4c23f6b37ac7797e30fc3c1b7fd6d72745ce3d",
+    "content/items/relations/items.json": "adac3bc61cd4aa1dcff3a2dae293f50d66359cc31818c89e22b4e46e040a253e",
+    "content/loot/index.json": "0e3f6df03e0580f14bdad48c5b0c5346298cc6f25e935e4bc6fca6e61831ea87",
+    "content/npcs/definitions/index.json": "5e671d0f67f4104d5c85324837bfd2c64803865225fadbd38cd4850fb68f19c1",
+    "content/presentations/definitions/index.json": "199952c9318cbcb3c6cc163e7f019ad44b166eaabe7ec36db60c05cd90f30048",
+    "content/services/trade/index.json": "70a48f8d109bbfe2bd8115fd4bf775dee10c4c9f7b2ec2038ba557dbe1d80fc9",
+    "content/services/travel/index.json": "3ba025807cbddd11a5566e5a1bf939ba4b8f0e7bc52a931590f10f050bd505c8",
+    "content/world/content.lock.json": "0da232c6d662b68b0a50d19e6ab99191577cc2555c671f43a0b86a4378bac747",
+    "content/world/definitions/declarations.json": "e553a2a894ea15f7743a94fac91b588994b3b36a80df8ca669a3b4fbde753ff9",
+    "content/world/definitions/reference.json": "08d905512d61f9d909daa532e02c7f249e25ef1c8e48c1d9835b16ebd99f93cd",
+    "content/world/manifest.json": "f05a79f3c74d74132a82678a18c98305559791985510826f8bf35cfb5877c552",
+    "content/world/project.json": "ab30d2572e7243b9229c50e3a09f9cbea7f4e1c9773752fa00bffafbdeb699d0",
+    "content/world/provenance/imports.json": "1f50c423b1acb046bc168cb167eeea70b5e2be55fa6a5c171ca32b7025782387",
+    "content/world/provenance/sources.json": "82dbf6d7133fd23818e0a248cee51a85ea977609bec732b81e730e55507f57c5",
+    "imports/tibiawiki/batches.json": "1480b5272a4372acd1f3b3555f6fcbffdf900fda49736bc53a3225408529b569",
+    "imports/tibiawiki/bindings/items.json": "9bce9d5a0bded656c8345109080a6d71dfe6bf7ce4d1c4b0bbb3c2ae62b9cfc3",
+    "imports/tibiawiki/sources.json": "fa915718c67ab135c4b1b72515aed680b6e3b5cdee466da99dfc1fb07d5bfdcc"
+  },
+  "owned_file_count": 156,
+  "source_owned_count": 64,
+  "generated_owned_count": 92,
+  "double_full_owned_readback": "PASS",
+  "all_source64_equal_accepted_v6": "PASS; no further repository pin/code changes after v6",
+  "historical_pin_review_reuse": "Accepted sourcev4b inverse restores original handwritten21a9 using only original generator12pin spans; eight changed spans and actual11documents+framedTREE checked. v5 soleForge count436 is preserved; repository source current425b remains byteexact to v6.",
+  "independent_last_original_generator_readback": {
+    "status": "PASS",
+    "before_snapshot": "/workspace/audit-continuation/combined-before-last-generation-all-file-hashes.json",
+    "before_snapshot_sha256": "913e742a243ee77597d5e758a31a88cae46c727f01f39602f71b1883989adc83",
+    "files": 11920,
+    "content_files": 7723,
+    "actual_all_snapshot_bytes_and_hashes_match": true,
+    "different_files": [],
+    "original_parent_and_current_generator_sha256": "d85cbceaf8324f2a859dddb1eb2a843de4fb07d078d4663cad0b8ccbd2f488d5",
+    "exit_code": 0,
+    "generation_reexecuted_by_reviewer": false
+  },
+  "final_logs_readback": [
+    {
+      "path": "/workspace/audit-continuation/combined-first-generation-repaired.log",
+      "sha256": "ca8577ca16d87a06256e2ed95bf0b4b3932712f89e4e741600837313e199ff13",
+      "bytes": 1905
+    },
+    {
+      "path": "/workspace/audit-continuation/combined-second-original-generation.log",
+      "sha256": "94a2478f12879d9b728a12e915ba38c6862302a706718c478e6f9e936f2edcf2",
+      "bytes": 1905
+    },
+    {
+      "path": "/workspace/audit-continuation/combined-cargo-server-lib.log",
+      "sha256": "fd34c9e5807fe4faf1696fa9bad608f6f1e6d822be6443db14de64f445ea49ed",
+      "bytes": 148519
+    },
+    {
+      "path": "/workspace/audit-continuation/combined-cargo-model-v2.log",
+      "sha256": "13171f4418afaa5896a0899b636be09a71feed7546758098949eeb698a2e7cb6",
+      "bytes": 2338
+    },
+    {
+      "path": "/workspace/audit-continuation/combined-cargo-repository-repaired.log",
+      "sha256": "a451be903d94c052a0d6adc7e3629e5bc9f5971bcbbd8c2aa2004c09a1a3e4ba",
+      "bytes": 1159
+    },
+    {
+      "path": "/workspace/audit-continuation/combined-cargo-affected-desc-name-tests.log",
+      "sha256": "5f326f34c7739d54de3e3d9b563086547dbcc30aec9e44940e6c4e0f29ea3895",
+      "bytes": 1794
+    },
+    {
+      "path": "/workspace/audit-continuation/combined-cargo-clippy-final.log",
+      "sha256": "bc573ba9c8b5c31d338826b50b3a2567317ce9c1b5221df370d9a920d2d32055",
+      "bytes": 626
+    },
+    {
+      "path": "/workspace/audit-continuation/combined-cargo-fmt.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "/workspace/audit-continuation/combined-postgen-all-source-unit-tests.log",
+      "sha256": "eca249cd8e15a0e3017cc6719eff2379acb0b5a23fbd7bd0da1120cca8ed90fd",
+      "bytes": 395
+    }
+  ],
+  "effective_route_and_gate_logs_readback": [
+    {
+      "path": "/workspace/audit-continuation/combined-postgen-source-lower_client_physical_packet.log",
+      "sha256": "28362e07af342492aadeac12178de78bd7c53bd649237242cbdfa8c0b31a7b8b",
+      "bytes": 122,
+      "command": [
+        "/workspace/audit-continuation/venv/bin/python",
+        "/workspace/pr1437-world-owner-completion/tools/content-schema/item-authoring/lower_client_physical_packet.py",
+        "--check"
+      ],
+      "exit_code": 0
+    },
+    {
+      "path": "/workspace/audit-continuation/combined-postgen-source-lower_wiki_capacity_packet.log",
+      "sha256": "ccf0946630852fe1254849f52ec5a7b6bf2b22b00dcb25199a7d13f0bdaa2f35",
+      "bytes": 32,
+      "command": [
+        "/workspace/audit-continuation/venv/bin/python",
+        "/workspace/pr1437-world-owner-completion/tools/content-schema/item-authoring/lower_wiki_capacity_packet.py",
+        "--check"
+      ],
+      "exit_code": 0
+    },
+    {
+      "path": "/workspace/audit-continuation/combined-postgen-source-lower_wiki_stats_packet.log",
+      "sha256": "cc316a1a90f3074391f02ead28ca0eb0420c9d1845cd3283779313e77b373dc0",
+      "bytes": 36,
+      "command": [
+        "/workspace/audit-continuation/venv/bin/python",
+        "/workspace/pr1437-world-owner-completion/tools/content-schema/item-authoring/lower_wiki_stats_packet.py",
+        "--check"
+      ],
+      "exit_code": 0
+    },
+    {
+      "path": "/workspace/audit-continuation/combined-postgen-source-lower_wiki_stack_false_packet.log",
+      "sha256": "e475959022683da7ab45b9a73184b1e9fdae246fff7868e78e0e74d3d556dedb",
+      "bytes": 34,
+      "command": [
+        "/workspace/audit-continuation/venv/bin/python",
+        "/workspace/pr1437-world-owner-completion/tools/content-schema/item-authoring/lower_wiki_stack_false_packet.py",
+        "--check"
+      ],
+      "exit_code": 0
+    },
+    {
+      "path": "/workspace/audit-continuation/combined-postgen-source-lower_client_market_packet.log",
+      "sha256": "20faae33d501ddb8c552ec612730d1fdf132a4c84c4369aacfeb53199b366cb9",
+      "bytes": 35,
+      "command": [
+        "/workspace/audit-continuation/venv/bin/python",
+        "/workspace/pr1437-world-owner-completion/tools/content-schema/item-authoring/lower_client_market_packet.py",
+        "--check"
+      ],
+      "exit_code": 0
+    },
+    {
+      "path": "/workspace/audit-continuation/combined-postgen-source-lower_wiki_movable_packet.log",
+      "sha256": "9fc3c240b89c3544bce897e59a530d3f30e9213cd1bbd2b566bb663f9672b577",
+      "bytes": 50,
+      "command": [
+        "/workspace/audit-continuation/venv/bin/python",
+        "/workspace/pr1437-world-owner-completion/tools/content-schema/item-authoring/lower_wiki_movable_packet.py",
+        "--check"
+      ],
+      "exit_code": 0
+    },
+    {
+      "path": "/workspace/audit-continuation/combined-postgen-source-lower_item_document_packet.log",
+      "sha256": "7fbbc3ec2fa97bb654c55b2eb0edac2c37bcfa4a03e9af4c3b6124b946d2ae3d",
+      "bytes": 27,
+      "command": [
+        "/workspace/audit-continuation/venv/bin/python",
+        "/workspace/pr1437-world-owner-completion/tools/content-schema/item-authoring/lower_item_document_packet.py",
+        "--check"
+      ],
+      "exit_code": 0
+    },
+    {
+      "path": "/workspace/audit-continuation/combined-postgen-source-lower_elemental_magic_modifier_packet.log",
+      "sha256": "431eb082264c540804bde8f6d213945e3ff8663ff6f2bacf18bc5d3aa559fe48",
+      "bytes": 96,
+      "command": [
+        "/workspace/audit-continuation/venv/bin/python",
+        "/workspace/pr1437-world-owner-completion/tools/content-schema/item-authoring/lower_elemental_magic_modifier_packet.py",
+        "--check"
+      ],
+      "exit_code": 0
+    },
+    {
+      "path": "/workspace/audit-continuation/combined-postgen-source-lower_item_name_packet.log",
+      "sha256": "305acf14547656f25ac56bc8e72a0d75567c71c66317cc50f88229e44a0c856d",
+      "bytes": 25,
+      "command": [
+        "/workspace/audit-continuation/venv/bin/python",
+        "/workspace/pr1437-world-owner-completion/tools/content-schema/item-authoring/lower_item_name_packet.py",
+        "--check"
+      ],
+      "exit_code": 0
+    },
+    {
+      "path": "/workspace/audit-continuation/combined-postgen-source-lower_item_hit_magic_packet.log",
+      "sha256": "0705efb8e82f681421cc799893e11fec8ca5ed3b315113e9c955b3aa8aaa88b9",
+      "bytes": 31,
+      "command": [
+        "/workspace/audit-continuation/venv/bin/python",
+        "/workspace/pr1437-world-owner-completion/tools/content-schema/item-authoring/lower_item_hit_magic_packet.py",
+        "--check"
+      ],
+      "exit_code": 0
+    },
+    {
+      "path": "/workspace/audit-continuation/combined-postgen-source-lower_mantra_bond_modifier_packet.log",
+      "sha256": "7bdd1e5f9956241e20fe77f4e5781d06a50971cb490d6e82f54c5e829c65064f",
+      "bytes": 106,
+      "command": [
+        "/workspace/audit-continuation/venv/bin/python",
+        "/workspace/pr1437-world-owner-completion/tools/content-schema/item-authoring/lower_mantra_bond_modifier_packet.py",
+        "--check"
+      ],
+      "exit_code": 0
+    },
+    {
+      "path": "/workspace/audit-continuation/combined-postgen-source-lower_item_use_observation_packet.log",
+      "sha256": "182def43eb5ba4d90c790f39ff463cf847b1582990f5d08043d5799ec14dfa5d",
+      "bytes": 47,
+      "command": [
+        "/workspace/audit-continuation/venv/bin/python",
+        "/workspace/pr1437-world-owner-completion/tools/content-schema/item-authoring/lower_item_use_observation_packet.py",
+        "--check"
+      ],
+      "exit_code": 0
+    },
+    {
+      "path": "/workspace/audit-continuation/combined-postgen-source-lower_wiki_stack_default_successor8_packet.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "command": [
+        "/workspace/audit-continuation/venv/bin/python",
+        "/workspace/pr1437-world-owner-completion/tools/content-schema/item-authoring/lower_wiki_stack_default_successor8_packet.py",
+        "--check"
+      ],
+      "exit_code": 0
+    },
+    {
+      "path": "/workspace/audit-continuation/combined-postgen-source-lower_item_forge289_packet.log",
+      "sha256": "78cbe0714156db6a87e425b3ea8594500522dc76c0e66e016dc067ac377d7ac8",
+      "bytes": 72,
+      "command": [
+        "/workspace/audit-continuation/venv/bin/python",
+        "/workspace/pr1437-world-owner-completion/tools/content-schema/item-authoring/lower_item_forge289_packet.py",
+        "--check"
+      ],
+      "exit_code": 0
+    },
+    {
+      "path": "/workspace/audit-continuation/combined-postgen-source-lower_item_description_packet.log",
+      "sha256": "88daf9182fd19902b06313c678b0f31a76a6147763d9b124b96be6f6915b35bd",
+      "bytes": 69,
+      "command": [
+        "/workspace/audit-continuation/venv/bin/python",
+        "/workspace/pr1437-world-owner-completion/tools/content-schema/item-authoring/lower_item_description_packet.py",
+        "--check"
+      ],
+      "exit_code": 0
+    },
+    {
+      "path": "/workspace/audit-continuation/combined-postgen-source-lower_item_description_wiki_packet.log",
+      "sha256": "651e56caebf3a5991a54b9aced984c7b4477c24bb96874defb0c6d20f5b2618c",
+      "bytes": 81,
+      "command": [
+        "/workspace/audit-continuation/venv/bin/python",
+        "/workspace/pr1437-world-owner-completion/tools/content-schema/item-authoring/lower_item_description_wiki_packet.py",
+        "--check"
+      ],
+      "exit_code": 0
+    },
+    {
+      "path": "/workspace/audit-continuation/combined-postgen-source-lower_numeric_modifier17_packet.log",
+      "sha256": "2e4159a5bed162cd0714a6fc2c3ab8dad2616c10566919a26e809fa9e77c924b",
+      "bytes": 83,
+      "command": [
+        "/workspace/audit-continuation/venv/bin/python",
+        "/workspace/pr1437-world-owner-completion/tools/content-schema/item-authoring/lower_numeric_modifier17_packet.py",
+        "--check"
+      ],
+      "exit_code": 0
+    },
+    {
+      "path": "/workspace/audit-continuation/combined-postgen-source-lower_item_name15_packet.log",
+      "sha256": "9b309fdf9760439a8cd88a631a4bb335b54a95f31dce396a9fa46d287ca12fac",
+      "bytes": 74,
+      "command": [
+        "/workspace/audit-continuation/venv/bin/python",
+        "/workspace/pr1437-world-owner-completion/tools/content-schema/item-authoring/lower_item_name15_packet.py",
+        "--check"
+      ],
+      "exit_code": 0
+    },
+    {
+      "path": "/workspace/audit-continuation/combined-postgen-source-forge.log",
+      "sha256": "55907cec26bb7b8cfa7cf0896bd117e06329b79e3709738a09295bf6848097f3",
+      "bytes": 141,
+      "command": [
+        "/workspace/audit-continuation/venv/bin/python",
+        "/workspace/pr1437-world-owner-completion/tools/content-schema/item-authoring/check_tibiawiki165_historical_context.py",
+        "--cohort",
+        "forge"
+      ],
+      "exit_code": 0
+    },
+    {
+      "path": "/workspace/audit-continuation/combined-postgen-source-weapon.log",
+      "sha256": "d2d428e136c0d779315237d5940b173c4f5d80fc34862617a6d34ddbc80fba6b",
+      "bytes": 142,
+      "command": [
+        "/workspace/audit-continuation/venv/bin/python",
+        "/workspace/pr1437-world-owner-completion/tools/content-schema/item-authoring/check_tibiawiki165_historical_context.py",
+        "--cohort",
+        "weapon"
+      ],
+      "exit_code": 0
+    },
+    {
+      "path": "/workspace/audit-continuation/combined-postgen-source-stack-default.log",
+      "sha256": "909e28fa97e1da9c2eff3c7b92718e25e604d6f1b572f3c8634c908b10489f25",
+      "bytes": 267,
+      "command": [
+        "/workspace/audit-continuation/venv/bin/python",
+        "/workspace/pr1437-world-owner-completion/tools/content-schema/item-authoring/check_stack_default_historical_context.py",
+        "--cohort",
+        "default"
+      ],
+      "exit_code": 0
+    },
+    {
+      "path": "/workspace/audit-continuation/combined-postgen-source-stack-historical.log",
+      "sha256": "909e28fa97e1da9c2eff3c7b92718e25e604d6f1b572f3c8634c908b10489f25",
+      "bytes": 267,
+      "command": [
+        "/workspace/audit-continuation/venv/bin/python",
+        "/workspace/pr1437-world-owner-completion/tools/content-schema/item-authoring/check_stack_default_historical_context.py",
+        "--cohort",
+        "historical"
+      ],
+      "exit_code": 0
+    },
+    {
+      "path": "/workspace/audit-continuation/combined-content-gate-00.log",
+      "sha256": "63f7d37d88b465a7b67f5ea2d69e8c68c8badcca488984c8cc396177f8b97f86",
+      "bytes": 448,
+      "command": [
+        "/workspace/audit-continuation/venv/bin/python",
+        "tools/content-migration/validate_world_project_v2_to_tree.py"
+      ],
+      "exit_code": 0
+    },
+    {
+      "path": "/workspace/audit-continuation/combined-migration-test-fixture-repair.log",
+      "sha256": "74184ab84f2713f7df1c9558260a1af42e7ae8d9a11d6e5a4391a510ea6dc526",
+      "bytes": 648,
+      "command": [
+        "/workspace/audit-continuation/venv/bin/python",
+        "tools/content-migration/test_world_project_v2_to_tree.py"
+      ],
+      "exit_code": 0
+    },
+    {
+      "path": "/workspace/audit-continuation/combined-content-gate-02.log",
+      "sha256": "aae937d4e7ec96b4c1eef5d1daaf5fdb5952ce0586e9142514fe3dcfb9ff223b",
+      "bytes": 68,
+      "command": [
+        "/workspace/audit-continuation/venv/bin/python",
+        "tools/content-schema/validate_materialized_game_tree.py"
+      ],
+      "exit_code": 0
+    },
+    {
+      "path": "/workspace/audit-continuation/combined-content-gate-03.log",
+      "sha256": "b08f28581436ae4caecb80229a804365eb25614e28494fa271cb6dbf447603bc",
+      "bytes": 83,
+      "command": [
+        "/workspace/audit-continuation/venv/bin/python",
+        "tools/content-census/item_key_references.py"
+      ],
+      "exit_code": 0
+    },
+    {
+      "path": "/workspace/audit-continuation/combined-content-gate-04.log",
+      "sha256": "0d7cfef78b72706b58192cb7fba2ba6c160e88b1cdc26fa3efb8b49d2166dfd4",
+      "bytes": 24,
+      "command": [
+        "/workspace/audit-continuation/venv/bin/python",
+        "tools/content-schema/charm-authoring/charm_authoring.py",
+        "content",
+        "--check"
+      ],
+      "exit_code": 0
+    },
+    {
+      "path": "/workspace/audit-continuation/combined-content-gate-05.log",
+      "sha256": "2dad938d34a047a6675c5518e9842becbb87598ab52bbdf4dfdf2c61258ab2d7",
+      "bytes": 30,
+      "command": [
+        "/workspace/audit-continuation/venv/bin/python",
+        "tools/content-schema/proficiency-authoring/proficiency_authoring.py",
+        "content",
+        "--check"
+      ],
+      "exit_code": 0
+    },
+    {
+      "path": "/workspace/audit-continuation/combined-content-gate-06.log",
+      "sha256": "766d44c371f8afd6aa34b7ab3a4359590d8a32fc3c37048ddb65c26958d261f0",
+      "bytes": 31,
+      "command": [
+        "/workspace/audit-continuation/venv/bin/python",
+        "tools/content-schema/reward-claim-authoring/reward_claim_authoring.py",
+        "content",
+        "--check"
+      ],
+      "exit_code": 0
+    },
+    {
+      "path": "/workspace/audit-continuation/combined-content-gate-07.log",
+      "sha256": "dcfe00e165162028c9a3917f8b30c9fda0c6f78db106e3deb7dea6a8023e9b8c",
+      "bytes": 30,
+      "command": [
+        "/workspace/audit-continuation/venv/bin/python",
+        "tools/content-schema/starter-kit-authoring/starter_kit_authoring.py",
+        "content",
+        "--check"
+      ],
+      "exit_code": 0
+    },
+    {
+      "path": "/workspace/audit-continuation/combined-content-gate-08.log",
+      "sha256": "5746caf8f0354bb9eb5c6da3f78d1b06f79713707b47b7676715f1d128c2bc2e",
+      "bytes": 141,
+      "command": [
+        "/workspace/audit-continuation/venv/bin/python",
+        "tools/content-schema/item-authoring/item_weapon_proficiency.py",
+        "--check"
+      ],
+      "exit_code": 0
+    },
+    {
+      "path": "/workspace/audit-continuation/combined-content-gate-09.log",
+      "sha256": "071a24ad0579b9477bcb54118178b6c2b76ef7ef24c89811d8a243011a59426e",
+      "bytes": 77,
+      "command": [
+        "/workspace/audit-continuation/venv/bin/python",
+        "tools/content-census/g4_item_crystal_binding_generator.py",
+        "--check"
+      ],
+      "exit_code": 0
+    },
+    {
+      "path": "/workspace/audit-continuation/combined-content-gate-10.log",
+      "sha256": "c7dd5cd86083158cd48e35301c5907b32d4ce688d06fbc711a11cc7db98975bd",
+      "bytes": 81,
+      "command": [
+        "/workspace/audit-continuation/venv/bin/python",
+        "tools/content-schema/validate_item_master_schema.py"
+      ],
+      "exit_code": 0
+    },
+    {
+      "path": "/workspace/audit-continuation/combined-content-gate-11.log",
+      "sha256": "b427c3a892077b30efa49c88588c560f00da23fb5ea7302ca2b66394497ef99e",
+      "bytes": 27,
+      "command": [
+        "/workspace/audit-continuation/venv/bin/python",
+        "tools/content-schema/test_validate_item_master_schema.py"
+      ],
+      "exit_code": 0
+    },
+    {
+      "path": "/workspace/audit-continuation/combined-content-gate-12.log",
+      "sha256": "8068013249ac6a1ac14b13155511b3bd8f719ec775e7b63c784dcf61c637ee3f",
+      "bytes": 259,
+      "command": [
+        "/workspace/audit-continuation/venv/bin/python",
+        "tools/content-schema/item-authoring/check_tibiawiki165_historical_context.py",
+        "--cohort",
+        "engine"
+      ],
+      "exit_code": 0
+    },
+    {
+      "path": "/workspace/audit-continuation/combined-content-gate-13.log",
+      "sha256": "fa60f710a49b53d46d275ddbd0b3a31154713cfb238039f8eeeb7cbaa7ce7bec",
+      "bytes": 343,
+      "command": [
+        "/workspace/audit-continuation/venv/bin/python",
+        "tools/content-schema/item-authoring/check_tibiawiki165_historical_context.py",
+        "--cohort",
+        "formal"
+      ],
+      "exit_code": 0
+    },
+    {
+      "path": "/workspace/audit-continuation/combined-content-gate-14.log",
+      "sha256": "4206307f61f08af71e3b0556e4ae2a1df0c3b01dd4bd691ddb3596508b2cfbc5",
+      "bytes": 250,
+      "command": [
+        "/workspace/audit-continuation/venv/bin/python",
+        "tools/content-schema/item-authoring/check_tibiawiki165_historical_context.py",
+        "--cohort",
+        "weapon-tests"
+      ],
+      "exit_code": 0
+    },
+    {
+      "path": "/workspace/audit-continuation/combined-content-gate-15.log",
+      "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+      "bytes": 19,
+      "command": [
+        "/workspace/audit-continuation/venv/bin/ruff",
+        "check",
+        "tools/content-schema/item-authoring",
+        "tools/content-schema/world-object-authoring"
+      ],
+      "exit_code": 0
+    },
+    {
+      "path": "/workspace/audit-continuation/combined-content-gate-16.log",
+      "sha256": "f588c3ec1fb32abdb8a7f97c112d1d59c9392eda79af1d6b7b51577e47f2b2dc",
+      "bytes": 27,
+      "command": [
+        "/workspace/audit-continuation/venv/bin/ruff",
+        "format",
+        "--check",
+        "tools/content-schema/item-authoring",
+        "tools/content-schema/world-object-authoring"
+      ],
+      "exit_code": 0
+    }
+  ],
+  "test_result_verification": {
+    "server_library": "1344 passed,0failed,2ignored",
+    "model_v2": "19 passed,0failed",
+    "repository": "3 passed,0failed",
+    "affected_description_name_tests": "8 passed,0failed",
+    "Clippy_project_alltargets_deny_warnings": "exit0, finished; log retains existing vendor Tokio missing_docs warning, no claim of globally warning-free dependencies",
+    "fmt": "exit0/emptylog",
+    "source_python": "93 tests OK; actualfamily274/23",
+    "legacy_weapon": "4 tests OK under mandatory live411/700 closure",
+    "effective_packets": "20cohorts via22exit0 commands incl2defaultcontexts",
+    "content_gates": "17 exit0, engine599/leech3, family274/23, tree97 and migration170; historical starter-kit no-base smoke history skip explicitly retained"
+  },
+  "historical_failures_and_repairs": {
+    "production_compile": "typed ProjectV2Family comparison fixed and independently reviewed; current production materialization PASS",
+    "test_compile": "Name15 fixture explicit Vec<ProjectReferenceRecord> type; production unchanged; current fullLIB PASS",
+    "migration_test": "old165/411 fixture extended to exact454/sealed700; all previous negatives preserved; current test PASS",
+    "repository_test": "old live Forge aggregate147→436; old147/full289 assertions preserved; current repository3 PASS",
+    "test_lints": "only cfg(test) panic allowance and snake_case test identifiers; production and test bodies byte-identical; current Clippy PASS"
+  },
+  "original_immutable_seals": {
+    "tools/content-schema/item-authoring/lower_item_weapon_metadata_packet.py": "da3646b445398bcdd86289d2927038c4ff9a827778ab33216863e6991b9ac25b",
+    "docs/agents/evidence/OTV2-20261002-item-weapon-metadata-source-qualification-v2.json": "92edd219079460e03ac3f792fc6c3bf849ed37e4191f07de72a69ca16b67806b",
+    "docs/agents/evidence/OTV2-20261002-item-weapon-metadata-promotion-v1.json": "33e95859691705e550a45458a64a15ddb04b6981834e66ce76a618f7efc66e1b",
+    "tools/content-schema/item-authoring/lower_item_forge3332_packet.py": "0c59dd9df73bf3f8b6411cb9241f1d1163a39bca27efffa50a80c2c1a8e6092e",
+    "docs/agents/evidence/OTV2-20261002-item-forge3332-source-qualification-v2.json": "a22405164b549aff06849db98ede92d48d0b72606a25a3d8685054c8b6b324c3",
+    "docs/agents/evidence/OTV2-20261001-item-forge3332-promotion-v1.json": "d6e300e571f1d2e8e6794d3875759fdd0b2cb1ee7872c8527d0f4019ec27b8c1",
+    "tools/content-schema/item-authoring/engine_items.py": "28644c0fcc88f364992670489f7d458f827a9cd1db023b7f5ce0a9ae32d08c1a",
+    "tools/content-schema/item-authoring/source_field_catalogs.py": "8250880aaa89b7c5fa1593d5738a478b0d09e1ef9ef9cef630cb5da172d634bc"
+  },
+  "materialized_counts": {
+    "source_qualified_distinct_item_union": 1859,
+    "native_distinct_changed_item_union": 1655,
+    "description_fields": 1629,
+    "modifier_vectors": 17,
+    "modifier_atoms": 50,
+    "known_name_corrections": 15,
+    "forge_source_items": 289,
+    "forge_source_fields": 578,
+    "old_authoring": 411,
+    "new_authoring": 289,
+    "expected_authoring": 700,
+    "old_forge_profiles": 147,
+    "expected_forge_profiles": 436,
+    "old_tibiawiki_bindings": 165,
+    "expected_tibiawiki_bindings": 454,
+    "old_relation_sources": 250,
+    "expected_relation_sources": 539,
+    "old_relation_refs": 325,
+    "expected_relation_refs": 752,
+    "new_existing_native_positive_slot_refs": 138,
+    "templates": 23,
+    "profiles": 22,
+    "native_records": 57320,
+    "canonical_item_definitions": 34031,
+    "baseline_known_descriptions": 0,
+    "expected_known_descriptions": 1629,
+    "baseline_known_modifier_vectors": 494,
+    "expected_known_modifier_vectors": 511,
+    "baseline_modifier_atoms": 796,
+    "expected_modifier_atoms": 846,
+    "known_name_cardinality_preserved": 12100
+  },
+  "full_native_source_preservation_evidence": {
+    "root_native_receipt": "38efd6d69962a62611befc4831b51b8368bf5b630f8be5d34cbae9898a9e6f4a",
+    "source700_receipt": "51545b2ed600b29da9b49d5b9ae575682686317c93b59ea6c1450c0cb55524d9",
+    "receipt_bytes_and_digests_checked": true,
+    "independent_native_semantic_peer": "Separate equipment review; this final supplement binds source156/all11920 logs and idempotence, reuses previously reviewed source guards and exact owner700 readback"
+  },
+  "dirty_set": "Exactly worker156 plus Root-owned two closeout documents",
+  "root_closeout_paths_excluded": [
+    "docs/agents/evidence/OTV2-20261002-item-source-completion-batch.md",
+    "docs/agents/tasks/archive/OTV2-20261002-item-source-completion-batch.md"
+  ],
+  "runtime_readiness": null,
+  "fully_verified": null,
+  "runtime_activation_or_abi_changes": false,
+  "all_items_complete_claim": false,
+  "data_import_scope": "Qualified1859 distinct source targets;1655NativeItems modified in existing leaves,700sourceowners,454BRbindings,539relationrows752refs. Counts describe data import, not executable runtime or complete Item semantics.",
+  "reviewer_operations": "Read-only repository; external report only. No Cargo/build/generation/Git/ref changes."
+}

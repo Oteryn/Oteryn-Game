@@ -1,0 +1,23 @@
+{
+  "schema": "ITEM_REMAINING_WORK_FINAL_PUBLICATION_REPORT/v1",
+  "status": "PASS",
+  "published_native_head": "4151e3005daa41ed848533e45b63fadc5ed78fa3",
+  "Root_phase": "VALIDATE",
+  "PR": 1562,
+  "owned_files": {
+    "/workspace/audit-continuation/item-remaining-work-published-combined-final-20261002.json": {
+      "sha256": "d897f84d0cbd36710dec40a2c934a2b9d6ded71d3eaf0ae87c0595ed484ac109",
+      "bytes": 234653
+    },
+    "/workspace/audit-continuation/item-remaining-work-published-combined-final-20261002.md": {
+      "sha256": "0c4de9051ef8b1ba85590c73c657a0ecd39a2e5a88ec0a0ac123255c57289c99",
+      "bytes": 5169
+    }
+  },
+  "no_project_writes_Git_mutations_Cargo_or_new_research": true,
+  "FIRSTgen_originals_preserved": {
+    "item-remaining-work-combined-firstgen-20261002.json": "ca19c8e772a4122cfd34ec49998f2c7deffd16838e321f28d780558ddface7b9",
+    "item-remaining-work-combined-firstgen-20261002.md": "f15ebdce5d7ba5b217eff7ee4da1005cb6ee2bb0cb715ebaf33912ec68a2ecc8",
+    "item-remaining-work-combined-firstgen-stopped-manifest-20261002.json": "abaf4beaf6c7916680b032ae3d3c13555f1ab0739d7178a4162834dbda9f06be"
+  }
+}
