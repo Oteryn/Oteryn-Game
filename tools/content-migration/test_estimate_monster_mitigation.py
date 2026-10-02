@@ -5,6 +5,7 @@ import math
 from pathlib import Path
 import tempfile
 import unittest
+from unittest.mock import patch
 import estimate_monster_mitigation as model
 
 
@@ -81,6 +82,62 @@ class MitigationEstimateTests(unittest.TestCase):
         for value in (-1, float('nan'), float('inf'), True):
             with self.assertRaises(ValueError):
                 model.features({'max_health': value, 'armor': 0, 'defense': 0, 'experience': 0})
+
+    def test_accepted_estimates_never_train_or_change_source_model(self):
+        observed = [dict(self.row(str(i), i * 100 + 1, i / 10),
+                         estimate_markers=[], boss=True, special=False) for i in range(40)]
+        target = dict(self.row('target', 1500, None), estimate_markers=[], boss=False, special=False)
+        hashes = {'population_index_sha256': 'index', 'classification_sha256': 'catalog'}
+        with patch.object(model, 'load_rows', return_value=(copy.deepcopy(observed + [target]), hashes)):
+            before = model.build('unused', 'unused')
+        accepted = dict(self.row('accepted', 1500, 999),
+                        estimate_markers=['population_completion_flag'], boss=True, special=False)
+        with patch.object(model, 'load_rows', return_value=(copy.deepcopy(observed + [target, accepted]), hashes)):
+            after = model.build('unused', 'unused')
+        self.assertEqual(40, after['known_count'])
+        self.assertEqual(1, after['preserved_estimate_count'])
+        self.assertEqual(before['entries'], after['entries'])
+        self.assertEqual(before['cross_validation'], after['cross_validation'])
+        self.assertEqual(999, after['excluded_estimates'][0]['value_percent'])
+
+    def test_estimate_detection_with_either_independent_provenance_marker(self):
+        for marker in ('manifest', 'flag', 'none'):
+            with self.subTest(marker=marker), tempfile.TemporaryDirectory() as temporary:
+                root = Path(temporary)
+                folder = root / 'bundles' / 'a'
+                folder.mkdir(parents=True)
+                identity = {'key': 'a', 'revision': 'r1'}
+                ratio = {'numerator': 1, 'denominator': 1}
+                creature = {'identity': identity, 'stats': {'max_health': 100, 'armor': 10,
+                            'defense': 20, 'experience': 100, 'mitigation_percent': ratio}}
+                documents = {'monster.json': {'creature': creature}, 'dependencies.json': {},
+                             'catalog.json': {}, 'manifest.json': {'sources':
+                             [{'kind': 'oteryn_balance_estimate'}] if marker == 'manifest' else []}}
+                digest = hashlib.sha256()
+                for filename, document in documents.items():
+                    data = json.dumps(document).encode()
+                    (folder / filename).write_bytes(data)
+                    digest.update(f'{filename}\0{len(data)}\0'.encode('ascii') + data)
+                index = root / 'population-index.json'
+                index.write_text(json.dumps({'monsters': [{'monster': 'a', 'sha256': digest.hexdigest(),
+                    'completion_flags': [model.QUALIFICATION] if marker == 'flag' else []}]}))
+                catalog = root / 'classification.json'
+                catalog.write_text(json.dumps({'population_index_sha256': model.sha(index), 'entries': [{
+                    'monster': 'a', 'identity': identity, 'bundle_sha256': digest.hexdigest(),
+                    'display_name': 'a', 'variant_relations': [], 'roles': [],
+                    'mitigation': {'status': 'present', 'value': ratio}}]}))
+                row = model.load_rows(root, catalog)[0][0]
+                self.assertEqual(1, row['y'])
+                self.assertEqual(marker != 'none', bool(row['estimate_markers']))
+
+    def test_no_missing_values_returns_empty_ledger_without_reestimating(self):
+        rows = [dict(self.row(str(i), i * 100 + 1, i / 10), estimate_markers=[],
+                     boss=True, special=False) for i in range(40)]
+        hashes = {'population_index_sha256': 'index', 'classification_sha256': 'catalog'}
+        with patch.object(model, 'load_rows', return_value=(rows, hashes)):
+            ledger = model.build('unused', 'unused')
+        self.assertEqual([], ledger['entries'])
+        self.assertIsNone(ledger['summary']['estimated_range_percent'])
 
 
 if __name__ == '__main__':

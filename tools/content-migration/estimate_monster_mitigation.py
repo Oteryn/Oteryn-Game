@@ -133,9 +133,12 @@ def load_rows(population, classification):
         if Path(name).name != name or entry['bundle_sha256'] != by_name[name]['sha256']:
             raise ValueError('Invalid or stale classified bundle')
         digest = hashlib.sha256()
+        manifest = None
         for filename in ('monster.json', 'dependencies.json', 'catalog.json', 'manifest.json'):
             data = (population / 'bundles' / name / filename).read_bytes()
             digest.update(f'{filename}\0{len(data)}\0'.encode('ascii') + data)
+            if filename == 'manifest.json':
+                manifest = json.loads(data)
         if digest.hexdigest() != entry['bundle_sha256']:
             raise ValueError('Bundle bytes differ from source-bound snapshot')
         path = population / 'bundles' / name / 'monster.json'
@@ -151,7 +154,15 @@ def load_rows(population, classification):
         if y is not None and (not math.isfinite(y) or y < 0):
             raise ValueError('Invalid observed mitigation')
         role_names = {c['role'] for c in entry['roles']}
+        # Acceptance authorizes use in Oteryn, not promotion to observed source truth.
+        # Either marker excludes the value: older snapshots may carry only one.
+        estimate_markers = []
+        if QUALIFICATION in by_name[name].get('completion_flags', []):
+            estimate_markers.append('population_completion_flag')
+        if any(source.get('kind') == 'oteryn_balance_estimate' for source in manifest.get('sources', [])):
+            estimate_markers.append('manifest_balance_estimate_source')
         rows.append({**entry, 'x': features(creature['stats']), 'y': y,
+                     'estimate_markers': estimate_markers,
                      'confirmed_boss': any(c['role'] == 'boss' and c['confidence'] == 'confirmed' for c in entry['roles']),
                      'boss': 'boss' in role_names, 'special': bool(role_names & {'mechanic_actor', 'trainer', 'familiar'})})
         input_hashes[f'bundles/{name}/monster.json'] = sha(path)
@@ -162,8 +173,13 @@ def load_rows(population, classification):
 
 def build(population, classification):
     rows, hashes = load_rows(population, classification)
-    known = [r for r in rows if r['y'] is not None]
+    known = [r for r in rows if r['y'] is not None and not r['estimate_markers']]
+    preserved = [r for r in rows if r['y'] is not None and r['estimate_markers']]
     missing = [r for r in rows if r['y'] is None]
+    if not known:
+        raise ValueError('No source-backed mitigation training values')
+    # Estimated/unknown actors must not bridge observed groups or change their folds.
+    groups(known)
     global_reports, boss_reports = cross_validate(known, 'global'), cross_validate(known, 'boss')
     global_model = choose(global_reports)
     boss_model = choose([global_model] + boss_reports, boss=True)
@@ -199,6 +215,9 @@ def build(population, classification):
     return {'schema': 'OTERYN_ACCEPTED_MITIGATION_ESTIMATES/v1', 'qualification': QUALIFICATION,
             'global_parity': False, 'input_hashes': hashes,
             'input_sha256': {'population_index': hashes['population_index_sha256'], 'classification': hashes['classification_sha256']}, 'known_count': len(known), 'estimated_count': len(entries),
+            'training_policy': 'Only existing values without Oteryn estimate markers train the model; accepted estimates are preserved and excluded.',
+            'preserved_estimate_count': len(preserved),
+            'excluded_estimates': [{'monster': r['monster'], 'value_percent': r['y'], 'markers': r['estimate_markers']} for r in preserved],
             'confirmed_boss_training_count': sum(r['confirmed_boss'] for r in known),
             'grouping': 'Union of identical stat tuples, normalized display names and explicit transformation relations; SHA256 group modulo 5.',
             'selection': 'MAE + 0.2*p90; within 2%, prefer k near 5, then lower XP weight.',
@@ -206,7 +225,7 @@ def build(population, classification):
             'selected_global_model': global_model, 'selected_boss_model': boss_model,
             'cross_validation': global_reports + boss_reports, 'observed_range_percent': [min(r['y'] for r in known), maximum],
             'summary': {'policy': dict(Counter(e['policy'] for e in entries)), 'ood_count': sum(e['out_of_distribution'] for e in entries),
-                        'estimated_range_percent': [min(e['value_percent'] for e in entries), max(e['value_percent'] for e in entries)]},
+                        'estimated_range_percent': [min(e['value_percent'] for e in entries), max(e['value_percent'] for e in entries)] if entries else None},
             'entries': entries}
 
 
@@ -221,7 +240,7 @@ def main():
     ledger = build(args.population, args.classification)
     args.out.mkdir(parents=True)
     (args.out / 'mitigation-estimates.json').write_text(json.dumps(ledger, indent=2) + '\n')
-    print(json.dumps({k: ledger[k] for k in ('known_count', 'estimated_count', 'selected_global_model', 'selected_boss_model', 'summary')}, indent=2))
+    print(json.dumps({k: ledger[k] for k in ('known_count', 'preserved_estimate_count', 'estimated_count', 'selected_global_model', 'selected_boss_model', 'summary')}, indent=2))
 
 
 if __name__ == '__main__':
