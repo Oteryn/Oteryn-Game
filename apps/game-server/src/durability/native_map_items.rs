@@ -80,7 +80,9 @@ pub(crate) async fn initialize_in_transaction(
             return Err(SpellItemError::Rejected("map placement binding"));
         }
         let bytes = intent(&binding, p)?;
-        let previous=sqlx::query("SELECT uuid_send(transaction_id),uuid_send(item_instance_id),source_intent,scope_generation::text FROM game_native_map_item_receipts WHERE world_id=encode($1,'hex')::uuid AND channel_id=encode($2,'hex')::uuid AND content_digest=$3 AND placement_key=$4 FOR SHARE")
+        // This scope's initializer holds the advisory transaction lock above.
+        // Receipts are immutable; SELECT needs no receipt UPDATE privilege.
+        let previous=sqlx::query("SELECT uuid_send(transaction_id),uuid_send(item_instance_id),source_intent,scope_generation::text FROM game_native_map_item_receipts WHERE world_id=encode($1,'hex')::uuid AND channel_id=encode($2,'hex')::uuid AND content_digest=$3 AND placement_key=$4")
             .bind(binding.world.as_bytes().as_slice()).bind(binding.channel.as_bytes().as_slice()).bind(binding.content_digest.as_slice()).bind(&p.placement_key).fetch_optional(&mut **tx).await?;
         if let Some(row) = previous {
             let original: serde_json::Value =
@@ -221,7 +223,9 @@ async fn adopt_current_ground(
     if exists.is_none() {
         return Err(SpellItemError::Rejected("map source Item absent"));
     }
-    let ground=sqlx::query("SELECT to_jsonb(g),world_id=encode($2,'hex')::uuid AND channel_id=encode($3,'hex')::uuid AND map_revision=$4 AND content_revision=$5 AND native_room_placement_context=$6 AS compatible,runtime_scope_ownership_generation::text FROM game_item_ground_locations g WHERE item_instance_id=encode($1,'hex')::uuid FOR UPDATE")
+    // The actual item row is already locked above. Custody writers and the
+    // location-exclusivity trigger serialize on that item; Ground is immutable.
+    let ground=sqlx::query("SELECT to_jsonb(g),world_id=encode($2,'hex')::uuid AND channel_id=encode($3,'hex')::uuid AND map_revision=$4 AND content_revision=$5 AND native_room_placement_context=$6 AS compatible,runtime_scope_ownership_generation::text FROM game_item_ground_locations g WHERE item_instance_id=encode($1,'hex')::uuid")
         .bind(item).bind(binding.world.as_bytes().as_slice()).bind(binding.channel.as_bytes().as_slice()).bind(format!("sha256:{}",hex(&binding.map_digest))).bind(format!("sha256:{}",hex(&binding.content_digest))).bind(binding.frame_digest.as_slice()).fetch_optional(&mut **tx).await?;
     let before = match ground {
         Some(row) if row.try_get::<bool, _>(1)? => {

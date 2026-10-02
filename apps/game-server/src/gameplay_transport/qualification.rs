@@ -60,6 +60,9 @@ use tokio_rustls::{TlsConnector, rustls};
 
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
+#[path = "qualification_spell_character.rs"]
+mod spell_character;
+
 const SOURCE_AUTHORITY: &str = "platform";
 const PLATFORM_SOURCE: &str = "5d4883acf7079e26fd51e03f460166730de1ada0";
 /// Interpretation requested by the Platform intents that `run.sh` issues.
@@ -927,6 +930,162 @@ async fn join<A, B>(a: impl Future<Output = A>, b: impl Future<Output = B>) -> (
 /// against its own bound port. Characters were bootstrapped through the node
 /// control socket; this harness only reads them and the assignment back.
 #[test]
+#[ignore = "requires the disposable node-boot spell topology and Character-owned cast facts"]
+fn node_boot_spells_against_running_node() -> TestResult {
+    // Reuse the node's issued manifest and the normal client admission. Neither the
+    // grant nor this test supplies vocation, progression, resources or targets.
+    let manifest = required("NODE_BOOT_SPELL_MANIFEST")?;
+    let world = crate::node::uuid_bytes(&required("NODE_BOOT_WORLD_ID")?)
+        .ok_or("invalid NODE_BOOT_WORLD_ID")?;
+    let channel = crate::node::uuid_bytes(&required("NODE_BOOT_CHANNEL_ID")?)
+        .ok_or("invalid NODE_BOOT_CHANNEL_ID")?;
+    let room = crate::content::qualify_native_entry_room_from_gameplay_manifest(
+        WorldId::decode(&world)?,
+        std::path::Path::new(&manifest),
+    )
+    .map_err(|error| format!("spell manifest qualification: {error}"))?;
+    let input = crate::content::native_gameplay::NativeGameplayInput::from_manifest(
+        std::path::Path::new(&manifest),
+    )?;
+    let catalog =
+        crate::spell::executable_catalog::compile(&input.catalog.bytes, &input.catalog.sha256)?;
+    let selections = crate::spell::executable_catalog::compile_source_selection(
+        &input.source_selection.bytes,
+        &input.source_selection.sha256,
+        &catalog,
+    )?;
+    let book = catalog.into_spell_book_with_selections(&selections)?;
+    let signing = SigningKey::from_bytes(&hex32(&required("WP5_S3B_FRESH_KEY_SEED")?)?);
+    let key_id = required("WP5_S3B_FRESH_KEY_ID")?;
+    let account = required("WP5_S3A_ACCOUNT_ID")?;
+    let certificate = CertificateDer::from(pem_der(
+        &required("NODE_BOOT_GAMEPLAY_CERT")?,
+        "CERTIFICATE",
+    )?);
+    tokio::runtime::Builder::new_multi_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            let url = required("NODE_BOOT_DATABASE_URL")?;
+            let mut database = sqlx::PgConnection::connect(&url).await?;
+            let character: Vec<u8> = sqlx::query_scalar(
+                "SELECT uuid_send(character_id) FROM game_character_roots WHERE account_id = $1::uuid",
+            )
+            .bind(&account)
+            .fetch_one(&mut database)
+            .await?;
+            let character = <[u8; 16]>::try_from(character.as_slice())?;
+            let generation: String = sqlx::query_scalar(
+                "SELECT ownership_generation::text FROM game_runtime_scope_assignments \
+                 WHERE world_id = encode($1, 'hex')::uuid AND channel_id = encode($2, 'hex')::uuid AND state = 1",
+            )
+            .bind(world.as_slice())
+            .bind(channel.as_slice())
+            .fetch_one(&mut database)
+            .await?;
+            database.close().await?;
+            let descriptor = producer_descriptor(
+                SOURCE_AUTHORITY,
+                "WP5_S3A_CLIENT_CERT",
+                "WP5_S3A_CLIENT_KEY",
+            )?;
+            let security_generation = platform_generation(&descriptor, &account).await?;
+            let token = sign_grant(
+                &Grant {
+                    signing: &signing,
+                    key_id: &key_id,
+                    account_id: &account,
+                    character_id: character,
+                    world_id: world,
+                    channel_id: channel,
+                    security_generation,
+                    scope_generation: generation.parse()?,
+                    nonce: [0x61; 32],
+                    attempt: v7(61, 3),
+                },
+                now_seconds()?,
+            );
+            let mut client = oteryn_dev_client::connect_session(oteryn_dev_client::JoinRequest {
+                address: required("NODE_BOOT_ADDRESS")?.parse()?,
+                server_name: "localhost",
+                root_certificate: &certificate,
+                schema_revision: 1,
+                character_id: CharacterId::decode(&character)?,
+                admission_material: token.as_bytes(),
+                client_build_id: "oteryn-dev-client/spell-qualification",
+                deadline: Duration::from_secs(20),
+            })
+            .await?;
+            if client.world_spatial().content_generation != room.compiled().client_digest() {
+                return Err("running node did not admit the issued spell content generation".into());
+            }
+            let owned_vitals = client.actor_vitals().is_some();
+            let before_unknown = client.actor_vitals().copied();
+            let unknown = client
+                .cast_spell(
+                    std::num::NonZeroU32::new(u32::MAX).ok_or("invalid probe index")?,
+                    super::actor_spell::SpellTarget::None,
+                    false,
+                )
+                .await?;
+            if unknown.disposition != super::actor_spell::SpellCastDisposition::Rejected
+                || unknown.actor_vitals_delta.is_some()
+                || client.actor_vitals().copied() != before_unknown
+            {
+                return Err("unknown spell index mutated resources or was not rejected".into());
+            }
+            evidence("spell_probe unknown_index=rejected resources=unchanged");
+            let mut cast = 0;
+            for offset in 0..book.source_len() {
+                let index = std::num::NonZeroU32::new(u32::try_from(offset + 1)?)
+                    .ok_or("invalid spell index")?;
+                let (spell, selected) = book.source_indexed(index).ok_or("missing source index")?;
+                let outcome = client
+                    .cast_spell(index, super::actor_spell::SpellTarget::None, false)
+                    .await?;
+                if outcome.disposition == super::actor_spell::SpellCastDisposition::Cast {
+                    cast += 1;
+                    if spell.cooldown_micros >= 1_000_000 {
+                        let before_retry = client.actor_vitals().copied();
+                        let retry = client
+                            .cast_spell(index, super::actor_spell::SpellTarget::None, false)
+                            .await?;
+                        if retry.disposition != super::actor_spell::SpellCastDisposition::CoolingDown
+                            || retry.actor_vitals_delta.is_some()
+                            || client.actor_vitals().copied() != before_retry
+                        {
+                            return Err(format!(
+                                "spell {} immediate retry did not refuse without resource payment: {retry:?}",
+                                spell.key,
+                            )
+                            .into());
+                        }
+                        evidence(&format!("spell_probe index={index} immediate_retry=cooling_down resources=unchanged"));
+                    }
+                }
+                evidence(&format!(
+                    "spell_probe index={index} key={} selected={selected} target=none disposition={:?} vitals_delta={}",
+                    spell.key,
+                    outcome.disposition,
+                    outcome.actor_vitals_delta.is_some(),
+                ));
+            }
+            evidence(&format!(
+                "spell_probe_summary definitions={} attempted={} cast={cast} character_owned_vitals={owned_vitals} scope=untargeted_catalog_probe gameplay_complete=false",
+                book.source_len(),
+                book.source_len(),
+            ));
+            if !owned_vitals {
+                return Err("spell execution blocked: bootstrap produced no Character-owned vocation/progression cast facts; transport refusals are not successful spell execution".into());
+            }
+            if cast == 0 {
+                return Err("no spell executed: inspect Character-owned level, vocation, resources and spell_probe dispositions".into());
+            }
+            Ok(())
+        })
+}
+
+#[test]
 #[ignore = "requires a running node in the disposable WP5 node-boot topology"]
 fn node_boot_seam_against_running_node() -> TestResult {
     let key_id = required("WP5_S3B_FRESH_KEY_ID")?;
@@ -1011,6 +1170,13 @@ fn server_seam_real_owners_over_tcp_tls() -> TestResult {
 }
 
 async fn seam_flow(accounts: &[String; 2], key_id: &str, signing: &SigningKey) -> TestResult {
+    let spell_input = env::var_os("OTERYN_SEAM_SPELL_MANIFEST")
+        .map(|path| {
+            crate::content::native_gameplay::NativeGameplayInput::from_manifest(
+                std::path::Path::new(&path),
+            )
+        })
+        .transpose()?;
     let descriptor = producer_descriptor(
         SOURCE_AUTHORITY,
         "WP5_S3A_CLIENT_CERT",
@@ -1070,6 +1236,19 @@ async fn seam_flow(accounts: &[String; 2], key_id: &str, signing: &SigningKey) -
     .bind(v7(1, 0x03).as_slice())
     .execute(&mut owner)
     .await?;
+    if spell_input.is_some() {
+        // The native item/Wheel owners independently read the current durable
+        // activation. Grant only this disposable control login this exact scope.
+        sqlx::query(
+            "INSERT INTO game_control_scope_grants (control_role, world_id, channel_id, operation) \
+             VALUES ($1, encode($2, 'hex')::uuid, encode($3, 'hex')::uuid, 4)",
+        )
+        .bind(&control_role)
+        .bind(world.as_bytes().as_slice())
+        .bind(channel.as_bytes().as_slice())
+        .execute(&mut owner)
+        .await?;
+    }
     owner.close().await?;
     let writer = RuntimeScopeAssignmentWriter::open(control.clone(), "seam-writer")
         .await
@@ -1089,8 +1268,11 @@ async fn seam_flow(accounts: &[String; 2], key_id: &str, signing: &SigningKey) -
     let scope_generation = assigned.assignment.ownership_generation;
     // #935: activate the genuine committed entry room for this World, as `serve` does, so the
     // Channel pin and the Movement cells come from the same qualified generation.
-    let room = crate::content::qualify_native_entry_room(world)
-        .map_err(|e| format!("native entry room: {e}"))?;
+    let room = match &spell_input {
+        Some(input) => crate::content::qualify_selected_native_gameplay_room(world, input),
+        None => crate::content::qualify_native_entry_room(world),
+    }
+    .map_err(|e| format!("native entry room: {e}"))?;
     let issuance = crate::content::NativeEntryActivationIssuance {
         world_id: world,
         activation_sequence: 1,
@@ -1098,15 +1280,54 @@ async fn seam_flow(accounts: &[String; 2], key_id: &str, signing: &SigningKey) -
         client_artifact_digest: room.compiled().client_digest(),
         frame_binding_digest: room.frame_binding().digest(),
     };
+    if spell_input.is_some() {
+        let request = crate::durability::content_activation::ContentActivationRequest {
+            world_id: world,
+            channel_id: channel,
+            activation_sequence: issuance.activation_sequence,
+            previous_sequence: None,
+            server_artifact_digest: issuance.server_artifact_digest,
+            client_artifact_digest: issuance.client_artifact_digest,
+            frame_binding_digest: issuance.frame_binding_digest,
+        };
+        if !control.record_content_activation(&request).await? {
+            return Err("spell content activation owner refused exact scoped issuance".into());
+        }
+        let recorded = root
+            .read_current_content_activation(world, channel)
+            .await?
+            .ok_or("spell content activation issuance missing after owner write")?;
+        if recorded.activation_sequence != issuance.activation_sequence
+            || recorded.server_artifact_digest != issuance.server_artifact_digest
+            || recorded.client_artifact_digest != issuance.client_artifact_digest
+            || recorded.frame_binding_digest != issuance.frame_binding_digest
+        {
+            return Err("spell content activation readback differs from qualified issuance".into());
+        }
+        evidence(
+            "spell_content activation=durably_issued scoped_grant=content_activate readback=exact",
+        );
+    }
     let mut content_controller = crate::content::ContentActivationController::new();
-    let (channel_pin, movement_cells, door_content) = crate::content::activate_native_entry_room(
-        &mut content_controller,
-        &crate::content::NodeBootQuiescence::before_channel_runtime(),
-        world,
-        &issuance,
-    )
-    .map_err(|e| format!("native entry activation: {e}"))?
-    .into_channel_parts();
+    let quiescence = crate::content::NodeBootQuiescence::before_channel_runtime();
+    let pin = match &spell_input {
+        Some(input) => crate::content::activate_native_entry_room_with_gameplay(
+            &mut content_controller,
+            &quiescence,
+            world,
+            &issuance,
+            input,
+        ),
+        None => crate::content::activate_native_entry_room(
+            &mut content_controller,
+            &quiescence,
+            world,
+            &issuance,
+        ),
+    };
+    let (channel_pin, movement_cells, door_content) = pin
+        .map_err(|e| format!("native entry activation: {e}"))?
+        .into_channel_parts();
     // #162 5868482467 (M2b): the same door-binding the production boot sequence performs, from
     // the same committed scope and ownership generation this Channel runtime is composed with
     // below.
@@ -1133,7 +1354,13 @@ async fn seam_flow(accounts: &[String; 2], key_id: &str, signing: &SigningKey) -
     // C2: the same chest injection the production boot sequence performs.
     let chest = crate::interaction_chest_use::with_entry_chest(&door_content)
         .map_err(|e| format!("native entry chest content: {e:?}"))?;
-    let spells = crate::spell::cast::v1_spell_book()?;
+    let spells = match content_controller
+        .active()
+        .and_then(|active| active.native_gameplay())
+    {
+        Some(native) => native.spell_book().clone(),
+        None => crate::spell::cast::v1_spell_book()?,
+    };
     let achievements = crate::achievement_catalogue::AchievementCatalogue::embedded()
         .map_err(|e| format!("achievement catalogue: {e:?}"))?;
     // KAN-26: the Channel runtime is composed from this exact committed
@@ -1152,6 +1379,35 @@ async fn seam_flow(accounts: &[String; 2], key_id: &str, signing: &SigningKey) -
         )
         .map_err(|e| format!("channel runtime: {e:?}"))?,
     );
+    if spell_input.is_some()
+        && let Some(source_world) = room.source_world()
+    {
+        // Refuse invalid placement producers before client admission and the
+        // ordinary reconnect grace. This is the same constructor cast executes;
+        // qualification does not initialize SQL state or mark the map ready.
+        let native = content_controller
+            .active()
+            .and_then(|active| active.native_gameplay())
+            .ok_or("spell map preflight has no active native content")?;
+        let runtime_guard = runtime.lock().await;
+        let pending = source_world.pending_mutable_placements().len();
+        let proof = crate::spell::source_map_initialization::CurrentNativeMapInitialization::from_current_owner(
+            &runtime_guard,
+            &room,
+            native,
+        )
+        .map_err(|reason| {
+            evidence(&format!(
+                "spell_map_preflight pending_placements={pending} disposition=refused reason={reason}"
+            ));
+            format!("spell map placement preflight: {reason}")
+        })?;
+        use crate::durability::native_map_items_abi::NativeMapInitializationProof;
+        evidence(&format!(
+            "spell_map_preflight pending_placements={pending} qualified_placements={} disposition=qualified runtime_initialized=false",
+            proof.placements().len(),
+        ));
+    }
     publish_readiness(&root, &holder, scope, scope_generation, now_seconds()?).await?;
     let retained = std::path::PathBuf::from(required("WP5_S3B_CHARACTER_FENCE_DIR")?);
     let recovery = CharacterRecoveryStore::open(&retained, "character-primary", "game-ops")
@@ -1243,16 +1499,18 @@ async fn seam_flow(accounts: &[String; 2], key_id: &str, signing: &SigningKey) -
             door: &door,
             chest: &chest,
             spells: &spells,
-            active_generation: None,
+            active_generation: spell_input
+                .as_ref()
+                .and_then(|_| content_controller.active()),
             premium_coordinator: None,
-            qualified_room: None,
+            qualified_room: spell_input.as_ref().map(|_| &room),
             achievements: &achievements,
         },
         &shutdown,
     );
 
     let recovery_signing = recovery_key()?;
-    let clients = seam_clients(SeamClients {
+    let client_config = SeamClients {
         address,
         certificate: &certificate,
         signing,
@@ -1266,7 +1524,14 @@ async fn seam_flow(accounts: &[String; 2], key_id: &str, signing: &SigningKey) -
         url: &url,
         runtime: Some(&runtime),
         recovery: &recovery_signing,
-    });
+    };
+    let clients = async {
+        if spell_input.is_some() {
+            seam_spell_clients(client_config, &root, &authority, &holder, &spells).await
+        } else {
+            seam_clients(client_config).await
+        }
+    };
     // The listener must outlive every client case: an early listener exit is a
     // failure, never a hang on an unaccepted connection.
     let mut serve = pin!(serve);
@@ -1292,6 +1557,10 @@ async fn seam_flow(accounts: &[String; 2], key_id: &str, signing: &SigningKey) -
         None => return Err(format!("listener ended before the client cases: {served:?}").into()),
     }
     served?;
+    if spell_input.is_some() {
+        evidence("spell_seam shutdown=drained scope=real_owner_tcp_tls gameplay_complete=false");
+        return Ok(());
+    }
     // KAN-26: every committed fresh admission holds exactly one player actor;
     // refused, replayed and losing attempts leave no reservation behind; and
     // ordinary disconnect (every client has closed by now) removes nothing.
@@ -1327,6 +1596,173 @@ async fn seam_flow(accounts: &[String; 2], key_id: &str, signing: &SigningKey) -
     }
     evidence("grace_expiry runtime_released_actors=2 marks_left=0");
     evidence("shutdown=drained FORMAL_ADR0007_QA_TIER1_TIER2=NOT_EVALUATED");
+    Ok(())
+}
+
+/// Full-content smoke through actual Character writers and the shipped TLS listener.
+async fn seam_spell_clients(
+    config: SeamClients<'_>,
+    root: &DurabilityRoot,
+    authority: &crate::durability::character_authority::ReconciledCharacterAuthority<'_, '_>,
+    holder: &NodeIncarnationProof,
+    book: &crate::spell::SpellBook,
+) -> TestResult {
+    let character = config.characters[1];
+    let account = &config.accounts[1];
+    let generation = platform_generation(config.descriptor, account).await?;
+    let token = |tag| -> TestResult<String> {
+        Ok(sign_grant(
+            &Grant {
+                signing: config.signing,
+                key_id: config.key_id,
+                account_id: account,
+                character_id: character,
+                world_id: config.world,
+                channel_id: config.channel,
+                security_generation: generation,
+                scope_generation: config.scope_generation,
+                nonce: [tag; 32],
+                attempt: v7(tag, 0x31),
+            },
+            now_seconds()?,
+        ))
+    };
+    let first_token = token(70)?;
+    evidence("spell_seam stage=initial_join");
+    let first = oteryn_dev_client::connect_session(oteryn_dev_client::JoinRequest {
+        address: config.address,
+        server_name: "localhost",
+        root_certificate: config.certificate,
+        schema_revision: 1,
+        character_id: CharacterId::decode(&character)?,
+        admission_material: first_token.as_bytes(),
+        client_build_id: "oteryn-dev-client/spell-owner-setup",
+        deadline: Duration::from_secs(20),
+    })
+    .await?;
+    evidence("spell_seam stage=initial_join_complete");
+    let session = first.join_snapshot().game_session_id;
+    let current = crate::durability::fresh_admission::FreshAdmissionStore::from_root(root.clone())
+        .current_session(session)
+        .await
+        .map_err(|error| format!("spell setup session: {error:?}"))?;
+    spell_character::prepare_free_sorcerer(
+        root,
+        authority,
+        holder,
+        &current,
+        crate::domain::progression::ProgressionRevisionContext {
+            profile: INTERPRETATION[0].into(),
+            ruleset: INTERPRETATION[1].into(),
+            content: INTERPRETATION[2].into(),
+            simulation: "spell-qualification-simulation-1".into(),
+            evidence: "spell-qualification-real-owners-1".into(),
+            declaration: "spell-qualification-finite-1".into(),
+        },
+        v7(71, 0x31),
+        v7(72, 0x31),
+    )
+    .await?;
+    evidence("spell_seam stage=character_writers_complete");
+    drop(first);
+    // Let the ordinary control-loss and grace-release owners remove the old actor.
+    // Re-admission, rather than overwriting runtime resources, installs new cast facts.
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(170);
+    while !matches!(
+        session_loss_row(config.url, *session.as_bytes()).await?,
+        Some((3, _, _))
+    ) {
+        if tokio::time::Instant::now() >= deadline {
+            return Err("spell setup session did not release through ordinary grace".into());
+        }
+        tokio::time::sleep(Duration::from_millis(500)).await;
+    }
+    let second_token = token(73)?;
+    evidence("spell_seam stage=classed_reentry");
+    let mut client = oteryn_dev_client::connect_session(oteryn_dev_client::JoinRequest {
+        address: config.address,
+        server_name: "localhost",
+        root_certificate: config.certificate,
+        schema_revision: 1,
+        character_id: CharacterId::decode(&character)?,
+        admission_material: second_token.as_bytes(),
+        client_build_id: "oteryn-dev-client/spell-seam",
+        deadline: Duration::from_secs(20),
+    })
+    .await?;
+    let before = client
+        .actor_vitals()
+        .copied()
+        .ok_or("classed re-admission supplied no vitals")?;
+    evidence(&format!(
+        "spell_seam stage=classed_reentry_complete health={} max_health={} mana={} max_mana={} soul={}",
+        before.health, before.max_health, before.mana, before.max_mana, before.soul
+    ));
+    let heal_key = &book
+        .spoken("exura")
+        .ok_or("full catalog has no exura")?
+        .spell
+        .key;
+    let index = (1..=u32::try_from(book.source_len())?)
+        .filter_map(std::num::NonZeroU32::new)
+        .find(|index| {
+            book.indexed(*index)
+                .is_some_and(|spell| &spell.key == heal_key)
+        })
+        .ok_or("exura has no active index")?;
+    evidence(&format!(
+        "spell_seam stage=exura_command_send index={index}"
+    ));
+    let healed = client
+        .cast_spell(index, super::actor_spell::SpellTarget::None, false)
+        .await?;
+    evidence(&format!(
+        "spell_seam stage=exura_command_result disposition={:?}",
+        healed.disposition
+    ));
+    let after = client.actor_vitals().copied().ok_or("cast lost vitals")?;
+    if healed.disposition != super::actor_spell::SpellCastDisposition::Cast
+        || healed.actor_vitals_delta.is_none()
+        || after.mana >= before.mana
+        || after.health > after.max_health
+        || after.health < before.health
+    {
+        return Err(format!(
+            "real exura failed: outcome={healed:?} before={before:?} after={after:?}"
+        )
+        .into());
+    }
+    let retry = client
+        .cast_spell(index, super::actor_spell::SpellTarget::None, false)
+        .await?;
+    if retry.disposition != super::actor_spell::SpellCastDisposition::CoolingDown
+        || retry.actor_vitals_delta.is_some()
+        || client.actor_vitals().copied() != Some(after)
+    {
+        return Err(format!("real exura cooldown failed: {retry:?}").into());
+    }
+    evidence(&format!(
+        "spell_seam definitions={} caster=free_sorcerer_level8 setup=fenced_character_writers reentry=ordinary_grace exura=cast mana_before={} mana_after={} immediate_retry=cooling_down health_bounded=true wounded_heal_magnitude=not_evaluated",
+        book.source_len(),
+        before.mana,
+        after.mana
+    ));
+    for offset in 0..book.source_len() {
+        let index = std::num::NonZeroU32::new(u32::try_from(offset + 1)?)
+            .ok_or("invalid spell catalog index")?;
+        let (spell, selected) = book
+            .source_indexed(index)
+            .ok_or("missing spell catalog index")?;
+        let outcome = client
+            .cast_spell(index, super::actor_spell::SpellTarget::None, false)
+            .await?;
+        evidence(&format!(
+            "spell_probe index={index} key={} selected={selected} caster=free_sorcerer_level8 target=none disposition={:?} vitals_delta={} scope=untargeted_catalog_probe gameplay_complete=false",
+            spell.key,
+            outcome.disposition,
+            outcome.actor_vitals_delta.is_some()
+        ));
+    }
     Ok(())
 }
 

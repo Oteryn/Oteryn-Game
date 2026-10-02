@@ -668,24 +668,30 @@ where
     // `WORLD_OBJECT_OVERLAY`, the same code path a reconnect resumes through, so a resumed
     // connection gets the door's current overlay exactly as a fresh join does.
     let overlay = authority.observe_world_object_overlay().await;
-    let overlay_payload;
+    // Absence qualifies the initial empty domain, not a reset of an overlay
+    // revision already delivered on this session. Refuse an unavailable owner.
+    if overlay.is_none() && admitted.continuity.overlay_revision != 0 {
+        return ConnectionEnd::AdmittedThenDisconnected(admitted);
+    }
     // Spell cast §3/§4: the own actor's `ACTOR_VITALS`, when it has them, in the same snapshot.
     let vitals = authority
         .observe_vitals(actor, admitted.game_session_id)
         .await;
     let vitals_payload;
-    if let Some(entry) = &overlay {
-        let Ok(bytes) = encode_world_object_overlay_snapshot(std::slice::from_ref(entry)) else {
-            return ConnectionEnd::AdmittedThenDisconnected(admitted);
-        };
-        overlay_payload = bytes;
-        domains.push(DomainSnapshot {
-            domain_id: STATE_DOMAIN_WORLD_OBJECT_OVERLAY,
-            revision: entry.revision,
-            snapshot_type: SNAPSHOT_TYPE_WORLD_OBJECT_OVERLAY_V1,
-            payload: &overlay_payload,
-        });
-    }
+    // An empty overlay is still the registered domain's complete snapshot.
+    // Source-qualified maps have no legacy entry-room door; publish no invented
+    // placement, while allowing the client to distinguish empty from missing.
+    let entries = overlay.as_ref().map(std::slice::from_ref).unwrap_or(&[]);
+    let Ok(overlay_payload) = encode_world_object_overlay_snapshot(entries) else {
+        return ConnectionEnd::AdmittedThenDisconnected(admitted);
+    };
+    let overlay_revision = overlay.as_ref().map_or(0, |entry| entry.revision);
+    domains.push(DomainSnapshot {
+        domain_id: STATE_DOMAIN_WORLD_OBJECT_OVERLAY,
+        revision: overlay_revision,
+        snapshot_type: SNAPSHOT_TYPE_WORLD_OBJECT_OVERLAY_V1,
+        payload: &overlay_payload,
+    });
     if let Some((vitals_revision, value)) = &vitals {
         let Ok(bytes) = encode_actor_vitals(value) else {
             return ConnectionEnd::AdmittedThenDisconnected(admitted);
@@ -713,9 +719,7 @@ where
     // `spatial_revision`, this actor's own counter), so the reconnect fence (`resume.rs`,
     // r4122215795) must record what was actually confirmed delivered, never a value written
     // before transmission could still fail partway through.
-    if let Some(entry) = &overlay {
-        admitted.continuity.overlay_revision = entry.revision;
-    }
+    admitted.continuity.overlay_revision = overlay_revision;
     if let Some((vitals_revision, _)) = &vitals {
         admitted.continuity.vitals_revision = *vitals_revision;
     }
@@ -1603,17 +1607,31 @@ mod tests {
         Ok((end, frames))
     }
 
+    // V1 encodes the empty entry list as an empty payload, while retaining
+    // the registered domain, snapshot type and initial revision in the envelope.
+    fn empty_overlay_snapshot() -> DomainSnapshot<'static> {
+        DomainSnapshot {
+            domain_id: STATE_DOMAIN_WORLD_OBJECT_OVERLAY,
+            revision: 0,
+            snapshot_type: SNAPSHOT_TYPE_WORLD_OBJECT_OVERLAY_V1,
+            payload: &[],
+        }
+    }
+
     fn baseline() -> Vec<Vec<u8>> {
         encode_single_chunk_snapshot(
             ADMITTED_GENERATION,
             1,
             0,
-            &[DomainSnapshot {
-                domain_id: STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
-                revision: 1,
-                snapshot_type: SNAPSHOT_TYPE_WORLD_SPATIAL_V1,
-                payload: &encode_world_spatial(&at(0)),
-            }],
+            &[
+                DomainSnapshot {
+                    domain_id: STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
+                    revision: 1,
+                    snapshot_type: SNAPSHOT_TYPE_WORLD_SPATIAL_V1,
+                    payload: &encode_world_spatial(&at(0)),
+                },
+                empty_overlay_snapshot(),
+            ],
         )
         .expect("snapshot")
         .into()
@@ -2249,6 +2267,64 @@ mod tests {
     /// calls have gone through the inner stream, then fails every call after. Reads are
     /// unaffected. Used to prove a specific frame's transmission fails, without racing a real
     /// duplex's buffering/timing.
+    #[test]
+    fn admitted_empty_overlay_is_present_and_records_its_delivered_revision()
+    -> Result<(), Box<dyn Error>> {
+        run(async {
+            let authority = UseAuthority {
+                uses: RefCell::new(Vec::new()),
+                commands: RefCell::new(Vec::new()),
+                overlay: None,
+                outcome: UseOutcome::rejected(),
+            };
+            let world_id = WorldId::decode(&WORLD)?;
+            let channel_id = ChannelId::decode(&CHANNEL)?;
+            let mut admitted = AdmittedSession {
+                game_session_id: GameSessionId::decode(&SESSION)?,
+                world_id,
+                channel_id,
+                runtime_actor: Some(ExactActorRef::transport_fixture(world_id, channel_id)),
+                first_entry: FirstEntryOutcome::Positioned,
+                controller: None,
+                continuity: SessionContinuity::FRESH,
+                item_fence: None,
+            };
+            let (end, frames) = drive_session(&authority, admitted, &[]).await?;
+            let chunk = oteryn_protocol_oteryn::decode_wire_envelope(
+                frames.get(1).ok_or("missing snapshot chunk")?,
+            )?;
+            let (_, domains) = oteryn_protocol_oteryn::decode_snapshot_chunk(chunk.payload())?;
+            let overlay = domains
+                .iter()
+                .find(|domain| domain.domain_id == STATE_DOMAIN_WORLD_OBJECT_OVERLAY)
+                .ok_or("empty overlay domain was omitted")?;
+            assert_eq!(overlay.revision, 0);
+            assert_eq!(overlay.snapshot_type, SNAPSHOT_TYPE_WORLD_OBJECT_OVERLAY_V1);
+            assert!(
+                oteryn_protocol_oteryn::world_object::decode_world_object_overlay_snapshot(
+                    overlay.payload
+                )
+                .map_err(|error| format!("empty overlay decode: {error:?}"))?
+                .is_empty()
+            );
+            let ConnectionEnd::AdmittedThenDisconnected(ended) = end else {
+                return Err(format!("unexpected end {end:?}").into());
+            };
+            assert_eq!(ended.continuity.overlay_revision, 0);
+            admitted.continuity.overlay_revision = 7;
+            let (end, frames) = drive_session(&authority, admitted, &[]).await?;
+            assert!(
+                frames.is_empty(),
+                "an unavailable previous overlay must not publish empty"
+            );
+            let ConnectionEnd::AdmittedThenDisconnected(ended) = end else {
+                return Err(format!("unexpected end {end:?}").into());
+            };
+            assert_eq!(ended.continuity.overlay_revision, 7);
+            Ok(())
+        })
+    }
+
     struct FailNthWrite<S> {
         inner: S,
         ok_writes: usize,
@@ -2467,12 +2543,15 @@ mod tests {
                 ADMITTED_GENERATION,
                 1,
                 0,
-                &[DomainSnapshot {
-                    domain_id: STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
-                    revision: 1,
-                    snapshot_type: SNAPSHOT_TYPE_WORLD_SPATIAL_V1,
-                    payload: &encode_world_spatial(&at(0)),
-                }],
+                &[
+                    DomainSnapshot {
+                        domain_id: STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
+                        revision: 1,
+                        snapshot_type: SNAPSHOT_TYPE_WORLD_SPATIAL_V1,
+                        payload: &encode_world_spatial(&at(0)),
+                    },
+                    empty_overlay_snapshot(),
+                ],
             )?
             .into();
             expected.extend([
@@ -2643,6 +2722,7 @@ mod tests {
                         snapshot_type: SNAPSHOT_TYPE_WORLD_SPATIAL_V1,
                         payload: &encode_world_spatial(&at(0)),
                     },
+                    empty_overlay_snapshot(),
                     DomainSnapshot {
                         domain_id: STATE_DOMAIN_ACTOR_VITALS,
                         revision: 1,
@@ -2773,6 +2853,7 @@ mod tests {
                         snapshot_type: SNAPSHOT_TYPE_WORLD_SPATIAL_V1,
                         payload: &encode_world_spatial(&at(0)),
                     },
+                    empty_overlay_snapshot(),
                     DomainSnapshot {
                         domain_id: STATE_DOMAIN_ACTOR_VITALS,
                         revision: 1,
@@ -2922,6 +3003,7 @@ mod tests {
                         snapshot_type: SNAPSHOT_TYPE_WORLD_SPATIAL_V1,
                         payload: &encode_world_spatial(&at(0)),
                     },
+                    empty_overlay_snapshot(),
                     DomainSnapshot {
                         domain_id: STATE_DOMAIN_ACTOR_VITALS,
                         revision: 2,

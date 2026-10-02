@@ -25,6 +25,12 @@ case "$mode" in
   live)
     exec cargo run --locked -p oteryn-synthetic-client-harness -- --live "$@"
     ;;
+  server)
+    if [[ $# -gt 1 ]]; then echo 'server accepts at most one manifest path' >&2; exit 2; fi
+    if [[ $# -eq 1 ]]; then export OTERYN_SEAM_SPELL_MANIFEST="$1"; fi
+    export WP5_QUALIFICATION=spell-seam
+    exec bash tools/qualification/wp5_s3b/run.sh
+    ;;
   room)
     exec bash tools/qualification/native_entry_room/run.sh "$@"
     ;;
@@ -35,6 +41,7 @@ Usage: bash tools/qualification/spells/run.sh MODE [ARGS]
   map [MANIFEST]         qualify existing Thalom map + full gameplay manifest
   client                 harness parsing/model/TLS-loopback regression tests
   live [LIVE_ARGS]       existing dev client, interactive or --script FILE
+  server [MANIFEST]      existing real-owner TCP/TLS server spell qualification
   room                   existing Platform-issued room qualification
 Live mode needs the existing server, its trusted CA and an admission grant.
 USAGE

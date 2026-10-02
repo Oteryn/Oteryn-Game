@@ -97,6 +97,30 @@ assignment/admission configuration; setting that variable alone does not grant
 activation. This map includes negative native floors. Their compiled presence is
 not a claim that every movement/visibility consumer supports those floors.
 
+## Full spell server qualification
+
+```sh
+PLATFORM_SOURCE=/path/to/pinned/platform \
+  bash tools/qualification/spells/run.sh server
+# Or select an explicit candidate:
+bash tools/qualification/spells/run.sh server /path/to/manifest.json
+```
+
+This delegates to the existing S3-B runner with `WP5_QUALIFICATION=spell-seam`.
+It uses the real Game owners, TCP/TLS and Platform admission with the Thalom/full
+spell manifest. It creates disposable qualification services and cleans them up;
+it does not deploy to or change a long-lived test server. Default room/SEAM runs
+remain available. A spell's observed rejection is recorded as a rejection, not a
+successful execution or complete catalog qualification.
+
+Prerequisites are the exact Platform checkout pinned by `wp5_s3b/run.sh`, Docker
+with Compose/BuildKit, OpenSSL, Rust 1.94.0 and an isolated PostgreSQL 17.6 service
+selected through `OTERYN_TEST_POSTGRES_ADMIN_URL`. Keep connection secrets in the
+existing private environment/profile, not a committed scenario. The runner
+requires disposable database administration and does not require host `sudo`.
+Optional build CA and exact image mirror settings are documented in
+[the S3-B runner README](../wp5_s3b/README.md).
+
 ## Existing room qualification
 
 ```sh

@@ -107,6 +107,30 @@ pub(crate) struct EquipmentAuthority {
 fn rejected(message: &'static str) -> EquipmentError {
     EquipmentError::Rejected(message)
 }
+fn admission_equipment_unavailable(
+    _stage: &'static str,
+    _error: EquipmentError,
+) -> DurabilityError {
+    #[cfg(test)]
+    if std::env::var_os("OTERYN_SEAM_SPELL_MANIFEST").is_some() {
+        match &_error {
+            EquipmentError::Rejected(reason) => {
+                eprintln!("SEAM_EVIDENCE equipment_owner stage={_stage} rejected={reason}")
+            }
+            EquipmentError::Database(sqlx::Error::Database(error)) => eprintln!(
+                "SEAM_EVIDENCE equipment_owner stage={_stage} sqlstate={}",
+                error.code().as_deref().unwrap_or("unknown")
+            ),
+            EquipmentError::Durability(error) => {
+                eprintln!("SEAM_EVIDENCE equipment_owner stage={_stage} durability={error:?}")
+            }
+            EquipmentError::Database(_) => {
+                eprintln!("SEAM_EVIDENCE equipment_owner stage={_stage} database=non_server_error")
+            }
+        }
+    }
+    DurabilityError::Unavailable
+}
 fn uuid(text: String) -> Result<[u8; 16]> {
     let compact: String = text.chars().filter(|c| *c != '-').collect();
     if compact.len() != 32 {
@@ -182,12 +206,16 @@ pub(super) async fn assert_current_equipment_in_transaction(
     }
     assert_recovery_fence(tx, recovery).await?;
     super::db::lock_admission_relations(tx).await?;
-    // Hold the independently issued active generation against a concurrent append
-    // throughout this same physical transaction, not just the selected old row.
-    sqlx::query("LOCK TABLE game_content_activations IN SHARE MODE")
+    let (world, channel) = scope_of(fence).map_err(|_| rejected("equipment Channel scope"))?;
+    // Match game_content_record_activation's existing per-scope transaction lock.
+    // The runtime has SELECT, not UPDATE: table/row SHARE locks require write
+    // privileges. This lock blocks the authorized append producer without
+    // granting the runtime any Content mutation authority.
+    sqlx::query("SELECT pg_advisory_xact_lock_shared(hashtextextended('oteryn:content-activation:' || encode($1::bytea, 'hex')::uuid::text || ':' || encode($2::bytea, 'hex')::uuid::text, 0))")
+        .bind(world.as_bytes().as_slice())
+        .bind(channel.as_bytes().as_slice())
         .execute(&mut **tx)
         .await?;
-    let (world, channel) = scope_of(fence).map_err(|_| rejected("equipment Channel scope"))?;
     // Existing fence takes the actual Character root lock, so all custody writers serialize.
     if let Some(command) = command {
         if !character_item_fence_is_current(
@@ -221,7 +249,7 @@ pub(super) async fn assert_current_equipment_in_transaction(
             .await?
             .map_err(|_| rejected("equipment current lifecycle fence"))?;
     }
-    let digest:Option<Vec<u8>>=sqlx::query_scalar("SELECT server_artifact_digest FROM game_content_activations WHERE world_id=encode($1,'hex')::uuid AND channel_id=encode($2,'hex')::uuid ORDER BY activation_sequence DESC LIMIT 1 FOR SHARE")
+    let digest:Option<Vec<u8>>=sqlx::query_scalar("SELECT server_artifact_digest FROM game_content_activations WHERE world_id=encode($1,'hex')::uuid AND channel_id=encode($2,'hex')::uuid ORDER BY activation_sequence DESC LIMIT 1")
         .bind(world.as_bytes().as_slice()).bind(channel.as_bytes().as_slice()).fetch_optional(&mut **tx).await?;
     if digest.as_deref() != Some(content_digest.as_slice()) {
         return Err(rejected("equipment independent active Content"));
@@ -260,7 +288,10 @@ pub(crate) async fn read_equipment_in_transaction(
     same_transaction(tx, authority).await?;
     let row=sqlx::query("SELECT revision::text,combat_mode FROM game_character_equipment_state WHERE character_id=encode($1,'hex')::uuid FOR UPDATE")
         .bind(authority.fence.character_id.as_bytes().as_slice()).fetch_optional(&mut **tx).await?.ok_or(rejected("equipment owner not initialized"))?;
-    let rows=sqlx::query("SELECT s.slot,i.item_instance_id::text,i.definition_family,i.definition_production_key,i.definition_revision_ref,i.quantity,i.state_revision::text,i.lifecycle,i.world_id::text AS item_world,s.world_id::text AS slot_world FROM game_character_equipment_slots s JOIN game_item_instances i USING(item_instance_id) WHERE s.character_id=encode($1,'hex')::uuid ORDER BY s.slot FOR UPDATE OF s,i")
+    // The validated equipment authority already holds the Character root lock.
+    // Slot locations are immutable (INSERT/DELETE only); lock their actual item
+    // rows, as the custody exclusivity trigger does, without requiring slot UPDATE.
+    let rows=sqlx::query("SELECT s.slot,i.item_instance_id::text,i.definition_family,i.definition_production_key,i.definition_revision_ref,i.quantity,i.state_revision::text,i.lifecycle,i.world_id::text AS item_world,s.world_id::text AS slot_world FROM game_character_equipment_slots s JOIN game_item_instances i USING(item_instance_id) WHERE s.character_id=encode($1,'hex')::uuid ORDER BY s.slot FOR UPDATE OF i")
         .bind(authority.fence.character_id.as_bytes().as_slice()).fetch_all(&mut **tx).await?;
     if rows.len() > 9 {
         return Err(rejected("equipment slot bound"));
@@ -375,7 +406,8 @@ pub(crate) async fn apply_equipment_in_transaction(
             if row.try_get::<String, _>("definition_family")? != "Item" {
                 return Err(rejected("equipment item family"));
             }
-            let backpack=sqlx::query("SELECT s.item_instance_id::text,i.definition_production_key,i.definition_revision_ref FROM game_item_container_slots s JOIN game_item_instances i USING(item_instance_id) WHERE s.character_id=encode($1,'hex')::uuid FOR UPDATE OF s,i")
+            // The Character root and backpack item serialize this immutable slot.
+            let backpack=sqlx::query("SELECT s.item_instance_id::text,i.definition_production_key,i.definition_revision_ref FROM game_item_container_slots s JOIN game_item_instances i USING(item_instance_id) WHERE s.character_id=encode($1,'hex')::uuid FOR UPDATE OF i")
                 .bind(authority.fence.character_id.as_bytes().as_slice()).fetch_optional(&mut **tx).await?.ok_or(rejected("equipment requires actual backpack"))?;
             let backpack_id = uuid(backpack.try_get("item_instance_id")?)?;
             if let Some(slot) = to_slot {
@@ -428,7 +460,9 @@ pub(crate) async fn apply_equipment_in_transaction(
                         return Err(rejected("equipment occupancy conflict"));
                     }
                 }
-                let source=sqlx::query("SELECT placement_ordinal::text FROM game_item_container_entries WHERE item_instance_id=encode($1,'hex')::uuid AND character_id=encode($2,'hex')::uuid AND parent_item_instance_id=encode($3,'hex')::uuid FOR UPDATE")
+                // This transaction already holds the Character, source item and
+                // backpack locks. Immutable placement rows need no UPDATE grant.
+                let source=sqlx::query("SELECT placement_ordinal::text FROM game_item_container_entries WHERE item_instance_id=encode($1,'hex')::uuid AND character_id=encode($2,'hex')::uuid AND parent_item_instance_id=encode($3,'hex')::uuid")
                     .bind(identity.as_slice()).bind(authority.fence.character_id.as_bytes().as_slice()).bind(backpack_id.as_slice()).fetch_optional(&mut **tx).await?.ok_or(rejected("equipment source is not direct backpack entry"))?;
                 ordinal = Some(number(source.try_get("placement_ordinal")?)?);
             } else {
@@ -439,7 +473,9 @@ pub(crate) async fn apply_equipment_in_transaction(
                 {
                     return Err(rejected("equipment source exact slot"));
                 }
-                let rows=sqlx::query("SELECT placement_ordinal::text FROM game_item_container_entries WHERE parent_item_instance_id=encode($1,'hex')::uuid ORDER BY placement_ordinal FOR UPDATE").bind(backpack_id.as_slice()).fetch_all(&mut **tx).await?;
+                // Other legitimate custody writers for this backpack serialize
+                // on the same held Character root before changing its entries.
+                let rows=sqlx::query("SELECT placement_ordinal::text FROM game_item_container_entries WHERE parent_item_instance_id=encode($1,'hex')::uuid ORDER BY placement_ordinal").bind(backpack_id.as_slice()).fetch_all(&mut **tx).await?;
                 let backpack_policy = content
                     .equipment_policy(
                         &backpack.try_get::<String, _>("definition_production_key")?,
@@ -807,16 +843,16 @@ impl DurabilityRoot {
         self.try_issue_semantic_pass()?.run(move |holder,deadline|Box::pin(async move {
             let mut tx=super::db::begin_semantic_transaction(holder,deadline).await?;
             let authority=assert_current_equipment_in_transaction(&mut tx,&record,&node,&fence,None,content_digest)
-                .await.map_err(|_|DurabilityError::Unavailable)?;
+                .await.map_err(|error| admission_equipment_unavailable("assert_current", error))?;
             let committed:bool=sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_durability_fresh_admission_receipts WHERE replay_key=$1 AND game_session_id=encode($2,'hex')::uuid AND character_id=encode($3,'hex')::uuid AND account_id=encode($4,'hex')::uuid AND world_id=encode($5,'hex')::uuid AND channel_id=encode($6,'hex')::uuid AND character_lease_generation=$7::text::numeric AND scope_ownership_generation=$8::text::numeric)")
                 .bind(replay_key.as_slice()).bind(fence.game_session_id.as_bytes().as_slice())
                 .bind(fence.character_id.as_bytes().as_slice()).bind(authority.account.as_slice())
                 .bind(authority.world.as_slice()).bind(authority.channel.as_slice())
                 .bind(fence.character_lease_generation.to_string()).bind(fence.scope_ownership_generation.get().to_string())
                 .fetch_one(&mut *tx).await?;
-            if !committed {return Err(DurabilityError::Unavailable);}
-            initialize_equipment_in_transaction(&mut tx,&authority).await.map_err(|_|DurabilityError::Unavailable)?;
-            let equipment=read_equipment_in_transaction(&mut tx,&authority).await.map_err(|_|DurabilityError::Unavailable)?;
+            if !committed {return Err(admission_equipment_unavailable("admission_receipt", rejected("equipment committed admission receipt absent")));}
+            initialize_equipment_in_transaction(&mut tx,&authority).await.map_err(|error| admission_equipment_unavailable("initialize", error))?;
+            let equipment=read_equipment_in_transaction(&mut tx,&authority).await.map_err(|error| admission_equipment_unavailable("read", error))?;
             super::db::commit_semantic_transaction(tx,deadline).await?; Ok(equipment)
         })).await.map_err(EquipmentError::from)
     }

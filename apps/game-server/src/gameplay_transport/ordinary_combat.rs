@@ -416,6 +416,8 @@ async fn prepare_inner(
     {
         return reject();
     }
+    #[cfg(test)]
+    eprintln!("SEAM_EVIDENCE ordinary_combat_prepare stage=bindings");
     let b = owned.binding();
     let actual = runtime.binding();
     if b.session != command.game_session_id()
@@ -450,6 +452,8 @@ async fn prepare_inner(
             now.get(),
         )
         .map_err(|_| SpellCastDisposition::Rejected)?;
+    #[cfg(test)]
+    eprintln!("SEAM_EVIDENCE ordinary_combat_prepare stage=caster_qualified");
     let profile = spell
         .authored
         .as_ref()
@@ -603,6 +607,8 @@ async fn prepare_inner(
     if candidates.len() > MAX_WORLD_TILES {
         return reject();
     }
+    #[cfg(test)]
+    eprintln!("SEAM_EVIDENCE ordinary_combat_prepare stage=tile_reads");
     let mut tiles = BTreeMap::new();
     for p in candidates {
         tiles.insert(
@@ -616,6 +622,8 @@ async fn prepare_inner(
     if !caster_tile.present {
         return reject();
     }
+    #[cfg(test)]
+    eprintln!("SEAM_EVIDENCE ordinary_combat_prepare stage=tiles_qualified");
     let sight = paths
         .into_iter()
         .filter_map(|(pair, steps)| {

@@ -697,6 +697,8 @@ async fn prepare_source_self_from_owners(
     if !flags.present {
         return reject();
     }
+    #[cfg(test)]
+    eprintln!("SEAM_EVIDENCE source_self_prepare stage=tile_qualified");
     let operational = OperationalCastFacts {
         caster_position: position,
         target_position: None,
@@ -853,6 +855,8 @@ async fn prepare_source_self_from_owners(
             now.get(),
         )
         .map_err(|_| SpellCastDisposition::Rejected)?;
+    #[cfg(test)]
+    eprintln!("SEAM_EVIDENCE source_self_prepare stage=preview_training_qualified");
     let paid = prepare_paid_self(
         runtime,
         room,
@@ -2668,18 +2672,25 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                 } else if native_world_item_cast::applicable(spell) {
                     native_world_item_cast::prepare(&mut tx,owner.root,&authority,runtime,states,room,objects,content,&owned,
                         owner.spells,spell,&intent,command,occurrence,training_occurrence,now,rune.as_ref(),&mut draw).await
+                } else if is_source_self(spell) {
+                    // Simple self effects use their existing whole-player owner.
+                    // The broad ordinary predicate also includes these Effects;
+                    // target/area/chain spells retain the magnitude-owner route.
+                    prepare_source_self_from_owners(&mut tx,owner.root,&authority,runtime,states,room,objects,content,&owned,
+                        owner.spells,spell,&intent,command,occurrence,training_occurrence,now,rune.as_ref(),&mut draw).await
                 } else if ordinary_combat::applicable(spell) {
                     ordinary_combat::prepare(&mut tx,owner.root,&authority,runtime,states,room,objects,content,&owned,
-                        owner.spells,spell,&intent,command,occurrence,training_occurrence,now,rune.as_ref(),&mut draw).await
-                } else if is_source_self(spell) {
-                    prepare_source_self_from_owners(&mut tx,owner.root,&authority,runtime,states,room,objects,content,&owned,
                         owner.spells,spell,&intent,command,occurrence,training_occurrence,now,rune.as_ref(),&mut draw).await
                 } else {
                     prepare_from_owners(&mut tx,owner.root,&authority,runtime,states,room,objects,content,&owned,
                         owner.spells,spell,&intent,command,occurrence,training_occurrence,now,rune.as_ref(),&mut draw).await
                 };
                 let mut prepared=match prepared_result{
-                    Ok(p)=>p,Err(disposition)=>return Ok(NativeCastDispatch::Outcome(super::SpellCastOutcome{disposition,vitals:super::observe_vitals(runtime,states,actor,session)}))
+                    Ok(p)=>p,Err(disposition)=>{
+                    #[cfg(test)]
+                    eprintln!("SEAM_EVIDENCE native_combat_prepare result={disposition:?} ordinary={}",ordinary_combat::applicable(spell));
+                    return Ok(NativeCastDispatch::Outcome(super::SpellCastOutcome{disposition,vitals:super::observe_vitals(runtime,states,actor,session)}))
+                }
                 };
                 if invalid_draw{return Err(DurabilityError::Unavailable);}
                 if let Some(reserved)=rune_reservation.as_ref(){

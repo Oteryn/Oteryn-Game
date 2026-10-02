@@ -1523,6 +1523,10 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         let (first_entry, item_fence) = self
             .initialize_first_entry(&request, attempt.game_session_id, attempt.transport, actor)
             .await;
+        #[cfg(test)]
+        if std::env::var_os("OTERYN_SEAM_SPELL_MANIFEST").is_some() {
+            eprintln!("SEAM_EVIDENCE spell_first_entry outcome={first_entry:?}");
+        }
         Ok(AdmittedSession {
             game_session_id: attempt.game_session_id,
             world_id: self.world_id,
@@ -1814,6 +1818,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         transport: AuthenticatedTransportRefV1,
         actor: ExactActorRef,
     ) -> (FirstEntryOutcome, Option<CurrentCharacterItemFence>) {
+        #[cfg(test)]
+        let stage = |name: &str| {
+            if std::env::var_os("OTERYN_SEAM_SPELL_MANIFEST").is_some() {
+                eprintln!("SEAM_EVIDENCE spell_first_entry stage={name}");
+            }
+        };
+        #[cfg(test)]
+        stage("resolve_session");
         let store = FreshAdmissionStore::from_root(self.root.clone());
         let current = match store.reconcile(request.operation()).await {
             Ok(FreshReconciliation::Committed(snapshot)) => snapshot.current_session,
@@ -1852,6 +1864,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return (FirstEntryOutcome::RefusedUnavailable, None);
             }
         };
+        #[cfg(test)]
+        stage("character_facts_loaded");
         let monk = match facts {
             Some(_) => {
                 let Ok(character_id) =
@@ -1889,7 +1903,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let Some(fence) = item_fence_of(current) else {
                 return (FirstEntryOutcome::RefusedStaleAuthority, None);
             };
-            if self
+            #[cfg(test)]
+            stage("equipment_initialize");
+            if let Err(_error) = self
                 .root
                 .initialize_admission_equipment(
                     self.character,
@@ -1899,12 +1915,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     request.operation(),
                 )
                 .await
-                .is_err()
             {
+                #[cfg(test)]
+                stage(&format!("equipment_refused:{_error:?}"));
                 return (FirstEntryOutcome::RefusedUnavailable, None);
             }
             if let Some(profile) = native.wheel_profile() {
-                if self
+                #[cfg(test)]
+                stage("wheel_initialize");
+                if let Err(_error) = self
                     .root
                     .initialize_admission_wheel(
                         self.character,
@@ -1914,8 +1933,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         request.operation(),
                     )
                     .await
-                    .is_err()
                 {
+                    #[cfg(test)]
+                    stage(&format!("wheel_refused:{_error:?}"));
                     return (FirstEntryOutcome::RefusedUnavailable, None);
                 }
             }
@@ -1929,12 +1949,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     scope_ownership_generation: current.current_scope_generation(),
                     expected_character_revision: character_revision,
                 };
-            if self
+            #[cfg(test)]
+            stage("familiar_initialize");
+            if let Err(_error) = self
                 .root
                 .initialize_familiar_group(self.character, self.holder, gameplay)
                 .await
-                .is_err()
             {
+                #[cfg(test)]
+                stage(&format!("familiar_refused:{_error:?}"));
                 return (FirstEntryOutcome::RefusedUnavailable, None);
             }
         }
@@ -1991,6 +2014,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Ok(FirstEntryPosition::Reconciled(_)) => FirstEntryOutcome::Reconciled,
             Err(_) => return (FirstEntryOutcome::RefusedByChannel, None),
         };
+        #[cfg(test)]
+        stage("position_initialized");
         // C2: the item fence of the admitted session, from the same current session read that
         // just proved it is this admission's own.
         let item_fence = item_fence_of(current);
@@ -2051,6 +2076,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
         }
         drop(runtime);
+        #[cfg(test)]
+        stage("runtime_facts_initialized");
         if self
             .active_generation
             .and_then(|active| active.native_gameplay())

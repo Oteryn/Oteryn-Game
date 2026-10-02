@@ -656,6 +656,36 @@ pub fn qualify_native_entry_room(
     project.room_with_compiled(compiled)
 }
 
+/// Qualifies the exact pinned gameplay manifest selected by the operator and node.
+/// This computes content identity only; it grants no activation authority.
+pub fn qualify_native_entry_room_from_gameplay_manifest(
+    world_id: crate::foundation::WorldId,
+    manifest: &std::path::Path,
+) -> Result<QualifiedNativeEntryRoom, ProjectError> {
+    let input = crate::content::native_gameplay::NativeGameplayInput::from_manifest(manifest)?;
+    qualify_selected_native_gameplay_room(world_id, &input)
+}
+
+/// Shared selection for operator issuance and node activation.
+pub(crate) fn qualify_selected_native_gameplay_room(
+    world_id: crate::foundation::WorldId,
+    input: &crate::content::native_gameplay::NativeGameplayInput,
+) -> Result<QualifiedNativeEntryRoom, ProjectError> {
+    match input.source_world.as_ref() {
+        Some(source) => {
+            qualify_native_source_spell_world_with_gameplay(world_id, input, &source.bytes)
+        }
+        None => match input.native_map_profile {
+            crate::content::native_gameplay::NativeGameplayMapProfile::AcceptedEntryR1 => {
+                qualify_native_entry_room_with_gameplay(world_id, input)
+            }
+            crate::content::native_gameplay::NativeGameplayMapProfile::SourceQualifiedSpellEntryR2 => {
+                qualify_native_spell_entry_room_with_gameplay(world_id, input)
+            }
+        },
+    }
+}
+
 /// Qualify the same genuine native source with an explicitly supplied, pinned
 /// candidate gameplay envelope. This never loads a global/embedded catalogue.
 pub(crate) fn qualify_native_entry_room_with_gameplay(

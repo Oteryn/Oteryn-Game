@@ -94,6 +94,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     }
 
     pub(super) async fn ensure_source_map_initialized(&self) -> bool {
+        #[cfg(test)]
+        let stage = |name: &str| {
+            if std::env::var_os("OTERYN_SEAM_SPELL_MANIFEST").is_some() {
+                eprintln!("SEAM_EVIDENCE source_map_initialize stage={name}");
+            }
+        };
+        #[cfg(test)]
+        stage("entered");
         let Some(room) = self
             .qualified_room
             .filter(|room| room.source_world().is_some())
@@ -113,9 +121,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return false;
         }
-        let Ok(binding) = crate::spell::source_map_initialization::CurrentNativeMapInitialization::qualify_current_binding(
+        let binding = match crate::spell::source_map_initialization::CurrentNativeMapInitialization::qualify_current_binding(
             &runtime, room, source,
-        ) else { return false; };
+        ) {
+            Ok(binding) => binding,
+            Err(_reason) => {
+                #[cfg(test)]
+                stage(&format!("binding_refused:{_reason}"));
+                return false;
+            }
+        };
         if states.source_map_initialized.as_ref() == Some(&binding) {
             return true;
         }
@@ -124,17 +139,40 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return false;
         }
         states.next_map_initialization_pass_us = now.saturating_add(1_000_000);
-        let Ok(proof) = crate::spell::source_map_initialization::CurrentNativeMapInitialization::from_current_owner(
+        let proof = match crate::spell::source_map_initialization::CurrentNativeMapInitialization::from_current_owner(
             &runtime, room, source,
-        ) else { return false; };
-        if self
+        ) {
+            Ok(proof) => proof,
+            Err(_reason) => {
+                #[cfg(test)]
+                stage(&format!("placements_refused:{_reason}"));
+                return false;
+            }
+        };
+        #[cfg(test)]
+        stage("owner_sql_begin");
+        if let Err(_error) = self
             .root
             .initialize_native_map_current_owner(self.character, self.holder, &proof)
             .await
-            .is_err()
         {
+            #[cfg(test)]
+            match _error {
+                crate::durability::spell_item_transaction::SpellItemError::Database(
+                    sqlx::Error::Database(error),
+                ) => stage(&format!(
+                    "owner_sql_refused:sqlstate={}",
+                    error.code().as_deref().unwrap_or("unknown")
+                )),
+                crate::durability::spell_item_transaction::SpellItemError::Rejected(reason) => {
+                    stage(&format!("owner_sql_refused:rejected={reason}"))
+                }
+                _ => stage("owner_sql_refused:other_error"),
+            }
             return false;
         }
+        #[cfg(test)]
+        stage("owner_sql_committed");
         // Only a real SQL COMMIT sets this physical owner's readiness. Tile
         // reads still inspect current custody; this never restores moved items.
         states.source_map_initialized = Some(binding);

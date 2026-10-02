@@ -1,6 +1,6 @@
 services:
   db:
-    image: mariadb:11.8.8-noble@sha256:e564bcaefb87c3d2b8b09b539ea791d34f4b62c05e2e7cb03f5d6388bdc54f2c
+    image: ${WP5_IMAGE_REGISTRY:-docker.io/library}/mariadb:11.8.8-noble@sha256:e564bcaefb87c3d2b8b09b539ea791d34f4b62c05e2e7cb03f5d6388bdc54f2c
     platform: linux/amd64
     environment:
       MARIADB_DATABASE: oteryn_s3a
@@ -22,6 +22,7 @@ services:
     build:
       context: ${GAME_SOURCE:?set GAME_SOURCE}
       dockerfile: tools/qualification/wp5_s3a/platform-fpm.Dockerfile
+      secrets: [wp5_build_ca]
       additional_contexts:
         platform: ${PLATFORM_SOURCE:?set PLATFORM_SOURCE}
     depends_on:
@@ -66,7 +67,7 @@ services:
     networks: [qualification]
 
   nginx:
-    image: nginx:1.29-bookworm@sha256:17ae566734b63632e543c907ba74757e0c1a25d812ab9f10a07a6bed98dd199c
+    image: ${WP5_IMAGE_REGISTRY:-docker.io/library}/nginx:1.29-bookworm@sha256:17ae566734b63632e543c907ba74757e0c1a25d812ab9f10a07a6bed98dd199c
     platform: linux/amd64
     depends_on:
       platform:
@@ -85,3 +86,8 @@ networks:
 volumes:
   db-state:
   witness-state:
+
+# Optional trust bundle for managed-cloud Composer downloads; never stored in layers.
+secrets:
+  wp5_build_ca:
+    file: ${WP5_BUILD_CA_FILE:-/dev/null}

@@ -587,22 +587,8 @@ pub(crate) fn activate_native_entry_room_with_gameplay(
     if issuance.world_id != scope_world_id {
         return Err(NativeEntryActivationError::WorldMismatch);
     }
-    let room = match input.source_world.as_ref() {
-        Some(source) => super::qualify_native_source_spell_world_with_gameplay(
-            scope_world_id,
-            input,
-            &source.bytes,
-        ),
-        None => match input.native_map_profile {
-            super::native_gameplay::NativeGameplayMapProfile::AcceptedEntryR1 => {
-                super::qualify_native_entry_room_with_gameplay(scope_world_id, input)
-            }
-            super::native_gameplay::NativeGameplayMapProfile::SourceQualifiedSpellEntryR2 => {
-                super::qualify_native_spell_entry_room_with_gameplay(scope_world_id, input)
-            }
-        },
-    }
-    .map_err(NativeEntryActivationError::Qualification)?;
+    let room = super::qualify_selected_native_gameplay_room(scope_world_id, input)
+        .map_err(NativeEntryActivationError::Qualification)?;
     activate_qualified_native_entry_room(controller, quiescence, issuance, room)
 }
 

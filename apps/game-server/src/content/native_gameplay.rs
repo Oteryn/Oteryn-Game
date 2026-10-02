@@ -1240,6 +1240,25 @@ mod tests {
             &source.bytes,
         )
         .unwrap();
+        let issued =
+            super::super::qualify_native_entry_room_from_gameplay_manifest(world, Path::new(&path))
+                .unwrap();
+        let selected = super::super::qualify_selected_native_gameplay_room(world, &input).unwrap();
+        for equivalent in [&issued, &selected] {
+            assert_eq!(
+                equivalent.compiled().server_digest(),
+                room.compiled().server_digest()
+            );
+            assert_eq!(
+                equivalent.compiled().client_digest(),
+                room.compiled().client_digest()
+            );
+            assert_eq!(
+                equivalent.frame_binding().digest(),
+                room.frame_binding().digest()
+            );
+            assert_eq!(equivalent.entry_start(), room.entry_start());
+        }
         let compiled = room.compiled();
         let staged = StagedGeneration::stage(
             &compiled.server_artifact,
@@ -1510,6 +1529,20 @@ mod tests {
         let world = test_source(1).unwrap().world_id;
         let baseline = qualify_native_entry_room(world).unwrap();
         let room = qualify_native_entry_room_with_gameplay(world, &input()).unwrap();
+        let selected =
+            super::super::qualify_selected_native_gameplay_room(world, &input()).unwrap();
+        assert_eq!(
+            selected.compiled().server_digest(),
+            room.compiled().server_digest()
+        );
+        assert_eq!(
+            selected.compiled().client_digest(),
+            room.compiled().client_digest()
+        );
+        assert_eq!(
+            selected.frame_binding().digest(),
+            room.frame_binding().digest()
+        );
         assert_ne!(
             baseline.compiled().server_digest(),
             room.compiled().server_digest()

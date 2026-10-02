@@ -111,8 +111,12 @@ impl<'owner> CurrentNativeMapInitialization<'owner> {
             // they never become a zero quantity or guessed charge count.
             let quantity = if item.stack_maximum > 1 {
                 match placement.attributes().get("15") {
+                    // Canary/Crystal MapCache creates a stack with one Item and
+                    // only applies a positive ATTR_COUNT; raw zero stays in the
+                    // source attributes but materializes as quantity one.
                     Some(value) => u32::try_from(value.as_u64().ok_or("source stack count shape")?)
-                        .map_err(|_| "source stack count overflow")?,
+                        .map_err(|_| "source stack count overflow")?
+                        .max(1),
                     None => 1,
                 }
             } else {
