@@ -27,6 +27,7 @@ on:
       - docs/agents/evidence/OTV2-20261001-item-stack-default-promotion-v1.json
       - docs/agents/evidence/OTV2-20261001-item-stack-historical-source-frame-v1.json
       - docs/agents/evidence/OTV2-20261001-item-stack-historical-promotion-v1.json
+      - docs/agents/evidence/OTV2-20261002-stack-default-historical-native-context-v1.json
       - docs/agents/evidence/OTV2-20261001-item-capacity-promotion-v1.json
       - docs/agents/evidence/OTV2-20261001-item-physical-promotion-v1.json
       - docs/agents/evidence/OTV2-20261001-item-physical-source-qualification-v1.json
@@ -120,13 +121,14 @@ jobs:
         run: |
           set -euo pipefail
           python test_lower_wiki_stack_default_packet.py
-          python lower_wiki_stack_default_packet.py --check
+          python check_stack_default_historical_context.py --cohort default
+          python test_stack_default_historical_context.py
 
       - name: Closed historical source frames for seven stack defaults
         working-directory: tools/content-schema/item-authoring
         run: |
           python test_lower_wiki_stack_historical_packet.py
-          python lower_wiki_stack_historical_packet.py --check
+          python check_stack_default_historical_context.py --cohort historical
 
       - name: Weapon proficiency tests and artifact drift
         run: |

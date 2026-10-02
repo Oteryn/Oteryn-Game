@@ -6,6 +6,7 @@ import unittest
 from collections import defaultdict
 
 import lower_wiki_stack_historical_packet as lower
+from check_stack_default_historical_context import qualification_context
 
 
 class HistoricalFrameTests(unittest.TestCase):
@@ -43,7 +44,10 @@ class HistoricalFrameTests(unittest.TestCase):
         )
         self.assertEqual(self.args["current_observations"], before)
         data = (lower.ROOT / lower.base.WIKI).read_bytes()
-        self.assertEqual(lower.build()["counts"], {"promotions": 7, "holds": 0})
+        with qualification_context() as historical_root:
+            self.assertEqual(
+                lower.build(historical_root)["counts"], {"promotions": 7, "holds": 0}
+            )
         self.assertEqual((lower.ROOT / lower.base.WIKI).read_bytes(), data)
 
     def test_actual_current_snapshot_coordinates_cannot_be_substituted(self):

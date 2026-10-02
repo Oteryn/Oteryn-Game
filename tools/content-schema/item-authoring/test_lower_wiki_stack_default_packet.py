@@ -5,6 +5,7 @@ import unittest
 from collections import defaultdict
 
 import lower_wiki_stack_default_packet as lower
+from check_stack_default_historical_context import qualification_context
 
 
 class QualificationTests(unittest.TestCase):
@@ -206,7 +207,8 @@ class QualificationTests(unittest.TestCase):
             )
 
     def test_closed_source_packet_and_digest_substitution_guard(self):
-        packet = lower.build()
+        with qualification_context() as historical_root:
+            packet = lower.build(historical_root)
         self.assertEqual(packet["counts"], {"promotions": 1487, "holds": 164})
         self.assertEqual(packet["source_policy"], "DERIVED_DOCUMENTED_TEMPLATE_DEFAULT")
         self.assertTrue(all(r["stackable"] is False for r in packet["promotions"]))
