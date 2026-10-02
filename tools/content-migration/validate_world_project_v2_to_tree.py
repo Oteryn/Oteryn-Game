@@ -336,6 +336,10 @@ def validate_dialogue(declarations: Any) -> int:
 
 
 def main() -> int:
+    from register_spell_families import outputs as spell_outputs
+    for relative, expected in spell_outputs(ROOT).items():
+        require((ROOT / relative).is_file() and (ROOT / relative).read_bytes() == expected,
+                f"SPELL_IMPORT_DRIFT:{relative}")
     reference = load(LEGACY / "definitions" / "reference.json")
     declarations = load(LEGACY / "definitions" / "declarations.json")
     legacy_mount_declarations = [row for row in declarations["records"] if row.get("kind") == "Mount"]

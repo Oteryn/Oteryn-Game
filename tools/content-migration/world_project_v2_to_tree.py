@@ -561,6 +561,12 @@ def main() -> int:
             "Quest", "Achievement", "Outfit", "Area", "House", "WorldObject",
         ],
     })
+    # Preserve independently authored spell collections on every regeneration.
+    from register_spell_families import outputs as spell_outputs
+    for relative, data in spell_outputs(ROOT).items():
+        destination = ROOT / relative
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        destination.write_bytes(data)
     print(f"PASS items={len(item_records)} creatures={creature_counts['Creature']} creature_records={sum(creature_counts.values())} creature_profiles={len(profiles)} item_shards={len(item_shards)} mounts={len(mount_rows)} authoring={len(authoring_by_target)} taxonomy={len(taxonomy_rows)} relation_sources={len(relation_rows)} relations={sum(len(row['relations']) for row in relation_rows)} npcs={len(npc_rows)} encounters={len(encounter_rows)} npc_bindings={len(npc_bindings)} dialogues={len(dialogue_rows)} service_trade={service_counts['Service.Trade']} service_travel={service_counts['Service.Travel']}")
     return 0
 

@@ -29,7 +29,9 @@ Validate directly from the repository root:
 bash tools/qualification/spells/run.sh map content/test-packs/spells/r25/manifest.json
 ```
 
-The default `map` and `server` modes select this package too. The latter uses the
+The current default `map` and `server` modes select `content/spells.manifest.json`,
+which reads the canonical family import described in `content/abilities/SPELL-IMPORT.md`.
+This directory preserves the pinned input snapshot. The `server` mode uses the
 existing disposable qualification services, not a long-lived deployment.
 
 `import-status.json` identifies actual loader inputs versus reference sidecars.

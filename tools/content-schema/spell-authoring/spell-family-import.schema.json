@@ -1,0 +1,193 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:oteryn:spell-family-import:1",
+  "title": "Schema-preserving spell family import",
+  "oneOf": [
+    {
+      "$ref": "#/$defs/catalog"
+    },
+    {
+      "$ref": "#/$defs/dependency_collection"
+    }
+  ],
+  "$defs": {
+    "catalog": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "revision",
+        "bundles",
+        "removed"
+      ],
+      "properties": {
+        "schema": {
+          "const": "OTERYN_EXECUTABLE_SPELL_CATALOG/v1"
+        },
+        "revision": {
+          "type": "string",
+          "minLength": 1
+        },
+        "removed": {
+          "type": "array"
+        },
+        "bundles": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "bundle",
+              "catalog",
+              "dependencies",
+              "manifest",
+              "source_identities"
+            ],
+            "properties": {
+              "bundle": {
+                "$ref": "urn:oteryn:spell-authoring:candidate:1"
+              },
+              "dependencies": {
+                "$ref": "urn:oteryn:spell-dependencies:candidate:1"
+              },
+              "manifest": {
+                "$ref": "urn:oteryn:monster-import-readiness:candidate:1"
+              },
+              "catalog": {
+                "type": "object"
+              },
+              "source_identities": {
+                "type": "array"
+              }
+            }
+          }
+        }
+      }
+    },
+    "dependency_collection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "family",
+        "representation",
+        "schema_refs",
+        "source_catalog",
+        "runtime_activation",
+        "record_count",
+        "records"
+      ],
+      "properties": {
+        "schema": {
+          "const": "OTERYN_SPELL_DEPENDENCY_COLLECTION/v1"
+        },
+        "family": {
+          "enum": [
+            "Ability",
+            "Effect",
+            "Formula"
+          ]
+        },
+        "representation": {
+          "const": "spell_authoring_supplement"
+        },
+        "schema_refs": {
+          "type": "object",
+          "required": [
+            "records"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "records": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        "source_catalog": {
+          "type": "object",
+          "required": [
+            "path",
+            "sha256"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "path": {
+              "const": "content/abilities/definitions/player-spells.json"
+            },
+            "sha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            }
+          }
+        },
+        "runtime_activation": {
+          "const": false
+        },
+        "record_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "records": {
+          "type": "array"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "family": {
+                "const": "Ability"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "records": {
+                "items": {
+                  "$ref": "urn:oteryn:spell-dependencies:candidate:1#/properties/abilities/items"
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "family": {
+                "const": "Effect"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "records": {
+                "items": {
+                  "$ref": "urn:oteryn:spell-dependencies:candidate:1#/properties/effects/items"
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "family": {
+                "const": "Formula"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "records": {
+                "items": {
+                  "$ref": "urn:oteryn:spell-dependencies:candidate:1#/properties/formulas/items"
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,542 @@
+{
+  "schema": "OTERYN_R25_TARGETED_EFFECT_RESEARCH/v1",
+  "observed_date": "2026-10-02",
+  "scope": "Eight targeted spell pages; not all246spells/all1508monsterprofiles wiki verified. No claim of client visual/audio playback qualification.",
+  "ordinary_http_attempts": [
+    {
+      "url": "https://www.tibiawiki.com.br/wiki/Eternal_Winter",
+      "status": 403,
+      "usable": false
+    },
+    {
+      "url": "https://www.tibiawiki.com.br/wiki/Rage_of_the_Skies",
+      "status": 403,
+      "usable": false
+    },
+    {
+      "url": "https://www.tibiawiki.com.br/wiki/Light_Healing",
+      "status": 403,
+      "usable": false
+    },
+    {
+      "url": "https://tibia.fandom.com/wiki/Creature_Illusion",
+      "status": 402,
+      "usable": false
+    },
+    {
+      "url": "https://www.tibiawiki.com.br/wiki/Divine_Grenade",
+      "status": 403,
+      "usable": false
+    },
+    {
+      "url": "https://www.tibiawiki.com.br/wiki/Death_Echo",
+      "status": 403,
+      "usable": false
+    },
+    {
+      "url": "https://www.tibiawiki.com.br/wiki/Spiritual_Outburst",
+      "status": 403,
+      "usable": false
+    },
+    {
+      "url": "https://www.tibiawiki.com.br/wiki/Divine_Empowerment",
+      "status": 403,
+      "usable": false
+    }
+  ],
+  "fallback": {
+    "device": "Molehill-PC",
+    "browser": "Chrome/154.0.8037.95",
+    "method": "Existing CDP browser via minimal Node command, public page navigation and DOM reads only",
+    "forbidden_operations_performed": false,
+    "project_files_changed_on_remote_computer": false,
+    "new_public_tabs_closed_after_batch": true
+  },
+  "wiki_observations": [
+    {
+      "url": "https://www.tibiawiki.com.br/wiki/Eternal_Winter",
+      "method": "Remote Desktop Commander + existing Chrome154/CDP127.0.0.1:9222 public DOM read",
+      "title": "Eternal Winter - Tibia Wiki - A Enciclopédia do Tibia",
+      "revision_links": [
+        "https://www.tibiawiki.com.br/index.php?title=Eternal_Winter&oldid=436030"
+      ],
+      "captured_text_sha256": "975894a35760d9330f14f560aa2363be5a3d89a920023f14eaa724134df13ee2",
+      "captured_text_utf8_bytes": 2060,
+      "facts": {
+        "minimum_level": 60,
+        "mana": 1050,
+        "cooldowns_ms": [
+          40000,
+          4000,
+          40000
+        ],
+        "base_power": 200,
+        "element": "ice",
+        "area_including_caster": 61
+      },
+      "uncertainty": "Wiki describes behavior; no image-only Premium row inference, animation/audio playback, or numeric real-Tibia formula verification. Conflicts against pinned upstream remain explicit."
+    },
+    {
+      "url": "https://www.tibiawiki.com.br/wiki/Rage_of_the_Skies",
+      "method": "Remote Desktop Commander + existing Chrome154/CDP127.0.0.1:9222 public DOM read",
+      "title": "Rage of the Skies - Tibia Wiki - A Enciclopédia do Tibia",
+      "revision_links": [
+        "https://www.tibiawiki.com.br/index.php?title=Rage_of_the_Skies&oldid=436051"
+      ],
+      "captured_text_sha256": "6107b6d844e73a5698e461ce4c3704ec4634bda7d54b2d54b9d2a16db719af89",
+      "captured_text_utf8_bytes": 1503,
+      "facts": {
+        "minimum_level": 55,
+        "mana": 600,
+        "cooldowns_ms": [
+          40000,
+          4000,
+          40000
+        ],
+        "base_power": 200,
+        "element": "energy",
+        "area_including_caster": 85
+      },
+      "uncertainty": "Wiki describes behavior; no image-only Premium row inference, animation/audio playback, or numeric real-Tibia formula verification. Conflicts against pinned upstream remain explicit."
+    },
+    {
+      "url": "https://www.tibiawiki.com.br/wiki/Light_Healing",
+      "method": "Remote Desktop Commander + existing Chrome154/CDP127.0.0.1:9222 public DOM read",
+      "title": "Light Healing - Tibia Wiki - A Enciclopédia do Tibia",
+      "revision_links": [
+        "https://www.tibiawiki.com.br/index.php?title=Light_Healing&oldid=436069"
+      ],
+      "captured_text_sha256": "d4eb34f7e75c982333495c4f1d0246b71d21fc2818e47985682340325d5aabc8",
+      "captured_text_utf8_bytes": 1153,
+      "facts": {
+        "minimum_level": 8,
+        "mana": 20,
+        "cooldowns_ms": [
+          1000,
+          1000
+        ],
+        "base_power": 40,
+        "removes_paralysis": true
+      },
+      "uncertainty": "Wiki describes behavior; no image-only Premium row inference, animation/audio playback, or numeric real-Tibia formula verification. Conflicts against pinned upstream remain explicit."
+    },
+    {
+      "url": "https://tibia.fandom.com/wiki/Creature_Illusion",
+      "method": "Remote Desktop Commander + existing Chrome154/CDP127.0.0.1:9222 public DOM read",
+      "title": "Creature Illusion | TibiaWiki | Fandom",
+      "revision_links": [],
+      "captured_text_sha256": "03ed9b5617fc4308300a7428ded272e001342c291696b144550bf96740d82731",
+      "captured_text_utf8_bytes": 2991,
+      "facts": {
+        "minimum_level": 23,
+        "mana": 100,
+        "cooldowns_ms": [
+          2000,
+          2000
+        ],
+        "premium_required": false,
+        "duration_ms": 180000,
+        "cosmetic_only": true,
+        "name_remains_visible": true,
+        "does_not_grant_monster_abilities": true
+      },
+      "uncertainty": "Wiki describes behavior; no image-only Premium row inference, animation/audio playback, or numeric real-Tibia formula verification. Conflicts against pinned upstream remain explicit."
+    },
+    {
+      "url": "https://www.tibiawiki.com.br/wiki/Divine_Grenade",
+      "method": "Remote Desktop Commander + existing Chrome154/CDP127.0.0.1:9222 public DOM read",
+      "title": "Divine Grenade - Tibia Wiki - A Enciclopédia do Tibia",
+      "revision_links": [
+        "https://www.tibiawiki.com.br/index.php?title=Divine_Grenade&oldid=436982"
+      ],
+      "captured_text_sha256": "8177c1ec4113ff8edd053822d78ccf557a95ec4485bbca8a9960f611a31a72bc",
+      "captured_text_utf8_bytes": 3062,
+      "facts": {
+        "mana": 160,
+        "wheel_revelation": true,
+        "base_power": 190,
+        "delay_ms": 3000,
+        "cooldowns_by_stage_ms": [
+          26000,
+          20000,
+          14000
+        ],
+        "group_cooldown_ms": 2000,
+        "damage_buffs_received_after_plant_do_not_increase_damage": true,
+        "target_modes": [
+          "crosshair",
+          "mouse_position",
+          "selected_target_else_caster"
+        ]
+      },
+      "uncertainty": "Wiki describes behavior; no image-only Premium row inference, animation/audio playback, or numeric real-Tibia formula verification. Conflicts against pinned upstream remain explicit."
+    },
+    {
+      "url": "https://www.tibiawiki.com.br/wiki/Death_Echo",
+      "method": "Remote Desktop Commander + existing Chrome154/CDP127.0.0.1:9222 public DOM read",
+      "title": "Death Echo - Tibia Wiki - A Enciclopédia do Tibia",
+      "revision_links": [
+        "https://www.tibiawiki.com.br/index.php?title=Death_Echo&oldid=440160"
+      ],
+      "captured_text_sha256": "ba50eae2d2c6d43b6bb9a2e0f811a2263f81ec3c2e978fbc4e5b508d8e622bd6",
+      "captured_text_utf8_bytes": 2577,
+      "facts": {
+        "minimum_level": 120,
+        "mana": 150,
+        "base_power": 75,
+        "cooldowns_ms": [
+          6000,
+          2000
+        ],
+        "element": "death",
+        "second_impact_delay_ms": 1000,
+        "wiki_claim_second_damage_multiplier": 1.5,
+        "wiki_claim_second_area_larger": true
+      },
+      "uncertainty": "Wiki describes behavior; no image-only Premium row inference, animation/audio playback, or numeric real-Tibia formula verification. Conflicts against pinned upstream remain explicit."
+    },
+    {
+      "url": "https://www.tibiawiki.com.br/wiki/Spiritual_Outburst",
+      "method": "Remote Desktop Commander + existing Chrome154/CDP127.0.0.1:9222 public DOM read",
+      "title": "Spiritual Outburst - Tibia Wiki - A Enciclopédia do Tibia",
+      "revision_links": [
+        "https://www.tibiawiki.com.br/index.php?title=Spiritual_Outburst&oldid=437001"
+      ],
+      "captured_text_sha256": "a542fcc8fd81f8a167f3e1dba03344fa0edbfa9cda5d668fbad64fae16f50a33",
+      "captured_text_utf8_bytes": 2487,
+      "facts": {
+        "mana": 425,
+        "base_power": 42,
+        "wheel_revelation": true,
+        "cooldowns_ms": [
+          24000,
+          2000
+        ],
+        "wiki_claim_targets_at_most": 8,
+        "wiki_claim_jump_distance": 2,
+        "nearest_targets_first": true,
+        "second_impact_delay_ms": 1000,
+        "second_impact_weaker": true,
+        "spends_all_harmony": true
+      },
+      "uncertainty": "Wiki describes behavior; no image-only Premium row inference, animation/audio playback, or numeric real-Tibia formula verification. Conflicts against pinned upstream remain explicit."
+    },
+    {
+      "url": "https://www.tibiawiki.com.br/wiki/Divine_Empowerment",
+      "method": "Remote Desktop Commander + existing Chrome154/CDP127.0.0.1:9222 public DOM read",
+      "title": "Divine Empowerment - Tibia Wiki - A Enciclopédia do Tibia",
+      "revision_links": [
+        "https://www.tibiawiki.com.br/index.php?title=Divine_Empowerment&oldid=436258"
+      ],
+      "captured_text_sha256": "04a224f37682c625974ec7314ae6218684f093df557e312c7e7e4737ed9a4fcb",
+      "captured_text_utf8_bytes": 2894,
+      "facts": {
+        "mana": 500,
+        "wheel_revelation": true,
+        "field_width": 3,
+        "field_height": 3,
+        "duration_ms": 5000,
+        "damage_increase_stage_percent": [
+          8,
+          10,
+          12
+        ],
+        "cooldowns_by_stage_ms": [
+          32000,
+          28000,
+          24000
+        ],
+        "group_cooldown_ms": 2000,
+        "requires_standing_in_field": true
+      },
+      "uncertainty": "Wiki describes behavior; no image-only Premium row inference, animation/audio playback, or numeric real-Tibia formula verification. Conflicts against pinned upstream remain explicit."
+    }
+  ],
+  "upstream_sources": [
+    {
+      "url": "https://github.com/opentibiabr/canary/blob/99902524e052f37574194466c2949c576e4ab269/data/scripts/spells/healing/light_healing.lua",
+      "method": "local git show exact accepted revision",
+      "revision": "99902524e052f37574194466c2949c576e4ab269",
+      "path": "data/scripts/spells/healing/light_healing.lua",
+      "available": true,
+      "sha256": "dd3daa24a0c690982e6447a3a4ddcdb78856f841879137f6d1a6a4161ef6dada",
+      "bytes": 1156,
+      "visual_sound_and_mechanic_declarations": [
+        "combat:setParameter(COMBAT_PARAM_EFFECT, CONST_ME_MAGIC_BLUE)",
+        "combat:setParameter(COMBAT_PARAM_DISPEL, CONDITION_PARALYZE)",
+        "spell:castSound(SOUND_EFFECT_TYPE_SPELL_LIGHT_HEALING)"
+      ]
+    },
+    {
+      "url": "https://github.com/opentibiabr/canary/blob/99902524e052f37574194466c2949c576e4ab269/data/scripts/spells/support/creature_illusion.lua",
+      "method": "local git show exact accepted revision",
+      "revision": "99902524e052f37574194466c2949c576e4ab269",
+      "path": "data/scripts/spells/support/creature_illusion.lua",
+      "available": true,
+      "sha256": "ae37364d6449702486fa049356456d624e63bea3fe302d80424124b08108bd5f",
+      "bytes": 1185,
+      "visual_sound_and_mechanic_declarations": [
+        "condition:setTicks(180000)",
+        "spell:castSound(SOUND_EFFECT_TYPE_SPELL_CREATURE_ILLUSION)"
+      ]
+    },
+    {
+      "url": "https://github.com/opentibiabr/canary/blob/99902524e052f37574194466c2949c576e4ab269/data/scripts/spells/attack/eternal_winter.lua",
+      "method": "local git show exact accepted revision",
+      "revision": "99902524e052f37574194466c2949c576e4ab269",
+      "path": "data/scripts/spells/attack/eternal_winter.lua",
+      "available": true,
+      "sha256": "e782022e40ef6e4649546c04e91f0de719f2689689dbd9576780c4da78890e1d",
+      "bytes": 941,
+      "visual_sound_and_mechanic_declarations": [
+        "combat:setParameter(COMBAT_PARAM_EFFECT, CONST_ME_ICETORNADO)",
+        "spell:castSound(SOUND_EFFECT_TYPE_SPELL_ETERNAL_WINTER)"
+      ]
+    },
+    {
+      "url": "https://github.com/opentibiabr/canary/blob/99902524e052f37574194466c2949c576e4ab269/data/scripts/spells/attack/rage_of_the_skies.lua",
+      "method": "local git show exact accepted revision",
+      "revision": "99902524e052f37574194466c2949c576e4ab269",
+      "path": "data/scripts/spells/attack/rage_of_the_skies.lua",
+      "available": true,
+      "sha256": "584d15263c298f3f9a4b4c46d8586b487a597b77a23fe9236800b5e5b03bc30e",
+      "bytes": 973,
+      "visual_sound_and_mechanic_declarations": [
+        "combat:setParameter(COMBAT_PARAM_EFFECT, CONST_ME_BIGCLOUDS)",
+        "spell:castSound(SOUND_EFFECT_TYPE_SPELL_RAGE_OF_THE_SKIES)"
+      ]
+    },
+    {
+      "url": "https://github.com/opentibiabr/canary/blob/99902524e052f37574194466c2949c576e4ab269/data/scripts/spells/attack/divine_grenade.lua",
+      "method": "local git show exact accepted revision",
+      "revision": "99902524e052f37574194466c2949c576e4ab269",
+      "path": "data/scripts/spells/attack/divine_grenade.lua",
+      "available": true,
+      "sha256": "4db33a343efa3f45ae5ec968fa37916b0934c7d279dcae9bb7a1a79fc7921e00",
+      "bytes": 2760,
+      "visual_sound_and_mechanic_declarations": [
+        "combatGrenade:setParameter(COMBAT_PARAM_EFFECT, CONST_ME_HOLYDAMAGE)",
+        "local multiplierByGrade = { 1.3, 1.6, 2.0 }",
+        "local cooldownByGrade = { 26, 20, 14 }",
+        "addEvent(explodeGrenade, 3000, position, creature:getId())",
+        "addEvent(removeGrenadeEffect, 3000, position)"
+      ]
+    },
+    {
+      "url": "https://github.com/opentibiabr/canary/blob/99902524e052f37574194466c2949c576e4ab269/data/scripts/spells/attack/death_echo.lua",
+      "method": "local git show exact accepted revision",
+      "revision": "99902524e052f37574194466c2949c576e4ab269",
+      "path": "data/scripts/spells/attack/death_echo.lua",
+      "available": true,
+      "sha256": "ca7b92f59be6b35b505fde596469ffcfd3c7d6b763849bd9a578dc8cb43966c1",
+      "bytes": 3008,
+      "visual_sound_and_mechanic_declarations": [
+        "local ECHO_DAMAGE_MULTIPLIER = 0.5",
+        "local ECHO_DELAY = 1000",
+        "combat:setParameter(COMBAT_PARAM_EFFECT, CONST_ME_DEATH_ECHO)",
+        "echoCombat:setParameter(COMBAT_PARAM_EFFECT, CONST_ME_DEATH_ECHO)",
+        "return calculateDamage(player, magicLevel, ECHO_DAMAGE_MULTIPLIER)",
+        "addEvent(executeEcho, ECHO_DELAY, position, player:getId(), player:getGuid(), elementalStanceContext)"
+      ]
+    },
+    {
+      "url": "https://github.com/opentibiabr/canary/blob/99902524e052f37574194466c2949c576e4ab269/data/scripts/spells/attack/spiritual_outburst.lua",
+      "method": "local git show exact accepted revision",
+      "revision": "99902524e052f37574194466c2949c576e4ab269",
+      "path": "data/scripts/spells/attack/spiritual_outburst.lua",
+      "available": true,
+      "sha256": "5148f5ebd5bdd58e1975733d007e029e29846a64612967f55baf2e742ccc1c51",
+      "bytes": 3385,
+      "visual_sound_and_mechanic_declarations": [
+        "combatRecast:setParameter(COMBAT_PARAM_CHAIN_EFFECT, CONST_ME_BLOW_WHITE)",
+        "local defaultDecreasedDamage = 37.5",
+        "defaultDecreasedDamage = (defaultDecreasedDamage + (12.5 * (grade - 1))) / 100",
+        "return targets, 4, false",
+        "combat:setParameter(COMBAT_PARAM_CHAIN_EFFECT, CONST_ME_BLOW_WHITE)",
+        "return targets, 4, false",
+        "addEvent(function(playerGuid, spellVar)"
+      ]
+    },
+    {
+      "url": "https://github.com/opentibiabr/canary/blob/99902524e052f37574194466c2949c576e4ab269/data/scripts/spells/support/divine_empowerment.lua",
+      "method": "local git show exact accepted revision",
+      "revision": "99902524e052f37574194466c2949c576e4ab269",
+      "path": "data/scripts/spells/support/divine_empowerment.lua",
+      "available": true,
+      "sha256": "105872cef06f9b9dda720a9eff1af24884c3e0cc6979be6f7a7e21891bf4830b",
+      "bytes": 1585,
+      "visual_sound_and_mechanic_declarations": [
+        "addEvent(removeEmpowermentItem, 5000, position)"
+      ]
+    },
+    {
+      "url": "https://github.com/zimbadev/crystalserver/blob/ff7ede593c69d4c658b382c97443e8155926924a/data/scripts/spells/healing/light_healing.lua",
+      "method": "local git show exact accepted revision",
+      "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+      "path": "data/scripts/spells/healing/light_healing.lua",
+      "available": true,
+      "sha256": "4a406c0ba980a707be46f6f24615512eba7747a27c62e8969f9b47f5ee441371",
+      "bytes": 1230,
+      "visual_sound_and_mechanic_declarations": [
+        "combat:setParameter(COMBAT_PARAM_EFFECT, CONST_ME_MAGIC_BLUE)",
+        "combat:setParameter(COMBAT_PARAM_DISPEL, CONDITION_PARALYZE)",
+        "spell:castSound(SOUND_EFFECT_TYPE_SPELL_LIGHT_HEALING)"
+      ]
+    },
+    {
+      "url": "https://github.com/zimbadev/crystalserver/blob/ff7ede593c69d4c658b382c97443e8155926924a/data/scripts/spells/support/creature_illusion.lua",
+      "method": "local git show exact accepted revision",
+      "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+      "path": "data/scripts/spells/support/creature_illusion.lua",
+      "available": true,
+      "sha256": "ae37364d6449702486fa049356456d624e63bea3fe302d80424124b08108bd5f",
+      "bytes": 1185,
+      "visual_sound_and_mechanic_declarations": [
+        "condition:setTicks(180000)",
+        "spell:castSound(SOUND_EFFECT_TYPE_SPELL_CREATURE_ILLUSION)"
+      ]
+    },
+    {
+      "url": "https://github.com/zimbadev/crystalserver/blob/ff7ede593c69d4c658b382c97443e8155926924a/data/scripts/spells/attack/eternal_winter.lua",
+      "method": "local git show exact accepted revision",
+      "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+      "path": "data/scripts/spells/attack/eternal_winter.lua",
+      "available": true,
+      "sha256": "ac1dc8aabd70bda895677cf6b6a601ab7d37b7f6a2b0ecfc12d631a8906f8bf7",
+      "bytes": 1020,
+      "visual_sound_and_mechanic_declarations": [
+        "combat:setParameter(COMBAT_PARAM_EFFECT, CONST_ME_ICETORNADO)",
+        "spell:castSound(SOUND_EFFECT_TYPE_SPELL_ETERNAL_WINTER)"
+      ]
+    },
+    {
+      "url": "https://github.com/zimbadev/crystalserver/blob/ff7ede593c69d4c658b382c97443e8155926924a/data/scripts/spells/attack/rage_of_the_skies.lua",
+      "method": "local git show exact accepted revision",
+      "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+      "path": "data/scripts/spells/attack/rage_of_the_skies.lua",
+      "available": true,
+      "sha256": "0df4426161a7e4b0421fdb1e6f8f2e5199cdf27464a3998e29e49f91ebde0af3",
+      "bytes": 2335,
+      "visual_sound_and_mechanic_declarations": [
+        "c:setParameter(COMBAT_PARAM_EFFECT, effect)",
+        "spell:castSound(SOUND_EFFECT_TYPE_SPELL_RAGE_OF_THE_SKIES)"
+      ]
+    },
+    {
+      "url": "https://github.com/zimbadev/crystalserver/blob/ff7ede593c69d4c658b382c97443e8155926924a/data/scripts/spells/attack/divine_grenade.lua",
+      "method": "local git show exact accepted revision",
+      "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+      "path": "data/scripts/spells/attack/divine_grenade.lua",
+      "available": true,
+      "sha256": "5a4f852926655219e616900e36f91c51ad1dba228def631cd2baeaeafe4a2882",
+      "bytes": 3330,
+      "visual_sound_and_mechanic_declarations": [
+        "combatGrenade:setParameter(COMBAT_PARAM_EFFECT, CONST_ME_HOLYDAMAGE)",
+        "local multiplierByGrade = { 1.3, 1.6, 2.0 }",
+        "addEvent(explodeGrenade, 3000, position, creature:getId())",
+        "addEvent(removeGrenadeEffect, 3000, position)",
+        "addEvent(explodeGrenade, 3000, position, creature:getId())",
+        "addEvent(removeGrenadeEffect, 3000, position)"
+      ]
+    },
+    {
+      "url": "https://github.com/zimbadev/crystalserver/blob/ff7ede593c69d4c658b382c97443e8155926924a/data/scripts/spells/attack/death_echo.lua",
+      "method": "local git show exact accepted revision",
+      "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+      "path": "data/scripts/spells/attack/death_echo.lua",
+      "available": true,
+      "sha256": "4d541cf3c4db8af260d1659ae38e93f25a8e6c88b6a57ec12887cf9f0c026682",
+      "bytes": 4426,
+      "visual_sound_and_mechanic_declarations": [
+        "combatMain:setParameter(COMBAT_PARAM_EFFECT, 321)",
+        "combatEcho:setParameter(COMBAT_PARAM_EFFECT, 321)",
+        "combatEcho:setParameter(COMBAT_PARAM_EFFECT, effect)",
+        "combatMain:setParameter(COMBAT_PARAM_EFFECT, effect)",
+        "addEvent(echoStrike, 1000, center, creature:getId(), combatType, effect)"
+      ]
+    },
+    {
+      "url": "https://github.com/zimbadev/crystalserver/blob/ff7ede593c69d4c658b382c97443e8155926924a/data/scripts/spells/attack/spiritual_outburst.lua",
+      "method": "local git show exact accepted revision",
+      "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+      "path": "data/scripts/spells/attack/spiritual_outburst.lua",
+      "available": true,
+      "sha256": "9d871a326fe9b9fae327c82b10fce8304811f550463f8c0049f9757ae06ebd62",
+      "bytes": 5335,
+      "visual_sound_and_mechanic_declarations": [
+        "addEvent(function()",
+        "local cooldownByGrade = { 24, 20, 16 }"
+      ]
+    },
+    {
+      "url": "https://github.com/zimbadev/crystalserver/blob/ff7ede593c69d4c658b382c97443e8155926924a/data/scripts/spells/support/divine_empowerment.lua",
+      "method": "local git show exact accepted revision",
+      "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+      "path": "data/scripts/spells/support/divine_empowerment.lua",
+      "available": true,
+      "sha256": "11e48f91f887a49d8ccb4b5ab243943a51405eb13f0dfc5cc870dae3de910965",
+      "bytes": 1408,
+      "visual_sound_and_mechanic_declarations": [
+        "addEvent(removeEmpowermentItem, 5000, position)"
+      ]
+    },
+    {
+      "url": "https://github.com/opentibiabr/canary/blob/99902524e052f37574194466c2949c576e4ab269/src/creatures/players/components/wheel/player_wheel.cpp",
+      "revision": "99902524e052f37574194466c2949c576e4ab269",
+      "method": "local git show exact accepted revision",
+      "available": true,
+      "sha256": "e1eef362cce79252cae9f9d469b57ccb5a1b1658e848ed8c8d1881f5c8650717",
+      "bytes": 143888,
+      "targeted_lines": [
+        2185,
+        2189,
+        2192,
+        2195,
+        3061,
+        3071,
+        3073,
+        3075
+      ],
+      "facts": {
+        "stage2_cooldown_reduction_ms": 4000,
+        "stage3_additional_cooldown_reduction_ms": 4000,
+        "stage_damage_percent": [
+          8,
+          10,
+          12
+        ],
+        "standing_on_own_field_required": true
+      }
+    }
+  ],
+  "actionable_findings": [
+    {
+      "id": "LIGHT_HEALING_PARALYSIS",
+      "decision": "Successful Exura should heal and remove paralysis; preserve typed condition removal and test already-max-HP caster with paralysis. Upstream COMBAT_PARAM_DISPEL CONDITION_PARALYZE and wiki agree."
+    },
+    {
+      "id": "CREATURE_ILLUSION_COSMETIC",
+      "decision": "180000ms outfit effect; preserve player name, abilities and combat identity. Use source illusionable guard; success MAGIC_RED, refusal POFF; castSound declaration is not proof of actual audio playback."
+    },
+    {
+      "id": "GRENADE_BUFF_SNAPSHOT",
+      "decision": "Wiki says buffs acquired after plant do not change damage. Pinned upstream formula callback runs at explosion, so snapshot/re-evaluation parity must be explicit; do not claim exact equivalence."
+    },
+    {
+      "id": "DEATH_ECHO_CONFLICT",
+      "decision": "Wiki claims larger second area and 150% initial damage; accepted Canary uses same AREA_CIRCLE2X2 and multiplier0.5. Keep exact chosen source policy and explicit conflict flag; do not blend conflicting formulas."
+    },
+    {
+      "id": "SPIRITUAL_OUTBURST_CHAIN_CONFLICT",
+      "decision": "Wiki jumpdistance2 and up to8; acceptedCanary callback returns7,4,false. Root-target counting semantics need engine validation. Retain selected source geometry and flag uncertainty."
+    },
+    {
+      "id": "EMPOWERMENT_STAGE_COOLDOWNS",
+      "decision": "Resolved by native accepted Canary player_wheel.cpp: stage2 adds4000ms cooldown reduction and stage3 adds another4000ms, yielding32/28/24s. checkDivineEmpowerment requires standing on own ownerGUID field item and applies8/10/12% stage damage. Lua-only import omits these native Wheel rules."
+    },
+    {
+      "id": "AUDIO_CLIENT_NOT_VERIFIED",
+      "decision": "Pinned sound and visual constants can qualify declarations only. No wiki textual playback or asset playback verification was performed; keep client presentation/playback gap explicit."
+    }
+  ]
+}

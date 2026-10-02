@@ -6,7 +6,7 @@ cd "$SPELL_REPO_ROOT"
 mode="${1:-help}"
 if [[ $# -gt 0 ]]; then shift; fi
 prepare_current_manifest() {
-  SPELL_CURRENT_MANIFEST="$SPELL_REPO_ROOT/content/test-packs/spells/r25/manifest.json"
+  SPELL_CURRENT_MANIFEST="$SPELL_REPO_ROOT/content/spells.manifest.json"
   [[ -f "$SPELL_CURRENT_MANIFEST" ]] || { echo 'Imported spell manifest missing' >&2; exit 2; }
 }
 case "$mode" in

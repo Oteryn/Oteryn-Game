@@ -81,7 +81,7 @@ manifest pins the exact map SHA. Reuse it rather than create a new arena.
 
 ```sh
 bash tools/qualification/spells/run.sh map
-# Default reads the committed content/test-packs/spells/r25/manifest.json package.
+# Default reads the committed content/spells.manifest.json package.
 # Or an explicitly produced candidate manifest:
 bash tools/qualification/spells/run.sh map /path/to/manifest.json
 ```
@@ -110,7 +110,7 @@ bash tools/qualification/spells/run.sh server /path/to/manifest.json
 This delegates to the existing S3-B runner with `WP5_QUALIFICATION=spell-seam`.
 It uses the real Game owners, TCP/TLS and Platform admission with the Thalom/full
 spell manifest. With no explicit manifest, it reads the committed
-`content/test-packs/spells/r25/manifest.json` package. It creates disposable qualification services and cleans them up;
+`content/spells.manifest.json` package. It creates disposable qualification services and cleans them up;
 it does not deploy to or change a long-lived test server. Default room/SEAM runs
 remain available. A spell's observed rejection is recorded as a rejection, not a
 successful execution or complete catalog qualification.
