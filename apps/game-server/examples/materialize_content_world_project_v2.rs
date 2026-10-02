@@ -20,6 +20,7 @@ use oteryn_game_server::content::{
     ReferenceSignedPoints, ReferenceWeaponType, ReimportDecision, ReimportFieldState,
     item_admission::apply_item_admission_v1,
     item_capacity_promotion::apply_item_capacity_promotion_v1,
+    item_document_promotion::apply_item_document_promotion_v1,
     item_identity::{ItemKeyAliasTable, apply_tibia_id_key_rule, tibia_item_key},
     item_market_true_promotion::apply_item_market_true_promotion_v1,
     item_movable_promotion::apply_item_movable_promotion_v1,
@@ -1960,6 +1961,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     apply_item_stack_historical_promotion_v1(&mut draft)?;
     apply_item_market_true_promotion_v1(&mut draft)?;
     apply_item_movable_promotion_v1(&mut draft)?;
+    apply_item_document_promotion_v1(&mut draft)?;
     let documents = CanonicalProjectDocuments::from_v2_draft(draft, limits())?;
     if documents.documents().len() != DOCUMENT_COUNT {
         return Err("canonical WorldProject/v2 document count drifted".into());

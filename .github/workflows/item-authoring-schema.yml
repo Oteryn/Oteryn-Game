@@ -33,6 +33,7 @@ on:
       - docs/agents/evidence/OTV2-20260930-item-stats-promotion-v2.json
       - docs/agents/evidence/OTV2-20261001-item-market-true*.json
       - docs/agents/evidence/OTV2-20261001-item-movable*.json
+      - docs/agents/evidence/OTV2-20261001-item-document*.json
       - content/items/index.json
       - content/items/definitions/**
       - content/assets/files/appearances-*.dat
@@ -141,6 +142,11 @@ jobs:
         run: |
           python test_lower_wiki_movable_packet.py
           python lower_wiki_movable_packet.py --check
+
+      - name: Explicit document qualification guards and packet drift
+        run: |
+          python test_lower_item_document_packet.py
+          python lower_item_document_packet.py --check
 
       - name: Client appearance census fixture tests
         run: python test_client_appearance_census.py

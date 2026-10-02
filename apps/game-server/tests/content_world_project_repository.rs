@@ -17,7 +17,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "content.lock.json",
         364,
-        "fac024fdcdb5a9997b30f4aa7864b3d3ca803fb852d5a35b303d3982ace6a746",
+        "2077fdc772aef78f249442f86603cbb34bdf798b08d9b59fe77a51ac4ba9bbd1",
     ),
     (
         "definitions/declarations.json",
@@ -26,8 +26,8 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "definitions/reference.json",
-        24_890_347,
-        "9fc8082a0e7bf2bdec963cc1127cfd91e12339f75dce822130504295729f67c4",
+        24_910_731,
+        "fdbed1d0bcc75c82dcb31c8a0058b2edac911e3b839a134e60632ff3da4f4283",
     ),
     (
         "editor/author.json",
@@ -37,7 +37,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "manifest.json",
         1_937,
-        "146b3b29b93488f67748fad29e9920865b677f1fae0f97ceb8c606c3e4f9a836",
+        "7b51f00f4ea484b9050bdb6f132b68a8ef854c8d3edbd0af6494db1aa526b7b0",
     ),
     (
         "presentations/bindings.json",
@@ -47,7 +47,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "project.json",
         390,
-        "4b7494c986a82208e78010fd6b33e6aaa6d7b1b8e49977756f7bb96390adbe9b",
+        "080e9f147f4ff51c9f8bcf05a3a85c4d034cc1995a4debf15475d8b8851e895b",
     ),
     (
         "provenance/imports.json",
@@ -114,7 +114,7 @@ const WORLD_CATALOGUE_SHARDS: [(&str, &str); 4] = [
 const TREE_CONTRACT: &str =
     "docs/agents/evidence/OTV2-20260925-full-game-content-ruleset-tree-v1.json";
 const TREE_DIRECTORY_NODES: usize = 97;
-const TREE_SHA256: &str = "2ead8ad32038fb4bb7534700590658d428e1bb57d8ef25a55aabdd70fe01240d";
+const TREE_SHA256: &str = "c5c674c6db5058cf026551938b61cd5fd9b7d9c2cd1edeb44390ad8a6382e78d";
 /// A12 (ITEM-ID-1b): the protected Item family less the 4,590 D149 records, on Tibia keys,
 /// plus the 404 donor epoch-2 records and the 60 appearance-only records (ITEM-ADD-1).
 const ITEMS: usize = 34_031;
@@ -1044,10 +1044,24 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     let (mut pickup_fields, mut positive_stacks, mut weight_fields) = (0, 0, 0);
     let (mut movable_true, mut movable_false) = (0, 0);
     let (mut modifier_vectors, mut modifier_atoms) = (0, 0);
+    let (mut document_groups, mut readable, mut writeable, mut not_writeable, mut text_lengths) =
+        (0, 0, 0, 0, 0);
     for definition in &linked.definitions {
         let ReferenceDefinitionKind::Item(item) = &definition.kind else {
             continue;
         };
+        if let ReferenceItemField::Known(document) = &item.semantics.readable_writeable {
+            document_groups += 1;
+            readable += usize::from(document.readable == ReferenceItemField::Known(true));
+            writeable += usize::from(document.writeable == ReferenceItemField::Known(true));
+            not_writeable += usize::from(document.writeable == ReferenceItemField::Known(false));
+            text_lengths += usize::from(matches!(
+                document.max_text_length,
+                ReferenceItemField::Known(_)
+            ));
+            assert_eq!(document.distance_read, ReferenceItemField::Unknown);
+            assert_eq!(document.write_once_target, ReferenceItemField::Unknown);
+        }
         if let ReferenceItemField::Known(physical) = &item.semantics.physical {
             pickup_fields += usize::from(matches!(
                 physical.pickupable,
@@ -1137,6 +1151,16 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
         (6756, 39, 6513 + 4)
     );
     assert_eq!((movable_true, movable_false), (5692, 0));
+    assert_eq!(
+        (
+            document_groups,
+            readable,
+            writeable,
+            not_writeable,
+            text_lengths
+        ),
+        (98, 82, 54, 17, 55)
+    );
     assert_eq!((modifier_vectors, modifier_atoms), (419, 619));
     assert_eq!(resistance_vectors, 391);
     assert_eq!(resistance_atoms, 625);

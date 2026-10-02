@@ -38,6 +38,7 @@ pub mod encounter_map_item;
 mod fixture;
 pub mod item_admission;
 pub mod item_capacity_promotion;
+pub mod item_document_promotion;
 pub mod item_identity;
 pub mod item_market_true_promotion;
 pub mod item_movable_promotion;
