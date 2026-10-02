@@ -17,7 +17,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "content.lock.json",
         364,
-        "2077fdc772aef78f249442f86603cbb34bdf798b08d9b59fe77a51ac4ba9bbd1",
+        "8c95c94e2853a392e58e6a802fd622ef27a78d5b99fe73e8f15bed8b748cedd7",
     ),
     (
         "definitions/declarations.json",
@@ -26,8 +26,8 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "definitions/reference.json",
-        24_910_731,
-        "fdbed1d0bcc75c82dcb31c8a0058b2edac911e3b839a134e60632ff3da4f4283",
+        24_925_426,
+        "117fe0d6b2b9078a8ccecef1602b0f55125e7db75d56194629c6ea5b7c48891b",
     ),
     (
         "editor/author.json",
@@ -37,7 +37,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "manifest.json",
         1_937,
-        "7b51f00f4ea484b9050bdb6f132b68a8ef854c8d3edbd0af6494db1aa526b7b0",
+        "c09cd7404712ca757d0e850d24ec4859ca4a7bea17422790b4e587602b5a5855",
     ),
     (
         "presentations/bindings.json",
@@ -47,7 +47,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "project.json",
         390,
-        "080e9f147f4ff51c9f8bcf05a3a85c4d034cc1995a4debf15475d8b8851e895b",
+        "a27cdee7197539385d21e754eebcfdbbb65cb525df32f71d415fcebf7b834871",
     ),
     (
         "provenance/imports.json",
@@ -114,7 +114,7 @@ const WORLD_CATALOGUE_SHARDS: [(&str, &str); 4] = [
 const TREE_CONTRACT: &str =
     "docs/agents/evidence/OTV2-20260925-full-game-content-ruleset-tree-v1.json";
 const TREE_DIRECTORY_NODES: usize = 97;
-const TREE_SHA256: &str = "c5c674c6db5058cf026551938b61cd5fd9b7d9c2cd1edeb44390ad8a6382e78d";
+const TREE_SHA256: &str = "0c49e0f88998184bdd8fb153078ea9e076c506e98c7e39d59b867fbbc6287f84";
 /// A12 (ITEM-ID-1b): the protected Item family less the 4,590 D149 records, on Tibia keys,
 /// plus the 404 donor epoch-2 records and the 60 appearance-only records (ITEM-ADD-1).
 const ITEMS: usize = 34_031;
@@ -1161,7 +1161,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
         ),
         (98, 82, 54, 17, 55)
     );
-    assert_eq!((modifier_vectors, modifier_atoms), (419, 619));
+    assert_eq!((modifier_vectors, modifier_atoms), (419 + 26, 619 + 63));
     assert_eq!(resistance_vectors, 391);
     assert_eq!(resistance_atoms, 625);
     // The independent predecessor census includes the separately admitted starter pattern.

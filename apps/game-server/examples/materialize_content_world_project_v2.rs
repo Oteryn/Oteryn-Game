@@ -21,6 +21,7 @@ use oteryn_game_server::content::{
     item_admission::apply_item_admission_v1,
     item_capacity_promotion::apply_item_capacity_promotion_v1,
     item_document_promotion::apply_item_document_promotion_v1,
+    item_elemental_magic_modifier_promotion::apply_item_elemental_magic_modifier_promotion_v1,
     item_identity::{ItemKeyAliasTable, apply_tibia_id_key_rule, tibia_item_key},
     item_market_true_promotion::apply_item_market_true_promotion_v1,
     item_movable_promotion::apply_item_movable_promotion_v1,
@@ -1951,6 +1952,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
     // ITEM-SEM-2b: TibiaWiki stats replace earlier promotions on the canonical Item keys.
     let stats = apply_item_stats_promotion_v2(&mut draft)?;
+    apply_item_elemental_magic_modifier_promotion_v1(&mut draft)?;
     // Explicit bounded wiki capacity repair, preserving conflicting furniture variants.
     let _capacity_fields = apply_item_capacity_promotion_v1(&mut draft)?;
     // STARTER-CONTENT-1: the main backpack becomes materializable and container-slot equippable.

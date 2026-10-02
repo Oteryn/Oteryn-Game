@@ -153,7 +153,7 @@ pub fn apply_item_stats_promotion_v2(
     Ok(applied)
 }
 
-fn apply_packet(
+pub(super) fn apply_packet(
     draft: &mut ProjectV2Draft,
     bytes: &[u8],
 ) -> Result<ItemStatsPromotion, ItemStatsPromotionError> {
@@ -376,7 +376,14 @@ fn set_field(
                 || entries.iter().any(|entry| {
                     let parameter = match (entry.kind, &entry.parameter) {
                         (
-                            Kind::MagicLevelPoints
+                            Kind::DeathMagicLevelPoints
+                            | Kind::EarthMagicLevelPoints
+                            | Kind::EnergyMagicLevelPoints
+                            | Kind::FireMagicLevelPoints
+                            | Kind::HealingMagicLevelPoints
+                            | Kind::HolyMagicLevelPoints
+                            | Kind::IceMagicLevelPoints
+                            | Kind::MagicLevelPoints
                             | Kind::SkillAxe
                             | Kind::SkillClub
                             | Kind::SkillDistance
@@ -816,6 +823,40 @@ mod tests {
             let mut semantics = ReferenceItemSemantics::default();
             let before = semantics.clone();
             assert!(apply(&bytes, &mut semantics).is_err());
+            assert_eq!(semantics, before);
+        }
+    }
+
+    #[test]
+    fn elemental_magic_points_use_existing_atomic_metadata_guards() {
+        for kind in [
+            "DEATH_MAGIC_LEVEL_POINTS",
+            "EARTH_MAGIC_LEVEL_POINTS",
+            "ENERGY_MAGIC_LEVEL_POINTS",
+            "FIRE_MAGIC_LEVEL_POINTS",
+            "HEALING_MAGIC_LEVEL_POINTS",
+            "HOLY_MAGIC_LEVEL_POINTS",
+            "ICE_MAGIC_LEVEL_POINTS",
+        ] {
+            let mut value = modifier_value();
+            value["value"][0]["kind"] = serde_json::json!(kind);
+            let bytes = packet(
+                &row(KEY, "skill_modifiers.modifiers", &value.to_string()),
+                1,
+                1,
+            );
+            let mut semantics = ReferenceItemSemantics::default();
+            apply(&bytes, &mut semantics).expect("existing signed-point kind");
+            let before = semantics.clone();
+            assert!(apply(&bytes, &mut semantics).is_ok());
+            assert_eq!(semantics, before);
+            value["value"][0]["parameter"] = value["value"][1]["parameter"].clone();
+            let wrong = packet(
+                &row(KEY, "skill_modifiers.modifiers", &value.to_string()),
+                1,
+                1,
+            );
+            assert!(apply(&wrong, &mut semantics).is_err());
             assert_eq!(semantics, before);
         }
     }
