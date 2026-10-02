@@ -1,0 +1,30 @@
+{
+  "schema": "RECOVERY_STAGED_TEXT_V1",
+  "original_file_restoration_complete": false,
+  "original_source_packets_available": false,
+  "files": [
+    {
+      "path": "docs/agents/evidence/recovery/coverage-prepare_hit_magic67.py.txt",
+      "sha": "fee1474e50199ef4b559319aa2e72395a97d5825",
+      "bytes": 2686,
+      "sha256": "39a2f320d56f4bcc0fd4cd02c1b360a4307c90f2138254bc4b1e34aeaa4b5db6",
+      "fidelity": "Exact retained scratch tool input; final project file bytes unknown"
+    },
+    {
+      "path": "docs/agents/evidence/recovery/coverage-expand_name139_source.py.txt",
+      "sha": "e61c7c8a723fa547f60d1398b8036fa566e8e562",
+      "bytes": 3582,
+      "sha256": "b2ccde3fd98dd307ac89913905ca50c9529d8f3deda2b7b0ed0fbd24cde37a4f",
+      "fidelity": "Exact retained scratch tool input; final project file bytes unknown"
+    },
+    {
+      "path": "docs/agents/evidence/recovery/OTV2-20261002-world-routing-retained-context-receipt.json",
+      "sha": "efd2e586ab0ff39468a9596e8771c8f000af771c",
+      "bytes": 6773,
+      "fidelity": "Retained compaction facts only; not original script, prototype or packet bytes",
+      "sha256": "9126815575fd489cef7438258896c0dfe0d3dece0bf6fe45d6818f71ef230b2c"
+    }
+  ],
+  "checks": "Full blob readback and byte length/hash; SHA256 helper verified with abc known-answer",
+  "use": "Recovery material only. Not game source, admission, final native bytes or certified exact final worker files."
+}

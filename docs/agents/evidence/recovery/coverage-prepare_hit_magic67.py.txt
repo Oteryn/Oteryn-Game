@@ -1,0 +1,17 @@
+from pathlib import Path
+import json,hashlib
+R=Path('/workspace/pr1437-stack-publish');N=Path('/workspace/pr1437-native-publish');A=Path('/workspace/audit-continuation');S=A/'name-hit-magic91-source-checkpoint-20261002'
+q=json.loads((S/'docs/agents/evidence/OTV2-20261002-item-name-hit-magic-source-qualification-v1.json').read_text())
+for r in q['records']:
+ r['facts'].pop('name',None);r.pop('imported_name_proof',None)
+assert len(q['records'])==67 and sum(len(r['facts']) for r in q['records'])==67
+q.update(schema='OTERYN_ITEM_HIT_MAGIC_SOURCE_QUALIFICATION/v1',facts=67,items=67,baseline_head='PENDING_PUBLISHED_NAME139_CARRY',source_policy='Explicit singleton own-ID fields, all-present agreement and normal current native name guard; metadata only; no Name exception.')
+helper='tools/content-schema/item-authoring/lower_item_name_packet.py'; q['input_digests'][helper]=hashlib.sha256((N/helper).read_bytes()).hexdigest();q['input_digests']['tools/content-schema/item-authoring/lower_client_market_packet.py']=hashlib.sha256((N/'tools/content-schema/item-authoring/lower_client_market_packet.py').read_bytes()).hexdigest()
+p=R/'docs/agents/evidence/OTV2-20261002-item-hit-magic-source-qualification-v1.json';p.write_text(json.dumps(q,ensure_ascii=False,sort_keys=True,separators=(',',':'))+'\n');print('source67',hashlib.sha256(p.read_bytes()).hexdigest())
+s=(S/'apps/game-server/src/content/item_name_hit_magic_promotion.rs').read_text();s=s[:s.index('#[cfg(test)]')];s=s.replace('Closed historical-name exception and explicit metadata in existing field owners.','Explicit relative hit and Rune ML metadata in existing field owners.').replace('NAME_HIT_MAGIC','HIT_MAGIC').replace('name_hit_magic','hit_magic').replace('item-name-hit-magic','item-hit-magic').replace('name/hit/ML','hit/ML');s=s.replace('    name: Option<String>,\n','').replace('usize::from(self.name.is_some())\n            + usize::from(self.hit_chance.is_some())','usize::from(self.hit_chance.is_some())').replace('        91,\n','        67,\n');start=s.index('    let mut absent_name:');end=s.index('    if row.expected_name.is_empty()',start);s=s[:start]+'''    let absent_name: ReferenceItemField<String> = Unknown;
+    let name = match &next.presentation {
+        Known(group) => &group.name,
+        Unknown => &absent_name,
+        _ => return Err("hit/ML presentation group blocked".into()),
+    };
+'''+s[end:];s=s.replace('changed += usize::from(current.presentation != semantics.presentation)\n            + usize::from(current.weapon != semantics.weapon);','changed += usize::from(current.weapon != semantics.weapon);');(R/'apps/game-server/src/content/item_hit_magic_promotion.rs').write_text(s)

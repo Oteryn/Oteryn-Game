@@ -1,0 +1,27 @@
+import json,hashlib,pathlib,xml.etree.ElementTree as ET
+R=pathlib.Path('/workspace/pr1437-native-publish'); A=pathlib.Path('/workspace/audit-continuation'); Q=R/'docs/agents/evidence/OTV2-20261002-item-name-source-qualification-v1.json'
+sha=lambda b:hashlib.sha256(b).hexdigest()
+p=json.loads(Q.read_text()); src=A/'additional-imported-known-name-closed-proposal.json'; assert sha(src.read_bytes())=='57cd9d92425b8e71f8b4755fa2023597ae5820e437aacd70184227d0e907bb23'; more=json.loads(src.read_text())
+parts={}
+for row in more['records']:
+ if row['item_id'] not in more['qualified_ids']:continue
+ assert row['status']=='QUALIFIED_CLOSED_IMPORTED_NAME_CORRECTION' and not row['holds']
+ witnesses=[]
+ for s in row['whole_global_own_id_sources']:
+  c=s['coordinates']; path=pathlib.Path(c['capture_path'])
+  if path not in parts:
+   assert sha(path.read_bytes())==c['capture_sha256'];parts[path]=json.loads(path.read_text())
+  page=parts[path]['pages'][c['page_ordinal']]; box=page['infobox_objects'][c['box_index']]
+  assert box['raw']==s['raw_template'] and sha(box['raw'].encode())==s['raw_template_sha256']
+  witnesses.append(dict(page_id=c['page_id'],title=c['title'],revision_id=c['revision_id'],revision_timestamp=c['revision_timestamp'],content_sha256=c['content_sha256'],source_part=path.name,source_part_sha256=c['capture_sha256'],source_page_ordinal=c['page_ordinal'],box_index=c['box_index'],raw_infobox=box['raw'],raw_infobox_sha256=s['raw_template_sha256'],balanced=box['balanced'],inside_comment=box['inside_comment'],positive_exact_infobox_object_match=box['positive_exact_infobox_object_match']))
+ p['records'].append(dict(source_item_id=row['item_id'],target=row['full_target'],binding=row['binding'],official_name=row['proposed_literal'],official_object_sha256=row['current_official_object_sha256'],facts={'name':row['proposed_literal']},imported_name_proof=row['historical_sample_name_promotion'],protected_source_xml_witness=row['actual_protected_source_xml_witness'],sources=witnesses))
+p['records'].sort(key=lambda r:r['source_item_id']); assert len(p['records'])==len({r['source_item_id'] for r in p['records']})==139
+xmlpath=A/'world-owner-sources/base/data/items/items.xml'; xmlraw=xmlpath.read_text().replace('\r\n','\n'); assert sha(xmlraw.encode())=='c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb'
+items=ET.fromstring(xmlraw)
+for row in p['records']:
+ iid=row['source_item_id']; found=[e for e in items if int(e.get('id',e.get('fromid','-1')))<=iid<=int(e.get('id',e.get('toid','-1')))]; assert len(found)==1 and found[0].get('name')==row['imported_name_proof']['typed_value']['value']
+ row.setdefault('protected_source_xml_witness',dict(source_numeric_id=iid,source_element_attributes=found[0].attrib,name_literal=found[0].get('name'),source_file_sha256=sha(xmlraw.encode()),parsed_subtree_serialization_not_raw_bytes=ET.tostring(found[0],encoding='unicode')))
+p.update(facts=139,items=139,baseline_head='2ec1f34f05fd89abbb041f313b0852c331ae2b53',historical_importer_literal={'weapon of carving':120,'event item':19},additional_qualification_seal={'path':src.name,'sha256':sha(src.read_bytes()),'qualified_ids':more['qualified_ids'],'accepted':115,'held':220,'history_scope':more['history_scope']},protected_source_lineage=more['protected_source_lineage'])
+for helper in ['lower_client_market_packet.py']:
+ path='tools/content-schema/item-authoring/'+helper;p['input_digests'][path]=sha((R/path).read_bytes())
+Q.write_text(json.dumps(p,ensure_ascii=False,sort_keys=True,separators=(',',':'))+'\n');print('139 proof',sha(Q.read_bytes()))

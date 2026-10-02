@@ -1,0 +1,111 @@
+{
+  "schema": "oteryn-recovery-retained-context/v1",
+  "status": "UNTESTED_PROTOTYPE_AND_SOURCE_RECOVERY_RECEIPT",
+  "fidelity": "RETAINED_COMPACTION_FACTS_ONLY_NOT_ORIGINAL_FILE_BYTES",
+  "warning": "Original Physical8 prototype creation script and Mantra49 source/patch literals are not retained in current context. This receipt cannot reconstruct exact files. Filesystem executor unavailable; no compile or new local checks.",
+  "repository": "Oteryn/Oteryn-Game",
+  "recovered_by": "world_routing",
+  "source49": {
+    "worktree": "/workspace/pr1437-stack-default-completion",
+    "baseline": "8257ba68d449a4975345897823d8282393e5bae2",
+    "manifest_path": "/workspace/audit-continuation/mantra-bond49-source-only-manifest.json",
+    "manifest_sha256": "bb23ce0defd4f612bccc5f49979499a7caa667013bbac4f92712e1f390d06d3b",
+    "backup_path": "/workspace/audit-continuation/mantra-bond49-source-only-checkpoint",
+    "proof_path": "docs/agents/evidence/OTV2-20261002-item-mantra-bond-source-qualification-v1.json",
+    "proof_sha256": "fece04bb34ccdf8c6718442ed31ba25ee4bf7bd7b5aa7c7eea7991785e7e8ced",
+    "packet_path": "docs/agents/evidence/OTV2-20261002-item-mantra-bond-promotion-v1.json",
+    "packet_sha256": "eecfca5562dbe8f1cbb271061b58ca20b883b9c751368dd3fd0cfac9119ef2bf",
+    "compiler_path": "tools/content-schema/item-authoring/lower_mantra_bond_modifier_packet.py",
+    "tests_path": "tools/content-schema/item-authoring/test_lower_mantra_bond_modifier_packet.py",
+    "rust_wrapper_path": "apps/game-server/src/content/item_mantra_bond_modifier_promotion.rs",
+    "source_vectors": 57,
+    "source_atoms": 130,
+    "native_v4_vectors": 49,
+    "native_v4_atoms": 114,
+    "physical_held_vectors": 8,
+    "physical_held_atoms": 16,
+    "physical_held_item_ids": [
+      10389,
+      17828,
+      50164,
+      50165,
+      50181,
+      50239,
+      50273,
+      52335
+    ],
+    "other_whole_source_holds": [
+      50147,
+      50156,
+      51261,
+      50157,
+      50158,
+      50159,
+      50161,
+      50162,
+      50169,
+      50170,
+      50251,
+      50252,
+      50253
+    ],
+    "retained_source_checks": "9 Python tests and Ruff passed before outage with staged readonly shared26 helper. No Cargo or final Native generation.",
+    "native_test_source_path": "/workspace/audit-continuation/mantra-bond49-postcarry-native-tests.rs",
+    "staged_runner_path": "/workspace/audit-continuation/run-mantra57-source-staged.py",
+    "peer_report_path": "/workspace/audit-continuation/mantra-bond49-cutoff-independent-source-peer.json",
+    "peer_sha256": "832691583ec6c415ed6580db25dfc404d079445f317cf2d4b5ba6fc41fee13b7",
+    "peer_disposition": "SOURCE57/native49 cutoff partition PASS, not compiler complete build/Cargo/native generation",
+    "item50239": {
+      "stats_revision": 1207393,
+      "stats_capture": "part188/page44",
+      "cutoff_revision": 1177239,
+      "cutoff_capture": "part208/page0",
+      "current_continuity": "UNKNOWN",
+      "rule": "Historical cutoff and postcutoff stats coordinates remain distinct; do not backdate."
+    }
+  },
+  "physical8_prototype": {
+    "status": "UNTESTED_UNPUBLISHED_CORE_ONLY",
+    "creation_script_path": "/workspace/audit-continuation/build-physical8-v5-rust-prototype.py",
+    "tree_path": "/workspace/audit-continuation/physical8-v5-prototype/tree",
+    "successfully_written_before_outage": [
+      "apps/game-server/src/content/reference_playable.rs",
+      "apps/game-server/src/content/reference_artifact.rs",
+      "apps/game-server/src/content/item_stats_promotion.rs",
+      "tools/reference-item-resource-profile/item_resource_profile.py"
+    ],
+    "not_written_failed_executor_request": [
+      "/workspace/audit-continuation/physical8-v5-prototype/native-v5-tests.rs",
+      "apps/game-server/tests/content_reference_artifact.rs"
+    ],
+    "retained_design": {
+      "element": "Append Physical=7, preserve Death1/Earth2/Energy3/Fire4/Holy5/Ice6.",
+      "profile": "TypedItemPhysicalV5, artifact/compiler/canonicalization identifiers v5, magic OTRPA05\\0, profile u16=5, typed body version2.",
+      "dispatch": "Complete38157 family chooses v5 if Known ElementalBond Physical exists; all source.definitions retained including materializable=false.",
+      "parameter": "One-byte Element. Physical encoding and decoding only profile5. Historical profile4 rejects7; from_wire rejects0/8/255.",
+      "lazy_caveat": "Existing lazy header/index load can accept forged integrity-valid v4 body until lookup; record decode rejects7. True v5 header rejected by old readers.",
+      "setter": "Retained shared atomic packet setter extended with Mantra SignedPoints checked i16 and ElementalBond Earth/Energy/Physical. Prior26 unchanged.",
+      "oracle": "codec(bounds, artifact_profile=4), allowed4/5; element count6 for4,7 for5; default4 unchanged.",
+      "unresolved": "Semantic SourcePackage/version gating and owning contract decision remain pending. No claim of approved producer/consumer forward compatibility."
+    },
+    "reference_setter_origin": "/workspace/pr1437-resistances/apps/game-server/src/content/item_stats_promotion.rs",
+    "pending_checks": [
+      "Rust source tests are not authored by the failed write and not run.",
+      "Python independent oracle/goldens/maxima not run.",
+      "Full38157 family/header/unknown8/historical-v4-lookup7 checks pending.",
+      "Atomic/idempotence/source8 packet qualification and dependent proof version reseals pending.",
+      "No compiler/source-native final integration or generated artifact review."
+    ]
+  },
+  "contracts": {
+    "proposal_path": "/workspace/audit-continuation/physical8-native-schema-abi-read-only-proposal.json",
+    "proposal_sha256": "ab11dc92cab546efcdd547d19dcdbd3b8db5d2d158e24550a4896bddb1e65226",
+    "proposed_decision_path": "docs/architecture/reviews/OTERYN_REFERENCE_ITEM_PHYSICAL_ELEMENT_V5_DECISION_2026-10-02.md",
+    "required": "Explicit DUR-04/native Item metadata grammar successor and semantic source/package version disposition. No network protocol, gameplay admission or other family change.",
+    "dependency_reseal": "New Modifier26 proof/packet version and Physical8 successor proof must pin changed actual files; preserve historical V1 exact bytes and facts. Original49 remains closed V4 49/114; historical CARRIER_MISSING must not be relabeled retroactively.",
+    "old_reference_playable_sha256": "e50682b67ca36431f9a6b9eb018a8cb17a08cf7e4fdc66c33a5831dc83f4e3ad",
+    "shared26_compiler_sha256": "ea3dcd372bbdc09cce03de483cb29dbac4ffc085f85688e618dfeff8801e72ea",
+    "shared26_source_proof_sha256": "3fd080375c2187ff6b2bef26514488816f3c096e68bbe34aaaab1aef985c7226",
+    "shared26_packet_sha256": "fd3a302fae411c71c71bea7aebe6d8d95b0fbc3ac503e88b6844be6017233a9f"
+  }
+}
