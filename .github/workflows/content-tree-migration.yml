@@ -18,6 +18,7 @@ on:
       - imports/tibiawiki/bindings/**
       - imports/tibiawiki/facts/items-family-fallback*.json
       - imports/tibiawiki/facts/items-family-alias26-20261001.json
+      - imports/tibiawiki/facts/items-external-family18-20261001.json
       - tools/content-migration/**
       - tools/content-schema/starter-kit-authoring/**
       - .github/workflows/content-tree-migration.yml
@@ -64,6 +65,7 @@ jobs:
           python tools/content-migration/test_item_taxonomy.py
           python tools/content-migration/test_item_navigation_source_supplement.py
           python tools/content-migration/test_item_engine_navigation.py
+          python tools/content-migration/test_item_external_family_refinement.py
           python tools/content-migration/validate_world_project_v2_to_tree.py
 
       - name: Check StarterKit seals against the base revision

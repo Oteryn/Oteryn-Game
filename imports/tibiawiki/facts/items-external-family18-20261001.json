@@ -1,0 +1,2504 @@
+{
+  "classification": "DERIVED",
+  "closed_profiles": {
+    "Etcher/own_notes_erase_imbuements": "tool",
+    "Others/Quest": "quest_item",
+    "Others/Taming": "tool"
+  },
+  "limits": [
+    "Existing Wiki Others values and snapshots retained without edits.",
+    "17 public articles assert names/categories, not numeric native IDs. Name bridge is DERIVED from globally unique official15.30 names, native names and existing real EXACT bindings.",
+    "Current public capture has UNKNOWN article revision/date; no assertion of pre-cut public category or official15.30 family certainty.",
+    "Etcher function interpretation is closed to exact51443 own-box notes, not a generic Others tool rule.",
+    "No native scalar/action/runtime admission, World owner or existing taxonomy row is overwritten."
+  ],
+  "predecessor": "4c32b58d71fe3394d8afd7b9c3fec64193b67cd0",
+  "records": [
+    {
+      "appearance_id": 51443,
+      "decoded_record_sha256": "bc5c9e99455c924b1133ae0adc5371c8e4ae65d878c078a04cf4845b20aa8871",
+      "family_profile": "tool",
+      "mode": "OWN_WIKI_FUNCTION",
+      "official_name": "etcher",
+      "source_binding": {
+        "disposition": "EXACT",
+        "external_id": "51443",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i51443",
+          "revision": "definition-r1"
+        }
+      },
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i51443",
+        "revision": "definition-r1"
+      },
+      "wiki_sources": [
+        {
+          "balanced": true,
+          "capture_coordinate": {
+            "balanced": true,
+            "batch": 191,
+            "box_index": 0,
+            "capture_path": "/workspace/audit-continuation/global-infobox-object-source-part-191.json",
+            "capture_sha256": "12fc834f9a05481cb3c6dcb7bf19484e72bc425456cd1176f24a6d27d98c5245",
+            "content_sha256": "a2f370dd0c633f618f0fabbc5b540198110e3987e83b40d5d807209341e61f94",
+            "duplicate_itemid_parameters": false,
+            "inside_comment": false,
+            "occurrence_index": 0,
+            "own_object_box_indices": [
+              0
+            ],
+            "page_id": 108672,
+            "page_ordinal": 5,
+            "raw_itemid": "51443",
+            "revision_id": 1119102,
+            "revision_timestamp": "2025-08-02T16:21:24Z",
+            "selection": "CURRENT_REVISION_AT_OR_BEFORE_CUTOFF",
+            "strict_numeric_itemid": true,
+            "title": "Etcher"
+          },
+          "coordinates": {
+            "content_sha256": "a2f370dd0c633f618f0fabbc5b540198110e3987e83b40d5d807209341e61f94",
+            "page_id": 108672,
+            "revision_id": 1119102,
+            "revision_timestamp": "2025-08-02T16:21:24Z",
+            "title": "Etcher"
+          },
+          "fullarticle_sha256_role": "DECLARED_CAPTURE_COORDINATE; raw own-box hash independently recomputed",
+          "inside_comment": false,
+          "parameter_values": {
+            "actualname": [
+              "etcher"
+            ],
+            "article": [
+              "an"
+            ],
+            "buyfrom": [
+              "Albinius"
+            ],
+            "droppedby": [
+              "{{Dropped By |Lion Hydra| Crusader |Blight Mariner|Bluebeak|Hawk Hopper|Tropical Desolator}}"
+            ],
+            "flavortext": [
+              ""
+            ],
+            "getvalue": [
+              "{{{GetValue|}}}"
+            ],
+            "implemented": [
+              "15.10.46b862"
+            ],
+            "itemid": [
+              "51443"
+            ],
+            "list": [
+              "{{{1|}}}"
+            ],
+            "marketable": [
+              "yes"
+            ],
+            "name": [
+              "Etcher"
+            ],
+            "notes": [
+              "Can be used on an imbued item to erase all applied [[imbuements]]."
+            ],
+            "npcprice": [
+              "30000"
+            ],
+            "objectclass": [
+              ""
+            ],
+            "pickupable": [
+              "yes"
+            ],
+            "primarytype": [
+              "Others"
+            ],
+            "stackable": [
+              "yes"
+            ],
+            "usable": [
+              "yes"
+            ],
+            "weight": [
+              "1.50"
+            ]
+          },
+          "positive_exact_infobox_object_match": true,
+          "raw_own_infobox": "{{Infobox Object|List={{{1|}}}|GetValue={{{GetValue|}}}\n| name           = Etcher\n| itemid         = 51443\n| article        = an\n| actualname     = etcher\n| implemented    = 15.10.46b862\n| primarytype    = Others\n| objectclass    = \n| flavortext     = \n| pickupable     = yes\n| droppedby      = {{Dropped By |Lion Hydra| Crusader |Blight Mariner|Bluebeak|Hawk Hopper|Tropical Desolator}}\n| usable         = yes\n| stackable      = yes\n| marketable     = yes\n| npcprice       = 30000\n| buyfrom        = Albinius\n| weight         = 1.50\n| notes          = Can be used on an imbued item to erase all applied [[imbuements]].\n}}",
+          "raw_own_infobox_sha256": "a2f370dd0c633f618f0fabbc5b540198110e3987e83b40d5d807209341e61f94",
+          "revision_sha1": "a293b84ce9c38c2d5ed23fda86b4c4c538c50bf4",
+          "url": "https://tibia.fandom.com/wiki/Etcher"
+        }
+      ]
+    },
+    {
+      "appearance_id": 51702,
+      "decoded_record_sha256": "07dabd87c3aa5d802b86dbd89e3fc21bcb1966f9fef8c80de3ee15207bc38e29",
+      "family_profile": "quest_item",
+      "mode": "EXTERNAL_CATEGORY_REFINEMENT",
+      "official_name": "the Tale of Joran and Yvette - Part I",
+      "source_binding": {
+        "disposition": "EXACT",
+        "external_id": "51702",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i51702",
+          "revision": "definition-r1"
+        }
+      },
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i51702",
+        "revision": "definition-r1"
+      },
+      "wiki_sources": [
+        {
+          "balanced": true,
+          "capture_coordinate": {
+            "balanced": true,
+            "batch": 192,
+            "box_index": 0,
+            "capture_path": "/workspace/audit-continuation/global-infobox-object-source-part-192.json",
+            "capture_sha256": "fba4684807d5bfb06db04a9c96b001e5076fee7964241552e2f60a8ec7774b46",
+            "content_sha256": "8a88a0e7d1f1ed8a0863f28b10de41c2d2c91cc809141079c997594c07395a31",
+            "duplicate_itemid_parameters": false,
+            "inside_comment": false,
+            "occurrence_index": 0,
+            "own_object_box_indices": [
+              0
+            ],
+            "page_id": 108806,
+            "page_ordinal": 22,
+            "raw_itemid": "51702",
+            "revision_id": 1177210,
+            "revision_timestamp": "2026-04-21T17:01:29Z",
+            "selection": "CURRENT_REVISION_AT_OR_BEFORE_CUTOFF",
+            "strict_numeric_itemid": true,
+            "title": "The Tale of Joran and Yvette - Part I"
+          },
+          "coordinates": {
+            "content_sha256": "8a88a0e7d1f1ed8a0863f28b10de41c2d2c91cc809141079c997594c07395a31",
+            "page_id": 108806,
+            "revision_id": 1177210,
+            "revision_timestamp": "2026-04-21T17:01:29Z",
+            "title": "The Tale of Joran and Yvette - Part I"
+          },
+          "fullarticle_sha256_role": "DECLARED_CAPTURE_COORDINATE; raw own-box hash independently recomputed",
+          "inside_comment": false,
+          "parameter_values": {
+            "actualname": [
+              "the Tale of Joran and Yvette - Part I"
+            ],
+            "article": [
+              "a"
+            ],
+            "buyfrom": [
+              "--"
+            ],
+            "droppedby": [
+              "{{Dropped By|}}"
+            ],
+            "flavortext": [
+              ""
+            ],
+            "getvalue": [
+              "{{{GetValue|}}}"
+            ],
+            "history": [
+              ""
+            ],
+            "immobile": [
+              "no"
+            ],
+            "implemented": [
+              "15.10.46b862"
+            ],
+            "itemid": [
+              "51702"
+            ],
+            "list": [
+              "{{{1|}}}"
+            ],
+            "marketable": [
+              "yes"
+            ],
+            "name": [
+              "The Tale of Joran and Yvette - Part I"
+            ],
+            "notes": [
+              ""
+            ],
+            "npcprice": [
+              "0"
+            ],
+            "npcvalue": [
+              "0"
+            ],
+            "objectclass": [
+              ""
+            ],
+            "pickupable": [
+              "yes"
+            ],
+            "primarytype": [
+              "Others"
+            ],
+            "sellto": [
+              "--"
+            ],
+            "usable": [
+              "yes"
+            ],
+            "value": [
+              "Negotiable"
+            ],
+            "weight": [
+              "3.00"
+            ]
+          },
+          "positive_exact_infobox_object_match": true,
+          "raw_own_infobox": "{{Infobox Object|List={{{1|}}}|GetValue={{{GetValue|}}}\n| name           = The Tale of Joran and Yvette - Part I\n| itemid         = 51702\n| article        = a\n| actualname     = the Tale of Joran and Yvette - Part I\n| implemented    = 15.10.46b862\n| weight         = 3.00\n| notes          = \n| history        = \n| primarytype    = Others\n| objectclass    = \n| flavortext     = \n| pickupable     = yes\n| droppedby      = {{Dropped By|}}\n| usable         = yes\n| marketable     = yes\n| value          = Negotiable\n| npcvalue       = 0\n| npcprice       = 0\n| buyfrom        = --\n| sellto         = --\n| immobile       = no\n}}",
+          "raw_own_infobox_sha256": "8a88a0e7d1f1ed8a0863f28b10de41c2d2c91cc809141079c997594c07395a31",
+          "revision_sha1": "f73b7b478c9698450dff77cd84c55f6613df31c1",
+          "url": "https://tibia.fandom.com/wiki/The_Tale_of_Joran_and_Yvette_-_Part_I"
+        }
+      ]
+    },
+    {
+      "appearance_id": 51703,
+      "decoded_record_sha256": "579e628d2a08ce0cb7295575e18eb2f81fb0e7dd7e5ee38b4159c3e1649b26d8",
+      "family_profile": "quest_item",
+      "mode": "EXTERNAL_CATEGORY_REFINEMENT",
+      "official_name": "the Tale of Joran and Yvette - Part II",
+      "source_binding": {
+        "disposition": "EXACT",
+        "external_id": "51703",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i51703",
+          "revision": "definition-r1"
+        }
+      },
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i51703",
+        "revision": "definition-r1"
+      },
+      "wiki_sources": [
+        {
+          "balanced": true,
+          "capture_coordinate": {
+            "balanced": true,
+            "batch": 192,
+            "box_index": 0,
+            "capture_path": "/workspace/audit-continuation/global-infobox-object-source-part-192.json",
+            "capture_sha256": "fba4684807d5bfb06db04a9c96b001e5076fee7964241552e2f60a8ec7774b46",
+            "content_sha256": "26053b0fb9b9d887fb7538ba4ad68c2d3c7b483f2aef4673b9364d0278481b09",
+            "duplicate_itemid_parameters": false,
+            "inside_comment": false,
+            "occurrence_index": 0,
+            "own_object_box_indices": [
+              0
+            ],
+            "page_id": 108808,
+            "page_ordinal": 23,
+            "raw_itemid": "51703",
+            "revision_id": 1177211,
+            "revision_timestamp": "2026-04-21T17:01:31Z",
+            "selection": "CURRENT_REVISION_AT_OR_BEFORE_CUTOFF",
+            "strict_numeric_itemid": true,
+            "title": "The Tale of Joran and Yvette - Part II"
+          },
+          "coordinates": {
+            "content_sha256": "26053b0fb9b9d887fb7538ba4ad68c2d3c7b483f2aef4673b9364d0278481b09",
+            "page_id": 108808,
+            "revision_id": 1177211,
+            "revision_timestamp": "2026-04-21T17:01:31Z",
+            "title": "The Tale of Joran and Yvette - Part II"
+          },
+          "fullarticle_sha256_role": "DECLARED_CAPTURE_COORDINATE; raw own-box hash independently recomputed",
+          "inside_comment": false,
+          "parameter_values": {
+            "actualname": [
+              "the Tale of Joran and Yvette - Part II"
+            ],
+            "article": [
+              "a"
+            ],
+            "buyfrom": [
+              "--"
+            ],
+            "droppedby": [
+              "{{Dropped By|}}"
+            ],
+            "flavortext": [
+              ""
+            ],
+            "getvalue": [
+              "{{{GetValue|}}}"
+            ],
+            "history": [
+              ""
+            ],
+            "immobile": [
+              "no"
+            ],
+            "implemented": [
+              "15.10.46b862"
+            ],
+            "itemid": [
+              "51703"
+            ],
+            "list": [
+              "{{{1|}}}"
+            ],
+            "marketable": [
+              "yes"
+            ],
+            "name": [
+              "The Tale of Joran and Yvette - Part II"
+            ],
+            "notes": [
+              ""
+            ],
+            "npcprice": [
+              "0"
+            ],
+            "npcvalue": [
+              "0"
+            ],
+            "objectclass": [
+              ""
+            ],
+            "pickupable": [
+              "yes"
+            ],
+            "primarytype": [
+              "Others"
+            ],
+            "sellto": [
+              "--"
+            ],
+            "usable": [
+              "yes"
+            ],
+            "value": [
+              "Negotiable"
+            ],
+            "weight": [
+              "3.00"
+            ]
+          },
+          "positive_exact_infobox_object_match": true,
+          "raw_own_infobox": "{{Infobox Object|List={{{1|}}}|GetValue={{{GetValue|}}}\n| name           = The Tale of Joran and Yvette - Part II\n| itemid         = 51703\n| article        = a\n| actualname     = the Tale of Joran and Yvette - Part II\n| implemented    = 15.10.46b862\n| weight         = 3.00\n| notes          = \n| history        = \n| primarytype    = Others\n| objectclass    = \n| flavortext     = \n| pickupable     = yes\n| droppedby      = {{Dropped By|}}\n| usable         = yes\n| marketable     = yes\n| value          = Negotiable\n| npcvalue       = 0\n| npcprice       = 0\n| buyfrom        = --\n| sellto         = --\n| immobile       = no\n}}",
+          "raw_own_infobox_sha256": "26053b0fb9b9d887fb7538ba4ad68c2d3c7b483f2aef4673b9364d0278481b09",
+          "revision_sha1": "ed753cc32444dbd9aa08d1e6691e46ffb5033975",
+          "url": "https://tibia.fandom.com/wiki/The_Tale_of_Joran_and_Yvette_-_Part_II"
+        }
+      ]
+    },
+    {
+      "appearance_id": 51704,
+      "decoded_record_sha256": "3b74636d39bf20dab5940ac90533ae31ce87c8315c1078f0f31412a2150ae0b4",
+      "family_profile": "quest_item",
+      "mode": "EXTERNAL_CATEGORY_REFINEMENT",
+      "official_name": "the Tale of Joran and Yvette - Part III",
+      "source_binding": {
+        "disposition": "EXACT",
+        "external_id": "51704",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i51704",
+          "revision": "definition-r1"
+        }
+      },
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i51704",
+        "revision": "definition-r1"
+      },
+      "wiki_sources": [
+        {
+          "balanced": true,
+          "capture_coordinate": {
+            "balanced": true,
+            "batch": 192,
+            "box_index": 0,
+            "capture_path": "/workspace/audit-continuation/global-infobox-object-source-part-192.json",
+            "capture_sha256": "fba4684807d5bfb06db04a9c96b001e5076fee7964241552e2f60a8ec7774b46",
+            "content_sha256": "43c6f7af13197df8881ab2d0a82525e531f2e73f6773b02556e117f2936c4160",
+            "duplicate_itemid_parameters": false,
+            "inside_comment": false,
+            "occurrence_index": 0,
+            "own_object_box_indices": [
+              0
+            ],
+            "page_id": 108810,
+            "page_ordinal": 24,
+            "raw_itemid": "51704",
+            "revision_id": 1177212,
+            "revision_timestamp": "2026-04-21T17:01:33Z",
+            "selection": "CURRENT_REVISION_AT_OR_BEFORE_CUTOFF",
+            "strict_numeric_itemid": true,
+            "title": "The Tale of Joran and Yvette - Part III"
+          },
+          "coordinates": {
+            "content_sha256": "43c6f7af13197df8881ab2d0a82525e531f2e73f6773b02556e117f2936c4160",
+            "page_id": 108810,
+            "revision_id": 1177212,
+            "revision_timestamp": "2026-04-21T17:01:33Z",
+            "title": "The Tale of Joran and Yvette - Part III"
+          },
+          "fullarticle_sha256_role": "DECLARED_CAPTURE_COORDINATE; raw own-box hash independently recomputed",
+          "inside_comment": false,
+          "parameter_values": {
+            "actualname": [
+              "the Tale of Joran and Yvette - Part III"
+            ],
+            "article": [
+              "a"
+            ],
+            "buyfrom": [
+              "--"
+            ],
+            "droppedby": [
+              "{{Dropped By|}}"
+            ],
+            "flavortext": [
+              ""
+            ],
+            "getvalue": [
+              "{{{GetValue|}}}"
+            ],
+            "history": [
+              ""
+            ],
+            "immobile": [
+              "no"
+            ],
+            "implemented": [
+              "15.10.46b862"
+            ],
+            "itemid": [
+              "51704"
+            ],
+            "list": [
+              "{{{1|}}}"
+            ],
+            "marketable": [
+              "yes"
+            ],
+            "name": [
+              "The Tale of Joran and Yvette - Part III"
+            ],
+            "notes": [
+              ""
+            ],
+            "npcprice": [
+              "0"
+            ],
+            "npcvalue": [
+              "0"
+            ],
+            "objectclass": [
+              ""
+            ],
+            "pickupable": [
+              "yes"
+            ],
+            "primarytype": [
+              "Others"
+            ],
+            "sellto": [
+              "--"
+            ],
+            "usable": [
+              "yes"
+            ],
+            "value": [
+              "Negotiable"
+            ],
+            "weight": [
+              "3.00"
+            ]
+          },
+          "positive_exact_infobox_object_match": true,
+          "raw_own_infobox": "{{Infobox Object|List={{{1|}}}|GetValue={{{GetValue|}}}\n| name           = The Tale of Joran and Yvette - Part III\n| itemid         = 51704\n| article        = a\n| actualname     = the Tale of Joran and Yvette - Part III\n| implemented    = 15.10.46b862\n| weight         = 3.00\n| notes          = \n| history        = \n| primarytype    = Others\n| objectclass    = \n| flavortext     = \n| pickupable     = yes\n| droppedby      = {{Dropped By|}}\n| usable         = yes\n| marketable     = yes\n| value          = Negotiable\n| npcvalue       = 0\n| npcprice       = 0\n| buyfrom        = --\n| sellto         = --\n| immobile       = no\n}}",
+          "raw_own_infobox_sha256": "43c6f7af13197df8881ab2d0a82525e531f2e73f6773b02556e117f2936c4160",
+          "revision_sha1": "b7c3266cde411553fc2674d732dada2953173fca",
+          "url": "https://tibia.fandom.com/wiki/The_Tale_of_Joran_and_Yvette_-_Part_III"
+        }
+      ]
+    },
+    {
+      "appearance_id": 52635,
+      "decoded_record_sha256": "0ca98b599dffc6dcfb63225ec3c0d53f3f6f5e9a4e83089e8dca79117dabf418",
+      "family_profile": "quest_item",
+      "mode": "EXTERNAL_CATEGORY_REFINEMENT",
+      "official_name": "salvaged iron parts",
+      "source_binding": {
+        "disposition": "EXACT",
+        "external_id": "52635",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i52635",
+          "revision": "definition-r1"
+        }
+      },
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i52635",
+        "revision": "definition-r1"
+      },
+      "wiki_sources": [
+        {
+          "balanced": true,
+          "capture_coordinate": {
+            "balanced": true,
+            "batch": 193,
+            "box_index": 0,
+            "capture_path": "/workspace/audit-continuation/global-infobox-object-source-part-193.json",
+            "capture_sha256": "b1fec9576ca026e630b446a944a1ea498bc2be0e2dcacae6c6dea0b19bce951f",
+            "content_sha256": "3d33f24145d23506cf43ea1cf3825c8819914a58faa2a263fa2bf29b65f1c982",
+            "duplicate_itemid_parameters": false,
+            "inside_comment": false,
+            "occurrence_index": 0,
+            "own_object_box_indices": [
+              0
+            ],
+            "page_id": 109484,
+            "page_ordinal": 47,
+            "raw_itemid": "52635",
+            "revision_id": 1177207,
+            "revision_timestamp": "2026-04-21T17:01:06Z",
+            "selection": "CURRENT_REVISION_AT_OR_BEFORE_CUTOFF",
+            "strict_numeric_itemid": true,
+            "title": "Salvaged Iron Parts"
+          },
+          "coordinates": {
+            "content_sha256": "3d33f24145d23506cf43ea1cf3825c8819914a58faa2a263fa2bf29b65f1c982",
+            "page_id": 109484,
+            "revision_id": 1177207,
+            "revision_timestamp": "2026-04-21T17:01:06Z",
+            "title": "Salvaged Iron Parts"
+          },
+          "fullarticle_sha256_role": "DECLARED_CAPTURE_COORDINATE; raw own-box hash independently recomputed",
+          "inside_comment": false,
+          "parameter_values": {
+            "actualname": [
+              "salvaged iron parts"
+            ],
+            "article": [
+              ""
+            ],
+            "buyfrom": [
+              "--"
+            ],
+            "droppedby": [
+              "{{Dropped By|Clavius}}"
+            ],
+            "flavortext": [
+              "Salvaged iron parts in good quality that can be reused for repairs and maintenance."
+            ],
+            "getvalue": [
+              "{{{GetValue|}}}"
+            ],
+            "immobile": [
+              "no"
+            ],
+            "implemented": [
+              "15.20.7a5cc9"
+            ],
+            "itemid": [
+              "52635"
+            ],
+            "list": [
+              "{{{1|}}}"
+            ],
+            "marketable": [
+              "yes"
+            ],
+            "name": [
+              "Salvaged Iron Parts"
+            ],
+            "notes": [
+              ""
+            ],
+            "npcprice": [
+              "0"
+            ],
+            "npcvalue": [
+              "0"
+            ],
+            "objectclass": [
+              ""
+            ],
+            "pickupable": [
+              "yes"
+            ],
+            "primarytype": [
+              "Others"
+            ],
+            "sellto": [
+              "--"
+            ],
+            "stackable": [
+              "yes"
+            ],
+            "value": [
+              "Negotiable"
+            ],
+            "weight": [
+              "20.00"
+            ]
+          },
+          "positive_exact_infobox_object_match": true,
+          "raw_own_infobox": "{{Infobox Object|List={{{1|}}}|GetValue={{{GetValue|}}}\n| name           = Salvaged Iron Parts\n| itemid         = 52635\n| article        = \n| actualname     = salvaged iron parts\n| implemented    = 15.20.7a5cc9\n| weight         = 20.00\n| primarytype    = Others\n| objectclass    = \n| flavortext     = Salvaged iron parts in good quality that can be reused for repairs and maintenance.\n| pickupable     = yes\n| droppedby      = {{Dropped By|Clavius}}\n| stackable      = yes\n| marketable     = yes\n| value          = Negotiable\n| npcvalue       = 0\n| npcprice       = 0\n| buyfrom        = --\n| sellto         = --\n| immobile       = no\n| notes          = \n}}",
+          "raw_own_infobox_sha256": "3d33f24145d23506cf43ea1cf3825c8819914a58faa2a263fa2bf29b65f1c982",
+          "revision_sha1": "08875a0f26f9224e0ff34341e5b5cf778e370570",
+          "url": "https://tibia.fandom.com/wiki/Salvaged_Iron_Parts"
+        }
+      ]
+    },
+    {
+      "appearance_id": 52637,
+      "decoded_record_sha256": "577cf798346305d96a59b2239115f6a771c439d55a9e256e69cc768a60828330",
+      "family_profile": "quest_item",
+      "mode": "EXTERNAL_CATEGORY_REFINEMENT",
+      "official_name": "repair kit for boats",
+      "source_binding": {
+        "disposition": "EXACT",
+        "external_id": "52637",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i52637",
+          "revision": "definition-r1"
+        }
+      },
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i52637",
+        "revision": "definition-r1"
+      },
+      "wiki_sources": [
+        {
+          "balanced": true,
+          "capture_coordinate": {
+            "balanced": true,
+            "batch": 193,
+            "box_index": 0,
+            "capture_path": "/workspace/audit-continuation/global-infobox-object-source-part-193.json",
+            "capture_sha256": "b1fec9576ca026e630b446a944a1ea498bc2be0e2dcacae6c6dea0b19bce951f",
+            "content_sha256": "b902c5441a5af27bda9a44c9879d03a5f1ab2d37a85c634b391e6b03180df55c",
+            "duplicate_itemid_parameters": false,
+            "inside_comment": false,
+            "occurrence_index": 0,
+            "own_object_box_indices": [
+              0
+            ],
+            "page_id": 109488,
+            "page_ordinal": 49,
+            "raw_itemid": "52637",
+            "revision_id": 1151481,
+            "revision_timestamp": "2025-12-21T18:14:11Z",
+            "selection": "CURRENT_REVISION_AT_OR_BEFORE_CUTOFF",
+            "strict_numeric_itemid": true,
+            "title": "Repair Kit For Boats"
+          },
+          "coordinates": {
+            "content_sha256": "b902c5441a5af27bda9a44c9879d03a5f1ab2d37a85c634b391e6b03180df55c",
+            "page_id": 109488,
+            "revision_id": 1151481,
+            "revision_timestamp": "2025-12-21T18:14:11Z",
+            "title": "Repair Kit For Boats"
+          },
+          "fullarticle_sha256_role": "DECLARED_CAPTURE_COORDINATE; raw own-box hash independently recomputed",
+          "inside_comment": false,
+          "parameter_values": {
+            "actualname": [
+              "repair kit for boats"
+            ],
+            "article": [
+              ""
+            ],
+            "buyfrom": [
+              "--"
+            ],
+            "droppedby": [
+              "{{Dropped By|Adlerauge|Clavius|Michael the Stalwart|Overseer Osverger}}"
+            ],
+            "flavortext": [
+              "A practical repair kit for small boats, complete with tar and all the necessary tools."
+            ],
+            "getvalue": [
+              "{{{GetValue|}}}"
+            ],
+            "implemented": [
+              "15.20.7a5cc9"
+            ],
+            "itemid": [
+              "52637"
+            ],
+            "list": [
+              "{{{1|}}}"
+            ],
+            "marketable": [
+              "yes"
+            ],
+            "name": [
+              "Repair Kit For Boats"
+            ],
+            "notes": [
+              "Can be used on the small boat south-west in the [[Isle of Ada]], {{Mapper Coords|132.39|125.232|7|4|text=here}}, for a chance to get teleported to the small boat north of the isle, {{Mapper Coords|132.109|125.106|7|4|text=here}}.\n\nIt is not guaranteed to succeed, and might require a few tries. The item does not disappear when used.\n* when failing: {{Server Message|You were not able to fix the boat with the repair kit and the few spare parts it came with.}}\n* when suceeding: {{Server Message|You manage to repair the boat using the kit. The small boat is sturdy enough to sail around the reef and towards a tiny bay at the back of the isle.}}"
+            ],
+            "npcprice": [
+              "0"
+            ],
+            "npcvalue": [
+              "0"
+            ],
+            "objectclass": [
+              ""
+            ],
+            "pickupable": [
+              "yes"
+            ],
+            "primarytype": [
+              "Others"
+            ],
+            "sellto": [
+              "--"
+            ],
+            "usable": [
+              "yes"
+            ],
+            "value": [
+              "Negotiable"
+            ],
+            "weight": [
+              "15.00"
+            ]
+          },
+          "positive_exact_infobox_object_match": true,
+          "raw_own_infobox": "{{Infobox Object|List={{{1|}}}|GetValue={{{GetValue|}}}\n| name           = Repair Kit For Boats\n| itemid         = 52637\n| article        = \n| actualname     = repair kit for boats\n| implemented    = 15.20.7a5cc9\n| weight         = 15.00\n| primarytype    = Others\n| objectclass    = \n| flavortext     = A practical repair kit for small boats, complete with tar and all the necessary tools.\n| pickupable     = yes\n| droppedby      = {{Dropped By|Adlerauge|Clavius|Michael the Stalwart|Overseer Osverger}}\n| usable         = yes\n| marketable     = yes\n| value          = Negotiable\n| npcvalue       = 0\n| npcprice       = 0\n| buyfrom        = --\n| sellto         = --\n| notes          = Can be used on the small boat south-west in the [[Isle of Ada]], {{Mapper Coords|132.39|125.232|7|4|text=here}}, for a chance to get teleported to the small boat north of the isle, {{Mapper Coords|132.109|125.106|7|4|text=here}}.\n\nIt is not guaranteed to succeed, and might require a few tries. The item does not disappear when used.\n* when failing: {{Server Message|You were not able to fix the boat with the repair kit and the few spare parts it came with.}}\n* when suceeding: {{Server Message|You manage to repair the boat using the kit. The small boat is sturdy enough to sail around the reef and towards a tiny bay at the back of the isle.}}\n}}",
+          "raw_own_infobox_sha256": "b902c5441a5af27bda9a44c9879d03a5f1ab2d37a85c634b391e6b03180df55c",
+          "revision_sha1": "87c94052ab5b8c7bf1b7acaecf0f28217457b4d4",
+          "url": "https://tibia.fandom.com/wiki/Repair_Kit_For_Boats"
+        }
+      ]
+    },
+    {
+      "appearance_id": 52638,
+      "decoded_record_sha256": "02c5b353649defd3ecfdc686e52c23fee9d4b98e9118148bd8a6f92dfd9a0f82",
+      "family_profile": "tool",
+      "mode": "EXTERNAL_CATEGORY_REFINEMENT",
+      "official_name": "marinated sturgeon",
+      "source_binding": {
+        "disposition": "EXACT",
+        "external_id": "52638",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i52638",
+          "revision": "definition-r1"
+        }
+      },
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i52638",
+        "revision": "definition-r1"
+      },
+      "wiki_sources": [
+        {
+          "balanced": true,
+          "capture_coordinate": {
+            "balanced": true,
+            "batch": 194,
+            "box_index": 0,
+            "capture_path": "/workspace/audit-continuation/global-infobox-object-source-part-194.json",
+            "capture_sha256": "378fac28ff1cd30996f0ee4985fd1cc120a0e93c53df978166b5db51875d75f0",
+            "content_sha256": "95fce92e90fd95e89b0a484dd5f9e95567e2f435fbe91a1866d34c874125eaf9",
+            "duplicate_itemid_parameters": false,
+            "inside_comment": false,
+            "occurrence_index": 0,
+            "own_object_box_indices": [
+              0
+            ],
+            "page_id": 109490,
+            "page_ordinal": 0,
+            "raw_itemid": "52638",
+            "revision_id": 1149613,
+            "revision_timestamp": "2025-12-12T16:33:11Z",
+            "selection": "CURRENT_REVISION_AT_OR_BEFORE_CUTOFF",
+            "strict_numeric_itemid": true,
+            "title": "Marinated Sturgeon"
+          },
+          "coordinates": {
+            "content_sha256": "95fce92e90fd95e89b0a484dd5f9e95567e2f435fbe91a1866d34c874125eaf9",
+            "page_id": 109490,
+            "revision_id": 1149613,
+            "revision_timestamp": "2025-12-12T16:33:11Z",
+            "title": "Marinated Sturgeon"
+          },
+          "fullarticle_sha256_role": "DECLARED_CAPTURE_COORDINATE; raw own-box hash independently recomputed",
+          "inside_comment": false,
+          "parameter_values": {
+            "actualname": [
+              "marinated sturgeon"
+            ],
+            "article": [
+              "a"
+            ],
+            "buyfrom": [
+              "--"
+            ],
+            "droppedby": [
+              "{{Dropped By|Raubritter Skirmisher}}"
+            ],
+            "flavortext": [
+              "This sturgeon has been prepared in a tasty marinade and a special and rare delicacy."
+            ],
+            "getvalue": [
+              "{{{GetValue|}}}"
+            ],
+            "implemented": [
+              "15.20.7a5cc9"
+            ],
+            "itemid": [
+              "52638"
+            ],
+            "list": [
+              "{{{1|}}}"
+            ],
+            "marketable": [
+              "yes"
+            ],
+            "name": [
+              "Marinated Sturgeon"
+            ],
+            "notes": [
+              "Only dropped by the [[Raubritter Skirmisher]]s that spawn inside the kitchen, {{Mapper Coords|132.71|125.112|3|8|text=here}}. Used to obtain the [[Battlefrazzle]] mount."
+            ],
+            "npcprice": [
+              "0"
+            ],
+            "npcvalue": [
+              "0"
+            ],
+            "objectclass": [
+              ""
+            ],
+            "pickupable": [
+              "yes"
+            ],
+            "primarytype": [
+              "Others"
+            ],
+            "sellto": [
+              "--"
+            ],
+            "usable": [
+              "yes"
+            ],
+            "value": [
+              "Negotiable"
+            ],
+            "weight": [
+              "10.00"
+            ]
+          },
+          "positive_exact_infobox_object_match": true,
+          "raw_own_infobox": "{{Infobox Object|List={{{1|}}}|GetValue={{{GetValue|}}}\n| name           = Marinated Sturgeon\n| itemid         = 52638\n| article        = a\n| actualname     = marinated sturgeon\n| implemented    = 15.20.7a5cc9\n| weight         = 10.00\n| primarytype    = Others\n| objectclass    = \n| flavortext     = This sturgeon has been prepared in a tasty marinade and a special and rare delicacy.\n| pickupable     = yes\n| droppedby      = {{Dropped By|Raubritter Skirmisher}}\n| usable         = yes\n| marketable     = yes\n| value          = Negotiable\n| npcvalue       = 0\n| npcprice       = 0\n| buyfrom        = --\n| sellto         = --\n| notes          = Only dropped by the [[Raubritter Skirmisher]]s that spawn inside the kitchen, {{Mapper Coords|132.71|125.112|3|8|text=here}}. Used to obtain the [[Battlefrazzle]] mount.\n}}",
+          "raw_own_infobox_sha256": "95fce92e90fd95e89b0a484dd5f9e95567e2f435fbe91a1866d34c874125eaf9",
+          "revision_sha1": "5644899b226ad7efd08dfb326959a29a9d64ba23",
+          "url": "https://tibia.fandom.com/wiki/Marinated_Sturgeon"
+        }
+      ]
+    },
+    {
+      "appearance_id": 52743,
+      "decoded_record_sha256": "2a7f9e3ef687d80ad4e42c2e85e4907163082fff2be4391526dc7536d38d8458",
+      "family_profile": "quest_item",
+      "mode": "EXTERNAL_CATEGORY_REFINEMENT",
+      "official_name": "salvaged silver parts",
+      "source_binding": {
+        "disposition": "EXACT",
+        "external_id": "52743",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i52743",
+          "revision": "definition-r1"
+        }
+      },
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i52743",
+        "revision": "definition-r1"
+      },
+      "wiki_sources": [
+        {
+          "balanced": true,
+          "capture_coordinate": {
+            "balanced": true,
+            "batch": 194,
+            "box_index": 0,
+            "capture_path": "/workspace/audit-continuation/global-infobox-object-source-part-194.json",
+            "capture_sha256": "378fac28ff1cd30996f0ee4985fd1cc120a0e93c53df978166b5db51875d75f0",
+            "content_sha256": "4e8845e7e8f38e0688e44ceafe7624f822cd70889361881086bb8cd3f135d414",
+            "duplicate_itemid_parameters": false,
+            "inside_comment": false,
+            "occurrence_index": 0,
+            "own_object_box_indices": [
+              0
+            ],
+            "page_id": 109551,
+            "page_ordinal": 30,
+            "raw_itemid": "52743",
+            "revision_id": 1177208,
+            "revision_timestamp": "2026-04-21T17:01:07Z",
+            "selection": "CURRENT_REVISION_AT_OR_BEFORE_CUTOFF",
+            "strict_numeric_itemid": true,
+            "title": "Salvaged Silver Parts"
+          },
+          "coordinates": {
+            "content_sha256": "4e8845e7e8f38e0688e44ceafe7624f822cd70889361881086bb8cd3f135d414",
+            "page_id": 109551,
+            "revision_id": 1177208,
+            "revision_timestamp": "2026-04-21T17:01:07Z",
+            "title": "Salvaged Silver Parts"
+          },
+          "fullarticle_sha256_role": "DECLARED_CAPTURE_COORDINATE; raw own-box hash independently recomputed",
+          "inside_comment": false,
+          "parameter_values": {
+            "actualname": [
+              "salvaged silver parts"
+            ],
+            "article": [
+              ""
+            ],
+            "buyfrom": [
+              "--"
+            ],
+            "droppedby": [
+              "{{Dropped By|Adlerauge}}"
+            ],
+            "flavortext": [
+              "Salvaged silver parts in good quality that can be reused for embellishments and ornaments."
+            ],
+            "getvalue": [
+              "{{{GetValue|}}}"
+            ],
+            "immobile": [
+              "no"
+            ],
+            "implemented": [
+              "15.20.7a5cc9"
+            ],
+            "itemid": [
+              "52743"
+            ],
+            "list": [
+              "{{{1|}}}"
+            ],
+            "marketable": [
+              "yes"
+            ],
+            "name": [
+              "Salvaged Silver Parts"
+            ],
+            "notes": [
+              ""
+            ],
+            "npcprice": [
+              "0"
+            ],
+            "npcvalue": [
+              "0"
+            ],
+            "objectclass": [
+              ""
+            ],
+            "pickupable": [
+              "yes"
+            ],
+            "primarytype": [
+              "Others"
+            ],
+            "sellto": [
+              "--"
+            ],
+            "stackable": [
+              "yes"
+            ],
+            "value": [
+              "Negotiable"
+            ],
+            "weight": [
+              "20.00"
+            ]
+          },
+          "positive_exact_infobox_object_match": true,
+          "raw_own_infobox": "{{Infobox Object|List={{{1|}}}|GetValue={{{GetValue|}}}\n| name           = Salvaged Silver Parts\n| itemid         = 52743\n| article        = \n| actualname     = salvaged silver parts\n| implemented    = 15.20.7a5cc9\n| weight         = 20.00\n| primarytype    = Others\n| objectclass    = \n| flavortext     = Salvaged silver parts in good quality that can be reused for embellishments and ornaments.\n| pickupable     = yes\n| droppedby      = {{Dropped By|Adlerauge}}\n| stackable      = yes\n| marketable     = yes\n| value          = Negotiable\n| npcvalue       = 0\n| npcprice       = 0\n| buyfrom        = --\n| sellto         = --\n| immobile       = no\n| notes          = \n}}",
+          "raw_own_infobox_sha256": "4e8845e7e8f38e0688e44ceafe7624f822cd70889361881086bb8cd3f135d414",
+          "revision_sha1": "e649c2ca7527146c180356e6dc87db1a90f35238",
+          "url": "https://tibia.fandom.com/wiki/Salvaged_Silver_Parts"
+        }
+      ]
+    },
+    {
+      "appearance_id": 52744,
+      "decoded_record_sha256": "d1050be7eaa805f31e9031b4333af163f721090ebe3e92167575e55798e2e4d0",
+      "family_profile": "quest_item",
+      "mode": "EXTERNAL_CATEGORY_REFINEMENT",
+      "official_name": "personal letter of Michael the Stalwart I",
+      "source_binding": {
+        "disposition": "EXACT",
+        "external_id": "52744",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i52744",
+          "revision": "definition-r1"
+        }
+      },
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i52744",
+        "revision": "definition-r1"
+      },
+      "wiki_sources": [
+        {
+          "balanced": true,
+          "capture_coordinate": {
+            "balanced": true,
+            "batch": 194,
+            "box_index": 0,
+            "capture_path": "/workspace/audit-continuation/global-infobox-object-source-part-194.json",
+            "capture_sha256": "378fac28ff1cd30996f0ee4985fd1cc120a0e93c53df978166b5db51875d75f0",
+            "content_sha256": "8d4e5a1648860489b72844bfb6e631239d37a078b607121cd31372f096707374",
+            "duplicate_itemid_parameters": false,
+            "inside_comment": false,
+            "occurrence_index": 0,
+            "own_object_box_indices": [
+              0
+            ],
+            "page_id": 109553,
+            "page_ordinal": 31,
+            "raw_itemid": "52744",
+            "revision_id": 1177166,
+            "revision_timestamp": "2026-04-21T16:56:45Z",
+            "selection": "CURRENT_REVISION_AT_OR_BEFORE_CUTOFF",
+            "strict_numeric_itemid": true,
+            "title": "Personal Letter of Michael the Stalwart I"
+          },
+          "coordinates": {
+            "content_sha256": "8d4e5a1648860489b72844bfb6e631239d37a078b607121cd31372f096707374",
+            "page_id": 109553,
+            "revision_id": 1177166,
+            "revision_timestamp": "2026-04-21T16:56:45Z",
+            "title": "Personal Letter of Michael the Stalwart I"
+          },
+          "fullarticle_sha256_role": "DECLARED_CAPTURE_COORDINATE; raw own-box hash independently recomputed",
+          "inside_comment": false,
+          "parameter_values": {
+            "actualname": [
+              "personal letter of Michael the Stalwart I"
+            ],
+            "article": [
+              "a"
+            ],
+            "buyfrom": [
+              "--"
+            ],
+            "droppedby": [
+              "{{Dropped By|Michael the Stalwart}}"
+            ],
+            "flavortext": [
+              "A personal letter of a knight of the Order of the Stag 1/3."
+            ],
+            "getvalue": [
+              "{{{GetValue|}}}"
+            ],
+            "immobile": [
+              "no"
+            ],
+            "implemented": [
+              "15.20.7a5cc9"
+            ],
+            "itemid": [
+              "52744"
+            ],
+            "list": [
+              "{{{1|}}}"
+            ],
+            "marketable": [
+              "yes"
+            ],
+            "name": [
+              "Personal Letter of Michael the Stalwart I"
+            ],
+            "notes": [
+              "{{Server Message|Order of thirteen spike traps and five iron maidens to Michel the Starkheart: here are your traps and maidens, Suffer and Bleed Co. wishes you a very fun day!}}"
+            ],
+            "npcprice": [
+              "0"
+            ],
+            "npcvalue": [
+              "0"
+            ],
+            "objectclass": [
+              ""
+            ],
+            "pickupable": [
+              "yes"
+            ],
+            "primarytype": [
+              "Others"
+            ],
+            "sellto": [
+              "--"
+            ],
+            "usable": [
+              "yes"
+            ],
+            "value": [
+              "Negotiable"
+            ],
+            "weight": [
+              "2.00"
+            ]
+          },
+          "positive_exact_infobox_object_match": true,
+          "raw_own_infobox": "{{Infobox Object|List={{{1|}}}|GetValue={{{GetValue|}}}\n| name           = Personal Letter of Michael the Stalwart I\n| itemid         = 52744\n| article        = a\n| actualname     = personal letter of Michael the Stalwart I\n| implemented    = 15.20.7a5cc9\n| weight         = 2.00\n| primarytype    = Others\n| objectclass    = \n| flavortext     = A personal letter of a knight of the Order of the Stag 1/3.\n| pickupable     = yes\n| droppedby      = {{Dropped By|Michael the Stalwart}}\n| usable         = yes\n| marketable     = yes\n| value          = Negotiable\n| npcvalue       = 0\n| npcprice       = 0\n| buyfrom        = --\n| sellto         = --\n| notes          = {{Server Message|Order of thirteen spike traps and five iron maidens to Michel the Starkheart: here are your traps and maidens, Suffer and Bleed Co. wishes you a very fun day!}}\n| immobile       = no\n}}",
+          "raw_own_infobox_sha256": "8d4e5a1648860489b72844bfb6e631239d37a078b607121cd31372f096707374",
+          "revision_sha1": "7e669092377ccbe5201efb2eff27c621a60d6046",
+          "url": "https://tibia.fandom.com/wiki/Personal_Letter_of_Michael_the_Stalwart_I"
+        }
+      ]
+    },
+    {
+      "appearance_id": 52758,
+      "decoded_record_sha256": "1f862f91ea72ba65adbc7ce45c50d9af97e8d14532436274fcbc2e6ad1862aa9",
+      "family_profile": "quest_item",
+      "mode": "EXTERNAL_CATEGORY_REFINEMENT",
+      "official_name": "salvaged bronze parts",
+      "source_binding": {
+        "disposition": "EXACT",
+        "external_id": "52758",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i52758",
+          "revision": "definition-r1"
+        }
+      },
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i52758",
+        "revision": "definition-r1"
+      },
+      "wiki_sources": [
+        {
+          "balanced": true,
+          "capture_coordinate": {
+            "balanced": true,
+            "batch": 194,
+            "box_index": 0,
+            "capture_path": "/workspace/audit-continuation/global-infobox-object-source-part-194.json",
+            "capture_sha256": "378fac28ff1cd30996f0ee4985fd1cc120a0e93c53df978166b5db51875d75f0",
+            "content_sha256": "87e61bf489dc84cfaf05874df9813c1bb41a95941feb501a919df3d9a5d6656d",
+            "duplicate_itemid_parameters": false,
+            "inside_comment": false,
+            "occurrence_index": 0,
+            "own_object_box_indices": [
+              0
+            ],
+            "page_id": 109565,
+            "page_ordinal": 37,
+            "raw_itemid": "52758",
+            "revision_id": 1177206,
+            "revision_timestamp": "2026-04-21T17:01:04Z",
+            "selection": "CURRENT_REVISION_AT_OR_BEFORE_CUTOFF",
+            "strict_numeric_itemid": true,
+            "title": "Salvaged Bronze Parts"
+          },
+          "coordinates": {
+            "content_sha256": "87e61bf489dc84cfaf05874df9813c1bb41a95941feb501a919df3d9a5d6656d",
+            "page_id": 109565,
+            "revision_id": 1177206,
+            "revision_timestamp": "2026-04-21T17:01:04Z",
+            "title": "Salvaged Bronze Parts"
+          },
+          "fullarticle_sha256_role": "DECLARED_CAPTURE_COORDINATE; raw own-box hash independently recomputed",
+          "inside_comment": false,
+          "parameter_values": {
+            "actualname": [
+              "salvaged bronze parts"
+            ],
+            "article": [
+              ""
+            ],
+            "buyfrom": [
+              "--"
+            ],
+            "droppedby": [
+              "{{Dropped By|Michael the Stalwart}}"
+            ],
+            "flavortext": [
+              "Salvaged bronze parts in good quality that can be reused to for various refinements."
+            ],
+            "getvalue": [
+              "{{{GetValue|}}}"
+            ],
+            "immobile": [
+              "no"
+            ],
+            "implemented": [
+              "15.20.7a5cc9"
+            ],
+            "itemid": [
+              "52758"
+            ],
+            "list": [
+              "{{{1|}}}"
+            ],
+            "marketable": [
+              "yes"
+            ],
+            "name": [
+              "Salvaged Bronze Parts"
+            ],
+            "notes": [
+              ""
+            ],
+            "npcprice": [
+              "0"
+            ],
+            "npcvalue": [
+              "0"
+            ],
+            "objectclass": [
+              ""
+            ],
+            "pickupable": [
+              "yes"
+            ],
+            "primarytype": [
+              "Others"
+            ],
+            "sellto": [
+              "--"
+            ],
+            "stackable": [
+              "yes"
+            ],
+            "value": [
+              "Negotiable"
+            ],
+            "weight": [
+              "20.00"
+            ]
+          },
+          "positive_exact_infobox_object_match": true,
+          "raw_own_infobox": "{{Infobox Object|List={{{1|}}}|GetValue={{{GetValue|}}}\n| name           = Salvaged Bronze Parts\n| itemid         = 52758\n| article        = \n| actualname     = salvaged bronze parts\n| implemented    = 15.20.7a5cc9\n| weight         = 20.00\n| primarytype    = Others\n| objectclass    = \n| flavortext     = Salvaged bronze parts in good quality that can be reused to for various refinements.\n| pickupable     = yes\n| droppedby      = {{Dropped By|Michael the Stalwart}}\n| stackable      = yes\n| marketable     = yes\n| value          = Negotiable\n| npcvalue       = 0\n| npcprice       = 0\n| buyfrom        = --\n| sellto         = --\n| immobile       = no\n| notes          = \n}}",
+          "raw_own_infobox_sha256": "87e61bf489dc84cfaf05874df9813c1bb41a95941feb501a919df3d9a5d6656d",
+          "revision_sha1": "22033456f608cf75f13fb4ddf5233e9c4764b597",
+          "url": "https://tibia.fandom.com/wiki/Salvaged_Bronze_Parts"
+        }
+      ]
+    },
+    {
+      "appearance_id": 52816,
+      "decoded_record_sha256": "b360b5b0eadeb4a358c3e6dd65ef24d8d6446cc0ff9c7168b0f8532e9a409a23",
+      "family_profile": "quest_item",
+      "mode": "EXTERNAL_CATEGORY_REFINEMENT",
+      "official_name": "personal letter of Clavius I",
+      "source_binding": {
+        "disposition": "EXACT",
+        "external_id": "52816",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i52816",
+          "revision": "definition-r1"
+        }
+      },
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i52816",
+        "revision": "definition-r1"
+      },
+      "wiki_sources": [
+        {
+          "balanced": true,
+          "capture_coordinate": {
+            "balanced": true,
+            "batch": 195,
+            "box_index": 0,
+            "capture_path": "/workspace/audit-continuation/global-infobox-object-source-part-195.json",
+            "capture_sha256": "f5780b65e0c2d467d19929d865a6889cce8537c1668d16530c1d5873436e6609",
+            "content_sha256": "8ddd370bd4b2966e0ef48e5433e84529ade7549259d0897246e148fc9ce9504f",
+            "duplicate_itemid_parameters": false,
+            "inside_comment": false,
+            "occurrence_index": 0,
+            "own_object_box_indices": [
+              0
+            ],
+            "page_id": 109603,
+            "page_ordinal": 5,
+            "raw_itemid": "52816",
+            "revision_id": 1177163,
+            "revision_timestamp": "2026-04-21T16:56:41Z",
+            "selection": "CURRENT_REVISION_AT_OR_BEFORE_CUTOFF",
+            "strict_numeric_itemid": true,
+            "title": "Personal Letter of Clavius I"
+          },
+          "coordinates": {
+            "content_sha256": "8ddd370bd4b2966e0ef48e5433e84529ade7549259d0897246e148fc9ce9504f",
+            "page_id": 109603,
+            "revision_id": 1177163,
+            "revision_timestamp": "2026-04-21T16:56:41Z",
+            "title": "Personal Letter of Clavius I"
+          },
+          "fullarticle_sha256_role": "DECLARED_CAPTURE_COORDINATE; raw own-box hash independently recomputed",
+          "inside_comment": false,
+          "parameter_values": {
+            "actualname": [
+              "personal letter of Clavius I"
+            ],
+            "article": [
+              "a"
+            ],
+            "buyfrom": [
+              "--"
+            ],
+            "droppedby": [
+              "{{Dropped By|Clavius}}"
+            ],
+            "flavortext": [
+              "A personal letter of a knight of the Order of the Stag 1/3."
+            ],
+            "getvalue": [
+              "{{{GetValue|}}}"
+            ],
+            "immobile": [
+              "no"
+            ],
+            "implemented": [
+              "15.20.7a5cc9"
+            ],
+            "itemid": [
+              "52816"
+            ],
+            "list": [
+              "{{{1|}}}"
+            ],
+            "marketable": [
+              "yes"
+            ],
+            "name": [
+              "Personal Letter of Clavius I"
+            ],
+            "notes": [
+              "{{Server Message|Professor, I have told you once and I will tell you again. The darkness we face today is not by our own making but it fall to us, to stand up against and fight it. It is in our hands to end the threats of our time, in our time.}}"
+            ],
+            "npcprice": [
+              "0"
+            ],
+            "npcvalue": [
+              "0"
+            ],
+            "objectclass": [
+              ""
+            ],
+            "pickupable": [
+              "yes"
+            ],
+            "primarytype": [
+              "Others"
+            ],
+            "sellto": [
+              "--"
+            ],
+            "usable": [
+              "yes"
+            ],
+            "value": [
+              "Negotiable"
+            ],
+            "weight": [
+              "2.00"
+            ]
+          },
+          "positive_exact_infobox_object_match": true,
+          "raw_own_infobox": "{{Infobox Object|List={{{1|}}}|GetValue={{{GetValue|}}}\n| name           = Personal Letter of Clavius I\n| itemid         = 52816\n| article        = a\n| actualname     = personal letter of Clavius I\n| implemented    = 15.20.7a5cc9\n| weight         = 2.00\n| primarytype    = Others\n| objectclass    = \n| flavortext     = A personal letter of a knight of the Order of the Stag 1/3.\n| pickupable     = yes\n| droppedby      = {{Dropped By|Clavius}}\n| usable         = yes\n| marketable     = yes\n| value          = Negotiable\n| npcvalue       = 0\n| npcprice       = 0\n| buyfrom        = --\n| sellto         = --\n| notes          = {{Server Message|Professor, I have told you once and I will tell you again. The darkness we face today is not by our own making but it fall to us, to stand up against and fight it. It is in our hands to end the threats of our time, in our time.}}\n| immobile       = no\n}}",
+          "raw_own_infobox_sha256": "8ddd370bd4b2966e0ef48e5433e84529ade7549259d0897246e148fc9ce9504f",
+          "revision_sha1": "ec6931827574963fa5cab8fb912031dd5937675a",
+          "url": "https://tibia.fandom.com/wiki/Personal_Letter_of_Clavius_I"
+        }
+      ]
+    },
+    {
+      "appearance_id": 52817,
+      "decoded_record_sha256": "7cecce5e91b1e3678c7491ba02f5ee9f614694d30eb1c61631e63a0b4fd39273",
+      "family_profile": "quest_item",
+      "mode": "EXTERNAL_CATEGORY_REFINEMENT",
+      "official_name": "personal letter of Clavius II",
+      "source_binding": {
+        "disposition": "EXACT",
+        "external_id": "52817",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i52817",
+          "revision": "definition-r1"
+        }
+      },
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i52817",
+        "revision": "definition-r1"
+      },
+      "wiki_sources": [
+        {
+          "balanced": true,
+          "capture_coordinate": {
+            "balanced": true,
+            "batch": 195,
+            "box_index": 0,
+            "capture_path": "/workspace/audit-continuation/global-infobox-object-source-part-195.json",
+            "capture_sha256": "f5780b65e0c2d467d19929d865a6889cce8537c1668d16530c1d5873436e6609",
+            "content_sha256": "b83da80219e8cfae441e39409992b9cce66fa51c722770e82f0d53dfcee5608a",
+            "duplicate_itemid_parameters": false,
+            "inside_comment": false,
+            "occurrence_index": 0,
+            "own_object_box_indices": [
+              0
+            ],
+            "page_id": 109605,
+            "page_ordinal": 6,
+            "raw_itemid": "52817",
+            "revision_id": 1177164,
+            "revision_timestamp": "2026-04-21T16:56:42Z",
+            "selection": "CURRENT_REVISION_AT_OR_BEFORE_CUTOFF",
+            "strict_numeric_itemid": true,
+            "title": "Personal Letter of Clavius II"
+          },
+          "coordinates": {
+            "content_sha256": "b83da80219e8cfae441e39409992b9cce66fa51c722770e82f0d53dfcee5608a",
+            "page_id": 109605,
+            "revision_id": 1177164,
+            "revision_timestamp": "2026-04-21T16:56:42Z",
+            "title": "Personal Letter of Clavius II"
+          },
+          "fullarticle_sha256_role": "DECLARED_CAPTURE_COORDINATE; raw own-box hash independently recomputed",
+          "inside_comment": false,
+          "parameter_values": {
+            "actualname": [
+              "personal letter of Clavius II"
+            ],
+            "article": [
+              "a"
+            ],
+            "buyfrom": [
+              "--"
+            ],
+            "droppedby": [
+              "{{Dropped By|Clavius}}"
+            ],
+            "flavortext": [
+              "A personal letter of a knight of the Order of the Stag 2/3."
+            ],
+            "getvalue": [
+              "{{{GetValue|}}}"
+            ],
+            "immobile": [
+              "no"
+            ],
+            "implemented": [
+              "15.20.7a5cc9"
+            ],
+            "itemid": [
+              "52817"
+            ],
+            "list": [
+              "{{{1|}}}"
+            ],
+            "marketable": [
+              "yes"
+            ],
+            "name": [
+              "Personal Letter of Clavius II"
+            ],
+            "notes": [
+              "{{Server Message|Professor, Cormealius, we know each other for a long time now. As I have explained to you again and again, the enemy stands united while our dispute divides us even further. We have to act and as soon as we stand down, our enemies will prevail.}}"
+            ],
+            "npcprice": [
+              "0"
+            ],
+            "npcvalue": [
+              "0"
+            ],
+            "objectclass": [
+              ""
+            ],
+            "pickupable": [
+              "yes"
+            ],
+            "primarytype": [
+              "Others"
+            ],
+            "sellto": [
+              "--"
+            ],
+            "usable": [
+              "yes"
+            ],
+            "value": [
+              "Negotiable"
+            ],
+            "weight": [
+              "2.00"
+            ]
+          },
+          "positive_exact_infobox_object_match": true,
+          "raw_own_infobox": "{{Infobox Object|List={{{1|}}}|GetValue={{{GetValue|}}}\n| name           = Personal Letter of Clavius II\n| itemid         = 52817\n| article        = a\n| actualname     = personal letter of Clavius II\n| implemented    = 15.20.7a5cc9\n| weight         = 2.00\n| primarytype    = Others\n| objectclass    = \n| flavortext     = A personal letter of a knight of the Order of the Stag 2/3.\n| pickupable     = yes\n| droppedby      = {{Dropped By|Clavius}}\n| usable         = yes\n| marketable     = yes\n| value          = Negotiable\n| npcvalue       = 0\n| npcprice       = 0\n| buyfrom        = --\n| sellto         = --\n| notes          = {{Server Message|Professor, Cormealius, we know each other for a long time now. As I have explained to you again and again, the enemy stands united while our dispute divides us even further. We have to act and as soon as we stand down, our enemies will prevail.}}\n| immobile       = no\n}}",
+          "raw_own_infobox_sha256": "b83da80219e8cfae441e39409992b9cce66fa51c722770e82f0d53dfcee5608a",
+          "revision_sha1": "251d7cb79610241b19e1d160d0264539df42f8b8",
+          "url": "https://tibia.fandom.com/wiki/Personal_Letter_of_Clavius_II"
+        }
+      ]
+    },
+    {
+      "appearance_id": 52818,
+      "decoded_record_sha256": "b4a21fc1499141eebfb3645b6cae33d3d39ce7d999ec7257119a736466cdad9e",
+      "family_profile": "quest_item",
+      "mode": "EXTERNAL_CATEGORY_REFINEMENT",
+      "official_name": "personal letter of Clavius III",
+      "source_binding": {
+        "disposition": "EXACT",
+        "external_id": "52818",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i52818",
+          "revision": "definition-r1"
+        }
+      },
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i52818",
+        "revision": "definition-r1"
+      },
+      "wiki_sources": [
+        {
+          "balanced": true,
+          "capture_coordinate": {
+            "balanced": true,
+            "batch": 195,
+            "box_index": 0,
+            "capture_path": "/workspace/audit-continuation/global-infobox-object-source-part-195.json",
+            "capture_sha256": "f5780b65e0c2d467d19929d865a6889cce8537c1668d16530c1d5873436e6609",
+            "content_sha256": "ee5b697ed930d6c84347a9f8c87b0570f8ed15a00a07757a9cdf32ed1750cc79",
+            "duplicate_itemid_parameters": false,
+            "inside_comment": false,
+            "occurrence_index": 0,
+            "own_object_box_indices": [
+              0
+            ],
+            "page_id": 109607,
+            "page_ordinal": 7,
+            "raw_itemid": "52818",
+            "revision_id": 1177165,
+            "revision_timestamp": "2026-04-21T16:56:43Z",
+            "selection": "CURRENT_REVISION_AT_OR_BEFORE_CUTOFF",
+            "strict_numeric_itemid": true,
+            "title": "Personal Letter of Clavius III"
+          },
+          "coordinates": {
+            "content_sha256": "ee5b697ed930d6c84347a9f8c87b0570f8ed15a00a07757a9cdf32ed1750cc79",
+            "page_id": 109607,
+            "revision_id": 1177165,
+            "revision_timestamp": "2026-04-21T16:56:43Z",
+            "title": "Personal Letter of Clavius III"
+          },
+          "fullarticle_sha256_role": "DECLARED_CAPTURE_COORDINATE; raw own-box hash independently recomputed",
+          "inside_comment": false,
+          "parameter_values": {
+            "actualname": [
+              "personal letter of Clavius III"
+            ],
+            "article": [
+              "a"
+            ],
+            "buyfrom": [
+              "--"
+            ],
+            "droppedby": [
+              "{{Dropped By|Clavius}}"
+            ],
+            "flavortext": [
+              "A personal letter of a knight of the Order of the Stag 3/3."
+            ],
+            "getvalue": [
+              "{{{GetValue|}}}"
+            ],
+            "immobile": [
+              "no"
+            ],
+            "implemented": [
+              "15.20.7a5cc9"
+            ],
+            "itemid": [
+              "52818"
+            ],
+            "list": [
+              "{{{1|}}}"
+            ],
+            "marketable": [
+              "yes"
+            ],
+            "name": [
+              "Personal Letter of Clavius III"
+            ],
+            "notes": [
+              "{{Server Message|This will be my last letter to you, Professor. There is not a single argument of mine that you have ever considered. I will tell you this, the blood of the innocent of this world will be on your hands, when the tide of evil rises.}}"
+            ],
+            "npcprice": [
+              "0"
+            ],
+            "npcvalue": [
+              "0"
+            ],
+            "objectclass": [
+              ""
+            ],
+            "pickupable": [
+              "yes"
+            ],
+            "primarytype": [
+              "Others"
+            ],
+            "sellto": [
+              "--"
+            ],
+            "usable": [
+              "yes"
+            ],
+            "value": [
+              "Negotiable"
+            ],
+            "weight": [
+              "2.00"
+            ]
+          },
+          "positive_exact_infobox_object_match": true,
+          "raw_own_infobox": "{{Infobox Object|List={{{1|}}}|GetValue={{{GetValue|}}}\n| name           = Personal Letter of Clavius III\n| itemid         = 52818\n| article        = a\n| actualname     = personal letter of Clavius III\n| implemented    = 15.20.7a5cc9\n| weight         = 2.00\n| primarytype    = Others\n| objectclass    = \n| flavortext     = A personal letter of a knight of the Order of the Stag 3/3.\n| pickupable     = yes\n| droppedby      = {{Dropped By|Clavius}}\n| usable         = yes\n| marketable     = yes\n| value          = Negotiable\n| npcvalue       = 0\n| npcprice       = 0\n| buyfrom        = --\n| sellto         = --\n| notes          = {{Server Message|This will be my last letter to you, Professor. There is not a single argument of mine that you have ever considered. I will tell you this, the blood of the innocent of this world will be on your hands, when the tide of evil rises.}}\n| immobile       = no\n}}",
+          "raw_own_infobox_sha256": "ee5b697ed930d6c84347a9f8c87b0570f8ed15a00a07757a9cdf32ed1750cc79",
+          "revision_sha1": "c46670add2136ef1c09d3701fa42d34a59fd8136",
+          "url": "https://tibia.fandom.com/wiki/Personal_Letter_of_Clavius_III"
+        }
+      ]
+    },
+    {
+      "appearance_id": 52819,
+      "decoded_record_sha256": "60fd6aeff87925f9b35f7bee11fc03ac6d397dbb87406b808d729340a90ee6f8",
+      "family_profile": "quest_item",
+      "mode": "EXTERNAL_CATEGORY_REFINEMENT",
+      "official_name": "personal letter of Adlerauge I",
+      "source_binding": {
+        "disposition": "EXACT",
+        "external_id": "52819",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i52819",
+          "revision": "definition-r1"
+        }
+      },
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i52819",
+        "revision": "definition-r1"
+      },
+      "wiki_sources": [
+        {
+          "balanced": true,
+          "capture_coordinate": {
+            "balanced": true,
+            "batch": 195,
+            "box_index": 0,
+            "capture_path": "/workspace/audit-continuation/global-infobox-object-source-part-195.json",
+            "capture_sha256": "f5780b65e0c2d467d19929d865a6889cce8537c1668d16530c1d5873436e6609",
+            "content_sha256": "c7ca3b4558f637e2375664c4d8a884906422acbd334705346df184c571e39d49",
+            "duplicate_itemid_parameters": false,
+            "inside_comment": false,
+            "occurrence_index": 0,
+            "own_object_box_indices": [
+              0
+            ],
+            "page_id": 109609,
+            "page_ordinal": 8,
+            "raw_itemid": "52819",
+            "revision_id": 1177160,
+            "revision_timestamp": "2026-04-21T16:56:36Z",
+            "selection": "CURRENT_REVISION_AT_OR_BEFORE_CUTOFF",
+            "strict_numeric_itemid": true,
+            "title": "Personal Letter of Adlerauge I"
+          },
+          "coordinates": {
+            "content_sha256": "c7ca3b4558f637e2375664c4d8a884906422acbd334705346df184c571e39d49",
+            "page_id": 109609,
+            "revision_id": 1177160,
+            "revision_timestamp": "2026-04-21T16:56:36Z",
+            "title": "Personal Letter of Adlerauge I"
+          },
+          "fullarticle_sha256_role": "DECLARED_CAPTURE_COORDINATE; raw own-box hash independently recomputed",
+          "inside_comment": false,
+          "parameter_values": {
+            "actualname": [
+              "personal letter of Adlerauge I"
+            ],
+            "article": [
+              "a"
+            ],
+            "buyfrom": [
+              "--"
+            ],
+            "droppedby": [
+              "{{Dropped By|Adlerauge}}"
+            ],
+            "flavortext": [
+              "A personal letter of a knight of the Order of the Stag 1/3."
+            ],
+            "getvalue": [
+              "{{{GetValue|}}}"
+            ],
+            "immobile": [
+              "no"
+            ],
+            "implemented": [
+              "15.20.7a5cc9"
+            ],
+            "itemid": [
+              "52819"
+            ],
+            "list": [
+              "{{{1|}}}"
+            ],
+            "marketable": [
+              "yes"
+            ],
+            "name": [
+              "Personal Letter of Adlerauge I"
+            ],
+            "notes": [
+              "{{Server Message|Amelia, my love, I want you to feel what I feel, hear what I hear and see what I see: the wonders of the world, the breath of life and the wildness of the sea. All in the warm, green colour of your vivid eyes, I have sunken into so deeply that they painted my world in the hues of your soul.}}"
+            ],
+            "npcprice": [
+              "0"
+            ],
+            "npcvalue": [
+              "0"
+            ],
+            "objectclass": [
+              ""
+            ],
+            "pickupable": [
+              "yes"
+            ],
+            "primarytype": [
+              "Others"
+            ],
+            "sellto": [
+              "--"
+            ],
+            "usable": [
+              "yes"
+            ],
+            "value": [
+              "Negotiable"
+            ],
+            "weight": [
+              "2.00"
+            ]
+          },
+          "positive_exact_infobox_object_match": true,
+          "raw_own_infobox": "{{Infobox Object|List={{{1|}}}|GetValue={{{GetValue|}}}\n| name           = Personal Letter of Adlerauge I\n| itemid         = 52819\n| article        = a\n| actualname     = personal letter of Adlerauge I\n| implemented    = 15.20.7a5cc9\n| weight         = 2.00\n| primarytype    = Others\n| objectclass    = \n| flavortext     = A personal letter of a knight of the Order of the Stag 1/3.\n| pickupable     = yes\n| droppedby      = {{Dropped By|Adlerauge}}\n| usable         = yes\n| marketable     = yes\n| value          = Negotiable\n| npcvalue       = 0\n| npcprice       = 0\n| buyfrom        = --\n| sellto         = --\n| notes          = {{Server Message|Amelia, my love, I want you to feel what I feel, hear what I hear and see what I see: the wonders of the world, the breath of life and the wildness of the sea. All in the warm, green colour of your vivid eyes, I have sunken into so deeply that they painted my world in the hues of your soul.}}\n| immobile       = no\n}}",
+          "raw_own_infobox_sha256": "c7ca3b4558f637e2375664c4d8a884906422acbd334705346df184c571e39d49",
+          "revision_sha1": "a73d8b46620fb045df0233f0f63e1fb4dcd2b72e",
+          "url": "https://tibia.fandom.com/wiki/Personal_Letter_of_Adlerauge_I"
+        }
+      ]
+    },
+    {
+      "appearance_id": 52820,
+      "decoded_record_sha256": "099abdee836d39098f6a725ec1b9ffae654b872e7dfe5c387bbcb0faaef5830a",
+      "family_profile": "quest_item",
+      "mode": "EXTERNAL_CATEGORY_REFINEMENT",
+      "official_name": "personal letter of Adlerauge II",
+      "source_binding": {
+        "disposition": "EXACT",
+        "external_id": "52820",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i52820",
+          "revision": "definition-r1"
+        }
+      },
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i52820",
+        "revision": "definition-r1"
+      },
+      "wiki_sources": [
+        {
+          "balanced": true,
+          "capture_coordinate": {
+            "balanced": true,
+            "batch": 195,
+            "box_index": 0,
+            "capture_path": "/workspace/audit-continuation/global-infobox-object-source-part-195.json",
+            "capture_sha256": "f5780b65e0c2d467d19929d865a6889cce8537c1668d16530c1d5873436e6609",
+            "content_sha256": "00bc0a3508d00ee55ad9606ec951d31c777c5667c0c0fced761d6da3f43fe090",
+            "duplicate_itemid_parameters": false,
+            "inside_comment": false,
+            "occurrence_index": 0,
+            "own_object_box_indices": [
+              0
+            ],
+            "page_id": 109611,
+            "page_ordinal": 9,
+            "raw_itemid": "52820",
+            "revision_id": 1177161,
+            "revision_timestamp": "2026-04-21T16:56:38Z",
+            "selection": "CURRENT_REVISION_AT_OR_BEFORE_CUTOFF",
+            "strict_numeric_itemid": true,
+            "title": "Personal Letter of Adlerauge II"
+          },
+          "coordinates": {
+            "content_sha256": "00bc0a3508d00ee55ad9606ec951d31c777c5667c0c0fced761d6da3f43fe090",
+            "page_id": 109611,
+            "revision_id": 1177161,
+            "revision_timestamp": "2026-04-21T16:56:38Z",
+            "title": "Personal Letter of Adlerauge II"
+          },
+          "fullarticle_sha256_role": "DECLARED_CAPTURE_COORDINATE; raw own-box hash independently recomputed",
+          "inside_comment": false,
+          "parameter_values": {
+            "actualname": [
+              "personal letter of Adlerauge II"
+            ],
+            "article": [
+              "a"
+            ],
+            "buyfrom": [
+              "--"
+            ],
+            "droppedby": [
+              "{{Dropped By|Adlerauge}}"
+            ],
+            "flavortext": [
+              "A personal letter of a knight of the Order of the Stag 2/3."
+            ],
+            "getvalue": [
+              "{{{GetValue|}}}"
+            ],
+            "immobile": [
+              "no"
+            ],
+            "implemented": [
+              "15.20.7a5cc9"
+            ],
+            "itemid": [
+              "52820"
+            ],
+            "list": [
+              "{{{1|}}}"
+            ],
+            "marketable": [
+              "yes"
+            ],
+            "name": [
+              "Personal Letter of Adlerauge II"
+            ],
+            "notes": [
+              "{{Server Message|Amelia, why don't you answer as my heart yearns for you and my mind longs for the satisfaction of your kind words?}}"
+            ],
+            "npcprice": [
+              "0"
+            ],
+            "npcvalue": [
+              "0"
+            ],
+            "objectclass": [
+              ""
+            ],
+            "pickupable": [
+              "yes"
+            ],
+            "primarytype": [
+              "Others"
+            ],
+            "sellto": [
+              "--"
+            ],
+            "usable": [
+              "yes"
+            ],
+            "value": [
+              "Negotiable"
+            ],
+            "weight": [
+              "2.00"
+            ]
+          },
+          "positive_exact_infobox_object_match": true,
+          "raw_own_infobox": "{{Infobox Object|List={{{1|}}}|GetValue={{{GetValue|}}}\n| name           = Personal Letter of Adlerauge II\n| itemid         = 52820\n| article        = a\n| actualname     = personal letter of Adlerauge II\n| implemented    = 15.20.7a5cc9\n| weight         = 2.00\n| primarytype    = Others\n| objectclass    = \n| flavortext     = A personal letter of a knight of the Order of the Stag 2/3.\n| pickupable     = yes\n| droppedby      = {{Dropped By|Adlerauge}}\n| usable         = yes\n| marketable     = yes\n| value          = Negotiable\n| npcvalue       = 0\n| npcprice       = 0\n| buyfrom        = --\n| sellto         = --\n| notes          = {{Server Message|Amelia, why don't you answer as my heart yearns for you and my mind longs for the satisfaction of your kind words?}}\n| immobile       = no\n}}",
+          "raw_own_infobox_sha256": "00bc0a3508d00ee55ad9606ec951d31c777c5667c0c0fced761d6da3f43fe090",
+          "revision_sha1": "5820c26a5095df418e49251cdaa09394942a7a4d",
+          "url": "https://tibia.fandom.com/wiki/Personal_Letter_of_Adlerauge_II"
+        }
+      ]
+    },
+    {
+      "appearance_id": 52821,
+      "decoded_record_sha256": "3fc12fe26fc70feef8466431ac84761323ea5fbbb5bdc1306510a0ae753eff65",
+      "family_profile": "quest_item",
+      "mode": "EXTERNAL_CATEGORY_REFINEMENT",
+      "official_name": "personal letter of Adlerauge III",
+      "source_binding": {
+        "disposition": "EXACT",
+        "external_id": "52821",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i52821",
+          "revision": "definition-r1"
+        }
+      },
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i52821",
+        "revision": "definition-r1"
+      },
+      "wiki_sources": [
+        {
+          "balanced": true,
+          "capture_coordinate": {
+            "balanced": true,
+            "batch": 195,
+            "box_index": 0,
+            "capture_path": "/workspace/audit-continuation/global-infobox-object-source-part-195.json",
+            "capture_sha256": "f5780b65e0c2d467d19929d865a6889cce8537c1668d16530c1d5873436e6609",
+            "content_sha256": "a064ec96c3dcc21193e13677c859d455fc002b2e8320e3f8f6b6675ddbeaee34",
+            "duplicate_itemid_parameters": false,
+            "inside_comment": false,
+            "occurrence_index": 0,
+            "own_object_box_indices": [
+              0
+            ],
+            "page_id": 109613,
+            "page_ordinal": 10,
+            "raw_itemid": "52821",
+            "revision_id": 1177162,
+            "revision_timestamp": "2026-04-21T16:56:39Z",
+            "selection": "CURRENT_REVISION_AT_OR_BEFORE_CUTOFF",
+            "strict_numeric_itemid": true,
+            "title": "Personal Letter of Adlerauge III"
+          },
+          "coordinates": {
+            "content_sha256": "a064ec96c3dcc21193e13677c859d455fc002b2e8320e3f8f6b6675ddbeaee34",
+            "page_id": 109613,
+            "revision_id": 1177162,
+            "revision_timestamp": "2026-04-21T16:56:39Z",
+            "title": "Personal Letter of Adlerauge III"
+          },
+          "fullarticle_sha256_role": "DECLARED_CAPTURE_COORDINATE; raw own-box hash independently recomputed",
+          "inside_comment": false,
+          "parameter_values": {
+            "actualname": [
+              "personal letter of Adlerauge III"
+            ],
+            "article": [
+              "a"
+            ],
+            "buyfrom": [
+              "--"
+            ],
+            "droppedby": [
+              "{{Dropped By|Adlerauge}}"
+            ],
+            "flavortext": [
+              "A personal letter of a knight of the Order of the Stag 3/3."
+            ],
+            "getvalue": [
+              "{{{GetValue|}}}"
+            ],
+            "immobile": [
+              "no"
+            ],
+            "implemented": [
+              "15.20.7a5cc9"
+            ],
+            "itemid": [
+              "52821"
+            ],
+            "list": [
+              "{{{1|}}}"
+            ],
+            "marketable": [
+              "yes"
+            ],
+            "name": [
+              "Personal Letter of Adlerauge III"
+            ],
+            "notes": [
+              "{{Server Message|TAmelia, now, knowing you do not return my love, I will forever lock my heart away within the dark debris of my shattered soul. Turning this flame into pure hatred, it will fuel the fires of my wrath and burn my enemies to black cinder.}}"
+            ],
+            "npcprice": [
+              "0"
+            ],
+            "npcvalue": [
+              "0"
+            ],
+            "objectclass": [
+              ""
+            ],
+            "pickupable": [
+              "yes"
+            ],
+            "primarytype": [
+              "Others"
+            ],
+            "sellto": [
+              "--"
+            ],
+            "usable": [
+              "yes"
+            ],
+            "value": [
+              "Negotiable"
+            ],
+            "weight": [
+              "2.00"
+            ]
+          },
+          "positive_exact_infobox_object_match": true,
+          "raw_own_infobox": "{{Infobox Object|List={{{1|}}}|GetValue={{{GetValue|}}}\n| name           = Personal Letter of Adlerauge III\n| itemid         = 52821\n| article        = a\n| actualname     = personal letter of Adlerauge III\n| implemented    = 15.20.7a5cc9\n| weight         = 2.00\n| primarytype    = Others\n| objectclass    = \n| flavortext     = A personal letter of a knight of the Order of the Stag 3/3.\n| notes          = {{Server Message|TAmelia, now, knowing you do not return my love, I will forever lock my heart away within the dark debris of my shattered soul. Turning this flame into pure hatred, it will fuel the fires of my wrath and burn my enemies to black cinder.}}\n| pickupable     = yes\n| droppedby      = {{Dropped By|Adlerauge}}\n| usable         = yes\n| marketable     = yes\n| value          = Negotiable\n| npcvalue       = 0\n| npcprice       = 0\n| buyfrom        = --\n| sellto         = --\n| immobile       = no\n}}",
+          "raw_own_infobox_sha256": "a064ec96c3dcc21193e13677c859d455fc002b2e8320e3f8f6b6675ddbeaee34",
+          "revision_sha1": "51ae957c37243be710d0a416c8832cf12e906cb0",
+          "url": "https://tibia.fandom.com/wiki/Personal_Letter_of_Adlerauge_III"
+        }
+      ]
+    },
+    {
+      "appearance_id": 52822,
+      "decoded_record_sha256": "6b9438265ba66d4e7b4d6a5027853f10f36ec54a969c0b4e02d5c2d751cbd55c",
+      "family_profile": "quest_item",
+      "mode": "EXTERNAL_CATEGORY_REFINEMENT",
+      "official_name": "personal letter of Michael the Stalwart II",
+      "source_binding": {
+        "disposition": "EXACT",
+        "external_id": "52822",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i52822",
+          "revision": "definition-r1"
+        }
+      },
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i52822",
+        "revision": "definition-r1"
+      },
+      "wiki_sources": [
+        {
+          "balanced": true,
+          "capture_coordinate": {
+            "balanced": true,
+            "batch": 195,
+            "box_index": 0,
+            "capture_path": "/workspace/audit-continuation/global-infobox-object-source-part-195.json",
+            "capture_sha256": "f5780b65e0c2d467d19929d865a6889cce8537c1668d16530c1d5873436e6609",
+            "content_sha256": "53c5b3f9c8f46fc8c2293f6aeb472deb31a2d9dd52cf3c1b50586a52d6d0fa33",
+            "duplicate_itemid_parameters": false,
+            "inside_comment": false,
+            "occurrence_index": 0,
+            "own_object_box_indices": [
+              0
+            ],
+            "page_id": 109615,
+            "page_ordinal": 11,
+            "raw_itemid": "52822",
+            "revision_id": 1177167,
+            "revision_timestamp": "2026-04-21T16:56:46Z",
+            "selection": "CURRENT_REVISION_AT_OR_BEFORE_CUTOFF",
+            "strict_numeric_itemid": true,
+            "title": "Personal Letter of Michael the Stalwart II"
+          },
+          "coordinates": {
+            "content_sha256": "53c5b3f9c8f46fc8c2293f6aeb472deb31a2d9dd52cf3c1b50586a52d6d0fa33",
+            "page_id": 109615,
+            "revision_id": 1177167,
+            "revision_timestamp": "2026-04-21T16:56:46Z",
+            "title": "Personal Letter of Michael the Stalwart II"
+          },
+          "fullarticle_sha256_role": "DECLARED_CAPTURE_COORDINATE; raw own-box hash independently recomputed",
+          "inside_comment": false,
+          "parameter_values": {
+            "actualname": [
+              "personal letter of Michael the Stalwart II"
+            ],
+            "article": [
+              "a"
+            ],
+            "buyfrom": [
+              "--"
+            ],
+            "droppedby": [
+              "{{Dropped By|Michael the Stalwart}}"
+            ],
+            "flavortext": [
+              "A personal letter of a knight of the Order of the Stag 2/3."
+            ],
+            "getvalue": [
+              "{{{GetValue|}}}"
+            ],
+            "immobile": [
+              "no"
+            ],
+            "implemented": [
+              "15.20.7a5cc9"
+            ],
+            "itemid": [
+              "52822"
+            ],
+            "list": [
+              "{{{1|}}}"
+            ],
+            "marketable": [
+              "yes"
+            ],
+            "name": [
+              "Personal Letter of Michael the Stalwart II"
+            ],
+            "notes": [
+              "{{Server Message|We are sorry, Mr. Steepwart, the rest of the SEVENTEEN spike traps originally ordered, are already on their way! The mistake was clearly on the side of Suffer and Bleed Co. We won't put you on the rack any longer!}}"
+            ],
+            "npcprice": [
+              "0"
+            ],
+            "npcvalue": [
+              "0"
+            ],
+            "objectclass": [
+              ""
+            ],
+            "pickupable": [
+              "yes"
+            ],
+            "primarytype": [
+              "Others"
+            ],
+            "sellto": [
+              "--"
+            ],
+            "usable": [
+              "yes"
+            ],
+            "value": [
+              "Negotiable"
+            ],
+            "weight": [
+              "2.00"
+            ]
+          },
+          "positive_exact_infobox_object_match": true,
+          "raw_own_infobox": "{{Infobox Object|List={{{1|}}}|GetValue={{{GetValue|}}}\n| name           = Personal Letter of Michael the Stalwart II\n| itemid         = 52822\n| article        = a\n| actualname     = personal letter of Michael the Stalwart II\n| implemented    = 15.20.7a5cc9\n| weight         = 2.00\n| primarytype    = Others\n| objectclass    = \n| flavortext     = A personal letter of a knight of the Order of the Stag 2/3.\n| pickupable     = yes\n| droppedby      = {{Dropped By|Michael the Stalwart}}\n| usable         = yes\n| marketable     = yes\n| value          = Negotiable\n| npcvalue       = 0\n| npcprice       = 0\n| buyfrom        = --\n| sellto         = --\n| notes          = {{Server Message|We are sorry, Mr. Steepwart, the rest of the SEVENTEEN spike traps originally ordered, are already on their way! The mistake was clearly on the side of Suffer and Bleed Co. We won't put you on the rack any longer!}}\n| immobile       = no\n}}",
+          "raw_own_infobox_sha256": "53c5b3f9c8f46fc8c2293f6aeb472deb31a2d9dd52cf3c1b50586a52d6d0fa33",
+          "revision_sha1": "e3cc4f0cf5ba8270347b287decbf71b4f93e7d63",
+          "url": "https://tibia.fandom.com/wiki/Personal_Letter_of_Michael_the_Stalwart_II"
+        }
+      ]
+    },
+    {
+      "appearance_id": 52823,
+      "decoded_record_sha256": "c5e4fb3326be5c649bb77401ad5713c1e49ff40877d8c894d4dd6fc394132c17",
+      "family_profile": "quest_item",
+      "mode": "EXTERNAL_CATEGORY_REFINEMENT",
+      "official_name": "personal letter of Michael the Stalwart III",
+      "source_binding": {
+        "disposition": "EXACT",
+        "external_id": "52823",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i52823",
+          "revision": "definition-r1"
+        }
+      },
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i52823",
+        "revision": "definition-r1"
+      },
+      "wiki_sources": [
+        {
+          "balanced": true,
+          "capture_coordinate": {
+            "balanced": true,
+            "batch": 195,
+            "box_index": 0,
+            "capture_path": "/workspace/audit-continuation/global-infobox-object-source-part-195.json",
+            "capture_sha256": "f5780b65e0c2d467d19929d865a6889cce8537c1668d16530c1d5873436e6609",
+            "content_sha256": "f05331c3b217945b155d24d814bca31ea72709aa19fdc648de2c60c47b1310a2",
+            "duplicate_itemid_parameters": false,
+            "inside_comment": false,
+            "occurrence_index": 0,
+            "own_object_box_indices": [
+              0
+            ],
+            "page_id": 109617,
+            "page_ordinal": 12,
+            "raw_itemid": "52823",
+            "revision_id": 1177168,
+            "revision_timestamp": "2026-04-21T16:56:48Z",
+            "selection": "CURRENT_REVISION_AT_OR_BEFORE_CUTOFF",
+            "strict_numeric_itemid": true,
+            "title": "Personal Letter of Michael the Stalwart III"
+          },
+          "coordinates": {
+            "content_sha256": "f05331c3b217945b155d24d814bca31ea72709aa19fdc648de2c60c47b1310a2",
+            "page_id": 109617,
+            "revision_id": 1177168,
+            "revision_timestamp": "2026-04-21T16:56:48Z",
+            "title": "Personal Letter of Michael the Stalwart III"
+          },
+          "fullarticle_sha256_role": "DECLARED_CAPTURE_COORDINATE; raw own-box hash independently recomputed",
+          "inside_comment": false,
+          "parameter_values": {
+            "actualname": [
+              "personal letter of Michael the Stalwart III"
+            ],
+            "article": [
+              "a"
+            ],
+            "buyfrom": [
+              "--"
+            ],
+            "droppedby": [
+              "{{Dropped By|Michael the Stalwart}}"
+            ],
+            "flavortext": [
+              "A personal letter of a knight of the Order of the Stag 3/3."
+            ],
+            "getvalue": [
+              "{{{GetValue|}}}"
+            ],
+            "immobile": [
+              "no"
+            ],
+            "implemented": [
+              "15.20.7a5cc9"
+            ],
+            "itemid": [
+              "52823"
+            ],
+            "list": [
+              "{{{1|}}}"
+            ],
+            "marketable": [
+              "yes"
+            ],
+            "name": [
+              "Personal Letter of Michael the Stalwart III"
+            ],
+            "notes": [
+              "{{Server Message|Thank you for the good wishes, Mr. Stalwart, we are glad the THIRTEEN spike traps arrived at your bastion of the Deer in Edron safe and sound. We hear the weather is nice there all year round! All the best, Suffer and Bleed Co.}}"
+            ],
+            "npcprice": [
+              "0"
+            ],
+            "npcvalue": [
+              "0"
+            ],
+            "objectclass": [
+              ""
+            ],
+            "pickupable": [
+              "yes"
+            ],
+            "primarytype": [
+              "Others"
+            ],
+            "sellto": [
+              "--"
+            ],
+            "usable": [
+              "yes"
+            ],
+            "value": [
+              "Negotiable"
+            ],
+            "weight": [
+              "2.00"
+            ]
+          },
+          "positive_exact_infobox_object_match": true,
+          "raw_own_infobox": "{{Infobox Object|List={{{1|}}}|GetValue={{{GetValue|}}}\n| name           = Personal Letter of Michael the Stalwart III\n| itemid         = 52823\n| article        = a\n| actualname     = personal letter of Michael the Stalwart III\n| implemented    = 15.20.7a5cc9\n| weight         = 2.00\n| primarytype    = Others\n| objectclass    = \n| flavortext     = A personal letter of a knight of the Order of the Stag 3/3.\n| pickupable     = yes\n| droppedby      = {{Dropped By|Michael the Stalwart}}\n| usable         = yes\n| marketable     = yes\n| value          = Negotiable\n| npcvalue       = 0\n| npcprice       = 0\n| buyfrom        = --\n| sellto         = --\n| notes          = {{Server Message|Thank you for the good wishes, Mr. Stalwart, we are glad the THIRTEEN spike traps arrived at your bastion of the Deer in Edron safe and sound. We hear the weather is nice there all year round! All the best, Suffer and Bleed Co.}}\n| immobile       = no\n}}",
+          "raw_own_infobox_sha256": "f05331c3b217945b155d24d814bca31ea72709aa19fdc648de2c60c47b1310a2",
+          "revision_sha1": "9e71d01912d609292b54d83657c48e6237c69a96",
+          "url": "https://tibia.fandom.com/wiki/Personal_Letter_of_Michael_the_Stalwart_III"
+        }
+      ]
+    }
+  ],
+  "schema": "OTERYN_ITEM_EXTERNAL_FAMILY18_NAV_QUALIFICATION/v1",
+  "scope": "NAVIGATION_ONLY",
+  "sources": {
+    "bindings": {
+      "path": "imports/crystalserver/bindings/items.json",
+      "sha256": "1d19709c28a649d8a9f32bf53e5bf43ad847d7901d6c6254833f456154d2de5a"
+    },
+    "client_artifact": {
+      "path": "content/assets/files/appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.dat",
+      "sha256": "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2",
+      "version": "15.30"
+    },
+    "closed_own_id_source_inventory": {
+      "capture_parts_sha256": {
+        "global-infobox-object-source-part-191.json": "12fc834f9a05481cb3c6dcb7bf19484e72bc425456cd1176f24a6d27d98c5245",
+        "global-infobox-object-source-part-192.json": "fba4684807d5bfb06db04a9c96b001e5076fee7964241552e2f60a8ec7774b46",
+        "global-infobox-object-source-part-193.json": "b1fec9576ca026e630b446a944a1ea498bc2be0e2dcacae6c6dea0b19bce951f",
+        "global-infobox-object-source-part-194.json": "378fac28ff1cd30996f0ee4985fd1cc120a0e93c53df978166b5db51875d75f0",
+        "global-infobox-object-source-part-195.json": "f5780b65e0c2d467d19929d865a6889cce8537c1668d16530c1d5873436e6609"
+      },
+      "global_index_sha256": "ca5cf161016da4530c249ca49022cbea44342e2fbd78623fbb99fee92dde8190",
+      "global_selected_manifest_sha256": "014f140c789e554f11cee61012932d214f7bd46dd9bc6155bca08f42f3e93629",
+      "own_id_index_scope": "Complete selected own Object boxes; all numeric mentions for exactly these18 IDs copied, no name fallback"
+    },
+    "current_public_capture_role": "PROVEN DOM names/category links; DERIVED exact-name identity and navigation interpretation; revision/current15.30 family certainty UNKNOWN",
+    "dom_witnesses": {
+      "path": "tools/content-migration/samples/external-family18-dom-witnesses-20261001.json",
+      "sha256": "5e4e9f31781f027da126595b0ce961f953d7d229ced353dc2f06bb6ecaf2128c"
+    },
+    "engine_sha256": "8e07b435532e01b5892e19609a506f5ef721b4de6e16d112d5d3435258e96001",
+    "etcher_field_witness_v2": {
+      "sha256": "81ed2e2e80d1d8908577592d431034822cddc0867f3e6f3c8c428c2639a7fabe",
+      "source": {
+        "capture_url": "https://tibia.fandom.com/api.php?action=query&format=json&formatversion=2&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent%7Csha1&rvslots=main&pageids=108662%7C108664%7C108666%7C108668%7C108670%7C108672%7C108674%7C108676%7C108678%7C108680%7C108682%7C108684%7C108686%7C108688%7C108690%7C108692%7C108694%7C108696%7C108698%7C108700%7C108702%7C108704%7C108706%7C108708%7C108710%7C108712%7C108714%7C108716%7C108718%7C108720%7C108722%7C108724%7C108726%7C108728%7C108730%7C108732%7C108734%7C108736%7C108738%7C108740%7C108742%7C108744%7C108746%7C108748%7C108750%7C108752%7C108754%7C108756%7C108758%7C108760&maxlag=5",
+        "captured_at": "2026-10-01T21:29:57.541Z",
+        "duplicates": [],
+        "explicit_own_itemids": [
+          51443
+        ],
+        "fullarticle_body_retained_in_this_witness": true,
+        "fullarticle_body_retention_basis": "Retained rawOwnInfobox is622UTF8bytes at offset0, equal declared wholearticle bytecount622, and independently computedRawBoxSHA equals declaredFullArticleSHA. Wholearticle was not separately re-fetched.",
+        "fullarticle_recompute_basis": "Recomputed raw-box digest; complete-body equality established by matching hash, length and zero offset. Declared capture source-coordinate is retained verbatim.",
+        "fullarticle_sha256_declared_capture_coordinate": "a2f370dd0c633f618f0fabbc5b540198110e3987e83b40d5d807209341e61f94",
+        "fullarticle_sha256_recomputed_from_retained_fullarticle": true,
+        "fullarticle_utf8_bytes_declared_capture_coordinate": 622,
+        "interpretation": "Own-box fieldwitness with independently hashed rawBox; for this particular page that box is also the fullarticle by matching declared digest/bytecount and zerooffset. No generic assertion about other compactpages.",
+        "method": "Full page fetched and digested; every Infobox Object prefix occurrence raw/parameter presence/duplicate/itemid captured; full articles not retained",
+        "notes_quote": "Can be used on an imbued item to erase all applied [[imbuements]].",
+        "notes_quote_offset_within_raw_own_infobox": 553,
+        "notes_values": [
+          "Can be used on an imbued item to erase all applied [[imbuements]]."
+        ],
+        "objectclass_values_preserved": [
+          ""
+        ],
+        "own_actualname_values": [
+          "etcher"
+        ],
+        "own_name_values": [
+          "Etcher"
+        ],
+        "page_id": 108672,
+        "pickupable_values": [
+          "yes"
+        ],
+        "positive_exact_Infobox_Object": true,
+        "primarytype_values_preserved": [
+          "Others"
+        ],
+        "raw_box_digest_equals_declared_fullarticle_digest": true,
+        "raw_field_evidence_class": "PROVEN",
+        "raw_own_infobox": "{{Infobox Object|List={{{1|}}}|GetValue={{{GetValue|}}}\n| name           = Etcher\n| itemid         = 51443\n| article        = an\n| actualname     = etcher\n| implemented    = 15.10.46b862\n| primarytype    = Others\n| objectclass    = \n| flavortext     = \n| pickupable     = yes\n| droppedby      = {{Dropped By |Lion Hydra| Crusader |Blight Mariner|Bluebeak|Hawk Hopper|Tropical Desolator}}\n| usable         = yes\n| stackable      = yes\n| marketable     = yes\n| npcprice       = 30000\n| buyfrom        = Albinius\n| weight         = 1.50\n| notes          = Can be used on an imbued item to erase all applied [[imbuements]].\n}}",
+        "raw_own_infobox_sha256": "a2f370dd0c633f618f0fabbc5b540198110e3987e83b40d5d807209341e61f94",
+        "raw_own_infobox_utf8_bytes": 622,
+        "raw_own_itemid_values": [
+          "51443"
+        ],
+        "revision_id": 1119102,
+        "revision_parent_id": 1118269,
+        "revision_sha1": "a293b84ce9c38c2d5ed23fda86b4c4c538c50bf4",
+        "revision_timestamp": "2025-08-02T16:21:24Z",
+        "source_box_article_offset_declared": 0,
+        "source_box_index": 0,
+        "source_id": "fandom",
+        "source_page_ordinal": 5,
+        "source_part_path": "/workspace/audit-continuation/global-infobox-object-source-part-191.json",
+        "source_part_sha256": "12fc834f9a05481cb3c6dcb7bf19484e72bc425456cd1176f24a6d27d98c5245",
+        "temporal_qualification": "SOURCE_REVISION_AT_OR_BEFORE_2026_09_27_CUTOFF",
+        "url": "https://tibia.fandom.com/wiki/Etcher"
+      }
+    },
+    "helper_sha256": "0abb6b0180eeef98bfa397ca3b7c9192d47806a7e97aa6423159220e82c36f03",
+    "qualification_cutoff": "2026-09-27T23:59:59Z",
+    "stats": {
+      "path": "imports/tibiawiki/facts/items-stats.json",
+      "sha256": "49d43cbe6957e6edc16aeda72e05152c55606e9381452ea74d7a63b5a5e91e4a"
+    }
+  }
+}

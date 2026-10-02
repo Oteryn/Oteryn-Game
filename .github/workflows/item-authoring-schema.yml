@@ -29,6 +29,10 @@ on:
       - tools/content-migration/item_engine_navigation.py
       - tools/content-migration/test_item_engine_navigation.py
       - tools/content-migration/samples/engine-family-navigation-265.json
+      - imports/tibiawiki/facts/items-external-family18-20261001.json
+      - tools/content-migration/item_external_family_refinement.py
+      - tools/content-migration/test_item_external_family_refinement.py
+      - tools/content-migration/samples/external-family18-dom-witnesses-20261001.json
       - .github/workflows/item-authoring-schema.yml
   workflow_dispatch:
 
@@ -78,6 +82,10 @@ jobs:
 
       - name: Converter fixture tests
         run: python test_engine_items.py
+
+      - name: Closed external family source guards
+        working-directory: tools/content-migration
+        run: python test_item_external_family_refinement.py
 
       - name: Semantic promotion lowering fixture tests
         run: python test_lower_promotion_packet.py
