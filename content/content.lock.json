@@ -2,13 +2,13 @@
   "admission_main": "ec0e12a7927dcd4d98f7d1151f6b8ee100c1b65c",
   "authoring_profile_counts": {
     "Ability": 6000,
-    "Behavior": 2652,
+    "Behavior": 2785,
     "Creature": 1503,
     "Effect": 4599,
     "Encounter": 61,
     "Formula": 4905,
     "Loot": 23,
-    "Presentation": 2652
+    "Presentation": 2785
   },
   "editor_entry_counts": {
     "Item": 165,
@@ -16,18 +16,18 @@
   },
   "family_counts": {
     "Ability": 6000,
-    "Behavior": 2652,
+    "Behavior": 2785,
     "Charm": 25,
     "Creature": 1503,
-    "Dialogue": 703,
+    "Dialogue": 836,
     "Effect": 4599,
     "Encounter": 61,
     "Formula": 4905,
     "Item": 34031,
     "Loot": 1056,
     "Mount": 252,
-    "NPC": 1149,
-    "Presentation": 2652,
+    "NPC": 1282,
+    "Presentation": 2785,
     "Proficiency": 443,
     "RewardClaim": 231,
     "Service.Trade": 324,
@@ -40,11 +40,11 @@
     "taxonomy": 164
   },
   "legacy_blobs": {
-    "declarations": "49b7589d1ab1f0176afbff25290856bf6944eb12",
+    "declarations": "ccda430ab72a40fe1abaf6557c9525cf30abbc25",
     "editor": "ec0ee6cb9195cb6db3f12b1f226fbbf0cac536e7",
     "imports": "4f1b4e2a2256868b5597ca05c9aa4dd7ad5ca280",
-    "reference": "b33a273f4676fd9fd03e095827dbf2784cfde198",
-    "sources": "0e4953b5b1aff94b5c49842acc17b5754474d9ff"
+    "reference": "b03100bbe7d3ff51f499da27ce051f9774081829",
+    "sources": "b303d302f53592bac2af0dfb356c54b56817a101"
   },
   "project_revision": "tree-npc-reviewed-definitions-r1",
   "schema": "OTERYN_GAME_CONTENT_TREE_LOCK/v1",
@@ -53,6 +53,6 @@
     "Encounter": 61,
     "Item": 165,
     "Mount": 252,
-    "NPC": 2482
+    "NPC": 2747
   }
 }

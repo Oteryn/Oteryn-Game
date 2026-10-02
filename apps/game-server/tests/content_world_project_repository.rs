@@ -16,18 +16,18 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "content.lock.json",
-        436,
-        "5d325114e43ec5ba1e14466aae0721c3d70f90d38b90e41bdb53e51632df7365",
+        418,
+        "fac590ba8e9bab3d9448aea99d7415b623fdf197d863add12e7742427508f937",
     ),
     (
         "definitions/declarations.json",
-        17082661,
-        "b5c6cb1c4ad4b836d599d374d346a75e0caf67bc70e31f87245be9018adbf02b",
+        17565521,
+        "3d77692bacf81cea3ad958c7834a972c77edc0cb21409da91c504ee9c6dd5f53",
     ),
     (
         "definitions/reference.json",
-        22550123,
-        "26d8fbfbfc21844fb75456311569c742c9b871695f3254af8a6f372b978a45fa",
+        22591819,
+        "e96cbd5baa1690a54d73ecde228c18008f16b6cf352bc5001bf8b3fac45b9a97",
     ),
     (
         "editor/author.json",
@@ -36,8 +36,8 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "manifest.json",
-        1961,
-        "585302de29e71bc78045c16deafdb63d4d952396e81ffb2e75e432c6e95cc2da",
+        1955,
+        "91179f16225065e9c1ad6f1767c90017c985df8e42dd5f4dcd9cd66c53ea276d",
     ),
     (
         "presentations/bindings.json",
@@ -46,8 +46,8 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "project.json",
-        414,
-        "9c767a21c2a0f1016447d1ad9a3560b5fbc56edf31af36594f3616e1a9b45a5e",
+        408,
+        "d26291afecfd2ad884be07d45a944c77a6169c307f81f97ec3ad4692f482068a",
     ),
     (
         "provenance/imports.json",
@@ -56,8 +56,8 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "provenance/sources.json",
-        1350669,
-        "66f6f5ebe2f294564cd53d0cf7df052268d5ac5cc177406c65e89e4f1f9dc1df",
+        1425775,
+        "1ccf2a4b85d78540e142e991b42f4c005e236478dd74ac95c488b2d9c8750c9b",
     ),
     (
         "worlds/world.json",
@@ -114,7 +114,7 @@ const WORLD_CATALOGUE_SHARDS: [(&str, &str); 4] = [
 const TREE_CONTRACT: &str =
     "docs/agents/evidence/OTV2-20260925-full-game-content-ruleset-tree-v1.json";
 const TREE_DIRECTORY_NODES: usize = 97;
-const TREE_SHA256: &str = "a91bd820d8ea96044ec456bce9264a103d8ae1e8fe9b40c3cd7bd6e50360b4b6";
+const TREE_SHA256: &str = "39019038fb7fbdd77b0b2f89e23d129cd41c316ee050c7a2508de3effb5af1a5";
 /// A12 (ITEM-ID-1b): the protected Item family less the 4,590 D149 records, on Tibia keys,
 /// plus the 404 donor epoch-2 records and the 60 appearance-only records (ITEM-ADD-1).
 const ITEMS: usize = 34_031;
@@ -125,11 +125,11 @@ const CREATURES: usize = 1503;
 const CREATURE_RECORDS: usize = 21069;
 const CREATURE_PROFILES: usize = 20097;
 /// NPC admission wave A (OTERYN_WORLD_PROJECT_V2_NPC_ADMISSION_V1 §7 slice 4).
-const NPCS: usize = 1149;
-const NPC_RECORDS: usize = 2298;
-const NPC_DECLARATIONS: usize = 2232;
-const NPC_DIALOGUES: usize = 703;
-const NPC_BINDINGS: usize = 2482;
+const NPCS: usize = 1282;
+const NPC_RECORDS: usize = 2564;
+const NPC_DECLARATIONS: usize = 2498;
+const NPC_DIALOGUES: usize = 836;
+const NPC_BINDINGS: usize = 2747;
 /// Encounter admission (OTERYN_WORLD_PROJECT_V2_ENCOUNTER_ADMISSION_V1 §5 slice 4).
 const ENCOUNTERS: usize = 61;
 
@@ -323,7 +323,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     .expect("capture tracked canonical package");
     assert_eq!(
         project.project_revision(),
-        "g4-npc-qualified-bounded-definitions-r18"
+        "g4-npc-provisional-remaining88-r20"
     );
     assert_eq!(project.imports().len(), 25);
     let import_for = |batch: &str| {
@@ -480,6 +480,28 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
             .count(),
         252
     );
+    let provisional_packet: serde_json::Value = serde_json::from_slice(include_bytes!(
+        "../../../docs/agents/evidence/OTV2-20261002-npc-bulk-first45/native-additions.json"
+    ))
+    .expect("provisional packet");
+    let remaining_packet: serde_json::Value = serde_json::from_slice(include_bytes!(
+        "../../../docs/agents/evidence/OTV2-20261002-npc-bulk-remaining88/native-additions.json"
+    ))
+    .expect("remaining provisional packet");
+    let provisional_dialogues = provisional_packet["native_additions"]["declarations"]
+        .as_array()
+        .expect("closed declarations")
+        .iter()
+        .chain(
+            remaining_packet["native_additions"]["declarations"]
+                .as_array()
+                .expect("remaining declarations")
+                .iter(),
+        )
+        .filter(|row| row["kind"] == "Dialogue")
+        .map(|row| row["identity"]["key"].as_str().expect("dialogue key"))
+        .collect::<BTreeSet<_>>();
+    assert_eq!(provisional_dialogues.len(), 133);
     assert!(v2.declarations.iter().all(|declaration| {
         match declaration {
             ProjectV2Declaration::Outfit {
@@ -512,9 +534,29 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
                         "oteryn:npc.hagor" | "oteryn:npc.a_sleeping_dragon"
                     )
             }
-            ProjectV2Declaration::Dialogue { fields, .. } => fields
-                .iter()
-                .all(|field| field.field_path == "oteryn:source.npc.static_speech_corrections"),
+            ProjectV2Declaration::Dialogue {
+                identity, fields, ..
+            } => {
+                if provisional_dialogues.contains(identity.key.as_str()) {
+                    fields.len() == 2
+                        && fields.iter().all(|field| match field.field_path.as_str() {
+                            "oteryn:source.npc.bulk.status" => {
+                                field.value == ProjectV2CandidateValue::Text("provisional".into())
+                            }
+                            "oteryn:source.npc.bulk.quality" => {
+                                field.value
+                                    == ProjectV2CandidateValue::Text(
+                                        "{\"dialogue\":\"placeholder\"}".into(),
+                                    )
+                            }
+                            _ => false,
+                        })
+                } else {
+                    fields.iter().all(|field| {
+                        field.field_path == "oteryn:source.npc.static_speech_corrections"
+                    })
+                }
+            }
             ProjectV2Declaration::Service {
                 recipes, fields, ..
             } => {

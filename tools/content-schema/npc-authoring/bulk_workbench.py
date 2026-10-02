@@ -15,6 +15,18 @@ TOOLS = ROOT / 'tools/content-schema/npc-authoring'
 PYTHON = Path(sys.executable)
 
 
+def partial_definitions():
+    declarations = json.loads((ROOT / 'content/world/definitions/declarations.json').read_text())
+    partial = {}
+    for row in declarations['records']:
+        if row['kind'] != 'NPC':
+            continue
+        fields = {f['field_path']: f['value']['value'] for f in row['fields']}
+        if fields.get('oteryn:source.npc.bulk.status') == 'provisional':
+            partial[row['identity']['key']] = json.loads(fields['oteryn:source.npc.bulk.quality'])
+    return partial
+
+
 def prepare():
     data = json.loads(LEDGER.read_text())
     admitted = {'DEFINITION_ADMITTED_PREDECESSOR', 'QUALIFIED_EIGHT_CANDIDATE'}
@@ -24,12 +36,16 @@ def prepare():
     if (WORK / 'targets.json').exists():
         raise SystemExit('targets.json already exists; use check or choose a fresh workspace to preserve progress.')
     parts = [targets[i:i + 45] for i in range(0, len(targets), 45)]
+    partial = partial_definitions()
     rows = []
     for batch, group in enumerate(parts, 1):
         for actor in group:
             rows.append({'key': actor['key'], 'name': actor['name'], 'batch': batch,
-                         'state': 'IMPORT_PENDING', 'previous_hold': actor['status'],
-                         'field_quality': {}, 'remaining_tasks': actor.get('reasons', []),
+                         'state': 'DATA_READY_PARTIAL' if actor['key'] in partial else 'IMPORT_PENDING',
+                         'previous_hold': actor['status'], 'field_quality': partial.get(actor['key'], {}),
+                         'remaining_tasks': [f'{path}: {quality}' for path, quality in partial[actor['key']].items()
+                                             if quality in {'placeholder', 'defaulted', 'todo'}]
+                         if actor['key'] in partial else actor.get('reasons', []),
                          'native_runtime_loaded': False})
     result = {'schema': 'NPC_BULK_WORKSPACE/v1', 'base_head': subprocess.check_output(
         ['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip(),
@@ -37,10 +53,10 @@ def prepare():
         'batch_sizes': [len(group) for group in parts], 'records': rows,
         'field_quality_values': ['verified', 'donor', 'defaulted', 'placeholder', 'todo'],
         'policy': 'Approximate NPC content is allowed with explicit per-field flags; missing features do not hold the whole NPC.',
-        'server_environment': 'Native NPC runtime integration and dev-map setup are planned, not running.'}
+        'server_environment': 'Existing native_entry_room.json is the test map; NPC runtime integration is pending.'}
     (WORK / 'targets.json').write_text(json.dumps(result, ensure_ascii=False, indent=2) + '\n')
     print(json.dumps({'targets': len(targets), 'batch_sizes': result['batch_sizes'],
-                      'runtime_loaded': 0, 'state': 'IMPORT_PENDING'}))
+                      'runtime_loaded': 0, 'data_ready_partial': sum(r['state'] == 'DATA_READY_PARTIAL' for r in rows)}))
 
 
 def check():

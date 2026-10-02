@@ -134,6 +134,23 @@ const NPC_R5_NATIVE_REPAIRS: &[u8] = include_bytes!(
 const NPC_R5_NATIVE_REPAIRS_SHA256: &str =
     "07245803e9ef2c1e709c73f73775e141e70318d911921ad57ecb27e86e08b2cb";
 const NPC_R5_PROJECT_REVISION: &str = "g4-npc-source-repairs-r10";
+#[path = "npc_materializer/bulk_provisional.rs"]
+mod npc_bulk_provisional;
+const NPC_BULK: &[u8] = include_bytes!(
+    "../../../docs/agents/evidence/OTV2-20261002-npc-bulk-first45/native-additions.json"
+);
+const NPC_BULK_SHA256: &str = "5f6305b658489c842a1fe46ba6deb6e1db254ef30b531c23c788ab99636100c7";
+const NPC_BULK_PREDECESSOR: &str =
+    "a91bd820d8ea96044ec456bce9264a103d8ae1e8fe9b40c3cd7bd6e50360b4b6";
+const NPC_BULK_COUNT: usize = 45;
+const NPC_BULK_MORE: &[u8] = include_bytes!(
+    "../../../docs/agents/evidence/OTV2-20261002-npc-bulk-remaining88/native-additions.json"
+);
+const NPC_BULK_MORE_SHA256: &str =
+    "d2eb94b904b0405705d5dd044370c44f2c7cac12a112627750d980bc1c6dff24";
+const NPC_BULK_MORE_PREDECESSOR: &str =
+    "92faa0e8052c16593811a1841476de3cc9897469b2a77bc83247653ecea0ed1c";
+const NPC_BULK_MORE_COUNT: usize = 88;
 #[path = "npc_materializer/qualified_bounded.rs"]
 mod npc_qualified_bounded;
 #[path = "npc_materializer/qualified_nine.rs"]
@@ -198,7 +215,11 @@ fn limits() -> ProjectEvidenceLimits {
         max_string_bytes: FULL_FAMILY_MAX_STRING_BYTES,
         max_locator_bytes: 160,
         max_locator_segments: 8,
-        max_reference_records: CW2_B1_FULL_ITEM_FAMILY_COUNT + CREATURE_RECORDS + NPC_RECORDS + 62,
+        max_reference_records: CW2_B1_FULL_ITEM_FAMILY_COUNT
+            + CREATURE_RECORDS
+            + NPC_RECORDS
+            + 62
+            + (NPC_BULK_COUNT + NPC_BULK_MORE_COUNT) * 2,
         max_import_records: 24,
         max_reimport_states: ENCOUNTER_COUNT,
     }
@@ -269,17 +290,33 @@ fn materialize_from_predecessor(
     };
     let mut draft = capture_world_project(parent, name, filesystem)?.migrate_to_v2();
     let before = CanonicalProjectDocuments::from_v2_draft(draft.clone(), limits())?;
-    // Entire published 61fb package, including worlds, editor, assets and provenance.
-    if document_tree_digest(&before)
-        != "e3cd78fc9002cd127e5066aaf379408bc118c884f23ece7d8bcafa91bfa7681c"
-    {
+    // Entire published 1149-NPC predecessor, including worlds, editor, assets and provenance.
+    if document_tree_digest(&before) != NPC_BULK_PREDECESSOR {
         return Err("qualified predecessor package drifted".into());
     }
-    let admitted = npc_qualified_bounded::apply(&mut draft)?;
+    let admitted = npc_bulk_provisional::apply(
+        &mut draft,
+        NPC_BULK,
+        NPC_BULK_SHA256,
+        NPC_BULK_PREDECESSOR,
+        NPC_BULK_COUNT,
+    )?;
+    let first_wave = CanonicalProjectDocuments::from_v2_draft(draft, limits())?;
+    let mut draft = first_wave
+        .into_snapshot(limits())?
+        .parse(limits())?
+        .migrate_to_v2();
+    let more_admitted = npc_bulk_provisional::apply(
+        &mut draft,
+        NPC_BULK_MORE,
+        NPC_BULK_MORE_SHA256,
+        NPC_BULK_MORE_PREDECESSOR,
+        NPC_BULK_MORE_COUNT,
+    )?;
     let documents = CanonicalProjectDocuments::from_v2_draft(draft, limits())?;
     let tree_sha256 = write_documents(output, &documents)?;
     println!(
-        "npc_r19_definitions={admitted} total_npcs=1149 total_dialogues=703 tree_sha256={tree_sha256} predecessor_mode=true"
+        "npc_provisional_first={admitted} npc_provisional_remaining={more_admitted} total_npcs=1282 total_dialogues=836 tree_sha256={tree_sha256} predecessor_mode=true"
     );
     Ok(())
 }
@@ -2279,6 +2316,30 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let snapshot = documents.into_snapshot(limits())?.parse(limits())?;
     let mut draft = snapshot.migrate_to_v2();
     let npc_r19_definitions = npc_qualified_bounded::apply(&mut draft)?;
+    let predecessor = CanonicalProjectDocuments::from_v2_draft(draft, limits())?;
+    let mut draft = predecessor
+        .into_snapshot(limits())?
+        .parse(limits())?
+        .migrate_to_v2();
+    let npc_bulk_definitions = npc_bulk_provisional::apply(
+        &mut draft,
+        NPC_BULK,
+        NPC_BULK_SHA256,
+        NPC_BULK_PREDECESSOR,
+        NPC_BULK_COUNT,
+    )?;
+    let first_wave = CanonicalProjectDocuments::from_v2_draft(draft, limits())?;
+    let mut draft = first_wave
+        .into_snapshot(limits())?
+        .parse(limits())?
+        .migrate_to_v2();
+    let npc_more_definitions = npc_bulk_provisional::apply(
+        &mut draft,
+        NPC_BULK_MORE,
+        NPC_BULK_MORE_SHA256,
+        NPC_BULK_MORE_PREDECESSOR,
+        NPC_BULK_MORE_COUNT,
+    )?;
     let documents = CanonicalProjectDocuments::from_v2_draft(draft, limits())?;
     if documents.documents().len() != DOCUMENT_COUNT {
         return Err("canonical WorldProject/v2 document count drifted".into());
@@ -2303,7 +2364,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!(
         "npc_r18_definitions={npc_r18_definitions} intermediate_npcs=1141 total_dialogues=703"
     );
-    println!("npc_r19_definitions={npc_r19_definitions} total_npcs=1149 total_dialogues=703");
+    println!(
+        "npc_r19_definitions={npc_r19_definitions} intermediate_npcs=1149 total_dialogues=703"
+    );
+    println!(
+        "npc_provisional_first={npc_bulk_definitions} npc_provisional_remaining={npc_more_definitions} total_npcs=1282 total_dialogues=836"
+    );
     Ok(())
 }
 

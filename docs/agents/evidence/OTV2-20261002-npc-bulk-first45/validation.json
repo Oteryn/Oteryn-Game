@@ -1,0 +1,91 @@
+{
+  "schema": "NPC_BULK_AUTHORING_VALIDATION/v1",
+  "phase": "AUTHORING",
+  "result": "PASS",
+  "native_example_tests": 73,
+  "repository_package_tests": 4,
+  "existing_map_mechanics_tests": 2,
+  "issued_world_map_tests_ignored": 1,
+  "stage_tests": 7,
+  "authoring_schema_tests": 27,
+  "governance_tests": 36,
+  "full_fast_parity": {
+    "result": "PASS",
+    "documents": 11,
+    "full_generation_exit_code": 0,
+    "full_log_sha256": "cc77d0a9c0c4397c6a855d17a85e22cb2bafe5c21f7938c43bb20c255e979c93",
+    "fast_log_sha256": "f23403c4e29c70b039936d713b8308961825e641584cf26d79364f8fdce72249",
+    "tree_sha256": "39019038fb7fbdd77b0b2f89e23d129cd41c316ee050c7a2508de3effb5af1a5",
+    "all_bytes_equal": true
+  },
+  "existing_baseline_preserved": {
+    "result": "PASS",
+    "added_npcs": 133,
+    "added_dialogues": 133,
+    "added_profiles": 266,
+    "added_wiki_identity_bindings": 265,
+    "unrelated_declarations_profiles_sources_imports_assets_world_editor_preserved": true,
+    "tree_sha256": "39019038fb7fbdd77b0b2f89e23d129cd41c316ee050c7a2508de3effb5af1a5",
+    "documents": [
+      {
+        "path": "assets/catalog.json",
+        "bytes": 56,
+        "sha256": "fa61df1076ef66e8c69b6182db1b13fe2ccb92653ab16a148d1fbaf773adb344"
+      },
+      {
+        "path": "content.lock.json",
+        "bytes": 418,
+        "sha256": "fac590ba8e9bab3d9448aea99d7415b623fdf197d863add12e7742427508f937"
+      },
+      {
+        "path": "definitions/declarations.json",
+        "bytes": 17565521,
+        "sha256": "3d77692bacf81cea3ad958c7834a972c77edc0cb21409da91c504ee9c6dd5f53"
+      },
+      {
+        "path": "definitions/reference.json",
+        "bytes": 22591819,
+        "sha256": "e96cbd5baa1690a54d73ecde228c18008f16b6cf352bc5001bf8b3fac45b9a97"
+      },
+      {
+        "path": "editor/author.json",
+        "bytes": 120557,
+        "sha256": "14c6e3163baf17096545daa897a866df0b5ee23721c26312867ffa73447bbfdb"
+      },
+      {
+        "path": "manifest.json",
+        "bytes": 1955,
+        "sha256": "91179f16225065e9c1ad6f1767c90017c985df8e42dd5f4dcd9cd66c53ea276d"
+      },
+      {
+        "path": "presentations/bindings.json",
+        "bytes": 73,
+        "sha256": "b7d27b2d7fde6370b7ae56c2c60412f2b213a4a5e92e7db82dd4b59a64359cd7"
+      },
+      {
+        "path": "project.json",
+        "bytes": 408,
+        "sha256": "d26291afecfd2ad884be07d45a944c77a6169c307f81f97ec3ad4692f482068a"
+      },
+      {
+        "path": "provenance/imports.json",
+        "bytes": 41360,
+        "sha256": "27cb79a06ac9ade63e9a447dc35e44b4267510c0d5fca0bccb40c383ac31e595"
+      },
+      {
+        "path": "provenance/sources.json",
+        "bytes": 1425775,
+        "sha256": "1ccf2a4b85d78540e142e991b42f4c005e236478dd74ac95c488b2d9c8750c9b"
+      },
+      {
+        "path": "worlds/world.json",
+        "bytes": 72,
+        "sha256": "0dcc223c4a904834a58b3ad2b1c7882636cc66c9123aafdb25bb69a1d4670dfa"
+      }
+    ],
+    "runtime_loaded": 0
+  },
+  "native_runtime_loaded": 0,
+  "interaction_smoke_passed": 0,
+  "formal_review_and_protected_ci": "pending controlplane162"
+}
