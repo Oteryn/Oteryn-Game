@@ -3,11 +3,10 @@
 // MINT). Ordinary workspace runs report PRE-ROUTING/NONCANONICAL when the routed database is
 // absent. CHEST-1's own suite (`reward_claim_mint_postgres.rs`) proves the D40-D42/D92 MINT
 // matrix; these cases prove the D39 layer (`interaction_chest_use`) end to end.
+extern crate oteryn_game_server as production_server;
 extern crate self as oteryn_game_server;
 
-#[allow(dead_code, unused_imports)]
-#[path = "../src/admission_evidence.rs"]
-pub mod admission_evidence;
+pub use production_server::admission_evidence;
 #[allow(dead_code, unused_imports)]
 #[path = "../src/character_bootstrap_intent.rs"]
 pub mod character_bootstrap_intent;
@@ -27,9 +26,7 @@ pub mod combat_pickup;
 #[allow(dead_code, unused_imports)]
 #[path = "support/content_shim.rs"]
 pub mod content;
-#[allow(dead_code, unused_imports)]
-#[path = "../src/domain/mod.rs"]
-pub mod domain;
+pub use production_server::domain;
 #[allow(dead_code, unused_imports)]
 #[path = "../src/durability/mod.rs"]
 mod durability;
