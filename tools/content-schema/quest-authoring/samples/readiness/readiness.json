@@ -1531,10 +1531,10 @@
     "trigger_use",
     "world_object"
    ],
-   "interactions": 42,
+   "interactions": 41,
    "data_gaps": {
-    "interactions_with_gaps": 29,
-    "unresolved_items": 99
+    "interactions_with_gaps": 28,
+    "unresolved_items": 97
    }
   },
   {

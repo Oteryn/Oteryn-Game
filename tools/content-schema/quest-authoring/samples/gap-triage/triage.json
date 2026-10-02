@@ -1446,7 +1446,7 @@
    "counts": {
     "owner_pending": 8,
     "shared_mechanism": 1,
-    "bespoke": 92
+    "bespoke": 90
    },
    "owners_needed": [
     "condition",
@@ -1459,7 +1459,7 @@
     "owner:condition",
     "owner:scheduler",
     "mechanism:kill_reward_fanout",
-    "bespoke:92"
+    "bespoke:90"
    ]
   },
   {

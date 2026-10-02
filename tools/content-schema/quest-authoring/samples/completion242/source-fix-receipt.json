@@ -1,7 +1,7 @@
 {
   "approval": {
     "path": "tools/content-schema/quest-authoring/samples/completion242/source-fix-approval.json",
-    "sha256": "98bfd1ed80cb916319d2c8c04c7eb68cfcefaa7d07558d38f2c773504da46496"
+    "sha256": "bbd168d829422bbc2ad59b30ee9e67570182a111b6775172f2c736d6c83d72e2"
   },
   "changes": [
     {
@@ -147547,12 +147547,12 @@
         "missing_data": [
           {
             "code": "reported_source_gap",
-            "count": 29,
+            "count": 28,
             "field": "interactions_with_gaps"
           },
           {
             "code": "reported_source_gap",
-            "count": 99,
+            "count": 97,
             "field": "unresolved_items"
           },
           {
@@ -147568,8 +147568,8 @@
         "readiness": "waiting_data",
         "reported_source_readiness": {
           "data_gaps": {
-            "interactions_with_gaps": 29,
-            "unresolved_items": 99
+            "interactions_with_gaps": 28,
+            "unresolved_items": 97
           },
           "features": [
             "condition",
@@ -147586,7 +147586,7 @@
             "trigger_use",
             "world_object"
           ],
-          "interactions": 42,
+          "interactions": 41,
           "kind": "storyline",
           "quest": "canary:quest/grave_danger_quest"
         },
@@ -149748,157 +149748,6 @@
               "unresolved": [
                 {
                   "line": 94,
-                  "reason": "statement outside the transcribed vocabulary"
-                }
-              ]
-            },
-            {
-              "anchors": [],
-              "identity": {
-                "key": "canary:interaction/kilmaresh_quest/1_fafnars_wrath/7_four_masks",
-                "revision": "canary-04b83b51+crystalserver-9f5a72c6"
-              },
-              "rules": [
-                {
-                  "branch": [
-                    {
-                      "then": [
-                        {
-                          "branch": [
-                            {
-                              "then": [
-                                {
-                                  "count": 1,
-                                  "item": {
-                                    "family": "Item",
-                                    "key": "canary:item/31369",
-                                    "revision": "canary-04b83b51+crystalserver-9f5a72c6"
-                                  },
-                                  "owner": "Item",
-                                  "request": "hand_out"
-                                }
-                              ],
-                              "when": {
-                                "negate": false,
-                                "object": {
-                                  "field": "unique_id",
-                                  "op": "==",
-                                  "role": "source",
-                                  "value": 40033
-                                }
-                              }
-                            },
-                            {
-                              "then": [
-                                {
-                                  "count": 1,
-                                  "item": {
-                                    "family": "Item",
-                                    "key": "canary:item/31370",
-                                    "revision": "canary-04b83b51+crystalserver-9f5a72c6"
-                                  },
-                                  "owner": "Item",
-                                  "request": "hand_out"
-                                }
-                              ],
-                              "when": {
-                                "negate": false,
-                                "object": {
-                                  "field": "unique_id",
-                                  "op": "==",
-                                  "role": "source",
-                                  "value": 40034
-                                }
-                              }
-                            },
-                            {
-                              "then": [
-                                {
-                                  "count": 1,
-                                  "item": {
-                                    "family": "Item",
-                                    "key": "canary:item/31372",
-                                    "revision": "canary-04b83b51+crystalserver-9f5a72c6"
-                                  },
-                                  "owner": "Item",
-                                  "request": "hand_out"
-                                }
-                              ],
-                              "when": {
-                                "negate": false,
-                                "object": {
-                                  "field": "unique_id",
-                                  "op": "==",
-                                  "role": "source",
-                                  "value": 40035
-                                }
-                              }
-                            }
-                          ],
-                          "otherwise": [
-                            {
-                              "owner": "Item",
-                              "request": "hand_out",
-                              "value_source_line": 39
-                            }
-                          ]
-                        },
-                        {
-                          "authoritative": false,
-                          "effect": "message",
-                          "owner": "Presentation",
-                          "source_line": 40
-                        },
-                        {
-                          "owner": "Quest",
-                          "progress": "canary:quest-progress/quest/u12_20/kilmaresh_quest/sixth/favor",
-                          "request": "set_progress",
-                          "value_source_line": 41
-                        },
-                        {
-                          "owner": "Quest",
-                          "progress": "canary:quest-progress/quest/u12_20/kilmaresh_quest/sixth/four_masks",
-                          "request": "set_progress",
-                          "value_source_line": 42
-                        }
-                      ],
-                      "when": {
-                        "unresolved": {
-                          "line": 38
-                        }
-                      }
-                    },
-                    {
-                      "then": [
-                        {
-                          "authoritative": false,
-                          "effect": "message",
-                          "owner": "Presentation",
-                          "source_line": 45
-                        }
-                      ],
-                      "when": {
-                        "negate": false,
-                        "quest_stage": {
-                          "op": ">=",
-                          "progress": "canary:quest-progress/quest/u12_20/kilmaresh_quest/sixth/favor",
-                          "value": 1
-                        }
-                      }
-                    }
-                  ]
-                }
-              ],
-              "source": {
-                "callback": "onUse",
-                "edge": "USE",
-                "target_registrations": [
-                  "uid(uniqueId)"
-                ]
-              },
-              "unresolved": [
-                {
-                  "line": 43,
                   "reason": "statement outside the transcribed vocabulary"
                 }
               ]
@@ -154151,595 +154000,6 @@
               ],
               "writes": {
                 "canary": 2,
-                "crystalserver": 0
-              }
-            },
-            {
-              "auxiliary_of": [
-                "canary:quest/grave_danger_quest"
-              ],
-              "key": "canary:quest-progress/quest/u12_20/kilmaresh_quest/sixth/favor",
-              "missions": [],
-              "owner_basis": "mission track prefix",
-              "read_by_gates": [],
-              "start_of": [],
-              "transitions": [
-                {
-                  "key": "action_1",
-                  "script": "scripts/actions/other/gems.lua",
-                  "source_occurrences": [
-                    {
-                      "blob_sha256": "3ebd502dc5bcdda7b284cb7901e443a302351aed9f1787b24b4a4cbf81d7d5f9",
-                      "line": 92,
-                      "line_sha256": "e353086d71e96c8bf7709398a15c016155a44abbf42039bee40636be680f92e9",
-                      "occurrence": 4,
-                      "path": "data-otservbr-global/scripts/actions/other/gems.lua",
-                      "registrations": [
-                        "id(9057)",
-                        "id(index)"
-                      ],
-                      "repository": "opentibiabr/canary",
-                      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
-                      "source": "canary",
-                      "target": "Storage.Quest.U12_20.KilmareshQuest.Sixth.Favor",
-                      "write": {
-                        "callback": "onUse",
-                        "from": {
-                          "exact": false,
-                          "op": ">=",
-                          "value": 1
-                        },
-                        "increment": 1,
-                        "key": "action_1",
-                        "owner": "action",
-                        "servers": [
-                          "canary"
-                        ]
-                      }
-                    }
-                  ],
-                  "sources": {
-                    "canary": {
-                      "line": 92,
-                      "path": "data-otservbr-global/scripts/actions/other/gems.lua",
-                      "registrations": [
-                        "id(9057)",
-                        "id(index)"
-                      ]
-                    }
-                  },
-                  "write": {
-                    "callback": "onUse",
-                    "from": {
-                      "exact": false,
-                      "op": ">=",
-                      "value": 1
-                    },
-                    "increment": 1,
-                    "key": "action_1",
-                    "owner": "action",
-                    "servers": [
-                      "canary"
-                    ]
-                  }
-                },
-                {
-                  "key": "action_2",
-                  "script": "scripts/quests/kilmaresh_quest/1-fafnars-wrath/7-four-masks.lua",
-                  "source_occurrences": [
-                    {
-                      "blob_sha256": "e8518199a170ede7f941704a26e81a4bd5c280ed320da2fac16034040d7318dd",
-                      "line": 41,
-                      "line_sha256": "e353086d71e96c8bf7709398a15c016155a44abbf42039bee40636be680f92e9",
-                      "occurrence": 5,
-                      "path": "data-otservbr-global/scripts/quests/kilmaresh_quest/1-fafnars-wrath/7-four-masks.lua",
-                      "registrations": [
-                        "uid(uniqueId)"
-                      ],
-                      "repository": "opentibiabr/canary",
-                      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
-                      "source": "canary",
-                      "target": "Storage.Quest.U12_20.KilmareshQuest.Sixth.Favor",
-                      "write": {
-                        "callback": "onUse",
-                        "from": {
-                          "exact": false,
-                          "op": ">=",
-                          "value": 1
-                        },
-                        "increment": 1,
-                        "key": "action_2",
-                        "owner": "action",
-                        "servers": [
-                          "canary"
-                        ]
-                      }
-                    }
-                  ],
-                  "sources": {
-                    "canary": {
-                      "line": 41,
-                      "path": "data-otservbr-global/scripts/quests/kilmaresh_quest/1-fafnars-wrath/7-four-masks.lua",
-                      "registrations": [
-                        "uid(uniqueId)"
-                      ]
-                    }
-                  },
-                  "write": {
-                    "callback": "onUse",
-                    "from": {
-                      "exact": false,
-                      "op": ">=",
-                      "value": 1
-                    },
-                    "increment": 1,
-                    "key": "action_2",
-                    "owner": "action",
-                    "servers": [
-                      "canary"
-                    ]
-                  }
-                },
-                {
-                  "key": "action_3",
-                  "script": "scripts/quests/kilmaresh_quest/1-fafnars-wrath/8-blessing-the-statues.lua",
-                  "source_occurrences": [
-                    {
-                      "blob_sha256": "cf695f1c9f98a19f4b1d11cdb1f411d8394d605d1a69681bc46269729fe42ce4",
-                      "line": 35,
-                      "line_sha256": "e353086d71e96c8bf7709398a15c016155a44abbf42039bee40636be680f92e9",
-                      "occurrence": 6,
-                      "path": "data-otservbr-global/scripts/quests/kilmaresh_quest/1-fafnars-wrath/8-blessing-the-statues.lua",
-                      "registrations": [
-                        "id(31414)"
-                      ],
-                      "repository": "opentibiabr/canary",
-                      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
-                      "source": "canary",
-                      "target": "Storage.Quest.U12_20.KilmareshQuest.Sixth.Favor",
-                      "write": {
-                        "callback": "onUse",
-                        "from": {
-                          "exact": false,
-                          "op": ">=",
-                          "value": 5
-                        },
-                        "increment": 1,
-                        "key": "action_3",
-                        "owner": "action",
-                        "servers": [
-                          "canary"
-                        ]
-                      }
-                    }
-                  ],
-                  "sources": {
-                    "canary": {
-                      "line": 35,
-                      "path": "data-otservbr-global/scripts/quests/kilmaresh_quest/1-fafnars-wrath/8-blessing-the-statues.lua",
-                      "registrations": [
-                        "id(31414)"
-                      ]
-                    }
-                  },
-                  "write": {
-                    "callback": "onUse",
-                    "from": {
-                      "exact": false,
-                      "op": ">=",
-                      "value": 5
-                    },
-                    "increment": 1,
-                    "key": "action_3",
-                    "owner": "action",
-                    "servers": [
-                      "canary"
-                    ]
-                  }
-                },
-                {
-                  "key": "npc_1",
-                  "script": "npc/kallimae.lua",
-                  "source_occurrences": [
-                    {
-                      "blob_sha256": "ad56b65b287717603c78ea587e54aad3a916aaa30edcf4c5662a376090006d1a",
-                      "dialogue": {
-                        "keywords": [
-                          "yes"
-                        ],
-                        "topics": [
-                          1
-                        ]
-                      },
-                      "line": 95,
-                      "line_sha256": "d44dd9b7c20bd418ab7615cd3b20113a93cd211a9c25c788e45892a8c675ddfd",
-                      "occurrence": 1,
-                      "path": "data-otservbr-global/npc/kallimae.lua",
-                      "registrations": [],
-                      "repository": "opentibiabr/canary",
-                      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
-                      "source": "canary",
-                      "target": "Storage.Quest.U12_20.KilmareshQuest.Sixth.Favor",
-                      "write": {
-                        "callback": null,
-                        "from": {
-                          "exact": true,
-                          "op": "==",
-                          "value": 11
-                        },
-                        "key": "npc_1",
-                        "owner": "npc",
-                        "requested_by": {
-                          "keywords": [
-                            "yes"
-                          ],
-                          "npc": "canary:npc/kallimae",
-                          "topics": [
-                            1
-                          ]
-                        },
-                        "servers": [
-                          "canary"
-                        ],
-                        "to": 12
-                      }
-                    }
-                  ],
-                  "sources": {
-                    "canary": {
-                      "dialogue": {
-                        "keywords": [
-                          "yes"
-                        ],
-                        "topics": [
-                          1
-                        ]
-                      },
-                      "line": 95,
-                      "path": "data-otservbr-global/npc/kallimae.lua",
-                      "registrations": []
-                    }
-                  },
-                  "write": {
-                    "callback": null,
-                    "from": {
-                      "exact": true,
-                      "op": "==",
-                      "value": 11
-                    },
-                    "key": "npc_1",
-                    "owner": "npc",
-                    "requested_by": {
-                      "keywords": [
-                        "yes"
-                      ],
-                      "npc": "canary:npc/kallimae",
-                      "topics": [
-                        1
-                      ]
-                    },
-                    "servers": [
-                      "canary"
-                    ],
-                    "to": 12
-                  }
-                },
-                {
-                  "key": "npc_2",
-                  "script": "npc/the_empress.lua",
-                  "source_occurrences": [
-                    {
-                      "blob_sha256": "403c005a051d9e972f2ded4ca18c4f56e5990b87132531164f3a9a190508d555",
-                      "dialogue": {
-                        "keywords": [],
-                        "topics": []
-                      },
-                      "line": 65,
-                      "line_sha256": "c9af32784b4a35187ef7375bbfdfff58e0bd1c8d3f8b43655d413beeffd46306",
-                      "occurrence": 2,
-                      "path": "data-otservbr-global/npc/the_empress.lua",
-                      "registrations": [],
-                      "repository": "opentibiabr/canary",
-                      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
-                      "source": "canary",
-                      "target": "Storage.Quest.U12_20.KilmareshQuest.Sixth.Favor",
-                      "write": {
-                        "callback": null,
-                        "from": {
-                          "exact": true,
-                          "op": "==",
-                          "value": 10
-                        },
-                        "key": "npc_2",
-                        "owner": "npc",
-                        "requested_by": {
-                          "keywords": [],
-                          "npc": "canary:npc/the_empress",
-                          "topics": []
-                        },
-                        "servers": [
-                          "canary"
-                        ],
-                        "to": 11
-                      }
-                    }
-                  ],
-                  "sources": {
-                    "canary": {
-                      "dialogue": {
-                        "keywords": [],
-                        "topics": []
-                      },
-                      "line": 65,
-                      "path": "data-otservbr-global/npc/the_empress.lua",
-                      "registrations": []
-                    }
-                  },
-                  "write": {
-                    "callback": null,
-                    "from": {
-                      "exact": true,
-                      "op": "==",
-                      "value": 10
-                    },
-                    "key": "npc_2",
-                    "owner": "npc",
-                    "requested_by": {
-                      "keywords": [],
-                      "npc": "canary:npc/the_empress",
-                      "topics": []
-                    },
-                    "servers": [
-                      "canary"
-                    ],
-                    "to": 11
-                  }
-                },
-                {
-                  "key": "npc_3",
-                  "script": "npc/the_empress.lua",
-                  "source_occurrences": [
-                    {
-                      "blob_sha256": "403c005a051d9e972f2ded4ca18c4f56e5990b87132531164f3a9a190508d555",
-                      "dialogue": {
-                        "keywords": [],
-                        "topics": []
-                      },
-                      "line": 75,
-                      "line_sha256": "c8cad09027cd16e2ac8fea7489fc4d93b7246e32c5bd2f92852a12e577280ab6",
-                      "occurrence": 3,
-                      "path": "data-otservbr-global/npc/the_empress.lua",
-                      "registrations": [],
-                      "repository": "opentibiabr/canary",
-                      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
-                      "source": "canary",
-                      "target": "Storage.Quest.U12_20.KilmareshQuest.Sixth.Favor",
-                      "write": {
-                        "callback": null,
-                        "from": null,
-                        "key": "npc_3",
-                        "owner": "npc",
-                        "requested_by": {
-                          "keywords": [],
-                          "npc": "canary:npc/the_empress",
-                          "topics": []
-                        },
-                        "servers": [
-                          "canary"
-                        ],
-                        "to": 1
-                      }
-                    }
-                  ],
-                  "sources": {
-                    "canary": {
-                      "dialogue": {
-                        "keywords": [],
-                        "topics": []
-                      },
-                      "line": 75,
-                      "path": "data-otservbr-global/npc/the_empress.lua",
-                      "registrations": []
-                    }
-                  },
-                  "write": {
-                    "callback": null,
-                    "from": null,
-                    "key": "npc_3",
-                    "owner": "npc",
-                    "requested_by": {
-                      "keywords": [],
-                      "npc": "canary:npc/the_empress",
-                      "topics": []
-                    },
-                    "servers": [
-                      "canary"
-                    ],
-                    "to": 1
-                  }
-                }
-              ],
-              "writes": {
-                "canary": 6,
-                "crystalserver": 0
-              }
-            },
-            {
-              "auxiliary_of": [
-                "canary:quest/grave_danger_quest"
-              ],
-              "key": "canary:quest-progress/quest/u12_20/kilmaresh_quest/sixth/four_masks",
-              "missions": [],
-              "owner_basis": "mission track prefix",
-              "read_by_gates": [],
-              "start_of": [],
-              "transitions": [
-                {
-                  "key": "action_1",
-                  "script": "scripts/actions/other/gems.lua",
-                  "source_occurrences": [
-                    {
-                      "blob_sha256": "3ebd502dc5bcdda7b284cb7901e443a302351aed9f1787b24b4a4cbf81d7d5f9",
-                      "line": 93,
-                      "line_sha256": "912f8f9d1db92abb52dea0c3ccd756a6cb6e5dc83bf2b0a9522a6ac053381fbe",
-                      "occurrence": 2,
-                      "path": "data-otservbr-global/scripts/actions/other/gems.lua",
-                      "registrations": [
-                        "id(9057)",
-                        "id(index)"
-                      ],
-                      "repository": "opentibiabr/canary",
-                      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
-                      "source": "canary",
-                      "target": "Storage.Quest.U12_20.KilmareshQuest.Sixth.FourMasks",
-                      "write": {
-                        "callback": "onUse",
-                        "computed": "expression",
-                        "from": null,
-                        "key": "action_1",
-                        "owner": "action",
-                        "servers": [
-                          "canary"
-                        ]
-                      }
-                    }
-                  ],
-                  "sources": {
-                    "canary": {
-                      "line": 93,
-                      "path": "data-otservbr-global/scripts/actions/other/gems.lua",
-                      "registrations": [
-                        "id(9057)",
-                        "id(index)"
-                      ]
-                    }
-                  },
-                  "write": {
-                    "callback": "onUse",
-                    "computed": "expression",
-                    "from": null,
-                    "key": "action_1",
-                    "owner": "action",
-                    "servers": [
-                      "canary"
-                    ]
-                  }
-                },
-                {
-                  "key": "action_2",
-                  "script": "scripts/quests/kilmaresh_quest/1-fafnars-wrath/7-four-masks.lua",
-                  "source_occurrences": [
-                    {
-                      "blob_sha256": "e8518199a170ede7f941704a26e81a4bd5c280ed320da2fac16034040d7318dd",
-                      "line": 42,
-                      "line_sha256": "cc9a000ea888f5fc79c439278ee2ad24128aacb4951ba00bdb0c8d2f59ae819a",
-                      "occurrence": 3,
-                      "path": "data-otservbr-global/scripts/quests/kilmaresh_quest/1-fafnars-wrath/7-four-masks.lua",
-                      "registrations": [
-                        "uid(uniqueId)"
-                      ],
-                      "repository": "opentibiabr/canary",
-                      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
-                      "source": "canary",
-                      "target": "Storage.Quest.U12_20.KilmareshQuest.Sixth.FourMasks",
-                      "write": {
-                        "callback": "onUse",
-                        "computed": "expression",
-                        "from": null,
-                        "key": "action_2",
-                        "owner": "action",
-                        "servers": [
-                          "canary"
-                        ]
-                      }
-                    }
-                  ],
-                  "sources": {
-                    "canary": {
-                      "line": 42,
-                      "path": "data-otservbr-global/scripts/quests/kilmaresh_quest/1-fafnars-wrath/7-four-masks.lua",
-                      "registrations": [
-                        "uid(uniqueId)"
-                      ]
-                    }
-                  },
-                  "write": {
-                    "callback": "onUse",
-                    "computed": "expression",
-                    "from": null,
-                    "key": "action_2",
-                    "owner": "action",
-                    "servers": [
-                      "canary"
-                    ]
-                  }
-                },
-                {
-                  "key": "npc_1",
-                  "script": "npc/the_empress.lua",
-                  "source_occurrences": [
-                    {
-                      "blob_sha256": "403c005a051d9e972f2ded4ca18c4f56e5990b87132531164f3a9a190508d555",
-                      "dialogue": {
-                        "keywords": [],
-                        "topics": []
-                      },
-                      "line": 76,
-                      "line_sha256": "beb0dd627672309c1f2a8c657c23cffe6ecd54fbf8ce25756e32853436c68db3",
-                      "occurrence": 1,
-                      "path": "data-otservbr-global/npc/the_empress.lua",
-                      "registrations": [],
-                      "repository": "opentibiabr/canary",
-                      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
-                      "source": "canary",
-                      "target": "Storage.Quest.U12_20.KilmareshQuest.Sixth.FourMasks",
-                      "write": {
-                        "callback": null,
-                        "from": null,
-                        "key": "npc_1",
-                        "owner": "npc",
-                        "requested_by": {
-                          "keywords": [],
-                          "npc": "canary:npc/the_empress",
-                          "topics": []
-                        },
-                        "servers": [
-                          "canary"
-                        ],
-                        "to": 0
-                      }
-                    }
-                  ],
-                  "sources": {
-                    "canary": {
-                      "dialogue": {
-                        "keywords": [],
-                        "topics": []
-                      },
-                      "line": 76,
-                      "path": "data-otservbr-global/npc/the_empress.lua",
-                      "registrations": []
-                    }
-                  },
-                  "write": {
-                    "callback": null,
-                    "from": null,
-                    "key": "npc_1",
-                    "owner": "npc",
-                    "requested_by": {
-                      "keywords": [],
-                      "npc": "canary:npc/the_empress",
-                      "topics": []
-                    },
-                    "servers": [
-                      "canary"
-                    ],
-                    "to": 0
-                  }
-                }
-              ],
-              "writes": {
-                "canary": 3,
                 "crystalserver": 0
               }
             },
@@ -168341,7 +167601,7 @@
           "title": "Grave Danger Quest"
         }
       },
-      "to_digest": "226119489a9b0245ba5c4876acb3d72c9f9571128d8a042e02d790a3377cf232"
+      "to_digest": "150434fc05b024b372ddd518a17736d0e7b82ff36f14d7bfb44485025ab9bd39"
     },
     {
       "from_digest": "f42c2d832920b8d84b0de9f9eb6281ba1f34384d6a15741e0d17372cd41c1b67",
@@ -188883,6 +188143,595 @@
               "auxiliary_of": [
                 "canary:quest/kilmaresh_quest"
               ],
+              "key": "canary:quest-progress/quest/u12_20/kilmaresh_quest/sixth/favor",
+              "missions": [],
+              "owner_basis": "track_owners.json",
+              "read_by_gates": [],
+              "start_of": [],
+              "transitions": [
+                {
+                  "key": "action_1",
+                  "script": "scripts/actions/other/gems.lua",
+                  "source_occurrences": [
+                    {
+                      "blob_sha256": "3ebd502dc5bcdda7b284cb7901e443a302351aed9f1787b24b4a4cbf81d7d5f9",
+                      "line": 92,
+                      "line_sha256": "e353086d71e96c8bf7709398a15c016155a44abbf42039bee40636be680f92e9",
+                      "occurrence": 4,
+                      "path": "data-otservbr-global/scripts/actions/other/gems.lua",
+                      "registrations": [
+                        "id(9057)",
+                        "id(index)"
+                      ],
+                      "repository": "opentibiabr/canary",
+                      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+                      "source": "canary",
+                      "target": "Storage.Quest.U12_20.KilmareshQuest.Sixth.Favor",
+                      "write": {
+                        "callback": "onUse",
+                        "from": {
+                          "exact": false,
+                          "op": ">=",
+                          "value": 1
+                        },
+                        "increment": 1,
+                        "key": "action_1",
+                        "owner": "action",
+                        "servers": [
+                          "canary"
+                        ]
+                      }
+                    }
+                  ],
+                  "sources": {
+                    "canary": {
+                      "line": 92,
+                      "path": "data-otservbr-global/scripts/actions/other/gems.lua",
+                      "registrations": [
+                        "id(9057)",
+                        "id(index)"
+                      ]
+                    }
+                  },
+                  "write": {
+                    "callback": "onUse",
+                    "from": {
+                      "exact": false,
+                      "op": ">=",
+                      "value": 1
+                    },
+                    "increment": 1,
+                    "key": "action_1",
+                    "owner": "action",
+                    "servers": [
+                      "canary"
+                    ]
+                  }
+                },
+                {
+                  "key": "action_2",
+                  "script": "scripts/quests/kilmaresh_quest/1-fafnars-wrath/7-four-masks.lua",
+                  "source_occurrences": [
+                    {
+                      "blob_sha256": "e8518199a170ede7f941704a26e81a4bd5c280ed320da2fac16034040d7318dd",
+                      "line": 41,
+                      "line_sha256": "e353086d71e96c8bf7709398a15c016155a44abbf42039bee40636be680f92e9",
+                      "occurrence": 5,
+                      "path": "data-otservbr-global/scripts/quests/kilmaresh_quest/1-fafnars-wrath/7-four-masks.lua",
+                      "registrations": [
+                        "uid(uniqueId)"
+                      ],
+                      "repository": "opentibiabr/canary",
+                      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+                      "source": "canary",
+                      "target": "Storage.Quest.U12_20.KilmareshQuest.Sixth.Favor",
+                      "write": {
+                        "callback": "onUse",
+                        "from": {
+                          "exact": false,
+                          "op": ">=",
+                          "value": 1
+                        },
+                        "increment": 1,
+                        "key": "action_2",
+                        "owner": "action",
+                        "servers": [
+                          "canary"
+                        ]
+                      }
+                    }
+                  ],
+                  "sources": {
+                    "canary": {
+                      "line": 41,
+                      "path": "data-otservbr-global/scripts/quests/kilmaresh_quest/1-fafnars-wrath/7-four-masks.lua",
+                      "registrations": [
+                        "uid(uniqueId)"
+                      ]
+                    }
+                  },
+                  "write": {
+                    "callback": "onUse",
+                    "from": {
+                      "exact": false,
+                      "op": ">=",
+                      "value": 1
+                    },
+                    "increment": 1,
+                    "key": "action_2",
+                    "owner": "action",
+                    "servers": [
+                      "canary"
+                    ]
+                  }
+                },
+                {
+                  "key": "action_3",
+                  "script": "scripts/quests/kilmaresh_quest/1-fafnars-wrath/8-blessing-the-statues.lua",
+                  "source_occurrences": [
+                    {
+                      "blob_sha256": "cf695f1c9f98a19f4b1d11cdb1f411d8394d605d1a69681bc46269729fe42ce4",
+                      "line": 35,
+                      "line_sha256": "e353086d71e96c8bf7709398a15c016155a44abbf42039bee40636be680f92e9",
+                      "occurrence": 6,
+                      "path": "data-otservbr-global/scripts/quests/kilmaresh_quest/1-fafnars-wrath/8-blessing-the-statues.lua",
+                      "registrations": [
+                        "id(31414)"
+                      ],
+                      "repository": "opentibiabr/canary",
+                      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+                      "source": "canary",
+                      "target": "Storage.Quest.U12_20.KilmareshQuest.Sixth.Favor",
+                      "write": {
+                        "callback": "onUse",
+                        "from": {
+                          "exact": false,
+                          "op": ">=",
+                          "value": 5
+                        },
+                        "increment": 1,
+                        "key": "action_3",
+                        "owner": "action",
+                        "servers": [
+                          "canary"
+                        ]
+                      }
+                    }
+                  ],
+                  "sources": {
+                    "canary": {
+                      "line": 35,
+                      "path": "data-otservbr-global/scripts/quests/kilmaresh_quest/1-fafnars-wrath/8-blessing-the-statues.lua",
+                      "registrations": [
+                        "id(31414)"
+                      ]
+                    }
+                  },
+                  "write": {
+                    "callback": "onUse",
+                    "from": {
+                      "exact": false,
+                      "op": ">=",
+                      "value": 5
+                    },
+                    "increment": 1,
+                    "key": "action_3",
+                    "owner": "action",
+                    "servers": [
+                      "canary"
+                    ]
+                  }
+                },
+                {
+                  "key": "npc_1",
+                  "script": "npc/kallimae.lua",
+                  "source_occurrences": [
+                    {
+                      "blob_sha256": "ad56b65b287717603c78ea587e54aad3a916aaa30edcf4c5662a376090006d1a",
+                      "dialogue": {
+                        "keywords": [
+                          "yes"
+                        ],
+                        "topics": [
+                          1
+                        ]
+                      },
+                      "line": 95,
+                      "line_sha256": "d44dd9b7c20bd418ab7615cd3b20113a93cd211a9c25c788e45892a8c675ddfd",
+                      "occurrence": 1,
+                      "path": "data-otservbr-global/npc/kallimae.lua",
+                      "registrations": [],
+                      "repository": "opentibiabr/canary",
+                      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+                      "source": "canary",
+                      "target": "Storage.Quest.U12_20.KilmareshQuest.Sixth.Favor",
+                      "write": {
+                        "callback": null,
+                        "from": {
+                          "exact": true,
+                          "op": "==",
+                          "value": 11
+                        },
+                        "key": "npc_1",
+                        "owner": "npc",
+                        "requested_by": {
+                          "keywords": [
+                            "yes"
+                          ],
+                          "npc": "canary:npc/kallimae",
+                          "topics": [
+                            1
+                          ]
+                        },
+                        "servers": [
+                          "canary"
+                        ],
+                        "to": 12
+                      }
+                    }
+                  ],
+                  "sources": {
+                    "canary": {
+                      "dialogue": {
+                        "keywords": [
+                          "yes"
+                        ],
+                        "topics": [
+                          1
+                        ]
+                      },
+                      "line": 95,
+                      "path": "data-otservbr-global/npc/kallimae.lua",
+                      "registrations": []
+                    }
+                  },
+                  "write": {
+                    "callback": null,
+                    "from": {
+                      "exact": true,
+                      "op": "==",
+                      "value": 11
+                    },
+                    "key": "npc_1",
+                    "owner": "npc",
+                    "requested_by": {
+                      "keywords": [
+                        "yes"
+                      ],
+                      "npc": "canary:npc/kallimae",
+                      "topics": [
+                        1
+                      ]
+                    },
+                    "servers": [
+                      "canary"
+                    ],
+                    "to": 12
+                  }
+                },
+                {
+                  "key": "npc_2",
+                  "script": "npc/the_empress.lua",
+                  "source_occurrences": [
+                    {
+                      "blob_sha256": "403c005a051d9e972f2ded4ca18c4f56e5990b87132531164f3a9a190508d555",
+                      "dialogue": {
+                        "keywords": [],
+                        "topics": []
+                      },
+                      "line": 65,
+                      "line_sha256": "c9af32784b4a35187ef7375bbfdfff58e0bd1c8d3f8b43655d413beeffd46306",
+                      "occurrence": 2,
+                      "path": "data-otservbr-global/npc/the_empress.lua",
+                      "registrations": [],
+                      "repository": "opentibiabr/canary",
+                      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+                      "source": "canary",
+                      "target": "Storage.Quest.U12_20.KilmareshQuest.Sixth.Favor",
+                      "write": {
+                        "callback": null,
+                        "from": {
+                          "exact": true,
+                          "op": "==",
+                          "value": 10
+                        },
+                        "key": "npc_2",
+                        "owner": "npc",
+                        "requested_by": {
+                          "keywords": [],
+                          "npc": "canary:npc/the_empress",
+                          "topics": []
+                        },
+                        "servers": [
+                          "canary"
+                        ],
+                        "to": 11
+                      }
+                    }
+                  ],
+                  "sources": {
+                    "canary": {
+                      "dialogue": {
+                        "keywords": [],
+                        "topics": []
+                      },
+                      "line": 65,
+                      "path": "data-otservbr-global/npc/the_empress.lua",
+                      "registrations": []
+                    }
+                  },
+                  "write": {
+                    "callback": null,
+                    "from": {
+                      "exact": true,
+                      "op": "==",
+                      "value": 10
+                    },
+                    "key": "npc_2",
+                    "owner": "npc",
+                    "requested_by": {
+                      "keywords": [],
+                      "npc": "canary:npc/the_empress",
+                      "topics": []
+                    },
+                    "servers": [
+                      "canary"
+                    ],
+                    "to": 11
+                  }
+                },
+                {
+                  "key": "npc_3",
+                  "script": "npc/the_empress.lua",
+                  "source_occurrences": [
+                    {
+                      "blob_sha256": "403c005a051d9e972f2ded4ca18c4f56e5990b87132531164f3a9a190508d555",
+                      "dialogue": {
+                        "keywords": [],
+                        "topics": []
+                      },
+                      "line": 75,
+                      "line_sha256": "c8cad09027cd16e2ac8fea7489fc4d93b7246e32c5bd2f92852a12e577280ab6",
+                      "occurrence": 3,
+                      "path": "data-otservbr-global/npc/the_empress.lua",
+                      "registrations": [],
+                      "repository": "opentibiabr/canary",
+                      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+                      "source": "canary",
+                      "target": "Storage.Quest.U12_20.KilmareshQuest.Sixth.Favor",
+                      "write": {
+                        "callback": null,
+                        "from": null,
+                        "key": "npc_3",
+                        "owner": "npc",
+                        "requested_by": {
+                          "keywords": [],
+                          "npc": "canary:npc/the_empress",
+                          "topics": []
+                        },
+                        "servers": [
+                          "canary"
+                        ],
+                        "to": 1
+                      }
+                    }
+                  ],
+                  "sources": {
+                    "canary": {
+                      "dialogue": {
+                        "keywords": [],
+                        "topics": []
+                      },
+                      "line": 75,
+                      "path": "data-otservbr-global/npc/the_empress.lua",
+                      "registrations": []
+                    }
+                  },
+                  "write": {
+                    "callback": null,
+                    "from": null,
+                    "key": "npc_3",
+                    "owner": "npc",
+                    "requested_by": {
+                      "keywords": [],
+                      "npc": "canary:npc/the_empress",
+                      "topics": []
+                    },
+                    "servers": [
+                      "canary"
+                    ],
+                    "to": 1
+                  }
+                }
+              ],
+              "writes": {
+                "canary": 6,
+                "crystalserver": 0
+              }
+            },
+            {
+              "auxiliary_of": [
+                "canary:quest/kilmaresh_quest"
+              ],
+              "key": "canary:quest-progress/quest/u12_20/kilmaresh_quest/sixth/four_masks",
+              "missions": [],
+              "owner_basis": "track_owners.json",
+              "read_by_gates": [],
+              "start_of": [],
+              "transitions": [
+                {
+                  "key": "action_1",
+                  "script": "scripts/actions/other/gems.lua",
+                  "source_occurrences": [
+                    {
+                      "blob_sha256": "3ebd502dc5bcdda7b284cb7901e443a302351aed9f1787b24b4a4cbf81d7d5f9",
+                      "line": 93,
+                      "line_sha256": "912f8f9d1db92abb52dea0c3ccd756a6cb6e5dc83bf2b0a9522a6ac053381fbe",
+                      "occurrence": 2,
+                      "path": "data-otservbr-global/scripts/actions/other/gems.lua",
+                      "registrations": [
+                        "id(9057)",
+                        "id(index)"
+                      ],
+                      "repository": "opentibiabr/canary",
+                      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+                      "source": "canary",
+                      "target": "Storage.Quest.U12_20.KilmareshQuest.Sixth.FourMasks",
+                      "write": {
+                        "callback": "onUse",
+                        "computed": "expression",
+                        "from": null,
+                        "key": "action_1",
+                        "owner": "action",
+                        "servers": [
+                          "canary"
+                        ]
+                      }
+                    }
+                  ],
+                  "sources": {
+                    "canary": {
+                      "line": 93,
+                      "path": "data-otservbr-global/scripts/actions/other/gems.lua",
+                      "registrations": [
+                        "id(9057)",
+                        "id(index)"
+                      ]
+                    }
+                  },
+                  "write": {
+                    "callback": "onUse",
+                    "computed": "expression",
+                    "from": null,
+                    "key": "action_1",
+                    "owner": "action",
+                    "servers": [
+                      "canary"
+                    ]
+                  }
+                },
+                {
+                  "key": "action_2",
+                  "script": "scripts/quests/kilmaresh_quest/1-fafnars-wrath/7-four-masks.lua",
+                  "source_occurrences": [
+                    {
+                      "blob_sha256": "e8518199a170ede7f941704a26e81a4bd5c280ed320da2fac16034040d7318dd",
+                      "line": 42,
+                      "line_sha256": "cc9a000ea888f5fc79c439278ee2ad24128aacb4951ba00bdb0c8d2f59ae819a",
+                      "occurrence": 3,
+                      "path": "data-otservbr-global/scripts/quests/kilmaresh_quest/1-fafnars-wrath/7-four-masks.lua",
+                      "registrations": [
+                        "uid(uniqueId)"
+                      ],
+                      "repository": "opentibiabr/canary",
+                      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+                      "source": "canary",
+                      "target": "Storage.Quest.U12_20.KilmareshQuest.Sixth.FourMasks",
+                      "write": {
+                        "callback": "onUse",
+                        "computed": "expression",
+                        "from": null,
+                        "key": "action_2",
+                        "owner": "action",
+                        "servers": [
+                          "canary"
+                        ]
+                      }
+                    }
+                  ],
+                  "sources": {
+                    "canary": {
+                      "line": 42,
+                      "path": "data-otservbr-global/scripts/quests/kilmaresh_quest/1-fafnars-wrath/7-four-masks.lua",
+                      "registrations": [
+                        "uid(uniqueId)"
+                      ]
+                    }
+                  },
+                  "write": {
+                    "callback": "onUse",
+                    "computed": "expression",
+                    "from": null,
+                    "key": "action_2",
+                    "owner": "action",
+                    "servers": [
+                      "canary"
+                    ]
+                  }
+                },
+                {
+                  "key": "npc_1",
+                  "script": "npc/the_empress.lua",
+                  "source_occurrences": [
+                    {
+                      "blob_sha256": "403c005a051d9e972f2ded4ca18c4f56e5990b87132531164f3a9a190508d555",
+                      "dialogue": {
+                        "keywords": [],
+                        "topics": []
+                      },
+                      "line": 76,
+                      "line_sha256": "beb0dd627672309c1f2a8c657c23cffe6ecd54fbf8ce25756e32853436c68db3",
+                      "occurrence": 1,
+                      "path": "data-otservbr-global/npc/the_empress.lua",
+                      "registrations": [],
+                      "repository": "opentibiabr/canary",
+                      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+                      "source": "canary",
+                      "target": "Storage.Quest.U12_20.KilmareshQuest.Sixth.FourMasks",
+                      "write": {
+                        "callback": null,
+                        "from": null,
+                        "key": "npc_1",
+                        "owner": "npc",
+                        "requested_by": {
+                          "keywords": [],
+                          "npc": "canary:npc/the_empress",
+                          "topics": []
+                        },
+                        "servers": [
+                          "canary"
+                        ],
+                        "to": 0
+                      }
+                    }
+                  ],
+                  "sources": {
+                    "canary": {
+                      "dialogue": {
+                        "keywords": [],
+                        "topics": []
+                      },
+                      "line": 76,
+                      "path": "data-otservbr-global/npc/the_empress.lua",
+                      "registrations": []
+                    }
+                  },
+                  "write": {
+                    "callback": null,
+                    "from": null,
+                    "key": "npc_1",
+                    "owner": "npc",
+                    "requested_by": {
+                      "keywords": [],
+                      "npc": "canary:npc/the_empress",
+                      "topics": []
+                    },
+                    "servers": [
+                      "canary"
+                    ],
+                    "to": 0
+                  }
+                }
+              ],
+              "writes": {
+                "canary": 3,
+                "crystalserver": 0
+              }
+            },
+            {
+              "auxiliary_of": [
+                "canary:quest/kilmaresh_quest"
+              ],
               "key": "canary:quest-progress/quest/u12_20/kilmaresh_quest/sixth/gryphon_mask",
               "missions": [],
               "owner_basis": "gate catalogue link",
@@ -198155,7 +198004,796 @@
           "title": "Kilmaresh Quest"
         }
       },
-      "to_digest": "8a15d284a948424ed0550c874b0266cfa8aa524f763c02f0f808b380a88d30c2"
+      "to_digest": "53cb83801b1f95bc0c49d3c732f24828ebd7a7c776a3fc71298ebf9fb8295f3c"
+    },
+    {
+      "from_digest": "61609b79a77ab84e1cc8ceac55d4fb247ba6ccb038a04373bd93f7b68d9c682c",
+      "key": "oteryn:quest.marlin_trophy_quest",
+      "new_core": {
+        "claims": [],
+        "classification": "OTS_HYPOTHESIS_ONLY",
+        "completeness": "NOT_ASSESSED",
+        "display_name": "Marlin Trophy Quest",
+        "identity": {
+          "key": "oteryn:quest.marlin_trophy_quest",
+          "revision": "quest-r1"
+        },
+        "kind": "script_only",
+        "missing_data": [
+          {
+            "code": "reported_source_gap",
+            "count": 1,
+            "field": "unresolved_items"
+          },
+          {
+            "code": "quest_native_lowering_missing"
+          }
+        ],
+        "native_lowering": {
+          "canonical_interaction_refs": [],
+          "canonical_progress_refs": [],
+          "reason": "QuestState tracks, bounds, transitions and requested-by bindings have not been lowered",
+          "state": "WAITING_IMPLEMENTATION"
+        },
+        "readiness": "waiting_data",
+        "reported_source_readiness": {
+          "data_gaps": {
+            "interactions_with_gaps": 0,
+            "unresolved_items": 1
+          },
+          "features": [
+            "npc_dialogue",
+            "quest_state"
+          ],
+          "interactions": 0,
+          "kind": "script_only",
+          "quest": "canary:quest/marlin_trophy_quest"
+        },
+        "requirements": {
+          "min_level": 0,
+          "premium": true
+        },
+        "requirements_from_wiki": {
+          "lvl": "0",
+          "premium": "yes"
+        },
+        "requirements_unparsed": {},
+        "shown_in_quest_log": false,
+        "source_data": {
+          "gates": [],
+          "interaction_source_conflicts": [],
+          "interactions": [],
+          "progress": [
+            {
+              "auxiliary_of": [
+                "canary:quest/marlin_trophy_quest"
+              ],
+              "key": "canary:quest-progress/quest/u7_8/marlin_trophy",
+              "missions": [],
+              "owner_basis": "exclusive curated NPC writers",
+              "read_by_gates": [],
+              "start_of": [],
+              "transitions": [
+                {
+                  "key": "npc_1",
+                  "script": "npc/pemaret.lua",
+                  "source_occurrences": [
+                    {
+                      "blob_sha256": "e9f9e9cc4a35ec8157aa1836ee382afb33c8dd4b0747ef7e44170044a0138c74",
+                      "dialogue": {
+                        "keywords": [
+                          "yes"
+                        ],
+                        "topics": [
+                          1
+                        ]
+                      },
+                      "line": 74,
+                      "line_sha256": "146c2bbf1cfbeec8d39da4f7943abcb3c94f8dc85ab908552b4336626ccb308a",
+                      "occurrence": 1,
+                      "path": "data-otservbr-global/npc/pemaret.lua",
+                      "registrations": [],
+                      "repository": "opentibiabr/canary",
+                      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+                      "source": "canary",
+                      "source_exchange": {
+                        "callback": "creatureSayCallback",
+                        "callback_complete": false,
+                        "classification": "OTS_HYPOTHESIS_ONLY",
+                        "evidence": [
+                          {
+                            "line": 55,
+                            "line_sha256": "b0e861540ac2fe4ea735c76a07daeb8d8c49124587ed287293dddfbe4e4e2017",
+                            "role": "callback"
+                          },
+                          {
+                            "line": 56,
+                            "line_sha256": "c0ba7c7122f3d83a4e3f91852a7daa2375673d28cfd057c64d3d0f6046734e6b",
+                            "role": "actor"
+                          },
+                          {
+                            "line": 59,
+                            "line_sha256": "11aee628f9c6594da6be681e52c36eb7eeb7ea2fd8411a2aa2bbbc2900529d26",
+                            "role": "interaction_guard"
+                          },
+                          {
+                            "line": 63,
+                            "line_sha256": "487ab8e207fbf750bcb5025b272e67a99adad6264cdf80c5f5d0b9b0a661d146",
+                            "role": "offer_keyword"
+                          },
+                          {
+                            "line": 64,
+                            "line_sha256": "b88a0b45ba796d8882f1377a285b5f35de3630ea4286eda46f8297eb959d45ca",
+                            "role": "offer_guard"
+                          },
+                          {
+                            "line": 65,
+                            "line_sha256": "b447f82ea6afcea96e213951a490eb215b86a657ada4d995f3a249d57c763913",
+                            "role": "offer_items"
+                          },
+                          {
+                            "line": 67,
+                            "line_sha256": "1f9a1e1d0b92e6a900c373cde853a19cfa4ac0bcf17012fdd631f97ff0158642",
+                            "role": "offer_topic"
+                          },
+                          {
+                            "line": 70,
+                            "line_sha256": "c03e0b2d9124f0931e1e2371542bd757b65f3d5caf732b290928ea96dc28b9b2",
+                            "role": "commit_guard"
+                          },
+                          {
+                            "line": 71,
+                            "line_sha256": "b154a97af63178131dedf527f434780d80de6a15ed208fa3f446f37c36e35d08",
+                            "role": "consume"
+                          },
+                          {
+                            "line": 73,
+                            "line_sha256": "c86d1898c355d205f98c651b872145eedd580c3d40b38f6a4e3860179b424ea7",
+                            "role": "hand_out"
+                          },
+                          {
+                            "line": 74,
+                            "line_sha256": "146c2bbf1cfbeec8d39da4f7943abcb3c94f8dc85ab908552b4336626ccb308a",
+                            "role": "progress"
+                          },
+                          {
+                            "line": 78,
+                            "line_sha256": "eb56edd90d0382a5550510dc218218ad27672d5c3bbb14b7e082151f6a39ab26",
+                            "role": "topic_reset"
+                          }
+                        ],
+                        "profile": "pemaret_marlin_v1",
+                        "remaining_holds": [
+                          "conversation_and_topic_predicates_unadmitted",
+                          "checkInteraction_unadmitted",
+                          "remove_return_and_handout_success_unknown",
+                          "callback_other_branches_untranscribed"
+                        ],
+                        "rules": [
+                          {
+                            "branch": [
+                              {
+                                "then": [
+                                  {
+                                    "count": 1,
+                                    "item": {
+                                      "family": "Item",
+                                      "key": "canary:item/901",
+                                      "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                                    },
+                                    "owner": "Item",
+                                    "request": "consume"
+                                  },
+                                  {
+                                    "branch": [
+                                      {
+                                        "then": [
+                                          {
+                                            "count": 1,
+                                            "item": {
+                                              "family": "Item",
+                                              "key": "canary:item/902",
+                                              "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                                            },
+                                            "owner": "Item",
+                                            "request": "hand_out"
+                                          },
+                                          {
+                                            "owner": "Quest",
+                                            "progress": "canary:quest-progress/quest/u7_8/marlin_trophy",
+                                            "request": "set_progress",
+                                            "to": 1,
+                                            "value_source_line": 74
+                                          }
+                                        ],
+                                        "when": {
+                                          "unresolved": {
+                                            "line": 71
+                                          }
+                                        }
+                                      }
+                                    ]
+                                  }
+                                ],
+                                "when": {
+                                  "all": [
+                                    {
+                                      "unresolved": {
+                                        "line": 59
+                                      }
+                                    },
+                                    {
+                                      "unresolved": {
+                                        "line": 70
+                                      }
+                                    },
+                                    {
+                                      "negate": false,
+                                      "quest_stage": {
+                                        "op": "<",
+                                        "progress": "canary:quest-progress/quest/u7_8/marlin_trophy",
+                                        "value": 1
+                                      }
+                                    }
+                                  ]
+                                }
+                              }
+                            ]
+                          }
+                        ],
+                        "runtime_readiness": "UNKNOWN"
+                      },
+                      "target": "Storage.Quest.U7_8.MarlinTrophy",
+                      "write": {
+                        "callback": null,
+                        "from": null,
+                        "key": "npc_1",
+                        "owner": "npc",
+                        "requested_by": {
+                          "keywords": [
+                            "yes"
+                          ],
+                          "npc": "canary:npc/pemaret",
+                          "topics": [
+                            1
+                          ]
+                        },
+                        "servers": [
+                          "canary"
+                        ],
+                        "to": 1
+                      }
+                    },
+                    {
+                      "blob_sha256": "7860edb917cf36e43f2f675b9a2f9b8bbbc0821051ef20e4a9443cf04649489c",
+                      "dialogue": {
+                        "keywords": [
+                          "yes"
+                        ],
+                        "topics": [
+                          1
+                        ]
+                      },
+                      "line": 72,
+                      "line_sha256": "146c2bbf1cfbeec8d39da4f7943abcb3c94f8dc85ab908552b4336626ccb308a",
+                      "occurrence": 1,
+                      "path": "data-global/npc/pemaret.lua",
+                      "registrations": [],
+                      "repository": "zimbadev/crystalserver",
+                      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+                      "source": "crystalserver",
+                      "source_exchange": {
+                        "callback": "creatureSayCallback",
+                        "callback_complete": false,
+                        "classification": "OTS_HYPOTHESIS_ONLY",
+                        "evidence": [
+                          {
+                            "line": 53,
+                            "line_sha256": "b0e861540ac2fe4ea735c76a07daeb8d8c49124587ed287293dddfbe4e4e2017",
+                            "role": "callback"
+                          },
+                          {
+                            "line": 54,
+                            "line_sha256": "c0ba7c7122f3d83a4e3f91852a7daa2375673d28cfd057c64d3d0f6046734e6b",
+                            "role": "actor"
+                          },
+                          {
+                            "line": 57,
+                            "line_sha256": "11aee628f9c6594da6be681e52c36eb7eeb7ea2fd8411a2aa2bbbc2900529d26",
+                            "role": "interaction_guard"
+                          },
+                          {
+                            "line": 61,
+                            "line_sha256": "487ab8e207fbf750bcb5025b272e67a99adad6264cdf80c5f5d0b9b0a661d146",
+                            "role": "offer_keyword"
+                          },
+                          {
+                            "line": 62,
+                            "line_sha256": "b88a0b45ba796d8882f1377a285b5f35de3630ea4286eda46f8297eb959d45ca",
+                            "role": "offer_guard"
+                          },
+                          {
+                            "line": 63,
+                            "line_sha256": "b447f82ea6afcea96e213951a490eb215b86a657ada4d995f3a249d57c763913",
+                            "role": "offer_items"
+                          },
+                          {
+                            "line": 65,
+                            "line_sha256": "1f9a1e1d0b92e6a900c373cde853a19cfa4ac0bcf17012fdd631f97ff0158642",
+                            "role": "offer_topic"
+                          },
+                          {
+                            "line": 68,
+                            "line_sha256": "c03e0b2d9124f0931e1e2371542bd757b65f3d5caf732b290928ea96dc28b9b2",
+                            "role": "commit_guard"
+                          },
+                          {
+                            "line": 69,
+                            "line_sha256": "b154a97af63178131dedf527f434780d80de6a15ed208fa3f446f37c36e35d08",
+                            "role": "consume"
+                          },
+                          {
+                            "line": 71,
+                            "line_sha256": "c86d1898c355d205f98c651b872145eedd580c3d40b38f6a4e3860179b424ea7",
+                            "role": "hand_out"
+                          },
+                          {
+                            "line": 72,
+                            "line_sha256": "146c2bbf1cfbeec8d39da4f7943abcb3c94f8dc85ab908552b4336626ccb308a",
+                            "role": "progress"
+                          },
+                          {
+                            "line": 76,
+                            "line_sha256": "eb56edd90d0382a5550510dc218218ad27672d5c3bbb14b7e082151f6a39ab26",
+                            "role": "topic_reset"
+                          }
+                        ],
+                        "profile": "pemaret_marlin_v1",
+                        "remaining_holds": [
+                          "conversation_and_topic_predicates_unadmitted",
+                          "checkInteraction_unadmitted",
+                          "remove_return_and_handout_success_unknown",
+                          "callback_other_branches_untranscribed"
+                        ],
+                        "rules": [
+                          {
+                            "branch": [
+                              {
+                                "then": [
+                                  {
+                                    "count": 1,
+                                    "item": {
+                                      "family": "Item",
+                                      "key": "crystalserver:item/901",
+                                      "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                                    },
+                                    "owner": "Item",
+                                    "request": "consume"
+                                  },
+                                  {
+                                    "branch": [
+                                      {
+                                        "then": [
+                                          {
+                                            "count": 1,
+                                            "item": {
+                                              "family": "Item",
+                                              "key": "crystalserver:item/902",
+                                              "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                                            },
+                                            "owner": "Item",
+                                            "request": "hand_out"
+                                          },
+                                          {
+                                            "owner": "Quest",
+                                            "progress": "canary:quest-progress/quest/u7_8/marlin_trophy",
+                                            "request": "set_progress",
+                                            "to": 1,
+                                            "value_source_line": 72
+                                          }
+                                        ],
+                                        "when": {
+                                          "unresolved": {
+                                            "line": 69
+                                          }
+                                        }
+                                      }
+                                    ]
+                                  }
+                                ],
+                                "when": {
+                                  "all": [
+                                    {
+                                      "unresolved": {
+                                        "line": 57
+                                      }
+                                    },
+                                    {
+                                      "unresolved": {
+                                        "line": 68
+                                      }
+                                    },
+                                    {
+                                      "negate": false,
+                                      "quest_stage": {
+                                        "op": "<",
+                                        "progress": "canary:quest-progress/quest/u7_8/marlin_trophy",
+                                        "value": 1
+                                      }
+                                    }
+                                  ]
+                                }
+                              }
+                            ]
+                          }
+                        ],
+                        "runtime_readiness": "UNKNOWN"
+                      },
+                      "target": "Storage.Quest.U7_8.MarlinTrophy",
+                      "write": {
+                        "callback": null,
+                        "from": null,
+                        "key": "npc_1",
+                        "owner": "npc",
+                        "requested_by": {
+                          "keywords": [
+                            "yes"
+                          ],
+                          "npc": "crystal:npc/pemaret",
+                          "topics": [
+                            1
+                          ]
+                        },
+                        "servers": [
+                          "crystalserver"
+                        ],
+                        "to": 1
+                      }
+                    }
+                  ],
+                  "sources": {
+                    "canary": {
+                      "dialogue": {
+                        "keywords": [
+                          "yes"
+                        ],
+                        "topics": [
+                          1
+                        ]
+                      },
+                      "line": 74,
+                      "path": "data-otservbr-global/npc/pemaret.lua",
+                      "registrations": []
+                    },
+                    "crystalserver": {
+                      "dialogue": {
+                        "keywords": [
+                          "yes"
+                        ],
+                        "topics": [
+                          1
+                        ]
+                      },
+                      "line": 72,
+                      "path": "data-global/npc/pemaret.lua",
+                      "registrations": []
+                    }
+                  },
+                  "write": {
+                    "callback": null,
+                    "from": null,
+                    "key": "npc_1",
+                    "owner": "npc",
+                    "requested_by": {
+                      "keywords": [
+                        "yes"
+                      ],
+                      "npc": "canary:npc/pemaret",
+                      "topics": [
+                        1
+                      ]
+                    },
+                    "servers": [
+                      "canary",
+                      "crystalserver"
+                    ],
+                    "to": 1
+                  }
+                }
+              ],
+              "writes": {
+                "canary": 1,
+                "crystalserver": 1
+              }
+            }
+          ],
+          "quest": {
+            "claims": [],
+            "display_name": "Marlin Trophy Quest",
+            "identity": {
+              "key": "canary:quest/marlin_trophy_quest",
+              "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+            },
+            "kind": "script_only",
+            "requirements": {
+              "min_level": 0,
+              "premium": true
+            },
+            "requirements_from_wiki": {
+              "lvl": "0",
+              "premium": "yes"
+            },
+            "shown_in_quest_log": false,
+            "wiki": {
+              "pageid": 21716,
+              "revid": 683910,
+              "title": "Marlin Trophy Quest"
+            }
+          },
+          "reference_gaps": []
+        },
+        "source_refs": {
+          "claims": [],
+          "gates": [],
+          "quest": {
+            "family": "Quest",
+            "key": "canary:quest/marlin_trophy_quest",
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+          }
+        },
+        "unresolved_claims": [],
+        "wiki": {
+          "pageid": 21716,
+          "revid": 683910,
+          "title": "Marlin Trophy Quest"
+        }
+      },
+      "old_core": {
+        "claims": [],
+        "classification": "OTS_HYPOTHESIS_ONLY",
+        "completeness": "NOT_ASSESSED",
+        "display_name": "Marlin Trophy Quest",
+        "identity": {
+          "key": "oteryn:quest.marlin_trophy_quest",
+          "revision": "quest-r1"
+        },
+        "kind": "script_only",
+        "missing_data": [
+          {
+            "code": "reported_source_gap",
+            "count": 1,
+            "field": "unresolved_items"
+          },
+          {
+            "code": "quest_native_lowering_missing"
+          }
+        ],
+        "native_lowering": {
+          "canonical_interaction_refs": [],
+          "canonical_progress_refs": [],
+          "reason": "QuestState tracks, bounds, transitions and requested-by bindings have not been lowered",
+          "state": "WAITING_IMPLEMENTATION"
+        },
+        "readiness": "waiting_data",
+        "reported_source_readiness": {
+          "data_gaps": {
+            "interactions_with_gaps": 0,
+            "unresolved_items": 1
+          },
+          "features": [
+            "npc_dialogue",
+            "quest_state"
+          ],
+          "interactions": 0,
+          "kind": "script_only",
+          "quest": "canary:quest/marlin_trophy_quest"
+        },
+        "requirements": {
+          "min_level": 0,
+          "premium": true
+        },
+        "requirements_from_wiki": {
+          "lvl": "0",
+          "premium": "yes"
+        },
+        "requirements_unparsed": {},
+        "shown_in_quest_log": false,
+        "source_data": {
+          "gates": [],
+          "interaction_source_conflicts": [],
+          "interactions": [],
+          "progress": [
+            {
+              "auxiliary_of": [
+                "canary:quest/marlin_trophy_quest"
+              ],
+              "key": "canary:quest-progress/quest/u7_8/marlin_trophy",
+              "missions": [],
+              "owner_basis": "exclusive curated NPC writers",
+              "read_by_gates": [],
+              "start_of": [],
+              "transitions": [
+                {
+                  "key": "npc_1",
+                  "script": "npc/pemaret.lua",
+                  "source_occurrences": [
+                    {
+                      "blob_sha256": "e9f9e9cc4a35ec8157aa1836ee382afb33c8dd4b0747ef7e44170044a0138c74",
+                      "dialogue": {
+                        "keywords": [
+                          "yes"
+                        ],
+                        "topics": [
+                          1
+                        ]
+                      },
+                      "line": 74,
+                      "line_sha256": "146c2bbf1cfbeec8d39da4f7943abcb3c94f8dc85ab908552b4336626ccb308a",
+                      "occurrence": 1,
+                      "path": "data-otservbr-global/npc/pemaret.lua",
+                      "registrations": [],
+                      "repository": "opentibiabr/canary",
+                      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+                      "source": "canary",
+                      "target": "Storage.Quest.U7_8.MarlinTrophy",
+                      "write": {
+                        "callback": null,
+                        "from": null,
+                        "key": "npc_1",
+                        "owner": "npc",
+                        "requested_by": {
+                          "keywords": [
+                            "yes"
+                          ],
+                          "npc": "canary:npc/pemaret",
+                          "topics": [
+                            1
+                          ]
+                        },
+                        "servers": [
+                          "canary"
+                        ],
+                        "to": 1
+                      }
+                    },
+                    {
+                      "blob_sha256": "7860edb917cf36e43f2f675b9a2f9b8bbbc0821051ef20e4a9443cf04649489c",
+                      "dialogue": {
+                        "keywords": [
+                          "yes"
+                        ],
+                        "topics": [
+                          1
+                        ]
+                      },
+                      "line": 72,
+                      "line_sha256": "146c2bbf1cfbeec8d39da4f7943abcb3c94f8dc85ab908552b4336626ccb308a",
+                      "occurrence": 1,
+                      "path": "data-global/npc/pemaret.lua",
+                      "registrations": [],
+                      "repository": "zimbadev/crystalserver",
+                      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+                      "source": "crystalserver",
+                      "target": "Storage.Quest.U7_8.MarlinTrophy",
+                      "write": {
+                        "callback": null,
+                        "from": null,
+                        "key": "npc_1",
+                        "owner": "npc",
+                        "requested_by": {
+                          "keywords": [
+                            "yes"
+                          ],
+                          "npc": "crystal:npc/pemaret",
+                          "topics": [
+                            1
+                          ]
+                        },
+                        "servers": [
+                          "crystalserver"
+                        ],
+                        "to": 1
+                      }
+                    }
+                  ],
+                  "sources": {
+                    "canary": {
+                      "dialogue": {
+                        "keywords": [
+                          "yes"
+                        ],
+                        "topics": [
+                          1
+                        ]
+                      },
+                      "line": 74,
+                      "path": "data-otservbr-global/npc/pemaret.lua",
+                      "registrations": []
+                    },
+                    "crystalserver": {
+                      "dialogue": {
+                        "keywords": [
+                          "yes"
+                        ],
+                        "topics": [
+                          1
+                        ]
+                      },
+                      "line": 72,
+                      "path": "data-global/npc/pemaret.lua",
+                      "registrations": []
+                    }
+                  },
+                  "write": {
+                    "callback": null,
+                    "from": null,
+                    "key": "npc_1",
+                    "owner": "npc",
+                    "requested_by": {
+                      "keywords": [
+                        "yes"
+                      ],
+                      "npc": "canary:npc/pemaret",
+                      "topics": [
+                        1
+                      ]
+                    },
+                    "servers": [
+                      "canary",
+                      "crystalserver"
+                    ],
+                    "to": 1
+                  }
+                }
+              ],
+              "writes": {
+                "canary": 1,
+                "crystalserver": 1
+              }
+            }
+          ],
+          "quest": {
+            "claims": [],
+            "display_name": "Marlin Trophy Quest",
+            "identity": {
+              "key": "canary:quest/marlin_trophy_quest",
+              "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+            },
+            "kind": "script_only",
+            "requirements": {
+              "min_level": 0,
+              "premium": true
+            },
+            "requirements_from_wiki": {
+              "lvl": "0",
+              "premium": "yes"
+            },
+            "shown_in_quest_log": false,
+            "wiki": {
+              "pageid": 21716,
+              "revid": 683910,
+              "title": "Marlin Trophy Quest"
+            }
+          },
+          "reference_gaps": []
+        },
+        "source_refs": {
+          "claims": [],
+          "gates": [],
+          "quest": {
+            "family": "Quest",
+            "key": "canary:quest/marlin_trophy_quest",
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+          }
+        },
+        "unresolved_claims": [],
+        "wiki": {
+          "pageid": 21716,
+          "revid": 683910,
+          "title": "Marlin Trophy Quest"
+        }
+      },
+      "to_digest": "a951589b804f01e9ff6e97c39a18180a82430bf50a881388f49090b687a76c69"
     },
     {
       "from_digest": "fe7e0d6782f65adb93d583de033333874f8584afc5a6eb6bb7715ec2574039d2",
@@ -307007,7 +307645,7 @@
     },
     {
       "path": "tools/content-schema/quest-authoring/ots_questlog.py",
-      "sha256": "d00cdb880acb85c8fb9dab8981cd2f7c5d51831d375a68c1dca7b1573ffc7ffb"
+      "sha256": "d114471997746c750d283e51627b66abe1d8d7ae694f1cbd2e2e8a3ce4905fea"
     },
     {
       "path": "tools/content-schema/quest-authoring/quest_completion.schema.json",
@@ -307016,6 +307654,10 @@
     {
       "path": "tools/content-schema/quest-authoring/quest_completion_authoring.py",
       "sha256": "9212f1f923fa7667138d13db5fe5f78e2c44ade6f8fd82af6a263329d6aa4993"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/quest_progress.schema.json",
+      "sha256": "1101e84ddd745c907dab515e53b30c78bbee2c0cdee4bbc1630653b9b54cfbc0"
     },
     {
       "path": "tools/content-schema/quest-authoring/reward_aliases.py",
@@ -307027,7 +307669,23 @@
     },
     {
       "path": "tools/content-schema/quest-authoring/source_fix_guard.py",
-      "sha256": "c4eb0b5007200cd56abe343441c8ad32d67c8254f5d23746d65ae2999f7c0394"
+      "sha256": "762cb2e2cbff8a5238ea7db19fbc5662837cb0152fc61e1db3f15ea48dbd54be"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/source_kilmaresh_owner_guard.py",
+      "sha256": "d22bc8e55dc2d82af9a1339716d1cbd5c1879e177fd4c7ced481ae147778aae3"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/source_npc_exchange.py",
+      "sha256": "15581ba1d05bde5d6fb0c6618473b22eda044a6861b645a08f38949e7698391c"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/source_npc_exchange_guard.py",
+      "sha256": "735709abedaf95dfa9ae4702ac305949d778cb72caef406f2fe997858529eda3"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/source_npc_exchange_schema.py",
+      "sha256": "b38ee8d0097b856944931ffa8e2ce54468ab86561cca9e2058d54daf1645c504"
     },
     {
       "path": "tools/content-schema/quest-authoring/source_owner_guard.py",
@@ -307046,12 +307704,24 @@
       "sha256": "2a8843b92220202522eaf3180624c9e873fb257195531380449ad406d7043976"
     },
     {
+      "path": "tools/content-schema/quest-authoring/test_source_kilmaresh_owner_guard.py",
+      "sha256": "59b85e1af8faada21f3bbbb15fbe5f28134831f4d6bc1b3e9a31ad0215fe1099"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_source_npc_exchange.py",
+      "sha256": "b1fd364478ef55c55b3f2108362d746073a5f0fd9beec13451e0333c426c61c9"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_source_npc_exchange_guard.py",
+      "sha256": "e952dd4298ea9ad42bd28c5f8cc154b2141ade61cc940df621f80101e53ffcf3"
+    },
+    {
       "path": "tools/content-schema/quest-authoring/test_white_pearl_curation.py",
       "sha256": "7f7d4e3a6d9a34c2b9e4141befb904aeea9455935e89b90a162fccadc3b5727c"
     },
     {
       "path": "tools/content-schema/quest-authoring/track_owners.json",
-      "sha256": "36a752baec9088935c14e2c4bfca04ca7c2ce0a22169ce5c0690fc49da59d09a"
+      "sha256": "e962797d6132639a7d56284ed10cc825c0b20401bcac1623a9f16f4b26b04e4e"
     }
   ],
   "immutable_inputs": [
@@ -307073,7 +307743,7 @@
     "path": "tools/content-schema/quest-authoring/samples/owner-associations/approval.json",
     "sha256": "d899756390193523bf1a5bf642164027569bc2977fe09db0fb41241e1a4cd531"
   },
-  "parent_frozen_head": "1caddc0d9e65ff502c8137264391cd43d06911b6",
+  "parent_frozen_head": "495ae76a9d7aa140a3b5ac26c2e64c3b9db5630c",
   "proof_inputs": [
     {
       "path": "tools/content-schema/quest-authoring/samples/completion242/source-fix-evidence/copy-api-evidence.json",
@@ -307104,6 +307774,50 @@
       "sha256": "4ef587783884f3db835e40b2a4f793596db76a11b4fc083804fda1a61610812a"
     },
     {
+      "path": "tools/content-schema/quest-authoring/samples/kilmaresh-owner-fix/baseline-proof.json",
+      "sha256": "7a51af413044c81681ecf8d4560ccf4bcf36c749d50695a3d08228498d29be33"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/samples/kilmaresh-owner-fix/curation-delta.json",
+      "sha256": "63631bad687c58a2c8670cfd583ebd3cc48d5eb88b1606482927d6f0226a829c"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/samples/kilmaresh-owner-fix/parent-graph.json",
+      "sha256": "710faa9bc2d86a515c893e123a17987ff1ee95a121ccf371076b5748cbd3a554"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/samples/kilmaresh-owner-fix/projection.json",
+      "sha256": "018d61c28a8d90af7e45a99693e7964f030cca515ea15632dedf61b9bcd51804"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/samples/kilmaresh-owner-fix/snapshots.json",
+      "sha256": "5d991f6bcb6f8cd50283876dc610c55c57045f0d7cdd1be98a82ac5fd958e949"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/samples/npc-exchanges/interaction-reuse-proof.json",
+      "sha256": "692c9a6d267d34b30ae35329b26c4fffa31c3fb59b3170949644307a6452da0a"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/samples/npc-exchanges/new-track.json",
+      "sha256": "fa8756e89bcc690a44054d9d99912528a8f65f77d82c33a696b69899b0fc19a4"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/samples/npc-exchanges/old-track.json",
+      "sha256": "61fe670930d7007db677c66b142270970ffde2f20975997e9cf18a0adb1831c9"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/samples/npc-exchanges/profiles.json",
+      "sha256": "9f05c4f7326e49f863322738d53e1f296fb0bea63364a938bd8517bacdc8b885"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/samples/npc-exchanges/proof.json",
+      "sha256": "f63fed887d149d689223d1760c876bbb21e4bbd6455f57fd681c650021dabf79"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/samples/npc-exchanges/qualification-proof.json",
+      "sha256": "d53ab12724f696338c12b0cee2033f3ba24aaae0a6e4b47e3c2780ffc44db1d4"
+    },
+    {
       "path": "tools/content-schema/quest-authoring/samples/owner-associations/evidence.json",
       "sha256": "930b310b67e59b0be360bf909476edde7cb915204707ea64ae43179d4c4ae26d"
     },
@@ -307117,7 +307831,7 @@
     },
     {
       "path": "tools/content-schema/quest-authoring/samples/questlog/progress.json",
-      "sha256": "23e2ed24fca83e3faf14155fcd67deca478c5d888f5af1cc53de15371af7f4b2"
+      "sha256": "000899005fae456c437db046372d2ebcd6ad90926308a0701e62903c4171d33d"
     },
     {
       "path": "tools/content-schema/quest-authoring/samples/questlog/quests.json",
@@ -307125,7 +307839,7 @@
     },
     {
       "path": "tools/content-schema/quest-authoring/samples/readiness/readiness.json",
-      "sha256": "7b4419d13391eaff5112230c2bafa1cd11af231b73fa8f5a9c8685dba960b718"
+      "sha256": "05441072438c81d280576103cae86318b215c6378892070311bb3711e3a6281e"
     },
     {
       "path": "tools/content-schema/quest-authoring/samples/source-proofs/serpentine-white-pearl-cores.json",
@@ -307165,7 +307879,7 @@
     },
     {
       "path": "tools/content-schema/quest-authoring/samples/source_migration/bundle.json",
-      "sha256": "ae712972ab19e7a84a32469d80f77e861e88938e080e896db16daa8f8b962323"
+      "sha256": "a05c469db44210a4d569e35211faff3176cf7ae1712a0622a82cdca0680bab44"
     },
     {
       "path": "tools/content-schema/quest-authoring/script_quests.json",

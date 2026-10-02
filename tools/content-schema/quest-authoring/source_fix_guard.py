@@ -191,6 +191,12 @@ def validate_change(change, baseline, current, approval, root=None):
             if root is None:
                 raise ValueError('owner association proof requires repository root')
             structural_old, structural_new = reviewed_pair(root, change, approval['owner_associations'])
+    if key == 'oteryn:quest.marlin_trophy_quest':
+        from source_npc_exchange_guard import reviewed_pair as npc_pair
+        structural_old, structural_new = npc_pair(structural_old, structural_new)
+    from source_kilmaresh_owner_guard import CORES as kilmaresh_cores, reviewed_pair as kilmaresh_pair
+    if key in kilmaresh_cores:
+        structural_old, structural_new = kilmaresh_pair(structural_old, structural_new)
     if normalize_core(structural_old) != normalize_core(structural_new):
         raise ValueError('unrelated core, source pins/owner/alias or Native hold changed')
     graphs = {(r['key'], r['from_digest'], r['to_digest']) for r in approval['approved_graphs']}

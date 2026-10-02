@@ -3102,6 +3102,12 @@
       ],
       "npc_source": "npc/omrabas.lua",
       "source_declaration_required": true
+    },
+    "quest/u12_20/kilmaresh_quest/sixth/favor": {
+      "quest": "canary:quest/kilmaresh_quest"
+    },
+    "quest/u12_20/kilmaresh_quest/sixth/four_masks": {
+      "quest": "canary:quest/kilmaresh_quest"
     }
   },
   "deferred_tracks": {

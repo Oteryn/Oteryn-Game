@@ -25,6 +25,7 @@ from pathlib import Path
 
 import lua_tables
 import lua_writers
+import source_npc_exchange
 from ots_chests import CONFLICT_DECISIONS, REVISION, ROOT, SOURCES, check_checkout, decided, git_blob, quest_key, ref, requirements_counts, requirements_of, slug, text_ref, unused_decisions, wiki_matcher
 
 
@@ -187,7 +188,9 @@ def transition_index(repos):
                               'registrations': write['registrations'],
                               **({'dialogue': write['dialogue']} if 'dialogue' in write else {})}
                     entry['sources'].setdefault(name, source)
+                    exchange = source_npc_exchange.transcribe(name, rel, raw, write)
                     entry['source_occurrences'].append({
+                        **({'source_exchange': exchange} if exchange is not None else {}),
                         'source': name, 'occurrence': track['count'][name],
                         'repository': SOURCES[name]['repository'], 'revision': SOURCES[name]['revision'],
                         'target': write['target'], 'blob_sha256': blob_sha256,

@@ -13,7 +13,7 @@
     },
     {
       "path": "tools/content-schema/quest-authoring/samples/readiness/readiness.json",
-      "sha256": "7b4419d13391eaff5112230c2bafa1cd11af231b73fa8f5a9c8685dba960b718"
+      "sha256": "05441072438c81d280576103cae86318b215c6378892070311bb3711e3a6281e"
     },
     {
       "path": "tools/content-schema/quest-authoring/wiki_quest_links.json",
@@ -60550,8 +60550,8 @@
               "world_object"
             ],
             "data_gaps": {
-              "interactions_with_gaps": 29,
-              "unresolved_items": 99
+              "interactions_with_gaps": 28,
+              "unresolved_items": 97
             },
             "runtime_readiness": "UNKNOWN"
           }

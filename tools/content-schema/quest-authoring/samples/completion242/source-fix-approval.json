@@ -53,7 +53,7 @@
     {
       "from_digest": "a0ffd72f162b385c3b6048d666c6c1eb450f0ba7a9901d644cc6e005c3a1ea3f",
       "key": "oteryn:quest.grave_danger_quest",
-      "to_digest": "226119489a9b0245ba5c4876acb3d72c9f9571128d8a042e02d790a3377cf232"
+      "to_digest": "150434fc05b024b372ddd518a17736d0e7b82ff36f14d7bfb44485025ab9bd39"
     },
     {
       "from_digest": "f42c2d832920b8d84b0de9f9eb6281ba1f34384d6a15741e0d17372cd41c1b67",
@@ -63,7 +63,12 @@
     {
       "from_digest": "2e90d2d2616a920c2e5d3dab886d327f897424ad09264b43e6677de910a9d689",
       "key": "oteryn:quest.kilmaresh_quest",
-      "to_digest": "8a15d284a948424ed0550c874b0266cfa8aa524f763c02f0f808b380a88d30c2"
+      "to_digest": "53cb83801b1f95bc0c49d3c732f24828ebd7a7c776a3fc71298ebf9fb8295f3c"
+    },
+    {
+      "from_digest": "61609b79a77ab84e1cc8ceac55d4fb247ba6ccb038a04373bd93f7b68d9c682c",
+      "key": "oteryn:quest.marlin_trophy_quest",
+      "to_digest": "a951589b804f01e9ff6e97c39a18180a82430bf50a881388f49090b687a76c69"
     },
     {
       "from_digest": "fe7e0d6782f65adb93d583de033333874f8584afc5a6eb6bb7715ec2574039d2",
@@ -314,7 +319,7 @@
     },
     {
       "path": "tools/content-schema/quest-authoring/ots_questlog.py",
-      "sha256": "d00cdb880acb85c8fb9dab8981cd2f7c5d51831d375a68c1dca7b1573ffc7ffb"
+      "sha256": "d114471997746c750d283e51627b66abe1d8d7ae694f1cbd2e2e8a3ce4905fea"
     },
     {
       "path": "tools/content-schema/quest-authoring/quest_completion.schema.json",
@@ -323,6 +328,10 @@
     {
       "path": "tools/content-schema/quest-authoring/quest_completion_authoring.py",
       "sha256": "9212f1f923fa7667138d13db5fe5f78e2c44ade6f8fd82af6a263329d6aa4993"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/quest_progress.schema.json",
+      "sha256": "1101e84ddd745c907dab515e53b30c78bbee2c0cdee4bbc1630653b9b54cfbc0"
     },
     {
       "path": "tools/content-schema/quest-authoring/reward_aliases.py",
@@ -334,7 +343,23 @@
     },
     {
       "path": "tools/content-schema/quest-authoring/source_fix_guard.py",
-      "sha256": "c4eb0b5007200cd56abe343441c8ad32d67c8254f5d23746d65ae2999f7c0394"
+      "sha256": "762cb2e2cbff8a5238ea7db19fbc5662837cb0152fc61e1db3f15ea48dbd54be"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/source_kilmaresh_owner_guard.py",
+      "sha256": "d22bc8e55dc2d82af9a1339716d1cbd5c1879e177fd4c7ced481ae147778aae3"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/source_npc_exchange.py",
+      "sha256": "15581ba1d05bde5d6fb0c6618473b22eda044a6861b645a08f38949e7698391c"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/source_npc_exchange_guard.py",
+      "sha256": "735709abedaf95dfa9ae4702ac305949d778cb72caef406f2fe997858529eda3"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/source_npc_exchange_schema.py",
+      "sha256": "b38ee8d0097b856944931ffa8e2ce54468ab86561cca9e2058d54daf1645c504"
     },
     {
       "path": "tools/content-schema/quest-authoring/source_owner_guard.py",
@@ -353,12 +378,24 @@
       "sha256": "2a8843b92220202522eaf3180624c9e873fb257195531380449ad406d7043976"
     },
     {
+      "path": "tools/content-schema/quest-authoring/test_source_kilmaresh_owner_guard.py",
+      "sha256": "59b85e1af8faada21f3bbbb15fbe5f28134831f4d6bc1b3e9a31ad0215fe1099"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_source_npc_exchange.py",
+      "sha256": "b1fd364478ef55c55b3f2108362d746073a5f0fd9beec13451e0333c426c61c9"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_source_npc_exchange_guard.py",
+      "sha256": "e952dd4298ea9ad42bd28c5f8cc154b2141ade61cc940df621f80101e53ffcf3"
+    },
+    {
       "path": "tools/content-schema/quest-authoring/test_white_pearl_curation.py",
       "sha256": "7f7d4e3a6d9a34c2b9e4141befb904aeea9455935e89b90a162fccadc3b5727c"
     },
     {
       "path": "tools/content-schema/quest-authoring/track_owners.json",
-      "sha256": "36a752baec9088935c14e2c4bfca04ca7c2ce0a22169ce5c0690fc49da59d09a"
+      "sha256": "e962797d6132639a7d56284ed10cc825c0b20401bcac1623a9f16f4b26b04e4e"
     }
   ],
   "immutable_inputs": [
@@ -380,7 +417,7 @@
     "path": "tools/content-schema/quest-authoring/samples/owner-associations/approval.json",
     "sha256": "d899756390193523bf1a5bf642164027569bc2977fe09db0fb41241e1a4cd531"
   },
-  "parent_frozen_head": "1caddc0d9e65ff502c8137264391cd43d06911b6",
+  "parent_frozen_head": "495ae76a9d7aa140a3b5ac26c2e64c3b9db5630c",
   "proof_inputs": [
     {
       "path": "tools/content-schema/quest-authoring/samples/completion242/source-fix-evidence/copy-api-evidence.json",
@@ -411,6 +448,50 @@
       "sha256": "4ef587783884f3db835e40b2a4f793596db76a11b4fc083804fda1a61610812a"
     },
     {
+      "path": "tools/content-schema/quest-authoring/samples/kilmaresh-owner-fix/baseline-proof.json",
+      "sha256": "7a51af413044c81681ecf8d4560ccf4bcf36c749d50695a3d08228498d29be33"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/samples/kilmaresh-owner-fix/curation-delta.json",
+      "sha256": "63631bad687c58a2c8670cfd583ebd3cc48d5eb88b1606482927d6f0226a829c"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/samples/kilmaresh-owner-fix/parent-graph.json",
+      "sha256": "710faa9bc2d86a515c893e123a17987ff1ee95a121ccf371076b5748cbd3a554"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/samples/kilmaresh-owner-fix/projection.json",
+      "sha256": "018d61c28a8d90af7e45a99693e7964f030cca515ea15632dedf61b9bcd51804"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/samples/kilmaresh-owner-fix/snapshots.json",
+      "sha256": "5d991f6bcb6f8cd50283876dc610c55c57045f0d7cdd1be98a82ac5fd958e949"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/samples/npc-exchanges/interaction-reuse-proof.json",
+      "sha256": "692c9a6d267d34b30ae35329b26c4fffa31c3fb59b3170949644307a6452da0a"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/samples/npc-exchanges/new-track.json",
+      "sha256": "fa8756e89bcc690a44054d9d99912528a8f65f77d82c33a696b69899b0fc19a4"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/samples/npc-exchanges/old-track.json",
+      "sha256": "61fe670930d7007db677c66b142270970ffde2f20975997e9cf18a0adb1831c9"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/samples/npc-exchanges/profiles.json",
+      "sha256": "9f05c4f7326e49f863322738d53e1f296fb0bea63364a938bd8517bacdc8b885"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/samples/npc-exchanges/proof.json",
+      "sha256": "f63fed887d149d689223d1760c876bbb21e4bbd6455f57fd681c650021dabf79"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/samples/npc-exchanges/qualification-proof.json",
+      "sha256": "d53ab12724f696338c12b0cee2033f3ba24aaae0a6e4b47e3c2780ffc44db1d4"
+    },
+    {
       "path": "tools/content-schema/quest-authoring/samples/owner-associations/evidence.json",
       "sha256": "930b310b67e59b0be360bf909476edde7cb915204707ea64ae43179d4c4ae26d"
     },
@@ -424,7 +505,7 @@
     },
     {
       "path": "tools/content-schema/quest-authoring/samples/questlog/progress.json",
-      "sha256": "23e2ed24fca83e3faf14155fcd67deca478c5d888f5af1cc53de15371af7f4b2"
+      "sha256": "000899005fae456c437db046372d2ebcd6ad90926308a0701e62903c4171d33d"
     },
     {
       "path": "tools/content-schema/quest-authoring/samples/questlog/quests.json",
@@ -432,7 +513,7 @@
     },
     {
       "path": "tools/content-schema/quest-authoring/samples/readiness/readiness.json",
-      "sha256": "7b4419d13391eaff5112230c2bafa1cd11af231b73fa8f5a9c8685dba960b718"
+      "sha256": "05441072438c81d280576103cae86318b215c6378892070311bb3711e3a6281e"
     },
     {
       "path": "tools/content-schema/quest-authoring/samples/source-proofs/serpentine-white-pearl-cores.json",
@@ -472,7 +553,7 @@
     },
     {
       "path": "tools/content-schema/quest-authoring/samples/source_migration/bundle.json",
-      "sha256": "ae712972ab19e7a84a32469d80f77e861e88938e080e896db16daa8f8b962323"
+      "sha256": "a05c469db44210a4d569e35211faff3176cf7ae1712a0622a82cdca0680bab44"
     },
     {
       "path": "tools/content-schema/quest-authoring/script_quests.json",
