@@ -17,12 +17,12 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "content.lock.json",
         415,
-        "d51326d0b179189002e67d75b7fba40c2284fb3c89c9059d13f5e69d028db06d",
+        "419a4a797edfd366395ff61f34235a364f70e79bafc3c1e3573e39384a2d77f3",
     ),
     (
         "definitions/declarations.json",
-        19026086,
-        "72a82d84e70c29a0362258c13ef31d85dd6c85eee0759d23bebc3e3f9abb2fac",
+        19959864,
+        "9c2587d3b5fca686d4771687964e5c6628d13ed17fbee93b08dcc9fed74e8e33",
     ),
     (
         "definitions/reference.json",
@@ -37,7 +37,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "manifest.json",
         1954,
-        "7cb8f864955d918121062fa4da79959d7a857229a654fde0af66912c03204ade",
+        "f0ea16cd16c4d1137b3a24de3fb084a5d434e561657eb709c1a36e100d39da8c",
     ),
     (
         "presentations/bindings.json",
@@ -47,7 +47,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "project.json",
         407,
-        "03d195fb39280fce3c36588ce94f7d0192cb3aefe25924335cc42bd08701ee2a",
+        "34df5d660fda3e852b37833b970768edd5e3a22935771b7d10a1ca65e4520842",
     ),
     (
         "provenance/imports.json",
@@ -114,7 +114,7 @@ const WORLD_CATALOGUE_SHARDS: [(&str, &str); 4] = [
 const TREE_CONTRACT: &str =
     "docs/agents/evidence/OTV2-20260925-full-game-content-ruleset-tree-v1.json";
 const TREE_DIRECTORY_NODES: usize = 97;
-const TREE_SHA256: &str = "4c395bf099d057bae2619f49f4124f0eb5593aa7a297e19d53ee04f98f17d394";
+const TREE_SHA256: &str = "c6a6e609c63e8965bce3ceb08df2681f4d00c0182384193fa68a3cd3ff64cb28";
 /// A12 (ITEM-ID-1b): the protected Item family less the 4,590 D149 records, on Tibia keys,
 /// plus the 404 donor epoch-2 records and the 60 appearance-only records (ITEM-ADD-1).
 const ITEMS: usize = 34_031;
@@ -323,7 +323,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     .expect("capture tracked canonical package");
     assert_eq!(
         project.project_revision(),
-        "g4-npc-provisional-enrichment-r22"
+        "g4-npc-provisional-enrichment-r23"
     );
     assert_eq!(project.imports().len(), 25);
     let import_for = |batch: &str| {
@@ -527,7 +527,11 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
         "../../../docs/agents/evidence/OTV2-20261002-npc-enrichment-r22/native-enrichment.json"
     ))
     .expect("closed followup packet");
-    for packet in [&enrichment, &followup] {
+    let finish: serde_json::Value = serde_json::from_slice(include_bytes!(
+        "../../../docs/agents/evidence/OTV2-20261002-npc-enrichment-r23/native-enrichment.json"
+    ))
+    .expect("closed finish packet");
+    for packet in [&enrichment, &followup, &finish] {
         for repair in packet["repairs"]
             .as_array()
             .expect("closed enrichment array")

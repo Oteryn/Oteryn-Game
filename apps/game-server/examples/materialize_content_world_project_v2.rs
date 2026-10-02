@@ -167,6 +167,27 @@ const NPC_ENRICH_MORE_SHA256: &str =
     "c3a7322ddfe597ecba350b09bcac9ae224082362bcd67d84dcc796a96d9155f8";
 const NPC_ENRICH_MORE_PREDECESSOR: &str =
     "c0d46eaa7380bea64e438f4d0855c582e0d2dc85d2e2adf388820ed1a263eb29";
+const NPC_ENRICH_FINAL: &[u8] = include_bytes!(
+    "../../../docs/agents/evidence/OTV2-20261002-npc-enrichment-r23/native-enrichment.json"
+);
+const NPC_ENRICH_FINAL_SHA256: &str =
+    "52022031c1b23ebaefbe3a42f4f324588935279f8601cd05b8cc89992c3ac898";
+const NPC_ENRICH_FINAL_PREDECESSOR: &str =
+    "4c395bf099d057bae2619f49f4124f0eb5593aa7a297e19d53ee04f98f17d394";
+fn finish_provisional(draft: ProjectV2Draft) -> Result<ProjectV2Draft, Box<dyn std::error::Error>> {
+    let documents = CanonicalProjectDocuments::from_v2_draft(draft, limits())?;
+    let mut draft = documents
+        .into_snapshot(limits())?
+        .parse(limits())?
+        .migrate_to_v2();
+    npc_bulk_enrichment::apply(
+        &mut draft,
+        NPC_ENRICH_FINAL,
+        NPC_ENRICH_FINAL_SHA256,
+        NPC_ENRICH_FINAL_PREDECESSOR,
+    )?;
+    Ok(draft)
+}
 fn enrich_provisional(draft: ProjectV2Draft) -> Result<ProjectV2Draft, Box<dyn std::error::Error>> {
     let documents = CanonicalProjectDocuments::from_v2_draft(draft, limits())?;
     let mut draft = documents
@@ -190,7 +211,7 @@ fn enrich_provisional(draft: ProjectV2Draft) -> Result<ProjectV2Draft, Box<dyn s
         NPC_ENRICH_MORE_SHA256,
         NPC_ENRICH_MORE_PREDECESSOR,
     )?;
-    Ok(draft)
+    finish_provisional(draft)
 }
 
 #[path = "npc_materializer/qualified_bounded.rs"]
@@ -332,6 +353,21 @@ fn materialize_from_predecessor(
     };
     let mut draft = capture_world_project(parent, name, filesystem)?.migrate_to_v2();
     let before = CanonicalProjectDocuments::from_v2_draft(draft.clone(), limits())?;
+    // R23 fast batch accepts only the full pinned R22 catalogue.
+    if document_tree_digest(&before) == NPC_ENRICH_FINAL_PREDECESSOR {
+        npc_bulk_enrichment::apply(
+            &mut draft,
+            NPC_ENRICH_FINAL,
+            NPC_ENRICH_FINAL_SHA256,
+            NPC_ENRICH_FINAL_PREDECESSOR,
+        )?;
+        let documents = CanonicalProjectDocuments::from_v2_draft(draft, limits())?;
+        let tree_sha256 = write_documents(output, &documents)?;
+        println!(
+            "npc_enrichment=133 total_npcs=1282 total_dialogues=836 tree_sha256={tree_sha256} predecessor_mode=true"
+        );
+        return Ok(());
+    }
     // Fast successor: accept only the complete pinned R21 canonical catalogue.
     if document_tree_digest(&before) == NPC_ENRICH_MORE_PREDECESSOR {
         npc_bulk_enrichment::apply(
@@ -340,6 +376,7 @@ fn materialize_from_predecessor(
             NPC_ENRICH_MORE_SHA256,
             NPC_ENRICH_MORE_PREDECESSOR,
         )?;
+        let draft = finish_provisional(draft)?;
         let documents = CanonicalProjectDocuments::from_v2_draft(draft, limits())?;
         let tree_sha256 = write_documents(output, &documents)?;
         println!(

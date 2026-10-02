@@ -52,6 +52,9 @@ fn fields_allowed(before: &[ProjectV2CandidateField], after: &[ProjectV2Candidat
         "quality",
         "profession",
         "profession_selection",
+        "appearance_selection",
+        "fallback_selection",
+        "completion",
         "appearance_reference",
         "dialogue_followup",
         "voices",
@@ -163,6 +166,42 @@ fn profile_scope(repair: &ProfileRepair, actors: &BTreeSet<String>) -> bool {
             .strip_prefix(prefix)
             .is_some_and(|stem| actors.contains(&format!("oteryn:npc.{stem}")))
 }
+// Exact placeholder inventory in the pinned R22 successor; donors cannot be overwritten.
+fn placeholder_presentations() -> Result<BTreeSet<String>> {
+    if hex_sha256(NPC_ENRICH_MORE) != NPC_ENRICH_MORE_SHA256 {
+        return Err("placeholder source packet drifted".into());
+    }
+    let p: Packet = serde_json::from_slice(NPC_ENRICH_MORE)?;
+    let mut keys = BTreeSet::new();
+    for repair in p.repairs {
+        if let ProjectV2Declaration::Npc {
+            identity, fields, ..
+        } = repair.after
+        {
+            let quality = fields
+                .iter()
+                .find(|f| f.field_path == "oteryn:source.npc.bulk.quality")
+                .ok_or("placeholder quality missing")?;
+            let ProjectV2CandidateValue::Text(text) = &quality.value else {
+                return Err("placeholder quality shape".into());
+            };
+            let quality: Value = serde_json::from_str(text)?;
+            if quality["presentation"] == "placeholder" {
+                let stem = identity
+                    .key
+                    .strip_prefix("oteryn:npc.")
+                    .ok_or("placeholder NPC key")?;
+                if !keys.insert(format!("oteryn:presentation.npc.{stem}")) {
+                    return Err("duplicate placeholder target".into());
+                }
+            }
+        }
+    }
+    if keys.len() != 112 {
+        return Err("placeholder closed inventory drifted".into());
+    }
+    Ok(keys)
+}
 pub(super) fn apply(
     draft: &mut ProjectV2Draft,
     bytes: &[u8],
@@ -183,17 +222,24 @@ pub(super) fn apply(
     {
         return Err("enrichment envelope drifted".into());
     }
+    let placeholders = if packet.from_project_revision == "g4-npc-provisional-enrichment-r22" {
+        Some(placeholder_presentations()?)
+    } else {
+        None
+    };
     let actors = actors()?;
     let mut next = draft.clone();
     let mut seen = BTreeSet::new();
     let mut npc_count = 0;
     for repair in &packet.repairs {
         // R22 supplies selected replies only; keyword matching and flow remain unchanged.
-        if packet.from_project_revision == "g4-npc-provisional-enrichment-r21"
-            && let (
-                ProjectV2Declaration::Dialogue { keywords: k, .. },
-                ProjectV2Declaration::Dialogue { keywords: nk, .. },
-            ) = (&repair.before, &repair.after)
+        if matches!(
+            packet.from_project_revision.as_str(),
+            "g4-npc-provisional-enrichment-r21" | "g4-npc-provisional-enrichment-r22"
+        ) && let (
+            ProjectV2Declaration::Dialogue { keywords: k, .. },
+            ProjectV2Declaration::Dialogue { keywords: nk, .. },
+        ) = (&repair.before, &repair.after)
         {
             let retained = if nk.len() == k.len() + 1 {
                 let last = nk.last().ok_or("missing successor story")?;
@@ -238,6 +284,18 @@ pub(super) fn apply(
     }
     let mut seen = BTreeSet::new();
     for repair in &packet.profile_repairs {
+        if placeholders.as_ref().is_some_and(|keys| {
+            !keys.contains(&repair.before.target.key)
+                || !matches!(
+                    (&repair.before.data, &repair.after.data),
+                    (
+                        ProjectV2AuthoringProfileData::Presentation(_),
+                        ProjectV2AuthoringProfileData::Presentation(_)
+                    )
+                )
+        }) {
+            return Err("project defaults cannot overwrite donor appearance or behavior".into());
+        }
         if !seen.insert(repair.before.target.key.clone()) || !profile_scope(repair, &actors) {
             return Err("enrichment profile scope/duplicate drifted".into());
         }
@@ -269,7 +327,13 @@ pub(super) fn reverse_for_fixture(
 ) -> Result<()> {
     let chain = if bytes == NPC_ENRICH {
         vec![
+            (NPC_ENRICH_FINAL, NPC_ENRICH_FINAL_SHA256),
             (NPC_ENRICH_MORE, NPC_ENRICH_MORE_SHA256),
+            (bytes, packet_sha256),
+        ]
+    } else if bytes == NPC_ENRICH_MORE {
+        vec![
+            (NPC_ENRICH_FINAL, NPC_ENRICH_FINAL_SHA256),
             (bytes, packet_sha256),
         ]
     } else {
@@ -470,5 +534,63 @@ mod tests {
             .is_err()
         );
         assert_eq!(draft, before);
+    }
+    #[test]
+    fn r23_project_defaults_cannot_override_donor_or_foreign_presentations() {
+        let content = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../content");
+        let fs_limits = ProjectFilesystemLimits {
+            project: limits(),
+            max_entries_per_directory_scan: 32,
+            max_total_directory_entries_scanned: 201,
+        };
+        let mut predecessor =
+            capture_world_project(&content, std::ffi::OsStr::new("world"), fs_limits)
+                .expect("repository native project")
+                .migrate_to_v2();
+        reverse_for_fixture(
+            &mut predecessor,
+            NPC_ENRICH_FINAL,
+            NPC_ENRICH_FINAL_SHA256,
+            NPC_ENRICH_FINAL_PREDECESSOR,
+        )
+        .expect("R22 predecessor");
+        let placeholders = placeholder_presentations().unwrap();
+        let actors = actors().unwrap();
+        let donor = predecessor
+            .state
+            .authoring_profiles
+            .iter()
+            .find(|p| {
+                p.target
+                    .key
+                    .strip_prefix("oteryn:presentation.npc.")
+                    .is_some_and(|stem| actors.contains(&format!("oteryn:npc.{stem}")))
+                    && !placeholders.contains(&p.target.key)
+            })
+            .expect("one preserved donor presentation");
+        for foreign in [false, true] {
+            let mut profile = serde_json::to_value(donor).unwrap();
+            if foreign {
+                profile["target"]["key"] =
+                    serde_json::json!("oteryn:presentation.npc.foreign_actor");
+            }
+            let mut packet: Value = serde_json::from_slice(NPC_ENRICH_FINAL).unwrap();
+            packet["profile_repairs"]
+                .as_array_mut()
+                .unwrap()
+                .push(serde_json::json!({"before": profile.clone(), "after": profile}));
+            let bytes = serde_json::to_vec(&packet).unwrap();
+            let mut draft = predecessor.clone();
+            assert!(
+                apply(
+                    &mut draft,
+                    &bytes,
+                    &hex_sha256(&bytes),
+                    NPC_ENRICH_FINAL_PREDECESSOR
+                )
+                .is_err()
+            );
+            assert_eq!(draft, predecessor);
+        }
     }
 }
