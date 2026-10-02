@@ -1,6 +1,6 @@
 # OTV2-20261002-monster-classification
 
-Owner requested distinguishing bosses, quest/raid creatures and other roles so absent stats are assessed correctly. Root owns AUTHORING branch `codex/monster-classification-20261002`, parent `67112b9a194f77fc514564843be6596a877e986c` (draft #1543). One publisher; source and schema reviewers are read-only. No merge or production mutation selected.
+Owner requested distinguishing bosses, quest/raid creatures and other roles so absent stats are assessed correctly. Root owns AUTHORING branch `codex/monster-classification-20261002`, base snapshot `67112b9a194f77fc514564843be6596a877e986c` (draft #1543). One publisher; source and schema reviewers are read-only. No merge or production mutation selected.
 
 Owned paths: source evidence generator, classification catalogue builder/schema/tests and README in tools/content-migration; this archive task and docs/agents/evidence/monster-classification-20261002. Native contracts, profiles, source bundles and prior frozen drafts remain unchanged.
 

@@ -1,6 +1,5 @@
 {
   "classification": "SOURCE_BOUND_AUTHORING_CLASSIFICATION",
-  "parent": "67112b9a194f77fc514564843be6596a877e986c",
   "counts": {
     "population": 1697,
     "roles": {
@@ -56,11 +55,11 @@
     "positive_role_completeness": "399rolesunknown;notfabricated",
     "governance": "validatorPASS;36testsPASS"
   },
-  "archive_sha256": "dff31607d2e70ce0c6929962d3a728304f4e4ada4fe01877747dd7e265b41505",
-  "archive_bytes": 832076,
+  "archive_sha256": "209a462c9fba3ef9e8baad14b1e9a292cfb700a28813d81b36920331f5f62213",
+  "archive_bytes": 831718,
   "members": {
     "published-classification.json": "a1c2089352a0262c8ee5ee955d6e21bdb38b15625360e7788aa59c99c8a595e4",
-    "published-classification.csv": "0d8870f3dde42eac7a3b90938546dcde27fba59734cd10229bc195de946ba4e0",
+    "published-classification.csv": "95a3fa821905b244b6131bcbeed863e2ef8d9679d40519fff40d264a21a88bcc",
     "published-source-evidence.json": "35cfd7af75e3db8ed5ea0772ea51999bfc6bafdb4f5843941367c560fd2f396b",
     "schema-review.json": "91b46493855dc596ce313c8470148ed0e136bf03aefbe149ea6e89a2ab2f2a34",
     "independent-review.json": "b6c292f9c6915298a3dd17a3f8ddc92f7e9172d9286f7d6c2a717181f4ecd71a",
@@ -75,5 +74,6 @@
   },
   "live_gameplay_verified": false,
   "production_activated": false,
-  "runtime_metadata_promotion": "PENDING architecture/integration #162"
+  "runtime_metadata_promotion": "PENDING architecture/integration #162",
+  "source_snapshot_head": "67112b9a194f77fc514564843be6596a877e986c"
 }
