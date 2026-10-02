@@ -1,0 +1,77 @@
+{
+  "schema": "NUMERIC_MODIFIER13_EXTERNAL_SOURCE_CHECKPOINT/v2",
+  "status": "SOURCE13_QUALIFIED_PENDING_FINAL_TRANSPORT_PEER_NOT_AUTHORED_OR_APPLIED",
+  "baseline": "1b026969a8b2236737bff537b3eddb3c909781b2",
+  "historical_source_checkpoint": {
+    "path": "/workspace/audit-continuation/numeric-modifier13-source-checkpoint-manifest.json",
+    "sha256": "2cdbb35a1de93c51b8a76fdb3a72d35f844fba3ecb0b0733f82e8d4309fdd52b"
+  },
+  "source_vectors": 13,
+  "source_atoms": 34,
+  "separate_magic4_atoms": 16,
+  "field_pairs": 176,
+  "native_applied": 0,
+  "source_facts_or_guard_changes": false,
+  "owned_files": {
+    "/workspace/audit-continuation/numeric-modifier13-source-transport-and-setter-superseding-receipt-v2.json": {
+      "sha256": "b07cb0c66e97be17c93b0762116608d17407e80dd162ab1da7cab938ad1380f3",
+      "bytes": 3526
+    },
+    "/workspace/audit-continuation/numeric-modifier13-whole-vector-source-proof-20261002-v2.json": {
+      "sha256": "11b8a6a7f1f85765f2b9c99dabc7815405c2bf3b0c10bb78b39deebb741937c9",
+      "bytes": 196121
+    },
+    "/workspace/audit-continuation/equipment19-modifier103-duration54-source-requalification-20261002-v2.md": {
+      "sha256": "8638468ba023d81090b1f506669066889ee255f8a1627f2b1578180da33fd679",
+      "bytes": 5777
+    }
+  },
+  "retained11_source_files": {
+    "/workspace/audit-continuation/requalify-equipment-modifier-duration-holds-20261002.py": {
+      "sha256": "21877c4c63548e878c05e84d543a518575050d2dc27fd4403387c5c39a520ba0",
+      "bytes": 18634
+    },
+    "/workspace/audit-continuation/qualify-modifier64-existing-carrier-numeric-shapes.py": {
+      "sha256": "49d1958a5f69874e2f24ee7fe502c1e5e1ed1979411e0a8b75cc36afdd5fb03f",
+      "bytes": 11753
+    },
+    "/workspace/audit-continuation/seal-numeric-modifier13-source-proof.py": {
+      "sha256": "b760c1d416437b3afeceed6d9a5b9e7ee642d005e05b2c0118c31c001ffe735f",
+      "bytes": 11354
+    },
+    "/workspace/audit-continuation/equipment19-modifier103-duration54-source-requalification-20261002.json": {
+      "sha256": "815f293f42bc81885db8b45c1cfb8dbe8585c94ca225d6a49349731ce9b6dc19",
+      "bytes": 1807489
+    },
+    "/workspace/audit-continuation/modifier64-existing-carrier-numeric-source-proposal-20261002.json": {
+      "sha256": "b62b0668bf37982cf4138bdb3a3b051e66352883bfcb4303203e4b04db4985cf",
+      "bytes": 95829
+    },
+    "/workspace/audit-continuation/numeric-modifier13-whole-vector-source-proof-20261002.json": {
+      "sha256": "8c09c97c5ea5503ef4caaa72c70a49d98f4afb219fe669d557c3b594cf37488d",
+      "bytes": 194688
+    },
+    "/workspace/audit-continuation/equipment19-modifier103-duration54-final-source-disposition-20261002.json": {
+      "sha256": "26e3d614c512d126d891b2d380b0c89dae2a5b9c3e2a0eab24f66ca5c2124fcc",
+      "bytes": 344894
+    },
+    "/workspace/audit-continuation/equipment19-modifier103-duration54-source-requalification-20261002.md": {
+      "sha256": "a876ca9b6bb9a7732fd4997340c846f1a8ecf997c5b12af3860eed407d8e3f7e",
+      "bytes": 5230
+    },
+    "/workspace/audit-continuation/modifier64-semantics-normal-http-attempt.json": {
+      "sha256": "dc0a269c42529c253ed8dba06fc89355af1c86cbf3501c097b297969b31d91d8",
+      "bytes": 458
+    },
+    "/workspace/audit-continuation/modifier64-six-semantics-browser-cdp-source.json": {
+      "sha256": "a09999353090d60cbed247d4ca077a66fe0bc9da973dc053eebf75c077c9a3de",
+      "bytes": 40722
+    },
+    "/workspace/audit-continuation/modifier64-six-semantics-public-source-report.json": {
+      "sha256": "311c069b27de010c30ca08307a614f2640f655558a0a9f94ad735022c0b40357",
+      "bytes": 6507
+    }
+  },
+  "source_peer": "Await final transportmetadata readback; independent value/guard replay alreadyPASS.",
+  "production_source_or_native_checks": "NOT_RUN; source-only; separate closed local setter required."
+}

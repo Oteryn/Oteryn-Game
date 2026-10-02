@@ -1,0 +1,45 @@
+{
+  "schema": "NUMERIC13_SOURCE_METADATA_CORRECTION_RECEIPT/v2",
+  "status": "TRANSPORT_ONLY_CORRECTION_NO_FACT_OR_ID_CHANGE",
+  "superseded_historical_manifest": {
+    "path": "/workspace/audit-continuation/numeric-modifier13-source-checkpoint-manifest.json",
+    "sha256": "2cdbb35a1de93c51b8a76fdb3a72d35f844fba3ecb0b0733f82e8d4309fdd52b"
+  },
+  "superseded_source_proof": {
+    "path": "/workspace/audit-continuation/numeric-modifier13-whole-vector-source-proof-20261002.json",
+    "sha256": "8c09c97c5ea5503ef4caaa72c70a49d98f4afb219fe669d557c3b594cf37488d"
+  },
+  "actual_global_capture_manifest": {
+    "path": "/workspace/audit-continuation/global-infobox-object-source-manifest.json",
+    "sha256": "014f140c789e554f11cee61012932d214f7bd46dd9bc6155bca08f42f3e93629",
+    "method": "Complete public MediaWiki embeddedin continuation census; all listed pages fetched in batches <=50 through anonymous browser same-origin API. Compact source capture retains page/rev/date/fullcontentSHA/all matched fullrawInfobox bodies and all parameter presence, duplicates and raw itemid occurrences; no original article corpus redistributed.",
+    "collector": "client_assets sole public browser writer",
+    "source_role": "Global source ItemID priority index; malformed and unresolved IDs remain holds. Name or engine discovery is not source identity."
+  },
+  "source13_full_capture_parts": [
+    "/workspace/audit-continuation/global-infobox-object-source-part-137.json",
+    "/workspace/audit-continuation/global-infobox-object-source-part-138.json",
+    "/workspace/audit-continuation/global-infobox-object-source-part-150.json",
+    "/workspace/audit-continuation/global-infobox-object-source-part-188.json"
+  ],
+  "correct_transport": "Own Infobox Object cutoff frames were retained anonymous browser same-origin public MediaWiki API captures through Chrome/CDP by client_assets. They were not ordinaryHTTP in the original capture. This pass replays those exact local retained bytes. Mechanic docs were separately browser captured by equipment after ordinaryHTTP402. Public XML is retained repository source; no new remote XML request made in this pass.",
+  "incorrect_inherited_fields": [
+    "equipment19-modifier103-duration54-source-requalification-20261002.json:source_transport ordinaryHTTP phrase",
+    "equipment19-modifier103-duration54-source-requalification-20261002.md ordinaryHTTP ownWiki phrase"
+  ],
+  "preserved_source_fact_checks": {
+    "all13ID_targets_bindings_native_current_guards": "UNCHANGED",
+    "all34typed_atoms_contexts": "UNCHANGED",
+    "allownraw_templates_coordinates_hashes": "UNCHANGED",
+    "numeric17_and_magic4proposal": "UNCHANGED",
+    "source175_or_complete_count": "NO_NEW_CLAIM"
+  },
+  "production_authoring_seam": {
+    "native_carrier": "Existing Native37 +ReferencePlayable.validate_modifier_parameter supports all proposed13 kinds without type/enum/ABI/profile changes.",
+    "current_existing_stats_setter": "item_stats_promotion.rs MODIFIERS whitelist370–427 does not accept REFLECT_DAMAGE/CLEAVE_PERCENT/PERFECT_SHOT_DAMAGE/PERFECT_SHOT_RANGE (_=>false).",
+    "accepted_next_plan": "Root authorized separate closed13 local atomic/idempotent setter, leaving oldstats whitelist/sourceproofs/compiler and26/49 unchanged. No production implementation orchecks have occurred.",
+    "global_current_hash": "Historical witness only; liveguard scoped13, sibling future enrichment allowed."
+  },
+  "new_native_applied": 0,
+  "no_repository_cargo_git_remoteadmin_mutations": true
+}

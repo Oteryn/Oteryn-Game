@@ -1,0 +1,103 @@
+{
+  "schema": "OTERYN_MODIFIER64_BOUNDED_PUBLIC_SEMANTIC_SOURCE_RESEARCH/v1",
+  "status": "PUBLIC_SOURCE_CAPTURE_COMPLETE_NATIVE_QUALIFICATION_NOT_ASSESSED",
+  "source": {
+    "path": "/workspace/audit-continuation/modifier64-six-semantics-browser-cdp-source.json",
+    "sha256": "a09999353090d60cbed247d4ca077a66fe0bc9da973dc053eebf75c077c9a3de",
+    "bytes": 40722,
+    "method": "anonymous public browser same-origin MediaWiki API through Chrome CDP",
+    "captureUTC": "2026-10-02T14:45:28.621Z",
+    "url": "https://tibia.fandom.com/api.php?action=query&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent%7Csha1&rvslots=main&titles=Damage+Reflection%7CCleave%7CPerfect+Shot%7CMagic+Shield%7CLife+Leech%7CTemplate%3AInfobox+Object%2FDocumentation&format=json&formatversion=2&redirects=1",
+    "status": 200,
+    "full_exact_CDP_and_API_bodies_retained": true
+  },
+  "normal_HTTP_block": {
+    "path": "/workspace/audit-continuation/modifier64-semantics-normal-http-attempt.json",
+    "sha256": "dc0a269c42529c253ed8dba06fc89355af1c86cbf3501c097b297969b31d91d8",
+    "status": 402
+  },
+  "pages": [
+    {
+      "title": "Magic Shield",
+      "page_id": 1866,
+      "revision_id": 1182867,
+      "revision_timestamp": "2026-05-07T06:32:56Z",
+      "API_revision_sha1": "e8fba34a6a2da517971ebe6dc33273bdd02a58de",
+      "raw_content_sha256": "339fe8a26e66322749a0ab17d428576d8450128280dbf1fbcb4124b8d33184ec",
+      "raw_content_bytes": 3532,
+      "target_cutoff_eligible": true,
+      "stable_link": "https://tibia.fandom.com/wiki/Magic_Shield?oldid=1182867"
+    },
+    {
+      "title": "Life Leech",
+      "page_id": 78085,
+      "revision_id": 1101811,
+      "revision_timestamp": "2025-05-04T17:01:12Z",
+      "API_revision_sha1": "66676a50d17637d0d74a2495be9dcfe881913b9c",
+      "raw_content_sha256": "507f3e067c027749e8e2de7b832d9473565d97a8436f0939d90bdce6c7049d35",
+      "raw_content_bytes": 859,
+      "target_cutoff_eligible": true,
+      "stable_link": "https://tibia.fandom.com/wiki/Life_Leech?oldid=1101811"
+    },
+    {
+      "title": "Damage Reflection",
+      "page_id": 84163,
+      "revision_id": 1131993,
+      "revision_timestamp": "2025-10-07T15:47:33Z",
+      "API_revision_sha1": "9e0e8ada13deed7779b9411eafad4f9bfcb70699",
+      "raw_content_sha256": "f9d47777697487d341ca252b98f9b5b9ee1cd446315555281c7f6f016a6fe4a7",
+      "raw_content_bytes": 4865,
+      "target_cutoff_eligible": true,
+      "stable_link": "https://tibia.fandom.com/wiki/Damage_Reflection?oldid=1131993"
+    },
+    {
+      "title": "Template:Infobox Object/Documentation",
+      "page_id": 94083,
+      "revision_id": 1204204,
+      "revision_timestamp": "2026-08-31T00:49:33Z",
+      "API_revision_sha1": "c84180ef4c519a9f7a56495d6fb1c744ed356e3b",
+      "raw_content_sha256": "15e0fd448b90de5df669c37fe5db230dae842bb78151e2bc9df67b392c6be150",
+      "raw_content_bytes": 23973,
+      "target_cutoff_eligible": true,
+      "stable_link": "https://tibia.fandom.com/wiki/Template:Infobox_Object/Documentation?oldid=1204204"
+    },
+    {
+      "title": "Perfect Shot",
+      "page_id": 107866,
+      "revision_id": 1090573,
+      "revision_timestamp": "2025-02-08T16:18:36Z",
+      "API_revision_sha1": "ceb3184c3bc8f302610580abe0afac04e68474d2",
+      "raw_content_sha256": "0024eac554781a6c182663de77cc57882562c2123a3eeb7a5c7680eeadf79c6e",
+      "raw_content_bytes": 2318,
+      "target_cutoff_eligible": true,
+      "stable_link": "https://tibia.fandom.com/wiki/Perfect_Shot?oldid=1090573"
+    },
+    {
+      "title": "Cleave",
+      "page_id": 107867,
+      "revision_id": 1095106,
+      "revision_timestamp": "2025-03-13T16:49:23Z",
+      "API_revision_sha1": "32e92161f8f1da5ded74645b7d6c4265e47960d7",
+      "raw_content_sha256": "9f82b297bf470e9b1f6bb8946c7e19f2e5c52f1451129069eb8ec70949a305fe",
+      "raw_content_bytes": 1419,
+      "target_cutoff_eligible": true,
+      "stable_link": "https://tibia.fandom.com/wiki/Cleave?oldid=1095106"
+    }
+  ],
+  "findings": {
+    "Damage_Reflection": "Player equipment reflection is flat damage: combined80 becomes capped50 against5000health. Trigger only melee, not bosses; cap1%attackers HP and Prey exception. Creature reflection percentage/element tables are a distinct mechanic. Captured player rule does NOT establish reflected damage element Physical/Neutral/AllElements; do not import creature table elements or infer element from melee trigger.",
+    "Perfect_Shot": "Explicit+25 at range5 turns240damage into265 only at exactdistance5, singleprimarytarget; flatdamage points plus exactrange, not percentage or weaponmaximumrange6. Native cells/context representation still independently qualified.",
+    "Cleave": "Explicit10%Cleave sends10physical+50fire main-target example to1physical+5fire secondary targets beforetheirdefense; percentofdamage, splitdamageelements preserved. Does not assign targetItems or override shared-own-ID exclusions.",
+    "Magic_Shield": "Captured page is spell44, absorbing limiteddamage depends Level/MagicLevel viaformula and gear/skillboosts. Does NOT explicitly define gear +80 versus8% capacity modifier arithmetic/order. This six-page batch alone leaves intrinsic flat/percent gear unit grammar unsupported, despite establishing shieldcapacity asdamageabsorption/mana unit.",
+    "Life_Leech": "OwnInfoBoxDocumentation explicitly distinguishes intrinsic chance hpleech_ch from amount hpleech_am (sameasmanaleech), both numberwith%sign and pairedfields required. Missing XMLmodifier for50147 cannot be inferred fromequipped50148 or genericLifeLeech page.",
+    "Infobox_Documentation": "page94083/rev1204204 directly documents chance and amount%routes; noreflection/cleave/perfectshot/MagicShield modifier unitparameter guidance found in itsactualraw content."
+  },
+  "limits": [
+    "No perItem fact/cardinality/default/Nativekind/element/context/runtime/schema admission follows from these generalmechanic pages.",
+    "No Native/WT/Cargo/Git/ref mutation; no newprojectsource admission asserted.",
+    "Sixexactrequestedtitles onepublicbrowser APIbatch; allcurrentrevisions preSep27cutoff, no postcutoff substitution.",
+    "OnlynewownedresearchtargetA2AD1055CE83C778368F1DA19984BD4A wascreatedandclosed. No remoteFS/admin/config/install/private/otherexistingtabs touched.",
+    "No Tavilycalls."
+  ],
+  "next_owner_action": "world_routing must separately validate actualtypedNativeunits/kinds plus fullownItem raw/source/targetguards; holdunknown/reflectionelement and insufficientMagicShield gearsemantics."
+}

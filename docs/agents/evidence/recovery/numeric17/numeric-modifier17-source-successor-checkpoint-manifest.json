@@ -1,0 +1,81 @@
+{
+  "schema": "NUMERIC_MODIFIER17_EXTERNAL_SOURCE_SUCCESSOR_CHECKPOINT/v1",
+  "status": "FROZEN_SOURCE17_50_READY_FOR_COVERAGE_AUTHORING_NOT_NATIVE_APPLIED",
+  "baseline": "1b026969a8b2236737bff537b3eddb3c909781b2",
+  "source_vectors": 17,
+  "source_atoms": 50,
+  "native_applied": 0,
+  "original_histories": {
+    "source13v2": {
+      "path": "/workspace/audit-continuation/numeric-modifier13-whole-vector-source-proof-20261002-v2.json",
+      "sha256": "11b8a6a7f1f85765f2b9c99dabc7815405c2bf3b0c10bb78b39deebb741937c9",
+      "bytes": 196121
+    },
+    "source13v2manifest": {
+      "path": "/workspace/audit-continuation/numeric-modifier13-source-checkpoint-manifest-v2.json",
+      "sha256": "19e879d91f71254d32dde47ab322dc8e77210913db2e88923f971e41de6f25a5",
+      "bytes": 3820
+    },
+    "source17pending": {
+      "path": "/workspace/audit-continuation/modifier64-existing-carrier-numeric-source-proposal-20261002.json",
+      "sha256": "b62b0668bf37982cf4138bdb3a3b051e66352883bfcb4303203e4b04db4985cf",
+      "bytes": 95829
+    },
+    "source13v1": {
+      "path": "/workspace/audit-continuation/numeric-modifier13-whole-vector-source-proof-20261002.json",
+      "sha256": "8c09c97c5ea5503ef4caaa72c70a49d98f4afb219fe669d557c3b594cf37488d",
+      "bytes": 194688
+    },
+    "source13v1manifest": {
+      "path": "/workspace/audit-continuation/numeric-modifier13-source-checkpoint-manifest.json",
+      "sha256": "2cdbb35a1de93c51b8a76fdb3a72d35f844fba3ecb0b0733f82e8d4309fdd52b",
+      "bytes": 3626
+    }
+  },
+  "source_peers": {
+    "numeric13": {
+      "path": "/workspace/audit-continuation/numeric-modifier13-independent-source-proposal-peer.json",
+      "sha256": "4db1121c141ecbb4bf88c624570a595b8f5cea9d9649f3a918942d33c1efd986",
+      "bytes": 5011
+    },
+    "magic4": {
+      "path": "/workspace/audit-continuation/magic-capacity4-independent-observed-parameter-source-peer.json",
+      "sha256": "6652b18f9a9a410ff9f11de607e7e2fffd10bb3701e3ed7d9b83b588974a7035",
+      "bytes": 24985
+    }
+  },
+  "owned_files": {
+    "/workspace/audit-continuation/magic-capacity4-observed-parameter-source-proof-20261002.json": {
+      "sha256": "9aba058979f9376996377163964cbad2a9a20cd826c071ea40c9e1273213238f",
+      "bytes": 80888
+    },
+    "/workspace/audit-continuation/numeric-modifier17-whole-vector-source-successor-20261002.json": {
+      "sha256": "c950c0c89db442612b4822e857b86e70ac01056974f9752996aadda415f2d71f",
+      "bytes": 276142
+    },
+    "/workspace/audit-continuation/numeric-modifier17-source-successor-20261002.md": {
+      "sha256": "9ea84e5d55b46f5d783712a90134ae70e14426f16d6d3e878cda2bbb0bfd1b14",
+      "bytes": 1992
+    },
+    "/workspace/audit-continuation/build-magic4-numeric17-source-successor.py": {
+      "sha256": "e42a393138169bd85551c02fbf26f226a3164f6e16634da91a89e8dfc3bf26ed",
+      "bytes": 15545
+    }
+  },
+  "checks": {
+    "disjoint13plus4equals17": "PASS",
+    "whole34plus16equals50": "PASS",
+    "all16MagicownCrystal_Canary_atomcomparisons": "PASS",
+    "all13original_records_unchanged_incombined": "PASS",
+    "alloriginalproof_histories_unchanged": "PASS",
+    "cpp_exactbytes_lineranges_andpublicLook1131388": "PASS",
+    "source17_fullproductionimplementationpeer": "NOT_RUN; sourceauthoring nextbyCoverage",
+    "Cargo_generation_fullNative_delta": "NOT_RUN; Rootexclusivegrant required"
+  },
+  "proposed_repository_paths": {
+    "source13_history": "docs/agents/evidence/OTV2-20261002-item-numeric-modifier13-source-qualification-v1.json",
+    "magic4_source": "docs/agents/evidence/OTV2-20261002-item-magic-capacity4-source-qualification-v1.json",
+    "source17_successor": "docs/agents/evidence/OTV2-20261002-item-numeric-modifier17-source-qualification-v1.json",
+    "production_packet": "docs/agents/evidence/OTV2-20261002-item-numeric-modifier17-promotion-v1.json"
+  }
+}

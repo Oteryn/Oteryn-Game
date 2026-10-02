@@ -1,0 +1,73 @@
+{
+  "schema": "OTERYN_NUMERIC_MODIFIER13_INDEPENDENT_SOURCE_PROPOSAL_PEER/v1",
+  "status": "SOURCE_NUMERIC_MODIFIER13_PROPOSAL_PEER_PASS",
+  "findings": [],
+  "resolved_findings": [
+    {
+      "id": "SOURCE_TRANSPORT_LABEL",
+      "historical_inaccurate_claim": "Complete replay815f called retained ownWiki frames ordinaryMediaWikiHTTP; actualglobalmanifest anonymousbrowser sameoriginAPI throughCDP.",
+      "resolution": "Truthful supersedingreceiptb07cb0c6 andeffectiveproof11b8a6a7, oldfrozen11+manifest2cdb unchanged. Verified originalcapturemanifestmethod/collector/sourceRole and fourfullparts. No value/identity/sourcecoordinate changed."
+    }
+  ],
+  "manifest_v2": {
+    "path": "/workspace/audit-continuation/numeric-modifier13-source-checkpoint-manifest-v2.json",
+    "sha256": "19e879d91f71254d32dde47ab322dc8e77210913db2e88923f971e41de6f25a5",
+    "bytes": 3820
+  },
+  "effective_proof_v2": {
+    "path": "/workspace/audit-continuation/numeric-modifier13-whole-vector-source-proof-20261002-v2.json",
+    "sha256": "11b8a6a7f1f85765f2b9c99dabc7815405c2bf3b0c10bb78b39deebb741937c9",
+    "bytes": 196121
+  },
+  "independent_replay_script": {
+    "path": "/workspace/audit-continuation/review-numeric-modifier13-source-peer.py",
+    "sha256": "43240a1d124cb7f96191862970934756411ad6de5dec506d53a2b94268627925",
+    "bytes": 11222
+  },
+  "counts": {
+    "whole_vectors": 13,
+    "atoms": 34,
+    "Reflection": 5,
+    "Cleave": 6,
+    "PerfectShot": 2,
+    "own_source_parts": 4,
+    "complete_own_raw_groups": 13,
+    "official_objects_redecoded": 43516,
+    "current_All138_records_unchanged": 138,
+    "new_native_applied": 0
+  },
+  "checks": {
+    "all14files_new3_old11_hashes_and_sizes_twice": "PASS",
+    "all110_originalsource_inputpins_actual_or_historicalGit": "PASS",
+    "all13ownIDcomplete_global_index_refs_sourceframes_rawreparse_names_and_preCutoff_coords": "PASS",
+    "all13actual_CR_exact_fullbindings_forward_reverse_official_take/noWorld_currentmember/historicalmember/name_current1b_guards": "PASS",
+    "all13current_fourheaders_NameKnown_and_Native_modifier_UNKNOWN": "PASS",
+    "all34ownBoundCrystal_andCanary_exact_literal_values_actualXMLnot_report_only": "PASS",
+    "all34Native37_order_unique_typedparameter_shapes_canonicalpercent_unknowncontexts": "PASS",
+    "all13whole_raw_source_groups_no_empty_duplicate_or_unrecognized_atom_dropped": "PASS",
+    "all3mechanic_documentation_fullraw_identity_REV_sha1_SHA_quote_char_UTF8_offsets": "PASS",
+    "effective_v2_allrecords34atoms_CurrentParent/mechanicquotes_exact_v1": "PASS",
+    "existingNative37_core_contractSupportsParameters_static": "PASS_UNCOMPILED",
+    "oldpublishedStatsSetterRejectsNewKinds_confirmed": "PASS_STATIC_LIMIT_NOT_INTEGRATION_PASS"
+  },
+  "typed_semantics": {
+    "ReflectDamage": "SignedPoints flatplayer equipment reflecteddamage; no damageElement parameter belongs to thiskind. Own50/42/19/13 numeric source values distinct from creaturepercent reflection; meleetrigger/cap/bossexclusion onlyretainedsource context, noNativeTarget/Phase/priority guessed.",
+    "CleavePercent": "RationalPercent3/1 percentagepoints, not3/100fraction orflat3; all6 ownsingletonID pagesactual andfullweapon skill sibling preserved.",
+    "PerfectShot": "SignedPoints20 plusCells4or3 exact-distance parameter; not percent orweaponmaxrange. No gameplaytarget/trigger binding asserted.",
+    "ElementalBond": "Only50169/70 explicitEnergy element preserved, sameexistingElement3 Native domain; not Physical7/Neutral/All."
+  },
+  "integration_limits": [
+    "SOURCE qualification only, not authoredNativeEligibility/finalruntime parity or fullitemcompleteness.",
+    "Existing Native37 validate_modifier_parameter accepts shapes, but item_stats_promotion.rs currentwhitelist rejects Reflection/Cleave/PerfectShot; new closedlocalatomicsetter plusproductionchecks required. Oldsharedstats/compiler/26/49 packets unchanged.",
+    "No ABI/type/profile/schema extension, no context defaults, no individualmodifier inheritance from otherIDs/equiptargets.",
+    "CurrentfullNative hash is historical1b observation only; futureactualcurrentguards must scope exact13identity/name/fourheaders/source/membership/noWorld and wholemodifier Unknown-or-identical with blocked/conflicting groups rejected.",
+    "FullarticleSHA in ownbox captures retained as declaredcapturecoordinate; actualfullsourcepart/rawboxbytes checked, no claim recomputedwholeWikiarticle.",
+    "MagicCapacity4/16 remains a separateparameter-meaning decision, Physical8requires separatelyacceptedV5, LifeLeech50147noownXML/corroboration stillheld."
+  ],
+  "pending": [
+    "Root currentclosed authoring allocation/sourceprofile acceptance asneeded.",
+    "Dedicatedproductioncompiler/localatomicsettertests and stoppedimplementationpeer.",
+    "SerialCargo/finalgeneration/exact13wholedelta/oldnative sibling-and-owner/Worldpreservation/idempotence/finalpeer beforepublication."
+  ],
+  "no_WT_Cargo_Git_ref_remoteadmin_or_publication_mutations": true
+}

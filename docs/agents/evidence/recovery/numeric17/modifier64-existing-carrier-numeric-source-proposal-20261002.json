@@ -1,0 +1,3293 @@
+{
+  "schema": "MODIFIER64_EXISTING_CARRIER_NUMERIC_SOURCE_PROPOSAL/v1",
+  "status": "SOURCE_ONLY_UNPUBLISHED; PUBLIC_SEMANTIC_DOCS_PENDING; NATIVE_APPLIED_ZERO",
+  "source_replay_baseline": "b0f91e2883007861f5556c44cce13701bb447283",
+  "current_published_receipt": {
+    "commit": "1b026969a8b2236737bff537b3eddb3c909781b2",
+    "publication_state": "VALIDATE",
+    "reference_path": "content/world/definitions/reference.json",
+    "reference_sha256": "debae88e73dd4dda22060733970e25f4cc72028eae8d7cbdbb8dee36ca1e47c2",
+    "reference_bytes": 24952379,
+    "all138_complete_native_definitions_equal_replay_baseline": true,
+    "current_full_native_item_count": 34031
+  },
+  "parent_source_report": {
+    "path": "/workspace/audit-continuation/equipment19-modifier103-duration54-source-requalification-20261002.json",
+    "sha256": "815f293f42bc81885db8b45c1cfb8dbe8585c94ca225d6a49349731ce9b6dc19"
+  },
+  "closed17_intrinsic_numeric_lead_ids": [
+    36656,
+    36657,
+    36658,
+    36659,
+    36660,
+    36661,
+    36662,
+    36666,
+    36672,
+    36673,
+    39147,
+    39148,
+    39150,
+    45639,
+    45640,
+    50169,
+    50170
+  ],
+  "proposed_complete_vectors": 17,
+  "proposed_whole_atoms": 50,
+  "no_current_native_promotion": true,
+  "parser_and_enum_unchanged": true,
+  "malformed64_disjoint_shapes": [
+    {
+      "shape": "EXPLICIT_EMPTY_OR_DUPLICATE_GROUP_PARAMETER",
+      "count": 29,
+      "ids": [
+        36668,
+        36669,
+        36674,
+        36675,
+        39162,
+        39163,
+        43882,
+        43883,
+        43885,
+        47372,
+        47373,
+        49528,
+        49529,
+        49882,
+        49883,
+        49884,
+        49885,
+        49886,
+        49887,
+        50156,
+        50157,
+        50158,
+        50159,
+        50161,
+        50162,
+        50251,
+        50252,
+        50253,
+        51261
+      ],
+      "examples": [
+        {
+          "item_id": 36668,
+          "raw_complete_group": [
+            {
+              "crithit_ch": [
+                ""
+              ],
+              "critextra_dmg": [
+                ""
+              ],
+              "attrib": [
+                "magic level +2, fire magic level +1, perfect shot +65 at range 4"
+              ]
+            }
+          ],
+          "source_coordinates": [
+            {
+              "page_id": 94373,
+              "revision_id": 1148450,
+              "raw_sha256": "f6d3326fa435b2131412f8ad4e9eff2500abb0d4532bd079de007a258dbd52c8"
+            }
+          ]
+        },
+        {
+          "item_id": 36669,
+          "raw_complete_group": [
+            {
+              "crithit_ch": [
+                ""
+              ],
+              "critextra_dmg": [
+                ""
+              ],
+              "attrib": [
+                "magic level +2, fire magic level +1, perfect shot +65 at range 4"
+              ]
+            }
+          ],
+          "source_coordinates": [
+            {
+              "page_id": 94376,
+              "revision_id": 1148451,
+              "raw_sha256": "f74258816e86019c96bc26d03f7fad5164a4044675531d177009100ca23810a6"
+            }
+          ]
+        },
+        {
+          "item_id": 36674,
+          "raw_complete_group": [
+            {
+              "crithit_ch": [
+                ""
+              ],
+              "critextra_dmg": [
+                ""
+              ],
+              "attrib": [
+                "magic level +2, healing magic level +2"
+              ]
+            }
+          ],
+          "source_coordinates": [
+            {
+              "page_id": 94374,
+              "revision_id": 1165266,
+              "raw_sha256": "7bb2127656389e800591852486dcc1f9d485e02c64da2b910dc20edf4390f3f3"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "shape": "INLINE_LIFE_LEECH_AMOUNT_OWN_XML_MISSING",
+      "count": 1,
+      "ids": [
+        50147
+      ],
+      "examples": [
+        {
+          "item_id": 50147,
+          "raw_complete_group": [
+            {
+              "attrib": [
+                "fist fighting +3, magic level +2, life leech +2%"
+              ],
+              "mantra": [
+                "2"
+              ]
+            }
+          ],
+          "source_coordinates": [
+            {
+              "page_id": 108005,
+              "revision_id": 1148639,
+              "raw_sha256": "78cb01b5af532e88a1aebe5a04983cfd38e48e0817949093dcea8066d6b9effa"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "shape": "NAMED_BOOLEAN_EFFECT_NO_OWN_XML_EFFECT",
+      "count": 3,
+      "ids": [
+        3049,
+        3051,
+        3097
+      ],
+      "examples": [
+        {
+          "item_id": 3049,
+          "raw_complete_group": [
+            {
+              "attrib": [
+                "invisibility"
+              ]
+            }
+          ],
+          "source_coordinates": [
+            {
+              "page_id": 2197,
+              "revision_id": 1194097,
+              "raw_sha256": "5de3e921000af97aaae5ae89d2381bd94277cf873cf6355daf605339dde9753b"
+            }
+          ]
+        },
+        {
+          "item_id": 3051,
+          "raw_complete_group": [
+            {
+              "attrib": [
+                "magic shield"
+              ]
+            }
+          ],
+          "source_coordinates": [
+            {
+              "page_id": 2189,
+              "revision_id": 1194066,
+              "raw_sha256": "220700e4970b0c51a9df7cbb392715ebf6d067c5e3a71c3c93e327089f9a95f3"
+            }
+          ]
+        },
+        {
+          "item_id": 3097,
+          "raw_complete_group": [
+            {
+              "attrib": [
+                "hard drinking"
+              ]
+            }
+          ],
+          "source_coordinates": [
+            {
+              "page_id": 2177,
+              "revision_id": 1194084,
+              "raw_sha256": "703acc86f079fa7716d58fc9c6a1c56354a453b7fcd4aefaea823de836b335ba"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "shape": "NUMERIC_CLEAVE_PERCENT_SINGLE_OWN_ID",
+      "count": 6,
+      "ids": [
+        36657,
+        36658,
+        36659,
+        36660,
+        36661,
+        36662
+      ],
+      "examples": [
+        {
+          "item_id": 36657,
+          "raw_complete_group": [
+            {
+              "attrib": [
+                "sword fighting +3, Cleave 3%"
+              ]
+            }
+          ],
+          "source_coordinates": [
+            {
+              "page_id": 94361,
+              "revision_id": 1148439,
+              "raw_sha256": "0eee824f866ca2c62e7c9a3eac527bd7e8326b9c95baa73e5b664bedbd5b666d"
+            }
+          ]
+        },
+        {
+          "item_id": 36658,
+          "raw_complete_group": [
+            {
+              "attrib": [
+                "sword fighting +3, Cleave 3%"
+              ]
+            }
+          ],
+          "source_coordinates": [
+            {
+              "page_id": 94362,
+              "revision_id": 1148440,
+              "raw_sha256": "c5e8b666c4d1b3dd275e0244042afb90fa8d36e43e49575d49040e5744f51175"
+            }
+          ]
+        },
+        {
+          "item_id": 36659,
+          "raw_complete_group": [
+            {
+              "attrib": [
+                "club fighting +3, Cleave 3%"
+              ]
+            }
+          ],
+          "source_coordinates": [
+            {
+              "page_id": 94365,
+              "revision_id": 1148441,
+              "raw_sha256": "9f5976e55f89b51cb068bff8e3509bb14c53d28fcd5f778e97947f5314d13761"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "shape": "NUMERIC_DAMAGE_REFLECTION",
+      "count": 5,
+      "ids": [
+        36656,
+        39147,
+        39148,
+        50169,
+        50170
+      ],
+      "examples": [
+        {
+          "item_id": 36656,
+          "raw_complete_group": [
+            {
+              "attrib": [
+                "42 Damage Reflection"
+              ]
+            }
+          ],
+          "source_coordinates": [
+            {
+              "page_id": 94360,
+              "revision_id": 1190654,
+              "raw_sha256": "e6018a6d5e7508ef6bcf28c959c0c8457128b07ad936957e64be429b6db680a0"
+            }
+          ]
+        },
+        {
+          "item_id": 39147,
+          "raw_complete_group": [
+            {
+              "attrib": [
+                "sword fighting +4, axe fighting +4, club fighting +4, 19 damage reflection"
+              ]
+            }
+          ],
+          "source_coordinates": [
+            {
+              "page_id": 98453,
+              "revision_id": 1148474,
+              "raw_sha256": "893e7479ce58cd43d6d372625904e02dba3b388cd6096fd198efd8e3902e5ce1"
+            }
+          ]
+        },
+        {
+          "item_id": 39148,
+          "raw_complete_group": [
+            {
+              "attrib": [
+                "sword fighting +3, axe fighting +3, club fighting +3, 13 damage reflection"
+              ]
+            }
+          ],
+          "source_coordinates": [
+            {
+              "page_id": 98466,
+              "revision_id": 1148475,
+              "raw_sha256": "d1eb0d4d02475b21acc134ef3186da5a0629291a72da2a194117be23fee96dad"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "shape": "NUMERIC_MAGIC_SHIELD_FLAT_AND_PERCENT",
+      "count": 4,
+      "ids": [
+        36672,
+        36673,
+        45639,
+        45640
+      ],
+      "examples": [
+        {
+          "item_id": 36672,
+          "raw_complete_group": [
+            {
+              "attrib": [
+                "magic level +4, death magic level +1, Magic Shield Capacity +80 and 8%"
+              ]
+            }
+          ],
+          "source_coordinates": [
+            {
+              "page_id": 94377,
+              "revision_id": 1190684,
+              "raw_sha256": "e2035e6aa0954b7637d2d6a61f44d2a7a7ab1030ae8c4b2279a519f0eb0f75be"
+            }
+          ]
+        },
+        {
+          "item_id": 36673,
+          "raw_complete_group": [
+            {
+              "attrib": [
+                "magic level +4, earth magic level +1, Magic Shield Capacity +80 and 8%"
+              ]
+            }
+          ],
+          "source_coordinates": [
+            {
+              "page_id": 94378,
+              "revision_id": 1190685,
+              "raw_sha256": "6b945b666e1868d5a54e792439b7a6661d445091ece2c4bcf4397497ceea32a3"
+            }
+          ]
+        },
+        {
+          "item_id": 45639,
+          "raw_complete_group": [
+            {
+              "attrib": [
+                "magic level +3, fire magic level +1, magic shield capacity +150 and 3%"
+              ]
+            }
+          ],
+          "source_coordinates": [
+            {
+              "page_id": 105195,
+              "revision_id": 1202657,
+              "raw_sha256": "222d86d7543d551381097e1bf8ab69ae8c6eb995e5a04d3df9e7ef4bb6839d72"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "shape": "NUMERIC_PERFECT_SHOT_DAMAGE_AND_RANGE",
+      "count": 2,
+      "ids": [
+        36666,
+        39150
+      ],
+      "examples": [
+        {
+          "item_id": 36666,
+          "raw_complete_group": [
+            {
+              "attrib": [
+                "perfect shot +20 at range 4"
+              ]
+            }
+          ],
+          "source_coordinates": [
+            {
+              "page_id": 94411,
+              "revision_id": 1148448,
+              "raw_sha256": "3f2e683a37ca37407492fa4fbab485423a71909cbef93774958020af20c1b3ae"
+            }
+          ]
+        },
+        {
+          "item_id": 39150,
+          "raw_complete_group": [
+            {
+              "attrib": [
+                "magic level +1, perfect shot +20 at range 3"
+              ]
+            }
+          ],
+          "source_coordinates": [
+            {
+              "page_id": 98473,
+              "revision_id": 1148477,
+              "raw_sha256": "9ca518467400d2618533db46a95e1e5074fed95164fe643db32149157858045a"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "shape": "UNQUANTIFIED_REGENERATION_WHOLE_VECTOR",
+      "count": 14,
+      "ids": [
+        3052,
+        3098,
+        3549,
+        6529,
+        8081,
+        12669,
+        23474,
+        23475,
+        23476,
+        23477,
+        23531,
+        23532,
+        23543,
+        45643
+      ],
+      "examples": [
+        {
+          "item_id": 3052,
+          "raw_complete_group": [
+            {
+              "attrib": [
+                "faster regeneration"
+              ]
+            }
+          ],
+          "source_coordinates": [
+            {
+              "page_id": 2185,
+              "revision_id": 1194087,
+              "raw_sha256": "9370a9a3558007b7bb36fe9670f604951fbef90a57b1cddae570ee4178316c32"
+            }
+          ]
+        },
+        {
+          "item_id": 3098,
+          "raw_complete_group": [
+            {
+              "attrib": [
+                "faster regeneration"
+              ]
+            }
+          ],
+          "source_coordinates": [
+            {
+              "page_id": 2187,
+              "revision_id": 1194098,
+              "raw_sha256": "0b6c1459f3efad23799c540d4b2c49ea5a43fb2ffa66d6e2d4fe9f106a04f107"
+            }
+          ]
+        },
+        {
+          "item_id": 3549,
+          "raw_complete_group": [
+            {
+              "attrib": [
+                "faster regeneration"
+              ]
+            }
+          ],
+          "source_coordinates": [
+            {
+              "page_id": 2384,
+              "revision_id": 1148781,
+              "raw_sha256": "334a2ad4f97cb3bc1b4a3787876592943eb925098b2ea427159ab7ec8d1459bf"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "typed_leads_all_including_held": [
+    {
+      "item_id": 36656,
+      "item_key": "oteryn:item.tibia.i36656",
+      "current_target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i36656",
+        "revision": "definition-r1"
+      },
+      "shape": "NUMERIC_DAMAGE_REFLECTION",
+      "source_whole_vector": {
+        "kind": "MODIFIERS",
+        "value": [
+          {
+            "kind": "REFLECT_DAMAGE",
+            "target_domain": {
+              "state": "UNKNOWN"
+            },
+            "evaluation_phase": {
+              "state": "UNKNOWN"
+            },
+            "priority": {
+              "state": "UNKNOWN"
+            },
+            "parameter": {
+              "state": "KNOWN",
+              "value": {
+                "kind": "SIGNED_POINTS",
+                "value": 42
+              }
+            }
+          }
+        ]
+      },
+      "atom_count": 1,
+      "literal_routes": [
+        {
+          "source_literal": "42 Damage Reflection",
+          "native_kind": "REFLECT_DAMAGE",
+          "parameter_type": "SIGNED_POINTS",
+          "xml_key": "reflectdamage",
+          "expected_scalar": 42
+        }
+      ],
+      "corroboration": [
+        {
+          "source": "binding-selected-Crystal",
+          "own_modifier_fields": [
+            {
+              "xml_key": "reflectdamage",
+              "own_values": [
+                "42"
+              ],
+              "agrees": true
+            }
+          ],
+          "agrees": true,
+          "scope": "ONLY_NEW_LITERAL_MODIFIER_KEYS; NOT_ALL_XML_RECORD_ATTRIBUTES"
+        },
+        {
+          "source": "Canary-hypothesis",
+          "own_modifier_fields": [
+            {
+              "xml_key": "reflectdamage",
+              "own_values": [
+                "42"
+              ],
+              "agrees": true
+            }
+          ],
+          "agrees": true,
+          "scope": "ONLY_NEW_LITERAL_MODIFIER_KEYS; NOT_ALL_XML_RECORD_ATTRIBUTES"
+        }
+      ],
+      "guards": {
+        "CURRENT_NATIVE_ITEM_PRESENT": true,
+        "EXPLICIT_EXACT_BINDING_FULL_IDENTITY": true,
+        "CURRENT_OFFICIAL_OBJECT_PRESENT": true,
+        "CURRENT_MEMBER_FULL_RECORD_PROJECTION": true,
+        "BOUND_SOURCE_EPOCH_IDENTITY_CONTINUITY": true,
+        "NO_CURRENT_WORLD_OWNER": true,
+        "NATIVE_NAME_KNOWN_SOURCE_EQUAL": true,
+        "OFFICIAL_TAKE_TRUE_NON_WORLD_FLAGS": true,
+        "ALL_OWN_ID_BOXES_EXACT_SINGLE_ID": true,
+        "OWN_SOURCE_NAMES_EQUAL_OFFICIAL": true,
+        "BOUND_XML_EXACT_RECORD_PRESENT": true
+      },
+      "blockers": [],
+      "qualification": "PENDING_DOCUMENTED_UNITS_AND_CLOSED_PARSER_AUTHORING",
+      "raw_source_reference_ids": [
+        {
+          "page_id": 94360,
+          "revision_id": 1190654,
+          "raw_sha256": "e6018a6d5e7508ef6bcf28c959c0c8457128b07ad936957e64be429b6db680a0"
+        }
+      ]
+    },
+    {
+      "item_id": 36657,
+      "item_key": "oteryn:item.tibia.i36657",
+      "current_target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i36657",
+        "revision": "definition-r1"
+      },
+      "shape": "NUMERIC_CLEAVE_PERCENT_SINGLE_OWN_ID",
+      "source_whole_vector": {
+        "kind": "MODIFIERS",
+        "value": [
+          {
+            "kind": "CLEAVE_PERCENT",
+            "target_domain": {
+              "state": "UNKNOWN"
+            },
+            "evaluation_phase": {
+              "state": "UNKNOWN"
+            },
+            "priority": {
+              "state": "UNKNOWN"
+            },
+            "parameter": {
+              "state": "KNOWN",
+              "value": {
+                "kind": "RATIONAL_PERCENT",
+                "value": {
+                  "numerator": 3,
+                  "denominator": 1
+                }
+              }
+            }
+          },
+          {
+            "kind": "SKILL_SWORD",
+            "target_domain": {
+              "state": "UNKNOWN"
+            },
+            "evaluation_phase": {
+              "state": "UNKNOWN"
+            },
+            "priority": {
+              "state": "UNKNOWN"
+            },
+            "parameter": {
+              "state": "KNOWN",
+              "value": {
+                "kind": "SIGNED_POINTS",
+                "value": 3
+              }
+            }
+          }
+        ]
+      },
+      "atom_count": 2,
+      "literal_routes": [
+        {
+          "source_literal": " Cleave 3%",
+          "native_kind": "CLEAVE_PERCENT",
+          "parameter_type": "RATIONAL_PERCENT",
+          "xml_key": "cleavepercent",
+          "expected_scalar": {
+            "numerator": 3,
+            "denominator": 1
+          }
+        }
+      ],
+      "corroboration": [
+        {
+          "source": "binding-selected-Crystal",
+          "own_modifier_fields": [
+            {
+              "xml_key": "cleavepercent",
+              "own_values": [
+                "3"
+              ],
+              "agrees": true
+            }
+          ],
+          "agrees": true,
+          "scope": "ONLY_NEW_LITERAL_MODIFIER_KEYS; NOT_ALL_XML_RECORD_ATTRIBUTES"
+        },
+        {
+          "source": "Canary-hypothesis",
+          "own_modifier_fields": [
+            {
+              "xml_key": "cleavepercent",
+              "own_values": [
+                "3"
+              ],
+              "agrees": true
+            }
+          ],
+          "agrees": true,
+          "scope": "ONLY_NEW_LITERAL_MODIFIER_KEYS; NOT_ALL_XML_RECORD_ATTRIBUTES"
+        }
+      ],
+      "guards": {
+        "CURRENT_NATIVE_ITEM_PRESENT": true,
+        "EXPLICIT_EXACT_BINDING_FULL_IDENTITY": true,
+        "CURRENT_OFFICIAL_OBJECT_PRESENT": true,
+        "CURRENT_MEMBER_FULL_RECORD_PROJECTION": true,
+        "BOUND_SOURCE_EPOCH_IDENTITY_CONTINUITY": true,
+        "NO_CURRENT_WORLD_OWNER": true,
+        "NATIVE_NAME_KNOWN_SOURCE_EQUAL": true,
+        "OFFICIAL_TAKE_TRUE_NON_WORLD_FLAGS": true,
+        "ALL_OWN_ID_BOXES_EXACT_SINGLE_ID": true,
+        "OWN_SOURCE_NAMES_EQUAL_OFFICIAL": true,
+        "BOUND_XML_EXACT_RECORD_PRESENT": true
+      },
+      "blockers": [],
+      "qualification": "PENDING_DOCUMENTED_UNITS_AND_CLOSED_PARSER_AUTHORING",
+      "raw_source_reference_ids": [
+        {
+          "page_id": 94361,
+          "revision_id": 1148439,
+          "raw_sha256": "0eee824f866ca2c62e7c9a3eac527bd7e8326b9c95baa73e5b664bedbd5b666d"
+        }
+      ]
+    },
+    {
+      "item_id": 36658,
+      "item_key": "oteryn:item.tibia.i36658",
+      "current_target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i36658",
+        "revision": "definition-r1"
+      },
+      "shape": "NUMERIC_CLEAVE_PERCENT_SINGLE_OWN_ID",
+      "source_whole_vector": {
+        "kind": "MODIFIERS",
+        "value": [
+          {
+            "kind": "CLEAVE_PERCENT",
+            "target_domain": {
+              "state": "UNKNOWN"
+            },
+            "evaluation_phase": {
+              "state": "UNKNOWN"
+            },
+            "priority": {
+              "state": "UNKNOWN"
+            },
+            "parameter": {
+              "state": "KNOWN",
+              "value": {
+                "kind": "RATIONAL_PERCENT",
+                "value": {
+                  "numerator": 3,
+                  "denominator": 1
+                }
+              }
+            }
+          },
+          {
+            "kind": "SKILL_SWORD",
+            "target_domain": {
+              "state": "UNKNOWN"
+            },
+            "evaluation_phase": {
+              "state": "UNKNOWN"
+            },
+            "priority": {
+              "state": "UNKNOWN"
+            },
+            "parameter": {
+              "state": "KNOWN",
+              "value": {
+                "kind": "SIGNED_POINTS",
+                "value": 3
+              }
+            }
+          }
+        ]
+      },
+      "atom_count": 2,
+      "literal_routes": [
+        {
+          "source_literal": " Cleave 3%",
+          "native_kind": "CLEAVE_PERCENT",
+          "parameter_type": "RATIONAL_PERCENT",
+          "xml_key": "cleavepercent",
+          "expected_scalar": {
+            "numerator": 3,
+            "denominator": 1
+          }
+        }
+      ],
+      "corroboration": [
+        {
+          "source": "binding-selected-Crystal",
+          "own_modifier_fields": [
+            {
+              "xml_key": "cleavepercent",
+              "own_values": [
+                "3"
+              ],
+              "agrees": true
+            }
+          ],
+          "agrees": true,
+          "scope": "ONLY_NEW_LITERAL_MODIFIER_KEYS; NOT_ALL_XML_RECORD_ATTRIBUTES"
+        },
+        {
+          "source": "Canary-hypothesis",
+          "own_modifier_fields": [
+            {
+              "xml_key": "cleavepercent",
+              "own_values": [
+                "3"
+              ],
+              "agrees": true
+            }
+          ],
+          "agrees": true,
+          "scope": "ONLY_NEW_LITERAL_MODIFIER_KEYS; NOT_ALL_XML_RECORD_ATTRIBUTES"
+        }
+      ],
+      "guards": {
+        "CURRENT_NATIVE_ITEM_PRESENT": true,
+        "EXPLICIT_EXACT_BINDING_FULL_IDENTITY": true,
+        "CURRENT_OFFICIAL_OBJECT_PRESENT": true,
+        "CURRENT_MEMBER_FULL_RECORD_PROJECTION": true,
+        "BOUND_SOURCE_EPOCH_IDENTITY_CONTINUITY": true,
+        "NO_CURRENT_WORLD_OWNER": true,
+        "NATIVE_NAME_KNOWN_SOURCE_EQUAL": true,
+        "OFFICIAL_TAKE_TRUE_NON_WORLD_FLAGS": true,
+        "ALL_OWN_ID_BOXES_EXACT_SINGLE_ID": true,
+        "OWN_SOURCE_NAMES_EQUAL_OFFICIAL": true,
+        "BOUND_XML_EXACT_RECORD_PRESENT": true
+      },
+      "blockers": [],
+      "qualification": "PENDING_DOCUMENTED_UNITS_AND_CLOSED_PARSER_AUTHORING",
+      "raw_source_reference_ids": [
+        {
+          "page_id": 94362,
+          "revision_id": 1148440,
+          "raw_sha256": "c5e8b666c4d1b3dd275e0244042afb90fa8d36e43e49575d49040e5744f51175"
+        }
+      ]
+    },
+    {
+      "item_id": 36659,
+      "item_key": "oteryn:item.tibia.i36659",
+      "current_target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i36659",
+        "revision": "definition-r1"
+      },
+      "shape": "NUMERIC_CLEAVE_PERCENT_SINGLE_OWN_ID",
+      "source_whole_vector": {
+        "kind": "MODIFIERS",
+        "value": [
+          {
+            "kind": "CLEAVE_PERCENT",
+            "target_domain": {
+              "state": "UNKNOWN"
+            },
+            "evaluation_phase": {
+              "state": "UNKNOWN"
+            },
+            "priority": {
+              "state": "UNKNOWN"
+            },
+            "parameter": {
+              "state": "KNOWN",
+              "value": {
+                "kind": "RATIONAL_PERCENT",
+                "value": {
+                  "numerator": 3,
+                  "denominator": 1
+                }
+              }
+            }
+          },
+          {
+            "kind": "SKILL_CLUB",
+            "target_domain": {
+              "state": "UNKNOWN"
+            },
+            "evaluation_phase": {
+              "state": "UNKNOWN"
+            },
+            "priority": {
+              "state": "UNKNOWN"
+            },
+            "parameter": {
+              "state": "KNOWN",
+              "value": {
+                "kind": "SIGNED_POINTS",
+                "value": 3
+              }
+            }
+          }
+        ]
+      },
+      "atom_count": 2,
+      "literal_routes": [
+        {
+          "source_literal": " Cleave 3%",
+          "native_kind": "CLEAVE_PERCENT",
+          "parameter_type": "RATIONAL_PERCENT",
+          "xml_key": "cleavepercent",
+          "expected_scalar": {
+            "numerator": 3,
+            "denominator": 1
+          }
+        }
+      ],
+      "corroboration": [
+        {
+          "source": "binding-selected-Crystal",
+          "own_modifier_fields": [
+            {
+              "xml_key": "cleavepercent",
+              "own_values": [
+                "3"
+              ],
+              "agrees": true
+            }
+          ],
+          "agrees": true,
+          "scope": "ONLY_NEW_LITERAL_MODIFIER_KEYS; NOT_ALL_XML_RECORD_ATTRIBUTES"
+        },
+        {
+          "source": "Canary-hypothesis",
+          "own_modifier_fields": [
+            {
+              "xml_key": "cleavepercent",
+              "own_values": [
+                "3"
+              ],
+              "agrees": true
+            }
+          ],
+          "agrees": true,
+          "scope": "ONLY_NEW_LITERAL_MODIFIER_KEYS; NOT_ALL_XML_RECORD_ATTRIBUTES"
+        }
+      ],
+      "guards": {
+        "CURRENT_NATIVE_ITEM_PRESENT": true,
+        "EXPLICIT_EXACT_BINDING_FULL_IDENTITY": true,
+        "CURRENT_OFFICIAL_OBJECT_PRESENT": true,
+        "CURRENT_MEMBER_FULL_RECORD_PROJECTION": true,
+        "BOUND_SOURCE_EPOCH_IDENTITY_CONTINUITY": true,
+        "NO_CURRENT_WORLD_OWNER": true,
+        "NATIVE_NAME_KNOWN_SOURCE_EQUAL": true,
+        "OFFICIAL_TAKE_TRUE_NON_WORLD_FLAGS": true,
+        "ALL_OWN_ID_BOXES_EXACT_SINGLE_ID": true,
+        "OWN_SOURCE_NAMES_EQUAL_OFFICIAL": true,
+        "BOUND_XML_EXACT_RECORD_PRESENT": true
+      },
+      "blockers": [],
+      "qualification": "PENDING_DOCUMENTED_UNITS_AND_CLOSED_PARSER_AUTHORING",
+      "raw_source_reference_ids": [
+        {
+          "page_id": 94365,
+          "revision_id": 1148441,
+          "raw_sha256": "9f5976e55f89b51cb068bff8e3509bb14c53d28fcd5f778e97947f5314d13761"
+        }
+      ]
+    },
+    {
+      "item_id": 36660,
+      "item_key": "oteryn:item.tibia.i36660",
+      "current_target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i36660",
+        "revision": "definition-r1"
+      },
+      "shape": "NUMERIC_CLEAVE_PERCENT_SINGLE_OWN_ID",
+      "source_whole_vector": {
+        "kind": "MODIFIERS",
+        "value": [
+          {
+            "kind": "CLEAVE_PERCENT",
+            "target_domain": {
+              "state": "UNKNOWN"
+            },
+            "evaluation_phase": {
+              "state": "UNKNOWN"
+            },
+            "priority": {
+              "state": "UNKNOWN"
+            },
+            "parameter": {
+              "state": "KNOWN",
+              "value": {
+                "kind": "RATIONAL_PERCENT",
+                "value": {
+                  "numerator": 3,
+                  "denominator": 1
+                }
+              }
+            }
+          },
+          {
+            "kind": "SKILL_CLUB",
+            "target_domain": {
+              "state": "UNKNOWN"
+            },
+            "evaluation_phase": {
+              "state": "UNKNOWN"
+            },
+            "priority": {
+              "state": "UNKNOWN"
+            },
+            "parameter": {
+              "state": "KNOWN",
+              "value": {
+                "kind": "SIGNED_POINTS",
+                "value": 3
+              }
+            }
+          }
+        ]
+      },
+      "atom_count": 2,
+      "literal_routes": [
+        {
+          "source_literal": " Cleave 3%",
+          "native_kind": "CLEAVE_PERCENT",
+          "parameter_type": "RATIONAL_PERCENT",
+          "xml_key": "cleavepercent",
+          "expected_scalar": {
+            "numerator": 3,
+            "denominator": 1
+          }
+        }
+      ],
+      "corroboration": [
+        {
+          "source": "binding-selected-Crystal",
+          "own_modifier_fields": [
+            {
+              "xml_key": "cleavepercent",
+              "own_values": [
+                "3"
+              ],
+              "agrees": true
+            }
+          ],
+          "agrees": true,
+          "scope": "ONLY_NEW_LITERAL_MODIFIER_KEYS; NOT_ALL_XML_RECORD_ATTRIBUTES"
+        },
+        {
+          "source": "Canary-hypothesis",
+          "own_modifier_fields": [
+            {
+              "xml_key": "cleavepercent",
+              "own_values": [
+                "3"
+              ],
+              "agrees": true
+            }
+          ],
+          "agrees": true,
+          "scope": "ONLY_NEW_LITERAL_MODIFIER_KEYS; NOT_ALL_XML_RECORD_ATTRIBUTES"
+        }
+      ],
+      "guards": {
+        "CURRENT_NATIVE_ITEM_PRESENT": true,
+        "EXPLICIT_EXACT_BINDING_FULL_IDENTITY": true,
+        "CURRENT_OFFICIAL_OBJECT_PRESENT": true,
+        "CURRENT_MEMBER_FULL_RECORD_PROJECTION": true,
+        "BOUND_SOURCE_EPOCH_IDENTITY_CONTINUITY": true,
+        "NO_CURRENT_WORLD_OWNER": true,
+        "NATIVE_NAME_KNOWN_SOURCE_EQUAL": true,
+        "OFFICIAL_TAKE_TRUE_NON_WORLD_FLAGS": true,
+        "ALL_OWN_ID_BOXES_EXACT_SINGLE_ID": true,
+        "OWN_SOURCE_NAMES_EQUAL_OFFICIAL": true,
+        "BOUND_XML_EXACT_RECORD_PRESENT": true
+      },
+      "blockers": [],
+      "qualification": "PENDING_DOCUMENTED_UNITS_AND_CLOSED_PARSER_AUTHORING",
+      "raw_source_reference_ids": [
+        {
+          "page_id": 94363,
+          "revision_id": 1148442,
+          "raw_sha256": "8d05ef82cf5012cad4396f62420733ec183a817311e8305224a24f7febce3443"
+        }
+      ]
+    },
+    {
+      "item_id": 36661,
+      "item_key": "oteryn:item.tibia.i36661",
+      "current_target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i36661",
+        "revision": "definition-r1"
+      },
+      "shape": "NUMERIC_CLEAVE_PERCENT_SINGLE_OWN_ID",
+      "source_whole_vector": {
+        "kind": "MODIFIERS",
+        "value": [
+          {
+            "kind": "CLEAVE_PERCENT",
+            "target_domain": {
+              "state": "UNKNOWN"
+            },
+            "evaluation_phase": {
+              "state": "UNKNOWN"
+            },
+            "priority": {
+              "state": "UNKNOWN"
+            },
+            "parameter": {
+              "state": "KNOWN",
+              "value": {
+                "kind": "RATIONAL_PERCENT",
+                "value": {
+                  "numerator": 3,
+                  "denominator": 1
+                }
+              }
+            }
+          },
+          {
+            "kind": "SKILL_AXE",
+            "target_domain": {
+              "state": "UNKNOWN"
+            },
+            "evaluation_phase": {
+              "state": "UNKNOWN"
+            },
+            "priority": {
+              "state": "UNKNOWN"
+            },
+            "parameter": {
+              "state": "KNOWN",
+              "value": {
+                "kind": "SIGNED_POINTS",
+                "value": 3
+              }
+            }
+          }
+        ]
+      },
+      "atom_count": 2,
+      "literal_routes": [
+        {
+          "source_literal": " Cleave 3%",
+          "native_kind": "CLEAVE_PERCENT",
+          "parameter_type": "RATIONAL_PERCENT",
+          "xml_key": "cleavepercent",
+          "expected_scalar": {
+            "numerator": 3,
+            "denominator": 1
+          }
+        }
+      ],
+      "corroboration": [
+        {
+          "source": "binding-selected-Crystal",
+          "own_modifier_fields": [
+            {
+              "xml_key": "cleavepercent",
+              "own_values": [
+                "3"
+              ],
+              "agrees": true
+            }
+          ],
+          "agrees": true,
+          "scope": "ONLY_NEW_LITERAL_MODIFIER_KEYS; NOT_ALL_XML_RECORD_ATTRIBUTES"
+        },
+        {
+          "source": "Canary-hypothesis",
+          "own_modifier_fields": [
+            {
+              "xml_key": "cleavepercent",
+              "own_values": [
+                "3"
+              ],
+              "agrees": true
+            }
+          ],
+          "agrees": true,
+          "scope": "ONLY_NEW_LITERAL_MODIFIER_KEYS; NOT_ALL_XML_RECORD_ATTRIBUTES"
+        }
+      ],
+      "guards": {
+        "CURRENT_NATIVE_ITEM_PRESENT": true,
+        "EXPLICIT_EXACT_BINDING_FULL_IDENTITY": true,
+        "CURRENT_OFFICIAL_OBJECT_PRESENT": true,
+        "CURRENT_MEMBER_FULL_RECORD_PROJECTION": true,
+        "BOUND_SOURCE_EPOCH_IDENTITY_CONTINUITY": true,
+        "NO_CURRENT_WORLD_OWNER": true,
+        "NATIVE_NAME_KNOWN_SOURCE_EQUAL": true,
+        "OFFICIAL_TAKE_TRUE_NON_WORLD_FLAGS": true,
+        "ALL_OWN_ID_BOXES_EXACT_SINGLE_ID": true,
+        "OWN_SOURCE_NAMES_EQUAL_OFFICIAL": true,
+        "BOUND_XML_EXACT_RECORD_PRESENT": true
+      },
+      "blockers": [],
+      "qualification": "PENDING_DOCUMENTED_UNITS_AND_CLOSED_PARSER_AUTHORING",
+      "raw_source_reference_ids": [
+        {
+          "page_id": 94366,
+          "revision_id": 1148443,
+          "raw_sha256": "e0487f1d5607fd3b963266ce51532ccd2552f9a836da9da0a6616c9a9c3598e8"
+        }
+      ]
+    },
+    {
+      "item_id": 36662,
+      "item_key": "oteryn:item.tibia.i36662",
+      "current_target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i36662",
+        "revision": "definition-r1"
+      },
+      "shape": "NUMERIC_CLEAVE_PERCENT_SINGLE_OWN_ID",
+      "source_whole_vector": {
+        "kind": "MODIFIERS",
+        "value": [
+          {
+            "kind": "CLEAVE_PERCENT",
+            "target_domain": {
+              "state": "UNKNOWN"
+            },
+            "evaluation_phase": {
+              "state": "UNKNOWN"
+            },
+            "priority": {
+              "state": "UNKNOWN"
+            },
+            "parameter": {
+              "state": "KNOWN",
+              "value": {
+                "kind": "RATIONAL_PERCENT",
+                "value": {
+                  "numerator": 3,
+                  "denominator": 1
+                }
+              }
+            }
+          },
+          {
+            "kind": "SKILL_AXE",
+            "target_domain": {
+              "state": "UNKNOWN"
+            },
+            "evaluation_phase": {
+              "state": "UNKNOWN"
+            },
+            "priority": {
+              "state": "UNKNOWN"
+            },
+            "parameter": {
+              "state": "KNOWN",
+              "value": {
+                "kind": "SIGNED_POINTS",
+                "value": 3
+              }
+            }
+          }
+        ]
+      },
+      "atom_count": 2,
+      "literal_routes": [
+        {
+          "source_literal": " Cleave 3%",
+          "native_kind": "CLEAVE_PERCENT",
+          "parameter_type": "RATIONAL_PERCENT",
+          "xml_key": "cleavepercent",
+          "expected_scalar": {
+            "numerator": 3,
+            "denominator": 1
+          }
+        }
+      ],
+      "corroboration": [
+        {
+          "source": "binding-selected-Crystal",
+          "own_modifier_fields": [
+            {
+              "xml_key": "cleavepercent",
+              "own_values": [
+                "3"
+              ],
+              "agrees": true
+            }
+          ],
+          "agrees": true,
+          "scope": "ONLY_NEW_LITERAL_MODIFIER_KEYS; NOT_ALL_XML_RECORD_ATTRIBUTES"
+        },
+        {
+          "source": "Canary-hypothesis",
+          "own_modifier_fields": [
+            {
+              "xml_key": "cleavepercent",
+              "own_values": [
+                "3"
+              ],
+              "agrees": true
+            }
+          ],
+          "agrees": true,
+          "scope": "ONLY_NEW_LITERAL_MODIFIER_KEYS; NOT_ALL_XML_RECORD_ATTRIBUTES"
+        }
+      ],
+      "guards": {
+        "CURRENT_NATIVE_ITEM_PRESENT": true,
+        "EXPLICIT_EXACT_BINDING_FULL_IDENTITY": true,
+        "CURRENT_OFFICIAL_OBJECT_PRESENT": true,
+        "CURRENT_MEMBER_FULL_RECORD_PROJECTION": true,
+        "BOUND_SOURCE_EPOCH_IDENTITY_CONTINUITY": true,
+        "NO_CURRENT_WORLD_OWNER": true,
+        "NATIVE_NAME_KNOWN_SOURCE_EQUAL": true,
+        "OFFICIAL_TAKE_TRUE_NON_WORLD_FLAGS": true,
+        "ALL_OWN_ID_BOXES_EXACT_SINGLE_ID": true,
+        "OWN_SOURCE_NAMES_EQUAL_OFFICIAL": true,
+        "BOUND_XML_EXACT_RECORD_PRESENT": true
+      },
+      "blockers": [],
+      "qualification": "PENDING_DOCUMENTED_UNITS_AND_CLOSED_PARSER_AUTHORING",
+      "raw_source_reference_ids": [
+        {
+          "page_id": 94364,
+          "revision_id": 1148444,
+          "raw_sha256": "7e089fb8b8d762a0cd875d1ed37302956d1ee00d258974a5661165f15ff58dd7"
+        }
+      ]
+    },
+    {
+      "item_id": 36666,
+      "item_key": "oteryn:item.tibia.i36666",
+      "current_target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i36666",
+        "revision": "definition-r1"
+      },
+      "shape": "NUMERIC_PERFECT_SHOT_DAMAGE_AND_RANGE",
+      "source_whole_vector": {
+        "kind": "MODIFIERS",
+        "value": [
+          {
+            "kind": "PERFECT_SHOT_DAMAGE",
+            "target_domain": {
+              "state": "UNKNOWN"
+            },
+            "evaluation_phase": {
+              "state": "UNKNOWN"
+            },
+            "priority": {
+              "state": "UNKNOWN"
+            },
+            "parameter": {
+              "state": "KNOWN",
+              "value": {
+                "kind": "SIGNED_POINTS",
+                "value": 20
+              }
+            }
+          },
+          {
+            "kind": "PERFECT_SHOT_RANGE",
+            "target_domain": {
+              "state": "UNKNOWN"
+            },
+            "evaluation_phase": {
+              "state": "UNKNOWN"
+            },
+            "priority": {
+              "state": "UNKNOWN"
+            },
+            "parameter": {
+              "state": "KNOWN",
+              "value": {
+                "kind": "CELLS",
+                "value": 4
+              }
+            }
+          }
+        ]
+      },
+      "atom_count": 2,
+      "literal_routes": [
+        {
+          "source_literal": "perfect shot +20 at range 4",
+          "native_kind": "PERFECT_SHOT_DAMAGE",
+          "parameter_type": "SIGNED_POINTS",
+          "xml_key": "perfectshotdamage",
+          "expected_scalar": 20
+        },
+        {
+          "source_literal": "perfect shot +20 at range 4",
+          "native_kind": "PERFECT_SHOT_RANGE",
+          "parameter_type": "CELLS",
+          "xml_key": "perfectshotrange",
+          "expected_scalar": 4
+        }
+      ],
+      "corroboration": [
+        {
+          "source": "binding-selected-Crystal",
+          "own_modifier_fields": [
+            {
+              "xml_key": "perfectshotdamage",
+              "own_values": [
+                "20"
+              ],
+              "agrees": true
+            },
+            {
+              "xml_key": "perfectshotrange",
+              "own_values": [
+                "4"
+              ],
+              "agrees": true
+            }
+          ],
+          "agrees": true,
+          "scope": "ONLY_NEW_LITERAL_MODIFIER_KEYS; NOT_ALL_XML_RECORD_ATTRIBUTES"
+        },
+        {
+          "source": "Canary-hypothesis",
+          "own_modifier_fields": [
+            {
+              "xml_key": "perfectshotdamage",
+              "own_values": [
+                "20"
+              ],
+              "agrees": true
+            },
+            {
+              "xml_key": "perfectshotrange",
+              "own_values": [
+                "4"
+              ],
+              "agrees": true
+            }
+          ],
+          "agrees": true,
+          "scope": "ONLY_NEW_LITERAL_MODIFIER_KEYS; NOT_ALL_XML_RECORD_ATTRIBUTES"
+        }
+      ],
+      "guards": {
+        "CURRENT_NATIVE_ITEM_PRESENT": true,
+        "EXPLICIT_EXACT_BINDING_FULL_IDENTITY": true,
+        "CURRENT_OFFICIAL_OBJECT_PRESENT": true,
+        "CURRENT_MEMBER_FULL_RECORD_PROJECTION": true,
+        "BOUND_SOURCE_EPOCH_IDENTITY_CONTINUITY": true,
+        "NO_CURRENT_WORLD_OWNER": true,
+        "NATIVE_NAME_KNOWN_SOURCE_EQUAL": true,
+        "OFFICIAL_TAKE_TRUE_NON_WORLD_FLAGS": true,
+        "ALL_OWN_ID_BOXES_EXACT_SINGLE_ID": true,
+        "OWN_SOURCE_NAMES_EQUAL_OFFICIAL": true,
+        "BOUND_XML_EXACT_RECORD_PRESENT": true
+      },
+      "blockers": [],
+      "qualification": "PENDING_DOCUMENTED_UNITS_AND_CLOSED_PARSER_AUTHORING",
+      "raw_source_reference_ids": [
+        {
+          "page_id": 94411,
+          "revision_id": 1148448,
+          "raw_sha256": "3f2e683a37ca37407492fa4fbab485423a71909cbef93774958020af20c1b3ae"
+        }
+      ]
+    },
+    {
+      "item_id": 36672,
+      "item_key": "oteryn:item.tibia.i36672",
+      "current_target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i36672",
+        "revision": "definition-r1"
+      },
+      "shape": "NUMERIC_MAGIC_SHIELD_FLAT_AND_PERCENT",
+      "source_whole_vector": {
+        "kind": "MODIFIERS",
+        "value": [
+          {
+            "kind": "DEATH_MAGIC_LEVEL_POINTS",
+            "target_domain": {
+              "state": "UNKNOWN"
+            },
+            "evaluation_phase": {
+              "state": "UNKNOWN"
+            },
+            "priority": {
+              "state": "UNKNOWN"
+            },
+            "parameter": {
+              "state": "KNOWN",
+              "value": {
+                "kind": "SIGNED_POINTS",
+                "value": 1
+              }
+            }
+          },
+          {
+            "kind": "MAGIC_LEVEL_POINTS",
+            "target_domain": {
+              "state": "UNKNOWN"
+            },
+            "evaluation_phase": {
+              "state": "UNKNOWN"
+            },
+            "priority": {
+              "state": "UNKNOWN"
+            },
+            "parameter": {
+              "state": "KNOWN",
+              "value": {
+                "kind": "SIGNED_POINTS",
+                "value": 4
+              }
+            }
+          },
+          {
+            "kind": "MAGIC_SHIELD_CAPACITY_FLAT",
+            "target_domain": {
+              "state": "UNKNOWN"
+            },
+            "evaluation_phase": {
+              "state": "UNKNOWN"
+            },
+            "priority": {
+              "state": "UNKNOWN"
+            },
+            "parameter": {
+              "state": "KNOWN",
+              "value": {
+                "kind": "SIGNED_POINTS",
+                "value": 80
+              }
+            }
+          },
+          {
+            "kind": "MAGIC_SHIELD_CAPACITY_PERCENT",
+            "target_domain": {
+              "state": "UNKNOWN"
+            },
+            "evaluation_phase": {
+              "state": "UNKNOWN"
+            },
+            "priority": {
+              "state": "UNKNOWN"
+            },
+            "parameter": {
+              "state": "KNOWN",
+              "value": {
+                "kind": "RATIONAL_PERCENT",
+                "value": {
+                  "numerator": 8,
+                  "denominator": 1
+                }
+              }
+            }
+          }
+        ]
+      },
+      "atom_count": 4,
+      "literal_routes": [
+        {
+          "source_literal": " Magic Shield Capacity +80 and 8%",
+          "native_kind": "MAGIC_SHIELD_CAPACITY_FLAT",
+          "parameter_type": "SIGNED_POINTS",
+          "xml_key": "magicshieldcapacityflat",
+          "expected_scalar": 80
+        },
+        {
+          "source_literal": " Magic Shield Capacity +80 and 8%",
+          "native_kind": "MAGIC_SHIELD_CAPACITY_PERCENT",
+          "parameter_type": "RATIONAL_PERCENT",
+          "xml_key": "magicshieldcapacitypercent",
+          "expected_scalar": {
+            "numerator": 8,
+            "denominator": 1
+          }
+        }
+      ],
+      "corroboration": [
+        {
+          "source": "binding-selected-Crystal",
+          "own_modifier_fields": [
+            {
+              "xml_key": "magicshieldcapacityflat",
+              "own_values": [
+                "80"
+              ],
+              "agrees": true
+            },
+            {
+              "xml_key": "magicshieldcapacitypercent",
+              "own_values": [
+                "8"
+              ],
+              "agrees": true
+            }
+          ],
+          "agrees": true,
+          "scope": "ONLY_NEW_LITERAL_MODIFIER_KEYS; NOT_ALL_XML_RECORD_ATTRIBUTES"
+        },
+        {
+          "source": "Canary-hypothesis",
+          "own_modifier_fields": [
+            {
+              "xml_key": "magicshieldcapacityflat",
+              "own_values": [
+                "80"
+              ],
+              "agrees": true
+            },
+            {
+              "xml_key": "magicshieldcapacitypercent",
+              "own_values": [
+                "8"
+              ],
+              "agrees": true
+            }
+          ],
+          "agrees": true,
+          "scope": "ONLY_NEW_LITERAL_MODIFIER_KEYS; NOT_ALL_XML_RECORD_ATTRIBUTES"
+        }
+      ],
+      "guards": {
+        "CURRENT_NATIVE_ITEM_PRESENT": true,
+        "EXPLICIT_EXACT_BINDING_FULL_IDENTITY": true,
+        "CURRENT_OFFICIAL_OBJECT_PRESENT": true,
+        "CURRENT_MEMBER_FULL_RECORD_PROJECTION": true,
+        "BOUND_SOURCE_EPOCH_IDENTITY_CONTINUITY": true,
+        "NO_CURRENT_WORLD_OWNER": true,
+        "NATIVE_NAME_KNOWN_SOURCE_EQUAL": true,
+        "OFFICIAL_TAKE_TRUE_NON_WORLD_FLAGS": true,
+        "ALL_OWN_ID_BOXES_EXACT_SINGLE_ID": true,
+        "OWN_SOURCE_NAMES_EQUAL_OFFICIAL": true,
+        "BOUND_XML_EXACT_RECORD_PRESENT": true
+      },
+      "blockers": [],
+      "qualification": "PENDING_DOCUMENTED_UNITS_AND_CLOSED_PARSER_AUTHORING",
+      "raw_source_reference_ids": [
+        {
+          "page_id": 94377,
+          "revision_id": 1190684,
+          "raw_sha256": "e2035e6aa0954b7637d2d6a61f44d2a7a7ab1030ae8c4b2279a519f0eb0f75be"
+        }
+      ]
+    },
+    {
+      "item_id": 36673,
+      "item_key": "oteryn:item.tibia.i36673",
+      "current_target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i36673",
+        "revision": "definition-r1"
+      },
+      "shape": "NUMERIC_MAGIC_SHIELD_FLAT_AND_PERCENT",
+      "source_whole_vector": {
+        "kind": "MODIFIERS",
+        "value": [
+          {
+            "kind": "EARTH_MAGIC_LEVEL_POINTS",
+            "target_domain": {
+              "state": "UNKNOWN"
+            },
+            "evaluation_phase": {
+              "state": "UNKNOWN"
+            },
+            "priority": {
+              "state": "UNKNOWN"
+            },
+            "parameter": {
+              "state": "KNOWN",
+              "value": {
+                "kind": "SIGNED_POINTS",
+                "value": 1
+              }
+            }
+          },
+          {
+            "kind": "MAGIC_LEVEL_POINTS",
+            "target_domain": {
+              "state": "UNKNOWN"
+            },
+            "evaluation_phase": {
+              "state": "UNKNOWN"
+            },
+            "priority": {
+              "state": "UNKNOWN"
+            },
+            "parameter": {
+              "state": "KNOWN",
+              "value": {
+                "kind": "SIGNED_POINTS",
+                "value": 4
+              }
+            }
+          },
+          {
+            "kind": "MAGIC_SHIELD_CAPACITY_FLAT",
+            "target_domain": {
+              "state": "UNKNOWN"
+            },
+            "evaluation_phase": {
+              "state": "UNKNOWN"
+            },
+            "priority": {
+              "state": "UNKNOWN"
+            },
+            "parameter": {
+              "state": "KNOWN",
+              "value": {
+                "kind": "SIGNED_POINTS",
+                "value": 80
+              }
+            }
+          },
+          {
+            "kind": "MAGIC_SHIELD_CAPACITY_PERCENT",
+            "target_domain": {
+              "state": "UNKNOWN"
+            },
+            "evaluation_phase": {
+              "state": "UNKNOWN"
+            },
+            "priority": {
+              "state": "UNKNOWN"
+            },
+            "parameter": {
+              "state": "KNOWN",
+              "value": {
+                "kind": "RATIONAL_PERCENT",
+                "value": {
+                  "numerator": 8,
+                  "denominator": 1
+                }
+              }
+            }
+          }
+        ]
+      },
+      "atom_count": 4,
+      "literal_routes": [
+        {
+          "source_literal": " Magic Shield Capacity +80 and 8%",
+          "native_kind": "MAGIC_SHIELD_CAPACITY_FLAT",
+          "parameter_type": "SIGNED_POINTS",
+          "xml_key": "magicshieldcapacityflat",
+          "expected_scalar": 80
+        },
+        {
+          "source_literal": " Magic Shield Capacity +80 and 8%",
+          "native_kind": "MAGIC_SHIELD_CAPACITY_PERCENT",
+          "parameter_type": "RATIONAL_PERCENT",
+          "xml_key": "magicshieldcapacitypercent",
+          "expected_scalar": {
+            "numerator": 8,
+            "denominator": 1
+          }
+        }
+      ],
+      "corroboration": [
+        {
+          "source": "binding-selected-Crystal",
+          "own_modifier_fields": [
+            {
+              "xml_key": "magicshieldcapacityflat",
+              "own_values": [
+                "80"
+              ],
+              "agrees": true
+            },
+            {
+              "xml_key": "magicshieldcapacitypercent",
+              "own_values": [
+                "8"
+              ],
+              "agrees": true
+            }
+          ],
+          "agrees": true,
+          "scope": "ONLY_NEW_LITERAL_MODIFIER_KEYS; NOT_ALL_XML_RECORD_ATTRIBUTES"
+        },
+        {
+          "source": "Canary-hypothesis",
+          "own_modifier_fields": [
+            {
+              "xml_key": "magicshieldcapacityflat",
+              "own_values": [
+                "80"
+              ],
+              "agrees": true
+            },
+            {
+              "xml_key": "magicshieldcapacitypercent",
+              "own_values": [
+                "8"
+              ],
+              "agrees": true
+            }
+          ],
+          "agrees": true,
+          "scope": "ONLY_NEW_LITERAL_MODIFIER_KEYS; NOT_ALL_XML_RECORD_ATTRIBUTES"
+        }
+      ],
+      "guards": {
+        "CURRENT_NATIVE_ITEM_PRESENT": true,
+        "EXPLICIT_EXACT_BINDING_FULL_IDENTITY": true,
+        "CURRENT_OFFICIAL_OBJECT_PRESENT": true,
+        "CURRENT_MEMBER_FULL_RECORD_PROJECTION": true,
+        "BOUND_SOURCE_EPOCH_IDENTITY_CONTINUITY": true,
+        "NO_CURRENT_WORLD_OWNER": true,
+        "NATIVE_NAME_KNOWN_SOURCE_EQUAL": true,
+        "OFFICIAL_TAKE_TRUE_NON_WORLD_FLAGS": true,
+        "ALL_OWN_ID_BOXES_EXACT_SINGLE_ID": true,
+        "OWN_SOURCE_NAMES_EQUAL_OFFICIAL": true,
+        "BOUND_XML_EXACT_RECORD_PRESENT": true
+      },
+      "blockers": [],
+      "qualification": "PENDING_DOCUMENTED_UNITS_AND_CLOSED_PARSER_AUTHORING",
+      "raw_source_reference_ids": [
+        {
+          "page_id": 94378,
+          "revision_id": 1190685,
+          "raw_sha256": "6b945b666e1868d5a54e792439b7a6661d445091ece2c4bcf4397497ceea32a3"
+        }
+      ]
+    },
+    {
+      "item_id": 39147,
+      "item_key": "oteryn:item.tibia.i39147",
+      "current_target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i39147",
+        "revision": "definition-r1"
+      },
+      "shape": "NUMERIC_DAMAGE_REFLECTION",
+      "source_whole_vector": {
+        "kind": "MODIFIERS",
+        "value": [
+          {
+            "kind": "REFLECT_DAMAGE",
+            "target_domain": {
+              "state": "UNKNOWN"
+            },
+            "evaluation_phase": {
+              "state": "UNKNOWN"
+            },
+            "priority": {
+              "state": "UNKNOWN"
+            },
+            "parameter": {
+              "state": "KNOWN",
+              "value": {
+                "kind": "SIGNED_POINTS",
+                "value": 19
+              }
+            }
+          },
+          {
+            "kind": "SKILL_AXE",
+            "target_domain": {
+              "state": "UNKNOWN"
+            },
+            "evaluation_phase": {
+              "state": "UNKNOWN"
+            },
+            "priority": {
+              "state": "UNKNOWN"
+            },
+            "parameter": {
+              "state": "KNOWN",
+              "value": {
+                "kind": "SIGNED_POINTS",
+                "value": 4
+              }
+            }
+          },
+          {
+            "kind": "SKILL_CLUB",
+            "target_domain": {
+              "state": "UNKNOWN"
+            },
+            "evaluation_phase": {
+              "state": "UNKNOWN"
+            },
+            "priority": {
+              "state": "UNKNOWN"
+            },
+            "parameter": {
+              "state": "KNOWN",
+              "value": {
+                "kind": "SIGNED_POINTS",
+                "value": 4
+              }
+            }
+          },
+          {
+            "kind": "SKILL_SWORD",
+            "target_domain": {
+              "state": "UNKNOWN"
+            },
+            "evaluation_phase": {
+              "state": "UNKNOWN"
+            },
+            "priority": {
+              "state": "UNKNOWN"
+            },
+            "parameter": {
+              "state": "KNOWN",
+              "value": {
+                "kind": "SIGNED_POINTS",
+                "value": 4
+              }
+            }
+          }
+        ]
+      },
+      "atom_count": 4,
+      "literal_routes": [
+        {
+          "source_literal": " 19 damage reflection",
+          "native_kind": "REFLECT_DAMAGE",
+          "parameter_type": "SIGNED_POINTS",
+          "xml_key": "reflectdamage",
+          "expected_scalar": 19
+        }
+      ],
+      "corroboration": [
+        {
+          "source": "binding-selected-Crystal",
+          "own_modifier_fields": [
+            {
+              "xml_key": "reflectdamage",
+              "own_values": [
+                "19"
+              ],
+              "agrees": true
+            }
+          ],
+          "agrees": true,
+          "scope": "ONLY_NEW_LITERAL_MODIFIER_KEYS; NOT_ALL_XML_RECORD_ATTRIBUTES"
+        },
+        {
+          "source": "Canary-hypothesis",
+          "own_modifier_fields": [
+            {
+              "xml_key": "reflectdamage",
+              "own_values": [
+                "19"
+              ],
+              "agrees": true
+            }
+          ],
+          "agrees": true,
+          "scope": "ONLY_NEW_LITERAL_MODIFIER_KEYS; NOT_ALL_XML_RECORD_ATTRIBUTES"
+        }
+      ],
+      "guards": {
+        "CURRENT_NATIVE_ITEM_PRESENT": true,
+        "EXPLICIT_EXACT_BINDING_FULL_IDENTITY": true,
+        "CURRENT_OFFICIAL_OBJECT_PRESENT": true,
+        "CURRENT_MEMBER_FULL_RECORD_PROJECTION": true,
+        "BOUND_SOURCE_EPOCH_IDENTITY_CONTINUITY": true,
+        "NO_CURRENT_WORLD_OWNER": true,
+        "NATIVE_NAME_KNOWN_SOURCE_EQUAL": true,
+        "OFFICIAL_TAKE_TRUE_NON_WORLD_FLAGS": true,
+        "ALL_OWN_ID_BOXES_EXACT_SINGLE_ID": true,
+        "OWN_SOURCE_NAMES_EQUAL_OFFICIAL": true,
+        "BOUND_XML_EXACT_RECORD_PRESENT": true
+      },
+      "blockers": [],
+      "qualification": "PENDING_DOCUMENTED_UNITS_AND_CLOSED_PARSER_AUTHORING",
+      "raw_source_reference_ids": [
+        {
+          "page_id": 98453,
+          "revision_id": 1148474,
+          "raw_sha256": "893e7479ce58cd43d6d372625904e02dba3b388cd6096fd198efd8e3902e5ce1"
+        }
+      ]
+    },
+    {
+      "item_id": 39148,
+      "item_key": "oteryn:item.tibia.i39148",
+      "current_target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i39148",
+        "revision": "definition-r1"
+      },
+      "shape": "NUMERIC_DAMAGE_REFLECTION",
+      "source_whole_vector": {
+        "kind": "MODIFIERS",
+        "value": [
+          {
+            "kind": "REFLECT_DAMAGE",
+            "target_domain": {
+              "state": "UNKNOWN"
+            },
+            "evaluation_phase": {
+              "state": "UNKNOWN"
+            },
+            "priority": {
+              "state": "UNKNOWN"
+            },
+            "parameter": {
+              "state": "KNOWN",
+              "value": {
+                "kind": "SIGNED_POINTS",
+                "value": 13
+              }
+            }
+          },
+          {
+            "kind": "SKILL_AXE",
+            "target_domain": {
+              "state": "UNKNOWN"
+            },
+            "evaluation_phase": {
+              "state": "UNKNOWN"
+            },
+            "priority": {
+              "state": "UNKNOWN"
+            },
+            "parameter": {
+              "state": "KNOWN",
+              "value": {
+                "kind": "SIGNED_POINTS",
+                "value": 3
+              }
+            }
+          },
+          {
+            "kind": "SKILL_CLUB",
+            "target_domain": {
+              "state": "UNKNOWN"
+            },
+            "evaluation_phase": {
+              "state": "UNKNOWN"
+            },
+            "priority": {
+              "state": "UNKNOWN"
+            },
+            "parameter": {
+              "state": "KNOWN",
+              "value": {
+                "kind": "SIGNED_POINTS",
+                "value": 3
+              }
+            }
+          },
+          {
+            "kind": "SKILL_SWORD",
+            "target_domain": {
+              "state": "UNKNOWN"
+            },
+            "evaluation_phase": {
+              "state": "UNKNOWN"
+            },
+            "priority": {
+              "state": "UNKNOWN"
+            },
+            "parameter": {
+              "state": "KNOWN",
+              "value": {
+                "kind": "SIGNED_POINTS",
+                "value": 3
+              }
+            }
+          }
+        ]
+      },
+      "atom_count": 4,
+      "literal_routes": [
+        {
+          "source_literal": " 13 damage reflection",
+          "native_kind": "REFLECT_DAMAGE",
+          "parameter_type": "SIGNED_POINTS",
+          "xml_key": "reflectdamage",
+          "expected_scalar": 13
+        }
+      ],
+      "corroboration": [
+        {
+          "source": "binding-selected-Crystal",
+          "own_modifier_fields": [
+            {
+              "xml_key": "reflectdamage",
+              "own_values": [
+                "13"
+              ],
+              "agrees": true
+            }
+          ],
+          "agrees": true,
+          "scope": "ONLY_NEW_LITERAL_MODIFIER_KEYS; NOT_ALL_XML_RECORD_ATTRIBUTES"
+        },
+        {
+          "source": "Canary-hypothesis",
+          "own_modifier_fields": [
+            {
+              "xml_key": "reflectdamage",
+              "own_values": [
+                "13"
+              ],
+              "agrees": true
+            }
+          ],
+          "agrees": true,
+          "scope": "ONLY_NEW_LITERAL_MODIFIER_KEYS; NOT_ALL_XML_RECORD_ATTRIBUTES"
+        }
+      ],
+      "guards": {
+        "CURRENT_NATIVE_ITEM_PRESENT": true,
+        "EXPLICIT_EXACT_BINDING_FULL_IDENTITY": true,
+        "CURRENT_OFFICIAL_OBJECT_PRESENT": true,
+        "CURRENT_MEMBER_FULL_RECORD_PROJECTION": true,
+        "BOUND_SOURCE_EPOCH_IDENTITY_CONTINUITY": true,
+        "NO_CURRENT_WORLD_OWNER": true,
+        "NATIVE_NAME_KNOWN_SOURCE_EQUAL": true,
+        "OFFICIAL_TAKE_TRUE_NON_WORLD_FLAGS": true,
+        "ALL_OWN_ID_BOXES_EXACT_SINGLE_ID": true,
+        "OWN_SOURCE_NAMES_EQUAL_OFFICIAL": true,
+        "BOUND_XML_EXACT_RECORD_PRESENT": true
+      },
+      "blockers": [],
+      "qualification": "PENDING_DOCUMENTED_UNITS_AND_CLOSED_PARSER_AUTHORING",
+      "raw_source_reference_ids": [
+        {
+          "page_id": 98466,
+          "revision_id": 1148475,
+          "raw_sha256": "d1eb0d4d02475b21acc134ef3186da5a0629291a72da2a194117be23fee96dad"
+        }
+      ]
+    },
+    {
+      "item_id": 39150,
+      "item_key": "oteryn:item.tibia.i39150",
+      "current_target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i39150",
+        "revision": "definition-r1"
+      },
+      "shape": "NUMERIC_PERFECT_SHOT_DAMAGE_AND_RANGE",
+      "source_whole_vector": {
+        "kind": "MODIFIERS",
+        "value": [
+          {
+            "kind": "MAGIC_LEVEL_POINTS",
+            "target_domain": {
+              "state": "UNKNOWN"
+            },
+            "evaluation_phase": {
+              "state": "UNKNOWN"
+            },
+            "priority": {
+              "state": "UNKNOWN"
+            },
+            "parameter": {
+              "state": "KNOWN",
+              "value": {
+                "kind": "SIGNED_POINTS",
+                "value": 1
+              }
+            }
+          },
+          {
+            "kind": "PERFECT_SHOT_DAMAGE",
+            "target_domain": {
+              "state": "UNKNOWN"
+            },
+            "evaluation_phase": {
+              "state": "UNKNOWN"
+            },
+            "priority": {
+              "state": "UNKNOWN"
+            },
+            "parameter": {
+              "state": "KNOWN",
+              "value": {
+                "kind": "SIGNED_POINTS",
+                "value": 20
+              }
+            }
+          },
+          {
+            "kind": "PERFECT_SHOT_RANGE",
+            "target_domain": {
+              "state": "UNKNOWN"
+            },
+            "evaluation_phase": {
+              "state": "UNKNOWN"
+            },
+            "priority": {
+              "state": "UNKNOWN"
+            },
+            "parameter": {
+              "state": "KNOWN",
+              "value": {
+                "kind": "CELLS",
+                "value": 3
+              }
+            }
+          }
+        ]
+      },
+      "atom_count": 3,
+      "literal_routes": [
+        {
+          "source_literal": " perfect shot +20 at range 3",
+          "native_kind": "PERFECT_SHOT_DAMAGE",
+          "parameter_type": "SIGNED_POINTS",
+          "xml_key": "perfectshotdamage",
+          "expected_scalar": 20
+        },
+        {
+          "source_literal": " perfect shot +20 at range 3",
+          "native_kind": "PERFECT_SHOT_RANGE",
+          "parameter_type": "CELLS",
+          "xml_key": "perfectshotrange",
+          "expected_scalar": 3
+        }
+      ],
+      "corroboration": [
+        {
+          "source": "binding-selected-Crystal",
+          "own_modifier_fields": [
+            {
+              "xml_key": "perfectshotdamage",
+              "own_values": [
+                "20"
+              ],
+              "agrees": true
+            },
+            {
+              "xml_key": "perfectshotrange",
+              "own_values": [
+                "3"
+              ],
+              "agrees": true
+            }
+          ],
+          "agrees": true,
+          "scope": "ONLY_NEW_LITERAL_MODIFIER_KEYS; NOT_ALL_XML_RECORD_ATTRIBUTES"
+        },
+        {
+          "source": "Canary-hypothesis",
+          "own_modifier_fields": [
+            {
+              "xml_key": "perfectshotdamage",
+              "own_values": [
+                "20"
+              ],
+              "agrees": true
+            },
+            {
+              "xml_key": "perfectshotrange",
+              "own_values": [
+                "3"
+              ],
+              "agrees": true
+            }
+          ],
+          "agrees": true,
+          "scope": "ONLY_NEW_LITERAL_MODIFIER_KEYS; NOT_ALL_XML_RECORD_ATTRIBUTES"
+        }
+      ],
+      "guards": {
+        "CURRENT_NATIVE_ITEM_PRESENT": true,
+        "EXPLICIT_EXACT_BINDING_FULL_IDENTITY": true,
+        "CURRENT_OFFICIAL_OBJECT_PRESENT": true,
+        "CURRENT_MEMBER_FULL_RECORD_PROJECTION": true,
+        "BOUND_SOURCE_EPOCH_IDENTITY_CONTINUITY": true,
+        "NO_CURRENT_WORLD_OWNER": true,
+        "NATIVE_NAME_KNOWN_SOURCE_EQUAL": true,
+        "OFFICIAL_TAKE_TRUE_NON_WORLD_FLAGS": true,
+        "ALL_OWN_ID_BOXES_EXACT_SINGLE_ID": true,
+        "OWN_SOURCE_NAMES_EQUAL_OFFICIAL": true,
+        "BOUND_XML_EXACT_RECORD_PRESENT": true
+      },
+      "blockers": [],
+      "qualification": "PENDING_DOCUMENTED_UNITS_AND_CLOSED_PARSER_AUTHORING",
+      "raw_source_reference_ids": [
+        {
+          "page_id": 98473,
+          "revision_id": 1148477,
+          "raw_sha256": "9ca518467400d2618533db46a95e1e5074fed95164fe643db32149157858045a"
+        }
+      ]
+    },
+    {
+      "item_id": 45639,
+      "item_key": "oteryn:item.tibia.i45639",
+      "current_target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i45639",
+        "revision": "definition-r1"
+      },
+      "shape": "NUMERIC_MAGIC_SHIELD_FLAT_AND_PERCENT",
+      "source_whole_vector": {
+        "kind": "MODIFIERS",
+        "value": [
+          {
+            "kind": "FIRE_MAGIC_LEVEL_POINTS",
+            "target_domain": {
+              "state": "UNKNOWN"
+            },
+            "evaluation_phase": {
+              "state": "UNKNOWN"
+            },
+            "priority": {
+              "state": "UNKNOWN"
+            },
+            "parameter": {
+              "state": "KNOWN",
+              "value": {
+                "kind": "SIGNED_POINTS",
+                "value": 1
+              }
+            }
+          },
+          {
+            "kind": "MAGIC_LEVEL_POINTS",
+            "target_domain": {
+              "state": "UNKNOWN"
+            },
+            "evaluation_phase": {
+              "state": "UNKNOWN"
+            },
+            "priority": {
+              "state": "UNKNOWN"
+            },
+            "parameter": {
+              "state": "KNOWN",
+              "value": {
+                "kind": "SIGNED_POINTS",
+                "value": 3
+              }
+            }
+          },
+          {
+            "kind": "MAGIC_SHIELD_CAPACITY_FLAT",
+            "target_domain": {
+              "state": "UNKNOWN"
+            },
+            "evaluation_phase": {
+              "state": "UNKNOWN"
+            },
+            "priority": {
+              "state": "UNKNOWN"
+            },
+            "parameter": {
+              "state": "KNOWN",
+              "value": {
+                "kind": "SIGNED_POINTS",
+                "value": 150
+              }
+            }
+          },
+          {
+            "kind": "MAGIC_SHIELD_CAPACITY_PERCENT",
+            "target_domain": {
+              "state": "UNKNOWN"
+            },
+            "evaluation_phase": {
+              "state": "UNKNOWN"
+            },
+            "priority": {
+              "state": "UNKNOWN"
+            },
+            "parameter": {
+              "state": "KNOWN",
+              "value": {
+                "kind": "RATIONAL_PERCENT",
+                "value": {
+                  "numerator": 3,
+                  "denominator": 1
+                }
+              }
+            }
+          }
+        ]
+      },
+      "atom_count": 4,
+      "literal_routes": [
+        {
+          "source_literal": " magic shield capacity +150 and 3%",
+          "native_kind": "MAGIC_SHIELD_CAPACITY_FLAT",
+          "parameter_type": "SIGNED_POINTS",
+          "xml_key": "magicshieldcapacityflat",
+          "expected_scalar": 150
+        },
+        {
+          "source_literal": " magic shield capacity +150 and 3%",
+          "native_kind": "MAGIC_SHIELD_CAPACITY_PERCENT",
+          "parameter_type": "RATIONAL_PERCENT",
+          "xml_key": "magicshieldcapacitypercent",
+          "expected_scalar": {
+            "numerator": 3,
+            "denominator": 1
+          }
+        }
+      ],
+      "corroboration": [
+        {
+          "source": "binding-selected-Crystal",
+          "own_modifier_fields": [
+            {
+              "xml_key": "magicshieldcapacityflat",
+              "own_values": [
+                "150"
+              ],
+              "agrees": true
+            },
+            {
+              "xml_key": "magicshieldcapacitypercent",
+              "own_values": [
+                "3"
+              ],
+              "agrees": true
+            }
+          ],
+          "agrees": true,
+          "scope": "ONLY_NEW_LITERAL_MODIFIER_KEYS; NOT_ALL_XML_RECORD_ATTRIBUTES"
+        },
+        {
+          "source": "Canary-hypothesis",
+          "own_modifier_fields": [
+            {
+              "xml_key": "magicshieldcapacityflat",
+              "own_values": [
+                "150"
+              ],
+              "agrees": true
+            },
+            {
+              "xml_key": "magicshieldcapacitypercent",
+              "own_values": [
+                "3"
+              ],
+              "agrees": true
+            }
+          ],
+          "agrees": true,
+          "scope": "ONLY_NEW_LITERAL_MODIFIER_KEYS; NOT_ALL_XML_RECORD_ATTRIBUTES"
+        }
+      ],
+      "guards": {
+        "CURRENT_NATIVE_ITEM_PRESENT": true,
+        "EXPLICIT_EXACT_BINDING_FULL_IDENTITY": true,
+        "CURRENT_OFFICIAL_OBJECT_PRESENT": true,
+        "CURRENT_MEMBER_FULL_RECORD_PROJECTION": true,
+        "BOUND_SOURCE_EPOCH_IDENTITY_CONTINUITY": true,
+        "NO_CURRENT_WORLD_OWNER": true,
+        "NATIVE_NAME_KNOWN_SOURCE_EQUAL": true,
+        "OFFICIAL_TAKE_TRUE_NON_WORLD_FLAGS": true,
+        "ALL_OWN_ID_BOXES_EXACT_SINGLE_ID": true,
+        "OWN_SOURCE_NAMES_EQUAL_OFFICIAL": true,
+        "BOUND_XML_EXACT_RECORD_PRESENT": true
+      },
+      "blockers": [],
+      "qualification": "PENDING_DOCUMENTED_UNITS_AND_CLOSED_PARSER_AUTHORING",
+      "raw_source_reference_ids": [
+        {
+          "page_id": 105195,
+          "revision_id": 1202657,
+          "raw_sha256": "222d86d7543d551381097e1bf8ab69ae8c6eb995e5a04d3df9e7ef4bb6839d72"
+        }
+      ]
+    },
+    {
+      "item_id": 45640,
+      "item_key": "oteryn:item.tibia.i45640",
+      "current_target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i45640",
+        "revision": "definition-r1"
+      },
+      "shape": "NUMERIC_MAGIC_SHIELD_FLAT_AND_PERCENT",
+      "source_whole_vector": {
+        "kind": "MODIFIERS",
+        "value": [
+          {
+            "kind": "HEALING_MAGIC_LEVEL_POINTS",
+            "target_domain": {
+              "state": "UNKNOWN"
+            },
+            "evaluation_phase": {
+              "state": "UNKNOWN"
+            },
+            "priority": {
+              "state": "UNKNOWN"
+            },
+            "parameter": {
+              "state": "KNOWN",
+              "value": {
+                "kind": "SIGNED_POINTS",
+                "value": 1
+              }
+            }
+          },
+          {
+            "kind": "MAGIC_LEVEL_POINTS",
+            "target_domain": {
+              "state": "UNKNOWN"
+            },
+            "evaluation_phase": {
+              "state": "UNKNOWN"
+            },
+            "priority": {
+              "state": "UNKNOWN"
+            },
+            "parameter": {
+              "state": "KNOWN",
+              "value": {
+                "kind": "SIGNED_POINTS",
+                "value": 3
+              }
+            }
+          },
+          {
+            "kind": "MAGIC_SHIELD_CAPACITY_FLAT",
+            "target_domain": {
+              "state": "UNKNOWN"
+            },
+            "evaluation_phase": {
+              "state": "UNKNOWN"
+            },
+            "priority": {
+              "state": "UNKNOWN"
+            },
+            "parameter": {
+              "state": "KNOWN",
+              "value": {
+                "kind": "SIGNED_POINTS",
+                "value": 150
+              }
+            }
+          },
+          {
+            "kind": "MAGIC_SHIELD_CAPACITY_PERCENT",
+            "target_domain": {
+              "state": "UNKNOWN"
+            },
+            "evaluation_phase": {
+              "state": "UNKNOWN"
+            },
+            "priority": {
+              "state": "UNKNOWN"
+            },
+            "parameter": {
+              "state": "KNOWN",
+              "value": {
+                "kind": "RATIONAL_PERCENT",
+                "value": {
+                  "numerator": 3,
+                  "denominator": 1
+                }
+              }
+            }
+          }
+        ]
+      },
+      "atom_count": 4,
+      "literal_routes": [
+        {
+          "source_literal": " Magic Shield Capacity +150 and 3%",
+          "native_kind": "MAGIC_SHIELD_CAPACITY_FLAT",
+          "parameter_type": "SIGNED_POINTS",
+          "xml_key": "magicshieldcapacityflat",
+          "expected_scalar": 150
+        },
+        {
+          "source_literal": " Magic Shield Capacity +150 and 3%",
+          "native_kind": "MAGIC_SHIELD_CAPACITY_PERCENT",
+          "parameter_type": "RATIONAL_PERCENT",
+          "xml_key": "magicshieldcapacitypercent",
+          "expected_scalar": {
+            "numerator": 3,
+            "denominator": 1
+          }
+        }
+      ],
+      "corroboration": [
+        {
+          "source": "binding-selected-Crystal",
+          "own_modifier_fields": [
+            {
+              "xml_key": "magicshieldcapacityflat",
+              "own_values": [
+                "150"
+              ],
+              "agrees": true
+            },
+            {
+              "xml_key": "magicshieldcapacitypercent",
+              "own_values": [
+                "3"
+              ],
+              "agrees": true
+            }
+          ],
+          "agrees": true,
+          "scope": "ONLY_NEW_LITERAL_MODIFIER_KEYS; NOT_ALL_XML_RECORD_ATTRIBUTES"
+        },
+        {
+          "source": "Canary-hypothesis",
+          "own_modifier_fields": [
+            {
+              "xml_key": "magicshieldcapacityflat",
+              "own_values": [
+                "150"
+              ],
+              "agrees": true
+            },
+            {
+              "xml_key": "magicshieldcapacitypercent",
+              "own_values": [
+                "3"
+              ],
+              "agrees": true
+            }
+          ],
+          "agrees": true,
+          "scope": "ONLY_NEW_LITERAL_MODIFIER_KEYS; NOT_ALL_XML_RECORD_ATTRIBUTES"
+        }
+      ],
+      "guards": {
+        "CURRENT_NATIVE_ITEM_PRESENT": true,
+        "EXPLICIT_EXACT_BINDING_FULL_IDENTITY": true,
+        "CURRENT_OFFICIAL_OBJECT_PRESENT": true,
+        "CURRENT_MEMBER_FULL_RECORD_PROJECTION": true,
+        "BOUND_SOURCE_EPOCH_IDENTITY_CONTINUITY": true,
+        "NO_CURRENT_WORLD_OWNER": true,
+        "NATIVE_NAME_KNOWN_SOURCE_EQUAL": true,
+        "OFFICIAL_TAKE_TRUE_NON_WORLD_FLAGS": true,
+        "ALL_OWN_ID_BOXES_EXACT_SINGLE_ID": true,
+        "OWN_SOURCE_NAMES_EQUAL_OFFICIAL": true,
+        "BOUND_XML_EXACT_RECORD_PRESENT": true
+      },
+      "blockers": [],
+      "qualification": "PENDING_DOCUMENTED_UNITS_AND_CLOSED_PARSER_AUTHORING",
+      "raw_source_reference_ids": [
+        {
+          "page_id": 105207,
+          "revision_id": 1190682,
+          "raw_sha256": "025ee3b6600639ef33d48d0ccc971a2b4559bdff005930da60b3e41299f31865"
+        }
+      ]
+    },
+    {
+      "item_id": 50147,
+      "item_key": "oteryn:item.tibia.i50147",
+      "current_target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i50147",
+        "revision": "definition-r1"
+      },
+      "shape": "INLINE_LIFE_LEECH_AMOUNT_OWN_XML_MISSING",
+      "source_whole_vector": {
+        "kind": "MODIFIERS",
+        "value": [
+          {
+            "kind": "MANTRA",
+            "target_domain": {
+              "state": "UNKNOWN"
+            },
+            "evaluation_phase": {
+              "state": "UNKNOWN"
+            },
+            "priority": {
+              "state": "UNKNOWN"
+            },
+            "parameter": {
+              "state": "KNOWN",
+              "value": {
+                "kind": "SIGNED_POINTS",
+                "value": 2
+              }
+            }
+          },
+          {
+            "kind": "LIFE_LEECH_AMOUNT",
+            "target_domain": {
+              "state": "UNKNOWN"
+            },
+            "evaluation_phase": {
+              "state": "UNKNOWN"
+            },
+            "priority": {
+              "state": "UNKNOWN"
+            },
+            "parameter": {
+              "state": "KNOWN",
+              "value": {
+                "kind": "RATIONAL_PERCENT",
+                "value": {
+                  "numerator": 2,
+                  "denominator": 1
+                }
+              }
+            }
+          },
+          {
+            "kind": "MAGIC_LEVEL_POINTS",
+            "target_domain": {
+              "state": "UNKNOWN"
+            },
+            "evaluation_phase": {
+              "state": "UNKNOWN"
+            },
+            "priority": {
+              "state": "UNKNOWN"
+            },
+            "parameter": {
+              "state": "KNOWN",
+              "value": {
+                "kind": "SIGNED_POINTS",
+                "value": 2
+              }
+            }
+          },
+          {
+            "kind": "SKILL_FIST",
+            "target_domain": {
+              "state": "UNKNOWN"
+            },
+            "evaluation_phase": {
+              "state": "UNKNOWN"
+            },
+            "priority": {
+              "state": "UNKNOWN"
+            },
+            "parameter": {
+              "state": "KNOWN",
+              "value": {
+                "kind": "SIGNED_POINTS",
+                "value": 3
+              }
+            }
+          }
+        ]
+      },
+      "atom_count": 4,
+      "literal_routes": [
+        {
+          "source_literal": " life leech +2%",
+          "native_kind": "LIFE_LEECH_AMOUNT",
+          "parameter_type": "RATIONAL_PERCENT",
+          "xml_key": "lifeleechamount",
+          "expected_scalar": {
+            "numerator": 2,
+            "denominator": 1
+          }
+        }
+      ],
+      "corroboration": [
+        {
+          "source": "binding-selected-Crystal",
+          "own_modifier_fields": [
+            {
+              "xml_key": "lifeleechamount",
+              "own_values": [],
+              "agrees": false
+            }
+          ],
+          "agrees": false,
+          "scope": "ONLY_NEW_LITERAL_MODIFIER_KEYS; NOT_ALL_XML_RECORD_ATTRIBUTES"
+        },
+        {
+          "source": "Canary-hypothesis",
+          "own_modifier_fields": [
+            {
+              "xml_key": "lifeleechamount",
+              "own_values": [],
+              "agrees": false
+            }
+          ],
+          "agrees": false,
+          "scope": "ONLY_NEW_LITERAL_MODIFIER_KEYS; NOT_ALL_XML_RECORD_ATTRIBUTES"
+        }
+      ],
+      "guards": {
+        "CURRENT_NATIVE_ITEM_PRESENT": true,
+        "EXPLICIT_EXACT_BINDING_FULL_IDENTITY": true,
+        "CURRENT_OFFICIAL_OBJECT_PRESENT": true,
+        "CURRENT_MEMBER_FULL_RECORD_PROJECTION": true,
+        "BOUND_SOURCE_EPOCH_IDENTITY_CONTINUITY": true,
+        "NO_CURRENT_WORLD_OWNER": true,
+        "NATIVE_NAME_KNOWN_SOURCE_EQUAL": true,
+        "OFFICIAL_TAKE_TRUE_NON_WORLD_FLAGS": true,
+        "ALL_OWN_ID_BOXES_EXACT_SINGLE_ID": true,
+        "OWN_SOURCE_NAMES_EQUAL_OFFICIAL": true,
+        "BOUND_XML_EXACT_RECORD_PRESENT": true
+      },
+      "blockers": [
+        "OWN_XML_NUMERIC_MODIFIER_CORROBORATION_MISSING"
+      ],
+      "qualification": "HELD_EXISTING_IDENTITY_OR_OWN_SOURCE_GUARD",
+      "raw_source_reference_ids": [
+        {
+          "page_id": 108005,
+          "revision_id": 1148639,
+          "raw_sha256": "78cb01b5af532e88a1aebe5a04983cfd38e48e0817949093dcea8066d6b9effa"
+        }
+      ]
+    },
+    {
+      "item_id": 50169,
+      "item_key": "oteryn:item.tibia.i50169",
+      "current_target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i50169",
+        "revision": "definition-r1"
+      },
+      "shape": "NUMERIC_DAMAGE_REFLECTION",
+      "source_whole_vector": {
+        "kind": "MODIFIERS",
+        "value": [
+          {
+            "kind": "ELEMENTAL_BOND",
+            "target_domain": {
+              "state": "UNKNOWN"
+            },
+            "evaluation_phase": {
+              "state": "UNKNOWN"
+            },
+            "priority": {
+              "state": "UNKNOWN"
+            },
+            "parameter": {
+              "state": "KNOWN",
+              "value": {
+                "kind": "ELEMENT",
+                "value": "ENERGY"
+              }
+            }
+          },
+          {
+            "kind": "MAGIC_LEVEL_POINTS",
+            "target_domain": {
+              "state": "UNKNOWN"
+            },
+            "evaluation_phase": {
+              "state": "UNKNOWN"
+            },
+            "priority": {
+              "state": "UNKNOWN"
+            },
+            "parameter": {
+              "state": "KNOWN",
+              "value": {
+                "kind": "SIGNED_POINTS",
+                "value": 2
+              }
+            }
+          },
+          {
+            "kind": "REFLECT_DAMAGE",
+            "target_domain": {
+              "state": "UNKNOWN"
+            },
+            "evaluation_phase": {
+              "state": "UNKNOWN"
+            },
+            "priority": {
+              "state": "UNKNOWN"
+            },
+            "parameter": {
+              "state": "KNOWN",
+              "value": {
+                "kind": "SIGNED_POINTS",
+                "value": 50
+              }
+            }
+          },
+          {
+            "kind": "SKILL_FIST",
+            "target_domain": {
+              "state": "UNKNOWN"
+            },
+            "evaluation_phase": {
+              "state": "UNKNOWN"
+            },
+            "priority": {
+              "state": "UNKNOWN"
+            },
+            "parameter": {
+              "state": "KNOWN",
+              "value": {
+                "kind": "SIGNED_POINTS",
+                "value": 2
+              }
+            }
+          }
+        ]
+      },
+      "atom_count": 4,
+      "literal_routes": [
+        {
+          "source_literal": " 50 damage reflection",
+          "native_kind": "REFLECT_DAMAGE",
+          "parameter_type": "SIGNED_POINTS",
+          "xml_key": "reflectdamage",
+          "expected_scalar": 50
+        }
+      ],
+      "corroboration": [
+        {
+          "source": "binding-selected-Crystal",
+          "own_modifier_fields": [
+            {
+              "xml_key": "reflectdamage",
+              "own_values": [
+                "50"
+              ],
+              "agrees": true
+            }
+          ],
+          "agrees": true,
+          "scope": "ONLY_NEW_LITERAL_MODIFIER_KEYS; NOT_ALL_XML_RECORD_ATTRIBUTES"
+        },
+        {
+          "source": "Canary-hypothesis",
+          "own_modifier_fields": [
+            {
+              "xml_key": "reflectdamage",
+              "own_values": [
+                "50"
+              ],
+              "agrees": true
+            }
+          ],
+          "agrees": true,
+          "scope": "ONLY_NEW_LITERAL_MODIFIER_KEYS; NOT_ALL_XML_RECORD_ATTRIBUTES"
+        }
+      ],
+      "guards": {
+        "CURRENT_NATIVE_ITEM_PRESENT": true,
+        "EXPLICIT_EXACT_BINDING_FULL_IDENTITY": true,
+        "CURRENT_OFFICIAL_OBJECT_PRESENT": true,
+        "CURRENT_MEMBER_FULL_RECORD_PROJECTION": true,
+        "BOUND_SOURCE_EPOCH_IDENTITY_CONTINUITY": true,
+        "NO_CURRENT_WORLD_OWNER": true,
+        "NATIVE_NAME_KNOWN_SOURCE_EQUAL": true,
+        "OFFICIAL_TAKE_TRUE_NON_WORLD_FLAGS": true,
+        "ALL_OWN_ID_BOXES_EXACT_SINGLE_ID": true,
+        "OWN_SOURCE_NAMES_EQUAL_OFFICIAL": true,
+        "BOUND_XML_EXACT_RECORD_PRESENT": true
+      },
+      "blockers": [],
+      "qualification": "PENDING_DOCUMENTED_UNITS_AND_CLOSED_PARSER_AUTHORING",
+      "raw_source_reference_ids": [
+        {
+          "page_id": 108025,
+          "revision_id": 1148655,
+          "raw_sha256": "4d6316e4baa71c10723fdfca4fa2ca9b86ed904cbad28510a638bf1997e543f8"
+        }
+      ]
+    },
+    {
+      "item_id": 50170,
+      "item_key": "oteryn:item.tibia.i50170",
+      "current_target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i50170",
+        "revision": "definition-r1"
+      },
+      "shape": "NUMERIC_DAMAGE_REFLECTION",
+      "source_whole_vector": {
+        "kind": "MODIFIERS",
+        "value": [
+          {
+            "kind": "ELEMENTAL_BOND",
+            "target_domain": {
+              "state": "UNKNOWN"
+            },
+            "evaluation_phase": {
+              "state": "UNKNOWN"
+            },
+            "priority": {
+              "state": "UNKNOWN"
+            },
+            "parameter": {
+              "state": "KNOWN",
+              "value": {
+                "kind": "ELEMENT",
+                "value": "ENERGY"
+              }
+            }
+          },
+          {
+            "kind": "MAGIC_LEVEL_POINTS",
+            "target_domain": {
+              "state": "UNKNOWN"
+            },
+            "evaluation_phase": {
+              "state": "UNKNOWN"
+            },
+            "priority": {
+              "state": "UNKNOWN"
+            },
+            "parameter": {
+              "state": "KNOWN",
+              "value": {
+                "kind": "SIGNED_POINTS",
+                "value": 2
+              }
+            }
+          },
+          {
+            "kind": "REFLECT_DAMAGE",
+            "target_domain": {
+              "state": "UNKNOWN"
+            },
+            "evaluation_phase": {
+              "state": "UNKNOWN"
+            },
+            "priority": {
+              "state": "UNKNOWN"
+            },
+            "parameter": {
+              "state": "KNOWN",
+              "value": {
+                "kind": "SIGNED_POINTS",
+                "value": 50
+              }
+            }
+          },
+          {
+            "kind": "SKILL_FIST",
+            "target_domain": {
+              "state": "UNKNOWN"
+            },
+            "evaluation_phase": {
+              "state": "UNKNOWN"
+            },
+            "priority": {
+              "state": "UNKNOWN"
+            },
+            "parameter": {
+              "state": "KNOWN",
+              "value": {
+                "kind": "SIGNED_POINTS",
+                "value": 2
+              }
+            }
+          }
+        ]
+      },
+      "atom_count": 4,
+      "literal_routes": [
+        {
+          "source_literal": " 50 damage reflection",
+          "native_kind": "REFLECT_DAMAGE",
+          "parameter_type": "SIGNED_POINTS",
+          "xml_key": "reflectdamage",
+          "expected_scalar": 50
+        }
+      ],
+      "corroboration": [
+        {
+          "source": "binding-selected-Crystal",
+          "own_modifier_fields": [
+            {
+              "xml_key": "reflectdamage",
+              "own_values": [
+                "50"
+              ],
+              "agrees": true
+            }
+          ],
+          "agrees": true,
+          "scope": "ONLY_NEW_LITERAL_MODIFIER_KEYS; NOT_ALL_XML_RECORD_ATTRIBUTES"
+        },
+        {
+          "source": "Canary-hypothesis",
+          "own_modifier_fields": [
+            {
+              "xml_key": "reflectdamage",
+              "own_values": [
+                "50"
+              ],
+              "agrees": true
+            }
+          ],
+          "agrees": true,
+          "scope": "ONLY_NEW_LITERAL_MODIFIER_KEYS; NOT_ALL_XML_RECORD_ATTRIBUTES"
+        }
+      ],
+      "guards": {
+        "CURRENT_NATIVE_ITEM_PRESENT": true,
+        "EXPLICIT_EXACT_BINDING_FULL_IDENTITY": true,
+        "CURRENT_OFFICIAL_OBJECT_PRESENT": true,
+        "CURRENT_MEMBER_FULL_RECORD_PROJECTION": true,
+        "BOUND_SOURCE_EPOCH_IDENTITY_CONTINUITY": true,
+        "NO_CURRENT_WORLD_OWNER": true,
+        "NATIVE_NAME_KNOWN_SOURCE_EQUAL": true,
+        "OFFICIAL_TAKE_TRUE_NON_WORLD_FLAGS": true,
+        "ALL_OWN_ID_BOXES_EXACT_SINGLE_ID": true,
+        "OWN_SOURCE_NAMES_EQUAL_OFFICIAL": true,
+        "BOUND_XML_EXACT_RECORD_PRESENT": true
+      },
+      "blockers": [],
+      "qualification": "PENDING_DOCUMENTED_UNITS_AND_CLOSED_PARSER_AUTHORING",
+      "raw_source_reference_ids": [
+        {
+          "page_id": 108026,
+          "revision_id": 1148656,
+          "raw_sha256": "98691207acd936249b7b9c76f69556cc1fba13197641b9a0a1910a8d2634518b"
+        }
+      ]
+    }
+  ],
+  "native_carrier_witness": {
+    "path": "apps/game-server/src/content/reference_playable.rs",
+    "published_commit": "1b026969a8b2236737bff537b3eddb3c909781b2",
+    "sha256": "e50682b67ca36431f9a6b9eb018a8cb17a08cf7e4fdc66c33a5831dc83f4e3ad",
+    "enum_lines": [
+      318,
+      332
+    ],
+    "types_lines": [
+      335,
+      345
+    ],
+    "kind_parameter_validation_lines": [
+      1954,
+      1983
+    ],
+    "existing_element_requirement": "ReflectDamage uses SIGNED_POINTS, not ELEMENT. No Physical7, Neutral, physical-only or all-elements inferred. Public player reflection flat-point/melee/cap rule is independent source provenance; no element asserted. Intrinsic parameter-only metadata keeps runtime/context bindings UNKNOWN.",
+    "context": "All target_domain/evaluation_phase/priority remain UNKNOWN, including PerfectShot range; no runtime attack target, trigger or binding invented."
+  },
+  "held_overrides_prohibited": [
+    "Physical8 whole16 awaiting V5",
+    "Cleave6 have exact separate own-ID pages; historical malformed-parser hold is not a shared-ID hold",
+    "LifeLeech50147 other-ID50148 equip attributes cannot be treated as own bound XML corroboration",
+    "29 explicitly empty modifiergroups cannot become partially Known",
+    "Named boolean effects3 have no effect on own-bound XML (equip target only), no target inheritance",
+    "Faster regeneration14 unquantified and vocation/phase-dependent; XML health/mana rates alone not native public values"
+  ],
+  "semantic_documentation": {
+    "report_path": "/workspace/audit-continuation/modifier64-six-semantics-public-source-report.json",
+    "report_sha256": "311c069b27de010c30ca08307a614f2640f655558a0a9f94ad735022c0b40357",
+    "raw_capture": {
+      "path": "/workspace/audit-continuation/modifier64-six-semantics-browser-cdp-source.json",
+      "sha256": "a09999353090d60cbed247d4ca077a66fe0bc9da973dc053eebf75c077c9a3de",
+      "bytes": 40722,
+      "method": "anonymous public browser same-origin MediaWiki API through Chrome CDP",
+      "captureUTC": "2026-10-02T14:45:28.621Z",
+      "url": "https://tibia.fandom.com/api.php?action=query&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent%7Csha1&rvslots=main&titles=Damage+Reflection%7CCleave%7CPerfect+Shot%7CMagic+Shield%7CLife+Leech%7CTemplate%3AInfobox+Object%2FDocumentation&format=json&formatversion=2&redirects=1",
+      "status": 200,
+      "full_exact_CDP_and_API_bodies_retained": true
+    },
+    "pages": [
+      {
+        "title": "Magic Shield",
+        "page_id": 1866,
+        "revision_id": 1182867,
+        "revision_timestamp": "2026-05-07T06:32:56Z",
+        "API_revision_sha1": "e8fba34a6a2da517971ebe6dc33273bdd02a58de",
+        "raw_content_sha256": "339fe8a26e66322749a0ab17d428576d8450128280dbf1fbcb4124b8d33184ec",
+        "raw_content_bytes": 3532,
+        "target_cutoff_eligible": true,
+        "stable_link": "https://tibia.fandom.com/wiki/Magic_Shield?oldid=1182867"
+      },
+      {
+        "title": "Life Leech",
+        "page_id": 78085,
+        "revision_id": 1101811,
+        "revision_timestamp": "2025-05-04T17:01:12Z",
+        "API_revision_sha1": "66676a50d17637d0d74a2495be9dcfe881913b9c",
+        "raw_content_sha256": "507f3e067c027749e8e2de7b832d9473565d97a8436f0939d90bdce6c7049d35",
+        "raw_content_bytes": 859,
+        "target_cutoff_eligible": true,
+        "stable_link": "https://tibia.fandom.com/wiki/Life_Leech?oldid=1101811"
+      },
+      {
+        "title": "Damage Reflection",
+        "page_id": 84163,
+        "revision_id": 1131993,
+        "revision_timestamp": "2025-10-07T15:47:33Z",
+        "API_revision_sha1": "9e0e8ada13deed7779b9411eafad4f9bfcb70699",
+        "raw_content_sha256": "f9d47777697487d341ca252b98f9b5b9ee1cd446315555281c7f6f016a6fe4a7",
+        "raw_content_bytes": 4865,
+        "target_cutoff_eligible": true,
+        "stable_link": "https://tibia.fandom.com/wiki/Damage_Reflection?oldid=1131993"
+      },
+      {
+        "title": "Template:Infobox Object/Documentation",
+        "page_id": 94083,
+        "revision_id": 1204204,
+        "revision_timestamp": "2026-08-31T00:49:33Z",
+        "API_revision_sha1": "c84180ef4c519a9f7a56495d6fb1c744ed356e3b",
+        "raw_content_sha256": "15e0fd448b90de5df669c37fe5db230dae842bb78151e2bc9df67b392c6be150",
+        "raw_content_bytes": 23973,
+        "target_cutoff_eligible": true,
+        "stable_link": "https://tibia.fandom.com/wiki/Template:Infobox_Object/Documentation?oldid=1204204"
+      },
+      {
+        "title": "Perfect Shot",
+        "page_id": 107866,
+        "revision_id": 1090573,
+        "revision_timestamp": "2025-02-08T16:18:36Z",
+        "API_revision_sha1": "ceb3184c3bc8f302610580abe0afac04e68474d2",
+        "raw_content_sha256": "0024eac554781a6c182663de77cc57882562c2123a3eeb7a5c7680eeadf79c6e",
+        "raw_content_bytes": 2318,
+        "target_cutoff_eligible": true,
+        "stable_link": "https://tibia.fandom.com/wiki/Perfect_Shot?oldid=1090573"
+      },
+      {
+        "title": "Cleave",
+        "page_id": 107867,
+        "revision_id": 1095106,
+        "revision_timestamp": "2025-03-13T16:49:23Z",
+        "API_revision_sha1": "32e92161f8f1da5ded74645b7d6c4265e47960d7",
+        "raw_content_sha256": "9f82b297bf470e9b1f6bb8946c7e19f2e5c52f1451129069eb8ec70949a305fe",
+        "raw_content_bytes": 1419,
+        "target_cutoff_eligible": true,
+        "stable_link": "https://tibia.fandom.com/wiki/Cleave?oldid=1095106"
+      }
+    ],
+    "findings": {
+      "Damage_Reflection": "Player equipment reflection is flat damage: combined80 becomes capped50 against5000health. Trigger only melee, not bosses; cap1%attackers HP and Prey exception. Creature reflection percentage/element tables are a distinct mechanic. Captured player rule does NOT establish reflected damage element Physical/Neutral/AllElements; do not import creature table elements or infer element from melee trigger.",
+      "Perfect_Shot": "Explicit+25 at range5 turns240damage into265 only at exactdistance5, singleprimarytarget; flatdamage points plus exactrange, not percentage or weaponmaximumrange6. Native cells/context representation still independently qualified.",
+      "Cleave": "Explicit10%Cleave sends10physical+50fire main-target example to1physical+5fire secondary targets beforetheirdefense; percentofdamage, splitdamageelements preserved. Does not assign targetItems or override shared-own-ID exclusions.",
+      "Magic_Shield": "Captured page is spell44, absorbing limiteddamage depends Level/MagicLevel viaformula and gear/skillboosts. Does NOT explicitly define gear +80 versus8% capacity modifier arithmetic/order. This six-page batch alone leaves intrinsic flat/percent gear unit grammar unsupported, despite establishing shieldcapacity asdamageabsorption/mana unit.",
+      "Life_Leech": "OwnInfoBoxDocumentation explicitly distinguishes intrinsic chance hpleech_ch from amount hpleech_am (sameasmanaleech), both numberwith%sign and pairedfields required. Missing XMLmodifier for50147 cannot be inferred fromequipped50148 or genericLifeLeech page.",
+      "Infobox_Documentation": "page94083/rev1204204 directly documents chance and amount%routes; noreflection/cleave/perfectshot/MagicShield modifier unitparameter guidance found in itsactualraw content."
+    }
+  },
+  "intrinsic_source_qualified13_ids": [
+    36656,
+    36657,
+    36658,
+    36659,
+    36660,
+    36661,
+    36662,
+    36666,
+    39147,
+    39148,
+    39150,
+    50169,
+    50170
+  ],
+  "intrinsic_source_qualified13_atoms": 34,
+  "magic_capacity4_pending_literal_metadata_route_ids": [
+    36672,
+    36673,
+    45639,
+    45640
+  ],
+  "magic_capacity4_scope": "Own literal +80 and8% or+150 and3% plus own bound Crystal andCanary flat/percent keys agree. General MagicShield spell page does not prove gear modifier arithmetic/order. Proposed native intrinsic two-parameter metadata ONLY; owner/source review needed for direct literal route; no inferred formula, baseline capacity or runtime combination."
+}

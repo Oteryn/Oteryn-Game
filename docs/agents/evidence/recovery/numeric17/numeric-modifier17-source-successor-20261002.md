@@ -1,0 +1,9 @@
+Jawnie połączono dwa rozłączne zestawy: Numeric13/34 oraz MagicCapacity4/16. Wynik:17 całych wektorów i50 parametrów;0 zmian Native. Starsze dowody13/v2 oraz historyczna propozycja17 zachowują identyczne bajty.
+
+Cztery nowe itemy:36672,36673,45639,45640. Zachowano wszystkie16 atomów, w tym8 wcześniejszych magic-level points. Własne Wiki obserwuje Magic Shield Capacity +80 and8% lub+150 and3%. Własny wybrany XML oraz Canary zgadzają się co do każdego atomu. Pinned Crystal parser zapisuje odrębne wartości Flat/Percent, a renderer pokazuje dokładnie +Flat andPercent%. Jest to zgodność obserwowanych parametrów:80/150SignedPoints oraz8/1 lub3/1RationalPercent. Nie ustalono wzoru, kolejności łączenia, aktywacji, celu ani reguł gry. Wszystkie50 target_domain/evaluation_phase/priority pozostają UNKNOWN.
+
+Wykorzystano istniejące Native37 nośniki. Stary statssetter nie przyjmuje nowych rodzajów; Root zatwierdził osobny zamknięty setter17 z atomowością i idempotencją, zachowujący starszą whitelistę, kompilatory i proofy26/49. Obecny parent1b jest świadkiem źródłowej kwalifikacji, a jego cały Native hash nie staje się przyszłym globalnym guardem. Nowy rzeczywisty parent/carry wymaga odrębnego receipt.
+
+Własne źródła Wiki pochodzą z publicznych zapisów Remote Desktop+Chrome/CDP client_assets; niezależne dokumentacje również odczytano publicznym Chrome po blokadzie zwykłego HTTP402. CPP źródła czterech parametrów przechowano z normalnego publicznego HTTP rawGitHub ff7ede5. Hash własnego rawbox i źródłowej części jest weryfikowany; pełny articleSHA pozostaje deklarowaną współrzędną, bez udawania rekonstrukcji całego artykułu.
+
+Pozostałe159 par pól z zakresu176 nadal są wstrzymane;17 źródłowo zakwalifikowanych także oczekuje wdrożenia. Physical8,14regen,50147 oraz puste grupy nie wchodzą do nowego cohortu. Nie jest to liczba w pełni ukończonych itemów. Nie wykonano WT/Cargo/Git/publikacji.

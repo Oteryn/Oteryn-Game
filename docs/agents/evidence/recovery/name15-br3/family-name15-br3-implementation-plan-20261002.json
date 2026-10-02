@@ -1,0 +1,167 @@
+{
+  "baseline": "b0f91e2883007861f5556c44cce13701bb447283",
+  "no_new_model_or_native_field": true,
+  "normal_Name139_guard_and_bytes_preserved": true,
+  "other_family235_holds_retained": 217,
+  "phases": [
+    {
+      "accepted_owning_leaf": "ReferenceItemSemantics.presentation.name",
+      "compiler_route": "New narrow compiler using checked/exact_bindings/leaf/own_index; do not call old Name139 witness_params/load_inputs",
+      "idempotent_current_state": "KNOWN exact incoming official name accepted; historical proof source pins remain historical, not false current fullshard equality",
+      "must_preserve": [
+        "all Name139 sources/module/packet",
+        "protected imported literals",
+        "other semantic leaves",
+        "411 existing authoring owners",
+        "current taxonomy/world/relations",
+        "classes and runtime materializable"
+      ],
+      "native_route": "New narrow fixed15 module; prevalidate complete target set and every current state/owner before15 name mutations",
+      "order": 1,
+      "postgeneration_exact_delta": "15 presentation.name leaves on15Items only; no admission/class/owner/relations/scalar change",
+      "required_decision": "Explicit fixed15 official numeric-name + exact imported mayhem authority, without ownWikiID",
+      "scope": "Name15 correction",
+      "source_carrier": "New sealed closed15 proof with actual official raw-object+complete membership/currentbinding/importSample+alias/protected raw XML lineage; no fake Wiki observations",
+      "tests": [
+        "numeric ID exactness/reverse/fulltarget revision",
+        "duplicate own raw field4/invalid UTF8",
+        "wrong XML/importSample/alias",
+        "GameOwned presentation",
+        "unrelated Known and blocked Unknown/Conflict/NA",
+        "late missing or duplicate target atomicity",
+        "two IDs sharing exact official name",
+        "idempotence"
+      ]
+    },
+    {
+      "additional_source_requirement": "Retain actual full article DISAMBIG_RE branch and complete candidate-title/redirect lookup responses for each selected attempt; no rawbox-as-fullarticle substitute",
+      "classification": "DERIVED_NAVIGATION_ONLY",
+      "current_admission_steps": [
+        "compose published taxonomy with actual native predecessor separately",
+        "actual new KnownName guard match",
+        "replay existing build_taxonomy bound/World/retained source priority/profile guards",
+        "measure actual accepted append-only results"
+      ],
+      "expected_profile_candidates": {
+        "weapon_magic": 6,
+        "weapon_melee": 9
+      },
+      "full_article_branch_missing_now": true,
+      "order": 2,
+      "required_complete_source_frames": [
+        {
+          "page_id": 78037,
+          "revision_id": 1147946,
+          "title": "Blade of Mayhem"
+        },
+        {
+          "page_id": 78038,
+          "revision_id": 1147986,
+          "title": "Blade of Remedy"
+        },
+        {
+          "page_id": 78039,
+          "revision_id": 1148026,
+          "title": "Blade of Carving"
+        },
+        {
+          "page_id": 78040,
+          "revision_id": 1147948,
+          "title": "Axe of Mayhem"
+        },
+        {
+          "page_id": 78042,
+          "revision_id": 1148034,
+          "title": "Axe of Carving"
+        },
+        {
+          "page_id": 78043,
+          "revision_id": 1147950,
+          "title": "Mace of Mayhem"
+        },
+        {
+          "page_id": 78044,
+          "revision_id": 1148002,
+          "title": "Mace of Remedy"
+        },
+        {
+          "page_id": 78045,
+          "revision_id": 1148042,
+          "title": "Mace of Carving"
+        },
+        {
+          "page_id": 78072,
+          "revision_id": 1147955,
+          "title": "Rod of Mayhem"
+        },
+        {
+          "page_id": 78074,
+          "revision_id": 1148062,
+          "title": "Rod of Carving"
+        },
+        {
+          "page_id": 78075,
+          "revision_id": 1147954,
+          "title": "Wand of Mayhem"
+        },
+        {
+          "page_id": 78076,
+          "revision_id": 1148018,
+          "title": "Wand of Remedy"
+        },
+        {
+          "page_id": 78077,
+          "revision_id": 1148058,
+          "title": "Wand of Carving"
+        }
+      ],
+      "required_replay": "Exact frozen capture helper own-ID first then accepted name attempts with all-source agreement within selected attempt",
+      "scalar_inheritance_permitted": false,
+      "scope": "family15 after actual Name15 publication",
+      "source_carrier": "Real source-qualified family snapshot/helper output; base article own IDs remain distinct from missing variants",
+      "tests": [
+        "own-ID opposition blocks fallback",
+        "full article disambiguation branch",
+        "all-present within selected attempt vs separate lower-priority attempt",
+        "unavailable retained",
+        "no scalar inheritance",
+        "old family rows and217 holds unchanged"
+      ]
+    },
+    {
+      "classification": "DERIVED_NAVIGATION_ONLY",
+      "current_admission_steps": [
+        "EXACT forward/reverse/fulltarget",
+        "TakeTRUE/currentNoWorld/nativeKnownname",
+        "full global own-ID opposition",
+        "BR exact unique officialname and declared primarytype Itens de Quest",
+        "existingprofile catalog navigation category",
+        "actual build_taxonomy filtering on actual predecessor"
+      ],
+      "identity_authority": "ownFandom singleton ID + EXACT current official numeric binding; BR only exact globally unique name/category",
+      "native_changes_expected": 0,
+      "order": 3,
+      "owning_existing_profile": "quest_item",
+      "parser_route": "Balanced uncommented duplicate-preserving raw Infobox_Item parser; not Fandom Infobox Object nor Tibiopedia DOM parser",
+      "required_decision": "Fixed3 raw-BR auxiliary category bridge; do not add aliases to engine or SourceFieldCatalog",
+      "scope": "auxiliary BR3 family",
+      "source_carrier": "Separate closed raw-source frame carrying full Fandom and BR articles/Infobox fields/coordinates/hashes already captured",
+      "tests": [
+        "borrowed Fandom itemid/second conflicting own frame",
+        "malformed/empty/duplicate BR primary",
+        "wrong caption/ambiguous officialname",
+        "wrong rev/hash/cutoff",
+        "competing admitted family",
+        "source owner/domain conflict",
+        "preserve old external18 and frozen217 holds",
+        "actor buff is not Item duration"
+      ]
+    }
+  ],
+  "review_gate": "Independent source/authority review, then Root allocation only; no repo/Cargo/Git action authorized in this proposal task",
+  "runtime_or_full_verified_claim": null,
+  "schema": "OTERYN_CLOSED_NAME15_BR3_FUTURE_IMPLEMENTATION_PLAN/v1",
+  "source_policy_acceptance": false,
+  "source_proposal_sha256": "f0fe004299ab3fea1e7bb5deeb74c749836e1dc80a0120e3beadee3c187a543d",
+  "status": "OFFLINE_PROPOSAL_NO_APPLIED_CHANGES"
+}

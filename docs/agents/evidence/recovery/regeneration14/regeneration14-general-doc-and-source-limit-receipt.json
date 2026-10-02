@@ -1,0 +1,58 @@
+{
+  "schema": "REGENERATION14_PUBLIC_DOC_LIMIT_RECEIPT/v1",
+  "source_proposal": {
+    "path": "/workspace/audit-continuation/regeneration14-own-notes-xml-existing-carrier-source-proposal-20261002.json",
+    "sha256": "40f8a1074b45e9b58367578256c94204e61cfddb02e54aa7990d7a193500f427"
+  },
+  "public_doc_report": {
+    "path": "/workspace/audit-continuation/regeneration14-bounded-public-source-report.json",
+    "sha256": "5cb21a9dbc1fe747df04c44ac1e8d641329a8336cc18fff5a5b7421399e1398b"
+  },
+  "public_raw_capture": {
+    "path": "/workspace/audit-continuation/regeneration-semantics-browser-cdp-source.json",
+    "sha256": "31c2a61f7d9fdc12c7cd70452a3efe2942079f3249f350ce100ff0d0db4a5e4b",
+    "bytes": 17835,
+    "url": "https://tibia.fandom.com/api.php?action=query&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent%7Csha1&rvslots=main&titles=Regeneration&format=json&formatversion=2&redirects=1",
+    "method": "anonymous public browser same-origin MediaWiki API through Chrome CDP",
+    "captureUTC": "2026-10-02T15:10:40.085Z",
+    "status": 200,
+    "page_id": 5494,
+    "title": "Regeneration",
+    "revision_id": 1141317,
+    "revision_timestamp": "2025-11-09T15:51:57Z",
+    "API_revision_sha1": "8c039e96cd89cbcf35e0e64ad578ae6f218771e4",
+    "raw_content_sha256": "6da73b198b6fa432d3006bb5ac52bdc6cc87eb767498dc0a9d1a07aaf4071d20",
+    "raw_content_bytes": 13048,
+    "stable_link": "https://tibia.fandom.com/wiki/Regeneration?oldid=1141317",
+    "cutoff_eligible": true
+  },
+  "source_begin_outdated": true,
+  "own_quotes": [
+    {
+      "quote": "All vocations regenerate mana and hitpoints at different rates.",
+      "char_offset": 476,
+      "UTF8_offset": 476
+    },
+    {
+      "quote": "If a player has purchased a [[promotion]], then they will regenerate [[Mana]] and/or [[Hitpoint]]s faster.",
+      "char_offset": 717,
+      "UTF8_offset": 717
+    },
+    {
+      "quote": "This bonus also affects all regenerative items, meaning their efficiency will be twice the numbers displayed on the related pages.",
+      "char_offset": 1026,
+      "UTF8_offset": 1026
+    }
+  ],
+  "effect_on14qualification": "NO_POSITIVE_CHANGE. General article contains conditional vocation/promotion/rest bonuses and no14 ownID numeric rows. Exact own itemNotes13 numeric tuples retained in sourceproposal remain stronger per-item evidence, but do not supply8 missingownXML phases, resolve4 sharedID phases, erase8081tickquantum disagreement or45643actualrate opposition.",
+  "native_kinds_available": {
+    "HEALTH_GAIN": 13,
+    "HEALTH_TICKS": 14,
+    "MANA_GAIN": 22,
+    "MANA_TICKS": 25
+  },
+  "native_parameter_shapes": "SIGNED_POINTS for gain amounts and MILLISECONDS for tick intervals; allcontextUNKNOWN; old statssetter whitelist excludes these types so futureclosedsetter required.",
+  "sourceQualifiedWhole": 0,
+  "native_applied": 0,
+  "no_repository_mutations": true
+}

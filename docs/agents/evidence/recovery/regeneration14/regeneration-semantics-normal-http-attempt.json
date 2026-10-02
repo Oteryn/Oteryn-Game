@@ -1,0 +1,8 @@
+{
+  "url": "https://tibia.fandom.com/api.php?action=query&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent%7Csha1&rvslots=main&titles=Regeneration&format=json&formatversion=2&redirects=1",
+  "method": "ordinary anonymous public HTTP",
+  "captureUTC": "2026-10-02T15:09:53.872690+00:00",
+  "status": 402,
+  "body": "{\"message\":\"Please contact the site owner for access.\"}",
+  "body_sha256": "35e642f0e1bd426b9d8b0ee0284aefe801873dc13c18819fbeeaf2bf47136664"
+}

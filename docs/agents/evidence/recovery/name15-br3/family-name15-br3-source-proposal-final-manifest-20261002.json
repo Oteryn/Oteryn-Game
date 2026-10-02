@@ -1,0 +1,54 @@
+{
+  "applied": 0,
+  "baseline": "b0f91e2883007861f5556c44cce13701bb447283",
+  "checks": {
+    "EXACTforward_reverse_18": "PASS",
+    "Rust": "NOT_RUN_NOT_ALLOCATED",
+    "appliedPromotions": 0,
+    "closed_15_3_217_partition": "PASS",
+    "complete_global_ownIDpriority": "PASS",
+    "family15_WT_stopped_manifest_still_byteexact": true,
+    "family15_literal_name_join_fullarticle_replay": "NOT_RUN_MISSING_COMPLETE_BRANCH_FRAMES",
+    "full43516OfficialMembership": "PASS",
+    "independent_source_review": "NOT_RUN",
+    "nativeName_source_proof_15": "PASS",
+    "native_four_headers_18": "PASS",
+    "negative_source_state_checks": 8,
+    "positive_idempotent_check": 1,
+    "source_fullRaw_BR3_and_Fandom3": "PASS"
+  },
+  "family15_stopped_checkpoint": {
+    "path": "/workspace/audit-continuation/family-contract-composition-final-worker-manifest.json",
+    "sha256": "384f843fd85ede2babbb454ad6be52413dfce9b883c4a324b131d3c3cc4f161a"
+  },
+  "fully_verified": "NOT_ESTABLISHED",
+  "owned_external_files": [
+    {
+      "bytes": 23578,
+      "path": "/workspace/audit-continuation/prepare-family-name15-br3-closed-proposal.py",
+      "sha256": "ab19150475a311fd694304fb57462446b4ea455f7933640d97a8abd6cfc1f10d"
+    },
+    {
+      "bytes": 235668,
+      "path": "/workspace/audit-continuation/family-name15-br3-closed-source-proposal-20261002.json",
+      "sha256": "f0fe004299ab3fea1e7bb5deeb74c749836e1dc80a0120e3beadee3c187a543d"
+    },
+    {
+      "bytes": 7957,
+      "path": "/workspace/audit-continuation/family-name15-br3-proposed-packet-20261002.json",
+      "sha256": "6f399e959c2b9094732406522d0798726c5b24a60a3b26866ef282ad16d2d644"
+    },
+    {
+      "bytes": 11030,
+      "path": "/workspace/audit-continuation/family-name15-br3-implementation-proposal-20261002.md",
+      "sha256": "122980b535766c741c62d464354e4e697c6c90f0682c978eb6e7eee389796cfd"
+    },
+    {
+      "bytes": 6940,
+      "path": "/workspace/audit-continuation/family-name15-br3-implementation-plan-20261002.json",
+      "sha256": "a9ac59dfa0d66dd1c131a140d1faa47c1be1e4c704535d3607d5f8b8d27f4092"
+    }
+  ],
+  "schema": "OTERYN_EXTERNAL_SOURCE_PROPOSAL_CHECKPOINT/v1",
+  "status": "SOURCE_PROPOSAL_STOPPED_PENDING_INDEPENDENT_REVIEW"
+}

@@ -1,0 +1,39 @@
+{
+  "schema": "REGENERATION14_EXTERNAL_SOURCE_CHECKPOINT/v1",
+  "status": "WHOLE14_SOURCE_REVIEW_COMPLETE_ZERO_NATIVE_ELIGIBLE_UNDER_CURRENT_GUARDS",
+  "baseline": "1b026969a8b2236737bff537b3eddb3c909781b2",
+  "source_count": 14,
+  "source14_atoms_applied": 0,
+  "numeric13_source_untouched": true,
+  "owned_files": {
+    "/workspace/audit-continuation/regeneration14-own-notes-xml-existing-carrier-source-proposal-20261002.json": {
+      "sha256": "40f8a1074b45e9b58367578256c94204e61cfddb02e54aa7990d7a193500f427",
+      "bytes": 157596
+    },
+    "/workspace/audit-continuation/regeneration14-general-doc-and-source-limit-receipt.json": {
+      "sha256": "9bacbd94e14de30ae6e23b025de5322c092ca7f4c0cb79f3f65db5e1f9d4ce5c",
+      "bytes": 2886
+    },
+    "/workspace/audit-continuation/regeneration14-own-source-hold-report-20261002.md": {
+      "sha256": "aa0b0d9a0ca757d1c048c7acac010bbf7d711d87fae5bd643eb52bf008369619",
+      "bytes": 2273
+    },
+    "/workspace/audit-continuation/regeneration14-bounded-public-source-report.json": {
+      "sha256": "5cb21a9dbc1fe747df04c44ac1e8d641329a8336cc18fff5a5b7421399e1398b",
+      "bytes": 3680
+    },
+    "/workspace/audit-continuation/regeneration-semantics-browser-cdp-source.json": {
+      "sha256": "31c2a61f7d9fdc12c7cd70452a3efe2942079f3249f350ce100ff0d0db4a5e4b",
+      "bytes": 17835
+    },
+    "/workspace/audit-continuation/regeneration-semantics-normal-http-attempt.json": {
+      "sha256": "dd8720caf2e576dc78e2de4bdb53df63b6443cb26009c4fea3f491e74899eba2",
+      "bytes": 462
+    },
+    "/workspace/audit-continuation/characterize-regeneration14-own-source-carriers.py": {
+      "sha256": "83b09b0de68ed86e1350fdbe4fb8f1b1a4fe241a4fef2965f0c8481ef0437732",
+      "bytes": 8484
+    }
+  },
+  "independent_source_peer": "PENDING; equipment supplied independentlycaptured genericdoc, source14 exact ownNotes/XMLproposal not yet independentlyreviewed"
+}

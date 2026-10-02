@@ -1,0 +1,63 @@
+{
+  "schema": "OTERYN_REGENERATION14_BOUNDED_PUBLIC_SEMANTICS_RESEARCH/v1",
+  "status": "PUBLIC_CAPTURE_COMPLETE_NO_NEW_ITEM_SOURCE_QUALIFICATION",
+  "source": {
+    "path": "/workspace/audit-continuation/regeneration-semantics-browser-cdp-source.json",
+    "sha256": "31c2a61f7d9fdc12c7cd70452a3efe2942079f3249f350ce100ff0d0db4a5e4b",
+    "bytes": 17835,
+    "url": "https://tibia.fandom.com/api.php?action=query&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent%7Csha1&rvslots=main&titles=Regeneration&format=json&formatversion=2&redirects=1",
+    "method": "anonymous public browser same-origin MediaWiki API through Chrome CDP",
+    "captureUTC": "2026-10-02T15:10:40.085Z",
+    "status": 200,
+    "page_id": 5494,
+    "title": "Regeneration",
+    "revision_id": 1141317,
+    "revision_timestamp": "2025-11-09T15:51:57Z",
+    "API_revision_sha1": "8c039e96cd89cbcf35e0e64ad578ae6f218771e4",
+    "raw_content_sha256": "6da73b198b6fa432d3006bb5ac52bdc6cc87eb767498dc0a9d1a07aaf4071d20",
+    "raw_content_bytes": 13048,
+    "stable_link": "https://tibia.fandom.com/wiki/Regeneration?oldid=1141317",
+    "cutoff_eligible": true
+  },
+  "normal_HTTP_attempt": {
+    "path": "/workspace/audit-continuation/regeneration-semantics-normal-http-attempt.json",
+    "sha256": "dd8720caf2e576dc78e2de4bdb53df63b6443cb26009c4fea3f491e74899eba2",
+    "status": 402
+  },
+  "actual_source_status": "Own source begins <noinclude>{{outdated}}</noinclude>; do not present as confirmed current complete rates.",
+  "quotes": [
+    {
+      "quote": "All vocations regenerate mana and hitpoints at different rates.",
+      "char_offset": 476,
+      "UTF8_offset": 476
+    },
+    {
+      "quote": "If a player has purchased a [[promotion]], then they will regenerate [[Mana]] and/or [[Hitpoint]]s faster.",
+      "char_offset": 717,
+      "UTF8_offset": 717
+    },
+    {
+      "quote": "This bonus also affects all regenerative items, meaning their efficiency will be twice the numbers displayed on the related pages.",
+      "char_offset": 1026,
+      "UTF8_offset": 1026
+    }
+  ],
+  "findings": [
+    "General health/mana regeneration varies by vocation and promotion; food type does not change base rate.",
+    "Resting-area DailyReward streak boosts double efficiency of regenerative items; explicit context condition, not a globally doubled perItem intrinsic rate.",
+    "Raw source graphs refer to Calculator/Mana Per Second and Calculator/Hit Points Per Second *3600 perhour; actual calculator raw values are not present in this article and were not fetched/evaluated.",
+    "SpecialItems section separates instant restorative potions/runes/spells from regenerative equipment, so do not inherit potion/use amounts into intrinsic HealthGain/ManaGain modifier facts.",
+    "Own source uses DPL category/template tables referencing intrinsic attrib but does not contain exact own numericItemID/rate/interval rows for the14candidate Items.",
+    "This article alone cannot turn unquantified ownWiki fasterregeneration into exact SignedPoints/Milliseconds values; XML equip-target rates remain scoped OTS hypotheses without exact ownItem source/phase proof."
+  ],
+  "held_native_claims": [
+    "No one universal gain amount/interval for all14.",
+    "No transfer of equipped-target XML values to unequipped/base ownID.",
+    "No healthticks/manaTicks time-unit conversion or runtimeclock/activation formula inferred from this article.",
+    "No title/DPL category to numerical item identity or family/tier inference."
+  ],
+  "owned_tab": "1598F798FF4EF7FFD2F613745A933CDB",
+  "owned_tab_closed": true,
+  "no_Cargo_WT_Git_Native_private_admin_or_other_tab_mutations": true,
+  "no_Tavily_calls": true
+}

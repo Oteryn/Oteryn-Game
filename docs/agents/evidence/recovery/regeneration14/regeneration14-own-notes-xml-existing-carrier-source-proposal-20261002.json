@@ -1,0 +1,4164 @@
+{
+  "schema": "REGENERATION14_EXISTING_NATIVE_CARRIER_SOURCE_PROPOSAL/v1",
+  "status": "WHOLE14_EXACT_SOURCE_CHARACTERIZED_ZERO_QUALIFIED_UNDER_CURRENT_OWN_ID_AND_OWN_XML_GUARDS",
+  "baseline_source_replay": "b0f91e2883007861f5556c44cce13701bb447283",
+  "current_source_receipt_commit": "1b026969a8b2236737bff537b3eddb3c909781b2",
+  "prior_numeric13_source_immutable": true,
+  "parent_report_path": "/workspace/audit-continuation/equipment19-modifier103-duration54-source-requalification-20261002.json",
+  "parent_report_sha256": "815f293f42bc81885db8b45c1cfb8dbe8585c94ca225d6a49349731ce9b6dc19",
+  "source_transport_override": "All complete selected own Wiki frames are anonymous browser same-origin API captures by client_assets, per actual global manifest. Parent ordinaryHTTP prose is superseded by numeric13 transport receiptv2. XML locally replayed retained public source, hypothesis/corroboration only.",
+  "counts": {
+    "whole_source_ids": 14,
+    "own_Wiki_explicit_rate_tuple": 13,
+    "own_Wiki_no_numeric_rate": 1,
+    "all_four_own_XML_attributes_present": 6,
+    "own_XML_missing_equip_target_only": 8,
+    "own_XML_complete_but_shared_own_Wiki_ID": 4,
+    "own_XML_complete_single_Wiki_ID": 2,
+    "whole_native_eligible": 0,
+    "native_applied": 0,
+    "disjoint_primary_reasons": {
+      "OWN_BOUND_XML_TUPLE_ABSENT_EQUIP_TARGET_TRANSFER_PROHIBITED": 8,
+      "SHARED_OWN_ID_PHASE_UNQUALIFIED": 4,
+      "WIKI_XML_TICK_QUANTUM_DISAGREEMENT_NO_AVERAGE_RATE_SUBSTITUTION": 1,
+      "WIKI_XML_MANA_RATE_DISAGREEMENT_AND_PUBLIC_HEALTH_AMOUNT_ABSENT": 1
+    }
+  },
+  "native_boundary": "Native37 has kinds13/14/22/25 and parameterSignedPoints/Milliseconds already. Existing stats apply_packet MODIFIERS whitelist excludes these; any accepted future source tuple needs distinct closed local setter, not enum/schema/protocol/profile expansion.",
+  "source_meaning_limits": [
+    "Do not replace source2HP/8mana every6s with1HP/4mana every3s on8081 merely because average rates agree; the explicit tick quantum differs. No gameplay clock assumption permitted.",
+    "45643 own notes16mana per6s versus boundXML4mana per3s are opposing even as average rates, with public health tuple absent; no alternate value chosen.",
+    "Eight absent-own XML tuples cannot be filled by another equipTargetID; public notes prove a named effect, not own bound-source phase equivalence.",
+    "Four equipped IDs with numeric own XML remain source-shared with base IDs; source-own-ID phase qualification is not silently inferred from XMLtransform data.",
+    "13 ownNote numeric rate witnesses coexist with food/rest/vocation/normalregeneration clauses; retain all clauses. No inference of activation, rest doubling or clock domain.",
+    "No partial Known vector by keeping speed/magic level/life leech while omitting fasterregeneration.",
+    "Generic documentation needed only to explain parameter units/modifier-vs-total semantics; it cannot assign anotherID phase or erase actual source disagreement.",
+    "13numeric34 source-qualified proof remains distinct and unchanged; these14 are add-on research, not an expanded oldcohort."
+  ],
+  "required_bounded_public_doc": [
+    "Regeneration: intrinsic item gainpoints and repeat interval units; additive versus normal/vocation/rest rates; no native runtimeclock inference."
+  ],
+  "records": [
+    {
+      "item_id": 3052,
+      "item_key": "oteryn:item.tibia.i3052",
+      "identity_and_current_guards": {
+        "item_id": 3052,
+        "item_key": "oteryn:item.tibia.i3052",
+        "native_identity": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3052",
+          "revision": "definition-r1"
+        },
+        "binding": {
+          "disposition": "EXACT",
+          "external_id": "3052",
+          "identity_namespace": "ots/item_server_id",
+          "source_key": "oteryn:source.crystalserver",
+          "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+          "target": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i3052",
+            "revision": "definition-r1"
+          }
+        },
+        "official_name": "life ring",
+        "official_raw_object_sha256": "db38aa275f1c18b349e14c22e10c76d78e87c6047e338638debc3ec80db2ea0b",
+        "official_identity_projection_sha256": "2707b8755eebe5d60ca11ffeae1b45dfd5118146b681809e4b66d17d91923091",
+        "official_flags": {
+          "flags.take": true,
+          "flags.clothes": true,
+          "clothes.slot": 9,
+          "flags.market": true,
+          "market.category": 11,
+          "market.trade_as_object_id": 3052,
+          "market.show_as_object_id": 3052,
+          "flags.cyclopediaitem": true,
+          "cyclopediaitem.cyclopedia_type": 3052,
+          "flags.expirestop": true,
+          "npcsaledata.name": [
+            "Alexander",
+            "Khanna",
+            "Yaman"
+          ],
+          "npcsaledata.location": [
+            "Edron Castle",
+            "Issavi",
+            "Mal'ouquah"
+          ],
+          "npcsaledata.sale_price": [
+            900,
+            1000,
+            900
+          ],
+          "npcsaledata.buy_price": [
+            0,
+            0,
+            50
+          ]
+        },
+        "native_name": {
+          "state": "KNOWN",
+          "value": "life ring"
+        },
+        "native_headers": {
+          "kind": "Item",
+          "stack_class": "Unknown",
+          "client_projection": "ClientSafe",
+          "materializable": false
+        },
+        "current_member": [
+          3052,
+          "2707b8755eebe5d60ca11ffeae1b45dfd5118146b681809e4b66d17d91923091",
+          "db38aa275f1c18b349e14c22e10c76d78e87c6047e338638debc3ec80db2ea0b"
+        ],
+        "bound_old_member": [
+          3052,
+          "2707b8755eebe5d60ca11ffeae1b45dfd5118146b681809e4b66d17d91923091",
+          "b759687ba580a3699ec1194ecb4418d6616dde47fe39420841d7c9929d8b92f6"
+        ],
+        "bound_old_member_label": "crystal-ff7ede5",
+        "guard_results": {
+          "CURRENT_NATIVE_ITEM_PRESENT": true,
+          "EXPLICIT_EXACT_BINDING_FULL_IDENTITY": true,
+          "CURRENT_OFFICIAL_OBJECT_PRESENT": true,
+          "CURRENT_MEMBER_FULL_RECORD_PROJECTION": true,
+          "BOUND_SOURCE_EPOCH_IDENTITY_CONTINUITY": true,
+          "NO_CURRENT_WORLD_OWNER": true,
+          "NATIVE_NAME_KNOWN_SOURCE_EQUAL": true,
+          "OFFICIAL_TAKE_TRUE_NON_WORLD_FLAGS": true,
+          "ALL_OWN_ID_BOXES_EXACT_SINGLE_ID": true,
+          "OWN_SOURCE_NAMES_EQUAL_OFFICIAL": true,
+          "BOUND_XML_EXACT_RECORD_PRESENT": true
+        },
+        "binding_selected_xml": {
+          "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+          "source_path": "/workspace/audit-continuation/sources/crystal-ff7ede5-items.xml",
+          "records": [
+            {
+              "element_ordinal": 1468,
+              "source_item_attributes": {
+                "id": "3052",
+                "article": "a",
+                "name": "life ring"
+              },
+              "own_attributes": [
+                {
+                  "key": "primarytype",
+                  "value": "rings"
+                },
+                {
+                  "key": "stopduration",
+                  "value": "1"
+                },
+                {
+                  "key": "showduration",
+                  "value": "1"
+                },
+                {
+                  "key": "transformequipto",
+                  "value": "3089"
+                },
+                {
+                  "key": "weight",
+                  "value": "80"
+                },
+                {
+                  "key": "script",
+                  "value": "moveevent"
+                }
+              ],
+              "projection_sha256": "140be00088a70fe5e7fdda2111dfe3d6a428325133815ebf7c3bac653fc4d53a",
+              "projection_serialization": "ET.tostring; derived semantic projection, not literal source XML bytes"
+            }
+          ]
+        },
+        "canary_hypothesis_only": [
+          {
+            "element_ordinal": 1468,
+            "source_item_attributes": {
+              "id": "3052",
+              "article": "a",
+              "name": "life ring"
+            },
+            "own_attributes": [
+              {
+                "key": "primarytype",
+                "value": "rings"
+              },
+              {
+                "key": "stopduration",
+                "value": "1"
+              },
+              {
+                "key": "showduration",
+                "value": "1"
+              },
+              {
+                "key": "transformequipto",
+                "value": "3089"
+              },
+              {
+                "key": "weight",
+                "value": "80"
+              },
+              {
+                "key": "script",
+                "value": "moveevent"
+              }
+            ],
+            "projection_sha256": "140be00088a70fe5e7fdda2111dfe3d6a428325133815ebf7c3bac653fc4d53a",
+            "projection_serialization": "ET.tostring; derived semantic projection, not literal source XML bytes"
+          }
+        ]
+      },
+      "own_raw_modifier_groups": [
+        {
+          "attrib": [
+            "faster regeneration"
+          ]
+        }
+      ],
+      "own_note_tuple_witnesses": [
+        {
+          "reference": {
+            "page_id": 2185,
+            "title": "Life Ring",
+            "revision_id": 1194087,
+            "revision_timestamp": "2026-07-04T12:41:39Z",
+            "content_sha256": "20ae02e6072bbe5f0e2ce751029d480f085b09dc5774a56711779da8f1d221b7",
+            "capture_path": "/workspace/audit-continuation/global-infobox-object-source-part-002.json",
+            "capture_sha256": "73c0ce09f985c9d0c7d4beff29618ca123792e6a32bac5e2dd35be44634e245f",
+            "page_ordinal": 12,
+            "batch": 2,
+            "own_object_box_indices": [
+              0
+            ],
+            "selection": "CURRENT_REVISION_AT_OR_BEFORE_CUTOFF",
+            "box_index": 0,
+            "occurrence_index": 0,
+            "raw_itemid": "3052",
+            "strict_numeric_itemid": true,
+            "balanced": true,
+            "inside_comment": false,
+            "duplicate_itemid_parameters": false
+          },
+          "raw_template_sha256": "9370a9a3558007b7bb36fe9670f604951fbef90a57b1cddae570ee4178316c32",
+          "own_notes": "The [[ring]] gives 8 [[manapoint]]s and 2 [[hitpoint]]s every 6 seconds on top of your normal [[regeneration]] rate for the 20 minutes that it lasts, which results in additional 1600 [[manapoint]]s and 400 [[hitpoint]]s in total; 3200 [[manapoint]]s and 800 [[hitpoint]]s if the player is inside a [[Resting Area]] and double regeneration is unlocked.\n\nSee the [[Money Spent per Mana Point|GP/MP]], [[Money Spent per Hit Point|GP/HP]], [[Capacity Taken per Mana Point|Cap/MP]] and [[Capacity Taken per Hit Point|Cap/HP]] efficiency tables for comparisons of the different items that regenerates your mana and hit points.\n\nYou can get [[Life Crystal]]s exchanged for Life Rings by speaking to [[Chester Kahs]]. You can also obtain 1 of these [[ring]]s from the [[Life Ring Quest]], [[Darashia Dragon Quest]] and [[Behemoth Quest]]. A life ring is used in the [[Dreamer's Challenge Quest]].",
+          "exact_tuple_quote": "gives 8 [[manapoint]]s and 2 [[hitpoint]]s every 6 seconds",
+          "quote_char_offset": 13,
+          "tuple": {
+            "health_gain_points": 2,
+            "mana_gain_points": 8,
+            "ticks_milliseconds": 6000
+          },
+          "seconds_to_milliseconds": "EXACT6s=>6000ms source unit conversion only; no active clock interpretation"
+        }
+      ],
+      "all_own_xml_checks": [
+        {
+          "source": "binding-selected-Crystal",
+          "source_record_projection_sha256": "140be00088a70fe5e7fdda2111dfe3d6a428325133815ebf7c3bac653fc4d53a",
+          "own_regeneration_attributes": {
+            "healthgain": [],
+            "healthticks": [],
+            "managain": [],
+            "manaticks": []
+          },
+          "own_numeric_tuple": null,
+          "transformequipto_own_literal": [
+            "3089"
+          ],
+          "all_four_own_values_present": false,
+          "target_transfer_allowed": false
+        },
+        {
+          "source": "Canary-hypothesis",
+          "source_record_projection_sha256": "140be00088a70fe5e7fdda2111dfe3d6a428325133815ebf7c3bac653fc4d53a",
+          "own_regeneration_attributes": {
+            "healthgain": [],
+            "healthticks": [],
+            "managain": [],
+            "manaticks": []
+          },
+          "own_numeric_tuple": null,
+          "transformequipto_own_literal": [
+            "3089"
+          ],
+          "all_four_own_values_present": false,
+          "target_transfer_allowed": false
+        }
+      ],
+      "same_own_Crystal_Canary_tuple": false,
+      "native_carriers_available": {
+        "HEALTH_GAIN": "SIGNED_POINTS/i32",
+        "HEALTH_TICKS": "MILLISECONDS/u64",
+        "MANA_GAIN": "SIGNED_POINTS/i32",
+        "MANA_TICKS": "MILLISECONDS/u64"
+      },
+      "native_context_policy": "UNKNOWN target_domain/evaluation_phase/priority; no ruleset, food clock, rest mode or activation source fabricated",
+      "source_guard_holds": [
+        "OWN_BOUND_XML_TUPLE_ABSENT_EQUIP_TARGET_TRANSFER_PROHIBITED"
+      ],
+      "disjoint_primary_reason": "OWN_BOUND_XML_TUPLE_ABSENT_EQUIP_TARGET_TRANSFER_PROHIBITED",
+      "classification": "SOURCE_ONLY_TYPED_TUPLE_LEAD_HELD_NOT_NATIVE_ELIGIBLE",
+      "remaining_present_group": {
+        "faster regeneration": "Cannot drop this observed effect while retaining other numeric modifiers.",
+        "attrib": [
+          {
+            "attrib": [
+              "faster regeneration"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "item_id": 3098,
+      "item_key": "oteryn:item.tibia.i3098",
+      "identity_and_current_guards": {
+        "item_id": 3098,
+        "item_key": "oteryn:item.tibia.i3098",
+        "native_identity": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3098",
+          "revision": "definition-r1"
+        },
+        "binding": {
+          "disposition": "EXACT",
+          "external_id": "3098",
+          "identity_namespace": "ots/item_server_id",
+          "source_key": "oteryn:source.crystalserver",
+          "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+          "target": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i3098",
+            "revision": "definition-r1"
+          }
+        },
+        "official_name": "ring of healing",
+        "official_raw_object_sha256": "ac0bf4be78543886a573bbade218e4675f200e54adfb7fcef9c2965212fc9388",
+        "official_identity_projection_sha256": "e0808ee21e0a25fca4009d35bafed9256be605e147794bf2b5f8f122d426ff7c",
+        "official_flags": {
+          "flags.take": true,
+          "flags.clothes": true,
+          "clothes.slot": 9,
+          "flags.market": true,
+          "market.category": 11,
+          "market.trade_as_object_id": 3098,
+          "market.show_as_object_id": 3098,
+          "flags.cyclopediaitem": true,
+          "cyclopediaitem.cyclopedia_type": 3098,
+          "flags.expirestop": true,
+          "npcsaledata.name": [
+            "Yaman"
+          ],
+          "npcsaledata.location": [
+            "Mal'ouquah"
+          ],
+          "npcsaledata.sale_price": [
+            2000
+          ],
+          "npcsaledata.buy_price": [
+            100
+          ]
+        },
+        "native_name": {
+          "state": "KNOWN",
+          "value": "ring of healing"
+        },
+        "native_headers": {
+          "kind": "Item",
+          "stack_class": "Unknown",
+          "client_projection": "ClientSafe",
+          "materializable": false
+        },
+        "current_member": [
+          3098,
+          "e0808ee21e0a25fca4009d35bafed9256be605e147794bf2b5f8f122d426ff7c",
+          "ac0bf4be78543886a573bbade218e4675f200e54adfb7fcef9c2965212fc9388"
+        ],
+        "bound_old_member": [
+          3098,
+          "e0808ee21e0a25fca4009d35bafed9256be605e147794bf2b5f8f122d426ff7c",
+          "40567d8c965e61f99b2210d53b23d7df7a5e076c13d5298e07f96e907efb1a67"
+        ],
+        "bound_old_member_label": "crystal-ff7ede5",
+        "guard_results": {
+          "CURRENT_NATIVE_ITEM_PRESENT": true,
+          "EXPLICIT_EXACT_BINDING_FULL_IDENTITY": true,
+          "CURRENT_OFFICIAL_OBJECT_PRESENT": true,
+          "CURRENT_MEMBER_FULL_RECORD_PROJECTION": true,
+          "BOUND_SOURCE_EPOCH_IDENTITY_CONTINUITY": true,
+          "NO_CURRENT_WORLD_OWNER": true,
+          "NATIVE_NAME_KNOWN_SOURCE_EQUAL": true,
+          "OFFICIAL_TAKE_TRUE_NON_WORLD_FLAGS": true,
+          "ALL_OWN_ID_BOXES_EXACT_SINGLE_ID": true,
+          "OWN_SOURCE_NAMES_EQUAL_OFFICIAL": true,
+          "BOUND_XML_EXACT_RECORD_PRESENT": true
+        },
+        "binding_selected_xml": {
+          "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+          "source_path": "/workspace/audit-continuation/sources/crystal-ff7ede5-items.xml",
+          "records": [
+            {
+              "element_ordinal": 1514,
+              "source_item_attributes": {
+                "id": "3098",
+                "article": "a",
+                "name": "ring of healing"
+              },
+              "own_attributes": [
+                {
+                  "key": "stopduration",
+                  "value": "1"
+                },
+                {
+                  "key": "showduration",
+                  "value": "1"
+                },
+                {
+                  "key": "transformequipto",
+                  "value": "3100"
+                },
+                {
+                  "key": "weight",
+                  "value": "80"
+                },
+                {
+                  "key": "script",
+                  "value": "moveevent"
+                }
+              ],
+              "projection_sha256": "bba8dc230944d508ca1541cd2c8537aadb6f62d61a1cfcc378c4de8a7202aeb9",
+              "projection_serialization": "ET.tostring; derived semantic projection, not literal source XML bytes"
+            }
+          ]
+        },
+        "canary_hypothesis_only": [
+          {
+            "element_ordinal": 1514,
+            "source_item_attributes": {
+              "id": "3098",
+              "article": "a",
+              "name": "ring of healing"
+            },
+            "own_attributes": [
+              {
+                "key": "stopduration",
+                "value": "1"
+              },
+              {
+                "key": "showduration",
+                "value": "1"
+              },
+              {
+                "key": "transformequipto",
+                "value": "3100"
+              },
+              {
+                "key": "weight",
+                "value": "80"
+              },
+              {
+                "key": "script",
+                "value": "moveevent"
+              }
+            ],
+            "projection_sha256": "bba8dc230944d508ca1541cd2c8537aadb6f62d61a1cfcc378c4de8a7202aeb9",
+            "projection_serialization": "ET.tostring; derived semantic projection, not literal source XML bytes"
+          }
+        ]
+      },
+      "own_raw_modifier_groups": [
+        {
+          "attrib": [
+            "faster regeneration"
+          ]
+        }
+      ],
+      "own_note_tuple_witnesses": [
+        {
+          "reference": {
+            "page_id": 2187,
+            "title": "Ring of Healing",
+            "revision_id": 1194098,
+            "revision_timestamp": "2026-07-04T12:43:45Z",
+            "content_sha256": "9604de5ab365ccc714f0d97f9381cc65446d2cc82d00c21430c84a962b3d5143",
+            "capture_path": "/workspace/audit-continuation/global-infobox-object-source-part-002.json",
+            "capture_sha256": "73c0ce09f985c9d0c7d4beff29618ca123792e6a32bac5e2dd35be44634e245f",
+            "page_ordinal": 13,
+            "batch": 2,
+            "own_object_box_indices": [
+              0
+            ],
+            "selection": "CURRENT_REVISION_AT_OR_BEFORE_CUTOFF",
+            "box_index": 0,
+            "occurrence_index": 0,
+            "raw_itemid": "3098",
+            "strict_numeric_itemid": true,
+            "balanced": true,
+            "inside_comment": false,
+            "duplicate_itemid_parameters": false
+          },
+          "raw_template_sha256": "0b6c1459f3efad23799c540d4b2c49ea5a43fb2ffa66d6e2d4fe9f106a04f107",
+          "own_notes": "Increases the speed of [[Hit Points]] and [[Mana Points]] [[regeneration]] for 7.5 minutes at a rate of 24 [[Mana Points|mp]] and 6 [[Hit Points|hp]] per 6 seconds (4 MP/s and 1 HP/s). This makes 1800 [[Mana Points|mp]] and 450 [[Hit Points|hp]] in this 450 seconds the Ring of Healing lasts.<br />\nSee the [[Money Spent per Mana Point|GP/MP]], [[Money Spent per Hit Point|GP/HP]], [[Capacity Taken per Mana Point|Cap/MP]] and [[Capacity Taken per Hit Point|Cap/HP]] efficiency tables for comparisons of the different items that regenerates your mana and hit points.\n\nObtainable through [[The Desert Dungeon Quest]] and [[Fire Axe Quest]]. One of these can also be obtained if you have lit at least 1 basin during the [[Lightbearer Event]] on a winning [[server]] and two more can be obtained if you have lit all 10 basins.",
+          "exact_tuple_quote": "at a rate of 24 [[Mana Points|mp]] and 6 [[Hit Points|hp]] per 6 seconds",
+          "quote_char_offset": 91,
+          "tuple": {
+            "health_gain_points": 6,
+            "mana_gain_points": 24,
+            "ticks_milliseconds": 6000
+          },
+          "seconds_to_milliseconds": "EXACT6s=>6000ms source unit conversion only; no active clock interpretation"
+        }
+      ],
+      "all_own_xml_checks": [
+        {
+          "source": "binding-selected-Crystal",
+          "source_record_projection_sha256": "bba8dc230944d508ca1541cd2c8537aadb6f62d61a1cfcc378c4de8a7202aeb9",
+          "own_regeneration_attributes": {
+            "healthgain": [],
+            "healthticks": [],
+            "managain": [],
+            "manaticks": []
+          },
+          "own_numeric_tuple": null,
+          "transformequipto_own_literal": [
+            "3100"
+          ],
+          "all_four_own_values_present": false,
+          "target_transfer_allowed": false
+        },
+        {
+          "source": "Canary-hypothesis",
+          "source_record_projection_sha256": "bba8dc230944d508ca1541cd2c8537aadb6f62d61a1cfcc378c4de8a7202aeb9",
+          "own_regeneration_attributes": {
+            "healthgain": [],
+            "healthticks": [],
+            "managain": [],
+            "manaticks": []
+          },
+          "own_numeric_tuple": null,
+          "transformequipto_own_literal": [
+            "3100"
+          ],
+          "all_four_own_values_present": false,
+          "target_transfer_allowed": false
+        }
+      ],
+      "same_own_Crystal_Canary_tuple": false,
+      "native_carriers_available": {
+        "HEALTH_GAIN": "SIGNED_POINTS/i32",
+        "HEALTH_TICKS": "MILLISECONDS/u64",
+        "MANA_GAIN": "SIGNED_POINTS/i32",
+        "MANA_TICKS": "MILLISECONDS/u64"
+      },
+      "native_context_policy": "UNKNOWN target_domain/evaluation_phase/priority; no ruleset, food clock, rest mode or activation source fabricated",
+      "source_guard_holds": [
+        "OWN_BOUND_XML_TUPLE_ABSENT_EQUIP_TARGET_TRANSFER_PROHIBITED"
+      ],
+      "disjoint_primary_reason": "OWN_BOUND_XML_TUPLE_ABSENT_EQUIP_TARGET_TRANSFER_PROHIBITED",
+      "classification": "SOURCE_ONLY_TYPED_TUPLE_LEAD_HELD_NOT_NATIVE_ELIGIBLE",
+      "remaining_present_group": {
+        "faster regeneration": "Cannot drop this observed effect while retaining other numeric modifiers.",
+        "attrib": [
+          {
+            "attrib": [
+              "faster regeneration"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "item_id": 3549,
+      "item_key": "oteryn:item.tibia.i3549",
+      "identity_and_current_guards": {
+        "item_id": 3549,
+        "item_key": "oteryn:item.tibia.i3549",
+        "native_identity": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3549",
+          "revision": "definition-r1"
+        },
+        "binding": {
+          "disposition": "EXACT",
+          "external_id": "3549",
+          "identity_namespace": "ots/item_server_id",
+          "source_key": "oteryn:source.crystalserver",
+          "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+          "target": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i3549",
+            "revision": "definition-r1"
+          }
+        },
+        "official_name": "pair of soft boots",
+        "official_raw_object_sha256": "db8aefbfa1e67c9e2fa52b99ce5c30a38cb35bd2457b3926397038652a80e353",
+        "official_identity_projection_sha256": "90c066fad09b838b897b2a0514d9305874c45d1ef69a1c5ce1f958f74a1cd7ba",
+        "official_flags": {
+          "flags.take": true,
+          "flags.clothes": true,
+          "clothes.slot": 8,
+          "flags.changedtoexpire": true,
+          "changedtoexpire.former_object_typeid": 6529,
+          "flags.cyclopediaitem": true,
+          "cyclopediaitem.cyclopedia_type": 3549,
+          "flags.expire": true
+        },
+        "native_name": {
+          "state": "KNOWN",
+          "value": "pair of soft boots"
+        },
+        "native_headers": {
+          "kind": "Item",
+          "stack_class": "Unknown",
+          "client_projection": "ClientSafe",
+          "materializable": false
+        },
+        "current_member": [
+          3549,
+          "90c066fad09b838b897b2a0514d9305874c45d1ef69a1c5ce1f958f74a1cd7ba",
+          "db8aefbfa1e67c9e2fa52b99ce5c30a38cb35bd2457b3926397038652a80e353"
+        ],
+        "bound_old_member": [
+          3549,
+          "90c066fad09b838b897b2a0514d9305874c45d1ef69a1c5ce1f958f74a1cd7ba",
+          "fc24cd2406cb6bb8d02eac4a0c780a7ff5d46ae386dd07ce94908264a97469f5"
+        ],
+        "bound_old_member_label": "crystal-ff7ede5",
+        "guard_results": {
+          "CURRENT_NATIVE_ITEM_PRESENT": true,
+          "EXPLICIT_EXACT_BINDING_FULL_IDENTITY": true,
+          "CURRENT_OFFICIAL_OBJECT_PRESENT": true,
+          "CURRENT_MEMBER_FULL_RECORD_PROJECTION": true,
+          "BOUND_SOURCE_EPOCH_IDENTITY_CONTINUITY": true,
+          "NO_CURRENT_WORLD_OWNER": true,
+          "NATIVE_NAME_KNOWN_SOURCE_EQUAL": true,
+          "OFFICIAL_TAKE_TRUE_NON_WORLD_FLAGS": true,
+          "ALL_OWN_ID_BOXES_EXACT_SINGLE_ID": false,
+          "OWN_SOURCE_NAMES_EQUAL_OFFICIAL": true,
+          "BOUND_XML_EXACT_RECORD_PRESENT": true
+        },
+        "binding_selected_xml": {
+          "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+          "source_path": "/workspace/audit-continuation/sources/crystal-ff7ede5-items.xml",
+          "records": [
+            {
+              "element_ordinal": 1917,
+              "source_item_attributes": {
+                "id": "3549",
+                "article": "a",
+                "name": "pair of soft boots"
+              },
+              "own_attributes": [
+                {
+                  "key": "showduration",
+                  "value": "1"
+                },
+                {
+                  "key": "showAttributes",
+                  "value": "1"
+                },
+                {
+                  "key": "manaticks",
+                  "value": "6000"
+                },
+                {
+                  "key": "managain",
+                  "value": "12"
+                },
+                {
+                  "key": "healthticks",
+                  "value": "6000"
+                },
+                {
+                  "key": "healthgain",
+                  "value": "3"
+                },
+                {
+                  "key": "duration",
+                  "value": "14400"
+                },
+                {
+                  "key": "transformdeequipto",
+                  "value": "6529"
+                },
+                {
+                  "key": "decayTo",
+                  "value": "6530"
+                },
+                {
+                  "key": "weight",
+                  "value": "800"
+                },
+                {
+                  "key": "script",
+                  "value": "moveevent"
+                }
+              ],
+              "projection_sha256": "26cba40218d7c65639ec4bfcdd0c6e139481a302b0ae39813080a061f187328a",
+              "projection_serialization": "ET.tostring; derived semantic projection, not literal source XML bytes"
+            }
+          ]
+        },
+        "canary_hypothesis_only": [
+          {
+            "element_ordinal": 1917,
+            "source_item_attributes": {
+              "id": "3549",
+              "article": "a",
+              "name": "pair of soft boots"
+            },
+            "own_attributes": [
+              {
+                "key": "showduration",
+                "value": "1"
+              },
+              {
+                "key": "showAttributes",
+                "value": "1"
+              },
+              {
+                "key": "manaticks",
+                "value": "6000"
+              },
+              {
+                "key": "managain",
+                "value": "12"
+              },
+              {
+                "key": "healthticks",
+                "value": "6000"
+              },
+              {
+                "key": "healthgain",
+                "value": "3"
+              },
+              {
+                "key": "duration",
+                "value": "14400"
+              },
+              {
+                "key": "transformdeequipto",
+                "value": "6529"
+              },
+              {
+                "key": "decayTo",
+                "value": "6530"
+              },
+              {
+                "key": "weight",
+                "value": "800"
+              },
+              {
+                "key": "script",
+                "value": "moveevent"
+              }
+            ],
+            "projection_sha256": "26cba40218d7c65639ec4bfcdd0c6e139481a302b0ae39813080a061f187328a",
+            "projection_serialization": "ET.tostring; derived semantic projection, not literal source XML bytes"
+          }
+        ]
+      },
+      "own_raw_modifier_groups": [
+        {
+          "attrib": [
+            "faster regeneration"
+          ]
+        }
+      ],
+      "own_note_tuple_witnesses": [
+        {
+          "reference": {
+            "page_id": 2384,
+            "title": "Pair of Soft Boots",
+            "revision_id": 1148781,
+            "revision_timestamp": "2025-12-08T18:47:23Z",
+            "content_sha256": "d7e5c821df8bcbd73278e57827dd660e432900417c419694415899e554ae77d6",
+            "capture_path": "/workspace/audit-continuation/global-infobox-object-source-part-003.json",
+            "capture_sha256": "8c9e2ec6cb485c3df013d1bb3e9d4c364bff157ccb8d4166a642d14673dad376",
+            "page_ordinal": 15,
+            "batch": 3,
+            "own_object_box_indices": [
+              0
+            ],
+            "selection": "CURRENT_REVISION_AT_OR_BEFORE_CUTOFF",
+            "box_index": 0,
+            "occurrence_index": 0,
+            "raw_itemid": "3549, 6529",
+            "strict_numeric_itemid": true,
+            "balanced": true,
+            "inside_comment": false,
+            "duplicate_itemid_parameters": false
+          },
+          "raw_template_sha256": "334a2ad4f97cb3bc1b4a3787876592943eb925098b2ea427159ab7ec8d1459bf",
+          "own_notes": "Obtained through the [[Pits of Inferno Quest]]. When the boots get completely used, they become a pair of [[Worn Soft Boots]].\n\nThese [[boots]] increase your [[Mana]] and [[Hitpoints]] [[Regeneration]] for 240 minutes (4 hours) by the rate of 3 [[HP]] and 12 [[Mana|MP]] per 6 seconds (0.5 [[HP]] and 2 [[Mana|MP]] / s), which means they recover 28800 [[Mana|MP]] and 7200 [[HP]] in total (for all vocations). Very useful when hunting or making runes, specially in [[Resting Area|resting areas]] as health and mana gained are also doubled (6 HP and 24 mana every 6 seconds) if the reward streak is 6 or higher. As a higher level option for hunts, [[Void Boots]] have the same regeneration bonus with added armor and speed.\n\nResults of four hours of regeneration with Soft Boots:\n{{{!}}class=\"wikitable\" style=\"text-align: center;\"\n{{!}}-\n! !! D/S !! ED/MS !! K !! EK !! P !! RP\n{{!}}-\n{{!}} style=\"color:red\" {{!}} Health (Boots only)\n{{!}} colspan=\"6\" {{!}} 7200\n{{!}}-\n{{!}} style=\"color:#6698FF\" {{!}} Mana (Boots only)\n{{!}} colspan=\"6\" {{!}} 28800\n{{!}}-\n{{!}} style=\"color:red\" {{!}} Health (Food + Boots)\n{{!}} colspan=\"2\" {{!}} 8400 {{!}}{{!}} 9600 {{!}}{{!}} 10800 {{!}}{{!}} 9000 {{!}}{{!}} 9600\n{{!}}-\n{{!}} style=\"color:#6698FF\" {{!}} Mana (Food + Boots)\n{{!}} 38400 {{!}}{{!}} 43200 {{!}}{{!}} colspan=\"2\" {{!}} 33600 {{!}}{{!}} 36000 {{!}}{{!}} 38400\n{{!}}}\n\nWhen a promoted [[mage]] is using Soft Boots and regenerating [[Mana]] by eating [[Food]] at the same time, they can make 129 [[SD]]s, 171 [[Magic Wall]]s, 324 [[GFB]]s or [[Avalanche (Rune)|Avalanche]]s, 470 [[Icicle (Rune)|Icicle]]s, 108 [[Ultimate Healing Rune|UH]]s, or 1230 [[HMM]]s during the 4 hours that the boots last. This is profitable for [[Druid]]s making [[Icicle (Rune)|Icicle]]s, taking into consideration the boots' recharging cost. It can also profitable for [[Sorcerer]]s to make [[SD]]s, depending on the [[SD]] price on the server. This provides a cost effective way of mana training. A promoted [[Paladin]] can make a total of 109 [[Enchanted Spear]]s if they are eating while using Soft Boots. Knights also use these when they hunt weaker creatures, as they only need [[Healing Spells|Spells]] to heal, or to reduce [[Mana Potion]] usage when hunting stronger creatures, such as [[dragon]]s and [[dragon lord]]s, or when blocking. When combined with [[life Ring]] or [[Ring of Healing]], making [[runes]] or [[Enchanted Spear]]s becomes even faster, allowing players to mana train more effectively and create a greater number of items.\n\nA pair can be seen in [[Santa's House]] on [[Vega]]. Soft Boots look the same as [[Boots of Waterwalking]].\n\nSee the [[Money Spent per Mana Point|GP/MP]], [[Money Spent per Hit Point|GP/HP]], [[Capacity Taken per Mana Point|Cap/MP]] and [[Capacity Taken per Hit Point|Cap/HP]] efficiency tables for more information.",
+          "exact_tuple_quote": "by the rate of 3 [[HP]] and 12 [[Mana|MP]] per 6 seconds",
+          "quote_char_offset": 228,
+          "tuple": {
+            "health_gain_points": 3,
+            "mana_gain_points": 12,
+            "ticks_milliseconds": 6000
+          },
+          "seconds_to_milliseconds": "EXACT6s=>6000ms source unit conversion only; no active clock interpretation"
+        }
+      ],
+      "all_own_xml_checks": [
+        {
+          "source": "binding-selected-Crystal",
+          "source_record_projection_sha256": "26cba40218d7c65639ec4bfcdd0c6e139481a302b0ae39813080a061f187328a",
+          "own_regeneration_attributes": {
+            "healthgain": [
+              "3"
+            ],
+            "healthticks": [
+              "6000"
+            ],
+            "managain": [
+              "12"
+            ],
+            "manaticks": [
+              "6000"
+            ]
+          },
+          "own_numeric_tuple": {
+            "healthgain": 3,
+            "healthticks": 6000,
+            "managain": 12,
+            "manaticks": 6000
+          },
+          "transformequipto_own_literal": [],
+          "all_four_own_values_present": true,
+          "target_transfer_allowed": false
+        },
+        {
+          "source": "Canary-hypothesis",
+          "source_record_projection_sha256": "26cba40218d7c65639ec4bfcdd0c6e139481a302b0ae39813080a061f187328a",
+          "own_regeneration_attributes": {
+            "healthgain": [
+              "3"
+            ],
+            "healthticks": [
+              "6000"
+            ],
+            "managain": [
+              "12"
+            ],
+            "manaticks": [
+              "6000"
+            ]
+          },
+          "own_numeric_tuple": {
+            "healthgain": 3,
+            "healthticks": 6000,
+            "managain": 12,
+            "manaticks": 6000
+          },
+          "transformequipto_own_literal": [],
+          "all_four_own_values_present": true,
+          "target_transfer_allowed": false
+        }
+      ],
+      "same_own_Crystal_Canary_tuple": true,
+      "native_carriers_available": {
+        "HEALTH_GAIN": "SIGNED_POINTS/i32",
+        "HEALTH_TICKS": "MILLISECONDS/u64",
+        "MANA_GAIN": "SIGNED_POINTS/i32",
+        "MANA_TICKS": "MILLISECONDS/u64"
+      },
+      "native_context_policy": "UNKNOWN target_domain/evaluation_phase/priority; no ruleset, food clock, rest mode or activation source fabricated",
+      "source_guard_holds": [
+        "SHARED_OWN_ID_PHASE_UNQUALIFIED"
+      ],
+      "disjoint_primary_reason": "SHARED_OWN_ID_PHASE_UNQUALIFIED",
+      "classification": "SOURCE_ONLY_TYPED_TUPLE_LEAD_HELD_NOT_NATIVE_ELIGIBLE",
+      "remaining_present_group": {
+        "faster regeneration": "Cannot drop this observed effect while retaining other numeric modifiers.",
+        "attrib": [
+          {
+            "attrib": [
+              "faster regeneration"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "item_id": 6529,
+      "item_key": "oteryn:item.tibia.i6529",
+      "identity_and_current_guards": {
+        "item_id": 6529,
+        "item_key": "oteryn:item.tibia.i6529",
+        "native_identity": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i6529",
+          "revision": "definition-r1"
+        },
+        "binding": {
+          "disposition": "EXACT",
+          "external_id": "6529",
+          "identity_namespace": "ots/item_server_id",
+          "source_key": "oteryn:source.crystalserver",
+          "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+          "target": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i6529",
+            "revision": "definition-r1"
+          }
+        },
+        "official_name": "pair of soft boots",
+        "official_raw_object_sha256": "fcdf280abc93fafff520e90334cfc05c763042e93eda593922e2b67fcba92ab2",
+        "official_identity_projection_sha256": "90c066fad09b838b897b2a0514d9305874c45d1ef69a1c5ce1f958f74a1cd7ba",
+        "official_flags": {
+          "flags.take": true,
+          "flags.clothes": true,
+          "clothes.slot": 8,
+          "flags.market": true,
+          "market.category": 3,
+          "market.trade_as_object_id": 6529,
+          "market.show_as_object_id": 6529,
+          "flags.cyclopediaitem": true,
+          "cyclopediaitem.cyclopedia_type": 6529,
+          "flags.expirestop": true
+        },
+        "native_name": {
+          "state": "KNOWN",
+          "value": "pair of soft boots"
+        },
+        "native_headers": {
+          "kind": "Item",
+          "stack_class": "Unknown",
+          "client_projection": "ClientSafe",
+          "materializable": false
+        },
+        "current_member": [
+          6529,
+          "90c066fad09b838b897b2a0514d9305874c45d1ef69a1c5ce1f958f74a1cd7ba",
+          "fcdf280abc93fafff520e90334cfc05c763042e93eda593922e2b67fcba92ab2"
+        ],
+        "bound_old_member": [
+          6529,
+          "90c066fad09b838b897b2a0514d9305874c45d1ef69a1c5ce1f958f74a1cd7ba",
+          "4bdee58f83779822dde0d9b54ee838e184b31822e2087f6141e81dc9d6b1e4b4"
+        ],
+        "bound_old_member_label": "crystal-ff7ede5",
+        "guard_results": {
+          "CURRENT_NATIVE_ITEM_PRESENT": true,
+          "EXPLICIT_EXACT_BINDING_FULL_IDENTITY": true,
+          "CURRENT_OFFICIAL_OBJECT_PRESENT": true,
+          "CURRENT_MEMBER_FULL_RECORD_PROJECTION": true,
+          "BOUND_SOURCE_EPOCH_IDENTITY_CONTINUITY": true,
+          "NO_CURRENT_WORLD_OWNER": true,
+          "NATIVE_NAME_KNOWN_SOURCE_EQUAL": true,
+          "OFFICIAL_TAKE_TRUE_NON_WORLD_FLAGS": true,
+          "ALL_OWN_ID_BOXES_EXACT_SINGLE_ID": false,
+          "OWN_SOURCE_NAMES_EQUAL_OFFICIAL": true,
+          "BOUND_XML_EXACT_RECORD_PRESENT": true
+        },
+        "binding_selected_xml": {
+          "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+          "source_path": "/workspace/audit-continuation/sources/crystal-ff7ede5-items.xml",
+          "records": [
+            {
+              "element_ordinal": 3459,
+              "source_item_attributes": {
+                "id": "6529",
+                "article": "a",
+                "name": "pair of soft boots"
+              },
+              "own_attributes": [
+                {
+                  "key": "stopduration",
+                  "value": "1"
+                },
+                {
+                  "key": "showduration",
+                  "value": "1"
+                },
+                {
+                  "key": "transformequipto",
+                  "value": "3549"
+                },
+                {
+                  "key": "weight",
+                  "value": "800"
+                },
+                {
+                  "key": "script",
+                  "value": "moveevent"
+                }
+              ],
+              "projection_sha256": "e980d59408d1b2bfb6785779743d63fcabfaff1111158b14a7f6db205d17fff2",
+              "projection_serialization": "ET.tostring; derived semantic projection, not literal source XML bytes"
+            }
+          ]
+        },
+        "canary_hypothesis_only": [
+          {
+            "element_ordinal": 3452,
+            "source_item_attributes": {
+              "id": "6529",
+              "article": "a",
+              "name": "pair of soft boots"
+            },
+            "own_attributes": [
+              {
+                "key": "stopduration",
+                "value": "1"
+              },
+              {
+                "key": "showduration",
+                "value": "1"
+              },
+              {
+                "key": "transformequipto",
+                "value": "3549"
+              },
+              {
+                "key": "weight",
+                "value": "800"
+              },
+              {
+                "key": "script",
+                "value": "moveevent"
+              }
+            ],
+            "projection_sha256": "e980d59408d1b2bfb6785779743d63fcabfaff1111158b14a7f6db205d17fff2",
+            "projection_serialization": "ET.tostring; derived semantic projection, not literal source XML bytes"
+          }
+        ]
+      },
+      "own_raw_modifier_groups": [
+        {
+          "attrib": [
+            "faster regeneration"
+          ]
+        }
+      ],
+      "own_note_tuple_witnesses": [
+        {
+          "reference": {
+            "page_id": 2384,
+            "title": "Pair of Soft Boots",
+            "revision_id": 1148781,
+            "revision_timestamp": "2025-12-08T18:47:23Z",
+            "content_sha256": "d7e5c821df8bcbd73278e57827dd660e432900417c419694415899e554ae77d6",
+            "capture_path": "/workspace/audit-continuation/global-infobox-object-source-part-003.json",
+            "capture_sha256": "8c9e2ec6cb485c3df013d1bb3e9d4c364bff157ccb8d4166a642d14673dad376",
+            "page_ordinal": 15,
+            "batch": 3,
+            "own_object_box_indices": [
+              0
+            ],
+            "selection": "CURRENT_REVISION_AT_OR_BEFORE_CUTOFF",
+            "box_index": 0,
+            "occurrence_index": 0,
+            "raw_itemid": "3549, 6529",
+            "strict_numeric_itemid": true,
+            "balanced": true,
+            "inside_comment": false,
+            "duplicate_itemid_parameters": false
+          },
+          "raw_template_sha256": "334a2ad4f97cb3bc1b4a3787876592943eb925098b2ea427159ab7ec8d1459bf",
+          "own_notes": "Obtained through the [[Pits of Inferno Quest]]. When the boots get completely used, they become a pair of [[Worn Soft Boots]].\n\nThese [[boots]] increase your [[Mana]] and [[Hitpoints]] [[Regeneration]] for 240 minutes (4 hours) by the rate of 3 [[HP]] and 12 [[Mana|MP]] per 6 seconds (0.5 [[HP]] and 2 [[Mana|MP]] / s), which means they recover 28800 [[Mana|MP]] and 7200 [[HP]] in total (for all vocations). Very useful when hunting or making runes, specially in [[Resting Area|resting areas]] as health and mana gained are also doubled (6 HP and 24 mana every 6 seconds) if the reward streak is 6 or higher. As a higher level option for hunts, [[Void Boots]] have the same regeneration bonus with added armor and speed.\n\nResults of four hours of regeneration with Soft Boots:\n{{{!}}class=\"wikitable\" style=\"text-align: center;\"\n{{!}}-\n! !! D/S !! ED/MS !! K !! EK !! P !! RP\n{{!}}-\n{{!}} style=\"color:red\" {{!}} Health (Boots only)\n{{!}} colspan=\"6\" {{!}} 7200\n{{!}}-\n{{!}} style=\"color:#6698FF\" {{!}} Mana (Boots only)\n{{!}} colspan=\"6\" {{!}} 28800\n{{!}}-\n{{!}} style=\"color:red\" {{!}} Health (Food + Boots)\n{{!}} colspan=\"2\" {{!}} 8400 {{!}}{{!}} 9600 {{!}}{{!}} 10800 {{!}}{{!}} 9000 {{!}}{{!}} 9600\n{{!}}-\n{{!}} style=\"color:#6698FF\" {{!}} Mana (Food + Boots)\n{{!}} 38400 {{!}}{{!}} 43200 {{!}}{{!}} colspan=\"2\" {{!}} 33600 {{!}}{{!}} 36000 {{!}}{{!}} 38400\n{{!}}}\n\nWhen a promoted [[mage]] is using Soft Boots and regenerating [[Mana]] by eating [[Food]] at the same time, they can make 129 [[SD]]s, 171 [[Magic Wall]]s, 324 [[GFB]]s or [[Avalanche (Rune)|Avalanche]]s, 470 [[Icicle (Rune)|Icicle]]s, 108 [[Ultimate Healing Rune|UH]]s, or 1230 [[HMM]]s during the 4 hours that the boots last. This is profitable for [[Druid]]s making [[Icicle (Rune)|Icicle]]s, taking into consideration the boots' recharging cost. It can also profitable for [[Sorcerer]]s to make [[SD]]s, depending on the [[SD]] price on the server. This provides a cost effective way of mana training. A promoted [[Paladin]] can make a total of 109 [[Enchanted Spear]]s if they are eating while using Soft Boots. Knights also use these when they hunt weaker creatures, as they only need [[Healing Spells|Spells]] to heal, or to reduce [[Mana Potion]] usage when hunting stronger creatures, such as [[dragon]]s and [[dragon lord]]s, or when blocking. When combined with [[life Ring]] or [[Ring of Healing]], making [[runes]] or [[Enchanted Spear]]s becomes even faster, allowing players to mana train more effectively and create a greater number of items.\n\nA pair can be seen in [[Santa's House]] on [[Vega]]. Soft Boots look the same as [[Boots of Waterwalking]].\n\nSee the [[Money Spent per Mana Point|GP/MP]], [[Money Spent per Hit Point|GP/HP]], [[Capacity Taken per Mana Point|Cap/MP]] and [[Capacity Taken per Hit Point|Cap/HP]] efficiency tables for more information.",
+          "exact_tuple_quote": "by the rate of 3 [[HP]] and 12 [[Mana|MP]] per 6 seconds",
+          "quote_char_offset": 228,
+          "tuple": {
+            "health_gain_points": 3,
+            "mana_gain_points": 12,
+            "ticks_milliseconds": 6000
+          },
+          "seconds_to_milliseconds": "EXACT6s=>6000ms source unit conversion only; no active clock interpretation"
+        }
+      ],
+      "all_own_xml_checks": [
+        {
+          "source": "binding-selected-Crystal",
+          "source_record_projection_sha256": "e980d59408d1b2bfb6785779743d63fcabfaff1111158b14a7f6db205d17fff2",
+          "own_regeneration_attributes": {
+            "healthgain": [],
+            "healthticks": [],
+            "managain": [],
+            "manaticks": []
+          },
+          "own_numeric_tuple": null,
+          "transformequipto_own_literal": [
+            "3549"
+          ],
+          "all_four_own_values_present": false,
+          "target_transfer_allowed": false
+        },
+        {
+          "source": "Canary-hypothesis",
+          "source_record_projection_sha256": "e980d59408d1b2bfb6785779743d63fcabfaff1111158b14a7f6db205d17fff2",
+          "own_regeneration_attributes": {
+            "healthgain": [],
+            "healthticks": [],
+            "managain": [],
+            "manaticks": []
+          },
+          "own_numeric_tuple": null,
+          "transformequipto_own_literal": [
+            "3549"
+          ],
+          "all_four_own_values_present": false,
+          "target_transfer_allowed": false
+        }
+      ],
+      "same_own_Crystal_Canary_tuple": false,
+      "native_carriers_available": {
+        "HEALTH_GAIN": "SIGNED_POINTS/i32",
+        "HEALTH_TICKS": "MILLISECONDS/u64",
+        "MANA_GAIN": "SIGNED_POINTS/i32",
+        "MANA_TICKS": "MILLISECONDS/u64"
+      },
+      "native_context_policy": "UNKNOWN target_domain/evaluation_phase/priority; no ruleset, food clock, rest mode or activation source fabricated",
+      "source_guard_holds": [
+        "OWN_BOUND_XML_TUPLE_ABSENT_EQUIP_TARGET_TRANSFER_PROHIBITED",
+        "SHARED_OWN_ID_PHASE_UNQUALIFIED"
+      ],
+      "disjoint_primary_reason": "OWN_BOUND_XML_TUPLE_ABSENT_EQUIP_TARGET_TRANSFER_PROHIBITED",
+      "classification": "SOURCE_ONLY_TYPED_TUPLE_LEAD_HELD_NOT_NATIVE_ELIGIBLE",
+      "remaining_present_group": {
+        "faster regeneration": "Cannot drop this observed effect while retaining other numeric modifiers.",
+        "attrib": [
+          {
+            "attrib": [
+              "faster regeneration"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "item_id": 8081,
+      "item_key": "oteryn:item.tibia.i8081",
+      "identity_and_current_guards": {
+        "item_id": 8081,
+        "item_key": "oteryn:item.tibia.i8081",
+        "native_identity": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i8081",
+          "revision": "definition-r1"
+        },
+        "binding": {
+          "disposition": "EXACT",
+          "external_id": "8081",
+          "identity_namespace": "ots/item_server_id",
+          "source_key": "oteryn:source.crystalserver",
+          "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+          "target": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i8081",
+            "revision": "definition-r1"
+          }
+        },
+        "official_name": "terran rainbow shield",
+        "official_raw_object_sha256": "0d93014d9e32699f532de51214d1eeb19d84c851b73a57caf24d63595083c3da",
+        "official_identity_projection_sha256": "15364e1ec7209e16fb66424a629b00523cd39f523faf74e1f63ee7f4f2a4e579",
+        "official_flags": {
+          "flags.take": true,
+          "flags.clothes": true,
+          "clothes.slot": 5,
+          "flags.market": true,
+          "market.category": 13,
+          "market.trade_as_object_id": 8077,
+          "market.show_as_object_id": 8077,
+          "flags.cyclopediaitem": true,
+          "cyclopediaitem.cyclopedia_type": 8081
+        },
+        "native_name": {
+          "state": "KNOWN",
+          "value": "terran rainbow shield"
+        },
+        "native_headers": {
+          "kind": "Item",
+          "stack_class": "Unknown",
+          "client_projection": "ClientSafe",
+          "materializable": false
+        },
+        "current_member": [
+          8081,
+          "15364e1ec7209e16fb66424a629b00523cd39f523faf74e1f63ee7f4f2a4e579",
+          "0d93014d9e32699f532de51214d1eeb19d84c851b73a57caf24d63595083c3da"
+        ],
+        "bound_old_member": [
+          8081,
+          "15364e1ec7209e16fb66424a629b00523cd39f523faf74e1f63ee7f4f2a4e579",
+          "ac1797ea3ea5f86e39134392c11dd311d2ec5371f70a1ee0148d1b58b9696fe3"
+        ],
+        "bound_old_member_label": "crystal-ff7ede5",
+        "guard_results": {
+          "CURRENT_NATIVE_ITEM_PRESENT": true,
+          "EXPLICIT_EXACT_BINDING_FULL_IDENTITY": true,
+          "CURRENT_OFFICIAL_OBJECT_PRESENT": true,
+          "CURRENT_MEMBER_FULL_RECORD_PROJECTION": true,
+          "BOUND_SOURCE_EPOCH_IDENTITY_CONTINUITY": true,
+          "NO_CURRENT_WORLD_OWNER": true,
+          "NATIVE_NAME_KNOWN_SOURCE_EQUAL": true,
+          "OFFICIAL_TAKE_TRUE_NON_WORLD_FLAGS": true,
+          "ALL_OWN_ID_BOXES_EXACT_SINGLE_ID": true,
+          "OWN_SOURCE_NAMES_EQUAL_OFFICIAL": true,
+          "BOUND_XML_EXACT_RECORD_PRESENT": true
+        },
+        "binding_selected_xml": {
+          "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+          "source_path": "/workspace/audit-continuation/sources/crystal-ff7ede5-items.xml",
+          "records": [
+            {
+              "element_ordinal": 4163,
+              "source_item_attributes": {
+                "id": "8081",
+                "article": "a",
+                "name": "terran rainbow shield"
+              },
+              "own_attributes": [
+                {
+                  "key": "primarytype",
+                  "value": "shields"
+                },
+                {
+                  "key": "description",
+                  "value": "It has been temporarily imbued with earth magic and boosts your regeneration"
+                },
+                {
+                  "key": "weaponType",
+                  "value": "shield"
+                },
+                {
+                  "key": "manaticks",
+                  "value": "3000"
+                },
+                {
+                  "key": "managain",
+                  "value": "4"
+                },
+                {
+                  "key": "healthticks",
+                  "value": "3000"
+                },
+                {
+                  "key": "healthgain",
+                  "value": "1"
+                },
+                {
+                  "key": "duration",
+                  "value": "1200"
+                },
+                {
+                  "key": "decayTo",
+                  "value": "8077"
+                },
+                {
+                  "key": "defense",
+                  "value": "37"
+                },
+                {
+                  "key": "weight",
+                  "value": "6900"
+                },
+                {
+                  "key": "script",
+                  "value": "moveevent"
+                }
+              ],
+              "projection_sha256": "170a3ca6f563fbcd2daf2e3cf3498fb6660b0f54070c9813fa8048c4d7db393a",
+              "projection_serialization": "ET.tostring; derived semantic projection, not literal source XML bytes"
+            }
+          ]
+        },
+        "canary_hypothesis_only": [
+          {
+            "element_ordinal": 4156,
+            "source_item_attributes": {
+              "id": "8081",
+              "article": "a",
+              "name": "terran rainbow shield"
+            },
+            "own_attributes": [
+              {
+                "key": "primarytype",
+                "value": "shields"
+              },
+              {
+                "key": "description",
+                "value": "It has been temporarily imbued with earth magic and boosts your regeneration"
+              },
+              {
+                "key": "weaponType",
+                "value": "shield"
+              },
+              {
+                "key": "manaticks",
+                "value": "3000"
+              },
+              {
+                "key": "managain",
+                "value": "4"
+              },
+              {
+                "key": "healthticks",
+                "value": "3000"
+              },
+              {
+                "key": "healthgain",
+                "value": "1"
+              },
+              {
+                "key": "duration",
+                "value": "1200"
+              },
+              {
+                "key": "decayTo",
+                "value": "8077"
+              },
+              {
+                "key": "defense",
+                "value": "37"
+              },
+              {
+                "key": "weight",
+                "value": "6900"
+              },
+              {
+                "key": "script",
+                "value": "moveevent"
+              }
+            ],
+            "projection_sha256": "170a3ca6f563fbcd2daf2e3cf3498fb6660b0f54070c9813fa8048c4d7db393a",
+            "projection_serialization": "ET.tostring; derived semantic projection, not literal source XML bytes"
+          }
+        ]
+      },
+      "own_raw_modifier_groups": [
+        {
+          "attrib": [
+            "faster regeneration"
+          ]
+        }
+      ],
+      "own_note_tuple_witnesses": [
+        {
+          "reference": {
+            "page_id": 26034,
+            "title": "Terran Rainbow Shield",
+            "revision_id": 1190726,
+            "revision_timestamp": "2026-06-20T16:37:45Z",
+            "content_sha256": "37634af5ef24a2deca732f8541af61fca75fc6ae46258247ac683c6bdc3d8026",
+            "capture_path": "/workspace/audit-continuation/global-infobox-object-source-part-031.json",
+            "capture_sha256": "7fa64adf5b32551d819c590329d504d4bcd83c269ef1d89a469a207140a1fb4e",
+            "page_ordinal": 38,
+            "batch": 31,
+            "own_object_box_indices": [
+              0
+            ],
+            "selection": "CURRENT_REVISION_AT_OR_BEFORE_CUTOFF",
+            "box_index": 0,
+            "occurrence_index": 0,
+            "raw_itemid": "8081",
+            "strict_numeric_itemid": true,
+            "balanced": true,
+            "inside_comment": false,
+            "duplicate_itemid_parameters": false
+          },
+          "raw_template_sha256": "f55bc78a2e4e1bef254d9ddfd3ce101317e461bddd8cb9a684081b1b62df2868",
+          "own_notes": "To get this shield you need to use a [[Small Enchanted Emerald]] on a [[Rainbow Shield]], enchanting it with earth. It speeds up your regeneration for 15 minutes (8 manapoints and 2 hitpoints every 6 seconds; 300 HP and 1200 MP in total).",
+          "exact_tuple_quote": "8 manapoints and 2 hitpoints every 6 seconds",
+          "quote_char_offset": 163,
+          "tuple": {
+            "health_gain_points": 2,
+            "mana_gain_points": 8,
+            "ticks_milliseconds": 6000
+          },
+          "seconds_to_milliseconds": "EXACT6s=>6000ms source unit conversion only; no active clock interpretation"
+        }
+      ],
+      "all_own_xml_checks": [
+        {
+          "source": "binding-selected-Crystal",
+          "source_record_projection_sha256": "170a3ca6f563fbcd2daf2e3cf3498fb6660b0f54070c9813fa8048c4d7db393a",
+          "own_regeneration_attributes": {
+            "healthgain": [
+              "1"
+            ],
+            "healthticks": [
+              "3000"
+            ],
+            "managain": [
+              "4"
+            ],
+            "manaticks": [
+              "3000"
+            ]
+          },
+          "own_numeric_tuple": {
+            "healthgain": 1,
+            "healthticks": 3000,
+            "managain": 4,
+            "manaticks": 3000
+          },
+          "transformequipto_own_literal": [],
+          "all_four_own_values_present": true,
+          "target_transfer_allowed": false
+        },
+        {
+          "source": "Canary-hypothesis",
+          "source_record_projection_sha256": "170a3ca6f563fbcd2daf2e3cf3498fb6660b0f54070c9813fa8048c4d7db393a",
+          "own_regeneration_attributes": {
+            "healthgain": [
+              "1"
+            ],
+            "healthticks": [
+              "3000"
+            ],
+            "managain": [
+              "4"
+            ],
+            "manaticks": [
+              "3000"
+            ]
+          },
+          "own_numeric_tuple": {
+            "healthgain": 1,
+            "healthticks": 3000,
+            "managain": 4,
+            "manaticks": 3000
+          },
+          "transformequipto_own_literal": [],
+          "all_four_own_values_present": true,
+          "target_transfer_allowed": false
+        }
+      ],
+      "same_own_Crystal_Canary_tuple": true,
+      "native_carriers_available": {
+        "HEALTH_GAIN": "SIGNED_POINTS/i32",
+        "HEALTH_TICKS": "MILLISECONDS/u64",
+        "MANA_GAIN": "SIGNED_POINTS/i32",
+        "MANA_TICKS": "MILLISECONDS/u64"
+      },
+      "native_context_policy": "UNKNOWN target_domain/evaluation_phase/priority; no ruleset, food clock, rest mode or activation source fabricated",
+      "source_guard_holds": [
+        "WIKI_XML_TICK_QUANTUM_DISAGREEMENT_NO_AVERAGE_RATE_SUBSTITUTION"
+      ],
+      "disjoint_primary_reason": "WIKI_XML_TICK_QUANTUM_DISAGREEMENT_NO_AVERAGE_RATE_SUBSTITUTION",
+      "classification": "SOURCE_ONLY_TYPED_TUPLE_LEAD_HELD_NOT_NATIVE_ELIGIBLE",
+      "remaining_present_group": {
+        "faster regeneration": "Cannot drop this observed effect while retaining other numeric modifiers.",
+        "attrib": [
+          {
+            "attrib": [
+              "faster regeneration"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "item_id": 12669,
+      "item_key": "oteryn:item.tibia.i12669",
+      "identity_and_current_guards": {
+        "item_id": 12669,
+        "item_key": "oteryn:item.tibia.i12669",
+        "native_identity": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i12669",
+          "revision": "definition-r1"
+        },
+        "binding": {
+          "disposition": "EXACT",
+          "external_id": "12669",
+          "identity_namespace": "ots/item_server_id",
+          "source_key": "oteryn:source.crystalserver",
+          "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+          "target": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i12669",
+            "revision": "definition-r1"
+          }
+        },
+        "official_name": "star ring",
+        "official_raw_object_sha256": "86e456ac021aefa8f46db2f9e89d948d6af1d2ac5f5c2d0bc14b641653c786f0",
+        "official_identity_projection_sha256": "bcf17a007db2b3d87eb0537e2dcf8f6fe80baeb363e9085f8c5ca6c07b2695b7",
+        "official_flags": {
+          "flags.take": true,
+          "flags.clothes": true,
+          "clothes.slot": 9,
+          "flags.market": true,
+          "market.category": 11,
+          "market.trade_as_object_id": 12669,
+          "market.show_as_object_id": 12669,
+          "flags.cyclopediaitem": true,
+          "cyclopediaitem.cyclopedia_type": 12669,
+          "flags.expirestop": true
+        },
+        "native_name": {
+          "state": "KNOWN",
+          "value": "star ring"
+        },
+        "native_headers": {
+          "kind": "Item",
+          "stack_class": "Unknown",
+          "client_projection": "ClientSafe",
+          "materializable": false
+        },
+        "current_member": [
+          12669,
+          "bcf17a007db2b3d87eb0537e2dcf8f6fe80baeb363e9085f8c5ca6c07b2695b7",
+          "86e456ac021aefa8f46db2f9e89d948d6af1d2ac5f5c2d0bc14b641653c786f0"
+        ],
+        "bound_old_member": [
+          12669,
+          "bcf17a007db2b3d87eb0537e2dcf8f6fe80baeb363e9085f8c5ca6c07b2695b7",
+          "9d3d4e55abf74421fdac9babba1f57291eac03925f14ac9266bd82b1ecb35df6"
+        ],
+        "bound_old_member_label": "crystal-ff7ede5",
+        "guard_results": {
+          "CURRENT_NATIVE_ITEM_PRESENT": true,
+          "EXPLICIT_EXACT_BINDING_FULL_IDENTITY": true,
+          "CURRENT_OFFICIAL_OBJECT_PRESENT": true,
+          "CURRENT_MEMBER_FULL_RECORD_PROJECTION": true,
+          "BOUND_SOURCE_EPOCH_IDENTITY_CONTINUITY": true,
+          "NO_CURRENT_WORLD_OWNER": true,
+          "NATIVE_NAME_KNOWN_SOURCE_EQUAL": true,
+          "OFFICIAL_TAKE_TRUE_NON_WORLD_FLAGS": true,
+          "ALL_OWN_ID_BOXES_EXACT_SINGLE_ID": true,
+          "OWN_SOURCE_NAMES_EQUAL_OFFICIAL": true,
+          "BOUND_XML_EXACT_RECORD_PRESENT": true
+        },
+        "binding_selected_xml": {
+          "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+          "source_path": "/workspace/audit-continuation/sources/crystal-ff7ede5-items.xml",
+          "records": [
+            {
+              "element_ordinal": 6222,
+              "source_item_attributes": {
+                "id": "12669",
+                "article": "a",
+                "name": "star ring"
+              },
+              "own_attributes": [
+                {
+                  "key": "primarytype",
+                  "value": "rings"
+                },
+                {
+                  "key": "description",
+                  "value": "If you wear it on your ring slot, it will boost your health regeneration when you're not hungry"
+                },
+                {
+                  "key": "stopduration",
+                  "value": "1"
+                },
+                {
+                  "key": "showduration",
+                  "value": "1"
+                },
+                {
+                  "key": "showAttributes",
+                  "value": "1"
+                },
+                {
+                  "key": "transformequipto",
+                  "value": "12670"
+                },
+                {
+                  "key": "weight",
+                  "value": "80"
+                },
+                {
+                  "key": "script",
+                  "value": "moveevent"
+                }
+              ],
+              "projection_sha256": "c4f0296d402485f7f0867b725858571d4db53cbc890c846ac8b1af54d4fd0338",
+              "projection_serialization": "ET.tostring; derived semantic projection, not literal source XML bytes"
+            }
+          ]
+        },
+        "canary_hypothesis_only": [
+          {
+            "element_ordinal": 6210,
+            "source_item_attributes": {
+              "id": "12669",
+              "article": "a",
+              "name": "star ring"
+            },
+            "own_attributes": [
+              {
+                "key": "primarytype",
+                "value": "rings"
+              },
+              {
+                "key": "description",
+                "value": "If you wear it on your ring slot, it will boost your health regeneration when you're not hungry"
+              },
+              {
+                "key": "stopduration",
+                "value": "1"
+              },
+              {
+                "key": "showduration",
+                "value": "1"
+              },
+              {
+                "key": "showAttributes",
+                "value": "1"
+              },
+              {
+                "key": "transformequipto",
+                "value": "12670"
+              },
+              {
+                "key": "weight",
+                "value": "80"
+              },
+              {
+                "key": "script",
+                "value": "moveevent"
+              }
+            ],
+            "projection_sha256": "c4f0296d402485f7f0867b725858571d4db53cbc890c846ac8b1af54d4fd0338",
+            "projection_serialization": "ET.tostring; derived semantic projection, not literal source XML bytes"
+          }
+        ]
+      },
+      "own_raw_modifier_groups": [
+        {
+          "attrib": [
+            "faster regeneration"
+          ]
+        }
+      ],
+      "own_note_tuple_witnesses": [
+        {
+          "reference": {
+            "page_id": 54087,
+            "title": "Star Ring",
+            "revision_id": 1194111,
+            "revision_timestamp": "2026-07-04T12:46:14Z",
+            "content_sha256": "7c3bfd9f355c29d6942da44d0db0fd9159924d1c3ca163fe11be7d227de717d0",
+            "capture_path": "/workspace/audit-continuation/global-infobox-object-source-part-056.json",
+            "capture_sha256": "7f50d75a2738ea42f200f5807f3f427733052d1c4b11822c1c290438954fa5f8",
+            "page_ordinal": 14,
+            "batch": 56,
+            "own_object_box_indices": [
+              0
+            ],
+            "selection": "CURRENT_REVISION_AT_OR_BEFORE_CUTOFF",
+            "box_index": 0,
+            "occurrence_index": 0,
+            "raw_itemid": "12669",
+            "strict_numeric_itemid": true,
+            "balanced": true,
+            "inside_comment": false,
+            "duplicate_itemid_parameters": false
+          },
+          "raw_template_sha256": "7c3bfd9f355c29d6942da44d0db0fd9159924d1c3ca163fe11be7d227de717d0",
+          "own_notes": "As it's only wearable by players without a [[vocation]], it's only useful on [[Rookgaard]]. It lasts for 10 minutes.\nObtained in [[The Rookie Guard Quest]]",
+          "exact_tuple_quote": null,
+          "quote_char_offset": null,
+          "tuple": null,
+          "seconds_to_milliseconds": null
+        }
+      ],
+      "all_own_xml_checks": [
+        {
+          "source": "binding-selected-Crystal",
+          "source_record_projection_sha256": "c4f0296d402485f7f0867b725858571d4db53cbc890c846ac8b1af54d4fd0338",
+          "own_regeneration_attributes": {
+            "healthgain": [],
+            "healthticks": [],
+            "managain": [],
+            "manaticks": []
+          },
+          "own_numeric_tuple": null,
+          "transformequipto_own_literal": [
+            "12670"
+          ],
+          "all_four_own_values_present": false,
+          "target_transfer_allowed": false
+        },
+        {
+          "source": "Canary-hypothesis",
+          "source_record_projection_sha256": "c4f0296d402485f7f0867b725858571d4db53cbc890c846ac8b1af54d4fd0338",
+          "own_regeneration_attributes": {
+            "healthgain": [],
+            "healthticks": [],
+            "managain": [],
+            "manaticks": []
+          },
+          "own_numeric_tuple": null,
+          "transformequipto_own_literal": [
+            "12670"
+          ],
+          "all_four_own_values_present": false,
+          "target_transfer_allowed": false
+        }
+      ],
+      "same_own_Crystal_Canary_tuple": false,
+      "native_carriers_available": {
+        "HEALTH_GAIN": "SIGNED_POINTS/i32",
+        "HEALTH_TICKS": "MILLISECONDS/u64",
+        "MANA_GAIN": "SIGNED_POINTS/i32",
+        "MANA_TICKS": "MILLISECONDS/u64"
+      },
+      "native_context_policy": "UNKNOWN target_domain/evaluation_phase/priority; no ruleset, food clock, rest mode or activation source fabricated",
+      "source_guard_holds": [
+        "OWN_BOUND_XML_TUPLE_ABSENT_EQUIP_TARGET_TRANSFER_PROHIBITED",
+        "NO_OWN_WIKI_NUMERIC_REGENERATION_TUPLE"
+      ],
+      "disjoint_primary_reason": "OWN_BOUND_XML_TUPLE_ABSENT_EQUIP_TARGET_TRANSFER_PROHIBITED",
+      "classification": "SOURCE_ONLY_TYPED_TUPLE_LEAD_HELD_NOT_NATIVE_ELIGIBLE",
+      "remaining_present_group": {
+        "faster regeneration": "Cannot drop this observed effect while retaining other numeric modifiers.",
+        "attrib": [
+          {
+            "attrib": [
+              "faster regeneration"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "item_id": 23474,
+      "item_key": "oteryn:item.tibia.i23474",
+      "identity_and_current_guards": {
+        "item_id": 23474,
+        "item_key": "oteryn:item.tibia.i23474",
+        "native_identity": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i23474",
+          "revision": "definition-r1"
+        },
+        "binding": {
+          "disposition": "EXACT",
+          "external_id": "23474",
+          "identity_namespace": "ots/item_server_id",
+          "source_key": "oteryn:source.crystalserver",
+          "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+          "target": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i23474",
+            "revision": "definition-r1"
+          }
+        },
+        "official_name": "tiara of power",
+        "official_raw_object_sha256": "1074fce4d23e975680ccb4d1b5c97f8e04e74fadc5d4d5573f12857ec03bf903",
+        "official_identity_projection_sha256": "3fc5dff8d2915be3b0087419475bbbc6e20c6445144b7f16b59f9d0dd3c85295",
+        "official_flags": {
+          "flags.take": true,
+          "flags.clothes": true,
+          "clothes.slot": 1,
+          "flags.market": true,
+          "market.category": 7,
+          "market.trade_as_object_id": 23474,
+          "market.show_as_object_id": 23474,
+          "flags.cyclopediaitem": true,
+          "cyclopediaitem.cyclopedia_type": 23474,
+          "flags.expirestop": true
+        },
+        "native_name": {
+          "state": "KNOWN",
+          "value": "tiara of power"
+        },
+        "native_headers": {
+          "kind": "Item",
+          "stack_class": "Unknown",
+          "client_projection": "ClientSafe",
+          "materializable": false
+        },
+        "current_member": [
+          23474,
+          "3fc5dff8d2915be3b0087419475bbbc6e20c6445144b7f16b59f9d0dd3c85295",
+          "1074fce4d23e975680ccb4d1b5c97f8e04e74fadc5d4d5573f12857ec03bf903"
+        ],
+        "bound_old_member": [
+          23474,
+          "3fc5dff8d2915be3b0087419475bbbc6e20c6445144b7f16b59f9d0dd3c85295",
+          "365ff384017164871ac0ca28e0d3f7ac11a7111fb4783c1db126f836821cc9c4"
+        ],
+        "bound_old_member_label": "crystal-ff7ede5",
+        "guard_results": {
+          "CURRENT_NATIVE_ITEM_PRESENT": true,
+          "EXPLICIT_EXACT_BINDING_FULL_IDENTITY": true,
+          "CURRENT_OFFICIAL_OBJECT_PRESENT": true,
+          "CURRENT_MEMBER_FULL_RECORD_PROJECTION": true,
+          "BOUND_SOURCE_EPOCH_IDENTITY_CONTINUITY": true,
+          "NO_CURRENT_WORLD_OWNER": true,
+          "NATIVE_NAME_KNOWN_SOURCE_EQUAL": true,
+          "OFFICIAL_TAKE_TRUE_NON_WORLD_FLAGS": true,
+          "ALL_OWN_ID_BOXES_EXACT_SINGLE_ID": false,
+          "OWN_SOURCE_NAMES_EQUAL_OFFICIAL": true,
+          "BOUND_XML_EXACT_RECORD_PRESENT": true
+        },
+        "binding_selected_xml": {
+          "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+          "source_path": "/workspace/audit-continuation/sources/crystal-ff7ede5-items.xml",
+          "records": [
+            {
+              "element_ordinal": 9912,
+              "source_item_attributes": {
+                "id": "23474",
+                "article": "a",
+                "name": "tiara of power"
+              },
+              "own_attributes": [
+                {
+                  "key": "description",
+                  "value": "It can only be wielded properly by sorcerers and druids of level 100 or higher."
+                },
+                {
+                  "key": "stopduration",
+                  "value": "1"
+                },
+                {
+                  "key": "showduration",
+                  "value": "1"
+                },
+                {
+                  "key": "transformequipto",
+                  "value": "23475"
+                },
+                {
+                  "key": "weight",
+                  "value": "1150"
+                },
+                {
+                  "key": "script",
+                  "value": "moveevent"
+                }
+              ],
+              "projection_sha256": "b09f1a4fd8bc1a93633c666a2b92cf29ba196893bb1df2cbdaec44d7ea3fd8d3",
+              "projection_serialization": "ET.tostring; derived semantic projection, not literal source XML bytes"
+            }
+          ]
+        },
+        "canary_hypothesis_only": [
+          {
+            "element_ordinal": 9894,
+            "source_item_attributes": {
+              "id": "23474",
+              "article": "a",
+              "name": "tiara of power"
+            },
+            "own_attributes": [
+              {
+                "key": "description",
+                "value": "It can only be wielded properly by sorcerers and druids of level 100 or higher."
+              },
+              {
+                "key": "stopduration",
+                "value": "1"
+              },
+              {
+                "key": "showduration",
+                "value": "1"
+              },
+              {
+                "key": "transformequipto",
+                "value": "23475"
+              },
+              {
+                "key": "weight",
+                "value": "1150"
+              },
+              {
+                "key": "script",
+                "value": "moveevent"
+              }
+            ],
+            "projection_sha256": "b09f1a4fd8bc1a93633c666a2b92cf29ba196893bb1df2cbdaec44d7ea3fd8d3",
+            "projection_serialization": "ET.tostring; derived semantic projection, not literal source XML bytes"
+          }
+        ]
+      },
+      "own_raw_modifier_groups": [
+        {
+          "attrib": [
+            "faster regeneration, speed +20"
+          ]
+        }
+      ],
+      "own_note_tuple_witnesses": [
+        {
+          "reference": {
+            "page_id": 78262,
+            "title": "Tiara of Power",
+            "revision_id": 1148800,
+            "revision_timestamp": "2025-12-08T18:51:09Z",
+            "content_sha256": "1cabc9f5bcbf2614ae7dd147789105684525b8f998c17f8029f2596593974c55",
+            "capture_path": "/workspace/audit-continuation/global-infobox-object-source-part-099.json",
+            "capture_sha256": "00b0071448b4b6af90a90c0a0cd5c87461ebf7e66953ee7b2fea5b3263f55b77",
+            "page_ordinal": 33,
+            "batch": 99,
+            "own_object_box_indices": [
+              0
+            ],
+            "selection": "CURRENT_REVISION_AT_OR_BEFORE_CUTOFF",
+            "box_index": 0,
+            "occurrence_index": 0,
+            "raw_itemid": "23474, 23475",
+            "strict_numeric_itemid": true,
+            "balanced": true,
+            "inside_comment": false,
+            "duplicate_itemid_parameters": false
+          },
+          "raw_template_sha256": "b88c44a5909aa729dbd64eeb5e9b6f7a949f710dc07570f879bbdc2d90c1fad8",
+          "own_notes": "Looks like [[File:Tiara of Power (Red).gif]] when equipped. Increases your [[Mana]] and [[Hitpoints]] [[Regeneration]] for 60 minutes (1 hours) by the rate of 2 [[HP]] and 8 [[Mana|MP]] per 6 seconds, which means it will recover 4800 [[Mana|MP]] and 1200 [[HP]] in total. Tiara of Power can't be repaired. It disappears after using for 60 minutes.",
+          "exact_tuple_quote": "by the rate of 2 [[HP]] and 8 [[Mana|MP]] per 6 seconds",
+          "quote_char_offset": 144,
+          "tuple": {
+            "health_gain_points": 2,
+            "mana_gain_points": 8,
+            "ticks_milliseconds": 6000
+          },
+          "seconds_to_milliseconds": "EXACT6s=>6000ms source unit conversion only; no active clock interpretation"
+        }
+      ],
+      "all_own_xml_checks": [
+        {
+          "source": "binding-selected-Crystal",
+          "source_record_projection_sha256": "b09f1a4fd8bc1a93633c666a2b92cf29ba196893bb1df2cbdaec44d7ea3fd8d3",
+          "own_regeneration_attributes": {
+            "healthgain": [],
+            "healthticks": [],
+            "managain": [],
+            "manaticks": []
+          },
+          "own_numeric_tuple": null,
+          "transformequipto_own_literal": [
+            "23475"
+          ],
+          "all_four_own_values_present": false,
+          "target_transfer_allowed": false
+        },
+        {
+          "source": "Canary-hypothesis",
+          "source_record_projection_sha256": "b09f1a4fd8bc1a93633c666a2b92cf29ba196893bb1df2cbdaec44d7ea3fd8d3",
+          "own_regeneration_attributes": {
+            "healthgain": [],
+            "healthticks": [],
+            "managain": [],
+            "manaticks": []
+          },
+          "own_numeric_tuple": null,
+          "transformequipto_own_literal": [
+            "23475"
+          ],
+          "all_four_own_values_present": false,
+          "target_transfer_allowed": false
+        }
+      ],
+      "same_own_Crystal_Canary_tuple": false,
+      "native_carriers_available": {
+        "HEALTH_GAIN": "SIGNED_POINTS/i32",
+        "HEALTH_TICKS": "MILLISECONDS/u64",
+        "MANA_GAIN": "SIGNED_POINTS/i32",
+        "MANA_TICKS": "MILLISECONDS/u64"
+      },
+      "native_context_policy": "UNKNOWN target_domain/evaluation_phase/priority; no ruleset, food clock, rest mode or activation source fabricated",
+      "source_guard_holds": [
+        "OWN_BOUND_XML_TUPLE_ABSENT_EQUIP_TARGET_TRANSFER_PROHIBITED",
+        "SHARED_OWN_ID_PHASE_UNQUALIFIED"
+      ],
+      "disjoint_primary_reason": "OWN_BOUND_XML_TUPLE_ABSENT_EQUIP_TARGET_TRANSFER_PROHIBITED",
+      "classification": "SOURCE_ONLY_TYPED_TUPLE_LEAD_HELD_NOT_NATIVE_ELIGIBLE",
+      "remaining_present_group": {
+        "faster regeneration": "Cannot drop this observed effect while retaining other numeric modifiers.",
+        "attrib": [
+          {
+            "attrib": [
+              "faster regeneration, speed +20"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "item_id": 23475,
+      "item_key": "oteryn:item.tibia.i23475",
+      "identity_and_current_guards": {
+        "item_id": 23475,
+        "item_key": "oteryn:item.tibia.i23475",
+        "native_identity": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i23475",
+          "revision": "definition-r1"
+        },
+        "binding": {
+          "disposition": "EXACT",
+          "external_id": "23475",
+          "identity_namespace": "ots/item_server_id",
+          "source_key": "oteryn:source.crystalserver",
+          "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+          "target": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i23475",
+            "revision": "definition-r1"
+          }
+        },
+        "official_name": "tiara of power",
+        "official_raw_object_sha256": "9eac65d90bf2755a62cfa7ee1290bb5984fb4751432e8e5f2461258cff8410ed",
+        "official_identity_projection_sha256": "3fc5dff8d2915be3b0087419475bbbc6e20c6445144b7f16b59f9d0dd3c85295",
+        "official_flags": {
+          "flags.take": true,
+          "flags.light": true,
+          "light.brightness": 5,
+          "light.color": 202,
+          "flags.clothes": true,
+          "clothes.slot": 1,
+          "flags.changedtoexpire": true,
+          "changedtoexpire.former_object_typeid": 23474,
+          "flags.cyclopediaitem": true,
+          "cyclopediaitem.cyclopedia_type": 23475,
+          "flags.expire": true
+        },
+        "native_name": {
+          "state": "KNOWN",
+          "value": "tiara of power"
+        },
+        "native_headers": {
+          "kind": "Item",
+          "stack_class": "Unknown",
+          "client_projection": "ClientSafe",
+          "materializable": false
+        },
+        "current_member": [
+          23475,
+          "3fc5dff8d2915be3b0087419475bbbc6e20c6445144b7f16b59f9d0dd3c85295",
+          "9eac65d90bf2755a62cfa7ee1290bb5984fb4751432e8e5f2461258cff8410ed"
+        ],
+        "bound_old_member": [
+          23475,
+          "3fc5dff8d2915be3b0087419475bbbc6e20c6445144b7f16b59f9d0dd3c85295",
+          "01e1ef15dd5ae6f6a88aec27c43224d6093d5a5b3693213c5047fde33f5bd27f"
+        ],
+        "bound_old_member_label": "crystal-ff7ede5",
+        "guard_results": {
+          "CURRENT_NATIVE_ITEM_PRESENT": true,
+          "EXPLICIT_EXACT_BINDING_FULL_IDENTITY": true,
+          "CURRENT_OFFICIAL_OBJECT_PRESENT": true,
+          "CURRENT_MEMBER_FULL_RECORD_PROJECTION": true,
+          "BOUND_SOURCE_EPOCH_IDENTITY_CONTINUITY": true,
+          "NO_CURRENT_WORLD_OWNER": true,
+          "NATIVE_NAME_KNOWN_SOURCE_EQUAL": true,
+          "OFFICIAL_TAKE_TRUE_NON_WORLD_FLAGS": true,
+          "ALL_OWN_ID_BOXES_EXACT_SINGLE_ID": false,
+          "OWN_SOURCE_NAMES_EQUAL_OFFICIAL": true,
+          "BOUND_XML_EXACT_RECORD_PRESENT": true
+        },
+        "binding_selected_xml": {
+          "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+          "source_path": "/workspace/audit-continuation/sources/crystal-ff7ede5-items.xml",
+          "records": [
+            {
+              "element_ordinal": 9913,
+              "source_item_attributes": {
+                "id": "23475",
+                "article": "a",
+                "name": "tiara of power"
+              },
+              "own_attributes": [
+                {
+                  "key": "description",
+                  "value": "It can only be wielded properly by sorcerers and druids of level 100 or higher."
+                },
+                {
+                  "key": "showduration",
+                  "value": "1"
+                },
+                {
+                  "key": "showAttributes",
+                  "value": "1"
+                },
+                {
+                  "key": "absorbpercentenergy",
+                  "value": "8"
+                },
+                {
+                  "key": "manaticks",
+                  "value": "6000"
+                },
+                {
+                  "key": "managain",
+                  "value": "8"
+                },
+                {
+                  "key": "healthticks",
+                  "value": "6000"
+                },
+                {
+                  "key": "healthgain",
+                  "value": "2"
+                },
+                {
+                  "key": "speed",
+                  "value": "20"
+                },
+                {
+                  "key": "duration",
+                  "value": "3600"
+                },
+                {
+                  "key": "transformdeequipto",
+                  "value": "23474"
+                },
+                {
+                  "key": "decayTo",
+                  "value": "0"
+                },
+                {
+                  "key": "armor",
+                  "value": "7"
+                },
+                {
+                  "key": "weight",
+                  "value": "1150"
+                },
+                {
+                  "key": "script",
+                  "value": "moveevent"
+                }
+              ],
+              "projection_sha256": "b57455bce1cb5c140291287df82eb9616d8d74136c54d86d27fa453a4ec687e2",
+              "projection_serialization": "ET.tostring; derived semantic projection, not literal source XML bytes"
+            }
+          ]
+        },
+        "canary_hypothesis_only": [
+          {
+            "element_ordinal": 9895,
+            "source_item_attributes": {
+              "id": "23475",
+              "article": "a",
+              "name": "tiara of power"
+            },
+            "own_attributes": [
+              {
+                "key": "description",
+                "value": "It can only be wielded properly by sorcerers and druids of level 100 or higher."
+              },
+              {
+                "key": "showduration",
+                "value": "1"
+              },
+              {
+                "key": "showAttributes",
+                "value": "1"
+              },
+              {
+                "key": "absorbpercentenergy",
+                "value": "8"
+              },
+              {
+                "key": "manaticks",
+                "value": "6000"
+              },
+              {
+                "key": "managain",
+                "value": "8"
+              },
+              {
+                "key": "healthticks",
+                "value": "6000"
+              },
+              {
+                "key": "healthgain",
+                "value": "2"
+              },
+              {
+                "key": "speed",
+                "value": "20"
+              },
+              {
+                "key": "duration",
+                "value": "3600"
+              },
+              {
+                "key": "transformdeequipto",
+                "value": "23474"
+              },
+              {
+                "key": "decayTo",
+                "value": "0"
+              },
+              {
+                "key": "armor",
+                "value": "7"
+              },
+              {
+                "key": "weight",
+                "value": "1150"
+              },
+              {
+                "key": "script",
+                "value": "moveevent"
+              }
+            ],
+            "projection_sha256": "b57455bce1cb5c140291287df82eb9616d8d74136c54d86d27fa453a4ec687e2",
+            "projection_serialization": "ET.tostring; derived semantic projection, not literal source XML bytes"
+          }
+        ]
+      },
+      "own_raw_modifier_groups": [
+        {
+          "attrib": [
+            "faster regeneration, speed +20"
+          ]
+        }
+      ],
+      "own_note_tuple_witnesses": [
+        {
+          "reference": {
+            "page_id": 78262,
+            "title": "Tiara of Power",
+            "revision_id": 1148800,
+            "revision_timestamp": "2025-12-08T18:51:09Z",
+            "content_sha256": "1cabc9f5bcbf2614ae7dd147789105684525b8f998c17f8029f2596593974c55",
+            "capture_path": "/workspace/audit-continuation/global-infobox-object-source-part-099.json",
+            "capture_sha256": "00b0071448b4b6af90a90c0a0cd5c87461ebf7e66953ee7b2fea5b3263f55b77",
+            "page_ordinal": 33,
+            "batch": 99,
+            "own_object_box_indices": [
+              0
+            ],
+            "selection": "CURRENT_REVISION_AT_OR_BEFORE_CUTOFF",
+            "box_index": 0,
+            "occurrence_index": 0,
+            "raw_itemid": "23474, 23475",
+            "strict_numeric_itemid": true,
+            "balanced": true,
+            "inside_comment": false,
+            "duplicate_itemid_parameters": false
+          },
+          "raw_template_sha256": "b88c44a5909aa729dbd64eeb5e9b6f7a949f710dc07570f879bbdc2d90c1fad8",
+          "own_notes": "Looks like [[File:Tiara of Power (Red).gif]] when equipped. Increases your [[Mana]] and [[Hitpoints]] [[Regeneration]] for 60 minutes (1 hours) by the rate of 2 [[HP]] and 8 [[Mana|MP]] per 6 seconds, which means it will recover 4800 [[Mana|MP]] and 1200 [[HP]] in total. Tiara of Power can't be repaired. It disappears after using for 60 minutes.",
+          "exact_tuple_quote": "by the rate of 2 [[HP]] and 8 [[Mana|MP]] per 6 seconds",
+          "quote_char_offset": 144,
+          "tuple": {
+            "health_gain_points": 2,
+            "mana_gain_points": 8,
+            "ticks_milliseconds": 6000
+          },
+          "seconds_to_milliseconds": "EXACT6s=>6000ms source unit conversion only; no active clock interpretation"
+        }
+      ],
+      "all_own_xml_checks": [
+        {
+          "source": "binding-selected-Crystal",
+          "source_record_projection_sha256": "b57455bce1cb5c140291287df82eb9616d8d74136c54d86d27fa453a4ec687e2",
+          "own_regeneration_attributes": {
+            "healthgain": [
+              "2"
+            ],
+            "healthticks": [
+              "6000"
+            ],
+            "managain": [
+              "8"
+            ],
+            "manaticks": [
+              "6000"
+            ]
+          },
+          "own_numeric_tuple": {
+            "healthgain": 2,
+            "healthticks": 6000,
+            "managain": 8,
+            "manaticks": 6000
+          },
+          "transformequipto_own_literal": [],
+          "all_four_own_values_present": true,
+          "target_transfer_allowed": false
+        },
+        {
+          "source": "Canary-hypothesis",
+          "source_record_projection_sha256": "b57455bce1cb5c140291287df82eb9616d8d74136c54d86d27fa453a4ec687e2",
+          "own_regeneration_attributes": {
+            "healthgain": [
+              "2"
+            ],
+            "healthticks": [
+              "6000"
+            ],
+            "managain": [
+              "8"
+            ],
+            "manaticks": [
+              "6000"
+            ]
+          },
+          "own_numeric_tuple": {
+            "healthgain": 2,
+            "healthticks": 6000,
+            "managain": 8,
+            "manaticks": 6000
+          },
+          "transformequipto_own_literal": [],
+          "all_four_own_values_present": true,
+          "target_transfer_allowed": false
+        }
+      ],
+      "same_own_Crystal_Canary_tuple": true,
+      "native_carriers_available": {
+        "HEALTH_GAIN": "SIGNED_POINTS/i32",
+        "HEALTH_TICKS": "MILLISECONDS/u64",
+        "MANA_GAIN": "SIGNED_POINTS/i32",
+        "MANA_TICKS": "MILLISECONDS/u64"
+      },
+      "native_context_policy": "UNKNOWN target_domain/evaluation_phase/priority; no ruleset, food clock, rest mode or activation source fabricated",
+      "source_guard_holds": [
+        "SHARED_OWN_ID_PHASE_UNQUALIFIED"
+      ],
+      "disjoint_primary_reason": "SHARED_OWN_ID_PHASE_UNQUALIFIED",
+      "classification": "SOURCE_ONLY_TYPED_TUPLE_LEAD_HELD_NOT_NATIVE_ELIGIBLE",
+      "remaining_present_group": {
+        "faster regeneration": "Cannot drop this observed effect while retaining other numeric modifiers.",
+        "attrib": [
+          {
+            "attrib": [
+              "faster regeneration, speed +20"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "item_id": 23476,
+      "item_key": "oteryn:item.tibia.i23476",
+      "identity_and_current_guards": {
+        "item_id": 23476,
+        "item_key": "oteryn:item.tibia.i23476",
+        "native_identity": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i23476",
+          "revision": "definition-r1"
+        },
+        "binding": {
+          "disposition": "EXACT",
+          "external_id": "23476",
+          "identity_namespace": "ots/item_server_id",
+          "source_key": "oteryn:source.crystalserver",
+          "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+          "target": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i23476",
+            "revision": "definition-r1"
+          }
+        },
+        "official_name": "void boots",
+        "official_raw_object_sha256": "da878b5f125e3b7710f3399191e21042f906fd106dc6fabf27ab8ecf0ce69c86",
+        "official_identity_projection_sha256": "bed3bf068f0cf9f8a85fd1b308f86ae7c9150379f8cd31462b70ec03f51bfc88",
+        "official_flags": {
+          "flags.take": true,
+          "flags.clothes": true,
+          "clothes.slot": 8,
+          "flags.changedtoexpire": true,
+          "changedtoexpire.former_object_typeid": 23477,
+          "flags.cyclopediaitem": true,
+          "cyclopediaitem.cyclopedia_type": 23476,
+          "flags.expire": true
+        },
+        "native_name": {
+          "state": "KNOWN",
+          "value": "void boots"
+        },
+        "native_headers": {
+          "kind": "Item",
+          "stack_class": "Unknown",
+          "client_projection": "ClientSafe",
+          "materializable": false
+        },
+        "current_member": [
+          23476,
+          "bed3bf068f0cf9f8a85fd1b308f86ae7c9150379f8cd31462b70ec03f51bfc88",
+          "da878b5f125e3b7710f3399191e21042f906fd106dc6fabf27ab8ecf0ce69c86"
+        ],
+        "bound_old_member": [
+          23476,
+          "bed3bf068f0cf9f8a85fd1b308f86ae7c9150379f8cd31462b70ec03f51bfc88",
+          "6975e3c6c648601bb302c4a71186b6c8b68b763509e0170c0441ca0a99687bf0"
+        ],
+        "bound_old_member_label": "crystal-ff7ede5",
+        "guard_results": {
+          "CURRENT_NATIVE_ITEM_PRESENT": true,
+          "EXPLICIT_EXACT_BINDING_FULL_IDENTITY": true,
+          "CURRENT_OFFICIAL_OBJECT_PRESENT": true,
+          "CURRENT_MEMBER_FULL_RECORD_PROJECTION": true,
+          "BOUND_SOURCE_EPOCH_IDENTITY_CONTINUITY": true,
+          "NO_CURRENT_WORLD_OWNER": true,
+          "NATIVE_NAME_KNOWN_SOURCE_EQUAL": true,
+          "OFFICIAL_TAKE_TRUE_NON_WORLD_FLAGS": true,
+          "ALL_OWN_ID_BOXES_EXACT_SINGLE_ID": false,
+          "OWN_SOURCE_NAMES_EQUAL_OFFICIAL": true,
+          "BOUND_XML_EXACT_RECORD_PRESENT": true
+        },
+        "binding_selected_xml": {
+          "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+          "source_path": "/workspace/audit-continuation/sources/crystal-ff7ede5-items.xml",
+          "records": [
+            {
+              "element_ordinal": 9914,
+              "source_item_attributes": {
+                "id": "23476",
+                "name": "void boots"
+              },
+              "own_attributes": [
+                {
+                  "key": "primarytype",
+                  "value": "boots"
+                },
+                {
+                  "key": "description",
+                  "value": "It can only be wielded properly by players of level 150 or higher."
+                },
+                {
+                  "key": "showduration",
+                  "value": "1"
+                },
+                {
+                  "key": "showAttributes",
+                  "value": "1"
+                },
+                {
+                  "key": "absorbpercentenergy",
+                  "value": "10"
+                },
+                {
+                  "key": "manaticks",
+                  "value": "6000"
+                },
+                {
+                  "key": "managain",
+                  "value": "12"
+                },
+                {
+                  "key": "healthticks",
+                  "value": "6000"
+                },
+                {
+                  "key": "healthgain",
+                  "value": "3"
+                },
+                {
+                  "key": "speed",
+                  "value": "30"
+                },
+                {
+                  "key": "duration",
+                  "value": "3600"
+                },
+                {
+                  "key": "transformdeequipto",
+                  "value": "23477"
+                },
+                {
+                  "key": "decayTo",
+                  "value": "0"
+                },
+                {
+                  "key": "armor",
+                  "value": "2"
+                },
+                {
+                  "key": "weight",
+                  "value": "1500"
+                },
+                {
+                  "key": "script",
+                  "value": "moveevent"
+                }
+              ],
+              "projection_sha256": "229e232125dbdf574aba1cb5e878fe3a1b3258432ad35add2b799346b015e352",
+              "projection_serialization": "ET.tostring; derived semantic projection, not literal source XML bytes"
+            }
+          ]
+        },
+        "canary_hypothesis_only": [
+          {
+            "element_ordinal": 9896,
+            "source_item_attributes": {
+              "id": "23476",
+              "name": "void boots"
+            },
+            "own_attributes": [
+              {
+                "key": "primarytype",
+                "value": "boots"
+              },
+              {
+                "key": "description",
+                "value": "It can only be wielded properly by players of level 150 or higher."
+              },
+              {
+                "key": "showduration",
+                "value": "1"
+              },
+              {
+                "key": "showAttributes",
+                "value": "1"
+              },
+              {
+                "key": "absorbpercentenergy",
+                "value": "10"
+              },
+              {
+                "key": "manaticks",
+                "value": "6000"
+              },
+              {
+                "key": "managain",
+                "value": "12"
+              },
+              {
+                "key": "healthticks",
+                "value": "6000"
+              },
+              {
+                "key": "healthgain",
+                "value": "3"
+              },
+              {
+                "key": "speed",
+                "value": "30"
+              },
+              {
+                "key": "duration",
+                "value": "3600"
+              },
+              {
+                "key": "transformdeequipto",
+                "value": "23477"
+              },
+              {
+                "key": "decayTo",
+                "value": "0"
+              },
+              {
+                "key": "armor",
+                "value": "2"
+              },
+              {
+                "key": "weight",
+                "value": "1500"
+              },
+              {
+                "key": "script",
+                "value": "moveevent"
+              }
+            ],
+            "projection_sha256": "229e232125dbdf574aba1cb5e878fe3a1b3258432ad35add2b799346b015e352",
+            "projection_serialization": "ET.tostring; derived semantic projection, not literal source XML bytes"
+          }
+        ]
+      },
+      "own_raw_modifier_groups": [
+        {
+          "attrib": [
+            "speed +30, faster regeneration"
+          ]
+        }
+      ],
+      "own_note_tuple_witnesses": [
+        {
+          "reference": {
+            "page_id": 78265,
+            "title": "Void Boots",
+            "revision_id": 1148802,
+            "revision_timestamp": "2025-12-08T18:51:36Z",
+            "content_sha256": "3abd05e6fbfcfc3dfac1f76b0b76dda0cc927398c97579a4c56b4299b1803dbc",
+            "capture_path": "/workspace/audit-continuation/global-infobox-object-source-part-099.json",
+            "capture_sha256": "00b0071448b4b6af90a90c0a0cd5c87461ebf7e66953ee7b2fea5b3263f55b77",
+            "page_ordinal": 34,
+            "batch": 99,
+            "own_object_box_indices": [
+              0
+            ],
+            "selection": "CURRENT_REVISION_AT_OR_BEFORE_CUTOFF",
+            "box_index": 0,
+            "occurrence_index": 0,
+            "raw_itemid": "23476, 23477",
+            "strict_numeric_itemid": true,
+            "balanced": true,
+            "inside_comment": false,
+            "duplicate_itemid_parameters": false
+          },
+          "raw_template_sha256": "e19c90209529a6a1e716ac35cd86513f0118f579f09d59093c1ddac08e48ae70",
+          "own_notes": "Look like [[File:Void Boots (Red).gif]] when used. Increases your [[Mana]] and [[Hitpoints]] [[Regeneration]] for 60 minutes (1 hour) by the rate of 3 [[HP]] and 12 [[Mana|MP]] per 6 seconds, for a total of 7200 [[Mana|MP]] and 1800 [[HP]]. Void Boots cannot be repaired and will disappear after use. As they have the same regeneration bonus as [[Pair of Soft Boots|Soft Boots]], the Void Boots are a better alternative while hunting due to armor and speed bonuses. If they cost less than 2500 gold on your game world, they are even cheaper than [[Pair of Soft Boots|Soft Boots]] to use.",
+          "exact_tuple_quote": "by the rate of 3 [[HP]] and 12 [[Mana|MP]] per 6 seconds",
+          "quote_char_offset": 134,
+          "tuple": {
+            "health_gain_points": 3,
+            "mana_gain_points": 12,
+            "ticks_milliseconds": 6000
+          },
+          "seconds_to_milliseconds": "EXACT6s=>6000ms source unit conversion only; no active clock interpretation"
+        }
+      ],
+      "all_own_xml_checks": [
+        {
+          "source": "binding-selected-Crystal",
+          "source_record_projection_sha256": "229e232125dbdf574aba1cb5e878fe3a1b3258432ad35add2b799346b015e352",
+          "own_regeneration_attributes": {
+            "healthgain": [
+              "3"
+            ],
+            "healthticks": [
+              "6000"
+            ],
+            "managain": [
+              "12"
+            ],
+            "manaticks": [
+              "6000"
+            ]
+          },
+          "own_numeric_tuple": {
+            "healthgain": 3,
+            "healthticks": 6000,
+            "managain": 12,
+            "manaticks": 6000
+          },
+          "transformequipto_own_literal": [],
+          "all_four_own_values_present": true,
+          "target_transfer_allowed": false
+        },
+        {
+          "source": "Canary-hypothesis",
+          "source_record_projection_sha256": "229e232125dbdf574aba1cb5e878fe3a1b3258432ad35add2b799346b015e352",
+          "own_regeneration_attributes": {
+            "healthgain": [
+              "3"
+            ],
+            "healthticks": [
+              "6000"
+            ],
+            "managain": [
+              "12"
+            ],
+            "manaticks": [
+              "6000"
+            ]
+          },
+          "own_numeric_tuple": {
+            "healthgain": 3,
+            "healthticks": 6000,
+            "managain": 12,
+            "manaticks": 6000
+          },
+          "transformequipto_own_literal": [],
+          "all_four_own_values_present": true,
+          "target_transfer_allowed": false
+        }
+      ],
+      "same_own_Crystal_Canary_tuple": true,
+      "native_carriers_available": {
+        "HEALTH_GAIN": "SIGNED_POINTS/i32",
+        "HEALTH_TICKS": "MILLISECONDS/u64",
+        "MANA_GAIN": "SIGNED_POINTS/i32",
+        "MANA_TICKS": "MILLISECONDS/u64"
+      },
+      "native_context_policy": "UNKNOWN target_domain/evaluation_phase/priority; no ruleset, food clock, rest mode or activation source fabricated",
+      "source_guard_holds": [
+        "SHARED_OWN_ID_PHASE_UNQUALIFIED"
+      ],
+      "disjoint_primary_reason": "SHARED_OWN_ID_PHASE_UNQUALIFIED",
+      "classification": "SOURCE_ONLY_TYPED_TUPLE_LEAD_HELD_NOT_NATIVE_ELIGIBLE",
+      "remaining_present_group": {
+        "faster regeneration": "Cannot drop this observed effect while retaining other numeric modifiers.",
+        "attrib": [
+          {
+            "attrib": [
+              "speed +30, faster regeneration"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "item_id": 23477,
+      "item_key": "oteryn:item.tibia.i23477",
+      "identity_and_current_guards": {
+        "item_id": 23477,
+        "item_key": "oteryn:item.tibia.i23477",
+        "native_identity": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i23477",
+          "revision": "definition-r1"
+        },
+        "binding": {
+          "disposition": "EXACT",
+          "external_id": "23477",
+          "identity_namespace": "ots/item_server_id",
+          "source_key": "oteryn:source.crystalserver",
+          "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+          "target": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i23477",
+            "revision": "definition-r1"
+          }
+        },
+        "official_name": "void boots",
+        "official_raw_object_sha256": "899e99fe297913e97aea5378d8d81e757d00b89fa50922d2ec14fe33a30c6d94",
+        "official_identity_projection_sha256": "bed3bf068f0cf9f8a85fd1b308f86ae7c9150379f8cd31462b70ec03f51bfc88",
+        "official_flags": {
+          "flags.take": true,
+          "flags.clothes": true,
+          "clothes.slot": 8,
+          "flags.market": true,
+          "market.category": 3,
+          "market.trade_as_object_id": 23477,
+          "market.show_as_object_id": 23477,
+          "flags.cyclopediaitem": true,
+          "cyclopediaitem.cyclopedia_type": 23477,
+          "flags.expirestop": true
+        },
+        "native_name": {
+          "state": "KNOWN",
+          "value": "void boots"
+        },
+        "native_headers": {
+          "kind": "Item",
+          "stack_class": "Unknown",
+          "client_projection": "ClientSafe",
+          "materializable": false
+        },
+        "current_member": [
+          23477,
+          "bed3bf068f0cf9f8a85fd1b308f86ae7c9150379f8cd31462b70ec03f51bfc88",
+          "899e99fe297913e97aea5378d8d81e757d00b89fa50922d2ec14fe33a30c6d94"
+        ],
+        "bound_old_member": [
+          23477,
+          "bed3bf068f0cf9f8a85fd1b308f86ae7c9150379f8cd31462b70ec03f51bfc88",
+          "2986096e80d6d61d3ed8005ebe531b330c955a1daa674e223f185a53649e4124"
+        ],
+        "bound_old_member_label": "crystal-ff7ede5",
+        "guard_results": {
+          "CURRENT_NATIVE_ITEM_PRESENT": true,
+          "EXPLICIT_EXACT_BINDING_FULL_IDENTITY": true,
+          "CURRENT_OFFICIAL_OBJECT_PRESENT": true,
+          "CURRENT_MEMBER_FULL_RECORD_PROJECTION": true,
+          "BOUND_SOURCE_EPOCH_IDENTITY_CONTINUITY": true,
+          "NO_CURRENT_WORLD_OWNER": true,
+          "NATIVE_NAME_KNOWN_SOURCE_EQUAL": true,
+          "OFFICIAL_TAKE_TRUE_NON_WORLD_FLAGS": true,
+          "ALL_OWN_ID_BOXES_EXACT_SINGLE_ID": false,
+          "OWN_SOURCE_NAMES_EQUAL_OFFICIAL": true,
+          "BOUND_XML_EXACT_RECORD_PRESENT": true
+        },
+        "binding_selected_xml": {
+          "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+          "source_path": "/workspace/audit-continuation/sources/crystal-ff7ede5-items.xml",
+          "records": [
+            {
+              "element_ordinal": 9915,
+              "source_item_attributes": {
+                "id": "23477",
+                "name": "void boots"
+              },
+              "own_attributes": [
+                {
+                  "key": "primarytype",
+                  "value": "boots"
+                },
+                {
+                  "key": "description",
+                  "value": "It can only be wielded properly by players of level 150 or higher."
+                },
+                {
+                  "key": "stopduration",
+                  "value": "1"
+                },
+                {
+                  "key": "showduration",
+                  "value": "1"
+                },
+                {
+                  "key": "transformequipto",
+                  "value": "23476"
+                },
+                {
+                  "key": "armor",
+                  "value": "2"
+                },
+                {
+                  "key": "weight",
+                  "value": "1500"
+                },
+                {
+                  "key": "script",
+                  "value": "moveevent"
+                }
+              ],
+              "projection_sha256": "d38bb2b7334a2d363e13875383ed68180d76c03f338a84eacfc6725391a4d68f",
+              "projection_serialization": "ET.tostring; derived semantic projection, not literal source XML bytes"
+            }
+          ]
+        },
+        "canary_hypothesis_only": [
+          {
+            "element_ordinal": 9897,
+            "source_item_attributes": {
+              "id": "23477",
+              "name": "void boots"
+            },
+            "own_attributes": [
+              {
+                "key": "primarytype",
+                "value": "boots"
+              },
+              {
+                "key": "description",
+                "value": "It can only be wielded properly by players of level 150 or higher."
+              },
+              {
+                "key": "stopduration",
+                "value": "1"
+              },
+              {
+                "key": "showduration",
+                "value": "1"
+              },
+              {
+                "key": "transformequipto",
+                "value": "23476"
+              },
+              {
+                "key": "armor",
+                "value": "2"
+              },
+              {
+                "key": "weight",
+                "value": "1500"
+              },
+              {
+                "key": "script",
+                "value": "moveevent"
+              }
+            ],
+            "projection_sha256": "d38bb2b7334a2d363e13875383ed68180d76c03f338a84eacfc6725391a4d68f",
+            "projection_serialization": "ET.tostring; derived semantic projection, not literal source XML bytes"
+          }
+        ]
+      },
+      "own_raw_modifier_groups": [
+        {
+          "attrib": [
+            "speed +30, faster regeneration"
+          ]
+        }
+      ],
+      "own_note_tuple_witnesses": [
+        {
+          "reference": {
+            "page_id": 78265,
+            "title": "Void Boots",
+            "revision_id": 1148802,
+            "revision_timestamp": "2025-12-08T18:51:36Z",
+            "content_sha256": "3abd05e6fbfcfc3dfac1f76b0b76dda0cc927398c97579a4c56b4299b1803dbc",
+            "capture_path": "/workspace/audit-continuation/global-infobox-object-source-part-099.json",
+            "capture_sha256": "00b0071448b4b6af90a90c0a0cd5c87461ebf7e66953ee7b2fea5b3263f55b77",
+            "page_ordinal": 34,
+            "batch": 99,
+            "own_object_box_indices": [
+              0
+            ],
+            "selection": "CURRENT_REVISION_AT_OR_BEFORE_CUTOFF",
+            "box_index": 0,
+            "occurrence_index": 0,
+            "raw_itemid": "23476, 23477",
+            "strict_numeric_itemid": true,
+            "balanced": true,
+            "inside_comment": false,
+            "duplicate_itemid_parameters": false
+          },
+          "raw_template_sha256": "e19c90209529a6a1e716ac35cd86513f0118f579f09d59093c1ddac08e48ae70",
+          "own_notes": "Look like [[File:Void Boots (Red).gif]] when used. Increases your [[Mana]] and [[Hitpoints]] [[Regeneration]] for 60 minutes (1 hour) by the rate of 3 [[HP]] and 12 [[Mana|MP]] per 6 seconds, for a total of 7200 [[Mana|MP]] and 1800 [[HP]]. Void Boots cannot be repaired and will disappear after use. As they have the same regeneration bonus as [[Pair of Soft Boots|Soft Boots]], the Void Boots are a better alternative while hunting due to armor and speed bonuses. If they cost less than 2500 gold on your game world, they are even cheaper than [[Pair of Soft Boots|Soft Boots]] to use.",
+          "exact_tuple_quote": "by the rate of 3 [[HP]] and 12 [[Mana|MP]] per 6 seconds",
+          "quote_char_offset": 134,
+          "tuple": {
+            "health_gain_points": 3,
+            "mana_gain_points": 12,
+            "ticks_milliseconds": 6000
+          },
+          "seconds_to_milliseconds": "EXACT6s=>6000ms source unit conversion only; no active clock interpretation"
+        }
+      ],
+      "all_own_xml_checks": [
+        {
+          "source": "binding-selected-Crystal",
+          "source_record_projection_sha256": "d38bb2b7334a2d363e13875383ed68180d76c03f338a84eacfc6725391a4d68f",
+          "own_regeneration_attributes": {
+            "healthgain": [],
+            "healthticks": [],
+            "managain": [],
+            "manaticks": []
+          },
+          "own_numeric_tuple": null,
+          "transformequipto_own_literal": [
+            "23476"
+          ],
+          "all_four_own_values_present": false,
+          "target_transfer_allowed": false
+        },
+        {
+          "source": "Canary-hypothesis",
+          "source_record_projection_sha256": "d38bb2b7334a2d363e13875383ed68180d76c03f338a84eacfc6725391a4d68f",
+          "own_regeneration_attributes": {
+            "healthgain": [],
+            "healthticks": [],
+            "managain": [],
+            "manaticks": []
+          },
+          "own_numeric_tuple": null,
+          "transformequipto_own_literal": [
+            "23476"
+          ],
+          "all_four_own_values_present": false,
+          "target_transfer_allowed": false
+        }
+      ],
+      "same_own_Crystal_Canary_tuple": false,
+      "native_carriers_available": {
+        "HEALTH_GAIN": "SIGNED_POINTS/i32",
+        "HEALTH_TICKS": "MILLISECONDS/u64",
+        "MANA_GAIN": "SIGNED_POINTS/i32",
+        "MANA_TICKS": "MILLISECONDS/u64"
+      },
+      "native_context_policy": "UNKNOWN target_domain/evaluation_phase/priority; no ruleset, food clock, rest mode or activation source fabricated",
+      "source_guard_holds": [
+        "OWN_BOUND_XML_TUPLE_ABSENT_EQUIP_TARGET_TRANSFER_PROHIBITED",
+        "SHARED_OWN_ID_PHASE_UNQUALIFIED"
+      ],
+      "disjoint_primary_reason": "OWN_BOUND_XML_TUPLE_ABSENT_EQUIP_TARGET_TRANSFER_PROHIBITED",
+      "classification": "SOURCE_ONLY_TYPED_TUPLE_LEAD_HELD_NOT_NATIVE_ELIGIBLE",
+      "remaining_present_group": {
+        "faster regeneration": "Cannot drop this observed effect while retaining other numeric modifiers.",
+        "attrib": [
+          {
+            "attrib": [
+              "speed +30, faster regeneration"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "item_id": 23531,
+      "item_key": "oteryn:item.tibia.i23531",
+      "identity_and_current_guards": {
+        "item_id": 23531,
+        "item_key": "oteryn:item.tibia.i23531",
+        "native_identity": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i23531",
+          "revision": "definition-r1"
+        },
+        "binding": {
+          "disposition": "EXACT",
+          "external_id": "23531",
+          "identity_namespace": "ots/item_server_id",
+          "source_key": "oteryn:source.crystalserver",
+          "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+          "target": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i23531",
+            "revision": "definition-r1"
+          }
+        },
+        "official_name": "ring of green plasma",
+        "official_raw_object_sha256": "66adcad9c9d8bf2d0d2ed2d7ddea7d4bc7e072e78f23b622a0fd74492cd6c4a5",
+        "official_identity_projection_sha256": "b28ddb4ed9e8ed4b5cf44bc65c196b7ce6d766088d6f3720fc161efa4978990e",
+        "official_flags": {
+          "flags.take": true,
+          "flags.clothes": true,
+          "clothes.slot": 9,
+          "flags.market": true,
+          "market.category": 11,
+          "market.trade_as_object_id": 23531,
+          "market.show_as_object_id": 23531,
+          "flags.cyclopediaitem": true,
+          "cyclopediaitem.cyclopedia_type": 23531,
+          "flags.expirestop": true,
+          "npcsaledata.name": [
+            "Fadil"
+          ],
+          "npcsaledata.location": [
+            "Darashia City"
+          ],
+          "npcsaledata.sale_price": [
+            0
+          ],
+          "npcsaledata.buy_price": [
+            8000
+          ]
+        },
+        "native_name": {
+          "state": "KNOWN",
+          "value": "ring of green plasma"
+        },
+        "native_headers": {
+          "kind": "Item",
+          "stack_class": "Unknown",
+          "client_projection": "ClientSafe",
+          "materializable": false
+        },
+        "current_member": [
+          23531,
+          "b28ddb4ed9e8ed4b5cf44bc65c196b7ce6d766088d6f3720fc161efa4978990e",
+          "66adcad9c9d8bf2d0d2ed2d7ddea7d4bc7e072e78f23b622a0fd74492cd6c4a5"
+        ],
+        "bound_old_member": [
+          23531,
+          "b28ddb4ed9e8ed4b5cf44bc65c196b7ce6d766088d6f3720fc161efa4978990e",
+          "31071bd0b021e3327761e5958beed83c8342f65c5697704bdf3b2e4476cee7a5"
+        ],
+        "bound_old_member_label": "crystal-ff7ede5",
+        "guard_results": {
+          "CURRENT_NATIVE_ITEM_PRESENT": true,
+          "EXPLICIT_EXACT_BINDING_FULL_IDENTITY": true,
+          "CURRENT_OFFICIAL_OBJECT_PRESENT": true,
+          "CURRENT_MEMBER_FULL_RECORD_PROJECTION": true,
+          "BOUND_SOURCE_EPOCH_IDENTITY_CONTINUITY": true,
+          "NO_CURRENT_WORLD_OWNER": true,
+          "NATIVE_NAME_KNOWN_SOURCE_EQUAL": true,
+          "OFFICIAL_TAKE_TRUE_NON_WORLD_FLAGS": true,
+          "ALL_OWN_ID_BOXES_EXACT_SINGLE_ID": false,
+          "OWN_SOURCE_NAMES_EQUAL_OFFICIAL": true,
+          "BOUND_XML_EXACT_RECORD_PRESENT": true
+        },
+        "binding_selected_xml": {
+          "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+          "source_path": "/workspace/audit-continuation/sources/crystal-ff7ede5-items.xml",
+          "records": [
+            {
+              "element_ordinal": 9961,
+              "source_item_attributes": {
+                "id": "23531",
+                "name": "ring of green plasma"
+              },
+              "own_attributes": [
+                {
+                  "key": "stopduration",
+                  "value": "1"
+                },
+                {
+                  "key": "showduration",
+                  "value": "1"
+                },
+                {
+                  "key": "transformequipto",
+                  "value": "23532"
+                },
+                {
+                  "key": "weight",
+                  "value": "90"
+                },
+                {
+                  "key": "script",
+                  "value": "moveevent"
+                }
+              ],
+              "projection_sha256": "5cb4f4b1f11caa53db3b294cf32e3ece545947fbb5f9126f5838582532cfde95",
+              "projection_serialization": "ET.tostring; derived semantic projection, not literal source XML bytes"
+            }
+          ]
+        },
+        "canary_hypothesis_only": [
+          {
+            "element_ordinal": 9943,
+            "source_item_attributes": {
+              "id": "23531",
+              "name": "ring of green plasma"
+            },
+            "own_attributes": [
+              {
+                "key": "stopduration",
+                "value": "1"
+              },
+              {
+                "key": "showduration",
+                "value": "1"
+              },
+              {
+                "key": "transformequipto",
+                "value": "23532"
+              },
+              {
+                "key": "weight",
+                "value": "90"
+              },
+              {
+                "key": "script",
+                "value": "moveevent"
+              }
+            ],
+            "projection_sha256": "5cb4f4b1f11caa53db3b294cf32e3ece545947fbb5f9126f5838582532cfde95",
+            "projection_serialization": "ET.tostring; derived semantic projection, not literal source XML bytes"
+          }
+        ]
+      },
+      "own_raw_modifier_groups": [
+        {
+          "attrib": [
+            "magic level +2, faster Regeneration"
+          ]
+        }
+      ],
+      "own_note_tuple_witnesses": [
+        {
+          "reference": {
+            "page_id": 78128,
+            "title": "Ring of Green Plasma",
+            "revision_id": 1194113,
+            "revision_timestamp": "2026-07-04T12:46:36Z",
+            "content_sha256": "fcb387590bfb6d60e539ae261cc5b5c9553b30eb0392bb1098fc6d700d4312e0",
+            "capture_path": "/workspace/audit-continuation/global-infobox-object-source-part-098.json",
+            "capture_sha256": "95a2f647f1100e8da266f033684280c340163327addbd24528e4f5463664b15d",
+            "page_ordinal": 49,
+            "batch": 98,
+            "own_object_box_indices": [
+              0
+            ],
+            "selection": "CURRENT_REVISION_AT_OR_BEFORE_CUTOFF",
+            "box_index": 0,
+            "occurrence_index": 0,
+            "raw_itemid": "23531, 23532",
+            "strict_numeric_itemid": true,
+            "balanced": true,
+            "inside_comment": false,
+            "duplicate_itemid_parameters": false
+          },
+          "raw_template_sha256": "073227b95d5ec092559965717329d13d21e9e23c0fa9ea4532bf8a391764d697",
+          "own_notes": "Increases your [[Mana]] and [[Hitpoints]] [[Regeneration]] for 30 minutes by the rate of 1 [[HP]] and 4 [[Mana|MP]] per 6 seconds, which means it recovers 1200 [[Mana|MP]] and 300 [[HP]] in total. It can be sold for the full price to the NPC even if used, as long as it does not disappear when used completely.&nbsp;",
+          "exact_tuple_quote": "by the rate of 1 [[HP]] and 4 [[Mana|MP]] per 6 seconds",
+          "quote_char_offset": 74,
+          "tuple": {
+            "health_gain_points": 1,
+            "mana_gain_points": 4,
+            "ticks_milliseconds": 6000
+          },
+          "seconds_to_milliseconds": "EXACT6s=>6000ms source unit conversion only; no active clock interpretation"
+        }
+      ],
+      "all_own_xml_checks": [
+        {
+          "source": "binding-selected-Crystal",
+          "source_record_projection_sha256": "5cb4f4b1f11caa53db3b294cf32e3ece545947fbb5f9126f5838582532cfde95",
+          "own_regeneration_attributes": {
+            "healthgain": [],
+            "healthticks": [],
+            "managain": [],
+            "manaticks": []
+          },
+          "own_numeric_tuple": null,
+          "transformequipto_own_literal": [
+            "23532"
+          ],
+          "all_four_own_values_present": false,
+          "target_transfer_allowed": false
+        },
+        {
+          "source": "Canary-hypothesis",
+          "source_record_projection_sha256": "5cb4f4b1f11caa53db3b294cf32e3ece545947fbb5f9126f5838582532cfde95",
+          "own_regeneration_attributes": {
+            "healthgain": [],
+            "healthticks": [],
+            "managain": [],
+            "manaticks": []
+          },
+          "own_numeric_tuple": null,
+          "transformequipto_own_literal": [
+            "23532"
+          ],
+          "all_four_own_values_present": false,
+          "target_transfer_allowed": false
+        }
+      ],
+      "same_own_Crystal_Canary_tuple": false,
+      "native_carriers_available": {
+        "HEALTH_GAIN": "SIGNED_POINTS/i32",
+        "HEALTH_TICKS": "MILLISECONDS/u64",
+        "MANA_GAIN": "SIGNED_POINTS/i32",
+        "MANA_TICKS": "MILLISECONDS/u64"
+      },
+      "native_context_policy": "UNKNOWN target_domain/evaluation_phase/priority; no ruleset, food clock, rest mode or activation source fabricated",
+      "source_guard_holds": [
+        "OWN_BOUND_XML_TUPLE_ABSENT_EQUIP_TARGET_TRANSFER_PROHIBITED",
+        "SHARED_OWN_ID_PHASE_UNQUALIFIED"
+      ],
+      "disjoint_primary_reason": "OWN_BOUND_XML_TUPLE_ABSENT_EQUIP_TARGET_TRANSFER_PROHIBITED",
+      "classification": "SOURCE_ONLY_TYPED_TUPLE_LEAD_HELD_NOT_NATIVE_ELIGIBLE",
+      "remaining_present_group": {
+        "faster regeneration": "Cannot drop this observed effect while retaining other numeric modifiers.",
+        "attrib": [
+          {
+            "attrib": [
+              "magic level +2, faster Regeneration"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "item_id": 23532,
+      "item_key": "oteryn:item.tibia.i23532",
+      "identity_and_current_guards": {
+        "item_id": 23532,
+        "item_key": "oteryn:item.tibia.i23532",
+        "native_identity": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i23532",
+          "revision": "definition-r1"
+        },
+        "binding": {
+          "disposition": "EXACT",
+          "external_id": "23532",
+          "identity_namespace": "ots/item_server_id",
+          "source_key": "oteryn:source.crystalserver",
+          "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+          "target": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i23532",
+            "revision": "definition-r1"
+          }
+        },
+        "official_name": "ring of green plasma",
+        "official_raw_object_sha256": "4e573a36519645419a22d3f8956627423ef0086a4358577a49a551f36d6bc306",
+        "official_identity_projection_sha256": "b28ddb4ed9e8ed4b5cf44bc65c196b7ce6d766088d6f3720fc161efa4978990e",
+        "official_flags": {
+          "flags.take": true,
+          "flags.clothes": true,
+          "clothes.slot": 9,
+          "flags.changedtoexpire": true,
+          "changedtoexpire.former_object_typeid": 23531,
+          "flags.cyclopediaitem": true,
+          "cyclopediaitem.cyclopedia_type": 23531,
+          "flags.expire": true
+        },
+        "native_name": {
+          "state": "KNOWN",
+          "value": "ring of green plasma"
+        },
+        "native_headers": {
+          "kind": "Item",
+          "stack_class": "Unknown",
+          "client_projection": "ClientSafe",
+          "materializable": false
+        },
+        "current_member": [
+          23532,
+          "b28ddb4ed9e8ed4b5cf44bc65c196b7ce6d766088d6f3720fc161efa4978990e",
+          "4e573a36519645419a22d3f8956627423ef0086a4358577a49a551f36d6bc306"
+        ],
+        "bound_old_member": [
+          23532,
+          "b28ddb4ed9e8ed4b5cf44bc65c196b7ce6d766088d6f3720fc161efa4978990e",
+          "711364e437f92d12f2dc46ca98cb35ac2e0855d3ebb9bf382cc9dfe4d7ccc863"
+        ],
+        "bound_old_member_label": "crystal-ff7ede5",
+        "guard_results": {
+          "CURRENT_NATIVE_ITEM_PRESENT": true,
+          "EXPLICIT_EXACT_BINDING_FULL_IDENTITY": true,
+          "CURRENT_OFFICIAL_OBJECT_PRESENT": true,
+          "CURRENT_MEMBER_FULL_RECORD_PROJECTION": true,
+          "BOUND_SOURCE_EPOCH_IDENTITY_CONTINUITY": true,
+          "NO_CURRENT_WORLD_OWNER": true,
+          "NATIVE_NAME_KNOWN_SOURCE_EQUAL": true,
+          "OFFICIAL_TAKE_TRUE_NON_WORLD_FLAGS": true,
+          "ALL_OWN_ID_BOXES_EXACT_SINGLE_ID": false,
+          "OWN_SOURCE_NAMES_EQUAL_OFFICIAL": true,
+          "BOUND_XML_EXACT_RECORD_PRESENT": true
+        },
+        "binding_selected_xml": {
+          "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+          "source_path": "/workspace/audit-continuation/sources/crystal-ff7ede5-items.xml",
+          "records": [
+            {
+              "element_ordinal": 9962,
+              "source_item_attributes": {
+                "id": "23532",
+                "article": "a",
+                "name": "ring of green plasma"
+              },
+              "own_attributes": [
+                {
+                  "key": "showduration",
+                  "value": "1"
+                },
+                {
+                  "key": "showAttributes",
+                  "value": "1"
+                },
+                {
+                  "key": "magiclevelpoints",
+                  "value": "2"
+                },
+                {
+                  "key": "manaticks",
+                  "value": "6000"
+                },
+                {
+                  "key": "managain",
+                  "value": "4"
+                },
+                {
+                  "key": "healthticks",
+                  "value": "6000"
+                },
+                {
+                  "key": "healthgain",
+                  "value": "1"
+                },
+                {
+                  "key": "duration",
+                  "value": "1800"
+                },
+                {
+                  "key": "transformdeequipto",
+                  "value": "23531"
+                },
+                {
+                  "key": "decayTo",
+                  "value": "0"
+                },
+                {
+                  "key": "weight",
+                  "value": "90"
+                },
+                {
+                  "key": "script",
+                  "value": "moveevent"
+                }
+              ],
+              "projection_sha256": "2a4f82187bd25e451ccbdb9be1f57c22bfbe86d32d4024754e028c69808c3473",
+              "projection_serialization": "ET.tostring; derived semantic projection, not literal source XML bytes"
+            }
+          ]
+        },
+        "canary_hypothesis_only": [
+          {
+            "element_ordinal": 9944,
+            "source_item_attributes": {
+              "id": "23532",
+              "article": "a",
+              "name": "ring of green plasma"
+            },
+            "own_attributes": [
+              {
+                "key": "showduration",
+                "value": "1"
+              },
+              {
+                "key": "showAttributes",
+                "value": "1"
+              },
+              {
+                "key": "magiclevelpoints",
+                "value": "2"
+              },
+              {
+                "key": "manaticks",
+                "value": "6000"
+              },
+              {
+                "key": "managain",
+                "value": "4"
+              },
+              {
+                "key": "healthticks",
+                "value": "6000"
+              },
+              {
+                "key": "healthgain",
+                "value": "1"
+              },
+              {
+                "key": "duration",
+                "value": "1800"
+              },
+              {
+                "key": "transformdeequipto",
+                "value": "23531"
+              },
+              {
+                "key": "decayTo",
+                "value": "0"
+              },
+              {
+                "key": "weight",
+                "value": "90"
+              },
+              {
+                "key": "script",
+                "value": "moveevent"
+              }
+            ],
+            "projection_sha256": "2a4f82187bd25e451ccbdb9be1f57c22bfbe86d32d4024754e028c69808c3473",
+            "projection_serialization": "ET.tostring; derived semantic projection, not literal source XML bytes"
+          }
+        ]
+      },
+      "own_raw_modifier_groups": [
+        {
+          "attrib": [
+            "magic level +2, faster Regeneration"
+          ]
+        }
+      ],
+      "own_note_tuple_witnesses": [
+        {
+          "reference": {
+            "page_id": 78128,
+            "title": "Ring of Green Plasma",
+            "revision_id": 1194113,
+            "revision_timestamp": "2026-07-04T12:46:36Z",
+            "content_sha256": "fcb387590bfb6d60e539ae261cc5b5c9553b30eb0392bb1098fc6d700d4312e0",
+            "capture_path": "/workspace/audit-continuation/global-infobox-object-source-part-098.json",
+            "capture_sha256": "95a2f647f1100e8da266f033684280c340163327addbd24528e4f5463664b15d",
+            "page_ordinal": 49,
+            "batch": 98,
+            "own_object_box_indices": [
+              0
+            ],
+            "selection": "CURRENT_REVISION_AT_OR_BEFORE_CUTOFF",
+            "box_index": 0,
+            "occurrence_index": 0,
+            "raw_itemid": "23531, 23532",
+            "strict_numeric_itemid": true,
+            "balanced": true,
+            "inside_comment": false,
+            "duplicate_itemid_parameters": false
+          },
+          "raw_template_sha256": "073227b95d5ec092559965717329d13d21e9e23c0fa9ea4532bf8a391764d697",
+          "own_notes": "Increases your [[Mana]] and [[Hitpoints]] [[Regeneration]] for 30 minutes by the rate of 1 [[HP]] and 4 [[Mana|MP]] per 6 seconds, which means it recovers 1200 [[Mana|MP]] and 300 [[HP]] in total. It can be sold for the full price to the NPC even if used, as long as it does not disappear when used completely.&nbsp;",
+          "exact_tuple_quote": "by the rate of 1 [[HP]] and 4 [[Mana|MP]] per 6 seconds",
+          "quote_char_offset": 74,
+          "tuple": {
+            "health_gain_points": 1,
+            "mana_gain_points": 4,
+            "ticks_milliseconds": 6000
+          },
+          "seconds_to_milliseconds": "EXACT6s=>6000ms source unit conversion only; no active clock interpretation"
+        }
+      ],
+      "all_own_xml_checks": [
+        {
+          "source": "binding-selected-Crystal",
+          "source_record_projection_sha256": "2a4f82187bd25e451ccbdb9be1f57c22bfbe86d32d4024754e028c69808c3473",
+          "own_regeneration_attributes": {
+            "healthgain": [
+              "1"
+            ],
+            "healthticks": [
+              "6000"
+            ],
+            "managain": [
+              "4"
+            ],
+            "manaticks": [
+              "6000"
+            ]
+          },
+          "own_numeric_tuple": {
+            "healthgain": 1,
+            "healthticks": 6000,
+            "managain": 4,
+            "manaticks": 6000
+          },
+          "transformequipto_own_literal": [],
+          "all_four_own_values_present": true,
+          "target_transfer_allowed": false
+        },
+        {
+          "source": "Canary-hypothesis",
+          "source_record_projection_sha256": "2a4f82187bd25e451ccbdb9be1f57c22bfbe86d32d4024754e028c69808c3473",
+          "own_regeneration_attributes": {
+            "healthgain": [
+              "1"
+            ],
+            "healthticks": [
+              "6000"
+            ],
+            "managain": [
+              "4"
+            ],
+            "manaticks": [
+              "6000"
+            ]
+          },
+          "own_numeric_tuple": {
+            "healthgain": 1,
+            "healthticks": 6000,
+            "managain": 4,
+            "manaticks": 6000
+          },
+          "transformequipto_own_literal": [],
+          "all_four_own_values_present": true,
+          "target_transfer_allowed": false
+        }
+      ],
+      "same_own_Crystal_Canary_tuple": true,
+      "native_carriers_available": {
+        "HEALTH_GAIN": "SIGNED_POINTS/i32",
+        "HEALTH_TICKS": "MILLISECONDS/u64",
+        "MANA_GAIN": "SIGNED_POINTS/i32",
+        "MANA_TICKS": "MILLISECONDS/u64"
+      },
+      "native_context_policy": "UNKNOWN target_domain/evaluation_phase/priority; no ruleset, food clock, rest mode or activation source fabricated",
+      "source_guard_holds": [
+        "SHARED_OWN_ID_PHASE_UNQUALIFIED"
+      ],
+      "disjoint_primary_reason": "SHARED_OWN_ID_PHASE_UNQUALIFIED",
+      "classification": "SOURCE_ONLY_TYPED_TUPLE_LEAD_HELD_NOT_NATIVE_ELIGIBLE",
+      "remaining_present_group": {
+        "faster regeneration": "Cannot drop this observed effect while retaining other numeric modifiers.",
+        "attrib": [
+          {
+            "attrib": [
+              "magic level +2, faster Regeneration"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "item_id": 23543,
+      "item_key": "oteryn:item.tibia.i23543",
+      "identity_and_current_guards": {
+        "item_id": 23543,
+        "item_key": "oteryn:item.tibia.i23543",
+        "native_identity": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i23543",
+          "revision": "definition-r1"
+        },
+        "binding": {
+          "disposition": "EXACT",
+          "external_id": "23543",
+          "identity_namespace": "ots/item_server_id",
+          "source_key": "oteryn:source.crystalserver",
+          "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+          "target": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i23543",
+            "revision": "definition-r1"
+          }
+        },
+        "official_name": "collar of green plasma",
+        "official_raw_object_sha256": "317809f1c0760c122e5eaf226ec76584c71c2c4d7e999fa14f53b69e97051d2c",
+        "official_identity_projection_sha256": "4750c17d4256f63259b6acb36706e3c38721eff5f9324fed110a4ef3faccea2b",
+        "official_flags": {
+          "flags.take": true,
+          "flags.clothes": true,
+          "clothes.slot": 2,
+          "flags.market": true,
+          "market.category": 2,
+          "market.trade_as_object_id": 23543,
+          "market.show_as_object_id": 23543,
+          "flags.cyclopediaitem": true,
+          "cyclopediaitem.cyclopedia_type": 23543,
+          "flags.expirestop": true,
+          "npcsaledata.name": [
+            "Fadil"
+          ],
+          "npcsaledata.location": [
+            "Darashia City"
+          ],
+          "npcsaledata.sale_price": [
+            0
+          ],
+          "npcsaledata.buy_price": [
+            6000
+          ]
+        },
+        "native_name": {
+          "state": "KNOWN",
+          "value": "collar of green plasma"
+        },
+        "native_headers": {
+          "kind": "Item",
+          "stack_class": "Unknown",
+          "client_projection": "ClientSafe",
+          "materializable": false
+        },
+        "current_member": [
+          23543,
+          "4750c17d4256f63259b6acb36706e3c38721eff5f9324fed110a4ef3faccea2b",
+          "317809f1c0760c122e5eaf226ec76584c71c2c4d7e999fa14f53b69e97051d2c"
+        ],
+        "bound_old_member": [
+          23543,
+          "4750c17d4256f63259b6acb36706e3c38721eff5f9324fed110a4ef3faccea2b",
+          "3cac4a20548ee58d877f47ff2b5266bcd0966d1f4ec24b4ef0fa6abc90742067"
+        ],
+        "bound_old_member_label": "crystal-ff7ede5",
+        "guard_results": {
+          "CURRENT_NATIVE_ITEM_PRESENT": true,
+          "EXPLICIT_EXACT_BINDING_FULL_IDENTITY": true,
+          "CURRENT_OFFICIAL_OBJECT_PRESENT": true,
+          "CURRENT_MEMBER_FULL_RECORD_PROJECTION": true,
+          "BOUND_SOURCE_EPOCH_IDENTITY_CONTINUITY": true,
+          "NO_CURRENT_WORLD_OWNER": true,
+          "NATIVE_NAME_KNOWN_SOURCE_EQUAL": true,
+          "OFFICIAL_TAKE_TRUE_NON_WORLD_FLAGS": true,
+          "ALL_OWN_ID_BOXES_EXACT_SINGLE_ID": true,
+          "OWN_SOURCE_NAMES_EQUAL_OFFICIAL": true,
+          "BOUND_XML_EXACT_RECORD_PRESENT": true
+        },
+        "binding_selected_xml": {
+          "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+          "source_path": "/workspace/audit-continuation/sources/crystal-ff7ede5-items.xml",
+          "records": [
+            {
+              "element_ordinal": 9972,
+              "source_item_attributes": {
+                "id": "23543",
+                "name": "collar of green plasma"
+              },
+              "own_attributes": [
+                {
+                  "key": "stopduration",
+                  "value": "1"
+                },
+                {
+                  "key": "showduration",
+                  "value": "1"
+                },
+                {
+                  "key": "transformequipto",
+                  "value": "23527"
+                },
+                {
+                  "key": "weight",
+                  "value": "500"
+                },
+                {
+                  "key": "script",
+                  "value": "moveevent"
+                }
+              ],
+              "projection_sha256": "8c46c438414f945c1533ed6ac8dea45d8134f2fb4f0b9473594b2b78349b78de",
+              "projection_serialization": "ET.tostring; derived semantic projection, not literal source XML bytes"
+            }
+          ]
+        },
+        "canary_hypothesis_only": [
+          {
+            "element_ordinal": 9954,
+            "source_item_attributes": {
+              "id": "23543",
+              "name": "collar of green plasma"
+            },
+            "own_attributes": [
+              {
+                "key": "stopduration",
+                "value": "1"
+              },
+              {
+                "key": "showduration",
+                "value": "1"
+              },
+              {
+                "key": "transformequipto",
+                "value": "23527"
+              },
+              {
+                "key": "weight",
+                "value": "500"
+              },
+              {
+                "key": "script",
+                "value": "moveevent"
+              }
+            ],
+            "projection_sha256": "8c46c438414f945c1533ed6ac8dea45d8134f2fb4f0b9473594b2b78349b78de",
+            "projection_serialization": "ET.tostring; derived semantic projection, not literal source XML bytes"
+          }
+        ]
+      },
+      "own_raw_modifier_groups": [
+        {
+          "attrib": [
+            "magic level +3, faster Regeneration"
+          ]
+        }
+      ],
+      "own_note_tuple_witnesses": [
+        {
+          "reference": {
+            "page_id": 78116,
+            "title": "Collar of Green Plasma",
+            "revision_id": 1194220,
+            "revision_timestamp": "2026-07-04T18:35:28Z",
+            "content_sha256": "5f92288ef45e440ea7cab04a5e06aba3674b32ec91b8e2655b5b767a52abb7e2",
+            "capture_path": "/workspace/audit-continuation/global-infobox-object-source-part-098.json",
+            "capture_sha256": "95a2f647f1100e8da266f033684280c340163327addbd24528e4f5463664b15d",
+            "page_ordinal": 43,
+            "batch": 98,
+            "own_object_box_indices": [
+              0
+            ],
+            "selection": "CURRENT_REVISION_AT_OR_BEFORE_CUTOFF",
+            "box_index": 0,
+            "occurrence_index": 0,
+            "raw_itemid": "23543",
+            "strict_numeric_itemid": true,
+            "balanced": true,
+            "inside_comment": false,
+            "duplicate_itemid_parameters": false
+          },
+          "raw_template_sha256": "5d5a3f1c29526fcf46f76991805c3ae034572e51fbb30181fa560f6925d5a7ed",
+          "own_notes": "Increases your [[Mana]] and [[Hitpoints]] [[Regeneration]] for 30 minutes by the rate of 2 [[HP]] and 8 [[Mana|MP]] per 6 seconds, which means it recover 2400 [[Mana|MP]] and 600 [[HP]] in total. Similar to rings, and different from most amulets, this collar can  be equipped/unequipped in smart mode using an action button of the action bars. It can be sold for the full price to the NPC even if used, as long as it does not disappear when used completely.&nbsp;",
+          "exact_tuple_quote": "by the rate of 2 [[HP]] and 8 [[Mana|MP]] per 6 seconds",
+          "quote_char_offset": 74,
+          "tuple": {
+            "health_gain_points": 2,
+            "mana_gain_points": 8,
+            "ticks_milliseconds": 6000
+          },
+          "seconds_to_milliseconds": "EXACT6s=>6000ms source unit conversion only; no active clock interpretation"
+        }
+      ],
+      "all_own_xml_checks": [
+        {
+          "source": "binding-selected-Crystal",
+          "source_record_projection_sha256": "8c46c438414f945c1533ed6ac8dea45d8134f2fb4f0b9473594b2b78349b78de",
+          "own_regeneration_attributes": {
+            "healthgain": [],
+            "healthticks": [],
+            "managain": [],
+            "manaticks": []
+          },
+          "own_numeric_tuple": null,
+          "transformequipto_own_literal": [
+            "23527"
+          ],
+          "all_four_own_values_present": false,
+          "target_transfer_allowed": false
+        },
+        {
+          "source": "Canary-hypothesis",
+          "source_record_projection_sha256": "8c46c438414f945c1533ed6ac8dea45d8134f2fb4f0b9473594b2b78349b78de",
+          "own_regeneration_attributes": {
+            "healthgain": [],
+            "healthticks": [],
+            "managain": [],
+            "manaticks": []
+          },
+          "own_numeric_tuple": null,
+          "transformequipto_own_literal": [
+            "23527"
+          ],
+          "all_four_own_values_present": false,
+          "target_transfer_allowed": false
+        }
+      ],
+      "same_own_Crystal_Canary_tuple": false,
+      "native_carriers_available": {
+        "HEALTH_GAIN": "SIGNED_POINTS/i32",
+        "HEALTH_TICKS": "MILLISECONDS/u64",
+        "MANA_GAIN": "SIGNED_POINTS/i32",
+        "MANA_TICKS": "MILLISECONDS/u64"
+      },
+      "native_context_policy": "UNKNOWN target_domain/evaluation_phase/priority; no ruleset, food clock, rest mode or activation source fabricated",
+      "source_guard_holds": [
+        "OWN_BOUND_XML_TUPLE_ABSENT_EQUIP_TARGET_TRANSFER_PROHIBITED"
+      ],
+      "disjoint_primary_reason": "OWN_BOUND_XML_TUPLE_ABSENT_EQUIP_TARGET_TRANSFER_PROHIBITED",
+      "classification": "SOURCE_ONLY_TYPED_TUPLE_LEAD_HELD_NOT_NATIVE_ELIGIBLE",
+      "remaining_present_group": {
+        "faster regeneration": "Cannot drop this observed effect while retaining other numeric modifiers.",
+        "attrib": [
+          {
+            "attrib": [
+              "magic level +3, faster Regeneration"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "item_id": 45643,
+      "item_key": "oteryn:item.tibia.i45643",
+      "identity_and_current_guards": {
+        "item_id": 45643,
+        "item_key": "oteryn:item.tibia.i45643",
+        "native_identity": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i45643",
+          "revision": "definition-r1"
+        },
+        "binding": {
+          "disposition": "EXACT",
+          "external_id": "45643",
+          "identity_namespace": "ots/item_server_id",
+          "source_key": "oteryn:source.crystalserver",
+          "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+          "target": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i45643",
+            "revision": "definition-r1"
+          }
+        },
+        "official_name": "biscuit barrier",
+        "official_raw_object_sha256": "02d8aa78c01737a65a14bb05c5936d1e7cbc040f4a21ae0a3cb42f7c04a69514",
+        "official_identity_projection_sha256": "903f9a5e513048214304d623816ecaa365faaef07bfb82b327ddc3e1676c4864",
+        "official_flags": {
+          "flags.take": true,
+          "flags.light": true,
+          "light.brightness": 3,
+          "light.color": 107,
+          "flags.clothes": true,
+          "clothes.slot": 5,
+          "flags.market": true,
+          "market.category": 13,
+          "market.trade_as_object_id": 45643,
+          "market.show_as_object_id": 45643,
+          "flags.cyclopediaitem": true,
+          "cyclopediaitem.cyclopedia_type": 45643,
+          "npcsaledata.name": [
+            "Coco"
+          ],
+          "npcsaledata.location": [
+            "Candia"
+          ],
+          "npcsaledata.sale_price": [
+            8000
+          ],
+          "npcsaledata.buy_price": [
+            0
+          ],
+          "npcsaledata.currency_object_type_id": [
+            48250
+          ]
+        },
+        "native_name": {
+          "state": "KNOWN",
+          "value": "biscuit barrier"
+        },
+        "native_headers": {
+          "kind": "Item",
+          "stack_class": "Unknown",
+          "client_projection": "ClientSafe",
+          "materializable": false
+        },
+        "current_member": [
+          45643,
+          "903f9a5e513048214304d623816ecaa365faaef07bfb82b327ddc3e1676c4864",
+          "02d8aa78c01737a65a14bb05c5936d1e7cbc040f4a21ae0a3cb42f7c04a69514"
+        ],
+        "bound_old_member": [
+          45643,
+          "903f9a5e513048214304d623816ecaa365faaef07bfb82b327ddc3e1676c4864",
+          "c871b126a81ad57784771d0c26ad77440aa5e1fce3af3cf63f9a2ff996ba74d4"
+        ],
+        "bound_old_member_label": "crystal-ff7ede5",
+        "guard_results": {
+          "CURRENT_NATIVE_ITEM_PRESENT": true,
+          "EXPLICIT_EXACT_BINDING_FULL_IDENTITY": true,
+          "CURRENT_OFFICIAL_OBJECT_PRESENT": true,
+          "CURRENT_MEMBER_FULL_RECORD_PROJECTION": true,
+          "BOUND_SOURCE_EPOCH_IDENTITY_CONTINUITY": true,
+          "NO_CURRENT_WORLD_OWNER": true,
+          "NATIVE_NAME_KNOWN_SOURCE_EQUAL": true,
+          "OFFICIAL_TAKE_TRUE_NON_WORLD_FLAGS": true,
+          "ALL_OWN_ID_BOXES_EXACT_SINGLE_ID": true,
+          "OWN_SOURCE_NAMES_EQUAL_OFFICIAL": true,
+          "BOUND_XML_EXACT_RECORD_PRESENT": true
+        },
+        "binding_selected_xml": {
+          "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+          "source_path": "/workspace/audit-continuation/sources/crystal-ff7ede5-items.xml",
+          "records": [
+            {
+              "element_ordinal": 16022,
+              "source_item_attributes": {
+                "id": "45643",
+                "article": "a",
+                "name": "biscuit barrier"
+              },
+              "own_attributes": [
+                {
+                  "key": "primarytype",
+                  "value": "shields"
+                },
+                {
+                  "key": "weaponType",
+                  "value": "shield"
+                },
+                {
+                  "key": "description",
+                  "value": "This tasty-looking shield protects from damage and boosts your regeneration."
+                },
+                {
+                  "key": "absorbpercentphysical",
+                  "value": "3"
+                },
+                {
+                  "key": "absorbpercentfire",
+                  "value": "5"
+                },
+                {
+                  "key": "lifeleechamount",
+                  "value": "200"
+                },
+                {
+                  "key": "manaticks",
+                  "value": "3000"
+                },
+                {
+                  "key": "managain",
+                  "value": "4"
+                },
+                {
+                  "key": "healthticks",
+                  "value": "3000"
+                },
+                {
+                  "key": "healthgain",
+                  "value": "1"
+                },
+                {
+                  "key": "skillshield",
+                  "value": "2"
+                },
+                {
+                  "key": "defense",
+                  "value": "36"
+                },
+                {
+                  "key": "weight",
+                  "value": "5200"
+                },
+                {
+                  "key": "imbuementslot",
+                  "value": "1"
+                },
+                {
+                  "key": "augments",
+                  "value": "1"
+                },
+                {
+                  "key": "script",
+                  "value": "moveevent"
+                }
+              ],
+              "projection_sha256": "f3a73d0b18c59ee66aec9abb740f8936d2b152ebafb066d19e84a22fb6f0f2b3",
+              "projection_serialization": "ET.tostring; derived semantic projection, not literal source XML bytes"
+            }
+          ]
+        },
+        "canary_hypothesis_only": [
+          {
+            "element_ordinal": 16011,
+            "source_item_attributes": {
+              "id": "45643",
+              "article": "a",
+              "name": "biscuit barrier"
+            },
+            "own_attributes": [
+              {
+                "key": "primarytype",
+                "value": "shields"
+              },
+              {
+                "key": "weaponType",
+                "value": "shield"
+              },
+              {
+                "key": "description",
+                "value": "This tasty-looking shield protects from damage and boosts your regeneration."
+              },
+              {
+                "key": "weaponType",
+                "value": "shield"
+              },
+              {
+                "key": "absorbpercentphysical",
+                "value": "3"
+              },
+              {
+                "key": "absorbpercentfire",
+                "value": "5"
+              },
+              {
+                "key": "skillshield",
+                "value": "2"
+              },
+              {
+                "key": "manaticks",
+                "value": "5000"
+              },
+              {
+                "key": "managain",
+                "value": "16"
+              },
+              {
+                "key": "healthticks",
+                "value": "5000"
+              },
+              {
+                "key": "healthgain",
+                "value": "4"
+              },
+              {
+                "key": "lifeleechamount",
+                "value": "200"
+              },
+              {
+                "key": "defense",
+                "value": "36"
+              },
+              {
+                "key": "weight",
+                "value": "5200"
+              },
+              {
+                "key": "imbuementslot",
+                "value": "1"
+              },
+              {
+                "key": "augments",
+                "value": "1"
+              },
+              {
+                "key": "script",
+                "value": "moveevent"
+              }
+            ],
+            "projection_sha256": "7e49349e0c1b9026805a658c45eddced6ec98393d87f2105adb5faf9bc3e0756",
+            "projection_serialization": "ET.tostring; derived semantic projection, not literal source XML bytes"
+          }
+        ]
+      },
+      "own_raw_modifier_groups": [
+        {
+          "attrib": [
+            "shielding +2, faster regeneration, life leech +2%"
+          ]
+        }
+      ],
+      "own_note_tuple_witnesses": [
+        {
+          "reference": {
+            "page_id": 105213,
+            "title": "Biscuit Barrier",
+            "revision_id": 1190688,
+            "revision_timestamp": "2026-06-20T16:13:58Z",
+            "content_sha256": "c3708384a9f6570a1ad9ed405f519af4ee6a50b8d68afb3aab664f109c3be7dc",
+            "capture_path": "/workspace/audit-continuation/global-infobox-object-source-part-168.json",
+            "capture_sha256": "86742f1869a56d14c3b4a6d41024fdc31a7bc550ca7037ebf135dafc1f1f215f",
+            "page_ordinal": 11,
+            "batch": 168,
+            "own_object_box_indices": [
+              0
+            ],
+            "selection": "CURRENT_REVISION_AT_OR_BEFORE_CUTOFF",
+            "box_index": 0,
+            "occurrence_index": 0,
+            "raw_itemid": "45643",
+            "strict_numeric_itemid": true,
+            "balanced": true,
+            "inside_comment": false,
+            "duplicate_itemid_parameters": false
+          },
+          "raw_template_sha256": "cb858c5b349f4199353e5919cb3471a929adacf3ecf1dab7217b1ff57f7c3540",
+          "own_notes": "While equipped, it speeds up your [[Regeneration]] indefinitely. \n\nThe Biscuit Barrier restores 16 [[Mana]] every 6 seconds. Players who spend time within [[Resting Area]]s can make use of it for [[Magic Level]] training purposes.\n\nThis regeneration is also doubled if the appropriate [[Daily Reward System]] streak is maintained, stacking with [[Soft Boots]], [[Life Ring]], and  [[Ring of Healing]].",
+          "exact_tuple_quote": "restores 16 [[Mana]] every 6 seconds",
+          "quote_char_offset": 87,
+          "tuple": {
+            "health_gain_points": null,
+            "mana_gain_points": 16,
+            "ticks_milliseconds": 6000
+          },
+          "seconds_to_milliseconds": "EXACT6s=>6000ms source unit conversion only; no active clock interpretation"
+        }
+      ],
+      "all_own_xml_checks": [
+        {
+          "source": "binding-selected-Crystal",
+          "source_record_projection_sha256": "f3a73d0b18c59ee66aec9abb740f8936d2b152ebafb066d19e84a22fb6f0f2b3",
+          "own_regeneration_attributes": {
+            "healthgain": [
+              "1"
+            ],
+            "healthticks": [
+              "3000"
+            ],
+            "managain": [
+              "4"
+            ],
+            "manaticks": [
+              "3000"
+            ]
+          },
+          "own_numeric_tuple": {
+            "healthgain": 1,
+            "healthticks": 3000,
+            "managain": 4,
+            "manaticks": 3000
+          },
+          "transformequipto_own_literal": [],
+          "all_four_own_values_present": true,
+          "target_transfer_allowed": false
+        },
+        {
+          "source": "Canary-hypothesis",
+          "source_record_projection_sha256": "7e49349e0c1b9026805a658c45eddced6ec98393d87f2105adb5faf9bc3e0756",
+          "own_regeneration_attributes": {
+            "healthgain": [
+              "4"
+            ],
+            "healthticks": [
+              "5000"
+            ],
+            "managain": [
+              "16"
+            ],
+            "manaticks": [
+              "5000"
+            ]
+          },
+          "own_numeric_tuple": {
+            "healthgain": 4,
+            "healthticks": 5000,
+            "managain": 16,
+            "manaticks": 5000
+          },
+          "transformequipto_own_literal": [],
+          "all_four_own_values_present": true,
+          "target_transfer_allowed": false
+        }
+      ],
+      "same_own_Crystal_Canary_tuple": false,
+      "native_carriers_available": {
+        "HEALTH_GAIN": "SIGNED_POINTS/i32",
+        "HEALTH_TICKS": "MILLISECONDS/u64",
+        "MANA_GAIN": "SIGNED_POINTS/i32",
+        "MANA_TICKS": "MILLISECONDS/u64"
+      },
+      "native_context_policy": "UNKNOWN target_domain/evaluation_phase/priority; no ruleset, food clock, rest mode or activation source fabricated",
+      "source_guard_holds": [
+        "WIKI_XML_MANA_RATE_DISAGREEMENT_AND_PUBLIC_HEALTH_AMOUNT_ABSENT",
+        "OWN_CRYSTAL_CANARY_REGENERATION_DISAGREEMENT"
+      ],
+      "disjoint_primary_reason": "WIKI_XML_MANA_RATE_DISAGREEMENT_AND_PUBLIC_HEALTH_AMOUNT_ABSENT",
+      "classification": "SOURCE_ONLY_TYPED_TUPLE_LEAD_HELD_NOT_NATIVE_ELIGIBLE",
+      "remaining_present_group": {
+        "faster regeneration": "Cannot drop this observed effect while retaining other numeric modifiers.",
+        "attrib": [
+          {
+            "attrib": [
+              "shielding +2, faster regeneration, life leech +2%"
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

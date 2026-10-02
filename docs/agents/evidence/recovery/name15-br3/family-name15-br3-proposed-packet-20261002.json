@@ -1,0 +1,300 @@
+{
+  "applied": 0,
+  "auxiliary_BR3": {
+    "count": 3,
+    "records": [
+      {
+        "BR_page_revision": [
+          66272,
+          432005
+        ],
+        "Fandom_page_revision": [
+          [
+            109555,
+            1149615
+          ]
+        ],
+        "classification": "DERIVED",
+        "family_profile": "quest_item",
+        "scope": "NAVIGATION_ONLY",
+        "source_item_id": 52745,
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i52745",
+          "revision": "definition-r1"
+        }
+      },
+      {
+        "BR_page_revision": [
+          66276,
+          431353
+        ],
+        "Fandom_page_revision": [
+          [
+            109571,
+            1149612
+          ]
+        ],
+        "classification": "DERIVED",
+        "family_profile": "quest_item",
+        "scope": "NAVIGATION_ONLY",
+        "source_item_id": 52785,
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i52785",
+          "revision": "definition-r1"
+        }
+      },
+      {
+        "BR_page_revision": [
+          66274,
+          433335
+        ],
+        "Fandom_page_revision": [
+          [
+            109575,
+            1163034
+          ]
+        ],
+        "classification": "DERIVED",
+        "family_profile": "quest_item",
+        "scope": "NAVIGATION_ONLY",
+        "source_item_id": 52789,
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i52789",
+          "revision": "definition-r1"
+        }
+      }
+    ]
+  },
+  "baseline": "b0f91e2883007861f5556c44cce13701bb447283",
+  "family15_followup": {
+    "count": 15,
+    "profiles": {
+      "weapon_magic": 6,
+      "weapon_melee": 9
+    },
+    "status": "WAIT_CORRECTION_THEN_REAL_ACCEPTED_JOIN_REPLAY"
+  },
+  "name15": {
+    "count": 15,
+    "promotions": [
+      {
+        "field_path": "presentation.name",
+        "previous_imported_name": "weapon of mayhem",
+        "source_item_id": 23577,
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i23577",
+          "revision": "definition-r1"
+        },
+        "typed_value": {
+          "kind": "TEXT",
+          "value": "blade of mayhem"
+        }
+      },
+      {
+        "field_path": "presentation.name",
+        "previous_imported_name": "weapon of mayhem",
+        "source_item_id": 23583,
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i23583",
+          "revision": "definition-r1"
+        },
+        "typed_value": {
+          "kind": "TEXT",
+          "value": "axe of mayhem"
+        }
+      },
+      {
+        "field_path": "presentation.name",
+        "previous_imported_name": "weapon of mayhem",
+        "source_item_id": 23589,
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i23589",
+          "revision": "definition-r1"
+        },
+        "typed_value": {
+          "kind": "TEXT",
+          "value": "mace of mayhem"
+        }
+      },
+      {
+        "field_path": "presentation.name",
+        "previous_imported_name": "weapon of mayhem",
+        "source_item_id": 23596,
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i23596",
+          "revision": "definition-r1"
+        },
+        "typed_value": {
+          "kind": "TEXT",
+          "value": "blade of remedy"
+        }
+      },
+      {
+        "field_path": "presentation.name",
+        "previous_imported_name": "weapon of mayhem",
+        "source_item_id": 23605,
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i23605",
+          "revision": "definition-r1"
+        },
+        "typed_value": {
+          "kind": "TEXT",
+          "value": "blade of carving"
+        }
+      },
+      {
+        "field_path": "presentation.name",
+        "previous_imported_name": "weapon of mayhem",
+        "source_item_id": 23609,
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i23609",
+          "revision": "definition-r1"
+        },
+        "typed_value": {
+          "kind": "TEXT",
+          "value": "blade of carving"
+        }
+      },
+      {
+        "field_path": "presentation.name",
+        "previous_imported_name": "weapon of mayhem",
+        "source_item_id": 23619,
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i23619",
+          "revision": "definition-r1"
+        },
+        "typed_value": {
+          "kind": "TEXT",
+          "value": "mace of remedy"
+        }
+      },
+      {
+        "field_path": "presentation.name",
+        "previous_imported_name": "weapon of mayhem",
+        "source_item_id": 23624,
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i23624",
+          "revision": "definition-r1"
+        },
+        "typed_value": {
+          "kind": "TEXT",
+          "value": "axe of carving"
+        }
+      },
+      {
+        "field_path": "presentation.name",
+        "previous_imported_name": "weapon of mayhem",
+        "source_item_id": 23638,
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i23638",
+          "revision": "definition-r1"
+        },
+        "typed_value": {
+          "kind": "TEXT",
+          "value": "wand of remedy"
+        }
+      },
+      {
+        "field_path": "presentation.name",
+        "previous_imported_name": "weapon of mayhem",
+        "source_item_id": 23641,
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i23641",
+          "revision": "definition-r1"
+        },
+        "typed_value": {
+          "kind": "TEXT",
+          "value": "wand of remedy"
+        }
+      },
+      {
+        "field_path": "presentation.name",
+        "previous_imported_name": "weapon of mayhem",
+        "source_item_id": 23644,
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i23644",
+          "revision": "definition-r1"
+        },
+        "typed_value": {
+          "kind": "TEXT",
+          "value": "mace of carving"
+        }
+      },
+      {
+        "field_path": "presentation.name",
+        "previous_imported_name": "weapon of mayhem",
+        "source_item_id": 23656,
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i23656",
+          "revision": "definition-r1"
+        },
+        "typed_value": {
+          "kind": "TEXT",
+          "value": "wand of carving"
+        }
+      },
+      {
+        "field_path": "presentation.name",
+        "previous_imported_name": "weapon of mayhem",
+        "source_item_id": 23659,
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i23659",
+          "revision": "definition-r1"
+        },
+        "typed_value": {
+          "kind": "TEXT",
+          "value": "rod of carving"
+        }
+      },
+      {
+        "field_path": "presentation.name",
+        "previous_imported_name": "weapon of mayhem",
+        "source_item_id": 23662,
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i23662",
+          "revision": "definition-r1"
+        },
+        "typed_value": {
+          "kind": "TEXT",
+          "value": "wand of mayhem"
+        }
+      },
+      {
+        "field_path": "presentation.name",
+        "previous_imported_name": "weapon of mayhem",
+        "source_item_id": 23665,
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i23665",
+          "revision": "definition-r1"
+        },
+        "typed_value": {
+          "kind": "TEXT",
+          "value": "rod of mayhem"
+        }
+      }
+    ]
+  },
+  "policy_acceptance_required": true,
+  "runtime_or_native_classification_admission": false,
+  "schema": "OTERYN_UNACCEPTED_CLOSED_SOURCE_PACKET_PROPOSAL/v1",
+  "source_qualification_sha256": "f0fe004299ab3fea1e7bb5deeb74c749836e1dc80a0120e3beadee3c187a543d",
+  "status": "PROPOSAL_ONLY_NOT_EXECUTABLE_PACKET"
+}

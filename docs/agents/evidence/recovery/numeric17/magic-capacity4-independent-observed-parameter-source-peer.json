@@ -1,0 +1,710 @@
+{
+  "schema": "OTERYN_MAGIC_CAPACITY4_INDEPENDENT_OBSERVED_PARAMETER_SCOPE_PEER/v1",
+  "status": "SOURCE_MAGIC_CAPACITY4_PARAMETER_OBSERVATION_PROPOSAL_PEER_PASS",
+  "findings": [],
+  "native_applied": 0,
+  "baseline": "1b026969a8b2236737bff537b3eddb3c909781b2",
+  "scope_decision": "Sufficient source meaning exists for these exact4 wholevectors16atoms as intrinsic observed parameters only: direct ownWiki named MagicShieldCapacity +N andP% literal, exact own-bound named XMLFlat/Percent values, and pinned Crystal parser/look emitter demonstrate correspondence toexisting Native37 explicitFlat/SignedPoints andPercent/RationalPercent fields. No formula, combination/order, activation, target, ruleset orruntime clock is selected.",
+  "frozen_source17_proposal": {
+    "path": "/workspace/audit-continuation/modifier64-existing-carrier-numeric-source-proposal-20261002.json",
+    "sha256": "b62b0668bf37982cf4138bdb3a3b051e66352883bfcb4303203e4b04db4985cf",
+    "bytes": 95829
+  },
+  "historical_fullsource_report": {
+    "path": "/workspace/audit-continuation/equipment19-modifier103-duration54-source-requalification-20261002.json",
+    "sha256": "815f293f42bc81885db8b45c1cfb8dbe8585c94ca225d6a49349731ce9b6dc19",
+    "bytes": 1807489
+  },
+  "truthful_transport_receipt": {
+    "path": "/workspace/audit-continuation/numeric-modifier13-source-transport-and-setter-superseding-receipt-v2.json",
+    "sha256": "b07cb0c66e97be17c93b0762116608d17407e80dd162ab1da7cab938ad1380f3",
+    "bytes": 3526
+  },
+  "actual_global_manifest": {
+    "path": "/workspace/audit-continuation/global-infobox-object-source-manifest.json",
+    "sha256": "014f140c789e554f11cee61012932d214f7bd46dd9bc6155bca08f42f3e93629",
+    "bytes": 5997502
+  },
+  "independent_replay_script": {
+    "path": "/workspace/audit-continuation/review-magic-capacity4-observed-parameter-source-peer.py",
+    "sha256": "f2015151f7a74702bcc929b4e03eb06f779cb94425b568bc7b4a441d93a1b353",
+    "bytes": 12725
+  },
+  "cpp_direct_parameter_meaning": [
+    {
+      "path": "/workspace/audit-continuation/weapon-presentation-source-audit/ff7ede59/src/items/functions/item/item_parse.cpp",
+      "sha256": "08687bc0e096ebfcce55daa6a523b78bca0191f25ce4134c133927d4a10dfce7",
+      "bytes": 59234,
+      "capture": {
+        "commit": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "path": "src/items/functions/item/item_parse.cpp",
+        "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/ff7ede593c69d4c658b382c97443e8155926924a/src/items/functions/item/item_parse.cpp",
+        "bytes": 59234,
+        "sha256": "08687bc0e096ebfcce55daa6a523b78bca0191f25ce4134c133927d4a10dfce7",
+        "method": "anonymous_normal_public_HTTP"
+      },
+      "lines": [
+        934,
+        940
+      ],
+      "meaning": "Named XML percent andflat values castint32_t toseparate abilities.magicShieldCapacityPercent/Flat.",
+      "role": "OTS_IMPLEMENTATION_CORROBORATION_NOT_SOLE_VALUE_AUTHORITY"
+    },
+    {
+      "path": "/workspace/audit-continuation/weapon-presentation-source-audit/ff7ede59/src/items/item.cpp",
+      "sha256": "3484af408e0b25a7204a03725318b6e0c55811cef4922bbfd54af33f4b6661f5",
+      "bytes": 96623,
+      "capture": {
+        "commit": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "path": "src/items/item.cpp",
+        "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/ff7ede593c69d4c658b382c97443e8155926924a/src/items/item.cpp",
+        "bytes": 96623,
+        "sha256": "3484af408e0b25a7204a03725318b6e0c55811cef4922bbfd54af33f4b6661f5",
+        "method": "anonymous_normal_public_HTTP"
+      },
+      "lines": [
+        2360,
+        2368
+      ],
+      "meaning": "itemDescription emits Magic Shield Capacity then showposFlat then and thenPercent then %.",
+      "role": "OTS_IMPLEMENTATION_CORROBORATION_NOT_SOLE_VALUE_AUTHORITY"
+    }
+  ],
+  "Wiki_Look_parameter_route": {
+    "capture": {
+      "path": "/workspace/audit-continuation/description1515-look-browser-cdp-source.json",
+      "sha256": "19e76a1bb1bbfb95fbe8b56bbad59d399ff730fd13bb9f3b8982d1ac2ecafdeb",
+      "bytes": 6893
+    },
+    "page_id": 67603,
+    "revision_id": 1131388,
+    "lines": [
+      2,
+      16,
+      17
+    ],
+    "meaning": "Own noinclude identifies in-game look renderer; literal attrib/attributes forwarded directly in stats InlineList, no magiccapacity formula conversion. Public MagicShield spellpage only genericmechanic, not gearparameter authority."
+  },
+  "Native_existing_carrier": {
+    "file": "/workspace/pr1437-resistances/apps/game-server/src/content/reference_playable.rs",
+    "sha256": "e50682b67ca36431f9a6b9eb018a8cb17a08cf7e4fdc66c33a5831dc83f4e3ad",
+    "kind_ids": {
+      "MagicShieldCapacityFlat": 20,
+      "MagicShieldCapacityPercent": 21
+    },
+    "parameter_units": {
+      "flat": "ReferenceSignedPoints i32; literal80or150 points unchanged",
+      "percent": "ReferenceRationalPercent8/1or3/1 percentagepoints; no divide-by100 probability ratio"
+    },
+    "target_domain_evaluation_phase_priority": "UNKNOWN for all16atoms",
+    "ABI_type_profile_schema_changes": 0
+  },
+  "counts": {
+    "source_vectors": 4,
+    "whole_atoms": 16,
+    "magic_capacity_parameters": 8,
+    "preserved_general_and_element_magic_level_points": 8,
+    "source_parts": 2,
+    "own_singleton_ID_boxes": 4,
+    "Native_applied": 0
+  },
+  "records": [
+    {
+      "item_id": 36672,
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i36672",
+        "revision": "definition-r1"
+      },
+      "whole_vector": {
+        "kind": "MODIFIERS",
+        "value": [
+          {
+            "kind": "DEATH_MAGIC_LEVEL_POINTS",
+            "target_domain": {
+              "state": "UNKNOWN"
+            },
+            "evaluation_phase": {
+              "state": "UNKNOWN"
+            },
+            "priority": {
+              "state": "UNKNOWN"
+            },
+            "parameter": {
+              "state": "KNOWN",
+              "value": {
+                "kind": "SIGNED_POINTS",
+                "value": 1
+              }
+            }
+          },
+          {
+            "kind": "MAGIC_LEVEL_POINTS",
+            "target_domain": {
+              "state": "UNKNOWN"
+            },
+            "evaluation_phase": {
+              "state": "UNKNOWN"
+            },
+            "priority": {
+              "state": "UNKNOWN"
+            },
+            "parameter": {
+              "state": "KNOWN",
+              "value": {
+                "kind": "SIGNED_POINTS",
+                "value": 4
+              }
+            }
+          },
+          {
+            "kind": "MAGIC_SHIELD_CAPACITY_FLAT",
+            "target_domain": {
+              "state": "UNKNOWN"
+            },
+            "evaluation_phase": {
+              "state": "UNKNOWN"
+            },
+            "priority": {
+              "state": "UNKNOWN"
+            },
+            "parameter": {
+              "state": "KNOWN",
+              "value": {
+                "kind": "SIGNED_POINTS",
+                "value": 80
+              }
+            }
+          },
+          {
+            "kind": "MAGIC_SHIELD_CAPACITY_PERCENT",
+            "target_domain": {
+              "state": "UNKNOWN"
+            },
+            "evaluation_phase": {
+              "state": "UNKNOWN"
+            },
+            "priority": {
+              "state": "UNKNOWN"
+            },
+            "parameter": {
+              "state": "KNOWN",
+              "value": {
+                "kind": "RATIONAL_PERCENT",
+                "value": {
+                  "numerator": 8,
+                  "denominator": 1
+                }
+              }
+            }
+          }
+        ]
+      },
+      "atom_count": 4,
+      "binding": {
+        "disposition": "EXACT",
+        "external_id": "36672",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i36672",
+          "revision": "definition-r1"
+        }
+      },
+      "raw_own_source_witnesses": [
+        {
+          "source_reference": {
+            "page_id": 94377,
+            "title": "Eldritch Folio",
+            "revision_id": 1190684,
+            "revision_timestamp": "2026-06-20T15:56:58Z",
+            "content_sha256": "e2035e6aa0954b7637d2d6a61f44d2a7a7ab1030ae8c4b2279a519f0eb0f75be",
+            "capture_path": "/workspace/audit-continuation/global-infobox-object-source-part-137.json",
+            "capture_sha256": "299c97f7b04e947cf3ac74a85fa6941dadef5c7163a0c008467ba57f2b6eb0df",
+            "page_ordinal": 40,
+            "batch": 137,
+            "own_object_box_indices": [
+              0
+            ],
+            "selection": "CURRENT_REVISION_AT_OR_BEFORE_CUTOFF",
+            "box_index": 0,
+            "occurrence_index": 0,
+            "raw_itemid": "36672",
+            "strict_numeric_itemid": true,
+            "balanced": true,
+            "inside_comment": false,
+            "duplicate_itemid_parameters": false
+          },
+          "actual_raw_sha256": "e2035e6aa0954b7637d2d6a61f44d2a7a7ab1030ae8c4b2279a519f0eb0f75be",
+          "own_attrib_literals": [
+            "magic level +4, death magic level +1, Magic Shield Capacity +80 and 8%"
+          ]
+        }
+      ],
+      "direct_parameter_observation": {
+        "flat_points": 80,
+        "percent_points": {
+          "numerator": 8,
+          "denominator": 1
+        }
+      },
+      "all_four_whole_atoms_checked_both_own_bound_Crystal_andCanary": true
+    },
+    {
+      "item_id": 36673,
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i36673",
+        "revision": "definition-r1"
+      },
+      "whole_vector": {
+        "kind": "MODIFIERS",
+        "value": [
+          {
+            "kind": "EARTH_MAGIC_LEVEL_POINTS",
+            "target_domain": {
+              "state": "UNKNOWN"
+            },
+            "evaluation_phase": {
+              "state": "UNKNOWN"
+            },
+            "priority": {
+              "state": "UNKNOWN"
+            },
+            "parameter": {
+              "state": "KNOWN",
+              "value": {
+                "kind": "SIGNED_POINTS",
+                "value": 1
+              }
+            }
+          },
+          {
+            "kind": "MAGIC_LEVEL_POINTS",
+            "target_domain": {
+              "state": "UNKNOWN"
+            },
+            "evaluation_phase": {
+              "state": "UNKNOWN"
+            },
+            "priority": {
+              "state": "UNKNOWN"
+            },
+            "parameter": {
+              "state": "KNOWN",
+              "value": {
+                "kind": "SIGNED_POINTS",
+                "value": 4
+              }
+            }
+          },
+          {
+            "kind": "MAGIC_SHIELD_CAPACITY_FLAT",
+            "target_domain": {
+              "state": "UNKNOWN"
+            },
+            "evaluation_phase": {
+              "state": "UNKNOWN"
+            },
+            "priority": {
+              "state": "UNKNOWN"
+            },
+            "parameter": {
+              "state": "KNOWN",
+              "value": {
+                "kind": "SIGNED_POINTS",
+                "value": 80
+              }
+            }
+          },
+          {
+            "kind": "MAGIC_SHIELD_CAPACITY_PERCENT",
+            "target_domain": {
+              "state": "UNKNOWN"
+            },
+            "evaluation_phase": {
+              "state": "UNKNOWN"
+            },
+            "priority": {
+              "state": "UNKNOWN"
+            },
+            "parameter": {
+              "state": "KNOWN",
+              "value": {
+                "kind": "RATIONAL_PERCENT",
+                "value": {
+                  "numerator": 8,
+                  "denominator": 1
+                }
+              }
+            }
+          }
+        ]
+      },
+      "atom_count": 4,
+      "binding": {
+        "disposition": "EXACT",
+        "external_id": "36673",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i36673",
+          "revision": "definition-r1"
+        }
+      },
+      "raw_own_source_witnesses": [
+        {
+          "source_reference": {
+            "page_id": 94378,
+            "title": "Eldritch Tome",
+            "revision_id": 1190685,
+            "revision_timestamp": "2026-06-20T15:57:14Z",
+            "content_sha256": "6b945b666e1868d5a54e792439b7a6661d445091ece2c4bcf4397497ceea32a3",
+            "capture_path": "/workspace/audit-continuation/global-infobox-object-source-part-137.json",
+            "capture_sha256": "299c97f7b04e947cf3ac74a85fa6941dadef5c7163a0c008467ba57f2b6eb0df",
+            "page_ordinal": 41,
+            "batch": 137,
+            "own_object_box_indices": [
+              0
+            ],
+            "selection": "CURRENT_REVISION_AT_OR_BEFORE_CUTOFF",
+            "box_index": 0,
+            "occurrence_index": 0,
+            "raw_itemid": "36673",
+            "strict_numeric_itemid": true,
+            "balanced": true,
+            "inside_comment": false,
+            "duplicate_itemid_parameters": false
+          },
+          "actual_raw_sha256": "6b945b666e1868d5a54e792439b7a6661d445091ece2c4bcf4397497ceea32a3",
+          "own_attrib_literals": [
+            "magic level +4, earth magic level +1, Magic Shield Capacity +80 and 8%"
+          ]
+        }
+      ],
+      "direct_parameter_observation": {
+        "flat_points": 80,
+        "percent_points": {
+          "numerator": 8,
+          "denominator": 1
+        }
+      },
+      "all_four_whole_atoms_checked_both_own_bound_Crystal_andCanary": true
+    },
+    {
+      "item_id": 45639,
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i45639",
+        "revision": "definition-r1"
+      },
+      "whole_vector": {
+        "kind": "MODIFIERS",
+        "value": [
+          {
+            "kind": "FIRE_MAGIC_LEVEL_POINTS",
+            "target_domain": {
+              "state": "UNKNOWN"
+            },
+            "evaluation_phase": {
+              "state": "UNKNOWN"
+            },
+            "priority": {
+              "state": "UNKNOWN"
+            },
+            "parameter": {
+              "state": "KNOWN",
+              "value": {
+                "kind": "SIGNED_POINTS",
+                "value": 1
+              }
+            }
+          },
+          {
+            "kind": "MAGIC_LEVEL_POINTS",
+            "target_domain": {
+              "state": "UNKNOWN"
+            },
+            "evaluation_phase": {
+              "state": "UNKNOWN"
+            },
+            "priority": {
+              "state": "UNKNOWN"
+            },
+            "parameter": {
+              "state": "KNOWN",
+              "value": {
+                "kind": "SIGNED_POINTS",
+                "value": 3
+              }
+            }
+          },
+          {
+            "kind": "MAGIC_SHIELD_CAPACITY_FLAT",
+            "target_domain": {
+              "state": "UNKNOWN"
+            },
+            "evaluation_phase": {
+              "state": "UNKNOWN"
+            },
+            "priority": {
+              "state": "UNKNOWN"
+            },
+            "parameter": {
+              "state": "KNOWN",
+              "value": {
+                "kind": "SIGNED_POINTS",
+                "value": 150
+              }
+            }
+          },
+          {
+            "kind": "MAGIC_SHIELD_CAPACITY_PERCENT",
+            "target_domain": {
+              "state": "UNKNOWN"
+            },
+            "evaluation_phase": {
+              "state": "UNKNOWN"
+            },
+            "priority": {
+              "state": "UNKNOWN"
+            },
+            "parameter": {
+              "state": "KNOWN",
+              "value": {
+                "kind": "RATIONAL_PERCENT",
+                "value": {
+                  "numerator": 3,
+                  "denominator": 1
+                }
+              }
+            }
+          }
+        ]
+      },
+      "atom_count": 4,
+      "binding": {
+        "disposition": "EXACT",
+        "external_id": "45639",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i45639",
+          "revision": "definition-r1"
+        }
+      },
+      "raw_own_source_witnesses": [
+        {
+          "source_reference": {
+            "page_id": 105195,
+            "title": "Cocoa Grimoire",
+            "revision_id": 1202657,
+            "revision_timestamp": "2026-08-22T12:58:58Z",
+            "content_sha256": "222d86d7543d551381097e1bf8ab69ae8c6eb995e5a04d3df9e7ef4bb6839d72",
+            "capture_path": "/workspace/audit-continuation/global-infobox-object-source-part-168.json",
+            "capture_sha256": "86742f1869a56d14c3b4a6d41024fdc31a7bc550ca7037ebf135dafc1f1f215f",
+            "page_ordinal": 6,
+            "batch": 168,
+            "own_object_box_indices": [
+              0
+            ],
+            "selection": "CURRENT_REVISION_AT_OR_BEFORE_CUTOFF",
+            "box_index": 0,
+            "occurrence_index": 0,
+            "raw_itemid": "45639",
+            "strict_numeric_itemid": true,
+            "balanced": true,
+            "inside_comment": false,
+            "duplicate_itemid_parameters": false
+          },
+          "actual_raw_sha256": "222d86d7543d551381097e1bf8ab69ae8c6eb995e5a04d3df9e7ef4bb6839d72",
+          "own_attrib_literals": [
+            "magic level +3, fire magic level +1, magic shield capacity +150 and 3%"
+          ]
+        }
+      ],
+      "direct_parameter_observation": {
+        "flat_points": 150,
+        "percent_points": {
+          "numerator": 3,
+          "denominator": 1
+        }
+      },
+      "all_four_whole_atoms_checked_both_own_bound_Crystal_andCanary": true
+    },
+    {
+      "item_id": 45640,
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i45640",
+        "revision": "definition-r1"
+      },
+      "whole_vector": {
+        "kind": "MODIFIERS",
+        "value": [
+          {
+            "kind": "HEALING_MAGIC_LEVEL_POINTS",
+            "target_domain": {
+              "state": "UNKNOWN"
+            },
+            "evaluation_phase": {
+              "state": "UNKNOWN"
+            },
+            "priority": {
+              "state": "UNKNOWN"
+            },
+            "parameter": {
+              "state": "KNOWN",
+              "value": {
+                "kind": "SIGNED_POINTS",
+                "value": 1
+              }
+            }
+          },
+          {
+            "kind": "MAGIC_LEVEL_POINTS",
+            "target_domain": {
+              "state": "UNKNOWN"
+            },
+            "evaluation_phase": {
+              "state": "UNKNOWN"
+            },
+            "priority": {
+              "state": "UNKNOWN"
+            },
+            "parameter": {
+              "state": "KNOWN",
+              "value": {
+                "kind": "SIGNED_POINTS",
+                "value": 3
+              }
+            }
+          },
+          {
+            "kind": "MAGIC_SHIELD_CAPACITY_FLAT",
+            "target_domain": {
+              "state": "UNKNOWN"
+            },
+            "evaluation_phase": {
+              "state": "UNKNOWN"
+            },
+            "priority": {
+              "state": "UNKNOWN"
+            },
+            "parameter": {
+              "state": "KNOWN",
+              "value": {
+                "kind": "SIGNED_POINTS",
+                "value": 150
+              }
+            }
+          },
+          {
+            "kind": "MAGIC_SHIELD_CAPACITY_PERCENT",
+            "target_domain": {
+              "state": "UNKNOWN"
+            },
+            "evaluation_phase": {
+              "state": "UNKNOWN"
+            },
+            "priority": {
+              "state": "UNKNOWN"
+            },
+            "parameter": {
+              "state": "KNOWN",
+              "value": {
+                "kind": "RATIONAL_PERCENT",
+                "value": {
+                  "numerator": 3,
+                  "denominator": 1
+                }
+              }
+            }
+          }
+        ]
+      },
+      "atom_count": 4,
+      "binding": {
+        "disposition": "EXACT",
+        "external_id": "45640",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i45640",
+          "revision": "definition-r1"
+        }
+      },
+      "raw_own_source_witnesses": [
+        {
+          "source_reference": {
+            "page_id": 105207,
+            "title": "Creamy Grimoire",
+            "revision_id": 1190682,
+            "revision_timestamp": "2026-06-20T15:56:29Z",
+            "content_sha256": "025ee3b6600639ef33d48d0ccc971a2b4559bdff005930da60b3e41299f31865",
+            "capture_path": "/workspace/audit-continuation/global-infobox-object-source-part-168.json",
+            "capture_sha256": "86742f1869a56d14c3b4a6d41024fdc31a7bc550ca7037ebf135dafc1f1f215f",
+            "page_ordinal": 8,
+            "batch": 168,
+            "own_object_box_indices": [
+              0
+            ],
+            "selection": "CURRENT_REVISION_AT_OR_BEFORE_CUTOFF",
+            "box_index": 0,
+            "occurrence_index": 0,
+            "raw_itemid": "45640",
+            "strict_numeric_itemid": true,
+            "balanced": true,
+            "inside_comment": false,
+            "duplicate_itemid_parameters": false
+          },
+          "actual_raw_sha256": "025ee3b6600639ef33d48d0ccc971a2b4559bdff005930da60b3e41299f31865",
+          "own_attrib_literals": [
+            "magic level +3, healing magic level +1, Magic Shield Capacity +150 and 3%"
+          ]
+        }
+      ],
+      "direct_parameter_observation": {
+        "flat_points": 150,
+        "percent_points": {
+          "numerator": 3,
+          "denominator": 1
+        }
+      },
+      "all_four_whole_atoms_checked_both_own_bound_Crystal_andCanary": true
+    }
+  ],
+  "checks": {
+    "all4currentexactNativeidentity_fourheaders_NameKnown_modifierUNKNOWN_andAll138Native_b0f_vs1b": "PASS",
+    "all110sourcepins_globalOwnID_refs_twofullparts_rawreparse": "PASS",
+    "official43516fullrawobjects_andCRforward_reverse_noWorld_Take_membercontinuity_names": "PASS",
+    "all4sourcewholegroups_no_empty_duplicate_unrecognized_atom_drop": "PASS",
+    "all16atoms_exactownCR_andCanary_XML_values_actualsource_not_report_only": "PASS",
+    "existingNative37_enumsortedunique37bound_i32canonicalpercent_andUNKNOWNcontexts": "PASS_STATIC_UNCOMPILED",
+    "pinnedff_cpp_parse_andliteral_look_meaning_actualbytes_andpriorHTTPcapturecoordinates": "PASS"
+  },
+  "semantic_limits": [
+    "Own +80 and8% or+150 and3% directly identifies absolute capacity points andpercentage points; no probability/relativehitchance/runeuse amount asserted.",
+    "Do not derive effectivecapacity frombasecapacity, add-before-multiply/multiply-before-add, rounding, combinationwithotheritems or spellrecast behavior: all unobserved, remainUNKNOWN.",
+    "Do not claim exactcurrent GlobalTibia runtime parity fromOTS; WikiPrimary static literal observations provide sourceauthority, XML/parser/emitter corroborate parameter labels.",
+    "All16wholegroupatoms retained, including8existing ML/sourceelementMLsiblings. No partialvector overwrite/dropping.",
+    "Original Source13/34 andnumeric17+Magic4 historicalpending receipts remain immutable; this new scoped decision is not a silent rewrite of generic spellsemantic report.",
+    "ParentfullNative artifactdigest andoldNativewhole-record comparison are historicalobservations, not live siblingenrichment guards.",
+    "Shared oldstatswhitelist rejects newMagic kinds: dedicatedclosed localatomicsetter/productiontests/sourcepeer/currentactualparentreceipt required.",
+    "Twoactualparts137/168 captured browser/CDP asglobalmanifest; do not perpetuate oldordinaryHTTP label. WholearticleSHA staysdeclaredmetadata; onlyfullpart/ownboxbytes independentlyavailable."
+  ],
+  "next_gates": [
+    "Root owningacceptance of this concrete4 observedparameter decision alongside13, yielding17wholevectors50atoms ifcombined.",
+    "Dedicatedclosed17compiler/setter withcurrentidentity/name/fourheaders/noWorld/member/wholeUNKNOWN-or-identical andatomic lateconflict/typedunit/range/order/duplicates/unlistedID negatives.",
+    "Combined sourcefreeze/independentimplementationpeer, serializedRust/generation/exactwhole17vectors50atoms/preservedallotherfacts/idempotence/finalpeer."
+  ],
+  "review_scope": "Externalread-only sourceproposal/meaning review; noWT/Cargo/Git/ref/Native orpublication mutation."
+}
