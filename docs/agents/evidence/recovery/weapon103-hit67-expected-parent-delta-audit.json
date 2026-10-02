@@ -1,0 +1,2775 @@
+{
+  "schema": "WEAPON103_SERIAL_PARENT_HIT67_EXPECTED_DELTA_AUDIT/v1",
+  "status": "PLANNED_PREDECESSOR_DELTA_FROM_PINNED_PACKET_NOT_FINAL_PARENT_RECEIPT",
+  "source24": {
+    "path": "/workspace/audit-continuation/weapon24-after-name139-actualname-priority-source-qualification.json",
+    "sha256": "497ce38dcdfabc0bcac7642ed3159808869b1418d9b61b34d074d9beb7e7c0a2"
+  },
+  "immutable_original79": {
+    "path": "/workspace/pr1437-world-owner-completion/docs/agents/evidence/OTV2-20261002-item-weapon-metadata-source-qualification-v1.json",
+    "sha256": "dbe5e74c63a45cb169fb9557b8b98cb87582f8ba0fec274b372e78297242e78d"
+  },
+  "independently_reviewed_closed103_manifest": {
+    "path": "/workspace/audit-continuation/weapon103-closed-cohort-audit-manifest.json",
+    "sha256": "264546b1f5af184c4415fa52e98b9b66dd106d2c3297f13ae695b1b804889ff4"
+  },
+  "Hit67_packet_current_local_frozen_input": {
+    "path": "/workspace/pr1437-stack-publish/docs/agents/evidence/OTV2-20261002-item-hit-magic-promotion-v1.json",
+    "sha256": "8ec1f103c874e4424e7636743e78a3c57821e1cbebef6a69dd1c9a448cd47660",
+    "published_parent_verification": "REQUIRED_DURING_FINAL_SERIAL_CARRY"
+  },
+  "counts": {
+    "prospective103": 103,
+    "allowed_explicit_relative_hit_deltas": 28,
+    "additional24": 24,
+    "original79": 4,
+    "remaining_native_weapon_guards_unchanged": 75
+  },
+  "rows": [
+    {
+      "item_id": 23229,
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i23229",
+        "revision": "definition-r1"
+      },
+      "cohort": "additional24",
+      "explicit_Hit67_row": {
+        "expected_name": "bow of mayhem",
+        "facts": {
+          "hit_chance": {
+            "denominator": 50,
+            "numerator": 3
+          }
+        },
+        "hit_percentage_points": 6,
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i23229",
+          "revision": "definition-r1"
+        }
+      },
+      "before_native_weapon_guard": {
+        "state": "KNOWN",
+        "value": {
+          "ammunition": {
+            "state": "UNKNOWN"
+          },
+          "attack": {
+            "state": "UNKNOWN"
+          },
+          "defense": {
+            "state": "UNKNOWN"
+          },
+          "elemental": {
+            "state": "UNKNOWN"
+          },
+          "extra_defense": {
+            "state": "UNKNOWN"
+          },
+          "hit_chance": {
+            "state": "UNKNOWN"
+          },
+          "max_hit_chance": {
+            "state": "UNKNOWN"
+          },
+          "range": {
+            "state": "KNOWN",
+            "value": 6
+          },
+          "weapon_type": {
+            "state": "KNOWN",
+            "value": "DISTANCE"
+          }
+        }
+      },
+      "allowed_expected_after_Hit67_weapon_guard": {
+        "state": "KNOWN",
+        "value": {
+          "ammunition": {
+            "state": "UNKNOWN"
+          },
+          "attack": {
+            "state": "UNKNOWN"
+          },
+          "defense": {
+            "state": "UNKNOWN"
+          },
+          "elemental": {
+            "state": "UNKNOWN"
+          },
+          "extra_defense": {
+            "state": "UNKNOWN"
+          },
+          "hit_chance": {
+            "state": "KNOWN",
+            "value": {
+              "denominator": 50,
+              "numerator": 3
+            }
+          },
+          "max_hit_chance": {
+            "state": "UNKNOWN"
+          },
+          "range": {
+            "state": "KNOWN",
+            "value": 6
+          },
+          "weapon_type": {
+            "state": "KNOWN",
+            "value": "DISTANCE"
+          }
+        }
+      },
+      "native_attack_unchanged": true,
+      "other_native_weapon_fields_unchanged": true
+    },
+    {
+      "item_id": 23230,
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i23230",
+        "revision": "definition-r1"
+      },
+      "cohort": "additional24",
+      "explicit_Hit67_row": {
+        "expected_name": "crossbow of mayhem",
+        "facts": {
+          "hit_chance": {
+            "denominator": 50,
+            "numerator": 3
+          }
+        },
+        "hit_percentage_points": 6,
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i23230",
+          "revision": "definition-r1"
+        }
+      },
+      "before_native_weapon_guard": {
+        "state": "KNOWN",
+        "value": {
+          "ammunition": {
+            "state": "UNKNOWN"
+          },
+          "attack": {
+            "state": "UNKNOWN"
+          },
+          "defense": {
+            "state": "UNKNOWN"
+          },
+          "elemental": {
+            "state": "UNKNOWN"
+          },
+          "extra_defense": {
+            "state": "UNKNOWN"
+          },
+          "hit_chance": {
+            "state": "UNKNOWN"
+          },
+          "max_hit_chance": {
+            "state": "UNKNOWN"
+          },
+          "range": {
+            "state": "KNOWN",
+            "value": 5
+          },
+          "weapon_type": {
+            "state": "KNOWN",
+            "value": "DISTANCE"
+          }
+        }
+      },
+      "allowed_expected_after_Hit67_weapon_guard": {
+        "state": "KNOWN",
+        "value": {
+          "ammunition": {
+            "state": "UNKNOWN"
+          },
+          "attack": {
+            "state": "UNKNOWN"
+          },
+          "defense": {
+            "state": "UNKNOWN"
+          },
+          "elemental": {
+            "state": "UNKNOWN"
+          },
+          "extra_defense": {
+            "state": "UNKNOWN"
+          },
+          "hit_chance": {
+            "state": "KNOWN",
+            "value": {
+              "denominator": 50,
+              "numerator": 3
+            }
+          },
+          "max_hit_chance": {
+            "state": "UNKNOWN"
+          },
+          "range": {
+            "state": "KNOWN",
+            "value": 5
+          },
+          "weapon_type": {
+            "state": "KNOWN",
+            "value": "DISTANCE"
+          }
+        }
+      },
+      "native_attack_unchanged": true,
+      "other_native_weapon_fields_unchanged": true
+    },
+    {
+      "item_id": 23239,
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i23239",
+        "revision": "definition-r1"
+      },
+      "cohort": "additional24",
+      "explicit_Hit67_row": {
+        "expected_name": "bow of mayhem",
+        "facts": {
+          "hit_chance": {
+            "denominator": 25,
+            "numerator": 1
+          }
+        },
+        "hit_percentage_points": 4,
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i23239",
+          "revision": "definition-r1"
+        }
+      },
+      "before_native_weapon_guard": {
+        "state": "KNOWN",
+        "value": {
+          "ammunition": {
+            "state": "UNKNOWN"
+          },
+          "attack": {
+            "state": "UNKNOWN"
+          },
+          "defense": {
+            "state": "UNKNOWN"
+          },
+          "elemental": {
+            "state": "UNKNOWN"
+          },
+          "extra_defense": {
+            "state": "UNKNOWN"
+          },
+          "hit_chance": {
+            "state": "UNKNOWN"
+          },
+          "max_hit_chance": {
+            "state": "UNKNOWN"
+          },
+          "range": {
+            "state": "KNOWN",
+            "value": 6
+          },
+          "weapon_type": {
+            "state": "KNOWN",
+            "value": "DISTANCE"
+          }
+        }
+      },
+      "allowed_expected_after_Hit67_weapon_guard": {
+        "state": "KNOWN",
+        "value": {
+          "ammunition": {
+            "state": "UNKNOWN"
+          },
+          "attack": {
+            "state": "UNKNOWN"
+          },
+          "defense": {
+            "state": "UNKNOWN"
+          },
+          "elemental": {
+            "state": "UNKNOWN"
+          },
+          "extra_defense": {
+            "state": "UNKNOWN"
+          },
+          "hit_chance": {
+            "state": "KNOWN",
+            "value": {
+              "denominator": 25,
+              "numerator": 1
+            }
+          },
+          "max_hit_chance": {
+            "state": "UNKNOWN"
+          },
+          "range": {
+            "state": "KNOWN",
+            "value": 6
+          },
+          "weapon_type": {
+            "state": "KNOWN",
+            "value": "DISTANCE"
+          }
+        }
+      },
+      "native_attack_unchanged": true,
+      "other_native_weapon_fields_unchanged": true
+    },
+    {
+      "item_id": 23240,
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i23240",
+        "revision": "definition-r1"
+      },
+      "cohort": "additional24",
+      "explicit_Hit67_row": {
+        "expected_name": "crossbow of mayhem",
+        "facts": {
+          "hit_chance": {
+            "denominator": 25,
+            "numerator": 1
+          }
+        },
+        "hit_percentage_points": 4,
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i23240",
+          "revision": "definition-r1"
+        }
+      },
+      "before_native_weapon_guard": {
+        "state": "KNOWN",
+        "value": {
+          "ammunition": {
+            "state": "UNKNOWN"
+          },
+          "attack": {
+            "state": "UNKNOWN"
+          },
+          "defense": {
+            "state": "UNKNOWN"
+          },
+          "elemental": {
+            "state": "UNKNOWN"
+          },
+          "extra_defense": {
+            "state": "UNKNOWN"
+          },
+          "hit_chance": {
+            "state": "UNKNOWN"
+          },
+          "max_hit_chance": {
+            "state": "UNKNOWN"
+          },
+          "range": {
+            "state": "KNOWN",
+            "value": 5
+          },
+          "weapon_type": {
+            "state": "KNOWN",
+            "value": "DISTANCE"
+          }
+        }
+      },
+      "allowed_expected_after_Hit67_weapon_guard": {
+        "state": "KNOWN",
+        "value": {
+          "ammunition": {
+            "state": "UNKNOWN"
+          },
+          "attack": {
+            "state": "UNKNOWN"
+          },
+          "defense": {
+            "state": "UNKNOWN"
+          },
+          "elemental": {
+            "state": "UNKNOWN"
+          },
+          "extra_defense": {
+            "state": "UNKNOWN"
+          },
+          "hit_chance": {
+            "state": "KNOWN",
+            "value": {
+              "denominator": 25,
+              "numerator": 1
+            }
+          },
+          "max_hit_chance": {
+            "state": "UNKNOWN"
+          },
+          "range": {
+            "state": "KNOWN",
+            "value": 5
+          },
+          "weapon_type": {
+            "state": "KNOWN",
+            "value": "DISTANCE"
+          }
+        }
+      },
+      "native_attack_unchanged": true,
+      "other_native_weapon_fields_unchanged": true
+    },
+    {
+      "item_id": 23249,
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i23249",
+        "revision": "definition-r1"
+      },
+      "cohort": "additional24",
+      "explicit_Hit67_row": {
+        "expected_name": "crossbow of mayhem",
+        "facts": {
+          "hit_chance": {
+            "denominator": 20,
+            "numerator": 1
+          }
+        },
+        "hit_percentage_points": 5,
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i23249",
+          "revision": "definition-r1"
+        }
+      },
+      "before_native_weapon_guard": {
+        "state": "KNOWN",
+        "value": {
+          "ammunition": {
+            "state": "UNKNOWN"
+          },
+          "attack": {
+            "state": "UNKNOWN"
+          },
+          "defense": {
+            "state": "UNKNOWN"
+          },
+          "elemental": {
+            "state": "UNKNOWN"
+          },
+          "extra_defense": {
+            "state": "UNKNOWN"
+          },
+          "hit_chance": {
+            "state": "UNKNOWN"
+          },
+          "max_hit_chance": {
+            "state": "UNKNOWN"
+          },
+          "range": {
+            "state": "KNOWN",
+            "value": 5
+          },
+          "weapon_type": {
+            "state": "KNOWN",
+            "value": "DISTANCE"
+          }
+        }
+      },
+      "allowed_expected_after_Hit67_weapon_guard": {
+        "state": "KNOWN",
+        "value": {
+          "ammunition": {
+            "state": "UNKNOWN"
+          },
+          "attack": {
+            "state": "UNKNOWN"
+          },
+          "defense": {
+            "state": "UNKNOWN"
+          },
+          "elemental": {
+            "state": "UNKNOWN"
+          },
+          "extra_defense": {
+            "state": "UNKNOWN"
+          },
+          "hit_chance": {
+            "state": "KNOWN",
+            "value": {
+              "denominator": 20,
+              "numerator": 1
+            }
+          },
+          "max_hit_chance": {
+            "state": "UNKNOWN"
+          },
+          "range": {
+            "state": "KNOWN",
+            "value": 5
+          },
+          "weapon_type": {
+            "state": "KNOWN",
+            "value": "DISTANCE"
+          }
+        }
+      },
+      "native_attack_unchanged": true,
+      "other_native_weapon_fields_unchanged": true
+    },
+    {
+      "item_id": 23250,
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i23250",
+        "revision": "definition-r1"
+      },
+      "cohort": "additional24",
+      "explicit_Hit67_row": {
+        "expected_name": "bow of mayhem",
+        "facts": {
+          "hit_chance": {
+            "denominator": 20,
+            "numerator": 1
+          }
+        },
+        "hit_percentage_points": 5,
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i23250",
+          "revision": "definition-r1"
+        }
+      },
+      "before_native_weapon_guard": {
+        "state": "KNOWN",
+        "value": {
+          "ammunition": {
+            "state": "UNKNOWN"
+          },
+          "attack": {
+            "state": "UNKNOWN"
+          },
+          "defense": {
+            "state": "UNKNOWN"
+          },
+          "elemental": {
+            "state": "UNKNOWN"
+          },
+          "extra_defense": {
+            "state": "UNKNOWN"
+          },
+          "hit_chance": {
+            "state": "UNKNOWN"
+          },
+          "max_hit_chance": {
+            "state": "UNKNOWN"
+          },
+          "range": {
+            "state": "KNOWN",
+            "value": 6
+          },
+          "weapon_type": {
+            "state": "KNOWN",
+            "value": "DISTANCE"
+          }
+        }
+      },
+      "allowed_expected_after_Hit67_weapon_guard": {
+        "state": "KNOWN",
+        "value": {
+          "ammunition": {
+            "state": "UNKNOWN"
+          },
+          "attack": {
+            "state": "UNKNOWN"
+          },
+          "defense": {
+            "state": "UNKNOWN"
+          },
+          "elemental": {
+            "state": "UNKNOWN"
+          },
+          "extra_defense": {
+            "state": "UNKNOWN"
+          },
+          "hit_chance": {
+            "state": "KNOWN",
+            "value": {
+              "denominator": 20,
+              "numerator": 1
+            }
+          },
+          "max_hit_chance": {
+            "state": "UNKNOWN"
+          },
+          "range": {
+            "state": "KNOWN",
+            "value": 6
+          },
+          "weapon_type": {
+            "state": "KNOWN",
+            "value": "DISTANCE"
+          }
+        }
+      },
+      "native_attack_unchanged": true,
+      "other_native_weapon_fields_unchanged": true
+    },
+    {
+      "item_id": 23259,
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i23259",
+        "revision": "definition-r1"
+      },
+      "cohort": "additional24",
+      "explicit_Hit67_row": {
+        "expected_name": "bow of mayhem",
+        "facts": {
+          "hit_chance": {
+            "denominator": 50,
+            "numerator": 3
+          }
+        },
+        "hit_percentage_points": 6,
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i23259",
+          "revision": "definition-r1"
+        }
+      },
+      "before_native_weapon_guard": {
+        "state": "KNOWN",
+        "value": {
+          "ammunition": {
+            "state": "UNKNOWN"
+          },
+          "attack": {
+            "state": "UNKNOWN"
+          },
+          "defense": {
+            "state": "UNKNOWN"
+          },
+          "elemental": {
+            "state": "UNKNOWN"
+          },
+          "extra_defense": {
+            "state": "UNKNOWN"
+          },
+          "hit_chance": {
+            "state": "UNKNOWN"
+          },
+          "max_hit_chance": {
+            "state": "UNKNOWN"
+          },
+          "range": {
+            "state": "KNOWN",
+            "value": 6
+          },
+          "weapon_type": {
+            "state": "KNOWN",
+            "value": "DISTANCE"
+          }
+        }
+      },
+      "allowed_expected_after_Hit67_weapon_guard": {
+        "state": "KNOWN",
+        "value": {
+          "ammunition": {
+            "state": "UNKNOWN"
+          },
+          "attack": {
+            "state": "UNKNOWN"
+          },
+          "defense": {
+            "state": "UNKNOWN"
+          },
+          "elemental": {
+            "state": "UNKNOWN"
+          },
+          "extra_defense": {
+            "state": "UNKNOWN"
+          },
+          "hit_chance": {
+            "state": "KNOWN",
+            "value": {
+              "denominator": 50,
+              "numerator": 3
+            }
+          },
+          "max_hit_chance": {
+            "state": "UNKNOWN"
+          },
+          "range": {
+            "state": "KNOWN",
+            "value": 6
+          },
+          "weapon_type": {
+            "state": "KNOWN",
+            "value": "DISTANCE"
+          }
+        }
+      },
+      "native_attack_unchanged": true,
+      "other_native_weapon_fields_unchanged": true
+    },
+    {
+      "item_id": 23260,
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i23260",
+        "revision": "definition-r1"
+      },
+      "cohort": "additional24",
+      "explicit_Hit67_row": {
+        "expected_name": "crossbow of mayhem",
+        "facts": {
+          "hit_chance": {
+            "denominator": 50,
+            "numerator": 3
+          }
+        },
+        "hit_percentage_points": 6,
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i23260",
+          "revision": "definition-r1"
+        }
+      },
+      "before_native_weapon_guard": {
+        "state": "KNOWN",
+        "value": {
+          "ammunition": {
+            "state": "UNKNOWN"
+          },
+          "attack": {
+            "state": "UNKNOWN"
+          },
+          "defense": {
+            "state": "UNKNOWN"
+          },
+          "elemental": {
+            "state": "UNKNOWN"
+          },
+          "extra_defense": {
+            "state": "UNKNOWN"
+          },
+          "hit_chance": {
+            "state": "UNKNOWN"
+          },
+          "max_hit_chance": {
+            "state": "UNKNOWN"
+          },
+          "range": {
+            "state": "KNOWN",
+            "value": 5
+          },
+          "weapon_type": {
+            "state": "KNOWN",
+            "value": "DISTANCE"
+          }
+        }
+      },
+      "allowed_expected_after_Hit67_weapon_guard": {
+        "state": "KNOWN",
+        "value": {
+          "ammunition": {
+            "state": "UNKNOWN"
+          },
+          "attack": {
+            "state": "UNKNOWN"
+          },
+          "defense": {
+            "state": "UNKNOWN"
+          },
+          "elemental": {
+            "state": "UNKNOWN"
+          },
+          "extra_defense": {
+            "state": "UNKNOWN"
+          },
+          "hit_chance": {
+            "state": "KNOWN",
+            "value": {
+              "denominator": 50,
+              "numerator": 3
+            }
+          },
+          "max_hit_chance": {
+            "state": "UNKNOWN"
+          },
+          "range": {
+            "state": "KNOWN",
+            "value": 5
+          },
+          "weapon_type": {
+            "state": "KNOWN",
+            "value": "DISTANCE"
+          }
+        }
+      },
+      "native_attack_unchanged": true,
+      "other_native_weapon_fields_unchanged": true
+    },
+    {
+      "item_id": 23287,
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i23287",
+        "revision": "definition-r1"
+      },
+      "cohort": "additional24",
+      "explicit_Hit67_row": {
+        "expected_name": "bow of remedy",
+        "facts": {
+          "hit_chance": {
+            "denominator": 50,
+            "numerator": 3
+          }
+        },
+        "hit_percentage_points": 6,
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i23287",
+          "revision": "definition-r1"
+        }
+      },
+      "before_native_weapon_guard": {
+        "state": "KNOWN",
+        "value": {
+          "ammunition": {
+            "state": "UNKNOWN"
+          },
+          "attack": {
+            "state": "UNKNOWN"
+          },
+          "defense": {
+            "state": "UNKNOWN"
+          },
+          "elemental": {
+            "state": "UNKNOWN"
+          },
+          "extra_defense": {
+            "state": "UNKNOWN"
+          },
+          "hit_chance": {
+            "state": "UNKNOWN"
+          },
+          "max_hit_chance": {
+            "state": "UNKNOWN"
+          },
+          "range": {
+            "state": "KNOWN",
+            "value": 6
+          },
+          "weapon_type": {
+            "state": "KNOWN",
+            "value": "DISTANCE"
+          }
+        }
+      },
+      "allowed_expected_after_Hit67_weapon_guard": {
+        "state": "KNOWN",
+        "value": {
+          "ammunition": {
+            "state": "UNKNOWN"
+          },
+          "attack": {
+            "state": "UNKNOWN"
+          },
+          "defense": {
+            "state": "UNKNOWN"
+          },
+          "elemental": {
+            "state": "UNKNOWN"
+          },
+          "extra_defense": {
+            "state": "UNKNOWN"
+          },
+          "hit_chance": {
+            "state": "KNOWN",
+            "value": {
+              "denominator": 50,
+              "numerator": 3
+            }
+          },
+          "max_hit_chance": {
+            "state": "UNKNOWN"
+          },
+          "range": {
+            "state": "KNOWN",
+            "value": 6
+          },
+          "weapon_type": {
+            "state": "KNOWN",
+            "value": "DISTANCE"
+          }
+        }
+      },
+      "native_attack_unchanged": true,
+      "other_native_weapon_fields_unchanged": true
+    },
+    {
+      "item_id": 23288,
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i23288",
+        "revision": "definition-r1"
+      },
+      "cohort": "additional24",
+      "explicit_Hit67_row": {
+        "expected_name": "bow of remedy",
+        "facts": {
+          "hit_chance": {
+            "denominator": 25,
+            "numerator": 1
+          }
+        },
+        "hit_percentage_points": 4,
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i23288",
+          "revision": "definition-r1"
+        }
+      },
+      "before_native_weapon_guard": {
+        "state": "KNOWN",
+        "value": {
+          "ammunition": {
+            "state": "UNKNOWN"
+          },
+          "attack": {
+            "state": "UNKNOWN"
+          },
+          "defense": {
+            "state": "UNKNOWN"
+          },
+          "elemental": {
+            "state": "UNKNOWN"
+          },
+          "extra_defense": {
+            "state": "UNKNOWN"
+          },
+          "hit_chance": {
+            "state": "UNKNOWN"
+          },
+          "max_hit_chance": {
+            "state": "UNKNOWN"
+          },
+          "range": {
+            "state": "KNOWN",
+            "value": 6
+          },
+          "weapon_type": {
+            "state": "KNOWN",
+            "value": "DISTANCE"
+          }
+        }
+      },
+      "allowed_expected_after_Hit67_weapon_guard": {
+        "state": "KNOWN",
+        "value": {
+          "ammunition": {
+            "state": "UNKNOWN"
+          },
+          "attack": {
+            "state": "UNKNOWN"
+          },
+          "defense": {
+            "state": "UNKNOWN"
+          },
+          "elemental": {
+            "state": "UNKNOWN"
+          },
+          "extra_defense": {
+            "state": "UNKNOWN"
+          },
+          "hit_chance": {
+            "state": "KNOWN",
+            "value": {
+              "denominator": 25,
+              "numerator": 1
+            }
+          },
+          "max_hit_chance": {
+            "state": "UNKNOWN"
+          },
+          "range": {
+            "state": "KNOWN",
+            "value": 6
+          },
+          "weapon_type": {
+            "state": "KNOWN",
+            "value": "DISTANCE"
+          }
+        }
+      },
+      "native_attack_unchanged": true,
+      "other_native_weapon_fields_unchanged": true
+    },
+    {
+      "item_id": 23289,
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i23289",
+        "revision": "definition-r1"
+      },
+      "cohort": "additional24",
+      "explicit_Hit67_row": {
+        "expected_name": "bow of remedy",
+        "facts": {
+          "hit_chance": {
+            "denominator": 20,
+            "numerator": 1
+          }
+        },
+        "hit_percentage_points": 5,
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i23289",
+          "revision": "definition-r1"
+        }
+      },
+      "before_native_weapon_guard": {
+        "state": "KNOWN",
+        "value": {
+          "ammunition": {
+            "state": "UNKNOWN"
+          },
+          "attack": {
+            "state": "UNKNOWN"
+          },
+          "defense": {
+            "state": "UNKNOWN"
+          },
+          "elemental": {
+            "state": "UNKNOWN"
+          },
+          "extra_defense": {
+            "state": "UNKNOWN"
+          },
+          "hit_chance": {
+            "state": "UNKNOWN"
+          },
+          "max_hit_chance": {
+            "state": "UNKNOWN"
+          },
+          "range": {
+            "state": "KNOWN",
+            "value": 6
+          },
+          "weapon_type": {
+            "state": "KNOWN",
+            "value": "DISTANCE"
+          }
+        }
+      },
+      "allowed_expected_after_Hit67_weapon_guard": {
+        "state": "KNOWN",
+        "value": {
+          "ammunition": {
+            "state": "UNKNOWN"
+          },
+          "attack": {
+            "state": "UNKNOWN"
+          },
+          "defense": {
+            "state": "UNKNOWN"
+          },
+          "elemental": {
+            "state": "UNKNOWN"
+          },
+          "extra_defense": {
+            "state": "UNKNOWN"
+          },
+          "hit_chance": {
+            "state": "KNOWN",
+            "value": {
+              "denominator": 20,
+              "numerator": 1
+            }
+          },
+          "max_hit_chance": {
+            "state": "UNKNOWN"
+          },
+          "range": {
+            "state": "KNOWN",
+            "value": 6
+          },
+          "weapon_type": {
+            "state": "KNOWN",
+            "value": "DISTANCE"
+          }
+        }
+      },
+      "native_attack_unchanged": true,
+      "other_native_weapon_fields_unchanged": true
+    },
+    {
+      "item_id": 23290,
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i23290",
+        "revision": "definition-r1"
+      },
+      "cohort": "additional24",
+      "explicit_Hit67_row": {
+        "expected_name": "bow of remedy",
+        "facts": {
+          "hit_chance": {
+            "denominator": 50,
+            "numerator": 3
+          }
+        },
+        "hit_percentage_points": 6,
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i23290",
+          "revision": "definition-r1"
+        }
+      },
+      "before_native_weapon_guard": {
+        "state": "KNOWN",
+        "value": {
+          "ammunition": {
+            "state": "UNKNOWN"
+          },
+          "attack": {
+            "state": "UNKNOWN"
+          },
+          "defense": {
+            "state": "UNKNOWN"
+          },
+          "elemental": {
+            "state": "UNKNOWN"
+          },
+          "extra_defense": {
+            "state": "UNKNOWN"
+          },
+          "hit_chance": {
+            "state": "UNKNOWN"
+          },
+          "max_hit_chance": {
+            "state": "UNKNOWN"
+          },
+          "range": {
+            "state": "KNOWN",
+            "value": 6
+          },
+          "weapon_type": {
+            "state": "KNOWN",
+            "value": "DISTANCE"
+          }
+        }
+      },
+      "allowed_expected_after_Hit67_weapon_guard": {
+        "state": "KNOWN",
+        "value": {
+          "ammunition": {
+            "state": "UNKNOWN"
+          },
+          "attack": {
+            "state": "UNKNOWN"
+          },
+          "defense": {
+            "state": "UNKNOWN"
+          },
+          "elemental": {
+            "state": "UNKNOWN"
+          },
+          "extra_defense": {
+            "state": "UNKNOWN"
+          },
+          "hit_chance": {
+            "state": "KNOWN",
+            "value": {
+              "denominator": 50,
+              "numerator": 3
+            }
+          },
+          "max_hit_chance": {
+            "state": "UNKNOWN"
+          },
+          "range": {
+            "state": "KNOWN",
+            "value": 6
+          },
+          "weapon_type": {
+            "state": "KNOWN",
+            "value": "DISTANCE"
+          }
+        }
+      },
+      "native_attack_unchanged": true,
+      "other_native_weapon_fields_unchanged": true
+    },
+    {
+      "item_id": 23291,
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i23291",
+        "revision": "definition-r1"
+      },
+      "cohort": "additional24",
+      "explicit_Hit67_row": {
+        "expected_name": "crossbow of remedy",
+        "facts": {
+          "hit_chance": {
+            "denominator": 50,
+            "numerator": 3
+          }
+        },
+        "hit_percentage_points": 6,
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i23291",
+          "revision": "definition-r1"
+        }
+      },
+      "before_native_weapon_guard": {
+        "state": "KNOWN",
+        "value": {
+          "ammunition": {
+            "state": "UNKNOWN"
+          },
+          "attack": {
+            "state": "UNKNOWN"
+          },
+          "defense": {
+            "state": "UNKNOWN"
+          },
+          "elemental": {
+            "state": "UNKNOWN"
+          },
+          "extra_defense": {
+            "state": "UNKNOWN"
+          },
+          "hit_chance": {
+            "state": "UNKNOWN"
+          },
+          "max_hit_chance": {
+            "state": "UNKNOWN"
+          },
+          "range": {
+            "state": "KNOWN",
+            "value": 5
+          },
+          "weapon_type": {
+            "state": "KNOWN",
+            "value": "DISTANCE"
+          }
+        }
+      },
+      "allowed_expected_after_Hit67_weapon_guard": {
+        "state": "KNOWN",
+        "value": {
+          "ammunition": {
+            "state": "UNKNOWN"
+          },
+          "attack": {
+            "state": "UNKNOWN"
+          },
+          "defense": {
+            "state": "UNKNOWN"
+          },
+          "elemental": {
+            "state": "UNKNOWN"
+          },
+          "extra_defense": {
+            "state": "UNKNOWN"
+          },
+          "hit_chance": {
+            "state": "KNOWN",
+            "value": {
+              "denominator": 50,
+              "numerator": 3
+            }
+          },
+          "max_hit_chance": {
+            "state": "UNKNOWN"
+          },
+          "range": {
+            "state": "KNOWN",
+            "value": 5
+          },
+          "weapon_type": {
+            "state": "KNOWN",
+            "value": "DISTANCE"
+          }
+        }
+      },
+      "native_attack_unchanged": true,
+      "other_native_weapon_fields_unchanged": true
+    },
+    {
+      "item_id": 23292,
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i23292",
+        "revision": "definition-r1"
+      },
+      "cohort": "additional24",
+      "explicit_Hit67_row": {
+        "expected_name": "crossbow of remedy",
+        "facts": {
+          "hit_chance": {
+            "denominator": 25,
+            "numerator": 1
+          }
+        },
+        "hit_percentage_points": 4,
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i23292",
+          "revision": "definition-r1"
+        }
+      },
+      "before_native_weapon_guard": {
+        "state": "KNOWN",
+        "value": {
+          "ammunition": {
+            "state": "UNKNOWN"
+          },
+          "attack": {
+            "state": "UNKNOWN"
+          },
+          "defense": {
+            "state": "UNKNOWN"
+          },
+          "elemental": {
+            "state": "UNKNOWN"
+          },
+          "extra_defense": {
+            "state": "UNKNOWN"
+          },
+          "hit_chance": {
+            "state": "UNKNOWN"
+          },
+          "max_hit_chance": {
+            "state": "UNKNOWN"
+          },
+          "range": {
+            "state": "KNOWN",
+            "value": 5
+          },
+          "weapon_type": {
+            "state": "KNOWN",
+            "value": "DISTANCE"
+          }
+        }
+      },
+      "allowed_expected_after_Hit67_weapon_guard": {
+        "state": "KNOWN",
+        "value": {
+          "ammunition": {
+            "state": "UNKNOWN"
+          },
+          "attack": {
+            "state": "UNKNOWN"
+          },
+          "defense": {
+            "state": "UNKNOWN"
+          },
+          "elemental": {
+            "state": "UNKNOWN"
+          },
+          "extra_defense": {
+            "state": "UNKNOWN"
+          },
+          "hit_chance": {
+            "state": "KNOWN",
+            "value": {
+              "denominator": 25,
+              "numerator": 1
+            }
+          },
+          "max_hit_chance": {
+            "state": "UNKNOWN"
+          },
+          "range": {
+            "state": "KNOWN",
+            "value": 5
+          },
+          "weapon_type": {
+            "state": "KNOWN",
+            "value": "DISTANCE"
+          }
+        }
+      },
+      "native_attack_unchanged": true,
+      "other_native_weapon_fields_unchanged": true
+    },
+    {
+      "item_id": 23293,
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i23293",
+        "revision": "definition-r1"
+      },
+      "cohort": "additional24",
+      "explicit_Hit67_row": {
+        "expected_name": "crossbow of remedy",
+        "facts": {
+          "hit_chance": {
+            "denominator": 20,
+            "numerator": 1
+          }
+        },
+        "hit_percentage_points": 5,
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i23293",
+          "revision": "definition-r1"
+        }
+      },
+      "before_native_weapon_guard": {
+        "state": "KNOWN",
+        "value": {
+          "ammunition": {
+            "state": "UNKNOWN"
+          },
+          "attack": {
+            "state": "UNKNOWN"
+          },
+          "defense": {
+            "state": "UNKNOWN"
+          },
+          "elemental": {
+            "state": "UNKNOWN"
+          },
+          "extra_defense": {
+            "state": "UNKNOWN"
+          },
+          "hit_chance": {
+            "state": "UNKNOWN"
+          },
+          "max_hit_chance": {
+            "state": "UNKNOWN"
+          },
+          "range": {
+            "state": "KNOWN",
+            "value": 5
+          },
+          "weapon_type": {
+            "state": "KNOWN",
+            "value": "DISTANCE"
+          }
+        }
+      },
+      "allowed_expected_after_Hit67_weapon_guard": {
+        "state": "KNOWN",
+        "value": {
+          "ammunition": {
+            "state": "UNKNOWN"
+          },
+          "attack": {
+            "state": "UNKNOWN"
+          },
+          "defense": {
+            "state": "UNKNOWN"
+          },
+          "elemental": {
+            "state": "UNKNOWN"
+          },
+          "extra_defense": {
+            "state": "UNKNOWN"
+          },
+          "hit_chance": {
+            "state": "KNOWN",
+            "value": {
+              "denominator": 20,
+              "numerator": 1
+            }
+          },
+          "max_hit_chance": {
+            "state": "UNKNOWN"
+          },
+          "range": {
+            "state": "KNOWN",
+            "value": 5
+          },
+          "weapon_type": {
+            "state": "KNOWN",
+            "value": "DISTANCE"
+          }
+        }
+      },
+      "native_attack_unchanged": true,
+      "other_native_weapon_fields_unchanged": true
+    },
+    {
+      "item_id": 23294,
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i23294",
+        "revision": "definition-r1"
+      },
+      "cohort": "additional24",
+      "explicit_Hit67_row": {
+        "expected_name": "crossbow of remedy",
+        "facts": {
+          "hit_chance": {
+            "denominator": 50,
+            "numerator": 3
+          }
+        },
+        "hit_percentage_points": 6,
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i23294",
+          "revision": "definition-r1"
+        }
+      },
+      "before_native_weapon_guard": {
+        "state": "KNOWN",
+        "value": {
+          "ammunition": {
+            "state": "UNKNOWN"
+          },
+          "attack": {
+            "state": "UNKNOWN"
+          },
+          "defense": {
+            "state": "UNKNOWN"
+          },
+          "elemental": {
+            "state": "UNKNOWN"
+          },
+          "extra_defense": {
+            "state": "UNKNOWN"
+          },
+          "hit_chance": {
+            "state": "UNKNOWN"
+          },
+          "max_hit_chance": {
+            "state": "UNKNOWN"
+          },
+          "range": {
+            "state": "KNOWN",
+            "value": 5
+          },
+          "weapon_type": {
+            "state": "KNOWN",
+            "value": "DISTANCE"
+          }
+        }
+      },
+      "allowed_expected_after_Hit67_weapon_guard": {
+        "state": "KNOWN",
+        "value": {
+          "ammunition": {
+            "state": "UNKNOWN"
+          },
+          "attack": {
+            "state": "UNKNOWN"
+          },
+          "defense": {
+            "state": "UNKNOWN"
+          },
+          "elemental": {
+            "state": "UNKNOWN"
+          },
+          "extra_defense": {
+            "state": "UNKNOWN"
+          },
+          "hit_chance": {
+            "state": "KNOWN",
+            "value": {
+              "denominator": 50,
+              "numerator": 3
+            }
+          },
+          "max_hit_chance": {
+            "state": "UNKNOWN"
+          },
+          "range": {
+            "state": "KNOWN",
+            "value": 5
+          },
+          "weapon_type": {
+            "state": "KNOWN",
+            "value": "DISTANCE"
+          }
+        }
+      },
+      "native_attack_unchanged": true,
+      "other_native_weapon_fields_unchanged": true
+    },
+    {
+      "item_id": 23327,
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i23327",
+        "revision": "definition-r1"
+      },
+      "cohort": "additional24",
+      "explicit_Hit67_row": {
+        "expected_name": "bow of carving",
+        "facts": {
+          "hit_chance": {
+            "denominator": 50,
+            "numerator": 3
+          }
+        },
+        "hit_percentage_points": 6,
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i23327",
+          "revision": "definition-r1"
+        }
+      },
+      "before_native_weapon_guard": {
+        "state": "KNOWN",
+        "value": {
+          "ammunition": {
+            "state": "UNKNOWN"
+          },
+          "attack": {
+            "state": "UNKNOWN"
+          },
+          "defense": {
+            "state": "UNKNOWN"
+          },
+          "elemental": {
+            "state": "UNKNOWN"
+          },
+          "extra_defense": {
+            "state": "UNKNOWN"
+          },
+          "hit_chance": {
+            "state": "UNKNOWN"
+          },
+          "max_hit_chance": {
+            "state": "UNKNOWN"
+          },
+          "range": {
+            "state": "KNOWN",
+            "value": 6
+          },
+          "weapon_type": {
+            "state": "KNOWN",
+            "value": "DISTANCE"
+          }
+        }
+      },
+      "allowed_expected_after_Hit67_weapon_guard": {
+        "state": "KNOWN",
+        "value": {
+          "ammunition": {
+            "state": "UNKNOWN"
+          },
+          "attack": {
+            "state": "UNKNOWN"
+          },
+          "defense": {
+            "state": "UNKNOWN"
+          },
+          "elemental": {
+            "state": "UNKNOWN"
+          },
+          "extra_defense": {
+            "state": "UNKNOWN"
+          },
+          "hit_chance": {
+            "state": "KNOWN",
+            "value": {
+              "denominator": 50,
+              "numerator": 3
+            }
+          },
+          "max_hit_chance": {
+            "state": "UNKNOWN"
+          },
+          "range": {
+            "state": "KNOWN",
+            "value": 6
+          },
+          "weapon_type": {
+            "state": "KNOWN",
+            "value": "DISTANCE"
+          }
+        }
+      },
+      "native_attack_unchanged": true,
+      "other_native_weapon_fields_unchanged": true
+    },
+    {
+      "item_id": 23328,
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i23328",
+        "revision": "definition-r1"
+      },
+      "cohort": "additional24",
+      "explicit_Hit67_row": {
+        "expected_name": "bow of carving",
+        "facts": {
+          "hit_chance": {
+            "denominator": 25,
+            "numerator": 1
+          }
+        },
+        "hit_percentage_points": 4,
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i23328",
+          "revision": "definition-r1"
+        }
+      },
+      "before_native_weapon_guard": {
+        "state": "KNOWN",
+        "value": {
+          "ammunition": {
+            "state": "UNKNOWN"
+          },
+          "attack": {
+            "state": "UNKNOWN"
+          },
+          "defense": {
+            "state": "UNKNOWN"
+          },
+          "elemental": {
+            "state": "UNKNOWN"
+          },
+          "extra_defense": {
+            "state": "UNKNOWN"
+          },
+          "hit_chance": {
+            "state": "UNKNOWN"
+          },
+          "max_hit_chance": {
+            "state": "UNKNOWN"
+          },
+          "range": {
+            "state": "KNOWN",
+            "value": 6
+          },
+          "weapon_type": {
+            "state": "KNOWN",
+            "value": "DISTANCE"
+          }
+        }
+      },
+      "allowed_expected_after_Hit67_weapon_guard": {
+        "state": "KNOWN",
+        "value": {
+          "ammunition": {
+            "state": "UNKNOWN"
+          },
+          "attack": {
+            "state": "UNKNOWN"
+          },
+          "defense": {
+            "state": "UNKNOWN"
+          },
+          "elemental": {
+            "state": "UNKNOWN"
+          },
+          "extra_defense": {
+            "state": "UNKNOWN"
+          },
+          "hit_chance": {
+            "state": "KNOWN",
+            "value": {
+              "denominator": 25,
+              "numerator": 1
+            }
+          },
+          "max_hit_chance": {
+            "state": "UNKNOWN"
+          },
+          "range": {
+            "state": "KNOWN",
+            "value": 6
+          },
+          "weapon_type": {
+            "state": "KNOWN",
+            "value": "DISTANCE"
+          }
+        }
+      },
+      "native_attack_unchanged": true,
+      "other_native_weapon_fields_unchanged": true
+    },
+    {
+      "item_id": 23329,
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i23329",
+        "revision": "definition-r1"
+      },
+      "cohort": "additional24",
+      "explicit_Hit67_row": {
+        "expected_name": "bow of carving",
+        "facts": {
+          "hit_chance": {
+            "denominator": 20,
+            "numerator": 1
+          }
+        },
+        "hit_percentage_points": 5,
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i23329",
+          "revision": "definition-r1"
+        }
+      },
+      "before_native_weapon_guard": {
+        "state": "KNOWN",
+        "value": {
+          "ammunition": {
+            "state": "UNKNOWN"
+          },
+          "attack": {
+            "state": "UNKNOWN"
+          },
+          "defense": {
+            "state": "UNKNOWN"
+          },
+          "elemental": {
+            "state": "UNKNOWN"
+          },
+          "extra_defense": {
+            "state": "UNKNOWN"
+          },
+          "hit_chance": {
+            "state": "UNKNOWN"
+          },
+          "max_hit_chance": {
+            "state": "UNKNOWN"
+          },
+          "range": {
+            "state": "KNOWN",
+            "value": 6
+          },
+          "weapon_type": {
+            "state": "KNOWN",
+            "value": "DISTANCE"
+          }
+        }
+      },
+      "allowed_expected_after_Hit67_weapon_guard": {
+        "state": "KNOWN",
+        "value": {
+          "ammunition": {
+            "state": "UNKNOWN"
+          },
+          "attack": {
+            "state": "UNKNOWN"
+          },
+          "defense": {
+            "state": "UNKNOWN"
+          },
+          "elemental": {
+            "state": "UNKNOWN"
+          },
+          "extra_defense": {
+            "state": "UNKNOWN"
+          },
+          "hit_chance": {
+            "state": "KNOWN",
+            "value": {
+              "denominator": 20,
+              "numerator": 1
+            }
+          },
+          "max_hit_chance": {
+            "state": "UNKNOWN"
+          },
+          "range": {
+            "state": "KNOWN",
+            "value": 6
+          },
+          "weapon_type": {
+            "state": "KNOWN",
+            "value": "DISTANCE"
+          }
+        }
+      },
+      "native_attack_unchanged": true,
+      "other_native_weapon_fields_unchanged": true
+    },
+    {
+      "item_id": 23330,
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i23330",
+        "revision": "definition-r1"
+      },
+      "cohort": "additional24",
+      "explicit_Hit67_row": {
+        "expected_name": "bow of carving",
+        "facts": {
+          "hit_chance": {
+            "denominator": 50,
+            "numerator": 3
+          }
+        },
+        "hit_percentage_points": 6,
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i23330",
+          "revision": "definition-r1"
+        }
+      },
+      "before_native_weapon_guard": {
+        "state": "KNOWN",
+        "value": {
+          "ammunition": {
+            "state": "UNKNOWN"
+          },
+          "attack": {
+            "state": "UNKNOWN"
+          },
+          "defense": {
+            "state": "UNKNOWN"
+          },
+          "elemental": {
+            "state": "UNKNOWN"
+          },
+          "extra_defense": {
+            "state": "UNKNOWN"
+          },
+          "hit_chance": {
+            "state": "UNKNOWN"
+          },
+          "max_hit_chance": {
+            "state": "UNKNOWN"
+          },
+          "range": {
+            "state": "KNOWN",
+            "value": 6
+          },
+          "weapon_type": {
+            "state": "KNOWN",
+            "value": "DISTANCE"
+          }
+        }
+      },
+      "allowed_expected_after_Hit67_weapon_guard": {
+        "state": "KNOWN",
+        "value": {
+          "ammunition": {
+            "state": "UNKNOWN"
+          },
+          "attack": {
+            "state": "UNKNOWN"
+          },
+          "defense": {
+            "state": "UNKNOWN"
+          },
+          "elemental": {
+            "state": "UNKNOWN"
+          },
+          "extra_defense": {
+            "state": "UNKNOWN"
+          },
+          "hit_chance": {
+            "state": "KNOWN",
+            "value": {
+              "denominator": 50,
+              "numerator": 3
+            }
+          },
+          "max_hit_chance": {
+            "state": "UNKNOWN"
+          },
+          "range": {
+            "state": "KNOWN",
+            "value": 6
+          },
+          "weapon_type": {
+            "state": "KNOWN",
+            "value": "DISTANCE"
+          }
+        }
+      },
+      "native_attack_unchanged": true,
+      "other_native_weapon_fields_unchanged": true
+    },
+    {
+      "item_id": 23331,
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i23331",
+        "revision": "definition-r1"
+      },
+      "cohort": "additional24",
+      "explicit_Hit67_row": {
+        "expected_name": "crossbow of carving",
+        "facts": {
+          "hit_chance": {
+            "denominator": 50,
+            "numerator": 3
+          }
+        },
+        "hit_percentage_points": 6,
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i23331",
+          "revision": "definition-r1"
+        }
+      },
+      "before_native_weapon_guard": {
+        "state": "KNOWN",
+        "value": {
+          "ammunition": {
+            "state": "UNKNOWN"
+          },
+          "attack": {
+            "state": "UNKNOWN"
+          },
+          "defense": {
+            "state": "UNKNOWN"
+          },
+          "elemental": {
+            "state": "UNKNOWN"
+          },
+          "extra_defense": {
+            "state": "UNKNOWN"
+          },
+          "hit_chance": {
+            "state": "UNKNOWN"
+          },
+          "max_hit_chance": {
+            "state": "UNKNOWN"
+          },
+          "range": {
+            "state": "KNOWN",
+            "value": 5
+          },
+          "weapon_type": {
+            "state": "KNOWN",
+            "value": "DISTANCE"
+          }
+        }
+      },
+      "allowed_expected_after_Hit67_weapon_guard": {
+        "state": "KNOWN",
+        "value": {
+          "ammunition": {
+            "state": "UNKNOWN"
+          },
+          "attack": {
+            "state": "UNKNOWN"
+          },
+          "defense": {
+            "state": "UNKNOWN"
+          },
+          "elemental": {
+            "state": "UNKNOWN"
+          },
+          "extra_defense": {
+            "state": "UNKNOWN"
+          },
+          "hit_chance": {
+            "state": "KNOWN",
+            "value": {
+              "denominator": 50,
+              "numerator": 3
+            }
+          },
+          "max_hit_chance": {
+            "state": "UNKNOWN"
+          },
+          "range": {
+            "state": "KNOWN",
+            "value": 5
+          },
+          "weapon_type": {
+            "state": "KNOWN",
+            "value": "DISTANCE"
+          }
+        }
+      },
+      "native_attack_unchanged": true,
+      "other_native_weapon_fields_unchanged": true
+    },
+    {
+      "item_id": 23332,
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i23332",
+        "revision": "definition-r1"
+      },
+      "cohort": "additional24",
+      "explicit_Hit67_row": {
+        "expected_name": "crossbow of carving",
+        "facts": {
+          "hit_chance": {
+            "denominator": 25,
+            "numerator": 1
+          }
+        },
+        "hit_percentage_points": 4,
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i23332",
+          "revision": "definition-r1"
+        }
+      },
+      "before_native_weapon_guard": {
+        "state": "KNOWN",
+        "value": {
+          "ammunition": {
+            "state": "UNKNOWN"
+          },
+          "attack": {
+            "state": "UNKNOWN"
+          },
+          "defense": {
+            "state": "UNKNOWN"
+          },
+          "elemental": {
+            "state": "UNKNOWN"
+          },
+          "extra_defense": {
+            "state": "UNKNOWN"
+          },
+          "hit_chance": {
+            "state": "UNKNOWN"
+          },
+          "max_hit_chance": {
+            "state": "UNKNOWN"
+          },
+          "range": {
+            "state": "KNOWN",
+            "value": 5
+          },
+          "weapon_type": {
+            "state": "KNOWN",
+            "value": "DISTANCE"
+          }
+        }
+      },
+      "allowed_expected_after_Hit67_weapon_guard": {
+        "state": "KNOWN",
+        "value": {
+          "ammunition": {
+            "state": "UNKNOWN"
+          },
+          "attack": {
+            "state": "UNKNOWN"
+          },
+          "defense": {
+            "state": "UNKNOWN"
+          },
+          "elemental": {
+            "state": "UNKNOWN"
+          },
+          "extra_defense": {
+            "state": "UNKNOWN"
+          },
+          "hit_chance": {
+            "state": "KNOWN",
+            "value": {
+              "denominator": 25,
+              "numerator": 1
+            }
+          },
+          "max_hit_chance": {
+            "state": "UNKNOWN"
+          },
+          "range": {
+            "state": "KNOWN",
+            "value": 5
+          },
+          "weapon_type": {
+            "state": "KNOWN",
+            "value": "DISTANCE"
+          }
+        }
+      },
+      "native_attack_unchanged": true,
+      "other_native_weapon_fields_unchanged": true
+    },
+    {
+      "item_id": 23333,
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i23333",
+        "revision": "definition-r1"
+      },
+      "cohort": "additional24",
+      "explicit_Hit67_row": {
+        "expected_name": "crossbow of carving",
+        "facts": {
+          "hit_chance": {
+            "denominator": 20,
+            "numerator": 1
+          }
+        },
+        "hit_percentage_points": 5,
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i23333",
+          "revision": "definition-r1"
+        }
+      },
+      "before_native_weapon_guard": {
+        "state": "KNOWN",
+        "value": {
+          "ammunition": {
+            "state": "UNKNOWN"
+          },
+          "attack": {
+            "state": "UNKNOWN"
+          },
+          "defense": {
+            "state": "UNKNOWN"
+          },
+          "elemental": {
+            "state": "UNKNOWN"
+          },
+          "extra_defense": {
+            "state": "UNKNOWN"
+          },
+          "hit_chance": {
+            "state": "UNKNOWN"
+          },
+          "max_hit_chance": {
+            "state": "UNKNOWN"
+          },
+          "range": {
+            "state": "KNOWN",
+            "value": 5
+          },
+          "weapon_type": {
+            "state": "KNOWN",
+            "value": "DISTANCE"
+          }
+        }
+      },
+      "allowed_expected_after_Hit67_weapon_guard": {
+        "state": "KNOWN",
+        "value": {
+          "ammunition": {
+            "state": "UNKNOWN"
+          },
+          "attack": {
+            "state": "UNKNOWN"
+          },
+          "defense": {
+            "state": "UNKNOWN"
+          },
+          "elemental": {
+            "state": "UNKNOWN"
+          },
+          "extra_defense": {
+            "state": "UNKNOWN"
+          },
+          "hit_chance": {
+            "state": "KNOWN",
+            "value": {
+              "denominator": 20,
+              "numerator": 1
+            }
+          },
+          "max_hit_chance": {
+            "state": "UNKNOWN"
+          },
+          "range": {
+            "state": "KNOWN",
+            "value": 5
+          },
+          "weapon_type": {
+            "state": "KNOWN",
+            "value": "DISTANCE"
+          }
+        }
+      },
+      "native_attack_unchanged": true,
+      "other_native_weapon_fields_unchanged": true
+    },
+    {
+      "item_id": 23334,
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i23334",
+        "revision": "definition-r1"
+      },
+      "cohort": "additional24",
+      "explicit_Hit67_row": {
+        "expected_name": "crossbow of carving",
+        "facts": {
+          "hit_chance": {
+            "denominator": 50,
+            "numerator": 3
+          }
+        },
+        "hit_percentage_points": 6,
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i23334",
+          "revision": "definition-r1"
+        }
+      },
+      "before_native_weapon_guard": {
+        "state": "KNOWN",
+        "value": {
+          "ammunition": {
+            "state": "UNKNOWN"
+          },
+          "attack": {
+            "state": "UNKNOWN"
+          },
+          "defense": {
+            "state": "UNKNOWN"
+          },
+          "elemental": {
+            "state": "UNKNOWN"
+          },
+          "extra_defense": {
+            "state": "UNKNOWN"
+          },
+          "hit_chance": {
+            "state": "UNKNOWN"
+          },
+          "max_hit_chance": {
+            "state": "UNKNOWN"
+          },
+          "range": {
+            "state": "KNOWN",
+            "value": 5
+          },
+          "weapon_type": {
+            "state": "KNOWN",
+            "value": "DISTANCE"
+          }
+        }
+      },
+      "allowed_expected_after_Hit67_weapon_guard": {
+        "state": "KNOWN",
+        "value": {
+          "ammunition": {
+            "state": "UNKNOWN"
+          },
+          "attack": {
+            "state": "UNKNOWN"
+          },
+          "defense": {
+            "state": "UNKNOWN"
+          },
+          "elemental": {
+            "state": "UNKNOWN"
+          },
+          "extra_defense": {
+            "state": "UNKNOWN"
+          },
+          "hit_chance": {
+            "state": "KNOWN",
+            "value": {
+              "denominator": 50,
+              "numerator": 3
+            }
+          },
+          "max_hit_chance": {
+            "state": "UNKNOWN"
+          },
+          "range": {
+            "state": "KNOWN",
+            "value": 5
+          },
+          "weapon_type": {
+            "state": "KNOWN",
+            "value": "DISTANCE"
+          }
+        }
+      },
+      "native_attack_unchanged": true,
+      "other_native_weapon_fields_unchanged": true
+    },
+    {
+      "item_id": 53225,
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i53225",
+        "revision": "definition-r1"
+      },
+      "cohort": "original79",
+      "explicit_Hit67_row": {
+        "expected_name": "moonsilver bow",
+        "facts": {
+          "hit_chance": {
+            "denominator": 100,
+            "numerator": 7
+          }
+        },
+        "hit_percentage_points": 7,
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i53225",
+          "revision": "definition-r1"
+        }
+      },
+      "before_native_weapon_guard": {
+        "state": "KNOWN",
+        "value": {
+          "ammunition": {
+            "state": "UNKNOWN"
+          },
+          "attack": {
+            "state": "UNKNOWN"
+          },
+          "defense": {
+            "state": "UNKNOWN"
+          },
+          "elemental": {
+            "state": "UNKNOWN"
+          },
+          "extra_defense": {
+            "state": "UNKNOWN"
+          },
+          "hit_chance": {
+            "state": "UNKNOWN"
+          },
+          "max_hit_chance": {
+            "state": "UNKNOWN"
+          },
+          "range": {
+            "state": "KNOWN",
+            "value": 6
+          },
+          "weapon_type": {
+            "state": "KNOWN",
+            "value": "DISTANCE"
+          }
+        }
+      },
+      "allowed_expected_after_Hit67_weapon_guard": {
+        "state": "KNOWN",
+        "value": {
+          "ammunition": {
+            "state": "UNKNOWN"
+          },
+          "attack": {
+            "state": "UNKNOWN"
+          },
+          "defense": {
+            "state": "UNKNOWN"
+          },
+          "elemental": {
+            "state": "UNKNOWN"
+          },
+          "extra_defense": {
+            "state": "UNKNOWN"
+          },
+          "hit_chance": {
+            "state": "KNOWN",
+            "value": {
+              "denominator": 100,
+              "numerator": 7
+            }
+          },
+          "max_hit_chance": {
+            "state": "UNKNOWN"
+          },
+          "range": {
+            "state": "KNOWN",
+            "value": 6
+          },
+          "weapon_type": {
+            "state": "KNOWN",
+            "value": "DISTANCE"
+          }
+        }
+      },
+      "native_attack_unchanged": true,
+      "other_native_weapon_fields_unchanged": true
+    },
+    {
+      "item_id": 53226,
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i53226",
+        "revision": "definition-r1"
+      },
+      "cohort": "original79",
+      "explicit_Hit67_row": {
+        "expected_name": "stellar moonsilver bow",
+        "facts": {
+          "hit_chance": {
+            "denominator": 100,
+            "numerator": 7
+          }
+        },
+        "hit_percentage_points": 7,
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i53226",
+          "revision": "definition-r1"
+        }
+      },
+      "before_native_weapon_guard": {
+        "state": "KNOWN",
+        "value": {
+          "ammunition": {
+            "state": "UNKNOWN"
+          },
+          "attack": {
+            "state": "UNKNOWN"
+          },
+          "defense": {
+            "state": "UNKNOWN"
+          },
+          "elemental": {
+            "state": "UNKNOWN"
+          },
+          "extra_defense": {
+            "state": "UNKNOWN"
+          },
+          "hit_chance": {
+            "state": "UNKNOWN"
+          },
+          "max_hit_chance": {
+            "state": "UNKNOWN"
+          },
+          "range": {
+            "state": "KNOWN",
+            "value": 6
+          },
+          "weapon_type": {
+            "state": "KNOWN",
+            "value": "DISTANCE"
+          }
+        }
+      },
+      "allowed_expected_after_Hit67_weapon_guard": {
+        "state": "KNOWN",
+        "value": {
+          "ammunition": {
+            "state": "UNKNOWN"
+          },
+          "attack": {
+            "state": "UNKNOWN"
+          },
+          "defense": {
+            "state": "UNKNOWN"
+          },
+          "elemental": {
+            "state": "UNKNOWN"
+          },
+          "extra_defense": {
+            "state": "UNKNOWN"
+          },
+          "hit_chance": {
+            "state": "KNOWN",
+            "value": {
+              "denominator": 100,
+              "numerator": 7
+            }
+          },
+          "max_hit_chance": {
+            "state": "UNKNOWN"
+          },
+          "range": {
+            "state": "KNOWN",
+            "value": 6
+          },
+          "weapon_type": {
+            "state": "KNOWN",
+            "value": "DISTANCE"
+          }
+        }
+      },
+      "native_attack_unchanged": true,
+      "other_native_weapon_fields_unchanged": true
+    },
+    {
+      "item_id": 53227,
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i53227",
+        "revision": "definition-r1"
+      },
+      "cohort": "original79",
+      "explicit_Hit67_row": {
+        "expected_name": "moonsilver crossbow",
+        "facts": {
+          "hit_chance": {
+            "denominator": 25,
+            "numerator": 2
+          }
+        },
+        "hit_percentage_points": 8,
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i53227",
+          "revision": "definition-r1"
+        }
+      },
+      "before_native_weapon_guard": {
+        "state": "KNOWN",
+        "value": {
+          "ammunition": {
+            "state": "UNKNOWN"
+          },
+          "attack": {
+            "state": "UNKNOWN"
+          },
+          "defense": {
+            "state": "UNKNOWN"
+          },
+          "elemental": {
+            "state": "UNKNOWN"
+          },
+          "extra_defense": {
+            "state": "UNKNOWN"
+          },
+          "hit_chance": {
+            "state": "UNKNOWN"
+          },
+          "max_hit_chance": {
+            "state": "UNKNOWN"
+          },
+          "range": {
+            "state": "KNOWN",
+            "value": 6
+          },
+          "weapon_type": {
+            "state": "KNOWN",
+            "value": "DISTANCE"
+          }
+        }
+      },
+      "allowed_expected_after_Hit67_weapon_guard": {
+        "state": "KNOWN",
+        "value": {
+          "ammunition": {
+            "state": "UNKNOWN"
+          },
+          "attack": {
+            "state": "UNKNOWN"
+          },
+          "defense": {
+            "state": "UNKNOWN"
+          },
+          "elemental": {
+            "state": "UNKNOWN"
+          },
+          "extra_defense": {
+            "state": "UNKNOWN"
+          },
+          "hit_chance": {
+            "state": "KNOWN",
+            "value": {
+              "denominator": 25,
+              "numerator": 2
+            }
+          },
+          "max_hit_chance": {
+            "state": "UNKNOWN"
+          },
+          "range": {
+            "state": "KNOWN",
+            "value": 6
+          },
+          "weapon_type": {
+            "state": "KNOWN",
+            "value": "DISTANCE"
+          }
+        }
+      },
+      "native_attack_unchanged": true,
+      "other_native_weapon_fields_unchanged": true
+    },
+    {
+      "item_id": 53228,
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i53228",
+        "revision": "definition-r1"
+      },
+      "cohort": "original79",
+      "explicit_Hit67_row": {
+        "expected_name": "stellar moonsilver crossbow",
+        "facts": {
+          "hit_chance": {
+            "denominator": 25,
+            "numerator": 2
+          }
+        },
+        "hit_percentage_points": 8,
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i53228",
+          "revision": "definition-r1"
+        }
+      },
+      "before_native_weapon_guard": {
+        "state": "KNOWN",
+        "value": {
+          "ammunition": {
+            "state": "UNKNOWN"
+          },
+          "attack": {
+            "state": "UNKNOWN"
+          },
+          "defense": {
+            "state": "UNKNOWN"
+          },
+          "elemental": {
+            "state": "UNKNOWN"
+          },
+          "extra_defense": {
+            "state": "UNKNOWN"
+          },
+          "hit_chance": {
+            "state": "UNKNOWN"
+          },
+          "max_hit_chance": {
+            "state": "UNKNOWN"
+          },
+          "range": {
+            "state": "KNOWN",
+            "value": 6
+          },
+          "weapon_type": {
+            "state": "KNOWN",
+            "value": "DISTANCE"
+          }
+        }
+      },
+      "allowed_expected_after_Hit67_weapon_guard": {
+        "state": "KNOWN",
+        "value": {
+          "ammunition": {
+            "state": "UNKNOWN"
+          },
+          "attack": {
+            "state": "UNKNOWN"
+          },
+          "defense": {
+            "state": "UNKNOWN"
+          },
+          "elemental": {
+            "state": "UNKNOWN"
+          },
+          "extra_defense": {
+            "state": "UNKNOWN"
+          },
+          "hit_chance": {
+            "state": "KNOWN",
+            "value": {
+              "denominator": 25,
+              "numerator": 2
+            }
+          },
+          "max_hit_chance": {
+            "state": "UNKNOWN"
+          },
+          "range": {
+            "state": "KNOWN",
+            "value": 6
+          },
+          "weapon_type": {
+            "state": "KNOWN",
+            "value": "DISTANCE"
+          }
+        }
+      },
+      "native_attack_unchanged": true,
+      "other_native_weapon_fields_unchanged": true
+    }
+  ],
+  "scope": "ONLY known relative hit_chance from explicit frozenHit67 packet; preserve nativeattack/sourceatkmod/sourceabsolutehit/names/types/siblings. New actualwholeForge parent must read back exact expectedgroups and independently sealed live packet/head; no generic projection weakening."
+}

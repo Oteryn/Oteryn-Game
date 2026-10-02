@@ -1,0 +1,822 @@
+{
+  "schema": "WEAPON103_AUDIT_ONLY_CLOSED_COHORT_EXTENSION_MANIFEST/v1",
+  "status": "SOURCE24_QUALIFIED_SCOPED_ACTUALNAME_PRIORITY_SUCCESSOR_NOT_AUTHORED_OR_GENERATED",
+  "utc": "2026-10-02T07:45:02.513706+00:00",
+  "actual_audit_parent": "1945520b41fc1c71856ba52b282c3f4171e083b6",
+  "original79": {
+    "path": "/workspace/pr1437-world-owner-completion/docs/agents/evidence/OTV2-20261002-item-weapon-metadata-source-qualification-v1.json",
+    "sha256": "dbe5e74c63a45cb169fb9557b8b98cb87582f8ba0fec274b372e78297242e78d",
+    "bytes": 343200,
+    "source_facts_canonical_sha256": "52a17163f36f085125db2a906e9b4250fee453c938feadef5c3dbefd9eef2169",
+    "all_source_records_unchanged": true,
+    "field_counts": {
+      "atk_mod": 54,
+      "hit_chance": 25
+    }
+  },
+  "additional24": {
+    "path": "/workspace/audit-continuation/weapon24-after-name139-actualname-priority-source-qualification.json",
+    "sha256": "497ce38dcdfabc0bcac7642ed3159808869b1418d9b61b34d074d9beb7e7c0a2",
+    "bytes": 236651,
+    "qualified_ids": [
+      23229,
+      23230,
+      23239,
+      23240,
+      23249,
+      23250,
+      23259,
+      23260,
+      23287,
+      23288,
+      23289,
+      23290,
+      23291,
+      23292,
+      23293,
+      23294,
+      23327,
+      23328,
+      23329,
+      23330,
+      23331,
+      23332,
+      23333,
+      23334
+    ],
+    "source_facts_canonical_sha256": "38d55086456679dedbceee64f42585e06abdc96d6a015db2570494bbf4a6e69e",
+    "own_raw_box_count": 24,
+    "source_part_count": 4,
+    "source_parts": {
+      "global-infobox-object-source-part-098.json": "95a2f647f1100e8da266f033684280c340163327addbd24528e4f5463664b15d",
+      "global-infobox-object-source-part-100.json": "124e05486d71a6a7cce0121eeeaf9b198b88b1275fb036c60af78a36eff3aac2",
+      "global-infobox-object-source-part-101.json": "d916af0624014e1f67756460507c059fccdc2095b63cef4a74c34e7120ba75cd",
+      "global-infobox-object-source-part-102.json": "9a115bff8c4e9440a8f200782dd690ef3995908fd0d8c9da6ade94dcaea768b0"
+    },
+    "native_attack_states": {
+      "UNKNOWN": 24
+    },
+    "label_variants_retained": [
+      23239,
+      23250,
+      23259,
+      23240,
+      23249,
+      23260,
+      23328,
+      23329,
+      23330,
+      23332,
+      23333,
+      23334,
+      23288,
+      23289,
+      23290,
+      23292,
+      23293,
+      23294
+    ]
+  },
+  "prospective103": {
+    "items": 103,
+    "fields": 103,
+    "atk_mod": 78,
+    "absolute_hit": 25,
+    "exact_ids": [
+      761,
+      762,
+      763,
+      774,
+      3446,
+      3447,
+      3448,
+      3449,
+      3450,
+      5803,
+      6528,
+      7363,
+      7364,
+      7365,
+      8022,
+      8023,
+      8026,
+      8027,
+      8030,
+      12733,
+      14246,
+      14247,
+      14251,
+      14252,
+      14768,
+      15793,
+      16141,
+      16142,
+      16143,
+      16163,
+      16164,
+      19356,
+      19362,
+      20082,
+      20083,
+      20084,
+      20085,
+      20086,
+      20087,
+      21470,
+      22866,
+      22867,
+      23229,
+      23230,
+      23239,
+      23240,
+      23249,
+      23250,
+      23259,
+      23260,
+      23287,
+      23288,
+      23289,
+      23290,
+      23291,
+      23292,
+      23293,
+      23294,
+      23327,
+      23328,
+      23329,
+      23330,
+      23331,
+      23332,
+      23333,
+      23334,
+      27455,
+      27456,
+      28718,
+      29417,
+      30393,
+      31581,
+      34088,
+      34089,
+      34150,
+      35518,
+      36664,
+      36665,
+      39159,
+      43877,
+      43878,
+      43879,
+      43880,
+      47371,
+      47377,
+      49520,
+      49522,
+      49858,
+      49859,
+      49860,
+      49861,
+      49862,
+      49863,
+      52332,
+      53168,
+      53169,
+      53170,
+      53171,
+      53172,
+      53225,
+      53226,
+      53227,
+      53228
+    ],
+    "source_facts_canonical_sha256": "994229968764c0ff5e681b6a21042cdccb77a9cd3cbadde2aba21edce891e517",
+    "native_name_unknown_preserved": [
+      53225,
+      53226,
+      53227,
+      53228
+    ]
+  },
+  "holds_preserved": {
+    "additional_attack_name_conflicts": [
+      8024,
+      8025
+    ],
+    "old_absolute_hit_shared_id_holds": [
+      {
+        "formal_property": "/item/weapon/hit_chance_percent",
+        "full_target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i25757",
+          "revision": "definition-r1"
+        },
+        "holds": [
+          "EXACT_OWN_SOURCE_IDENTITY_OR_PARAMETER_AMBIGUITY"
+        ],
+        "item_id": 25757,
+        "native_write_ready": false,
+        "schema_gap": "Dedicated absolute hit percentage owner is absent. Existing native hit_chance is already used for hit_chance_modifier_percent; never reuse it for this absolute percentage.",
+        "source_field": "hit_chance",
+        "source_proofs": [
+          {
+            "balanced": true,
+            "capture_path": "/workspace/audit-continuation/global-infobox-object-source-part-106.json",
+            "capture_sha256": "f7630713a3345cc1318f3460cceedaeabb3cff2732d1a60bb7ec6d39043f8574",
+            "duplicate_parameter_names": [],
+            "fields": {
+              "actualname": "diamond arrow",
+              "article": "a",
+              "attack": "37",
+              "buyfrom": "Asnarus, Brengus, Cedrik, Dario, Edoch, Eliyas, Maun, Mugruu, Perod, Pompan;tomes-1, Robert, Rock In A Hard Place, Silas, Taegen, Vincent, Willard",
+              "droppedby": "{{Dropped By|}}",
+              "getvalue": "{{{GetValue|}}}",
+              "history": "Before [[Updates/12.55|Vocation Adjustments Update]], [[Paladins|Royal Paladins]] could make 100 of them by casting the [[Conjure Diamond Arrow]] [[spell]]. Diamond Arrows used to expire 60 minutes after they were made.\nThe price was changed from 100 to 130 since [[Summer Update 2024]].",
+              "hit_chance": "100%",
+              "immobile": "no",
+              "implemented": "11.40.5409",
+              "itemid": "25757, 35901",
+              "levelrequired": "150",
+              "list": "{{{1|}}}",
+              "marketable": "yes",
+              "name": "Diamond Arrow",
+              "notes": "Diamond arrows damage an area of 21 fields centred on the target (2 fields of radius), just like old [[Fireball Rune]] (before update in 2007). Since target will always be within the damage area, you will hit it even when you miss it. [[Blue Electricity Effect]]s {{Ilink|Blue Electricity Effect}} appears on the damage area.\n\nDiamond Arrows are not affected by Bows [[Imbuing|imbued]] with Elemental Damage such as [[Powerful Frost]]. The damage they deal is always [[Physical Damage]].",
+              "notes2": "{{Scene|spell=2sqmballtarget|effect=Blue Electricity Effect|effect_on_target=Blue Electricity Effect|missile=Diamond Arrow Missile|missile_direction=south-east|missile_distance=2/2}}",
+              "npcprice": "130",
+              "npcvalue": "0",
+              "objectclass": "Weapons",
+              "pickupable": "yes",
+              "plural": "diamond arrows",
+              "primarytype": "Ammunition",
+              "sellto": "--",
+              "stackable": "yes",
+              "value": "130",
+              "walkable": "yes",
+              "weight": "0.80"
+            },
+            "inside_comment": false,
+            "own_ids": [
+              25757,
+              35901
+            ],
+            "page_id": 80872,
+            "parameters": {
+              "actualname": [
+                "diamond arrow"
+              ],
+              "article": [
+                "a"
+              ],
+              "attack": [
+                "37"
+              ],
+              "buyfrom": [
+                "Asnarus, Brengus, Cedrik, Dario, Edoch, Eliyas, Maun, Mugruu, Perod, Pompan;tomes-1, Robert, Rock In A Hard Place, Silas, Taegen, Vincent, Willard"
+              ],
+              "droppedby": [
+                "{{Dropped By|}}"
+              ],
+              "getvalue": [
+                "{{{GetValue|}}}"
+              ],
+              "history": [
+                "Before [[Updates/12.55|Vocation Adjustments Update]], [[Paladins|Royal Paladins]] could make 100 of them by casting the [[Conjure Diamond Arrow]] [[spell]]. Diamond Arrows used to expire 60 minutes after they were made.\nThe price was changed from 100 to 130 since [[Summer Update 2024]]."
+              ],
+              "hit_chance": [
+                "100%"
+              ],
+              "immobile": [
+                "no"
+              ],
+              "implemented": [
+                "11.40.5409"
+              ],
+              "itemid": [
+                "25757, 35901"
+              ],
+              "levelrequired": [
+                "150"
+              ],
+              "list": [
+                "{{{1|}}}"
+              ],
+              "marketable": [
+                "yes"
+              ],
+              "name": [
+                "Diamond Arrow"
+              ],
+              "notes": [
+                "Diamond arrows damage an area of 21 fields centred on the target (2 fields of radius), just like old [[Fireball Rune]] (before update in 2007). Since target will always be within the damage area, you will hit it even when you miss it. [[Blue Electricity Effect]]s {{Ilink|Blue Electricity Effect}} appears on the damage area.\n\nDiamond Arrows are not affected by Bows [[Imbuing|imbued]] with Elemental Damage such as [[Powerful Frost]]. The damage they deal is always [[Physical Damage]]."
+              ],
+              "notes2": [
+                "{{Scene|spell=2sqmballtarget|effect=Blue Electricity Effect|effect_on_target=Blue Electricity Effect|missile=Diamond Arrow Missile|missile_direction=south-east|missile_distance=2/2}}"
+              ],
+              "npcprice": [
+                "130"
+              ],
+              "npcvalue": [
+                "0"
+              ],
+              "objectclass": [
+                "Weapons"
+              ],
+              "pickupable": [
+                "yes"
+              ],
+              "plural": [
+                "diamond arrows"
+              ],
+              "primarytype": [
+                "Ammunition"
+              ],
+              "sellto": [
+                "--"
+              ],
+              "stackable": [
+                "yes"
+              ],
+              "value": [
+                "130"
+              ],
+              "walkable": [
+                "yes"
+              ],
+              "weight": [
+                "0.80"
+              ]
+            },
+            "positive_exact_infobox_object_match": true,
+            "raw_own_template_sha256": "29f30a1c4ff9180e72053f4b4cd871ac2e97dd1a99d45df38c64039b9834e741",
+            "revision_id": 1195078,
+            "revision_timestamp": "2026-07-09T07:48:27Z",
+            "title": "Diamond Arrow",
+            "whole_article_sha256_declared": "29f30a1c4ff9180e72053f4b4cd871ac2e97dd1a99d45df38c64039b9834e741"
+          }
+        ],
+        "source_value": 100
+      },
+      {
+        "formal_property": "/item/weapon/hit_chance_percent",
+        "full_target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i35901",
+          "revision": "definition-r1"
+        },
+        "holds": [
+          "EXACT_OWN_SOURCE_IDENTITY_OR_PARAMETER_AMBIGUITY"
+        ],
+        "item_id": 35901,
+        "native_write_ready": false,
+        "schema_gap": "Dedicated absolute hit percentage owner is absent. Existing native hit_chance is already used for hit_chance_modifier_percent; never reuse it for this absolute percentage.",
+        "source_field": "hit_chance",
+        "source_proofs": [
+          {
+            "balanced": true,
+            "capture_path": "/workspace/audit-continuation/global-infobox-object-source-part-106.json",
+            "capture_sha256": "f7630713a3345cc1318f3460cceedaeabb3cff2732d1a60bb7ec6d39043f8574",
+            "duplicate_parameter_names": [],
+            "fields": {
+              "actualname": "diamond arrow",
+              "article": "a",
+              "attack": "37",
+              "buyfrom": "Asnarus, Brengus, Cedrik, Dario, Edoch, Eliyas, Maun, Mugruu, Perod, Pompan;tomes-1, Robert, Rock In A Hard Place, Silas, Taegen, Vincent, Willard",
+              "droppedby": "{{Dropped By|}}",
+              "getvalue": "{{{GetValue|}}}",
+              "history": "Before [[Updates/12.55|Vocation Adjustments Update]], [[Paladins|Royal Paladins]] could make 100 of them by casting the [[Conjure Diamond Arrow]] [[spell]]. Diamond Arrows used to expire 60 minutes after they were made.\nThe price was changed from 100 to 130 since [[Summer Update 2024]].",
+              "hit_chance": "100%",
+              "immobile": "no",
+              "implemented": "11.40.5409",
+              "itemid": "25757, 35901",
+              "levelrequired": "150",
+              "list": "{{{1|}}}",
+              "marketable": "yes",
+              "name": "Diamond Arrow",
+              "notes": "Diamond arrows damage an area of 21 fields centred on the target (2 fields of radius), just like old [[Fireball Rune]] (before update in 2007). Since target will always be within the damage area, you will hit it even when you miss it. [[Blue Electricity Effect]]s {{Ilink|Blue Electricity Effect}} appears on the damage area.\n\nDiamond Arrows are not affected by Bows [[Imbuing|imbued]] with Elemental Damage such as [[Powerful Frost]]. The damage they deal is always [[Physical Damage]].",
+              "notes2": "{{Scene|spell=2sqmballtarget|effect=Blue Electricity Effect|effect_on_target=Blue Electricity Effect|missile=Diamond Arrow Missile|missile_direction=south-east|missile_distance=2/2}}",
+              "npcprice": "130",
+              "npcvalue": "0",
+              "objectclass": "Weapons",
+              "pickupable": "yes",
+              "plural": "diamond arrows",
+              "primarytype": "Ammunition",
+              "sellto": "--",
+              "stackable": "yes",
+              "value": "130",
+              "walkable": "yes",
+              "weight": "0.80"
+            },
+            "inside_comment": false,
+            "own_ids": [
+              25757,
+              35901
+            ],
+            "page_id": 80872,
+            "parameters": {
+              "actualname": [
+                "diamond arrow"
+              ],
+              "article": [
+                "a"
+              ],
+              "attack": [
+                "37"
+              ],
+              "buyfrom": [
+                "Asnarus, Brengus, Cedrik, Dario, Edoch, Eliyas, Maun, Mugruu, Perod, Pompan;tomes-1, Robert, Rock In A Hard Place, Silas, Taegen, Vincent, Willard"
+              ],
+              "droppedby": [
+                "{{Dropped By|}}"
+              ],
+              "getvalue": [
+                "{{{GetValue|}}}"
+              ],
+              "history": [
+                "Before [[Updates/12.55|Vocation Adjustments Update]], [[Paladins|Royal Paladins]] could make 100 of them by casting the [[Conjure Diamond Arrow]] [[spell]]. Diamond Arrows used to expire 60 minutes after they were made.\nThe price was changed from 100 to 130 since [[Summer Update 2024]]."
+              ],
+              "hit_chance": [
+                "100%"
+              ],
+              "immobile": [
+                "no"
+              ],
+              "implemented": [
+                "11.40.5409"
+              ],
+              "itemid": [
+                "25757, 35901"
+              ],
+              "levelrequired": [
+                "150"
+              ],
+              "list": [
+                "{{{1|}}}"
+              ],
+              "marketable": [
+                "yes"
+              ],
+              "name": [
+                "Diamond Arrow"
+              ],
+              "notes": [
+                "Diamond arrows damage an area of 21 fields centred on the target (2 fields of radius), just like old [[Fireball Rune]] (before update in 2007). Since target will always be within the damage area, you will hit it even when you miss it. [[Blue Electricity Effect]]s {{Ilink|Blue Electricity Effect}} appears on the damage area.\n\nDiamond Arrows are not affected by Bows [[Imbuing|imbued]] with Elemental Damage such as [[Powerful Frost]]. The damage they deal is always [[Physical Damage]]."
+              ],
+              "notes2": [
+                "{{Scene|spell=2sqmballtarget|effect=Blue Electricity Effect|effect_on_target=Blue Electricity Effect|missile=Diamond Arrow Missile|missile_direction=south-east|missile_distance=2/2}}"
+              ],
+              "npcprice": [
+                "130"
+              ],
+              "npcvalue": [
+                "0"
+              ],
+              "objectclass": [
+                "Weapons"
+              ],
+              "pickupable": [
+                "yes"
+              ],
+              "plural": [
+                "diamond arrows"
+              ],
+              "primarytype": [
+                "Ammunition"
+              ],
+              "sellto": [
+                "--"
+              ],
+              "stackable": [
+                "yes"
+              ],
+              "value": [
+                "130"
+              ],
+              "walkable": [
+                "yes"
+              ],
+              "weight": [
+                "0.80"
+              ]
+            },
+            "positive_exact_infobox_object_match": true,
+            "raw_own_template_sha256": "29f30a1c4ff9180e72053f4b4cd871ac2e97dd1a99d45df38c64039b9834e741",
+            "revision_id": 1195078,
+            "revision_timestamp": "2026-07-09T07:48:27Z",
+            "title": "Diamond Arrow",
+            "whole_article_sha256_declared": "29f30a1c4ff9180e72053f4b4cd871ac2e97dd1a99d45df38c64039b9834e741"
+          }
+        ],
+        "source_value": 100
+      },
+      {
+        "formal_property": "/item/weapon/hit_chance_percent",
+        "full_target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i25758",
+          "revision": "definition-r1"
+        },
+        "holds": [
+          "EXACT_OWN_SOURCE_IDENTITY_OR_PARAMETER_AMBIGUITY"
+        ],
+        "item_id": 25758,
+        "native_write_ready": false,
+        "schema_gap": "Dedicated absolute hit percentage owner is absent. Existing native hit_chance is already used for hit_chance_modifier_percent; never reuse it for this absolute percentage.",
+        "source_field": "hit_chance",
+        "source_proofs": [
+          {
+            "balanced": true,
+            "capture_path": "/workspace/audit-continuation/global-infobox-object-source-part-106.json",
+            "capture_sha256": "f7630713a3345cc1318f3460cceedaeabb3cff2732d1a60bb7ec6d39043f8574",
+            "duplicate_parameter_names": [],
+            "fields": {
+              "actualname": "spectral bolt",
+              "article": "a",
+              "attack": "78",
+              "buyfrom": "Asnarus, Brengus, Cedrik, Dario, Edoch, Eliyas, Maun, Mugruu, Perod, Pompan;tomes-1, Robert, Rock In A Hard Place, Silas, Taegen, Vincent, Willard",
+              "droppedby": "{{Dropped By|}}",
+              "getvalue": "{{{GetValue|}}}",
+              "history": "Before [[Updates/12.55|Vocation Adjustments Update]], [[Paladins|Royal Paladins]] could make 100 of them by casting the [[Conjure Spectral Bolt]] [[spell]]. Spectral Bolts used to expire 60 minutes after they were made.",
+              "hit_chance": "90%",
+              "immobile": "no",
+              "implemented": "11.40.5409",
+              "itemid": "25758, 35902",
+              "levelrequired": "150",
+              "list": "{{{1|}}}",
+              "marketable": "yes",
+              "name": "Spectral Bolt",
+              "notes": "It is as accurate as [[Prismatic Bolt]]s.",
+              "npcprice": "70",
+              "npcvalue": "0",
+              "objectclass": "Weapons",
+              "pickupable": "yes",
+              "plural": "spectral bolts",
+              "primarytype": "Ammunition",
+              "sellto": "--",
+              "stackable": "yes",
+              "value": "Negotiable",
+              "walkable": "yes",
+              "weight": "0.90"
+            },
+            "inside_comment": false,
+            "own_ids": [
+              25758,
+              35902
+            ],
+            "page_id": 80873,
+            "parameters": {
+              "actualname": [
+                "spectral bolt"
+              ],
+              "article": [
+                "a"
+              ],
+              "attack": [
+                "78"
+              ],
+              "buyfrom": [
+                "Asnarus, Brengus, Cedrik, Dario, Edoch, Eliyas, Maun, Mugruu, Perod, Pompan;tomes-1, Robert, Rock In A Hard Place, Silas, Taegen, Vincent, Willard"
+              ],
+              "droppedby": [
+                "{{Dropped By|}}"
+              ],
+              "getvalue": [
+                "{{{GetValue|}}}"
+              ],
+              "history": [
+                "Before [[Updates/12.55|Vocation Adjustments Update]], [[Paladins|Royal Paladins]] could make 100 of them by casting the [[Conjure Spectral Bolt]] [[spell]]. Spectral Bolts used to expire 60 minutes after they were made."
+              ],
+              "hit_chance": [
+                "90%"
+              ],
+              "immobile": [
+                "no"
+              ],
+              "implemented": [
+                "11.40.5409"
+              ],
+              "itemid": [
+                "25758, 35902"
+              ],
+              "levelrequired": [
+                "150"
+              ],
+              "list": [
+                "{{{1|}}}"
+              ],
+              "marketable": [
+                "yes"
+              ],
+              "name": [
+                "Spectral Bolt"
+              ],
+              "notes": [
+                "It is as accurate as [[Prismatic Bolt]]s."
+              ],
+              "npcprice": [
+                "70"
+              ],
+              "npcvalue": [
+                "0"
+              ],
+              "objectclass": [
+                "Weapons"
+              ],
+              "pickupable": [
+                "yes"
+              ],
+              "plural": [
+                "spectral bolts"
+              ],
+              "primarytype": [
+                "Ammunition"
+              ],
+              "sellto": [
+                "--"
+              ],
+              "stackable": [
+                "yes"
+              ],
+              "value": [
+                "Negotiable"
+              ],
+              "walkable": [
+                "yes"
+              ],
+              "weight": [
+                "0.90"
+              ]
+            },
+            "positive_exact_infobox_object_match": true,
+            "raw_own_template_sha256": "d5cbb90bf5aa9ed0da7a6858919d9bdd1979f8f6a1aa041bda6bd38ae57cdd3a",
+            "revision_id": 1195113,
+            "revision_timestamp": "2026-07-09T08:11:41Z",
+            "title": "Spectral Bolt",
+            "whole_article_sha256_declared": "d5cbb90bf5aa9ed0da7a6858919d9bdd1979f8f6a1aa041bda6bd38ae57cdd3a"
+          }
+        ],
+        "source_value": 90
+      },
+      {
+        "formal_property": "/item/weapon/hit_chance_percent",
+        "full_target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i35902",
+          "revision": "definition-r1"
+        },
+        "holds": [
+          "EXACT_OWN_SOURCE_IDENTITY_OR_PARAMETER_AMBIGUITY"
+        ],
+        "item_id": 35902,
+        "native_write_ready": false,
+        "schema_gap": "Dedicated absolute hit percentage owner is absent. Existing native hit_chance is already used for hit_chance_modifier_percent; never reuse it for this absolute percentage.",
+        "source_field": "hit_chance",
+        "source_proofs": [
+          {
+            "balanced": true,
+            "capture_path": "/workspace/audit-continuation/global-infobox-object-source-part-106.json",
+            "capture_sha256": "f7630713a3345cc1318f3460cceedaeabb3cff2732d1a60bb7ec6d39043f8574",
+            "duplicate_parameter_names": [],
+            "fields": {
+              "actualname": "spectral bolt",
+              "article": "a",
+              "attack": "78",
+              "buyfrom": "Asnarus, Brengus, Cedrik, Dario, Edoch, Eliyas, Maun, Mugruu, Perod, Pompan;tomes-1, Robert, Rock In A Hard Place, Silas, Taegen, Vincent, Willard",
+              "droppedby": "{{Dropped By|}}",
+              "getvalue": "{{{GetValue|}}}",
+              "history": "Before [[Updates/12.55|Vocation Adjustments Update]], [[Paladins|Royal Paladins]] could make 100 of them by casting the [[Conjure Spectral Bolt]] [[spell]]. Spectral Bolts used to expire 60 minutes after they were made.",
+              "hit_chance": "90%",
+              "immobile": "no",
+              "implemented": "11.40.5409",
+              "itemid": "25758, 35902",
+              "levelrequired": "150",
+              "list": "{{{1|}}}",
+              "marketable": "yes",
+              "name": "Spectral Bolt",
+              "notes": "It is as accurate as [[Prismatic Bolt]]s.",
+              "npcprice": "70",
+              "npcvalue": "0",
+              "objectclass": "Weapons",
+              "pickupable": "yes",
+              "plural": "spectral bolts",
+              "primarytype": "Ammunition",
+              "sellto": "--",
+              "stackable": "yes",
+              "value": "Negotiable",
+              "walkable": "yes",
+              "weight": "0.90"
+            },
+            "inside_comment": false,
+            "own_ids": [
+              25758,
+              35902
+            ],
+            "page_id": 80873,
+            "parameters": {
+              "actualname": [
+                "spectral bolt"
+              ],
+              "article": [
+                "a"
+              ],
+              "attack": [
+                "78"
+              ],
+              "buyfrom": [
+                "Asnarus, Brengus, Cedrik, Dario, Edoch, Eliyas, Maun, Mugruu, Perod, Pompan;tomes-1, Robert, Rock In A Hard Place, Silas, Taegen, Vincent, Willard"
+              ],
+              "droppedby": [
+                "{{Dropped By|}}"
+              ],
+              "getvalue": [
+                "{{{GetValue|}}}"
+              ],
+              "history": [
+                "Before [[Updates/12.55|Vocation Adjustments Update]], [[Paladins|Royal Paladins]] could make 100 of them by casting the [[Conjure Spectral Bolt]] [[spell]]. Spectral Bolts used to expire 60 minutes after they were made."
+              ],
+              "hit_chance": [
+                "90%"
+              ],
+              "immobile": [
+                "no"
+              ],
+              "implemented": [
+                "11.40.5409"
+              ],
+              "itemid": [
+                "25758, 35902"
+              ],
+              "levelrequired": [
+                "150"
+              ],
+              "list": [
+                "{{{1|}}}"
+              ],
+              "marketable": [
+                "yes"
+              ],
+              "name": [
+                "Spectral Bolt"
+              ],
+              "notes": [
+                "It is as accurate as [[Prismatic Bolt]]s."
+              ],
+              "npcprice": [
+                "70"
+              ],
+              "npcvalue": [
+                "0"
+              ],
+              "objectclass": [
+                "Weapons"
+              ],
+              "pickupable": [
+                "yes"
+              ],
+              "plural": [
+                "spectral bolts"
+              ],
+              "primarytype": [
+                "Ammunition"
+              ],
+              "sellto": [
+                "--"
+              ],
+              "stackable": [
+                "yes"
+              ],
+              "value": [
+                "Negotiable"
+              ],
+              "walkable": [
+                "yes"
+              ],
+              "weight": [
+                "0.90"
+              ]
+            },
+            "positive_exact_infobox_object_match": true,
+            "raw_own_template_sha256": "d5cbb90bf5aa9ed0da7a6858919d9bdd1979f8f6a1aa041bda6bd38ae57cdd3a",
+            "revision_id": 1195113,
+            "revision_timestamp": "2026-07-09T08:11:41Z",
+            "title": "Spectral Bolt",
+            "whole_article_sha256_declared": "d5cbb90bf5aa9ed0da7a6858919d9bdd1979f8f6a1aa041bda6bd38ae57cdd3a"
+          }
+        ],
+        "source_value": 90
+      }
+    ]
+  },
+  "guard_policy": "Unique nonempty actualname first; fallback name ONLYifactualname parameter absent. Duplicate/empty/conflicting actualname rejects. Raw display name labels retained; singleton own numeric ID only; no name joins.",
+  "native_policy": "Source-only existing ItemAuthoring weapon_attack_modifier_points + weapon_absolute_hit_chance_percent; nativeattack and V4 unchanged. All new24 nativeweapon groups equal before/afterName139.",
+  "future_closed_successor_preconditions": [
+    "Fresh final serial-parent native/name/type/binding/current official/World/authoring guards; no reuse of Name139 native projection as final parent.",
+    "Separate explicit successor source proof and closed103 packet/count/tests if all24 remain qualified; do not rewrite immutable79 proof.",
+    "Preserve exact4 Hit67 changes on original79, all other native data, all authoring siblings, and all remaining holds.",
+    "Compiler-only imported EXACT Crystal bridge as accepted; no fabricated draft source_identity_bindings.",
+    "No native attack mutation or absolute-hit overwrite; no new ABI or runtime capability.",
+    "Adopt source name priority in explicit Weapon successor with label-vsactualname + duplicate/empty/conflict tests; unchanged79 source proof stays historical.",
+    "Fresh actual wholeForge parent receipt verifies exactly4 allowed Hit67 relative deltas; preserve4 UNKNOWN names and75 other original79 nativeprojections.",
+    "Independent peer24 + fixed exact103/count/idempotent/conflict/atomicity guards before publication."
+  ],
+  "audit_helper": {
+    "path": "/workspace/audit-continuation/qualify-weapon24-after-name139.py",
+    "sha256": "a2589d13bdfc29cf9c6ac25f1d8349845e7755793bc2c58abfa47566a59e70cd"
+  }
+}

@@ -1,0 +1,828 @@
+{
+  "schema": "WEAPON24_CLOSED103_INDEPENDENT_SOURCE_FACT_PEER/v1",
+  "utc": "2026-10-02T07:52:02.333125+00:00",
+  "status": "SOURCE24_RAW_FACTS_PASS_PROSPECTIVE_CLOSED103_NOT_AUTHORED",
+  "proof_sha256": "497ce38dcdfabc0bcac7642ed3159808869b1418d9b61b34d074d9beb7e7c0a2",
+  "manifest_sha256": "264546b1f5af184c4415fa52e98b9b66dd106d2c3297f13ae695b1b804889ff4",
+  "actual_published_audit_parent": "1945520b41fc1c71856ba52b282c3f4171e083b6",
+  "qualified24": [
+    23229,
+    23230,
+    23239,
+    23240,
+    23249,
+    23250,
+    23259,
+    23260,
+    23287,
+    23288,
+    23289,
+    23290,
+    23291,
+    23292,
+    23293,
+    23294,
+    23327,
+    23328,
+    23329,
+    23330,
+    23331,
+    23332,
+    23333,
+    23334
+  ],
+  "held2": [
+    8024,
+    8025
+  ],
+  "prospective_counts": {
+    "attack_modifier": 78,
+    "absolute_hit_percent": 25,
+    "items": 103
+  },
+  "full_global_own_index_pages": 9980,
+  "actual24_own_raw_boxes": 24,
+  "actual24_parts": {
+    "global-infobox-object-source-part-098.json": "95a2f647f1100e8da266f033684280c340163327addbd24528e4f5463664b15d",
+    "global-infobox-object-source-part-100.json": "124e05486d71a6a7cce0121eeeaf9b198b88b1275fb036c60af78a36eff3aac2",
+    "global-infobox-object-source-part-101.json": "d916af0624014e1f67756460507c059fccdc2095b63cef4a74c34e7120ba75cd",
+    "global-infobox-object-source-part-102.json": "9a115bff8c4e9440a8f200782dd690ef3995908fd0d8c9da6ade94dcaea768b0"
+  },
+  "display_label_variants_preserved": [
+    23239,
+    23240,
+    23249,
+    23250,
+    23259,
+    23260,
+    23288,
+    23289,
+    23290,
+    23292,
+    23293,
+    23294,
+    23328,
+    23329,
+    23330,
+    23332,
+    23333,
+    23334
+  ],
+  "native_attack_unknown_preserved24": 24,
+  "original79_proof_immutable_sha256": "dbe5e74c63a45cb169fb9557b8b98cb87582f8ba0fec274b372e78297242e78d",
+  "original79_disjoint_source_facts_unchanged": true,
+  "all_three_manifest_fact_projections_order_encoding_seals_independently_match": true,
+  "current24_authoring_property_absence_verified": true,
+  "existing24_authoring_owner_rows": [],
+  "four_unknown_original_names_preserved": [
+    53225,
+    53226,
+    53227,
+    53228
+  ],
+  "absolute_shared_ID_holds4_preserved": true,
+  "perID_raw_witnesses26": [
+    {
+      "source_item_id": 23229,
+      "full_target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i23229",
+        "revision": "definition-r1"
+      },
+      "atk_modifier_points": 6,
+      "old_native_attack": {
+        "state": "UNKNOWN"
+      },
+      "raw_coordinate_names": [
+        {
+          "page_id": 78065,
+          "revision_id": 1147952,
+          "raw_name": [
+            "Bow of Mayhem"
+          ],
+          "raw_actualname": [
+            "bow of mayhem"
+          ],
+          "own_ids": [
+            "23229"
+          ]
+        }
+      ],
+      "qualification": "QUALIFIED"
+    },
+    {
+      "source_item_id": 23287,
+      "full_target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i23287",
+        "revision": "definition-r1"
+      },
+      "atk_modifier_points": 6,
+      "old_native_attack": {
+        "state": "UNKNOWN"
+      },
+      "raw_coordinate_names": [
+        {
+          "page_id": 78066,
+          "revision_id": 1148010,
+          "raw_name": [
+            "Bow of Remedy"
+          ],
+          "raw_actualname": [
+            "bow of remedy"
+          ],
+          "own_ids": [
+            "23287"
+          ]
+        }
+      ],
+      "qualification": "QUALIFIED"
+    },
+    {
+      "source_item_id": 23327,
+      "full_target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i23327",
+        "revision": "definition-r1"
+      },
+      "atk_modifier_points": 6,
+      "old_native_attack": {
+        "state": "UNKNOWN"
+      },
+      "raw_coordinate_names": [
+        {
+          "page_id": 78067,
+          "revision_id": 1148050,
+          "raw_name": [
+            "Bow of Carving"
+          ],
+          "raw_actualname": [
+            "bow of carving"
+          ],
+          "own_ids": [
+            "23327"
+          ]
+        }
+      ],
+      "qualification": "QUALIFIED"
+    },
+    {
+      "source_item_id": 23230,
+      "full_target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i23230",
+        "revision": "definition-r1"
+      },
+      "atk_modifier_points": 6,
+      "old_native_attack": {
+        "state": "UNKNOWN"
+      },
+      "raw_coordinate_names": [
+        {
+          "page_id": 78068,
+          "revision_id": 1147953,
+          "raw_name": [
+            "Crossbow of Mayhem"
+          ],
+          "raw_actualname": [
+            "crossbow of mayhem"
+          ],
+          "own_ids": [
+            "23230"
+          ]
+        }
+      ],
+      "qualification": "QUALIFIED"
+    },
+    {
+      "source_item_id": 23291,
+      "full_target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i23291",
+        "revision": "definition-r1"
+      },
+      "atk_modifier_points": 6,
+      "old_native_attack": {
+        "state": "UNKNOWN"
+      },
+      "raw_coordinate_names": [
+        {
+          "page_id": 78069,
+          "revision_id": 1148014,
+          "raw_name": [
+            "Crossbow of Remedy"
+          ],
+          "raw_actualname": [
+            "crossbow of remedy"
+          ],
+          "own_ids": [
+            "23291"
+          ]
+        }
+      ],
+      "qualification": "QUALIFIED"
+    },
+    {
+      "source_item_id": 23331,
+      "full_target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i23331",
+        "revision": "definition-r1"
+      },
+      "atk_modifier_points": 6,
+      "old_native_attack": {
+        "state": "UNKNOWN"
+      },
+      "raw_coordinate_names": [
+        {
+          "page_id": 78070,
+          "revision_id": 1148054,
+          "raw_name": [
+            "Crossbow of Carving"
+          ],
+          "raw_actualname": [
+            "crossbow of carving"
+          ],
+          "own_ids": [
+            "23331"
+          ]
+        }
+      ],
+      "qualification": "QUALIFIED"
+    },
+    {
+      "source_item_id": 23239,
+      "full_target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i23239",
+        "revision": "definition-r1"
+      },
+      "atk_modifier_points": 4,
+      "old_native_attack": {
+        "state": "UNKNOWN"
+      },
+      "raw_coordinate_names": [
+        {
+          "page_id": 78605,
+          "revision_id": 1147962,
+          "raw_name": [
+            "Bow of Mayhem (Charged)"
+          ],
+          "raw_actualname": [
+            "bow of mayhem"
+          ],
+          "own_ids": [
+            "23239"
+          ]
+        }
+      ],
+      "qualification": "QUALIFIED"
+    },
+    {
+      "source_item_id": 23250,
+      "full_target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i23250",
+        "revision": "definition-r1"
+      },
+      "atk_modifier_points": 5,
+      "old_native_attack": {
+        "state": "UNKNOWN"
+      },
+      "raw_coordinate_names": [
+        {
+          "page_id": 78608,
+          "revision_id": 1147973,
+          "raw_name": [
+            "Bow of Mayhem (Heavily Charged)"
+          ],
+          "raw_actualname": [
+            "bow of mayhem"
+          ],
+          "own_ids": [
+            "23250"
+          ]
+        }
+      ],
+      "qualification": "QUALIFIED"
+    },
+    {
+      "source_item_id": 23259,
+      "full_target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i23259",
+        "revision": "definition-r1"
+      },
+      "atk_modifier_points": 6,
+      "old_native_attack": {
+        "state": "UNKNOWN"
+      },
+      "raw_coordinate_names": [
+        {
+          "page_id": 78610,
+          "revision_id": 1147982,
+          "raw_name": [
+            "Bow of Mayhem (Overcharged)"
+          ],
+          "raw_actualname": [
+            "bow of mayhem"
+          ],
+          "own_ids": [
+            "23259"
+          ]
+        }
+      ],
+      "qualification": "QUALIFIED"
+    },
+    {
+      "source_item_id": 23240,
+      "full_target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i23240",
+        "revision": "definition-r1"
+      },
+      "atk_modifier_points": 4,
+      "old_native_attack": {
+        "state": "UNKNOWN"
+      },
+      "raw_coordinate_names": [
+        {
+          "page_id": 78678,
+          "revision_id": 1147963,
+          "raw_name": [
+            "Crossbow of Mayhem (Charged)"
+          ],
+          "raw_actualname": [
+            "crossbow of mayhem"
+          ],
+          "own_ids": [
+            "23240"
+          ]
+        }
+      ],
+      "qualification": "QUALIFIED"
+    },
+    {
+      "source_item_id": 23249,
+      "full_target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i23249",
+        "revision": "definition-r1"
+      },
+      "atk_modifier_points": 5,
+      "old_native_attack": {
+        "state": "UNKNOWN"
+      },
+      "raw_coordinate_names": [
+        {
+          "page_id": 78679,
+          "revision_id": 1147972,
+          "raw_name": [
+            "Crossbow of Mayhem (Heavily Charged)"
+          ],
+          "raw_actualname": [
+            "crossbow of mayhem"
+          ],
+          "own_ids": [
+            "23249"
+          ]
+        }
+      ],
+      "qualification": "QUALIFIED"
+    },
+    {
+      "source_item_id": 23260,
+      "full_target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i23260",
+        "revision": "definition-r1"
+      },
+      "atk_modifier_points": 6,
+      "old_native_attack": {
+        "state": "UNKNOWN"
+      },
+      "raw_coordinate_names": [
+        {
+          "page_id": 78680,
+          "revision_id": 1147983,
+          "raw_name": [
+            "Crossbow of Mayhem (Overcharged)"
+          ],
+          "raw_actualname": [
+            "crossbow of mayhem"
+          ],
+          "own_ids": [
+            "23260"
+          ]
+        }
+      ],
+      "qualification": "QUALIFIED"
+    },
+    {
+      "source_item_id": 23328,
+      "full_target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i23328",
+        "revision": "definition-r1"
+      },
+      "atk_modifier_points": 4,
+      "old_native_attack": {
+        "state": "UNKNOWN"
+      },
+      "raw_coordinate_names": [
+        {
+          "page_id": 79315,
+          "revision_id": 1148051,
+          "raw_name": [
+            "Bow of Carving (Charged)"
+          ],
+          "raw_actualname": [
+            "bow of carving"
+          ],
+          "own_ids": [
+            "23328"
+          ]
+        }
+      ],
+      "qualification": "QUALIFIED"
+    },
+    {
+      "source_item_id": 23329,
+      "full_target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i23329",
+        "revision": "definition-r1"
+      },
+      "atk_modifier_points": 5,
+      "old_native_attack": {
+        "state": "UNKNOWN"
+      },
+      "raw_coordinate_names": [
+        {
+          "page_id": 79316,
+          "revision_id": 1148052,
+          "raw_name": [
+            "Bow of Carving (Heavily Charged)"
+          ],
+          "raw_actualname": [
+            "bow of carving"
+          ],
+          "own_ids": [
+            "23329"
+          ]
+        }
+      ],
+      "qualification": "QUALIFIED"
+    },
+    {
+      "source_item_id": 23330,
+      "full_target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i23330",
+        "revision": "definition-r1"
+      },
+      "atk_modifier_points": 6,
+      "old_native_attack": {
+        "state": "UNKNOWN"
+      },
+      "raw_coordinate_names": [
+        {
+          "page_id": 79317,
+          "revision_id": 1148053,
+          "raw_name": [
+            "Bow of Carving (Overcharged)"
+          ],
+          "raw_actualname": [
+            "bow of carving"
+          ],
+          "own_ids": [
+            "23330"
+          ]
+        }
+      ],
+      "qualification": "QUALIFIED"
+    },
+    {
+      "source_item_id": 23332,
+      "full_target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i23332",
+        "revision": "definition-r1"
+      },
+      "atk_modifier_points": 4,
+      "old_native_attack": {
+        "state": "UNKNOWN"
+      },
+      "raw_coordinate_names": [
+        {
+          "page_id": 79318,
+          "revision_id": 1148055,
+          "raw_name": [
+            "Crossbow of Carving (Charged)"
+          ],
+          "raw_actualname": [
+            "crossbow of carving"
+          ],
+          "own_ids": [
+            "23332"
+          ]
+        }
+      ],
+      "qualification": "QUALIFIED"
+    },
+    {
+      "source_item_id": 23333,
+      "full_target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i23333",
+        "revision": "definition-r1"
+      },
+      "atk_modifier_points": 5,
+      "old_native_attack": {
+        "state": "UNKNOWN"
+      },
+      "raw_coordinate_names": [
+        {
+          "page_id": 79319,
+          "revision_id": 1148056,
+          "raw_name": [
+            "Crossbow of Carving (Heavily Charged)"
+          ],
+          "raw_actualname": [
+            "crossbow of carving"
+          ],
+          "own_ids": [
+            "23333"
+          ]
+        }
+      ],
+      "qualification": "QUALIFIED"
+    },
+    {
+      "source_item_id": 23334,
+      "full_target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i23334",
+        "revision": "definition-r1"
+      },
+      "atk_modifier_points": 6,
+      "old_native_attack": {
+        "state": "UNKNOWN"
+      },
+      "raw_coordinate_names": [
+        {
+          "page_id": 79320,
+          "revision_id": 1148057,
+          "raw_name": [
+            "Crossbow of Carving (Overcharged)"
+          ],
+          "raw_actualname": [
+            "crossbow of carving"
+          ],
+          "own_ids": [
+            "23334"
+          ]
+        }
+      ],
+      "qualification": "QUALIFIED"
+    },
+    {
+      "source_item_id": 23288,
+      "full_target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i23288",
+        "revision": "definition-r1"
+      },
+      "atk_modifier_points": 4,
+      "old_native_attack": {
+        "state": "UNKNOWN"
+      },
+      "raw_coordinate_names": [
+        {
+          "page_id": 79377,
+          "revision_id": 1148011,
+          "raw_name": [
+            "Bow of Remedy (Charged)"
+          ],
+          "raw_actualname": [
+            "bow of remedy"
+          ],
+          "own_ids": [
+            "23288"
+          ]
+        }
+      ],
+      "qualification": "QUALIFIED"
+    },
+    {
+      "source_item_id": 23289,
+      "full_target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i23289",
+        "revision": "definition-r1"
+      },
+      "atk_modifier_points": 5,
+      "old_native_attack": {
+        "state": "UNKNOWN"
+      },
+      "raw_coordinate_names": [
+        {
+          "page_id": 79378,
+          "revision_id": 1148012,
+          "raw_name": [
+            "Bow of Remedy (Heavily Charged)"
+          ],
+          "raw_actualname": [
+            "bow of remedy"
+          ],
+          "own_ids": [
+            "23289"
+          ]
+        }
+      ],
+      "qualification": "QUALIFIED"
+    },
+    {
+      "source_item_id": 23290,
+      "full_target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i23290",
+        "revision": "definition-r1"
+      },
+      "atk_modifier_points": 6,
+      "old_native_attack": {
+        "state": "UNKNOWN"
+      },
+      "raw_coordinate_names": [
+        {
+          "page_id": 79379,
+          "revision_id": 1148013,
+          "raw_name": [
+            "Bow of Remedy (Overcharged)"
+          ],
+          "raw_actualname": [
+            "bow of remedy"
+          ],
+          "own_ids": [
+            "23290"
+          ]
+        }
+      ],
+      "qualification": "QUALIFIED"
+    },
+    {
+      "source_item_id": 23292,
+      "full_target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i23292",
+        "revision": "definition-r1"
+      },
+      "atk_modifier_points": 4,
+      "old_native_attack": {
+        "state": "UNKNOWN"
+      },
+      "raw_coordinate_names": [
+        {
+          "page_id": 79383,
+          "revision_id": 1148015,
+          "raw_name": [
+            "Crossbow of Remedy (Charged)"
+          ],
+          "raw_actualname": [
+            "crossbow of remedy"
+          ],
+          "own_ids": [
+            "23292"
+          ]
+        }
+      ],
+      "qualification": "QUALIFIED"
+    },
+    {
+      "source_item_id": 23293,
+      "full_target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i23293",
+        "revision": "definition-r1"
+      },
+      "atk_modifier_points": 5,
+      "old_native_attack": {
+        "state": "UNKNOWN"
+      },
+      "raw_coordinate_names": [
+        {
+          "page_id": 79384,
+          "revision_id": 1148016,
+          "raw_name": [
+            "Crossbow of Remedy (Heavily Charged)"
+          ],
+          "raw_actualname": [
+            "crossbow of remedy"
+          ],
+          "own_ids": [
+            "23293"
+          ]
+        }
+      ],
+      "qualification": "QUALIFIED"
+    },
+    {
+      "source_item_id": 23294,
+      "full_target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i23294",
+        "revision": "definition-r1"
+      },
+      "atk_modifier_points": 6,
+      "old_native_attack": {
+        "state": "UNKNOWN"
+      },
+      "raw_coordinate_names": [
+        {
+          "page_id": 79385,
+          "revision_id": 1148017,
+          "raw_name": [
+            "Crossbow of Remedy (Overcharged)"
+          ],
+          "raw_actualname": [
+            "crossbow of remedy"
+          ],
+          "own_ids": [
+            "23294"
+          ]
+        }
+      ],
+      "qualification": "QUALIFIED"
+    },
+    {
+      "source_item_id": 8024,
+      "full_target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i8024",
+        "revision": "definition-r1"
+      },
+      "atk_modifier_points": 20,
+      "old_native_attack": {
+        "state": "KNOWN",
+        "value": 20
+      },
+      "raw_coordinate_names": [
+        {
+          "page_id": 25609,
+          "revision_id": 1147534,
+          "raw_name": [
+            "The Devileye"
+          ],
+          "raw_actualname": [
+            "the devileye"
+          ],
+          "own_ids": [
+            "8024"
+          ]
+        }
+      ],
+      "qualification": "HELD_NATIVE_NON_GENERIC_NAME_CONFLICT"
+    },
+    {
+      "source_item_id": 8025,
+      "full_target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i8025",
+        "revision": "definition-r1"
+      },
+      "atk_modifier_points": 4,
+      "old_native_attack": {
+        "state": "KNOWN",
+        "value": 4
+      },
+      "raw_coordinate_names": [
+        {
+          "page_id": 25691,
+          "revision_id": 1147535,
+          "raw_name": [
+            "The Ironworker"
+          ],
+          "raw_actualname": [
+            "the ironworker"
+          ],
+          "own_ids": [
+            "8025"
+          ]
+        }
+      ],
+      "qualification": "HELD_NATIVE_NON_GENERIC_NAME_CONFLICT"
+    }
+  ],
+  "future_requirements": [
+    "Implement only an explicit closed103 successor after actual wholeForge carry; old79 proof remains immutable.",
+    "Strict unique nonempty actualname, fallback name only if parameter absent; present empty/duplicate/disagreeing actualname rejects. Keep every raw name label and numeric ownID. No general name aliases or title-derived IDs.",
+    "Fresh actual successor native weapon/name/binding/B3/currentownID/World/sourceauthoring guard reseal. Preserve24native attackUnknown and all4Unknown original names.",
+    "Hit67 changed24relativehit native groups on new24 plus4stellar onoriginal79; preserve those exact native fields in successor guards rather than reusing Name139 fullweapon guards as current.",
+    "Source-only two existing authoring owners; no native attack write, absolute/relative confusion, ruleset availability, runtime activation or draftbinding fabrication."
+  ],
+  "limits": [
+    "Audit-only genuine source24 facts/103 closed cohort proposal, not native generation/final publication or complete Item readiness.",
+    "Actual public ownInfobox raw bytes independently read from retained anonymous Chrome/CDP captures after ordinaryHTTPblock; full-articleSHA declared metadata only. No new external internet reads/paidcalls/Desktop/Cargo/repo writes."
+  ],
+  "findings": []
+}
