@@ -17,12 +17,12 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "content.lock.json",
         415,
-        "d74d88ccd3217c5106fbee168662ac7911cc28104b76b91281feeeaa74123274",
+        "b7d75f5d7f4cae304fe4d7a4ae3c0e1884bcf590bd1917617066f4b3eb9d14aa",
     ),
     (
         "definitions/declarations.json",
-        21526291,
-        "95ac2268a605bf35d23a17c6e50a3287cec0f77eefc07f4c3219cf7bec768496",
+        21548112,
+        "e7a7192a8e9c9ef5ac40e8b59db2226729d1f1ef8d429cd4a50649619bc9ba57",
     ),
     (
         "definitions/reference.json",
@@ -37,7 +37,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "manifest.json",
         1954,
-        "ac20d9fe0fa7d8e743d3aa3e2afd15a1809a6052431776500dbe74220f875d72",
+        "cdc1083b72de1d1ac1ad89d7aa2fc2118c928f56bac8b376ab8a38cc0c233e17",
     ),
     (
         "presentations/bindings.json",
@@ -47,7 +47,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "project.json",
         407,
-        "8bbc70f271919b4706a934d6345111798992edef918f3aa8d0cd9c51ce1e678c",
+        "c3081e2d556d1f229cdc52089884fc1df9a544ddfd07923d23e077b4aac8c663",
     ),
     (
         "provenance/imports.json",
@@ -114,7 +114,7 @@ const WORLD_CATALOGUE_SHARDS: [(&str, &str); 4] = [
 const TREE_CONTRACT: &str =
     "docs/agents/evidence/OTV2-20260925-full-game-content-ruleset-tree-v1.json";
 const TREE_DIRECTORY_NODES: usize = 97;
-const TREE_SHA256: &str = "a59e099cd3818406d8428ecb727f818d44536dbb8b34d6c810274724e441f788";
+const TREE_SHA256: &str = "28a2c3140b89792f7c5cf9d1d74aa85b0fea06878388174bd93c270528089c1f";
 /// A12 (ITEM-ID-1b): the protected Item family less the 4,590 D149 records, on Tibia keys,
 /// plus the 404 donor epoch-2 records and the 60 appearance-only records (ITEM-ADD-1).
 const ITEMS: usize = 34_031;
@@ -323,7 +323,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     .expect("capture tracked canonical package");
     assert_eq!(
         project.project_revision(),
-        "g4-npc-provisional-enrichment-r26"
+        "g4-npc-provisional-enrichment-r27"
     );
     assert_eq!(project.imports().len(), 25);
     let import_for = |batch: &str| {

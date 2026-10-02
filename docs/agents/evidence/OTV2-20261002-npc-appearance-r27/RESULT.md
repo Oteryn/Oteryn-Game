@@ -1,0 +1,11 @@
+# Label-only NPC appearance correction R27
+
+MUD and Planestrider now use native Invisible authoring presentation instead of neutral human128 proxies. Owner screenshots and independent inspection of the entire retained Tibiopedia GIFs show only the green actor labels. The numerical/wiki actor-exact visibility is UNKNOWN; this is an explicitly DERIVED visual mapping accepted within owner-authorized approximate NPC completion. Both previous neutral choices remain in history. No invented numeric invisible lookType is used.
+
+Exactly2 NPC appearance/source-metadata overlays and2 Presentation profiles change. All other131 actors/profiles and all dialogue, role/history, Behavior, services, world/test map/editor/assets/provenance remain unchanged. Total133 provisional actors retain basic approximate authoring. Neutral appearance proxies remaining0;107 visible visual mappings,2 visually-inferred invisible mappings,1 documented invisible choice,23 previously source-evidenced choices. Exact source fidelity remains uncertain for approximations.
+
+Sources/access: retained public HTTP Tibiopedia actor GIF/HTML checksums; R26 Fandom DOM read via existing real Chrome/CDP Remote Desktop after ordinary HTTP402, reused without extra owner-PC commands. Owner-supplied screenshots corroborate retained full image review. Matching NPC filenames absent in checked pinned Canary04b83 and Crystal00ce02 trees; no claim of exhaustive source absence. No graphics rehosting, private files or owner-machine project/system changes.
+
+Runtime-loaded NPCs0 and interaction passes0. Native Invisible authoring does not prove current client runtime rendering/label behavior. Actual checks, independent reviews, complete predecessor fast generation/parity and draft publication evidence are recorded in validation.json. Formal coordinator, CI/main/Jira/MQ integration remains pending.
+
+Packet SHA `94ce471059d576dc4cadc3d06df22f395482b75443d061d5ef821515ac5bf3ca`; canonical tree `28a2c3140b89792f7c5cf9d1d74aa85b0fea06878388174bd93c270528089c1f`. All15 checks passed, including79 native materializer,4 invisible,7 follow-up,9 prior appearance and7 prior source tests. Independent source and implementation/generated-scope reviews passed. Exact11-document R26 predecessor fast generation and installed-byte parity passed; historical full generation was not rerun.

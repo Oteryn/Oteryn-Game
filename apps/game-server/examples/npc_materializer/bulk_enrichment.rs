@@ -260,7 +260,9 @@ fn visual_scope(
     after: &ProjectV2Declaration,
     from_revision: &str,
 ) -> Result<bool> {
-    let child = if from_revision == "g4-npc-provisional-enrichment-r25" {
+    let child = if from_revision == "g4-npc-provisional-enrichment-r26" {
+        "r27_visual_mapping"
+    } else if from_revision == "g4-npc-provisional-enrichment-r25" {
         "r26_visual_mapping"
     } else {
         "r25_visual_mapping"
@@ -334,7 +336,16 @@ fn visual_scope(
                     && b["classification"] == "PROJECT_DEFAULT_NO_SOURCE_SPRITE"
                     && b["source_completeness"] == "unknown"
                     && b["visual_correspondence"] == "unknown";
+                let derived_invisible = from_revision == "g4-npc-provisional-enrichment-r26"
+                    && matches!(before,ProjectV2Declaration::Npc{identity,..}
+                        if matches!(identity.key.as_str(),"oteryn:npc.mud"|"oteryn:npc.planestrider_npc"))
+                    && b["classification"] == "APPROXIMATE_WIKI_VISUAL_INVISIBLE_MAPPING"
+                    && b["source_visibility_classification"] == "derived_visual_reference"
+                    && b["visibility"] == "invisible"
+                    && b["outfit"].is_null()
+                    && b["literal_source_invisibility_claim"] == false;
                 if (!documented_invisible
+                    && !derived_invisible
                     && !documentary_default
                     && !matches!(
                         b["classification"].as_str(),
@@ -374,7 +385,12 @@ pub(super) fn apply(
     {
         return Err("enrichment envelope drifted".into());
     }
-    let placeholders = if packet.from_project_revision == "g4-npc-provisional-enrichment-r25" {
+    let placeholders = if packet.from_project_revision == "g4-npc-provisional-enrichment-r26" {
+        Some(BTreeSet::from([
+            "oteryn:presentation.npc.mud".to_owned(),
+            "oteryn:presentation.npc.planestrider_npc".to_owned(),
+        ]))
+    } else if packet.from_project_revision == "g4-npc-provisional-enrichment-r25" {
         Some(visual_followup_targets()?)
     } else if packet.from_project_revision == "g4-npc-provisional-enrichment-r24" {
         Some(visual_targets()?)
@@ -391,9 +407,18 @@ pub(super) fn apply(
     let mut seen = BTreeSet::new();
     let mut npc_count = 0;
     for repair in &packet.repairs {
+        if packet.from_project_revision == "g4-npc-provisional-enrichment-r26"
+            && !matches!(&repair.before, ProjectV2Declaration::Npc { identity, .. }
+                if matches!(identity.key.as_str(), "oteryn:npc.mud" | "oteryn:npc.planestrider_npc"))
+            && repair.before != repair.after
+        {
+            return Err("derived invisible refinement cannot alter another actor".into());
+        }
         if matches!(
             packet.from_project_revision.as_str(),
-            "g4-npc-provisional-enrichment-r24" | "g4-npc-provisional-enrichment-r25"
+            "g4-npc-provisional-enrichment-r24"
+                | "g4-npc-provisional-enrichment-r25"
+                | "g4-npc-provisional-enrichment-r26"
         ) && !visual_scope(&repair.before, &repair.after, &packet.from_project_revision)?
         {
             return Err("appearance-only successor cannot change dialogue/roles/history".into());
@@ -452,6 +477,17 @@ pub(super) fn apply(
     }
     let mut seen = BTreeSet::new();
     for repair in &packet.profile_repairs {
+        if packet.from_project_revision == "g4-npc-provisional-enrichment-r26"
+            && serde_json::to_value(&repair.after.data)?
+                != serde_json::json!({
+                "kind":"Presentation","profile":{"selection":"Invisible","light_level":0}})
+        {
+            return Err(
+                "derived invisible refinement must use the existing explicit Invisible selection"
+                    .into(),
+            );
+        }
+
         if packet.from_project_revision == "g4-npc-provisional-enrichment-r25"
             && matches!(
                 repair.after.target.key.as_str(),
@@ -512,6 +548,7 @@ pub(super) fn reverse_for_fixture(
 ) -> Result<()> {
     let chain = if bytes == NPC_ENRICH {
         vec![
+            (NPC_APPEARANCE_INVISIBLE, NPC_APPEARANCE_INVISIBLE_SHA256),
             (NPC_APPEARANCE_FOLLOWUP, NPC_APPEARANCE_FOLLOWUP_SHA256),
             (NPC_APPEARANCE_VISUAL, NPC_APPEARANCE_VISUAL_SHA256),
             (NPC_ENRICH_UPGRADE, NPC_ENRICH_UPGRADE_SHA256),
@@ -521,6 +558,7 @@ pub(super) fn reverse_for_fixture(
         ]
     } else if bytes == NPC_ENRICH_MORE {
         vec![
+            (NPC_APPEARANCE_INVISIBLE, NPC_APPEARANCE_INVISIBLE_SHA256),
             (NPC_APPEARANCE_FOLLOWUP, NPC_APPEARANCE_FOLLOWUP_SHA256),
             (NPC_APPEARANCE_VISUAL, NPC_APPEARANCE_VISUAL_SHA256),
             (NPC_ENRICH_UPGRADE, NPC_ENRICH_UPGRADE_SHA256),
@@ -529,6 +567,7 @@ pub(super) fn reverse_for_fixture(
         ]
     } else if bytes == NPC_ENRICH_FINAL {
         vec![
+            (NPC_APPEARANCE_INVISIBLE, NPC_APPEARANCE_INVISIBLE_SHA256),
             (NPC_APPEARANCE_FOLLOWUP, NPC_APPEARANCE_FOLLOWUP_SHA256),
             (NPC_APPEARANCE_VISUAL, NPC_APPEARANCE_VISUAL_SHA256),
             (NPC_ENRICH_UPGRADE, NPC_ENRICH_UPGRADE_SHA256),
@@ -536,13 +575,20 @@ pub(super) fn reverse_for_fixture(
         ]
     } else if bytes == NPC_ENRICH_UPGRADE {
         vec![
+            (NPC_APPEARANCE_INVISIBLE, NPC_APPEARANCE_INVISIBLE_SHA256),
             (NPC_APPEARANCE_FOLLOWUP, NPC_APPEARANCE_FOLLOWUP_SHA256),
             (NPC_APPEARANCE_VISUAL, NPC_APPEARANCE_VISUAL_SHA256),
             (bytes, packet_sha256),
         ]
     } else if bytes == NPC_APPEARANCE_VISUAL {
         vec![
+            (NPC_APPEARANCE_INVISIBLE, NPC_APPEARANCE_INVISIBLE_SHA256),
             (NPC_APPEARANCE_FOLLOWUP, NPC_APPEARANCE_FOLLOWUP_SHA256),
+            (bytes, packet_sha256),
+        ]
+    } else if bytes == NPC_APPEARANCE_FOLLOWUP {
+        vec![
+            (NPC_APPEARANCE_INVISIBLE, NPC_APPEARANCE_INVISIBLE_SHA256),
             (bytes, packet_sha256),
         ]
     } else {

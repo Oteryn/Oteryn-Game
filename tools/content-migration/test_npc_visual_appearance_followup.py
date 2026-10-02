@@ -9,6 +9,9 @@ class VisualFollowupTests(unittest.TestCase):
         cls.selections=json.loads((evidence/'source-facts.json').read_text())['selections']
         records={r['identity']['key']:r for r in cls.baseline['records']}
         profiles={r['target']['key']:r for r in cls.baseline['authoring_profiles']}
+        invisible = json.loads((ROOT/'docs/agents/evidence/OTV2-20261002-npc-appearance-r27/native-enrichment.json').read_text())
+        for repair in invisible['repairs']:records[repair['before']['identity']['key']]=repair['before']
+        for repair in invisible['profile_repairs']:profiles[repair['before']['target']['key']]=repair['before']
         for repair in cls.packet['repairs']:records[repair['before']['identity']['key']]=repair['before']
         for repair in cls.packet['profile_repairs']:profiles[repair['before']['target']['key']]=repair['before']
         cls.baseline['records']=list(records.values());cls.baseline['authoring_profiles']=list(profiles.values())
