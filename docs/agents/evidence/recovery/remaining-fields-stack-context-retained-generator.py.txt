@@ -1,0 +1,23 @@
+"""Read immutable real Git blobs, retain only the closed1651 native definitions."""
+import pathlib,json,subprocess,hashlib,collections
+R=pathlib.Path('/workspace/pr1437-default-context');P='6a68dbcb64538f9369aeb633d116061f7096ba30'
+sha=lambda b:hashlib.sha256(b).hexdigest()
+canon=lambda v:(json.dumps(v,sort_keys=True,ensure_ascii=False,separators=(',',':'))+'\n').encode()
+def git(*args):return subprocess.check_output(['git','-C',str(R),*args])
+def blob(path):
+ oid=git('rev-parse',f'{P}:{path}').decode().strip();raw=git('cat-file','blob',oid);assert hashlib.sha1(b'blob '+str(len(raw)).encode()+b'\0'+raw).hexdigest()==oid
+ return oid,raw
+proof=json.loads((R/'docs/agents/evidence/OTV2-20261001-item-stack-default-source-qualification-v1.json').read_bytes());assert proof['native_parent']==P
+scope={r['item_key']:r['source_item_id'] for r in proof['records']};assert len(scope)==1651
+io,indexraw=blob('content/items/index.json');index=json.loads(indexraw);assert len(index['shards'])==69
+shards=[];records=[]
+for path in index['shards']:
+ oid,raw=blob(path);data=json.loads(raw);n=0
+ for record in data['records']:
+  d=record['definition'];key=d['identity']['key']
+  if key not in scope:continue
+  n+=1;records.append({'source_item_id':scope[key],'source_shard':path,'source_blob_git_oid':oid,'source_record_sha256':sha(canon(record)),'definition_sha256':sha(canon(d)),'definition':d})
+ shards.append({'path':path,'git_blob_oid':oid,'bytes':len(raw),'sha256':sha(raw),'selected_records':n})
+assert len(records)==1651 and {r['definition']['identity']['key'] for r in records}==set(scope)
+context={'schema':'OTERYN_STACK_DEFAULT_HISTORICAL_NATIVE_QUALIFICATION_CONTEXT/v1','purpose':'HISTORICAL_QUALIFICATION_ONLY_NOT_CURRENT_NATIVE_AUTHORITY','native_parent':P,'native_parent_tree_git_oid':git('rev-parse',f'{P}^{{tree}}').decode().strip(),'source_index':{'path':'content/items/index.json','git_blob_oid':io,'sha256':sha(indexraw),'raw_utf8':indexraw.decode()},'source_shards':shards,'selected_native_definitions':sorted(records,key=lambda r:r['source_item_id']),'count_source_shards':69,'count_selected_definitions':1651,'projection_policy':'Literal full definitions read from actual immutable69 parent Git blobs; no names/states/fields rewritten. Full source shard blob SHA256/OID declared and independently Git-readback verified at generation; full shard bodies not retained here.','immutable_artifacts':{p:sha((R/p).read_bytes()) for p in ['tools/content-schema/item-authoring/lower_wiki_stack_default_packet.py','tools/content-schema/item-authoring/lower_wiki_stack_historical_packet.py','docs/agents/evidence/OTV2-20261001-item-stack-default-source-qualification-v1.json','docs/agents/evidence/OTV2-20261001-item-stack-historical-source-frame-v1.json','docs/agents/evidence/OTV2-20261001-item-stack-default-promotion-v1.json','docs/agents/evidence/OTV2-20261001-item-stack-historical-promotion-v1.json']}}
+p=R/'docs/agents/evidence/OTV2-20261002-stack-default-historical-native-context-v1.json';p.write_bytes(canon(context));print('context',sha(p.read_bytes()),p.stat().st_size,'records',len(records),'69 actualblobreadback')

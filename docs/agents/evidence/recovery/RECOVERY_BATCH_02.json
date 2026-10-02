@@ -1,0 +1,50 @@
+{
+  "schema": "RECOVERY_STAGED_TEXT_V1",
+  "original_file_restoration_complete": false,
+  "files": [
+    {
+      "path": "docs/agents/evidence/recovery/remaining-fields-stack-context-retained-generator.py.txt",
+      "sha": "0301419c66f34611238e5c73052185f5aa1e0a82",
+      "bytes": 3136,
+      "sha256": "68aa9cde9b99060a6ba9d752d21d25b8ed7b60555ff17959df7b7eb12f34ae80",
+      "fidelity": "Exact retained construction/tool input; original final project source/proof/packet bytes not certified"
+    },
+    {
+      "path": "docs/agents/evidence/recovery/forge3332-world-projection.creation.py.txt",
+      "sha": "233d2c2dffbdb4ba096391360a667b13520eb8bd",
+      "bytes": 937,
+      "sha256": "6cd789fe64f7abcc6861f7a0f111fc3994558e743524daa0540c5711326c4c01",
+      "fidelity": "Exact retained construction/tool input; original final project source/proof/packet bytes not certified"
+    },
+    {
+      "path": "docs/agents/evidence/recovery/forge3332-restore-create-v2.creation.py.txt",
+      "sha": "4fdfacea2878b2baedcdcc7680783eaa84b72059",
+      "bytes": 3967,
+      "sha256": "79a740e5fef4a4f164d211126fa2db45346fe0aeccb5d507b4f304fe39468255",
+      "fidelity": "Exact retained construction/tool input; original final project source/proof/packet bytes not certified"
+    },
+    {
+      "path": "docs/agents/evidence/recovery/weapon79-builder.creation.py.txt",
+      "sha": "d53e7dde5e15fedf3522c0f39fc38b7312676b41",
+      "bytes": 3909,
+      "sha256": "92ae72ca1b7c8ef593dfe218d5be842759b749849994e671b91142c102afa563",
+      "fidelity": "Exact retained construction/tool input; original final project source/proof/packet bytes not certified"
+    },
+    {
+      "path": "docs/agents/evidence/recovery/weapon79-alias-helper.creation.py.txt",
+      "sha": "3a80232d3c5afda013ecc7190ec58d989a978bf8",
+      "bytes": 1204,
+      "sha256": "d053127b4e63496b0b8e721cc3c712e98574199073b6990b55a550bb221b38c5",
+      "fidelity": "Exact retained construction/tool input; original final project source/proof/packet bytes not certified"
+    },
+    {
+      "path": "docs/agents/evidence/recovery/weapon79-initial-compiler.creation.py.txt",
+      "sha": "374c9805a82a8c508741b96a8d01a63f47e0ccd4",
+      "bytes": 9950,
+      "sha256": "7d833b17462c1c4aebe36e0b133ed67e47e22a82050caff41b026b5f087a11cd",
+      "fidelity": "Exact retained construction/tool input; original final project source/proof/packet bytes not certified"
+    }
+  ],
+  "checks": "Independent full blob readback; UTF8 length and SHA256",
+  "use": "Retained creation/tool input scripts only; not certified final worker source/proofs/packets or runtime admission."
+}
