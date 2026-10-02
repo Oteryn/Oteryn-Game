@@ -49,6 +49,16 @@ class DocumentAdmissionTests(unittest.TestCase):
         value={'records':[],'declarations':[],'counts':{'records':0,'encounters':0},'source':{}}
         self.assertEqual(successor.finalize(value),value)
 
+    def test_inspection_whitespace_normalized_without_mutating_source(self):
+        before=packet();before['authoring_profiles'][0]['data']['profile']['details']['inspection']=' an energy pulse'
+        after=successor.finalize(before)
+        self.assertEqual(after['authoring_profiles'][0]['data']['profile']['details']['inspection'],'an energy pulse')
+        self.assertEqual(before['authoring_profiles'][0]['data']['profile']['details']['inspection'],' an energy pulse')
+        self.assertEqual(after['declarations'][0]['content'],DOC['content'])
+        self.assertEqual(successor.finalize(after),after)
+        before['authoring_profiles'][0]['data']['profile']['details']['inspection']='  '
+        with self.assertRaisesRegex(original.StageError,'inspection text is empty'):successor.finalize(before)
+
     def test_nested_loot_still_rejected(self):
         stage=successor.DocumentStage(successor.DocumentMapper({}))
         with self.assertRaisesRegex(original.StageError,'outside wave A'):

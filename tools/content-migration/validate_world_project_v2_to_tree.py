@@ -11,9 +11,6 @@ from typing import Any
 ROOT = Path(__file__).resolve().parents[2]
 LEGACY = ROOT / "content" / "world"
 # Canary creature admission wave A (OTERYN_WORLD_PROJECT_V2_CREATURE_ADMISSION_V1 §7).
-CREATURE_FAMILY_COUNTS = {
-    "Creature": 1503, "Presentation": 2613, "Behavior": 2613, "Loot": 1056, "Ability": 6000, "Effect": 4599, "Formula": 4905,
-}
 CREATURE_FAMILY_NODES = {
     "Creature": "content/creatures/definitions/",
     "Presentation": "content/presentations/definitions/",
@@ -27,7 +24,8 @@ CREATURE_FAMILY_NODES = {
 NPC_COUNT = 1110
 NPC_BINDING_COUNT = 2376
 # Encounter admission (OTERYN_WORLD_PROJECT_V2_ENCOUNTER_ADMISSION_V1 E1-E5).
-ENCOUNTER_COUNT = 61
+ENCOUNTER_COUNT = 104
+DOCUMENT_COUNT = 1609
 DIALOGUE_COUNT = 694
 # Charm is a static family with no legacy source (tools/content-schema/charm-authoring).
 CHARM_COUNT = 25
@@ -167,15 +165,23 @@ def validate_item_enrichment(reference: Any, declarations: Any, sources: Any, ba
     return len(legacy_authoring), len(taxonomy["records"]), relation_count, fact_count
 
 
+def creature_family_counts(reference: Any) -> dict[str, int]:
+    counts = {family: sum(row['identity']['family'] == family for row in reference['records'])
+              for family in CREATURE_FAMILY_NODES}
+    require(counts['Creature'] == 1763, 'LEGACY_CREATURE_COUNT')
+    return counts
+
+
 def validate_creature_families(reference: Any, declarations: Any, sources: Any) -> tuple[int, int, int]:
     """Round-trip the admitted creature families, their authoring profiles and source bindings."""
+    family_counts = creature_family_counts(reference)
     legacy_profiles = {target_id(row["target"]): row["data"] for row in declarations.get("authoring_profiles", [])
                        if row["target"]["family"] != "Encounter"}
     migrated_profiles: dict[tuple[str, str, str], Any] = {}
     migrated_bindings: list[Any] = []
     for family, node in CREATURE_FAMILY_NODES.items():
         legacy = [row for row in reference["records"] if row["identity"]["family"] == family]
-        require(len(legacy) == CREATURE_FAMILY_COUNTS[family], f"LEGACY_{family.upper()}_COUNT")
+        require(len(legacy) == family_counts[family], f"LEGACY_{family.upper()}_COUNT")
         index = load(ROOT / node / "index.json")
         require(index["schema"] == "OTERYN_FAMILY_INDEX/v1" and index["family"] == family, f"{family.upper()}_INDEX")
         require(index["record_count"] == len(legacy), f"{family.upper()}_INDEX_COUNT")
@@ -199,7 +205,7 @@ def validate_creature_families(reference: Any, declarations: Any, sources: Any) 
     require(migrated_profiles == legacy_profiles, "CREATURE_AUTHORING_ROUNDTRIP")
     legacy_bindings = [row for row in sources["source_identity_bindings"] if row["target"]["family"] in CREATURE_FAMILY_NODES]
     require(canonical_sorted(migrated_bindings) == canonical_sorted(legacy_bindings), "CREATURE_BINDING_ROUNDTRIP")
-    require(len(legacy_bindings) == CREATURE_FAMILY_COUNTS["Creature"], "CREATURE_BINDING_COUNT")
+    require(len(legacy_bindings) == family_counts["Creature"], "CREATURE_BINDING_COUNT")
     canary_creatures = load(ROOT / "imports/canary/bindings/creatures.json")["bindings"]
     wiki_creatures = load(ROOT / "imports/tibiawiki/bindings/creatures.json")["bindings"]
     crystal_creatures = load(ROOT / "imports/crystalserver/bindings/creatures.json")["bindings"]
@@ -209,7 +215,7 @@ def validate_creature_families(reference: Any, declarations: Any, sources: Any) 
             and canonical_sorted(canary_creatures + wiki_creatures + crystal_creatures) == canonical_sorted(legacy_bindings),
             "IMPORT_CREATURE_BINDINGS")
     require(load(ROOT / "imports/canary/index.json")["population_state"] == "POPULATED", "IMPORT_CANARY_MARKER_STATE")
-    return sum(CREATURE_FAMILY_COUNTS.values()), len(migrated_profiles), len(migrated_bindings)
+    return sum(family_counts.values()), len(migrated_profiles), len(migrated_bindings)
 
 
 def validate_npc_services(declarations: Any, sources: Any) -> tuple[int, int, int]:
@@ -335,6 +341,42 @@ def validate_dialogue(declarations: Any) -> int:
     return len(migrated_dialogues)
 
 
+def validate_document_rows(rows: list[Any], declarations: Any, sources: Any) -> int:
+    legacy = [row for row in declarations['records'] if row.get('kind') == 'Document']
+    require(len(legacy) == DOCUMENT_COUNT, 'LEGACY_DOCUMENT_COUNT')
+    require(all(set(row) == {'declaration'} for row in rows), 'DOCUMENT_ROW_SHAPE')
+    migrated = [row['declaration'] for row in rows]
+    require(migrated == legacy, 'DOCUMENT_DECLARATION_ROUNDTRIP')
+    identities = {('Document', row['identity']['key'], row['identity']['revision']) for row in migrated}
+    require(len(identities) == DOCUMENT_COUNT, 'DOCUMENT_IDENTITY_UNIQUENESS')
+    require(not any(row['target']['family'] == 'Document' for row in sources['source_identity_bindings']),
+            'DOCUMENT_SOURCE_BINDING_FABRICATED')
+    for row in declarations.get('authoring_profiles', []):
+        if row['data']['kind'] != 'Creature':
+            continue
+        ref = row['data']['profile'].get('details', {}).get('encyclopedia_document')
+        if ref is not None:
+            require(target_id(ref) in identities, 'CREATURE_DOCUMENT_REFERENCE_UNRESOLVED')
+    return len(migrated)
+
+
+def validate_documents(declarations: Any, sources: Any) -> int:
+    index = load(ROOT / 'content/documents/index.json')
+    require(index['schema'] == 'OTERYN_FAMILY_INDEX/v1' and index['family'] == 'Document', 'DOCUMENT_INDEX')
+    require(index['record_count'] == DOCUMENT_COUNT, 'DOCUMENT_INDEX_COUNT')
+    rows, expected_start = [], 0
+    for path in index['shards']:
+        require(isinstance(path, str) and path.startswith('content/documents/') and '..' not in path.split('/'), 'DOCUMENT_SHARD_REF')
+        shard = load(ROOT / path)
+        require(shard['schema'] == 'OTERYN_DOCUMENT_AUTHORING_SHARD/v1' and shard['family'] == 'Document', 'DOCUMENT_SHARD_SCHEMA')
+        require(shard['shard']['start'] == expected_start, 'DOCUMENT_SHARD_GAP')
+        require(shard['shard']['count'] == len(shard['records']), 'DOCUMENT_SHARD_COUNT')
+        require(shard['shard']['end'] == expected_start + len(shard['records']) - 1, 'DOCUMENT_SHARD_END')
+        rows.extend(shard['records']); expected_start = shard['shard']['end'] + 1
+    require(expected_start == DOCUMENT_COUNT, 'DOCUMENT_SHARD_COVERAGE')
+    return validate_document_rows(rows, declarations, sources)
+
+
 def main() -> int:
     reference = load(LEGACY / "definitions" / "reference.json")
     declarations = load(LEGACY / "definitions" / "declarations.json")
@@ -354,8 +396,8 @@ def main() -> int:
         "legacy_mutated": False,
         "runtime_switch_authorized": False,
     }, "COMPATIBILITY_BOUNDARY")
-    require(lock["family_counts"] == {"Item": 34031, "Mount": 252, **CREATURE_FAMILY_COUNTS, "NPC": NPC_COUNT,
-                                       "Encounter": ENCOUNTER_COUNT, "Dialogue": DIALOGUE_COUNT, **SERVICE_FAMILY_COUNTS,
+    require(lock["family_counts"] == {"Item": 34031, "Mount": 252, **creature_family_counts(reference), "NPC": NPC_COUNT,
+                                       "Encounter": ENCOUNTER_COUNT, "Dialogue": DIALOGUE_COUNT, "Document": DOCUMENT_COUNT, **SERVICE_FAMILY_COUNTS,
                                        "Charm": CHARM_COUNT, "Proficiency": PROFICIENCY_COUNT,
                                        "RewardClaim": REWARD_CLAIM_COUNT, "StarterKit": STARTER_KIT_COUNT},
             "LOCK_COUNTS")
@@ -433,6 +475,9 @@ def main() -> int:
         reference, declarations, sources, imports_batches(), migrated_authoring)
     creature_records, creature_profiles, creature_bindings = validate_creature_families(reference, declarations, sources)
     npc_records, npc_bindings, service_records = validate_npc_services(declarations, sources)
+    document_records = validate_documents(declarations, sources)
+    require(manifest["families"]["Document"] == {"records": document_records, "index": "content/documents/index.json"}, "DOCUMENT_MANIFEST")
+    require("Document" in project["migrated_families"], "DOCUMENT_PROJECT_FAMILY")
     dialogue_records = validate_dialogue(declarations)
     encounter_records = validate_encounters(declarations, sources)
     charm_index = load(ROOT / "content" / "charms" / "index.json")

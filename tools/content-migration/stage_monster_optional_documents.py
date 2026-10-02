@@ -60,6 +60,15 @@ class DocumentStage(admission.Stage):
 
 def finalize(packet):
     result = copy.deepcopy(packet)
+    # Native source text is trimmed; retain frozen source bytes and normalize only staged output.
+    for profile in result.get('authoring_profiles', []):
+        if profile['data']['kind'] != 'Creature':
+            continue
+        details = profile['data']['profile'].get('details', {})
+        if isinstance(details.get('inspection'), str):
+            details['inspection'] = details['inspection'].strip()
+            if not details['inspection']:
+                raise admission.StageError('Creature inspection text is empty after normalization')
     documents = [row for row in result['records'] if row['kind'] == 'Document']
     if not documents:
         return result
