@@ -388,6 +388,14 @@ class Execution:
         self.canonical = self.converter  # S18: replaced by the Canary 15.30 tables once both sources exist
         # Lua names SOUND_EFFECT_TYPE_<member> exist only for the SoundEffect_t members lua_enums.cpp registers.
         self.sounds = set(re.findall(r'SoundEffect_t::([A-Z0-9_]+)', source_text(root, LUA_ENUMS)))
+        header = source_text(root, 'src/creatures/combat/spells.hpp')
+        self.sound_defaults = {}
+        for method, member in (('castSound', 'soundCastEffect'), ('impactSound', 'soundImpactEffect')):
+            match = re.search(r'\b' + member + r'\s*=\s*SoundEffect_t::([A-Z0-9_]+)\s*;', header)
+            if match is None:
+                raise ValueError('unresolved engine sound default: ' + member)
+            self.sound_defaults[method] = SOUND_PREFIX + match.group(1)
+
 
     def sound(self, value):
         """S18: the cue key of a castSound/impactSound constant, or None when Lua reads it as nil (silence)."""
@@ -668,18 +676,39 @@ class Bundle:
         for method, field in (('castSound', 'cast_cue'), ('impactSound', 'impact_cue')):
             keys = {}
             for source, record in self.records.items():
-                value = record['registrar'].get(method)
-                if value is None:
-                    continue
+                absent = method not in record['registrar']
+                value = (self.executions[source].sound_defaults[method] if absent
+                         else record['registrar'][method])
                 key = self.executions[source].sound(value)
+                if key == 'canary.sound:silence':
+                    keys[source] = key
+                    continue
+                if absent:
+                    self.row('mapped', method, f'{base}/presentation/{field}',
+                             'S18: absent registrar inherits the pinned Spell engine default ' + value,
+                             source=source)
+                    self.rows[-1]['source_file'] = 'src/creatures/combat/spells.hpp'
+                    self.rows[-1]['source_line'] = next(
+                        n for n, line in enumerate(source_text(self.executions[source].root,
+                            'src/creatures/combat/spells.hpp').splitlines(), 1)
+                        if ('soundCastEffect' if method == 'castSound' else 'soundImpactEffect') in line
+                        and 'SoundEffect_t::' in line)
+
                 if key is None:
                     self.row('approved_omission', method, resolution=f'S18: {value} is not a registered SoundEffect_t '
                              'constant, so Lua reads nil and the engine plays no sound.', source=source, method=method)
+                    keys[source] = 'canary.sound:silence'
                 else:
                     keys[source] = key
             if not keys:
                 continue
             chosen = keys.get('canary', next(iter(keys.values())))
+            if chosen == 'canary.sound:silence':
+                for source in keys:
+                    self.row('approved_omission', method,
+                             resolution='S18/S21: chosen source engine sound is SILENCE; no audible cue emitted.',
+                             source=source, method=method)
+                continue
             for source, key in keys.items():
                 if key == chosen:
                     self.row('mapped', method, f'{base}/presentation/{field}', 'S18: sound cue named by its '

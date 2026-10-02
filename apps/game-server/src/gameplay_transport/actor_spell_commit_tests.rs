@@ -353,3 +353,142 @@ fn source_condition_predecessor_substitution_refuses_entire_hp_and_cost_batch() 
     assert_eq!(f.states.get(&f.runtime, f.caster, f.session), Some(&before));
     assert_eq!(target_health(&f), 20);
 }
+
+// Canary/Crystal healing removes paralysis in the same owner transaction as HP.
+// This verifies the real condition owner, rather than a planner-only effect list.
+fn fixture_with_paralysis() -> Result<Fixture, String> {
+    use crate::ability::condition::{
+        ApplicationFacts, ConditionDefinition, ConditionSourceKind, ConditionValues, SpeedRange,
+    };
+    let mut f = fixture();
+    let before = f
+        .states
+        .get(&f.runtime, f.caster, f.session)
+        .ok_or("live predecessor")?
+        .owned_conditions()
+        .clone();
+    let mut paralysed = before.clone();
+    let root = oteryn_simulation_determinism::GameplayDecisionRoot::from_bytes([5; 32]);
+    let definition = ConditionDefinition::new(
+        "source.paralysis",
+        1,
+        ConditionValues::Speed {
+            paralysis: true,
+            range: SpeedRange {
+                a_min: 0,
+                a_max: 0,
+                b_min: 40,
+                b_max: 40,
+            },
+            duration_ms: 10000,
+        },
+    )
+    .ok_or("source paralysis")?;
+    paralysed
+        .apply(
+            &definition,
+            Some("actor:monster".into()),
+            ConditionSourceKind::Creature,
+            &[],
+            &ApplicationFacts {
+                now: 100_000,
+                base_speed: 220,
+                mana_shield_capacity: 0,
+                target_reentry_protected: false,
+                source_reentry_protected: false,
+                target_is_player: true,
+                decision_root: &root,
+                occurrence: oteryn_simulation_determinism::DecisionOccurrenceId::from_bytes(
+                    [6; 16],
+                ),
+            },
+        )
+        .map_err(|error| format!("actual condition installation: {error:?}"))?;
+    f.states
+        .get_mut(&f.runtime, f.caster, f.session)
+        .ok_or("condition owner")?
+        .apply_batch_conditions(&before, &paralysed)
+        .map_err(|error| format!("live condition: {error:?}"))?;
+    f.next
+        .apply_batch_conditions(&before, &paralysed)
+        .map_err(|error| format!("paid successor condition: {error:?}"))?;
+    f.batch.effects.push(OwnerCombatEffect {
+        target: f.caster,
+        sub_ordinal: 2,
+        change: OwnerCombatChange::DispelParalysis,
+    });
+    Ok(f)
+}
+
+#[test]
+fn healing_dispels_actual_paralysis_atomically_and_replay_preserves_successor() -> Result<(), String>
+{
+    let mut f = fixture_with_paralysis()?;
+    assert_eq!(
+        f.states
+            .get(&f.runtime, f.caster, f.session)
+            .ok_or("before")?
+            .owned_conditions()
+            .speed_delta(),
+        -180
+    );
+    let staged = f
+        .runtime
+        .stage_spell_batch(&f.batch)
+        .map_err(|error| format!("physical stage: {error:?}"))?;
+    let proof = stage_player_batch(&f.runtime, &f.states, &f.batch, Some(f.next.clone()))
+        .map_err(|error| format!("joined player preflight: {error:?}"))?;
+    assert!(
+        commit_owner_batch(&mut f.runtime, &mut f.states, staged, Some(proof))
+            .map_err(|error| format!("joined owner commit: {error:?}"))?
+            .applied
+    );
+    let after = f
+        .states
+        .get(&f.runtime, f.caster, f.session)
+        .ok_or("after")?
+        .clone();
+    assert_eq!(after.vitals().health, 29);
+    assert_eq!(after.owned_conditions().speed_delta(), 0);
+    assert!(
+        !after
+            .owned_conditions()
+            .instances()
+            .iter()
+            .any(|condition| condition.definition().condition_type()
+                == crate::ability::condition::ConditionType::Paralysis)
+    );
+    let replay = f
+        .runtime
+        .stage_spell_batch(&f.batch)
+        .map_err(|error| format!("retained batch: {error:?}"))?;
+    assert!(
+        !commit_owner_batch(&mut f.runtime, &mut f.states, replay, None)
+            .map_err(|error| format!("exact replay: {error:?}"))?
+            .applied
+    );
+    assert_eq!(f.states.get(&f.runtime, f.caster, f.session), Some(&after));
+    Ok(())
+}
+
+#[test]
+fn refused_healing_preserves_paralysis_hp_and_payment() -> Result<(), String> {
+    let mut f = fixture_with_paralysis()?;
+    if let OwnerCombatChange::Heal { target_atom, .. } = &mut f.batch.effects[1].change {
+        *target_atom = "actor:substituted".into();
+    }
+    let before = f
+        .states
+        .get(&f.runtime, f.caster, f.session)
+        .ok_or("before")?
+        .clone();
+    let _staged = f
+        .runtime
+        .stage_spell_batch(&f.batch)
+        .map_err(|error| format!("read-only stage: {error:?}"))?;
+    assert!(stage_player_batch(&f.runtime, &f.states, &f.batch, Some(f.next.clone())).is_err());
+    assert_eq!(f.states.get(&f.runtime, f.caster, f.session), Some(&before));
+    assert_eq!(before.owned_conditions().speed_delta(), -180);
+    assert_eq!(target_health(&f), 20);
+    Ok(())
+}

@@ -5,6 +5,13 @@ readonly SPELL_REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)
 cd "$SPELL_REPO_ROOT"
 mode="${1:-help}"
 if [[ $# -gt 0 ]]; then shift; fi
+prepare_current_manifest() {
+  SPELL_TEST_INPUT_ROOT="$(mktemp -d -t oteryn-spells.XXXXXXXX)"
+  trap 'rm -rf -- "$SPELL_TEST_INPUT_ROOT"' EXIT
+  python docs/reference/spells/r25-candidate/materialize_manifest.py \
+    --out "$SPELL_TEST_INPUT_ROOT/input" >/dev/null
+  SPELL_CURRENT_MANIFEST="$SPELL_TEST_INPUT_ROOT/input/manifest.json"
+}
 case "$mode" in
   runtime)
     # Existing composed-content tests require a larger test stack, not a production change.
@@ -13,9 +20,10 @@ case "$mode" in
     ;;
   map)
     export RUST_MIN_STACK="${RUST_MIN_STACK:-16777216}"
-    export OTERYN_FULL_SPELL_TEST_MANIFEST="${1:-$SPELL_REPO_ROOT/docs/reference/spells/r21-local-candidate/active-artifact/manifest.json}"
+    if [[ $# -eq 0 ]]; then prepare_current_manifest; fi
+    export OTERYN_FULL_SPELL_TEST_MANIFEST="${1:-${SPELL_CURRENT_MANIFEST:-}}"
     [[ -f "$OTERYN_FULL_SPELL_TEST_MANIFEST" ]] || { echo 'Spell map manifest missing' >&2; exit 2; }
-    exec cargo test --locked -p oteryn-game-server --lib \
+    cargo test --locked -p oteryn-game-server --lib \
       content::native_gameplay::tests::actual_full_manifest_qualifies_source_world_and_all_owner_profiles \
       -- --ignored --exact --nocapture
     ;;
@@ -27,9 +35,14 @@ case "$mode" in
     ;;
   server)
     if [[ $# -gt 1 ]]; then echo 'server accepts at most one manifest path' >&2; exit 2; fi
-    if [[ $# -eq 1 ]]; then export OTERYN_SEAM_SPELL_MANIFEST="$1"; fi
+    if [[ $# -eq 1 ]]; then
+      export OTERYN_SEAM_SPELL_MANIFEST="$1"
+    else
+      prepare_current_manifest
+      export OTERYN_SEAM_SPELL_MANIFEST="$SPELL_CURRENT_MANIFEST"
+    fi
     export WP5_QUALIFICATION=spell-seam
-    exec bash tools/qualification/wp5_s3b/run.sh
+    bash tools/qualification/wp5_s3b/run.sh
     ;;
   room)
     exec bash tools/qualification/native_entry_room/run.sh "$@"

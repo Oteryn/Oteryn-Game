@@ -1291,6 +1291,10 @@
     {
       "path": "src/creatures/creatures_definitions.hpp",
       "sha256": "dd403b4c2291b66bd5df49d1a59b45667698d8a916ecfb8fa87801688e1ca622"
+    },
+    {
+      "path": "src/lua/functions/core/game/lua_enums.cpp",
+      "sha256": "d1bda8dd89dab75f41dfa68d33c6221868382e10e3efdce046f84e56789b6aa1"
     }
   ],
   "source_revision": "99902524e052f37574194466c2949c576e4ab269"

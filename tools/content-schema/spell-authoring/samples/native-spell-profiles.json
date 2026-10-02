@@ -94,6 +94,9 @@
               "effect_asset_binding": "appearance:effect/avatar_appear"
             }
           }
+        },
+        "presentation": {
+          "cast_cue": "canary.sound:spell_or_rune"
         }
       },
       "execution": {
@@ -242,6 +245,9 @@
               "effect_asset_binding": "appearance:effect/avatar_appear"
             }
           }
+        },
+        "presentation": {
+          "cast_cue": "canary.sound:spell_or_rune"
         }
       },
       "execution": {
@@ -390,6 +396,9 @@
               "effect_asset_binding": "appearance:effect/avatar_appear"
             }
           }
+        },
+        "presentation": {
+          "cast_cue": "canary.sound:spell_or_rune"
         }
       },
       "execution": {
@@ -538,6 +547,9 @@
               "effect_asset_binding": "appearance:effect/avatar_appear"
             }
           }
+        },
+        "presentation": {
+          "cast_cue": "canary.sound:spell_or_rune"
         }
       },
       "execution": {
@@ -686,6 +698,9 @@
               "effect_asset_binding": "appearance:effect/avatar_appear"
             }
           }
+        },
+        "presentation": {
+          "cast_cue": "canary.sound:spell_or_rune"
         }
       },
       "execution": {
@@ -2008,6 +2023,9 @@
               "schedule_after_successful_immediate_strike": true
             }
           }
+        },
+        "presentation": {
+          "cast_cue": "canary.sound:spell_or_rune"
         }
       },
       "execution": {
@@ -2467,6 +2485,9 @@
               "expiry_requires_caster_online": false
             }
           }
+        },
+        "presentation": {
+          "cast_cue": "canary.sound:spell_or_rune"
         }
       },
       "execution": {
@@ -2706,6 +2727,9 @@
               "placement_gate": "existing_tile_and_no_pz_from_outside_pz"
             }
           }
+        },
+        "presentation": {
+          "cast_cue": "canary.sound:spell_or_rune"
         }
       },
       "execution": {
@@ -5573,6 +5597,9 @@
               }
             }
           }
+        },
+        "presentation": {
+          "cast_cue": "canary.sound:spell_or_rune"
         }
       },
       "execution": {
@@ -6016,6 +6043,9 @@
               "no_target_message": "At the moment there is no fiend with special loot roaming this world."
             }
           }
+        },
+        "presentation": {
+          "cast_cue": "canary.sound:spell_or_rune"
         }
       },
       "execution": {
@@ -14269,7 +14299,7 @@
         "pz_locks_caster": false,
         "needs_weapon": false,
         "presentation": {
-          "cast_cue": "canary.sound:spell_brutal_strike"
+          "cast_cue": "canary.sound:spell_or_rune"
         },
         "base_power": 55,
         "execution": {
@@ -14652,7 +14682,7 @@
         "pz_locks_caster": false,
         "needs_weapon": false,
         "presentation": {
-          "cast_cue": "canary.sound:spell_groundshaker"
+          "cast_cue": "canary.sound:spell_or_rune"
         },
         "base_power": 52,
         "execution": {
@@ -15651,6 +15681,9 @@
               "source_schedule_order": "before_immediate_combat_result"
             }
           }
+        },
+        "presentation": {
+          "cast_cue": "canary.sound:spell_or_rune"
         }
       },
       "execution": {
