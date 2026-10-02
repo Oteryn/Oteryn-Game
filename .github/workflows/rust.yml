@@ -171,17 +171,17 @@ jobs:
       - name: Install Rust toolchain
         run: rustup toolchain install 1.94.0 --profile minimal --component clippy,rustfmt
 
-      - name: Cache Cargo dependencies and build output for merge gates
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      - name: Restore trimmed Cargo cache from protected main
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
         with:
           path: |
             ~/.cargo/registry/index/
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
             target/
-          key: rust-linux-1.94.0-${{ hashFiles('Cargo.lock') }}
+          key: rust-linux-v2-1.94.0-${{ hashFiles('Cargo.lock') }}-${{ github.sha }}
           restore-keys: |
-            rust-linux-1.94.0-
+            rust-linux-v2-1.94.0-${{ hashFiles('Cargo.lock') }}-
 
       - name: Build workspace
         run: cargo +1.94.0 build --locked --workspace --all-targets
@@ -197,6 +197,25 @@ jobs:
 
       - name: Smoke native game-server bootstrap
         run: cargo +1.94.0 run --locked -p oteryn-game-server -- --smoke
+      - name: Trim incremental cache and measure archive inputs
+        if: github.ref == 'refs/heads/main' && github.ref_protected
+        shell: bash
+        run: |
+          set -euo pipefail
+          du -sh target/ | tee -a "$GITHUB_STEP_SUMMARY"
+          find target -type d -name incremental -prune -exec rm -rf -- {} +
+          du -sh target/ | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: Save trimmed cache from successful protected main
+        if: github.ref == 'refs/heads/main' && github.ref_protected
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: |
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: rust-linux-v2-1.94.0-${{ hashFiles('Cargo.lock') }}-${{ github.sha }}
 
   durability-postgres:
     name: Rust / Durability PostgreSQL harness
@@ -308,6 +327,7 @@ jobs:
           run_registered_target character_authority_postgres apps/game-server/tests/character_authority_postgres.rs
           run_registered_target runtime_scope_assignment_postgres apps/game-server/tests/runtime_scope_assignment_postgres.rs
           run_registered_target native_admission_source_postgres apps/game-server/tests/native_admission_source_postgres.rs
+
 
   windows:
     name: Rust / Windows pre-native client

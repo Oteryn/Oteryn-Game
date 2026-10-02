@@ -20,7 +20,7 @@ from unittest.mock import patch
 ROOT = Path(__file__).resolve().parents[2]
 GATE = ROOT / ".github/workflows/merge-group-gate.yml"
 LIFECYCLE = ROOT / "tools/agents/tests/test_governance_lifecycle_discovery.py"
-APPROVED = "9e7f083a7e2a58a1d03910d90a9423dd7ec5478c"
+APPROVED = "316241a1e0bc10b714410080f7003d6d35357704"
 LIFECYCLE_COMMAND = "python tools/agents/tests/test_governance_lifecycle_discovery.py"
 REGISTERED_POSTGRES_TARGETS = (
     ("durability_postgres", "apps/game-server/tests/durability_postgres.rs"),
