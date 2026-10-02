@@ -1,0 +1,146 @@
+{
+  "schema": "OTERYN_REMAINING_FIELDS_RECOVERY_AVAILABILITY/v2",
+  "phase": "UNREFERENCED_BLOB_STAGING_ONLY_ROOT_SOLE_PUBLISHER",
+  "original_final_context": {
+    "path": "docs/agents/evidence/OTV2-20261002-stack-default-historical-native-context-v1.json",
+    "blob_sha": "32859d2be0e5c351afbffd7cd13708a5d5b0ed3d",
+    "bytes": 2685926,
+    "sha256": "44143ceedbb00e843267d58d8463c7ec36dbb9886ea63f6e0d97b909465b574f",
+    "fidelity": "ORIGINAL_FINAL_BYTES_VERIFIED",
+    "actual_original_git_blobs_verified": 69,
+    "full_literal_definitions": 1651,
+    "published_by_root_commit": "918a0511cccf3f565c77e3f98291a9108b9f7db7"
+  },
+  "context_generator": {
+    "proposed_path": "docs/agents/evidence/recovery/remaining-fields-stack-context-retained-generator.py",
+    "blob_sha": "0301419c66f34611238e5c73052185f5aa1e0a82",
+    "bytes": 3136,
+    "sha256": "68aa9cde9b99060a6ba9d752d21d25b8ed7b60555ff17959df7b7eb12f34ae80",
+    "fidelity": "EXACT_RETAINED_TOOL_GENERATOR_LITERAL"
+  },
+  "use345_five_reconstructed_files": [
+    {
+      "original_project_path": "apps/game-server/examples/materialize_content_world_project_v2.rs",
+      "proposed_recovery_path": "docs/agents/evidence/recovery/use345-retained/apps/game-server/examples/materialize_content_world_project_v2.rs.txt",
+      "blob_sha": "33f4fa3c9a047e7c7041f40a247fc955b2ba9d17",
+      "bytes": 86689,
+      "sha256": "f473d69a14eabc2772940c0f02d2191c49361027902b7c47bcff1f8f651c4c81",
+      "exact_staged_readback": true,
+      "fidelity": "RECONSTRUCTED_RETAINED_UNFORMATTED_TOOL_WRITES_ORIGINAL_FINAL_FILE_HASH_UNAVAILABLE",
+      "base_commit": "8257ba68d449a4975345897823d8282393e5bae2",
+      "formatter_applied_to_these_five": false
+    },
+    {
+      "original_project_path": "apps/game-server/src/content/mod.rs",
+      "proposed_recovery_path": "docs/agents/evidence/recovery/use345-retained/apps/game-server/src/content/mod.rs.txt",
+      "blob_sha": "f7be0a9c773f90e71c6713ca2f1edff74bae71b0",
+      "bytes": 4739,
+      "sha256": "d44d358fe39366e9315e31a49cd80d906cace2a04ce5e8e3872502658f2fe10b",
+      "exact_staged_readback": true,
+      "fidelity": "RECONSTRUCTED_RETAINED_UNFORMATTED_TOOL_WRITES_ORIGINAL_FINAL_FILE_HASH_UNAVAILABLE",
+      "base_commit": "8257ba68d449a4975345897823d8282393e5bae2",
+      "formatter_applied_to_these_five": false
+    },
+    {
+      "original_project_path": "tools/content-schema/item-authoring/source_field_catalogs.py",
+      "proposed_recovery_path": "docs/agents/evidence/recovery/use345-retained/tools/content-schema/item-authoring/source_field_catalogs.py.txt",
+      "blob_sha": "2fb678d73ccca157099ebbe5c30043120d632a8e",
+      "bytes": 68480,
+      "sha256": "be586a07d6da18f67605c20923dd77f2b219e3752ac26e06c8e2a1f90d37fb02",
+      "exact_staged_readback": true,
+      "fidelity": "RECONSTRUCTED_RETAINED_UNFORMATTED_TOOL_WRITES_ORIGINAL_FINAL_FILE_HASH_UNAVAILABLE",
+      "base_commit": "8257ba68d449a4975345897823d8282393e5bae2",
+      "formatter_applied_to_these_five": false
+    },
+    {
+      "original_project_path": "tools/content-schema/item-authoring/lower_item_use_observation_packet.py",
+      "proposed_recovery_path": "docs/agents/evidence/recovery/use345-retained/tools/content-schema/item-authoring/lower_item_use_observation_packet.py.txt",
+      "blob_sha": "62d04a16c9593fdb81c65957ca8841211fcd6c84",
+      "bytes": 11912,
+      "sha256": "953d08a54f2744e6c7a1eedbdd8badf32e0a67d1c06501f7554afe367cb597b6",
+      "exact_staged_readback": true,
+      "fidelity": "RECONSTRUCTED_RETAINED_UNFORMATTED_TOOL_WRITES_ORIGINAL_FINAL_FILE_HASH_UNAVAILABLE",
+      "base_commit": "8257ba68d449a4975345897823d8282393e5bae2",
+      "formatter_applied_to_these_five": false
+    },
+    {
+      "original_project_path": "tools/content-schema/item-authoring/test_lower_item_use_observation_packet.py",
+      "proposed_recovery_path": "docs/agents/evidence/recovery/use345-retained/tools/content-schema/item-authoring/test_lower_item_use_observation_packet.py.txt",
+      "blob_sha": "a45248429640147fe94b4d05cb4c12aa5d931890",
+      "bytes": 3842,
+      "sha256": "63ad6a0f99524d4103f5297dab84ff5e0e86f8adc3fc6db0a66db3a30fded98b",
+      "exact_staged_readback": true,
+      "fidelity": "RECONSTRUCTED_RETAINED_UNFORMATTED_TOOL_WRITES_ORIGINAL_FINAL_FILE_HASH_UNAVAILABLE",
+      "base_commit": "8257ba68d449a4975345897823d8282393e5bae2",
+      "formatter_applied_to_these_five": false
+    }
+  ],
+  "use345_five_literal_replay": {
+    "proposed_path": "docs/agents/evidence/recovery/remaining-fields-use345-five-retained-replay.py",
+    "blob_sha": "20bb033c6be4123a4ca4ab605a951a11a6ccb416",
+    "bytes": 19499,
+    "sha256": "9eb4df207bcf6e1694c852fb8fd4d3ca1de8510079f11359dce9eced75664501",
+    "fidelity": "RETAINED_UNFORMATTED_TOOL_WRITE_PATCH_REPLAY_ORIGINAL_FINAL_HASH_UNKNOWN",
+    "execution": "EMITS_JSON_ONLY_NO_PROJECT_WRITES",
+    "runtime_execution_verified": false
+  },
+  "remaining_unknown_exact_bytes": [
+    {
+      "path": "apps/game-server/src/content/item_use_observation_promotion.rs",
+      "status": "Complete pre-rustfmt source and later patches retained; final Rust1.94 formatter output needs replay/hash verification",
+      "retained_literal_backup_blob": "117a176027edeb6ff7dabce5bc112975f93ae418"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/fandom-use-observation-alias-supplement.json",
+      "status": "Exact helper/writer retained; generated full JSON not captured; deterministic replay requires verification"
+    },
+    {
+      "path": "docs/agents/evidence/OTV2-20261002-item-use-observation-source-qualification-v1.json",
+      "known_sha256": "8ba83021a503ac7cbca60fe7f53448b2347a87ab7f23f8c62be956a9fd97139c",
+      "status": "Full original proof bytes not retained; no fabricated substitute"
+    },
+    {
+      "path": "docs/agents/evidence/OTV2-20261002-item-use-observation-promotion-v1.json",
+      "known_sha256": "fbbb6e191da097ceaae3059a55259ef7fe55ed5c56397f2e0f178b9ea66b7f56",
+      "status": "Full original packet bytes not retained; no fabricated substitute"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/check_stack_default_historical_context.py",
+      "known_sha256": "506382249115863545323b72c5cd52a330cc56f4678dcd13f72eae50a8a4c9b1",
+      "status": "Full pre-Ruff source+patches retained; final Ruff0.16.1 output requires replay and known SHA check",
+      "retained_literal_backup_blob": "117a176027edeb6ff7dabce5bc112975f93ae418"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/test_stack_default_historical_context.py",
+      "status": "Full pre-Ruff source+patches retained; final Ruff0.16.1 output requires replay/hash verification",
+      "retained_literal_backup_blob": "117a176027edeb6ff7dabce5bc112975f93ae418"
+    }
+  ],
+  "checkpoint_manifest_original_fullbytes_missing": [
+    {
+      "path": "/workspace/audit-continuation/default-context-worker-owned-manifest.json",
+      "sha256": "981a7412d9f42de1c3667c5206e80dfc8c8872bb597f71c0cb09ce6e736783de"
+    },
+    {
+      "path": "/workspace/audit-continuation/use-observation345-worker-owned-manifest.json",
+      "sha256": "7ebc3d21bdf6d195ec6f131723e0971cbc7a605e1380625192f63f5090b087b6"
+    }
+  ],
+  "compatibility_exact_pending_repair": "The new context path pull_request.paths trigger was never written before outage. Do not describe it as recovered.",
+  "retained_store": "Original environment store context_checks disappeared; only current recovery store and staged Git blobs verified",
+  "durable_archive_RPC": "Stopped after bounded wait; no indefinitely pending read or claimed unseen output",
+  "validation_scope": "Staged text full readback + SHA256/GitSHA1 verified. Original final Use5 hashes unavailable, no new Cargo/native/source-fact validation.",
+  "prefmt_complete_creation_and_patch_record": {
+    "proposed_path": "docs/agents/evidence/recovery/remaining-fields-prefmt-creation-patches-v1.json",
+    "blob_sha": "117a176027edeb6ff7dabce5bc112975f93ae418",
+    "bytes": 27099,
+    "sha256": "4887c793c7d63117e75608953628e933260beb9539314133861bf4ac3a113967",
+    "exact_staged_readback": true,
+    "fidelity": "COMPLETE_VISIBLE_TOOL_CREATION_LITERALS_AND_PATCHES_FINAL_FORMATTER_OUTPUT_NOT_RETAINED",
+    "coverage": [
+      "Complete initial item_use_observation_promotion.rs creation, exact later edits, complete appended actual-packet test, packet SHA replacement history; Rustfmt1.94 edition2024 output unknown",
+      "Complete initial check_stack_default_historical_context.py creation and exact subsequent checksum/context-root patches; final Ruff0.16.1 output unknown",
+      "Complete initial test_stack_default_historical_context.py creation and exact isolated-negative-current-fixture patch; final Ruff0.16.1 output unknown"
+    ]
+  }
+}
