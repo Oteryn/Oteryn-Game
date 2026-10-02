@@ -1,0 +1,57 @@
+{
+  "schema": "OTERYN_DEFAULT8_EXTERNAL_PREPARATION/v1",
+  "status": "EXTERNAL_PREPARED_NOT_INTEGRATED_RUST_UNCOMPILED",
+  "original_source_checkpoint_immutable": true,
+  "closed_ids": [
+    23229,
+    23230,
+    23231,
+    23232,
+    23295,
+    23299,
+    23335,
+    23339
+  ],
+  "actual_future_parent": "PENDING_PUBLISHED_WEAPON103_ALLOCATION",
+  "owned_files": [
+    {
+      "path": "/workspace/audit-continuation/stack-default-successor8-prepared/README.md",
+      "sha256": "4a43f53e3e693ccf9c1278b7fbcc71c264cb5608c0934e7485e46743190504c8",
+      "bytes": 4382,
+      "lines": 9
+    },
+    {
+      "path": "/workspace/audit-continuation/stack-default-successor8-prepared/item_stack_default_successor8_promotion.rs",
+      "sha256": "63637b33c3cfd564bd9fe52f211c66f3e3142013a57486b9b1aca7dca6f2e20f",
+      "bytes": 5197,
+      "lines": 122
+    },
+    {
+      "path": "/workspace/audit-continuation/stack-default-successor8-prepared/lower_wiki_stack_default_successor8_packet.py",
+      "sha256": "1a68399138f7e3c4acf929b8ceda8daa967457dd4b729f4559d0cf0dd75306dd",
+      "bytes": 6457,
+      "lines": 183
+    },
+    {
+      "path": "/workspace/audit-continuation/stack-default-successor8-prepared/test_stack_default_successor8.py",
+      "sha256": "6f6b5419fba9f1f96d9482d18a12bb095bd45ecf425a5a3ed418b32be99616a3",
+      "bytes": 3652,
+      "lines": 96
+    },
+    {
+      "path": "/workspace/audit-continuation/stack-default-successor8-prepared/verify_default8_exact_delta.py",
+      "sha256": "33f37945da0af1c43fb0694d610c36253a0a50f1a0e0b197890d756e56cf034e",
+      "bytes": 4692,
+      "lines": 127
+    }
+  ],
+  "checks": {
+    "source_tests": "PASS 4 tests at actual62c",
+    "python_syntax": "PASS",
+    "Python_Ruff": "PASS E F I",
+    "Rust_Cargo": "NOT_RUN",
+    "full_native_comparator": "PREPARED_NOT_RUN_AFTER_WEAPON",
+    "production_packet_current_receipt": "PENDING_ALLOCATION"
+  },
+  "source_handwritten_formatted_lines": 401
+}

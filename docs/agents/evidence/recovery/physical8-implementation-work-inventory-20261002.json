@@ -1,0 +1,219 @@
+{
+  "schema": "OTERYN_PHYSICAL8_READ_ONLY_IMPLEMENTATION_CHECKLIST/v1",
+  "status": "HELD_PROPOSAL_ONLY_NO_ACCEPTED_PROFILE5_OR_NATIVE_PROMOTION",
+  "published_item_baseline": "5ab88af6d43bff444ed85782a49d9d910855152d",
+  "examined_worktree": "/workspace/pr1437-timed-fields",
+  "method": "Local retained code/source/contracts/prototype read-only; no HTTP/RDC/Cargo/WT edits/Git publication",
+  "cohort": {
+    "items": 8,
+    "atoms": 16,
+    "item_ids": [
+      10389,
+      17828,
+      50164,
+      50165,
+      50181,
+      50239,
+      50273,
+      52335
+    ],
+    "per_item_atoms": {
+      "10389": 1,
+      "17828": 1,
+      "50164": 2,
+      "50165": 2,
+      "50181": 2,
+      "50239": 3,
+      "50273": 2,
+      "52335": 3
+    },
+    "current_native_modifier_groups": "UNKNOWN for all8 actual canonical rows",
+    "completed": 0
+  },
+  "separate_universes": {
+    "materialized_reference_all_records": 57320,
+    "materialized_reference_item_records": 34031,
+    "canonical_item_definitions": 34031,
+    "identity_sets_reference_items_and_canonical_items": "EXACT_EQUAL",
+    "historical_b1_v4_artifact_family": 38157,
+    "historical_artifact_fixture_constructor": "protected_cw2_b1_full_item_family_import(B1_EVIDENCE)",
+    "historical_v4_exact_cardinality_enforcement": "FAMILY_MAX_INDEX_ENTRIES; for_source and accepts_item_count; resource registry DUR04-REFERENCE-ITEM-PROFILE-V1-ITEM-RECORDS min=max38157",
+    "materializer_output": "CanonicalProjectDocuments JSON, no compile_reference_playable call",
+    "difference4126": "DIFFERENT_SOURCE_UNIVERSES_NOT_MISSING_ITEM_BACKLOG",
+    "current_materialized_full_v4_artifact_qualification": "NOT_ESTABLISHED; passing old fixture LIB is not actual current34k artifact proof"
+  },
+  "proposed_only": {
+    "element_domain": {
+      "Death": 1,
+      "Earth": 2,
+      "Energy": 3,
+      "Fire": 4,
+      "Holy": 5,
+      "Ice": 6,
+      "Physical": 7
+    },
+    "magic": "OTRPA05\\0",
+    "profile_version": 5,
+    "body_version": 2,
+    "modifier_kinds": 37,
+    "legacy_v4_laziness": "Header/index bounded integrity parse first; body decode after exact lookup; preserve rejection timing",
+    "nonchanges": [
+      "Old v1-v4 bytes and grammar",
+      "D278/protected runtime admission",
+      "Protocol/Rust memory layout ABI",
+      "No second public Native Item semantic owner",
+      "No Known field loss/Unknown conversion/partial vector/default context"
+    ],
+    "magic_hex": "4f54525041303500"
+  },
+  "immutable_source_records": [
+    {
+      "path": "docs/agents/evidence/OTV2-20261002-item-mantra-bond-source-qualification-v1.json",
+      "sha256": "fece04bb34ccdf8c6718442ed31ba25ee4bf7bd7b5aa7c7eea7991785e7e8ced"
+    },
+    {
+      "path": "docs/agents/evidence/OTV2-20261002-item-mantra-bond-promotion-v1.json",
+      "sha256": "eecfca5562dbe8f1cbb271061b58ca20b883b9c751368dd3fd0cfac9119ef2bf"
+    }
+  ],
+  "recovered_prototypes": [
+    {
+      "path": "apps/game-server/src/content/reference_artifact.rs",
+      "bytes": 149617,
+      "sha256": "7df6a07d3ee7b444f68789fef87dae1ba615f303fe79ef751523f813af8b25c2",
+      "status": "UNCOMPILED_UNREVIEWED_HISTORICAL_PROTOTYPE_NOT_CURRENT_INTEGRATION"
+    },
+    {
+      "path": "apps/game-server/src/content/reference_playable.rs",
+      "bytes": 107430,
+      "sha256": "340305ad7f918a97e9df45de05986678670e2dac2aa296ac7a7733cda0361caa",
+      "status": "UNCOMPILED_UNREVIEWED_HISTORICAL_PROTOTYPE_NOT_CURRENT_INTEGRATION"
+    },
+    {
+      "path": "apps/game-server/src/content/item_stats_promotion.rs",
+      "bytes": 47482,
+      "sha256": "a5f260934697a5877467824dac4680dd95d5a6d63bde1f383fc8489ceb8c1587",
+      "status": "UNCOMPILED_UNREVIEWED_HISTORICAL_PROTOTYPE_NOT_CURRENT_INTEGRATION"
+    },
+    {
+      "path": "tools/reference-item-resource-profile/item_resource_profile.py",
+      "bytes": 83237,
+      "sha256": "b77934f4b3c1c7a99442ecadc854b5d81412a83a3cbd52485971d334ccfb2d87",
+      "status": "UNCOMPILED_UNREVIEWED_HISTORICAL_PROTOTYPE_NOT_CURRENT_INTEGRATION"
+    }
+  ],
+  "phases": [
+    {
+      "step": 1,
+      "scope": "OWNING_VERSION_AND_INPUT_DECISION",
+      "missing": [
+        "Explicit accepted successor grammar/profile disposition for PHYSICAL=7 and OTRPA05/profile5/body2; old v4 domain1..6 remains fixed.",
+        "Exact artifact source universe/caller: preserve protected B1 v4 exactly38157; separately qualify whether successor artifact consumes B1 full-family or current34031 Item-only projection. No auto constant change, synthesized4126 IDs or broad partial-family exception.",
+        "New own resource profile/registry evidence and truthful semantic-schema/package/compiler/canonicalization/profile metadata; historical profile/archive is evidence, not live successor approval."
+      ],
+      "effort": "One bounded compatibility/resource decision packet; no new runtime or Item authority."
+    },
+    {
+      "step": 2,
+      "scope": "ISOLATED_CODEC_AND_INDEPENDENT_ORACLE",
+      "missing": [
+        "Fresh minimal diff against allocated current predecessor across existing enum/artifact/Stats/oracle files; no whole historical prototype transplant.",
+        "Profile-aware encode AND lazy lookup decode: V5 permits7, V4 rejects7 on body use, 0/8/255 rejected everywhere. OldV4 header/index loading behavior remains lazy; do not add an eager all-body scan.",
+        "Profile selection must cover every valid admitted Physical ELEMENT carrier or reject unsupported uses explicitly; prototype detection only ElementalBond requires audit against shared enum grammar.",
+        "Independent golden/resource tests actually invoke artifact_profile=5; prototype changes codec signature/domain but CLI has no v5 selection, output receipt or new checks."
+      ],
+      "effort": "Four existing production/oracle files have prototypes. Small codec delta (artifact prototype93 additions/22 removals; enum1; oracle4), plus substantial meaningful compatibility tests. Current Stats file differs by106 missing lines from prototype: reapply only Physical arm to fresh code."
+    },
+    {
+      "step": 3,
+      "scope": "SOURCE_SEALS_AND_ATOMIC_EIGHT_VECTOR_PACKET",
+      "missing": [
+        "Keep source57proof fece04... and native49packet eecfca... immutable, and prior26 original artifacts unchanged. New successor receipts/compilers/packets needed where whole enum file SHA or shared compiler changes.",
+        "Mantra proof explicitly pins reference_playable.rs e50682... and shared26 compiler ea3dcd...; both current26 and49 packet output metadata include enum digests. Audit exact final predecessor dependency closure before writing new receipts.",
+        "New fixed8/16 compiler/wrapper/current-owner qualification: all-global ownID/pre-cut source/fullTarget/exact/reverse binding/admitted membership/officialName/currentWorld/native states; no aliases/context inference/partial-vector merge.",
+        "Requalify50239 with retained pre-cut witness and separate post-cut observation; retain UNKNOWN current public revision continuity.",
+        "Migration/generation/Source field maps require exact8 whole-vector delta and preservation all prior Known fields, groups, names, core admission, authoring and World."
+      ],
+      "effort": "One small data cohort8IDs/16atoms; source-seal repair and compiler/wrapper tests are larger than data itself."
+    },
+    {
+      "step": 4,
+      "scope": "FINAL_EXACT_HEAD_QUALIFICATION",
+      "missing": [
+        "Independent source/codec/resource reviews on final stopped source, followed by serialized Cargo/library/selected artifact+repository/Clippy/fmt checks.",
+        "Full selected artifact family compiles/stages both projections including nonmaterializable partial Known facts; v1-v4 old goldens/bytes unchanged withoutPhysical; V5 profile mixing and corrupt metadata/hashes fail.",
+        "Independent maximum and max+1 measurements: unchanged1-byte width/37 kind entries suggest equal record maxima, but never assert equal resource ceilings without measured evidence.",
+        "Atomic late-conflict/duplicate/currentname/currentbinding/rawsource/digest/state failures; idempotent same vector and deterministic reordered/repeated generation; full8 versus all other definitions exact difference proof.",
+        "New profile/reference stage stays non-authoritative: preserve D278/protocol/runtime admission/controller boundaries and compile-fail nonactivation proof."
+      ],
+      "effort": "Two separable review slices are practical: compatibility+oracle/codec first, then sealed8 integration. Count32-bit native records and actual artifact families separately; no full-item completion claim."
+    }
+  ],
+  "required_tests": [
+    "Old values1..6 exact wire/JSON goldens preserved; Physical exact7 onlyV5; 0/8/255 rejection.",
+    "Newreader oldv1-v4 pair goldens unchanged; oldreader newV5 fails before body use; forged oldV4 valid integrity plus byte7 loads at lazy header/index boundary but rejects lookup.",
+    "Body2 server/client exact Physical vectors and all16 atoms retained, including materializable=false, known sibling fields and UNKNOWN target_domain/evaluation_phase/priority.",
+    "Profile discriminator/version/compiler/canonicalization mismatches and cross-profile pair mixing reject.",
+    "Selected full family exactcount +/-1, duplicate identities and full-record coverage reject without introducing synthetic records.",
+    "Oracle v4/v5 unit/shape/golden/max/max+1 comparison; same37 modifier kinds and allsix parameter shapes, client allowlist and allocation bounds.",
+    "Source all-global ownID/cutoff/fullidentity/reverse/membership/name/world/rawvalue/state/lateconflict guards; no partial vector application and full idempotence.",
+    "Exact native delta8 vectors16atoms, previous494vectors796atoms preserved -> conditional502vectors812atoms; canonical actual34031 and reference57320 must be fully compared, not assumed complete."
+  ],
+  "read_witnesses": [
+    {
+      "path": "apps/game-server/src/content/reference_playable.rs",
+      "sha256": "e50682b67ca36431f9a6b9eb018a8cb17a08cf7e4fdc66c33a5831dc83f4e3ad"
+    },
+    {
+      "path": "apps/game-server/src/content/reference_artifact.rs",
+      "sha256": "bee2d053314ac6023d187d0e1ae00aa13c96096d8fb3d31a12d6a8accb63072c"
+    },
+    {
+      "path": "apps/game-server/src/content/item_stats_promotion.rs",
+      "sha256": "545fb039eaa58e4c14facf14656a1fcec85d7393b74cb0b45c06cdc163599ce9"
+    },
+    {
+      "path": "apps/game-server/tests/content_reference_artifact.rs",
+      "sha256": "e385378afa0e26b673338408b51d6d0b3edc4288d09e54a5ec06314e26f7f31d"
+    },
+    {
+      "path": "tools/reference-item-resource-profile/item_resource_profile.py",
+      "sha256": "73e0c3e009966b3db75a60b39ca53f63648405b8ce794eca73231ff59fdbb6d0"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/lower_elemental_magic_modifier_packet.py",
+      "sha256": "ea3dcd372bbdc09cce03de483cb29dbac4ffc085f85688e618dfeff8801e72ea"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/lower_mantra_bond_modifier_packet.py",
+      "sha256": "3f144f1e8ed93e2606448f757695c43a24899f48e8aa6bce3f60ca164f4ae3c3"
+    },
+    {
+      "path": "docs/architecture/OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V1.md",
+      "sha256": "e96c4b716b5070a598183a3760bf7f859855a0a4ae320a2f47d88f38dbdad508"
+    },
+    {
+      "path": "docs/contracts/RESOURCE_LIMITS_REGISTRY.json",
+      "sha256": "3dd7459d81c90a9d1d4cbc75246b4fe9a0f61d128ec542d1c0bb1251eaf7607b"
+    },
+    {
+      "path": "docs/agents/tasks/archive/OTV2-20260922-content-world-item-schema-readiness-504.md",
+      "sha256": "411a15c6d3d3868ab866ed510e1d81212146fa9a4099efecbfb10029c7e7d304"
+    }
+  ],
+  "limits": [
+    "No Cargo, Rust/Python prototype execution or new tests were run for this read-only checklist.",
+    "No live profile5 acceptance or whole artifact compatibility proof was found/claimed.",
+    "Original proposal cited38157 as native current count; this checklist corrects that scope without changing its immutable prior bytes.",
+    "Historical prototype item_stats_promotion.rs would delete106 current lines if copied over: not a safe current patch."
+  ],
+  "current_native_modifier_census": {
+    "vectors": 494,
+    "atoms": 796,
+    "conditional_after_exact8_promotion": {
+      "vectors": 502,
+      "atoms": 812
+    },
+    "future_counts_not_completed": true
+  }
+}
