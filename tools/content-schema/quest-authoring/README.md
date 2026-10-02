@@ -214,7 +214,7 @@ arguments retain literal Item evidence with explicit unsupported-argument holds;
 raw quantities are not interpreted as charges. Donor alternatives remain conflict
 evidence, including the extra Crystal Inquisition reward.
 
-Canonical Quest DATA now includes all268 pinned donor definitions. Storyline/script_only records retain typed `source_data` missions, progress, interactions and source gaps; `quest_native_lowering_missing` prevents treating these imported records as executable Native quests. Regenerate with `quest_tree_authoring.py content` and qualify with `run_checks.py`.
+Canonical Quest DATA now includes276 pinned donor definitions, including explicitly partial components. Storyline/script_only records retain typed `source_data` missions, progress, interactions and source gaps; `quest_native_lowering_missing` prevents treating these imported records as executable Native quests. Regenerate with `quest_tree_authoring.py content` and qualify with `run_checks.py`.
 
 ## Complete373-title wiki SOURCE inventory
 
@@ -223,3 +223,7 @@ Canonical Quest DATA now includes all268 pinned donor definitions. Storyline/scr
 Run `wiki_all_source_inventory.py --schema-out wiki_all_source_specs.schema.json --check` from this tool directory to verify the closed generated schema. Both checks and all12 regressions are required by `run_checks.py`.
 
 Round5 SOURCE coverage resolves35 exact registered callback associations (path/line/blob/pin checked) and8 partial components plus2 mission-family links. Actor aliases require proven player guards; pure tables are checked before duplicate-key collapse, including nested Position tables. Source-only components, placeholders and dialogue references retain gaps. Rebuild downstream samples/content together; test discovery includes curated-link and shared-pattern regressions.
+
+## All-title completion and rollout flags
+
+`quest_rollout_authoring.py` generates `samples/rollout/quest-rollout.json` for all373 exact wiki catalogue titles from current source bundle, canonical Quest definitions and complete wiki SOURCE specs. It retains direct/family/unbound joins, proof levels, source refs and all known holds. `needs_source` means missing executable donor Quest binding even when wiki facts exist. `definition_fields_ready` is separate from completeness and runtime. Flags imported/partial/needs_source/needs_runtime are planning metadata; runtime_enabled=false, actual approximation_applied=false and all quest smoke steps NOT_RUN. The closed schema and exact input hashes prevent stale/invented promotions. Required CI executes --check and regression discovery.
