@@ -415,20 +415,19 @@
     "transitions_in_both_servers": 1345,
     "storyline_quests_linked_to_wiki": 52,
     "reward_only_quests_absorbed": 30,
-    "script_only_quests": 120,
-    "catalogue_quests": 283,
+    "script_only_quests": 121,
+    "catalogue_quests": 284,
     "by_status": {
       "mapped": 529
     },
     "requirements_parsed": {
-      "quests_with_wiki_requirements": 277,
+      "quests_with_wiki_requirements": 278,
       "premium": {
-        "parsed": 275,
+        "parsed": 276,
         "partial": 2
       },
       "min_level": {
-        "none": 3,
-        "note": 5,
+        "note": 9,
         "parsed": 252,
         "range": 5,
         "uncertain": 4,
@@ -530,6 +529,125 @@
         "max_level": null,
         "classification": "DERIVED",
         "coverage_gap": null
+      },
+      {
+        "quest": "canary:quest/awash_world_change",
+        "wiki": {
+          "provider": "tibia_fandom",
+          "title": "Awash World Change",
+          "pageid": 54563,
+          "revid": 1149363,
+          "content_sha256": "c14e8dc57b44eafe1820f287e215c8a9024d8734570c45fbea82f49f092e55ef"
+        },
+        "level_raw": "None",
+        "min_level": 0,
+        "max_level": null,
+        "classification": "DERIVED",
+        "coverage_gap": null,
+        "source_literal": "None",
+        "interpretation": "explicit_no_level_requirement"
+      },
+      {
+        "quest": "canary:quest/the_mummys_curse_world_change",
+        "wiki": {
+          "provider": "tibia_fandom",
+          "title": "The Mummy's Curse World Change",
+          "pageid": 54567,
+          "revid": 844898,
+          "content_sha256": "e93af90ea7e5149427b168a2591808ca53d1d25e9de262376969ed86c997e22f"
+        },
+        "level_raw": "None",
+        "min_level": 0,
+        "max_level": null,
+        "classification": "DERIVED",
+        "coverage_gap": null,
+        "source_literal": "None",
+        "interpretation": "explicit_no_level_requirement"
+      },
+      {
+        "quest": "canary:quest/thornfire_world_change",
+        "wiki": {
+          "provider": "tibia_fandom",
+          "title": "Thornfire World Change",
+          "pageid": 54125,
+          "revid": 844903,
+          "content_sha256": "ed180a2b2511526aa24dc1f1e291546eae3ddfa2da94b42ddbebe18a1beb9e29"
+        },
+        "level_raw": "None",
+        "min_level": 0,
+        "max_level": null,
+        "classification": "DERIVED",
+        "coverage_gap": null,
+        "source_literal": "None",
+        "interpretation": "explicit_no_level_requirement"
+      },
+      {
+        "quest": "canary:quest/adventures_of_galthen_quest",
+        "wiki": {
+          "provider": "tibia_fandom",
+          "title": "Adventures of Galthen Quest",
+          "pageid": 94718,
+          "revid": 1085045,
+          "content_sha256": "3c01565d120562456726b16350407ab031e866e39137265c9bfa42318841b165"
+        },
+        "level_raw": "0",
+        "min_level": 0,
+        "max_level": null,
+        "classification": "DERIVED",
+        "coverage_gap": "Source level scope note preserved but mission-level requirement is not lowered into Native Quest requirements",
+        "scope_note": "250 for the Lost Queen mission",
+        "interpretation": "scoped_level_requirement"
+      },
+      {
+        "quest": "canary:quest/in_service_of_yalahar_quest",
+        "wiki": {
+          "provider": "tibia_fandom",
+          "title": "In Service of Yalahar Quest",
+          "pageid": 30601,
+          "revid": 1178479,
+          "content_sha256": "b5f61eef59f6afdfd1bfe8258bc801daa0cdbb8699c5ec8fca6c0d50a42b5e4c"
+        },
+        "level_raw": "80",
+        "min_level": 80,
+        "max_level": null,
+        "classification": "DERIVED",
+        "coverage_gap": "Source level scope note preserved but mission-level requirement is not lowered into Native Quest requirements",
+        "scope_note": "Required after mission 9",
+        "interpretation": "scoped_level_requirement"
+      },
+      {
+        "quest": "canary:quest/the_inquisition_quest",
+        "wiki": {
+          "provider": "tibia_fandom",
+          "title": "The Inquisition Quest",
+          "pageid": 25383,
+          "revid": 1188871,
+          "content_sha256": "412a7f6702e10447889cd27c0b52931abd06aa71e259aa6561e68f6e8999a51b"
+        },
+        "level_raw": "100",
+        "min_level": 100,
+        "max_level": null,
+        "classification": "DERIVED",
+        "coverage_gap": "Source level scope note preserved but mission-level requirement is not lowered into Native Quest requirements",
+        "scope_note": "(for the last mission only)",
+        "interpretation": "scoped_level_requirement"
+      },
+      {
+        "quest": "canary:quest/the_way_of_the_monk_quest",
+        "wiki": {
+          "provider": "tibia_fandom",
+          "title": "The Way of the Monk Quest",
+          "pageid": 108376,
+          "revid": 1169052,
+          "content_sha256": "185cf25556b5b5db245e7fced3a61fe74963717249a140ffe0b770c9013ebebb"
+        },
+        "level_raw": "275",
+        "min_level": 275,
+        "max_level": null,
+        "classification": "DERIVED",
+        "coverage_gap": "Source level scope note preserved but mission-level requirement is not lowered into Native Quest requirements",
+        "scope_note": "no requirement for starting, increases with each mission",
+        "interpretation": "scoped_level_requirement"
       }
     ],
     "source_reference_readers": [
@@ -2755,6 +2873,14 @@
           "npc/captain_marie-denise_banner.lua"
         ],
         "coverage_gap": "Full mission gates/writers, Court Warlock encounter, actual wall-button/teleport implementation, other NPCs/rewards and Native/runtime admission remain UNKNOWN. No boss identity or generic NPC registration substitutes for the quest journey.",
+        "classification": "UNKNOWN"
+      },
+      {
+        "quest": "crystalserver:quest/illuminator_outfits_quest",
+        "source_paths": [
+          "scripts/actions/items/usable_outfit_items.lua"
+        ],
+        "coverage_gap": "Base outfit/world-book/boss progression and acquisition of addon items, complete journal missions, source graph attachment and Native/runtime admission remain UNKNOWN. Crystal addon-use guards require premium and base outfit and deny owned parts; no corresponding Canary callback is asserted. Numeric source item/outfit IDs remain SOURCE witnesses, not newly chosen Oteryn bindings.",
         "classification": "UNKNOWN"
       }
     ],

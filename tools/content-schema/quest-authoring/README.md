@@ -26,7 +26,7 @@ these files, and every source-derived output is `OTS_HYPOTHESIS_ONLY`.
 | `validate_quest_content.py` | Schema plus semantic checks: unique keys and positions, non-empty rewards, text on a handed-out item, claim/quest links in both directions, gate conditions against the claims (progress marker, key source), one identity per quest, mission ranges and stages against the progress tracks, catalog and manifest coverage; for interactions: anchors, blocked reasons, named transitions against the missions, undeclared progress tracks, manifest status. |
 | `verify_quest_schema.py` | Focused positive/negative cases on synthetic fixtures (`--verbose` prints each case's first error). |
 | `refresh_quest_source_checks.py` | Refreshes exact inventories of missing gate/condition references after conversion; unresolved and blocked definitions never become `mapped` merely because their JSON shape is valid. `--check` verifies reproducibility. |
-| `quest_tree_authoring.py` | Populates `content/quests/definitions/` with the accepted first reward-only batch, resolving existing canonical claims through exact source identity/revision. Also emits the full source catalogue packet. |
+| `quest_tree_authoring.py` | Populates `content/quests/definitions/` from all authored source quest kinds, resolving existing canonical claims through exact source identity/revision. Also emits the full source catalogue packet. |
 | `quest_tree.schema.json` | Strict definition/shard schema; `definition_ready` describes known definition fields, while overall quest completeness and runtime readiness remain unassessed. |
 | `quest_source_packet.schema.json` | Typed packet for every source quest kind, reusing the existing source Quest schema through an offline registry. |
 | `quest_catalogue_authoring.py` | Builds the 373-title source inventory with candidate/family coverage and independently scoped wiki facts. Fresh revision fingerprints and source snapshot digests are checked offline. |
@@ -73,11 +73,7 @@ The coverage sample was built from the Fandom API (Template:Infobox Quest, retri
 and a search of both servers' Lua sources; its `method` field records how, including the verdicts
 corrected by hand.
 
-The canonical tree currently includes the 110 distinct reward-only quests after
-Desert Dungeon deduplication. The migration packet preserves all 250 source quests,
-including 58 storylines and 82 script-only quests. It hashes the supporting progress,
-interaction, gate, chest and manifest inputs. These are separate scopes: a populated
-tree or complete source inventory does not establish complete gameplay definitions.
+The canonical tree contains 284 DATA definitions: 105 reward-only, 121 script-only and 58 storylines. Of these, 42 have complete required definition fields and 242 retain explicit data holds. The 373-title rollout catalogue has 278 direct and 27 family source bindings; 68 are unbound. Each title remains partial and needs runtime. These counts describe different scopes; a source component or a schema-valid definition does not prove complete playable quest behavior. New authoring batches regenerate these inventories rather than editing generated files by hand.
 
 Fresh Fandom reads retain the historical 2026-09-27 revision cut; BR crosschecks
 retain their distinct 2026-10-01 cut. Level/premium and quest-log differences stay
@@ -214,7 +210,7 @@ arguments retain literal Item evidence with explicit unsupported-argument holds;
 raw quantities are not interpreted as charges. Donor alternatives remain conflict
 evidence, including the extra Crystal Inquisition reward.
 
-Canonical Quest DATA now includes283 pinned donor definitions, including explicitly partial components. Storyline/script_only records retain typed `source_data` missions, progress, interactions and source gaps; `quest_native_lowering_missing` prevents treating these imported records as executable Native quests. Regenerate with `quest_tree_authoring.py content` and qualify with `run_checks.py`.
+Canonical Quest DATA now includes284 pinned donor definitions, including explicitly partial components. Storyline/script_only records retain typed `source_data` missions, progress, interactions and source gaps; `quest_native_lowering_missing` prevents treating these imported records as executable Native quests. Regenerate with `quest_tree_authoring.py content` and qualify with `run_checks.py`.
 
 ## Complete373-title wiki SOURCE inventory
 
@@ -235,3 +231,9 @@ Seven additional registered partial components cover Steamship, Awash, Machinery
 Four provenance-bound level interpretations retain minima8/2/2/0. The three interval maxima remain explicit source/readiness gaps; no default zero or Native-ready promotion. Missing symbolic SOURCE readers are retained as UNKNOWN caller references only, with no namespace/numeric alias, initial value or native ownership.
 
 `wiki_requirement_interpretations.py --check` validates a separate current interpretation projection:18 interpreted occurrences,187 remaining syntax holds. Historical205 holds and all105 detailed entries remain unchanged. Optional mission headings are scopes rather than gates; cumulative WarExp thresholds are not added together. This portable check validates pinned historical acquisition facts, not new raw-body retrieval. The required offline runner includes it and its six regressions.
+
+## Round7 source completion
+
+Illuminator addon item-use now has an exact partial donor binding; base outfit and complete gameplay remain unknown. `source_facts_authoring.py --specifications samples/wiki-source-all373/source-specs-373.json --samples samples/unbound-source-facts --check` replays SOURCE facts for all69 titles that lacked a binding at the parent cut. The projection preserves objectives, heading references, requirements, rewards and lexical action references. Physical source order does not choose execution order. Captured source bodies were checked locally by the authors; the portable receipt rechecks frozen inputs, facts and source membership, not public raw bodies. Existing detailed105/all373 historical entries remain unchanged.
+
+Three explicit `None` level requirements normalize to0; blanks, recommendations and qualified fields do not. Four mission-scoped level notes retain explicit readiness holds. The current wiki syntax projection has18 full interpretations,29 partial interpretations with UNKNOWN fields and158 unparsed expressions;187 remain effectively incomplete. This separate current projection leaves all205 archived holds unchanged. Every catalogue title still needs runtime and every real quest smoke remains NOT_RUN.

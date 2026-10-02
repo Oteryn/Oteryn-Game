@@ -747,5 +747,1366 @@
         ]
       }
     ]
+  },
+  {
+    "wiki_title": "Cartography 101 Quest",
+    "historical_hold_sha256": "b9cd15daf93821dc0fa3c4438b27c64fba3e5b2fbce0ab0e68202d0b77d14556",
+    "historical_evidence": {
+      "provider": "tibiawiki_br",
+      "pageid": 36271,
+      "revid": 431843,
+      "content_sha256": "0041714fdc69d4da2e2cc38b1b5fe14422d0823d9bdcc5cb50eeef3adb447213",
+      "url": "https://www.tibiawiki.com.br/index.php?curid=36271&oldid=431843",
+      "relation": "crosscheck",
+      "line": 68,
+      "line_sha256": "3c1a57e51f90d2b54146d8a52502de7010e8f67f51a1214a101de8c4586b7911"
+    },
+    "execution_semantics": "UNKNOWN",
+    "canonical_binding_status": "UNKNOWN",
+    "prerequisite_expressions": [],
+    "source_fact_entries": [
+      {
+        "kind": "curated_source_fact",
+        "source_order": 68,
+        "execution_semantics": "UNKNOWN",
+        "binding_status": "UNKNOWN",
+        "classification": "DERIVED",
+        "scope": "Requerimentos",
+        "facts": {
+          "requirement_category": "travel funds",
+          "required_quantity": null
+        },
+        "evidence": [
+          {
+            "line": 68,
+            "line_sha256": "3c1a57e51f90d2b54146d8a52502de7010e8f67f51a1214a101de8c4586b7911",
+            "byte_offset": 6576,
+            "byte_length": 22,
+            "span_sha256": "3c1a57e51f90d2b54146d8a52502de7010e8f67f51a1214a101de8c4586b7911"
+          }
+        ]
+      }
+    ],
+    "unresolved_semantics": [
+      {
+        "field": "currency_and_amount",
+        "classification": "UNKNOWN"
+      }
+    ],
+    "source_scope_kind": "source_requirement_reference"
+  },
+  {
+    "wiki_title": "Cartography 101 Quest",
+    "historical_hold_sha256": "727c5cf21151f8ba51037cb573bbcc5e70108a652ed31d8b466e1977df48b356",
+    "historical_evidence": {
+      "provider": "tibiawiki_br",
+      "pageid": 36271,
+      "revid": 431843,
+      "content_sha256": "0041714fdc69d4da2e2cc38b1b5fe14422d0823d9bdcc5cb50eeef3adb447213",
+      "url": "https://www.tibiawiki.com.br/index.php?curid=36271&oldid=431843",
+      "relation": "crosscheck",
+      "line": 68,
+      "line_sha256": "3c1a57e51f90d2b54146d8a52502de7010e8f67f51a1214a101de8c4586b7911"
+    },
+    "execution_semantics": "UNKNOWN",
+    "canonical_binding_status": "UNKNOWN",
+    "prerequisite_expressions": [],
+    "source_fact_entries": [
+      {
+        "kind": "curated_source_fact",
+        "source_order": 68,
+        "execution_semantics": "UNKNOWN",
+        "binding_status": "UNKNOWN",
+        "classification": "DERIVED",
+        "scope": "Requerimentos",
+        "facts": {
+          "requirement_category": "travel funds",
+          "required_quantity": null
+        },
+        "evidence": [
+          {
+            "line": 68,
+            "line_sha256": "3c1a57e51f90d2b54146d8a52502de7010e8f67f51a1214a101de8c4586b7911",
+            "byte_offset": 6576,
+            "byte_length": 22,
+            "span_sha256": "3c1a57e51f90d2b54146d8a52502de7010e8f67f51a1214a101de8c4586b7911"
+          }
+        ]
+      }
+    ],
+    "unresolved_semantics": [
+      {
+        "field": "currency_and_amount",
+        "classification": "UNKNOWN"
+      }
+    ],
+    "source_scope_kind": "source_requirement_reference"
+  },
+  {
+    "wiki_title": "Dragon Slayer Outfits Quest",
+    "historical_hold_sha256": "e1a53a578b22a16a6e87d053587d245c1e1c43520816b2785a62baddd20e96fb",
+    "historical_evidence": {
+      "provider": "tibiawiki_br",
+      "pageid": 61047,
+      "revid": 408914,
+      "content_sha256": "5c510703fd449afdc0b9dfb2ce794978ca6c70bed0114709a929e0a376170361",
+      "url": "https://www.tibiawiki.com.br/index.php?curid=61047&oldid=408914",
+      "relation": "crosscheck",
+      "line": 55,
+      "line_sha256": "2d2c271e51e75fc27183da6d05f9a9a384606849da8258d0184efc3095b15d3f"
+    },
+    "execution_semantics": "UNKNOWN",
+    "canonical_binding_status": "UNKNOWN",
+    "prerequisite_expressions": [],
+    "source_fact_entries": [
+      {
+        "kind": "curated_source_fact",
+        "source_order": 55,
+        "execution_semantics": "UNKNOWN",
+        "binding_status": "UNKNOWN",
+        "classification": "DERIVED",
+        "scope": "Requerimentos",
+        "facts": {
+          "required_component_literal": "outfit base"
+        },
+        "evidence": [
+          {
+            "line": 55,
+            "line_sha256": "2d2c271e51e75fc27183da6d05f9a9a384606849da8258d0184efc3095b15d3f",
+            "byte_offset": 2704,
+            "byte_length": 20,
+            "span_sha256": "2d2c271e51e75fc27183da6d05f9a9a384606849da8258d0184efc3095b15d3f"
+          }
+        ]
+      }
+    ],
+    "unresolved_semantics": [
+      {
+        "field": "outfit_identity_and_state_binding",
+        "classification": "UNKNOWN"
+      }
+    ],
+    "source_scope_kind": "source_requirement_reference"
+  },
+  {
+    "wiki_title": "Dragon Slayer Outfits Quest",
+    "historical_hold_sha256": "b35e1e85601ff1fc6b19720d97bca776dd0b3bf8bae3e2ccc2cbfea3385ce8a3",
+    "historical_evidence": {
+      "provider": "tibiawiki_br",
+      "pageid": 61047,
+      "revid": 408914,
+      "content_sha256": "5c510703fd449afdc0b9dfb2ce794978ca6c70bed0114709a929e0a376170361",
+      "url": "https://www.tibiawiki.com.br/index.php?curid=61047&oldid=408914",
+      "relation": "crosscheck",
+      "line": 80,
+      "line_sha256": "f8937853c7e875ef3703682d08ce2ad26c155f0d472d20faca9b3a4753767bd0"
+    },
+    "execution_semantics": "UNKNOWN",
+    "canonical_binding_status": "UNKNOWN",
+    "prerequisite_expressions": [],
+    "source_fact_entries": [
+      {
+        "kind": "curated_source_fact",
+        "source_order": 80,
+        "execution_semantics": "UNKNOWN",
+        "binding_status": "UNKNOWN",
+        "classification": "DERIVED",
+        "scope": "Requerimentos",
+        "facts": {
+          "required_component_literal": "outfit base e primeiro addon"
+        },
+        "evidence": [
+          {
+            "line": 80,
+            "line_sha256": "f8937853c7e875ef3703682d08ce2ad26c155f0d472d20faca9b3a4753767bd0",
+            "byte_offset": 3836,
+            "byte_length": 37,
+            "span_sha256": "f8937853c7e875ef3703682d08ce2ad26c155f0d472d20faca9b3a4753767bd0"
+          }
+        ]
+      }
+    ],
+    "unresolved_semantics": [
+      {
+        "field": "outfit_identity_and_state_binding",
+        "classification": "UNKNOWN"
+      }
+    ],
+    "source_scope_kind": "source_requirement_reference"
+  },
+  {
+    "wiki_title": "Measuring Tibia Quest",
+    "historical_hold_sha256": "54c31d56ce3228d4777cecd408c6e421166d61615db1f6628cca0ee757d13839",
+    "historical_evidence": {
+      "provider": "tibiawiki_br",
+      "pageid": 44517,
+      "revid": 443653,
+      "content_sha256": "143318ffbd5df154feae65ba3d31e4ee0638139813f1127e685c352cbcc49f45",
+      "url": "https://www.tibiawiki.com.br/index.php?curid=44517&oldid=443653",
+      "relation": "crosscheck",
+      "line": 20,
+      "line_sha256": "9082fee79e15b38d5265b91f736f1dbe21a883668d662a45f9ed4e15741aca3e"
+    },
+    "execution_semantics": "UNKNOWN",
+    "canonical_binding_status": "UNKNOWN",
+    "prerequisite_expressions": [],
+    "source_fact_entries": [
+      {
+        "kind": "curated_source_fact",
+        "source_order": 20,
+        "execution_semantics": "UNKNOWN",
+        "binding_status": "UNKNOWN",
+        "classification": "DERIVED",
+        "scope": "Requerimentos",
+        "facts": {
+          "minimum_level_literal": 250,
+          "scope_literal": "some_locations"
+        },
+        "evidence": [
+          {
+            "line": 20,
+            "line_sha256": "9082fee79e15b38d5265b91f736f1dbe21a883668d662a45f9ed4e15741aca3e",
+            "byte_offset": 587,
+            "byte_length": 81,
+            "span_sha256": "9082fee79e15b38d5265b91f736f1dbe21a883668d662a45f9ed4e15741aca3e"
+          }
+        ]
+      }
+    ],
+    "unresolved_semantics": [
+      {
+        "field": "location_identities",
+        "classification": "UNKNOWN"
+      }
+    ],
+    "source_scope_kind": "source_requirement_reference"
+  },
+  {
+    "wiki_title": "Measuring Tibia Quest",
+    "historical_hold_sha256": "7128dd6cef9a310f870a1f9680078f1a34a697e5353447db0423a9524fa4b3d7",
+    "historical_evidence": {
+      "provider": "tibiawiki_br",
+      "pageid": 44517,
+      "revid": 443653,
+      "content_sha256": "143318ffbd5df154feae65ba3d31e4ee0638139813f1127e685c352cbcc49f45",
+      "url": "https://www.tibiawiki.com.br/index.php?curid=44517&oldid=443653",
+      "relation": "crosscheck",
+      "line": 21,
+      "line_sha256": "3633ba5c6c707984a4b8ceb427b6934a323cec2de0b1bc55711139febc1b9564"
+    },
+    "execution_semantics": "UNKNOWN",
+    "canonical_binding_status": "UNKNOWN",
+    "prerequisite_expressions": [],
+    "source_fact_entries": [
+      {
+        "kind": "curated_source_fact",
+        "source_order": 21,
+        "execution_semantics": "UNKNOWN",
+        "binding_status": "UNKNOWN",
+        "classification": "DERIVED",
+        "scope": "Requerimentos",
+        "facts": {
+          "requirement_category": "quests for location access",
+          "required_quantity": null
+        },
+        "evidence": [
+          {
+            "line": 21,
+            "line_sha256": "3633ba5c6c707984a4b8ceb427b6934a323cec2de0b1bc55711139febc1b9564",
+            "byte_offset": 669,
+            "byte_length": 154,
+            "span_sha256": "3633ba5c6c707984a4b8ceb427b6934a323cec2de0b1bc55711139febc1b9564"
+          }
+        ]
+      }
+    ],
+    "unresolved_semantics": [
+      {
+        "field": "quest_and_location_identities",
+        "classification": "UNKNOWN"
+      }
+    ],
+    "source_scope_kind": "source_requirement_reference"
+  },
+  {
+    "wiki_title": "Measuring Tibia Quest",
+    "historical_hold_sha256": "66ef4fef5a0b9b84568f03dd02c097db793006a66f2f8278bd3960292a9a8d8a",
+    "historical_evidence": {
+      "provider": "tibiawiki_br",
+      "pageid": 44517,
+      "revid": 443653,
+      "content_sha256": "143318ffbd5df154feae65ba3d31e4ee0638139813f1127e685c352cbcc49f45",
+      "url": "https://www.tibiawiki.com.br/index.php?curid=44517&oldid=443653",
+      "relation": "crosscheck",
+      "line": 20,
+      "line_sha256": "9082fee79e15b38d5265b91f736f1dbe21a883668d662a45f9ed4e15741aca3e"
+    },
+    "execution_semantics": "UNKNOWN",
+    "canonical_binding_status": "UNKNOWN",
+    "prerequisite_expressions": [],
+    "source_fact_entries": [
+      {
+        "kind": "curated_source_fact",
+        "source_order": 20,
+        "execution_semantics": "UNKNOWN",
+        "binding_status": "UNKNOWN",
+        "classification": "DERIVED",
+        "scope": "Requerimentos",
+        "facts": {
+          "minimum_level_literal": 250,
+          "scope_literal": "some_locations"
+        },
+        "evidence": [
+          {
+            "line": 20,
+            "line_sha256": "9082fee79e15b38d5265b91f736f1dbe21a883668d662a45f9ed4e15741aca3e",
+            "byte_offset": 587,
+            "byte_length": 81,
+            "span_sha256": "9082fee79e15b38d5265b91f736f1dbe21a883668d662a45f9ed4e15741aca3e"
+          }
+        ]
+      }
+    ],
+    "unresolved_semantics": [
+      {
+        "field": "location_identities",
+        "classification": "UNKNOWN"
+      }
+    ],
+    "source_scope_kind": "source_requirement_reference"
+  },
+  {
+    "wiki_title": "Measuring Tibia Quest",
+    "historical_hold_sha256": "11007ef40920c1ab93a52557e0bd8fccb2edae636c119763e3abf48e0cc98a3f",
+    "historical_evidence": {
+      "provider": "tibiawiki_br",
+      "pageid": 44517,
+      "revid": 443653,
+      "content_sha256": "143318ffbd5df154feae65ba3d31e4ee0638139813f1127e685c352cbcc49f45",
+      "url": "https://www.tibiawiki.com.br/index.php?curid=44517&oldid=443653",
+      "relation": "crosscheck",
+      "line": 21,
+      "line_sha256": "3633ba5c6c707984a4b8ceb427b6934a323cec2de0b1bc55711139febc1b9564"
+    },
+    "execution_semantics": "UNKNOWN",
+    "canonical_binding_status": "UNKNOWN",
+    "prerequisite_expressions": [],
+    "source_fact_entries": [
+      {
+        "kind": "curated_source_fact",
+        "source_order": 21,
+        "execution_semantics": "UNKNOWN",
+        "binding_status": "UNKNOWN",
+        "classification": "DERIVED",
+        "scope": "Requerimentos",
+        "facts": {
+          "requirement_category": "quests for location access",
+          "required_quantity": null
+        },
+        "evidence": [
+          {
+            "line": 21,
+            "line_sha256": "3633ba5c6c707984a4b8ceb427b6934a323cec2de0b1bc55711139febc1b9564",
+            "byte_offset": 669,
+            "byte_length": 154,
+            "span_sha256": "3633ba5c6c707984a4b8ceb427b6934a323cec2de0b1bc55711139febc1b9564"
+          }
+        ]
+      }
+    ],
+    "unresolved_semantics": [
+      {
+        "field": "quest_and_location_identities",
+        "classification": "UNKNOWN"
+      }
+    ],
+    "source_scope_kind": "source_requirement_reference"
+  },
+  {
+    "wiki_title": "Mystery of the Valley Quest",
+    "historical_hold_sha256": "2e96ad0dc55de7c2aa7875efb505356cd44ab35d200d3dea481bb3ad639d4951",
+    "historical_evidence": {
+      "provider": "tibiawiki_br",
+      "pageid": 63794,
+      "revid": 423926,
+      "content_sha256": "7050ebabedeeb8b2206ff7a5eb97a905f16c99551e3bf8e8e54dd9d451c2391b",
+      "url": "https://www.tibiawiki.com.br/index.php?curid=63794&oldid=423926",
+      "relation": "crosscheck",
+      "line": 26,
+      "line_sha256": "71d5f8132c1e100b519f4ebe7c267b44622c9380fb97f98bb8d426f9d43aa21c"
+    },
+    "execution_semantics": "UNKNOWN",
+    "canonical_binding_status": "UNKNOWN",
+    "prerequisite_expressions": [],
+    "source_fact_entries": [
+      {
+        "kind": "curated_source_fact",
+        "source_order": 26,
+        "execution_semantics": "UNKNOWN",
+        "binding_status": "UNKNOWN",
+        "classification": "DERIVED",
+        "scope": "Requerimentos",
+        "facts": {
+          "recommendation_category": "protection",
+          "location_label": "Carved Shrine 3"
+        },
+        "evidence": [
+          {
+            "line": 26,
+            "line_sha256": "71d5f8132c1e100b519f4ebe7c267b44622c9380fb97f98bb8d426f9d43aa21c",
+            "byte_offset": 1128,
+            "byte_length": 67,
+            "span_sha256": "71d5f8132c1e100b519f4ebe7c267b44622c9380fb97f98bb8d426f9d43aa21c"
+          }
+        ]
+      }
+    ],
+    "unresolved_semantics": [
+      {
+        "field": "protection_items_or_effects",
+        "classification": "UNKNOWN"
+      }
+    ],
+    "source_scope_kind": "recommendation_only"
+  },
+  {
+    "wiki_title": "Pilgrimage of Ashes Quest",
+    "historical_hold_sha256": "dd865ab0f56bdd68ae4b9e8d35e2d0ea55bcedf1434604ad1beb60945f22e8ab",
+    "historical_evidence": {
+      "provider": "tibiawiki_br",
+      "pageid": 4492,
+      "revid": 432012,
+      "content_sha256": "75bb21b6c3c7ab179f49ae364d4577be7fa337e34aa19f1c8a355e879f0a55c4",
+      "url": "https://www.tibiawiki.com.br/index.php?curid=4492&oldid=432012",
+      "relation": "crosscheck",
+      "line": 27,
+      "line_sha256": "3faad3620f665e4838bb4046aa57f64cd13081b36d7658c549412b796bb3e3f0"
+    },
+    "execution_semantics": "UNKNOWN",
+    "canonical_binding_status": "UNKNOWN",
+    "prerequisite_expressions": [],
+    "source_fact_entries": [
+      {
+        "kind": "curated_source_fact",
+        "source_order": 27,
+        "execution_semantics": "UNKNOWN",
+        "binding_status": "UNKNOWN",
+        "classification": "DERIVED",
+        "scope": "Requerimentos",
+        "facts": {
+          "requirement_category": "healing supplies",
+          "required_quantity": null
+        },
+        "evidence": [
+          {
+            "line": 27,
+            "line_sha256": "3faad3620f665e4838bb4046aa57f64cd13081b36d7658c549412b796bb3e3f0",
+            "byte_offset": 1150,
+            "byte_length": 19,
+            "span_sha256": "3faad3620f665e4838bb4046aa57f64cd13081b36d7658c549412b796bb3e3f0"
+          }
+        ]
+      }
+    ],
+    "unresolved_semantics": [
+      {
+        "field": "item_identities_and_quantities",
+        "classification": "UNKNOWN"
+      }
+    ],
+    "source_scope_kind": "source_requirement_reference"
+  },
+  {
+    "wiki_title": "Pilgrimage of Ashes Quest",
+    "historical_hold_sha256": "94a184390eb5199271619eb3d673b71bf44336d2f8b31380aa460d7f0d5cb7ce",
+    "historical_evidence": {
+      "provider": "tibiawiki_br",
+      "pageid": 4492,
+      "revid": 432012,
+      "content_sha256": "75bb21b6c3c7ab179f49ae364d4577be7fa337e34aa19f1c8a355e879f0a55c4",
+      "url": "https://www.tibiawiki.com.br/index.php?curid=4492&oldid=432012",
+      "relation": "crosscheck",
+      "line": 27,
+      "line_sha256": "3faad3620f665e4838bb4046aa57f64cd13081b36d7658c549412b796bb3e3f0"
+    },
+    "execution_semantics": "UNKNOWN",
+    "canonical_binding_status": "UNKNOWN",
+    "prerequisite_expressions": [],
+    "source_fact_entries": [
+      {
+        "kind": "curated_source_fact",
+        "source_order": 27,
+        "execution_semantics": "UNKNOWN",
+        "binding_status": "UNKNOWN",
+        "classification": "DERIVED",
+        "scope": "Requerimentos",
+        "facts": {
+          "requirement_category": "healing supplies",
+          "required_quantity": null
+        },
+        "evidence": [
+          {
+            "line": 27,
+            "line_sha256": "3faad3620f665e4838bb4046aa57f64cd13081b36d7658c549412b796bb3e3f0",
+            "byte_offset": 1150,
+            "byte_length": 19,
+            "span_sha256": "3faad3620f665e4838bb4046aa57f64cd13081b36d7658c549412b796bb3e3f0"
+          }
+        ]
+      }
+    ],
+    "unresolved_semantics": [
+      {
+        "field": "item_identities_and_quantities",
+        "classification": "UNKNOWN"
+      }
+    ],
+    "source_scope_kind": "source_requirement_reference"
+  },
+  {
+    "wiki_title": "Rise of Devovorga",
+    "historical_hold_sha256": "99bd023060b40de8521f7825934c476715472c791f668b2aef7bbfd7d4b7859a",
+    "historical_evidence": {
+      "provider": "tibia_fandom",
+      "pageid": 48437,
+      "revid": 1204791,
+      "content_sha256": "2238955635ed5fb74b0ecc1e6af9fb6ccdf220dd210221ac2b17258adcae855e",
+      "url": "https://tibia.fandom.com/index.php?curid=48437&oldid=1204791",
+      "relation": "spoiler",
+      "line": 5,
+      "line_sha256": "3301ac46931759cabc3c560d735734674cb76ba9e7981da4ea9a6c49c8e062ed"
+    },
+    "execution_semantics": "UNKNOWN",
+    "canonical_binding_status": "UNKNOWN",
+    "prerequisite_expressions": [],
+    "source_fact_entries": [
+      {
+        "kind": "curated_source_fact",
+        "source_order": 5,
+        "execution_semantics": "UNKNOWN",
+        "binding_status": "UNKNOWN",
+        "classification": "DERIVED",
+        "scope": "Required Equipment",
+        "facts": {
+          "requirement_category": "hunting supplies",
+          "required_quantity": null
+        },
+        "evidence": [
+          {
+            "line": 5,
+            "line_sha256": "3301ac46931759cabc3c560d735734674cb76ba9e7981da4ea9a6c49c8e062ed",
+            "byte_offset": 355,
+            "byte_length": 17,
+            "span_sha256": "3301ac46931759cabc3c560d735734674cb76ba9e7981da4ea9a6c49c8e062ed"
+          }
+        ]
+      }
+    ],
+    "unresolved_semantics": [
+      {
+        "field": "item_identities_and_quantities",
+        "classification": "UNKNOWN"
+      }
+    ],
+    "source_scope_kind": "source_requirement_reference"
+  },
+  {
+    "wiki_title": "Rise of Devovorga",
+    "historical_hold_sha256": "989a379d6ab484f3690a80a9f412006de0683b90c165410836bde26a9204f5e6",
+    "historical_evidence": {
+      "provider": "tibia_fandom",
+      "pageid": 48437,
+      "revid": 1204791,
+      "content_sha256": "2238955635ed5fb74b0ecc1e6af9fb6ccdf220dd210221ac2b17258adcae855e",
+      "url": "https://tibia.fandom.com/index.php?curid=48437&oldid=1204791",
+      "relation": "spoiler",
+      "line": 6,
+      "line_sha256": "3f9cdd10b1a7757bd69bc9e764b7e0bea8c69a72987a537a113aaf763cea448f"
+    },
+    "execution_semantics": "UNKNOWN",
+    "canonical_binding_status": "UNKNOWN",
+    "prerequisite_expressions": [],
+    "source_fact_entries": [
+      {
+        "kind": "curated_source_fact",
+        "source_order": 6,
+        "execution_semantics": "UNKNOWN",
+        "binding_status": "UNKNOWN",
+        "classification": "DERIVED",
+        "scope": "Required Equipment",
+        "facts": {
+          "requirement_category": "team work",
+          "required_quantity": null
+        },
+        "evidence": [
+          {
+            "line": 6,
+            "line_sha256": "3f9cdd10b1a7757bd69bc9e764b7e0bea8c69a72987a537a113aaf763cea448f",
+            "byte_offset": 373,
+            "byte_length": 10,
+            "span_sha256": "3f9cdd10b1a7757bd69bc9e764b7e0bea8c69a72987a537a113aaf763cea448f"
+          }
+        ]
+      }
+    ],
+    "unresolved_semantics": [
+      {
+        "field": "team_members_and_size",
+        "classification": "UNKNOWN"
+      }
+    ],
+    "source_scope_kind": "source_requirement_reference"
+  },
+  {
+    "wiki_title": "Rise of Devovorga",
+    "historical_hold_sha256": "cb9045b27277ac41b72e91b5692bc47c602e27cedbb8f74ad91c9f74404fb771",
+    "historical_evidence": {
+      "provider": "tibia_fandom",
+      "pageid": 48437,
+      "revid": 1204791,
+      "content_sha256": "2238955635ed5fb74b0ecc1e6af9fb6ccdf220dd210221ac2b17258adcae855e",
+      "url": "https://tibia.fandom.com/index.php?curid=48437&oldid=1204791",
+      "relation": "spoiler",
+      "line": 5,
+      "line_sha256": "3301ac46931759cabc3c560d735734674cb76ba9e7981da4ea9a6c49c8e062ed"
+    },
+    "execution_semantics": "UNKNOWN",
+    "canonical_binding_status": "UNKNOWN",
+    "prerequisite_expressions": [],
+    "source_fact_entries": [
+      {
+        "kind": "curated_source_fact",
+        "source_order": 5,
+        "execution_semantics": "UNKNOWN",
+        "binding_status": "UNKNOWN",
+        "classification": "DERIVED",
+        "scope": "Required Equipment",
+        "facts": {
+          "requirement_category": "hunting supplies",
+          "required_quantity": null
+        },
+        "evidence": [
+          {
+            "line": 5,
+            "line_sha256": "3301ac46931759cabc3c560d735734674cb76ba9e7981da4ea9a6c49c8e062ed",
+            "byte_offset": 355,
+            "byte_length": 17,
+            "span_sha256": "3301ac46931759cabc3c560d735734674cb76ba9e7981da4ea9a6c49c8e062ed"
+          }
+        ]
+      }
+    ],
+    "unresolved_semantics": [
+      {
+        "field": "item_identities_and_quantities",
+        "classification": "UNKNOWN"
+      }
+    ],
+    "source_scope_kind": "source_requirement_reference"
+  },
+  {
+    "wiki_title": "Rise of Devovorga",
+    "historical_hold_sha256": "f698561c80e1adc7404ecdbf600777983d2ca2ebf2cb8bade9c2de8308905892",
+    "historical_evidence": {
+      "provider": "tibia_fandom",
+      "pageid": 48437,
+      "revid": 1204791,
+      "content_sha256": "2238955635ed5fb74b0ecc1e6af9fb6ccdf220dd210221ac2b17258adcae855e",
+      "url": "https://tibia.fandom.com/index.php?curid=48437&oldid=1204791",
+      "relation": "spoiler",
+      "line": 6,
+      "line_sha256": "3f9cdd10b1a7757bd69bc9e764b7e0bea8c69a72987a537a113aaf763cea448f"
+    },
+    "execution_semantics": "UNKNOWN",
+    "canonical_binding_status": "UNKNOWN",
+    "prerequisite_expressions": [],
+    "source_fact_entries": [
+      {
+        "kind": "curated_source_fact",
+        "source_order": 6,
+        "execution_semantics": "UNKNOWN",
+        "binding_status": "UNKNOWN",
+        "classification": "DERIVED",
+        "scope": "Required Equipment",
+        "facts": {
+          "requirement_category": "team work",
+          "required_quantity": null
+        },
+        "evidence": [
+          {
+            "line": 6,
+            "line_sha256": "3f9cdd10b1a7757bd69bc9e764b7e0bea8c69a72987a537a113aaf763cea448f",
+            "byte_offset": 373,
+            "byte_length": 10,
+            "span_sha256": "3f9cdd10b1a7757bd69bc9e764b7e0bea8c69a72987a537a113aaf763cea448f"
+          }
+        ]
+      }
+    ],
+    "unresolved_semantics": [
+      {
+        "field": "team_members_and_size",
+        "classification": "UNKNOWN"
+      }
+    ],
+    "source_scope_kind": "source_requirement_reference"
+  },
+  {
+    "wiki_title": "The Colours of Magic",
+    "historical_hold_sha256": "e7be599f748a613306aac39448277b98c79a545d1ea5a68bb102250fd08dce5e",
+    "historical_evidence": {
+      "provider": "tibia_fandom",
+      "pageid": 50860,
+      "revid": 1128664,
+      "content_sha256": "091c6cc595f9b1f53038fc731356da79ad161ec4415f8139b1555b5717e651b9",
+      "url": "https://tibia.fandom.com/index.php?curid=50860&oldid=1128664",
+      "relation": "spoiler",
+      "line": 10,
+      "line_sha256": "2255d63333db818c21fd12319657a894c1c6886bd229bc7c70408be9cb7b98f5"
+    },
+    "execution_semantics": "UNKNOWN",
+    "canonical_binding_status": "UNKNOWN",
+    "prerequisite_expressions": [],
+    "source_fact_entries": [
+      {
+        "kind": "curated_source_fact",
+        "source_order": 10,
+        "execution_semantics": "UNKNOWN",
+        "binding_status": "UNKNOWN",
+        "classification": "DERIVED",
+        "scope": "Required Equipment",
+        "facts": {
+          "requirement_category": "event participants",
+          "required_quantity": null
+        },
+        "evidence": [
+          {
+            "line": 10,
+            "line_sha256": "2255d63333db818c21fd12319657a894c1c6886bd229bc7c70408be9cb7b98f5",
+            "byte_offset": 529,
+            "byte_length": 33,
+            "span_sha256": "2255d63333db818c21fd12319657a894c1c6886bd229bc7c70408be9cb7b98f5"
+          }
+        ]
+      }
+    ],
+    "unresolved_semantics": [
+      {
+        "field": "participant_identities_and_count",
+        "classification": "UNKNOWN"
+      }
+    ],
+    "source_scope_kind": "source_requirement_reference"
+  },
+  {
+    "wiki_title": "The Colours of Magic",
+    "historical_hold_sha256": "670f0ff405c8fc7306ecfc6046c46099c6b72800a272d6428091a6691a4338b7",
+    "historical_evidence": {
+      "provider": "tibia_fandom",
+      "pageid": 50860,
+      "revid": 1128664,
+      "content_sha256": "091c6cc595f9b1f53038fc731356da79ad161ec4415f8139b1555b5717e651b9",
+      "url": "https://tibia.fandom.com/index.php?curid=50860&oldid=1128664",
+      "relation": "spoiler",
+      "line": 10,
+      "line_sha256": "2255d63333db818c21fd12319657a894c1c6886bd229bc7c70408be9cb7b98f5"
+    },
+    "execution_semantics": "UNKNOWN",
+    "canonical_binding_status": "UNKNOWN",
+    "prerequisite_expressions": [],
+    "source_fact_entries": [
+      {
+        "kind": "curated_source_fact",
+        "source_order": 10,
+        "execution_semantics": "UNKNOWN",
+        "binding_status": "UNKNOWN",
+        "classification": "DERIVED",
+        "scope": "Required Equipment",
+        "facts": {
+          "requirement_category": "event participants",
+          "required_quantity": null
+        },
+        "evidence": [
+          {
+            "line": 10,
+            "line_sha256": "2255d63333db818c21fd12319657a894c1c6886bd229bc7c70408be9cb7b98f5",
+            "byte_offset": 529,
+            "byte_length": 33,
+            "span_sha256": "2255d63333db818c21fd12319657a894c1c6886bd229bc7c70408be9cb7b98f5"
+          }
+        ]
+      }
+    ],
+    "unresolved_semantics": [
+      {
+        "field": "participant_identities_and_count",
+        "classification": "UNKNOWN"
+      }
+    ],
+    "source_scope_kind": "source_requirement_reference"
+  },
+  {
+    "wiki_title": "The Order of the Stag Quest",
+    "historical_hold_sha256": "7b3ae71a1fbb09a7c20a14fd6d38682684cb084798a7d7e4bff069cfaa69be8f",
+    "historical_evidence": {
+      "provider": "tibiawiki_br",
+      "pageid": 65908,
+      "revid": 443997,
+      "content_sha256": "e4006bc7f3ed38622dcf985728b448e6ecce23049b9ec8993b3e303a7a3252ae",
+      "url": "https://www.tibiawiki.com.br/index.php?curid=65908&oldid=443997",
+      "relation": "crosscheck",
+      "line": 28,
+      "line_sha256": "61a4deb938b62a583721847119dd787dc47ea5d6bbd6b193906f050fc90eccd7"
+    },
+    "execution_semantics": "UNKNOWN",
+    "canonical_binding_status": "UNKNOWN",
+    "prerequisite_expressions": [],
+    "source_fact_entries": [
+      {
+        "kind": "curated_source_fact",
+        "source_order": 28,
+        "execution_semantics": "UNKNOWN",
+        "binding_status": "UNKNOWN",
+        "classification": "DERIVED",
+        "scope": "Requerimentos",
+        "facts": {
+          "requirement_category": "physical weapon",
+          "required_quantity": null
+        },
+        "evidence": [
+          {
+            "line": 28,
+            "line_sha256": "61a4deb938b62a583721847119dd787dc47ea5d6bbd6b193906f050fc90eccd7",
+            "byte_offset": 1355,
+            "byte_length": 40,
+            "span_sha256": "61a4deb938b62a583721847119dd787dc47ea5d6bbd6b193906f050fc90eccd7"
+          }
+        ]
+      }
+    ],
+    "unresolved_semantics": [
+      {
+        "field": "weapon_identity",
+        "classification": "UNKNOWN"
+      }
+    ],
+    "source_scope_kind": "source_requirement_reference"
+  },
+  {
+    "wiki_title": "The Order of the Stag Quest",
+    "historical_hold_sha256": "a620b2a54a422533cea7b2bbc3c238ef6b25e56ea04c329d52f459378747e428",
+    "historical_evidence": {
+      "provider": "tibiawiki_br",
+      "pageid": 65908,
+      "revid": 443997,
+      "content_sha256": "e4006bc7f3ed38622dcf985728b448e6ecce23049b9ec8993b3e303a7a3252ae",
+      "url": "https://www.tibiawiki.com.br/index.php?curid=65908&oldid=443997",
+      "relation": "crosscheck",
+      "line": 28,
+      "line_sha256": "61a4deb938b62a583721847119dd787dc47ea5d6bbd6b193906f050fc90eccd7"
+    },
+    "execution_semantics": "UNKNOWN",
+    "canonical_binding_status": "UNKNOWN",
+    "prerequisite_expressions": [],
+    "source_fact_entries": [
+      {
+        "kind": "curated_source_fact",
+        "source_order": 28,
+        "execution_semantics": "UNKNOWN",
+        "binding_status": "UNKNOWN",
+        "classification": "DERIVED",
+        "scope": "Requerimentos",
+        "facts": {
+          "requirement_category": "physical weapon",
+          "required_quantity": null
+        },
+        "evidence": [
+          {
+            "line": 28,
+            "line_sha256": "61a4deb938b62a583721847119dd787dc47ea5d6bbd6b193906f050fc90eccd7",
+            "byte_offset": 1355,
+            "byte_length": 40,
+            "span_sha256": "61a4deb938b62a583721847119dd787dc47ea5d6bbd6b193906f050fc90eccd7"
+          }
+        ]
+      }
+    ],
+    "unresolved_semantics": [
+      {
+        "field": "weapon_identity",
+        "classification": "UNKNOWN"
+      }
+    ],
+    "source_scope_kind": "source_requirement_reference"
+  },
+  {
+    "wiki_title": "The Roost of the Graveborn Quest",
+    "historical_hold_sha256": "9b6c78729aa0656e6d74b5dbaa6ff28db6f7641bbb18a7c74f780d122236c3bf",
+    "historical_evidence": {
+      "provider": "tibia_fandom",
+      "pageid": 109746,
+      "revid": 1195315,
+      "content_sha256": "055a1067f2bfcffe32285e06d496f41cd68cde954a43b2f2dac8ba8b1f5c67ad",
+      "url": "https://tibia.fandom.com/index.php?curid=109746&oldid=1195315",
+      "relation": "spoiler",
+      "line": 229,
+      "line_sha256": "ba79f898c3f924cdb6a16357b9f09ee7efb9b7f445bc1a31766e4a153770a8b8"
+    },
+    "execution_semantics": "UNKNOWN",
+    "canonical_binding_status": "UNKNOWN",
+    "prerequisite_expressions": [],
+    "source_fact_entries": [
+      {
+        "kind": "curated_source_fact",
+        "source_order": 229,
+        "execution_semantics": "UNKNOWN",
+        "binding_status": "UNKNOWN",
+        "classification": "DERIVED",
+        "scope": "Requirements",
+        "facts": {
+          "required_defeated_group_literal": "previous bosses",
+          "group_quantifier": "all"
+        },
+        "evidence": [
+          {
+            "line": 229,
+            "line_sha256": "ba79f898c3f924cdb6a16357b9f09ee7efb9b7f445bc1a31766e4a153770a8b8",
+            "byte_offset": 12971,
+            "byte_length": 30,
+            "span_sha256": "ba79f898c3f924cdb6a16357b9f09ee7efb9b7f445bc1a31766e4a153770a8b8"
+          }
+        ]
+      }
+    ],
+    "unresolved_semantics": [
+      {
+        "field": "boss_identities_and_order",
+        "classification": "UNKNOWN"
+      }
+    ],
+    "source_scope_kind": "source_requirement_reference"
+  },
+  {
+    "wiki_title": "The Roost of the Graveborn Quest",
+    "historical_hold_sha256": "5857c50c26fb8c6e6be2570974e23cf16f341ff6d0d6855bace44dfd38443da0",
+    "historical_evidence": {
+      "provider": "tibia_fandom",
+      "pageid": 109746,
+      "revid": 1195315,
+      "content_sha256": "055a1067f2bfcffe32285e06d496f41cd68cde954a43b2f2dac8ba8b1f5c67ad",
+      "url": "https://tibia.fandom.com/index.php?curid=109746&oldid=1195315",
+      "relation": "spoiler",
+      "line": 229,
+      "line_sha256": "ba79f898c3f924cdb6a16357b9f09ee7efb9b7f445bc1a31766e4a153770a8b8"
+    },
+    "execution_semantics": "UNKNOWN",
+    "canonical_binding_status": "UNKNOWN",
+    "prerequisite_expressions": [],
+    "source_fact_entries": [
+      {
+        "kind": "curated_source_fact",
+        "source_order": 229,
+        "execution_semantics": "UNKNOWN",
+        "binding_status": "UNKNOWN",
+        "classification": "DERIVED",
+        "scope": "Requirements",
+        "facts": {
+          "required_defeated_group_literal": "previous bosses",
+          "group_quantifier": "all"
+        },
+        "evidence": [
+          {
+            "line": 229,
+            "line_sha256": "ba79f898c3f924cdb6a16357b9f09ee7efb9b7f445bc1a31766e4a153770a8b8",
+            "byte_offset": 12971,
+            "byte_length": 30,
+            "span_sha256": "ba79f898c3f924cdb6a16357b9f09ee7efb9b7f445bc1a31766e4a153770a8b8"
+          }
+        ]
+      }
+    ],
+    "unresolved_semantics": [
+      {
+        "field": "boss_identities_and_order",
+        "classification": "UNKNOWN"
+      }
+    ],
+    "source_scope_kind": "source_requirement_reference"
+  },
+  {
+    "wiki_title": "The Scatterbrained Sorcerer Quest",
+    "historical_hold_sha256": "54bcdad805017a0a6ffba17b61fd2e96c3e2c37fe155765c685825066ed42641",
+    "historical_evidence": {
+      "provider": "tibiawiki_br",
+      "pageid": 4542,
+      "revid": 433619,
+      "content_sha256": "fa234cca504377a4cbb0be0fa4416d69372cc10b67e310ad4027b4deda139703",
+      "url": "https://www.tibiawiki.com.br/index.php?curid=4542&oldid=433619",
+      "relation": "crosscheck",
+      "line": 23,
+      "line_sha256": "c7b784cb4fdb218a23f8b50820dd53ff59d2086bcf65ff696c7293f71320320c"
+    },
+    "execution_semantics": "UNKNOWN",
+    "canonical_binding_status": "UNKNOWN",
+    "prerequisite_expressions": [],
+    "source_fact_entries": [
+      {
+        "kind": "curated_source_fact",
+        "source_order": 23,
+        "execution_semantics": "UNKNOWN",
+        "binding_status": "UNKNOWN",
+        "classification": "DERIVED",
+        "scope": "Requerimentos",
+        "facts": {
+          "requirement_category": "travel funds",
+          "required_quantity": null
+        },
+        "evidence": [
+          {
+            "line": 23,
+            "line_sha256": "c7b784cb4fdb218a23f8b50820dd53ff59d2086bcf65ff696c7293f71320320c",
+            "byte_offset": 1004,
+            "byte_length": 23,
+            "span_sha256": "c7b784cb4fdb218a23f8b50820dd53ff59d2086bcf65ff696c7293f71320320c"
+          }
+        ]
+      }
+    ],
+    "unresolved_semantics": [
+      {
+        "field": "currency_and_amount",
+        "classification": "UNKNOWN"
+      }
+    ],
+    "source_scope_kind": "source_requirement_reference"
+  },
+  {
+    "wiki_title": "The Scatterbrained Sorcerer Quest",
+    "historical_hold_sha256": "9a4cfc5b4060c4c15daee39e0f7d51aa3ed102caa3159afe20af67267c991639",
+    "historical_evidence": {
+      "provider": "tibiawiki_br",
+      "pageid": 4542,
+      "revid": 433619,
+      "content_sha256": "fa234cca504377a4cbb0be0fa4416d69372cc10b67e310ad4027b4deda139703",
+      "url": "https://www.tibiawiki.com.br/index.php?curid=4542&oldid=433619",
+      "relation": "crosscheck",
+      "line": 23,
+      "line_sha256": "c7b784cb4fdb218a23f8b50820dd53ff59d2086bcf65ff696c7293f71320320c"
+    },
+    "execution_semantics": "UNKNOWN",
+    "canonical_binding_status": "UNKNOWN",
+    "prerequisite_expressions": [],
+    "source_fact_entries": [
+      {
+        "kind": "curated_source_fact",
+        "source_order": 23,
+        "execution_semantics": "UNKNOWN",
+        "binding_status": "UNKNOWN",
+        "classification": "DERIVED",
+        "scope": "Requerimentos",
+        "facts": {
+          "requirement_category": "travel funds",
+          "required_quantity": null
+        },
+        "evidence": [
+          {
+            "line": 23,
+            "line_sha256": "c7b784cb4fdb218a23f8b50820dd53ff59d2086bcf65ff696c7293f71320320c",
+            "byte_offset": 1004,
+            "byte_length": 23,
+            "span_sha256": "c7b784cb4fdb218a23f8b50820dd53ff59d2086bcf65ff696c7293f71320320c"
+          }
+        ]
+      }
+    ],
+    "unresolved_semantics": [
+      {
+        "field": "currency_and_amount",
+        "classification": "UNKNOWN"
+      }
+    ],
+    "source_scope_kind": "source_requirement_reference"
+  },
+  {
+    "wiki_title": "The Spirit Will Get You Quest",
+    "historical_hold_sha256": "e6d0a183ca434be415c1ce152d09703836bca59f71dfee61343b8fd8ebbeff4d",
+    "historical_evidence": {
+      "provider": "tibiawiki_br",
+      "pageid": 4544,
+      "revid": 393497,
+      "content_sha256": "3e4989b62cde79c7f5b0d39c760ec80abc016c9e8ee0973e47b4529233c1d0dc",
+      "url": "https://www.tibiawiki.com.br/index.php?curid=4544&oldid=393497",
+      "relation": "crosscheck",
+      "line": 24,
+      "line_sha256": "221291780d299cfec644ca3c0b2026f02bf71ffa9434675e612893835974e1cd"
+    },
+    "execution_semantics": "UNKNOWN",
+    "canonical_binding_status": "UNKNOWN",
+    "prerequisite_expressions": [],
+    "source_fact_entries": [
+      {
+        "kind": "curated_source_fact",
+        "source_order": 24,
+        "execution_semantics": "UNKNOWN",
+        "binding_status": "UNKNOWN",
+        "classification": "DERIVED",
+        "scope": "Requerimentos",
+        "facts": {
+          "requirement_category": "supplies",
+          "required_quantity": null
+        },
+        "evidence": [
+          {
+            "line": 24,
+            "line_sha256": "221291780d299cfec644ca3c0b2026f02bf71ffa9434675e612893835974e1cd",
+            "byte_offset": 1054,
+            "byte_length": 14,
+            "span_sha256": "221291780d299cfec644ca3c0b2026f02bf71ffa9434675e612893835974e1cd"
+          }
+        ]
+      }
+    ],
+    "unresolved_semantics": [
+      {
+        "field": "item_identities_and_quantities",
+        "classification": "UNKNOWN"
+      }
+    ],
+    "source_scope_kind": "source_requirement_reference"
+  },
+  {
+    "wiki_title": "The Spirit Will Get You Quest",
+    "historical_hold_sha256": "d590a61b44bcbd43b0d6aa0030158cc53fe9a21553f57ba7a88514dd0d3cd9e5",
+    "historical_evidence": {
+      "provider": "tibiawiki_br",
+      "pageid": 4544,
+      "revid": 393497,
+      "content_sha256": "3e4989b62cde79c7f5b0d39c760ec80abc016c9e8ee0973e47b4529233c1d0dc",
+      "url": "https://www.tibiawiki.com.br/index.php?curid=4544&oldid=393497",
+      "relation": "crosscheck",
+      "line": 24,
+      "line_sha256": "221291780d299cfec644ca3c0b2026f02bf71ffa9434675e612893835974e1cd"
+    },
+    "execution_semantics": "UNKNOWN",
+    "canonical_binding_status": "UNKNOWN",
+    "prerequisite_expressions": [],
+    "source_fact_entries": [
+      {
+        "kind": "curated_source_fact",
+        "source_order": 24,
+        "execution_semantics": "UNKNOWN",
+        "binding_status": "UNKNOWN",
+        "classification": "DERIVED",
+        "scope": "Requerimentos",
+        "facts": {
+          "requirement_category": "supplies",
+          "required_quantity": null
+        },
+        "evidence": [
+          {
+            "line": 24,
+            "line_sha256": "221291780d299cfec644ca3c0b2026f02bf71ffa9434675e612893835974e1cd",
+            "byte_offset": 1054,
+            "byte_length": 14,
+            "span_sha256": "221291780d299cfec644ca3c0b2026f02bf71ffa9434675e612893835974e1cd"
+          }
+        ]
+      }
+    ],
+    "unresolved_semantics": [
+      {
+        "field": "item_identities_and_quantities",
+        "classification": "UNKNOWN"
+      }
+    ],
+    "source_scope_kind": "source_requirement_reference"
+  },
+  {
+    "wiki_title": "Treasure Hunt Quest",
+    "historical_hold_sha256": "2a1f33754293c15949cb35418dd5510fa5feea4c7f65aa2a57c97b09055b52b1",
+    "historical_evidence": {
+      "provider": "tibiawiki_br",
+      "pageid": 4558,
+      "revid": 431833,
+      "content_sha256": "2ee71acc465aa386a903b6d1dc385f898bad79d5f1d4cdc4bfc557096e2a49c8",
+      "url": "https://www.tibiawiki.com.br/index.php?curid=4558&oldid=431833",
+      "relation": "crosscheck",
+      "line": 24,
+      "line_sha256": "cd5865d45e6e23f5f7a0d046de61c5d2e83024a6cbc14084a72aece12e33dcd3"
+    },
+    "execution_semantics": "UNKNOWN",
+    "canonical_binding_status": "UNKNOWN",
+    "prerequisite_expressions": [],
+    "source_fact_entries": [
+      {
+        "kind": "curated_source_fact",
+        "source_order": 24,
+        "execution_semantics": "UNKNOWN",
+        "binding_status": "UNKNOWN",
+        "classification": "DERIVED",
+        "scope": "Requerimentos",
+        "facts": {
+          "requirement_category": "melee weapon",
+          "required_quantity": null
+        },
+        "evidence": [
+          {
+            "line": 24,
+            "line_sha256": "cd5865d45e6e23f5f7a0d046de61c5d2e83024a6cbc14084a72aece12e33dcd3",
+            "byte_offset": 960,
+            "byte_length": 12,
+            "span_sha256": "cd5865d45e6e23f5f7a0d046de61c5d2e83024a6cbc14084a72aece12e33dcd3"
+          }
+        ]
+      }
+    ],
+    "unresolved_semantics": [
+      {
+        "field": "weapon_identity",
+        "classification": "UNKNOWN"
+      }
+    ],
+    "source_scope_kind": "source_requirement_reference"
+  },
+  {
+    "wiki_title": "Treasure Hunt Quest",
+    "historical_hold_sha256": "d042b7f435963c1aa24a64f56ca054089e611e60c639fb7457ad0ad4c6eaf240",
+    "historical_evidence": {
+      "provider": "tibiawiki_br",
+      "pageid": 4558,
+      "revid": 431833,
+      "content_sha256": "2ee71acc465aa386a903b6d1dc385f898bad79d5f1d4cdc4bfc557096e2a49c8",
+      "url": "https://www.tibiawiki.com.br/index.php?curid=4558&oldid=431833",
+      "relation": "crosscheck",
+      "line": 24,
+      "line_sha256": "cd5865d45e6e23f5f7a0d046de61c5d2e83024a6cbc14084a72aece12e33dcd3"
+    },
+    "execution_semantics": "UNKNOWN",
+    "canonical_binding_status": "UNKNOWN",
+    "prerequisite_expressions": [],
+    "source_fact_entries": [
+      {
+        "kind": "curated_source_fact",
+        "source_order": 24,
+        "execution_semantics": "UNKNOWN",
+        "binding_status": "UNKNOWN",
+        "classification": "DERIVED",
+        "scope": "Requerimentos",
+        "facts": {
+          "requirement_category": "melee weapon",
+          "required_quantity": null
+        },
+        "evidence": [
+          {
+            "line": 24,
+            "line_sha256": "cd5865d45e6e23f5f7a0d046de61c5d2e83024a6cbc14084a72aece12e33dcd3",
+            "byte_offset": 960,
+            "byte_length": 12,
+            "span_sha256": "cd5865d45e6e23f5f7a0d046de61c5d2e83024a6cbc14084a72aece12e33dcd3"
+          }
+        ]
+      }
+    ],
+    "unresolved_semantics": [
+      {
+        "field": "weapon_identity",
+        "classification": "UNKNOWN"
+      }
+    ],
+    "source_scope_kind": "source_requirement_reference"
+  },
+  {
+    "wiki_title": "Twenty Miles Beneath the Sea Quest",
+    "historical_hold_sha256": "e7549400051711ae0375deadff860f98063c876b36787cd2b69958654206c9b9",
+    "historical_evidence": {
+      "provider": "tibiawiki_br",
+      "pageid": 35190,
+      "revid": 385745,
+      "content_sha256": "149c03d277ea51ad446bb98f68eec317ee301e9f961cd4833ebef1172919c412",
+      "url": "https://www.tibiawiki.com.br/index.php?curid=35190&oldid=385745",
+      "relation": "crosscheck",
+      "line": 21,
+      "line_sha256": "a87e4cf09d3968813e106865e021c58ebe870ca75e3efd43c32c7a8565b1c6f7"
+    },
+    "execution_semantics": "UNKNOWN",
+    "canonical_binding_status": "UNKNOWN",
+    "prerequisite_expressions": [],
+    "source_fact_entries": [
+      {
+        "kind": "curated_source_fact",
+        "source_order": 21,
+        "execution_semantics": "UNKNOWN",
+        "binding_status": "UNKNOWN",
+        "classification": "DERIVED",
+        "scope": "Requerimentos",
+        "facts": {
+          "requirement_category": "supplies",
+          "required_quantity": null
+        },
+        "evidence": [
+          {
+            "line": 21,
+            "line_sha256": "a87e4cf09d3968813e106865e021c58ebe870ca75e3efd43c32c7a8565b1c6f7",
+            "byte_offset": 753,
+            "byte_length": 14,
+            "span_sha256": "a87e4cf09d3968813e106865e021c58ebe870ca75e3efd43c32c7a8565b1c6f7"
+          }
+        ]
+      }
+    ],
+    "unresolved_semantics": [
+      {
+        "field": "item_identities_and_quantities",
+        "classification": "UNKNOWN"
+      }
+    ],
+    "source_scope_kind": "source_requirement_reference"
+  },
+  {
+    "wiki_title": "Twenty Miles Beneath the Sea Quest",
+    "historical_hold_sha256": "c5c058c7bf7eb39e3f6d94de3c6f933965f558c15980d47605ff95f476a30b32",
+    "historical_evidence": {
+      "provider": "tibiawiki_br",
+      "pageid": 35190,
+      "revid": 385745,
+      "content_sha256": "149c03d277ea51ad446bb98f68eec317ee301e9f961cd4833ebef1172919c412",
+      "url": "https://www.tibiawiki.com.br/index.php?curid=35190&oldid=385745",
+      "relation": "crosscheck",
+      "line": 21,
+      "line_sha256": "a87e4cf09d3968813e106865e021c58ebe870ca75e3efd43c32c7a8565b1c6f7"
+    },
+    "execution_semantics": "UNKNOWN",
+    "canonical_binding_status": "UNKNOWN",
+    "prerequisite_expressions": [],
+    "source_fact_entries": [
+      {
+        "kind": "curated_source_fact",
+        "source_order": 21,
+        "execution_semantics": "UNKNOWN",
+        "binding_status": "UNKNOWN",
+        "classification": "DERIVED",
+        "scope": "Requerimentos",
+        "facts": {
+          "requirement_category": "supplies",
+          "required_quantity": null
+        },
+        "evidence": [
+          {
+            "line": 21,
+            "line_sha256": "a87e4cf09d3968813e106865e021c58ebe870ca75e3efd43c32c7a8565b1c6f7",
+            "byte_offset": 753,
+            "byte_length": 14,
+            "span_sha256": "a87e4cf09d3968813e106865e021c58ebe870ca75e3efd43c32c7a8565b1c6f7"
+          }
+        ]
+      }
+    ],
+    "unresolved_semantics": [
+      {
+        "field": "item_identities_and_quantities",
+        "classification": "UNKNOWN"
+      }
+    ],
+    "source_scope_kind": "source_requirement_reference"
   }
 ]

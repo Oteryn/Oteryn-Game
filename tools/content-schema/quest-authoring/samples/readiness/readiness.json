@@ -26,10 +26,10 @@
   "scheduler": "owner for delayed callbacks (none yet)"
  },
  "counts": {
-  "quests": 283,
+  "quests": 284,
   "by_kind": {
    "reward_only": 105,
-   "script_only": 120,
+   "script_only": 121,
    "storyline": 58
   },
   "quests_needing_feature": {
@@ -63,127 +63,127 @@
   {
    "feature": "trigger_use",
    "owner": "GAME-INTERACTION-01 USE edge",
-   "quests_complete_on_engine_side": 62,
+   "quests_complete_on_engine_side": 63,
    "of_which_without_data_gaps": 2
   },
   {
    "feature": "reward_claim",
    "owner": "DUR-03 inventory mint and RewardClaim (D39-D42)",
-   "quests_complete_on_engine_side": 144,
+   "quests_complete_on_engine_side": 145,
    "of_which_without_data_gaps": 84
   },
   {
    "feature": "world_object",
    "owner": "world-object overlay (D38)",
-   "quests_complete_on_engine_side": 148,
+   "quests_complete_on_engine_side": 149,
    "of_which_without_data_gaps": 84
   },
   {
    "feature": "teleport",
    "owner": "relocation owner (D37)",
-   "quests_complete_on_engine_side": 152,
+   "quests_complete_on_engine_side": 153,
    "of_which_without_data_gaps": 85
   },
   {
    "feature": "trigger_step",
    "owner": "GAME-INTERACTION-01 step edges",
-   "quests_complete_on_engine_side": 160,
+   "quests_complete_on_engine_side": 161,
    "of_which_without_data_gaps": 85
   },
   {
    "feature": "item_consume",
    "owner": "DUR-03 consumption",
-   "quests_complete_on_engine_side": 163,
+   "quests_complete_on_engine_side": 164,
    "of_which_without_data_gaps": 87
   },
   {
    "feature": "trigger_kill",
    "owner": "GAME-INTERACTION-01 death/kill edges",
-   "quests_complete_on_engine_side": 166,
+   "quests_complete_on_engine_side": 167,
    "of_which_without_data_gaps": 88
   },
   {
    "feature": "quest_state",
    "owner": "quest-state store (D35)",
-   "quests_complete_on_engine_side": 167,
+   "quests_complete_on_engine_side": 168,
    "of_which_without_data_gaps": 88
   },
   {
    "feature": "npc_dialogue",
    "owner": "NPC dialogue runtime",
-   "quests_complete_on_engine_side": 190,
+   "quests_complete_on_engine_side": 191,
    "of_which_without_data_gaps": 94
   },
   {
    "feature": "door_progress",
    "owner": "door gate: quest progress",
-   "quests_complete_on_engine_side": 204,
+   "quests_complete_on_engine_side": 205,
    "of_which_without_data_gaps": 102
   },
   {
    "feature": "scheduler",
    "owner": "owner for delayed callbacks (none yet)",
-   "quests_complete_on_engine_side": 210,
+   "quests_complete_on_engine_side": 211,
    "of_which_without_data_gaps": 102
   },
   {
    "feature": "item_hand_out",
    "owner": "DUR-03 inventory mint",
-   "quests_complete_on_engine_side": 222,
+   "quests_complete_on_engine_side": 223,
    "of_which_without_data_gaps": 103
   },
   {
    "feature": "summon",
    "owner": "GAME-AI-01 spawn",
-   "quests_complete_on_engine_side": 232,
+   "quests_complete_on_engine_side": 233,
    "of_which_without_data_gaps": 103
   },
   {
    "feature": "achievement",
    "owner": "Achievement owner",
-   "quests_complete_on_engine_side": 239,
+   "quests_complete_on_engine_side": 240,
    "of_which_without_data_gaps": 103
   },
   {
    "feature": "condition",
    "owner": "owner for player conditions (none yet)",
-   "quests_complete_on_engine_side": 252,
+   "quests_complete_on_engine_side": 253,
    "of_which_without_data_gaps": 103
   },
   {
    "feature": "creature_removal",
    "owner": "owner for creature removal (none yet)",
-   "quests_complete_on_engine_side": 258,
+   "quests_complete_on_engine_side": 259,
    "of_which_without_data_gaps": 103
   },
   {
    "feature": "boss_cooldown",
    "owner": "boss cooldown owner (none yet)",
-   "quests_complete_on_engine_side": 268,
+   "quests_complete_on_engine_side": 269,
    "of_which_without_data_gaps": 103
   },
   {
    "feature": "kv_state",
    "owner": "owner for key-value writes (none yet)",
-   "quests_complete_on_engine_side": 275,
+   "quests_complete_on_engine_side": 276,
    "of_which_without_data_gaps": 103
   },
   {
    "feature": "outfit",
    "owner": "Outfit grant owner",
-   "quests_complete_on_engine_side": 278,
+   "quests_complete_on_engine_side": 279,
    "of_which_without_data_gaps": 103
   },
   {
    "feature": "mount",
    "owner": "Mount grant owner",
-   "quests_complete_on_engine_side": 281,
+   "quests_complete_on_engine_side": 282,
    "of_which_without_data_gaps": 103
   },
   {
    "feature": "experience",
    "owner": "Character XP award from an interaction",
-   "quests_complete_on_engine_side": 283,
+   "quests_complete_on_engine_side": 284,
    "of_which_without_data_gaps": 103
   }
  ],
@@ -271,7 +271,7 @@
    "interactions": 8,
    "data_gaps": {
     "interactions_with_gaps": 8,
-    "unresolved_items": 17
+    "unresolved_items": 18
    }
   },
   {
@@ -1761,7 +1761,7 @@
    "interactions": 19,
    "data_gaps": {
     "interactions_with_gaps": 14,
-    "unresolved_items": 41
+    "unresolved_items": 42
    }
   },
   {
@@ -3362,7 +3362,7 @@
    "interactions": 10,
    "data_gaps": {
     "interactions_with_gaps": 8,
-    "unresolved_items": 40
+    "unresolved_items": 41
    }
   },
   {
@@ -3739,7 +3739,7 @@
    "interactions": 6,
    "data_gaps": {
     "interactions_with_gaps": 6,
-    "unresolved_items": 28
+    "unresolved_items": 29
    }
   },
   {
@@ -4313,6 +4313,16 @@
   },
   {
    "quest": "crystalserver:quest/illuminator_outfit_quest",
+   "kind": "script_only",
+   "features": [],
+   "interactions": 0,
+   "data_gaps": {
+    "interactions_with_gaps": 0,
+    "unresolved_items": 1
+   }
+  },
+  {
+   "quest": "crystalserver:quest/illuminator_outfits_quest",
    "kind": "script_only",
    "features": [],
    "interactions": 0,

@@ -74,7 +74,7 @@
    "shared_mechanism": 145,
    "bespoke": 3563
   },
-  "quests_triaged": 283,
+  "quests_triaged": 284,
   "quests_with_bespoke_work": 109,
   "quests_fully_covered_by_owners_and_mechanisms": 1,
   "interactions_unlinked_to_a_quest": 12
@@ -4108,6 +4108,18 @@
   },
   {
    "quest": "crystalserver:quest/illuminator_outfit_quest",
+   "kind": "script_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
+   "quest": "crystalserver:quest/illuminator_outfits_quest",
    "kind": "script_only",
    "counts": {
     "owner_pending": 0,

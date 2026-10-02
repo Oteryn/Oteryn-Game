@@ -11,6 +11,46 @@ def digest(value):
     return hashlib.sha256(json.dumps(value, sort_keys=True, ensure_ascii=False, separators=(',', ':')).encode()).hexdigest()
 
 
+def partial_requirement(raw, witness, section):
+    """Parse literal categories/scopes while retaining missing condition fields."""
+    text = re.sub(r"'{2,}", '', raw).strip()
+    text = re.sub(r'^\*\s*', '', text)
+    generic = {'Dinheiro para viagem': ('travel funds', 'currency_and_amount'),
+        'Dinheiro para viagens': ('travel funds', 'currency_and_amount'),
+        'Poções de cura.': ('healing supplies', 'item_identities_and_quantities'),
+        'Hunting supplies': ('hunting supplies', 'item_identities_and_quantities'),
+        'Team work': ('team work', 'team_members_and_size'),
+        'Other participants in the event': ('event participants', 'participant_identities_and_count'),
+        'Suprimentos.': ('supplies', 'item_identities_and_quantities'),
+        'Suprimentos;': ('supplies', 'item_identities_and_quantities'),
+        'Arma melee': ('melee weapon', 'weapon_identity')}
+    facts, fields, recommendation = None, [], False
+    if text in generic:
+        label, missing = generic[text]
+        facts = {'requirement_category': label, 'required_quantity': None}; fields = [missing]
+    if re.fullmatch(r'\[\[Arquivo:[^\]\n]+\]\] uma arma física', text):
+        facts = {'requirement_category': 'physical weapon', 'required_quantity': None}; fields = ['weapon_identity']
+    outfit = re.fullmatch(r'Ter o (outfit base(?: e primeiro addon)?)\.', text)
+    if outfit:
+        facts = {'required_component_literal': outfit[1]}; fields = ['outfit_identity_and_state_binding']
+    if text == 'All previous bosses defeated':
+        facts = {'required_defeated_group_literal': 'previous bosses', 'group_quantifier': 'all'}; fields = ['boss_identities_and_order']
+    places = re.fullmatch(r'Alguns locais só são acessíveis por personagens level ([0-9]+) ou superior\.', text)
+    if places:
+        facts = {'minimum_level_literal': int(places[1]), 'scope_literal': 'some_locations'}; fields = ['location_identities']
+    if text == 'Por ser necessário executar uma grande exploração por todo o mapa tibiano, várias quests são necessárias para se ter acesso a determinados locais.':
+        facts = {'requirement_category': 'quests for location access', 'required_quantity': None}; fields = ['quest_and_location_identities']
+    caution = re.fullmatch(r"\*\s*'''(Carved Shrine [0-9]+):''' Shrine em área perigosa, leve proteção!", raw)
+    if caution:
+        facts = {'recommendation_category': 'protection', 'location_label': caution[1]}; fields = ['protection_items_or_effects']; recommendation = True
+    if facts is None: return None
+    return {'prerequisite_expressions': [], 'source_fact_entries': [{'kind': 'curated_source_fact',
+        'source_order': witness['line'], 'execution_semantics': 'UNKNOWN', 'binding_status': 'UNKNOWN',
+        'classification': 'DERIVED', 'scope': section, 'facts': facts, 'evidence': [copy.deepcopy(witness)]}],
+        'unresolved_semantics': [{'field': f, 'classification': 'UNKNOWN'} for f in fields],
+        'source_scope_kind': 'recommendation_only' if recommendation else 'source_requirement_reference'}
+
+
 def parse_requirement(raw, witness, section):
     """Return source references/literal facts only; no canonical or execution choice."""
     text = re.sub(r"'{2,}", '', raw).strip()
@@ -49,7 +89,7 @@ def parse_requirement(raw, witness, section):
     if scope:
         facts = {'optional_mission_heading': scope[1].strip().strip('"')}
     if not expr and not facts:
-        return None
+        return partial_requirement(raw, witness, section)
     fact = [] if not facts else [{'kind': 'curated_source_fact', 'source_order': witness['line'],
         'execution_semantics': 'UNKNOWN', 'binding_status': 'UNKNOWN', 'classification': 'DERIVED',
         'scope': section, 'facts': facts, 'evidence': [copy.deepcopy(witness)]}]
@@ -67,7 +107,12 @@ def schema():
     facts = {'oneOf': [obj({'required_amount_literal': integer, 'unit_literal': string, 'scope_literal': string}),
         obj({'required_amount_literal': integer, 'unit_literal': {'const': 'War Exp pontos'}, 'scope_literal': string,
              'cumulative_declared': {'const': True}, 'excluded_additive_terms': {'type': 'array', 'minItems': 2, 'items': integer}}),
-        obj({'required_title_literal': string}), obj({'optional_mission_heading': string})]}
+        obj({'required_title_literal': string}), obj({'optional_mission_heading': string}),
+        obj({'requirement_category': string, 'required_quantity': {'const': None}}),
+        obj({'required_component_literal': string}),
+        obj({'required_defeated_group_literal': string, 'group_quantifier': {'const': 'all'}}),
+        obj({'minimum_level_literal': integer, 'scope_literal': {'const': 'some_locations'}}),
+        obj({'recommendation_category': {'const': 'protection'}, 'location_label': string})]}
     fact = obj({'kind': {'const': 'curated_source_fact'}, 'source_order': integer, 'execution_semantics': unknown,
         'binding_status': unknown, 'classification': {'const': 'DERIVED'}, 'scope': {'type': 'string'},
         'facts': facts, 'evidence': {'type': 'array', 'minItems': 1, 'maxItems': 1, 'items': witness}})
@@ -99,6 +144,11 @@ def build(specifications, authored, receipt, authored_schema):
                 raise ValueError('SOURCE expression authority differs')
             if expr['line'] != baseline[key]['evidence']['line'] or expr['line_sha256'] != baseline[key]['evidence']['line_sha256']:
                 raise ValueError('Source expression witness differs')
+        partial = any(set(f['facts']) & {'requirement_category', 'required_component_literal', 'required_defeated_group_literal', 'minimum_level_literal', 'recommendation_category'} for f in row['source_fact_entries'])
+        if partial and (not row.get('unresolved_semantics') or row.get('prerequisite_expressions')):
+            raise ValueError('Partial SOURCE condition cannot lose unknown fields or become a gate')
+        if partial and row.get('source_scope_kind') != ('recommendation_only' if any('recommendation_category' in f['facts'] for f in row['source_fact_entries']) else 'source_requirement_reference'):
+            raise ValueError('Recommendation and required source scope differ')
         if not row['prerequisite_expressions'] and not row['source_fact_entries']:
             raise ValueError('Empty interpretation cannot resolve requirement syntax')
         for fact in row['source_fact_entries']:
@@ -106,13 +156,22 @@ def build(specifications, authored, receipt, authored_schema):
                 if proof['line'] != row['historical_evidence']['line'] or proof['line_sha256'] != row['historical_evidence']['line_sha256']:
                     raise ValueError('Literal fact witness differs')
         rows.append(copy.deepcopy(row)); seen.add(key)
+    preserved = receipt.get('preserved_interpretation_digests', [])
+    if preserved and [digest(r) for r in rows[:len(preserved)]] != preserved:
+        raise ValueError('Prior interpretations cannot change or reorder')
     if sorted(digest(r) for r in rows) != receipt['interpretation_record_digests']:
         raise ValueError('Interpretation receipt membership differs')
     return {'schema': 'OTERYN_WIKI_REQUIREMENT_INTERPRETATIONS/v1', 'scope': 'SOURCE syntax only; historical holds preserved',
         'historical_specifications_sha256': receipt['specifications_file_sha256'], 'raw_body_rechecked': False,
         'proof_mode': 'AUTHORED_FACTS_AND_RECORDED_OFFLINE_BODY_WITNESSES', 'runtime_readiness': 'UNKNOWN',
         'definition_complete': False, 'historical_unparsed_holds': len(baseline), 'interpreted_holds': len(rows),
-        'current_unparsed_holds': len(baseline)-len(rows), 'interpretations': rows,
+        'current_unparsed_holds': len(baseline)-len(rows),
+        'partial_interpretations_with_unknown_fields': sum(bool(r.get('unresolved_semantics')) for r in rows),
+        'structured_unknown_fields': sum(len(r.get('unresolved_semantics', [])) for r in rows),
+        'full_syntax_interpretations': sum(not bool(r.get('unresolved_semantics')) for r in rows),
+        'partial_syntax_interpretations': sum(bool(r.get('unresolved_semantics')) for r in rows),
+        'unparsed': len(baseline)-len(rows),
+        'effective_unparsed_or_partial': len(baseline)-len(rows)+sum(bool(r.get('unresolved_semantics')) for r in rows), 'interpretations': rows,
         'remaining_holds': [{'wiki_title': title, 'hold': hold} for (title, marker), hold in baseline.items() if (title, marker) not in seen]}
 
 
@@ -130,7 +189,7 @@ def main():
     if args.check:
         if not output.is_file() or output.read_text() != content: raise ValueError('SOURCE interpretation output stale')
     else: output.write_text(content)
-    print(json.dumps({k:json.loads(content)[k] for k in ('historical_unparsed_holds', 'interpreted_holds', 'current_unparsed_holds')}))
+    print(json.dumps({k:json.loads(content)[k] for k in ('historical_unparsed_holds', 'full_syntax_interpretations', 'partial_syntax_interpretations', 'unparsed', 'effective_unparsed_or_partial')}))
 
 
 if __name__ == '__main__': main()

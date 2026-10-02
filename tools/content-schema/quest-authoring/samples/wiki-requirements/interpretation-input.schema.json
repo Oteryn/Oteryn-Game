@@ -336,6 +336,87 @@
                     "optional_mission_heading"
                   ],
                   "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "requirement_category": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "required_quantity": {
+                      "const": null
+                    }
+                  },
+                  "required": [
+                    "requirement_category",
+                    "required_quantity"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "required_component_literal": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  },
+                  "required": [
+                    "required_component_literal"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "required_defeated_group_literal": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "group_quantifier": {
+                      "const": "all"
+                    }
+                  },
+                  "required": [
+                    "required_defeated_group_literal",
+                    "group_quantifier"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "minimum_level_literal": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "scope_literal": {
+                      "const": "some_locations"
+                    }
+                  },
+                  "required": [
+                    "minimum_level_literal",
+                    "scope_literal"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "recommendation_category": {
+                      "const": "protection"
+                    },
+                    "location_label": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  },
+                  "required": [
+                    "recommendation_category",
+                    "location_label"
+                  ],
+                  "additionalProperties": false
                 }
               ]
             },
@@ -390,6 +471,33 @@
           ],
           "additionalProperties": false
         }
+      },
+      "source_scope_kind": {
+        "enum": [
+          "source_requirement_reference",
+          "recommendation_only"
+        ]
+      },
+      "unresolved_semantics": {
+        "type": "array",
+        "minItems": 1,
+        "items": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "field",
+            "classification"
+          ],
+          "properties": {
+            "field": {
+              "type": "string",
+              "minLength": 1
+            },
+            "classification": {
+              "const": "UNKNOWN"
+            }
+          }
+        }
       }
     },
     "required": [
@@ -401,6 +509,20 @@
       "prerequisite_expressions",
       "source_fact_entries"
     ],
-    "additionalProperties": false
+    "additionalProperties": false,
+    "allOf": [
+      {
+        "if": {
+          "required": [
+            "unresolved_semantics"
+          ]
+        },
+        "then": {
+          "required": [
+            "source_scope_kind"
+          ]
+        }
+      }
+    ]
   }
 }

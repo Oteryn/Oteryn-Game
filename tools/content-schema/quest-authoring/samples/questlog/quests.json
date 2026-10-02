@@ -564,6 +564,9 @@
       "requirements": {
         "premium": true,
         "min_level": 0
+      },
+      "requirements_unparsed": {
+        "min_level": "note"
       }
     },
     {
@@ -703,11 +706,9 @@
       },
       "requirements": {
         "premium": false,
-        "min_level": null
+        "min_level": 0
       },
-      "requirements_unparsed": {
-        "min_level": "none"
-      }
+      "requirements_unparsed": {}
     },
     {
       "identity": {
@@ -16022,6 +16023,9 @@
       "requirements": {
         "premium": true,
         "min_level": 80
+      },
+      "requirements_unparsed": {
+        "min_level": "note"
       }
     },
     {
@@ -39736,6 +39740,9 @@
       "requirements": {
         "premium": true,
         "min_level": 100
+      },
+      "requirements_unparsed": {
+        "min_level": "note"
       }
     },
     {
@@ -40465,11 +40472,9 @@
       },
       "requirements": {
         "premium": true,
-        "min_level": null
+        "min_level": 0
       },
-      "requirements_unparsed": {
-        "min_level": "none"
-      }
+      "requirements_unparsed": {}
     },
     {
       "identity": {
@@ -54428,6 +54433,9 @@
       "requirements": {
         "premium": true,
         "min_level": 275
+      },
+      "requirements_unparsed": {
+        "min_level": "note"
       }
     },
     {
@@ -54655,11 +54663,9 @@
       },
       "requirements": {
         "premium": false,
-        "min_level": null
+        "min_level": 0
       },
-      "requirements_unparsed": {
-        "min_level": "none"
-      }
+      "requirements_unparsed": {}
     },
     {
       "identity": {
@@ -61074,6 +61080,29 @@
       "requirements": {
         "premium": true,
         "min_level": 250
+      }
+    },
+    {
+      "identity": {
+        "key": "crystalserver:quest/illuminator_outfits_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "Illuminator Outfits Quest",
+      "kind": "script_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Illuminator Outfits Quest",
+        "pageid": 109146,
+        "revid": 1119520
+      },
+      "claims": [],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "200"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 200
       }
     },
     {
