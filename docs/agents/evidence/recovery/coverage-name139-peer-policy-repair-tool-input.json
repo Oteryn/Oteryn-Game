@@ -1,0 +1,14 @@
+{
+  "schema": "OTERYN_RETAINED_SOURCE_PATCH_TOOL_INPUT/v1",
+  "fidelity": "Verbatim retained Python patch tool input; NOT claimed final formatted project source or recovered proof/packet bytes.",
+  "applies_to": "Name139 source-policy metadata repair after independent peer review; original source8 parent 2ec1f34f05fd89abbb041f313b0852c331ae2b53.",
+  "python_tool_input": "from pathlib import Path\nimport json,hashlib,re\nq=Path('docs/agents/evidence/OTV2-20261002-item-name-source-qualification-v1.json');p=json.loads(q.read_text());p['source_policy']['names']='ReferenceItemSemantics.presentation.name; only exact fullTarget IDs in closed139 packet with each proven prior KNOWN imported literal (120 weapon of carving, 19 event item) and absent GameOwned presentation authoring; incoming already equal accepted idempotently. All other Known names and blocked states reject.';q.write_text(json.dumps(p,sort_keys=True,ensure_ascii=False,separators=(',',':'))+'\\n');digest=hashlib.sha256(q.read_bytes()).hexdigest();c=Path('tools/content-schema/item-authoring/lower_item_name_packet.py');s=re.sub(r'PROOF_SHA = \"[0-9a-f]{64}\"','PROOF_SHA = \"'+digest+'\"',c.read_text());c.write_text(s);print('proof',digest)\n",
+  "subsequent_command": "python tools/content-schema/item-authoring/lower_item_name_packet.py",
+  "subsequent_packet_pin_tool_input": "from pathlib import Path\nimport hashlib,re\np=Path('apps/game-server/src/content/item_name_promotion.rs');digest=hashlib.sha256(Path('docs/agents/evidence/OTV2-20261002-item-name-promotion-v1.json').read_bytes()).hexdigest();s=re.sub(r'(pub const ITEM_NAME_PACKET_SHA256: &str =\\s*\\n?\\s*\")[0-9a-f]{64}',r'\\g<1>'+digest,p.read_text());p.write_text(s);print('packet',digest)\n",
+  "subsequent_format_command": "/workspace/audit-continuation/rustup/toolchains/1.94.0-x86_64-unknown-linux-gnu/bin/rustfmt --edition 2024 apps/game-server/src/content/item_name_promotion.rs",
+  "recorded_outputs": {
+    "proof_sha256": "5650ab936c222a3771dec95c7bd058c3d398883f14b6ecb7e982e10f2592482c",
+    "packet_sha256": "f2f8f266a53fca4de2ed114c011a2c18dd3ac2557b4c25a8c11584d01902846b"
+  },
+  "original_proof_packet_full_bytes": "UNKNOWN_NOT_RECOVERED_BY_THIS_RECORD"
+}

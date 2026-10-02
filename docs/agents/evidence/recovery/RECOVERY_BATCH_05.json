@@ -1,0 +1,64 @@
+{
+  "schema": "RECOVERY_STAGED_TEXT_V1",
+  "original_file_restoration_complete": false,
+  "files": [
+    {
+      "path": "docs/agents/evidence/recovery/use345-retained/apps/game-server/examples/materialize_content_world_project_v2.rs.txt",
+      "sha": "33f4fa3c9a047e7c7041f40a247fc955b2ba9d17",
+      "bytes": 86689,
+      "sha256": "f473d69a14eabc2772940c0f02d2191c49361027902b7c47bcff1f8f651c4c81",
+      "fidelity": "RECONSTRUCTED_RETAINED_UNFORMATTED_TOOL_WRITES_ORIGINAL_FINAL_FILE_HASH_UNAVAILABLE"
+    },
+    {
+      "path": "docs/agents/evidence/recovery/use345-retained/apps/game-server/src/content/mod.rs.txt",
+      "sha": "f7be0a9c773f90e71c6713ca2f1edff74bae71b0",
+      "bytes": 4739,
+      "sha256": "d44d358fe39366e9315e31a49cd80d906cace2a04ce5e8e3872502658f2fe10b",
+      "fidelity": "RECONSTRUCTED_RETAINED_UNFORMATTED_TOOL_WRITES_ORIGINAL_FINAL_FILE_HASH_UNAVAILABLE"
+    },
+    {
+      "path": "docs/agents/evidence/recovery/use345-retained/tools/content-schema/item-authoring/source_field_catalogs.py.txt",
+      "sha": "2fb678d73ccca157099ebbe5c30043120d632a8e",
+      "bytes": 68480,
+      "sha256": "be586a07d6da18f67605c20923dd77f2b219e3752ac26e06c8e2a1f90d37fb02",
+      "fidelity": "RECONSTRUCTED_RETAINED_UNFORMATTED_TOOL_WRITES_ORIGINAL_FINAL_FILE_HASH_UNAVAILABLE"
+    },
+    {
+      "path": "docs/agents/evidence/recovery/use345-retained/tools/content-schema/item-authoring/lower_item_use_observation_packet.py.txt",
+      "sha": "62d04a16c9593fdb81c65957ca8841211fcd6c84",
+      "bytes": 11912,
+      "sha256": "953d08a54f2744e6c7a1eedbdd8badf32e0a67d1c06501f7554afe367cb597b6",
+      "fidelity": "RECONSTRUCTED_RETAINED_UNFORMATTED_TOOL_WRITES_ORIGINAL_FINAL_FILE_HASH_UNAVAILABLE"
+    },
+    {
+      "path": "docs/agents/evidence/recovery/use345-retained/tools/content-schema/item-authoring/test_lower_item_use_observation_packet.py.txt",
+      "sha": "a45248429640147fe94b4d05cb4c12aa5d931890",
+      "bytes": 3842,
+      "sha256": "63ad6a0f99524d4103f5297dab84ff5e0e86f8adc3fc6db0a66db3a30fded98b",
+      "fidelity": "RECONSTRUCTED_RETAINED_UNFORMATTED_TOOL_WRITES_ORIGINAL_FINAL_FILE_HASH_UNAVAILABLE"
+    },
+    {
+      "path": "docs/agents/evidence/recovery/remaining-fields-recovery-availability-v1.json",
+      "sha": "8ce041856d4a51a0f10c59fc37c63f7d7858e037",
+      "bytes": 6698,
+      "sha256": "546350659abd7c8e68f0fb7dbe1a84137914662865bf00b4e75b477ceaa0243a",
+      "fidelity": "New recovery inventory, not original authoring manifest"
+    },
+    {
+      "path": "docs/agents/evidence/recovery/remaining-fields-use345-five-retained-replay.py.txt",
+      "sha": "20bb033c6be4123a4ca4ab605a951a11a6ccb416",
+      "bytes": 19499,
+      "sha256": "9eb4df207bcf6e1694c852fb8fd4d3ca1de8510079f11359dce9eced75664501",
+      "fidelity": "Retained replay code, unexecuted, not certified original final source"
+    },
+    {
+      "path": "docs/agents/evidence/recovery/coverage-name139-peer-policy-repair-tool-input.json",
+      "sha": "b80478648f651ed1bb0a6719fe5f1923f90577c6",
+      "bytes": 2212,
+      "sha256": "95eb25f7fba6ce9e513288dc9ff92016d24942266f8196143583c80b63fafcc5",
+      "fidelity": "Exact retained repair tool arguments within new record, not full proof/packet"
+    }
+  ],
+  "checks": "Root independently verified full staged text, UTF8 byte counts and SHA256",
+  "use": "Use5 reconstructed from retained tool inputs/public parent; original final file hashes unavailable; no runtime/schema/sourcefact validation or proof/packet restoration claimed."
+}

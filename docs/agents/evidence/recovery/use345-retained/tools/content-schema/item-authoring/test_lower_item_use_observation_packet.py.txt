@@ -1,0 +1,60 @@
+"""Positive and opposing complete-source observation guards."""
+import copy
+import json
+import unittest
+
+import lower_item_use_observation_packet as lane
+from source_field_catalogs import build_fandom_use_observation_alias_supplement
+
+
+class Observations(unittest.TestCase):
+    def test_exact_types_no_expression_evaluation_or_cost_suffix_stripping(self):
+        self.assertEqual(lane.parse_value("damagerange", "13 (8-18)", 1), {"kind": "Text", "value": "13 (8-18)"})
+        self.assertEqual(lane.parse_value("damagerange", "65", 1), {"kind": "Integer", "value": 65})
+        self.assertEqual(lane.parse_value("manacost", "+10", 52336), 10)
+        self.assertEqual(lane.parse_value("manacost", "0", 1), 0)
+        for parameter, value, iid in [("manacost", "+10", 1), ("manacost", "+3 mana per attack", 1), ("manacost", "4294967296", 1), ("damagerange", "4-3", 1), ("damagerange", "", 1)]:
+            with self.assertRaises(ValueError):
+                lane.parse_value(parameter, value, iid)
+
+    def test_explicit_alias_catalog_is_separate_from_legacy_census(self):
+        catalog = build_fandom_use_observation_alias_supplement()
+        self.assertEqual(json.loads((lane.ROOT / lane.ALIASES).read_text()), catalog)
+        self.assertEqual({r["source_field"]: r["canonical_source_property"] for r in catalog["fields"]}, {"damagerange": "damage", "manacost": "mana_cost"})
+
+    def test_complete_source_scope_and_prospective_checkpoint_are_closed(self):
+        packet = lane.build(prospective=True)
+        self.assertEqual(packet["counts"]["fields"], 345)
+        self.assertEqual(packet["counts"]["items"], 139)
+        self.assertEqual(packet["counts"]["by_field"], {"damage": 111, "damage_type": 138, "mana_cost": 96})
+
+    def test_all_present_opposition_shared_id_and_existing_owner_fail(self):
+        proof = json.loads((lane.ROOT / lane.PROOF).read_text())
+        source = proof["records"][0]
+        record = next(r for shard in json.loads((lane.ROOT / "content/items/index.json").read_text())["shards"] for r in json.loads((lane.ROOT / shard).read_text())["records"] if r["definition"]["identity"] == source["target"])
+        token = source["own_tokens"][0]
+        params = lane.base.raw_parameters(proof["competing_own_infobox_witnesses"][token]["raw_own_infobox"])
+        box = {"balanced": True, "inside_comment": False, "positive_exact_infobox_object_match": True}
+        obj = {"name": source["official_name"], "flags": {"flags.take": True}}
+        own = [({}, box, params)]
+        self.assertEqual(lane.qualify(source, record, source["binding"], obj, own, set())["facts"], source["facts"])
+        for parameter, value in [("manacost", ["999"]), ("manacost", [""]), ("itemid", [f"{source['source_item_id']},1"]), ("actualname", ["other"]), ("damage", ["1"])]:
+            changed = copy.deepcopy(params)
+            changed[parameter] = value
+            with self.assertRaises(ValueError):
+                lane.qualify(source, record, source["binding"], obj, own + [({}, box, changed)], set())
+        changed = copy.deepcopy(record)
+        changed.setdefault("authoring", {})["use_observation"] = {"mana_cost": 999}
+        with self.assertRaises(ValueError):
+            lane.qualify(source, changed, source["binding"], obj, own, set())
+        with self.assertRaises(ValueError):
+            lane.qualify(source, record, source["binding"], obj, own, {source["target"]["key"]})
+        changed = copy.deepcopy(record)
+        changed["definition"]["semantics"]["presentation"] = {"state": "KNOWN", "value": {"name": {"state": "KNOWN", "value": "wrong imported name"}}}
+        for prospective in [False, True]:
+            with self.assertRaises(ValueError):
+                lane.qualify(source, changed, source["binding"], obj, own, set(), prospective)
+
+
+if __name__ == "__main__":
+    unittest.main()
