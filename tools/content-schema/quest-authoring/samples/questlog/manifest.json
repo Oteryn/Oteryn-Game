@@ -379,6 +379,10 @@
       "canary": 51,
       "crystalserver": 59
     },
+    "quest_log_selected_entries": {
+      "canary": 51,
+      "crystalserver": 58
+    },
     "storyline_quests": 58,
     "quest_log_entries_only_crystalserver": 7,
     "missions": 529,
@@ -410,7 +414,7 @@
       "total": 1360,
       "with_keywords": 1161,
       "with_topics": 713,
-      "npc_in_npc_census": 1360
+      "npc_in_npc_census": 0
     },
     "transitions_in_both_servers": 1345,
     "storyline_quests_linked_to_wiki": 52,
@@ -469,6 +473,68 @@
   ],
   "quest_source_aliases": [],
   "source_checks": {
+    "quest_log_primary_selection": [
+      {
+        "quest_name": "The Ultimate Challenges",
+        "source": "crystalserver",
+        "primary_path": "data-global/lib/core/quests.lua",
+        "primary_line": 4345,
+        "conditional_fallbacks": [
+          {
+            "server": "crystalserver",
+            "path": "data-crystal/lib/core/quests.lua",
+            "line": 3,
+            "name": "The Ultimate Challenges",
+            "start": {
+              "expr": "Storage.Quest.U8_0.BarbarianArena.QuestLogGreenhorn"
+            },
+            "start_value": 1,
+            "missions": [],
+            "classification": "OTS_HYPOTHESIS_ONLY",
+            "source_sha256": "ec82c49d3c3d76e2156076a399ca1f5c357277db2a2a873f49d66d868796efb0",
+            "condition": {
+              "expression": "not Quests",
+              "line_start": 1,
+              "line_end": 30
+            },
+            "dynamic_missions": {
+              "declared_modes": [
+                {
+                  "name": "Greenhorn",
+                  "storage": {
+                    "expr": "Storage.Quest.U8_0.BarbarianArena.QuestLogGreenhorn"
+                  },
+                  "missionId": 10312
+                },
+                {
+                  "name": "Scrapper",
+                  "storage": {
+                    "expr": "Storage.Quest.U8_0.BarbarianArena.QuestLogScrapper"
+                  },
+                  "missionId": 10313
+                },
+                {
+                  "name": "Warlord",
+                  "storage": {
+                    "expr": "Storage.Quest.U8_0.BarbarianArena.QuestLogWarlord"
+                  },
+                  "missionId": 10314
+                }
+              ],
+              "mode_table_lines": [
+                11,
+                15
+              ],
+              "loop_line": 17,
+              "assignment_line": 18,
+              "loop_end_line": 29,
+              "execution_semantics": "UNKNOWN_SOURCE_ONLY_NOT_EVALUATED"
+            },
+            "selection_basis": "configured primary data-global; exact pinned conditional fallback retained"
+          }
+        ]
+      }
+    ],
     "quest_requirement_interpretations": [
       {
         "quest": "canary:quest/dawnport_quest",
@@ -681,23 +747,6 @@
             "blob_sha256": "37067588014bc82b6a1db33ccb70d8e879ddc1545c719f1b0494a8605894297a",
             "line_sha256": "f44fb7d0f58bbca3a91323525769baabe173fd33552082b066621f65c0ef24b4",
             "expression": "Storage.HeroRathleton.FastWay",
-            "receiver_expression": "player"
-          }
-        ]
-      },
-      {
-        "key": "canary:quest-progress/quest/u10_10/the_gravedigger_of_drefia/mission05",
-        "reason": "SOURCE reader/declaration retained; ownership remains UNKNOWN",
-        "readers": [
-          {
-            "source": "canary",
-            "repository": "opentibiabr/canary",
-            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
-            "path": "data-otservbr-global/scripts/quests/the_gravedigger_of_drefia/actions_amforas.lua",
-            "line": 3,
-            "blob_sha256": "ced834c675ada61985c3e953155bb8f93fca6b042890545eb6f39ed31fb6b998",
-            "line_sha256": "33c7703ba1eefd3c2929573a5b6fee041ebfdacf3535f8cab973e77bfa81efc3",
-            "expression": "Storage.Quest.U10_10.TheGravediggerOfDrefia.Mission05",
             "receiver_expression": "player"
           }
         ]
@@ -1994,10 +2043,6 @@
         "key": "canary:quest-progress/hero_rathleton/fast_way",
         "owner": "UNKNOWN: caller-only symbolic SOURCE identity; owning quest, initial value, bounds, complete writer inventory and native Character policy are not inferred",
         "storage_declaration": "UNKNOWN: exact symbolic getter has no proven named Storage declaration; an undeclared lookup may supply nil; never repaired through GlobalStorage or numeric coincidence"
-      },
-      {
-        "key": "canary:quest-progress/quest/u10_10/the_gravedigger_of_drefia/mission05",
-        "owner": "UNKNOWN: exact source reader/declaration retained; owning quest, initial value, bounds and native Character policy are not inferred"
       },
       {
         "key": "canary:quest-progress/quest/u10_10/the_gravedigger_of_drefia/mission08",
@@ -3518,7 +3563,7 @@
       "quest": "canary:quest/the_ultimate_challenges",
       "mission": "barbarian_arena_greenhorn_mode",
       "status": "mapped",
-      "resolution": "mission present only in canary",
+      "resolution": "present in both servers and identical",
       "sources": [
         {
           "source": "canary",
@@ -3527,8 +3572,8 @@
         },
         {
           "source": "crystalserver",
-          "path": "data-crystal/lib/core/quests.lua",
-          "quest_line": 3
+          "path": "data-global/lib/core/quests.lua",
+          "quest_line": 4345
         }
       ]
     },
@@ -3536,7 +3581,7 @@
       "quest": "canary:quest/the_ultimate_challenges",
       "mission": "barbarian_arena_scrapper_mode",
       "status": "mapped",
-      "resolution": "mission present only in canary",
+      "resolution": "present in both servers and identical",
       "sources": [
         {
           "source": "canary",
@@ -3545,8 +3590,8 @@
         },
         {
           "source": "crystalserver",
-          "path": "data-crystal/lib/core/quests.lua",
-          "quest_line": 3
+          "path": "data-global/lib/core/quests.lua",
+          "quest_line": 4345
         }
       ]
     },
@@ -3554,7 +3599,7 @@
       "quest": "canary:quest/the_ultimate_challenges",
       "mission": "barbarian_arena_warlord_mode",
       "status": "mapped",
-      "resolution": "mission present only in canary",
+      "resolution": "present in both servers and identical",
       "sources": [
         {
           "source": "canary",
@@ -3563,8 +3608,8 @@
         },
         {
           "source": "crystalserver",
-          "path": "data-crystal/lib/core/quests.lua",
-          "quest_line": 3
+          "path": "data-global/lib/core/quests.lua",
+          "quest_line": 4345
         }
       ]
     },

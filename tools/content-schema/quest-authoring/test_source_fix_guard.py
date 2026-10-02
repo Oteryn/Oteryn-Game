@@ -1,4 +1,4 @@
-"""Real R10 receipt regressions, with isolated copies and no helper monkeypatch."""
+"""Real cumulative R12 receipt regressions, with isolated copies and no helper monkeypatch."""
 import copy
 import json
 import os
@@ -25,6 +25,7 @@ class SourceFixGuardTests(unittest.TestCase):
   self.root=Path(self.temp.name);self.baseline=copy.deepcopy(self.baseline);self.current=copy.deepcopy(self.current)
   self.receipt=copy.deepcopy(self.receipt);self.approval=copy.deepcopy(self.approval)
   descriptors=[self.receipt['approval']]+sum((self.receipt[k] for k in ('immutable_inputs','compiler_inputs','proof_inputs')),[])
+  if 'owner_associations' in self.receipt:descriptors.append(self.receipt['owner_associations'])
   for path in {guard.RECEIPT}|{d['path'] for d in descriptors}:
    dest=self.root/path;dest.parent.mkdir(parents=True,exist_ok=True);shutil.copyfile(FIXTURE/path,dest)
  def write_receipt(self):
@@ -38,9 +39,9 @@ class SourceFixGuardTests(unittest.TestCase):
   for row in self.approval['approved_core_digests']:
    if row['key']==change['key']:row['to_digest']=change['to_digest']
   with self.assertRaises(ValueError):guard.validate_change(change,self.baseline,change['new_core'],self.approval)
- def test_actual_ten_reviewed_core_changes_pass(self):
+ def test_actual_seventeen_reviewed_core_changes_pass(self):
   expected,proof=guard.effective_digests(self.root,self.baseline,self.current)
-  self.assertEqual(len(self.receipt['changes']),10);self.assertIsNotNone(proof)
+  self.assertEqual(len(self.receipt['changes']),17);self.assertIsNotNone(proof)
   for change in self.receipt['changes']:
    self.assertEqual(expected[change['key']],change['to_digest'])
  def test_bad_immutable_baseline_sha(self):

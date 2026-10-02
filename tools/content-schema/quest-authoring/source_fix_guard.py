@@ -55,8 +55,9 @@ def verified_receipt(root):
     if not path.exists():
         return None, {}
     receipt = read_json(path)
+    extra = ('owner_associations',) if 'owner_associations' in receipt else ()
     fields(receipt, ('schema', 'parent_frozen_head', 'approval', 'immutable_inputs',
-                     'compiler_inputs', 'proof_inputs', 'changes', 'native_runtime_admission'))
+                     'compiler_inputs', 'proof_inputs', 'changes', 'native_runtime_admission') + extra)
     if receipt['schema'] != 'OTERYN_SOURCE_TRANSCRIPTION_CHANGES/v1' or receipt['native_runtime_admission'] is not False:
         raise ValueError('receipt schema or Native admission differs')
     if receipt['approval']['path'] != APPROVAL:
@@ -64,9 +65,15 @@ def verified_receipt(root):
     verify_file(root, receipt['approval'])
     approval = read_json(root / APPROVAL)
     fields(approval, ('schema', 'parent_frozen_head', 'immutable_inputs', 'compiler_inputs',
-                      'proof_inputs', 'approved_graphs', 'approved_core_digests', 'native_runtime_admission'))
+                      'proof_inputs', 'approved_graphs', 'approved_core_digests', 'native_runtime_admission') + extra)
     if approval['schema'] != 'OTERYN_REVIEWED_SOURCE_TRANSCRIPTION_APPROVAL/v1' or approval['native_runtime_admission'] is not False:
         raise ValueError('approval schema or Native admission differs')
+    if extra:
+        if receipt['owner_associations'] != approval['owner_associations']:
+            raise ValueError('owner association approval substitution')
+        if receipt['owner_associations']['path'] != 'tools/content-schema/quest-authoring/samples/owner-associations/approval.json':
+            raise ValueError('wrong owner association approval path')
+        verify_file(root, receipt['owner_associations'])
     head = receipt['parent_frozen_head']
     if len(head) != 40 or any(c not in '0123456789abcdef' for c in head) or head != approval['parent_frozen_head']:
         raise ValueError('parent frozen head mismatch')
@@ -163,7 +170,7 @@ def graph_changes(old, new):
     return changes
 
 
-def validate_change(change, baseline, current, approval):
+def validate_change(change, baseline, current, approval, root=None):
     fields(change, ('key', 'from_digest', 'to_digest', 'old_core', 'new_core'))
     key = change['key']
     if key not in baseline or change['from_digest'] != baseline[key]:
@@ -177,10 +184,17 @@ def validate_change(change, baseline, current, approval):
         raise ValueError('source owner substitution')
     if digest(old) != change['from_digest'] or digest(new) != change['to_digest'] or new != current:
         raise ValueError('old/new core or current to_digest mismatch')
-    if normalize_core(old) != normalize_core(new):
+    structural_old, structural_new = old, new
+    if 'owner_associations' in approval:
+        from source_owner_guard import CORES, reviewed_pair
+        if key in CORES:
+            if root is None:
+                raise ValueError('owner association proof requires repository root')
+            structural_old, structural_new = reviewed_pair(root, change, approval['owner_associations'])
+    if normalize_core(structural_old) != normalize_core(structural_new):
         raise ValueError('unrelated core, source pins/owner/alias or Native hold changed')
     graphs = {(r['key'], r['from_digest'], r['to_digest']) for r in approval['approved_graphs']}
-    if not set(graph_changes(old, new)) <= graphs:
+    if not set(graph_changes(structural_old, structural_new)) <= graphs:
         raise ValueError('unreviewed graph replacement or joined graph')
 
 
@@ -202,7 +216,7 @@ def effective_digests(root, baseline, current):
         key = change['key']
         if key in changes or key not in current:
             raise ValueError('duplicate or missing changed core')
-        validate_change(change, baseline, current[key], approval)
+        validate_change(change, baseline, current[key], approval, root)
         source_key = current[key]['source_refs']['quest']['key']
         if current[key]['reported_source_readiness'] != readiness.get(source_key):
             raise ValueError('current readiness row does not match core')

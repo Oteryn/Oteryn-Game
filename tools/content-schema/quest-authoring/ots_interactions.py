@@ -39,6 +39,7 @@ from pathlib import Path
 
 import lua_blocks
 import lua_tables
+from scoped_storage_aliases import expand_scoped_storage_aliases
 from lua_writers import (REGISTRATION, argument, expand_aliases, storage_aliases,
                          builtin_binding_is_pristine, mask_code, scalar_leaf_paths, static_name_is_immutable, strip_code, unconditional_prefix)
 from ots_chests import CONFLICT_DECISIONS, REVISION, ROOT, SOURCES, check_checkout, decided, git_blob, ref, slug, unused_decisions
@@ -437,6 +438,13 @@ class Script:
         self.namespace = 'canary' if server == 'canary' else 'crystalserver'
         self.lines = (Path(repo) / path).read_text(errors='replace').split('\n')
         self.commentless_lines = mask_code('\n'.join(self.lines), literals=False, long_literals=True).split('\n')
+        # Reuse the progress importer's exact lexical argument proof; keep originals
+        # for mutation/actor proofs and evidence. Reflection leaves aliases opaque.
+        dynamic = re.search(r'\b(?:_G|_ENV|rawset|getfenv|setfenv|load|loadfile|loadstring|dofile|require|debug)\b',
+                            mask_code('\n'.join(self.lines)))
+        scoped = '\n'.join(self.lines) if dynamic else expand_scoped_storage_aliases('\n'.join(self.lines))
+        self.scoped_lines = mask_code(scoped, literals=False, long_literals=True).split('\n')
+        self.scoped_receivers = set()
         self.code_lines = mask_code('\n'.join(self.lines)).split('\n')
         self.block_lines, self.condition_headers = multiline_conditions(self.commentless_lines, self.code_lines)
         self.readonly_tables = readonly_table_lines(self.commentless_lines)
@@ -479,6 +487,7 @@ class Script:
         names = [n.strip() for n in params.split(',')]
         self.roles = {n: r for n, r in zip(names, ROLES.get(callback, ())) if r}
         self.callback = callback
+        self.scoped_receivers = set()
         # No shadowing or mutation: only one declaration in the file, before this use,
         # either before all functions or in this callback. Branch-selected values stay unknown.
         prefix = unconditional_prefix(self.lines)
@@ -566,6 +575,13 @@ class Script:
             if m and static_name_is_immutable(callback_lines, m.group(1)):
                 self.player_aliases[m.group(1)] = (n, self.line_scopes[n])
                 self.players.add(m.group(1))
+        self.scoped_receivers = {name for name in self.players if builtin_binding_is_pristine(
+            [self.lines[n - 1] for n in sorted(self.line_scopes)
+             if n != self.player_aliases.get(name, (None,))[0]], name)}
+        # Refresh snapshot reads once acting-player aliases and their scopes are known.
+        for n in sorted(body_numbers):
+            if (m := VALUE_ALIAS.match(self.raw(n))) and static_name_is_immutable(callback_lines, m.group(1)):
+                self.value_aliases[m.group(1)] = (n, m.group(2), self.line_scopes[n])
 
     def proven_player(self, name, number):
         if self.callback == 'onUse' and self.roles.get(name) == 'actor':
@@ -864,7 +880,13 @@ class Script:
         return None
 
     def raw(self, number):
-        return expand_aliases(self.commentless_lines[number - 1].strip(), self.aliases)
+        original = self.commentless_lines[number - 1].strip()
+        scoped = self.scoped_lines[number - 1].strip()
+        receivers = re.findall(r'(\w+):(?:get|set)StorageValue\(', scoped)
+        if (scoped != original and receivers and all(name in self.scoped_receivers
+                and self.proven_player(name, number) for name in receivers)):
+            original = scoped
+        return expand_aliases(original, self.aliases)
 
     def read_only(self, code):
         """A local assignment or table-constructor line whose calls only read state."""

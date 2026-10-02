@@ -43,16 +43,16 @@
    "item_hand_out": 50,
    "kv_state": 8,
    "mount": 3,
-   "npc_dialogue": 90,
+   "npc_dialogue": 92,
    "outfit": 4,
-   "quest_state": 113,
+   "quest_state": 114,
    "reward_claim": 135,
    "scheduler": 53,
    "summon": 38,
    "teleport": 88,
    "trigger_kill": 50,
    "trigger_step": 84,
-   "trigger_use": 197,
+   "trigger_use": 198,
    "world_object": 91
   },
   "quests_without_data_gaps": 103,
@@ -63,67 +63,67 @@
   {
    "feature": "trigger_use",
    "owner": "GAME-INTERACTION-01 USE edge",
-   "quests_complete_on_engine_side": 63,
+   "quests_complete_on_engine_side": 62,
    "of_which_without_data_gaps": 2
   },
   {
    "feature": "reward_claim",
    "owner": "DUR-03 inventory mint and RewardClaim (D39-D42)",
-   "quests_complete_on_engine_side": 145,
+   "quests_complete_on_engine_side": 144,
    "of_which_without_data_gaps": 84
   },
   {
    "feature": "world_object",
    "owner": "world-object overlay (D38)",
-   "quests_complete_on_engine_side": 149,
+   "quests_complete_on_engine_side": 148,
    "of_which_without_data_gaps": 84
   },
   {
    "feature": "teleport",
    "owner": "relocation owner (D37)",
-   "quests_complete_on_engine_side": 153,
+   "quests_complete_on_engine_side": 152,
    "of_which_without_data_gaps": 85
   },
   {
    "feature": "trigger_step",
    "owner": "GAME-INTERACTION-01 step edges",
-   "quests_complete_on_engine_side": 161,
+   "quests_complete_on_engine_side": 160,
    "of_which_without_data_gaps": 85
   },
   {
    "feature": "item_consume",
    "owner": "DUR-03 consumption",
-   "quests_complete_on_engine_side": 164,
+   "quests_complete_on_engine_side": 163,
    "of_which_without_data_gaps": 87
   },
   {
    "feature": "trigger_kill",
    "owner": "GAME-INTERACTION-01 death/kill edges",
-   "quests_complete_on_engine_side": 167,
+   "quests_complete_on_engine_side": 166,
    "of_which_without_data_gaps": 88
   },
   {
    "feature": "quest_state",
    "owner": "quest-state store (D35)",
-   "quests_complete_on_engine_side": 168,
+   "quests_complete_on_engine_side": 167,
    "of_which_without_data_gaps": 88
   },
   {
    "feature": "npc_dialogue",
    "owner": "NPC dialogue runtime",
-   "quests_complete_on_engine_side": 190,
+   "quests_complete_on_engine_side": 189,
    "of_which_without_data_gaps": 94
   },
   {
    "feature": "door_progress",
    "owner": "door gate: quest progress",
-   "quests_complete_on_engine_side": 203,
+   "quests_complete_on_engine_side": 202,
    "of_which_without_data_gaps": 102
   },
   {
    "feature": "scheduler",
    "owner": "owner for delayed callbacks (none yet)",
-   "quests_complete_on_engine_side": 210,
+   "quests_complete_on_engine_side": 209,
    "of_which_without_data_gaps": 102
   },
   {
@@ -321,7 +321,7 @@
    "interactions": 2,
    "data_gaps": {
     "interactions_with_gaps": 2,
-    "unresolved_items": 5
+    "unresolved_items": 3
    }
   },
   {
@@ -2640,7 +2640,7 @@
    "interactions": 4,
    "data_gaps": {
     "interactions_with_gaps": 3,
-    "unresolved_items": 11
+    "unresolved_items": 10
    }
   },
   {
@@ -2769,7 +2769,7 @@
    "interactions": 14,
    "data_gaps": {
     "interactions_with_gaps": 13,
-    "unresolved_items": 43
+    "unresolved_items": 41
    }
   },
   {
@@ -2962,11 +2962,16 @@
   {
    "quest": "canary:quest/steal_from_thieves_quest",
    "kind": "script_only",
-   "features": [],
-   "interactions": 0,
+   "features": [
+    "item_hand_out",
+    "npc_dialogue",
+    "quest_state",
+    "trigger_use"
+   ],
+   "interactions": 1,
    "data_gaps": {
-    "interactions_with_gaps": 0,
-    "unresolved_items": 1
+    "interactions_with_gaps": 1,
+    "unresolved_items": 2
    }
   },
   {
@@ -3265,6 +3270,7 @@
    "features": [
     "item_consume",
     "item_hand_out",
+    "npc_dialogue",
     "quest_state",
     "summon",
     "teleport",
@@ -3276,7 +3282,7 @@
    "interactions": 29,
    "data_gaps": {
     "interactions_with_gaps": 23,
-    "unresolved_items": 41
+    "unresolved_items": 40
    }
   },
   {
@@ -3298,7 +3304,7 @@
    "interactions": 13,
    "data_gaps": {
     "interactions_with_gaps": 8,
-    "unresolved_items": 62
+    "unresolved_items": 58
    }
   },
   {
@@ -3675,7 +3681,6 @@
     "condition",
     "door_progress",
     "item_consume",
-    "item_hand_out",
     "npc_dialogue",
     "quest_state",
     "reward_claim",
@@ -3685,10 +3690,10 @@
     "trigger_use",
     "world_object"
    ],
-   "interactions": 8,
+   "interactions": 7,
    "data_gaps": {
-    "interactions_with_gaps": 5,
-    "unresolved_items": 7
+    "interactions_with_gaps": 4,
+    "unresolved_items": 6
    }
   },
   {
@@ -4396,7 +4401,7 @@
    "interactions": 17,
    "data_gaps": {
     "interactions_with_gaps": 12,
-    "unresolved_items": 37
+    "unresolved_items": 36
    }
   },
   {

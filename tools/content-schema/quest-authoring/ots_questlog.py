@@ -29,6 +29,8 @@ from ots_chests import CONFLICT_DECISIONS, REVISION, ROOT, SOURCES, check_checko
 
 
 
+ARENA_FALLBACK_SHA256 = "ec82c49d3c3d76e2156076a399ca1f5c357277db2a2a873f49d66d868796efb0"
+
 # read-only: the NPC authoring census lists every converted NPC bundle key of both servers
 NPC_KEYS = {row['key'] for path in sorted((ROOT.parent / 'npc-authoring' / 'samples').glob('census-*.json'))
             for row in json.loads(path.read_text())['rows']}
@@ -68,7 +70,51 @@ def read_questlogs(name, repo):
         out.append({'server': name, 'path': path, 'line': table['line'], 'name': value['name'],
                     'start': value.get('startStorageId'), 'start_value': value.get('startStorageValue'),
                     'missions': missions})
-    return out
+    return select_questlog_primary(name, base, out)
+
+
+def select_questlog_primary(name, base, entries):
+    """Configured primary wins only over the exact pinned conditional initializer.
+
+    An unexpected duplicate or missing primary is UNKNOWN, never first/last wins.
+    The fallback is preserved as Source provenance, including its unexecuted loop.
+    """
+    primary_pack = SOURCES[name]["datapack"]
+    groups = defaultdict(list)
+    for entry in entries:
+        groups[norm(entry["name"])].append(entry)
+    selected = []
+    for group in groups.values():
+        primary = [q for q in group if q["path"].split("/", 1)[0] == primary_pack]
+        alternatives = [q for q in group if q not in primary]
+        if len(primary) != 1:
+            raise ValueError("UNKNOWN: quest-log duplicate or configured primary missing: " + group[0]["name"])
+        choice = dict(primary[0])
+        if alternatives:
+            allowed_path = "data-crystal/lib/core/quests.lua"
+            expected_sha = ARENA_FALLBACK_SHA256
+            if (name != "crystalserver" or primary_pack != "data-global" or len(alternatives) != 1
+                    or choice["name"] != "The Ultimate Challenges"
+                    or alternatives[0]["path"] != allowed_path
+                    or SOURCES[name]["revision"] != "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d"
+                    or hashlib.sha256((base / allowed_path).read_bytes()).hexdigest() != expected_sha):
+                raise ValueError("UNKNOWN: unreviewed duplicate/conditional quest-log initializer: " + choice["name"])
+            expected_entry = {"server": name, "path": allowed_path, "line": 3, "name": choice["name"],
+                "start": {"expr": "Storage.Quest.U8_0.BarbarianArena.QuestLogGreenhorn"},
+                "start_value": 1, "missions": []}
+            if alternatives[0] != expected_entry:
+                raise ValueError("UNKNOWN: conditional initializer parsed shape changed")
+            modes = lua_tables.as_python(lua_tables.assignments(
+                (base / allowed_path).read_text(), {"modes"})["modes"])
+            choice["conditional_fallbacks"] = [{**alternatives[0],
+                "classification": "OTS_HYPOTHESIS_ONLY", "source_sha256": expected_sha,
+                "condition": {"expression": "not Quests", "line_start": 1, "line_end": 30},
+                "dynamic_missions": {"declared_modes": modes, "mode_table_lines": [11, 15], "loop_line": 17,
+                    "assignment_line": 18, "loop_end_line": 29,
+                    "execution_semantics": "UNKNOWN_SOURCE_ONLY_NOT_EVALUATED"},
+                "selection_basis": "configured primary data-global; exact pinned conditional fallback retained"}]
+        selected.append(choice)
+    return selected
 
 
 def journal_of(mission):
@@ -437,7 +483,7 @@ def auxiliary_tracks(index, progress, catalogue, gates, repos):
         out.append({'key': f'{server}:quest-progress/{path}', 'missions': [], 'start_of': [],
                     'read_by_gates': sorted(g['identity']['key'] for g in gates if g['condition'].get('progress')
                                             and norm(g['condition']['progress'].split('/', 1)[1]) == key_norm),
-                    **merge_source_checks(owner, storage_evidence(source_storage, f'{server}:quest-progress/{path}', key_norm in gate_tracks or npc_prefix_owned)), 'writes': {n: found['count'][n] for n in repos},
+                    **merge_source_checks(owner, storage_evidence(source_storage, f'{server}:quest-progress/{path}', key_norm in gate_tracks or npc_prefix_owned or TRACK_OWNERS.get(key_norm, {}).get('source_declaration_required', False))), 'writes': {n: found['count'][n] for n in repos},
                     'transitions': [progress_transition(t) for t in mission_transitions(found)]})
     # Gates retain their exact source-qualified track keys. A matching path under
     # another namespace is an explicit alias of the transcription, not numeric-ID equality.
@@ -647,9 +693,10 @@ def build(repos, chests_dir, doors_dir, coverage):
         'classification': 'OTS_HYPOTHESIS_ONLY',
         'join': 'quest and mission names (normalised)',
         'sources': [{'kind': 'git', 'repository': SOURCES[n]['repository'], 'revision': SOURCES[n]['revision'], 'path': p,
-                     'blob_sha1': git_blob(repos[n], p)} for n in repos for p in sorted({q['path'] for q in logs[n]})],
+                     'blob_sha1': git_blob(repos[n], p)} for n in repos for p in sorted({q['path'] for q in logs[n]} | {f['path'] for q in logs[n] for f in q.get('conditional_fallbacks', [])})],
         'counts': {
-            'quest_log_entries': {n: len(q) for n, q in logs.items()},
+            'quest_log_entries': {n: sum(1 + len(q.get('conditional_fallbacks', [])) for q in rows) for n, rows in logs.items()},
+            'quest_log_selected_entries': {n: len(rows) for n, rows in logs.items()},
             'storyline_quests': len(storyline),
             'quest_log_entries_only_crystalserver': sum(1 for pair in by_name.values() if 'canary' not in pair),
             'missions': sum(len(q['missions']) for q in storyline.values()),
@@ -678,7 +725,11 @@ def build(repos, chests_dir, doors_dir, coverage):
         },
         'reward_only_absorbed': absorbed,
         'quest_source_aliases': source_aliases,
-        'source_checks': {'quest_requirement_interpretations': requirement_checks,
+        'source_checks': {'quest_log_primary_selection': [
+            {'quest_name': q['name'], 'source': n, 'primary_path': q['path'], 'primary_line': q['line'],
+             'conditional_fallbacks': q['conditional_fallbacks']}
+            for n, rows in logs.items() for q in rows if q.get('conditional_fallbacks')],
+            'quest_requirement_interpretations': requirement_checks,
                           'source_reference_readers': reader_checks, 'progress_track_unknowns': [
             {'key': p['key'], **p['source_checks']} for p in progress if p.get('source_checks')],
             'deferred_track_owners': DEFERRED_TRACKS,

@@ -3747,9 +3747,12 @@
               "branch": [
                 {
                   "when": {
-                    "unresolved": {
-                      "line": 15
-                    }
+                    "quest_stage": {
+                      "progress": "canary:quest-progress/quest/u8_54/an_uneasy_alliance/questline",
+                      "op": "==",
+                      "value": 3
+                    },
+                    "negate": false
                   },
                   "then": [
                     {
@@ -3762,6 +3765,12 @@
                       "owner": "Presentation",
                       "effect": "magic_effect",
                       "authoritative": false
+                    },
+                    {
+                      "owner": "Quest",
+                      "request": "set_progress",
+                      "progress": "canary:quest-progress/quest/u8_54/an_uneasy_alliance/questline",
+                      "to": 4
                     }
                   ]
                 }
@@ -3775,10 +3784,6 @@
         {
           "line": 18,
           "reason": "delayed callback (addEvent) without a scheduler owner"
-        },
-        {
-          "line": 19,
-          "reason": "statement outside the transcribed vocabulary"
         }
       ]
     },
@@ -66538,9 +66543,12 @@
               "branch": [
                 {
                   "when": {
-                    "unresolved": {
-                      "line": 76
-                    }
+                    "quest_stage": {
+                      "progress": "crystalserver:quest-progress/quest/u8_7/rottin_wood_and_the_married_men/mission03",
+                      "op": "~=",
+                      "value": 1
+                    },
+                    "negate": false
                   },
                   "then": []
                 }
@@ -67659,9 +67667,12 @@
           "branch": [
             {
               "when": {
-                "unresolved": {
-                  "line": 119
-                }
+                "quest_stage": {
+                  "progress": "crystalserver:quest-progress/quest/u8_5/shadows_of_yalahar/questline",
+                  "op": "~=",
+                  "value": 3
+                },
+                "negate": false
               },
               "then": []
             }
@@ -67748,9 +67759,12 @@
           "branch": [
             {
               "when": {
-                "unresolved": {
-                  "line": 64
-                }
+                "quest_stage": {
+                  "progress": "crystalserver:quest-progress/quest/u8_5/shadows_of_yalahar/questline",
+                  "op": "~=",
+                  "value": 3
+                },
+                "negate": false
               },
               "then": []
             }
@@ -74225,6 +74239,12 @@
                   ],
                   "otherwise": [
                     {
+                      "owner": "Quest",
+                      "request": "set_progress",
+                      "progress": "crystalserver:quest-progress/quest/u15_24/targuna/long_lost_treasure/tortoise_egg_count",
+                      "value_source_line": 75
+                    },
+                    {
                       "owner": "Item",
                       "request": "consume",
                       "object": "used_item"
@@ -74248,12 +74268,7 @@
         }
       ],
       "anchors": [],
-      "unresolved": [
-        {
-          "line": 75,
-          "reason": "statement outside the transcribed vocabulary"
-        }
-      ]
+      "unresolved": []
     },
     {
       "identity": {
@@ -92946,6 +92961,13 @@
           "repeated": true
         },
         {
+          "owner": "Quest",
+          "request": "set_progress",
+          "progress": "canary:quest-progress/quest/u8_4/the_hidden_city_of_beregar/royal_rescue",
+          "to": 2,
+          "repeated": true
+        },
+        {
           "owner": "Movement",
           "status": "blocked",
           "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
@@ -92984,6 +93006,13 @@
           "status": "blocked",
           "reason": "world-object operation kind not yet classified from source (D38 owner accepted; re-transcription pending)",
           "source_line": 122,
+          "repeated": true
+        },
+        {
+          "owner": "Quest",
+          "request": "set_progress",
+          "progress": "canary:quest-progress/quest/u8_4/the_hidden_city_of_beregar/royal_rescue",
+          "to": 3,
           "repeated": true
         },
         {
@@ -93062,6 +93091,13 @@
           "repeated": true
         },
         {
+          "owner": "Quest",
+          "request": "set_progress",
+          "progress": "canary:quest-progress/quest/u8_4/the_hidden_city_of_beregar/royal_rescue",
+          "to": 4,
+          "repeated": true
+        },
+        {
           "owner": "Movement",
           "status": "blocked",
           "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
@@ -93072,6 +93108,13 @@
           "owner": "Presentation",
           "effect": "magic_effect",
           "authoritative": false,
+          "repeated": true
+        },
+        {
+          "owner": "Quest",
+          "request": "set_progress",
+          "progress": "canary:quest-progress/quest/u8_4/the_hidden_city_of_beregar/royal_rescue",
+          "to": 5,
           "repeated": true
         },
         {
@@ -93241,22 +93284,6 @@
         },
         {
           "line": 89,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
-          "line": 116,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
-          "line": 126,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
-          "line": 150,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
-          "line": 157,
           "reason": "statement outside the transcribed vocabulary"
         },
         {

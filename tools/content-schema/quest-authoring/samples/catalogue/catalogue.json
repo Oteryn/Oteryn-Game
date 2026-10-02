@@ -13,7 +13,7 @@
     },
     {
       "path": "tools/content-schema/quest-authoring/samples/readiness/readiness.json",
-      "sha256": "b0a290a5d236730e3a6c6cb7f788864493a5f2f8209159f6b42a10c7ece515ab"
+      "sha256": "0c1046128c4ed900e76f2a30633fac6cab65155644aa167cad0f54b4c0a22717"
     },
     {
       "path": "tools/content-schema/quest-authoring/wiki_quest_links.json",
@@ -25,7 +25,7 @@
     },
     {
       "path": "tools/content-schema/quest-authoring/samples/questlog/manifest.json",
-      "sha256": "ec7eb16bb2a8c11ac8a35e6e69f253ae80f4206aa72b701d9e6b001cb917d872"
+      "sha256": "f4eb3f0e80dcfa10b4564796342549bc93397e42282e98777e0dd37a5d374dfa"
     }
   ],
   "historical_coverage_ots_sources": {
@@ -7727,7 +7727,7 @@
             ],
             "data_gaps": {
               "interactions_with_gaps": 2,
-              "unresolved_items": 5
+              "unresolved_items": 3
             },
             "runtime_readiness": "UNKNOWN"
           }
@@ -111821,7 +111821,7 @@
             ],
             "data_gaps": {
               "interactions_with_gaps": 3,
-              "unresolved_items": 11
+              "unresolved_items": 10
             },
             "runtime_readiness": "UNKNOWN"
           }
@@ -116949,7 +116949,7 @@
             ],
             "data_gaps": {
               "interactions_with_gaps": 13,
-              "unresolved_items": 43
+              "unresolved_items": 41
             },
             "runtime_readiness": "UNKNOWN"
           }
@@ -126393,10 +126393,15 @@
           "ots_shown_in_quest_log": false,
           "readiness_data": {
             "classification": "DERIVED",
-            "features": [],
+            "features": [
+              "item_hand_out",
+              "npc_dialogue",
+              "quest_state",
+              "trigger_use"
+            ],
             "data_gaps": {
-              "interactions_with_gaps": 0,
-              "unresolved_items": 1
+              "interactions_with_gaps": 1,
+              "unresolved_items": 2
             },
             "runtime_readiness": "UNKNOWN"
           }
@@ -130253,7 +130258,7 @@
             ],
             "data_gaps": {
               "interactions_with_gaps": 12,
-              "unresolved_items": 37
+              "unresolved_items": 36
             },
             "runtime_readiness": "UNKNOWN"
           }
@@ -141140,6 +141145,7 @@
             "features": [
               "item_consume",
               "item_hand_out",
+              "npc_dialogue",
               "quest_state",
               "summon",
               "teleport",
@@ -141150,7 +141156,7 @@
             ],
             "data_gaps": {
               "interactions_with_gaps": 23,
-              "unresolved_items": 41
+              "unresolved_items": 40
             },
             "runtime_readiness": "UNKNOWN"
           }
@@ -142521,7 +142527,7 @@
             ],
             "data_gaps": {
               "interactions_with_gaps": 8,
-              "unresolved_items": 62
+              "unresolved_items": 58
             },
             "runtime_readiness": "UNKNOWN"
           }
@@ -172153,7 +172159,6 @@
               "condition",
               "door_progress",
               "item_consume",
-              "item_hand_out",
               "npc_dialogue",
               "quest_state",
               "reward_claim",
@@ -172164,8 +172169,8 @@
               "world_object"
             ],
             "data_gaps": {
-              "interactions_with_gaps": 5,
-              "unresolved_items": 7
+              "interactions_with_gaps": 4,
+              "unresolved_items": 6
             },
             "runtime_readiness": "UNKNOWN"
           }

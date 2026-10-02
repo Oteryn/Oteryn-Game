@@ -290,3 +290,25 @@ old value and all identities, counts, stage links, source references and approxi
 basis. Canonical supplements carry both original and refinement provenance plus
 the scoped evidence receipt. Run `run_checks.py` for portable replay, schema and
 negative controls; actual server journeys remain `NOT_RUN`.
+
+## Arena attribution and exact Source associations
+
+Crystal's configured `data-global` journal wins over the exact pinned conditional
+`data-crystal` initializer. All three Arena missions retain their original values;
+the manifest attributes both donors and preserves the fallback's unexecuted loop.
+Unexpected duplicates fail closed. Portable tests use synthetic prose and Lua,
+while actual donor hashes remain fixed in the production selection proof.
+
+Scoped immutable storage aliases now recover6 Quest operations and4 predicates
+in6 selected graphs; donor alternatives are retained independently. Exactly two
+Source track curations correct Steal From Thieves ownership and Gravedigger Mission05.
+All8 writes/effects/provenance and the Grave declaration witness remain unchanged.
+An exact reviewed association receipt factors out only those two snapshots and
+one unchanged graph relocation before ordinary Source-core safety checks.
+
+`samples/source-repair-r12/proof.json` records deterministic current repair bounds;
+`remaining-source-work.json` separates Source importer work, accepted owner
+implementations and uncovered composition semantics. Its4124 triage items are
+statements/conditions/blocked children, not4124 quests. The broader bundle still
+reports gaps in203 of284 donor definitions; original42 field-ready/242 waiting
+and68 authored definitions remain separate from all373 runtime-held catalogue titles.

@@ -64,18 +64,18 @@
   ]
  },
  "counts": {
-  "unresolved_lines": 1936,
-  "unresolved_conditions": 1732,
+  "unresolved_lines": 1930,
+  "unresolved_conditions": 1728,
   "blocked_children": 466,
   "reference_gaps": 0,
-  "total_unresolved_items": 4134,
+  "total_unresolved_items": 4124,
   "by_bucket": {
    "owner_pending": 467,
    "shared_mechanism": 145,
-   "bespoke": 3522
+   "bespoke": 3512
   },
   "quests_triaged": 284,
-  "quests_with_bespoke_work": 109,
+  "quests_with_bespoke_work": 110,
   "quests_fully_covered_by_owners_and_mechanisms": 1,
   "interactions_unlinked_to_a_quest": 12
  },
@@ -291,7 +291,7 @@
    "counts": {
     "owner_pending": 1,
     "shared_mechanism": 1,
-    "bespoke": 4
+    "bespoke": 2
    },
    "owners_needed": [
     "scheduler"
@@ -302,7 +302,7 @@
    "to_finish": [
     "owner:scheduler",
     "mechanism:kill_reward_fanout",
-    "bespoke:4"
+    "bespoke:2"
    ]
   },
   {
@@ -2512,7 +2512,7 @@
    "counts": {
     "owner_pending": 8,
     "shared_mechanism": 0,
-    "bespoke": 11
+    "bespoke": 10
    },
    "owners_needed": [
     "creature_removal",
@@ -2524,7 +2524,7 @@
     "owner:creature_removal",
     "owner:kv_state",
     "owner:scheduler",
-    "bespoke:11"
+    "bespoke:10"
    ]
   },
   {
@@ -2631,7 +2631,7 @@
    "counts": {
     "owner_pending": 21,
     "shared_mechanism": 0,
-    "bespoke": 42
+    "bespoke": 40
    },
    "owners_needed": [
     "condition",
@@ -2641,7 +2641,7 @@
    "to_finish": [
     "owner:condition",
     "owner:kv_state",
-    "bespoke:42"
+    "bespoke:40"
    ]
   },
   {
@@ -2839,11 +2839,13 @@
    "counts": {
     "owner_pending": 0,
     "shared_mechanism": 0,
-    "bespoke": 0
+    "bespoke": 1
    },
    "owners_needed": [],
    "mechanisms_needed": [],
-   "to_finish": []
+   "to_finish": [
+    "bespoke:1"
+   ]
   },
   {
    "quest": "canary:quest/stealth_ring_quest",
@@ -3138,7 +3140,7 @@
    "counts": {
     "owner_pending": 1,
     "shared_mechanism": 1,
-    "bespoke": 60
+    "bespoke": 56
    },
    "owners_needed": [
     "creature_removal"
@@ -3149,7 +3151,7 @@
    "to_finish": [
     "owner:creature_removal",
     "mechanism:boss_room_entry_gate",
-    "bespoke:60"
+    "bespoke:56"
    ]
   },
   {
@@ -3481,7 +3483,7 @@
    "counts": {
     "owner_pending": 2,
     "shared_mechanism": 2,
-    "bespoke": 5
+    "bespoke": 4
    },
    "owners_needed": [
     "condition",
@@ -3494,7 +3496,7 @@
     "owner:condition",
     "owner:scheduler",
     "mechanism:kill_reward_fanout",
-    "bespoke:5"
+    "bespoke:4"
    ]
   },
   {
@@ -4177,7 +4179,7 @@
    "counts": {
     "owner_pending": 0,
     "shared_mechanism": 3,
-    "bespoke": 34
+    "bespoke": 33
    },
    "owners_needed": [],
    "mechanisms_needed": [
@@ -4185,7 +4187,7 @@
    ],
    "to_finish": [
     "mechanism:kill_reward_fanout",
-    "bespoke:34"
+    "bespoke:33"
    ]
   },
   {

@@ -18,17 +18,17 @@
     {
       "path": "tools/content-schema/quest-authoring/samples/interactions/interactions.json",
       "role": "interactions",
-      "sha256": "b1464bb78a8a61552325c3352688442204ba60b2f2717deaea4947c04654ad12"
+      "sha256": "e2c89e1275ed8e2de15fc0b245698bff6742310d1b152ad86219caa0602a07f7"
     },
     {
       "path": "tools/content-schema/quest-authoring/samples/interactions/manifest.json",
       "role": "interactions_manifest",
-      "sha256": "9b41fc84c8ae9877df0f078c991581b62ef6923f4db98a1c9677dc8694156ced"
+      "sha256": "f8358fe0d700f5d11cac372a5fbb3a7107aad36c25915e043d9f340cadcb1717"
     },
     {
       "path": "tools/content-schema/quest-authoring/samples/questlog/progress.json",
       "role": "progress",
-      "sha256": "0e1e7e59cd576d541c4c53f186b879dad040d9d8a3b3ded2530250605f9df0ab"
+      "sha256": "23e2ed24fca83e3faf14155fcd67deca478c5d888f5af1cc53de15371af7f4b2"
     },
     {
       "path": "tools/content-schema/quest-authoring/samples/questlog/quests.json",
@@ -38,7 +38,7 @@
     {
       "path": "tools/content-schema/quest-authoring/samples/catalogue/catalogue.json",
       "role": "wiki_catalogue",
-      "sha256": "05c4804837d243fa551733173a2c8b139fe6a79f83cce871847bad5a8a42c537"
+      "sha256": "380f3bfc8aada14741321390f390a88829201d3c24b9c8c57c8da7929876e24b"
     }
   ],
   "schema": "OTERYN_SOURCE_TEXT_REGISTRY/v1",

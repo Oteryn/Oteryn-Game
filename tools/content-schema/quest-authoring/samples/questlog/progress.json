@@ -231334,6 +231334,148 @@
       ]
     },
     {
+      "key": "canary:quest-progress/quest/u10_10/the_gravedigger_of_drefia/mission05",
+      "missions": [],
+      "start_of": [],
+      "read_by_gates": [],
+      "auxiliary_of": [
+        "canary:quest/the_gravedigger_of_drefia_quest"
+      ],
+      "owner_basis": "exclusive curated NPC writers",
+      "source_storage": {
+        "repository": "opentibiabr/canary",
+        "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+        "path": "data-otservbr-global/lib/core/storages.lua",
+        "line": 1841,
+        "storage_id": 44206,
+        "expression": "Storage.Quest.U10_10.TheGravediggerOfDrefia.Mission05"
+      },
+      "writes": {
+        "canary": 1,
+        "crystalserver": 1
+      },
+      "transitions": [
+        {
+          "key": "npc_1",
+          "script": "npc/omrabas.lua",
+          "sources": {
+            "canary": {
+              "path": "data-otservbr-global/npc/omrabas.lua",
+              "line": 82,
+              "registrations": [],
+              "dialogue": {
+                "keywords": [
+                  "mission"
+                ],
+                "topics": []
+              }
+            },
+            "crystalserver": {
+              "path": "data-global/npc/omrabas.lua",
+              "line": 80,
+              "registrations": [],
+              "dialogue": {
+                "keywords": [
+                  "mission"
+                ],
+                "topics": []
+              }
+            }
+          },
+          "write": {
+            "key": "npc_1",
+            "owner": "npc",
+            "callback": null,
+            "from": null,
+            "to": 1,
+            "servers": [
+              "canary",
+              "crystalserver"
+            ],
+            "requested_by": {
+              "npc": "canary:npc/omrabas",
+              "keywords": [
+                "mission"
+              ],
+              "topics": []
+            }
+          },
+          "source_occurrences": [
+            {
+              "source": "canary",
+              "occurrence": 1,
+              "repository": "opentibiabr/canary",
+              "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+              "target": "Storage.Quest.U10_10.TheGravediggerOfDrefia.Mission05",
+              "blob_sha256": "26b8b6c512d4049cfd6c5683da1b3840d0d447923c99d915d99895a271ff25ff",
+              "line_sha256": "f56f1bdda538e403e1b405a48c9455e517b51d03b30fd6b9641b3b46c69d7928",
+              "path": "data-otservbr-global/npc/omrabas.lua",
+              "line": 82,
+              "registrations": [],
+              "dialogue": {
+                "keywords": [
+                  "mission"
+                ],
+                "topics": []
+              },
+              "write": {
+                "key": "npc_1",
+                "owner": "npc",
+                "callback": null,
+                "from": null,
+                "to": 1,
+                "servers": [
+                  "canary"
+                ],
+                "requested_by": {
+                  "npc": "canary:npc/omrabas",
+                  "keywords": [
+                    "mission"
+                  ],
+                  "topics": []
+                }
+              }
+            },
+            {
+              "source": "crystalserver",
+              "occurrence": 1,
+              "repository": "zimbadev/crystalserver",
+              "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+              "target": "Storage.Quest.U10_10.TheGravediggerOfDrefia.Mission05",
+              "blob_sha256": "a2666b8881321b77e4f23767c314f2a4bf60de132c7ae752199126024758e25b",
+              "line_sha256": "f56f1bdda538e403e1b405a48c9455e517b51d03b30fd6b9641b3b46c69d7928",
+              "path": "data-global/npc/omrabas.lua",
+              "line": 80,
+              "registrations": [],
+              "dialogue": {
+                "keywords": [
+                  "mission"
+                ],
+                "topics": []
+              },
+              "write": {
+                "key": "npc_1",
+                "owner": "npc",
+                "callback": null,
+                "from": null,
+                "to": 1,
+                "servers": [
+                  "crystalserver"
+                ],
+                "requested_by": {
+                  "npc": "crystal:npc/omrabas",
+                  "keywords": [
+                    "mission"
+                  ],
+                  "topics": []
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
       "key": "canary:quest-progress/quest/u10_10/the_gravedigger_of_drefia/mission06",
       "missions": [],
       "start_of": [],
@@ -343305,9 +343447,10 @@
       "start_of": [],
       "read_by_gates": [],
       "auxiliary_of": [
-        "canary:quest/the_thieves_guild_quest"
+        "canary:quest/steal_from_thieves_quest"
       ],
-      "owner_basis": "mission track prefix",
+      "owner_basis": "track_owners.json",
+      "note": "Exact Ahmet yes/topic2 start, yes/topic3 Bag235 return and UID19910 action write the separately named StealFromThieves track. Prefix TheThievesGuildQuest is a source namespace, not the owner of this side quest. Adjacent Mission04 documents branch remains The Thieves Guild. Initial value, canonical bounds and NPC item/reward lowering remain UNKNOWN.",
       "writes": {
         "canary": 3,
         "crystalserver": 3
@@ -397436,149 +397579,6 @@
         "crystalserver": 0
       },
       "transitions": []
-    },
-    {
-      "key": "canary:quest-progress/quest/u10_10/the_gravedigger_of_drefia/mission05",
-      "missions": [],
-      "start_of": [],
-      "read_by_gates": [],
-      "auxiliary_of": [],
-      "owner_basis": "UNKNOWN",
-      "source_storage": {
-        "repository": "opentibiabr/canary",
-        "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
-        "path": "data-otservbr-global/lib/core/storages.lua",
-        "line": 1841,
-        "storage_id": 44206,
-        "expression": "Storage.Quest.U10_10.TheGravediggerOfDrefia.Mission05"
-      },
-      "source_checks": {
-        "owner": "UNKNOWN: exact source reader/declaration retained; owning quest, initial value, bounds and native Character policy are not inferred"
-      },
-      "writes": {
-        "canary": 1,
-        "crystalserver": 1
-      },
-      "transitions": [
-        {
-          "key": "npc_1",
-          "script": "npc/omrabas.lua",
-          "sources": {
-            "canary": {
-              "path": "data-otservbr-global/npc/omrabas.lua",
-              "line": 82,
-              "registrations": [],
-              "dialogue": {
-                "keywords": [
-                  "mission"
-                ],
-                "topics": []
-              }
-            },
-            "crystalserver": {
-              "path": "data-global/npc/omrabas.lua",
-              "line": 80,
-              "registrations": [],
-              "dialogue": {
-                "keywords": [
-                  "mission"
-                ],
-                "topics": []
-              }
-            }
-          },
-          "write": {
-            "key": "npc_1",
-            "owner": "npc",
-            "callback": null,
-            "from": null,
-            "to": 1,
-            "servers": [
-              "canary",
-              "crystalserver"
-            ],
-            "requested_by": {
-              "npc": "canary:npc/omrabas",
-              "keywords": [
-                "mission"
-              ],
-              "topics": []
-            }
-          },
-          "source_occurrences": [
-            {
-              "source": "canary",
-              "occurrence": 1,
-              "repository": "opentibiabr/canary",
-              "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
-              "target": "Storage.Quest.U10_10.TheGravediggerOfDrefia.Mission05",
-              "blob_sha256": "26b8b6c512d4049cfd6c5683da1b3840d0d447923c99d915d99895a271ff25ff",
-              "line_sha256": "f56f1bdda538e403e1b405a48c9455e517b51d03b30fd6b9641b3b46c69d7928",
-              "path": "data-otservbr-global/npc/omrabas.lua",
-              "line": 82,
-              "registrations": [],
-              "dialogue": {
-                "keywords": [
-                  "mission"
-                ],
-                "topics": []
-              },
-              "write": {
-                "key": "npc_1",
-                "owner": "npc",
-                "callback": null,
-                "from": null,
-                "to": 1,
-                "servers": [
-                  "canary"
-                ],
-                "requested_by": {
-                  "npc": "canary:npc/omrabas",
-                  "keywords": [
-                    "mission"
-                  ],
-                  "topics": []
-                }
-              }
-            },
-            {
-              "source": "crystalserver",
-              "occurrence": 1,
-              "repository": "zimbadev/crystalserver",
-              "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
-              "target": "Storage.Quest.U10_10.TheGravediggerOfDrefia.Mission05",
-              "blob_sha256": "a2666b8881321b77e4f23767c314f2a4bf60de132c7ae752199126024758e25b",
-              "line_sha256": "f56f1bdda538e403e1b405a48c9455e517b51d03b30fd6b9641b3b46c69d7928",
-              "path": "data-global/npc/omrabas.lua",
-              "line": 80,
-              "registrations": [],
-              "dialogue": {
-                "keywords": [
-                  "mission"
-                ],
-                "topics": []
-              },
-              "write": {
-                "key": "npc_1",
-                "owner": "npc",
-                "callback": null,
-                "from": null,
-                "to": 1,
-                "servers": [
-                  "crystalserver"
-                ],
-                "requested_by": {
-                  "npc": "crystal:npc/omrabas",
-                  "keywords": [
-                    "mission"
-                  ],
-                  "topics": []
-                }
-              }
-            }
-          ]
-        }
-      ]
     },
     {
       "key": "canary:quest-progress/quest/u10_10/the_gravedigger_of_drefia/mission08",

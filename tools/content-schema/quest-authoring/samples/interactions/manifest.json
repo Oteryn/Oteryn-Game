@@ -19,7 +19,7 @@
       "Movement": 801,
       "Outfit": 10,
       "Presentation": 2681,
-      "Quest": 856,
+      "Quest": 862,
       "WorldObject": 874
     },
     "blocked_children": {
@@ -38,8 +38,8 @@
     },
     "overlay_operations_with_revert_after": 0,
     "quest_children_naming_a_transition": 207,
-    "unresolved_lines": 1936,
-    "unresolved_conditions": 1732,
+    "unresolved_lines": 1930,
+    "unresolved_conditions": 1728,
     "by_status": {
       "conflict": 2,
       "mapped": 245,
