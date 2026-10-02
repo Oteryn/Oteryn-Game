@@ -1,0 +1,11 @@
+{
+  "schema": "OTERYN_LOSSLESS_SOURCE_ARCHIVE/v1",
+  "source_name": "item-fx-audio-bulk-raw-source-staging-20261002.json",
+  "source_sha256": "755e9d4fddf76eb38acd68aeb9e457ddfebffde55c7f98de8f7e5a07b994258c",
+  "source_bytes": 7921304,
+  "archive_file": "/workspace/audit-continuation/item-fx-audio-bulk-raw-source-staging-20261002.json.gz",
+  "archive_sha256": "cc30e535692c18bfc2ac7d89279334a7bbd71bc4090fe8e11aa4f0974272aa10",
+  "archive_bytes": 778338,
+  "decompress_equals_full_source_bytes": "PASS",
+  "source_role": "OTS_HYPOTHESIS_ONLY_NOT_NATIVE_OR_ASSETS"
+}

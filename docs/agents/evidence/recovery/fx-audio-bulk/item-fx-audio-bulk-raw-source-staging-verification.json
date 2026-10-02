@@ -1,0 +1,25 @@
+{
+  "checks": {
+    "295closed_ID_union12scripts_all_overlap": "PASS",
+    "full_existing_bindings_namespace_and_targets": "PASS",
+    "full_source_text_and_sound_line_coordinates": "PASS",
+    "no_native_asset_runtime_qualification_claim": "PASS",
+    "partition149_141_5": "PASS",
+    "source_files64_fullbytes": "PASS",
+    "spell107_never_mapped_as_Item_ID": "PASS",
+    "xml552_literal_byte_spans_and_fields_and_ids": "PASS"
+  },
+  "report": {
+    "bytes": 7921304,
+    "path": "/workspace/audit-continuation/item-fx-audio-bulk-raw-source-staging-20261002.json",
+    "sha256": "755e9d4fddf76eb38acd68aeb9e457ddfebffde55c7f98de8f7e5a07b994258c"
+  },
+  "schema": "OTERYN_ITEM_FX_AUDIO_EXTERNAL_LITERAL_REPLAY_VERIFICATION/v1",
+  "status": "PASS_RAW_STAGING_ONLY",
+  "unrun": [
+    "Native qualification",
+    "Asset import/admission",
+    "Runtime execution",
+    "Cargo"
+  ]
+}

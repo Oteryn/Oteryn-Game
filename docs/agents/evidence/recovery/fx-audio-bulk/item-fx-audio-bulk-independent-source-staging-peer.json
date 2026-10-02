@@ -1,0 +1,52 @@
+{
+  "baseline": "1b026969a8b2236737bff537b3eddb3c909781b2",
+  "checks": {
+    "43516officialRawDecode_current_bound_membership": "PASS",
+    "OTS_HypothesisOnly_noNativeAssetKeysRuntimeClaims": "PASS",
+    "actualGit1b_full57320_34031Items_411owners_allpins": "PASS",
+    "all_frozen_source5_doublehash": "PASS",
+    "complete3XML552declarations_allOwnAttributes_295rangeExpandedIDs": "PASS",
+    "fullExactBindingNamespaceForwardReverse_andWorldpartition149_141_5": "PASS",
+    "full_selected_context49files_315CppSoundLines": "PASS",
+    "literal3FXkeys_and_absentXMLsound_not_inferred": "PASS",
+    "presence46_notOpposition_zeroExplicitMismatches": "PASS",
+    "rawXMLbyte_spans_utf8_and_linecoordinates": "PASS",
+    "script12explicitIDs_subset_XML_Spell107excluded": "PASS",
+    "source64_manifest_completeness_and_fullbytes": "PASS",
+    "weapon24scripts_22soundLines_plusSpell1_2soundLines": "PASS"
+  },
+  "counts": {
+    "bound_static_items": 149,
+    "context_cpp_sound_lines": 315,
+    "current_world_owners": 141,
+    "explicit_cross_source_oppositions": 0,
+    "identity_holds": 5,
+    "inline_full_context_files": 49,
+    "new_asset_keys": 0,
+    "new_native_fields": 0,
+    "script_unique_item_ids": 12,
+    "source_pins": 64,
+    "source_presence_difference_items": 46,
+    "unique_numeric_ids": 295,
+    "xml_media_declarations": 552
+  },
+  "findings": [],
+  "limits": [
+    "Full census concerns three retained items.xml files and selected pinned scripts/C++ files; not entire upstream repository audio/runtime.",
+    "JSON embeds all552 XML media declaration slices and49 selected full contextual files;15 other source files have pins/local retained bytes, not inline full raw text.",
+    "Static current binding joins are not Item admission/source authority/FX asset resolution.",
+    "Proposed optional source-observation owner remains a proposal requiring explicit owning contract; no source/schema/runtime implementation here."
+  ],
+  "reviewer_script_sha256": "cd71f60841047c7148b96cf1c2af1487a7c6c0a6637d4be7e4f0b50335ec0523",
+  "schema": "OTERYN_ITEM_FX_AUDIO_BULK_INDEPENDENT_SOURCE_STAGING_PEER/v1",
+  "source_manifest_sha256": "63d22ffeac249a6b0dc54c9ce0072bd5db718b1fb1b653e072d487f9f6581fcd",
+  "source_owned_files": 5,
+  "source_report_sha256": "755e9d4fddf76eb38acd68aeb9e457ddfebffde55c7f98de8f7e5a07b994258c",
+  "status": "SOURCE_ONLY_PEER_PASS",
+  "unrun": [
+    "Cargo",
+    "Native generation",
+    "Asset import/admission",
+    "runtime callbacks"
+  ]
+}
