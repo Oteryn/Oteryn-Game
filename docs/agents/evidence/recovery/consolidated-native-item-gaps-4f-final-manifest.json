@@ -1,0 +1,41 @@
+{
+  "schema": "OTERYN_AUDIT_ONLY_CONSOLIDATED_NATIVE_LANE_CHECKPOINT/v1",
+  "status": "PASS_BOUNDED_NATIVE_OWNER_STORAGE_AND_SOURCE_SCOPE",
+  "published_native_baseline": "4f690c1e8a8966a4d074dde94d5a884dbb34fb94",
+  "owned_files": [
+    {
+      "path": "/workspace/audit-continuation/item-consolidated-native-gaps-after-forge4f-20261002.json",
+      "sha256": "e6e3567ff5f0aa0275e7e4b20f351688c72f7525f2c50478ffe13f69aa96f06f",
+      "bytes": 1518765
+    },
+    {
+      "path": "/workspace/audit-continuation/item-consolidated-native-gaps-after-forge4f-20261002.md",
+      "sha256": "69eb352876766ff3afc9c6d18263e9775d0a037bcd388fe87efd748470e9d02f",
+      "bytes": 11115
+    },
+    {
+      "path": "/workspace/audit-continuation/build-consolidated-native-item-gaps-4f.py",
+      "sha256": "12c3292ef72df59a818377836fa021f8f158857b1435301307e83263f5c88e40",
+      "bytes": 19070
+    }
+  ],
+  "checks": {
+    "actual_reference_records": 57320,
+    "actual_Item_records": 34031,
+    "actual_pool": 12487,
+    "source_rows": 35,
+    "native_leaf_paths": 43,
+    "family_open_ID": 235,
+    "actual_modifier_vectors_atoms": [
+      494,
+      796
+    ],
+    "actual_known_positive_slot_ID": [
+      661,
+      656
+    ],
+    "fully_verified": "NOT_ESTABLISHED/NULL",
+    "no_project_or_Git_or_Cargo_mutations": true,
+    "formal_and_upstream_FX_merge": "Root separate lane; not claimed exhaustive here"
+  }
+}

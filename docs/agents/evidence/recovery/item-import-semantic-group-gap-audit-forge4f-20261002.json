@@ -1,0 +1,897 @@
+{
+  "schema": "OTERYN_ITEM_IMPORT_SEMANTIC_GROUP_GAP_AUDIT/v1",
+  "baseline": "4f690c1e8a8966a4d074dde94d5a884dbb34fb94",
+  "method": "Exact publishedForge4f local Git blobs; snapshotmanifest hashes; no dirtyWeapon working code/repoedits/Cargo/network paid/RDC",
+  "scope": "29 semantic audit groups cover all32 formal rootfields and existing16Native groups; comprehensiveboundedownership/import gap list, not proofeveryItemcomplete",
+  "current_item_owner_counts": {
+    "owners": 316,
+    "present_fields": {
+      "taxonomy": 164,
+      "forge": 147,
+      "lifecycle": 136,
+      "source_lifecycle": 121,
+      "use_observation": 139,
+      "required_magic_level": 39
+    },
+    "zero_fields": [
+      "proficiency",
+      "augments",
+      "consumable",
+      "on_use_interactions",
+      "use_ability",
+      "presentation",
+      "document"
+    ]
+  },
+  "source_catalogue_counts": {
+    "crystal": {
+      "field_definitions": 270,
+      "status_counts": {
+        "mapped": 190,
+        "pinned_no_effect": 6,
+        "unresolved_semantics": 7,
+        "provenance_only": 12,
+        "external_domain": 39,
+        "reverse_relation": 15,
+        "approved_omission": 1
+      },
+      "unresolved_fields": [
+        "action",
+        "eventtype",
+        "flags.forceuse",
+        "flags.unmove",
+        "script",
+        "type",
+        "weapontype"
+      ],
+      "pinned_no_effect_fields": [
+        "absorbpercentallelements",
+        "fieldabsorbpercentearth",
+        "magicpointspercent",
+        "unwrapableto",
+        "write.max_text_length",
+        "write_once.max_text_length_once"
+      ]
+    },
+    "canary": {
+      "field_definitions": 257,
+      "status_counts": {
+        "mapped": 185,
+        "pinned_no_effect": 8,
+        "unresolved_semantics": 7,
+        "provenance_only": 12,
+        "external_domain": 37,
+        "approved_omission": 1,
+        "reverse_relation": 7
+      },
+      "unresolved_fields": [
+        "action",
+        "eventtype",
+        "flags.forceuse",
+        "flags.unmove",
+        "script",
+        "type",
+        "weapontype"
+      ],
+      "pinned_no_effect_fields": [
+        "absorbpercentallelements",
+        "femalesleeper",
+        "fieldabsorbpercentearth",
+        "magicpointspercent",
+        "malesleeper",
+        "unwrapableto",
+        "write.max_text_length",
+        "write_once.max_text_length_once"
+      ]
+    },
+    "fandom": {
+      "field_definitions": 84,
+      "status_counts": {
+        "mapped": 58,
+        "unresolved_semantics": 4,
+        "provenance_only": 4,
+        "external_domain": 10,
+        "reverse_relation": 7,
+        "approved_omission": 1
+      },
+      "unresolved_fields": [
+        "actualname",
+        "immobile",
+        "fansite",
+        "imbuements"
+      ],
+      "pinned_no_effect_fields": []
+    },
+    "wiki": {
+      "field_definitions": 71,
+      "status_counts": {
+        "DISPOSITION_ONLY": 71
+      },
+      "unresolved_fields": [],
+      "pinned_no_effect_fields": []
+    }
+  },
+  "historical_populations": {
+    "crystal": {
+      "source": {
+        "artifact_digests": {
+          "data/items/appearances.dat": {
+            "digest_mode": "raw_bytes",
+            "sha256": "6adb790d1064c2d31ffb2e5ce1a7aef376942ba672edea2adb6cafc620dd18f1"
+          },
+          "data/items/items.xml": {
+            "digest_mode": "text_lf_normalized",
+            "sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb"
+          },
+          "data/scripts/lib/task_board_delivery_items.lua": {
+            "digest_mode": "text_lf_normalized",
+            "sha256": "7b30362470893f6e3ce6bdc0237ac5d3f13d6e5288ce10591a93fde2013b688d"
+          }
+        },
+        "engine": "crystal",
+        "profile": "crystal_ff7ede5_item_definition_v1",
+        "repository": "zimbadev/crystalserver",
+        "revision": "ff7ede593c69d4c658b382c97443e8155926924a"
+      },
+      "scope": "Every item id in this engine's pinned data/items/items.xml (fromid/toid ranges expanded); not a placed map object or instance.",
+      "outcome": {
+        "blocked": 902,
+        "fully_resolved": 11399,
+        "items": 38157,
+        "not_converted": 10,
+        "routed_non_item": 25846
+      },
+      "mapped_but_missing_converter_fields": {
+        "absorbpercentmagic": 0,
+        "action": 86,
+        "augments": 83,
+        "eventtype": 39,
+        "flags.forceuse": 942,
+        "flags.imbueable": 0,
+        "flags.minimum_level": 0,
+        "flags.restrict_to_vocation": 0,
+        "flags.unmove": 22928,
+        "flags.weapon_type": 0,
+        "imbueable.slot_count": 0,
+        "maxhitpoints": 0,
+        "maxhitpointspercent": 0,
+        "maxmanapoints": 0,
+        "maxmanapointspercent": 0,
+        "reflectpercentall": 0,
+        "runespellname": 36,
+        "script": 0,
+        "stacksize": 0,
+        "type": 1626,
+        "weapontype": 819
+      },
+      "unit": "Historical per-source-field observed item occurrences, overlap allowed; NOT currentNative unknown or fullyincompleteItems"
+    },
+    "canary": {
+      "source": {
+        "artifact_digests": {
+          "data/items/appearances.dat": {
+            "digest_mode": "raw_bytes",
+            "sha256": "aa44a154f30c7ed59acc25f246286396e4043851ef0b54ef3cf3951e46d1ce50"
+          },
+          "data/items/items.xml": {
+            "digest_mode": "text_lf_normalized",
+            "sha256": "1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2"
+          },
+          "data/modules/scripts/taskboard/settings.lua": {
+            "digest_mode": "text_lf_normalized",
+            "sha256": "9ae88e3a3ee6d0baecfc26adc806f5b59d54bf1491348f67e6f00e32894fe504"
+          }
+        },
+        "engine": "canary",
+        "profile": "canary_47dfd51_item_definition_v1",
+        "repository": "opentibiabr/canary",
+        "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446"
+      },
+      "scope": "Every item id in this engine's pinned data/items/items.xml (fromid/toid ranges expanded); not a placed map object or instance.",
+      "outcome": {
+        "blocked": 877,
+        "fully_resolved": 11030,
+        "items": 37527,
+        "not_converted": 237,
+        "routed_non_item": 25383
+      },
+      "mapped_but_missing_converter_fields": {
+        "absorbpercentmagic": 0,
+        "action": 86,
+        "augments": 82,
+        "eventtype": 44,
+        "flags.forceuse": 891,
+        "flags.unmove": 22531,
+        "maxhitpoints": 0,
+        "maxhitpointspercent": 0,
+        "maxmanapoints": 0,
+        "maxmanapointspercent": 0,
+        "proficiency": 0,
+        "reflectpercentall": 0,
+        "runespellname": 36,
+        "script": 0,
+        "stacksize": 0,
+        "type": 1561,
+        "weapontype": 801
+      },
+      "unit": "Historical per-source-field observed item occurrences, overlap allowed; NOT currentNative unknown or fullyincompleteItems"
+    }
+  },
+  "groups": [
+    {
+      "id": "identity",
+      "title": "Identity / family / taxonomy",
+      "formal": "32 root schema properties;22profiles23templates;source family and NAV independent of runtime class",
+      "native": "Core identity exists; typed classification carrier exists. Current KNOWN classification group0. Authoring taxonomy164.",
+      "converter": "Engine family rules/wiki fallback implemented; source-category overlays exist.",
+      "remaining": "Remaining235 NAV pool gap is separate scope; name-only/foreign source family does not grant Native classification/runtime admission.",
+      "evidence": [
+        {
+          "path": "apps/game-server/src/content/reference_playable.rs",
+          "line": 412
+        },
+        {
+          "path": "apps/game-server/src/content/project/v2.rs",
+          "line": 935
+        },
+        {
+          "path": "tools/content-schema/item-authoring/engine_items.py",
+          "line": 986
+        }
+      ],
+      "units": null
+    },
+    {
+      "id": "presentation",
+      "title": "Name / description / aliases / grammar / display",
+      "formal": "Formal presentation includes grammar,aliases,tags/display metadata.",
+      "native": "Native name/description carrier only; groupKNOWN12100. Other display/alias data goes separate presentation/editor source owner.",
+      "converter": "Name/description/display flags converter implemented.",
+      "remaining": "Source qualifier and current name conflict guards still required. No generic Known override; aliases/variants/display flags are not absent source permission to create Native fields.",
+      "evidence": [
+        {
+          "path": "apps/game-server/src/content/reference_playable.rs",
+          "line": 405
+        },
+        {
+          "path": "tools/content-schema/item-authoring/engine_items.py",
+          "line": 2815
+        },
+        {
+          "path": "docs/architecture/OTERYN_ITEM_AUTHORING_MASTER_SCHEMA_V1.md",
+          "line": 54
+        }
+      ],
+      "units": null
+    },
+    {
+      "id": "appearance",
+      "title": "Sprites / appearance / variants",
+      "formal": "Typed PresentationRef and asset dependencies formal.",
+      "native": "ItemAuthoring.presentation ref exists but current0; no intrinsic native appearance field. Other Presentation family2613 records is not perItem completeness.",
+      "converter": "Appearance dependency built; historical samples sprite_atlas_not_admitted.",
+      "remaining": "Need actual accepted atlas/frame mapping and perItem Presentation projection; variants require source relations/own revision. Historical sprite blocker counts are not current backlog.",
+      "evidence": [
+        {
+          "path": "tools/content-schema/item-authoring/engine_items.py",
+          "line": 2817
+        },
+        {
+          "path": "apps/game-server/src/content/project/v2.rs",
+          "line": 1057
+        }
+      ],
+      "units": null
+    },
+    {
+      "id": "audio_fx",
+      "title": "Audio / effects / projectiles / attack effects",
+      "formal": "Formal sounds/effects/projectile_effect/attack_effect asset refs.",
+      "native": "No intrinsic native Item audio/effect owner; separate Presentation/Effect owners, Effect family4599 not proofItembinding.",
+      "converter": "Engine effect/shoottype/meleeattackeffect asset keys emitted; raw source labels not asset proof.",
+      "remaining": "Asset ID vocabulary/crosswalk/real media files/timing/context/Presentation linkage; RootFX audit53d1 owns fuller inventory. No guessed audio or generic raw integer -> runtime effect.",
+      "evidence": [
+        {
+          "path": "tools/content-schema/item-authoring/engine_items.py",
+          "line": 2847
+        },
+        {
+          "path": "docs/architecture/OTERYN_ITEM_AUTHORING_FORMAL_SCHEMA_V1.md",
+          "line": 86
+        },
+        {
+          "path": "docs/architecture/OTERYN_ITEM_AUTHORING_MASTER_SCHEMA_V1.md",
+          "line": 55
+        }
+      ],
+      "units": null
+    },
+    {
+      "id": "light",
+      "title": "Light emission / color / level / toggles",
+      "formal": "Formal typed light exists; source converter handles color/level.",
+      "native": "No intrinsic native light owner or current ItemAuthoring light field.",
+      "converter": "Light conversion implemented for admitted source fields; asset color dependencies remain separate.",
+      "remaining": "Need accepted metadata owner and exact perItem color/level evidence. Radius, timing, equipped-only behavior and toggles require independent context; do not infer from level/color.",
+      "evidence": [
+        {
+          "path": "tools/content-schema/item-authoring/engine_items.py",
+          "line": 3157
+        },
+        {
+          "path": "docs/architecture/OTERYN_ITEM_AUTHORING_MASTER_SCHEMA_V1.md",
+          "line": 137
+        }
+      ],
+      "units": null
+    },
+    {
+      "id": "physical",
+      "title": "Weight / movable / pickupable",
+      "formal": "Full formal physical.",
+      "native": "Native exists; Known group6781.",
+      "converter": "Implemented raw field conversion; dedicated guarded promotions shipped.",
+      "remaining": "Remaining direct source conflicts/missing authority/World domain holds;4091 TakeABSENT movable diagnostics are not4091 eligibleFalse. Sourceabsence remainsUNKNOWN.",
+      "evidence": [
+        {
+          "path": "apps/game-server/src/content/reference_playable.rs",
+          "line": 419
+        },
+        {
+          "path": "tools/content-schema/item-authoring/engine_items.py",
+          "line": 2779
+        }
+      ],
+      "units": null
+    },
+    {
+      "id": "stack",
+      "title": "Stackability / exact perItem max",
+      "formal": "Formal stack exists.",
+      "native": "Native exists; Known group3939.",
+      "converter": "Legacy converter normalizes default100/1, not independent own max.",
+      "remaining": "2493 scoped maxUnknown diagnostics need own maximum; cannot import legacy default100 as new perItem truth. DefaultFalse8 separate closed prepared successor, not all absent flags.",
+      "evidence": [
+        {
+          "path": "apps/game-server/src/content/reference_playable.rs",
+          "line": 427
+        },
+        {
+          "path": "tools/content-schema/item-authoring/engine_items.py",
+          "line": 3032
+        }
+      ],
+      "units": null
+    },
+    {
+      "id": "equipment_requirements",
+      "title": "Equipment / level / vocation / hands / premium / onUse",
+      "formal": "Formal expanded equipment and requirements/context/enforcement.",
+      "native": "Native patterns exist; Known1787; compatibility_rule Known explicitlyunsupported. required_magic_level authoring39.",
+      "converter": "Equipment conversion implemented, eventtype equip route conditional; Rune/Wand onUse distinct.",
+      "remaining": "Need exact source guards/qualifying patterns; onUse constraints/premium/shortfall/dual wield beyond current native shape need accepted owner route. Never infer unrestricted vocation or assign Rune constraints to equipment.",
+      "evidence": [
+        {
+          "path": "apps/game-server/src/content/reference_playable.rs",
+          "line": 434
+        },
+        {
+          "path": "tools/content-schema/item-authoring/engine_items.py",
+          "line": 1657
+        },
+        {
+          "path": "docs/architecture/OTERYN_ITEM_AUTHORING_FORMAL_SCHEMA_V1.md",
+          "line": 150
+        },
+        {
+          "path": "apps/game-server/src/content/project/v2.rs",
+          "line": 1076
+        }
+      ],
+      "units": null
+    },
+    {
+      "id": "weapon",
+      "title": "Weapon / ammo / attack / damage / absoluteHit / hit modifier / chain",
+      "formal": "Formal has attack_modifier,damage_range/type,absolutehit vsrelativehit,maxhit,chain/break/consumption.",
+      "native": "Native Weapon exists1025 Known groups but lacks attack_modifier and intrinsic damage_range/type. Existing hit_chance does not allow absoluteHit/relative conflation.",
+      "converter": "Engine weapon conversion implemented for allowed routes.",
+      "remaining": "Weapon103 pending supplement/metadata route is not published4f owner; no TypedV4 layout mutation or RuneUseCost substitution. Chain/default targeting needs own source/rules.",
+      "evidence": [
+        {
+          "path": "apps/game-server/src/content/reference_playable.rs",
+          "line": 460
+        },
+        {
+          "path": "tools/content-schema/item-authoring/engine_items.py",
+          "line": 2894
+        }
+      ],
+      "units": null
+    },
+    {
+      "id": "protection",
+      "title": "Armor / resistance / condition suppression / field protection",
+      "formal": "Formal typed expanded protection.",
+      "native": "Native armor/resistances exists639 groups;12 resistance enum includesPhysical10 separate from modifier element.",
+      "converter": "Implemented build protection/modifier conversion; parser defects remainexplicit.",
+      "remaining": "Source vectors/units/all-present agreement and runtime condition target remain separate; dead fieldabsorbpercentearth handler cannot be treated as effective.",
+      "evidence": [
+        {
+          "path": "apps/game-server/src/content/reference_playable.rs",
+          "line": 481
+        },
+        {
+          "path": "docs/architecture/OTERYN_ITEM_AUTHORING_FORMAL_SCHEMA_V1.md",
+          "line": 142
+        }
+      ],
+      "units": null
+    },
+    {
+      "id": "modifiers",
+      "title": "Skills / magic / speed / capacity / regen / reflection / shields / perfectshot / mantra",
+      "formal": "Formal broad modifier schema.",
+      "native": "37 native modifier kinds,494 vectors796 atoms. Target_domain/evaluation_phase/priority stay independentUNKNOWN.",
+      "converter": "build_modifiers implemented; already closed stats/modifier26/Mantra49 passed.",
+      "remaining": "More present field vectors require supported units/context/whole-vector agreement. Source params alone are not gameplay phase/target/ruleset proof.",
+      "evidence": [
+        {
+          "path": "apps/game-server/src/content/reference_playable.rs",
+          "line": 583
+        },
+        {
+          "path": "tools/content-schema/item-authoring/engine_items.py",
+          "line": 1979
+        }
+      ],
+      "units": null
+    },
+    {
+      "id": "leech_critical",
+      "title": "Critical / life+mana leech companions",
+      "formal": "Formal/native typed percent modifiers.",
+      "native": "Native carrier present within modifiers.",
+      "converter": "Known pairing builder supports only present source companions.",
+      "remaining": "All present empty/malformed/opposed companion fields hold whole vector; never manufacture leech chance100 or amount from incomplete text. Not a missing schema.",
+      "evidence": [
+        {
+          "path": "tools/content-schema/item-authoring/engine_items.py",
+          "line": 2010
+        },
+        {
+          "path": "apps/game-server/src/content/reference_playable.rs",
+          "line": 595
+        }
+      ],
+      "units": null
+    },
+    {
+      "id": "physical8",
+      "title": "Physical ELEMENTAL_BOND",
+      "formal": "Formal Physical bond exists.",
+      "native": "Native modifier enum1..6 lacksPhysical.8whole vectors16atoms stillheld.",
+      "converter": "Source57 proof retains8,49 native applied.",
+      "remaining": "Version/profile5/code/oracle/resource decision and full8 reseals/tests; preserve lazyoldv4 grammar. See Physical8 inventory. No complete8 claim.",
+      "evidence": [
+        {
+          "path": "apps/game-server/src/content/reference_playable.rs",
+          "line": 297
+        },
+        {
+          "path": "docs/architecture/OTERYN_ITEM_AUTHORING_FORMAL_SCHEMA_V1.md",
+          "line": 150
+        }
+      ],
+      "units": null
+    },
+    {
+      "id": "charges",
+      "title": "Definition charges / instance charges / consume policy",
+      "formal": "Formal count+display/consumption distinctions.",
+      "native": "Native count exists126Known. Current instance remainingcharges belongsInstance/durability.",
+      "converter": "Legacy count uses max(1,to_int(...,1)).",
+      "remaining": "Pure exact explicitcount only; no defaultRunecharge1 or clamp0. Use consumption rules need Ability/Interaction/context, display counts separate.",
+      "evidence": [
+        {
+          "path": "apps/game-server/src/content/reference_playable.rs",
+          "line": 601
+        },
+        {
+          "path": "tools/content-schema/item-authoring/engine_items.py",
+          "line": 3044
+        },
+        {
+          "path": "docs/architecture/OTERYN_ITEM_AUTHORING_FORMAL_SCHEMA_V1.md",
+          "line": 322
+        }
+      ],
+      "units": null
+    },
+    {
+      "id": "temporal",
+      "title": "Duration / stop / expire / active clock / decay",
+      "formal": "Full formal/native temporal.",
+      "native": "Native duration138Known; currentconsumption_mode/stop_duration/decay_target Known0.",
+      "converter": "Converter requires duration+decay pair; stopduration missingcompanions held; oldcontinuous/default clamps candidateonly.",
+      "remaining": "Literal duration does not prove durable vsactive consumption mode, stop or target; new bound ownID/target/membership/unit qualifier needed.",
+      "evidence": [
+        {
+          "path": "apps/game-server/src/content/reference_playable.rs",
+          "line": 607
+        },
+        {
+          "path": "tools/content-schema/item-authoring/engine_items.py",
+          "line": 3051
+        }
+      ],
+      "units": null
+    },
+    {
+      "id": "transform_lifecycle",
+      "title": "Use transforms / wrap / unwrap / enchant / destroy / lifecycle",
+      "formal": "Formal lifecycle/transform/wrapping; existing typed use_transform native and authoring lifecycle.",
+      "native": "Current native use_transform Known0; lifecycle136/source_lifecycle121 owners.",
+      "converter": "Converter target refs and wrap conditional relations implemented.",
+      "remaining": "Exact current target identity, placed vsportable disposition and owning Interaction; no copied scripts or blanket transform graph. Source parser unwrapableto ineffective. Source implemented/removed timestamps stay provenance.",
+      "evidence": [
+        {
+          "path": "apps/game-server/src/content/reference_playable.rs",
+          "line": 651
+        },
+        {
+          "path": "apps/game-server/src/content/project/v2.rs",
+          "line": 979
+        },
+        {
+          "path": "tools/content-schema/item-authoring/engine_items.py",
+          "line": 3051
+        }
+      ],
+      "units": null
+    },
+    {
+      "id": "container",
+      "title": "Capacity / accepted contents / nested bags / quivers",
+      "formal": "Formal typed capacity/content constraints.",
+      "native": "Native capacity469Known; no native content acceptance role/constraint fields.",
+      "converter": "containersize conversion; flags.container alone gives converter_missing if capacity absent.",
+      "remaining": "No capacity inference from containerflag; reconcile exact conflicting capacities and currentcount/contents Instance domain. Content acceptance/quiver semantics require typed owner/rules.",
+      "evidence": [
+        {
+          "path": "apps/game-server/src/content/reference_playable.rs",
+          "line": 616
+        },
+        {
+          "path": "tools/content-schema/item-authoring/engine_items.py",
+          "line": 3014
+        }
+      ],
+      "units": null
+    },
+    {
+      "id": "imbuement",
+      "title": "Slots / allowed family-tier / exclusions",
+      "formal": "Full formal/native imbuement carrier.",
+      "native": "slot_count661Known; currentallowed_family_tiers/excluded_families Known0.",
+      "converter": "Engine slots converted. Fandom imbuements ambiguous generic field.",
+      "remaining": "Independent exact family/tier/exclusion rules/associations needed; slot count is not permission to allfamilies or tiermax. Derived ruleset references are not new gameplay value.",
+      "evidence": [
+        {
+          "path": "apps/game-server/src/content/reference_playable.rs",
+          "line": 636
+        },
+        {
+          "path": "tools/content-schema/item-authoring/engine_items.py",
+          "line": 3129
+        }
+      ],
+      "units": null
+    },
+    {
+      "id": "forge",
+      "title": "Forge classification / perItem maximum",
+      "formal": "Authoring typed classification+max both mandatory.",
+      "native": "Forge147 owners afterHammer3332; no secondNativeForge group.",
+      "converter": "Legacy globalclass->max converter exists but cannot satisfy current perItemmax policy.",
+      "remaining": "870 independent perItemmax holds remain. Current147 owner presence not allforge sourcefields completed; protect old146selector and new3332 sourcepair.",
+      "evidence": [
+        {
+          "path": "apps/game-server/src/content/project/v2.rs",
+          "line": 945
+        },
+        {
+          "path": "tools/content-schema/item-authoring/engine_items.py",
+          "line": 3139
+        }
+      ],
+      "units": null
+    },
+    {
+      "id": "proficiency",
+      "title": "Proficiency profiles / bindings / thresholds / perk graph",
+      "formal": "Formal proficiency crosswalk and typed owner exists.",
+      "native": "ItemAuthoring.proficiency current0; separate proficiency package443profiles plus repository officialbindings666 is independent.",
+      "converter": "Generic engine converter admitted MagicSword238 only; otherIDs blocked even though separate module imports more.",
+      "remaining": "Need existing qualified binding/perk/rank graph perItem projection preserving exact current ID/domain/thresholds; no claimall632/643oldsource hits missing.",
+      "evidence": [
+        {
+          "path": "apps/game-server/src/content/project/v2.rs",
+          "line": 1068
+        },
+        {
+          "path": "tools/content-schema/item-authoring/engine_items.py",
+          "line": 3303
+        },
+        {
+          "path": "docs/architecture/OTERYN_ITEM_AUTHORING_FORMAL_SCHEMA_V1.md",
+          "line": 178
+        }
+      ],
+      "units": {
+        "historical_raw_occurrences": {
+          "Crystal": 643,
+          "Canary": 632
+        },
+        "not_current_backlog": true
+      }
+    },
+    {
+      "id": "augments",
+      "title": "Augments / shaping / ability targets / rank values",
+      "formal": "Formal exact typed augmenttarget/value/Effect/Ability refs exists.",
+      "native": "ItemAuthoring.augments current0; runtime execution independentlyAbility/Effect.",
+      "converter": "Catalog mapped; engineconverter absent for rawaugments.",
+      "remaining": "Retained62observations77clauses47spelllabels/44noexactcrosswalk are scoped diagnostics; cannot fuzzybind or flatten conditionals. Exact Ability/Effect crosswalk and units/triggers/ranks needed.",
+      "evidence": [
+        {
+          "path": "apps/game-server/src/content/project/v2.rs",
+          "line": 1019
+        },
+        {
+          "path": "apps/game-server/src/content/project/v2.rs",
+          "line": 1036
+        },
+        {
+          "path": "docs/architecture/OTERYN_ITEM_AUTHORING_FORMAL_SCHEMA_V1.md",
+          "line": 178
+        }
+      ],
+      "units": {
+        "historical_raw_occurrences": {
+          "Crystal": 83,
+          "Canary": 82
+        },
+        "not_current_backlog": true
+      }
+    },
+    {
+      "id": "consumable",
+      "title": "Food / edible / regeneration / consume_count",
+      "formal": "Formal typed; ProjectV2ItemConsumableProfile exists.",
+      "native": "Current consumable owner0, not proofthere is no food/Ability module.",
+      "converter": "Familyfoodclassified; exact consume/effect facts need own source, converter not generic script interpreter.",
+      "remaining": "Need pure source edible/regeneration and separately consume_count/Ability; do not convert spell/Potion behavior or engineTick blindlyinto foodseconds.",
+      "evidence": [
+        {
+          "path": "apps/game-server/src/content/project/v2.rs",
+          "line": 952
+        },
+        {
+          "path": "docs/architecture/OTERYN_ITEM_AUTHORING_MASTER_SCHEMA_V1.md",
+          "line": 120
+        },
+        {
+          "path": "docs/architecture/OTERYN_ITEM_AUTHORING_FORMAL_SCHEMA_V1.md",
+          "line": 322
+        }
+      ],
+      "units": null
+    },
+    {
+      "id": "fluid",
+      "title": "Portable fluid content/container/default vsplacedsource",
+      "formal": "Formal fluid role/content/default exists, source-world boundarynarrowed.",
+      "native": "Native fluid_type carrier8values but currentKnown0; role/default cannot fit same scalar.",
+      "converter": "Liquidcontainer role emitted, not intrinsicfluid type.",
+      "remaining": "Need sourceexact fluidtype/role and ownerroute for extra metadata. Bed/cask/tile source belongsWorldObject/Terrain; instancecurrent fluid subtype not definitionfact.",
+      "evidence": [
+        {
+          "path": "apps/game-server/src/content/reference_playable.rs",
+          "line": 670
+        },
+        {
+          "path": "tools/content-schema/item-authoring/engine_items.py",
+          "line": 3133
+        },
+        {
+          "path": "docs/architecture/OTERYN_ITEM_AUTHORING_FORMAL_SCHEMA_V1.md",
+          "line": 331
+        }
+      ],
+      "units": null
+    },
+    {
+      "id": "readable",
+      "title": "Readable / writable / max / distance / writeonce / document",
+      "formal": "Formal/nativecomplete basiccarrier; DocumentRef existingauthoring.",
+      "native": "Current98Known groups: read82/write71/max55. distance/write_once Known0; ItemAuthoring.document current0.",
+      "converter": "SourceXML writable/max/writeonce conversion; oldengine discarded nestedappearance max fields.",
+      "remaining": "Need exact writeonce target graph/document binding/distanceread source; currentDoc208 closesonly declared208fields, not whole document semantics orcontents. PINNED_NO_EFFECT is engine defect only, not prohibition on independentlyqualifiedofficialclient source.",
+      "evidence": [
+        {
+          "path": "apps/game-server/src/content/reference_playable.rs",
+          "line": 676
+        },
+        {
+          "path": "tools/content-schema/item-authoring/engine_items.py",
+          "line": 3224
+        },
+        {
+          "path": "apps/game-server/src/content/project/v2.rs",
+          "line": 1061
+        }
+      ],
+      "units": null
+    },
+    {
+      "id": "use_runes",
+      "title": "Generic usable / usewith / interactions / ability / Rune use",
+      "formal": "Formal use exists; existing on_use_interactions/use_ability authoring.",
+      "native": "No intrinsic native genericuse flag carrier; use_transform is different. Current on_use_interactions/use_ability0.",
+      "converter": "Usable/multiuse flags converted; runespellname mappedbut convertermissing.",
+      "remaining": "Need qualified Ability/Effect/Interaction bindings and complete usepolicy/requirements/charges/targets. Runeclass/name/mana observation is not execution or Runecreation/payment proof.",
+      "evidence": [
+        {
+          "path": "tools/content-schema/item-authoring/engine_items.py",
+          "line": 3274
+        },
+        {
+          "path": "apps/game-server/src/content/project/v2.rs",
+          "line": 1072
+        },
+        {
+          "path": "docs/architecture/OTERYN_ITEM_AUTHORING_FORMAL_SCHEMA_V1.md",
+          "line": 324
+        }
+      ],
+      "units": {
+        "historical_runespellname_occurrences": {
+          "Crystal": 36,
+          "Canary": 36
+        },
+        "not_current_backlog": true
+      }
+    },
+    {
+      "id": "use_observation",
+      "title": "Source wand/rod/Rune damage/type/mana",
+      "formal": "Accepted existing SourceProfile observation owner.",
+      "native": "139 current owners/345fields source-only: damage111/type138/mana96.",
+      "converter": "ClosedUse compiler done; dedicatedsourcealias exactwriter done.",
+      "remaining": "No intrinsic weaponAttack or consumption/runtimeclaim. Other unavailable/conflicting rawfields stayheld; Textunevaluated. Rawattrib text preservesource beforetypedpromotion.",
+      "evidence": [
+        {
+          "path": "apps/game-server/src/content/project/v2.rs",
+          "line": 968
+        },
+        {
+          "path": "docs/architecture/OTERYN_WORLD_PROJECT_SOURCE_PROFILE_V2_DECISION.md",
+          "line": 65
+        }
+      ],
+      "units": null
+    },
+    {
+      "id": "trade",
+      "title": "Market / tradability / vocab / immutablebindings",
+      "formal": "Formalexpandedtrade + nativecarrier.",
+      "native": "marketable4896 Known; currenttradeable/vocations Known0. account/character bindingKnown explicitly rejected.",
+      "converter": "Marketbool converter; vocabderivedfrommarket/equipment route mustcontextqualify.",
+      "remaining": "No NPCprices/economyoffers transfer; immutableaccount/character binding needs accepted grammar, not rawunique string. Sourceprice/NPCrefs reverse/external.",
+      "evidence": [
+        {
+          "path": "apps/game-server/src/content/reference_playable.rs",
+          "line": 658
+        },
+        {
+          "path": "apps/game-server/src/content/reference_playable.rs",
+          "line": 1937
+        },
+        {
+          "path": "tools/content-schema/item-authoring/engine_items.py",
+          "line": 3214
+        }
+      ],
+      "units": null
+    },
+    {
+      "id": "world_only",
+      "title": "Bed / sleep / placement / collision / teleports / hang / rotate",
+      "formal": "Earlier Mastercandidatebed explicitlynarrowedoutofItemformal.",
+      "native": "WorldObject/Terrain/Interaction owners; portablekit ordecorationfamily not placementbehavior.",
+      "converter": "Routing implemented; Canary sleeperaliases ineffectivedefects.",
+      "remaining": "Not an Item schema hole to fill. Preserve separateplaceddefinition/instance/player/sleep/lifetime/admission.",
+      "evidence": [
+        {
+          "path": "docs/architecture/OTERYN_ITEM_AUTHORING_FORMAL_SCHEMA_V1.md",
+          "line": 321
+        },
+        {
+          "path": "docs/architecture/OTERYN_ITEM_AUTHORING_FORMAL_SCHEMA_V1.md",
+          "line": 331
+        }
+      ],
+      "units": null
+    },
+    {
+      "id": "external_metadata",
+      "title": "Quest/drop/NPC/economy/sourceavailability/editor/sourceobservations",
+      "formal": "Source disposition/catalogues define reverse/external/template controls and provenance.",
+      "native": "ExistingQuest/Loot/Service/Interaction/availability modules outside intrinsicItem; source_lifecycle121.",
+      "converter": "Catalogues own explicitroutes; unknownrawvaluesfailclosed.",
+      "remaining": "Questmembership/merchantprices/reward relations source discovery not intrinsicfields. effectskeletons, fansite,template controls,implemented/removed and rawprose neverRuntimeauthority.",
+      "evidence": [
+        {
+          "path": "docs/architecture/OTERYN_ITEM_AUTHORING_MASTER_SCHEMA_V1.md",
+          "line": 180
+        },
+        {
+          "path": "docs/architecture/OTERYN_ITEM_AUTHORING_FORMAL_SCHEMA_V1.md",
+          "line": 319
+        },
+        {
+          "path": "apps/game-server/src/content/project/v2.rs",
+          "line": 992
+        }
+      ],
+      "units": null
+    }
+  ],
+  "critical_distinctions": [
+    "Schemaexists != converterimplemented != acceptedsourcegamefact != nativeKnown != runtimeexecution != fullItemcompletion.",
+    "Engineconverter defaultstack100/1, chargeclampmin1, durationclampmin1/continuous, forgeglobalmax and missinguseflagFalse normalizelegacycandidates; they do not authorize currentNative defaults.",
+    "Census allfielddispositions assigned and22profiles23templates does not mean everyexpandednativecarrier orsourcecrosswalk exists.",
+    "OldCrystal38157/Canary37527population andnewNative34031 referenceItems/57320allfamilies are differentuniverses; never sum or subtractinto currentbacklog.",
+    "No totalincompleteItems/currentallsource-supported-unknown claim; existingNative Known group orzeroauthoringfieldcounts are not applicability/readiness counts."
+  ],
+  "snapshot_manifest": "/workspace/audit-continuation/formal-item-gap-forge4f-readonly/manifest.json",
+  "formal_root_coverage": {
+    "properties": 32,
+    "missing": [],
+    "group_by_property": {
+      "identity": "identity",
+      "display_name": "presentation",
+      "aliases": "presentation",
+      "family_profile": "identity",
+      "family_profile_basis": "identity",
+      "family_profile_evidence": "identity",
+      "delivery_task_eligible": "identity",
+      "presentation": "presentation",
+      "taxonomy": "identity",
+      "physical": "physical",
+      "stack": "stack",
+      "requirements": "equipment_requirements",
+      "equipment": "equipment_requirements",
+      "weapon": "weapon",
+      "protection": "protection",
+      "modifiers": "modifiers",
+      "charges": "charges",
+      "temporal": "temporal",
+      "container": "container",
+      "imbuement": "imbuement",
+      "forge": "forge",
+      "proficiency": "proficiency",
+      "consumable": "consumable",
+      "fluid": "fluid",
+      "readable": "readable",
+      "light": "light",
+      "use": "use_runes",
+      "lifecycle": "transform_lifecycle",
+      "availability": "external_metadata",
+      "trade": "trade",
+      "source_observations": "use_observation",
+      "editor": "external_metadata"
+    }
+  }
+}
