@@ -1,11 +1,83 @@
 #!/usr/bin/env python3
+import copy
+import importlib.util
 import json
 import re
 import subprocess
 import sys
 from pathlib import Path
+from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[2]
+
+
+def test_closed_weapon_metadata_admission():
+    spec = importlib.util.spec_from_file_location("migration", ROOT / "tools/content-migration/validate_world_project_v2_to_tree.py")
+    migration = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(migration)
+    rows, receipt = migration.closed_weapon_metadata()
+    owners = {migration.target_id(row["item"]): copy.deepcopy(row) for row in receipt["parent_authoring"]}
+    for key, row in rows.items():
+        owners.setdefault(key, {"item": row["target"]}).update(copy.deepcopy(row["facts"]))
+    aliases = migration.item_alias_targets()
+    staged = {migration.staged_item_target(row["target"], aliases): row for row in migration.load(
+        ROOT / "docs/agents/evidence/OTV2-20260925-item-enrichment-wave1-staged.json")["items"]}
+    migration.validate_item_authoring_targets(owners, staged)
+    key = list(rows)[-1]
+    field = next(iter(rows[key]["facts"]))
+    variants = []
+    for mutation in (lambda row: row.pop(field), lambda row: row.update(use_ability="invented"),
+                     lambda row: row["item"].update(revision="wrong"), lambda row: row.update({field: False})):
+        bad = copy.deepcopy(owners)
+        mutation(bad[key])
+        variants.append(bad)
+    wrong = copy.deepcopy(owners)
+    wrong[key][field] = {"numerator": 1, "denominator": 100} if isinstance(wrong[key][field], dict) else wrong[key][field] + 1
+    variants += [wrong, {k: v for k, v in owners.items() if k != key}, owners | {("Item", "unlisted", "definition-r1"): {}}]
+    for bad in variants:
+        try:
+            migration.validate_item_authoring_targets(bad, staged)
+        except migration.ValidationError:
+            pass
+        else:
+            raise AssertionError("unqualified weapon owner accepted")
+    admitted = {migration.target_id(row["source"]): row for row in receipt["new_derived_relations"]}
+    definitions = {migration.target_id(row["identity"]): row for row in migration.load(
+        ROOT / "content/world/definitions/reference.json")["records"]}
+    relation_key = next(iter(admitted))
+    row, definition = admitted[relation_key], definitions[relation_key]
+    migration.validate_weapon_relation(row, definition, rows, admitted)
+    for value in (None, 0, True):
+        bad = copy.deepcopy(definition)
+        bad["semantics"]["imbuement"] = {"state": "UNKNOWN"} if value is None else {
+            "state": "KNOWN", "value": {"slot_count": {"state": "KNOWN", "value": value}}}
+        try:
+            migration.validate_weapon_relation(row, bad, rows, admitted)
+        except migration.ValidationError:
+            pass
+        else:
+            raise AssertionError("unknown/non-positive slot accepted")
+    for mutation in (lambda r: r["relations"][0].update(basis="weapon_attack_modifier_points"),
+                     lambda r: r["relations"][0].update(ruleset="rulesets/items/exaltation-forge/"),
+                     lambda r: r["relations"].append(copy.deepcopy(r["relations"][0])),
+                     lambda r: r["source"].update(key="unlisted"), lambda r: r.update(extra="unqualified")):
+        bad = copy.deepcopy(row)
+        mutation(bad)
+        try:
+            migration.validate_weapon_relation(bad, definition, rows, admitted)
+        except migration.ValidationError:
+            pass
+        else:
+            raise AssertionError("unqualified weapon relation accepted")
+    read_bytes = Path.read_bytes
+    with patch("pathlib.Path.read_bytes", lambda p: b"forged" if p.name == "OTV2-20261002-item-weapon-metadata-promotion-v1.json" else read_bytes(p)):
+        try:
+            migration.closed_weapon_metadata()
+        except migration.ValidationError as error:
+            assert str(error) == "WEAPON_METADATA_PACKET_DIGEST"
+        else:
+            raise AssertionError("forged weapon packet accepted")
+    print("ok test_closed_weapon_metadata_admission")
 project = json.loads((ROOT / "content/project.json").read_text(encoding="utf-8"))
 manifest = json.loads((ROOT / "content/manifest.json").read_text(encoding="utf-8"))
 lock = json.loads((ROOT / "content/content.lock.json").read_text(encoding="utf-8"))
@@ -73,4 +145,5 @@ for script in ("test_reward_claim_authoring.py",):
 starter_kit_tool = ROOT / "tools" / "content-schema" / "starter-kit-authoring"
 subprocess.run([sys.executable, "test_starter_kit_authoring.py"], cwd=starter_kit_tool, check=True)
 
+test_closed_weapon_metadata_admission()
 print(f"PASS managed_files={len(paths)} item_shards=69")

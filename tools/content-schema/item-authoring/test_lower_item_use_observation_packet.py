@@ -132,11 +132,10 @@ class Observations(unittest.TestCase):
                 ).read_text()
             )["items"]
         }
+        weapon_rows, receipt = migration.closed_weapon_metadata()
         legacy = {
             migration.target_id(row["item"]): copy.deepcopy(row)
-            for row in json.loads(
-                (lane.ROOT / "content/world/definitions/declarations.json").read_text()
-            )["item_authoring"]
+            for row in receipt["parent_authoring"]
         }
         packet = json.loads(lane.OUTPUT.read_text())
         for row in packet["promotions"]:
@@ -147,6 +146,11 @@ class Observations(unittest.TestCase):
         forge = migration.closed_forge_owner()
         legacy[migration.target_id(forge["item"])] = forge
         self.assertEqual(len(legacy), 316)
+        for weapon_key, row in weapon_rows.items():
+            legacy.setdefault(weapon_key, {"item": row["target"]}).update(
+                copy.deepcopy(row["facts"])
+            )
+        self.assertEqual(len(legacy), 411)
         migration.validate_item_authoring_targets(legacy, staged)
         key = next(
             migration.target_id(row["target"])

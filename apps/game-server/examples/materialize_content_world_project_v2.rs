@@ -35,6 +35,7 @@ use oteryn_game_server::content::{
     item_stack_historical_promotion::apply_item_stack_historical_promotion_v1,
     item_stats_promotion::apply_item_stats_promotion_v2,
     item_use_observation_promotion::apply_item_use_observation_promotion_v1,
+    item_weapon_metadata_promotion::apply_item_weapon_metadata_promotion_v1,
     protected_cw2_b1_donor_identity_epoch_2_import, protected_r7_p04_gold_coin_item_family_import,
 };
 use serde_json::Value;
@@ -781,6 +782,8 @@ fn wave1_authoring(
         taxonomy,
         forge,
         proficiency: None,
+        weapon_attack_modifier_points: None,
+        weapon_absolute_hit_chance_percent: None,
         augments: Vec::new(),
         on_use_interactions: Vec::new(),
         use_ability: None,
@@ -1974,6 +1977,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     apply_item_mantra_bond_modifier_promotion_v1(&mut draft)?;
     apply_item_use_observation_promotion_v1(&mut draft)?;
     apply_item_forge3332_promotion_v1(&mut draft)?;
+    apply_item_weapon_metadata_promotion_v1(&mut draft, limits())?;
     let documents = CanonicalProjectDocuments::from_v2_draft(draft, limits())?;
     if documents.documents().len() != DOCUMENT_COUNT {
         return Err("canonical WorldProject/v2 document count drifted".into());

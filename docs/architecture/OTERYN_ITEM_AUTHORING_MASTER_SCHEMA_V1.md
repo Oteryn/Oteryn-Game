@@ -169,6 +169,8 @@ imbuement/use-transform/trade/fluid/readable semantics. WorldProject/v2 authorin
 already owns taxonomy, Forge, proficiency/augments, consumable facts, use observations
 and lifecycle/source-lifecycle facts.
 
+The accepted WorldProject/v2 source supplement retains two additional optional intrinsic weapon metadata properties on the existing Item authoring owner: signed i32 `weapon_attack_modifier_points` maps to formal `/item/weapon/attack_modifier`, and canonical exact `weapon_absolute_hit_chance_percent` maps to `/item/weapon/hit_chance_percent` in absolute 0..100 percentage points (`90%` = `90/1`). Neither writes native attack nor native relative hit. Formal relative percentage points use `p/1`; the native relative percent representation uses reduced `p/100`. The separately generated current own-Object weapon alias catalog supplements the immutable legacy census; it does not rename relative `hit_mod` or infer absent values. Existing Forge, proficiency, magic-level, use-observation and other authoring siblings keep their owners.
+
 The schema-census exposes additional authoring concepts that are not yet first-class
 executable Item fields, especially typed light emission/toggle facts, sleepable beds,
 generic usable/use-with facts and presentation-variant authoring. They remain

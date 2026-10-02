@@ -53,6 +53,7 @@ pub mod item_stack_false_promotion;
 pub mod item_stack_historical_promotion;
 pub mod item_stats_promotion;
 pub mod item_use_observation_promotion;
+pub mod item_weapon_metadata_promotion;
 mod model;
 mod production;
 mod project;

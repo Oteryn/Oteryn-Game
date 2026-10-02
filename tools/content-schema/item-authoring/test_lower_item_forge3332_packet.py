@@ -38,15 +38,18 @@ class ForgeSources(unittest.TestCase):
                 ).read_text()
             )["items"]
         }
+        weapon_rows, receipt = migration.closed_weapon_metadata()
         owners = {
-            migration.target_id(r["item"]): r
-            for r in json.loads(
-                (forge.ROOT / "content/world/definitions/declarations.json").read_text()
-            )["item_authoring"]
+            migration.target_id(r["item"]): copy.deepcopy(r)
+            for r in receipt["parent_authoring"]
         }
         owner = json.loads(forge.OUTPUT.read_text())["promotion"]
         key = migration.target_id(owner["item"])
         owners[key] = owner
+        for weapon_key, row in weapon_rows.items():
+            owners.setdefault(weapon_key, {"item": row["target"]}).update(
+                copy.deepcopy(row["facts"])
+            )
         migration.validate_item_authoring_targets(owners, staged)
         for path, value in [
             ("classification", 3),

@@ -1,6 +1,7 @@
 //! Versioned editable-source additions. Declarative v2 records never become runtime definitions
 //! by appearing in the project: only the existing Reference linker owns executable lowering.
 
+use super::super::ReferenceSignedPoints;
 use super::*;
 
 mod creature;
@@ -1074,6 +1075,10 @@ pub struct ProjectV2ItemAuthoring {
     pub use_ability: Option<ProjectV2DefinitionRef>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub required_magic_level: Option<u16>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub weapon_attack_modifier_points: Option<ReferenceSignedPoints>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub weapon_absolute_hit_chance_percent: Option<ProjectV2ExactRatio>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub consumable: Option<ProjectV2ItemConsumableProfile>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -2740,6 +2745,16 @@ fn validate_v2_state(
             ));
         }
         require_ref(&item.item)?;
+        if let Some(value) = item.weapon_absolute_hit_chance_percent {
+            validate_v2_ratio(value, "v2 absolute weapon hit percent is not canonical")?;
+            if value.numerator < 0
+                || u128::from(value.numerator.unsigned_abs()) > 100 * u128::from(value.denominator)
+            {
+                return Err(ProjectError::InvalidProject(
+                    "v2 absolute weapon hit percent is outside 0..100",
+                ));
+            }
+        }
         if let Some(presentation) = &item.presentation {
             if presentation.family != ProjectV2Family::Presentation {
                 return Err(ProjectError::InvalidProject(

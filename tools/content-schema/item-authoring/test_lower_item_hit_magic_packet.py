@@ -93,9 +93,8 @@ class HitMagic(unittest.TestCase):
         )
         migration = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(migration)
-        owners = json.loads(
-            (fields.ROOT / "content/world/definitions/declarations.json").read_text()
-        )["item_authoring"]
+        weapon_rows, receipt = migration.closed_weapon_metadata()
+        owners = copy.deepcopy(receipt["parent_authoring"])
         legacy = {migration.target_id(o["item"]): o for o in owners}
         rows = json.loads(fields.OUTPUT.read_text())["promotions"]
         magic = [r for r in rows if "required_magic_level" in r["facts"]]
@@ -128,6 +127,10 @@ class HitMagic(unittest.TestCase):
         keys = {migration.target_id(r["target"]) for r in magic}
         forge = migration.closed_forge_owner()
         legacy[migration.target_id(forge["item"])] = forge
+        for weapon_key, row in weapon_rows.items():
+            legacy.setdefault(weapon_key, {"item": row["target"]}).update(
+                copy.deepcopy(row["facts"])
+            )
         migration.validate_item_authoring_targets(legacy, staged)
         key = next(iter(keys))
         for bad in (

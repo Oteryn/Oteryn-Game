@@ -44,6 +44,7 @@ on:
       - docs/agents/evidence/OTV2-20261002-item-name*.json
       - docs/agents/evidence/OTV2-20261002-item-hit-magic*.json
       - docs/agents/evidence/OTV2-20261002-item-mantra-bond*.json
+      - docs/agents/evidence/OTV2-20261002-item-weapon-metadata*.json
       - content/items/index.json
       - content/items/definitions/**
       - content/assets/files/appearances-*.dat
@@ -147,6 +148,11 @@ jobs:
         run: |
           python test_lower_item_forge3332_packet.py
           python lower_item_forge3332_packet.py --check
+
+      - name: Closed intrinsic weapon source metadata tests and drift
+        run: |
+          python test_lower_item_weapon_metadata_packet.py
+          python lower_item_weapon_metadata_packet.py --check
 
       - name: Weapon proficiency tests and artifact drift
         run: |

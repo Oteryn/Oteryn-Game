@@ -63,6 +63,7 @@ The overlay covers:
 - typed augment targets (Ability, auto attack, offensive rune, creature class or stable generic target), optional Effect references, exact bounded rank values, and source-only candidate fields for semantics without an accepted runtime owner;
 - Item -> Interaction and Item -> Ability use bindings plus required magic level;
 - source-only use observations for legacy/current Infobox `damage`, `damagetype` and `mana`; these preserve evidence for wand/rod/rune-like items while Ability/Effect/Formula remains the sole execution path;
+- optional intrinsic weapon source metadata `weapon_attack_modifier_points` (signed i32 points, formal `/item/weapon/attack_modifier`) and `weapon_absolute_hit_chance_percent` (canonical exact ratio of absolute percentage points in 0..100, formal `/item/weapon/hit_chance_percent`); these retain own-Object `atk_mod` and `hit_chance` without changing native attack or native relative hit;
 - edible/regeneration source facts;
 - enchantable/destructible source facts and typed lifecycle Interaction bindings;
 - source implementation/removal observations.
@@ -72,6 +73,10 @@ The existing editor role remains the v2 home for noncanonical Item aliases, tags
 NPC buy/sell prices are represented as typed `Service` offers referencing exact Item definitions. They are not Item fields. TibiaWiki `droppedby`, raid-drop and event-drop lists remain reverse discovery/evidence for Creature/Loot/Encounter relationships and must not be serialized into Item authoring. Wiki-estimated `value` and premium/store pricing are likewise editor/provenance or future commerce-owner evidence unless an accepted Oteryn economy contract gives them authoritative semantics.
 
 Fields already owned by the executable Item model — including weight, stackability, equipment requirements, attack/defense/range/hit, elemental attack, armor/resistances, skill modifiers including Elemental Bond/Mantra, charges, duration, container capacity, readable/writeable state and imbuement semantics — continue to use the existing Reference Item path. V2 does not duplicate them.
+
+The two intrinsic weapon metadata properties are distinct from that executable vocabulary: native `attack` is not the source `atk_mod`, and native normalized relative `hit_chance` is not absolute source `hit_chance`. A literal absolute `90%` is stored as `90/1` percentage points; formal relative `90` is also `90/1` points, while its existing native normalization is `9/10`. A separate current own-Object alias catalog declares these exact routes. It does not alter the immutable 84-field legacy Fandom census or admit sibling-page/alias inheritance. Missing properties remain `None`, with no zero/100 default. The extended reader preserves old absent-field canonical bytes; old strict readers reject newly present properties. Runtime lowering and TypedItemV4 remain unchanged.
+
+Current own-Object source qualification uses a unique nonempty `actualname` when present, with `name` fallback only when that parameter is absent. Descriptive variant labels remain retained evidence; numeric own IDs and accepted bindings determine identity. Empty, duplicate or conflicting actual names stay held.
 
 Mutable runtime state is explicitly excluded: current Forge tier, proficiency XP/unlocks/selected perks/ranks, active imbues, remaining charges/timers, stack quantity, container contents/custody, current enchanted form and live quest/runtime state remain with ItemInstance/Character/Progression/Durability or their accepted owner.
 

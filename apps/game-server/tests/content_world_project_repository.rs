@@ -17,12 +17,12 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "content.lock.json",
         364,
-        "e4c8bd7ac3231d7fe6e11580965169c314b5bd2c6f210319276b5a78f9dcd5cb",
+        "8d3bf8f53ad809a139c9c220af64084be8f12e953daa8c81e4bc7305bd4aff95",
     ),
     (
         "definitions/declarations.json",
-        15_175_312,
-        "d32ec9f1c94a5d04a063e068396d4362439fdcb132e2713c6428faf8c18b1a5c",
+        15_187_971,
+        "b9ad3d8429f538f1d9459c0917d500c84168cc74ae0e6c969eb99425b98d7a3e",
     ),
     (
         "definitions/reference.json",
@@ -37,7 +37,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "manifest.json",
         1_937,
-        "57e323d72155aff09cdce10be275e8efe6efbcd0a166f069170894eb0e04a4f5",
+        "f426ae40c4cb8099777c0e9a520eb581d163418b362a02285f178b11e86aff45",
     ),
     (
         "presentations/bindings.json",
@@ -47,7 +47,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "project.json",
         390,
-        "c83ee371a48f3462934bee801b1ce2ada213ef4aab53e1b08a2fd461480157e2",
+        "4dde8ff8e6f8b786ace743ebfc6635e2f1bdc68de4c30ed3fce6c87beeb9e6e7",
     ),
     (
         "provenance/imports.json",
@@ -114,7 +114,7 @@ const WORLD_CATALOGUE_SHARDS: [(&str, &str); 4] = [
 const TREE_CONTRACT: &str =
     "docs/agents/evidence/OTV2-20260925-full-game-content-ruleset-tree-v1.json";
 const TREE_DIRECTORY_NODES: usize = 97;
-const TREE_SHA256: &str = "c3af5f87c23ec8cf181a0dd488cbfff787b3210ca6e7a919d32f9df0f61ed2ed";
+const TREE_SHA256: &str = "70a797186021dfa0ad6a68d7cd833787370b32b11366a2f6aa7d70969584154e";
 /// A12 (ITEM-ID-1b): the protected Item family less the 4,590 D149 records, on Tibia keys,
 /// plus the 404 donor epoch-2 records and the 60 appearance-only records (ITEM-ADD-1).
 const ITEMS: usize = 34_031;
@@ -520,7 +520,107 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
         .map(|row| row["target"]["key"].as_str().expect("use key"))
         .collect();
     assert_eq!(use_keys.len(), 139);
-    assert_eq!(v2.item_authoring.len(), 164 + 39 + 139 - 27 + 1);
+    let weapon_packet: serde_json::Value =
+        serde_json::from_slice(item_weapon_metadata_promotion::ITEM_WEAPON_METADATA_PACKET)
+            .expect("sealed closed103 weapon source packet");
+    assert_eq!(
+        Sha256::digest(item_weapon_metadata_promotion::ITEM_WEAPON_METADATA_PACKET)
+            .iter()
+            .map(|b| format!("{b:02x}"))
+            .collect::<String>(),
+        item_weapon_metadata_promotion::ITEM_WEAPON_METADATA_PACKET_SHA256
+    );
+    let weapon_rows = weapon_packet["promotions"].as_array().expect("weapon rows");
+    assert_eq!(weapon_rows.len(), 103);
+    let weapon_keys: BTreeSet<_> = weapon_rows
+        .iter()
+        .map(|row| row["target"]["key"].as_str().expect("weapon key"))
+        .collect();
+    assert_eq!(weapon_keys.len(), 103);
+    let receipt_bytes = include_bytes!(
+        "../../../docs/agents/evidence/OTV2-20261002-item-weapon-metadata-source-qualification-v2.json"
+    );
+    assert_eq!(
+        Sha256::digest(receipt_bytes)
+            .iter()
+            .map(|b| format!("{b:02x}"))
+            .collect::<String>(),
+        weapon_packet["sources"]["proof_sha256"]
+            .as_str()
+            .expect("proof SHA")
+    );
+    let receipt: serde_json::Value =
+        serde_json::from_slice(receipt_bytes).expect("current parent receipt");
+    let parent_rows = receipt["current_parent_receipt"]["parent_authoring"]
+        .as_array()
+        .expect("parent owners");
+    let parent_keys: BTreeSet<_> = parent_rows
+        .iter()
+        .map(|row| row["item"]["key"].as_str().expect("parent key"))
+        .collect();
+    assert_eq!(parent_keys.len(), 316);
+    let weapon_new_keys: BTreeSet<_> = weapon_keys.difference(&parent_keys).copied().collect();
+    assert_eq!(weapon_new_keys.len(), 95);
+    let expected_keys: BTreeSet<_> = parent_keys.union(&weapon_keys).copied().collect();
+    assert_eq!(v2.item_authoring.len(), 411);
+    assert_eq!(
+        v2.item_authoring
+            .iter()
+            .map(|o| o.item.key.as_str())
+            .collect::<BTreeSet<_>>(),
+        expected_keys
+    );
+    assert_eq!(
+        weapon_rows
+            .iter()
+            .filter(|r| r["facts"]["weapon_attack_modifier_points"].is_number())
+            .count(),
+        78
+    );
+    assert_eq!(
+        weapon_rows
+            .iter()
+            .filter(|r| r["facts"]["weapon_absolute_hit_chance_percent"].is_object())
+            .count(),
+        25
+    );
+    for owner in &v2.item_authoring {
+        let mut stripped = serde_json::to_value(owner).expect("full source owner");
+        let mut actual = serde_json::Map::new();
+        for property in [
+            "weapon_attack_modifier_points",
+            "weapon_absolute_hit_chance_percent",
+        ] {
+            if let Some(value) = stripped
+                .as_object_mut()
+                .expect("owner object")
+                .remove(property)
+            {
+                actual.insert(property.into(), value);
+            }
+        }
+        if let Some(row) = weapon_rows
+            .iter()
+            .find(|row| row["target"]["key"] == owner.item.key)
+        {
+            assert_eq!(
+                serde_json::to_value(&owner.item).expect("full target"),
+                row["target"]
+            );
+            assert_eq!(serde_json::Value::Object(actual), row["facts"]);
+        } else {
+            assert!(
+                actual.is_empty(),
+                "unexpected intrinsic weapon source property"
+            );
+        }
+        let expected = parent_rows
+            .iter()
+            .find(|row| row["item"]["key"] == owner.item.key)
+            .cloned()
+            .unwrap_or_else(|| serde_json::json!({"item":owner.item}));
+        assert_eq!(stripped, expected, "parent owner siblings changed");
+    }
     let forge_packet: serde_json::Value =
         serde_json::from_slice(item_forge3332_promotion::ITEM_FORGE3332_PACKET)
             .expect("sealed Forge singleton");
@@ -546,7 +646,8 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
             .iter()
             .filter(|entry| entry.required_magic_level.is_none()
                 && !use_keys.contains(entry.item.key.as_str())
-                && entry.item.key != forge_owner.item.key)
+                && entry.item.key != forge_owner.item.key
+                && !weapon_new_keys.contains(entry.item.key.as_str()))
             .all(|entry| {
                 entry.item.family == ProjectV2Family::Item
                     && entry
