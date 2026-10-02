@@ -368,13 +368,21 @@ fn set_field(
         }
         ("skill_modifiers.modifiers", TypedValue::Modifiers(entries)) => {
             use ReferenceItemField::{Known, Unknown};
-            use ReferenceModifierParameter::{RationalPercent, SignedPoints};
+            use ReferenceModifierParameter::{Element, RationalPercent, SignedPoints};
             use ReferenceSkillModifierKind as Kind;
             if entries.is_empty()
                 || entries.len() > REFERENCE_ITEM_MAX_MODIFIERS
                 || entries.windows(2).any(|pair| pair[0].kind >= pair[1].kind)
                 || entries.iter().any(|entry| {
                     let parameter = match (entry.kind, &entry.parameter) {
+                        (Kind::Mantra, Known(SignedPoints(points))) => {
+                            i16::try_from(points.0).is_ok()
+                        }
+                        (Kind::ElementalBond, Known(Element(value))) => matches!(
+                            value,
+                            super::ReferenceModifierElement::Earth
+                                | super::ReferenceModifierElement::Energy
+                        ),
                         (
                             Kind::DeathMagicLevelPoints
                             | Kind::EarthMagicLevelPoints
@@ -1250,5 +1258,102 @@ mod tests {
         assert_eq!(packet.counts.fields, ITEM_STATS_PROMOTION_V2_FIELD_COUNT);
         assert_eq!(packet.counts.items, ITEM_STATS_PROMOTION_V2_ITEM_COUNT);
         assert_eq!(packet.promotions.len(), ITEM_STATS_PROMOTION_V2_FIELD_COUNT);
+    }
+    #[test]
+    fn mantra_bond_metadata_is_idempotent_with_unknown_context() {
+        for (kind, parameter) in [
+            (
+                "MANTRA",
+                serde_json::json!({"kind":"SIGNED_POINTS", "value":-32768}),
+            ),
+            (
+                "MANTRA",
+                serde_json::json!({"kind":"SIGNED_POINTS", "value":32767}),
+            ),
+            (
+                "ELEMENTAL_BOND",
+                serde_json::json!({"kind":"ELEMENT", "value":"EARTH"}),
+            ),
+            (
+                "ELEMENTAL_BOND",
+                serde_json::json!({"kind":"ELEMENT", "value":"ENERGY"}),
+            ),
+        ] {
+            let mut value = modifier_value();
+            value["value"] = serde_json::json!([value["value"][0]]);
+            value["value"][0]["kind"] = serde_json::json!(kind);
+            value["value"][0]["parameter"]["value"] = parameter;
+            let bytes = packet(
+                &row(KEY, "skill_modifiers.modifiers", &value.to_string()),
+                1,
+                1,
+            );
+            let mut semantics = ReferenceItemSemantics::default();
+            apply(&bytes, &mut semantics).expect("source-qualified typed metadata");
+            let before = semantics.clone();
+            assert_eq!(
+                apply(&bytes, &mut semantics)
+                    .expect("same-vector idempotence")
+                    .replaced,
+                0
+            );
+            assert_eq!(semantics, before);
+            assert_eq!(
+                serde_json::to_value(&semantics.skill_modifiers).expect("metadata")["value"]["modifiers"]
+                    ["value"],
+                value["value"]
+            );
+            semantics.skill_modifiers = ReferenceItemField::Unknown;
+            assert_eq!(semantics, ReferenceItemSemantics::default());
+        }
+    }
+
+    #[test]
+    fn mantra_bond_wrong_unit_bounds_element_and_late_conflict_are_atomic() {
+        for (kind, parameter) in [
+            (
+                "MANTRA",
+                serde_json::json!({"kind":"SIGNED_POINTS", "value":32768}),
+            ),
+            (
+                "MANTRA",
+                serde_json::json!({"kind":"SIGNED_POINTS", "value":-32769}),
+            ),
+            (
+                "MANTRA",
+                serde_json::json!({"kind":"RATIONAL_PERCENT", "value":{"numerator":1,"denominator":1}}),
+            ),
+            (
+                "ELEMENTAL_BOND",
+                serde_json::json!({"kind":"SIGNED_POINTS", "value":1}),
+            ),
+            (
+                "ELEMENTAL_BOND",
+                serde_json::json!({"kind":"ELEMENT", "value":"FIRE"}),
+            ),
+            (
+                "ELEMENTAL_BOND",
+                serde_json::json!({"kind":"ELEMENT", "value":"PHYSICAL"}),
+            ),
+        ] {
+            let mut value = modifier_value();
+            value["value"] = serde_json::json!([value["value"][0]]);
+            value["value"][0]["kind"] = serde_json::json!(kind);
+            value["value"][0]["parameter"]["value"] = parameter;
+            let rows = format!(
+                "{},{}",
+                row(
+                    KEY,
+                    "physical.weight",
+                    r#"{"kind":"WEIGHT_CENTI_OZ","value":4100}"#
+                ),
+                row(KEY, "skill_modifiers.modifiers", &value.to_string())
+            );
+            let bytes = packet(&rows, 2, 1);
+            let mut semantics = ReferenceItemSemantics::default();
+            let before = semantics.clone();
+            assert!(apply(&bytes, &mut semantics).is_err());
+            assert_eq!(semantics, before);
+        }
     }
 }

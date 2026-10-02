@@ -17,7 +17,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "content.lock.json",
         364,
-        "958ddb36eafb41996aa67442d01cb8858ee2c9bc887204cf5f6e2a404e33cb9e",
+        "45ab6482e2872a018410a81a8e490c9e86147608931034ca7c8e61305e36a599",
     ),
     (
         "definitions/declarations.json",
@@ -26,8 +26,8 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "definitions/reference.json",
-        24_926_286,
-        "7b9239cade9578d1755dcf0bfd243af97d0f61f49371d2d44855a1445cbee6c1",
+        24_951_707,
+        "1aa9c7b7400c6041cd878cfbfb46139950a386ab377749ae56ef0bd17104992e",
     ),
     (
         "editor/author.json",
@@ -37,7 +37,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "manifest.json",
         1_937,
-        "05f195d9b4b6d71d61cc04b354d05cf93345378af4a3a43a91bf27a6dde44ac8",
+        "2fbb5008a517210371aa9824e182a14bc5ef4eaad9878b59dc5f47f7b7de65d6",
     ),
     (
         "presentations/bindings.json",
@@ -47,7 +47,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "project.json",
         390,
-        "30b16f4c272be15565dc08bf792dd62ac389f556988c748580b9a185ea5f1bc4",
+        "13805fb3b7b68e10b65141b6fcef14fe541c83f9005c69e785f7fa3a2f7b032a",
     ),
     (
         "provenance/imports.json",
@@ -114,7 +114,7 @@ const WORLD_CATALOGUE_SHARDS: [(&str, &str); 4] = [
 const TREE_CONTRACT: &str =
     "docs/agents/evidence/OTV2-20260925-full-game-content-ruleset-tree-v1.json";
 const TREE_DIRECTORY_NODES: usize = 97;
-const TREE_SHA256: &str = "1dfb2fecf1a222689f700ab59ed5e86032895ffe1a414552d98336eeb28930bd";
+const TREE_SHA256: &str = "4e3bd3bdf42432124792cb9508340d29db624d6f2682cf2bf939dc5771288007";
 /// A12 (ITEM-ID-1b): the protected Item family less the 4,590 D149 records, on Tibia keys,
 /// plus the 404 donor epoch-2 records and the 60 appearance-only records (ITEM-ADD-1).
 const ITEMS: usize = 34_031;
@@ -1099,6 +1099,15 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     let (mut pickup_fields, mut positive_stacks, mut weight_fields) = (0, 0, 0);
     let (mut movable_true, mut movable_false) = (0, 0);
     let (mut modifier_vectors, mut modifier_atoms) = (0, 0);
+    let mantra_packet: serde_json::Value = serde_json::from_slice(
+        item_mantra_bond_modifier_promotion::ITEM_MANTRA_BOND_MODIFIER_PACKET,
+    )
+    .expect("sealed Mantra/Bond packet");
+    let mantra_rows = mantra_packet["promotions"]
+        .as_array()
+        .expect("whole modifier rows");
+    assert_eq!(mantra_rows.len(), 49);
+    let mut mantra_keys = BTreeSet::new();
     let (mut document_groups, mut readable, mut writeable, mut not_writeable, mut text_lengths) =
         (0, 0, 0, 0, 0);
     for definition in &linked.definitions {
@@ -1183,6 +1192,20 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
         if definition.definition.key().as_str() == "oteryn:item.tibia.i34086" {
             assert_eq!(item.semantics.skill_modifiers, ReferenceItemField::Unknown);
         }
+        if let Some(row) = mantra_rows
+            .iter()
+            .find(|row| row["item_key"].as_str() == Some(definition.definition.key().as_str()))
+        {
+            let ReferenceItemField::Known(group) = &item.semantics.skill_modifiers else {
+                panic!("qualified whole modifier group missing");
+            };
+            assert_eq!(
+                serde_json::to_value(&group.modifiers).expect("complete typed vector"),
+                serde_json::json!({"state":"KNOWN", "value":row["typed_value"]["value"]})
+            );
+            assert!(mantra_keys.insert(definition.definition.key().as_str()));
+            assert!(!item.materializable);
+        }
         if let ReferenceItemField::Known(group) = &item.semantics.skill_modifiers
             && let ReferenceItemField::Known(entries) = &group.modifiers
         {
@@ -1216,7 +1239,11 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
         ),
         (98, 82, 54, 17, 55)
     );
-    assert_eq!((modifier_vectors, modifier_atoms), (419 + 26, 619 + 63));
+    assert_eq!(mantra_keys.len(), 49);
+    assert_eq!(
+        (modifier_vectors, modifier_atoms),
+        (419 + 26 + 49, 619 + 63 + 114)
+    );
     assert_eq!(resistance_vectors, 391);
     assert_eq!(resistance_atoms, 625);
     // The independent predecessor census includes the separately admitted starter pattern.

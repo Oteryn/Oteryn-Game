@@ -24,6 +24,7 @@ use oteryn_game_server::content::{
     item_elemental_magic_modifier_promotion::apply_item_elemental_magic_modifier_promotion_v1,
     item_hit_magic_promotion::apply_item_hit_magic_promotion_v1,
     item_identity::{ItemKeyAliasTable, apply_tibia_id_key_rule, tibia_item_key},
+    item_mantra_bond_modifier_promotion::apply_item_mantra_bond_modifier_promotion_v1,
     item_market_true_promotion::apply_item_market_true_promotion_v1,
     item_movable_promotion::apply_item_movable_promotion_v1,
     item_name_promotion::apply_item_name_promotion_v1,
@@ -1968,6 +1969,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     apply_item_document_promotion_v1(&mut draft)?;
     apply_item_name_promotion_v1(&mut draft)?;
     apply_item_hit_magic_promotion_v1(&mut draft)?;
+    apply_item_mantra_bond_modifier_promotion_v1(&mut draft)?;
     let documents = CanonicalProjectDocuments::from_v2_draft(draft, limits())?;
     if documents.documents().len() != DOCUMENT_COUNT {
         return Err("canonical WorldProject/v2 document count drifted".into());

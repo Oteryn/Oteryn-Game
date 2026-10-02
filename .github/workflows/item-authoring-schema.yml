@@ -39,6 +39,7 @@ on:
       - docs/agents/evidence/OTV2-20261002-item-elemental-magic-modifier*.json
       - docs/agents/evidence/OTV2-20261002-item-name*.json
       - docs/agents/evidence/OTV2-20261002-item-hit-magic*.json
+      - docs/agents/evidence/OTV2-20261002-item-mantra-bond*.json
       - content/items/index.json
       - content/items/definitions/**
       - content/assets/files/appearances-*.dat
@@ -164,6 +165,12 @@ jobs:
         run: |
           python test_lower_item_hit_magic_packet.py
           python lower_item_hit_magic_packet.py --check
+        working-directory: tools/content-schema/item-authoring
+
+      - name: Whole Mantra and elemental Bond source qualification and packet drift
+        run: |
+          python test_lower_mantra_bond_modifier_packet.py
+          python lower_mantra_bond_modifier_packet.py --check
         working-directory: tools/content-schema/item-authoring
 
       - name: Complete elemental magic modifier qualification guards and packet drift
