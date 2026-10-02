@@ -1,0 +1,106 @@
+{
+  "WT_mutations_by_reviewer": 0,
+  "baseline": "1b026969a8b2236737bff537b3eddb3c909781b2",
+  "checks": {
+    "Cargo": "NOT_RUN",
+    "Description12_nonglue_preserved": "PASS",
+    "Name139_and_shared825_engine28644_unchanged": "PASS",
+    "Python_focused_tests": "PASS5_FRESH",
+    "Rust_prepared_tests": "STATIC_REVIEWED4_NOT_COMPILED",
+    "actual_source_packet_check": "PASS15_FRESH",
+    "all15_actual_forward_reverse_bindings_namespace_and_importAlias_provenance": "PASS",
+    "all15_current_target_name_fourHeaders_noWorld_noGameOwned": "PASS",
+    "all15_explicit_ownWikiID_absence": "PASS",
+    "all69_Native_shards_reference57320_Items34031_owners411_World_unchanged": "PASS",
+    "current_actual_packet_intersections_and_physical15_compatibility": "PASS",
+    "full43516_official_ownID_field4_UTF8_name_membership": "PASS",
+    "generation": "NOT_RUN",
+    "historical7fd1_source_proof_byteexact": "PASS",
+    "independent_current_target_name_header_and_owner_negatives": 195,
+    "independent_future_sibling_otherOwner_and_idempotence_checks": 30,
+    "source9_and_immutable_component_copy_twice": "PASS"
+  },
+  "findings": [],
+  "independent_replay": {
+    "bytes": 8335,
+    "path": "/workspace/audit-continuation/name15-independent-source-implementation-replay.json",
+    "sha256": "cc7bc5e93c7b0797f05742bf9c5b77143046ffc0980722e6b1813ede8411fa29"
+  },
+  "packet": {
+    "path": "docs/agents/evidence/OTV2-20261002-item-name15-promotion-v1.json",
+    "sha256": "096beca127481342cdf545131321102b460435ecdc97e7f10b9d4f9753228ca8"
+  },
+  "resolved_metadata_finding": {
+    "description": "Only stale self packet SHA3083f2a replaced by final096beca in new external receipt; exact target sets unchanged; historical receipt and source9 kept byteexact.",
+    "original_receipt_sha256": "37d23b921797f9b8edd3343fdfefd901fe51850112f8c4cb2d301efab0b05d34",
+    "superseding_receipt_sha256": "ca4b265a2e82e5bfb89801c6e499354c559ca7688c8125e84f38bd91e673fe6c"
+  },
+  "review_limits": "Stopped source implementation peer permits Root carry and later combined serial Cargo/generation. No compiled Rust, final postgeneration delta, migration, publication or runtime acceptance claimed by this review.",
+  "scope": {
+    "Items": 15,
+    "Native_applied": 0,
+    "cohort": "Only exact proven imported KNOWN weapon of mayhem -> exact own numeric official field4 name, or identical KNOWN incoming name. Own Wiki target-ID authority explicitly ABSENT. Name139 unchanged. No NAV/category/class/other scalars/runtime change.",
+    "fields": 15,
+    "materializable_false_preserved": 15
+  },
+  "source_manifest": {
+    "bytes": 6883,
+    "path": "/workspace/audit-continuation/name15-source-component-final-worker-manifest-v2.json",
+    "sha256": "4aa5438bcd134ec890616fa0827a7c9b4b4b3caaae6c0916f754d957633dd8bf"
+  },
+  "stable_source": [
+    {
+      "bytes": 13751,
+      "path": ".github/workflows/item-authoring-schema.yml",
+      "sha256": "a77e576c1c30ea5c7aa652b4a3ad51c1e24edb84146a2403b9fec0629c6c6a19"
+    },
+    {
+      "bytes": 88108,
+      "path": "apps/game-server/examples/materialize_content_world_project_v2.rs",
+      "sha256": "77f5d40878bfd5219bd5f63dcb4c581fc8b429ca228af3730ff258e803d7d831"
+    },
+    {
+      "bytes": 5127,
+      "path": "apps/game-server/src/content/mod.rs",
+      "sha256": "b22b6a67c2c494a5c8898ec496566d4842a9f4ade4bcf661c814398ddfd3fd9d"
+    },
+    {
+      "bytes": 11064,
+      "path": "apps/game-server/src/content/item_name15_promotion.rs",
+      "sha256": "2da2635c5faeedfc2cb20fba7ec830acdabd773dbc008270e7d3a320df4ec8e9"
+    },
+    {
+      "bytes": 11541,
+      "path": "tools/content-schema/item-authoring/lower_item_name15_packet.py",
+      "sha256": "e4f4943e1cd97718fbe4bf0c55a9e93f08c784d15bc6f741fbc74aaa86b0d0bf"
+    },
+    {
+      "bytes": 4472,
+      "path": "tools/content-schema/item-authoring/test_lower_item_name15_packet.py",
+      "sha256": "ce72c5259bd4a0273c6df6f35a477de62034f235c4bed42378c1f9813575429f"
+    },
+    {
+      "bytes": 237661,
+      "path": "docs/agents/evidence/OTV2-20261002-item-name15-historical-source-v1.json",
+      "sha256": "7fd1bd8d99967942c9a2c7dbf29df4759eba8dbdfcbb31dbf8e31313a394a662"
+    },
+    {
+      "bytes": 25168,
+      "path": "docs/agents/evidence/OTV2-20261002-item-name15-source-qualification-v1.json",
+      "sha256": "d4b14233d8aa9b33bb35ade24ef2d0b42d2504d7991297eabfe160b16fc2fed4"
+    },
+    {
+      "bytes": 9732,
+      "path": "docs/agents/evidence/OTV2-20261002-item-name15-promotion-v1.json",
+      "sha256": "096beca127481342cdf545131321102b460435ecdc97e7f10b9d4f9753228ca8"
+    }
+  ],
+  "static_production_review": {
+    "Rust_tests": "Prepared4 review actual production apply_rows seam: full15 exact successor equality including outside and sibling fields, repeated names and idempotence; late blocked/wrong name; late header/revision/missing/duplicate/GameOwned owner failure with whole-record rollback; packet scope/import literal/UTF8 limit/bool-int strict negatives. Tests remain uncompiled.",
+    "integration": "Additive mod/materializer/CI only, existing defaults provide Python working directory. Name15 after Name139 and before later source components; propagated error occurs before canonical materialization. OriginalDescription glue and all12 nonglue files preserved.",
+    "mutation_scope": "Only presentation.name assigned on approved15; no group replacement, so description and all other presentation/semantic fields, Native headers, outside Item/full records and source-owner metadata remain intact. Changed count is zero on idempotence.",
+    "native_setter": "Full fixed15 target set, every full family/key/revision/fourHeader/current exact imported-or-identical Known-name and GameOwned presentation owner guard prevalidated before any name write. Duplicate/missing current Item, unrelated/blocked name or incorrect owner rejects before all writes.",
+    "typed_limits": "Existing 46UTF8-byte name limit and control/trim validation; repeated own official names across charged variants accepted via numeric own object identity, not guessed global name uniqueness."
+  },
+  "status": "SOURCE_NAME15_IMPLEMENTATION_PEER_PASS"
+}

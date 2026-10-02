@@ -1,0 +1,14 @@
+{
+  "schema": "OTERYN_EXACT_SOURCE_CHECKPOINT_ARCHIVE/v1",
+  "status": "PASS63_EXACT_SOURCE_UNCOMPILED_NOT_NATIVE_GENERATED",
+  "source_manifest_sha256": "f0575a0740e98beee4a712afb99bc27665cc3372ae4f0898bdf270a5abdc3361",
+  "archive_name": "combined-item-source63-uncompiled-exact-checkpoint.tar.gz",
+  "archive_sha256": "0cfadf11c396f407fcda2a25e5f2b624b53f89b69e697f49efff484934baa1bc",
+  "archive_bytes": 2254533,
+  "source_file_count": 63,
+  "archive_members": 64,
+  "full_member_readback": "PASS",
+  "parent": "1b026969a8b2236737bff537b3eddb3c909781b2",
+  "native_promotions_applied": 0,
+  "fully_verified": null
+}

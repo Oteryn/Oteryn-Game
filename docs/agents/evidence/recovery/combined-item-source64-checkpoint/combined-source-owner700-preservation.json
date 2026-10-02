@@ -1,0 +1,24 @@
+{
+  "status": "PASS",
+  "parent": "1b026969a8b2236737bff537b3eddb3c909781b2",
+  "source_authoring": 700,
+  "canonical_nonempty_authoring": 697,
+  "preexisting_taxonomy_only_owners": [
+    "oteryn:item.tibia.i3287",
+    "oteryn:item.tibia.i3298",
+    "oteryn:item.tibia.i3347"
+  ],
+  "old_full_authoring_preserved": 411,
+  "new_source_authoring": 289,
+  "source_forge_profiles": 436,
+  "tibiawiki_bindings": 454,
+  "old_bindings_preserved": 165,
+  "relation_sources": 539,
+  "relation_refs": 752,
+  "old_full_relation_rows_preserved": 250,
+  "old_full_relation_refs_preserved": 325,
+  "new_existing_native_positive_slot_refs": 138,
+  "no_import_candidates": true,
+  "native_semantics": "NOT_CHANGED_BY_SOURCE_BATCH; separate fullNative verifier required",
+  "fully_verified": null
+}

@@ -1,0 +1,12 @@
+{
+  "archive": "/workspace/audit-continuation/combined-item-source64-v4b-exact-checkpoint.tar.gz",
+  "sha256": "25d8e6b3b652c3582e386137974b4f8f56c191b3456ddf5dec5394ba8b8f7cc6",
+  "bytes": 2258534,
+  "members": 65,
+  "source_files": 64,
+  "full_member_readback": "PASS",
+  "manifest_sha256": "a5eb8b3676d1f0f7a52d7fc2ebd4bdf40de63de4385670af28c1e5ab0a3dbe86",
+  "independent_peer_sha256": "e810e96b614ad7d0943a2c0714255026a100d403a5645655896b68d60395f5a8",
+  "state": "FIRST_GENERATION_PASS_SOURCE_REPAIR_PEER_PASS_FULL_CHECKS_PENDING",
+  "fully_complete": null
+}
