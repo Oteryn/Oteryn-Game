@@ -14,6 +14,7 @@ from engine_items import (
     qualified_navigation_supplement,
     resolve_wiki_family_value,
 )
+from item_bounded7_navigation import build_bounded7
 from item_engine_navigation import build_navigation as build_engine_navigation
 from item_external_family_refinement import build_external
 from item_navigation_source_supplement import (
@@ -232,6 +233,13 @@ def build_taxonomy(
     for row in build_external(
         {key[1]: definition for key, definition in definitions.items()},
         snapshot,
+        client or {},
+        routed_keys | {key[1] for key in rows},
+    ):
+        key = tuple(row["target"][field] for field in ("family", "key", "revision"))
+        rows[key] = row
+    for row in build_bounded7(
+        {key[1]: definition for key, definition in definitions.items()},
         client or {},
         routed_keys | {key[1] for key in rows},
     ):

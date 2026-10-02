@@ -26,6 +26,10 @@ on:
       - content/items/definitions/**
       - content/assets/files/appearances-*.dat
       - imports/official/appearance-membership/**
+      - imports/tibiawiki/facts/items-bounded7-navigation-20261002.json
+      - tools/content-migration/item_bounded7_navigation.py
+      - tools/content-migration/test_item_bounded7_navigation.py
+      - tools/content-migration/samples/bounded7-dom-witnesses-20261002.json
       - tools/content-migration/item_engine_navigation.py
       - tools/content-migration/test_item_engine_navigation.py
       - tools/content-migration/samples/engine-family-navigation-265.json
@@ -190,6 +194,7 @@ jobs:
           done
           python build_catalogue.py --source "$SRC" --donor-source "$DONOR_SRC" --official-client --check
           python ../../content-migration/item_engine_navigation.py --source "$SRC" --donor-source "$DONOR_SRC"
+          python ../../content-migration/item_bounded7_navigation.py --source "$SRC"
 
       - name: Item Master census
         working-directory: .
