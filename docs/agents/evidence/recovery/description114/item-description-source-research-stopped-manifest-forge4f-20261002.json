@@ -1,0 +1,58 @@
+{
+  "schema": "OTERYN_ITEM_DESCRIPTION_SOURCE_RESEARCH_STOPPED_MANIFEST/v1",
+  "status": "PASS",
+  "scope": "READONLY_SOURCE_QUALIFICATION_NOT_NATIVE_APPLIED",
+  "baseline": "4f690c1e8a8966a4d074dde94d5a884dbb34fb94",
+  "counts": {
+    "current_native_items": 34031,
+    "current_known_names": 12100,
+    "current_known_descriptions": 0,
+    "global_nonempty_flavor_id_discovery": 3694,
+    "source_qualified_descriptions": 114,
+    "held_discovery_ids": 3580,
+    "exact_wiki_xml_description_ids": 310
+  },
+  "checks": {
+    "closed_cohort114": true,
+    "literal_xml_agreement": true,
+    "utf8_and_unknown_current_descriptions": true,
+    "independent_raw_parameters": true,
+    "global_raw_and_current_name": true,
+    "parser8": true,
+    "no_runtime_or_project_changes": true
+  },
+  "owned_files": [
+    {
+      "path": "/workspace/audit-continuation/item-description-own-source-qualification-forge4f-20261002.json",
+      "sha256": "eb0b4e264c2c5363ceb415167b85067da8c4f7592388ffcf4c24f0fda9117bad",
+      "bytes": 33868762
+    },
+    {
+      "path": "/workspace/audit-continuation/item-description-closed114-source-proposal-forge4f-20261002.json",
+      "sha256": "328ada9dc206b4204bd61f463a5e21e70b473b0d20d4f1c48941aeff04336765",
+      "bytes": 1079275
+    },
+    {
+      "path": "/workspace/audit-continuation/item-description-own-source-qualification-forge4f-20261002.md",
+      "sha256": "b1c723eca1817f8c26dcedd0e8e5d62dfc015947425f4ca40c4592a04cfcc2cf",
+      "bytes": 3753
+    },
+    {
+      "path": "/workspace/audit-continuation/build-item-description-own-source-qualification-20261002.py",
+      "sha256": "106ac388f6854c6b5f857d7167f5aa8e0b039b9e51fc57f55ed3b4a3acbce6c1",
+      "bytes": 16214
+    },
+    {
+      "path": "/workspace/audit-continuation/forge-own-infobox-literal-parser-v2.py",
+      "sha256": "945146a042c9626c460c6d17dfafaa606263ec9b8246f755f3116632f844f38d",
+      "bytes": 2717
+    },
+    {
+      "path": "/workspace/audit-continuation/stack-forge-maxima-public-20261002/imbuement-renderers-own-exceptions-browser-cdp-source.json",
+      "sha256": "a88f57f1a169e8c188baa3e25247c4843e218fa49c7b807c41795e501a190c13",
+      "bytes": 37992
+    }
+  ],
+  "references_preserved_original_transport": true,
+  "native_promotions_applied": 0
+}

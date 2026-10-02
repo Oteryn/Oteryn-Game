@@ -1,0 +1,154 @@
+{
+  "schema": "STACK2493_BOUNDED_MAXIMUM_RESEARCH_STOPPED_MANIFEST/v1",
+  "status": "PASS_BOUNDED_RESEARCH_ZERO_QUALIFIED_MAXIMA",
+  "published_native_head": "4f690c1e8a8966a4d074dde94d5a884dbb34fb94",
+  "counts": {
+    "diagnostic_cohort": 2493,
+    "actual_typed_native_stack_unknown": 2491,
+    "identity_only_records": 2,
+    "new_source_qualified_stack_maxima": 0,
+    "eligible_new_stack_promotions": 0
+  },
+  "owned_files": [
+    {
+      "path": "/workspace/audit-continuation/build-stack2493-bounded-max-research-20261002.py",
+      "bytes": 7511,
+      "sha256": "6039d523e4ca0d260afc51785ead89868be53fcdcfab605391089ed99681e354"
+    },
+    {
+      "path": "/workspace/audit-continuation/stack-forge-maxima-public-20261002/br-maximum-template.body",
+      "bytes": 6925,
+      "sha256": "b1a37e66082386f0fdf470eb05ed0e3dbfb5821f2ddee31669628aded40133ce"
+    },
+    {
+      "path": "/workspace/audit-continuation/stack-forge-maxima-public-20261002/canary-item-cpp.body",
+      "bytes": 100849,
+      "sha256": "9bbf46dbecd43748737a2636eb2200f39f5a35d7fa524a800adabaa10473b3bb"
+    },
+    {
+      "path": "/workspace/audit-continuation/stack-forge-maxima-public-20261002/crystal-item-cpp.body",
+      "bytes": 96623,
+      "sha256": "3484af408e0b25a7204a03725318b6e0c55811cef4922bbfd54af33f4b6661f5"
+    },
+    {
+      "path": "/workspace/audit-continuation/stack-forge-maxima-public-20261002/google-closed-stack-max.body",
+      "bytes": 92407,
+      "sha256": "54a046e69c1f0976f40a223b7586809c93c4382a20655f442bc640b425cb3510"
+    },
+    {
+      "path": "/workspace/audit-continuation/stack-forge-maxima-public-20261002/google-maximum-stack-browser-cdp-toolresponse.json",
+      "bytes": 15898,
+      "sha256": "6937e954e0ef0de4885f35ce6f479367debe787996d18932d093c3c49a4d69c2"
+    },
+    {
+      "path": "/workspace/audit-continuation/stack-forge-maxima-public-20261002/google-stack-all.body",
+      "bytes": 92243,
+      "sha256": "f1601cdf2b30eb52539bd5bb6bebcd3bff18301487c5f2a708939f72a977505f"
+    },
+    {
+      "path": "/workspace/audit-continuation/stack-forge-maxima-public-20261002/google-stackable100-browser-cdp-toolresponse.json",
+      "bytes": 7352,
+      "sha256": "ba26e46884ae570343eb795ee4043aa6746e94172fe57bc2ec3406b4f029b099"
+    },
+    {
+      "path": "/workspace/audit-continuation/stack-forge-maxima-public-20261002/manifest-official-sections.json",
+      "bytes": 2079,
+      "sha256": "f4529590507edd7478ecd65b8702c4f7d754e0218045178ef7499b1279d4155a"
+    },
+    {
+      "path": "/workspace/audit-continuation/stack-forge-maxima-public-20261002/manifest-stack-rule-discovery.json",
+      "bytes": 2115,
+      "sha256": "e79223aae6635f7cfd0f3cdb18385e13e8f149112b0465fe4b0d84f35b2251f4"
+    },
+    {
+      "path": "/workspace/audit-continuation/stack-forge-maxima-public-20261002/manifest.json",
+      "bytes": 5719,
+      "sha256": "015263738619db4b09e95c357b10a6b9c0ced2df3165c8bdd2b5f47f240389c3"
+    },
+    {
+      "path": "/workspace/audit-continuation/stack-forge-maxima-public-20261002/official-characters.body",
+      "bytes": 160313,
+      "sha256": "c47ed6c369dffcd691339d4684713844f1f649b8eae23b637a78269577ae1d3d"
+    },
+    {
+      "path": "/workspace/audit-continuation/stack-forge-maxima-public-20261002/official-controls.body",
+      "bytes": 146523,
+      "sha256": "4000f8f848bb509f062b789a9fd9563bf3374416c86fb5973b2ad55cc5481247"
+    },
+    {
+      "path": "/workspace/audit-continuation/stack-forge-maxima-public-20261002/official-interface.body",
+      "bytes": 167168,
+      "sha256": "8ccad3ac2761da24e8a0842a07acb407c5f95f4814467a7421b8969320d2bf0a"
+    },
+    {
+      "path": "/workspace/audit-continuation/stack-forge-maxima-public-20261002/official-manual-inventory.body",
+      "bytes": 124611,
+      "sha256": "0e59e4460a6a4afaf6b1234a757c03e437969e00afac6d5ce9099e0bdb0e98f4"
+    },
+    {
+      "path": "/workspace/audit-continuation/stack-forge-maxima-public-20261002/official-manual-objects.body",
+      "bytes": 124608,
+      "sha256": "384210d5dc418c188df9f02d61f973749a272ae3c74eb7f5d62cd361f8d0bfef"
+    },
+    {
+      "path": "/workspace/audit-continuation/stack-forge-maxima-public-20261002/official-trading.body",
+      "bytes": 115232,
+      "sha256": "bbb100998c9f4c9280b7faf433ac3775f3b6319583ccea4e34b7514ad0fb4a80"
+    },
+    {
+      "path": "/workspace/audit-continuation/stack-forge-maxima-public-20261002/stack-hints-updates-and-npc-browser-cdp-source.json",
+      "bytes": 125002,
+      "sha256": "0ea94d68df1e2a9b2e565e52f710f01a59f0c9dadd02f2455e0937bcaf8c080a"
+    },
+    {
+      "path": "/workspace/audit-continuation/stack-forge-maxima-public-20261002/stack-rule-category-and-search-browser-cdp-source.json",
+      "bytes": 17353,
+      "sha256": "98e68fc67bd82f0ce53ecfe8f7a852231ba13f2567f8b1884415dce00bac1f64"
+    },
+    {
+      "path": "/workspace/audit-continuation/stack-forge-maxima-public-20261002/tibiopedia-blue-legs.body",
+      "bytes": 5126,
+      "sha256": "d10ade501028db6e79bb87c696ae303906ce9d471f37040c22f3c500d948a72e"
+    },
+    {
+      "path": "/workspace/audit-continuation/stack-forge-maxima-public-20261002/tibiopedia-forge.body",
+      "bytes": 5126,
+      "sha256": "d10ade501028db6e79bb87c696ae303906ce9d471f37040c22f3c500d948a72e"
+    },
+    {
+      "path": "/workspace/audit-continuation/stack-forge-maxima-public-20261002/wiki-stackable.body",
+      "bytes": 55,
+      "sha256": "35e642f0e1bd426b9d8b0ee0284aefe801873dc13c18819fbeeaf2bf47136664"
+    },
+    {
+      "path": "/workspace/audit-continuation/stack-limit-tibiaqa-cases.json",
+      "bytes": 11865,
+      "sha256": "990fe4e079d17f2709965e8914c3e4fa317f7d3328c8cbb2ff1167059b026771"
+    },
+    {
+      "path": "/workspace/audit-continuation/stack2493-retained-ownraw-maximum-string-candidates-20261002.json",
+      "bytes": 61326,
+      "sha256": "c99dff0e004fbd1c71bab3d8fb96ac7b8f4096cb3746188ffba108e6fae49a36"
+    },
+    {
+      "path": "/workspace/audit-continuation/stack2493-whole-cohort-bounded-maximum-research-20261002.json",
+      "bytes": 2111260,
+      "sha256": "29c6726dcfee19f1217265062b9a2a5afdb9082ec65ee32213def027e08d2562"
+    },
+    {
+      "path": "/workspace/audit-continuation/stack2493-whole-cohort-bounded-maximum-research-20261002.md",
+      "bytes": 1578,
+      "sha256": "bd24023bd985b0a0607d64b8dd9670cb7b890ccf68759703667053384f0aa8cb"
+    }
+  ],
+  "checks": {
+    "exact2493ID_join": "PASS",
+    "typed2491_plus_identityOnly2": "PASS",
+    "full_source_body_hash_readbacks": "PASS",
+    "qualified_positive_maxima": 0,
+    "native_project_changes": "NONE",
+    "Cargo": "NONE",
+    "Git_mutation": "NONE"
+  },
+  "continuity": "Current publicpages do not independently close an exception-free intrinsic maximum applicable to2493 currentIDs. No claim of global absence or fully incompleteItem count."
+}

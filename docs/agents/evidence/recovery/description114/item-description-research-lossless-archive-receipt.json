@@ -1,0 +1,13 @@
+{
+  "schema": "OTERYN_DESCRIPTION_RESEARCH_LOSSLESS_RECOVERY_ARCHIVE/v1",
+  "source_file": "/workspace/audit-continuation/item-description-own-source-qualification-forge4f-20261002.json",
+  "source_sha256": "eb0b4e264c2c5363ceb415167b85067da8c4f7592388ffcf4c24f0fda9117bad",
+  "source_bytes": 33868762,
+  "archive_file": "/workspace/audit-continuation/item-description-own-source-qualification-forge4f-20261002.json.gz",
+  "archive_sha256": "911c6b05c3c8b8abfbfd5a5c85d9528b4636e2af0157720ba96730448ed1b484",
+  "archive_bytes": 2202966,
+  "encoding": "gzip,mtime0,level6",
+  "decompression_exact_bytes": "PASS",
+  "baseline": "4f690c1e8a8966a4d074dde94d5a884dbb34fb94",
+  "native_promotions_applied": 0
+}

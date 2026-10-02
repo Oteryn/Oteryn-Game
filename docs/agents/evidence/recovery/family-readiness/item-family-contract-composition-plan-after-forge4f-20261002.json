@@ -1,0 +1,1169 @@
+{
+  "schema": "OTERYN_ITEM_FAMILY_CONTRACT_COMPOSITION_PLAN/v1",
+  "status": "READONLY_SOURCE_PLAN_NOT_APPLIED",
+  "native_baseline": "4f690c1e8a8966a4d074dde94d5a884dbb34fb94",
+  "published_taxonomy_head": "88edf552b323cef8cb68cef5b10949fbf0c85424",
+  "published_taxonomy_pr": 1523,
+  "original_contract_pr": 1437,
+  "original_contract_commits": [
+    {
+      "commit": "340a6be43b1beead30c145a4223a146a1024cca9",
+      "pr": 1437,
+      "owned_paths": [
+        "content/content.lock.json",
+        "content/items/relations/index.json",
+        "content/items/relations/items.json",
+        "content/items/taxonomy/index.json",
+        "content/items/taxonomy/items.json",
+        "docs/agents/reports/OTV2-20261001-item-catalog-audit-and-map-handover.md",
+        "docs/agents/tasks/archive/OTV2-20261001-item-taxonomy-and-imbuement-repair.md",
+        "tools/content-migration/item_taxonomy.py",
+        "tools/content-migration/test_item_taxonomy.py",
+        "tools/content-migration/test_world_project_v2_to_tree.py",
+        "tools/content-migration/validate_world_project_v2_to_tree.py",
+        "tools/content-migration/world_project_v2_to_tree.py",
+        "tools/content-schema/item-authoring/README.md",
+        "tools/content-schema/item-authoring/build_formal_schema.py",
+        "tools/content-schema/item-authoring/canary-field-dispositions.json",
+        "tools/content-schema/item-authoring/crystal-field-dispositions.json",
+        "tools/content-schema/item-authoring/engine_items.py",
+        "tools/content-schema/item-authoring/formal-schema-validation-report.json",
+        "tools/content-schema/item-authoring/item.schema.json",
+        "tools/content-schema/item-authoring/source_field_catalogs.py",
+        "tools/content-schema/item-authoring/test_engine_items.py",
+        "tools/content-schema/item-authoring/test_imbuement_limits.py",
+        "tools/content-schema/item-authoring/validate_item.py",
+        "tools/content-schema/item-authoring/verify_formal_schema.py"
+      ],
+      "full_batch_warning": "Includes taxonomy/converter/sourcecatalog changes; NOT a drop-in whole-tree replacement of current Native head"
+    },
+    {
+      "commit": "7aa9351d26f76734412a1492b28d6a519fdef70f",
+      "pr": 1437,
+      "owned_paths": [
+        "content/content.lock.json",
+        "content/items/taxonomy/items.json",
+        "docs/agents/evidence/OTV2-20261001-item-navigation-completion.md",
+        "docs/agents/reports/OTV2-20261001-item-catalog-audit-and-map-handover.md",
+        "docs/agents/tasks/archive/OTV2-20261001-item-taxonomy-and-imbuement-repair.md",
+        "tools/content-migration/item_taxonomy.py",
+        "tools/content-migration/test_item_taxonomy.py",
+        "tools/content-schema/item-authoring/README.md",
+        "tools/content-schema/item-authoring/build_formal_schema.py",
+        "tools/content-schema/item-authoring/engine_items.py",
+        "tools/content-schema/item-authoring/formal-schema-validation-report.json",
+        "tools/content-schema/item-authoring/templates/container-equipment.json",
+        "tools/content-schema/item-authoring/templates/event-collectible.json",
+        "tools/content-schema/item-authoring/templates/key.json",
+        "tools/content-schema/item-authoring/templates/light-source.json",
+        "tools/content-schema/item-authoring/templates/plant.json",
+        "tools/content-schema/item-authoring/templates/progression-material.json",
+        "tools/content-schema/item-authoring/templates/quest-item.json",
+        "tools/content-schema/item-authoring/templates/tool.json",
+        "tools/content-schema/item-authoring/templates/transformation-item.json",
+        "tools/content-schema/item-authoring/templates/trash.json",
+        "tools/content-schema/item-authoring/test_engine_items.py",
+        "tools/content-schema/item-authoring/test_navigation_supplement.py",
+        "tools/content-schema/item-authoring/verify_formal_schema.py"
+      ],
+      "full_batch_warning": "Includes taxonomy/converter/sourcecatalog changes; NOT a drop-in whole-tree replacement of current Native head"
+    }
+  ],
+  "source_pins_to_preserve": {
+    "tools/content-schema/item-authoring/engine_items.py": "28644c0fcc88f364992670489f7d458f827a9cd1db023b7f5ce0a9ae32d08c1a",
+    "tools/content-schema/item-authoring/source_field_catalogs.py": "8250880aaa89b7c5fa1593d5738a478b0d09e1ef9ef9cef630cb5da172d634bc"
+  },
+  "profile_class_map_same": true,
+  "scope_minimal_contract_batch": "10 already-published templates +22 family/itemclass constraints + executable full-profile coverage; no native facts/engine decoder/sourcecatalog change",
+  "exact_template_copies": [
+    {
+      "path": "tools/content-schema/item-authoring/templates/container-equipment.json",
+      "source_commit": "88edf552b323cef8cb68cef5b10949fbf0c85424",
+      "sha256": "bb4ee4f414165e03f3f23b90d9925f37978f5dca5c2fad5ead14952902199327",
+      "introduced_commit": "7aa9351d26f76734412a1492b28d6a519fdef70f",
+      "introduced_pr": 1437,
+      "action": "Copy exact already-published template bytes to newly allocated native integration successor; synthetic not source facts"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/templates/event-collectible.json",
+      "source_commit": "88edf552b323cef8cb68cef5b10949fbf0c85424",
+      "sha256": "a18d543e2c3b59e2c57c316474257f2f10b8f435611fbb23672bea402d3da8ab",
+      "introduced_commit": "7aa9351d26f76734412a1492b28d6a519fdef70f",
+      "introduced_pr": 1437,
+      "action": "Copy exact already-published template bytes to newly allocated native integration successor; synthetic not source facts"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/templates/key.json",
+      "source_commit": "88edf552b323cef8cb68cef5b10949fbf0c85424",
+      "sha256": "e6a9b017828dc1f1ecb36257b5c97c8938277bd7f06079b381a58232b6423a16",
+      "introduced_commit": "7aa9351d26f76734412a1492b28d6a519fdef70f",
+      "introduced_pr": 1437,
+      "action": "Copy exact already-published template bytes to newly allocated native integration successor; synthetic not source facts"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/templates/light-source.json",
+      "source_commit": "88edf552b323cef8cb68cef5b10949fbf0c85424",
+      "sha256": "4c688d0c8310c8f45d8f5b822fb3f1932285c5c62b80a0fe6e3b247bcae7a90f",
+      "introduced_commit": "7aa9351d26f76734412a1492b28d6a519fdef70f",
+      "introduced_pr": 1437,
+      "action": "Copy exact already-published template bytes to newly allocated native integration successor; synthetic not source facts"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/templates/plant.json",
+      "source_commit": "88edf552b323cef8cb68cef5b10949fbf0c85424",
+      "sha256": "b1cf978bdfc15e5efb5ab14d043c0970e6b9219a10765f8271744b60be742438",
+      "introduced_commit": "7aa9351d26f76734412a1492b28d6a519fdef70f",
+      "introduced_pr": 1437,
+      "action": "Copy exact already-published template bytes to newly allocated native integration successor; synthetic not source facts"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/templates/progression-material.json",
+      "source_commit": "88edf552b323cef8cb68cef5b10949fbf0c85424",
+      "sha256": "ccc89a1de9ad92fa2e554dce6256ec2f689e3944aa9fca12b8e5af03ea0235b5",
+      "introduced_commit": "7aa9351d26f76734412a1492b28d6a519fdef70f",
+      "introduced_pr": 1437,
+      "action": "Copy exact already-published template bytes to newly allocated native integration successor; synthetic not source facts"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/templates/quest-item.json",
+      "source_commit": "88edf552b323cef8cb68cef5b10949fbf0c85424",
+      "sha256": "368282df8857745fd671b6222c3e7165df4b778bb08423b5909211fb6f9285b8",
+      "introduced_commit": "7aa9351d26f76734412a1492b28d6a519fdef70f",
+      "introduced_pr": 1437,
+      "action": "Copy exact already-published template bytes to newly allocated native integration successor; synthetic not source facts"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/templates/tool.json",
+      "source_commit": "88edf552b323cef8cb68cef5b10949fbf0c85424",
+      "sha256": "d56001e1dc337a786361e6c83b16d495978335d5dfae30a8679e43606f698d4c",
+      "introduced_commit": "7aa9351d26f76734412a1492b28d6a519fdef70f",
+      "introduced_pr": 1437,
+      "action": "Copy exact already-published template bytes to newly allocated native integration successor; synthetic not source facts"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/templates/transformation-item.json",
+      "source_commit": "88edf552b323cef8cb68cef5b10949fbf0c85424",
+      "sha256": "055c04ecea213e733bb88e589efbc702403f3d052e87b2b1ce39f638fdd18b76",
+      "introduced_commit": "7aa9351d26f76734412a1492b28d6a519fdef70f",
+      "introduced_pr": 1437,
+      "action": "Copy exact already-published template bytes to newly allocated native integration successor; synthetic not source facts"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/templates/trash.json",
+      "source_commit": "88edf552b323cef8cb68cef5b10949fbf0c85424",
+      "sha256": "6517409582e80f9b01a00660bc7f72fa5dae0505fdaee2a8aedc9178b6ce8f98",
+      "introduced_commit": "7aa9351d26f76734412a1492b28d6a519fdef70f",
+      "introduced_pr": 1437,
+      "action": "Copy exact already-published template bytes to newly allocated native integration successor; synthetic not source facts"
+    }
+  ],
+  "composed_path_changes": [
+    {
+      "path": "tools/content-schema/item-authoring/build_formal_schema.py",
+      "action": "Add exact published family/itemclass allOf constructor (340a6) and missing_profiles template block (7aa9351) to actual native generator. Leave native leech anyOf intact; no engine import/function patch required because current PROFILE_ITEM_CLASS is identical."
+    },
+    {
+      "path": "tools/content-schema/item-authoring/item.schema.json",
+      "action": "Regenerate from composed generator; expected sole schema delta is22 root family-profile conditional allOf rules. Do not replace whole taxonomy schema (would regress partial leech). If approved optional imbuement maximum schema added later, count it independently."
+    },
+    {
+      "path": "tools/content-schema/item-authoring/verify_formal_schema.py",
+      "action": "Replace exact13 template count with catalog-profile set equality; add family/taxonomy mismatch regression; set family_profile=container in existing engine-type container destination case so expected-valid fixture satisfies new constraint. Preserve native partial-leech cases and every later source check."
+    },
+    {
+      "path": "tools/content-schema/item-authoring/formal-schema-validation-report.json",
+      "action": "Regenerate full formal report from actual composed source; do not import older report which omits native partial-leech regressions."
+    },
+    {
+      "path": "tools/content-schema/item-authoring/README.md",
+      "action": "State actual composed22profiles23templates and preserve current native source/runtime boundaries."
+    },
+    {
+      "path": ".github/workflows/item-authoring-schema.yml",
+      "action": "Add specific new template/checker routes only if absent; preserve all native/context/current predecessor packet checks. Source-only Python checks suffice for schema/template composition; Cargo only if actual Rust changes."
+    }
+  ],
+  "schema_component_to_merge": {
+    "allOf": [
+      {
+        "if": {
+          "properties": {
+            "family_profile": {
+              "const": "equipment_armor"
+            }
+          },
+          "required": [
+            "family_profile"
+          ]
+        },
+        "then": {
+          "properties": {
+            "taxonomy": {
+              "properties": {
+                "item_class": {
+                  "enum": [
+                    "equipment"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      {
+        "if": {
+          "properties": {
+            "family_profile": {
+              "const": "equipment_offhand"
+            }
+          },
+          "required": [
+            "family_profile"
+          ]
+        },
+        "then": {
+          "properties": {
+            "taxonomy": {
+              "properties": {
+                "item_class": {
+                  "enum": [
+                    "equipment"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      {
+        "if": {
+          "properties": {
+            "family_profile": {
+              "const": "container_equipment"
+            }
+          },
+          "required": [
+            "family_profile"
+          ]
+        },
+        "then": {
+          "properties": {
+            "taxonomy": {
+              "properties": {
+                "item_class": {
+                  "enum": [
+                    "container"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      {
+        "if": {
+          "properties": {
+            "family_profile": {
+              "const": "weapon_melee"
+            }
+          },
+          "required": [
+            "family_profile"
+          ]
+        },
+        "then": {
+          "properties": {
+            "taxonomy": {
+              "properties": {
+                "item_class": {
+                  "enum": [
+                    "weapon"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      {
+        "if": {
+          "properties": {
+            "family_profile": {
+              "const": "weapon_distance"
+            }
+          },
+          "required": [
+            "family_profile"
+          ]
+        },
+        "then": {
+          "properties": {
+            "taxonomy": {
+              "properties": {
+                "item_class": {
+                  "enum": [
+                    "weapon",
+                    "ammunition"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      {
+        "if": {
+          "properties": {
+            "family_profile": {
+              "const": "weapon_magic"
+            }
+          },
+          "required": [
+            "family_profile"
+          ]
+        },
+        "then": {
+          "properties": {
+            "taxonomy": {
+              "properties": {
+                "item_class": {
+                  "enum": [
+                    "weapon"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      {
+        "if": {
+          "properties": {
+            "family_profile": {
+              "const": "rune"
+            }
+          },
+          "required": [
+            "family_profile"
+          ]
+        },
+        "then": {
+          "properties": {
+            "taxonomy": {
+              "properties": {
+                "item_class": {
+                  "enum": [
+                    "rune"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      {
+        "if": {
+          "properties": {
+            "family_profile": {
+              "const": "document"
+            }
+          },
+          "required": [
+            "family_profile"
+          ]
+        },
+        "then": {
+          "properties": {
+            "taxonomy": {
+              "properties": {
+                "item_class": {
+                  "enum": [
+                    "document"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      {
+        "if": {
+          "properties": {
+            "family_profile": {
+              "const": "container"
+            }
+          },
+          "required": [
+            "family_profile"
+          ]
+        },
+        "then": {
+          "properties": {
+            "taxonomy": {
+              "properties": {
+                "item_class": {
+                  "enum": [
+                    "container"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      {
+        "if": {
+          "properties": {
+            "family_profile": {
+              "const": "decoration"
+            }
+          },
+          "required": [
+            "family_profile"
+          ]
+        },
+        "then": {
+          "properties": {
+            "taxonomy": {
+              "properties": {
+                "item_class": {
+                  "enum": [
+                    "decoration"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      {
+        "if": {
+          "properties": {
+            "family_profile": {
+              "const": "event_collectible"
+            }
+          },
+          "required": [
+            "family_profile"
+          ]
+        },
+        "then": {
+          "properties": {
+            "taxonomy": {
+              "properties": {
+                "item_class": {
+                  "enum": [
+                    "collectible"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      {
+        "if": {
+          "properties": {
+            "family_profile": {
+              "const": "progression_material"
+            }
+          },
+          "required": [
+            "family_profile"
+          ]
+        },
+        "then": {
+          "properties": {
+            "taxonomy": {
+              "properties": {
+                "item_class": {
+                  "enum": [
+                    "material"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      {
+        "if": {
+          "properties": {
+            "family_profile": {
+              "const": "transformation_item"
+            }
+          },
+          "required": [
+            "family_profile"
+          ]
+        },
+        "then": {
+          "properties": {
+            "taxonomy": {
+              "properties": {
+                "item_class": {
+                  "enum": [
+                    "transformation"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      {
+        "if": {
+          "properties": {
+            "family_profile": {
+              "const": "quest_item"
+            }
+          },
+          "required": [
+            "family_profile"
+          ]
+        },
+        "then": {
+          "properties": {
+            "taxonomy": {
+              "properties": {
+                "item_class": {
+                  "enum": [
+                    "quest_item"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      {
+        "if": {
+          "properties": {
+            "family_profile": {
+              "const": "material_valuable"
+            }
+          },
+          "required": [
+            "family_profile"
+          ]
+        },
+        "then": {
+          "properties": {
+            "taxonomy": {
+              "properties": {
+                "item_class": {
+                  "enum": [
+                    "material"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      {
+        "if": {
+          "properties": {
+            "family_profile": {
+              "const": "trash"
+            }
+          },
+          "required": [
+            "family_profile"
+          ]
+        },
+        "then": {
+          "properties": {
+            "taxonomy": {
+              "properties": {
+                "item_class": {
+                  "enum": [
+                    "trash"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      {
+        "if": {
+          "properties": {
+            "family_profile": {
+              "const": "key"
+            }
+          },
+          "required": [
+            "family_profile"
+          ]
+        },
+        "then": {
+          "properties": {
+            "taxonomy": {
+              "properties": {
+                "item_class": {
+                  "enum": [
+                    "key"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      {
+        "if": {
+          "properties": {
+            "family_profile": {
+              "const": "light_source"
+            }
+          },
+          "required": [
+            "family_profile"
+          ]
+        },
+        "then": {
+          "properties": {
+            "taxonomy": {
+              "properties": {
+                "item_class": {
+                  "enum": [
+                    "light_source"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      {
+        "if": {
+          "properties": {
+            "family_profile": {
+              "const": "tool"
+            }
+          },
+          "required": [
+            "family_profile"
+          ]
+        },
+        "then": {
+          "properties": {
+            "taxonomy": {
+              "properties": {
+                "item_class": {
+                  "enum": [
+                    "tool"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      {
+        "if": {
+          "properties": {
+            "family_profile": {
+              "const": "food"
+            }
+          },
+          "required": [
+            "family_profile"
+          ]
+        },
+        "then": {
+          "properties": {
+            "taxonomy": {
+              "properties": {
+                "item_class": {
+                  "enum": [
+                    "food",
+                    "consumable"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      {
+        "if": {
+          "properties": {
+            "family_profile": {
+              "const": "fluid"
+            }
+          },
+          "required": [
+            "family_profile"
+          ]
+        },
+        "then": {
+          "properties": {
+            "taxonomy": {
+              "properties": {
+                "item_class": {
+                  "enum": [
+                    "fluid",
+                    "container",
+                    "fluid_container"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      {
+        "if": {
+          "properties": {
+            "family_profile": {
+              "const": "plant"
+            }
+          },
+          "required": [
+            "family_profile"
+          ]
+        },
+        "then": {
+          "properties": {
+            "taxonomy": {
+              "properties": {
+                "item_class": {
+                  "enum": [
+                    "plant"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    ],
+    "native_partial_leech_to_preserve": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "resource": {
+          "enum": [
+            "health",
+            "mana"
+          ]
+        },
+        "chance_percent": {
+          "$ref": "#/$defs/percent"
+        },
+        "amount_percent": {
+          "$ref": "#/$defs/percent"
+        }
+      },
+      "required": [
+        "resource"
+      ],
+      "anyOf": [
+        {
+          "required": [
+            "chance_percent"
+          ]
+        },
+        {
+          "required": [
+            "amount_percent"
+          ]
+        }
+      ]
+    }
+  },
+  "packet_dependency_inventory": [
+    {
+      "path": "docs/agents/evidence/OTV2-20261001-item-capacity-promotion-v1.json",
+      "sha256": "e8b03269cc34e81065880bfb08569d666670fa1da2ad380522cc7ac85910fce9",
+      "direct_pinned_dependency_hits": [
+        {
+          "pointer": "/compiler/client_decoder_sha256",
+          "pin": "28644c0fcc88f364992670489f7d458f827a9cd1db023b7f5ce0a9ae32d08c1a"
+        }
+      ],
+      "schema_or_generator_path_pin": false
+    },
+    {
+      "path": "docs/agents/evidence/OTV2-20261001-item-document-promotion-v1.json",
+      "sha256": "bf42290e24008984a48fe6e12b0c3b3989cf5fc3cb7ac880f9b23ec58ba88134",
+      "direct_pinned_dependency_hits": [],
+      "schema_or_generator_path_pin": false
+    },
+    {
+      "path": "docs/agents/evidence/OTV2-20261001-item-forge3332-promotion-v1.json",
+      "sha256": "d6e300e571f1d2e8e6794d3875759fdd0b2cb1ee7872c8527d0f4019ec27b8c1",
+      "direct_pinned_dependency_hits": [
+        {
+          "pointer": "/compiler_dependencies/tools/content-schema/item-authoring/engine_items.py",
+          "pin": "28644c0fcc88f364992670489f7d458f827a9cd1db023b7f5ce0a9ae32d08c1a"
+        }
+      ],
+      "schema_or_generator_path_pin": false
+    },
+    {
+      "path": "docs/agents/evidence/OTV2-20261001-item-market-true-promotion-v1.json",
+      "sha256": "a3caa1afa06b56ead7e54531408be02caf1b94e13d6c72d087b3669e91d8c312",
+      "direct_pinned_dependency_hits": [],
+      "schema_or_generator_path_pin": false
+    },
+    {
+      "path": "docs/agents/evidence/OTV2-20261001-item-movable-promotion-v1.json",
+      "sha256": "e619b930e877fde117996a867c11676ce423aeca4931d3ae6f37a4afdd799939",
+      "direct_pinned_dependency_hits": [
+        {
+          "pointer": "/sources/decoder_sha256",
+          "pin": "28644c0fcc88f364992670489f7d458f827a9cd1db023b7f5ce0a9ae32d08c1a"
+        }
+      ],
+      "schema_or_generator_path_pin": false
+    },
+    {
+      "path": "docs/agents/evidence/OTV2-20261001-item-physical-promotion-v1.json",
+      "sha256": "3d2492a3335de213b975936ee45dcc28e0aa82aca0ba0a7cb21a027a11ee2306",
+      "direct_pinned_dependency_hits": [
+        {
+          "pointer": "/sources/tools/content-schema/item-authoring/engine_items.py",
+          "pin": "28644c0fcc88f364992670489f7d458f827a9cd1db023b7f5ce0a9ae32d08c1a"
+        }
+      ],
+      "schema_or_generator_path_pin": false
+    },
+    {
+      "path": "docs/agents/evidence/OTV2-20261001-item-stack-default-promotion-v1.json",
+      "sha256": "8c970ed74a22124b3081b1bb2c2768100e910b0f82dde39663fd1d531add4fa3",
+      "direct_pinned_dependency_hits": [
+        {
+          "pointer": "/compiler/decoder_sha256",
+          "pin": "28644c0fcc88f364992670489f7d458f827a9cd1db023b7f5ce0a9ae32d08c1a"
+        }
+      ],
+      "schema_or_generator_path_pin": false
+    },
+    {
+      "path": "docs/agents/evidence/OTV2-20261001-item-stack-false-promotion-v1.json",
+      "sha256": "81bdb488e7b4070d7c04c28bdadd802f83d303d2df6ede3c17fc17ca86786fcf",
+      "direct_pinned_dependency_hits": [
+        {
+          "pointer": "/compiler/client_decoder_sha256",
+          "pin": "28644c0fcc88f364992670489f7d458f827a9cd1db023b7f5ce0a9ae32d08c1a"
+        }
+      ],
+      "schema_or_generator_path_pin": false
+    },
+    {
+      "path": "docs/agents/evidence/OTV2-20261001-item-stack-historical-promotion-v1.json",
+      "sha256": "43cf6fb7b5119292ef56d98e43d48f14cf7381734e69638dbfd7103c8a9123ef",
+      "direct_pinned_dependency_hits": [],
+      "schema_or_generator_path_pin": false
+    },
+    {
+      "path": "docs/agents/evidence/OTV2-20261002-item-elemental-magic-modifier-promotion-v1.json",
+      "sha256": "fd3a302fae411c71c71bea7aebe6d8d95b0fbc3ac503e88b6844be6017233a9f",
+      "direct_pinned_dependency_hits": [
+        {
+          "pointer": "/sources/input_pins/0",
+          "pin": {
+            "path": "tools/content-schema/item-authoring/engine_items.py",
+            "sha256": "28644c0fcc88f364992670489f7d458f827a9cd1db023b7f5ce0a9ae32d08c1a"
+          }
+        },
+        {
+          "pointer": "/sources/input_pins/0/sha256",
+          "pin": "28644c0fcc88f364992670489f7d458f827a9cd1db023b7f5ce0a9ae32d08c1a"
+        }
+      ],
+      "schema_or_generator_path_pin": false
+    },
+    {
+      "path": "docs/agents/evidence/OTV2-20261002-item-hit-magic-promotion-v1.json",
+      "sha256": "8ec1f103c874e4424e7636743e78a3c57821e1cbebef6a69dd1c9a448cd47660",
+      "direct_pinned_dependency_hits": [],
+      "schema_or_generator_path_pin": false
+    },
+    {
+      "path": "docs/agents/evidence/OTV2-20261002-item-mantra-bond-promotion-v1.json",
+      "sha256": "eecfca5562dbe8f1cbb271061b58ca20b883b9c751368dd3fd0cfac9119ef2bf",
+      "direct_pinned_dependency_hits": [
+        {
+          "pointer": "/sources/input_pins/0",
+          "pin": {
+            "path": "tools/content-schema/item-authoring/engine_items.py",
+            "sha256": "28644c0fcc88f364992670489f7d458f827a9cd1db023b7f5ce0a9ae32d08c1a"
+          }
+        },
+        {
+          "pointer": "/sources/input_pins/0/sha256",
+          "pin": "28644c0fcc88f364992670489f7d458f827a9cd1db023b7f5ce0a9ae32d08c1a"
+        }
+      ],
+      "schema_or_generator_path_pin": false
+    },
+    {
+      "path": "docs/agents/evidence/OTV2-20261002-item-name-promotion-v1.json",
+      "sha256": "f2f8f266a53fca4de2ed114c011a2c18dd3ac2557b4c25a8c11584d01902846b",
+      "direct_pinned_dependency_hits": [],
+      "schema_or_generator_path_pin": false
+    },
+    {
+      "path": "docs/agents/evidence/OTV2-20261002-item-use-observation-promotion-v1.json",
+      "sha256": "990eca66d4d34156aaa7a2fd5c42251e26bdf503402f3d46d6beb6f7b2de99eb",
+      "direct_pinned_dependency_hits": [],
+      "schema_or_generator_path_pin": false
+    },
+    {
+      "path": "docs/agents/evidence/OTV2-20260930-item-stats-promotion-v2.json",
+      "sha256": "f833bc32bfc8762dbece8a7c2abe2985946fd153da4915e163c81e94f91c7bcc",
+      "schema_or_generator_path_pin": false,
+      "inspection": "Read current lower_wiki_stats_packet.py source: packet compiler metadata binds compiler, raw snapshots/qualified source holds and bindings, not Item authoring schema/generator"
+    }
+  ],
+  "packet_seal_effect": "No listed promotion packet pins schema/generator/verify paths. If decoder/catalog/compiler/raw source proofs are preserved, their packet SHAs/Rust constants and generated native facts must stay byte-identical. Re-run original packet checks/current-historical context after actual composition; later Weapon/Default packets must be checked from their actual published successor, not assumed here.",
+  "optional_imbuement_scope": "Taxonomy also has allowed_family_max_tiers and validator uniqueness/exclusion checks; full parser/catalog implementation changes sourcecatalog825/engine28644 pins, so keep this independent unless Root deliberately allocates a separate source-preserving wrapper/contract extension. Do not silently replace engine/catalog to recover taxonomy version.",
+  "full_published_data_composition_pending": [
+    {
+      "path": "content/items/taxonomy/items.json",
+      "current_native4f_rows": 164,
+      "published_taxonomy88ed_rows": 12252,
+      "status": "MISSING_FROM_COMPOSED_NATIVE_HEAD_NOT_NOT_CREATED",
+      "integration_requirement": "Whole published taxonomy batch qualification + actual current identity/name/domain/relation-owner coherence and deterministic tree/census receipt; never replace current source/native owners by old overlay without closed comparison"
+    },
+    {
+      "path": "content/items/relations/items.json",
+      "current_native4f_rows": 203,
+      "published_taxonomy88ed_rows": 729,
+      "status": "MISSING_FROM_COMPOSED_NATIVE_HEAD_NOT_NOT_CREATED",
+      "integration_requirement": "Whole published taxonomy batch qualification + actual current identity/name/domain/relation-owner coherence and deterministic tree/census receipt; never replace current source/native owners by old overlay without closed comparison"
+    }
+  ],
+  "full_composition_warning": "Minimal schema/template batch does not integrate12252 family rows or world3ed49 catalogs. Current native taxonomy164 remains actual. Complete native/taxonomy/world composition requires separate fully qualified published-chain receipt and sourceguard comparison, no perpetual overlay claim.",
+  "required_checks": [
+    "Exact published source blobs and template checksums",
+    "Generator --check / schema equivalence / formal verifier with all current cases and partial leech preserved",
+    "22profile coverage and23template count on actual composed successor",
+    "Reject wrong family/item_class; preserve accepted weapon_distance/food/fluid class alternatives",
+    "Every old packet/compiler/decoder/catalog digest unchanged; run existing packet --check and current/historical context compatibility",
+    "No changes to actual native69 shards/reference34031Item/all57320, owner316, source203/relations278 unless allocated full-data composition reports exact justified delta",
+    "Ruff/schema style/diff/checks and independent bounded source review; no Cargo for Python/schema-only batch"
+  ],
+  "input_witnesses": [
+    {
+      "path": "tools/content-schema/item-authoring/engine_items.py",
+      "commit": "4f690c1e8a8966a4d074dde94d5a884dbb34fb94",
+      "sha256": "28644c0fcc88f364992670489f7d458f827a9cd1db023b7f5ce0a9ae32d08c1a",
+      "bytes": 141088
+    },
+    {
+      "path": "tools/content-schema/item-authoring/source_field_catalogs.py",
+      "commit": "4f690c1e8a8966a4d074dde94d5a884dbb34fb94",
+      "sha256": "8250880aaa89b7c5fa1593d5738a478b0d09e1ef9ef9cef630cb5da172d634bc",
+      "bytes": 67615
+    },
+    {
+      "path": "tools/content-schema/item-authoring/engine_items.py",
+      "commit": "88edf552b323cef8cb68cef5b10949fbf0c85424",
+      "sha256": "8e07b435532e01b5892e19609a506f5ef721b4de6e16d112d5d3435258e96001",
+      "bytes": 150330
+    },
+    {
+      "path": "tools/content-schema/item-authoring/templates/container-equipment.json",
+      "commit": "88edf552b323cef8cb68cef5b10949fbf0c85424",
+      "sha256": "bb4ee4f414165e03f3f23b90d9925f37978f5dca5c2fad5ead14952902199327",
+      "bytes": 729
+    },
+    {
+      "path": "tools/content-schema/item-authoring/templates/event-collectible.json",
+      "commit": "88edf552b323cef8cb68cef5b10949fbf0c85424",
+      "sha256": "a18d543e2c3b59e2c57c316474257f2f10b8f435611fbb23672bea402d3da8ab",
+      "bytes": 555
+    },
+    {
+      "path": "tools/content-schema/item-authoring/templates/key.json",
+      "commit": "88edf552b323cef8cb68cef5b10949fbf0c85424",
+      "sha256": "e6a9b017828dc1f1ecb36257b5c97c8938277bd7f06079b381a58232b6423a16",
+      "bytes": 461
+    },
+    {
+      "path": "tools/content-schema/item-authoring/templates/light-source.json",
+      "commit": "88edf552b323cef8cb68cef5b10949fbf0c85424",
+      "sha256": "4c688d0c8310c8f45d8f5b822fb3f1932285c5c62b80a0fe6e3b247bcae7a90f",
+      "bytes": 492
+    },
+    {
+      "path": "tools/content-schema/item-authoring/templates/plant.json",
+      "commit": "88edf552b323cef8cb68cef5b10949fbf0c85424",
+      "sha256": "b1cf978bdfc15e5efb5ab14d043c0970e6b9219a10765f8271744b60be742438",
+      "bytes": 479
+    },
+    {
+      "path": "tools/content-schema/item-authoring/templates/progression-material.json",
+      "commit": "88edf552b323cef8cb68cef5b10949fbf0c85424",
+      "sha256": "ccc89a1de9ad92fa2e554dce6256ec2f689e3944aa9fca12b8e5af03ea0235b5",
+      "bytes": 542
+    },
+    {
+      "path": "tools/content-schema/item-authoring/templates/quest-item.json",
+      "commit": "88edf552b323cef8cb68cef5b10949fbf0c85424",
+      "sha256": "368282df8857745fd671b6222c3e7165df4b778bb08423b5909211fb6f9285b8",
+      "bytes": 439
+    },
+    {
+      "path": "tools/content-schema/item-authoring/templates/tool.json",
+      "commit": "88edf552b323cef8cb68cef5b10949fbf0c85424",
+      "sha256": "d56001e1dc337a786361e6c83b16d495978335d5dfae30a8679e43606f698d4c",
+      "bytes": 531
+    },
+    {
+      "path": "tools/content-schema/item-authoring/templates/transformation-item.json",
+      "commit": "88edf552b323cef8cb68cef5b10949fbf0c85424",
+      "sha256": "055c04ecea213e733bb88e589efbc702403f3d052e87b2b1ce39f638fdd18b76",
+      "bytes": 579
+    },
+    {
+      "path": "tools/content-schema/item-authoring/templates/trash.json",
+      "commit": "88edf552b323cef8cb68cef5b10949fbf0c85424",
+      "sha256": "6517409582e80f9b01a00660bc7f72fa5dae0505fdaee2a8aedc9178b6ce8f98",
+      "bytes": 414
+    },
+    {
+      "path": "tools/content-schema/item-authoring/item.schema.json",
+      "commit": "4f690c1e8a8966a4d074dde94d5a884dbb34fb94",
+      "sha256": "a7147e948459563f83a13d11a9a4b0e4f424393f438da1d0e1ae08f274352997",
+      "bytes": 69790
+    },
+    {
+      "path": "tools/content-schema/item-authoring/item.schema.json",
+      "commit": "88edf552b323cef8cb68cef5b10949fbf0c85424",
+      "sha256": "a5bb5ca8a73d936146ce13c0a70d0420616a65812704fec30c401cba0d667d7d",
+      "bytes": 80580
+    },
+    {
+      "path": "tools/content-schema/item-authoring/build_formal_schema.py",
+      "commit": "4f690c1e8a8966a4d074dde94d5a884dbb34fb94",
+      "sha256": "edac1fa7178a1273402ae97b70c207dc4789c5080d71e24bd717201de6527470",
+      "bytes": 70800
+    },
+    {
+      "path": "tools/content-schema/item-authoring/verify_formal_schema.py",
+      "commit": "4f690c1e8a8966a4d074dde94d5a884dbb34fb94",
+      "sha256": "1abee419af3675a85bf4d14ff5c56517ce18f5e74e4f321347b65acf24bc1fe9",
+      "bytes": 110311
+    },
+    {
+      "path": "docs/agents/evidence/OTV2-20261001-item-capacity-promotion-v1.json",
+      "commit": "4f690c1e8a8966a4d074dde94d5a884dbb34fb94",
+      "sha256": "e8b03269cc34e81065880bfb08569d666670fa1da2ad380522cc7ac85910fce9",
+      "bytes": 24345
+    },
+    {
+      "path": "docs/agents/evidence/OTV2-20261001-item-document-promotion-v1.json",
+      "commit": "4f690c1e8a8966a4d074dde94d5a884dbb34fb94",
+      "sha256": "bf42290e24008984a48fe6e12b0c3b3989cf5fc3cb7ac880f9b23ec58ba88134",
+      "bytes": 19215
+    },
+    {
+      "path": "docs/agents/evidence/OTV2-20261001-item-forge3332-promotion-v1.json",
+      "commit": "4f690c1e8a8966a4d074dde94d5a884dbb34fb94",
+      "sha256": "d6e300e571f1d2e8e6794d3875759fdd0b2cb1ee7872c8527d0f4019ec27b8c1",
+      "bytes": 7453
+    },
+    {
+      "path": "docs/agents/evidence/OTV2-20261001-item-market-true-promotion-v1.json",
+      "commit": "4f690c1e8a8966a4d074dde94d5a884dbb34fb94",
+      "sha256": "a3caa1afa06b56ead7e54531408be02caf1b94e13d6c72d087b3669e91d8c312",
+      "bytes": 2258102
+    },
+    {
+      "path": "docs/agents/evidence/OTV2-20261001-item-movable-promotion-v1.json",
+      "commit": "4f690c1e8a8966a4d074dde94d5a884dbb34fb94",
+      "sha256": "e619b930e877fde117996a867c11676ce423aeca4931d3ae6f37a4afdd799939",
+      "bytes": 2968061
+    },
+    {
+      "path": "docs/agents/evidence/OTV2-20261001-item-physical-promotion-v1.json",
+      "commit": "4f690c1e8a8966a4d074dde94d5a884dbb34fb94",
+      "sha256": "3d2492a3335de213b975936ee45dcc28e0aa82aca0ba0a7cb21a027a11ee2306",
+      "bytes": 3253592
+    },
+    {
+      "path": "docs/agents/evidence/OTV2-20261001-item-stack-default-promotion-v1.json",
+      "commit": "4f690c1e8a8966a4d074dde94d5a884dbb34fb94",
+      "sha256": "8c970ed74a22124b3081b1bb2c2768100e910b0f82dde39663fd1d531add4fa3",
+      "bytes": 2400228
+    },
+    {
+      "path": "docs/agents/evidence/OTV2-20261001-item-stack-false-promotion-v1.json",
+      "commit": "4f690c1e8a8966a4d074dde94d5a884dbb34fb94",
+      "sha256": "81bdb488e7b4070d7c04c28bdadd802f83d303d2df6ede3c17fc17ca86786fcf",
+      "bytes": 650040
+    },
+    {
+      "path": "docs/agents/evidence/OTV2-20261001-item-stack-historical-promotion-v1.json",
+      "commit": "4f690c1e8a8966a4d074dde94d5a884dbb34fb94",
+      "sha256": "43cf6fb7b5119292ef56d98e43d48f14cf7381734e69638dbfd7103c8a9123ef",
+      "bytes": 22469
+    },
+    {
+      "path": "docs/agents/evidence/OTV2-20261002-item-elemental-magic-modifier-promotion-v1.json",
+      "commit": "4f690c1e8a8966a4d074dde94d5a884dbb34fb94",
+      "sha256": "fd3a302fae411c71c71bea7aebe6d8d95b0fbc3ac503e88b6844be6017233a9f",
+      "bytes": 28410
+    },
+    {
+      "path": "docs/agents/evidence/OTV2-20261002-item-hit-magic-promotion-v1.json",
+      "commit": "4f690c1e8a8966a4d074dde94d5a884dbb34fb94",
+      "sha256": "8ec1f103c874e4424e7636743e78a3c57821e1cbebef6a69dd1c9a448cd47660",
+      "bytes": 18925
+    },
+    {
+      "path": "docs/agents/evidence/OTV2-20261002-item-mantra-bond-promotion-v1.json",
+      "commit": "4f690c1e8a8966a4d074dde94d5a884dbb34fb94",
+      "sha256": "eecfca5562dbe8f1cbb271061b58ca20b883b9c751368dd3fd0cfac9119ef2bf",
+      "bytes": 48711
+    },
+    {
+      "path": "docs/agents/evidence/OTV2-20261002-item-name-promotion-v1.json",
+      "commit": "4f690c1e8a8966a4d074dde94d5a884dbb34fb94",
+      "sha256": "f2f8f266a53fca4de2ed114c011a2c18dd3ac2557b4c25a8c11584d01902846b",
+      "bytes": 27656
+    },
+    {
+      "path": "docs/agents/evidence/OTV2-20261002-item-use-observation-promotion-v1.json",
+      "commit": "4f690c1e8a8966a4d074dde94d5a884dbb34fb94",
+      "sha256": "990eca66d4d34156aaa7a2fd5c42251e26bdf503402f3d46d6beb6f7b2de99eb",
+      "bytes": 34703
+    },
+    {
+      "path": "docs/agents/evidence/OTV2-20260930-item-stats-promotion-v2.json",
+      "commit": "4f690c1e8a8966a4d074dde94d5a884dbb34fb94",
+      "sha256": "f833bc32bfc8762dbece8a7c2abe2985946fd153da4915e163c81e94f91c7bcc",
+      "bytes": 3744320
+    },
+    {
+      "path": "content/items/taxonomy/items.json",
+      "commit": "4f690c1e8a8966a4d074dde94d5a884dbb34fb94",
+      "sha256": "eda169610a16eb0683c2193fb568bc4719edc57198276fd53f41185e92f4d8e0",
+      "bytes": 26964
+    },
+    {
+      "path": "content/items/taxonomy/items.json",
+      "commit": "88edf552b323cef8cb68cef5b10949fbf0c85424",
+      "sha256": "0b21984ae2489dad3dca89e7efe7ad0118c5002f5a0d844551a9bc481cf1af9c",
+      "bytes": 8133960
+    },
+    {
+      "path": "content/items/relations/items.json",
+      "commit": "4f690c1e8a8966a4d074dde94d5a884dbb34fb94",
+      "sha256": "194ddaec925091fb985f8ee2b8ee46e4c9f587e6606dac287709db1e172b46bf",
+      "bytes": 49949
+    },
+    {
+      "path": "content/items/relations/items.json",
+      "commit": "88edf552b323cef8cb68cef5b10949fbf0c85424",
+      "sha256": "2ab157b20e58f7516dc588b55adf292a42b02c0780c079d150e0fb3e473f5aee",
+      "bytes": 162270
+    }
+  ]
+}

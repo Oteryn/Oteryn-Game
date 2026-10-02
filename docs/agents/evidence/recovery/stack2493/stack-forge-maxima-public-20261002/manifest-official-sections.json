@@ -1,0 +1,41 @@
+{
+  "scope": "Eight bounded distinct normal HTTPS reads. No same URL retry, metered tools or Remote Desktop actions. Error bodies retained, no source absence inferred from blocked pages.",
+  "requests": [
+    {
+      "label": "official-controls",
+      "url": "https://www.tibia.com/gameguides/?subtopic=manual&section=controls",
+      "transport": "NORMAL_PUBLIC_HTTPS_READ_ONLY",
+      "utc": "2026-10-02T12:19:45.965127+00:00",
+      "status": 200,
+      "final_url": "https://www.tibia.com/gameguides/?subtopic=manual&section=controls",
+      "content_type": "text/html; charset=UTF-8",
+      "body_path": "/workspace/audit-continuation/stack-forge-maxima-public-20261002/official-controls.body",
+      "body_sha256": "4000f8f848bb509f062b789a9fd9563bf3374416c86fb5973b2ad55cc5481247",
+      "body_bytes": 146523
+    },
+    {
+      "label": "official-characters",
+      "url": "https://www.tibia.com/gameguides/?subtopic=manual&section=characters",
+      "transport": "NORMAL_PUBLIC_HTTPS_READ_ONLY",
+      "utc": "2026-10-02T12:19:45.965749+00:00",
+      "status": 200,
+      "final_url": "https://www.tibia.com/gameguides/?subtopic=manual&section=characters",
+      "content_type": "text/html; charset=UTF-8",
+      "body_path": "/workspace/audit-continuation/stack-forge-maxima-public-20261002/official-characters.body",
+      "body_sha256": "c47ed6c369dffcd691339d4684713844f1f649b8eae23b637a78269577ae1d3d",
+      "body_bytes": 160313
+    },
+    {
+      "label": "official-interface",
+      "url": "https://www.tibia.com/gameguides/?subtopic=manual&section=interface",
+      "transport": "NORMAL_PUBLIC_HTTPS_READ_ONLY",
+      "utc": "2026-10-02T12:19:45.966153+00:00",
+      "status": 200,
+      "final_url": "https://www.tibia.com/gameguides/?subtopic=manual&section=interface",
+      "content_type": "text/html; charset=UTF-8",
+      "body_path": "/workspace/audit-continuation/stack-forge-maxima-public-20261002/official-interface.body",
+      "body_sha256": "8ccad3ac2761da24e8a0842a07acb407c5f95f4814467a7421b8969320d2bf0a",
+      "body_bytes": 167168
+    }
+  ]
+}

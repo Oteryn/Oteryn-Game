@@ -1,0 +1,101 @@
+{
+  "scope": "Eight bounded distinct normal HTTPS reads. No same URL retry, metered tools or Remote Desktop actions. Error bodies retained, no source absence inferred from blocked pages.",
+  "requests": [
+    {
+      "label": "official-manual-objects",
+      "url": "https://www.tibia.com/gameguides/?subtopic=manual&section=objects",
+      "transport": "NORMAL_PUBLIC_HTTPS_READ_ONLY",
+      "utc": "2026-10-02T12:18:08.647457+00:00",
+      "status": 200,
+      "final_url": "https://www.tibia.com/gameguides/?subtopic=manual&section=objects",
+      "content_type": "text/html; charset=UTF-8",
+      "body_path": "/workspace/audit-continuation/stack-forge-maxima-public-20261002/official-manual-objects.body",
+      "body_sha256": "384210d5dc418c188df9f02d61f973749a272ae3c74eb7f5d62cd361f8d0bfef",
+      "body_bytes": 124608
+    },
+    {
+      "label": "official-manual-inventory",
+      "url": "https://www.tibia.com/gameguides/?subtopic=manual&section=inventory",
+      "transport": "NORMAL_PUBLIC_HTTPS_READ_ONLY",
+      "utc": "2026-10-02T12:18:08.648104+00:00",
+      "status": 200,
+      "final_url": "https://www.tibia.com/gameguides/?subtopic=manual&section=inventory",
+      "content_type": "text/html; charset=UTF-8",
+      "body_path": "/workspace/audit-continuation/stack-forge-maxima-public-20261002/official-manual-inventory.body",
+      "body_sha256": "0e59e4460a6a4afaf6b1234a757c03e437969e00afac6d5ce9099e0bdb0e98f4",
+      "body_bytes": 124611
+    },
+    {
+      "label": "wiki-stackable",
+      "url": "https://tibia.fandom.com/api.php?action=query&format=json&formatversion=2&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent&rvslots=main&titles=Stackable%7CEquipment_Upgrade",
+      "transport": "NORMAL_PUBLIC_HTTPS_READ_ONLY",
+      "utc": "2026-10-02T12:18:08.648601+00:00",
+      "status": 402,
+      "final_url": "https://tibia.fandom.com/api.php?action=query&format=json&formatversion=2&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent&rvslots=main&titles=Stackable%7CEquipment_Upgrade",
+      "content_type": "application/json",
+      "body_path": "/workspace/audit-continuation/stack-forge-maxima-public-20261002/wiki-stackable.body",
+      "body_sha256": "35e642f0e1bd426b9d8b0ee0284aefe801873dc13c18819fbeeaf2bf47136664",
+      "body_bytes": 55
+    },
+    {
+      "label": "br-maximum-template",
+      "url": "https://www.tibiawiki.com.br/api.php?action=query&format=json&formatversion=2&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent&rvslots=main&titles=Predefini%C3%A7%C3%A3o:Infobox_Item%7CExaltation_Forge",
+      "transport": "NORMAL_PUBLIC_HTTPS_READ_ONLY",
+      "utc": "2026-10-02T12:18:08.648987+00:00",
+      "status": 403,
+      "final_url": "https://www.tibiawiki.com.br/api.php?action=query&format=json&formatversion=2&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent&rvslots=main&titles=Predefini%C3%A7%C3%A3o:Infobox_Item%7CExaltation_Forge",
+      "content_type": "text/html; charset=UTF-8",
+      "body_path": "/workspace/audit-continuation/stack-forge-maxima-public-20261002/br-maximum-template.body",
+      "body_sha256": "b1a37e66082386f0fdf470eb05ed0e3dbfb5821f2ddee31669628aded40133ce",
+      "body_bytes": 6925
+    },
+    {
+      "label": "tibiopedia-forge",
+      "url": "https://tibiopedia.pl/tibianews/2098/Exaltation-Forge",
+      "transport": "NORMAL_PUBLIC_HTTPS_READ_ONLY",
+      "utc": "2026-10-02T12:18:08.858664+00:00",
+      "status": 200,
+      "final_url": "https://tibiopedia.pl/setup",
+      "content_type": "text/html; charset=UTF-8",
+      "body_path": "/workspace/audit-continuation/stack-forge-maxima-public-20261002/tibiopedia-forge.body",
+      "body_sha256": "d10ade501028db6e79bb87c696ae303906ce9d471f37040c22f3c500d948a72e",
+      "body_bytes": 5126
+    },
+    {
+      "label": "tibiopedia-blue-legs",
+      "url": "https://tibiopedia.pl/items/Blue_Legs",
+      "transport": "NORMAL_PUBLIC_HTTPS_READ_ONLY",
+      "utc": "2026-10-02T12:18:08.971810+00:00",
+      "status": 200,
+      "final_url": "https://tibiopedia.pl/setup",
+      "content_type": "text/html; charset=UTF-8",
+      "body_path": "/workspace/audit-continuation/stack-forge-maxima-public-20261002/tibiopedia-blue-legs.body",
+      "body_sha256": "d10ade501028db6e79bb87c696ae303906ce9d471f37040c22f3c500d948a72e",
+      "body_bytes": 5126
+    },
+    {
+      "label": "crystal-item-cpp",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/ff7ede593c69d4c658b382c97443e8155926924a/src/items/item.cpp",
+      "transport": "NORMAL_PUBLIC_HTTPS_READ_ONLY",
+      "utc": "2026-10-02T12:18:09.133896+00:00",
+      "status": 200,
+      "final_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/ff7ede593c69d4c658b382c97443e8155926924a/src/items/item.cpp",
+      "content_type": "text/plain; charset=utf-8",
+      "body_path": "/workspace/audit-continuation/stack-forge-maxima-public-20261002/crystal-item-cpp.body",
+      "body_sha256": "3484af408e0b25a7204a03725318b6e0c55811cef4922bbfd54af33f4b6661f5",
+      "body_bytes": 96623
+    },
+    {
+      "label": "canary-item-cpp",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/src/items/item.cpp",
+      "transport": "NORMAL_PUBLIC_HTTPS_READ_ONLY",
+      "utc": "2026-10-02T12:18:09.177040+00:00",
+      "status": 200,
+      "final_url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/src/items/item.cpp",
+      "content_type": "text/plain; charset=utf-8",
+      "body_path": "/workspace/audit-continuation/stack-forge-maxima-public-20261002/canary-item-cpp.body",
+      "body_sha256": "9bbf46dbecd43748737a2636eb2200f39f5a35d7fa524a800adabaa10473b3bb",
+      "body_bytes": 100849
+    }
+  ]
+}

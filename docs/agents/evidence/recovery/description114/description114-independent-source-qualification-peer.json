@@ -1,0 +1,113 @@
+{
+  "schema": "OTERYN_DESCRIPTION114_INDEPENDENT_SOURCE_QUALIFICATION_PEER/v1",
+  "status": "SOURCE_DESCRIPTION_PROPOSAL_PEER_PASS",
+  "findings": [],
+  "scope": "Read-only independent stoppedsource proposal; no Native/source admission or runtime activation by this report. Production implementation and Rust checks remain future owner work.",
+  "baseline": "4f690c1e8a8966a4d074dde94d5a884dbb34fb94",
+  "frozen_manifest": {
+    "path": "/workspace/audit-continuation/item-description-source-research-stopped-manifest-forge4f-20261002.json",
+    "sha256": "77556f5025adab941a86f9a17d4c9221e7cd7f51fc7b8f3c0da3649e7d29b000",
+    "bytes": 2273
+  },
+  "closed114_proof": {
+    "path": "/workspace/audit-continuation/item-description-closed114-source-proposal-forge4f-20261002.json",
+    "sha256": "328ada9dc206b4204bd61f463a5e21e70b473b0d20d4f1c48941aeff04336765",
+    "bytes": 1079275
+  },
+  "independent_replay": {
+    "path": "/workspace/audit-continuation/review-description114-source-peer.py",
+    "sha256": "9ad9d3a312471e313d9b3fb852188704f38fb9e69be43d2a2e383a486473692e",
+    "command": "PYTHONDONTWRITEBYTECODE=1 /workspace/audit-continuation/venv/bin/python /workspace/audit-continuation/review-description114-source-peer.py",
+    "result": "PASS all114"
+  },
+  "parent_contract_hashes": {
+    "tools/content-schema/item-authoring/item.schema.json": {
+      "sha256": "a7147e948459563f83a13d11a9a4b0e4f424393f438da1d0e1ae08f274352997",
+      "bytes": 69790
+    },
+    "tools/content-schema/item-authoring/engine_items.py": {
+      "sha256": "28644c0fcc88f364992670489f7d458f827a9cd1db023b7f5ce0a9ae32d08c1a",
+      "bytes": 141088
+    },
+    "tools/content-schema/item-authoring/source_field_catalogs.py": {
+      "sha256": "8250880aaa89b7c5fa1593d5738a478b0d09e1ef9ef9cef630cb5da172d634bc",
+      "bytes": 67615
+    },
+    "apps/game-server/src/content/reference_playable.rs": {
+      "sha256": "e50682b67ca36431f9a6b9eb018a8cb17a08cf7e4fdc66c33a5831dc83f4e3ad",
+      "bytes": 107416
+    },
+    "apps/game-server/src/content/reference_artifact.rs": {
+      "sha256": "bee2d053314ac6023d187d0e1ae00aa13c96096d8fb3d31a12d6a8accb63072c",
+      "bytes": 145808
+    }
+  },
+  "semantic_mapping": {
+    "formal_properties": "Existing item.schema.json lines515/519 presentation.inspection_description/flavor_text string fields.",
+    "own_Wiki": "Actual Template:Infobox Object page13623/rev1204205 line301 passes flavortext parameter to Infobox Item/Look in twbox-look. All114 carry own flavortext, not notes/quest text or invented title prose. No claim of independently replayed final Look template HTML rendering.",
+    "XML_importer": "Existing engine_items.py2812-2816 copies parsed XML description into formal inspection_description with no content rewrite; code28644 remains exact.",
+    "XML_runtime_witness": {
+      "source_role": "Pinned Crystal OTS implementation corroboration only; not product truth/runtime admission",
+      "commit": "ff7ede593c69d4c658b382c97443e8155926924a",
+      "parse_file": "/workspace/audit-continuation/weapon-presentation-source-audit/ff7ede59/src/items/functions/item/item_parse.cpp",
+      "parse_sha256": "08687bc0e096ebfcce55daa6a523b78bca0191f25ce4134c133927d4a10dfce7",
+      "parse_line": 140,
+      "emit_file": "/workspace/audit-continuation/weapon-presentation-source-audit/ff7ede59/src/items/item.cpp",
+      "emit_sha256": "3484af408e0b25a7204a03725318b6e0c55811cef4922bbfd54af33f4b6661f5",
+      "emit_lines": [
+        3270,
+        3276
+      ],
+      "interpretation": "Definition XML description is stored from parsed attribute and emitted unchanged; concatenated newline is output framing, not part of stored description. Instance overrides/context are outside immutabledefinition qualification.",
+      "capture_manifest": {
+        "path": "/workspace/audit-continuation/weapon-presentation-source-audit/captures.json",
+        "sha256": "af53c2ef16584e877be80fc71874a1d002b7f10b2d955ada932ec2057aa7f8dd",
+        "method": "Original anonymousnormalpublicHTTP pinnedcommit capture; currentreview localreadonly"
+      }
+    },
+    "Native_carrier": "Existing ReferenceItemPresentation.description: ReferenceItemField<String> atreference_playable.rs405-407; bytes bound200 at119/1719-1723; existing artifact put_utf8/read_utf8 fields atreference_artifact.rs1481/2043. No schema/property/ABI addition needed.",
+    "literal_definition": "Actual named Wiki parameter content and parsed XML attribute string values agree exactly. Source parameter padding/XML entity decoding are parsing semantics; no punctuation removal/addition, markup evaluation, whitespace/content rewrite, translation or Unicode normalization performed on description values."
+  },
+  "checks": {
+    "manifest_and_all_owned_hashes_twice": "PASS six original owned files plus frozenmanifest/compactproof; originalbytes retained.",
+    "identity_and_sources": "114 unique fullcurrentNative refs; exactCrystal source-ID forward/reverse/namespace/revision bridge; currentKnownName matches official15.30 and own actualname; actualglobal source214parts scanned for all ownID references, singleownnumericID perbox/current importedWiki sourcecoordinates agree.",
+    "name_variants": "All114 rawboxes use explicit actualname;113 displayname/title variants differ from actualname. OwnnumericID and exact existingbinding disambiguate; no unique-globaldisplayname assumption or name-to-ID invention. SelectedNativeName is unambiguousKnown, existingnamebytes preserved.",
+    "source_parts": 214,
+    "wholeofficial_object_count": 43516,
+    "official_and_alias_membership": "Current fullofficial2dfa artifact/fullobject hash/member coordinates and alias projection hash match. Actual both ff7/00ce fullappearance blobs redecoded and fullmanifest objecthash maps agree.",
+    "domain_and_state": "PositiveofficialTake/no relevantWorld/Unmoveflags/no actualWorldowner; presentationgroupKNOWN/currentdescriptionUNKNOWN; no authoringpresentationoverride. All114 Nativeclassification remainsUNKNOWN and materialization/admission is unchanged.",
+    "text": "All114 nonemptyplainASCII strings, no unsupportedmarkup/entities/multiline; UTF8bytes20..200. Native bound is bytecount, not charactercount; item52824 exact200B included. Independently checked noASCII control/NUL/DEL bytes.",
+    "XML": "Every present pinned XML description for eachtarget agrees verbatim. Both Crystal ff7+00ce agree114; Canary47 also agrees46, absentdescriptionfor68. Absence does not count as a contrary literal.",
+    "XML_agreement_counts": {
+      "crystal_ff7_and_00ce_and_canary47": 46,
+      "crystal_ff7_and_00ce_only": 68
+    },
+    "exclusions": {
+      "period_only_difference": 1515,
+      "other_difference_or_absent_corroboration": 924,
+      "included_in114": false,
+      "total_nonemptyflavor_discovery": 3694,
+      "qualified": 114,
+      "held": 3580
+    },
+    "currentNative_baseline": "ActualcurrentWT fullreference bytes equal4f1aa9c7b7400c6041cd878cfbfb46139950a386ab377749ae56ef0bd17104992e;34031Items/12100KnownNames/zeroKnownDescriptions. Futurepublishedparent must be rebound explicitly; Weaponb0f stability is Root-owned publication evidence, not independently read here.",
+    "protected_shared_sources": "8250880a source_field_catalogs and28644c0f engine_items current+Git4f unchanged.",
+    "materializable_preservation": {
+      "false": 112,
+      "true": 2,
+      "true_source_item_ids": [
+        237,
+        239
+      ],
+      "policy": "Preserve every current value, including both true records; do not force a materializability/classification/admission change."
+    }
+  },
+  "required_future_implementation_guards": [
+    "Rebind actual published Native/source/binding/owner/World/currentofficial sourceinputs; package portable complete rawbox/global-own-ID closedevidence and actual XML sourcewitnesses with honest transport/hash/sourceunit semantics, no scratchabsolute production dependencies.",
+    "Closedexact114targets/fullrefs+literalstrings; groupKNOWN/nameKnown matching source, descriptionUNKNOWN→KNOWN or identicalidempotence. Rejectblocked/notapplicable/conflicted group/leaf, differentKnownName/Description, duplicate/missing/unlistedtarget, missingexactbinding/member, page/revision/capture/rawbox/hash/cutoff drift, explicitempty/opposingFlavor orXMLdescription, sharedID and unsupportedmarkup.",
+    "Useexistingnativepresentationdescription only; preserveKnownnames/UNKNOWNclassification/each originalmaterializable value(112False/2True)/sourceowner/nativeallotherfields. Prevalidatewholecohort beforemutations; exactonefieldper114data delta, all57320records/full34031Item rows andWorld preserved.",
+    "Meaningful byteboundary test200/201 and Unicodebytecount, lateconflict/sourceopposition atomicity/idempotence tests; currentpacket seals/allpredecessor source/compiler contexts and exactfreshparent fullgeneration validation before publication.",
+    "Do not expand114 to1515perioddifference or924otherproposalIDs by punctuation normalization or OTSmajority. Broader sourceauthority policy would be a separate explicitly qualified owner decision."
+  ],
+  "writes": "Only independent external replayscript and peerreport; no WT/schema/native/Cargo/Git/ref mutations."
+}

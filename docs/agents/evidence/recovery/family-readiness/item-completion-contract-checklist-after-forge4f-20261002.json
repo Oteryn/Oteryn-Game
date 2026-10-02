@@ -1,0 +1,3840 @@
+{
+  "schema": "OTERYN_ITEM_COMPLETION_CONTRACT_READONLY_CHECKLIST/v1",
+  "native_baseline": "4f690c1e8a8966a4d074dde94d5a884dbb34fb94",
+  "taxonomy_overlay_baseline": "88edf552b323cef8cb68cef5b10949fbf0c85424",
+  "scope": "Audit of accepted authoring structures and finite proposed per-Item completion gate; no repo integration, validator run over Item pool, runtime qualification or complete Item count",
+  "profile_count": 22,
+  "templates_by_head": {
+    "4f690c1e8a8966a4d074dde94d5a884dbb34fb94": {
+      "templates": 13,
+      "covered_profiles": 12,
+      "uncovered_profiles": [
+        "container_equipment",
+        "event_collectible",
+        "key",
+        "light_source",
+        "plant",
+        "progression_material",
+        "quest_item",
+        "tool",
+        "transformation_item",
+        "trash"
+      ]
+    },
+    "88edf552b323cef8cb68cef5b10949fbf0c85424": {
+      "templates": 23,
+      "covered_profiles": 22,
+      "uncovered_profiles": []
+    }
+  },
+  "composition_requirement": "Carry family22 itemclass +template23 +imbuement max tiers from taxonomy while preserving native partial-leech fix. No current integrated candidate tested here.",
+  "root_required_authoring_fields": [
+    "identity",
+    "display_name",
+    "family_profile",
+    "delivery_task_eligible",
+    "taxonomy"
+  ],
+  "taxonomy_required_fields": [
+    "item_class",
+    "primary"
+  ],
+  "mandatory_capabilities_from_family_alone": [],
+  "profile_rows": [
+    {
+      "profile_id": "equipment_armor",
+      "expected_capabilities": [
+        "physical",
+        "equipment",
+        "protection",
+        "modifiers",
+        "imbuement",
+        "forge",
+        "trade"
+      ],
+      "common_capabilities": [
+        "physical",
+        "equipment",
+        "protection",
+        "trade"
+      ],
+      "optional_capabilities": [
+        "modifiers",
+        "imbuement",
+        "forge"
+      ],
+      "navigation_families": [
+        "Capacetes",
+        "Botas",
+        "Armaduras",
+        "Calças"
+      ],
+      "additional_capabilities_allowed": true,
+      "mandatory_capabilities_from_family_alone": [],
+      "common_capability_enforcement": "WARNING_ONLY in validate(); expected_capabilities is catalog metadata, not root required",
+      "taxonomy_overlay_allowed_item_classes": [
+        "equipment"
+      ],
+      "native4f_family_itemclass_constraint_present": false,
+      "native4f_templates": [
+        "tools/content-schema/item-authoring/templates/equipment-armor.json"
+      ],
+      "taxonomy88ed_templates": [
+        "tools/content-schema/item-authoring/templates/equipment-armor.json"
+      ],
+      "applicability_gate": "Use exact accepted source facts/catalog routes plus authored groups and declared relationships; do not copy template defaults or make every optional native leaf KNOWN"
+    },
+    {
+      "profile_id": "equipment_offhand",
+      "expected_capabilities": [
+        "physical",
+        "equipment",
+        "protection",
+        "modifiers",
+        "charges",
+        "temporal",
+        "imbuement",
+        "forge",
+        "trade"
+      ],
+      "common_capabilities": [
+        "physical",
+        "equipment",
+        "trade"
+      ],
+      "optional_capabilities": [
+        "protection",
+        "modifiers",
+        "charges",
+        "temporal",
+        "imbuement",
+        "forge"
+      ],
+      "navigation_families": [
+        "Escudos",
+        "Spellbooks",
+        "Extra Slot",
+        "Amuletos e Colares",
+        "Anéis"
+      ],
+      "additional_capabilities_allowed": true,
+      "mandatory_capabilities_from_family_alone": [],
+      "common_capability_enforcement": "WARNING_ONLY in validate(); expected_capabilities is catalog metadata, not root required",
+      "taxonomy_overlay_allowed_item_classes": [
+        "equipment"
+      ],
+      "native4f_family_itemclass_constraint_present": false,
+      "native4f_templates": [
+        "tools/content-schema/item-authoring/templates/equipment-accessory.json"
+      ],
+      "taxonomy88ed_templates": [
+        "tools/content-schema/item-authoring/templates/equipment-accessory.json"
+      ],
+      "applicability_gate": "Use exact accepted source facts/catalog routes plus authored groups and declared relationships; do not copy template defaults or make every optional native leaf KNOWN"
+    },
+    {
+      "profile_id": "container_equipment",
+      "expected_capabilities": [
+        "physical",
+        "equipment",
+        "container",
+        "trade"
+      ],
+      "common_capabilities": [
+        "physical",
+        "equipment",
+        "container",
+        "trade"
+      ],
+      "optional_capabilities": [],
+      "navigation_families": [
+        "Aljavas"
+      ],
+      "additional_capabilities_allowed": true,
+      "mandatory_capabilities_from_family_alone": [],
+      "common_capability_enforcement": "WARNING_ONLY in validate(); expected_capabilities is catalog metadata, not root required",
+      "taxonomy_overlay_allowed_item_classes": [
+        "container"
+      ],
+      "native4f_family_itemclass_constraint_present": false,
+      "native4f_templates": [],
+      "taxonomy88ed_templates": [
+        "tools/content-schema/item-authoring/templates/container-equipment.json"
+      ],
+      "applicability_gate": "Use exact accepted source facts/catalog routes plus authored groups and declared relationships; do not copy template defaults or make every optional native leaf KNOWN"
+    },
+    {
+      "profile_id": "weapon_melee",
+      "expected_capabilities": [
+        "physical",
+        "equipment",
+        "weapon",
+        "modifiers",
+        "imbuement",
+        "forge",
+        "proficiency",
+        "trade"
+      ],
+      "common_capabilities": [
+        "physical",
+        "equipment",
+        "weapon",
+        "trade"
+      ],
+      "optional_capabilities": [
+        "modifiers",
+        "imbuement",
+        "forge",
+        "proficiency"
+      ],
+      "navigation_families": [
+        "Machados",
+        "Clavas",
+        "Espadas",
+        "Punhos",
+        "Réplicas de Armas"
+      ],
+      "additional_capabilities_allowed": true,
+      "mandatory_capabilities_from_family_alone": [],
+      "common_capability_enforcement": "WARNING_ONLY in validate(); expected_capabilities is catalog metadata, not root required",
+      "taxonomy_overlay_allowed_item_classes": [
+        "weapon"
+      ],
+      "native4f_family_itemclass_constraint_present": false,
+      "native4f_templates": [
+        "tools/content-schema/item-authoring/templates/weapon-melee.json"
+      ],
+      "taxonomy88ed_templates": [
+        "tools/content-schema/item-authoring/templates/weapon-melee.json"
+      ],
+      "applicability_gate": "Use exact accepted source facts/catalog routes plus authored groups and declared relationships; do not copy template defaults or make every optional native leaf KNOWN"
+    },
+    {
+      "profile_id": "weapon_distance",
+      "expected_capabilities": [
+        "physical",
+        "equipment",
+        "weapon",
+        "stack",
+        "modifiers",
+        "imbuement",
+        "forge",
+        "trade"
+      ],
+      "common_capabilities": [
+        "physical",
+        "weapon",
+        "trade"
+      ],
+      "optional_capabilities": [
+        "equipment",
+        "stack",
+        "modifiers",
+        "imbuement",
+        "forge"
+      ],
+      "navigation_families": [
+        "Distância",
+        "Munição"
+      ],
+      "additional_capabilities_allowed": true,
+      "mandatory_capabilities_from_family_alone": [],
+      "common_capability_enforcement": "WARNING_ONLY in validate(); expected_capabilities is catalog metadata, not root required",
+      "taxonomy_overlay_allowed_item_classes": [
+        "weapon",
+        "ammunition"
+      ],
+      "native4f_family_itemclass_constraint_present": false,
+      "native4f_templates": [
+        "tools/content-schema/item-authoring/templates/ammunition.json",
+        "tools/content-schema/item-authoring/templates/weapon-distance.json"
+      ],
+      "taxonomy88ed_templates": [
+        "tools/content-schema/item-authoring/templates/ammunition.json",
+        "tools/content-schema/item-authoring/templates/weapon-distance.json"
+      ],
+      "applicability_gate": "Use exact accepted source facts/catalog routes plus authored groups and declared relationships; do not copy template defaults or make every optional native leaf KNOWN"
+    },
+    {
+      "profile_id": "weapon_magic",
+      "expected_capabilities": [
+        "physical",
+        "equipment",
+        "weapon",
+        "use",
+        "requirements",
+        "modifiers",
+        "trade"
+      ],
+      "common_capabilities": [
+        "physical",
+        "equipment",
+        "weapon",
+        "use",
+        "requirements",
+        "trade"
+      ],
+      "optional_capabilities": [
+        "modifiers"
+      ],
+      "navigation_families": [
+        "Wands",
+        "Rods",
+        "Antigas Wands e Rods"
+      ],
+      "additional_capabilities_allowed": true,
+      "mandatory_capabilities_from_family_alone": [],
+      "common_capability_enforcement": "WARNING_ONLY in validate(); expected_capabilities is catalog metadata, not root required",
+      "taxonomy_overlay_allowed_item_classes": [
+        "weapon"
+      ],
+      "native4f_family_itemclass_constraint_present": false,
+      "native4f_templates": [
+        "tools/content-schema/item-authoring/templates/weapon-magic.json"
+      ],
+      "taxonomy88ed_templates": [
+        "tools/content-schema/item-authoring/templates/weapon-magic.json"
+      ],
+      "applicability_gate": "Use exact accepted source facts/catalog routes plus authored groups and declared relationships; do not copy template defaults or make every optional native leaf KNOWN"
+    },
+    {
+      "profile_id": "rune",
+      "expected_capabilities": [
+        "physical",
+        "stack",
+        "charges",
+        "use",
+        "requirements",
+        "trade"
+      ],
+      "common_capabilities": [
+        "physical",
+        "stack",
+        "charges",
+        "use",
+        "requirements",
+        "trade"
+      ],
+      "optional_capabilities": [],
+      "navigation_families": [
+        "Runas",
+        "Runas de Decoração"
+      ],
+      "additional_capabilities_allowed": true,
+      "mandatory_capabilities_from_family_alone": [],
+      "common_capability_enforcement": "WARNING_ONLY in validate(); expected_capabilities is catalog metadata, not root required",
+      "taxonomy_overlay_allowed_item_classes": [
+        "rune"
+      ],
+      "native4f_family_itemclass_constraint_present": false,
+      "native4f_templates": [
+        "tools/content-schema/item-authoring/templates/rune.json"
+      ],
+      "taxonomy88ed_templates": [
+        "tools/content-schema/item-authoring/templates/rune.json"
+      ],
+      "applicability_gate": "Use exact accepted source facts/catalog routes plus authored groups and declared relationships; do not copy template defaults or make every optional native leaf KNOWN"
+    },
+    {
+      "profile_id": "document",
+      "expected_capabilities": [
+        "physical",
+        "readable",
+        "presentation",
+        "trade"
+      ],
+      "common_capabilities": [
+        "physical",
+        "readable",
+        "presentation",
+        "trade"
+      ],
+      "optional_capabilities": [],
+      "navigation_families": [
+        "Livros",
+        "Documentos e Papéis"
+      ],
+      "additional_capabilities_allowed": true,
+      "mandatory_capabilities_from_family_alone": [],
+      "common_capability_enforcement": "WARNING_ONLY in validate(); expected_capabilities is catalog metadata, not root required",
+      "taxonomy_overlay_allowed_item_classes": [
+        "document"
+      ],
+      "native4f_family_itemclass_constraint_present": false,
+      "native4f_templates": [
+        "tools/content-schema/item-authoring/templates/document.json"
+      ],
+      "taxonomy88ed_templates": [
+        "tools/content-schema/item-authoring/templates/document.json"
+      ],
+      "applicability_gate": "Use exact accepted source facts/catalog routes plus authored groups and declared relationships; do not copy template defaults or make every optional native leaf KNOWN"
+    },
+    {
+      "profile_id": "container",
+      "expected_capabilities": [
+        "physical",
+        "container",
+        "trade"
+      ],
+      "common_capabilities": [
+        "physical",
+        "container",
+        "trade"
+      ],
+      "optional_capabilities": [],
+      "navigation_families": [
+        "Recipientes"
+      ],
+      "additional_capabilities_allowed": true,
+      "mandatory_capabilities_from_family_alone": [],
+      "common_capability_enforcement": "WARNING_ONLY in validate(); expected_capabilities is catalog metadata, not root required",
+      "taxonomy_overlay_allowed_item_classes": [
+        "container"
+      ],
+      "native4f_family_itemclass_constraint_present": false,
+      "native4f_templates": [
+        "tools/content-schema/item-authoring/templates/container.json"
+      ],
+      "taxonomy88ed_templates": [
+        "tools/content-schema/item-authoring/templates/container.json"
+      ],
+      "applicability_gate": "Use exact accepted source facts/catalog routes plus authored groups and declared relationships; do not copy template defaults or make every optional native leaf KNOWN"
+    },
+    {
+      "profile_id": "decoration",
+      "expected_capabilities": [
+        "physical",
+        "presentation",
+        "use",
+        "light",
+        "lifecycle",
+        "trade"
+      ],
+      "common_capabilities": [
+        "physical",
+        "presentation",
+        "trade"
+      ],
+      "optional_capabilities": [
+        "use",
+        "light",
+        "lifecycle"
+      ],
+      "navigation_families": [
+        "Decorações",
+        "Dolls e Bears",
+        "Troféus",
+        "Instrumentos Musicais",
+        "Jogos e Diversão"
+      ],
+      "additional_capabilities_allowed": true,
+      "mandatory_capabilities_from_family_alone": [],
+      "common_capability_enforcement": "WARNING_ONLY in validate(); expected_capabilities is catalog metadata, not root required",
+      "taxonomy_overlay_allowed_item_classes": [
+        "decoration"
+      ],
+      "native4f_family_itemclass_constraint_present": false,
+      "native4f_templates": [
+        "tools/content-schema/item-authoring/templates/portable-decoration-kit.json"
+      ],
+      "taxonomy88ed_templates": [
+        "tools/content-schema/item-authoring/templates/portable-decoration-kit.json"
+      ],
+      "applicability_gate": "Use exact accepted source facts/catalog routes plus authored groups and declared relationships; do not copy template defaults or make every optional native leaf KNOWN"
+    },
+    {
+      "profile_id": "event_collectible",
+      "expected_capabilities": [
+        "physical",
+        "presentation",
+        "trade"
+      ],
+      "common_capabilities": [
+        "physical",
+        "presentation",
+        "trade"
+      ],
+      "optional_capabilities": [],
+      "navigation_families": [
+        "Prêmios de Eventos",
+        "Itens de Fansites",
+        "Itens de Festa"
+      ],
+      "additional_capabilities_allowed": true,
+      "mandatory_capabilities_from_family_alone": [],
+      "common_capability_enforcement": "WARNING_ONLY in validate(); expected_capabilities is catalog metadata, not root required",
+      "taxonomy_overlay_allowed_item_classes": [
+        "collectible"
+      ],
+      "native4f_family_itemclass_constraint_present": false,
+      "native4f_templates": [],
+      "taxonomy88ed_templates": [
+        "tools/content-schema/item-authoring/templates/event-collectible.json"
+      ],
+      "applicability_gate": "Use exact accepted source facts/catalog routes plus authored groups and declared relationships; do not copy template defaults or make every optional native leaf KNOWN"
+    },
+    {
+      "profile_id": "progression_material",
+      "expected_capabilities": [
+        "physical",
+        "stack",
+        "use",
+        "trade"
+      ],
+      "common_capabilities": [
+        "physical",
+        "trade"
+      ],
+      "optional_capabilities": [
+        "stack",
+        "use"
+      ],
+      "navigation_families": [
+        "Itens de Addons",
+        "Itens de Imbuements",
+        "Delivery Tasks"
+      ],
+      "additional_capabilities_allowed": true,
+      "mandatory_capabilities_from_family_alone": [],
+      "common_capability_enforcement": "WARNING_ONLY in validate(); expected_capabilities is catalog metadata, not root required",
+      "taxonomy_overlay_allowed_item_classes": [
+        "material"
+      ],
+      "native4f_family_itemclass_constraint_present": false,
+      "native4f_templates": [],
+      "taxonomy88ed_templates": [
+        "tools/content-schema/item-authoring/templates/progression-material.json"
+      ],
+      "applicability_gate": "Use exact accepted source facts/catalog routes plus authored groups and declared relationships; do not copy template defaults or make every optional native leaf KNOWN"
+    },
+    {
+      "profile_id": "transformation_item",
+      "expected_capabilities": [
+        "physical",
+        "lifecycle",
+        "use",
+        "temporal",
+        "charges",
+        "trade"
+      ],
+      "common_capabilities": [
+        "physical",
+        "lifecycle",
+        "use"
+      ],
+      "optional_capabilities": [
+        "temporal",
+        "charges",
+        "trade"
+      ],
+      "navigation_families": [
+        "Itens Encantados"
+      ],
+      "additional_capabilities_allowed": true,
+      "mandatory_capabilities_from_family_alone": [],
+      "common_capability_enforcement": "WARNING_ONLY in validate(); expected_capabilities is catalog metadata, not root required",
+      "taxonomy_overlay_allowed_item_classes": [
+        "transformation"
+      ],
+      "native4f_family_itemclass_constraint_present": false,
+      "native4f_templates": [],
+      "taxonomy88ed_templates": [
+        "tools/content-schema/item-authoring/templates/transformation-item.json"
+      ],
+      "applicability_gate": "Use exact accepted source facts/catalog routes plus authored groups and declared relationships; do not copy template defaults or make every optional native leaf KNOWN"
+    },
+    {
+      "profile_id": "quest_item",
+      "expected_capabilities": [
+        "physical",
+        "use",
+        "readable",
+        "container",
+        "fluid",
+        "light",
+        "lifecycle",
+        "presentation"
+      ],
+      "common_capabilities": [
+        "physical"
+      ],
+      "optional_capabilities": [
+        "use",
+        "readable",
+        "container",
+        "fluid",
+        "light",
+        "lifecycle",
+        "presentation"
+      ],
+      "navigation_families": [
+        "Itens de Quest"
+      ],
+      "additional_capabilities_allowed": true,
+      "mandatory_capabilities_from_family_alone": [],
+      "common_capability_enforcement": "WARNING_ONLY in validate(); expected_capabilities is catalog metadata, not root required",
+      "taxonomy_overlay_allowed_item_classes": [
+        "quest_item"
+      ],
+      "native4f_family_itemclass_constraint_present": false,
+      "native4f_templates": [],
+      "taxonomy88ed_templates": [
+        "tools/content-schema/item-authoring/templates/quest-item.json"
+      ],
+      "applicability_gate": "Use exact accepted source facts/catalog routes plus authored groups and declared relationships; do not copy template defaults or make every optional native leaf KNOWN"
+    },
+    {
+      "profile_id": "material_valuable",
+      "expected_capabilities": [
+        "physical",
+        "stack",
+        "trade"
+      ],
+      "common_capabilities": [
+        "physical",
+        "trade"
+      ],
+      "optional_capabilities": [
+        "stack"
+      ],
+      "navigation_families": [
+        "Cristais (Itens)",
+        "Valiosos",
+        "Produtos de Criaturas"
+      ],
+      "additional_capabilities_allowed": true,
+      "mandatory_capabilities_from_family_alone": [],
+      "common_capability_enforcement": "WARNING_ONLY in validate(); expected_capabilities is catalog metadata, not root required",
+      "taxonomy_overlay_allowed_item_classes": [
+        "material"
+      ],
+      "native4f_family_itemclass_constraint_present": false,
+      "native4f_templates": [
+        "tools/content-schema/item-authoring/templates/generic-portable.json"
+      ],
+      "taxonomy88ed_templates": [
+        "tools/content-schema/item-authoring/templates/generic-portable.json"
+      ],
+      "applicability_gate": "Use exact accepted source facts/catalog routes plus authored groups and declared relationships; do not copy template defaults or make every optional native leaf KNOWN"
+    },
+    {
+      "profile_id": "trash",
+      "expected_capabilities": [
+        "physical",
+        "use"
+      ],
+      "common_capabilities": [
+        "physical"
+      ],
+      "optional_capabilities": [
+        "use"
+      ],
+      "navigation_families": [
+        "Lixos"
+      ],
+      "additional_capabilities_allowed": true,
+      "mandatory_capabilities_from_family_alone": [],
+      "common_capability_enforcement": "WARNING_ONLY in validate(); expected_capabilities is catalog metadata, not root required",
+      "taxonomy_overlay_allowed_item_classes": [
+        "trash"
+      ],
+      "native4f_family_itemclass_constraint_present": false,
+      "native4f_templates": [],
+      "taxonomy88ed_templates": [
+        "tools/content-schema/item-authoring/templates/trash.json"
+      ],
+      "applicability_gate": "Use exact accepted source facts/catalog routes plus authored groups and declared relationships; do not copy template defaults or make every optional native leaf KNOWN"
+    },
+    {
+      "profile_id": "key",
+      "expected_capabilities": [
+        "physical",
+        "use"
+      ],
+      "common_capabilities": [
+        "physical",
+        "use"
+      ],
+      "optional_capabilities": [],
+      "navigation_families": [
+        "Chaves"
+      ],
+      "additional_capabilities_allowed": true,
+      "mandatory_capabilities_from_family_alone": [],
+      "common_capability_enforcement": "WARNING_ONLY in validate(); expected_capabilities is catalog metadata, not root required",
+      "taxonomy_overlay_allowed_item_classes": [
+        "key"
+      ],
+      "native4f_family_itemclass_constraint_present": false,
+      "native4f_templates": [],
+      "taxonomy88ed_templates": [
+        "tools/content-schema/item-authoring/templates/key.json"
+      ],
+      "applicability_gate": "Use exact accepted source facts/catalog routes plus authored groups and declared relationships; do not copy template defaults or make every optional native leaf KNOWN"
+    },
+    {
+      "profile_id": "light_source",
+      "expected_capabilities": [
+        "physical",
+        "light",
+        "use",
+        "temporal",
+        "lifecycle",
+        "presentation"
+      ],
+      "common_capabilities": [
+        "physical",
+        "light"
+      ],
+      "optional_capabilities": [
+        "use",
+        "temporal",
+        "lifecycle",
+        "presentation"
+      ],
+      "navigation_families": [
+        "Fontes de Luz"
+      ],
+      "additional_capabilities_allowed": true,
+      "mandatory_capabilities_from_family_alone": [],
+      "common_capability_enforcement": "WARNING_ONLY in validate(); expected_capabilities is catalog metadata, not root required",
+      "taxonomy_overlay_allowed_item_classes": [
+        "light_source"
+      ],
+      "native4f_family_itemclass_constraint_present": false,
+      "native4f_templates": [],
+      "taxonomy88ed_templates": [
+        "tools/content-schema/item-authoring/templates/light-source.json"
+      ],
+      "applicability_gate": "Use exact accepted source facts/catalog routes plus authored groups and declared relationships; do not copy template defaults or make every optional native leaf KNOWN"
+    },
+    {
+      "profile_id": "tool",
+      "expected_capabilities": [
+        "physical",
+        "use",
+        "charges",
+        "temporal",
+        "lifecycle",
+        "trade"
+      ],
+      "common_capabilities": [
+        "physical",
+        "use",
+        "trade"
+      ],
+      "optional_capabilities": [
+        "charges",
+        "temporal",
+        "lifecycle"
+      ],
+      "navigation_families": [
+        "Ferramentas",
+        "Ferramentas de Cozinha",
+        "Itens de Domar"
+      ],
+      "additional_capabilities_allowed": true,
+      "mandatory_capabilities_from_family_alone": [],
+      "common_capability_enforcement": "WARNING_ONLY in validate(); expected_capabilities is catalog metadata, not root required",
+      "taxonomy_overlay_allowed_item_classes": [
+        "tool"
+      ],
+      "native4f_family_itemclass_constraint_present": false,
+      "native4f_templates": [],
+      "taxonomy88ed_templates": [
+        "tools/content-schema/item-authoring/templates/tool.json"
+      ],
+      "applicability_gate": "Use exact accepted source facts/catalog routes plus authored groups and declared relationships; do not copy template defaults or make every optional native leaf KNOWN"
+    },
+    {
+      "profile_id": "food",
+      "expected_capabilities": [
+        "physical",
+        "stack",
+        "consumable",
+        "use",
+        "trade"
+      ],
+      "common_capabilities": [
+        "physical",
+        "consumable",
+        "use",
+        "trade"
+      ],
+      "optional_capabilities": [
+        "stack"
+      ],
+      "navigation_families": [
+        "Comidas"
+      ],
+      "additional_capabilities_allowed": true,
+      "mandatory_capabilities_from_family_alone": [],
+      "common_capability_enforcement": "WARNING_ONLY in validate(); expected_capabilities is catalog metadata, not root required",
+      "taxonomy_overlay_allowed_item_classes": [
+        "food",
+        "consumable"
+      ],
+      "native4f_family_itemclass_constraint_present": false,
+      "native4f_templates": [
+        "tools/content-schema/item-authoring/templates/food.json"
+      ],
+      "taxonomy88ed_templates": [
+        "tools/content-schema/item-authoring/templates/food.json"
+      ],
+      "applicability_gate": "Use exact accepted source facts/catalog routes plus authored groups and declared relationships; do not copy template defaults or make every optional native leaf KNOWN"
+    },
+    {
+      "profile_id": "fluid",
+      "expected_capabilities": [
+        "physical",
+        "fluid",
+        "use",
+        "requirements",
+        "trade"
+      ],
+      "common_capabilities": [
+        "physical",
+        "fluid",
+        "use",
+        "trade"
+      ],
+      "optional_capabilities": [
+        "requirements"
+      ],
+      "navigation_families": [
+        "Líquidos"
+      ],
+      "additional_capabilities_allowed": true,
+      "mandatory_capabilities_from_family_alone": [],
+      "common_capability_enforcement": "WARNING_ONLY in validate(); expected_capabilities is catalog metadata, not root required",
+      "taxonomy_overlay_allowed_item_classes": [
+        "fluid",
+        "container",
+        "fluid_container"
+      ],
+      "native4f_family_itemclass_constraint_present": false,
+      "native4f_templates": [
+        "tools/content-schema/item-authoring/templates/fluid.json"
+      ],
+      "taxonomy88ed_templates": [
+        "tools/content-schema/item-authoring/templates/fluid.json"
+      ],
+      "applicability_gate": "Use exact accepted source facts/catalog routes plus authored groups and declared relationships; do not copy template defaults or make every optional native leaf KNOWN"
+    },
+    {
+      "profile_id": "plant",
+      "expected_capabilities": [
+        "physical",
+        "stack",
+        "consumable",
+        "use",
+        "trade"
+      ],
+      "common_capabilities": [
+        "physical",
+        "trade"
+      ],
+      "optional_capabilities": [
+        "stack",
+        "consumable",
+        "use"
+      ],
+      "navigation_families": [
+        "Plantas e Ervas"
+      ],
+      "additional_capabilities_allowed": true,
+      "mandatory_capabilities_from_family_alone": [],
+      "common_capability_enforcement": "WARNING_ONLY in validate(); expected_capabilities is catalog metadata, not root required",
+      "taxonomy_overlay_allowed_item_classes": [
+        "plant"
+      ],
+      "native4f_family_itemclass_constraint_present": false,
+      "native4f_templates": [],
+      "taxonomy88ed_templates": [
+        "tools/content-schema/item-authoring/templates/plant.json"
+      ],
+      "applicability_gate": "Use exact accepted source facts/catalog routes plus authored groups and declared relationships; do not copy template defaults or make every optional native leaf KNOWN"
+    }
+  ],
+  "conditional_capability_contracts": {
+    "physical": {
+      "applies_when": "ONLY when capability is authored or a qualified source fact maps here; family common list alone is not a requirement",
+      "constraints": [
+        {
+          "schema_pointer": "#/$defs/physical",
+          "constraints": {
+            "required": []
+          }
+        }
+      ]
+    },
+    "stack": {
+      "applies_when": "ONLY when capability is authored or a qualified source fact maps here; family common list alone is not a requirement",
+      "constraints": [
+        {
+          "schema_pointer": "#/$defs/stack",
+          "constraints": {
+            "required": [
+              "stackable",
+              "max_count"
+            ],
+            "allOf": [
+              {
+                "if": {
+                  "properties": {
+                    "stackable": {
+                      "const": true
+                    }
+                  },
+                  "required": [
+                    "stackable"
+                  ]
+                },
+                "then": {
+                  "properties": {
+                    "max_count": {
+                      "minimum": 2
+                    }
+                  }
+                },
+                "else": {
+                  "properties": {
+                    "max_count": {
+                      "const": 1
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "requirements": {
+      "applies_when": "ONLY when capability is authored or a qualified source fact maps here; family common list alone is not a requirement",
+      "constraints": [
+        {
+          "schema_pointer": "#/$defs/requirements",
+          "constraints": {
+            "required": [
+              "enforcement_mode"
+            ]
+          }
+        },
+        {
+          "schema_pointer": "#/$defs/requirements/properties/vocations",
+          "constraints": {
+            "minItems": 0
+          }
+        },
+        {
+          "schema_pointer": "#/$defs/requirements/properties/level_magic_shortfall",
+          "constraints": {
+            "required": [
+              "policy",
+              "damage_multiplier_per_failed_check"
+            ]
+          }
+        },
+        {
+          "schema_pointer": "#/$defs/requirements/properties/level_magic_shortfall/properties/damage_multiplier_per_failed_check",
+          "constraints": {
+            "required": [
+              "numerator",
+              "denominator"
+            ]
+          }
+        }
+      ]
+    },
+    "equipment": {
+      "applies_when": "ONLY when capability is authored or a qualified source fact maps here; family common list alone is not a requirement",
+      "constraints": [
+        {
+          "schema_pointer": "#/$defs/equipment",
+          "constraints": {
+            "required": [],
+            "oneOf": [
+              {
+                "required": [
+                  "slot",
+                  "hands"
+                ],
+                "not": {
+                  "required": [
+                    "patterns"
+                  ]
+                }
+              },
+              {
+                "required": [
+                  "patterns"
+                ],
+                "not": {
+                  "anyOf": [
+                    {
+                      "required": [
+                        "pattern_id"
+                      ]
+                    },
+                    {
+                      "required": [
+                        "slot"
+                      ]
+                    },
+                    {
+                      "required": [
+                        "hands"
+                      ]
+                    },
+                    {
+                      "required": [
+                        "reserved_slots"
+                      ]
+                    },
+                    {
+                      "required": [
+                        "groups"
+                      ]
+                    },
+                    {
+                      "required": [
+                        "vocations"
+                      ]
+                    },
+                    {
+                      "required": [
+                        "min_level"
+                      ]
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "schema_pointer": "#/$defs/equipment/properties/reserved_slots",
+          "constraints": {
+            "minItems": 0
+          }
+        },
+        {
+          "schema_pointer": "#/$defs/equipment/properties/groups",
+          "constraints": {
+            "minItems": 0
+          }
+        },
+        {
+          "schema_pointer": "#/$defs/equipment/properties/vocations",
+          "constraints": {
+            "minItems": 0
+          }
+        },
+        {
+          "schema_pointer": "#/$defs/equipment/properties/patterns",
+          "constraints": {
+            "minItems": 1
+          }
+        },
+        {
+          "schema_pointer": "#/$defs/equipment/properties/activation_events",
+          "constraints": {
+            "minItems": 1
+          }
+        }
+      ]
+    },
+    "weapon": {
+      "applies_when": "ONLY when capability is authored or a qualified source fact maps here; family common list alone is not a requirement",
+      "constraints": [
+        {
+          "schema_pointer": "#/$defs/weapon",
+          "constraints": {
+            "required": [
+              "weapon_type"
+            ]
+          }
+        },
+        {
+          "schema_pointer": "#/$defs/weapon/properties/elemental_attack",
+          "constraints": {
+            "minItems": 0
+          }
+        }
+      ]
+    },
+    "protection": {
+      "applies_when": "ONLY when capability is authored or a qualified source fact maps here; family common list alone is not a requirement",
+      "constraints": [
+        {
+          "schema_pointer": "#/$defs/protection",
+          "constraints": {
+            "required": []
+          }
+        },
+        {
+          "schema_pointer": "#/$defs/protection/properties/resistances",
+          "constraints": {
+            "minItems": 0
+          }
+        },
+        {
+          "schema_pointer": "#/$defs/protection/properties/condition_suppressions",
+          "constraints": {
+            "minItems": 0
+          }
+        }
+      ]
+    },
+    "modifiers": {
+      "applies_when": "ONLY when capability is authored or a qualified source fact maps here; family common list alone is not a requirement",
+      "constraints": [
+        {
+          "schema_pointer": "#/$defs/modifiers",
+          "constraints": {
+            "required": []
+          }
+        },
+        {
+          "schema_pointer": "#/$defs/modifiers/properties/skill_boost",
+          "constraints": {
+            "minItems": 0
+          }
+        },
+        {
+          "schema_pointer": "#/$defs/modifiers/properties/resource_capacity",
+          "constraints": {
+            "minItems": 0
+          }
+        },
+        {
+          "schema_pointer": "#/$defs/modifiers/properties/regeneration",
+          "constraints": {
+            "minItems": 0
+          }
+        },
+        {
+          "schema_pointer": "#/$defs/modifiers/properties/leech",
+          "constraints": {
+            "minItems": 0
+          }
+        },
+        {
+          "schema_pointer": "#/$defs/modifiers/properties/magic_level",
+          "constraints": {
+            "minItems": 0
+          }
+        },
+        {
+          "schema_pointer": "#/$defs/modifiers/properties/perfect_shot_bonus",
+          "constraints": {
+            "minItems": 0
+          }
+        },
+        {
+          "schema_pointer": "#/$defs/modifiers/properties/perfect_shot_bonus/items",
+          "constraints": {
+            "required": [
+              "range_cells",
+              "damage"
+            ]
+          }
+        },
+        {
+          "schema_pointer": "#/$defs/modifiers/properties/reflection",
+          "constraints": {
+            "minItems": 0
+          }
+        },
+        {
+          "schema_pointer": "#/$defs/modifiers/properties/editor_notes",
+          "constraints": {
+            "minItems": 0
+          }
+        }
+      ]
+    },
+    "charges": {
+      "applies_when": "ONLY when capability is authored or a qualified source fact maps here; family common list alone is not a requirement",
+      "constraints": [
+        {
+          "schema_pointer": "#/$defs/charges",
+          "constraints": {
+            "required": [
+              "count"
+            ]
+          }
+        }
+      ]
+    },
+    "temporal": {
+      "applies_when": "ONLY when capability is authored or a qualified source fact maps here; family common list alone is not a requirement",
+      "constraints": [
+        {
+          "schema_pointer": "#/$defs/temporal",
+          "constraints": {
+            "required": [
+              "duration_ms",
+              "consumption_mode"
+            ]
+          }
+        }
+      ]
+    },
+    "container": {
+      "applies_when": "ONLY when capability is authored or a qualified source fact maps here; family common list alone is not a requirement",
+      "constraints": [
+        {
+          "schema_pointer": "#/$defs/container",
+          "constraints": {
+            "required": [
+              "capacity",
+              "content_kind"
+            ]
+          }
+        },
+        {
+          "schema_pointer": "#/$defs/container/properties/accepts",
+          "constraints": {
+            "minItems": 0
+          }
+        }
+      ]
+    },
+    "imbuement": {
+      "applies_when": "ONLY when capability is authored or a qualified source fact maps here; family common list alone is not a requirement",
+      "constraints": [
+        {
+          "schema_pointer": "#/$defs/imbuement",
+          "constraints": {
+            "required": [
+              "slot_count"
+            ]
+          }
+        },
+        {
+          "schema_pointer": "#/$defs/imbuement/properties/allowed_family_tiers",
+          "constraints": {
+            "minItems": 0
+          }
+        },
+        {
+          "schema_pointer": "#/$defs/imbuement/properties/excluded_families",
+          "constraints": {
+            "minItems": 0
+          }
+        }
+      ]
+    },
+    "forge": {
+      "applies_when": "ONLY when capability is authored or a qualified source fact maps here; family common list alone is not a requirement",
+      "constraints": [
+        {
+          "schema_pointer": "#/$defs/forge",
+          "constraints": {
+            "required": [
+              "classification",
+              "max_tier"
+            ]
+          }
+        }
+      ]
+    },
+    "proficiency": {
+      "applies_when": "ONLY when capability is authored or a qualified source fact maps here; family common list alone is not a requirement",
+      "constraints": [
+        {
+          "schema_pointer": "#/$defs/proficiency",
+          "constraints": {
+            "required": [],
+            "dependentRequired": {
+              "profile_binding": [
+                "threshold_class"
+              ],
+              "threshold_class": [
+                "profile_binding"
+              ]
+            },
+            "anyOf": [
+              {
+                "required": [
+                  "client_binding"
+                ]
+              },
+              {
+                "required": [
+                  "profile_binding"
+                ]
+              },
+              {
+                "required": [
+                  "augments"
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "schema_pointer": "#/$defs/proficiency/properties/augments",
+          "constraints": {
+            "minItems": 0
+          }
+        }
+      ]
+    },
+    "consumable": {
+      "applies_when": "ONLY when capability is authored or a qualified source fact maps here; family common list alone is not a requirement",
+      "constraints": [
+        {
+          "schema_pointer": "#/$defs/consumable",
+          "constraints": {
+            "required": [
+              "edible",
+              "consume_count"
+            ]
+          }
+        }
+      ]
+    },
+    "fluid": {
+      "applies_when": "ONLY when capability is authored or a qualified source fact maps here; family common list alone is not a requirement",
+      "constraints": [
+        {
+          "schema_pointer": "#/$defs/fluid",
+          "constraints": {
+            "required": [
+              "role"
+            ]
+          }
+        }
+      ]
+    },
+    "readable": {
+      "applies_when": "ONLY when capability is authored or a qualified source fact maps here; family common list alone is not a requirement",
+      "constraints": [
+        {
+          "schema_pointer": "#/$defs/readable",
+          "constraints": {
+            "required": [
+              "readable",
+              "writable",
+              "write_policy"
+            ],
+            "allOf": [
+              {
+                "if": {
+                  "properties": {
+                    "writable": {
+                      "const": false
+                    }
+                  },
+                  "required": [
+                    "writable"
+                  ]
+                },
+                "then": {
+                  "properties": {
+                    "write_policy": {
+                      "const": "none"
+                    }
+                  },
+                  "not": {
+                    "anyOf": [
+                      {
+                        "required": [
+                          "write_once_target"
+                        ]
+                      }
+                    ]
+                  }
+                },
+                "else": {
+                  "properties": {
+                    "write_policy": {
+                      "enum": [
+                        "write_once",
+                        "rewrite"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "max_characters"
+                  ]
+                }
+              },
+              {
+                "if": {
+                  "properties": {
+                    "write_policy": {
+                      "const": "write_once"
+                    }
+                  },
+                  "required": [
+                    "write_policy"
+                  ]
+                },
+                "then": {
+                  "required": [
+                    "write_once_target"
+                  ]
+                },
+                "else": {
+                  "not": {
+                    "anyOf": [
+                      {
+                        "required": [
+                          "write_once_target"
+                        ]
+                      }
+                    ]
+                  }
+                }
+              },
+              {
+                "if": {
+                  "properties": {
+                    "writable": {
+                      "const": true
+                    }
+                  },
+                  "required": [
+                    "writable"
+                  ]
+                },
+                "then": {
+                  "properties": {
+                    "readable": {
+                      "const": true
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "light": {
+      "applies_when": "ONLY when capability is authored or a qualified source fact maps here; family common list alone is not a requirement",
+      "constraints": [
+        {
+          "schema_pointer": "#/$defs/light",
+          "constraints": {
+            "required": [
+              "emits"
+            ],
+            "allOf": [
+              {
+                "if": {
+                  "properties": {
+                    "emits": {
+                      "const": true
+                    }
+                  },
+                  "required": [
+                    "emits"
+                  ]
+                },
+                "then": {
+                  "required": [
+                    "color_binding",
+                    "intensity"
+                  ]
+                },
+                "else": {
+                  "not": {
+                    "anyOf": [
+                      {
+                        "required": [
+                          "color_binding"
+                        ]
+                      },
+                      {
+                        "required": [
+                          "intensity"
+                        ]
+                      },
+                      {
+                        "required": [
+                          "radius_cells"
+                        ]
+                      },
+                      {
+                        "required": [
+                          "when_equipped"
+                        ]
+                      },
+                      {
+                        "required": [
+                          "toggleable"
+                        ]
+                      }
+                    ]
+                  }
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "use": {
+      "applies_when": "ONLY when capability is authored or a qualified source fact maps here; family common list alone is not a requirement",
+      "constraints": [
+        {
+          "schema_pointer": "#/$defs/use",
+          "constraints": {
+            "required": [
+              "usable",
+              "use_with"
+            ]
+          }
+        },
+        {
+          "schema_pointer": "#/$defs/use/properties/interactions",
+          "constraints": {
+            "minItems": 0
+          }
+        }
+      ]
+    },
+    "lifecycle": {
+      "applies_when": "ONLY when capability is authored or a qualified source fact maps here; family common list alone is not a requirement",
+      "constraints": [
+        {
+          "schema_pointer": "#/$defs/lifecycle",
+          "constraints": {
+            "required": []
+          }
+        },
+        {
+          "schema_pointer": "#/$defs/lifecycle/properties/transforms",
+          "constraints": {
+            "minItems": 0
+          }
+        }
+      ]
+    },
+    "availability": {
+      "applies_when": "ONLY when capability is authored or a qualified source fact maps here; family common list alone is not a requirement",
+      "constraints": [
+        {
+          "schema_pointer": "#/$defs/availability",
+          "constraints": {
+            "required": [
+              "status",
+              "evidence"
+            ]
+          }
+        }
+      ]
+    },
+    "trade": {
+      "applies_when": "ONLY when capability is authored or a qualified source fact maps here; family common list alone is not a requirement",
+      "constraints": [
+        {
+          "schema_pointer": "#/$defs/trade",
+          "constraints": {
+            "required": [],
+            "anyOf": [
+              {
+                "required": [
+                  "tradeable"
+                ]
+              },
+              {
+                "required": [
+                  "marketable"
+                ]
+              },
+              {
+                "required": [
+                  "market_category"
+                ]
+              },
+              {
+                "required": [
+                  "vocations"
+                ]
+              }
+            ],
+            "allOf": [
+              {
+                "if": {
+                  "anyOf": [
+                    {
+                      "required": [
+                        "market_category"
+                      ]
+                    },
+                    {
+                      "required": [
+                        "vocations"
+                      ]
+                    }
+                  ]
+                },
+                "then": {
+                  "properties": {
+                    "marketable": {
+                      "const": true
+                    }
+                  },
+                  "required": [
+                    "marketable"
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "schema_pointer": "#/$defs/trade/properties/vocations",
+          "constraints": {
+            "minItems": 0
+          }
+        }
+      ]
+    },
+    "presentation": {
+      "applies_when": "ONLY when capability is authored or a qualified source fact maps here; family common list alone is not a requirement",
+      "constraints": [
+        {
+          "schema_pointer": "#/$defs/presentation",
+          "constraints": {
+            "required": []
+          }
+        },
+        {
+          "schema_pointer": "#/$defs/presentation/properties/grammar",
+          "constraints": {
+            "required": []
+          }
+        },
+        {
+          "schema_pointer": "#/$defs/presentation/properties/sounds",
+          "constraints": {
+            "minItems": 0
+          }
+        },
+        {
+          "schema_pointer": "#/$defs/presentation/properties/effects",
+          "constraints": {
+            "minItems": 0
+          }
+        },
+        {
+          "schema_pointer": "#/$defs/presentation/properties/variants",
+          "constraints": {
+            "minItems": 0
+          }
+        }
+      ]
+    }
+  },
+  "all_nested_schema_obligations": [
+    {
+      "schema_pointer": "#/$defs/identity",
+      "constraints": {
+        "required": [
+          "key",
+          "revision"
+        ]
+      }
+    },
+    {
+      "schema_pointer": "#/$defs/ItemRef",
+      "constraints": {
+        "required": [
+          "family",
+          "key",
+          "revision"
+        ]
+      }
+    },
+    {
+      "schema_pointer": "#/$defs/AbilityRef",
+      "constraints": {
+        "required": [
+          "family",
+          "key",
+          "revision"
+        ]
+      }
+    },
+    {
+      "schema_pointer": "#/$defs/EffectRef",
+      "constraints": {
+        "required": [
+          "family",
+          "key",
+          "revision"
+        ]
+      }
+    },
+    {
+      "schema_pointer": "#/$defs/InteractionRef",
+      "constraints": {
+        "required": [
+          "family",
+          "key",
+          "revision"
+        ]
+      }
+    },
+    {
+      "schema_pointer": "#/$defs/DocumentRef",
+      "constraints": {
+        "required": [
+          "family",
+          "key",
+          "revision"
+        ]
+      }
+    },
+    {
+      "schema_pointer": "#/$defs/ProficiencyRef",
+      "constraints": {
+        "required": [
+          "family",
+          "key",
+          "revision"
+        ]
+      }
+    },
+    {
+      "schema_pointer": "#/$defs/PresentationRef",
+      "constraints": {
+        "required": [
+          "family",
+          "key",
+          "revision"
+        ]
+      }
+    },
+    {
+      "schema_pointer": "#/$defs/ratio",
+      "constraints": {
+        "required": [
+          "numerator",
+          "denominator"
+        ]
+      }
+    },
+    {
+      "schema_pointer": "#/$defs/nonnegativeRatio",
+      "constraints": {
+        "required": [
+          "numerator",
+          "denominator"
+        ]
+      }
+    },
+    {
+      "schema_pointer": "#/$defs/positiveRatio",
+      "constraints": {
+        "required": [
+          "numerator",
+          "denominator"
+        ]
+      }
+    },
+    {
+      "schema_pointer": "#/$defs/percent",
+      "constraints": {
+        "required": [
+          "numerator",
+          "denominator"
+        ]
+      }
+    },
+    {
+      "schema_pointer": "#/$defs/weight",
+      "constraints": {
+        "required": [
+          "value",
+          "unit"
+        ]
+      }
+    },
+    {
+      "schema_pointer": "#/$defs/displayWeight",
+      "constraints": {
+        "required": [
+          "value",
+          "unit"
+        ]
+      }
+    },
+    {
+      "schema_pointer": "#/$defs/displayFlags",
+      "constraints": {
+        "required": []
+      }
+    },
+    {
+      "schema_pointer": "#/$defs/presentation",
+      "constraints": {
+        "required": []
+      }
+    },
+    {
+      "schema_pointer": "#/$defs/presentation/properties/grammar",
+      "constraints": {
+        "required": []
+      }
+    },
+    {
+      "schema_pointer": "#/$defs/presentation/properties/sounds",
+      "constraints": {
+        "minItems": 0
+      }
+    },
+    {
+      "schema_pointer": "#/$defs/presentation/properties/effects",
+      "constraints": {
+        "minItems": 0
+      }
+    },
+    {
+      "schema_pointer": "#/$defs/presentation/properties/variants",
+      "constraints": {
+        "minItems": 0
+      }
+    },
+    {
+      "schema_pointer": "#/$defs/taxonomy",
+      "constraints": {
+        "required": [
+          "item_class",
+          "primary"
+        ]
+      }
+    },
+    {
+      "schema_pointer": "#/$defs/taxonomy/properties/tags",
+      "constraints": {
+        "minItems": 0
+      }
+    },
+    {
+      "schema_pointer": "#/$defs/physical",
+      "constraints": {
+        "required": []
+      }
+    },
+    {
+      "schema_pointer": "#/$defs/stack",
+      "constraints": {
+        "required": [
+          "stackable",
+          "max_count"
+        ],
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "stackable": {
+                  "const": true
+                }
+              },
+              "required": [
+                "stackable"
+              ]
+            },
+            "then": {
+              "properties": {
+                "max_count": {
+                  "minimum": 2
+                }
+              }
+            },
+            "else": {
+              "properties": {
+                "max_count": {
+                  "const": 1
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "schema_pointer": "#/$defs/requirements",
+      "constraints": {
+        "required": [
+          "enforcement_mode"
+        ]
+      }
+    },
+    {
+      "schema_pointer": "#/$defs/requirements/properties/vocations",
+      "constraints": {
+        "minItems": 0
+      }
+    },
+    {
+      "schema_pointer": "#/$defs/requirements/properties/level_magic_shortfall",
+      "constraints": {
+        "required": [
+          "policy",
+          "damage_multiplier_per_failed_check"
+        ]
+      }
+    },
+    {
+      "schema_pointer": "#/$defs/requirements/properties/level_magic_shortfall/properties/damage_multiplier_per_failed_check",
+      "constraints": {
+        "required": [
+          "numerator",
+          "denominator"
+        ]
+      }
+    },
+    {
+      "schema_pointer": "#/$defs/equipmentPattern",
+      "constraints": {
+        "required": [
+          "pattern_id",
+          "slot",
+          "hands"
+        ]
+      }
+    },
+    {
+      "schema_pointer": "#/$defs/equipmentPattern/properties/reserved_slots",
+      "constraints": {
+        "minItems": 0
+      }
+    },
+    {
+      "schema_pointer": "#/$defs/equipmentPattern/properties/groups",
+      "constraints": {
+        "minItems": 0
+      }
+    },
+    {
+      "schema_pointer": "#/$defs/equipmentPattern/properties/vocations",
+      "constraints": {
+        "minItems": 0
+      }
+    },
+    {
+      "schema_pointer": "#/$defs/equipment",
+      "constraints": {
+        "required": [],
+        "oneOf": [
+          {
+            "required": [
+              "slot",
+              "hands"
+            ],
+            "not": {
+              "required": [
+                "patterns"
+              ]
+            }
+          },
+          {
+            "required": [
+              "patterns"
+            ],
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "pattern_id"
+                  ]
+                },
+                {
+                  "required": [
+                    "slot"
+                  ]
+                },
+                {
+                  "required": [
+                    "hands"
+                  ]
+                },
+                {
+                  "required": [
+                    "reserved_slots"
+                  ]
+                },
+                {
+                  "required": [
+                    "groups"
+                  ]
+                },
+                {
+                  "required": [
+                    "vocations"
+                  ]
+                },
+                {
+                  "required": [
+                    "min_level"
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "schema_pointer": "#/$defs/equipment/properties/reserved_slots",
+      "constraints": {
+        "minItems": 0
+      }
+    },
+    {
+      "schema_pointer": "#/$defs/equipment/properties/groups",
+      "constraints": {
+        "minItems": 0
+      }
+    },
+    {
+      "schema_pointer": "#/$defs/equipment/properties/vocations",
+      "constraints": {
+        "minItems": 0
+      }
+    },
+    {
+      "schema_pointer": "#/$defs/equipment/properties/patterns",
+      "constraints": {
+        "minItems": 1
+      }
+    },
+    {
+      "schema_pointer": "#/$defs/equipment/properties/activation_events",
+      "constraints": {
+        "minItems": 1
+      }
+    },
+    {
+      "schema_pointer": "#/$defs/elementalAttack",
+      "constraints": {
+        "required": [
+          "damage_type",
+          "amount"
+        ]
+      }
+    },
+    {
+      "schema_pointer": "#/$defs/damageRange",
+      "constraints": {
+        "required": [
+          "minimum",
+          "maximum"
+        ]
+      }
+    },
+    {
+      "schema_pointer": "#/$defs/chainTargeting",
+      "constraints": {
+        "required": [
+          "max_targets",
+          "range_cells"
+        ]
+      }
+    },
+    {
+      "schema_pointer": "#/$defs/chain",
+      "constraints": {
+        "oneOf": [
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "mode": {
+                "const": "disabled"
+              }
+            },
+            "required": [
+              "mode"
+            ]
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "mode": {
+                "const": "override"
+              },
+              "skill_formula_coefficient": {
+                "$ref": "#/$defs/positiveRatio"
+              },
+              "targeting": {
+                "$ref": "#/$defs/chainTargeting"
+              }
+            },
+            "required": [
+              "mode",
+              "skill_formula_coefficient"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "schema_pointer": "#/$defs/weapon",
+      "constraints": {
+        "required": [
+          "weapon_type"
+        ]
+      }
+    },
+    {
+      "schema_pointer": "#/$defs/weapon/properties/elemental_attack",
+      "constraints": {
+        "minItems": 0
+      }
+    },
+    {
+      "schema_pointer": "#/$defs/resistance",
+      "constraints": {
+        "required": [
+          "damage_type",
+          "reduction_percent",
+          "scope"
+        ]
+      }
+    },
+    {
+      "schema_pointer": "#/$defs/conditionSuppression",
+      "constraints": {
+        "required": [
+          "condition",
+          "scope"
+        ]
+      }
+    },
+    {
+      "schema_pointer": "#/$defs/protection",
+      "constraints": {
+        "required": []
+      }
+    },
+    {
+      "schema_pointer": "#/$defs/protection/properties/resistances",
+      "constraints": {
+        "minItems": 0
+      }
+    },
+    {
+      "schema_pointer": "#/$defs/protection/properties/condition_suppressions",
+      "constraints": {
+        "minItems": 0
+      }
+    },
+    {
+      "schema_pointer": "#/$defs/skillBoost",
+      "constraints": {
+        "required": [
+          "skill",
+          "amount"
+        ]
+      }
+    },
+    {
+      "schema_pointer": "#/$defs/capacityModifier",
+      "constraints": {
+        "required": [
+          "resource"
+        ],
+        "anyOf": [
+          {
+            "required": [
+              "flat"
+            ]
+          },
+          {
+            "required": [
+              "percent"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "schema_pointer": "#/$defs/regenerationModifier",
+      "constraints": {
+        "required": [
+          "resource",
+          "amount",
+          "interval_ms"
+        ]
+      }
+    },
+    {
+      "schema_pointer": "#/$defs/leechModifier",
+      "constraints": {
+        "required": [
+          "resource"
+        ],
+        "anyOf": [
+          {
+            "required": [
+              "chance_percent"
+            ]
+          },
+          {
+            "required": [
+              "amount_percent"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "schema_pointer": "#/$defs/magicLevelModifier",
+      "constraints": {
+        "required": [
+          "combat_type"
+        ],
+        "oneOf": [
+          {
+            "required": [
+              "amount"
+            ],
+            "not": {
+              "required": [
+                "percent"
+              ]
+            }
+          },
+          {
+            "required": [
+              "percent"
+            ],
+            "not": {
+              "required": [
+                "amount"
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "schema_pointer": "#/$defs/magicLevelModifier/properties/combat_type",
+      "constraints": {
+        "oneOf": [
+          {
+            "$ref": "#/$defs/damageType"
+          },
+          {
+            "const": "all"
+          }
+        ]
+      }
+    },
+    {
+      "schema_pointer": "#/$defs/reflection",
+      "constraints": {
+        "required": [
+          "damage_type"
+        ],
+        "anyOf": [
+          {
+            "required": [
+              "flat"
+            ]
+          },
+          {
+            "required": [
+              "percent"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "schema_pointer": "#/$defs/magicShieldCapacity",
+      "constraints": {
+        "required": [],
+        "anyOf": [
+          {
+            "required": [
+              "flat"
+            ]
+          },
+          {
+            "required": [
+              "percent"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "schema_pointer": "#/$defs/movementSpeed",
+      "constraints": {
+        "required": [
+          "flat",
+          "unit"
+        ]
+      }
+    },
+    {
+      "schema_pointer": "#/$defs/mantra",
+      "constraints": {
+        "required": [
+          "points",
+          "damage_types"
+        ]
+      }
+    },
+    {
+      "schema_pointer": "#/$defs/mantra/properties/damage_types",
+      "constraints": {
+        "minItems": 1
+      }
+    },
+    {
+      "schema_pointer": "#/$defs/elementalBond",
+      "constraints": {
+        "required": [
+          "damage_type"
+        ]
+      }
+    },
+    {
+      "schema_pointer": "#/$defs/modifiers",
+      "constraints": {
+        "required": []
+      }
+    },
+    {
+      "schema_pointer": "#/$defs/modifiers/properties/skill_boost",
+      "constraints": {
+        "minItems": 0
+      }
+    },
+    {
+      "schema_pointer": "#/$defs/modifiers/properties/resource_capacity",
+      "constraints": {
+        "minItems": 0
+      }
+    },
+    {
+      "schema_pointer": "#/$defs/modifiers/properties/regeneration",
+      "constraints": {
+        "minItems": 0
+      }
+    },
+    {
+      "schema_pointer": "#/$defs/modifiers/properties/leech",
+      "constraints": {
+        "minItems": 0
+      }
+    },
+    {
+      "schema_pointer": "#/$defs/modifiers/properties/magic_level",
+      "constraints": {
+        "minItems": 0
+      }
+    },
+    {
+      "schema_pointer": "#/$defs/modifiers/properties/perfect_shot_bonus",
+      "constraints": {
+        "minItems": 0
+      }
+    },
+    {
+      "schema_pointer": "#/$defs/modifiers/properties/perfect_shot_bonus/items",
+      "constraints": {
+        "required": [
+          "range_cells",
+          "damage"
+        ]
+      }
+    },
+    {
+      "schema_pointer": "#/$defs/modifiers/properties/reflection",
+      "constraints": {
+        "minItems": 0
+      }
+    },
+    {
+      "schema_pointer": "#/$defs/modifiers/properties/editor_notes",
+      "constraints": {
+        "minItems": 0
+      }
+    },
+    {
+      "schema_pointer": "#/$defs/charges",
+      "constraints": {
+        "required": [
+          "count"
+        ]
+      }
+    },
+    {
+      "schema_pointer": "#/$defs/temporal",
+      "constraints": {
+        "required": [
+          "duration_ms",
+          "consumption_mode"
+        ]
+      }
+    },
+    {
+      "schema_pointer": "#/$defs/container",
+      "constraints": {
+        "required": [
+          "capacity",
+          "content_kind"
+        ]
+      }
+    },
+    {
+      "schema_pointer": "#/$defs/container/properties/accepts",
+      "constraints": {
+        "minItems": 0
+      }
+    },
+    {
+      "schema_pointer": "#/$defs/imbuementTier",
+      "constraints": {
+        "required": [
+          "family",
+          "tier"
+        ]
+      }
+    },
+    {
+      "schema_pointer": "#/$defs/imbuement",
+      "constraints": {
+        "required": [
+          "slot_count"
+        ]
+      }
+    },
+    {
+      "schema_pointer": "#/$defs/imbuement/properties/allowed_family_tiers",
+      "constraints": {
+        "minItems": 0
+      }
+    },
+    {
+      "schema_pointer": "#/$defs/imbuement/properties/excluded_families",
+      "constraints": {
+        "minItems": 0
+      }
+    },
+    {
+      "schema_pointer": "#/$defs/forge",
+      "constraints": {
+        "required": [
+          "classification",
+          "max_tier"
+        ]
+      }
+    },
+    {
+      "schema_pointer": "#/$defs/augmentValue",
+      "constraints": {
+        "oneOf": [
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "kind": {
+                "const": "boolean"
+              },
+              "value": {
+                "$ref": "#/$defs/bool"
+              }
+            },
+            "required": [
+              "kind",
+              "value"
+            ]
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "kind": {
+                "const": "signed_points"
+              },
+              "value": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "kind",
+              "value"
+            ]
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "kind": {
+                "const": "rational_percent"
+              },
+              "value": {
+                "$ref": "#/$defs/ratio"
+              }
+            },
+            "required": [
+              "kind",
+              "value"
+            ]
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "kind": {
+                "const": "milliseconds"
+              },
+              "value": {
+                "$ref": "#/$defs/ms"
+              }
+            },
+            "required": [
+              "kind",
+              "value"
+            ]
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "kind": {
+                "const": "signed_milliseconds"
+              },
+              "value": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "kind",
+              "value"
+            ]
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "kind": {
+                "const": "cells"
+              },
+              "value": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "kind",
+              "value"
+            ]
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "kind": {
+                "const": "count"
+              },
+              "value": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "kind",
+              "value"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "schema_pointer": "#/$defs/augmentTarget",
+      "constraints": {
+        "oneOf": [
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "kind": {
+                "const": "ability"
+              },
+              "ability": {
+                "$ref": "#/$defs/AbilityRef"
+              }
+            },
+            "required": [
+              "kind",
+              "ability"
+            ]
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "kind": {
+                "const": "auto_attack"
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "kind": {
+                "const": "skill_scaled_auto_attack"
+              },
+              "skill": {
+                "type": "string",
+                "minLength": 1,
+                "pattern": "^[a-z][a-z0-9_]*$"
+              }
+            },
+            "required": [
+              "kind",
+              "skill"
+            ]
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "kind": {
+                "const": "skill_scaled_spell_healing"
+              },
+              "skill": {
+                "type": "string",
+                "minLength": 1,
+                "pattern": "^[a-z][a-z0-9_]*$"
+              }
+            },
+            "required": [
+              "kind",
+              "skill"
+            ]
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "kind": {
+                "const": "weapon_shield_modifier"
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "kind": {
+                "const": "offensive_rune"
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "kind": {
+                "const": "creature_class"
+              },
+              "class_key": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "kind",
+              "class_key"
+            ]
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "kind": {
+                "const": "generic"
+              },
+              "target_key": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "kind",
+              "target_key"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "schema_pointer": "#/$defs/augmentRankValue",
+      "constraints": {
+        "required": [
+          "rank",
+          "value"
+        ]
+      }
+    },
+    {
+      "schema_pointer": "#/$defs/augment",
+      "constraints": {
+        "required": [
+          "key",
+          "target"
+        ]
+      }
+    },
+    {
+      "schema_pointer": "#/$defs/augment/properties/rank_values",
+      "constraints": {
+        "minItems": 0
+      }
+    },
+    {
+      "schema_pointer": "#/$defs/proficiencyClientBinding",
+      "constraints": {
+        "required": [
+          "client_proficiency_id",
+          "threshold_class"
+        ]
+      }
+    },
+    {
+      "schema_pointer": "#/$defs/proficiency",
+      "constraints": {
+        "required": [],
+        "dependentRequired": {
+          "profile_binding": [
+            "threshold_class"
+          ],
+          "threshold_class": [
+            "profile_binding"
+          ]
+        },
+        "anyOf": [
+          {
+            "required": [
+              "client_binding"
+            ]
+          },
+          {
+            "required": [
+              "profile_binding"
+            ]
+          },
+          {
+            "required": [
+              "augments"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "schema_pointer": "#/$defs/proficiency/properties/augments",
+      "constraints": {
+        "minItems": 0
+      }
+    },
+    {
+      "schema_pointer": "#/$defs/consumable",
+      "constraints": {
+        "required": [
+          "edible",
+          "consume_count"
+        ]
+      }
+    },
+    {
+      "schema_pointer": "#/$defs/fluid",
+      "constraints": {
+        "required": [
+          "role"
+        ]
+      }
+    },
+    {
+      "schema_pointer": "#/$defs/readable",
+      "constraints": {
+        "required": [
+          "readable",
+          "writable",
+          "write_policy"
+        ],
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "writable": {
+                  "const": false
+                }
+              },
+              "required": [
+                "writable"
+              ]
+            },
+            "then": {
+              "properties": {
+                "write_policy": {
+                  "const": "none"
+                }
+              },
+              "not": {
+                "anyOf": [
+                  {
+                    "required": [
+                      "write_once_target"
+                    ]
+                  }
+                ]
+              }
+            },
+            "else": {
+              "properties": {
+                "write_policy": {
+                  "enum": [
+                    "write_once",
+                    "rewrite"
+                  ]
+                }
+              },
+              "required": [
+                "max_characters"
+              ]
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "write_policy": {
+                  "const": "write_once"
+                }
+              },
+              "required": [
+                "write_policy"
+              ]
+            },
+            "then": {
+              "required": [
+                "write_once_target"
+              ]
+            },
+            "else": {
+              "not": {
+                "anyOf": [
+                  {
+                    "required": [
+                      "write_once_target"
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "writable": {
+                  "const": true
+                }
+              },
+              "required": [
+                "writable"
+              ]
+            },
+            "then": {
+              "properties": {
+                "readable": {
+                  "const": true
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "schema_pointer": "#/$defs/light",
+      "constraints": {
+        "required": [
+          "emits"
+        ],
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "emits": {
+                  "const": true
+                }
+              },
+              "required": [
+                "emits"
+              ]
+            },
+            "then": {
+              "required": [
+                "color_binding",
+                "intensity"
+              ]
+            },
+            "else": {
+              "not": {
+                "anyOf": [
+                  {
+                    "required": [
+                      "color_binding"
+                    ]
+                  },
+                  {
+                    "required": [
+                      "intensity"
+                    ]
+                  },
+                  {
+                    "required": [
+                      "radius_cells"
+                    ]
+                  },
+                  {
+                    "required": [
+                      "when_equipped"
+                    ]
+                  },
+                  {
+                    "required": [
+                      "toggleable"
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "schema_pointer": "#/$defs/use",
+      "constraints": {
+        "required": [
+          "usable",
+          "use_with"
+        ]
+      }
+    },
+    {
+      "schema_pointer": "#/$defs/use/properties/interactions",
+      "constraints": {
+        "minItems": 0
+      }
+    },
+    {
+      "schema_pointer": "#/$defs/transform",
+      "constraints": {
+        "required": [
+          "trigger",
+          "target"
+        ]
+      }
+    },
+    {
+      "schema_pointer": "#/$defs/wrapping",
+      "constraints": {
+        "required": [],
+        "anyOf": [
+          {
+            "required": [
+              "wrap_target"
+            ]
+          },
+          {
+            "required": [
+              "unwrap_target"
+            ]
+          },
+          {
+            "required": [
+              "is_wrap_kit"
+            ]
+          },
+          {
+            "required": [
+              "wrap_enabled"
+            ]
+          },
+          {
+            "required": [
+              "unwrap_enabled"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "schema_pointer": "#/$defs/lifecycle",
+      "constraints": {
+        "required": []
+      }
+    },
+    {
+      "schema_pointer": "#/$defs/lifecycle/properties/transforms",
+      "constraints": {
+        "minItems": 0
+      }
+    },
+    {
+      "schema_pointer": "#/$defs/availabilityEvidence",
+      "constraints": {
+        "required": [
+          "source",
+          "page_id",
+          "revision_id",
+          "wiki_title",
+          "match_basis"
+        ]
+      }
+    },
+    {
+      "schema_pointer": "#/$defs/availability",
+      "constraints": {
+        "required": [
+          "status",
+          "evidence"
+        ]
+      }
+    },
+    {
+      "schema_pointer": "#/$defs/trade",
+      "constraints": {
+        "required": [],
+        "anyOf": [
+          {
+            "required": [
+              "tradeable"
+            ]
+          },
+          {
+            "required": [
+              "marketable"
+            ]
+          },
+          {
+            "required": [
+              "market_category"
+            ]
+          },
+          {
+            "required": [
+              "vocations"
+            ]
+          }
+        ],
+        "allOf": [
+          {
+            "if": {
+              "anyOf": [
+                {
+                  "required": [
+                    "market_category"
+                  ]
+                },
+                {
+                  "required": [
+                    "vocations"
+                  ]
+                }
+              ]
+            },
+            "then": {
+              "properties": {
+                "marketable": {
+                  "const": true
+                }
+              },
+              "required": [
+                "marketable"
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "schema_pointer": "#/$defs/trade/properties/vocations",
+      "constraints": {
+        "minItems": 0
+      }
+    },
+    {
+      "schema_pointer": "#/$defs/sourceObservations",
+      "constraints": {
+        "required": []
+      }
+    },
+    {
+      "schema_pointer": "#/$defs/sourceObservations/properties/unparsed_clauses",
+      "constraints": {
+        "minItems": 0
+      }
+    },
+    {
+      "schema_pointer": "#/$defs/sourceObservations/properties/unparsed_modifier_clauses",
+      "constraints": {
+        "minItems": 0
+      }
+    },
+    {
+      "schema_pointer": "#/$defs/editor",
+      "constraints": {
+        "required": []
+      }
+    },
+    {
+      "schema_pointer": "#/$defs/editor/properties/notes",
+      "constraints": {
+        "minItems": 0
+      }
+    },
+    {
+      "schema_pointer": "#/$defs/editor/properties/estimated_value",
+      "constraints": {
+        "required": [
+          "amount",
+          "unit"
+        ]
+      }
+    },
+    {
+      "schema_pointer": "#/$defs/wikiEvidenceSource",
+      "constraints": {
+        "required": [
+          "source_id",
+          "page_id",
+          "title",
+          "url",
+          "revision",
+          "revision_timestamp",
+          "captured_at",
+          "revision_sha1",
+          "content_sha256"
+        ]
+      }
+    },
+    {
+      "schema_pointer": "#/$defs/wikiEvidenceCandidate",
+      "constraints": {
+        "required": [
+          "field",
+          "value",
+          "wiki_source"
+        ]
+      }
+    },
+    {
+      "schema_pointer": "#/$defs/familyProfileEvidence",
+      "constraints": {
+        "required": [],
+        "allOf": [
+          {
+            "if": {
+              "required": [
+                "resolution"
+              ]
+            },
+            "then": {
+              "required": [
+                "resolution",
+                "match_basis"
+              ],
+              "if": {
+                "properties": {
+                  "resolution": {
+                    "const": "direct"
+                  }
+                }
+              },
+              "then": {
+                "required": [
+                  "field",
+                  "value",
+                  "wiki_source"
+                ],
+                "not": {
+                  "required": [
+                    "candidates"
+                  ]
+                }
+              },
+              "else": {
+                "required": [
+                  "candidates"
+                ],
+                "not": {
+                  "anyOf": [
+                    {
+                      "required": [
+                        "field"
+                      ]
+                    },
+                    {
+                      "required": [
+                        "value"
+                      ]
+                    },
+                    {
+                      "required": [
+                        "wiki_source"
+                      ]
+                    }
+                  ]
+                }
+              }
+            },
+            "else": {
+              "not": {
+                "anyOf": [
+                  {
+                    "required": [
+                      "resolution"
+                    ]
+                  },
+                  {
+                    "required": [
+                      "match_basis"
+                    ]
+                  },
+                  {
+                    "required": [
+                      "field"
+                    ]
+                  },
+                  {
+                    "required": [
+                      "value"
+                    ]
+                  },
+                  {
+                    "required": [
+                      "wiki_source"
+                    ]
+                  },
+                  {
+                    "required": [
+                      "candidates"
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "if": {
+              "required": [
+                "wrap_target_id"
+              ]
+            },
+            "then": {
+              "required": [
+                "wrap_target_id",
+                "wrap_target_primarytype"
+              ],
+              "not": {
+                "anyOf": [
+                  {
+                    "required": [
+                      "resolution"
+                    ]
+                  },
+                  {
+                    "required": [
+                      "match_basis"
+                    ]
+                  },
+                  {
+                    "required": [
+                      "field"
+                    ]
+                  },
+                  {
+                    "required": [
+                      "value"
+                    ]
+                  },
+                  {
+                    "required": [
+                      "wiki_source"
+                    ]
+                  },
+                  {
+                    "required": [
+                      "candidates"
+                    ]
+                  },
+                  {
+                    "required": [
+                      "rule"
+                    ]
+                  },
+                  {
+                    "required": [
+                      "name"
+                    ]
+                  }
+                ]
+              }
+            },
+            "else": {
+              "not": {
+                "anyOf": [
+                  {
+                    "required": [
+                      "wrap_target_id"
+                    ]
+                  },
+                  {
+                    "required": [
+                      "wrap_target_primarytype"
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "if": {
+              "required": [
+                "rule"
+              ]
+            },
+            "then": {
+              "required": [
+                "rule",
+                "name"
+              ],
+              "not": {
+                "anyOf": [
+                  {
+                    "required": [
+                      "resolution"
+                    ]
+                  },
+                  {
+                    "required": [
+                      "match_basis"
+                    ]
+                  },
+                  {
+                    "required": [
+                      "field"
+                    ]
+                  },
+                  {
+                    "required": [
+                      "value"
+                    ]
+                  },
+                  {
+                    "required": [
+                      "wiki_source"
+                    ]
+                  },
+                  {
+                    "required": [
+                      "candidates"
+                    ]
+                  },
+                  {
+                    "required": [
+                      "wrap_target_id"
+                    ]
+                  },
+                  {
+                    "required": [
+                      "wrap_target_primarytype"
+                    ]
+                  }
+                ]
+              }
+            },
+            "else": {
+              "not": {
+                "anyOf": [
+                  {
+                    "required": [
+                      "rule"
+                    ]
+                  },
+                  {
+                    "required": [
+                      "name"
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "anyOf": [
+              {
+                "required": [
+                  "resolution"
+                ]
+              },
+              {
+                "required": [
+                  "wrap_target_id"
+                ]
+              },
+              {
+                "required": [
+                  "rule"
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "schema_pointer": "#/$defs/familyProfileEvidence/properties/candidates",
+      "constraints": {
+        "minItems": 2
+      }
+    }
+  ],
+  "dependencies_root_required": [
+    "definitions",
+    "assets",
+    "presentations",
+    "proficiency_crosswalks"
+  ],
+  "manifest_root_required": [
+    "sources",
+    "entries"
+  ],
+  "existing_authoring_validator_boundary": "portable Item authoring structure and declared dependency closure; no runtime qualification",
+  "real_example_closed_scope": {
+    "minimum_source_claim_gate": "Exact field_evidence/non_source_defaults authored leaf partition",
+    "fixed_blockers": [
+      "sprite_atlas_not_admitted",
+      "runtime_lowering_not_implemented"
+    ],
+    "conditional_blockers": [
+      "rune ability_binding_not_admitted and combat_formula_not_admitted",
+      "fluid fluid_interaction_binding_not_admitted",
+      "source sounds yum_sound_asset_not_admitted",
+      "missing canonical numeric identity",
+      "unadmitted proficiency crosswalk when applicable"
+    ],
+    "warning": "These checks apply to retained real-example fixture contract, not automatic current full-pool readiness counts"
+  },
+  "checklist": [
+    {
+      "id": "G1_IDENTITY_AND_DOMAIN",
+      "authority": "EXISTING_SOURCE_QUALIFICATION_PLUS_SCHEMA",
+      "scope": "every Item",
+      "check": "Unique exact current numeric binding and target identity; preserve own-ID-first and all-present source agreement; separate portable Item versus Terrain/WorldObject/instance state. Qualified family/navigation metadata alone is not native admission."
+    },
+    {
+      "id": "G2_FAMILY_AND_ENVELOPE",
+      "authority": "EXISTING_SCHEMA",
+      "scope": "every authoring Item",
+      "check": "identity, display_name, family_profile, delivery_task_eligible, taxonomy present; taxonomy item_class and primary present. Validate family/item_class using taxonomy88ed constraint only after real composition; native4f schema alone does not impose it."
+    },
+    {
+      "id": "G3_FIELD_INVENTORY",
+      "authority": "EXISTING_VALIDATE_WITH_MANIFEST; REQUIRED_FOR_PROPOSED_IMPORT_COMPLETION_GATE",
+      "scope": "every in-scope retained source frame",
+      "check": "Pinned source identities and real capture timestamps; every source field occurrence has exactly one disposition, and dispositions equal complete field_inventory. No unsupported_source_field, unresolved_semantics or conflict may pass import-readiness. Missing source field remains UNKNOWN; absence is not FALSE/N/A."
+    },
+    {
+      "id": "G4_INTRINSIC_TYPED_PROJECTION",
+      "authority": "EXISTING_CATALOG_ROUTES_AND_PACKET_GUARDS",
+      "scope": "every mapped intrinsic source fact",
+      "check": "Destination exists with admitted unit/type/exact value and accepted owner (native semantics or ItemAuthoring), all applicable guards and known/conflict-state preservation. Rational percentage points, relative p/100, milliseconds and source units stay distinct. OTS hypotheses remain labeled hypotheses; engine agreement does not become official truth."
+    },
+    {
+      "id": "G5_CONDITIONAL_CAPABILITY_VALIDITY",
+      "authority": "EXISTING_SCHEMA_AND_VALIDATE",
+      "scope": "only authored/applicable capability",
+      "check": "Apply exact nested required/oneOf/anyOf constraints and semantic coherence; missing common capabilities produce warning, not failure. Equipment slot/hands/reservation, damage minimum<=maximum, resource/vector uniqueness, imbuement exclusion, lifecycle decay consistency. No generic all-optional-known rule."
+    },
+    {
+      "id": "G6_EXTERNAL_RELATION_CLOSURE",
+      "authority": "EXISTING_VALIDATE_AND_SOURCE_DISPOSITIONS",
+      "scope": "every declared or mapped dependency",
+      "check": "Resolve every exact used definition/asset/proficiency crosswalk to its owning domain; no duplicate or unused declarations. Quest/drop/trade/actor/effect/formula/FX/audio relations retain source owning disposition; identity of a sound/effect alone does not establish its activation/consumer binding."
+    },
+    {
+      "id": "G7_PRESENTATION_AND_RESOURCE_STATUS",
+      "authority": "EXISTING_VALIDATE; FULL_RENDERABILITY_SEPARATE",
+      "scope": "when presentation/assets declared or source routes demand them",
+      "check": "appearance_binding requires actual pinned presentation payload and valid frame geometry/sprite counts. Sprite-atlas absence is a warning in structural validator, a real-example blocker, and must remain explicit in any renderability claim. Do not infer zero/missing FX from no source binding."
+    },
+    {
+      "id": "G8_EVERY_AUTHORED_LEAF_EVIDENCE",
+      "authority": "EXISTING_REAL_EXAMPLE_RULE; PROPOSED_GENERALIZATION_OUTSIDE_6_FIXTURES",
+      "scope": "every authored source-claiming Item",
+      "check": "field_evidence and non_source_defaults exactly partition authored leaves (validator-specific exceptions preserved). Defaults/normalizations are labeled, not source-proven. Existing validate_real_example is a closed real-example contract, not evidence that all34031 rows were checked."
+    },
+    {
+      "id": "G9_PUBLISHED_COMPOSITION",
+      "authority": "EXISTING_PACKET_GUARDS; PROPOSED_GLOBAL_AGGREGATE_GATE",
+      "scope": "after accepted source patch",
+      "check": "Exact final published parent/source/packet SHA, actual typed owner equality, deterministic native/tree/migration comparison, preservation of unrelated fields, approved dependencies. Overlay taxonomy/world/native reports are not proof that their branches were integrated."
+    },
+    {
+      "id": "G10_RUNTIME_READINESS",
+      "authority": "NOT_ESTABLISHED_AS_GLOBAL_PER_ITEM_CONTRACT",
+      "scope": "separate runtime/playable claim",
+      "check": "Existing Item authoring CLI always reports runtime_qualified=false. Rune ability/formula, modifier target/evaluation/priority, interaction/effects, sprites/resources and actor rules need their actual accepted owning contracts; do not substitute source metadata completion for runtime readiness."
+    }
+  ],
+  "proposed_per_item_record_shape": {
+    "target": "exact family/key/revision",
+    "scope": "explicit source versions/cutoff/published head",
+    "family_profile": "admitted family or held reason",
+    "source_fields": [
+      {
+        "locator": "actual retained source coordinates",
+        "field": "literal source field",
+        "disposition": "mapped / accepted external or omission / conflict or unresolved",
+        "typed_owner": "actual native path / authoring / external owning relation",
+        "state": "KNOWN or actual state",
+        "proof_sha256": "real proof or null",
+        "blocker": "exact missing mapping/unit/identity/source/owner reason or null"
+      }
+    ],
+    "capabilities": [
+      {
+        "name": "authored or independently source-applicable group",
+        "applicability": "PROVEN_APPLICABLE / PROVEN_NOT_APPLICABLE / UNKNOWN_NO_SOURCE",
+        "required_by": "actual schema conditional or actual source route; never common list alone",
+        "missing_applicable_fields": [],
+        "coherence_errors": []
+      }
+    ],
+    "relations": [
+      {
+        "owning_domain": "actual accepted owner",
+        "source_evidence": "real record or null",
+        "binding_status": "resolved / held / unsupported / no observed fact"
+      }
+    ],
+    "gate_results": {
+      "G1_IDENTITY_AND_DOMAIN": "PASS / HOLD / NOT_APPLICABLE_WITH_PROOF / NOT_EVALUATED",
+      "G2_FAMILY_AND_ENVELOPE": "PASS / HOLD / NOT_APPLICABLE_WITH_PROOF / NOT_EVALUATED",
+      "G3_FIELD_INVENTORY": "PASS / HOLD / NOT_APPLICABLE_WITH_PROOF / NOT_EVALUATED",
+      "G4_INTRINSIC_TYPED_PROJECTION": "PASS / HOLD / NOT_APPLICABLE_WITH_PROOF / NOT_EVALUATED",
+      "G5_CONDITIONAL_CAPABILITY_VALIDITY": "PASS / HOLD / NOT_APPLICABLE_WITH_PROOF / NOT_EVALUATED",
+      "G6_EXTERNAL_RELATION_CLOSURE": "PASS / HOLD / NOT_APPLICABLE_WITH_PROOF / NOT_EVALUATED",
+      "G7_PRESENTATION_AND_RESOURCE_STATUS": "PASS / HOLD / NOT_APPLICABLE_WITH_PROOF / NOT_EVALUATED",
+      "G8_EVERY_AUTHORED_LEAF_EVIDENCE": "PASS / HOLD / NOT_APPLICABLE_WITH_PROOF / NOT_EVALUATED",
+      "G9_PUBLISHED_COMPOSITION": "PASS / HOLD / NOT_APPLICABLE_WITH_PROOF / NOT_EVALUATED",
+      "G10_RUNTIME_READINESS": "PASS / HOLD / NOT_APPLICABLE_WITH_PROOF / NOT_EVALUATED"
+    },
+    "source_import_complete": "null until G1-G9 evaluated for declared scope and proposed aggregate gate accepted",
+    "runtime_qualified": "null until actual owning runtime contract checked"
+  },
+  "definition_of_done": {
+    "categorized": "Exact accepted family metadata and domain disposition established; not native playable admission",
+    "source_coverage_complete": "Every retained field in explicitly pinned source scope has one supported disposition; external relation omission is explicit, not lost",
+    "typed_import_complete": "Every accepted applicable intrinsic source mapping exists at actual stored typed owner with exact value; all conditional authoring and declared dependency constraints pass; no unresolved applicable source fact within declared scope",
+    "runtime_qualified": "Separate owning runtime contract; NOT_ESTABLISHED globally by current Item authoring validator",
+    "all_zero_claim": "Only after every scoped Item has evaluated gate records with no open applicable source/import/relationship blocker; cannot infer from zero missing templates or successful batch counts"
+  },
+  "fully_verified_status": "NOT_ESTABLISHED",
+  "fully_verified_count": null,
+  "incomplete_count": null,
+  "input_witnesses": [
+    {
+      "commit": "4f690c1e8a8966a4d074dde94d5a884dbb34fb94",
+      "path": "tools/content-schema/item-authoring/item.schema.json",
+      "sha256": "a7147e948459563f83a13d11a9a4b0e4f424393f438da1d0e1ae08f274352997",
+      "bytes": 69790
+    },
+    {
+      "commit": "88edf552b323cef8cb68cef5b10949fbf0c85424",
+      "path": "tools/content-schema/item-authoring/item.schema.json",
+      "sha256": "a5bb5ca8a73d936146ce13c0a70d0420616a65812704fec30c401cba0d667d7d",
+      "bytes": 80580
+    },
+    {
+      "commit": "4f690c1e8a8966a4d074dde94d5a884dbb34fb94",
+      "path": "tools/content-schema/item-authoring/profile-catalog.json",
+      "sha256": "1e5536b31eabbccd94ceb52ae7c8f18fc3e10e4701f98f01985da707464041fc",
+      "bytes": 11293
+    },
+    {
+      "commit": "88edf552b323cef8cb68cef5b10949fbf0c85424",
+      "path": "tools/content-schema/item-authoring/profile-catalog.json",
+      "sha256": "1e5536b31eabbccd94ceb52ae7c8f18fc3e10e4701f98f01985da707464041fc",
+      "bytes": 11293
+    },
+    {
+      "commit": "4f690c1e8a8966a4d074dde94d5a884dbb34fb94",
+      "path": "tools/content-schema/item-authoring/validate_item.py",
+      "sha256": "9328d4d93e28a4715541b7928311e74537bb51a8f3225fb943feb2cec883e019",
+      "bytes": 74982
+    },
+    {
+      "commit": "88edf552b323cef8cb68cef5b10949fbf0c85424",
+      "path": "tools/content-schema/item-authoring/validate_item.py",
+      "sha256": "e4b9026e0885c2c21835d530dd2441bfc02900741c0472b1b9defc31b92292dc",
+      "bytes": 75382
+    },
+    {
+      "commit": "4f690c1e8a8966a4d074dde94d5a884dbb34fb94",
+      "path": "tools/content-schema/item-authoring/item-dependencies.schema.json",
+      "sha256": "a2ed84548b58cb207c7db8ab66306247126754c1c028e5f172acd0c0900bc2bd",
+      "bytes": 9691
+    },
+    {
+      "commit": "4f690c1e8a8966a4d074dde94d5a884dbb34fb94",
+      "path": "tools/content-schema/item-authoring/item-import-readiness.schema.json",
+      "sha256": "e12120134c40e5a613d0b2d0b11b76b49ba4e01bd269122c483a8f76da2c1a7a",
+      "bytes": 4830
+    },
+    {
+      "commit": "4f690c1e8a8966a4d074dde94d5a884dbb34fb94",
+      "path": "tools/content-schema/item-authoring/real-source-evidence.schema.json",
+      "sha256": "b390350a93403b69b319278d2533b7e12dacf706746e77a3372c2ce37ddbe93a",
+      "bytes": 10509
+    },
+    {
+      "commit": "4f690c1e8a8966a4d074dde94d5a884dbb34fb94",
+      "path": "tools/content-schema/item-authoring/templates/ammunition.json",
+      "sha256": "ca1dce9a00d45932af3c4e60f15ce161a79a68113966e7e84e0f366415ddd8dc",
+      "bytes": 811
+    },
+    {
+      "commit": "4f690c1e8a8966a4d074dde94d5a884dbb34fb94",
+      "path": "tools/content-schema/item-authoring/templates/container.json",
+      "sha256": "01a429d06e511482d59d29c250ae8ecb482233d988618077d66d47a77b829e3f",
+      "bytes": 587
+    },
+    {
+      "commit": "4f690c1e8a8966a4d074dde94d5a884dbb34fb94",
+      "path": "tools/content-schema/item-authoring/templates/document.json",
+      "sha256": "44bf1c4df876e886ed15edec79fc865f3bb252d1ad89e0f90d4dd306fdfaca5a",
+      "bytes": 717
+    },
+    {
+      "commit": "4f690c1e8a8966a4d074dde94d5a884dbb34fb94",
+      "path": "tools/content-schema/item-authoring/templates/equipment-accessory.json",
+      "sha256": "7cac9039773dcbd4cd72864d135dce262c1c43fdfd12690b6897c3c0f4366be6",
+      "bytes": 666
+    },
+    {
+      "commit": "4f690c1e8a8966a4d074dde94d5a884dbb34fb94",
+      "path": "tools/content-schema/item-authoring/templates/equipment-armor.json",
+      "sha256": "ce34655698f133c04c10331dd7c9404716f252872b75250ebdf0698323c30762",
+      "bytes": 689
+    },
+    {
+      "commit": "4f690c1e8a8966a4d074dde94d5a884dbb34fb94",
+      "path": "tools/content-schema/item-authoring/templates/fluid.json",
+      "sha256": "f21246cd4cf69e53cd6eb35ef0308257bd736288ef609ba38d015eb2ecebc2e2",
+      "bytes": 661
+    },
+    {
+      "commit": "4f690c1e8a8966a4d074dde94d5a884dbb34fb94",
+      "path": "tools/content-schema/item-authoring/templates/food.json",
+      "sha256": "f19088b9312292c8fdc8d3ef12e2fc547a74f6a100cde98fcac7a9f4208eb43c",
+      "bytes": 697
+    },
+    {
+      "commit": "4f690c1e8a8966a4d074dde94d5a884dbb34fb94",
+      "path": "tools/content-schema/item-authoring/templates/generic-portable.json",
+      "sha256": "6a2a04aca20fdf05e5aa4f9c4b982184d95605eb7116937c706ded2b86cac601",
+      "bytes": 505
+    },
+    {
+      "commit": "4f690c1e8a8966a4d074dde94d5a884dbb34fb94",
+      "path": "tools/content-schema/item-authoring/templates/portable-decoration-kit.json",
+      "sha256": "d290cbabd0d46bcebc07b26b5d2e9cdac4368c4bd180a55e7d291dfe1f10a611",
+      "bytes": 687
+    },
+    {
+      "commit": "4f690c1e8a8966a4d074dde94d5a884dbb34fb94",
+      "path": "tools/content-schema/item-authoring/templates/rune.json",
+      "sha256": "44bbe6daacfdd9737a362d58f527c12cb4dabddc4b94a40f4ed27f2363ae4f0c",
+      "bytes": 776
+    },
+    {
+      "commit": "4f690c1e8a8966a4d074dde94d5a884dbb34fb94",
+      "path": "tools/content-schema/item-authoring/templates/weapon-distance.json",
+      "sha256": "0961ddc8c9e3dd0edf3d0e07640aa19375f9f6209a5f64e61ad81552b8d1a885",
+      "bytes": 908
+    },
+    {
+      "commit": "4f690c1e8a8966a4d074dde94d5a884dbb34fb94",
+      "path": "tools/content-schema/item-authoring/templates/weapon-magic.json",
+      "sha256": "4c094aed7fce0eb57f16cecd095240ca2518b8a14b22fdd4ea6988c679b47fce",
+      "bytes": 964
+    },
+    {
+      "commit": "4f690c1e8a8966a4d074dde94d5a884dbb34fb94",
+      "path": "tools/content-schema/item-authoring/templates/weapon-melee.json",
+      "sha256": "d2e60a6a9add4be1152d942007fcc01cacf4314c2bc3620099451977e3222a59",
+      "bytes": 713
+    },
+    {
+      "commit": "88edf552b323cef8cb68cef5b10949fbf0c85424",
+      "path": "tools/content-schema/item-authoring/templates/ammunition.json",
+      "sha256": "ca1dce9a00d45932af3c4e60f15ce161a79a68113966e7e84e0f366415ddd8dc",
+      "bytes": 811
+    },
+    {
+      "commit": "88edf552b323cef8cb68cef5b10949fbf0c85424",
+      "path": "tools/content-schema/item-authoring/templates/container-equipment.json",
+      "sha256": "bb4ee4f414165e03f3f23b90d9925f37978f5dca5c2fad5ead14952902199327",
+      "bytes": 729
+    },
+    {
+      "commit": "88edf552b323cef8cb68cef5b10949fbf0c85424",
+      "path": "tools/content-schema/item-authoring/templates/container.json",
+      "sha256": "01a429d06e511482d59d29c250ae8ecb482233d988618077d66d47a77b829e3f",
+      "bytes": 587
+    },
+    {
+      "commit": "88edf552b323cef8cb68cef5b10949fbf0c85424",
+      "path": "tools/content-schema/item-authoring/templates/document.json",
+      "sha256": "44bf1c4df876e886ed15edec79fc865f3bb252d1ad89e0f90d4dd306fdfaca5a",
+      "bytes": 717
+    },
+    {
+      "commit": "88edf552b323cef8cb68cef5b10949fbf0c85424",
+      "path": "tools/content-schema/item-authoring/templates/equipment-accessory.json",
+      "sha256": "7cac9039773dcbd4cd72864d135dce262c1c43fdfd12690b6897c3c0f4366be6",
+      "bytes": 666
+    },
+    {
+      "commit": "88edf552b323cef8cb68cef5b10949fbf0c85424",
+      "path": "tools/content-schema/item-authoring/templates/equipment-armor.json",
+      "sha256": "ce34655698f133c04c10331dd7c9404716f252872b75250ebdf0698323c30762",
+      "bytes": 689
+    },
+    {
+      "commit": "88edf552b323cef8cb68cef5b10949fbf0c85424",
+      "path": "tools/content-schema/item-authoring/templates/event-collectible.json",
+      "sha256": "a18d543e2c3b59e2c57c316474257f2f10b8f435611fbb23672bea402d3da8ab",
+      "bytes": 555
+    },
+    {
+      "commit": "88edf552b323cef8cb68cef5b10949fbf0c85424",
+      "path": "tools/content-schema/item-authoring/templates/fluid.json",
+      "sha256": "f21246cd4cf69e53cd6eb35ef0308257bd736288ef609ba38d015eb2ecebc2e2",
+      "bytes": 661
+    },
+    {
+      "commit": "88edf552b323cef8cb68cef5b10949fbf0c85424",
+      "path": "tools/content-schema/item-authoring/templates/food.json",
+      "sha256": "f19088b9312292c8fdc8d3ef12e2fc547a74f6a100cde98fcac7a9f4208eb43c",
+      "bytes": 697
+    },
+    {
+      "commit": "88edf552b323cef8cb68cef5b10949fbf0c85424",
+      "path": "tools/content-schema/item-authoring/templates/generic-portable.json",
+      "sha256": "6a2a04aca20fdf05e5aa4f9c4b982184d95605eb7116937c706ded2b86cac601",
+      "bytes": 505
+    },
+    {
+      "commit": "88edf552b323cef8cb68cef5b10949fbf0c85424",
+      "path": "tools/content-schema/item-authoring/templates/key.json",
+      "sha256": "e6a9b017828dc1f1ecb36257b5c97c8938277bd7f06079b381a58232b6423a16",
+      "bytes": 461
+    },
+    {
+      "commit": "88edf552b323cef8cb68cef5b10949fbf0c85424",
+      "path": "tools/content-schema/item-authoring/templates/light-source.json",
+      "sha256": "4c688d0c8310c8f45d8f5b822fb3f1932285c5c62b80a0fe6e3b247bcae7a90f",
+      "bytes": 492
+    },
+    {
+      "commit": "88edf552b323cef8cb68cef5b10949fbf0c85424",
+      "path": "tools/content-schema/item-authoring/templates/plant.json",
+      "sha256": "b1cf978bdfc15e5efb5ab14d043c0970e6b9219a10765f8271744b60be742438",
+      "bytes": 479
+    },
+    {
+      "commit": "88edf552b323cef8cb68cef5b10949fbf0c85424",
+      "path": "tools/content-schema/item-authoring/templates/portable-decoration-kit.json",
+      "sha256": "d290cbabd0d46bcebc07b26b5d2e9cdac4368c4bd180a55e7d291dfe1f10a611",
+      "bytes": 687
+    },
+    {
+      "commit": "88edf552b323cef8cb68cef5b10949fbf0c85424",
+      "path": "tools/content-schema/item-authoring/templates/progression-material.json",
+      "sha256": "ccc89a1de9ad92fa2e554dce6256ec2f689e3944aa9fca12b8e5af03ea0235b5",
+      "bytes": 542
+    },
+    {
+      "commit": "88edf552b323cef8cb68cef5b10949fbf0c85424",
+      "path": "tools/content-schema/item-authoring/templates/quest-item.json",
+      "sha256": "368282df8857745fd671b6222c3e7165df4b778bb08423b5909211fb6f9285b8",
+      "bytes": 439
+    },
+    {
+      "commit": "88edf552b323cef8cb68cef5b10949fbf0c85424",
+      "path": "tools/content-schema/item-authoring/templates/rune.json",
+      "sha256": "44bbe6daacfdd9737a362d58f527c12cb4dabddc4b94a40f4ed27f2363ae4f0c",
+      "bytes": 776
+    },
+    {
+      "commit": "88edf552b323cef8cb68cef5b10949fbf0c85424",
+      "path": "tools/content-schema/item-authoring/templates/tool.json",
+      "sha256": "d56001e1dc337a786361e6c83b16d495978335d5dfae30a8679e43606f698d4c",
+      "bytes": 531
+    },
+    {
+      "commit": "88edf552b323cef8cb68cef5b10949fbf0c85424",
+      "path": "tools/content-schema/item-authoring/templates/transformation-item.json",
+      "sha256": "055c04ecea213e733bb88e589efbc702403f3d052e87b2b1ce39f638fdd18b76",
+      "bytes": 579
+    },
+    {
+      "commit": "88edf552b323cef8cb68cef5b10949fbf0c85424",
+      "path": "tools/content-schema/item-authoring/templates/trash.json",
+      "sha256": "6517409582e80f9b01a00660bc7f72fa5dae0505fdaee2a8aedc9178b6ce8f98",
+      "bytes": 414
+    },
+    {
+      "commit": "88edf552b323cef8cb68cef5b10949fbf0c85424",
+      "path": "tools/content-schema/item-authoring/templates/weapon-distance.json",
+      "sha256": "0961ddc8c9e3dd0edf3d0e07640aa19375f9f6209a5f64e61ad81552b8d1a885",
+      "bytes": 908
+    },
+    {
+      "commit": "88edf552b323cef8cb68cef5b10949fbf0c85424",
+      "path": "tools/content-schema/item-authoring/templates/weapon-magic.json",
+      "sha256": "4c094aed7fce0eb57f16cecd095240ca2518b8a14b22fdd4ea6988c679b47fce",
+      "bytes": 964
+    },
+    {
+      "commit": "88edf552b323cef8cb68cef5b10949fbf0c85424",
+      "path": "tools/content-schema/item-authoring/templates/weapon-melee.json",
+      "sha256": "d2e60a6a9add4be1152d942007fcc01cacf4314c2bc3620099451977e3222a59",
+      "bytes": 713
+    }
+  ],
+  "validation_performed": "Read-only byte/digest/code/schema/catalog consistency audit; no Cargo, whole-pool validator or project mutation"
+}

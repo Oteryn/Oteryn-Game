@@ -1,0 +1,73 @@
+{
+  "schema": "OTERYN_FAMILY235_READINESS_COMPOSITION_EXTERNAL_CHECKPOINT/v1",
+  "status": "STOPPED_READONLY_SOURCE_QUALIFICATION_COMPLETE",
+  "native_baseline": "4f690c1e8a8966a4d074dde94d5a884dbb34fb94",
+  "taxonomy_overlay_baseline": "88edf552b323cef8cb68cef5b10949fbf0c85424",
+  "files": [
+    {
+      "path": "/workspace/audit-continuation/qualify-family235-retained-source-4f.py",
+      "sha256": "7ec24aaa349adb8bc4e6d24cd527966b4f9a97d5831377e6c2567a68de15dfa4",
+      "bytes": 24805
+    },
+    {
+      "path": "/workspace/audit-continuation/family235-source-qualification-after-forge4f-20261002.json",
+      "sha256": "b3d8ec12f3ecb0841cb5761dcc7273e9c9cf82c445ffc69e592174582c45efdf",
+      "bytes": 966365
+    },
+    {
+      "path": "/workspace/audit-continuation/family235-source-qualification-after-forge4f-20261002.md",
+      "sha256": "2713ac66fb5ea0569da3dfcfbff593f4b8407b7436fbeb741a524c55866274d7",
+      "bytes": 4626
+    },
+    {
+      "path": "/workspace/audit-continuation/build-item-completion-contract-checklist-4f.py",
+      "sha256": "832d20e2fe1f22e4733b37271300061dda97d3525044a2113cdb34248efe8063",
+      "bytes": 16451
+    },
+    {
+      "path": "/workspace/audit-continuation/item-completion-contract-checklist-after-forge4f-20261002.json",
+      "sha256": "0ddd7bcbce262867d52da6dd37ba2ab98a043ca570027558ffa4eed1746bdc27",
+      "bytes": 109339
+    },
+    {
+      "path": "/workspace/audit-continuation/item-completion-contract-checklist-after-forge4f-20261002.md",
+      "sha256": "57f7622629cebaf67ad43e89c5cd53f9da742fa0a903f88de77848bbca0deb76",
+      "bytes": 8634
+    },
+    {
+      "path": "/workspace/audit-continuation/build-item-family-contract-composition-plan-4f.py",
+      "sha256": "133443daa8f4997e89b0505dde4c623bfaff6c3890ae3b6e46c25697d347be73",
+      "bytes": 11576
+    },
+    {
+      "path": "/workspace/audit-continuation/item-family-contract-composition-plan-after-forge4f-20261002.json",
+      "sha256": "b4c9bc2675c9afbff14ea253a8e6e94788ec5a111b23110f0a3c573cc2cc5d4d",
+      "bytes": 41863
+    },
+    {
+      "path": "/workspace/audit-continuation/item-family-contract-composition-plan-after-forge4f-20261002.md",
+      "sha256": "d551383ac2083646a0a9cde34bde7b0fa24056fd625b01c2bbb4491c596d3ebe",
+      "bytes": 1896
+    }
+  ],
+  "checks": {
+    "exact235_partition": "PASS170/59/4/2",
+    "conditional_source_cohorts": "15name+3auxiliaryBR,18conditionalnotapplied",
+    "ambiguous51526officialname": "HELD51526+51527",
+    "template_scope": "13native4f;23publishedtaxonomy;10missingfromcomposition_notmissingcreated",
+    "common_capabilities": "WARNING_ONLY",
+    "partial_leech": "Preserved native anyOf; do not replace older taxonomy requiredpair",
+    "packet_digest_dependency_inventory": "15actualcurrentpackets; schema/generator not pinned; decoder/catalog preserve exact28644/825",
+    "full_ready": "NOT_ESTABLISHED; count null",
+    "project_mutations": "NONE",
+    "Cargo": "NOT_RUN_READONLY",
+    "published_native_facts": "UNCHANGED",
+    "new_source_promotions_applied": 0
+  },
+  "next_owner_actions": [
+    "Allocate explicit Name15 correction contract/closed source lane then navigation-only family re-evaluation",
+    "Qualify/implement closed3 auxiliary BR category bridge if accepted",
+    "Allocate actual native family contract composition after published Weapon/Default; preserve source pinned decoder/catalog and partial leech; full taxonomy/world composition requires actual integrated receipt",
+    "Instantiate per-Item finite import gate after declaring source scope and composition; runtime claim remains separate"
+  ]
+}

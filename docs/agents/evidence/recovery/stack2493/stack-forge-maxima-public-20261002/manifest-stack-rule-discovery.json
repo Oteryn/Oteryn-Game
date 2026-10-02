@@ -1,0 +1,41 @@
+{
+  "scope": "Eight bounded distinct normal HTTPS reads. No same URL retry, metered tools or Remote Desktop actions. Error bodies retained, no source absence inferred from blocked pages.",
+  "requests": [
+    {
+      "label": "official-trading",
+      "url": "https://www.tibia.com/gameguides/?subtopic=manual&section=controls_trading",
+      "transport": "NORMAL_PUBLIC_HTTPS_READ_ONLY",
+      "utc": "2026-10-02T12:51:21.617380+00:00",
+      "status": 200,
+      "final_url": "https://www.tibia.com/gameguides/?subtopic=manual&section=controls_trading",
+      "content_type": "text/html; charset=UTF-8",
+      "body_path": "/workspace/audit-continuation/stack-forge-maxima-public-20261002/official-trading.body",
+      "body_sha256": "bbb100998c9f4c9280b7faf433ac3775f3b6319583ccea4e34b7514ad0fb4a80",
+      "body_bytes": 115232
+    },
+    {
+      "label": "google-closed-stack-max",
+      "url": "https://www.google.com/search?q=site%3Atibia.com+%22stack%22+%22maximum%22",
+      "transport": "NORMAL_PUBLIC_HTTPS_READ_ONLY",
+      "utc": "2026-10-02T12:51:21.618323+00:00",
+      "status": 200,
+      "final_url": "https://www.google.com/search?q=site%3Atibia.com+%22stack%22+%22maximum%22",
+      "content_type": "text/html; charset=UTF-8",
+      "body_path": "/workspace/audit-continuation/stack-forge-maxima-public-20261002/google-closed-stack-max.body",
+      "body_sha256": "54a046e69c1f0976f40a223b7586809c93c4382a20655f442bc640b425cb3510",
+      "body_bytes": 92407
+    },
+    {
+      "label": "google-stack-all",
+      "url": "https://www.google.com/search?q=Tibia+%22stackable+items%22+%22up+to%22",
+      "transport": "NORMAL_PUBLIC_HTTPS_READ_ONLY",
+      "utc": "2026-10-02T12:51:21.618859+00:00",
+      "status": 200,
+      "final_url": "https://www.google.com/search?q=Tibia+%22stackable+items%22+%22up+to%22",
+      "content_type": "text/html; charset=UTF-8",
+      "body_path": "/workspace/audit-continuation/stack-forge-maxima-public-20261002/google-stack-all.body",
+      "body_sha256": "f1601cdf2b30eb52539bd5bb6bebcd3bff18301487c5f2a708939f72a977505f",
+      "body_bytes": 92243
+    }
+  ]
+}

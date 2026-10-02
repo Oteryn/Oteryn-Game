@@ -1,0 +1,88 @@
+{
+  "schema": "OTERYN_FORGE289_INDEPENDENT_SOURCE_BINDING_PROPOSAL_PEER/v1",
+  "status": "SOURCE_BINDING_PROPOSAL_PEER_PASS",
+  "findings": [],
+  "review_scope": "Frozen proposed data/source bindings only. Does not admit the source or activate native/runtime truth. No production implementation or Cargo reviewed.",
+  "baseline": "4f690c1e8a8966a4d074dde94d5a884dbb34fb94",
+  "reviewed_packet": {
+    "path": "/workspace/audit-continuation/forge289-proposed-binding-and-pair-packet.json",
+    "sha256": "0c934577617136c5af4fbd0bea4b454db1a6cec05dcee8ab281a1c1ef3c588f2",
+    "bytes": 186796
+  },
+  "reviewed_snapshot": {
+    "path": "/workspace/audit-continuation/forge289-proposed-source-snapshot.json",
+    "sha256": "cff4df43b6e38255656d56fd1f53a47cf30f6174f09c01e18450cf5e49db32c2",
+    "bytes": 569880
+  },
+  "reviewed_seal": {
+    "path": "/workspace/audit-continuation/forge289-independent-proposed-binding-data-batch-seal-v2.json",
+    "sha256": "f81b90243026c1d70c5ae620bce78e1b6ee7d28b43a33bbcef3f233c637821c9",
+    "bytes": 3348326
+  },
+  "independent_replay_script": {
+    "path": "/workspace/audit-continuation/review-forge289-source-binding-peer.py",
+    "sha256": "097711f8e2744759226721399f4942113635f02ff9dac79d6b177ddfec87c728",
+    "command": "PYTHONDONTWRITEBYTECODE=1 /workspace/audit-continuation/venv/bin/python /workspace/audit-continuation/review-forge289-source-binding-peer.py",
+    "result": "PASS whole289"
+  },
+  "accepted_contract_witnesses_4f": {
+    "apps/game-server/src/content/project/v2.rs": {
+      "sha256": "b066f883bcf6925be8ea2d8df428312376fc397a73d704229be2fe5a6782752b",
+      "bytes": 130189
+    },
+    "apps/game-server/src/content/project.rs": {
+      "sha256": "6ae5abf9d1fdff56cf19ea532deccd4a05aef4a916ecf928bb19f6968ff188bc",
+      "bytes": 91240
+    },
+    "tools/content-migration/world_project_v2_to_tree.py": {
+      "sha256": "caebd238a5dca47303d5baacf3f942ddadceee1321b36a2a7b5887c22ecc75f1",
+      "bytes": 32554
+    },
+    "tools/content-schema/item-authoring/engine_items.py": {
+      "sha256": "28644c0fcc88f364992670489f7d458f827a9cd1db023b7f5ce0a9ae32d08c1a",
+      "bytes": 141088
+    },
+    "tools/content-schema/item-authoring/source_field_catalogs.py": {
+      "sha256": "8250880aaa89b7c5fa1593d5738a478b0d09e1ef9ef9cef630cb5da172d634bc",
+      "bytes": 67615
+    }
+  },
+  "checks": {
+    "source_snapshot": "289 unique BR own full articles/one balanced uncommented Infobox_Item/no duplicate parameters/own literal classificacao and max_tier. Actual full raw content hashes and coordinates reproduced from six original Chrome/CDP anonymous API files; no classification-to-maximum derivation.",
+    "own_Fandom": "289 complete own InfoboxObject references from actual full global own-ID index; each has single numeric itemid/exact ownname, no shared or duplicate ID params/current selected revision at-or-before-cutoff. All102 relevant captured full part bytes hash-verified. Sourceunit here is own raw box, not unavailable whole Fandom article.",
+    "Fandom_global_index_sha256": "ca5cf161016da4530c249ca49022cbea44342e2fbd78623fbb99fee92dde8190",
+    "independent_nontitle_fields": "All289 ownBR/ownFandom/currentNative typed integer attack and defense agree; four also agree armor. At least two distinct accepted-pilot comparable field types perItem; not a claim that Native and Fandom provenance are independent origins. No present comparable contradiction, all-present rawname opposition or weapon-type disagreement found.",
+    "official": "Whole current official15.30 artifact2dfa decoded43516 unique objects; each candidate official name globally unique, positiveTake/currentclassification matches explicitBR class/current membership and fullobject raw SHA verified.",
+    "identity": "Actual current native identity/name match; Crystal source-ID forward and fulltarget reverse join is uniqueEXACT; aliases/historical and current official projection/member coordinates match. Exact typed SourceIdentityBinding carrier fields reproduced;289 unique new pageIDs/targets.",
+    "owners_and_World": "Actual4f316 fullauthoring owners/147oldForge protected; all289 currently lack Forge or any source-owner object. Native full definitions unchanged; no target is routedWorld; all46World wholefile hashes match4f. Futureparent owner overlap/counts require fresh actual receipt.",
+    "classification_maximum_distribution": {
+      "1/1": 135,
+      "2/2": 55,
+      "3/3": 18,
+      "4/10": 81
+    },
+    "historical_exclusions": [
+      3337,
+      50239
+    ],
+    "historical_exclusions_interpretation": "Both separately retained, excluded from all289 binding/promotion/snapshot sets; their four possible fields are outside this proposal and continuity staysUNKNOWN.",
+    "opposition_and_variant_exclusions": "All289 pass global unique officialnames and all current own-ID refs; none retargets any prior BR page in full imported/draft bindings. Existing three imported BR opposition rows remain untouched; fourth draft-only opposition10389 also absent from289. Duplicate/raw-shape/variant/unresolved cases remain outside closed289.",
+    "protected_code_bytes": "source_field_catalogs8250880a and engine_items28644c0f remain byteexactcurrent+Git4f; existing pilot3655fa1b remains immutable, including maxone protected pilot. New289 is separately proposed derived crosswalk, not replay/admission of original one-row pilot."
+  },
+  "minimum_existing_contract_route": {
+    "carriers": "Existing ProjectV2Source, ImportBatch provenance metadata, ProjectV2SourceIdentityBinding, ProjectV2ItemForgeProfile; no new model or NativeABI needed.",
+    "source_and_batch": "Separate truthful Derived source revision+rawartifact SHA+source import batch; actual implemented mapper revision/SHA, importer/generation profile and source access disposition must be qualified on the stopped future implementation.",
+    "metadata_batch_pattern": "Use existing BR metadata-only importbatch pattern with candidates[]/reimport_states[] and typed SourceIdentityBindings separately. Do not add new ImportCandidate::Item BindNativeItem: existing validator requires OTS_HYPOTHESIS_ONLY/LocalNonProduction and global no duplicate native targets, which is not this public-derived provenance route.",
+    "owner_fields": "Existing optional Forge profile positiveu8 fields; atomic fillNone/identical success, conflict/duplicate/fulltarget drift fail before mutation; no overwrite of Native/source-owner siblings. Exact derived governance rows must be computed from actual futureparent, not guessed.",
+    "ordering": "Source tuples/import batches/bindings require existing identity sorting and exact referenced source+batch artifact/revision matching."
+  },
+  "mandatory_implementation_holds": [
+    "Actual future published Weapon/Default parent must be rebound honestly for fullNative/canonical/owner/source/binding/relation/World receipts;4f is a historical observation only.",
+    "Preserve legacy Forge3332 full165-binding artifact and immutable proof/packet; use a truthful historical-byte replay context plus separate actualcurrent3332/fullbinding guard. New aggregate454 is not old165 bytes; all13 predecessor packet/context checks required.",
+    "Engine compatibility: source_field_catalogs196-206 reads aggregateBRbindings dynamically; engine_items515-530 changes identity_basis for289 newtargets from crystal_exact_binding to tibiawiki_exact_binding. Mapping keys remain identical, but old generated evidence/report provenance can drift even with unchanged825/28644 code. Explicit historical engine derivation context or truthful versioned successor receipt required; do not silently relabel/reseal old evidence.",
+    "Package closed actualBR raw snapshot and sufficient global own-ID/rawFandom evidence with verified source/provenance digests for repo/CI replay. External absolute scratch paths are not the production import route.",
+    "Root must explicitly admit the stopped concrete crosswalk/source batch under existing owning rules before current source bindings are treated as accepted. This peer is sourcebinding-proposal acceptance only, not runtime/native truth.",
+    "Future implementation must validate all289wholepairs and atomic optionalowner merge, current source identity/NoWorld/state/opposition guards, exact complete sourceowner/derived-relation deltas and all predecessor artifacts. No implementation/testPASS or Cargo is claimed here."
+  ],
+  "writes": "Only external replay script and this report; no WT/code/schema/native/Git/ref/Cargo mutations."
+}
