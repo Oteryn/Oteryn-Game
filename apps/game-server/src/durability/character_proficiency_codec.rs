@@ -1,8 +1,11 @@
 //! Inert retained-value reads. No content admission, effects or controller authority.
-use super::{DurableProficiencyState, ProficiencyCause, ProficiencyLineCandidate};
+use super::{
+    DurableProficiencyState, ProficiencyCause, ProficiencyLineCandidate, ProficiencyOccurrence,
+};
 use crate::domain::{CharacterId, CharacterRevision};
 use crate::durability::character_authority::{
-    ReconciledCharacterAuthority, assert_recovery_fence, verify_character_proficiency_history,
+    ReconciledCharacterAuthority, assert_recovery_fence,
+    verify_character_proficiency_history_with_definitions,
 };
 use crate::durability::character_progression::{CharacterProgressionError, numeric_u64, uuid_text};
 use crate::durability::db::{begin_semantic_transaction, commit_semantic_transaction};
@@ -56,7 +59,7 @@ fn decode_values(
     )
     .map_err(|_| DurabilityError::InvalidStoredState)
 }
-fn decode_state(
+pub(in crate::durability) fn decode_state(
     row: &sqlx::postgres::PgRow,
     suffix: &str,
 ) -> StoredResult<DurableProficiencyState> {
@@ -85,7 +88,9 @@ fn occurrence(row: &sqlx::postgres::PgRow, key: &str) -> StoredResult<[u8; 16]> 
     CharacterId::from_bytes(bytes).map_err(|_| DurabilityError::InvalidStoredState)?;
     Ok(bytes)
 }
-fn decode_line(row: &sqlx::postgres::PgRow) -> StoredResult<ProficiencyLineCandidate> {
+pub(in crate::durability) fn decode_line(
+    row: &sqlx::postgres::PgRow,
+) -> StoredResult<ProficiencyLineCandidate> {
     ProficiencyLineCandidate::new(
         cause(row.try_get("cause")?)?,
         decode_state(row, "_before")?,
@@ -103,16 +108,12 @@ fn validate_transition(
     ) {
         return Err(DurabilityError::InvalidStoredState);
     }
-    // No retained definition resolver/mapping proof is admitted in this batch.
-    if line.requires_mapping_verification() {
-        return Err(DurabilityError::Unavailable);
-    }
     Ok(())
 }
-const LINE_SELECT: &str = "SELECT l.*, l.proficiency_occurrence_id::text AS occurrence, l.committed_character_revision::text AS revision, \
+const LINE_SELECT: &str = "SELECT l.*, h.content_revision, h.policy_digest, h.command_binding, h.original_character_revision::text AS original_revision, l.proficiency_occurrence_id::text AS occurrence, l.committed_character_revision::text AS revision, \
  coalesce(array_ndims(selections_before)=1 AND array_lower(selections_before,1)=1,false) AS canonical_before, \
  coalesce(array_ndims(selections_after)=1 AND array_lower(selections_after,1)=1,false) AS canonical_after \
- FROM game_character_proficiency_receipt_lines l WHERE character_id=encode($1,'hex')::uuid \
+ FROM game_character_proficiency_receipt_lines l JOIN game_character_proficiency_receipts h USING (proficiency_occurrence_id) WHERE l.character_id=encode($1,'hex')::uuid \
  ORDER BY l.item_key, l.committed_character_revision";
 async fn load_lines(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
@@ -126,12 +127,56 @@ async fn load_lines(
 pub(in crate::durability) async fn verify_track_history(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     character: CharacterId,
+    definitions: Option<&dyn super::ProficiencyDefinitions>,
 ) -> StoredResult<Vec<StoredProficiencyTrack>> {
     let mut latest = BTreeMap::<String, StoredProficiencyTrack>::new();
+    let mut intents = BTreeMap::<
+        [u8; 16],
+        (
+            ProficiencyCause,
+            CharacterRevision,
+            [u8; 32],
+            Vec<u8>,
+            Option<CharacterRevision>,
+            Vec<ProficiencyLineCandidate>,
+        ),
+    >::new();
     for row in load_lines(tx, character).await? {
         let line = decode_line(&row)?;
         let previous = latest.get(line.before().item_key());
         validate_transition(previous.map(|track| &track.state), &line)?;
+        let digest: [u8; 32] = row
+            .try_get::<Vec<u8>, _>("policy_digest")?
+            .try_into()
+            .map_err(|_| DurabilityError::InvalidStoredState)?;
+        if line.requires_mapping_verification() {
+            super::writer::verify_migration(
+                definitions,
+                row.try_get("content_revision")?,
+                &digest,
+                &line,
+            )?;
+        }
+        // A selection binds its same-track historical predecessor, which may precede
+        // the original global revision. This intent value never grants current authority.
+        let expected_track = if line.cause() == ProficiencyCause::PerkSelection {
+            Some(
+                previous
+                    .ok_or(DurabilityError::InvalidStoredState)?
+                    .committed_character_revision,
+            )
+        } else {
+            None
+        };
+        let entry = intents.entry(occurrence(&row, "occurrence")?).or_insert((
+            line.cause(),
+            revision(&row, "original_revision")?,
+            digest,
+            row.try_get("command_binding")?,
+            expected_track,
+            Vec::new(),
+        ));
+        entry.5.push(line.clone());
         let committed_character_revision = revision(&row, "revision")?;
         if previous
             .is_some_and(|track| track.committed_character_revision >= committed_character_revision)
@@ -146,6 +191,16 @@ pub(in crate::durability) async fn verify_track_history(
                 last_proficiency_occurrence_id: occurrence(&row, "occurrence")?,
             },
         );
+    }
+    for (id, (cause, original, digest, binding, expected_track, lines)) in intents {
+        let occurrence = ProficiencyOccurrence::from_bytes(id)
+            .map_err(|_| DurabilityError::InvalidStoredState)?;
+        let request =
+            super::ProficiencyChangeRequest::new(occurrence, cause, lines, expected_track, digest)
+                .map_err(|_| DurabilityError::InvalidStoredState)?;
+        if request.command_binding(character, original).as_slice() != binding {
+            return Err(DurabilityError::InvalidStoredState);
+        }
     }
     let rows = sqlx::query("SELECT *, committed_character_revision::text AS revision, last_proficiency_occurrence_id::text AS occurrence, \
         coalesce(array_ndims(selections)=1 AND array_lower(selections,1)=1,false) AS canonical \
@@ -176,13 +231,13 @@ impl DurabilityRoot {
         authority: &ReconciledCharacterAuthority<'_, '_>,
         character: CharacterId,
     ) -> std::result::Result<Vec<StoredProficiencyTrack>, CharacterProgressionError> {
-        self.load_retained_proficiency(authority, character, None)
+        self.load_retained_proficiency(authority, character, None, None)
             .await
             .map(|(tracks, _)| tracks)
     }
     /// Read retained evidence for this Character and occurrence; no authority is granted.
-    /// This is not timeout reconciliation: request-binding/migration-map verification is unadmitted.
-    /// Migration history fails Unavailable until both retained definitions can be resolved.
+    /// This is not timeout reconciliation. Without an independent semantic source,
+    /// migration history fails Unavailable; use the source-aware read for retained maps.
     pub async fn read_character_proficiency_occurrence(
         &self,
         authority: &ReconciledCharacterAuthority<'_, '_>,
@@ -191,15 +246,38 @@ impl DurabilityRoot {
     ) -> std::result::Result<Option<CommittedProficiencyChange>, CharacterProgressionError> {
         CharacterId::from_bytes(occurrence_id)
             .map_err(|_| CharacterProgressionError::InvalidInput)?;
-        self.load_retained_proficiency(authority, character, Some(occurrence_id))
+        self.load_retained_proficiency(authority, character, Some(occurrence_id), None)
             .await
             .map(|(_, receipt)| receipt)
+    }
+    /// Recovery-fenced retained read using independent historical migration declarations.
+    pub async fn read_character_proficiency_with_definitions(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        character: CharacterId,
+        occurrence: Option<ProficiencyOccurrence>,
+        definitions: std::sync::Arc<dyn super::ProficiencyDefinitions>,
+    ) -> std::result::Result<
+        (
+            Vec<StoredProficiencyTrack>,
+            Option<CommittedProficiencyChange>,
+        ),
+        CharacterProgressionError,
+    > {
+        self.load_retained_proficiency(
+            authority,
+            character,
+            occurrence.map(|id| *id.as_bytes()),
+            Some(definitions),
+        )
+        .await
     }
     async fn load_retained_proficiency(
         &self,
         authority: &ReconciledCharacterAuthority<'_, '_>,
         character: CharacterId,
         requested: Option<[u8; 16]>,
+        definitions: Option<std::sync::Arc<dyn super::ProficiencyDefinitions>>,
     ) -> std::result::Result<
         (
             Vec<StoredProficiencyTrack>,
@@ -217,7 +295,7 @@ impl DurabilityRoot {
             let root = sqlx::query("SELECT 1 FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid FOR SHARE")
                 .bind(character.as_bytes().as_slice()).fetch_optional(&mut *tx).await?;
             if root.is_none() { return Err(DurabilityError::InvalidStoredState); }
-            let tracks = verify_character_proficiency_history(&mut tx, character).await?;
+            let tracks = verify_character_proficiency_history_with_definitions(&mut tx, character, definitions.as_deref()).await?;
             let receipt = if let Some(occurrence_id) = requested {
                 let row = sqlx::query("SELECT *, character_id::text AS character, proficiency_occurrence_id::text AS occurrence, \
                     original_character_revision::text AS original_revision, committed_character_revision::text AS revision \
@@ -315,8 +393,18 @@ mod tests {
         let character =
             CharacterId::from_bytes([1, 2, 3, 4, 5, 6, 0x70, 8, 0x80, 10, 11, 12, 13, 14, 15, 1])
                 .expect("character");
+        let request = super::super::ProficiencyChangeRequest::new(
+            ProficiencyOccurrence::from_bytes([2, 2, 3, 4, 5, 6, 0x70, 8, 0x80, 10, 11, 12, 13, 14, 15, 2]).expect("occurrence"),
+            ProficiencyCause::Training,
+            vec![ProficiencyLineCandidate::new(ProficiencyCause::Training, state(0, vec![None, None]), state(1, vec![None, None])).expect("line")],
+            None,
+            [0; 32],
+        ).expect("fixture intent");
+        let binding = request.command_binding(character, CharacterRevision::new(1).expect("original revision"));
+        sqlx::query("UPDATE game_character_proficiency_receipts SET command_binding=$1")
+            .bind(binding.as_slice()).execute(&mut *tx).await.expect("valid v1 fixture binding");
         assert_eq!(
-            verify_character_proficiency_history(&mut tx, character)
+            verify_character_proficiency_history_with_definitions(&mut tx, character, None)
                 .await
                 .expect("valid history")[0]
                 .committed_character_revision
@@ -346,7 +434,7 @@ mod tests {
                 .await
                 .expect("one mutation");
             assert!(
-                verify_character_proficiency_history(&mut tx, character)
+                verify_character_proficiency_history_with_definitions(&mut tx, character, None)
                     .await
                     .is_err(),
                 "{mutation}"
@@ -381,7 +469,7 @@ mod tests {
         let line = ProficiencyLineCandidate::new(ProficiencyCause::Migration, before, after)
             .expect("candidate");
         assert!(matches!(
-            validate_transition(None, &line),
+            super::super::writer::verify_migration(None, "r1", &[0; 32], &line),
             Err(DurabilityError::Unavailable)
         ));
     }

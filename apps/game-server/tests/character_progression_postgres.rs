@@ -29,3 +29,9 @@ pub mod native_admission_source;
 // includes these exact cases through character_authority_postgres.
 #[path = "support/character_progression_postgres_cases.rs"]
 mod character_progression_postgres_cases;
+
+#[path = "support/character_proficiency_postgres_cases.rs"]
+mod character_proficiency_postgres_cases;
+
+#[path = "support/bestiary_postgres_harness.rs"]
+mod bestiary_postgres_harness;
