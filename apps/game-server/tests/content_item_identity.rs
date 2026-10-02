@@ -284,7 +284,7 @@ fn semantic_constants_resolve_to_existing_tibia_keys() {
 fn content_names_only_canonical_item_keys() {
     let table = table();
     let content = content_item_keys();
-    assert_eq!(content.len(), 34_031);
+    assert_eq!(content.len(), 34_032);
     for key in &content {
         assert!(is_canonical_item_key(key), "{key}");
         assert!(key.starts_with("oteryn:item.tibia.i"), "{key}");
@@ -305,6 +305,21 @@ fn content_names_only_canonical_item_keys() {
     assert_eq!(
         tibia_item_key(3031).as_deref(),
         Some(semantic::CURRENCY_GOLD_COIN)
+    );
+}
+
+#[test]
+fn snowball_current_appearance_has_only_an_identity_record() {
+    let reference: Value = serde_json::from_slice(REFERENCE).expect("reference JSON");
+    let snowball = reference["records"]
+        .as_array()
+        .expect("reference records")
+        .iter()
+        .find(|record| record["identity"]["key"] == "oteryn:item.tibia.i53855")
+        .expect("admitted Snowball identity");
+    assert_eq!(
+        snowball,
+        &serde_json::to_value(item("oteryn:item.tibia.i53855")).expect("identity-only Item")
     );
 }
 
