@@ -1,0 +1,194 @@
+{
+  "schema": "OTERYN_SPELLS_R23_CANDIDATE_STATUS/v1",
+  "created_utc": "2026-10-02T10:23:25.534001+00:00",
+  "state": "candidate_under_investigation_not_finally_qualified",
+  "publication": "Repository-owned local authoring only; Git publication not performed by report producer",
+  "historical_r22": "Unmodified; earlier qualification is historical evidence only",
+  "repository_base_commit": "ce3c8712cb089ac486ac14102bb7fad7ede9c355",
+  "runtime_activation": false,
+  "candidate_inputs": {
+    "manifest_recipe": "manifest-recipe.json",
+    "expected_manifest_sha256": "f3f1fac9cb6dd473824938c4c7a24f8de01e86e3160403a78bf3c5e7a653d2d6",
+    "magnitude_policy": "baseline_test",
+    "training_revision": "s3b-content-1",
+    "classification": "Explicit test magnitude policy; not accepted production numerical completeness"
+  },
+  "approximate_monster_melee": {
+    "creatures": 162,
+    "enabled": 125,
+    "disabled": 37,
+    "execution_status": "approximate_nonlethal_physical_melee",
+    "derivation": "monster-melee-derivation.json",
+    "limitations": [
+      "No armor/shield mitigation in accepted AI-4 bite owner",
+      "Player health remains at least 1 (D54)",
+      "One selected melee slot per creature; ranged/defenses/custom disabled",
+      "No spawn or chase qualification implied"
+    ],
+    "wild_monster_spell_dispatch_complete": false
+  },
+  "soul_war": {
+    "classification": "Source-transcribed candidate data and encounter admission only",
+    "encounter_path": "tools/content-schema/encounter-authoring/samples/soul_war_taint_zones/encounter.json",
+    "encounter_sha256": "f71af8368072fe789290349de1332d640ad167e215633a941d734149f217b75d",
+    "rules": 16,
+    "unique_participants": 17,
+    "participant_role_entries": 9,
+    "participant_references_including_duplicates": 22,
+    "positive_zone_boxes": 23,
+    "excluded_zone_boxes": 5,
+    "live_progression_access_rewards_qualified": false
+  },
+  "core_repairs_reported": [
+    "Magnitude baseline test policy",
+    "Map initialization generation SQL guard",
+    "Premium and Aleta core qualification tests"
+  ],
+  "verification": {
+    "library": {
+      "passed": 1586,
+      "failed": 0,
+      "ignored": 4
+    },
+    "encounter_admission": {
+      "passed": 6,
+      "failed": 0,
+      "ignored": 0
+    },
+    "postgres_guard_cases": "passed_retained_output",
+    "physical_seam": {
+      "result": "failed",
+      "representative_spell": "exori vis",
+      "after_reported_successful_self_casts": 7,
+      "cast_command_id": 10,
+      "disposition": "Rejected",
+      "target_or_numeric_root_cause": "Under active investigation; not established by this report",
+      "first_attempt_full_log_retained": false,
+      "first_attempt_excerpt": "evidence/first-physical-attempt-failure.json",
+      "second_attempt": "In progress at evidence capture; no result claim"
+    },
+    "final_qualification": false,
+    "evidence": [
+      {
+        "path": "evidence/next-all-lib-tests.log",
+        "sha256": "6d83c7b4189c18c19b07d65112b3564d4fad00bd8fee3bbcc228d1b3cc3a6c2b",
+        "bytes": 46460,
+        "result": "passed",
+        "scope": "1586 library tests passed; four ignored; excludes separately attempted physical seam",
+        "observed_exit_code": null,
+        "observation": "Retained output inspected; process exit status not newly observed by this report producer"
+      },
+      {
+        "path": "evidence/next-encounter-admission-tests.log",
+        "sha256": "b536a3da6c177244778fbd84b5b3c6ad235eda93198e16e8167e7c6ad6a925a6",
+        "bytes": 60198,
+        "result": "passed",
+        "scope": "Six encounter admission tests; no full quest gameplay claim",
+        "observed_exit_code": null,
+        "observation": "Retained output inspected; process exit status not newly observed by this report producer"
+      },
+      {
+        "path": "evidence/next-encounter-python.log",
+        "sha256": "24ceb0a150fed7ffabb0c2c76b7845d1aa80ec6b88efa2279976920d7df487ea",
+        "bytes": 156,
+        "result": "passed",
+        "scope": "Encounter authoring/schema checks; no live quest progression",
+        "observed_exit_code": null,
+        "observation": "Retained output inspected; process exit status not newly observed by this report producer"
+      },
+      {
+        "path": "evidence/next-pg-owner-tests.log",
+        "sha256": "ea284fd284ddd98ec6a169089f76e70ae0fdef22ae23d644460fb11c04913d75",
+        "bytes": 1530,
+        "result": "passed",
+        "scope": "Map initialization and committed due read predicate SQL guard qualification",
+        "observed_exit_code": null,
+        "observation": "Retained output inspected; process exit status not newly observed by this report producer"
+      },
+      {
+        "path": "evidence/second-physical-attempt-in-progress.log",
+        "sha256": "2ba7006165f32bc9988a3ee66e1edbfd517552a3c53348cb8802c66855837b71",
+        "bytes": 2894,
+        "result": "in_progress_snapshot",
+        "scope": "Partial second physical attempt, captured after coordinator reused the original log path; it does not preserve first failure and is not a completion receipt",
+        "observed_exit_code": null,
+        "observation": "Retained output inspected; process exit status not newly observed by this report producer"
+      }
+    ]
+  },
+  "research": {
+    "report": "research/source-access.json",
+    "fresh_wiki_verification": false,
+    "source_approximations_preserved": true
+  },
+  "remaining_blockers": [
+    {
+      "area": "runtime",
+      "status": "open",
+      "requirement": "Resolve the actual exori vis owner seam failure and rerun the current full composed physical candidate; core/library passes cannot substitute."
+    },
+    {
+      "area": "monster_runtime",
+      "status": "open",
+      "requirement": "125 melee adapters are approximate and nonlethal; armor/shield mitigation, full attack/defense/ranged/custom schedule, spawn and chase qualification remain absent."
+    },
+    {
+      "area": "quest",
+      "status": "open",
+      "requirement": "Soul War progression, access, rewards, live participant placement/owner state and callback composition must be qualified on the real gameplay path."
+    },
+    {
+      "area": "premium_house",
+      "status": "open",
+      "requirement": "Premium entitlement and Aleta permission core tests do not prove live Platform entitlements, current HouseInstance ACL/session behavior or production house admission."
+    },
+    {
+      "area": "content_deployment",
+      "status": "open",
+      "requirement": "New candidate content pins, accepted resource/protocol allocations, WorldInstance admission, client rendering and production deployment need exact current qualification and owning control-plane authorization."
+    }
+  ],
+  "evidence_update_rule": "Coordinator may append actual current final test receipt after repairs; a later result must not silently recategorize this failed physical attempt as passed.",
+  "artifact_files": [
+    {
+      "path": "creature-profiles.json",
+      "sha256": "928bce647fb62907a510926745ab6335ba0f17e01c8448ebe667fba442490691",
+      "bytes": 981603
+    },
+    {
+      "path": "monster-melee-derivation.json",
+      "sha256": "d955d87c54a6ba6ae02317a72415f8c2b771e42563d45a37f829ecb091156ea3",
+      "bytes": 316315
+    },
+    {
+      "path": "build-training.json",
+      "sha256": "ed23a81ec9247c5808de8161e18e7bc366a7bb8709839c2256aba1c649f4d1c1",
+      "bytes": 3163
+    },
+    {
+      "path": "manifest-recipe.json",
+      "sha256": "1d6f3d8dac7aa3b715270d171663a8cb4b7d2e8ba3b7bcc68b2859365aae6282",
+      "bytes": 5001
+    },
+    {
+      "path": "materialize_manifest.py",
+      "sha256": "464da1adf23be08d1c9cfb24e886e9bb3d2f3180437fa4d0acd4cf95a6703155",
+      "bytes": 1904
+    },
+    {
+      "path": "research/source-access.json",
+      "sha256": "d5c9b74516a0518f77d1493709a6cb7f67178bc7b822c9331574d13b773d275f",
+      "bytes": 1479
+    },
+    {
+      "path": "evidence/first-physical-attempt-failure.json",
+      "sha256": "c01f6d832b29c85bb43e0309d8a30267e7e31cec02675a03bd9498c98392fb69",
+      "bytes": 1286
+    }
+  ],
+  "recipe_verification": {
+    "result": "passed",
+    "generated_manifest_sha256": "f3f1fac9cb6dd473824938c4c7a24f8de01e86e3160403a78bf3c5e7a653d2d6",
+    "scope": "Materialized actual pinned normalized providers from repository-relative paths; no Rust/stage/activation qualification inferred"
+  }
+}

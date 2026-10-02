@@ -284,14 +284,19 @@ CREATE FUNCTION game_native_map_adoption_stamp() RETURNS trigger LANGUAGE plpgsq
 DECLARE r game_native_map_item_receipts%ROWTYPE;g JSONB;
 BEGIN
  NEW.created_xact_id:=pg_current_xact_id();
- SELECT * INTO STRICT r FROM game_native_map_item_receipts WHERE transaction_id=NEW.source_transaction_id FOR SHARE;
+ -- Source receipts are immutable and runtime deliberately has no UPDATE right.
+ SELECT * INTO STRICT r FROM game_native_map_item_receipts WHERE transaction_id=NEW.source_transaction_id;
+ PERFORM pg_advisory_xact_lock(hashtextextended(encode(uuid_send(r.world_id),'hex') || encode(uuid_send(r.channel_id),'hex'),33));
+ -- All custody writers serialize on the Item; Ground needs no locking privilege.
+ PERFORM 1 FROM game_item_instances WHERE item_instance_id=r.item_instance_id FOR UPDATE;
+ IF NOT FOUND THEN RAISE EXCEPTION 'map custody Item absent' USING ERRCODE='23514'; END IF;
  IF NEW.ownership_generation<=r.scope_generation OR NOT EXISTS(
  SELECT 1 FROM game_runtime_scope_assignments s JOIN game_durability_admission_runtime_guards a USING(scope_key)
  WHERE s.world_id=r.world_id AND s.channel_id=r.channel_id AND s.state=1 AND s.ownership_generation=NEW.ownership_generation
   AND s.holder_node_id=NEW.holder_node_id AND s.holder_registration_revision=NEW.holder_registration_revision
   AND a.ready AND a.ownership_generation=s.ownership_generation) THEN
  RAISE EXCEPTION 'map custody adoption requires current higher scope owner' USING ERRCODE='23514'; END IF;
- SELECT to_jsonb(x) INTO g FROM game_item_ground_locations x WHERE x.item_instance_id=r.item_instance_id FOR UPDATE;
+ SELECT to_jsonb(x) INTO g FROM game_item_ground_locations x WHERE x.item_instance_id=r.item_instance_id;
  -- Absence or custody in a different frame is recorded as observation only;
  -- it can never create a new Ground or modify that other owner's row.
  IF NEW.ground_before IS NOT NULL AND (NEW.ground_before IS DISTINCT FROM g OR
@@ -304,6 +309,25 @@ BEGIN
 END $$;
 CREATE TRIGGER game_native_map_adoption_stamp BEFORE INSERT ON game_native_map_scope_adoptions FOR EACH ROW EXECUTE FUNCTION game_native_map_adoption_stamp();
 CREATE TRIGGER game_native_map_adoption_immutable BEFORE UPDATE OR DELETE ON game_native_map_scope_adoptions FOR EACH ROW EXECUTE FUNCTION game_native_map_item_immutable();
+-- The runtime can INSERT the exact handoff receipt, but cannot UPDATE Ground.
+-- This trigger alone performs its bounded same-transaction generation successor.
+CREATE FUNCTION game_native_map_adoption_apply() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER AS $$
+DECLARE changed BIGINT;
+BEGIN
+ IF NEW.ground_before IS NOT NULL THEN
+  UPDATE game_item_ground_locations g
+   SET runtime_scope_ownership_generation=NEW.ownership_generation
+   FROM game_native_map_item_receipts r
+   WHERE r.transaction_id=NEW.source_transaction_id AND g.item_instance_id=r.item_instance_id
+    AND to_jsonb(g)=NEW.ground_before AND NEW.created_xact_id=pg_current_xact_id();
+  GET DIAGNOSTICS changed=ROW_COUNT;
+  IF changed<>1 THEN RAISE EXCEPTION 'map Ground changed during custody handoff' USING ERRCODE='23514'; END IF;
+ END IF;
+ RETURN NULL;
+END $$;
+CREATE TRIGGER game_native_map_adoption_apply AFTER INSERT ON game_native_map_scope_adoptions
+ FOR EACH ROW EXECUTE FUNCTION game_native_map_adoption_apply();
 CREATE FUNCTION game_native_map_ground_rebind() RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
  IF (to_jsonb(NEW)-'runtime_scope_ownership_generation') IS DISTINCT FROM (to_jsonb(OLD)-'runtime_scope_ownership_generation') OR
@@ -327,8 +351,8 @@ END $$;
 CREATE CONSTRAINT TRIGGER game_native_map_adoption_proven AFTER INSERT ON game_native_map_scope_adoptions DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION game_native_map_adoption_proven();
 REVOKE ALL ON game_native_map_scope_adoptions FROM PUBLIC;
 GRANT SELECT,INSERT ON game_native_map_scope_adoptions TO oteryn_game_runtime;
-DO $$ DECLARE n TEXT;BEGIN FOREACH n IN ARRAY ARRAY['game_native_map_adoption_stamp','game_native_map_ground_rebind','game_native_map_adoption_proven'] LOOP
- EXECUTE format('ALTER FUNCTION %I() SET search_path = %I, pg_temp',n,current_schema());
+DO $$ DECLARE n TEXT;BEGIN FOREACH n IN ARRAY ARRAY['game_native_map_adoption_stamp','game_native_map_adoption_apply','game_native_map_ground_rebind','game_native_map_adoption_proven'] LOOP
+ EXECUTE format('ALTER FUNCTION %I() SET search_path = pg_catalog, %I, pg_temp',n,current_schema());
  EXECUTE format('REVOKE ALL ON FUNCTION %I() FROM PUBLIC',n);
  END LOOP;END $$;
 -- Preserve0033 shared Ground-owner serialization for every legacy writer.

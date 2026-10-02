@@ -228,6 +228,15 @@ fn destination(
             .transpose()
     })
 }
+fn clear_terminal_destination(
+    position: MovementLocalPosition,
+    current: &TileView<'_>,
+) -> Result<MovementLocalPosition, MovementError> {
+    if !current.ground_present() || current.solid {
+        return Err(MovementError::Blocked);
+    }
+    Ok(position)
+}
 fn destination_with_lookup<'a>(
     origin: MovementLocalPosition,
     direction: CardinalStep,
@@ -275,10 +284,7 @@ fn destination_with_lookup<'a>(
         let current = lookup(next)?.ok_or(MovementError::NotQualified)?;
         let flags = changes(&current)?;
         if flags.is_empty() {
-            if !current.ground_present() || current.solid {
-                return Err(MovementError::Blocked);
-            }
-            return Ok(next);
+            return clear_terminal_destination(next, &current);
         }
         let target = if flags.contains(&SourceFloorChange::Down) {
             let below = shifted(next, 0, 0, -1)?;
@@ -312,7 +318,7 @@ fn destination_with_lookup<'a>(
                     }
                     shifted(below, x, y, 0)?
                 } else {
-                    return Ok(next);
+                    return clear_terminal_destination(next, &current);
                 }
             }
         } else {
@@ -331,7 +337,7 @@ fn destination_with_lookup<'a>(
             shifted(next, x, y, 1)?
         };
         if lookup(target)?.is_none() {
-            return Ok(next);
+            return clear_terminal_destination(next, &current);
         }
         next = target;
     }
@@ -614,6 +620,130 @@ mod tests {
         );
     }
     #[test]
+    fn genuine_downstairs_step_inspects_solid_probe_and_lands_on_clear_floor() {
+        let (_runtime, room, _actor, _session) = owner();
+        let cells = room.movement_cells();
+        let origin = MovementLocalPosition {
+            x: 0,
+            y: 4,
+            floor: -5,
+        };
+        let probe = MovementLocalPosition {
+            x: 0,
+            y: 4,
+            floor: -6,
+        };
+        assert!(tile(cells, probe).unwrap().unwrap().flags().block_solid);
+        let mut queried = std::collections::BTreeSet::new();
+        let lookup = |p: MovementLocalPosition| {
+            tile(cells, p)?
+                .map(|tile| {
+                    Ok(TileView {
+                        tile,
+                        solid: tile.flags().block_solid,
+                        height_count: tile
+                            .source_step()
+                            .ok_or(MovementError::NotQualified)?
+                            .height_count,
+                    })
+                })
+                .transpose()
+        };
+        let destination = destination_with_lookup(origin, CardinalStep::South, |p| {
+            queried.insert((p.x, p.y, p.floor));
+            lookup(p)
+        })
+        .unwrap();
+        assert!(queried.contains(&(probe.x, probe.y, probe.floor)));
+        assert_eq!(
+            destination,
+            MovementLocalPosition {
+                x: 0,
+                y: 6,
+                floor: -6
+            }
+        );
+        // The broken standing/combat adapter refused a necessary solid probe.
+        assert!(
+            destination_with_lookup(origin, CardinalStep::South, |p| {
+                let fact = lookup(p)?;
+                if fact.is_some_and(|tile| tile.solid) {
+                    return Err(MovementError::NotQualified);
+                }
+                Ok(fact)
+            })
+            .is_err()
+        );
+        // Allowing a probe never allows a solid final landing.
+        assert!(
+            destination_with_lookup(origin, CardinalStep::South, |p| {
+                let mut fact = lookup(p)?;
+                if p == destination
+                    && let Some(tile) = &mut fact
+                {
+                    tile.solid = true;
+                }
+                Ok(fact)
+            })
+            .is_err()
+        );
+    }
+
+    #[test]
+    fn absent_floor_followups_never_make_a_solid_flagged_stair_a_landing() {
+        let (_runtime, room, _actor, _session) = owner();
+        let p = |x, y, floor| MovementLocalPosition { x, y, floor };
+        let cells = room.movement_cells();
+        let clear = tile(cells, p(0, 4, -5)).unwrap().unwrap();
+        let down = tile(cells, p(0, 5, -5)).unwrap().unwrap();
+        let north = tile(cells, p(0, 5, -6)).unwrap().unwrap();
+        let west = tile(cells, p(-10, 11, -7)).unwrap().unwrap();
+        assert_eq!(changes(down).unwrap(), &[SourceFloorChange::Down]);
+        assert_eq!(changes(west).unwrap(), &[SourceFloorChange::West]);
+        // Isolated query graph uses genuine qualified tile facts. It constructs
+        // neither a SourceStepProof nor current Item/movement authority.
+        for second in [down, west] {
+            for solid in [false, true] {
+                let view = |tile, solid| TileView {
+                    tile,
+                    solid,
+                    height_count: 0,
+                };
+                let graph = std::collections::BTreeMap::from([
+                    ((0, 0, -5), view(clear, false)),
+                    ((0, 1, -5), view(down, false)),
+                    ((0, 1, -6), view(north, false)),
+                    ((0, 2, -6), view(second, solid)),
+                ]);
+                let result = destination_with_lookup(p(0, 0, -5), CardinalStep::South, |p| {
+                    Ok(graph.get(&(p.x, p.y, p.floor)).copied())
+                });
+                assert_eq!(
+                    result,
+                    if solid {
+                        Err(MovementError::Blocked)
+                    } else {
+                        Ok(p(0, 2, -6))
+                    }
+                );
+            }
+        }
+        let groundless = tile(cells, p(-14, -2, -5)).unwrap().unwrap();
+        assert!(!groundless.ground_present());
+        assert_eq!(
+            clear_terminal_destination(
+                p(0, 2, -6),
+                &TileView {
+                    tile: groundless,
+                    solid: false,
+                    height_count: 0,
+                }
+            ),
+            Err(MovementError::Blocked)
+        );
+    }
+
+    #[test]
     fn source_proof_rejects_intervening_actual_step_and_original_profile() {
         let (mut runtime, room, actor, session) = owner();
         let before = runtime.read_actor_position(actor).unwrap();
@@ -771,7 +901,7 @@ pub(crate) async fn collect_current_source_step<'room>(
                 None
             }
             _ => Some(
-                crate::spell::world_execution::qualified_standing_tile_in_transaction(
+                crate::spell::world_execution::qualified_source_step_probe_in_transaction(
                     tx, &read, room, runtime, objects, position,
                 )
                 .await

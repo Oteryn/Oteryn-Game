@@ -743,7 +743,34 @@ async fn prepare_inner(
     };
     // Entire footprint, magnitude prerequisites, owner stores and outbox capacity
     // are qualified using a non-executed preview before consuming the live stream.
-    let preview = prepare_paid(&mut |minimum, _| minimum)?;
+    #[cfg(test)]
+    eprintln!(
+        "SEAM_EVIDENCE ordinary_combat_preview operational_target={} position_target={} direction={} protection={} needs_target={} target_or_direction={}",
+        operational.target.is_some(),
+        operational.target_position.is_some(),
+        operational.direction_available,
+        operational.in_protection_zone,
+        spell.needs_target,
+        spell.target_or_direction
+    );
+    #[cfg(test)]
+    eprintln!(
+        "SEAM_EVIDENCE ordinary_combat_preview caster_state pending_training={} level={} owned_magic={:?} qualified_level={} qualified_magic={} vocation_matches={}",
+        before.pending_training_checkpoint().is_some(),
+        before.character_facts().level,
+        before.owned_effective_magic_level(now.get()),
+        caster.level,
+        caster.magic_level,
+        caster.vocation == before.character_facts().vocation
+    );
+    let preview = prepare_paid(&mut |minimum, _| minimum).inspect_err(|_reason| {
+        #[cfg(test)]
+        eprintln!(
+            "SEAM_EVIDENCE ordinary_combat_prepare stage=paid_preview_refused reason={_reason:?}"
+        );
+    })?;
+    #[cfg(test)]
+    eprintln!("SEAM_EVIDENCE ordinary_combat_prepare stage=paid_preview_qualified");
     let preview_output = lower(
         runtime,
         states,
@@ -765,7 +792,15 @@ async fn prepare_inner(
         &occurrence,
         now,
         &mut |minimum, _| minimum,
-    )?;
+    )
+    .inspect_err(|_reason| {
+        #[cfg(test)]
+        eprintln!(
+            "SEAM_EVIDENCE ordinary_combat_prepare stage=lower_preview_refused reason={_reason:?}"
+        );
+    })?;
+    #[cfg(test)]
+    eprintln!("SEAM_EVIDENCE ordinary_combat_prepare stage=lower_preview_qualified");
     let formula = content
         .training_formula()
         .ok_or(SpellCastDisposition::Rejected)?;
@@ -777,16 +812,27 @@ async fn prepare_inner(
             training_occurrence,
             now.get(),
         )
-        .map_err(|_| SpellCastDisposition::Rejected)?;
+        .map_err(|_reason| {
+            #[cfg(test)]
+            eprintln!("SEAM_EVIDENCE ordinary_combat_prepare stage=training_or_runtime_preview_refused reason={_reason:?}");
+            SpellCastDisposition::Rejected
+        })?;
     stage_player_batch(
         runtime,
         states,
         &preview_output.batch,
         Some(preview.next.clone()),
-    )?;
+    ).inspect_err(|_reason| {
+        #[cfg(test)]
+        eprintln!("SEAM_EVIDENCE ordinary_combat_prepare stage=player_batch_preview_refused reason={_reason:?}");
+    })?;
     runtime
         .stage_spell_batch(&preview_output.batch)
-        .map_err(|_| SpellCastDisposition::Rejected)?;
+        .map_err(|_reason| {
+            #[cfg(test)]
+            eprintln!("SEAM_EVIDENCE ordinary_combat_prepare stage=training_or_runtime_preview_refused reason={_reason:?}");
+            SpellCastDisposition::Rejected
+        })?;
     let preview_requests = crate::spell::ordinary_timer::ordinary_timer_requests(
         runtime,
         spell,
@@ -990,6 +1036,12 @@ fn lower(
     if applications.len() > crate::spell::combat_batch::MAX_EFFECTS {
         return reject();
     }
+    #[cfg(test)]
+    eprintln!(
+        "SEAM_EVIDENCE ordinary_combat_lower stage=applications_qualified applications={} geometry={}",
+        applications.len(),
+        geometry.len()
+    );
     let source_protected = runtime
         .current_player_reentry_protection(
             owned.binding().actor,
@@ -1387,8 +1439,11 @@ fn lower(
                             cues.push(LocatedCueRequest {
                                 binding: binding.clone(),
                                 target: CueTarget::Tile(
-                                    QualifiedCueTile::from_owners(room, runtime, cell(*tile))
-                                        .map_err(|_| SpellCastDisposition::Rejected)?,
+                                    QualifiedCueTile::from_owners(room, runtime, cell(*tile)).map_err(|_reason| {
+                    #[cfg(test)]
+                    eprintln!("SEAM_EVIDENCE ordinary_combat_lower stage=tile_cue_owner_refused reason={_reason:?}");
+                    SpellCastDisposition::Rejected
+                })?,
                                 ),
                             });
                         }
@@ -1412,8 +1467,11 @@ fn lower(
                         cues.push(LocatedCueRequest {
                             binding: binding.clone(),
                             target: CueTarget::Tile(
-                                QualifiedCueTile::from_owners(room, runtime, cell(world.origin))
-                                    .map_err(|_| SpellCastDisposition::Rejected)?,
+                                QualifiedCueTile::from_owners(room, runtime, cell(world.origin)).map_err(|_reason| {
+                    #[cfg(test)]
+                    eprintln!("SEAM_EVIDENCE ordinary_combat_lower stage=tile_cue_owner_refused reason={_reason:?}");
+                    SpellCastDisposition::Rejected
+                })?,
                             ),
                         });
                     }
@@ -1438,12 +1496,25 @@ fn lower(
         capture["ordinary_item_creations"] = json!(format!("{items:?}"));
         batch.binding = serde_json::to_vec(&capture).map_err(|_| SpellCastDisposition::Rejected)?;
     }
+    #[cfg(test)]
+    eprintln!(
+        "SEAM_EVIDENCE ordinary_combat_lower stage=presentation_prepare cues={} applications={} magnitude_hits={}",
+        cues.len(),
+        application_targets.len(),
+        source_delays.len()
+    );
     let presentation = states
         .presentations
         .as_mut()
         .ok_or(SpellCastDisposition::Rejected)?
         .prepare_source_definition(runtime, content, intent.spell, spell, &mut batch, cues)
-        .map_err(|_| SpellCastDisposition::Rejected)?;
+        .map_err(|_reason| {
+            #[cfg(test)]
+            eprintln!(
+                "SEAM_EVIDENCE ordinary_combat_lower stage=presentation_refused reason={_reason:?}"
+            );
+            SpellCastDisposition::Rejected
+        })?;
     Ok(Output {
         batch,
         magnitude,

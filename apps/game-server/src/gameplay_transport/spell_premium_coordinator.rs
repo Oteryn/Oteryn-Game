@@ -580,4 +580,49 @@ mod tests {
         assert!(gate.current_time().is_none());
         assert_eq!(views.lock().unwrap().get(&[1; 16]).unwrap().epoch, 2);
     }
+    #[test]
+    fn denied_account_revokes_its_retained_gate_without_revoking_other_accounts() {
+        // Private epoch gate qualification only: no fake grant or Platform source.
+        let clock = Arc::new(TestClock(Mutex::new(
+            TrustedTime::from_current_clock_owner(100, 101).ok(),
+        )));
+        let coordinator = SpellPremiumCoordinator::new(None, Some(clock.clone()));
+        for account in [[1; 16], [2; 16]] {
+            coordinator.views.lock().unwrap().insert(
+                account,
+                Entry {
+                    epoch: 1,
+                    in_flight: false,
+                    view: Arc::new(RegisteredSpellAccessOwner::Unavailable {
+                        account: Some(account),
+                    }),
+                },
+            );
+        }
+        let gate = |account| AccountViewGate {
+            views: Arc::downgrade(&coordinator.views),
+            account,
+            epoch: 1,
+            clock: clock.clone(),
+        };
+        let first = gate([1; 16]);
+        let second = gate([2; 16]);
+        assert!(first.current_time().is_some());
+        assert!(second.current_time().is_some());
+        coordinator.deny([1; 16]);
+        assert!(first.current_time().is_none());
+        assert!(second.current_time().is_some());
+        assert_eq!(
+            coordinator
+                .views
+                .lock()
+                .unwrap()
+                .get(&[1; 16])
+                .unwrap()
+                .epoch,
+            2
+        );
+        coordinator.views.lock().unwrap().remove(&[2; 16]);
+        assert!(second.current_time().is_none());
+    }
 }

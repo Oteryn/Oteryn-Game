@@ -271,4 +271,18 @@ mod clock_domain_tests {
         assert!(advance_trusted_time(time, 10, 9).is_none());
         assert!(advance_trusted_time(time, 10, u64::MAX).is_some());
     }
+    #[test]
+    fn clock_translation_rejects_regression_and_overflow_and_rounds_subsecond_expiry() {
+        let time = TrustedTime::from_current_clock_owner(100, 101).expect("clock");
+        assert!(advance_trusted_time(time, 10, 9).is_none());
+        let same = advance_trusted_time(time, 10, 10).expect("unchanged");
+        assert_eq!((same.lower(), same.upper()), (100, 101));
+        let partial = advance_trusted_time(time, 10, 11).expect("partial second");
+        assert_eq!((partial.lower(), partial.upper()), (100, 102));
+        let exact = advance_trusted_time(time, 10, 1_000_010).expect("exact second");
+        assert_eq!((exact.lower(), exact.upper()), (101, 102));
+        let last =
+            TrustedTime::from_current_clock_owner(i64::MAX - 1, i64::MAX).expect("last window");
+        assert!(advance_trusted_time(last, 10, 11).is_none());
+    }
 }

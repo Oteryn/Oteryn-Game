@@ -120,6 +120,8 @@ fn fixture() -> Fixture {
         });
     }
     let attributes = MagnitudeOwnedAttributes {
+        policy: MagnitudePolicy::Strict,
+        owner_revisions: None,
         binding: MagnitudeOwnerBinding {
             actor: caster,
             session,
@@ -207,6 +209,135 @@ fn qualify(f: &Fixture, p: &NativeCombatPlan) -> Result<PreparedMagnitudeOwner, 
         &[],
         100,
     )
+}
+
+#[test]
+fn content_test_baseline_omits_optional_stages_preserves_unknowns_and_durable_revisions() {
+    let mut f = fixture();
+    let p = plan();
+    f.attributes.fatal_chance_permyriad = None;
+    f.attributes.wheel_flat_damage = None;
+    f.attributes.inactive_extra_stages = None;
+    assert!(
+        qualify(&f, &p).is_err(),
+        "strict Content refuses unknown stages"
+    );
+    f.attributes.policy = MagnitudePolicy::BaselineTest;
+    assert!(
+        qualify(&f, &p).is_err(),
+        "baseline still requires durable observations"
+    );
+    f.attributes.owner_revisions = Some((5, 3, Some(2)));
+    let mut prepared = qualify(&f, &p).expect("explicit test Content policy");
+    assert_eq!(prepared.attributes.fatal_chance_permyriad, None);
+    assert_eq!(prepared.attributes.inactive_extra_stages, None);
+    assert!(
+        prepared
+            .attributes
+            .omitted_modifiers()
+            .contains(&"fatal_chance")
+    );
+    assert!(prepared.attributes.omitted_modifiers().contains(&"charms"));
+    let NativeCombatPlan::Combat(combat) = &p else {
+        panic!("combat")
+    };
+    let mut draws = 0;
+    let amount = prepared
+        .finish(&p, &combat.hits[0], &f.bindings[1], &mut |low, _| {
+            draws += 1;
+            low
+        })
+        .expect("real creature magnitude with omitted fatal/Wheel stages");
+    assert!(amount > 0);
+    assert!(draws > 0);
+    assert!(
+        prepared
+            .validate_current(&f.runtime, &f.state, &f.attributes, &[])
+            .is_ok()
+    );
+    let mut changed = f.attributes.clone();
+    changed.owner_revisions = Some((5, 4, Some(2)));
+    assert_eq!(
+        prepared.validate_current(&f.runtime, &f.state, &changed, &[]),
+        Err(Error::SnapshotChanged)
+    );
+    changed = f.attributes.clone();
+    changed.policy = MagnitudePolicy::Strict;
+    assert_eq!(
+        prepared.validate_current(&f.runtime, &f.state, &changed, &[]),
+        Err(Error::SnapshotChanged)
+    );
+    f.attributes.inactive_extra_stages = Some(vec![ExtraStage::Charms]);
+    assert!(
+        qualify(&f, &p).is_err(),
+        "known active unsupported stage still refuses"
+    );
+}
+
+#[test]
+fn test_baseline_does_not_grant_player_damage_or_missing_target_health_authority() {
+    let mut f = fixture();
+    f.attributes.policy = MagnitudePolicy::BaselineTest;
+    f.attributes.owner_revisions = Some((1, 1, None));
+    let mut p = plan();
+    let NativeCombatPlan::Combat(combat) = &mut p else {
+        panic!("combat")
+    };
+    combat.hits[0].target = 1;
+    combat.hits.truncate(1);
+    assert!(
+        qualify(&f, &p).is_err(),
+        "baseline cannot authorize damage against player caster"
+    );
+    let NativeCombatPlan::Combat(combat) = &mut p else {
+        panic!("combat")
+    };
+    combat.hits[0].target = 99;
+    assert!(
+        qualify(&f, &p).is_err(),
+        "unowned target remains unavailable"
+    );
+    f.attributes.binding.player_revision += 1;
+    assert!(
+        qualify(&f, &plan()).is_err(),
+        "stale caster owner remains unavailable"
+    );
+}
+
+#[test]
+fn test_baseline_healing_uses_actual_player_owner_and_requires_current_content() {
+    let mut f = fixture();
+    f.attributes.policy = MagnitudePolicy::BaselineTest;
+    f.attributes.owner_revisions = Some((1, 1, None));
+    f.attributes.healing_dealt_percent = None;
+    f.attributes.source_healing_multiplier_percent = None;
+    let mut p = plan();
+    let NativeCombatPlan::Combat(combat) = &mut p else {
+        panic!("combat")
+    };
+    combat.element = Element::Healing;
+    combat.hits[0].target = 1;
+    combat.hits.truncate(1);
+    let mut prepared = qualify(&f, &p).expect("real player owner for healing");
+    let NativeCombatPlan::Combat(combat) = &p else {
+        panic!("combat")
+    };
+    assert!(
+        prepared
+            .finish(&p, &combat.hits[0], &f.bindings[0], &mut |low, _| low)
+            .expect("baseline healing magnitude")
+            > 0
+    );
+    assert!(
+        prepared
+            .validate_current(&f.runtime, &f.state, &f.attributes, &[])
+            .is_ok()
+    );
+    f.attributes.binding.content_digest = [0; 32];
+    assert!(
+        qualify(&f, &plan()).is_err(),
+        "current Content identity remains mandatory"
+    );
 }
 
 #[test]

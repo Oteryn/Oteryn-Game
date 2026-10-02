@@ -15,6 +15,19 @@ use crate::spell::owned_cast_facts::{
 };
 use sqlx::{Postgres, Transaction};
 
+fn current_wheel_stages(
+    mut stages: std::collections::BTreeMap<String, u8>,
+    level: u32,
+    vocation: &str,
+) -> std::collections::BTreeMap<String, u8> {
+    if !super::spell_magnitude_facts::wheel_bonus_eligible(level, vocation) {
+        for stage in stages.values_mut() {
+            *stage = 0;
+        }
+    }
+    stages
+}
+
 #[derive(Debug)]
 pub(crate) enum AccessFactsError {
     Equipment(EquipmentError),
@@ -192,6 +205,8 @@ pub(crate) fn qualify_raw_owned_cast_facts(
                     Some(wheel.maximum_grade_modifier),
                 )
                 .map_err(|_| AccessFactsError::Unavailable("qualified Wheel stage"))?;
+            // Retained allocation is not bonus authority after delevel/promotion loss.
+            let stages = current_wheel_stages(stages, level, build.vocation());
             let value = profile
                 .spell_stages(build.vocation(), &stages)
                 .map_err(|_| AccessFactsError::Unavailable("qualified Wheel vocation"))?;
@@ -203,10 +218,42 @@ pub(crate) fn qualify_raw_owned_cast_facts(
             });
         }
     }
+    projections.magnitude = super::spell_magnitude_facts::project(raw, &binding, native)?;
     let facts = OwnedCastFacts::from_owner_reads(binding, build, level, equipment, projections)?;
     // No await follows this final independent owner recheck; the caller keeps the same lock/tx.
     runtime
         .player_control_facts(actor, fence.game_session_id)
         .map_err(|_| AccessFactsError::Unavailable("player owner changed"))?;
     Ok(facts)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn retained_wheel_stage_projection_is_neutral_when_current_owner_is_ineligible() {
+        let retained = ["green", "red", "purple", "blue"]
+            .map(|colour| (colour.to_owned(), 3))
+            .into_iter()
+            .collect::<std::collections::BTreeMap<_, _>>();
+        for (level, vocation) in [
+            (50, "master_sorcerer"),
+            (8, "elder_druid"),
+            (100, "sorcerer"),
+        ] {
+            assert!(
+                current_wheel_stages(retained.clone(), level, vocation)
+                    .values()
+                    .all(|stage| *stage == 0)
+            );
+        }
+        assert_eq!(
+            current_wheel_stages(retained.clone(), 51, "master_sorcerer"),
+            retained
+        );
+        assert!(
+            retained.values().all(|stage| *stage == 3),
+            "stored allocation remains unchanged"
+        );
+    }
 }

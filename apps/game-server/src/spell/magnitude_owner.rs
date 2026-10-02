@@ -2,7 +2,8 @@
 //! Canary 99902524e052f37574194466c2949c576e4ab269: combat.cpp 873-878,
 //! 2999-3151; creature.cpp 910-1005; monster.cpp 1415-1462;
 //! game.cpp 8035-8067, 8392-8483; player.cpp 7410-7425.
-//! Unimplemented source extras/unknown owner fields refuse before any draw.
+//! Strict policy refuses unknown owner fields; qualified test Content may explicitly
+//! omit optional numerical stages while retaining raw unknowns and real owner fences.
 //! No target legality/PvP permission is granted by this numerical adapter.
 
 use super::cast::PlayerSpellState;
@@ -12,6 +13,15 @@ use crate::ability::condition::ConditionValues;
 use crate::foundation::{
     ChannelRuntimeV1, CharacterId, CompanionSnapshot, ExactActorRef, GameSessionId,
 };
+
+/// Content-bound test policy. Numerical approximation never grants target or session authority.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub(crate) enum MagnitudePolicy {
+    #[default]
+    Strict,
+    BaselineTest,
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) struct ExactRatio {
@@ -57,6 +67,9 @@ pub(crate) struct MagnitudeOwnerBinding {
 /// PlayerSpellState. A data snapshot alone is never a current ownership grant.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct MagnitudeOwnedAttributes {
+    pub(crate) policy: MagnitudePolicy,
+    /// Actual durable observations, retained across numerical revalidation.
+    pub(crate) owner_revisions: Option<(u64, u64, Option<u64>)>,
     pub(crate) binding: MagnitudeOwnerBinding,
     pub(crate) base_critical_chance_permyriad: Option<u16>,
     pub(crate) base_critical_extra_permyriad: Option<i32>,
@@ -74,10 +87,120 @@ pub(crate) struct MagnitudeOwnedAttributes {
     pub(crate) inactive_extra_stages: Option<Vec<ExtraStage>>,
 }
 
+impl MagnitudeOwnedAttributes {
+    /// Unknown modifiers remain unknown in the owner facts. These names describe
+    /// each omitted stage in the explicitly selected test baseline.
+    pub(crate) fn omitted_modifiers(&self) -> Vec<&'static str> {
+        let mut omitted = Vec::new();
+        for (unknown, name) in [
+            (
+                self.base_critical_chance_permyriad.is_none(),
+                "base_critical_chance",
+            ),
+            (
+                self.base_critical_extra_permyriad.is_none(),
+                "base_critical_extra",
+            ),
+            (
+                self.equipment_critical_chance_permyriad.is_none(),
+                "equipment_critical_chance",
+            ),
+            (
+                self.equipment_critical_extra_permyriad.is_none(),
+                "equipment_critical_extra",
+            ),
+            (self.fatal_chance_permyriad.is_none(), "fatal_chance"),
+            (
+                self.armor_penetration_permyriad.is_none(),
+                "armor_penetration",
+            ),
+            (
+                self.elemental_pierce_permyriad.is_none(),
+                "elemental_pierce",
+            ),
+            (self.wheel_flat_damage.is_none(), "wheel_flat_damage"),
+            (self.wheel_flat_healing.is_none(), "wheel_flat_healing"),
+            (
+                self.source_damage_multiplier_percent.is_none(),
+                "source_damage_multiplier",
+            ),
+            (
+                self.source_healing_multiplier_percent.is_none(),
+                "source_healing_multiplier",
+            ),
+            (
+                self.healing_dealt_percent.is_none(),
+                "healing_dealt_multiplier",
+            ),
+            (self.monster_armor_disabled.is_none(), "armor_configuration"),
+        ] {
+            if unknown {
+                omitted.push(name);
+            }
+        }
+        if self.inactive_extra_stages.is_none() {
+            omitted.extend([
+                "combat_callbacks",
+                "elemental_imbuement",
+                "charms",
+                "weapon_proficiency",
+                "prey",
+                "wheel_combat_mastery",
+                "battle_healing",
+                "blessing_of_the_grove",
+                "healing_link",
+                "shared_conservation",
+                "virtue_party",
+                "sustain_healing",
+                "sanctuary_adjacent",
+                "exposed_weakness",
+                "ballistic_mastery",
+                "target_absorb_reflect",
+            ]);
+        }
+        omitted
+    }
+
+    fn resolved_for_policy(&self) -> Self {
+        let mut resolved = self.clone();
+        if self.policy == MagnitudePolicy::BaselineTest {
+            resolved.base_critical_chance_permyriad.get_or_insert(0);
+            resolved.base_critical_extra_permyriad.get_or_insert(0);
+            resolved
+                .equipment_critical_chance_permyriad
+                .get_or_insert(0);
+            resolved.equipment_critical_extra_permyriad.get_or_insert(0);
+            resolved.fatal_chance_permyriad.get_or_insert(ExactRatio {
+                numerator: 0,
+                denominator: 1,
+            });
+            resolved.armor_penetration_permyriad.get_or_insert(0);
+            resolved.elemental_pierce_permyriad.get_or_insert_with(|| {
+                vec![
+                    (Element::Physical, 0),
+                    (Element::Energy, 0),
+                    (Element::Fire, 0),
+                    (Element::Death, 0),
+                    (Element::Ice, 0),
+                    (Element::Earth, 0),
+                ]
+            });
+            resolved.wheel_flat_damage.get_or_insert(0);
+            resolved.wheel_flat_healing.get_or_insert(0);
+            resolved.source_damage_multiplier_percent.get_or_insert(0);
+            resolved.source_healing_multiplier_percent.get_or_insert(0);
+            resolved.healing_dealt_percent.get_or_insert(100);
+            resolved.monster_armor_disabled.get_or_insert(false);
+            resolved.inactive_extra_stages.get_or_insert_with(Vec::new);
+        }
+        resolved
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 enum TargetOwner {
-    Player(PlayerSpellState),
-    Creature(CompanionSnapshot),
+    Player(Box<PlayerSpellState>),
+    Creature(Box<CompanionSnapshot>),
 }
 #[derive(Debug, Clone, PartialEq, Eq)]
 struct Target {
@@ -89,6 +212,7 @@ struct Target {
 #[derive(Debug)]
 pub(crate) struct PreparedMagnitudeOwner {
     attributes: MagnitudeOwnedAttributes,
+    resolved_attributes: MagnitudeOwnedAttributes,
     caster: PlayerSpellState,
     now_ms: u64,
     plan: NativeCombatPlan,
@@ -153,7 +277,18 @@ impl PreparedMagnitudeOwner {
         players: &[(ExactActorRef, &PlayerSpellState)],
         now_ms: u64,
     ) -> Result<Self, Error> {
-        let a = attributes.ok_or(Error::InvalidBatch)?;
+        let original = attributes.ok_or(Error::InvalidBatch)?;
+        if original.policy == MagnitudePolicy::BaselineTest
+            && original
+                .owner_revisions
+                .is_none_or(|(character, equipment, wheel)| {
+                    character == 0 || equipment == 0 || wheel == Some(0)
+                })
+        {
+            return invalid();
+        }
+        let resolved = original.resolved_for_policy();
+        let a = &resolved;
         if a.binding.actor != actor
             || a.binding.session != session
             || a.binding.lease_generation == 0
@@ -262,15 +397,15 @@ impl PreparedMagnitudeOwner {
                 continue;
             }
             let owner = if binding.actor == actor {
-                TargetOwner::Player(caster.clone())
+                TargetOwner::Player(Box::new(caster.clone()))
             } else if let Some((_, state)) = players.iter().find(|v| v.0 == binding.actor) {
-                TargetOwner::Player((*state).clone())
+                TargetOwner::Player(Box::new((*state).clone()))
             } else {
-                TargetOwner::Creature(
+                TargetOwner::Creature(Box::new(
                     runtime
                         .companion_snapshot(binding.actor)
                         .map_err(Error::Owner)?,
-                )
+                ))
             };
             if hits.iter().any(|hit| hit.target == binding.source_id) && element != Element::Healing
             {
@@ -312,7 +447,8 @@ impl PreparedMagnitudeOwner {
             return invalid();
         }
         Ok(Self {
-            attributes: a.clone(),
+            attributes: original.clone(),
+            resolved_attributes: resolved,
             caster: caster.clone(),
             now_ms,
             plan: plan.clone(),
@@ -353,17 +489,20 @@ impl PreparedMagnitudeOwner {
         for target in &self.targets {
             match &target.owner {
                 TargetOwner::Creature(before) => {
-                    if runtime.validate_companion_snapshot(before).is_err() {
+                    if runtime
+                        .validate_companion_snapshot(before.as_ref())
+                        .is_err()
+                    {
                         return Err(Error::SnapshotChanged);
                     }
                 }
                 TargetOwner::Player(before) if target.actor == attributes.binding.actor => {
-                    if caster != before {
+                    if caster != before.as_ref() {
                         return Err(Error::SnapshotChanged);
                     }
                 }
                 TargetOwner::Player(before) => {
-                    if player(target.actor) != Some(before) {
+                    if player(target.actor) != Some(before.as_ref()) {
                         return Err(Error::SnapshotChanged);
                     }
                 }
@@ -377,12 +516,10 @@ impl PreparedMagnitudeOwner {
         shared: bool,
         draw: &mut dyn FnMut(i64, i64) -> i64,
     ) -> Result<(bool, bool), Error> {
-        if shared {
-            if let Some(value) = self.shared_extensions {
-                return Ok(value);
-            }
+        if shared && let Some(value) = self.shared_extensions {
+            return Ok(value);
         }
-        let a = &self.attributes;
+        let a = &self.resolved_attributes;
         let mut skill_chance = u32::from(needed(a.equipment_critical_chance_permyriad)?);
         let mut bonus = needed(a.equipment_critical_extra_permyriad)?;
         if let Some(ConditionValues::Attributes {
@@ -467,7 +604,7 @@ impl PreparedMagnitudeOwner {
         } else {
             self.extensions(shared, draw)?
         };
-        let a = &self.attributes;
+        let a = &self.resolved_attributes;
         let mut value = signed_truncate(hit.magnitude as f64)?;
         if critical {
             let mut bonus = needed(a.equipment_critical_extra_permyriad)?;

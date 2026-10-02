@@ -138,3 +138,33 @@ combat/healing, conditions/fields, summons, then monster scheduling and custom
 encounters. Keep source revision, chosen approximation, execution status and known
 gaps per entry. Enable partial test content only when the implemented path works;
 unsupported custom behavior stays explicitly disabled until implemented.
+
+## Explicit playable test baseline
+
+The default numerical policy remains `strict`. To qualify a separate test content
+generation with documented neutral values for missing optional damage modifiers:
+
+```sh
+python tools/qualification/spells/prepare_test_manifest.py \
+  docs/reference/spells/r21-local-candidate/active-artifact/manifest.json \
+  /tmp/oteryn-spell-test-candidate \
+  --magnitude-policy baseline_test \
+  --training-revision s3b-content-1 \
+  --creature-profiles /path/to/qualified-creature-profiles.json
+bash tools/qualification/spells/run.sh server /tmp/oteryn-spell-test-candidate/manifest.json
+```
+
+The training revision must match the actual Character build owner in the selected
+qualification environment; `s3b-content-1` belongs to the existing S3-B bootstrap.
+Use the serving owner's revision for a different environment. The output directory
+must not exist. The generator verifies the source pins, copies the declared inputs,
+and creates a new manifest. This operation neither activates a node nor grants
+Premium, items, targets, houses or quest access.
+
+`baseline_test` preserves unknown owner observations and lists omitted numerical
+modifiers. It keeps session, equipment, target, health and content fences. Current
+Wheel level and promotion eligibility still apply. The expanded S3-B scenario
+uses ordinary progression, movement, casts and durable training writes; casts on
+an empty footprint do not prove damage to a creature. Monster melee profiles
+explicitly declare fixed physical bite approximation and a nonlethal player floor;
+ranged attacks, defenses, spawning and encounter execution need separate owners.

@@ -1325,6 +1325,22 @@ pub(crate) async fn read_spell_tile_in_transaction(
     )
 }
 
+/// Native qualification spawn reads the actual scope-owned Item tile, without
+/// fabricating a player command or describing it as a standing-player read.
+#[cfg(test)]
+pub(crate) async fn read_qualification_scope_tile_in_transaction(
+    tx: &mut Transaction<'_, Postgres>,
+    authority: &SpellItemScopeAuthority,
+    target: &SpellGroundTarget,
+) -> Result<DurableTileItems> {
+    check_scope_transaction(tx, authority).await?;
+    decode_tile_rows(
+        locked_tile_rows_for_scope(tx, authority, target).await?,
+        authority.ownership_generation,
+        target,
+    )
+}
+
 fn decode_tile_rows(
     rows: Vec<sqlx::postgres::PgRow>,
     ownership_generation: u64,

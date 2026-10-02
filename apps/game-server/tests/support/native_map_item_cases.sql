@@ -53,11 +53,14 @@ UPDATE game_runtime_scope_assignments SET ownership_generation=2 WHERE decision_
 UPDATE game_durability_admission_runtime_guards SET ownership_generation=2 WHERE decision_identity='map-fixture';
 SET session_replication_role=origin;
 BEGIN;
+SET LOCAL ROLE oteryn_game_runtime;
 INSERT INTO game_native_map_scope_adoptions(source_transaction_id,ownership_generation,holder_node_id,holder_registration_revision,ground_before)
  SELECT r.transaction_id,2,r.holder_node_id,r.holder_registration_revision,to_jsonb(g) FROM game_native_map_item_receipts r JOIN game_item_ground_locations g USING(item_instance_id);
-UPDATE game_item_ground_locations SET runtime_scope_ownership_generation=2 WHERE item_instance_id IN(SELECT item_instance_id FROM game_native_map_item_receipts);
 SET CONSTRAINTS ALL IMMEDIATE;
 DO $$ BEGIN
+ BEGIN UPDATE game_item_ground_locations SET runtime_scope_ownership_generation=2;
+  RAISE EXCEPTION 'runtime unexpectedly has direct Ground UPDATE privilege';
+ EXCEPTION WHEN insufficient_privilege THEN NULL; END;
  IF (SELECT count(*) FROM game_item_instances WHERE item_instance_id IN(SELECT item_instance_id FROM game_native_map_item_receipts))<>1 OR
  NOT EXISTS(SELECT 1 FROM game_item_instances i JOIN game_item_ground_locations g USING(item_instance_id) JOIN game_native_map_item_receipts r USING(item_instance_id)
  WHERE i.quantity=1 AND i.state_revision=1 AND i.last_transaction_id IS NULL AND g.runtime_scope_ownership_generation=2 AND r.scope_generation=1) THEN
@@ -69,5 +72,66 @@ DO $$ BEGIN
  BEGIN UPDATE game_item_ground_locations SET runtime_scope_ownership_generation=3;RAISE EXCEPTION 'unproven Ground generation advanced';EXCEPTION WHEN check_violation THEN NULL;END;
  BEGIN UPDATE game_native_map_scope_adoptions SET ownership_generation=3;RAISE EXCEPTION 'adoption historical scope rewritten';EXCEPTION WHEN check_violation THEN NULL;END;
 END $$;
+-- Restart/retry observes the same immutable adoption; no second mutation/mint.
+BEGIN;
+SET LOCAL ROLE oteryn_game_runtime;
+INSERT INTO game_native_map_scope_adoptions(source_transaction_id,ownership_generation,holder_node_id,holder_registration_revision,ground_before)
+ SELECT transaction_id,2,holder_node_id,holder_registration_revision,NULL FROM game_native_map_item_receipts
+ ON CONFLICT(source_transaction_id,ownership_generation) DO NOTHING;
+DO $$ BEGIN
+ IF (SELECT count(*) FROM game_native_map_scope_adoptions)<>1 THEN RAISE EXCEPTION 'restart duplicated handoff'; END IF;
+END $$;
+COMMIT;
+-- A separately accepted fixture owner changes both scope generation and holder.
+SET session_replication_role=replica;
+UPDATE game_runtime_scope_assignments SET ownership_generation=3,holder_node_id='019a0000-0000-7000-8000-000000000104',holder_registration_revision=2 WHERE decision_identity='map-fixture';
+UPDATE game_durability_admission_runtime_guards SET ownership_generation=3 WHERE decision_identity='map-fixture';
+SET session_replication_role=origin;
+BEGIN;
+SET LOCAL ROLE oteryn_game_runtime;
+DO $$ DECLARE r game_native_map_item_receipts%ROWTYPE;g JSONB; BEGIN
+ SELECT * INTO STRICT r FROM game_native_map_item_receipts;
+ SELECT to_jsonb(x) INTO STRICT g FROM game_item_ground_locations x WHERE item_instance_id=r.item_instance_id;
+ BEGIN
+  INSERT INTO game_native_map_scope_adoptions VALUES(r.transaction_id,3,r.holder_node_id,2,g,pg_current_xact_id());
+  RAISE EXCEPTION 'previous holder acquired current map custody';
+ EXCEPTION WHEN check_violation THEN NULL; END;
+ BEGIN
+  INSERT INTO game_native_map_scope_adoptions VALUES(r.transaction_id,3,'019a0000-0000-7000-8000-000000000104',1,g,pg_current_xact_id());
+  RAISE EXCEPTION 'stale holder revision acquired map custody';
+ EXCEPTION WHEN check_violation THEN NULL; END;
+ BEGIN
+  INSERT INTO game_native_map_scope_adoptions VALUES(r.transaction_id,2,'019a0000-0000-7000-8000-000000000104',2,g,pg_current_xact_id());
+  RAISE EXCEPTION 'stale generation acquired map custody';
+ EXCEPTION WHEN check_violation THEN NULL; END;
+ BEGIN
+  INSERT INTO game_native_map_scope_adoptions VALUES(r.transaction_id,3,'019a0000-0000-7000-8000-000000000104',2,jsonb_set(g,'{spatial_position}','"substituted"'),pg_current_xact_id());
+  RAISE EXCEPTION 'substituted Ground acquired map custody';
+ EXCEPTION WHEN check_violation THEN NULL; END;
+ INSERT INTO game_native_map_scope_adoptions VALUES(r.transaction_id,3,'019a0000-0000-7000-8000-000000000104',2,g,pg_current_xact_id());
+END $$;
+SET CONSTRAINTS ALL IMMEDIATE;
+DO $$ BEGIN
+ IF NOT EXISTS(SELECT 1 FROM game_item_ground_locations WHERE runtime_scope_ownership_generation=3)
+ OR (SELECT count(*) FROM game_item_instances WHERE item_instance_id IN(SELECT item_instance_id FROM game_native_map_item_receipts))<>1
+ THEN RAISE EXCEPTION 'future-generation handoff failed or reminted'; END IF;
+END $$;
+COMMIT;
+-- Historical moved-away custody must remain absent after a later owner adopts.
+SET session_replication_role=replica;
+DELETE FROM game_item_ground_locations WHERE item_instance_id IN(SELECT item_instance_id FROM game_native_map_item_receipts);
+UPDATE game_runtime_scope_assignments SET ownership_generation=4 WHERE decision_identity='map-fixture';
+UPDATE game_durability_admission_runtime_guards SET ownership_generation=4 WHERE decision_identity='map-fixture';
+SET session_replication_role=origin;
+BEGIN;
+SET LOCAL ROLE oteryn_game_runtime;
+INSERT INTO game_native_map_scope_adoptions(source_transaction_id,ownership_generation,holder_node_id,holder_registration_revision,ground_before)
+ SELECT transaction_id,4,'019a0000-0000-7000-8000-000000000104',2,NULL FROM game_native_map_item_receipts;
+SET CONSTRAINTS ALL IMMEDIATE;
+DO $$ BEGIN
+ IF EXISTS(SELECT 1 FROM game_item_ground_locations WHERE item_instance_id IN(SELECT item_instance_id FROM game_native_map_item_receipts))
+ THEN RAISE EXCEPTION 'handoff recreated moved-away Ground'; END IF;
+END $$;
+COMMIT;
 DROP FUNCTION test_map_row(int,bool);
 SELECT 'Map initialization exact Item/Ground/audit, immutable provenance, intent substitution, current-generation guards: PASS' AS result;

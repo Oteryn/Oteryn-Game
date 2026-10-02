@@ -206,6 +206,47 @@ fn premium_grant_renewal_and_expiry_keep_soul_without_refilling() {
     assert_eq!(state.soul, 100);
 }
 
+// This qualifies the pure actor-owned transition, not a commercial entitlement issuer.
+#[test]
+fn premium_revocation_expiry_and_regrant_obey_the_same_soul_limits() {
+    for initial in [0, 75, 100] {
+        for revoke_explicitly in [false, true] {
+            let mut state = PlayerSpellState::new(druid(8), 0, 0).expect("state");
+            state.soul = initial;
+            state
+                .apply_owner_premium_transition(true, Some(100))
+                .expect("grant");
+            assert_eq!((state.soul, state.facts.max_soul), (initial, 200));
+            // The actor has accumulated soul while Premium was genuinely current.
+            state.soul = 180;
+            let changed = if revoke_explicitly {
+                state
+                    .apply_owner_premium_transition(false, None)
+                    .expect("revoke")
+            } else {
+                assert!(!state.expire_owner_premium(99).expect("before expiry"));
+                state.expire_owner_premium(100).expect("expiry")
+            };
+            assert!(changed);
+            assert_eq!((state.soul, state.facts.max_soul), (100, 100));
+            let revision = state.revision();
+            assert!(
+                !state
+                    .apply_owner_premium_transition(false, None)
+                    .expect("repeat revoke")
+            );
+            assert_eq!(state.revision(), revision);
+            state
+                .apply_owner_premium_transition(true, Some(200))
+                .expect("regrant");
+            assert_eq!((state.soul, state.facts.max_soul), (100, 200));
+            assert!(!state.expire_owner_premium(199).expect("current"));
+            assert!(state.expire_owner_premium(200).expect("second expiry"));
+            assert_eq!((state.soul, state.facts.max_soul), (100, 100));
+        }
+    }
+}
+
 #[test]
 fn premium_transition_refuses_incomplete_evidence_and_revision_overflow_atomically() {
     let mut state = PlayerSpellState::new(druid(8), 0, 0).expect("state");

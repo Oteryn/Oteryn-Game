@@ -979,4 +979,137 @@ mod tests {
         ));
         // The plan does not apply a move or authorize entry. Commit rechecks admission.
     }
+    #[test]
+    fn authored_aleta_lists_use_current_house_and_source_permission_matrix() {
+        // Supplied facts qualify the planner only; they are not physical House admission.
+        let document: Value = serde_json::from_str(include_str!(
+            "../../../../tools/content-schema/spell-authoring/samples/native-spell-profiles.json"
+        ))
+        .unwrap();
+        for (name, words, list) in [
+            ("House Guest List", "aleta sio", HouseList::Guest),
+            ("House Subowner List", "aleta som", HouseList::Subowner),
+            ("House Door List", "aleta grav", HouseList::Door(3)),
+        ] {
+            let profile = document["profiles"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .find(|profile| profile["name"] == name)
+                .unwrap();
+            assert_eq!(profile["spell"]["words"], words);
+            let parameters = &profile["execution"]["native_behavior"]["parameters"];
+            for access in [
+                HouseAccess::NotInvited,
+                HouseAccess::Guest,
+                HouseAccess::Subowner,
+                HouseAccess::Owner,
+            ] {
+                let facts = HouseMovementFacts::HouseList {
+                    caster_house: Some(7),
+                    access,
+                    front_door: Some(3),
+                    own_door: Some(4),
+                };
+                let allowed = access == HouseAccess::Owner
+                    || access == HouseAccess::Subowner && list == HouseList::Guest;
+                let result = plan(parameters, &facts).unwrap();
+                if allowed {
+                    assert_eq!(
+                        result,
+                        HouseMovementPlan::OpenHouseEditor {
+                            house: 7,
+                            list,
+                            recheck_access_on_save: true,
+                            require_matching_window_and_session: true,
+                            evict_uninvited_on_save: list != HouseList::Door(3),
+                        }
+                    );
+                } else {
+                    assert!(
+                        matches!(result, HouseMovementPlan::Refused { cast_succeeds, start_cooldown, .. }
+                        if cast_succeeds == (list != HouseList::Door(3)) && start_cooldown == cast_succeeds)
+                    );
+                }
+                let missing = HouseMovementFacts::HouseList {
+                    caster_house: None,
+                    access,
+                    front_door: Some(3),
+                    own_door: Some(4),
+                };
+                assert!(matches!(
+                    plan(parameters, &missing),
+                    Ok(HouseMovementPlan::Refused {
+                        cast_succeeds: false,
+                        start_cooldown: false,
+                        ..
+                    })
+                ));
+            }
+        }
+    }
+
+    #[test]
+    fn authored_alana_kick_preserves_self_exit_and_rejects_each_missing_target_fact() {
+        let document: Value = serde_json::from_str(include_str!(
+            "../../../../tools/content-schema/spell-authoring/samples/native-spell-profiles.json"
+        ))
+        .unwrap();
+        let profile = document["profiles"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|profile| profile["name"] == "House Kick")
+            .unwrap();
+        assert_eq!(profile["spell"]["words"], "alana sio");
+        let parameters = &profile["execution"]["native_behavior"]["parameters"];
+        // Source self kick needs physical House membership, but no ACL editing privilege.
+        let self_kick = HouseMovementFacts::HouseKick {
+            caster_house: Some(7),
+            target_house: None,
+            target_is_caster: true,
+            caster_can_edit_guest: false,
+            caster_access_in_target_house: HouseAccess::NotInvited,
+            target_access: HouseAccess::Owner,
+            target_can_edit_houses: true,
+            caster_entry: Some(position(10, 11, 7)),
+            target_entry: None,
+        };
+        assert!(matches!(
+            plan(parameters, &self_kick),
+            Ok(HouseMovementPlan::Move {
+                target_is_caster: true,
+                destination: Position { x: 10, y: 11, z: 7 },
+                ..
+            })
+        ));
+        for failure in 0..5 {
+            let facts = HouseMovementFacts::HouseKick {
+                caster_house: if failure == 0 { None } else { Some(7) },
+                target_house: if failure == 1 { None } else { Some(8) },
+                target_is_caster: false,
+                caster_can_edit_guest: failure != 2,
+                caster_access_in_target_house: if failure == 3 {
+                    HouseAccess::Guest
+                } else {
+                    HouseAccess::Owner
+                },
+                target_access: HouseAccess::Subowner,
+                target_can_edit_houses: failure == 4,
+                caster_entry: Some(position(10, 11, 7)),
+                target_entry: Some(position(20, 21, 7)),
+            };
+            assert!(
+                matches!(
+                    plan(parameters, &facts),
+                    Ok(HouseMovementPlan::Refused {
+                        cast_succeeds: false,
+                        start_cooldown: false,
+                        ..
+                    })
+                ),
+                "failure {failure}"
+            );
+        }
+    }
 }

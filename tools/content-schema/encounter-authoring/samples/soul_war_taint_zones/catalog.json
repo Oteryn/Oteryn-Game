@@ -2,11 +2,6 @@
   "definitions": [
     {
       "family": "Creature",
-      "key": "canary:creature/mirror_image",
-      "revision": "canary-47dfd51f"
-    },
-    {
-      "family": "Creature",
       "key": "canary:creature/bony_sea_devil",
       "revision": "canary-47dfd51f"
     },
@@ -73,6 +68,51 @@
     {
       "family": "Creature",
       "key": "canary:creature/turbulent_elemental",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Creature",
+      "key": "canary:creature/mirror_image",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Creature",
+      "key": "canary:creature/druid_s_apparition",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Creature",
+      "key": "canary:creature/knight_s_apparition",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Creature",
+      "key": "canary:creature/paladin_s_apparition",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Creature",
+      "key": "canary:creature/sorcerer_s_apparition",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Creature",
+      "key": "canary:creature/monk_s_apparition",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Item",
+      "key": "canary:item/33854",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Creature",
+      "key": "canary:creature/spiteful_spitter",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Creature",
+      "key": "canary:creature/dreadful_harvester",
       "revision": "canary-47dfd51f"
     }
   ]

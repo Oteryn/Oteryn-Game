@@ -75,6 +75,7 @@ pub(crate) struct NativeGameplayInput {
 pub(crate) struct NativeTrainingInput {
     pub(crate) profile: PinnedGameplayBytes,
     pub(crate) content_revision: String,
+    pub(crate) magnitude_policy: crate::spell::magnitude_owner::MagnitudePolicy,
 }
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -82,12 +83,19 @@ struct TrainingFilePin {
     path: String,
     sha256: String,
     content_revision: String,
+    #[serde(default)]
+    magnitude_policy: crate::spell::magnitude_owner::MagnitudePolicy,
 }
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 struct TrainingEnvelope {
     content_revision: String,
     profile: serde_json::Value,
+    #[serde(default, skip_serializing_if = "strict_magnitude_policy")]
+    magnitude_policy: crate::spell::magnitude_owner::MagnitudePolicy,
+}
+fn strict_magnitude_policy(policy: &crate::spell::magnitude_owner::MagnitudePolicy) -> bool {
+    *policy == crate::spell::magnitude_owner::MagnitudePolicy::Strict
 }
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -142,6 +150,71 @@ pub(crate) struct CreatureProfileRecord {
     pub(crate) presentation: ProjectV2DefinitionRef,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub(crate) behavior: Option<ProjectV2AuthoringProfile>,
+    /// Explicit source-qualified approximation; absence disables wild melee.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) monster_melee: Option<NativeMonsterMeleeProfile>,
+}
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct NativeMonsterMeleeProfile {
+    pub(crate) ability: ProjectV2DefinitionRef,
+    pub(crate) interval_ms: u64,
+    pub(crate) chance_ppm: u32,
+    pub(crate) minimum: u32,
+    pub(crate) maximum: u32,
+    pub(crate) source_repository: String,
+    pub(crate) source_revision: String,
+    pub(crate) source_path: String,
+    pub(crate) source_sha256: String,
+    pub(crate) execution_status: String,
+}
+impl NativeMonsterMeleeProfile {
+    fn validate(
+        &self,
+        behavior: &super::project::ProjectV2BehaviorAuthoring,
+    ) -> Result<(), ContentError> {
+        let source_hex = |text: &str, length: usize| {
+            text.len() == length
+                && text
+                    .bytes()
+                    .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
+        };
+        if !matches!(
+            self.source_repository.as_str(),
+            "opentibiabr/canary" | "zimbadev/crystalserver"
+        ) || !source_hex(&self.source_revision, 40)
+            || !source_hex(&self.source_sha256, 64)
+            || self.source_path.is_empty()
+            || self.source_path.starts_with('/')
+            || self
+                .source_path
+                .split('/')
+                .any(|p| p == ".." || p.is_empty())
+            || self.source_path.contains('\\')
+            || !matches!(
+                self.execution_status.as_str(),
+                "approximate_nonlethal_physical_melee"
+                    | "primaryphysicalonly_omits_secondary_conditions"
+            )
+            || !behavior.attacks.iter().any(|a| {
+                a.ability == self.ability
+                    && a.interval_ms == self.interval_ms
+                    && a.chance_ppm == self.chance_ppm
+                    && a.range_tiles.is_none_or(|range| range == 1)
+            })
+            || crate::ai_monster_melee::MeleeDefinition::new(
+                [0; 32],
+                self.interval_ms,
+                self.chance_ppm,
+                self.minimum,
+                self.maximum,
+            )
+            .is_none()
+        {
+            return Err(invalid("native gameplay monster melee source binding"));
+        }
+        Ok(())
+    }
 }
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -247,6 +320,7 @@ pub(crate) struct NativeGameplayState {
     items: Option<ItemProfilesDocument>,
     appearances: Option<super::native_spell_appearances::CompiledSpellAppearances>,
     training: Option<crate::spell::mana_training::CompiledTrainingFormula>,
+    magnitude_policy: crate::spell::magnitude_owner::MagnitudePolicy,
     familiar_config: Option<super::spell_familiar_config::CompiledFamiliarConfig>,
     familiar_defenses: Option<super::spell_familiar_defenses::CompiledFamiliarDefenses>,
     wheel_profile: Option<super::spell_wheel_profile::CompiledWheelProfile>,
@@ -275,6 +349,9 @@ impl NativeGameplayState {
     }
     pub(crate) fn presentation_profiles(&self) -> &PresentationProfilesDocument {
         &self.presentations
+    }
+    pub(crate) fn magnitude_policy(&self) -> crate::spell::magnitude_owner::MagnitudePolicy {
+        self.magnitude_policy
     }
     pub(crate) fn training_formula(
         &self,
@@ -419,7 +496,7 @@ impl NativeGameplayInput {
                 | "OTERYN_NATIVE_GAMEPLAY_MANIFEST/v3"
                 | "OTERYN_NATIVE_GAMEPLAY_MANIFEST/v4"
                 | "OTERYN_NATIVE_GAMEPLAY_MANIFEST/v5"
-        ) || ((!manifest.schema.ends_with("/v1")) != manifest.item_profiles.is_some())
+        ) || (manifest.schema.ends_with("/v1") == manifest.item_profiles.is_some())
             || ((manifest.schema.ends_with("/v3")
                 || manifest.schema.ends_with("/v4")
                 || manifest.schema.ends_with("/v5"))
@@ -490,6 +567,7 @@ impl NativeGameplayInput {
                             MAX_PROFILES,
                         )?,
                         content_revision: pin.content_revision,
+                        magnitude_policy: pin.magnitude_policy,
                     })
                 })
                 .transpose()?,
@@ -547,6 +625,7 @@ pub(crate) fn compile_native_gameplay(
         let bytes = serde_json::to_vec(&TrainingEnvelope {
             content_revision: training.content_revision.clone(),
             profile,
+            magnitude_policy: training.magnitude_policy,
         })
         .map_err(|_| invalid("native gameplay training envelope"))?;
         bounded(&bytes, MAX_PROFILES)?;
@@ -919,21 +998,24 @@ pub(crate) fn decode(bytes: &[u8]) -> Result<DecodedNativeGameplay<'_>, ContentE
     } else {
         None
     };
-    let training = if is_v4 {
+    let (training, magnitude_policy) = if is_v4 {
         let envelope: TrainingEnvelope = serde_json::from_slice(sections[7])
             .map_err(|_| invalid("native gameplay training section"))?;
         super::DefinitionRevisionRef::new(&envelope.content_revision)?;
         let bytes = serde_json::to_vec(&envelope.profile)
             .map_err(|_| invalid("native gameplay training profile"))?;
-        Some(
-            crate::spell::mana_training::CompiledTrainingFormula::from_profile(
-                &bytes,
-                &envelope.content_revision,
-            )
-            .map_err(|_| invalid("native gameplay training qualification"))?,
+        (
+            Some(
+                crate::spell::mana_training::CompiledTrainingFormula::from_profile(
+                    &bytes,
+                    &envelope.content_revision,
+                )
+                .map_err(|_| invalid("native gameplay training qualification"))?,
+            ),
+            envelope.magnitude_policy,
         )
     } else {
-        None
+        (None, crate::spell::magnitude_owner::MagnitudePolicy::Strict)
     };
     let (familiar_config, familiar_defenses, wheel_profile, native_map_profile) = if is_v5 {
         let envelope: SupplementsEnvelope = serde_json::from_slice(sections[8])
@@ -986,6 +1068,7 @@ pub(crate) fn decode(bytes: &[u8]) -> Result<DecodedNativeGameplay<'_>, ContentE
             items,
             appearances,
             training,
+            magnitude_policy,
             familiar_config,
             familiar_defenses,
             wheel_profile,
@@ -1132,8 +1215,14 @@ fn creature_policies(
             let ProjectV2AuthoringProfileData::Behavior(value) = &profile.data else {
                 return Err(invalid("native gameplay behavior kind"));
             };
+            if let Some(melee) = &record.monster_melee {
+                melee.validate(value)?;
+            }
             Some(u32::from(value.targeting.target_distance_tiles))
         } else {
+            if record.monster_melee.is_some() {
+                return Err(invalid("native gameplay monster melee lacks behavior"));
+            }
             None
         };
         records.push(CompiledCreaturePolicy {
@@ -1302,8 +1391,20 @@ mod tests {
         let native = staged.runtime_state().native_gameplay().unwrap();
         assert_eq!(native.source_digest(), compiled.server_digest());
         assert_eq!(native.catalog().entries.len(), 246);
-        assert_eq!(native.creature_profiles().records.len(), 162);
-        assert_eq!(native.presentation_profiles().records.len(), 162);
+        // Compare all typed provider facts, including newly appended canonical
+        // profiles, rather than fixing qualification to one historical pack size.
+        let expected_creatures: CreatureProfilesDocument =
+            serde_json::from_slice(&input.creature_profiles.bytes).unwrap();
+        let expected_presentations: PresentationProfilesDocument =
+            serde_json::from_slice(&input.presentation_profiles.bytes).unwrap();
+        assert_eq!(
+            serde_json::to_value(native.creature_profiles()).unwrap(),
+            serde_json::to_value(&expected_creatures).unwrap()
+        );
+        assert_eq!(
+            serde_json::to_value(native.presentation_profiles()).unwrap(),
+            serde_json::to_value(&expected_presentations).unwrap()
+        );
         assert_eq!(native.items.as_ref().unwrap().records.len(), 118);
         for species in [
             "rat",
@@ -1338,7 +1439,11 @@ mod tests {
         assert!(item.record().production_binding_qualification.is_some());
         assert_eq!(
             native.training_formula().unwrap().content_revision(),
-            "build-content-r1"
+            input.build_training.as_ref().unwrap().content_revision
+        );
+        assert_eq!(
+            native.magnitude_policy(),
+            input.build_training.as_ref().unwrap().magnitude_policy
         );
         assert_eq!(
             native.familiar_config().unwrap().source_digest(),
@@ -1525,6 +1630,54 @@ mod tests {
         }
     }
     #[test]
+    fn monster_melee_requires_exact_active_schedule_and_explicit_approximation_status() {
+        let mut creatures: CreatureProfilesDocument =
+            serde_json::from_slice(&input().creature_profiles.bytes).unwrap();
+        let presentations: PresentationProfilesDocument =
+            serde_json::from_slice(&input().presentation_profiles.bytes).unwrap();
+        let index = creatures.records.iter().position(|r| matches!(&r.behavior,
+            Some(ProjectV2AuthoringProfile { data: ProjectV2AuthoringProfileData::Behavior(b), .. }) if !b.attacks.is_empty())).unwrap();
+        let ProjectV2AuthoringProfileData::Behavior(behavior) =
+            &creatures.records[index].behavior.as_ref().unwrap().data
+        else {
+            unreachable!()
+        };
+        let schedule = behavior.attacks[0].clone();
+        let profile = NativeMonsterMeleeProfile {
+            ability: schedule.ability,
+            interval_ms: schedule.interval_ms,
+            chance_ppm: schedule.chance_ppm,
+            minimum: 0,
+            maximum: 8,
+            source_repository: "opentibiabr/canary".into(),
+            source_revision: "99902524e052f37574194466c2949c576e4ab269".into(),
+            source_path: "data-otservbr-global/monster/mammals/rat.lua".into(),
+            source_sha256: "a".repeat(64),
+            execution_status: "approximate_nonlethal_physical_melee".into(),
+        };
+        creatures.records[index].monster_melee = Some(profile.clone());
+        assert!(creature_policies(&creatures, &presentations).is_ok());
+        let mut primary_only = profile.clone();
+        primary_only.execution_status = "primaryphysicalonly_omits_secondary_conditions".into();
+        creatures.records[index].monster_melee = Some(primary_only);
+        assert!(creature_policies(&creatures, &presentations).is_ok());
+        for mutation in 0..4 {
+            let mut invalid = profile.clone();
+            match mutation {
+                0 => invalid.interval_ms += 1,
+                1 => invalid.source_sha256 = "unknown".into(),
+                2 => invalid.execution_status = "retail_verified".into(),
+                _ => invalid.source_path = "../unrelated.lua".into(),
+            }
+            creatures.records[index].monster_melee = Some(invalid);
+            assert!(creature_policies(&creatures, &presentations).is_err());
+        }
+        creatures.records[index].monster_melee = Some(profile);
+        creatures.records[index].behavior = None;
+        assert!(creature_policies(&creatures, &presentations).is_err());
+    }
+
+    #[test]
     fn caller_artifact_activates_full_book_under_outer_pin_without_changing_baseline() {
         let world = test_source(1).unwrap().world_id;
         let baseline = qualify_native_entry_room(world).unwrap();
@@ -1692,6 +1845,7 @@ mod tests {
                 "../../../../tools/content-schema/native-gameplay/build-training.json"
             )),
             content_revision: "build-content-r1".into(),
+            magnitude_policy: crate::spell::magnitude_owner::MagnitudePolicy::Strict,
         });
         let artifact = compile_native_gameplay(baseline.compiled(), &supplied).unwrap();
         assert!(artifact.server_artifact.starts_with(MAGIC_V4));
@@ -1700,6 +1854,23 @@ mod tests {
             state.training_formula().unwrap().content_revision(),
             "build-content-r1"
         );
+        assert_eq!(
+            state.magnitude_policy(),
+            crate::spell::magnitude_owner::MagnitudePolicy::Strict
+        );
+        let mut baseline_test = supplied.clone();
+        baseline_test
+            .build_training
+            .as_mut()
+            .unwrap()
+            .magnitude_policy = crate::spell::magnitude_owner::MagnitudePolicy::BaselineTest;
+        let test_artifact = compile_native_gameplay(baseline.compiled(), &baseline_test).unwrap();
+        let test_state = decode(&test_artifact.server_artifact).unwrap().state;
+        assert_eq!(
+            test_state.magnitude_policy(),
+            crate::spell::magnitude_owner::MagnitudePolicy::BaselineTest
+        );
+        assert_ne!(test_artifact.server_digest(), artifact.server_digest());
         let appearances = state.spell_appearances().unwrap();
         let rat = appearances
             .for_creature("canary:creature/rat", "canary-47dfd51f")
@@ -1776,6 +1947,7 @@ mod tests {
                 "../../../../tools/content-schema/native-gameplay/build-training.json"
             )),
             content_revision: "build-content-r1".into(),
+            magnitude_policy: crate::spell::magnitude_owner::MagnitudePolicy::Strict,
         });
         supplied.familiar_config = Some(pinned(include_bytes!(
             "../../../../tools/content-schema/native-gameplay/familiar-config.json"

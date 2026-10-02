@@ -63,6 +63,9 @@ type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 #[path = "qualification_spell_character.rs"]
 mod spell_character;
 
+#[path = "qualification_wild_spawn.rs"]
+mod wild_spawn;
+
 const SOURCE_AUTHORITY: &str = "platform";
 const PLATFORM_SOURCE: &str = "5d4883acf7079e26fd51e03f460166730de1ada0";
 /// Interpretation requested by the Platform intents that `run.sh` issues.
@@ -1527,7 +1530,20 @@ async fn seam_flow(accounts: &[String; 2], key_id: &str, signing: &SigningKey) -
     };
     let clients = async {
         if spell_input.is_some() {
-            seam_spell_clients(client_config, &root, &authority, &holder, &spells).await
+            seam_spell_clients(
+                client_config,
+                &root,
+                &authority,
+                &holder,
+                &spells,
+                content_controller
+                    .active()
+                    .and_then(|active| active.native_gameplay())
+                    .ok_or("spell scenario has no active qualified content")?,
+                &room,
+                &runtime_url,
+            )
+            .await
         } else {
             seam_clients(client_config).await
         }
@@ -1600,12 +1616,16 @@ async fn seam_flow(accounts: &[String; 2], key_id: &str, signing: &SigningKey) -
 }
 
 /// Full-content smoke through actual Character writers and the shipped TLS listener.
+#[allow(clippy::too_many_arguments)]
 async fn seam_spell_clients(
     config: SeamClients<'_>,
     root: &DurabilityRoot,
     authority: &crate::durability::character_authority::ReconciledCharacterAuthority<'_, '_>,
     holder: &NodeIncarnationProof,
     book: &crate::spell::SpellBook,
+    native: &crate::content::native_gameplay::NativeGameplayState,
+    room: &crate::content::QualifiedNativeEntryRoom,
+    runtime_url: &str,
 ) -> TestResult {
     let character = config.characters[1];
     let account = &config.accounts[1];
@@ -1747,6 +1767,338 @@ async fn seam_spell_clients(
         before.mana,
         after.mana
     ));
+    if native.magnitude_policy() != crate::spell::magnitude_owner::MagnitudePolicy::BaselineTest {
+        evidence("spell_seam magnitude_policy=strict high_level_training_scenarios=not_selected");
+        for offset in 0..book.source_len() {
+            let index = std::num::NonZeroU32::new(u32::try_from(offset + 1)?)
+                .ok_or("invalid spell catalog index")?;
+            let (spell, selected) = book
+                .source_indexed(index)
+                .ok_or("missing spell catalog index")?;
+            let outcome = client
+                .cast_spell(index, super::actor_spell::SpellTarget::None, false)
+                .await?;
+            evidence(&format!(
+                "spell_probe index={index} key={} selected={selected} caster=free_sorcerer_level8 target=none disposition={:?} vitals_delta={} scope=untargeted_catalog_probe gameplay_complete=false",
+                spell.key,
+                outcome.disposition,
+                outcome.actor_vitals_delta.is_some()
+            ));
+        }
+        return Ok(());
+    }
+    // Award XP through the same Character owner. Existing actor resources are
+    // left alone until normal grace release and fresh client admission.
+    let current = crate::durability::fresh_admission::FreshAdmissionStore::from_root(root.clone())
+        .current_session(client.join_snapshot().game_session_id)
+        .await
+        .map_err(|error| format!("spell upgrade session: {error:?}"))?;
+    spell_character::advance_source_level(root, authority, holder, &current, 1000, v7(74, 0x31))
+        .await?;
+    let previous_session = client.join_snapshot().game_session_id;
+    drop(client);
+    wait_spell_fixture_release(config.url, previous_session).await?;
+    let character_owner = crate::domain::CharacterId::from_bytes(character)
+        .map_err(|error| format!("spell character: {error:?}"))?;
+    let saved_before = root
+        .read_character_build_state(authority, character_owner)
+        .await
+        .map_err(|error| format!("spell initial save: {error:?}"))?;
+    let high_token = token(75)?;
+    let mut client = oteryn_dev_client::connect_session(oteryn_dev_client::JoinRequest {
+        address: config.address,
+        server_name: "localhost",
+        root_certificate: config.certificate,
+        schema_revision: 1,
+        character_id: CharacterId::decode(&character)?,
+        admission_material: high_token.as_bytes(),
+        client_build_id: "oteryn-dev-client/spell-high-level-seam",
+        deadline: Duration::from_secs(20),
+    })
+    .await?;
+    let high_vitals = client
+        .actor_vitals()
+        .copied()
+        .ok_or("high-level re-admission supplied no vitals")?;
+    if high_vitals.max_mana != 29850 || high_vitals.max_health != 5145 {
+        return Err(format!("source level1000 maxima mismatch: {high_vitals:?}").into());
+    }
+    evidence(
+        "spell_seam caster=free_sorcerer_level1000 setup=xp_writer reentry=ordinary_grace premium=false resources=normal_admission",
+    );
+    let mut observed_mana_paid = 0_u64;
+    let mut wild_rat = None;
+    // These exercise self heal/light/shield/invisibility and a position damage
+    // recipe. The native test spawn qualifies physical melee and target damage;
+    // client condition visibility and corpse/loot/XP remain separate lanes.
+    for (words, position_target) in [
+        ("utevo lux", false),
+        ("exori vis", true),
+        ("exura", false),
+        ("utamo vita", false),
+        ("utana vid", false),
+        ("utana vid", false),
+        ("utana vid", false),
+        ("utana vid", false),
+    ] {
+        let source = book
+            .spoken(words)
+            .ok_or_else(|| format!("full catalog missing representative spell {words}"))?
+            .spell;
+        let source_key = &source.key;
+        let source_index = (1..=u32::try_from(book.source_len())?)
+            .filter_map(std::num::NonZeroU32::new)
+            .find(|index| {
+                book.indexed(*index)
+                    .is_some_and(|spell| &spell.key == source_key)
+            })
+            .ok_or_else(|| format!("representative spell has no index: {words}"))?;
+        let cooldown = source
+            .groups
+            .iter()
+            .map(|group| group.cooldown_micros)
+            .chain(std::iter::once(source.cooldown_micros))
+            .max()
+            .unwrap_or(0);
+        client
+            .service_liveness(Duration::from_micros(cooldown.saturating_add(100_000)))
+            .await?;
+        if position_target {
+            // Source target-or-direction spells require an actual facing owner.
+            // Two normal steps on the qualified entry cells return the caster to
+            // its original tile and establish West through the movement owner.
+            for direction in [StepDirection::East, StepDirection::West] {
+                client.service_liveness(Duration::from_secs(1)).await?;
+                let movement = client.step(direction).await?;
+                if movement.disposition != StepDisposition::Moved {
+                    return Err(format!(
+                        "position recipe could not establish real facing: {movement:?}"
+                    )
+                    .into());
+                }
+            }
+            evidence("spell_seam facing_owner=normal_movement path=temple_east_return");
+            let protected_position = client.world_spatial().actor_position;
+            if (
+                protected_position.x,
+                protected_position.y,
+                protected_position.floor,
+            ) != (0, 0, -5)
+            {
+                return Err(
+                    "Thalom protection-zone route requires its qualified temple start".into(),
+                );
+            }
+            let protected_target = super::actor_spell::SpellTarget::Position(
+                oteryn_protocol_oteryn::actor_spell::SpellTargetPosition {
+                    x: 1,
+                    y: 0,
+                    floor: -5,
+                },
+            );
+            let protected_vitals = client
+                .actor_vitals()
+                .copied()
+                .ok_or("protected probe missing vitals")?;
+            let refused = client
+                .cast_spell(source_index, protected_target, false)
+                .await?;
+            if refused.disposition != super::actor_spell::SpellCastDisposition::Rejected
+                || refused.actor_vitals_delta.is_some()
+                || client.actor_vitals().copied() != Some(protected_vitals)
+            {
+                return Err(format!(
+                    "protection-zone aggression did not refuse without payment: {refused:?}"
+                )
+                .into());
+            }
+            evidence("spell_scenario words=exori_vis temple_protection=refused mana=unchanged");
+            // Pinned Thalom source stairs: entering (0,5,-5) descends to
+            // (0,6,-6), then entering (0,10,-6) descends to (0,11,-7).
+            // All movement and floor changes use the ordinary source-step owner.
+            for (x, y, floor) in [
+                (0, 1, -5),
+                (0, 2, -5),
+                (0, 3, -5),
+                (0, 4, -5),
+                (0, 6, -6),
+                (0, 7, -6),
+                (0, 8, -6),
+                (0, 9, -6),
+                (0, 11, -7),
+            ] {
+                client.service_liveness(Duration::from_secs(1)).await?;
+                let movement = client.step(StepDirection::South).await?;
+                let observed = client.world_spatial().actor_position;
+                if movement.disposition != StepDisposition::Moved
+                    || (observed.x, observed.y, observed.floor) != (x, y, floor)
+                {
+                    return Err(format!("source Thalom staircase route failed expected=({x},{y},{floor}) observed={observed:?} result={movement:?}").into());
+                }
+                evidence(&format!(
+                    "spell_seam source_step=south observed=({x},{y},{floor})"
+                ));
+            }
+            evidence(
+                "spell_seam aggressive_caster_tile=(0,11,-7) target_tile=(1,11,-7) protection=false proof=pinned_thalom_source normal_movement=true",
+            );
+            let live_runtime = config
+                .runtime
+                .ok_or("wild spawn has no current Channel owner")?;
+            let mut sql = sqlx::PgConnection::connect(runtime_url).await?;
+            let runtime_reader: bool = sqlx::query_scalar("SELECT pg_has_role(current_user,'oteryn_game_runtime','member') AND NOT (SELECT rolsuper OR rolbypassrls FROM pg_roles WHERE rolname=current_user)")
+                .fetch_one(&mut sql).await?;
+            if !runtime_reader {
+                return Err("wild spawn collision proof requires actual runtime role".into());
+            }
+            let mut tx = sql.begin().await?;
+            let mut current = live_runtime.lock().await;
+            let rat = wild_spawn::realize_rat_in_transaction(
+                &mut tx,
+                root,
+                authority,
+                holder,
+                room,
+                native,
+                &mut current,
+            )
+            .await?;
+            if rat.state.master.is_some()
+                || rat.state.policy.is_familiar
+                || rat.position != wild_spawn::POSITION
+                || rat.health != rat.maximum_health
+            {
+                return Err("native qualification spawn did not produce an actual wild Rat".into());
+            }
+            // The spawn is ephemeral runtime state, not a SQL mutation. A failed
+            // read-only COMMIT aborts this disposable fixture before any PASS claim;
+            // fixture shutdown discards its scope, rather than claiming SQL rollback
+            // undoes an already-realized in-memory actor.
+            tx.commit().await?;
+            drop(current);
+            evidence(&format!(
+                "spell_seam native_test_spawn={} public_source_spawn=false policy={} revision={} actual_health={} position=(1,11,-7) master=none authority=current_channel_assignment dynamic_collision=actual_item_owner",
+                wild_spawn::DECLARATION,
+                rat.state.policy.definition_key,
+                rat.state.policy.definition_revision,
+                rat.health,
+            ));
+            let initial = client
+                .actor_vitals()
+                .copied()
+                .ok_or("Rat AI probe has no vitals")?;
+            let deadline = tokio::time::Instant::now() + Duration::from_secs(12);
+            loop {
+                client.service_liveness(Duration::from_secs(1)).await?;
+                let observed = client
+                    .actor_vitals()
+                    .copied()
+                    .ok_or("Rat AI probe lost vitals")?;
+                if observed.health < initial.health {
+                    evidence(&format!(
+                        "spell_seam monster_melee=actual_ai_cycle target=ordinary_player hp_before={} hp_after={} shield=false invisibility=false death_loot_xp=not_evaluated",
+                        initial.health, observed.health
+                    ));
+                    break;
+                }
+                if tokio::time::Instant::now() >= deadline {
+                    return Err(
+                        "native spawned Rat AI did not produce actual player health loss".into(),
+                    );
+                }
+            }
+            wild_rat = Some(rat);
+        }
+        let position = client.world_spatial().actor_position;
+        let target = if position_target {
+            super::actor_spell::SpellTarget::Position(
+                oteryn_protocol_oteryn::actor_spell::SpellTargetPosition {
+                    x: position
+                        .x
+                        .checked_add(1)
+                        .ok_or("position target coordinate overflow")?,
+                    y: position.y,
+                    floor: position.floor,
+                },
+            )
+        } else {
+            super::actor_spell::SpellTarget::None
+        };
+        let before = client
+            .actor_vitals()
+            .copied()
+            .ok_or("representative cast missing vitals")?;
+        let outcome = client.cast_spell(source_index, target, false).await?;
+        let after = client
+            .actor_vitals()
+            .copied()
+            .ok_or("representative cast lost vitals")?;
+        if outcome.disposition != super::actor_spell::SpellCastDisposition::Cast
+            || outcome.actor_vitals_delta.is_none()
+            || after.mana >= before.mana
+            || after.health > after.max_health
+        {
+            return Err(format!("representative real cast failed words={words} result={outcome:?} before={before:?} after={after:?}").into());
+        }
+        if words == "exura" {
+            // The prior real wild-creature attack supplies the wound. Neither
+            // fixture HP writes nor synthetic damage are used to qualify healing.
+            if wild_rat.is_none()
+                || before.health >= before.max_health
+                || after.health <= before.health
+            {
+                return Err(format!(
+                    "Light Healing did not heal an actual Rat wound before={before:?} after={after:?}"
+                ).into());
+            }
+            evidence(&format!(
+                "spell_seam words=exura wound=actual_monster_melee hp_before={} hp_after={} healing_magnitude=actual_owner optional_modifiers=baseline_omission",
+                before.health, after.health
+            ));
+        }
+        if position_target {
+            let before_rat = wild_rat
+                .as_ref()
+                .ok_or("damage probe has no real wild Rat")?;
+            let current = config
+                .runtime
+                .ok_or("damage probe has no Channel owner")?
+                .lock()
+                .await;
+            let damaged = current
+                .companion_snapshot_including_dead(before_rat.actor)
+                .map_err(|error| format!("actual target health read: {error:?}"))?;
+            if damaged.health >= before_rat.health
+                || damaged.state.policy != before_rat.state.policy
+            {
+                return Err(format!(
+                    "Energy Strike produced no real creature damage before={} after={}",
+                    before_rat.health, damaged.health
+                )
+                .into());
+            }
+            evidence(&format!(
+                "spell_seam words=exori_vis target=actual_native_test_rat hp_before={} hp_after={} damage_magnitude=actual_owner baseline_optional_modifiers=omitted corpse_loot_xp=not_evaluated",
+                before_rat.health, damaged.health
+            ));
+        }
+        observed_mana_paid += u64::from(before.mana - after.mana);
+        evidence(&format!(
+            "spell_scenario words={words:?} disposition=cast target={target:?} mana_paid={} condition_visibility=not_evaluated creature_damage_magnitude={}",
+            before.mana - after.mana,
+            if position_target {
+                "actual_owner"
+            } else {
+                "not_evaluated"
+            }
+        ));
+    }
+    if observed_mana_paid < 1600 {
+        return Err(format!("training stress paid only {observed_mana_paid} mana").into());
+    }
+    evidence(&format!(
+        "spell_seam training_stress observed_mana_paid={observed_mana_paid} checkpoint_threshold=1600"
+    ));
     for offset in 0..book.source_len() {
         let index = std::num::NonZeroU32::new(u32::try_from(offset + 1)?)
             .ok_or("invalid spell catalog index")?;
@@ -1757,11 +2109,64 @@ async fn seam_spell_clients(
             .cast_spell(index, super::actor_spell::SpellTarget::None, false)
             .await?;
         evidence(&format!(
-            "spell_probe index={index} key={} selected={selected} caster=free_sorcerer_level8 target=none disposition={:?} vitals_delta={} scope=untargeted_catalog_probe gameplay_complete=false",
+            "spell_probe index={index} key={} selected={selected} caster=free_sorcerer_level1000 target=none disposition={:?} vitals_delta={} scope=untargeted_catalog_probe gameplay_complete=false",
             spell.key,
             outcome.disposition,
             outcome.actor_vitals_delta.is_some()
         ));
+    }
+    let final_session = client.join_snapshot().game_session_id;
+    drop(client);
+    wait_spell_fixture_release(config.url, final_session).await?;
+    let saved_after = root
+        .read_character_build_state(authority, character_owner)
+        .await
+        .map_err(|error| format!("spell final save: {error:?}"))?;
+    let formula = crate::spell::mana_training::CompiledTrainingFormula::from_profile(
+        include_bytes!("../../../../tools/content-schema/native-gameplay/build-training.json"),
+        INTERPRETATION[2],
+    )
+    .map_err(|error| format!("spell training formula: {error:?}"))?;
+    let cumulative = |build: &crate::durability::character_build::DurableBuildState| {
+        let (level, progress) = build.magic();
+        crate::durability::character_build::cumulative_progress(level, progress, 0, |next| {
+            crate::durability::character_build::BuildFormula::required(
+                &formula,
+                build.vocation(),
+                0,
+                next,
+            )
+        })
+    };
+    let trained = cumulative(&saved_after)
+        .checked_sub(cumulative(&saved_before))
+        .ok_or("saved training moved backwards")?;
+    if trained < observed_mana_paid {
+        return Err(format!("paid cast training was not durably saved: paid={observed_mana_paid} saved_delta={trained} before={saved_before:?} after={saved_after:?}").into());
+    }
+    evidence(&format!(
+        "spell_seam training_save=durable ordinary_disconnect=complete mana_paid={observed_mana_paid} saved_training_delta={trained} content_revision={}",
+        INTERPRETATION[2]
+    ));
+    Ok(())
+}
+
+async fn wait_spell_fixture_release(
+    url: &str,
+    session: crate::foundation::GameSessionId,
+) -> TestResult {
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(170);
+    while !matches!(
+        session_loss_row(url, *session.as_bytes()).await?,
+        Some((3, _, _))
+    ) {
+        if tokio::time::Instant::now() >= deadline {
+            return Err(
+                "spell fixture session did not release through ordinary grace and training save"
+                    .into(),
+            );
+        }
+        tokio::time::sleep(Duration::from_millis(500)).await;
     }
     Ok(())
 }

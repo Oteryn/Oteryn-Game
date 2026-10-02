@@ -315,7 +315,7 @@ pub fn convert_vocation(
 
 /// Every level up to the current one is reachable, and progress is held within the current level
 /// (SKILLS-0 §3.1): no family has paid for its next reachable level without advancing.
-
+///
 /// An uncommitted build successor. It grants no durable or gameplay authority.
 /// Only a proof of COMMIT of this same physical transaction exposes its receipt.
 pub(crate) struct PendingBuildChange {

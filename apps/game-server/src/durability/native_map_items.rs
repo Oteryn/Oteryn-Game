@@ -247,10 +247,16 @@ async fn adopt_current_ground(
     let fact = node.fact();
     sqlx::query("INSERT INTO game_native_map_scope_adoptions(source_transaction_id,ownership_generation,holder_node_id,holder_registration_revision,ground_before) VALUES(encode($1,'hex')::uuid,$2::text::numeric(20,0),encode($3,'hex')::uuid,$4::text::numeric(20,0),$5)")
         .bind(source_transaction).bind(binding.scope_generation.to_string()).bind(fact.node_id().as_bytes().as_slice()).bind(fact.registration_revision().to_string()).bind(&before).execute(&mut **tx).await?;
+    // The bounded adoption trigger applies the exact generation-only successor.
+    // Runtime intentionally has no direct Ground UPDATE privilege.
     if let Some(before) = before {
-        let changed=sqlx::query("UPDATE game_item_ground_locations SET runtime_scope_ownership_generation=$2::text::numeric(20,0) WHERE item_instance_id=encode($1,'hex')::uuid AND to_jsonb(game_item_ground_locations)=$3")
-            .bind(item).bind(binding.scope_generation.to_string()).bind(before).execute(&mut **tx).await?.rows_affected();
-        if changed != 1 {
+        let applied: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_item_ground_locations g WHERE item_instance_id=encode($1,'hex')::uuid AND runtime_scope_ownership_generation=$2::text::numeric(20,0) AND (to_jsonb(g)-'runtime_scope_ownership_generation')=($3::jsonb-'runtime_scope_ownership_generation'))")
+            .bind(item)
+            .bind(binding.scope_generation.to_string())
+            .bind(before)
+            .fetch_one(&mut **tx)
+            .await?;
+        if !applied {
             return Err(SpellItemError::Rejected(
                 "map Ground changed during custody handoff",
             ));

@@ -44,9 +44,8 @@ def blob_id(data):
     return hashlib.sha1(b'blob %d\0' % len(data) + data).hexdigest()
 
 
-# E2: anchors without a location of their own. The Soul War zones subtract safe areas and include the Goshnar boss
-# rooms, which the zone box vocabulary does not express yet; the encounter stays unadmitted until they are located.
-UNLOCATED = {('soul_war_taint_zones', 'soul_war_taint_zones')}
+# All current anchors are located; SW-5 supports whole-tile safe-area subtraction.
+UNLOCATED = set()
 POSITION = r'\((\d+), (\d+), (\d+)\)'
 
 
@@ -183,16 +182,38 @@ class Encounters:
         return {name: sum(len(p['creatures']) for p in item['encounter']['participants']) for name, item in sorted(self.items.items())}
 
 
+def soul_war_zone_location(text):
+    """SW-5: exact source coordinates; accepted Q2 normalizes Rotten Wasteland corners."""
+    point = r"\{\s*x\s*=\s*(\d+),\s*y\s*=\s*(\d+),\s*z\s*=\s*(\d+)\s*\}"
+    def rectangles(pattern):
+        output = []
+        for match in re.finditer(pattern, text):
+            ax, ay, az, bx, by, bz = map(int, match.groups())
+            output.extend(box((ax, bx), (ay, by), floor) for floor in range(min(az, bz), max(az, bz) + 1))
+        return output
+    boxes = rectangles(r"SoulWarQuest\.areaZones\.\w+:addArea\(" + point + r",\s*" + point + r"\)")
+    minus = rectangles(r"SoulWarQuest\.areaZones\.\w+:subtractArea\(" + point + r",\s*" + point + r"\)")
+    rooms = rectangles(r"specPos\s*=\s*\{\s*from\s*=\s*Position" + POSITION +
+                       r",\s*to\s*=\s*Position" + POSITION + r",?\s*\}")
+    if (len(boxes), len(rooms), len(minus)) != (17, 6, 5):
+        raise SystemExit('Soul War zone source changed: expected 17 hunting floors, 6 boss rooms and 5 safe areas')
+    return {'boxes': boxes + rooms, 'minus': minus}
+
+
 def soul_war_taint_zones(build):
     """FourthTaintBossesPrepareDeath: the Soul War hunting monsters' lethal-damage heal (a zone rule)."""
     event = 'FourthTaintBossesPrepareDeath'
     item = build.get('soul_war_taint_zones', 'Soul War hunting zones: fourth taint lethal heal', 'channel_shared')
-    for name, _ in build.registrants(event):
-        build.participant(item, 'hunting_monster', name, event)
+    for name, path in build.registrants(event):
+        assignments = re.findall(r'monster\.events\s*=\s*\{([^}]*)\}',
+                                 (build.canary / path).read_text(encoding='utf-8'), re.S)
+        if assignments and event in re.findall(r'"([^"]+)"', assignments[-1]):
+            build.participant(item, 'hunting_monster', name, event)
     item['encounter']['anchors'].append({
         'key': 'soul_war_taint_zones', 'kind': 'area',
         'description': 'The eleven Canary zones of SoulWarQuest.areaZones.monsters (five hunting grounds and six Goshnar boss '
-                       'rooms); to be bound by the map project.'})
+                       'rooms), minus five safe entrance areas; Rotten Wasteland uses the whole rectangle (Q2 a).',
+        'location': soul_war_zone_location((build.canary / SOUL_WAR_LIB).read_text(encoding='utf-8'))})
     rule = build.rule(item, {
         'key': 'fourth_taint_lethal_heal',
         'trigger': {'kind': 'lethal_damage', 'role': 'hunting_monster'},
@@ -221,6 +242,83 @@ def soul_war_taint_zones(build):
         build.entry(item, SOUL_WAR_MECHANICS, lines, 'mapped', rule + destination, text)
     build.entry(item, SOUL_WAR_LIB, list(range(229, 243)), 'mapped', '/encounter/anchors/0',
                 'SoulWarQuest.areaZones.monsters lists the zones whose union is the anchor area.')
+    build.entry(item, SOUL_WAR_LIB, list(range(862, 882)) + [274, 275, 276, 310, 311, 312, 333, 334, 335,
+                362, 363, 364, 390, 391, 392, 418, 419, 420], 'mapped', '/encounter/anchors/0/location',
+                'SW-5: 17 hunting-floor boxes plus six lever specPos rooms, minus five safe areas. Accepted Q2 a '
+                'corrects the reversed Rotten Wasteland x corners to include the complete rectangle; quest/runtime '
+                'map binding remains outside this authoring record.')
+
+    # SW-4/Q5 b: first own hit chooses an apparition; other damage cannot kill the image.
+    build.participant(item, 'mirror_image', 'Mirror Image', 'MirrorImageTransform')
+    vocations = ('druid', 'knight', 'paladin', 'sorcerer', 'monk')
+    for vocation in vocations:
+        branches = []
+        for target in vocations:
+            into = creature(target.title() + "'s Apparition")
+            build.define(item, into)
+            branches.append({'weight': 28 if target == vocation else 3, 'actions': [
+                {'kind': 'transform', 'role': 'mirror_image', 'health': 'full', 'into': into}]})
+        path = build.rule(item, {'key': 'mirror_image_turns_for_' + vocation,
+            'trigger': {'kind': 'damage_taken', 'role': 'mirror_image', 'source': 'player', 'base_vocation': vocation},
+            'conditions': [], 'actions': [{'kind': 'one_of', 'branches': branches}]})
+        build.entry(item, 'data-otservbr-global/monster/quests/soul_war/mirror_image.lua', list(range(113, 144)),
+                    'mapped', path, 'SW-4/Q5 b: 28:3:3:3:3 weights preserve the 70% own-vocation source choice; '
+                    'apparitions start at full health. This accepted transcription unifies player hit and DoT paths; '
+                    'vocationless disappearance and health-preserving DoT conversion are omitted.')
+    build.entry(item, 'data-otservbr-global/scripts/creaturescripts/monster/mirror_image_transform.lua',
+                list(range(1, 23)), 'approved_omission', None,
+                'Accepted Q5 b applies the unified vocation-weighted full-health transform to own player damage '                'instead of the separate guaranteed same-vocation health-preserving DoT path; summons/familiars '                'do not transform the image. No-vocation disappearance is not authored.')
+    path = build.rule(item, {'key': 'mirror_image_non_player_floor',
+        'trigger': {'kind': 'lethal_damage', 'role': 'mirror_image'},
+        'conditions': [{'kind': 'killer_is_player', 'value': False}],
+        'actions': [{'kind': 'prevent_death', 'role': 'mirror_image'}]})
+    build.entry(item, 'data-otservbr-global/monster/quests/soul_war/mirror_image.lua', [109, 110, 111],
+                'mapped', path, 'Accepted SW-4/Q5 b adds the wiki 1HP floor for damage not owned by a player, '
+                'including summons and familiars; this floor is an explicit deviation from Canary. Mirror Image '                'is not a fourth-taint hunting participant: the final monster.events assignment replaces the earlier one.')
+
+    # SW-6/Q6 a: source refuses duplicate large pools; wiki hit polarity is the accepted correction.
+    build.participant(item, 'cloak_of_terror', 'Cloak of Terror', 'CloakOfTerrorHealthLoss')
+    pool = ref('Item', 'canary:item/33854')
+    build.define(item, pool)
+    path = build.rule(item, {'key': 'cloak_of_terror_bleeds',
+        'trigger': {'kind': 'damage_taken', 'role': 'cloak_of_terror', 'source': 'player'}, 'conditions': [],
+        'actions': [{'kind': 'map_item', 'operation': 'create', 'at': 'subject_position', 'unless_present': True,
+                    'item': pool, 'interaction': 'canary:interaction/blood_of_cloak_of_terror'}]})
+    build.entry(item, SOUL_WAR_MECHANICS, list(range(785, 806)), 'mapped', path,
+                'SW-6/Q6 a corrects the health-change sign defect to a player hit. Source getItemById blocks '                'a duplicate large pool on the same tile; source no-stacking is preserved as an explicit '                'approximation pending independent confirmation of the stacking/enlargement reports.')
+    build.entry(item, SOUL_WAR_MECHANICS, list(range(807, 836)), 'approved_omission', None,
+                'The interaction owner handles pool step-in: IDs 33854/34006/34007 harm players by '                '20/15/10% maximum HP as energy, heal Cloak of Terror 1500-2000 HP and remove the pool. '                'Those effects are reference evidence; the encounter does not invent an interaction executor.')
+
+    # SW-3/Q1 a: taint-gated 2s checks, current picked position, bounded warning and cooldown.
+    item['encounter']['state']['timers'].append({'name': 'taint_check', 'duration_ms': 2000, 'repeat': True})
+    build.rule(item, {'key': 'taint_check_runs', 'trigger': {'kind': 'encounter_started'}, 'conditions': [],
+                     'actions': [{'kind': 'timer', 'timer': 'taint_check', 'operation': 'start'}]})
+    teleporters = ('Bony Sea Devil', 'Brachiodemon', 'Branchy Crawler', 'Cloak of Terror', 'Many Faces',
+                   'Spiteful Spitter', 'Dreadful Harvester')
+    for name in teleporters:
+        role = slug(name)
+        _, source, text = build.monster_files[name.lower()]
+        match = re.search(r'tryTeleportToPlayer\("([^"\n]+)"\)', text)
+        say = match.group(1) if match else 'You have been chosen for a harvest!'
+        build.participant(item, role, name, 'mType.onThink' if match else None)
+        path = build.rule(item, {'key': role + '_taint_teleport',
+            'trigger': {'kind': 'timer_elapsed', 'timer': 'taint_check', 'each': role},
+            'conditions': [{'kind': 'creature_present', 'players': True,
+                'near': {'triggering': True, 'radius': 30}, 'where': [
+                    {'kind': 'killer_progress', 'subject': {'candidate': True},
+                     'progress': 'canary:quest-progress/soul_war_taint_1', 'op': '==', 'value': True},
+                    {'kind': 'in_anchor', 'subject': {'candidate': True}, 'anchor': 'soul_war_taint_zones'}],
+                'pick': 'farthest', 'present': True}, {'kind': 'chance_percent', 'value': 10}],
+            'actions': [{'kind': 'teleport', 'who': {'triggering': True}, 'to': {'picked_position': True},
+                'after_ms': 2000, 'picked_cooldown_ms': 10000, 'say': say,
+                'warning_effect': 'canary.appearance:effect/mortarea' if name in teleporters[:5] else
+                                  'canary.appearance:effect/purpleelectricity',
+                'arrival_effect': 'canary.appearance:effect/teleport'}]})
+        build.entry(item, SOUL_WAR_LIB, list(range(1241, 1299)), 'mapped', path,
+                    'Accepted SW-3/Q1 a corrects the skipped taint test and logout cooldown leak: each role checks '                    'every 2s, picks the farthest eligible player (Chebyshev distance, lowest creature-ID tie), '                    'warns 2s and lands at current picked position if both remain and no solid/projectile blocker. '                    'Successful movement starts a 10s cooldown; cancelled moves start none. No generic path authority.')
+        if not match:
+            build.entry(item, source, [64], 'mapped', path,
+                        'Dreadful Harvester teleport is the accepted wiki addition (Q1 a); the source voice gives '                        'the harvest text, also used by Spiteful Spitter. This is a source-labelled derived addition.')
 
 
 # creaturescripts_dreamCourtsDeath.lua questlog: boss, lines, quest storage, cap, cooldown storage.

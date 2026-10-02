@@ -6,6 +6,7 @@ pub(crate) mod charm;
 mod connection;
 pub(crate) mod fresh_evidence;
 mod monk_save;
+mod monster_ai_cycle;
 #[cfg(test)]
 mod qualification;
 mod resume;
@@ -13,6 +14,7 @@ mod source_item_cycle;
 mod spell_access_facts;
 mod spell_character_facts;
 pub(crate) mod spell_entitlements;
+mod spell_magnitude_facts;
 pub(crate) mod spell_premium_coordinator;
 mod spell_presentation_publisher;
 pub(crate) use spell_presentations::PreparedPresentation as PreparedSpellPresentation;
@@ -1194,6 +1196,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         if !self.ensure_source_map_initialized().await {
             return None;
         }
+        self.drain_monster_melee().await;
         self.drain_source_item_deadlines().await;
         self.drain_source_party_deadlines_bounded().await;
         if self

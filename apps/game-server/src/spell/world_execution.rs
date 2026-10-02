@@ -358,6 +358,60 @@ pub(crate) async fn qualified_standing_tile_in_transaction<'owner>(
     })
 }
 
+/// Read-only source STEP probes may inspect a known solid neighbour while
+/// resolving stair destinations. This fact grants neither combat nor movement.
+pub(crate) struct QualifiedSourceStepProbe<'owner> {
+    tile: &'owner crate::content::QualifiedSpellTile,
+    _runtime: &'owner ChannelRuntimeV1,
+    _objects: WorldStaticOwnerBorrow<'owner>,
+}
+impl QualifiedSourceStepProbe<'_> {
+    pub(crate) fn qualified_tile(&self) -> &crate::content::QualifiedSpellTile {
+        self.tile
+    }
+}
+pub(crate) async fn qualified_source_step_probe_in_transaction<'owner>(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    read: &crate::durability::spell_item_transaction::StandingTileRead,
+    room: &'owner crate::content::QualifiedNativeEntryRoom,
+    runtime: &'owner ChannelRuntimeV1,
+    objects: &'owner crate::world_runtime::LocalObjectRuntime,
+    position: MovementLocalPosition,
+) -> Result<QualifiedSourceStepProbe<'owner>, WorldRelocationError> {
+    read.check_transaction(tx)
+        .await
+        .map_err(WorldRelocationError::Items)?;
+    if read.fence().runtime_scope
+        != crate::foundation::RuntimeScopeRefV1::channel(
+            runtime.binding().world_id(),
+            runtime.binding().channel_id(),
+        )
+        || read.fence().scope_ownership_generation != runtime.binding().scope_generation()
+        || read.content_digest() != runtime.content_pin().server_artifact_digest()
+        || room.source_world().is_none()
+    {
+        return Err(WorldRelocationError::AuthorityMismatch);
+    }
+    let target = super::world_items_execution::SpellGroundTarget::for_native_tile_read(
+        room, runtime, position,
+    )
+    .map_err(WorldRelocationError::GroundAddress)?;
+    if read.target() != &target {
+        return Err(WorldRelocationError::AuthorityMismatch);
+    }
+    let owner = qualified_static_owner(room, runtime, objects)?;
+    let tile = initialized_tile_in_transaction(tx, room, runtime, position)
+        .await?
+        .ok_or(WorldRelocationError::MissingTileMetadata)?;
+    // Preserve solidity for the unchanged source algorithm. It rejects a solid
+    // final destination, but legitimately queries solid neighbour flags first.
+    Ok(QualifiedSourceStepProbe {
+        tile,
+        _runtime: runtime,
+        _objects: owner,
+    })
+}
+
 pub(crate) async fn qualified_combat_tile_in_transaction<'owner>(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     authority: &crate::durability::spell_item_transaction::SpellItemAuthority,

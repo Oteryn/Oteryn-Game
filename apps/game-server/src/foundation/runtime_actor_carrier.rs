@@ -1361,6 +1361,7 @@ fn mint_reward_occurrence_bytes(actor: ActorRef, character: [u8; 16]) -> [u8; 16
 /// frame binding digest. In production it is minted only by the Content activation path from an
 /// activated native entry generation; it is fixed for the runtime's lifetime.
 #[derive(Debug, PartialEq, Eq)]
+#[cfg_attr(test, derive(Clone))]
 pub(crate) struct ChannelContentPin {
     world_id: WorldId,
     activation_sequence: u64,
@@ -1961,6 +1962,89 @@ impl ChannelRuntimeV1 {
             map_revision_marker: 12,
             content_generation_marker: 13,
         }
+    }
+
+    /// Explicit Game-owned qualification declaration. The caller independently holds
+    /// current qualified tile and SQL Item collision proofs through this owner turn.
+    /// Health and policy come from this active runtime, not fixture health constants.
+    #[cfg(test)]
+    pub(crate) fn realize_native_qualification_spawn(
+        &mut self,
+        expected_pin: ChannelContentPin,
+        definition_key: &str,
+        position: MovementLocalPosition,
+    ) -> Result<runtime_actor_companion::CompanionSnapshot, CarrierError> {
+        self.owner_fence()?;
+        if self.content != expected_pin {
+            return Err(CarrierError::ContentPinWorldMismatch);
+        }
+        let policy = self.companion_policy(definition_key)?;
+        if policy.is_familiar {
+            return Err(CarrierError::InvalidCreatureTarget);
+        }
+        // The census refuses foreign physical contexts; reserved/pending destinations
+        // are checked separately so qualification cannot displace another owner.
+        self.positioned_actor_census()?;
+        let context = self.pinned_position_context();
+        let cell = LocalPosition {
+            x: position.x,
+            y: position.y,
+            floor: position.floor,
+        };
+        if self.carrier.cell_occupied(context, cell)
+            || self.carrier.slots.iter().any(|slot| match slot {
+                Slot::Occupied {
+                    committed: true,
+                    position: None,
+                    ..
+                }
+                | Slot::CreatureOccupied { position: None, .. }
+                | Slot::Occupied {
+                    committed: false, ..
+                } => true,
+                Slot::Occupied { spell_combat, .. }
+                | Slot::CreatureOccupied { spell_combat, .. } => spell_combat
+                    .pending_owner
+                    .as_ref()
+                    .and_then(|p| p.destination())
+                    .is_some_and(|(_, destination)| destination == position),
+                _ => false,
+            })
+        {
+            return Err(CarrierError::PlanConflict);
+        }
+        let definition = SpawnDefinition::new(
+            vec![(position.x, position.y, position.floor)],
+            1,
+            60_000_000,
+            5_000_000,
+            policy.definition_key.clone(),
+            policy.maximum_health,
+        )?;
+        let slots_before = self.carrier.slots.clone();
+        let free_before = self.carrier.free_head;
+        let spawns_before = self.carrier.spawns.clone();
+        let result = (|| {
+            self.carrier.realize_spawn(
+                &self.continuity,
+                SpawnSourceId(u16::MAX),
+                definition,
+                context,
+            )?;
+            let actor = self
+                .carrier
+                .spawn_cell_state(SpawnSourceId(u16::MAX), 0)?
+                .live
+                .ok_or(CarrierError::PlanConflict)?;
+            self.install_creature_policy(actor, definition_key)?;
+            self.companion_snapshot(actor)
+        })();
+        if result.is_err() {
+            self.carrier.slots = slots_before;
+            self.carrier.free_head = free_before;
+            self.carrier.spawns = spawns_before;
+        }
+        result
     }
 
     /// Test only: one live creature at `position`, under the same synthetic context as
@@ -4142,6 +4226,126 @@ mod tests {
             .remove_terminal_session(first_session, actor)
             .expect("authoritative terminal cleanup");
         assert!(!runtime.contains_committed_session(first_session, actor));
+    }
+
+    #[test]
+    fn qualification_spawn_uses_current_policy_and_refuses_wrong_pin_occupancy_duplicates_retirement()
+     {
+        use runtime_actor_companion::{
+            CompiledCreaturePolicies, CompiledCreaturePolicy, CreatureFlags,
+        };
+        let mut current = runtime(4);
+        let pin = current.content_pin().clone();
+        let position = MovementLocalPosition {
+            x: 2,
+            y: 0,
+            floor: 0,
+        };
+        assert!(
+            current
+                .realize_native_qualification_spawn(pin.clone(), "fixture:rat", position)
+                .is_err()
+        );
+        let policy = CompiledCreaturePolicy {
+            definition_key: "fixture:rat".into(),
+            definition_revision: "fixture:1".into(),
+            display_name: "fixture Rat".into(),
+            maximum_health: 37,
+            base_speed: 110,
+            outfit_look_type: 21,
+            object_look_type: None,
+            summonable: false,
+            convinceable: false,
+            mana_cost: None,
+            is_familiar: false,
+            condition_immunities: vec![],
+            armor: Some(1),
+            mitigation: None,
+            resistances: vec![],
+            damage_immunities: vec![],
+            preferred_distance: Some(1),
+            reward_boss: Some(false),
+            flags: CreatureFlags {
+                attackable: true,
+                illusionable: false,
+                health_hidden: false,
+            },
+        };
+        current
+            .install_companion_policies(
+                CompiledCreaturePolicies::from_active_artifact(
+                    pin.server_artifact_digest(),
+                    vec![policy],
+                )
+                .expect("qualified fixture table"),
+            )
+            .expect("current policy owner");
+        let reserved = current
+            .reserve_fresh_session(session(900))
+            .expect("ordinary session reservation");
+        let player = current
+            .commit_fresh_session(reserved)
+            .expect("actual player actor");
+        current
+            .initialize_first_entry_position(player)
+            .expect("actual positioned owner");
+        let before = current.positioned_actor_census().expect("current census");
+        let mut other_pin = pin.clone();
+        other_pin.activation_sequence += 1;
+        assert!(
+            current
+                .realize_native_qualification_spawn(other_pin, "fixture:rat", position)
+                .is_err()
+        );
+        assert!(
+            current
+                .realize_native_qualification_spawn(
+                    pin.clone(),
+                    "fixture:rat",
+                    current
+                        .read_actor_position(player)
+                        .expect("actual player position")
+                        .position()
+                )
+                .is_err()
+        );
+        assert_eq!(
+            current.positioned_actor_census().expect("unchanged census"),
+            before
+        );
+        let actual = current
+            .realize_native_qualification_spawn(pin.clone(), "fixture:rat", position)
+            .expect("actual spawn primitive");
+        assert_eq!(
+            (actual.health, actual.maximum_health),
+            (37, 37),
+            "HP comes from current policy rather than20"
+        );
+        assert!(actual.state.master.is_none());
+        assert_eq!(actual.position, position);
+        let spawned = current
+            .positioned_actor_census()
+            .expect("actual creature census");
+        assert_eq!(
+            current.realize_native_qualification_spawn(
+                pin.clone(),
+                "fixture:rat",
+                MovementLocalPosition { x: 3, ..position }
+            ),
+            Err(CarrierError::DuplicateSpawnSource)
+        );
+        assert_eq!(
+            current
+                .positioned_actor_census()
+                .expect("no partial duplicate admission"),
+            spawned
+        );
+        current.retire_owner_cycle();
+        assert!(
+            current
+                .realize_native_qualification_spawn(pin.clone(), "fixture:rat", position)
+                .is_err()
+        );
     }
 
     #[test]

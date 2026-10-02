@@ -24,6 +24,7 @@ mod ai;
 // the composed per-creature think into `ChannelRuntimeV1`'s live owner cycle yet -- same pattern
 // as AI-1's `owner_timer` and AI-2's spawn/respawn code: complete, tested and uncalled, ready for
 // that wiring.
+mod ai_monster_melee;
 #[allow(
     dead_code,
     reason = "ai_think has no production caller yet; AI-4/a later wiring task composes it into ChannelRuntimeV1's owner cycle"
