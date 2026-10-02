@@ -31,6 +31,14 @@ def sha(path):
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 
 
+def completed_flags(row, estimate):
+    flags = set(row.get('completion_flags', [])) | {QUALIFICATION}
+    flags.discard('MITIGATION_UNKNOWN')
+    if estimate['out_of_distribution']:
+        flags.add('MITIGATION_ESTIMATE_OUT_OF_DISTRIBUTION')
+    return sorted(flags)
+
+
 def patch(documents, estimate, ledger_sha, entry_number):
     documents = copy.deepcopy(documents)
     monster, _, _, manifest = documents
@@ -95,10 +103,8 @@ def apply(baseline, ledger_path, classification_path, annotations_path, output):
         values = patch([read(source / f) for f in population.FILES], estimate, sha(ledger_path), number)
         for filename, value in zip(population.FILES, values):
             write(patches / name / filename, value)
-        flags = set(rows[name].get('completion_flags', [])) | {QUALIFICATION}
-        if estimate['out_of_distribution']:
-            flags.add('MITIGATION_ESTIMATE_OUT_OF_DISTRIBUTION')
-        row = {**rows[name], 'sha256': population.admission.bundle_digest(patches / name), 'completion_flags': sorted(flags)}
+        row = {**rows[name], 'sha256': population.admission.bundle_digest(patches / name),
+               'completion_flags': completed_flags(rows[name], estimate)}
         supplements.append((patches / name, row))
     index = population.merge_population(read(index_path), baseline / 'bundles', output, supplements)
     index['mitigation_balance'] = {'qualification': QUALIFICATION, 'global_parity': False,

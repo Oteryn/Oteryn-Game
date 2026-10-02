@@ -5,6 +5,14 @@ import apply_mitigation_estimates as adoption
 
 
 class BalanceAdoptionTests(unittest.TestCase):
+    def test_completed_value_removes_stale_unknown_and_keeps_other_flags(self):
+        flags = adoption.completed_flags({'completion_flags': ['MITIGATION_UNKNOWN', 'UNSUPPORTED_CALLBACK']},
+                                         {'out_of_distribution': True})
+        self.assertNotIn('MITIGATION_UNKNOWN', flags)
+        self.assertIn(adoption.QUALIFICATION, flags)
+        self.assertIn('UNSUPPORTED_CALLBACK', flags)
+        self.assertIn('MITIGATION_ESTIMATE_OUT_OF_DISTRIBUTION', flags)
+
     def setUp(self):
         folder = adoption.population.MONSTERS / 'samples/canary-47dfd51f/rat'
         self.documents = [adoption.read(folder / f) for f in adoption.population.FILES]
