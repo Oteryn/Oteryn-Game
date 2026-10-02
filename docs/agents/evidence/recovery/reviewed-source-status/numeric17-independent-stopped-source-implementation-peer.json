@@ -1,0 +1,118 @@
+{
+  "baseline": "1b026969a8b2236737bff537b3eddb3c909781b2",
+  "checks": {
+    "Cargo": "NOT_RUN_NOT_AUTHORIZED",
+    "Python_worker_tests": "PASS4_FRESH",
+    "Rust_prepared_tests": "READ_ONLY_REVIEWED3_NOT_RUN",
+    "actual_source_packet_check": "PASS17/50_FRESH",
+    "all17_actual_current_target_name_4headers_take_noWorld": "PASS",
+    "all17_complete_ownID_source_vectors_and50_packet_atoms": "PASS",
+    "all228_predecessor_source_native_owner_paths_byteexact": "PASS",
+    "all69_shards_reference57320_Items34031_owners411_unchanged": "PASS",
+    "explicit17_exact_disjoint_union": "PASS",
+    "full43516_actual_official_object_decoder": "PASS",
+    "generation": "NOT_RUN_NOT_AUTHORIZED",
+    "inactive_initial13_packet_and_checkpoint_sealed": "PASS",
+    "independent_all17_current_identity_state_portability_negatives": 170,
+    "independent_all17_scoped_sibling_and_identical_vector_replays": 34,
+    "original13_proof_and_separate4_proof_exact": "PASS",
+    "owned12_hashes_twice": "PASS"
+  },
+  "findings": [],
+  "manifest": {
+    "bytes": 3815,
+    "path": "/workspace/audit-continuation/numeric17-source-final-worker-manifest.json",
+    "sha256": "58854a7487016fb0c39d5a7964675d5a9e59f9c0b6a7a66fbf8a1c768604736e"
+  },
+  "no_repository_mutations_by_reviewer": true,
+  "scope": {
+    "Native_applied": 0,
+    "Native_model": "EXISTING_NATIVE37",
+    "atoms": 50,
+    "context": "ALL_UNKNOWN; NO_REFLECTION_ELEMENT; NO_GEAR_FORMULA",
+    "observed_magic4": {
+      "atoms": 16,
+      "vectors": 4
+    },
+    "original13": {
+      "atoms": 34,
+      "vectors": 13
+    },
+    "vectors": 17
+  },
+  "semantic_limits": "Source implementation peer PASS permits source carry and later serial Cargo/generation under Root. It does not establish final runtime/native generation or publication PASS. OTS witnesses corroborate own Wiki values; no playback, ruleset formula, reflection element or evaluated context is derived.",
+  "source_source_peer_reuse": {
+    "observed_magic4_peer": "6652b18f9a9a410ff9f11de607e7e2fffd10bb3701e3ed7d9b83b588974a7035",
+    "original13_peer": "4db1121c141ecbb4bf88c624570a595b8f5cea9d9649f3a918942d33c1efd986"
+  },
+  "stable_source": [
+    {
+      "bytes": 13674,
+      "path": ".github/workflows/item-authoring-schema.yml",
+      "sha256": "761ed2a9717e0f91ebaa9326d660bf4b73d0ce9e2c49cb89d8502b0c1c35a7ee"
+    },
+    {
+      "bytes": 87877,
+      "path": "apps/game-server/examples/materialize_content_world_project_v2.rs",
+      "sha256": "f3bef8719e1fc37f0d926aae71ba2220e7441bf66c5be36a656fda98a85628ea"
+    },
+    {
+      "bytes": 13712,
+      "path": "apps/game-server/src/content/item_numeric_modifier_promotion.rs",
+      "sha256": "a68240fb59f09748369ab1856aa3d9792d15c8a1951794d669fc41c73463f68e"
+    },
+    {
+      "bytes": 5060,
+      "path": "apps/game-server/src/content/mod.rs",
+      "sha256": "90144b6efa1839c6dcc1c71570f22f70836d78e8b66f7d0748a49b8bcfc898cb"
+    },
+    {
+      "bytes": 80888,
+      "path": "docs/agents/evidence/OTV2-20261002-item-magic-capacity4-source-qualification-v1.json",
+      "sha256": "9aba058979f9376996377163964cbad2a9a20cd826c071ea40c9e1273213238f"
+    },
+    {
+      "bytes": 16639,
+      "path": "docs/agents/evidence/OTV2-20261002-item-numeric-modifier13-promotion-v1.json",
+      "sha256": "d8c89a733e28a1d437b9bacde7be3be791e7d408f9ff5d5fa4dd2d72046c163c"
+    },
+    {
+      "bytes": 196121,
+      "path": "docs/agents/evidence/OTV2-20261002-item-numeric-modifier13-source-proof-v2.json",
+      "sha256": "11b8a6a7f1f85765f2b9c99dabc7815405c2bf3b0c10bb78b39deebb741937c9"
+    },
+    {
+      "bytes": 4911,
+      "path": "docs/agents/evidence/OTV2-20261002-item-numeric-modifier17-current-receipt-v1.json",
+      "sha256": "5836649139a383fcb466b385b9dde32e754cb0af0ae13a4cf5685c2b297220a9"
+    },
+    {
+      "bytes": 21474,
+      "path": "docs/agents/evidence/OTV2-20261002-item-numeric-modifier17-promotion-v1.json",
+      "sha256": "1d384adbad5edfc1525d140d7f6757264a6b3a1ef82dda476d0337b7cdbaeb1b"
+    },
+    {
+      "bytes": 276142,
+      "path": "docs/agents/evidence/OTV2-20261002-item-numeric-modifier17-source-qualification-v1.json",
+      "sha256": "c950c0c89db442612b4822e857b86e70ac01056974f9752996aadda415f2d71f"
+    },
+    {
+      "bytes": 15434,
+      "path": "tools/content-schema/item-authoring/lower_numeric_modifier17_packet.py",
+      "sha256": "06bd5da33045406dcadf049509ea1e09e68ae10313b241c8dc5de41ac63fcd01"
+    },
+    {
+      "bytes": 7402,
+      "path": "tools/content-schema/item-authoring/test_lower_numeric_modifier17_packet.py",
+      "sha256": "5f2b23d6346bf85aa5fc991d5aa78a43ea05a6746a2709bfde559b8fd6cd1625"
+    }
+  ],
+  "static_Rust_review": {
+    "atomicity": "Duplicate/missing native target and duplicate promotion rejected during preparation. Every successor is cloned and validated before any write. Commit changes only skill_modifiers on approved Items; unchanged outside targets and all sibling fields/headers. Unknown or identical known whole vector accepted; conflict/NA/wrong known vector rejected.",
+    "integration": "mod.rs+materializer+workflow additive only; materializer propagates error before canonical writes. Old26/Mantra49/shared stats setter/catalog byteexact.",
+    "packet": "include_bytes fixed SHA and fixed17/50; complete source ID coverage; full target key/family/revision and native four headers",
+    "tests": "Prepared Rust3 exercise two-target late conflict rollback, full-target/header/missing-target failure, wrong typed units/order/context/name, exact idempotence and outside/sibling equality. They are not compiled or claimed passed.",
+    "validation": "All50 context Unknown and parameter Known. New damage/flat SignedPoints nonnegative, percent denominator1 and0..100; accepted Native37 validates enum order/uniqueness/max37/exact per-kind typed shape, including Cells."
+  },
+  "status": "SOURCE_MODIFIER17_IMPLEMENTATION_PEER_PASS"
+}

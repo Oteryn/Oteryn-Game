@@ -1,0 +1,171 @@
+{
+  "baseline": "1b026969a8b2236737bff537b3eddb3c909781b2",
+  "checks": {
+    "BR3_all3_actualcanonical_Others_observations_exact": "PASS",
+    "BR3_fullraw_coordinates_and_literals": "PASS",
+    "BR3_independent_negative_guards": 21,
+    "Name15_fullsource_authority_evidence_unchanged": "PASS",
+    "Rust": "NOT_RUN",
+    "all18_actual1b_native_projection": "PASS",
+    "all18_full_target_forward_reverse_official_binding_name_take_noWorld": "PASS",
+    "all217_holds_preserved": "PASS",
+    "applied": 0,
+    "full43516_artifact_membership": "PASS",
+    "new5_files_hash_size": "PASS",
+    "original5_files_and_original_manifest_byteexact": "PASS",
+    "source197_pins": "PASS"
+  },
+  "closed_BR3_ids": [
+    52745,
+    52785,
+    52789
+  ],
+  "closed_name15_ids": [
+    23577,
+    23583,
+    23589,
+    23596,
+    23605,
+    23609,
+    23619,
+    23624,
+    23638,
+    23641,
+    23644,
+    23656,
+    23659,
+    23662,
+    23665
+  ],
+  "findings": [],
+  "historical_baseline": "b0f91e2883007861f5556c44cce13701bb447283",
+  "manifest": {
+    "bytes": 2541,
+    "path": "/workspace/audit-continuation/family-name15-br3-source-proposal-final-manifest-20261002-v2.json",
+    "sha256": "94cf065ca60d08ed5153df477bcc0370440318fcab3898a05670443e4646ba25"
+  },
+  "negative_checks": [
+    {
+      "case": "competing_primary",
+      "result": "REJECTED",
+      "source_item_id": 52745
+    },
+    {
+      "case": "missing_canonical_record",
+      "result": "REJECTED",
+      "source_item_id": 52745
+    },
+    {
+      "case": "wrong_record_id",
+      "result": "REJECTED",
+      "source_item_id": 52745
+    },
+    {
+      "case": "wrong_revision",
+      "result": "REJECTED",
+      "source_item_id": 52745
+    },
+    {
+      "case": "duplicate_observation",
+      "result": "REJECTED",
+      "source_item_id": 52745
+    },
+    {
+      "case": "omitted_observations",
+      "result": "REJECTED",
+      "source_item_id": 52745
+    },
+    {
+      "case": "literal_mismatch",
+      "result": "REJECTED",
+      "source_item_id": 52745
+    },
+    {
+      "case": "competing_primary",
+      "result": "REJECTED",
+      "source_item_id": 52785
+    },
+    {
+      "case": "missing_canonical_record",
+      "result": "REJECTED",
+      "source_item_id": 52785
+    },
+    {
+      "case": "wrong_record_id",
+      "result": "REJECTED",
+      "source_item_id": 52785
+    },
+    {
+      "case": "wrong_revision",
+      "result": "REJECTED",
+      "source_item_id": 52785
+    },
+    {
+      "case": "duplicate_observation",
+      "result": "REJECTED",
+      "source_item_id": 52785
+    },
+    {
+      "case": "omitted_observations",
+      "result": "REJECTED",
+      "source_item_id": 52785
+    },
+    {
+      "case": "literal_mismatch",
+      "result": "REJECTED",
+      "source_item_id": 52785
+    },
+    {
+      "case": "competing_primary",
+      "result": "REJECTED",
+      "source_item_id": 52789
+    },
+    {
+      "case": "missing_canonical_record",
+      "result": "REJECTED",
+      "source_item_id": 52789
+    },
+    {
+      "case": "wrong_record_id",
+      "result": "REJECTED",
+      "source_item_id": 52789
+    },
+    {
+      "case": "wrong_revision",
+      "result": "REJECTED",
+      "source_item_id": 52789
+    },
+    {
+      "case": "duplicate_observation",
+      "result": "REJECTED",
+      "source_item_id": 52789
+    },
+    {
+      "case": "omitted_observations",
+      "result": "REJECTED",
+      "source_item_id": 52789
+    },
+    {
+      "case": "literal_mismatch",
+      "result": "REJECTED",
+      "source_item_id": 52789
+    }
+  ],
+  "proof": {
+    "path": "/workspace/audit-continuation/family-name15-br3-closed-source-proposal-20261002-v2.json",
+    "sha256": "7fd1bd8d99967942c9a2c7dbf29df4759eba8dbdfcbb31dbf8e31313a394a662"
+  },
+  "resolved_finding": {
+    "id": "BR3-CANONICAL-STATS-KEY",
+    "original_report_sha256": "20cc6407be8d811348c151c5fcd4814d858dfef5f11a5cdf0f18be43fe27b179",
+    "repair": "Actual canonical target key, affirmative expected record ID/observations, exact unique observation/source coordinate sets and all-present raw field equality; current three Others observations retained."
+  },
+  "semantic_limits": {
+    "BR3": "Repaired source proposal supports a prospective bounded auxiliary raw BR quest-category decision, NAV_ONLY and DERIVED. No project route, numeric BR binding, Known Class, gameplay/actor buff or Native scalar was implemented.",
+    "Name15": "Root accepted only the closed official own-numeric/proven imported Known-name correction authority. No generic Known overwrite, own-Wiki authority or family navigation acceptance.",
+    "family15": "Missing full article/disambiguation/redirect branch remains held; original conditional follow-up has not been admitted."
+  },
+  "source_inputs_count": 197,
+  "source_or_native_changes": 0,
+  "status": "SOURCE_NAME15_BR3_REPAIRED_PROPOSAL_PEER_PASS"
+}

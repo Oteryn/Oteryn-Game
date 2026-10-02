@@ -1,0 +1,57 @@
+{
+  "applied": 0,
+  "baseline": "1b026969a8b2236737bff537b3eddb3c909781b2",
+  "checks": {
+    "all3Others_retained": "PASS",
+    "all3canonical_stats_ownID_and_source_coordinates": "PASS",
+    "all_earlier_proposal_guards": "PASS",
+    "canonical_key_competing_PRIMARY_rejections": 3,
+    "originals_byteidentical": "PASS"
+  },
+  "originals": {
+    "/workspace/audit-continuation/family-name15-br3-closed-source-proposal-20261002.json": {
+      "bytes": 235668,
+      "sha256": "f0fe004299ab3fea1e7bb5deeb74c749836e1dc80a0120e3beadee3c187a543d"
+    },
+    "/workspace/audit-continuation/family-name15-br3-implementation-plan-20261002.json": {
+      "bytes": 6940,
+      "sha256": "a9ac59dfa0d66dd1c131a140d1faa47c1be1e4c704535d3607d5f8b8d27f4092"
+    },
+    "/workspace/audit-continuation/family-name15-br3-proposed-packet-20261002.json": {
+      "bytes": 7957,
+      "sha256": "6f399e959c2b9094732406522d0798726c5b24a60a3b26866ef282ad16d2d644"
+    },
+    "/workspace/audit-continuation/family-name15-br3-source-proposal-final-manifest-20261002.json": {
+      "bytes": 2223,
+      "sha256": "d322130c916da47b4b04501e66f143d13b4107e554ae69eb902560cc9799a9c8"
+    },
+    "/workspace/audit-continuation/prepare-family-name15-br3-closed-proposal.py": {
+      "bytes": 23578,
+      "sha256": "ab19150475a311fd694304fb57462446b4ea455f7933640d97a8abd6cfc1f10d"
+    }
+  },
+  "owned_external_files": {
+    "/workspace/audit-continuation/family-name15-br3-closed-source-proposal-20261002-v2.json": {
+      "bytes": 237661,
+      "sha256": "7fd1bd8d99967942c9a2c7dbf29df4759eba8dbdfcbb31dbf8e31313a394a662"
+    },
+    "/workspace/audit-continuation/family-name15-br3-implementation-plan-20261002-v2.json": {
+      "bytes": 8284,
+      "sha256": "51f782868a5fd9beb1d2238acc225a7e2fdfac75053300cd4d5264ffd0c7ae7d"
+    },
+    "/workspace/audit-continuation/family-name15-br3-proposal-v2-20261002.md": {
+      "bytes": 488,
+      "sha256": "6a32263ffe448d85d415005cbccf3631d0e4e91ad56a631225665f2de0e3c52f"
+    },
+    "/workspace/audit-continuation/family-name15-br3-proposed-packet-20261002-v2.json": {
+      "bytes": 7957,
+      "sha256": "d72f38a31a0a3cab0fb8f37205ca1f05eca0f53f533024ceedde99f7e8086135"
+    },
+    "/workspace/audit-continuation/prepare-family-name15-br3-closed-proposal-v2.py": {
+      "bytes": 24898,
+      "sha256": "5231a5e40d650ba347e8767060254b6a0477f5df46c41b31b737562454297ebf"
+    }
+  },
+  "schema": "FAMILY_NAME15_BR3_EXTERNAL_REPAIRED_SOURCE_CHECKPOINT/v2",
+  "status": "PASS_SOURCE_REPAIR_PENDING_FRESH_INDEPENDENT_PEER"
+}

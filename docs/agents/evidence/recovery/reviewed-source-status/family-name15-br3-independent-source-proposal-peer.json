@@ -1,0 +1,120 @@
+{
+  "BR3_actual_opposition": [
+    {
+      "actual_observations": [
+        {
+          "content_sha256": "eabb86ed5ce5a6b42c6e8b96765a8fc461620e05efd89de2253cd676f9f7c6e6",
+          "fields": {
+            "primarytype": "Others",
+            "weight": "5.00"
+          },
+          "page_id": 109555,
+          "revision_id": 1149615,
+          "revision_sha1": "839f483169edd53f26bf4db05fd97a8da04687ae",
+          "revision_timestamp": "2025-12-12T16:36:13Z",
+          "url": "https://tibia.fandom.com/wiki/Bottle_of_Raubritter_Lager",
+          "wiki_title": "Bottle of Raubritter Lager"
+        }
+      ],
+      "proposal_observations": [],
+      "source_item_id": 52745,
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i52745",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "actual_observations": [
+        {
+          "content_sha256": "c744fe2e27c1061f0100ecf637f5d0683607800babb12abd3e5a0f7300945644",
+          "fields": {
+            "primarytype": "Others",
+            "weight": "5.00"
+          },
+          "page_id": 109571,
+          "revision_id": 1149612,
+          "revision_sha1": "c331f3751b75a15441ce5555595559e5fcbec886",
+          "revision_timestamp": "2025-12-12T16:30:53Z",
+          "url": "https://tibia.fandom.com/wiki/Cool_Bottle_of_Raubritter_Lager",
+          "wiki_title": "Cool Bottle of Raubritter Lager"
+        }
+      ],
+      "proposal_observations": [],
+      "source_item_id": 52785,
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i52785",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "actual_observations": [
+        {
+          "content_sha256": "b8d84b53937dcf1a6d9197c62e1788e7b9b4cb01d725cd155a2bb39983de4191",
+          "fields": {
+            "primarytype": "Others",
+            "weight": "5.00"
+          },
+          "page_id": 109575,
+          "revision_id": 1163034,
+          "revision_sha1": "bf2947872b115f2ab85425b3cc7741b2789ecd21",
+          "revision_timestamp": "2026-02-15T20:37:55Z",
+          "url": "https://tibia.fandom.com/wiki/Bottle_of_Enhanced_Raubritter_Lager",
+          "wiki_title": "Bottle of Enhanced Raubritter Lager"
+        }
+      ],
+      "proposal_observations": [],
+      "source_item_id": 52789,
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i52789",
+        "revision": "definition-r1"
+      }
+    }
+  ],
+  "applied": 0,
+  "baseline": "b0f91e2883007861f5556c44cce13701bb447283",
+  "checks": {
+    "BR3_actual_retained_stats_observations_included": "FAIL",
+    "BR3_fullownFandom_and_auxiliaryBR_body_coordinate_literal": "PASS",
+    "Name15_fullarticle_family_followup_still_held": "PASS",
+    "Name15_ownWikiID_absence_and_Name139_cohort_disjoint": "PASS",
+    "Name15_own_numeric_field4_and_proven_import_literal": "PASS",
+    "Rust": "NOT_RUN",
+    "all18_currentNative_unchanged_since_baseline": "PASS",
+    "all18_forward_reverse_fullidentity_and_positive_take": "PASS",
+    "all18_noWorld_and_no_gameowned_presentation": "PASS",
+    "full43516_artifact_membership": "PASS",
+    "owned5_hash_size": "PASS",
+    "source197_pins": "PASS"
+  },
+  "current_native_comparison": "1b026969a8b2236737bff537b3eddb3c909781b2",
+  "findings": [
+    {
+      "actual_current_effect": "All three omitted observations are matching coarse Others, so no current category conflict was discovered. Current evidence declaration and future all-present opposition guard remain incorrect.",
+      "file": "prepare-family-name15-br3-closed-proposal.py",
+      "id": "BR3-CANONICAL-STATS-KEY",
+      "line": 263,
+      "problem": "Decimal-key lookup bypasses all existing canonical-key stats observations and falsely emits empty retained_stats_opposition. A canonical-key conflicting admitted primary would also evade this check.",
+      "repair": "Read observations by actual canonical target key, retain all three real observations and coordinate matches, reject malformed/missing expected record and add a canonical-key competing primary negative. Emit a superseding producer/proof/packet/plan/manifest; retain the frozen five original files.",
+      "severity": "SOURCE_GUARD_GAP"
+    }
+  ],
+  "manifest": {
+    "path": "/workspace/audit-continuation/family-name15-br3-source-proposal-final-manifest-20261002.json",
+    "sha256": "d322130c916da47b4b04501e66f143d13b4107e554ae69eb902560cc9799a9c8"
+  },
+  "native_or_repository_changes": 0,
+  "review_scope": "Read-only proposed authority/source qualification; no implementation, source-policy acceptance, family15 complete article replay, Cargo or live admission claim.",
+  "semantic_limits": {
+    "BR3": "Only derived NAV_ONLY quest_item from own Fandom numeric identity plus uniquely matching official/native/public BR names and literal declared BR category. No BR numeric identity, class, scalar, duration, actor buff or runtime admission is established.",
+    "Name15": "Closed explicit authority exception may use own official numeric name plus proven generic imported literal. This is not own-Wiki corroboration or a generic Known overwrite. Exact ID uniqueness is required; repeated official name across charged variants is expected.",
+    "family15": "Own base article IDs differ from variant targets. Missing full article/redirect/disambiguation branch must remain held until actual accepted replay."
+  },
+  "shared_source_pins": {
+    "engine_items.py": "28644c0fcc88f364992670489f7d458f827a9cd1db023b7f5ce0a9ae32d08c1a",
+    "source_field_catalogs.py": "8250880aaa89b7c5fa1593d5738a478b0d09e1ef9ef9cef630cb5da172d634bc"
+  },
+  "status": "SOURCE_NAME15_PROPOSAL_PEER_PASS_BR3_REPAIR_REQUIRED"
+}

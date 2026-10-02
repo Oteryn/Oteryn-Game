@@ -1,0 +1,68 @@
+{
+  "schema": "OTERYN_REMAINING_INVENTORY_INDEPENDENT_PUBLISHED1B_PEER/v1",
+  "status": "PASS",
+  "findings": [],
+  "timestamp_utc": "2026-10-02T15:51:30.171373+00:00",
+  "baseline": "1b026969a8b2236737bff537b3eddb3c909781b2",
+  "inventory": {
+    "path": "/workspace/audit-continuation/item-remaining-work-published1b-pending-composition-20261002.json",
+    "sha256": "5dc2f73908c729c9e7e0844860698e2726df600a7671be6c5484806a328fd4b7"
+  },
+  "markdown": {
+    "path": "/workspace/audit-continuation/item-remaining-work-published1b-pending-composition-20261002.md",
+    "sha256": "6b905f5e9c0dc430f1894109310d2e52443ec4ab5a0ebe6cdf648332c1bdfab0"
+  },
+  "manifest": {
+    "path": "/workspace/audit-continuation/item-remaining-work-published1b-pending-composition-stopped-manifest-20261002.json",
+    "sha256": "8349e5da3b8e17b4a6f451008c8a1ea3948ed3677d094679907835031634e222"
+  },
+  "checks": {
+    "actual_published_census": "Full actualGit1b record/family/native/name/description/modifier/materializable/sourceowner/relation/shard/catalog/template counts PASS. All input witnesses actualGitblob or retained fullbyte SHA verified.",
+    "pending_scope": "ExactsourceProofDescription114+1515 disjoint1629, Forge289 andModifier17/50atoms; exacttargetunion1844, pairwise81/6/8, triple4. AllCurrentDescription/modifier target leaves unknown; noItem completeness inference.",
+    "held_joins": "Actual1b forge870 profileabsent; closed289 subset/581conditionalremaining. Stack2491typedUNKNOWN +2identityonly45322/45497 confirmed2493;656positiveKnownslots/unknownwholeallowance vectors exact. Allreported overlaps independently computed; cannot sum heldcounts.",
+    "projected_math": "700owners436Forge,1629descriptions,511vectors846atoms,539relationrows752refs conditional only; Family10template count doesnotreduce235classification backlog.",
+    "completion_semantics": "fully_complete/all_incomplete/required_applicable_unknown allnull; sources vsNative vsruntime/optionalrequired distinct, actualartifact38157 notcurrentNativeItem34031; classificationoverlay12252 notNativeKnown0.",
+    "source_access": "Only actualGit1b/localretainedbytes; no newweb/search/CDP/browser/research or repo changes.",
+    "asof_status_note": "Original inventory observed15:46 before finalForge289 SourcePASS. Its fresh-implementation-peer-pending wording is retainedhistorical status, now independently SOURCE_PASS6f8bbbc5; remains notcomposed/generated/published. Root should present updatedstatus when sharing current inventory; no projectedcount promoted tocurrent."
+  },
+  "input_witness_paths_verified": [
+    "1b026969a8b2236737bff537b3eddb3c909781b2:content/world/definitions/reference.json",
+    "1b026969a8b2236737bff537b3eddb3c909781b2:content/world/definitions/declarations.json",
+    "1b026969a8b2236737bff537b3eddb3c909781b2:content/items/relations/items.json",
+    "1b026969a8b2236737bff537b3eddb3c909781b2:content/items/taxonomy/items.json",
+    "1b026969a8b2236737bff537b3eddb3c909781b2:tools/content-schema/item-authoring/profile-catalog.json",
+    "/workspace/pr1437-resistances/docs/agents/evidence/OTV2-20261002-item-description-source-qualification-v1.json",
+    "/workspace/pr1437-resistances/docs/agents/evidence/OTV2-20261002-item-description-wiki-source-qualification-v1.json",
+    "/workspace/audit-continuation/description1629-source-authoring-checkpoint-manifest.json",
+    "/workspace/audit-continuation/description1629-independent-stopped-source-implementation-peer.json",
+    "/workspace/audit-continuation/forge289-source-freeze-manifest-v2.json",
+    "/workspace/pr1437-world-owner-completion/docs/agents/evidence/OTV2-20261002-item-forge289-promotion-v1.json",
+    "/workspace/audit-continuation/numeric-modifier17-whole-vector-source-successor-20261002.json",
+    "/workspace/audit-continuation/numeric-modifier17-source-successor-checkpoint-manifest.json",
+    "/workspace/audit-continuation/family-contract-composition-final-worker-manifest.json",
+    "/workspace/audit-continuation/family-contract-composition-independent-source-authoring-peer.json",
+    "/workspace/audit-continuation/item-remaining-work-after-forge4f-20261002.json",
+    "/workspace/audit-continuation/physical8-implementation-work-inventory-20261002.json",
+    "/workspace/audit-continuation/stack2493-whole-cohort-bounded-maximum-research-20261002.json",
+    "/workspace/audit-continuation/forge865-independent-raw-source-discovery-v2-20261002.json",
+    "/workspace/audit-continuation/forge-last-five-own-raw-maximum-discovery-v2-20261002.json",
+    "/workspace/audit-continuation/regeneration14-own-notes-xml-existing-carrier-source-proposal-20261002.json",
+    "/workspace/audit-continuation/regeneration14-general-doc-and-source-limit-receipt.json",
+    "/workspace/audit-continuation/imbuement656-source-qualification-diagnostic-final.json",
+    "/workspace/audit-continuation/imbuement-two-own-notes-source-qualified-positive-tier-facts.json",
+    "/workspace/audit-continuation/imbuement-two-partial-source-owner-proposal-b0f-20261002.json",
+    "/workspace/audit-continuation/family-name15-br3-source-proposal-final-manifest-20261002.json",
+    "/workspace/audit-continuation/item-weapon-effects-audio-oteryn-4f-audit-20261002.json",
+    "/workspace/audit-continuation/weapon-presentation-source-audit/weapon-presentation-upstream-readonly-report.json"
+  ],
+  "exact_pending_pairwise_overlaps": {
+    "Description1629__Forge289": 81,
+    "Description1629__Modifier17": 6,
+    "Forge289__Modifier17": 8
+  },
+  "exact_pending_triple_overlap_count": 4,
+  "pending_target_union": 1844,
+  "fully_complete": null,
+  "all_incomplete_items": null,
+  "scope": "Independent bounded inventory review; no new fact/import/runtime admissions and no completeItem count."
+}

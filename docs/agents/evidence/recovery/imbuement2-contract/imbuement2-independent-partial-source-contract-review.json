@@ -1,0 +1,378 @@
+{
+  "accepted_contract_conflicts": [
+    {
+      "line": 75,
+      "path": "docs/architecture/OTERYN_WORLD_PROJECT_SOURCE_PROFILE_V2_DECISION.md",
+      "reason": "Explicit executable ownership/nonduplication covers imbuement; partial source observation exception is not present."
+    },
+    {
+      "line": 50,
+      "path": "docs/architecture/OTERYN_WORLD_PROJECT_SOURCE_PROFILE_V2_DECISION.md",
+      "reason": "A published field/authority change requires named schema revision and migration; existing optional weapon exception is not authority for this new field."
+    },
+    {
+      "line": 1057,
+      "path": "apps/game-server/src/content/project/v2.rs",
+      "reason": "Current strict Item authoring rejects the proposed new field."
+    }
+  ],
+  "closed_records": [
+    {
+      "current_headers_historical": {
+        "client_projection": "ClientSafe",
+        "kind": "Item",
+        "materializable": false,
+        "stack_class": "Unknown"
+      },
+      "current_imbuement_historical": {
+        "state": "KNOWN",
+        "value": {
+          "allowed_family_tiers": {
+            "state": "UNKNOWN"
+          },
+          "excluded_families": {
+            "state": "UNKNOWN"
+          },
+          "slot_count": {
+            "state": "KNOWN",
+            "value": 2
+          }
+        }
+      },
+      "current_name_historical": {
+        "state": "KNOWN",
+        "value": "falcon coif"
+      },
+      "positive_source_fact": {
+        "family": "SKILL_MAGIC_LEVEL",
+        "max_tier": 2
+      },
+      "source": {
+        "capture_path": "/workspace/audit-continuation/stack-forge-maxima-public-20261002/imbuement-renderers-own-exceptions-browser-cdp-source.json",
+        "capture_sha256": "a88f57f1a169e8c188baa3e25247c4843e218fa49c7b807c41795e501a190c13",
+        "content_sha256": "9a70d09fa28caa0fc02809c90b239370cc5338ed7b5a90775b520b9d690cce0c",
+        "page_id": 85231,
+        "raw_itemid": [
+          "28715"
+        ],
+        "raw_name": {
+          "actualname": [
+            "falcon coif"
+          ],
+          "name": [
+            "Falcon Coif"
+          ]
+        },
+        "raw_notes": [
+          "This is one of the few helmets that can be worn by Knights which can be imbued with up to Tier 2 [[Intricate Epiphany|Epiphany]] (Magic Level boost) [[Imbuing|imbuements]]. It's also one of the few helmets available for Paladins with this property."
+        ],
+        "revision_id": 1148286,
+        "revision_timestamp": "2025-12-08T17:39:32Z"
+      },
+      "source_item_id": 28715,
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i28715",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "current_headers_historical": {
+        "client_projection": "ClientSafe",
+        "kind": "Item",
+        "materializable": false,
+        "stack_class": "Unknown"
+      },
+      "current_imbuement_historical": {
+        "state": "KNOWN",
+        "value": {
+          "allowed_family_tiers": {
+            "state": "UNKNOWN"
+          },
+          "excluded_families": {
+            "state": "UNKNOWN"
+          },
+          "slot_count": {
+            "state": "KNOWN",
+            "value": 2
+          }
+        }
+      },
+      "current_name_historical": {
+        "state": "KNOWN",
+        "value": "dark whispers"
+      },
+      "positive_source_fact": {
+        "family": "SKILL_MAGIC_LEVEL",
+        "max_tier": 1
+      },
+      "source": {
+        "capture_path": "/workspace/audit-continuation/stack-forge-maxima-public-20261002/imbuement-renderers-own-exceptions-browser-cdp-source.json",
+        "capture_sha256": "a88f57f1a169e8c188baa3e25247c4843e218fa49c7b807c41795e501a190c13",
+        "content_sha256": "bccd74d9275d3ed99b64cf3aae7f6a9d1d2da494866583aa693b9e50e7bd67b6",
+        "page_id": 86769,
+        "raw_itemid": [
+          "29427"
+        ],
+        "raw_name": {
+          "actualname": [
+            "dark whispers"
+          ],
+          "name": [
+            "Dark Whispers"
+          ]
+        },
+        "raw_notes": [
+          "This helmet can be imbued with [[Basic Epiphany]] ([[Magic Level]] bonus), but not with [[Intricate Epiphany|Intricate]] or [[Powerful Epiphany]]."
+        ],
+        "revision_id": 1148314,
+        "revision_timestamp": "2025-12-08T17:40:03Z"
+      },
+      "source_item_id": 29427,
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i29427",
+        "revision": "definition-r1"
+      }
+    }
+  ],
+  "compatibility": {
+    "native_tier_enum": "UNCHANGED_TWO_THREE_TEN",
+    "new_reader_old_source": "ACCEPT_REQUIRED",
+    "new_source_field_old_strict_reader": "REJECT_REQUIRED",
+    "new_source_schema_revision_and_migration": "OWNER_ACCEPTANCE_REQUIRED",
+    "old_native_bytes": "UNCHANGED_REQUIRED",
+    "old_source_absent_field_canonical_bytes": "UNCHANGED_REQUIRED"
+  },
+  "contracts": [
+    {
+      "bytes": 17936,
+      "path": "/workspace/pr1437-stack-default-completion/docs/architecture/OTERYN_WORLD_PROJECT_SOURCE_PROFILE_V2_DECISION.md",
+      "quoted_lines": [
+        {
+          "line": 50,
+          "text": "What becomes harder later: changing a published v2 field or authority classification requires a new schema revision and migration. Evidence that warrants supersession includes a real family corpus, owner-accepted gameplay semantics, measured source cost or a security/compatibility defect. Permanent World Bundle format, full NPC/Quest/House/Encounter mechanics, production maxima and Studio UI remain separately owned decisions."
+        },
+        {
+          "line": 55,
+          "text": "The protected base v2 can retain editor aliases/tags and generic candidate observations, but the current TibiaWiki Item surface exposes structural relationships that must not be flattened into free-form fields or forced into the executable v1 Item schema. V2 therefore carries an optional typed `item_authoring` overlay inside the existing `declarative-definitions` document. It is bound to an exact existing Item definition and is source-only: it does not lower into `ReferenceItemSemantics` merely by being present."
+        },
+        {
+          "line": 71,
+          "text": "The existing editor role remains the v2 home for noncanonical Item aliases, tags, categories and notes. These values never redirect identity or grant gameplay capabilities."
+        },
+        {
+          "line": 75,
+          "text": "Fields already owned by the executable Item model — including weight, stackability, equipment requirements, attack/defense/range/hit, elemental attack, armor/resistances, skill modifiers including Elemental Bond/Mantra, charges, duration, container capacity, readable/writeable state and imbuement semantics — continue to use the existing Reference Item path. V2 does not duplicate them."
+        },
+        {
+          "line": 77,
+          "text": "The two intrinsic weapon metadata properties are distinct from that executable vocabulary: native `attack` is not the source `atk_mod`, and native normalized relative `hit_chance` is not absolute source `hit_chance`. A literal absolute `90%` is stored as `90/1` percentage points; formal relative `90` is also `90/1` points, while its existing native normalization is `9/10`. A separate current own-Object alias catalog declares these exact routes. It does not alter the immutable 84-field legacy Fandom census or admit sibling-page/alias inheritance. Missing properties remain `None`, with no zero/100 default. The extended reader preserves old absent-field canonical bytes; old strict readers reject newly present properties. Runtime lowering and TypedItemV4 remain unchanged."
+        },
+        {
+          "line": 79,
+          "text": "Current own-Object source qualification uses a unique nonempty `actualname` when present, with `name` fallback only when that parameter is absent. Descriptive variant labels remain retained evidence; numeric own IDs and accepted bindings determine identity. Empty, duplicate or conflicting actual names stay held."
+        },
+        {
+          "line": 81,
+          "text": "Mutable runtime state is explicitly excluded: current Forge tier, proficiency XP/unlocks/selected perks/ranks, active imbues, remaining charges/timers, stack quantity, container contents/custody, current enchanted form and live quest/runtime state remain with ItemInstance/Character/Progression/Durability or their accepted owner."
+        },
+        {
+          "line": 83,
+          "text": "Compatibility is additive for already protected v2 documents: `item_authoring` and Service `offers` are omitted from canonical JSON when empty and default to empty when absent, so v2 snapshots produced by #788 with no Item extension preserve their canonical bytes under the extended reader/writer."
+        }
+      ],
+      "repository_relative_path": "docs/architecture/OTERYN_WORLD_PROJECT_SOURCE_PROFILE_V2_DECISION.md",
+      "sha256": "4563ffe71cfe916cafc105e4008d6d3f7225d75d125f1075f20c28a49d35660d"
+    },
+    {
+      "bytes": 11082,
+      "path": "/workspace/pr1437-stack-default-completion/docs/architecture/OTERYN_ITEM_AUTHORING_MASTER_SCHEMA_V1.md",
+      "quoted_lines": [
+        {
+          "line": 158,
+          "text": "├── source_observations"
+        },
+        {
+          "line": 159,
+          "text": "│   └── attributes_text"
+        },
+        {
+          "line": 165,
+          "text": "The model reuses the existing protected Item owners whenever they already exist:"
+        },
+        {
+          "line": 166,
+          "text": "`ReferenceItemSemantics` remains the executable owner for presentation/classification,"
+        },
+        {
+          "line": 167,
+          "text": "physical/stack/equipment/weapon/protection/modifiers/charges/temporal/container/"
+        },
+        {
+          "line": 168,
+          "text": "imbuement/use-transform/trade/fluid/readable semantics. WorldProject/v2 authoring"
+        },
+        {
+          "line": 169,
+          "text": "already owns taxonomy, Forge, proficiency/augments, consumable facts, use observations"
+        },
+        {
+          "line": 170,
+          "text": "and lifecycle/source-lifecycle facts."
+        },
+        {
+          "line": 172,
+          "text": "The accepted WorldProject/v2 source supplement retains two additional optional intrinsic weapon metadata properties on the existing Item authoring owner: signed i32 `weapon_attack_modifier_points` maps to formal `/item/weapon/attack_modifier`, and canonical exact `weapon_absolute_hit_chance_percent` maps to `/item/weapon/hit_chance_percent` in absolute 0..100 percentage points (`90%` = `90/1`). Neither writes native attack nor native relative hit. Formal relative percentage points use `p/1`; the native relative percent representation uses reduced `p/100`. The separately generated current own-Object weapon alias catalog supplements the immutable legacy census; it does not rename relative `hit_mod` or infer absent values. Existing Forge, proficiency, magic-level, use-observation and other authoring siblings keep their owners."
+        }
+      ],
+      "repository_relative_path": "docs/architecture/OTERYN_ITEM_AUTHORING_MASTER_SCHEMA_V1.md",
+      "sha256": "766594837a39dd1d8d08b8c8e2b382bd84dfd1fee4f312751d1391d32332c727"
+    },
+    {
+      "bytes": 130982,
+      "path": "/workspace/pr1437-stack-default-completion/apps/game-server/src/content/project/v2.rs",
+      "quoted_lines": [
+        {
+          "line": 1056,
+          "text": "#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]"
+        },
+        {
+          "line": 1057,
+          "text": "#[serde(deny_unknown_fields)]"
+        },
+        {
+          "line": 1058,
+          "text": "pub struct ProjectV2ItemAuthoring {"
+        },
+        {
+          "line": 1085,
+          "text": "    pub use_observation: Option<ProjectV2ItemUseObservation>,"
+        },
+        {
+          "line": 1089,
+          "text": "    pub source_lifecycle: Option<ProjectV2ItemSourceLifecycle>,"
+        },
+        {
+          "line": 1090,
+          "text": "}"
+        }
+      ],
+      "repository_relative_path": "apps/game-server/src/content/project/v2.rs",
+      "sha256": "ae97426f36977abf5ae1bd2c2fc100960c93f3da80f3622a4cef7aaa1a40a69b"
+    },
+    {
+      "bytes": 107416,
+      "path": "/workspace/pr1437-stack-default-completion/apps/game-server/src/content/reference_playable.rs",
+      "quoted_lines": [
+        {
+          "line": 254,
+          "text": "        #[serde(rename_all = \"SCREAMING_SNAKE_CASE\")]"
+        },
+        {
+          "line": 305,
+          "text": "item_enum!(ReferenceImbuementFamily {"
+        },
+        {
+          "line": 310,
+          "text": "    ParalysisRemoval = 13, SkillAxe = 14, SkillClub = 15,"
+        },
+        {
+          "line": 621,
+          "text": "pub enum ReferenceImbuementTier {"
+        },
+        {
+          "line": 622,
+          "text": "    Two,"
+        },
+        {
+          "line": 623,
+          "text": "    Three,"
+        },
+        {
+          "line": 624,
+          "text": "    Ten,"
+        },
+        {
+          "line": 630,
+          "text": "    pub family: ReferenceImbuementFamily,"
+        },
+        {
+          "line": 631,
+          "text": "    pub tier: ReferenceImbuementTier,"
+        },
+        {
+          "line": 636,
+          "text": "pub struct ReferenceItemImbuement {"
+        },
+        {
+          "line": 637,
+          "text": "    pub slot_count: ReferenceItemField<u8>,"
+        },
+        {
+          "line": 638,
+          "text": "    pub allowed_family_tiers: ReferenceItemField<Vec<ReferenceImbuementAllowance>>,"
+        },
+        {
+          "line": 639,
+          "text": "    pub excluded_families: ReferenceItemField<Vec<ReferenceImbuementFamily>>,"
+        }
+      ],
+      "repository_relative_path": "apps/game-server/src/content/reference_playable.rs",
+      "sha256": "e50682b67ca36431f9a6b9eb018a8cb17a08cf7e4fdc66c33a5831dc83f4e3ad"
+    }
+  ],
+  "counts": {
+    "complete_items_claimed": 0,
+    "future_additional_authoring_owners_max": 2,
+    "future_additional_authoring_owners_min": 0,
+    "native_applied": 0,
+    "native_whole_vector_eligible": 0,
+    "positive_source_fact_entries": 2,
+    "target_items": 2
+  },
+  "disposition": {
+    "current_contract_route": "NOT_ADMITTED_BY_LINE_75",
+    "current_typed_carrier": "ABSENT",
+    "evidence_retention": "Existing retained evidence remains valid without typed promotion",
+    "existing_source_owner": "ProjectV2ItemAuthoring",
+    "full_native_exclusion_list": "UNKNOWN_PRESERVED",
+    "full_native_whitelist": "UNKNOWN_PRESERVED",
+    "native_tier_one": "NOT_PRESENT_AND_NOT_PROPOSED",
+    "required_action": "Explicit narrow owning source-contract supplement before production carrier/compiler writes"
+  },
+  "findings": [
+    {
+      "code": "OWNING_SOURCE_ROUTE_MISSING",
+      "disposition": "Concrete narrow amendment candidate attached; does not negate retained positive source facts",
+      "severity": "BLOCKS_PRODUCTION_AUTHORING_UNTIL_EXPLICIT_SUPPLEMENT"
+    },
+    {
+      "code": "HISTORICAL_OWNER_CENSUS_ONLY",
+      "disposition": "411→413 is b0f forecast; derive future delta 0..2 from actual owner merge, never repeat as current",
+      "severity": "RECEIPT_CORRECTION_REQUIRED_AT_IMPLEMENTATION"
+    }
+  ],
+  "future_current_parent_guard": "Must be a separate truthful receipt at actual published/carry parent. Historical b0f full native digest is not a live whole-native/sibling guard. Exact own targets, names, class/admission, slots, source facts/bindings/membership/noWorld remain guarded.",
+  "historical_baseline": "b0f91e2883007861f5556c44cce13701bb447283",
+  "implementation_and_test_status": "NOT_IMPLEMENTED_NOT_RUN",
+  "proposed_amendment": {
+    "bytes": 6028,
+    "path": "/workspace/audit-continuation/imbuement2-partial-source-owning-contract-amendment-candidate.md",
+    "sha256": "e6255da24b1e2af39788c15b902f7cd183ef45117530b9d715a0f236abf7ae8b"
+  },
+  "retained_positive_source_facts": {
+    "bytes": 15801,
+    "path": "/workspace/audit-continuation/imbuement-two-own-notes-source-qualified-positive-tier-facts.json",
+    "sha256": "38ee23b0733947544695e4d146734916ea679c28c93e69ac75a7d576001953b8"
+  },
+  "review_scope": "Actual minimal owning contract and Rust carrier readback plus unchanged retained two-fact proposal; no fresh full-source-corpus replay, production authoring, Cargo or acceptance claim.",
+  "reviewed_proposal": {
+    "bytes": 11425,
+    "path": "/workspace/audit-continuation/imbuement-two-partial-source-owner-proposal-b0f-20261002.json",
+    "sha256": "d1cb41d99297ccfda6b79f90274f1d3d578eaa2489564cd9ae6920ead4716bfb"
+  },
+  "schema": "OTERYN_IMBUEMENT2_INDEPENDENT_SOURCE_CONTRACT_REVIEW/v1",
+  "source_transport": "Previously retained public Chrome/CDP browser capture; no new website access in this contract review. OTS XML corroboration is hypothesis-only and not new native source authority.",
+  "status": "REQUIRES_NARROW_OWNING_SOURCE_CONTRACT_AMENDMENT_NOT_IMPLEMENTED"
+}

@@ -1,0 +1,31 @@
+{
+  "checks": {
+    "closed_two_fact_identity_and_ceiling": "PASS",
+    "fresh_current_parent_source_audit": "NOT_RUN",
+    "minimal_contract_and_carrier_readback": "PASS",
+    "owning_acceptance": "NOT_GRANTED",
+    "positive_source_fact_hash": "PASS",
+    "production_tests": "NOT_RUN",
+    "proposal_hash": "PASS"
+  },
+  "historical_baseline": "b0f91e2883007861f5556c44cce13701bb447283",
+  "owned_files": [
+    {
+      "bytes": 6028,
+      "path": "/workspace/audit-continuation/imbuement2-partial-source-owning-contract-amendment-candidate.md",
+      "sha256": "e6255da24b1e2af39788c15b902f7cd183ef45117530b9d715a0f236abf7ae8b"
+    },
+    {
+      "bytes": 17042,
+      "path": "/workspace/audit-continuation/imbuement2-independent-partial-source-contract-review.json",
+      "sha256": "e6fcb3f28c5eb248fc9a3667c59f202117f3d58e80a905fdf7455cad9bcd41c3"
+    },
+    {
+      "bytes": 12168,
+      "path": "/workspace/audit-continuation/review-imbuement2-partial-source-contract.py",
+      "sha256": "5de2c3772df7ad24fcaf9622c0d9e9d072af2cc53c42e31b74272a8652b50128"
+    }
+  ],
+  "schema": "OTERYN_IMBUEMENT2_EXTERNAL_CONTRACT_REVIEW_CHECKPOINT/v1",
+  "status": "FROZEN_PROPOSAL_ONLY_REQUIRES_OWNING_AMENDMENT"
+}

@@ -1,0 +1,97 @@
+{
+  "baseline": "1b026969a8b2236737bff537b3eddb3c909781b2",
+  "checks": {
+    "Cargo": "NOT_RUN_NOT_GRANTED",
+    "Python_regression_tests": "PASS4",
+    "Rust_tests": "AUTHORED_NOT_RUN",
+    "compiler_CLI_check": "PASS17/50",
+    "direct_rustfmt": "PASS",
+    "git_diff_check": "PASS",
+    "independent_implementation_peer": "PENDING",
+    "native_baseline_bytes": "PASS_ALL69_SHARDS_PLUS_REFERENCE_DECLARATIONS",
+    "native_generation": "NOT_RUN_NOT_GRANTED",
+    "old_packet_compiler_setters_sourcepins": "PASS_UNCHANGED",
+    "package_Ruff": "PASS",
+    "source_self_verification": {
+      "path": "/workspace/audit-continuation/numeric17-source-self-verification.json",
+      "sha256": "3552b0c5b2cd96bb4f3e66aa3d3fba760158a8267fdd4f42482bf54262b8c43c"
+    }
+  },
+  "historical_initial13_checkpoint": {
+    "path": "/workspace/audit-continuation/numeric13-initial-authoring-exact-checkpoint-20261002/manifest.json",
+    "sha256": "fd25164674f3cf13a189850f3e7316bcf08f5d4c24c7f65b3a5c1a3afcedfd5d"
+  },
+  "owned_files": [
+    {
+      "bytes": 13674,
+      "path": ".github/workflows/item-authoring-schema.yml",
+      "sha256": "761ed2a9717e0f91ebaa9326d660bf4b73d0ce9e2c49cb89d8502b0c1c35a7ee"
+    },
+    {
+      "bytes": 87877,
+      "path": "apps/game-server/examples/materialize_content_world_project_v2.rs",
+      "sha256": "f3bef8719e1fc37f0d926aae71ba2220e7441bf66c5be36a656fda98a85628ea"
+    },
+    {
+      "bytes": 13712,
+      "path": "apps/game-server/src/content/item_numeric_modifier_promotion.rs",
+      "sha256": "a68240fb59f09748369ab1856aa3d9792d15c8a1951794d669fc41c73463f68e"
+    },
+    {
+      "bytes": 5060,
+      "path": "apps/game-server/src/content/mod.rs",
+      "sha256": "90144b6efa1839c6dcc1c71570f22f70836d78e8b66f7d0748a49b8bcfc898cb"
+    },
+    {
+      "bytes": 80888,
+      "path": "docs/agents/evidence/OTV2-20261002-item-magic-capacity4-source-qualification-v1.json",
+      "sha256": "9aba058979f9376996377163964cbad2a9a20cd826c071ea40c9e1273213238f"
+    },
+    {
+      "bytes": 16639,
+      "path": "docs/agents/evidence/OTV2-20261002-item-numeric-modifier13-promotion-v1.json",
+      "sha256": "d8c89a733e28a1d437b9bacde7be3be791e7d408f9ff5d5fa4dd2d72046c163c"
+    },
+    {
+      "bytes": 196121,
+      "path": "docs/agents/evidence/OTV2-20261002-item-numeric-modifier13-source-proof-v2.json",
+      "sha256": "11b8a6a7f1f85765f2b9c99dabc7815405c2bf3b0c10bb78b39deebb741937c9"
+    },
+    {
+      "bytes": 4911,
+      "path": "docs/agents/evidence/OTV2-20261002-item-numeric-modifier17-current-receipt-v1.json",
+      "sha256": "5836649139a383fcb466b385b9dde32e754cb0af0ae13a4cf5685c2b297220a9"
+    },
+    {
+      "bytes": 21474,
+      "path": "docs/agents/evidence/OTV2-20261002-item-numeric-modifier17-promotion-v1.json",
+      "sha256": "1d384adbad5edfc1525d140d7f6757264a6b3a1ef82dda476d0337b7cdbaeb1b"
+    },
+    {
+      "bytes": 276142,
+      "path": "docs/agents/evidence/OTV2-20261002-item-numeric-modifier17-source-qualification-v1.json",
+      "sha256": "c950c0c89db442612b4822e857b86e70ac01056974f9752996aadda415f2d71f"
+    },
+    {
+      "bytes": 15434,
+      "path": "tools/content-schema/item-authoring/lower_numeric_modifier17_packet.py",
+      "sha256": "06bd5da33045406dcadf049509ea1e09e68ae10313b241c8dc5de41ac63fcd01"
+    },
+    {
+      "bytes": 7402,
+      "path": "tools/content-schema/item-authoring/test_lower_numeric_modifier17_packet.py",
+      "sha256": "5f2b23d6346bf85aa5fc991d5aa78a43ea05a6746a2709bfde559b8fd6cd1625"
+    }
+  ],
+  "scope": {
+    "atoms": 50,
+    "metadata_context": "ALL_UNKNOWN_NO_ELEMENT_FOR_REFLECTION_NO_GEAR_FORMULA",
+    "new_native_applied": 0,
+    "origins": {
+      "original13": 34,
+      "separate_observed4": 16
+    },
+    "vectors": 17
+  },
+  "status": "SOURCE_PASS_STOPPED_PENDING_INDEPENDENT_IMPLEMENTATION_PEER"
+}
