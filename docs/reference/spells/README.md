@@ -99,6 +99,22 @@ passed 32 native-data Python tests and 11 Rust native-content tests (one full-ma
 test remains separately ignored in this focused run). These local observations are
 not a complete production qualification.
 
+## Existing shared spell test environment
+
+The existing Thalom map (2,833 tiles) and full gameplay manifest are reused through
+`tools/qualification/spells/run.sh`: `runtime`, `client`, `map`, `live`, and `room`.
+The current live harness now supports casts, scripts, bounded cooldown waits and
+exact outcome expectations, with actual own-actor vitals and request identification.
+A script failure returns nonzero; typed refusals remain visible. See that runner's
+README for setup and the current spell-book index requirement.
+
+Current local validation: 19 harness tests, seven actual runtime combat tests and
+one full Thalom/gameplay compilation-decode-staging test passed. Harness Clippy
+with all targets and warnings denied passed; existing dependency warnings remain.
+The full-map test produced the same preserved artifact hashes. These results do
+not establish connection to a running server instance or runtime activation.
+Evidence is in `r22-audit/test-environment/qualification.json`.
+
 ## Remaining gameplay work
 
 Full wild-monster attack/defense scheduling and dispatch are not composed.

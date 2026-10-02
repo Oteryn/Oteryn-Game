@@ -5,17 +5,20 @@
 
 use super::controller::LiveController;
 use super::input::LiveInput;
-use super::model::{DOOR_TILE, RenderModel, Viewport, render_text, tile_centre_pixel};
+use super::model::{DOOR_TILE, LiveCommand, RenderModel, Viewport, render_text, tile_centre_pixel};
 use oteryn_dev_client::{JoinRequest, connect_session};
 use oteryn_input_actions::{
     ButtonState, InputError, KeyCode, Modifiers, MouseButton, NormalizedInputEvent,
     PointerCoordinate, PointerDelta, PointerMotion, PointerPosition,
 };
 use oteryn_protocol_oteryn::CharacterId;
+use oteryn_protocol_oteryn::actor_spell::{SpellCastDisposition, SpellTarget, SpellTargetPosition};
 use rustls::pki_types::CertificateDer;
 use rustls::pki_types::pem::PemObject;
 use std::error::Error;
+use std::io::Read;
 use std::net::SocketAddr;
+use std::num::NonZeroU32;
 use std::path::PathBuf;
 use std::sync::mpsc::TryRecvError;
 use std::time::Duration;
@@ -24,14 +27,22 @@ const DEFAULT_SURFACE: (u32, u32) = (640, 384);
 const IDLE_SLICE: Duration = Duration::from_millis(200);
 const JOIN_DEADLINE: Duration = Duration::from_secs(30);
 const CLIENT_BUILD_ID: &str = "oteryn-synthetic-client-harness-live";
+const MAX_SCRIPT_BYTES: usize = 1_048_576;
+const MAX_SCRIPT_LINES: usize = 4096;
+const MAX_WAIT_MS: u64 = 30_000;
+const MAX_SCRIPT_WAIT: Duration = Duration::from_secs(300);
 
 pub const USAGE: &str = "\
 live mode (dev/qualification only):
   synthetic-client-harness --live --addr HOST:PORT --ca CA.pem|der --character-id UUID \\
-      (--grant-file FILE | env OTERYN_LIVE_GRANT) [--server-name NAME] [--surface WxH]
+      (--grant-file FILE | env OTERYN_LIVE_GRANT) [--server-name NAME] [--surface WxH] [--script FILE]
   env fallbacks: OTERYN_LIVE_ADDR OTERYN_LIVE_CA OTERYN_LIVE_CHARACTER_ID
                  OTERYN_LIVE_SERVER_NAME OTERYN_LIVE_GRANT_FILE OTERYN_LIVE_GRANT
-input lines: up down left right (or w a s d) | use | click PX PY | quit";
+input lines: up down left right (or w a s d) | use | click PX PY | quit
+             cast SPELL_INDEX self|none|attack|position X Y FLOOR [aim]
+             wait MS (0..30000; connection remains serviced)
+             expect Cast|CoolingDown|LevelTooLow|MagicLevelTooLow|NotEnoughMana|NotEnoughSoul|NotAvailable|TargetRequired|TargetIllegal|Rejected
+script: same commands, blank lines and # comments; at most 4096 lines / 1 MiB / 5 min waits";
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum GrantSource {
@@ -47,6 +58,7 @@ pub struct LiveArgs {
     pub grant: GrantSource,
     pub character_id: String,
     pub surface: (u32, u32),
+    pub script_path: Option<PathBuf>,
 }
 
 /// Parses the arguments after `--live`, with `env` as the fallback for every value.
@@ -64,6 +76,7 @@ pub fn parse_args(
     let mut grant_file = None;
     let mut character_id = None;
     let mut surface = None;
+    let mut script = None;
     let mut rest = args.iter().filter(|arg| arg.as_str() != "--live");
     while let Some(flag) = rest.next() {
         let slot = match flag.as_str() {
@@ -73,6 +86,7 @@ pub fn parse_args(
             "--grant-file" => &mut grant_file,
             "--character-id" => &mut character_id,
             "--surface" => &mut surface,
+            "--script" => &mut script,
             other => return Err(format!("unknown live argument `{other}`")),
         };
         *slot = Some(
@@ -106,6 +120,7 @@ pub fn parse_args(
         grant,
         character_id: need(character_id, "--character-id", "OTERYN_LIVE_CHARACTER_ID")?,
         surface: surface.map_or(Ok(DEFAULT_SURFACE), |text| parse_surface(&text))?,
+        script_path: script.map(PathBuf::from),
     })
 }
 
@@ -159,6 +174,13 @@ pub enum LineCommand {
     /// Click the door tile.
     UseDoor,
     Click(i32, i32),
+    Cast {
+        spell: NonZeroU32,
+        target: SpellTarget,
+        aim_at_target: bool,
+    },
+    Wait(Duration),
+    Expect(SpellCastDisposition),
     Quit,
 }
 
@@ -172,10 +194,88 @@ pub fn parse_line(line: &str) -> Option<LineCommand> {
         "right" | "d" => LineCommand::Key(KeyCode::ARROW_RIGHT),
         "use" => LineCommand::UseDoor,
         "click" => LineCommand::Click(words.next()?.parse().ok()?, words.next()?.parse().ok()?),
+        "cast" => {
+            let spell = words.next()?.parse().ok()?;
+            let target = match words.next()? {
+                "self" | "none" => SpellTarget::None,
+                "attack" => SpellTarget::AttackTarget,
+                "position" => SpellTarget::Position(SpellTargetPosition {
+                    x: words.next()?.parse().ok()?,
+                    y: words.next()?.parse().ok()?,
+                    floor: words.next()?.parse().ok()?,
+                }),
+                _ => return None,
+            };
+            let aim_at_target = match words.next() {
+                Some("aim") => true,
+                None => false,
+                _ => return None,
+            };
+            LineCommand::Cast {
+                spell,
+                target,
+                aim_at_target,
+            }
+        }
+        "wait" => {
+            let milliseconds: u64 = words.next()?.parse().ok()?;
+            if milliseconds > MAX_WAIT_MS {
+                return None;
+            }
+            LineCommand::Wait(Duration::from_millis(milliseconds))
+        }
+        "expect" => LineCommand::Expect(match words.next()? {
+            "Cast" => SpellCastDisposition::Cast,
+            "CoolingDown" => SpellCastDisposition::CoolingDown,
+            "LevelTooLow" => SpellCastDisposition::LevelTooLow,
+            "MagicLevelTooLow" => SpellCastDisposition::MagicLevelTooLow,
+            "NotEnoughMana" => SpellCastDisposition::NotEnoughMana,
+            "NotEnoughSoul" => SpellCastDisposition::NotEnoughSoul,
+            "NotAvailable" => SpellCastDisposition::NotAvailable,
+            "TargetRequired" => SpellCastDisposition::TargetRequired,
+            "TargetIllegal" => SpellCastDisposition::TargetIllegal,
+            "Rejected" => SpellCastDisposition::Rejected,
+            _ => return None,
+        }),
         "quit" | "q" => LineCommand::Quit,
         _ => return None,
     };
     words.next().is_none().then_some(command)
+}
+
+/// Validates an entire batch before any command is sent. Spell indices belong to the loaded
+/// content generation; they are not source spell names or upstream numeric identifiers.
+///
+/// # Errors
+/// An invalid command, commands after `quit`, or a script exceeding its size/wait limits.
+pub fn parse_script(text: &str) -> Result<Vec<LineCommand>, String> {
+    if text.len() > MAX_SCRIPT_BYTES {
+        return Err("script exceeds 1 MiB".to_owned());
+    }
+    let mut commands = Vec::new();
+    let mut total_wait = Duration::ZERO;
+    for (index, line) in text.lines().enumerate() {
+        if index >= MAX_SCRIPT_LINES {
+            return Err("script exceeds 4096 lines".to_owned());
+        }
+        let line = line.trim();
+        if line.is_empty() || line.starts_with('#') {
+            continue;
+        }
+        if commands.last() == Some(&LineCommand::Quit) {
+            return Err(format!("script line {} follows quit", index + 1));
+        }
+        let command = parse_line(line)
+            .ok_or_else(|| format!("invalid script command at line {}", index + 1))?;
+        if let LineCommand::Wait(duration) = command {
+            total_wait += duration;
+            if total_wait > MAX_SCRIPT_WAIT {
+                return Err("script waits exceed 5 minutes".to_owned());
+            }
+        }
+        commands.push(command);
+    }
+    Ok(commands)
 }
 
 /// The normalized input events a line stands for (a key press and release, or a pointer move and
@@ -223,7 +323,10 @@ pub fn events_for(
             Some((px, py)) => click(px, py),
             None => Ok(Vec::new()),
         },
-        LineCommand::Quit => Ok(Vec::new()),
+        LineCommand::Cast { .. }
+        | LineCommand::Wait(_)
+        | LineCommand::Expect(_)
+        | LineCommand::Quit => Ok(Vec::new()),
     }
 }
 
@@ -243,6 +346,17 @@ pub fn grant_material(mut raw: Vec<u8>) -> Vec<u8> {
 /// Bad arguments, an unreadable CA or grant, a failed join, or any session failure.
 pub fn run(args: &[String]) -> Result<(), Box<dyn Error>> {
     let parsed = parse_args(args, &|name| std::env::var(name).ok())?;
+    let script = parsed
+        .script_path
+        .as_ref()
+        .map(|path| {
+            let mut text = String::new();
+            std::fs::File::open(path)?
+                .take((MAX_SCRIPT_BYTES + 1) as u64)
+                .read_to_string(&mut text)?;
+            Ok::<_, Box<dyn Error>>(parse_script(&text)?.into_iter())
+        })
+        .transpose()?;
     let root = load_root_certificate(&parsed.ca_path)?;
     let grant = grant_material(match &parsed.grant {
         GrantSource::File(path) => std::fs::read(path)
@@ -271,35 +385,93 @@ pub fn run(args: &[String]) -> Result<(), Box<dyn Error>> {
             let mut controller = LiveController::new(session, view, input);
             println!("{USAGE}\n\n{}", render_text(view, controller.model()));
 
-            let (lines, receiver) = std::sync::mpsc::channel::<String>();
-            std::thread::spawn(move || {
-                let stdin = std::io::stdin();
-                let mut line = String::new();
-                while matches!(stdin.read_line(&mut line), Ok(count) if count > 0) {
-                    if lines.send(std::mem::take(&mut line)).is_err() {
-                        break;
+            let scripted = script.is_some();
+            let mut script = script;
+            let mut command_count = 0_u32;
+            let mut cast_count = 0_u32;
+            let mut expectation_count = 0_u32;
+            let receiver = if script.is_none() {
+                let (lines, receiver) = std::sync::mpsc::channel::<String>();
+                std::thread::spawn(move || {
+                    let stdin = std::io::stdin();
+                    let mut line = String::new();
+                    while matches!(stdin.read_line(&mut line), Ok(count) if count > 0) {
+                        if lines.send(std::mem::take(&mut line)).is_err() {
+                            break;
+                        }
                     }
-                }
-            });
+                });
+                Some(receiver)
+            } else {
+                None
+            };
 
             loop {
-                match receiver.try_recv() {
-                    Ok(line) => match parse_line(&line) {
-                        Some(LineCommand::Quit) => break,
-                        Some(command) => {
-                            for event in events_for(command, controller.view(), controller.model())?
-                            {
-                                if controller.handle_event(&event).await? {
-                                    println!("{}", render_text(view, controller.model()));
-                                }
+                let command = if let Some(commands) = &mut script {
+                    let Some(command) = commands.next() else {
+                        break;
+                    };
+                    command
+                } else {
+                    let Some(receiver) = &receiver else { break };
+                    match receiver.try_recv() {
+                        Ok(line) => match parse_line(&line) {
+                            Some(command) => command,
+                            None if line.trim().is_empty() => continue,
+                            None => {
+                                println!("unrecognised input\n{USAGE}");
+                                continue;
+                            }
+                        },
+                        Err(TryRecvError::Empty) => {
+                            controller.idle(IDLE_SLICE).await?;
+                            continue;
+                        }
+                        Err(TryRecvError::Disconnected) => break,
+                    }
+                };
+                command_count += 1;
+                match command {
+                    LineCommand::Quit => break,
+                    LineCommand::Wait(duration) => controller.idle(duration).await?,
+                    LineCommand::Expect(expected) => {
+                        let actual = controller.last_cast().map(|outcome| outcome.disposition);
+                        if actual != Some(expected) {
+                            return Err(format!(
+                                "expected spell disposition {expected:?}, got {actual:?}"
+                            )
+                            .into());
+                        }
+                        expectation_count += 1;
+                        println!("expect {expected:?}: passed");
+                    }
+                    LineCommand::Cast {
+                        spell,
+                        target,
+                        aim_at_target,
+                    } => {
+                        println!("cast request: spell={spell} target={target:?} aim={aim_at_target}");
+                        controller
+                            .dispatch(LiveCommand::Cast {
+                                spell,
+                                target,
+                                aim_at_target,
+                            })
+                            .await?;
+                        cast_count += 1;
+                        println!("{}", controller.status_text());
+                    }
+                    command => {
+                        for event in events_for(command, controller.view(), controller.model())? {
+                            if controller.handle_event(&event).await? {
+                                println!("{}", render_text(view, controller.model()));
                             }
                         }
-                        None if line.trim().is_empty() => {}
-                        None => println!("unrecognised input\n{USAGE}"),
-                    },
-                    Err(TryRecvError::Empty) => controller.idle(IDLE_SLICE).await?,
-                    Err(TryRecvError::Disconnected) => break,
+                    }
                 }
+            }
+            if scripted {
+                println!("scenario completed: commands={command_count} casts={cast_count} expectations={expectation_count}");
             }
             Ok::<(), Box<dyn Error>>(())
         })
