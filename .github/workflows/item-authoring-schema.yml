@@ -29,6 +29,8 @@ on:
       - docs/agents/evidence/OTV2-20261001-item-stack-historical-source-frame-v1.json
       - docs/agents/evidence/OTV2-20261001-item-stack-historical-promotion-v1.json
       - docs/agents/evidence/OTV2-20261002-stack-default-historical-native-context-v1.json
+      - docs/agents/evidence/OTV2-20261002-item-use-observation-source-qualification-v1.json
+      - docs/agents/evidence/OTV2-20261002-item-use-observation-promotion-v1.json
       - docs/agents/evidence/OTV2-20261001-item-capacity-promotion-v1.json
       - docs/agents/evidence/OTV2-20261001-item-physical-promotion-v1.json
       - docs/agents/evidence/OTV2-20261001-item-physical-source-qualification-v1.json
@@ -133,6 +135,11 @@ jobs:
         run: |
           python test_lower_wiki_stack_historical_packet.py
           python check_stack_default_historical_context.py --cohort historical
+
+      - name: Source-only Item use observations tests and drift
+        run: |
+          python test_lower_item_use_observation_packet.py
+          python lower_item_use_observation_packet.py --check
 
       - name: Weapon proficiency tests and artifact drift
         run: |

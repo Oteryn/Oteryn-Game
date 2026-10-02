@@ -17,12 +17,12 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "content.lock.json",
         364,
-        "45ab6482e2872a018410a81a8e490c9e86147608931034ca7c8e61305e36a599",
+        "0cfedbad65dfcdf41d16198cbbb10dfebf28fb9be2cdf560d4a9e91c2587980c",
     ),
     (
         "definitions/declarations.json",
-        15_152_480,
-        "fccb7cbb5d9403ec0709442e7cd31647fde5866be30e187f78ec8bd5609a9f67",
+        15_175_184,
+        "0be09005fe02cb9b48fa56d2b9cad1df7eec284ceeb565d80e8e831c5ef28f2c",
     ),
     (
         "definitions/reference.json",
@@ -37,7 +37,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "manifest.json",
         1_937,
-        "2fbb5008a517210371aa9824e182a14bc5ef4eaad9878b59dc5f47f7b7de65d6",
+        "a29be8e347f85e8136237d098b473d7207d65a3dcd12b3bf4932b1ded23d903a",
     ),
     (
         "presentations/bindings.json",
@@ -47,7 +47,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "project.json",
         390,
-        "13805fb3b7b68e10b65141b6fcef14fe541c83f9005c69e785f7fa3a2f7b032a",
+        "f3344a33af0e93f6eae1521d7fd604be04d844d0993a2414456015d35ffc6086",
     ),
     (
         "provenance/imports.json",
@@ -114,7 +114,7 @@ const WORLD_CATALOGUE_SHARDS: [(&str, &str); 4] = [
 const TREE_CONTRACT: &str =
     "docs/agents/evidence/OTV2-20260925-full-game-content-ruleset-tree-v1.json";
 const TREE_DIRECTORY_NODES: usize = 97;
-const TREE_SHA256: &str = "4e3bd3bdf42432124792cb9508340d29db624d6f2682cf2bf939dc5771288007";
+const TREE_SHA256: &str = "b528dd8e0939fd07068f682084b3dedf9912193b1a4883e9143f9c3d95da6b45";
 /// A12 (ITEM-ID-1b): the protected Item family less the 4,590 D149 records, on Tibia keys,
 /// plus the 404 donor epoch-2 records and the 60 appearance-only records (ITEM-ADD-1).
 const ITEMS: usize = 34_031;
@@ -503,11 +503,29 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
         ProjectV2Declaration::Encounter { fields, .. } => fields.is_empty(),
         _ => false,
     }));
-    assert_eq!(v2.item_authoring.len(), 164 + 39);
+    let use_packet: serde_json::Value =
+        serde_json::from_slice(item_use_observation_promotion::ITEM_USE_OBSERVATION_PACKET)
+            .expect("sealed source-only use packet");
+    assert_eq!(
+        Sha256::digest(item_use_observation_promotion::ITEM_USE_OBSERVATION_PACKET)
+            .iter()
+            .map(|byte| format!("{byte:02x}"))
+            .collect::<String>(),
+        item_use_observation_promotion::ITEM_USE_OBSERVATION_PACKET_SHA256
+    );
+    let use_rows = use_packet["promotions"].as_array().expect("use rows");
+    assert_eq!(use_rows.len(), 139);
+    let use_keys: BTreeSet<_> = use_rows
+        .iter()
+        .map(|row| row["target"]["key"].as_str().expect("use key"))
+        .collect();
+    assert_eq!(use_keys.len(), 139);
+    assert_eq!(v2.item_authoring.len(), 164 + 39 + 139 - 27);
     assert!(
         v2.item_authoring
             .iter()
-            .filter(|entry| entry.required_magic_level.is_none())
+            .filter(|entry| entry.required_magic_level.is_none()
+                && !use_keys.contains(entry.item.key.as_str()))
             .all(|entry| {
                 entry.item.family == ProjectV2Family::Item
                     && entry
@@ -549,6 +567,34 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
         );
         assert!(owner.taxonomy.is_none() && owner.forge.is_none() && owner.presentation.is_none());
     }
+    let mut use_overlap = 0;
+    for row in use_rows {
+        let owner = v2
+            .item_authoring
+            .iter()
+            .find(|owner| owner.item.key == row["target"]["key"].as_str().expect("use key"))
+            .expect("use owner");
+        let mut expected =
+            serde_json::json!({"item": row["target"], "use_observation": row["facts"]});
+        if let Some(magic) = hit_magic_rows.iter().find(|magic| {
+            magic["target"] == row["target"] && magic["facts"]["required_magic_level"].is_number()
+        }) {
+            expected["required_magic_level"] = magic["facts"]["required_magic_level"].clone();
+            use_overlap += 1;
+        }
+        assert_eq!(
+            serde_json::to_value(owner).expect("full use owner"),
+            expected
+        );
+    }
+    assert_eq!(use_overlap, 27);
+    assert_eq!(
+        v2.item_authoring
+            .iter()
+            .filter(|owner| owner.use_observation.is_some())
+            .count(),
+        139
+    );
     assert_eq!(
         v2.item_authoring
             .iter()

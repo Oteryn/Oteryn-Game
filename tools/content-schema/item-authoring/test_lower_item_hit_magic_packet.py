@@ -104,8 +104,28 @@ class HitMagic(unittest.TestCase):
                 "item": row["target"],
                 "required_magic_level": row["facts"]["required_magic_level"],
             }
+        use = json.loads(
+            (
+                fields.ROOT
+                / "docs/agents/evidence/OTV2-20261002-item-use-observation-promotion-v1.json"
+            ).read_text()
+        )
+        for row in use["promotions"]:
+            owner = legacy.setdefault(
+                migration.target_id(row["target"]), {"item": row["target"]}
+            )
+            owner["use_observation"] = row["facts"]
+        aliases = migration.item_alias_targets()
+        staged = {
+            migration.staged_item_target(row["target"], aliases): row
+            for row in json.loads(
+                (
+                    fields.ROOT
+                    / "docs/agents/evidence/OTV2-20260925-item-enrichment-wave1-staged.json"
+                ).read_text()
+            )["items"]
+        }
         keys = {migration.target_id(r["target"]) for r in magic}
-        staged = {k: v for k, v in legacy.items() if k not in keys}
         migration.validate_item_authoring_targets(legacy, staged)
         key = next(iter(keys))
         for bad in (

@@ -94,16 +94,46 @@ def authoring_value(entry: dict[str, Any], path: str) -> Any:
 
 
 def validate_item_authoring_targets(legacy_authoring, staged_items):
-    """Retain the Wave1 owners plus only the sealed39 explicit ML-only owners."""
+    """Accept exactly Wave1, sealed ML39 and sealed source-observation139 owners."""
     raw = (ROOT / "docs/agents/evidence/OTV2-20261002-item-hit-magic-promotion-v1.json").read_bytes()
     require(hashlib.sha256(raw).hexdigest() == "8ec1f103c874e4424e7636743e78a3c57821e1cbebef6a69dd1c9a448cd47660", "HIT_MAGIC_PACKET_DIGEST")
-    packet = json.loads(raw)
-    magic = {target_id(row["target"]): row for row in packet["promotions"]
+    magic = {target_id(row["target"]): row for row in json.loads(raw)["promotions"]
              if "required_magic_level" in row["facts"]}
-    require(len(magic) == 39 and not set(magic).intersection(staged_items), "CLOSED_ML_OWNER_SCOPE")
-    require(set(legacy_authoring) == set(staged_items) | set(magic), "WAVE1_AUTHORING_TARGETS")
+    require(len(staged_items) == 164 and len(magic) == 39 and not set(magic).intersection(staged_items), "CLOSED_ML_OWNER_SCOPE")
+    expected = {key: {"item": {"family": key[0], "key": key[1], "revision": key[2]}, **row["authoring"]}
+                for key, row in staged_items.items()}
     for key, row in magic.items():
-        require(legacy_authoring[key] == {"item": row["target"], "required_magic_level": row["facts"]["required_magic_level"]}, "CLOSED_ML_OWNER_VALUE")
+        expected[key] = {"item": row["target"], "required_magic_level": row["facts"]["required_magic_level"]}
+    raw = (ROOT / "docs/agents/evidence/OTV2-20261002-item-use-observation-promotion-v1.json").read_bytes()
+    require(hashlib.sha256(raw).hexdigest() == "990eca66d4d34156aaa7a2fd5c42251e26bdf503402f3d46d6beb6f7b2de99eb", "USE_OBSERVATION_PACKET_DIGEST")
+    packet = json.loads(raw)
+    observations = {target_id(row["target"]): row for row in packet["promotions"]}
+    require(packet["schema"] == "OTERYN_ITEM_USE_OBSERVATION_PROMOTION/v1"
+            and packet["counts"] == {"fields": 345, "items": 139, "by_field": {"damage": 111, "damage_type": 138, "mana_cost": 96}}
+            and len(observations) == len(packet["promotions"]) == 139
+            and len(set(observations).intersection(magic)) == 27
+            and not set(observations).intersection(staged_items), "CLOSED_USE_OWNER_SCOPE")
+    for key, row in observations.items():
+        owner = expected.setdefault(key, {"item": row["target"]})
+        require(owner["item"] == row["target"] and "use_observation" not in owner, "CLOSED_USE_OWNER_IDENTITY")
+        owner["use_observation"] = row["facts"]
+    require(len(expected) == 315 and set(legacy_authoring) == set(expected), "WAVE1_AUTHORING_TARGETS")
+    for key, value in expected.items():
+        # Canonical bytes distinguish bool from integer and reject extra/partial siblings.
+        require(canonical_bytes(legacy_authoring[key]) == canonical_bytes(value), "CLOSED_ITEM_AUTHORING_VALUE")
+
+
+def validate_use_relation(row, definition):
+    """Existing known imbuement governance becomes visible with a sealed Use owner."""
+    raw = (ROOT / "docs/agents/evidence/OTV2-20261002-item-use-observation-promotion-v1.json").read_bytes()
+    require(hashlib.sha256(raw).hexdigest() == "990eca66d4d34156aaa7a2fd5c42251e26bdf503402f3d46d6beb6f7b2de99eb", "USE_OBSERVATION_PACKET_DIGEST")
+    targets = {target_id(p["target"]) for p in json.loads(raw)["promotions"]}
+    require(target_id(row["source"]) in targets and row["source"] == definition["identity"], "USE_RELATION_TARGET")
+    imbuement = definition.get("semantics", {}).get("imbuement", {})
+    slot = imbuement.get("value", {}).get("slot_count", {})
+    require(imbuement.get("state") == slot.get("state") == "KNOWN"
+            and type(slot.get("value")) is int and slot["value"] >= 1, "USE_RELATION_WITHOUT_EXISTING_SLOT")
+    require(row == {"source": definition["identity"], "relations": [{"relation": "CAPABILITY_GOVERNED_BY", "ruleset": "rulesets/items/imbuements/", "basis": "imbuement.slot_count>=1"}]}, "USE_RELATION_DERIVATION")
 
 
 def validate_item_enrichment(reference: Any, declarations: Any, sources: Any, batches: list[Any],
@@ -117,7 +147,9 @@ def validate_item_enrichment(reference: Any, declarations: Any, sources: Any, ba
         for row in stats["promotions"]
     }
     assignments = load(ROOT / "docs/agents/evidence/OTV2-20260925-tibiawiki-item-master-field-census-v1.json")["family_assignments"]
-    legacy_authoring = {target_id(row["item"]): row for row in declarations.get("item_authoring", [])}
+    authoring_rows = declarations.get("item_authoring", [])
+    legacy_authoring = {target_id(row["item"]): row for row in authoring_rows}
+    require(len(legacy_authoring) == len(authoring_rows), "DUPLICATE_ITEM_AUTHORING_OWNER")
     taxonomy = load(ROOT / "content/items/taxonomy/items.json")
     relations = load(ROOT / "content/items/relations/items.json")
     facts = load(ROOT / "imports/tibiawiki/facts/items-wave1.json")
@@ -136,17 +168,24 @@ def validate_item_enrichment(reference: Any, declarations: Any, sources: Any, ba
     staged_items = {staged_item_target(item["target"], aliases): item for item in staged["items"]}
     validate_item_authoring_targets(legacy_authoring, staged_items)
     relation_count = 0
+    use_relation_count = 0
     seen_sources = set()
     for row in relations["records"]:
         key = target_id(row["source"])
         require(key in definitions and key not in seen_sources, "RELATION_SOURCE_UNRESOLVED")
         seen_sources.add(key)
         rulesets = sorted(relation["ruleset"] for relation in row["relations"])
-        require(rulesets == staged_items[key]["capability_relations"], "RELATION_DERIVATION_DISAGREES")
+        if key in staged_items:
+            require(rulesets == staged_items[key]["capability_relations"], "RELATION_DERIVATION_DISAGREES")
+            basis = {"rulesets/items/enchanting/": "lifecycle.enchantable=true", "rulesets/items/exaltation-forge/": "forge", "rulesets/items/imbuements/": "imbuement.slot_count>=1"}
+            require(row == {"source": definitions[key]["identity"], "relations": [{"relation": "CAPABILITY_GOVERNED_BY", "ruleset": rule, "basis": basis[rule]} for rule in rulesets]}, "WAVE1_RELATION_FULL_VALUE")
+        else:
+            validate_use_relation(row, definitions[key])
+            use_relation_count += 1
         for ruleset in rulesets:
             require((ROOT / ruleset / "index.json").is_file(), f"RELATION_RULESET_UNRESOLVED:{ruleset}")
         relation_count += len(rulesets)
-    require(sum(bool(item["capability_relations"]) for item in staged["items"]) == len(seen_sources), "RELATION_COVERAGE")
+    require(use_relation_count == 55 and sum(bool(item["capability_relations"]) for item in staged["items"]) + use_relation_count == len(seen_sources), "RELATION_COVERAGE")
 
     batch = next(row for row in batches if row["batch_id"] == staged["batch_id"])
     require(batch["source_artifact_sha256"] == staged["source"]["snapshot_sha256"] == facts["snapshot_sha256"], "PROVENANCE_BATCH_DIGEST")
