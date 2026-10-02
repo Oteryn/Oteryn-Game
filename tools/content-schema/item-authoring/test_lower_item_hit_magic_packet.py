@@ -126,6 +126,8 @@ class HitMagic(unittest.TestCase):
             )["items"]
         }
         keys = {migration.target_id(r["target"]) for r in magic}
+        forge = migration.closed_forge_owner()
+        legacy[migration.target_id(forge["item"])] = forge
         migration.validate_item_authoring_targets(legacy, staged)
         key = next(iter(keys))
         for bad in (

@@ -31,6 +31,8 @@ on:
       - docs/agents/evidence/OTV2-20261002-stack-default-historical-native-context-v1.json
       - docs/agents/evidence/OTV2-20261002-item-use-observation-source-qualification-v1.json
       - docs/agents/evidence/OTV2-20261002-item-use-observation-promotion-v1.json
+      - docs/agents/evidence/OTV2-20261001-item-forge3332*.json
+      - docs/agents/evidence/OTV2-20261002-item-forge3332*.json
       - docs/agents/evidence/OTV2-20261001-item-capacity-promotion-v1.json
       - docs/agents/evidence/OTV2-20261001-item-physical-promotion-v1.json
       - docs/agents/evidence/OTV2-20261001-item-physical-source-qualification-v1.json
@@ -140,6 +142,11 @@ jobs:
         run: |
           python test_lower_item_use_observation_packet.py
           python lower_item_use_observation_packet.py --check
+
+      - name: Singleton explicit Forge pair qualification guards and drift
+        run: |
+          python test_lower_item_forge3332_packet.py
+          python lower_item_forge3332_packet.py --check
 
       - name: Weapon proficiency tests and artifact drift
         run: |

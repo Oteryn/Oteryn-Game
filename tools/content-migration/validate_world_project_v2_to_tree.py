@@ -93,8 +93,19 @@ def authoring_value(entry: dict[str, Any], path: str) -> Any:
     return value
 
 
+def closed_forge_owner():
+    """One explicit source-qualified Forge pair; no global maximum/default inference."""
+    raw = (ROOT / "docs/agents/evidence/OTV2-20261001-item-forge3332-promotion-v1.json").read_bytes()
+    require(hashlib.sha256(raw).hexdigest() == "d6e300e571f1d2e8e6794d3875759fdd0b2cb1ee7872c8527d0f4019ec27b8c1", "FORGE_PACKET_DIGEST")
+    packet = json.loads(raw)
+    owner = {"item": {"family": "Item", "key": "oteryn:item.tibia.i3332", "revision": "definition-r1"}, "forge": {"classification": 2, "max_tier": 2}}
+    require(packet["schema"] == "OTERYN_ITEM_FORGE3332_PROMOTION/v1"
+            and canonical_bytes(packet["promotion"]) == canonical_bytes(owner), "CLOSED_FORGE_OWNER_VALUE")
+    return owner
+
+
 def validate_item_authoring_targets(legacy_authoring, staged_items):
-    """Accept exactly Wave1, sealed ML39 and sealed source-observation139 owners."""
+    """Accept exactly Wave1, sealed ML39, Use139 and one explicit Forge owner."""
     raw = (ROOT / "docs/agents/evidence/OTV2-20261002-item-hit-magic-promotion-v1.json").read_bytes()
     require(hashlib.sha256(raw).hexdigest() == "8ec1f103c874e4424e7636743e78a3c57821e1cbebef6a69dd1c9a448cd47660", "HIT_MAGIC_PACKET_DIGEST")
     magic = {target_id(row["target"]): row for row in json.loads(raw)["promotions"]
@@ -117,10 +128,27 @@ def validate_item_authoring_targets(legacy_authoring, staged_items):
         owner = expected.setdefault(key, {"item": row["target"]})
         require(owner["item"] == row["target"] and "use_observation" not in owner, "CLOSED_USE_OWNER_IDENTITY")
         owner["use_observation"] = row["facts"]
-    require(len(expected) == 315 and set(legacy_authoring) == set(expected), "WAVE1_AUTHORING_TARGETS")
+    forge = closed_forge_owner()
+    forge_key = target_id(forge["item"])
+    require(len(expected) == 315 and forge_key not in expected, "CLOSED_FORGE_OWNER_SCOPE")
+    expected[forge_key] = forge
+    require(len(expected) == 316 and set(legacy_authoring) == set(expected), "WAVE1_AUTHORING_TARGETS")
     for key, value in expected.items():
         # Canonical bytes distinguish bool from integer and reject extra/partial siblings.
         require(canonical_bytes(legacy_authoring[key]) == canonical_bytes(value), "CLOSED_ITEM_AUTHORING_VALUE")
+
+
+def validate_forge_relation(row, definition):
+    """Existing known three-slot imbuement plus the singleton typed Forge pair."""
+    owner = closed_forge_owner()
+    require(row["source"] == definition["identity"] == owner["item"], "FORGE_RELATION_TARGET")
+    imbuement = definition.get("semantics", {}).get("imbuement", {})
+    slot = imbuement.get("value", {}).get("slot_count", {})
+    require(imbuement.get("state") == slot.get("state") == "KNOWN"
+            and type(slot.get("value")) is int and slot["value"] == 3, "FORGE_RELATION_WITHOUT_EXISTING_SLOT")
+    require(row == {"source": owner["item"], "relations": [
+        {"relation": "CAPABILITY_GOVERNED_BY", "ruleset": "rulesets/items/exaltation-forge/", "basis": "forge"},
+        {"relation": "CAPABILITY_GOVERNED_BY", "ruleset": "rulesets/items/imbuements/", "basis": "imbuement.slot_count>=1"}]}, "FORGE_RELATION_DERIVATION")
 
 
 def validate_use_relation(row, definition):
@@ -169,6 +197,8 @@ def validate_item_enrichment(reference: Any, declarations: Any, sources: Any, ba
     validate_item_authoring_targets(legacy_authoring, staged_items)
     relation_count = 0
     use_relation_count = 0
+    forge_relation_count = 0
+    forge_target = target_id(closed_forge_owner()["item"])
     seen_sources = set()
     for row in relations["records"]:
         key = target_id(row["source"])
@@ -179,13 +209,17 @@ def validate_item_enrichment(reference: Any, declarations: Any, sources: Any, ba
             require(rulesets == staged_items[key]["capability_relations"], "RELATION_DERIVATION_DISAGREES")
             basis = {"rulesets/items/enchanting/": "lifecycle.enchantable=true", "rulesets/items/exaltation-forge/": "forge", "rulesets/items/imbuements/": "imbuement.slot_count>=1"}
             require(row == {"source": definitions[key]["identity"], "relations": [{"relation": "CAPABILITY_GOVERNED_BY", "ruleset": rule, "basis": basis[rule]} for rule in rulesets]}, "WAVE1_RELATION_FULL_VALUE")
+        elif key == forge_target:
+            validate_forge_relation(row, definitions[key])
+            forge_relation_count += 1
         else:
             validate_use_relation(row, definitions[key])
             use_relation_count += 1
         for ruleset in rulesets:
             require((ROOT / ruleset / "index.json").is_file(), f"RELATION_RULESET_UNRESOLVED:{ruleset}")
         relation_count += len(rulesets)
-    require(use_relation_count == 55 and sum(bool(item["capability_relations"]) for item in staged["items"]) + use_relation_count == len(seen_sources), "RELATION_COVERAGE")
+    require(use_relation_count == 55 and forge_relation_count == 1
+            and sum(bool(item["capability_relations"]) for item in staged["items"]) + use_relation_count + forge_relation_count == len(seen_sources), "RELATION_COVERAGE")
 
     batch = next(row for row in batches if row["batch_id"] == staged["batch_id"])
     require(batch["source_artifact_sha256"] == staged["source"]["snapshot_sha256"] == facts["snapshot_sha256"], "PROVENANCE_BATCH_DIGEST")

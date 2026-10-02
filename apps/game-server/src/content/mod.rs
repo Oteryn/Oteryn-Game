@@ -40,6 +40,7 @@ pub mod item_admission;
 pub mod item_capacity_promotion;
 pub mod item_document_promotion;
 pub mod item_elemental_magic_modifier_promotion;
+pub mod item_forge3332_promotion;
 pub mod item_hit_magic_promotion;
 pub mod item_identity;
 pub mod item_mantra_bond_modifier_promotion;

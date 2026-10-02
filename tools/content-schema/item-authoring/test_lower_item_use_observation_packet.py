@@ -144,7 +144,9 @@ class Observations(unittest.TestCase):
                 migration.target_id(row["target"]), {"item": row["target"]}
             )
             owner["use_observation"] = copy.deepcopy(row["facts"])
-        self.assertEqual(len(legacy), 315)
+        forge = migration.closed_forge_owner()
+        legacy[migration.target_id(forge["item"])] = forge
+        self.assertEqual(len(legacy), 316)
         migration.validate_item_authoring_targets(legacy, staged)
         key = next(
             migration.target_id(row["target"])

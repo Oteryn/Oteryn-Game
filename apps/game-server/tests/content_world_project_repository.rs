@@ -17,12 +17,12 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "content.lock.json",
         364,
-        "0cfedbad65dfcdf41d16198cbbb10dfebf28fb9be2cdf560d4a9e91c2587980c",
+        "e4c8bd7ac3231d7fe6e11580965169c314b5bd2c6f210319276b5a78f9dcd5cb",
     ),
     (
         "definitions/declarations.json",
-        15_175_184,
-        "0be09005fe02cb9b48fa56d2b9cad1df7eec284ceeb565d80e8e831c5ef28f2c",
+        15_175_312,
+        "d32ec9f1c94a5d04a063e068396d4362439fdcb132e2713c6428faf8c18b1a5c",
     ),
     (
         "definitions/reference.json",
@@ -37,7 +37,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "manifest.json",
         1_937,
-        "a29be8e347f85e8136237d098b473d7207d65a3dcd12b3bf4932b1ded23d903a",
+        "57e323d72155aff09cdce10be275e8efe6efbcd0a166f069170894eb0e04a4f5",
     ),
     (
         "presentations/bindings.json",
@@ -47,7 +47,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "project.json",
         390,
-        "f3344a33af0e93f6eae1521d7fd604be04d844d0993a2414456015d35ffc6086",
+        "c83ee371a48f3462934bee801b1ce2ada213ef4aab53e1b08a2fd461480157e2",
     ),
     (
         "provenance/imports.json",
@@ -114,7 +114,7 @@ const WORLD_CATALOGUE_SHARDS: [(&str, &str); 4] = [
 const TREE_CONTRACT: &str =
     "docs/agents/evidence/OTV2-20260925-full-game-content-ruleset-tree-v1.json";
 const TREE_DIRECTORY_NODES: usize = 97;
-const TREE_SHA256: &str = "b528dd8e0939fd07068f682084b3dedf9912193b1a4883e9143f9c3d95da6b45";
+const TREE_SHA256: &str = "c3af5f87c23ec8cf181a0dd488cbfff787b3210ca6e7a919d32f9df0f61ed2ed";
 /// A12 (ITEM-ID-1b): the protected Item family less the 4,590 D149 records, on Tibia keys,
 /// plus the 404 donor epoch-2 records and the 60 appearance-only records (ITEM-ADD-1).
 const ITEMS: usize = 34_031;
@@ -520,12 +520,33 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
         .map(|row| row["target"]["key"].as_str().expect("use key"))
         .collect();
     assert_eq!(use_keys.len(), 139);
-    assert_eq!(v2.item_authoring.len(), 164 + 39 + 139 - 27);
+    assert_eq!(v2.item_authoring.len(), 164 + 39 + 139 - 27 + 1);
+    let forge_packet: serde_json::Value =
+        serde_json::from_slice(item_forge3332_promotion::ITEM_FORGE3332_PACKET)
+            .expect("sealed Forge singleton");
+    assert_eq!(
+        Sha256::digest(item_forge3332_promotion::ITEM_FORGE3332_PACKET)
+            .iter()
+            .map(|byte| format!("{byte:02x}"))
+            .collect::<String>(),
+        item_forge3332_promotion::ITEM_FORGE3332_PACKET_SHA256
+    );
+    let forge_owner = v2
+        .item_authoring
+        .iter()
+        .find(|owner| owner.item.key == "oteryn:item.tibia.i3332")
+        .expect("Forge singleton owner");
+    assert_eq!(
+        serde_json::to_value(forge_owner).expect("complete Forge owner"),
+        forge_packet["promotion"]
+    );
+    assert!(!use_keys.contains(forge_owner.item.key.as_str()));
     assert!(
         v2.item_authoring
             .iter()
             .filter(|entry| entry.required_magic_level.is_none()
-                && !use_keys.contains(entry.item.key.as_str()))
+                && !use_keys.contains(entry.item.key.as_str())
+                && entry.item.key != forge_owner.item.key)
             .all(|entry| {
                 entry.item.family == ProjectV2Family::Item
                     && entry
@@ -545,7 +566,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
             .iter()
             .filter(|entry| entry.forge.is_some())
             .count(),
-        146
+        147
     );
     let hit_magic: serde_json::Value =
         serde_json::from_slice(item_hit_magic_promotion::ITEM_HIT_MAGIC_PACKET)
