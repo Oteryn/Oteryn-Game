@@ -155,6 +155,86 @@ class QuestTreeTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'schema digest'):
             tool.validate_source_packet(packet, root)
 
+    def test_nonreward_empty_claims_do_not_create_a_fake_claim(self):
+        quest = source_quest(); quest.update(kind='script_only', claims=[], wiki={'title': 'Example', 'pageid': 1, 'revid': 1})
+        row = tool.build_records([quest], [])[0]['definition']
+        self.assertEqual(row['claims'], [])
+        self.assertEqual(row['unresolved_claims'], [])
+        self.assertEqual(row['source_data']['quest'], quest)
+        self.assertEqual(row['readiness'], 'waiting_data')
+        self.assertEqual(row['native_lowering']['canonical_progress_refs'], [])
+        self.assertEqual(row['missing_data'], [{'code': 'quest_native_lowering_missing'}])
+        tool.tree_validator().validate({'schema': 'OTERYN_QUEST_TREE_SHARD/v1', 'family': 'Quest',
+            'shard': {'index': 0, 'start': 0, 'end': 0, 'count': 1}, 'records': [{'definition': row}]})
+
+    def test_native_claim_hold_is_not_mislabelled_as_item_semantics(self):
+        claim = source_claim(); claim['readiness'] = 'waiting_implementation'
+        row = tool.build_records([source_quest()], [claim])[0]['definition']
+        self.assertEqual(row['missing_data'], [{'code': 'claim_native_lowering_missing', 'source_key': source_quest()['claims'][0]['key']}])
+        claim.update(definition_profile='authored_variant_v1', readiness='waiting_data', data_holds=[{'category': 'source'}])
+        row = tool.build_records([source_quest()], [claim])[0]['definition']
+        self.assertEqual({r['code'] for r in row['missing_data']}, {'claim_native_lowering_missing', 'claim_source_data_missing'})
+        claim['data_holds'].append({'category': 'item'})
+        row = tool.build_records([source_quest()], [claim])[0]['definition']
+        self.assertEqual({r['code'] for r in row['missing_data']}, {'claim_native_lowering_missing', 'claim_source_data_missing', 'claim_item_semantics_missing'})
+
+    def test_full_tree_preserves_existing_reward_definitions_and_adds_real_graphs(self):
+        root = Path(__file__).resolve().parents[3]
+        quests = tool.read(root, tool.SOURCE)['quests']; claims = tool.claim_catalogue(root)
+        reports = {q['quest']: q for q in tool.read(root, tool.READINESS)['quests']}
+        gates = tool.read(root, tool.GATES)['gates']; checks = tool.read(root, tool.GATE_MANIFEST)['entries']
+        data = tool.bound_source_data(root, quests, gates)
+        rows = tool.build_records(quests, claims, reports, gates, checks, data)
+        index = tool.read(root, tool.DIRECTORY + 'index.json')
+        old = [row for path in index['shards'] for row in tool.read(root, path)['records']]
+        self.assertEqual(rows[:len(old)], old)
+        self.assertEqual(len(rows), len(quests))
+        for row in rows[len(old):]:
+            q = row['definition']; source = next(v for v in quests if v['identity'] == {k: q['source_refs']['quest'][k] for k in ('key', 'revision')})
+            self.assertEqual(q['source_data']['quest'], source)
+            self.assertEqual(q['native_lowering']['state'], 'WAITING_IMPLEMENTATION')
+            if q['kind'] == 'storyline':
+                self.assertTrue(q['source_data']['quest']['missions'])
+                self.assertTrue(q['source_data']['progress'])
+        self.assertTrue(any(r['definition'].get('source_data', {}).get('interactions') for r in rows))
+
+    def test_source_reference_gap_is_preserved_as_an_explicit_hold(self):
+        quest = source_quest(); quest.update(kind='script_only', claims=[], wiki={'title': 'Example', 'pageid': 1, 'revid': 1})
+        data = tool.build_records([quest], [])[0]['definition']['source_data']
+        data['reference_gaps'] = [{'record_type': 'Interaction', 'record_key': 'canary:interaction/example/action',
+                                  'field': '/rules/0/progress', 'target_type': 'Progress',
+                                  'target_key': 'canary:quest-progress/missing', 'reason': 'not declared'}]
+        row = tool.build_records([quest], [], source_data={quest['identity']['key']: data})[0]['definition']
+        self.assertIn({'code': 'source_reference_missing', 'source_key': 'canary:quest-progress/missing'}, row['missing_data'])
+        self.assertEqual(row['source_data']['reference_gaps'], data['reference_gaps'])
+
+    def test_source_graph_mutation_is_not_accepted_by_exact_validator(self):
+        quest = source_quest(); quest.update(kind='script_only', claims=[], wiki={'title': 'Example', 'pageid': 1, 'revid': 1})
+        rows = tool.build_records([quest], [])
+        rows[0]['definition']['source_data']['quest']['display_name'] = 'Guessed'
+        self.assertTrue(tool.validate(rows, [quest], []))
+
+    def test_schema_rejects_fake_canonical_tracks_and_missing_source_missions(self):
+        root = Path(__file__).resolve().parents[3]
+        files = tool.expected_files(root); index = json.loads(files[tool.DIRECTORY + 'index.json'])
+        shard = next(json.loads(files[p]) for p in index['shards'] if any(r['definition']['kind'] == 'storyline' for r in json.loads(files[p])['records']))
+        row = next(r['definition'] for r in shard['records'] if r['definition']['kind'] == 'storyline')
+        row['native_lowering']['canonical_progress_refs'] = ['oteryn:quest-progress.guessed']
+        with self.assertRaises(jsonschema.ValidationError):
+            tool.tree_validator().validate(shard)
+        row['native_lowering']['canonical_progress_refs'] = []
+        del row['source_data']['quest']['missions']
+        with self.assertRaises(jsonschema.ValidationError):
+            tool.tree_validator().validate(shard)
+
+    def test_source_interaction_conflict_keeps_both_typed_choices(self):
+        root = Path(__file__).resolve().parents[3]
+        data = tool.bound_source_data(root, tool.read(root, tool.SOURCE)['quests'], tool.read(root, tool.GATES)['gates'])
+        q = data['canary:quest/the_inquisition_quest']
+        conflict = next(c for c in q['interaction_source_conflicts'] if c['interaction'].endswith('/actions_rewards'))
+        self.assertEqual({a['source'] for a in conflict['alternatives']}, {'canary', 'crystalserver'})
+        self.assertIn('crystalserver:item/50261', json.dumps(conflict))
+
     def test_committed_inputs_and_schema_coverage_are_honest(self):
         # Work in the real repo after integration; fallback supports the isolated proposal.
         root = Path(__file__).resolve().parents[3]
@@ -162,14 +242,14 @@ class QuestTreeTests(unittest.TestCase):
         schema = json.loads(Path(__file__).with_name('quest_tree.schema.json').read_text())
         jsonschema.Draft202012Validator.check_schema(schema)
         index = json.loads(files[tool.DIRECTORY + 'index.json'])
-        expected_count = sum(q['kind'] == 'reward_only' for q in tool.read(root, tool.SOURCE)['quests'])
+        expected_count = len(tool.read(root, tool.SOURCE)['quests'])
         self.assertEqual(index['record_count'], expected_count)
         self.assertEqual(index['catalogue_coverage']['source_records'], len(tool.read(root, tool.SOURCE)['quests']))
-        self.assertFalse(index['catalogue_coverage']['complete'])
+        self.assertTrue(index['catalogue_coverage']['complete'])
         self.assertEqual(index['runtime_readiness'], 'NOT_ASSESSED')
         self.assertEqual(sum(index['readiness'].values()), expected_count)
         for path in index['shards']:
-            jsonschema.validate(json.loads(files[path]), schema)
+            tool.tree_validator().validate(json.loads(files[path]))
 
 
 if __name__ == '__main__':

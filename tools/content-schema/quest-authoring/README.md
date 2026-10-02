@@ -213,3 +213,5 @@ escapes or unproven metaprogramming keep selection opaque. Additional addItem
 arguments retain literal Item evidence with explicit unsupported-argument holds;
 raw quantities are not interpreted as charges. Donor alternatives remain conflict
 evidence, including the extra Crystal Inquisition reward.
+
+Canonical Quest DATA now includes all268 pinned donor definitions. Storyline/script_only records retain typed `source_data` missions, progress, interactions and source gaps; `quest_native_lowering_missing` prevents treating these imported records as executable Native quests. Regenerate with `quest_tree_authoring.py content` and qualify with `run_checks.py`.

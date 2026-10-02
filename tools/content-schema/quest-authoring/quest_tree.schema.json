@@ -1,8 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://oteryn.invalid/schemas/quest-tree/v1",
-  "title": "First reward_only Quest data-only tree batch",
-  "description": "Canonical definitions resolve existing RewardClaim data. Source refs are aliases/evidence, not admitted production references. Populated is scoped, not full catalogue or runtime readiness.",
+  "title": "All authored Quest kinds: data-only canonical tree",
+  "description": "Canonical definitions resolve existing RewardClaim data. Source refs are aliases/evidence, not admitted production references. The source catalogue is populated; SOURCE progress and interaction graphs are explicitly held for native lowering.",
   "type": "object",
   "additionalProperties": false,
   "required": ["schema", "family", "shard", "records"],
@@ -71,7 +71,8 @@
                 "claim_content_missing",
                 "claim_item_semantics_missing",
                 "claim_native_lowering_missing",
-                "claim_source_data_missing"
+                "claim_source_data_missing",
+                "source_reference_missing"
               ]
             },
             "source_key": {"type": "string", "minLength": 1}
@@ -94,7 +95,8 @@
             "code": {
               "enum": [
                 "source_kind_log_flag_conflict",
-                "source_readiness_missing"
+                "source_readiness_missing",
+                "quest_native_lowering_missing"
               ]
             }
           }
@@ -154,7 +156,7 @@
           }
         },
         "display_name": {"type": "string", "minLength": 1},
-        "kind": {"const": "reward_only"},
+        "kind": {"enum": ["reward_only", "storyline", "script_only"]},
         "shown_in_quest_log": {"type": "boolean"},
         "requirements": {
           "type": "object",
@@ -237,8 +239,7 @@
               "type": "array",
               "items": {
                 "$ref": "#/$defs/sourceRef"
-              },
-              "minItems": 1
+              }
             },
             "gates": {
               "type": "array",
@@ -256,6 +257,74 @@
             "title": {"type": "string", "minLength": 1},
             "pageid": {"type": "integer", "minimum": 0},
             "revid": {"type": "integer", "minimum": 0}
+          }
+        },
+        "source_data": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "quest",
+            "progress",
+            "interactions",
+            "gates",
+            "interaction_source_conflicts",
+            "reference_gaps"
+          ],
+          "properties": {
+            "quest": {
+              "$ref": "oteryn:schema/quest-content/v1#/$defs/quest"
+            },
+            "progress": {
+              "type": "array",
+              "items": {
+                "$ref": "oteryn:schema/quest-progress-source/v1#/$defs/progress"
+              }
+            },
+            "interactions": {
+              "type": "array",
+              "items": {
+                "$ref": "oteryn:schema/interaction/v1#/$defs/interaction"
+              }
+            },
+            "gates": {
+              "type": "array",
+              "items": {
+                "$ref": "oteryn:schema/quest-content/v1#/$defs/gate"
+              }
+            },
+            "interaction_source_conflicts": {
+              "$ref": "oteryn:schema/quest-source-bundle/v1#/properties/interaction_source_conflicts"
+            },
+            "reference_gaps": {
+              "$ref": "oteryn:schema/quest-source-bundle/v1#/properties/reference_gaps"
+            }
+          }
+        },
+        "native_lowering": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "state",
+            "canonical_progress_refs",
+            "canonical_interaction_refs",
+            "reason"
+          ],
+          "properties": {
+            "state": {
+              "const": "WAITING_IMPLEMENTATION"
+            },
+            "canonical_progress_refs": {
+              "type": "array",
+              "maxItems": 0
+            },
+            "canonical_interaction_refs": {
+              "type": "array",
+              "maxItems": 0
+            },
+            "reason": {
+              "type": "string",
+              "minLength": 1
+            }
           }
         },
         "completeness": {"const": "NOT_ASSESSED"},
@@ -278,7 +347,7 @@
                   "minLength": 1
                 },
                 "kind": {
-                  "const": "reward_only"
+                  "enum": ["reward_only", "storyline", "script_only"]
                 },
                 "features": {
                   "type": "array",
@@ -315,6 +384,64 @@
         }
       },
       "allOf": [
+{
+  "if": {
+    "properties": {
+      "kind": {
+        "const": "reward_only"
+      }
+    }
+  },
+  "then": {
+    "properties": {
+      "source_refs": {
+        "properties": {
+          "claims": {
+            "minItems": 1
+          }
+        }
+      }
+    },
+    "not": {
+      "anyOf": [
+        {
+          "required": [
+            "source_data"
+          ]
+        },
+        {
+          "required": [
+            "native_lowering"
+          ]
+        }
+      ]
+    }
+  },
+  "else": {
+    "required": [
+      "source_data",
+      "native_lowering"
+    ],
+    "properties": {
+      "readiness": {
+        "const": "waiting_data"
+      },
+      "missing_data": {
+        "contains": {
+          "type": "object",
+          "required": [
+            "code"
+          ],
+          "properties": {
+            "code": {
+              "const": "quest_native_lowering_missing"
+            }
+          }
+        }
+      }
+    }
+  }
+},
         {
           "if": {"properties": {"readiness": {"const": "definition_ready"}}},
           "then": {

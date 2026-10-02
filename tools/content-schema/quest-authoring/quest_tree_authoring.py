@@ -1,4 +1,4 @@
-"""Populate the data-only Quest tree from the accepted first reward_only batch.
+"""Populate the data-only Quest tree from all authored source quest kinds.
 
 Source aliases remain evidence. Canonical claims resolve only against their exact
 committed provenance. This tool registers the scoped Quest family; it never declares runtime readiness.
@@ -19,6 +19,9 @@ MANIFEST = 'tools/content-schema/quest-authoring/samples/chests/manifest.json'
 READINESS = 'tools/content-schema/quest-authoring/samples/readiness/readiness.json'
 GATES = 'tools/content-schema/quest-authoring/samples/doors/gates.json'
 GATE_MANIFEST = 'tools/content-schema/quest-authoring/samples/doors/manifest.json'
+PROGRESS = 'tools/content-schema/quest-authoring/samples/questlog/progress.json'
+INTERACTIONS = 'tools/content-schema/quest-authoring/samples/interactions/interactions.json'
+BUNDLE = 'tools/content-schema/quest-authoring/samples/source_migration/bundle.json'
 INTERACTION_MANIFEST = 'tools/content-schema/quest-authoring/samples/interactions/manifest.json'
 DIRECTORY = 'content/quests/definitions/'
 REVISION = 'quest-r1'
@@ -48,7 +51,7 @@ def source_identity(ref):
     return ref['key'], ref['revision']
 
 
-def build_records(quests, claims, readiness_reports=None, gates=None, gate_checks=None):
+def build_records(quests, claims, readiness_reports=None, gates=None, gate_checks=None, source_data=None):
     """No guessed identity joins, missing requirements, quantities or readiness."""
     bindings = {}
     for claim in claims:
@@ -60,7 +63,7 @@ def build_records(quests, claims, readiness_reports=None, gates=None, gate_check
             raise ValueError('committed RewardClaim identity is not canonical')
         bindings[source] = claim
     records, identities = [], set()
-    for quest in sorted((q for q in quests if q['kind'] == 'reward_only'), key=lambda q: q['identity']['key']):
+    for quest in sorted(quests, key=lambda q: (q['kind'] != 'reward_only', q['identity']['key'])):
         # The converter has one identity per wiki quest, irrespective of source namespace.
         marker = quest['identity']['key'].split(':quest/', 1)[-1].replace('/', '.')
         key = f'oteryn:quest.{marker}'
@@ -71,7 +74,7 @@ def build_records(quests, claims, readiness_reports=None, gates=None, gate_check
         identities.add(key)
         source_refs = {'quest': {'family': 'Quest', **copy.deepcopy(quest['identity'])}, 'claims': copy.deepcopy(quest['claims'])}
         canonical, issues, unresolved = [], [], []
-        if quest['shown_in_quest_log']:
+        if quest['kind'] != 'storyline' and quest['shown_in_quest_log']:
             issues.append({'code': 'source_kind_log_flag_conflict'})
         report = readiness_reports.get(quest['identity']['key']) if readiness_reports is not None else None
         if readiness_reports is not None and report is None:
@@ -100,20 +103,21 @@ def build_records(quests, claims, readiness_reports=None, gates=None, gate_check
             canonical.append({'family': 'RewardClaim', **copy.deepcopy(claim['identity'])})
             if claim.get('definition_profile') == 'authored_variant_v1':
                 issues.append({'code': 'claim_native_lowering_missing', 'source_key': ref['key']})
-                for category in sorted({h['category'] for h in claim['data_holds']}):
-                    code = 'claim_source_data_missing' if category == 'source' else 'claim_item_semantics_missing'
+                for category in sorted({hold['category'] for hold in claim['data_holds']}):
+                    code = {'source': 'claim_source_data_missing', 'item': 'claim_item_semantics_missing'}[category]
                     issues.append({'code': code, 'source_key': ref['key']})
             elif claim['readiness'] != 'ready':
-                issues.append({'code': 'claim_item_semantics_missing', 'source_key': ref['key']})
+                code = 'claim_native_lowering_missing' if claim['readiness'] == 'waiting_implementation' else 'claim_item_semantics_missing'
+                issues.append({'code': code, 'source_key': ref['key']})
         requirements = copy.deepcopy(quest.get('requirements', {}))
         for field in ('premium', 'min_level'):
             if requirements.get(field) is None:
                 issues.append({'code': 'requirement_unknown', 'field': field})
-        if not quest['claims']:
+        if quest['kind'] == 'reward_only' and not quest['claims']:
             raise ValueError(f'{key}: reward_only Quest has no source claims')
         record = {
             'identity': {'key': key, 'revision': REVISION},
-            'display_name': quest['display_name'], 'kind': 'reward_only',
+            'display_name': quest['display_name'], 'kind': quest['kind'],
             'shown_in_quest_log': quest['shown_in_quest_log'],
             'requirements': requirements, 'requirements_from_wiki': copy.deepcopy(quest.get('requirements_from_wiki', {})),
             'requirements_unparsed': copy.deepcopy(quest.get('requirements_unparsed', {})),
@@ -124,18 +128,27 @@ def build_records(quests, claims, readiness_reports=None, gates=None, gate_check
             'missing_data': issues, 'source_refs': source_refs,
             'classification': 'OTS_HYPOTHESIS_ONLY',
         }
+        if quest['kind'] != 'reward_only':
+            issues.append({'code': 'quest_native_lowering_missing'})
+            record['readiness'] = 'waiting_data'
+            record['source_data'] = copy.deepcopy((source_data or {}).get(quest['identity']['key'], {
+                'quest': quest, 'progress': [], 'interactions': [], 'gates': bound_gates, 'interaction_source_conflicts': [], 'reference_gaps': []}))
+            for gap in record['source_data']['reference_gaps']:
+                issues.append({'code': 'source_reference_missing', 'source_key': gap['target_key']})
+            record['native_lowering'] = {'state': 'WAITING_IMPLEMENTATION', 'canonical_progress_refs': [],
+                'canonical_interaction_refs': [], 'reason': 'QuestState tracks, bounds, transitions and requested-by bindings have not been lowered'}
         if quest.get('wiki'):
             record['wiki'] = copy.deepcopy(quest['wiki'])
         records.append({'definition': record})
     return records
 
 
-def validate(records, quests, claims, readiness_reports=None, gates=None, gate_checks=None):
+def validate(records, quests, claims, readiness_reports=None, gates=None, gate_checks=None, source_data=None):
     """Validate exact regenerated content, including source ownership and missing-data truth."""
-    expected = build_records(quests, claims, readiness_reports, gates, gate_checks)
+    expected = build_records(quests, claims, readiness_reports, gates, gate_checks, source_data)
     errors = []
     if records != expected:
-        errors.append('Quest records differ from the source-bound reward_only projection')
+        errors.append('Quest records differ from the source-bound Quest projection')
     return errors
 
 
@@ -153,11 +166,58 @@ def registered(project, manifest, lock, count, paths):
     return project, manifest, lock
 
 
+def bound_source_data(root, quests, gates):
+    """Reuse SOURCE ownership joins; never turn aliases into production references."""
+    from ots_readiness import join_interactions
+    progress = read(root, PROGRESS)['progress']
+    interactions = read(root, INTERACTIONS)['interactions']
+    bundle = read(root, BUNDLE)
+    conflicts = bundle['interaction_source_conflicts']
+    joined = join_interactions(quests, progress, interactions)
+    owners = {key: set(value) for key, value in joined.items()}
+    for conflict in conflicts:
+        key = conflict['interaction']
+        for alternative in conflict['alternatives']:
+            graph = alternative['interaction']
+            projected = dict(graph, identity=dict(graph['identity'], key=key))
+            owners[key].update(join_interactions(quests, progress, [projected])[key])
+    result = {}
+    for quest in quests:
+        key = quest['identity']['key']
+        tracks = {m['progress'] for m in quest.get('missions', [])}
+        if quest.get('start'):
+            tracks.add(quest['start']['progress'])
+        selected = [p for p in progress if p['key'] in tracks or key in p['start_of']
+                    or key in p.get('auxiliary_of', []) or any(m.startswith(key + '#') for m in p['missions'])]
+        result[key] = {'quest': copy.deepcopy(quest), 'progress': copy.deepcopy(selected),
+                       'interactions': [copy.deepcopy(i) for i in interactions if key in owners[i['identity']['key']]],
+                       'gates': [copy.deepcopy(g) for g in gates if g.get('quest') and source_identity(g['quest']) == source_identity(quest['identity'])],
+                       'interaction_source_conflicts': [copy.deepcopy(c) for c in conflicts if key in owners[c['interaction']]],
+                       'reference_gaps': [copy.deepcopy(g) for g in bundle['reference_gaps'] if g['record_key'] == key
+                                          or any(g['record_key'] == p['key'] for p in selected)
+                                          or key in owners.get(g['record_key'], set())]}
+    return result
+
+
+def tree_validator():
+    """Resolve the existing typed SOURCE schemas offline, with no copied vocabulary."""
+    import jsonschema
+    from referencing import Registry, Resource
+    here = Path(__file__).parent
+    registry = Registry()
+    for name in ('quest_content', 'quest_progress', 'interaction', 'quest_bundle'):
+        schema = json.loads((here / (name + '.schema.json')).read_text(encoding='utf-8'))
+        registry = registry.with_resource(schema['$id'], Resource.from_contents(schema))
+    schema = json.loads((here / 'quest_tree.schema.json').read_text(encoding='utf-8'))
+    return jsonschema.Draft202012Validator(schema, registry=registry)
+
+
 def expected_files(root, include_registration=False):
     quests = read(root, SOURCE)['quests']
     claims = claim_catalogue(root)
     reports = {q['quest']: q for q in read(root, READINESS)['quests']}
-    records = build_records(quests, claims, reports, read(root, GATES)['gates'], read(root, GATE_MANIFEST)['entries'])
+    gates = read(root, GATES)['gates']
+    records = build_records(quests, claims, reports, gates, read(root, GATE_MANIFEST)['entries'], bound_source_data(root, quests, gates))
     files, shards = {}, []
     for number, start in enumerate(range(0, len(records), SHARD_SIZE)):
         chunk = records[start:start + SHARD_SIZE]
@@ -166,19 +226,23 @@ def expected_files(root, include_registration=False):
         shards.append(path)
         files[path] = compact({'schema': 'OTERYN_QUEST_TREE_SHARD/v1', 'family': 'Quest', 'shard': {'index': number, 'start': start, 'end': end, 'count': len(chunk)}, 'records': chunk})
     missing = Counter(issue['code'] for row in records for issue in row['definition']['missing_data'])
-    excluded = Counter(q['kind'] for q in quests if q['kind'] != 'reward_only')
+    by_kind = Counter(q['kind'] for q in quests)
     files[DIRECTORY + 'index.json'] = compact({
         'schema': 'OTERYN_FAMILY_INDEX/v1', 'family': 'Quest', 'population_state': 'POPULATED',
-        'record_count': len(records), 'shards': shards, 'scope': 'reward_only_first_batch',
+        'record_count': len(records), 'shards': shards, 'scope': 'all_authored_source_quests',
         'classification': 'OTS_HYPOTHESIS_ONLY',
         'readiness': dict(sorted(Counter(row['definition']['readiness'] for row in records).items())),
         'missing_data': dict(sorted(missing.items())),
-        'catalogue_coverage': {'source_records': len(quests), 'included_records': len(records), 'excluded_by_kind': dict(sorted(excluded.items())), 'complete': not excluded},
+        'catalogue_coverage': {'source_records': len(quests), 'included_records': len(records), 'excluded_by_kind': {}, 'included_by_kind': dict(sorted(by_kind.items())), 'complete': True},
         'runtime_readiness': 'NOT_ASSESSED',
         'readiness_scope': 'definition_fields_and_known_source_gaps_only',
         'quest_completeness': 'NOT_ASSESSED',
         'authoring_source': {'path': SOURCE, 'sha256': digest(root, SOURCE)},
-        'authoring_sources': [{'path': path, 'sha256': digest(root, path)} for path in (SOURCE, CLAIM_INDEX, MANIFEST, READINESS, GATES, GATE_MANIFEST, INTERACTION_MANIFEST, *read(root, CLAIM_INDEX)['shards'])],
+        'authoring_sources': [{'path': path, 'sha256': digest(root, path)} for path in (SOURCE, CLAIM_INDEX, MANIFEST, READINESS, GATES, GATE_MANIFEST, INTERACTION_MANIFEST, PROGRESS, INTERACTIONS, BUNDLE,
+            'tools/content-schema/quest-authoring/ots_readiness.py',
+            'tools/content-schema/quest-authoring/quest_tree_authoring.py',
+            *[f'tools/content-schema/quest-authoring/{n}.schema.json' for n in ('quest_tree', 'quest_content', 'quest_progress', 'interaction', 'quest_bundle')],
+            *read(root, CLAIM_INDEX)['shards'])],
         'source_refs': read(root, MANIFEST)['sources'],
         'contract': 'docs/architecture/OTERYN_FULL_GAME_CONTENT_AND_RULESET_TREE_V1.md',
     })
@@ -186,9 +250,7 @@ def expected_files(root, include_registration=False):
         values = registered(read(root, 'content/project.json'), read(root, 'content/manifest.json'), read(root, 'content/content.lock.json'), len(records), list(files))
         for path, value in zip(('content/project.json', 'content/manifest.json', 'content/content.lock.json'), values):
             files[path] = json.dumps(value, ensure_ascii=False, sort_keys=True, indent=2) + '\n'
-    import jsonschema
-    schema = json.loads(Path(__file__).with_name('quest_tree.schema.json').read_text(encoding='utf-8'))
-    validator = jsonschema.Draft202012Validator(schema)
+    validator = tree_validator()
     for path in shards:
         validator.validate(json.loads(files[path]))
     return files
