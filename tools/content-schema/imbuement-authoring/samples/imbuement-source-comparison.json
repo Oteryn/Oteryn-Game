@@ -1,0 +1,709 @@
+{
+  "schema": "OTERYN_IMBUEMENT_SOURCE_COMPARISON/v1",
+  "source_facts_sha256": "7ee2221886abdc80d27ce5cd13e58bdecab8b3c5210a7e0e7a36efc52771070e",
+  "engine_comparison_key": [
+    "name",
+    "tier"
+  ],
+  "differences": [
+    {
+      "name": "Bash",
+      "tier": 1,
+      "field": "scroll_item_ids",
+      "canary": [],
+      "crystal": [
+        53751
+      ]
+    },
+    {
+      "name": "Blockade",
+      "tier": 1,
+      "field": "scroll_item_ids",
+      "canary": [],
+      "crystal": [
+        53752
+      ]
+    },
+    {
+      "name": "Chop",
+      "tier": 1,
+      "field": "scroll_item_ids",
+      "canary": [],
+      "crystal": [
+        53753
+      ]
+    },
+    {
+      "name": "Cloud Fabric",
+      "tier": 1,
+      "field": "scroll_item_ids",
+      "canary": [],
+      "crystal": [
+        53754
+      ]
+    },
+    {
+      "name": "Demon Presence",
+      "tier": 1,
+      "field": "scroll_item_ids",
+      "canary": [],
+      "crystal": [
+        53755
+      ]
+    },
+    {
+      "name": "Dragon Hide",
+      "tier": 1,
+      "field": "scroll_item_ids",
+      "canary": [],
+      "crystal": [
+        53756
+      ]
+    },
+    {
+      "name": "Electrify",
+      "tier": 1,
+      "field": "scroll_item_ids",
+      "canary": [],
+      "crystal": [
+        53757
+      ]
+    },
+    {
+      "name": "Epiphany",
+      "tier": 1,
+      "field": "scroll_item_ids",
+      "canary": [],
+      "crystal": [
+        53758
+      ]
+    },
+    {
+      "name": "Featherweight",
+      "tier": 1,
+      "field": "scroll_item_ids",
+      "canary": [],
+      "crystal": [
+        53759
+      ]
+    },
+    {
+      "name": "Frost",
+      "tier": 1,
+      "field": "scroll_item_ids",
+      "canary": [],
+      "crystal": [
+        53760
+      ]
+    },
+    {
+      "name": "Lich Shroud",
+      "tier": 1,
+      "field": "scroll_item_ids",
+      "canary": [],
+      "crystal": [
+        53761
+      ]
+    },
+    {
+      "name": "Precision",
+      "tier": 1,
+      "field": "scroll_item_ids",
+      "canary": [],
+      "crystal": [
+        53762
+      ]
+    },
+    {
+      "name": "Punch",
+      "tier": 1,
+      "field": "materials",
+      "canary": [
+        {
+          "source_item_id": 9690,
+          "count": 20
+        }
+      ],
+      "crystal": [
+        {
+          "source_item_id": 10281,
+          "count": 25
+        }
+      ]
+    },
+    {
+      "name": "Punch",
+      "tier": 1,
+      "field": "scroll_item_ids",
+      "canary": [],
+      "crystal": [
+        53763
+      ]
+    },
+    {
+      "name": "Punch",
+      "tier": 3,
+      "field": "storage",
+      "canary": "50492",
+      "crystal": "50490"
+    },
+    {
+      "name": "Quara Scale",
+      "tier": 1,
+      "field": "scroll_item_ids",
+      "canary": [],
+      "crystal": [
+        53764
+      ]
+    },
+    {
+      "name": "Reap",
+      "tier": 1,
+      "field": "scroll_item_ids",
+      "canary": [],
+      "crystal": [
+        53765
+      ]
+    },
+    {
+      "name": "Scorch",
+      "tier": 1,
+      "field": "scroll_item_ids",
+      "canary": [],
+      "crystal": [
+        53766
+      ]
+    },
+    {
+      "name": "Slash",
+      "tier": 1,
+      "field": "scroll_item_ids",
+      "canary": [],
+      "crystal": [
+        53767
+      ]
+    },
+    {
+      "name": "Snake Skin",
+      "tier": 1,
+      "field": "scroll_item_ids",
+      "canary": [],
+      "crystal": [
+        53768
+      ]
+    },
+    {
+      "name": "Strike",
+      "tier": 1,
+      "field": "effect",
+      "canary": {
+        "key": "effect",
+        "type": "skill",
+        "value": "critical",
+        "bonus": "1500",
+        "chance": "1000"
+      },
+      "crystal": {
+        "key": "effect",
+        "type": "skill",
+        "value": "critical",
+        "bonus": "500",
+        "chance": "500"
+      }
+    },
+    {
+      "name": "Strike",
+      "tier": 1,
+      "field": "scroll_item_ids",
+      "canary": [],
+      "crystal": [
+        53769
+      ]
+    },
+    {
+      "name": "Strike",
+      "tier": 2,
+      "field": "effect",
+      "canary": {
+        "key": "effect",
+        "type": "skill",
+        "value": "critical",
+        "bonus": "2500",
+        "chance": "1000"
+      },
+      "crystal": {
+        "key": "effect",
+        "type": "skill",
+        "value": "critical",
+        "bonus": "1500",
+        "chance": "500"
+      }
+    },
+    {
+      "name": "Strike",
+      "tier": 3,
+      "field": "effect",
+      "canary": {
+        "key": "effect",
+        "type": "skill",
+        "value": "critical",
+        "bonus": "5000",
+        "chance": "1000"
+      },
+      "crystal": {
+        "key": "effect",
+        "type": "skill",
+        "value": "critical",
+        "bonus": "4000",
+        "chance": "500"
+      }
+    },
+    {
+      "name": "Swiftness",
+      "tier": 1,
+      "field": "scroll_item_ids",
+      "canary": [],
+      "crystal": [
+        53770
+      ]
+    },
+    {
+      "name": "Vampirism",
+      "tier": 1,
+      "field": "scroll_item_ids",
+      "canary": [],
+      "crystal": [
+        53771
+      ]
+    },
+    {
+      "name": "Venom",
+      "tier": 1,
+      "field": "scroll_item_ids",
+      "canary": [],
+      "crystal": [
+        53772
+      ]
+    },
+    {
+      "name": "Vibrancy",
+      "tier": 1,
+      "field": "effect",
+      "canary": {
+        "key": "effect",
+        "type": "paralysis",
+        "chance": "15",
+        "pvpDeflect": "1"
+      },
+      "crystal": {
+        "key": "effect",
+        "type": "vibrancy",
+        "chance": "15"
+      }
+    },
+    {
+      "name": "Vibrancy",
+      "tier": 1,
+      "field": "scroll_item_ids",
+      "canary": [],
+      "crystal": [
+        53773
+      ]
+    },
+    {
+      "name": "Vibrancy",
+      "tier": 2,
+      "field": "effect",
+      "canary": {
+        "key": "effect",
+        "type": "paralysis",
+        "chance": "25",
+        "pvpDeflect": "1"
+      },
+      "crystal": {
+        "key": "effect",
+        "type": "vibrancy",
+        "chance": "25"
+      }
+    },
+    {
+      "name": "Vibrancy",
+      "tier": 2,
+      "field": "scroll_item_ids",
+      "canary": [],
+      "crystal": [
+        51746
+      ]
+    },
+    {
+      "name": "Vibrancy",
+      "tier": 3,
+      "field": "effect",
+      "canary": {
+        "key": "effect",
+        "type": "paralysis",
+        "chance": "50",
+        "pvpDeflect": "1"
+      },
+      "crystal": {
+        "key": "effect",
+        "type": "vibrancy",
+        "chance": "50"
+      }
+    },
+    {
+      "name": "Vibrancy",
+      "tier": 3,
+      "field": "storage",
+      "canary": "0",
+      "crystal": "46317"
+    },
+    {
+      "name": "Vibrancy",
+      "tier": 3,
+      "field": "scroll_item_ids",
+      "canary": [],
+      "crystal": [
+        51466
+      ]
+    },
+    {
+      "name": "Void",
+      "tier": 1,
+      "field": "scroll_item_ids",
+      "canary": [],
+      "crystal": [
+        53774
+      ]
+    }
+  ],
+  "comparison_scope": "Raw XML facts with independently pinned corrected scroll bindings, not final engine outcomes. Original immutable captures incorrectly read scrollid only from children and remain preserved as capture history. Strike candidate values are additive modifiers; intrinsic character critical baseline is a separate Global rule.",
+  "selection": "Source-qualified post-2025 Strike additive modifiers; Wiki BR other effects and cumulative recipes; primary-plus-canonical Item identities; official Global fees; sourced quest predicates; direct per-item Tibiopedia types/tiers with explicit Wiki BR fallback and retained source conflicts",
+  "global_fee_conflict": {
+    "candidate_architecture": [
+      5000,
+      30000,
+      200000
+    ],
+    "global_since_2025": [
+      7500,
+      60000,
+      250000
+    ]
+  },
+  "supporting_catalogues": {
+    "crystal-imbuements-evidence.json": "2a5723725bd1046e36dc54453ec836810f2b1e972a05d4886eeebeafefbe45fe",
+    "current-behavior-answers.json": "9d1bd48ee0c09e2d27ba9ecb27e7a88069a543bc043cb8e6201beca77642e8e2",
+    "global-observation-plan.json": "a4913ee8dc03ba6fd80e620a44fde56a3610e73b19912247e56a5e3d53d81afb",
+    "global-research-closure.json": "48bdda9e20663cbb46c3fdaa631cb9de5807aa1ae1ef8f8f15c8333abe77440f",
+    "global-rules-evidence.json": "91555552462b5f78b0cb4253522fcacc30ab5601b7127c13ea7eab26b21930af",
+    "imbuement-access.json": "c05984cb8f0ac0e41b4f8bebd7bc2c93be24ea3cbbb86c0d95859e0a8a917f2d",
+    "imbuement-bindings.json": "e9b3c4355a5db835af150c125fa3204f4bd6e674ef9e3b2d52383bac81f21ebc",
+    "imbuement-combat.json": "39e8eaa16f7c1cd8358d70e620d23644a728c91a85a70ff9eb1659aadbe524d2",
+    "imbuement-eligibility.json": "4a9d7b93ea2a704f40e1f3cd35ef6b1686ed917457926ca9d5c359c9cd46586e",
+    "missing-item-definitions.json": "d1d324a100dbda840c1730561401f803aea4ec6014ec11dec23389e3280fd40d",
+    "missing-item-source-facts.json": "51409c2844390ee0fa03e8306767674ff410ecdafbacee0eb4dfc1743716115d",
+    "owner-authoring-policy.json": "c71b9351980fe70b8a83aafcfcca3e03a1ff9445427fedd842214ee89ae73079"
+  },
+  "completion": {
+    "definitions": 24,
+    "tier_recipes": 72,
+    "material_bindings": 72,
+    "scroll_bindings": 72,
+    "current_equipment_typed": 629,
+    "target_equipment_typed": 629,
+    "target_existing_item_refs": 627,
+    "basic_only_eligibility_profiles": 12,
+    "validated_missing_item_proposals": 2,
+    "source_defined_shrine_routes": 72,
+    "completed_scroll_loot_records": 48,
+    "global_rules": 72,
+    "combat_rule_profiles": 19,
+    "source_answered_engine_question_groups": 11,
+    "owner_approved_operational_decisions": 10,
+    "owner_resolved_scope_questions": 1,
+    "planned_not_observed_scenarios": 27,
+    "crystal_imbuements_revision": "15593c28fd9adc2bb9739cf0fdb1a4289ebfe1e1",
+    "gold_token_exchange_bundles": 9
+  },
+  "global_research_profile": "global-research-closure.json",
+  "owner_authoring_policy_profile": "owner-authoring-policy.json",
+  "remaining_global_public_fields": {
+    "etcher_consumption": [
+      {
+        "description": "Global Etcher units consumed on successful use.",
+        "value": null,
+        "status": "UNCONFIRMED_OR_SOURCE_CONFLICT"
+      },
+      {
+        "description": "Global net Etcher change for each specifically named ordinary rejection case, if that policy is required in authored operational data.",
+        "value": null,
+        "status": "UNCONFIRMED_OR_SOURCE_CONFLICT"
+      }
+    ],
+    "fine_grained_timers": [
+      {
+        "description": "Combat timer in PZ: BR blanket pause versus Fandom and dated reported residual-combat countdown; no universal boundary selected.",
+        "value": null,
+        "status": "UNCONFIRMED_OR_SOURCE_CONFLICT"
+      }
+    ],
+    "combat_pipeline": [
+      {
+        "description": "Current universal Life unequal-target/zero-damage/overkill/rounding formula is not stated in retrieved public references.",
+        "value": null,
+        "status": "UNCONFIRMED_OR_SOURCE_CONFLICT"
+      }
+    ],
+    "failed_transaction_consumption_and_rollback": [
+      {
+        "description": "Global visible net gold/material/blank/filled-scroll/Etcher changes for each specifically required ordinary rejection case remain unstated.",
+        "value": null,
+        "status": "UNCONFIRMED_OR_SOURCE_CONFLICT"
+      }
+    ],
+    "native_effect_composition": [
+      {
+        "description": "Universal all-context physical pipeline, integer hit rounding and equipment slot iteration remainunselected. A scoped current resistance-before-armor testing reference is now authored; do not treat this as evidence for every incoming-equipment case.",
+        "value": null,
+        "status": "UNCONFIRMED_OR_SOURCE_CONFLICT"
+      }
+    ],
+    "transfer_preserves_imbuement_state_and_remaining_duration": [
+      {
+        "description": "Exact Global visible remaining-duration preservation for a named transfer route is unconfirmed if required.",
+        "value": null,
+        "status": "UNCONFIRMED_OR_SOURCE_CONFLICT"
+      }
+    ],
+    "etcher_npc_purchase_requires_premium": [
+      {
+        "description": "The explicit Global Free/Premium acquisition predicate in utility_acquisition.etcher_npc_purchase.premium_requirement.value remainsnull.",
+        "value": null,
+        "status": "UNCONFIRMED_OR_SOURCE_CONFLICT"
+      }
+    ],
+    "scroll_consumption": [
+      {
+        "description": "Global filled-scroll success units and net units on each specifically named required rejection remainnull.",
+        "value": null,
+        "status": "UNCONFIRMED_OR_SOURCE_CONFLICT"
+      }
+    ]
+  },
+  "observation_requirement_interpretation": "SUPPLEMENTAL_CAPTURE_ALTERNATIVES; LITERAL_PUBLIC_REFERENCES_ACCEPTED; RUNTIME_CONTRACTS_SEPARATE",
+  "remaining_global_observation_requirements": [
+    {
+      "id": "etcher_consumption",
+      "reason": "Concrete current Canary and both Crystal implementation answers are recorded in current-behavior-answers.json. Public Global context is sourced, but does not explicitly establish every internal detail in this question group.",
+      "evidence": [
+        "wiki_br_etcher",
+        "tibiopedia_etcher",
+        "crystal_imbuements_player_impl"
+      ],
+      "source_urls": [
+        "https://www.tibiawiki.com.br/wiki/Etcher",
+        "https://tibiopedia.pl/items/Etcher",
+        "https://github.com/zimbadev/crystalserver/blob/15593c28fd9adc2bb9739cf0fdb1a4289ebfe1e1/src/creatures/players/player.cpp"
+      ],
+      "source_url_scope": "Research context and limits only; pending rows do not certify the missing behavior.",
+      "engine_answer_profile": "current-behavior-answers.json#etcher_consumption",
+      "scope": "ONLY_REMAINING_GLOBAL_DETAIL_NOT_ABSENCE_OF_ENGINE_ANSWER"
+    },
+    {
+      "id": "scroll_application_equipped_target",
+      "reason": "Concrete current Canary and both Crystal implementation answers are recorded in current-behavior-answers.json. Public Global context is sourced, but does not explicitly establish every internal detail in this question group.",
+      "evidence": [
+        "official_manual",
+        "canary_scroll_action",
+        "canary_player_impl",
+        "official_cm_scroll_anywhere_2025"
+      ],
+      "source_urls": [
+        "https://www.tibia.com/gameguides?subtopic=manual&section=characters",
+        "https://github.com/opentibiabr/canary/blob/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data-otservbr-global/scripts/actions/object/imbuement_scrolls.lua",
+        "https://github.com/opentibiabr/canary/blob/04b83b512114bfd888000d6e1433ed8ecaec7c5b/src/creatures/players/player.cpp",
+        "https://www.tibia.com/forum/?action=thread&postid=39527096#post39527096"
+      ],
+      "source_url_scope": "Research context and limits only; pending rows do not certify the missing behavior.",
+      "engine_answer_profile": "current-behavior-answers.json#scroll_application_equipped_target",
+      "scope": "ONLY_REMAINING_GLOBAL_DETAIL_NOT_ABSENCE_OF_ENGINE_ANSWER"
+    },
+    {
+      "id": "fine_grained_timers",
+      "reason": "Equipped/online utility behavior and current coarse hunting requirements are sourced. Exact Global tick/save/restore and PZ state boundaries are not fully specified; all three engine gates and ticks are separately answered.",
+      "evidence": [
+        "official_manual",
+        "wiki_br_imbuements",
+        "fandom_swiftness",
+        "canary_timer_impl",
+        "tibiaqa_zero_minute_display_2020",
+        "tibiaqa_utility_timers_2021",
+        "tibiaqa_pz_residual_combat_2025",
+        "fandom_imbuing_full",
+        "fandom_swiftness_archive_2025"
+      ],
+      "source_urls": [
+        "https://www.tibia.com/gameguides?subtopic=manual&section=characters",
+        "https://www.tibiawiki.com.br/wiki/Imbuements",
+        "https://tibia.fandom.com/wiki/Swiftness",
+        "https://github.com/opentibiabr/canary/blob/04b83b512114bfd888000d6e1433ed8ecaec7c5b/src/creatures/players/imbuements/imbuements.cpp",
+        "https://www.tibiaqa.com/15297/why-hasnt-my-imbuement-period-finished?state=showcomments-15297&show=15297#q15297",
+        "https://www.tibiaqa.com/23884/do-i-have-to-unequip-imbued-items-not-to-waste-my-imbuements",
+        "https://www.tibiaqa.com/36422/what-conditions-are-necessary-to-tick-down-imbuements",
+        "https://tibia.fandom.com/wiki/Imbuing",
+        "https://web.archive.org/web/20251211063342/https://tibia.fandom.com/wiki/Swiftness"
+      ],
+      "source_url_scope": "Research context and limits only; pending rows do not certify the missing behavior.",
+      "engine_answer_profile": "current-behavior-answers.json#fine_grained_timers",
+      "scope": "ONLY_REMAINING_GLOBAL_DETAIL_NOT_ABSENCE_OF_ENGINE_ANSWER"
+    },
+    {
+      "id": "combat_pipeline",
+      "reason": "Current SeptemberFormulae supplies a mana-specific sum/ceil formula and overkill claim; current Life independently excludes DamagePreys. Universal Life rounding and modifier order are not specified. Concrete engine pipelines are separately answered.",
+      "evidence": [
+        "fandom_formulae_full",
+        "official_news_8421_full",
+        "wiki_br_imbuements",
+        "fandom_life_archive_2026"
+      ],
+      "source_urls": [
+        "https://tibia.fandom.com/wiki/Formulae",
+        "https://www.tibia.com/news/?subtopic=newsarchive&id=8421",
+        "https://www.tibiawiki.com.br/wiki/Imbuements",
+        "https://web.archive.org/web/20260113015644/https://tibia.fandom.com/wiki/Life_Leech"
+      ],
+      "source_url_scope": "Research context and limits only; pending rows do not certify the missing behavior.",
+      "engine_answer_profile": "current-behavior-answers.json#combat_pipeline",
+      "scope": "ONLY_REMAINING_GLOBAL_DETAIL_NOT_ABSENCE_OF_ENGINE_ANSWER"
+    },
+    {
+      "id": "vibrancy_pvp_gate",
+      "reason": "Current full family supplies the conditional initial-success wording; exact state lifetime/reset lacks explicit public specification. Concrete Canary/Crystal admission/recovery code is separately answered.",
+      "evidence": [
+        "fandom_vibrancy_gate",
+        "fandom_basic_vibrancy_gate",
+        "fandom_powerful_vibrancy_gate",
+        "fandom_vibrancy_archive_2025"
+      ],
+      "evidence_catalogue": "imbuement-combat.json",
+      "source_urls": [
+        "https://tibia.fandom.com/wiki/Vibrancy",
+        "https://tibia.fandom.com/wiki/Basic_Vibrancy",
+        "https://tibia.fandom.com/wiki/Powerful_Vibrancy",
+        "https://web.archive.org/web/20250518214227/https://tibia.fandom.com/wiki/Vibrancy"
+      ],
+      "source_url_scope": "Research context and limits only; pending rows do not certify the missing behavior.",
+      "engine_answer_profile": "current-behavior-answers.json#vibrancy_pvp_gate",
+      "scope": "ONLY_REMAINING_GLOBAL_DETAIL_NOT_ABSENCE_OF_ENGINE_ANSWER"
+    },
+    {
+      "id": "transaction_payment_sources",
+      "reason": "Current Imbuing and prior archive specify inventory-first then Stash/bank. All engine search/debit orders are answered; hidden Global container/inter-resource ordering is not explicitly specified.",
+      "evidence": [
+        "fandom_imbuing_full",
+        "fandom_imbuing_archive_2026_05_22",
+        "tibiaqa_stash_materials_1121"
+      ],
+      "source_urls": [
+        "https://tibia.fandom.com/wiki/Imbuing",
+        "https://web.archive.org/web/20260522172855/https://tibia.fandom.com/wiki/Imbuing",
+        "https://www.tibiaqa.com/1120/how-does-supply-stash-work-and-what-is-the-capacity"
+      ],
+      "source_url_scope": "Research context and limits only; pending rows do not certify the missing behavior.",
+      "engine_answer_profile": "current-behavior-answers.json#transaction_payment_sources",
+      "scope": "ONLY_REMAINING_GLOBAL_DETAIL_NOT_ABSENCE_OF_ENGINE_ANSWER"
+    },
+    {
+      "id": "failed_transaction_consumption_and_rollback",
+      "reason": "Concrete current Canary and both Crystal implementation answers are recorded in current-behavior-answers.json. Public Global context is sourced, but does not explicitly establish every internal detail in this question group.",
+      "evidence": [
+        "official_manual",
+        "news_8396_mirror"
+      ],
+      "source_urls": [
+        "https://www.tibia.com/gameguides?subtopic=manual&section=characters",
+        "https://tibiaroute.com/news/Tradeable-Imbuements-8396-KVB7"
+      ],
+      "source_url_scope": "Research context and limits only; pending rows do not certify the missing behavior.",
+      "engine_answer_profile": "current-behavior-answers.json#failed_transaction_consumption_and_rollback",
+      "scope": "ONLY_REMAINING_GLOBAL_DETAIL_NOT_ABSENCE_OF_ENGINE_ANSWER"
+    },
+    {
+      "id": "native_effect_composition",
+      "reason": "Concrete current Canary and both Crystal implementation answers are recorded in current-behavior-answers.json. Public Global context is sourced, but does not explicitly establish every internal detail in this question group.",
+      "evidence": [
+        "wiki_br_imbuements",
+        "tibiopedia_imbuing_guide"
+      ],
+      "source_urls": [
+        "https://www.tibiawiki.com.br/wiki/Imbuements",
+        "https://tibiopedia.pl/articles/3,Imbuing-nasycenia"
+      ],
+      "source_url_scope": "Research context and limits only; pending rows do not certify the missing behavior.",
+      "engine_answer_profile": "current-behavior-answers.json#native_effect_composition",
+      "scope": "ONLY_REMAINING_GLOBAL_DETAIL_NOT_ABSENCE_OF_ENGINE_ANSWER"
+    },
+    {
+      "id": "transfer_preserves_imbuement_state_and_remaining_duration",
+      "reason": "Concrete current Canary and both Crystal implementation answers are recorded in current-behavior-answers.json. Public Global context is sourced, but does not explicitly establish every internal detail in this question group.",
+      "evidence": [
+        "tibiopedia_imbuing_guide",
+        "official_manual",
+        "tibiaqa_depot_coin_trade_2022"
+      ],
+      "source_urls": [
+        "https://tibiopedia.pl/articles/3,Imbuing-nasycenia",
+        "https://www.tibia.com/gameguides?subtopic=manual&section=characters",
+        "https://www.tibiaqa.com/30081/is-it-possible-to-safe-trade-items-in-the-depot-to-another-player"
+      ],
+      "source_url_scope": "Research context and limits only; pending rows do not certify the missing behavior.",
+      "engine_answer_profile": "current-behavior-answers.json#transfer_preserves_imbuement_state_and_remaining_duration",
+      "scope": "ONLY_REMAINING_GLOBAL_DETAIL_NOT_ABSENCE_OF_ENGINE_ANSWER"
+    },
+    {
+      "id": "etcher_npc_purchase_requires_premium",
+      "reason": "Concrete current Canary and both Crystal implementation answers are recorded in current-behavior-answers.json. Public Global context is sourced, but does not explicitly establish every internal detail in this question group.",
+      "evidence": [
+        "official_manual",
+        "news_8396_mirror",
+        "wiki_br_etcher",
+        "tibiopedia_etcher"
+      ],
+      "source_urls": [
+        "https://www.tibia.com/gameguides?subtopic=manual&section=characters",
+        "https://tibiaroute.com/news/Tradeable-Imbuements-8396-KVB7",
+        "https://www.tibiawiki.com.br/wiki/Etcher",
+        "https://tibiopedia.pl/items/Etcher"
+      ],
+      "source_url_scope": "Research context and limits only; pending rows do not certify the missing behavior.",
+      "engine_answer_profile": "current-behavior-answers.json#etcher_npc_purchase_requires_premium",
+      "scope": "ONLY_REMAINING_GLOBAL_DETAIL_NOT_ABSENCE_OF_ENGINE_ANSWER"
+    },
+    {
+      "id": "scroll_consumption",
+      "reason": "Concrete current Canary and both Crystal implementation answers are recorded in current-behavior-answers.json. Public Global context is sourced, but does not explicitly establish every internal detail in this question group.",
+      "evidence": [
+        "official_manual",
+        "crystal_imbuements_player_impl",
+        "tibiabr_discovery_index_2026"
+      ],
+      "source_urls": [
+        "https://www.tibia.com/gameguides?subtopic=manual&section=characters",
+        "https://github.com/zimbadev/crystalserver/blob/15593c28fd9adc2bb9739cf0fdb1a4289ebfe1e1/src/creatures/players/player.cpp",
+        "https://www.tibiabr.com/wp-json/wp/v2/search?search=imbuement&per_page=30"
+      ],
+      "source_url_scope": "Research context and limits only; pending rows do not certify the missing behavior.",
+      "engine_answer_profile": "current-behavior-answers.json#scroll_consumption",
+      "scope": "ONLY_REMAINING_GLOBAL_DETAIL_NOT_ABSENCE_OF_ENGINE_ANSWER"
+    }
+  ],
+  "blocked": [
+    "Candidate architecture reconciliation (fees, Basic inscription, Stash, Vibrancy)",
+    "Canonical Quest runtime state",
+    "Canonical Imbuement ruleset remains READY_UNPOPULATED; the authoring schema is not installed in runtime",
+    "Canonical Item type/tier profiles remain UNKNOWN; ReferenceImbuementTier lacks tier1 lowering",
+    "Per-field evidence gaps listed in eligibility and Global rules packets",
+    "Runtime, persistence and wire implementation"
+  ]
+}

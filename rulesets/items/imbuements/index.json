@@ -1,10 +1,108 @@
 {
-  "schema": "OTERYN_GAME_TREE_DIRECTORY/v1",
-  "path": "rulesets/items/imbuements/",
-  "kind": "ruleset",
-  "owner": "Item/Progression",
-  "repository": "Oteryn/Oteryn-Game",
-  "population_state": "READY_UNPOPULATED",
+  "authoring_sources": [
+    {
+      "path": "tools/content-schema/imbuement-authoring/imbuement.schema.json",
+      "sha256": "0020bceaa16e91d479d9abec235453482d62512e4db1ee18f56b73396778ddca"
+    },
+    {
+      "path": "tools/content-schema/imbuement-authoring/samples/crystal-imbuements-evidence.json",
+      "sha256": "2a5723725bd1046e36dc54453ec836810f2b1e972a05d4886eeebeafefbe45fe"
+    },
+    {
+      "path": "tools/content-schema/imbuement-authoring/samples/current-behavior-answers.json",
+      "sha256": "9d1bd48ee0c09e2d27ba9ecb27e7a88069a543bc043cb8e6201beca77642e8e2"
+    },
+    {
+      "path": "tools/content-schema/imbuement-authoring/samples/global-observation-plan.json",
+      "sha256": "a4913ee8dc03ba6fd80e620a44fde56a3610e73b19912247e56a5e3d53d81afb"
+    },
+    {
+      "path": "tools/content-schema/imbuement-authoring/samples/global-research-closure.json",
+      "sha256": "48bdda9e20663cbb46c3fdaa631cb9de5807aa1ae1ef8f8f15c8333abe77440f"
+    },
+    {
+      "path": "tools/content-schema/imbuement-authoring/samples/global-rules-evidence.json",
+      "sha256": "91555552462b5f78b0cb4253522fcacc30ab5601b7127c13ea7eab26b21930af"
+    },
+    {
+      "path": "tools/content-schema/imbuement-authoring/samples/imbuement-access.json",
+      "sha256": "c05984cb8f0ac0e41b4f8bebd7bc2c93be24ea3cbbb86c0d95859e0a8a917f2d"
+    },
+    {
+      "path": "tools/content-schema/imbuement-authoring/samples/imbuement-bindings.json",
+      "sha256": "e9b3c4355a5db835af150c125fa3204f4bd6e674ef9e3b2d52383bac81f21ebc"
+    },
+    {
+      "path": "tools/content-schema/imbuement-authoring/samples/imbuement-combat.json",
+      "sha256": "39e8eaa16f7c1cd8358d70e620d23644a728c91a85a70ff9eb1659aadbe524d2"
+    },
+    {
+      "path": "tools/content-schema/imbuement-authoring/samples/imbuement-eligibility.json",
+      "sha256": "4a9d7b93ea2a704f40e1f3cd35ef6b1686ed917457926ca9d5c359c9cd46586e"
+    },
+    {
+      "path": "tools/content-schema/imbuement-authoring/samples/imbuement-sources-2026-10-01.json",
+      "sha256": "7ee2221886abdc80d27ce5cd13e58bdecab8b3c5210a7e0e7a36efc52771070e"
+    },
+    {
+      "path": "tools/content-schema/imbuement-authoring/samples/imbuements-candidate.json",
+      "sha256": "54afe94b9098462d2911960001ee384bc53a677b5e5a2703781341ba9a198f7f"
+    },
+    {
+      "path": "tools/content-schema/imbuement-authoring/samples/missing-item-definitions.json",
+      "sha256": "d1d324a100dbda840c1730561401f803aea4ec6014ec11dec23389e3280fd40d"
+    },
+    {
+      "path": "tools/content-schema/imbuement-authoring/samples/missing-item-source-facts.json",
+      "sha256": "51409c2844390ee0fa03e8306767674ff410ecdafbacee0eb4dfc1743716115d"
+    },
+    {
+      "path": "tools/content-schema/imbuement-authoring/samples/owner-authoring-policy.json",
+      "sha256": "c71b9351980fe70b8a83aafcfcca3e03a1ff9445427fedd842214ee89ae73079"
+    }
+  ],
   "contract": "docs/architecture/OTERYN_FULL_GAME_CONTENT_AND_RULESET_TREE_V1.md",
-  "notes": "Imbuement families, tiers, effects, allowed items, materials, costs, duration."
+  "counts": {
+    "bound_equipment_profiles": 627,
+    "families": 24,
+    "held_equipment_observations": 36,
+    "tiers": 72,
+    "unregistered_equipment_items": 2
+  },
+  "kind": "ruleset",
+  "notes": "Static data imported; runtime, quest state and Item projection separately qualified.",
+  "owner": "Item/Progression",
+  "path": "rulesets/items/imbuements/",
+  "payloads": [
+    {
+      "path": "rulesets/items/imbuements/access.json",
+      "sha256": "cc8be9bc187bc6a58cd8919277fea4ef9cbffad3eee3a13c74c278571ec8cba5"
+    },
+    {
+      "path": "rulesets/items/imbuements/catalogue.json",
+      "sha256": "a4b957413639718d05bf58e21c879963e388ec734a9b37902c73d3b872c67858"
+    },
+    {
+      "path": "rulesets/items/imbuements/equipment.json",
+      "sha256": "8881f608798ba8b3eee55f46b96d8823531f39b0288e22d28fe52ae3bd28a0bd"
+    },
+    {
+      "path": "rulesets/items/imbuements/owner-policy.json",
+      "sha256": "b2c481493bb2305d52867469b4cde6314ffd1a4fa461c4a105e73782c7754c7d"
+    }
+  ],
+  "population_state": "POPULATED",
+  "reference_resolution": {
+    "item_refs": "CURRENT_CANONICAL_ITEM_IDENTITIES_VALIDATED",
+    "owner_policy_precedence": "OWNER_SELECTION_OVER_PUBLIC_UNKNOWN_OR_ENGINE_CONFLICT",
+    "quest_predicates": "SOURCE_DEFINED_RUNTIME_STATE_BINDING_HELD",
+    "supporting_catalogues_base": "tools/content-schema/imbuement-authoring/samples/"
+  },
+  "repository": "Oteryn/Oteryn-Game",
+  "runtime_admission": "BLOCKED",
+  "runtime_switch_authorized": false,
+  "schema": "OTERYN_GAME_TREE_DIRECTORY/v1",
+  "source_head": "8ae14d820500bd94a9da06c2323e3ef27d1b4018",
+  "source_pr": "https://github.com/Oteryn/Oteryn-Game/pull/1438",
+  "source_snapshot_target": "global-tibia-current-2026-10-01"
 }
