@@ -7,7 +7,7 @@ date: 2026-10-03
 owner: Sol Supervising Architect
 requested_by: control plane (D358 topic request after FAMILIARS-0-FIX-3)
 writes_on_other_prs: none
-amended_by: ARCH-PACKET-FIX-1 (§2.3 rows, §2.5 RL-04, §2.6 rows and the Light owner; #1687 round-3 P1s 4174692081 and 4174692089; #1689 P1s 4174761344, 4174761349, 4174781962 and 4174781965); ARCH-RT-CHECKPOINT-ROWS-1 (§1.1 and §2.3: the first item and the narrowed RT-1b scope; #1689 P1 4174803489; #1692 P1s 4174859933 and 4174875997); ARCH-SLOT-WIRING-1 (§1.1, §2.3 slot call sites; #1692 P1 4174906452)
+amended_by: ARCH-PACKET-FIX-1 (§2.3 rows, §2.5 RL-04, §2.6 rows and the Light owner; #1687 round-3 P1s 4174692081 and 4174692089; #1689 P1s 4174761344, 4174761349, 4174781962 and 4174781965); ARCH-RT-CHECKPOINT-ROWS-1 (§1.1 and §2.3: the first item and the narrowed RT-1b scope; #1689 P1 4174803489; #1692 P1s 4174859933 and 4174875997); ARCH-SLOT-WIRING-1 (§1.1, §2.3 slot call sites; #1692 P1 4174906452); ARCH-ITEM-PACKETS-AMEND-1 (§1.1 and the §2.3 call_sites: slot-to-Ground drops; #1696 P1 4175041166)
 ```
 
 This bundle splits and packets three requested topics:
@@ -79,7 +79,8 @@ EQUIP-RT-1". Most of it does not need those slices. The minimum-sufficient split
   - With this, soft boots worn at login run down and become worn soft boots. That is a playable
     effect without any move slice.
   - **Narrowed (ARCH-RT-CHECKPOINT-ROWS-1).** RT-1b hosts at login and logout only (§2.3).
-    - The slot call sites go to whichever of RT-1b and ITEM-MOVE-2a merges second (§2.3 Scope).
+    - The slot call sites go to whichever of RT-1b and ITEM-MOVE-2a merges second, and those of a
+      slot-to-Ground drop to whichever of RT-1b and ITEM-MOVE-2b merges second (§2.3 Scope).
     - The exercise binding and the composed writers move to EXERCISE-1.
     - `main` has no character channel transfer, death, respawn or arrival path. Whichever PR adds
       one wires the timed host for it, as a merge condition (§2.3 Scope).
@@ -340,7 +341,7 @@ owned_paths:
   - docs/contracts/RESOURCE_LIMITS_REGISTRY.json       # §12 checkpoint and expiry shape rows; RL-01/-02/-04/-05 only where #1681 did not register them; own rows only
   - docs/architecture/DUR-03_ITEM_TRANSACTION_AND_ANTI_DUPLICATION_CONTRACT.md  # §39.3 checkpoint and expiry shapes; own paragraphs only
   - docs/agents/tasks/archive/OTV2-20261003-timed-rt-1b.md
-call_sites: login and logout only call into timed_item_host; the worker names each file at allocation and adds only the call. `main` has no character channel transfer, death, respawn or arrival path to call from; slot call sites belong to whichever of RT-1b and ITEM-MOVE-2a merges second (§2.3 Scope). It does not edit foundation/runtime_actor_carrier.rs while #1675 or #1682 is open.
+call_sites: login and logout only call into timed_item_host; the worker names each file at allocation and adds only the call. `main` has no character channel transfer, death, respawn or arrival path to call from; slot call sites belong to whichever of RT-1b and ITEM-MOVE-2a merges second, and slot-to-Ground drop call sites to whichever of RT-1b and ITEM-MOVE-2b merges second (§2.3 Scope). It does not edit foundation/runtime_actor_carrier.rs while #1675 or #1682 is open.
 validation:
   - cargo fmt --all --check
   - cargo clippy --locked -p oteryn-game-server --all-targets --quiet -- -D warnings
@@ -371,8 +372,9 @@ Acceptance:
       a rejected move makes it live again from the row (§9.1). Both have tests (#1696 P1s).
     - A drop from a slot to Ground (ITEM-MOVE-2b §5) is also a move out of a slot. Its call
       sites go to whichever of RT-1b and ITEM-MOVE-2b merges second, with the same stop, empty
-      lane and rehost rules and tests. ITEM-MOVE-WIRE-1 §5 carries the same condition (#1696 P1
-      4175041166).
+      lane and rehost rules and tests, success and rejection. ITEM-MOVE-WIRE-1 §5 carries the same
+      condition (#1696 P1 4175041166). RT-1c cannot own them: it starts after ITEM-MOVE-2b, so
+      ordering 2b after RT-1c would be circular (item batch §1.7).
   - **The exercise binding** (place 3) moves to EXERCISE-1, with the two composed writers
     (composed checkpoint and composed expiry burn).
   - **Lifecycle paths: the owner is whichever PR adds them.** `main` has no character channel
