@@ -650,10 +650,10 @@
   "snapshot_sha256": "16c338cbc6b3382d08ce69ebd7aae22dcbb5f0e48bf867ec53eb3bc11d9260b0",
   "source": {
     "admission_source": {
-      "explicit_ids_sha256": "136743df391cf4ff63fe16658fca0df6b2d90ce00636ddbbc87032f29a5230ff",
-      "explicit_rule_only_count": 60,
+      "explicit_ids_sha256": "9876779fad9a347536584ef7384b69e3e46b1f94b64b7aabf2d9d5e1a49b7c61",
+      "explicit_rule_only_count": 61,
       "path": "apps/game-server/src/content/item_identity.rs",
-      "sha256": "dccd6090906217a2e79f5d656d25457f9439e96d8579e91898b44c4bbea79aa8"
+      "sha256": "af45ce42e72045c2bfc8d0cc8bb9201926bdb8abe959010e415d1d7722205733"
     },
     "bindings": {
       "path": "imports/crystalserver/bindings/items.json",
@@ -1558,7 +1558,7 @@
     "source_inventory_sha256": "0a791b742840f052aa6b512d06f0785f0c9e8ebb5745e2cc8fd6646cbb9df544",
     "stats": {
       "path": "imports/tibiawiki/facts/items-stats.json",
-      "sha256": "49d43cbe6957e6edc16aeda72e05152c55606e9381452ea74d7a63b5a5e91e4a"
+      "sha256": "379f2d468fdb8e5ec7b40d98e4ec62f1b1b189b4b2ad9c40c4a69869123c5864"
     }
   }
 }

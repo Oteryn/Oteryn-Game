@@ -18,7 +18,7 @@ from item_id_alias_table import tibia_key
 
 QUALIFICATION = Path(__file__).parent / "samples/official-rule-only-navigation-six.json"
 QUALIFICATION_SHA256 = (
-    "b103496c6ff11b279ad7c0709022d4a637ded666761ef139f75f6f93f1ad0c43"
+    "8fbf06539117290104156f641cb4941a5da1b784cfe7e398c49633c0b1f948d3"
 )
 REVIEWED_IDS = frozenset({51276, 53197, 53199, 53201, 53203, 53205})
 
@@ -34,7 +34,7 @@ def decoded_digest(appearance):
 def admission_ids(text, expected):
     # Inspect the existing explicit native admission cohort, never infer it from a key.
     declaration = re.search(
-        r"const APPEARANCE_ONLY_ITEM_IDS: \[u64; 60\] = \[([\d,\s]+)\];", text
+        r"const APPEARANCE_ONLY_ITEM_IDS: \[u64; \d+\] = \[([\d,\s]+)\];", text
     )
     if not declaration:
         raise ValueError("OFFICIAL_NAVIGATION_NATIVE_ADMISSION")

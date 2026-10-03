@@ -65,7 +65,7 @@ class OfficialNavigationTests(unittest.TestCase):
         admission = self.document["admission_source"]
         source = (official.ROOT / admission["path"]).read_text()
         ids = official.admission_ids(source, admission)
-        self.assertEqual(len(ids), 60)
+        self.assertEqual(len(ids), 61)
         self.assertTrue(official.REVIEWED_IDS.issubset(ids))
         for changed in (source.replace("53197, 53199", "53196, 53199"), ""):
             with self.assertRaisesRegex(ValueError, "NATIVE_ADMISSION"):
