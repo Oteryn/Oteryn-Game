@@ -18,7 +18,7 @@
 //!   snapshot withdrew (`NONE` or another entitlement), needs a new lifecycle revision.
 //!
 //! Every equivocation or lifecycle conflict also records the account's durable semantic conflict
-//! (migration 0033, keyed by account alone, first detection kept) and one security audit row per
+//! (migration 0057, keyed by account alone, first detection kept) and one security audit row per
 //! (kind, `authority_revision`) in the same transaction (PREMIUM-DELIVERY-0 §3.1, §10.2).
 //! [`DurabilityRoot::record_premium_semantic_failure`] records an unsupported response the same
 //! way; it needs no evidence row. Any conflict row makes the account conflicting for good: no path
@@ -634,7 +634,7 @@ mod tests {
     #[test]
     fn semantic_failure_api_is_linked() {
         let _ = super::DurabilityRoot::record_premium_semantic_failure;
-        // The 0033 CHECK values.
+        // The 0057 CHECK values.
         assert_eq!(PremiumConflictKind::Contradiction as i16, 1);
         assert_eq!(PremiumConflictKind::Unsupported as i16, 2);
     }

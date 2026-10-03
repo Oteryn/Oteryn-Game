@@ -1,5 +1,5 @@
 // PREM-1a Premium consumer fence (migration 0029, `durability::premium_fence`, `premium`) and
-// PREM-1b durable semantic conflict and audit (migration 0033), failed pulls and the pull
+// PREM-1b durable semantic conflict and audit (migration 0057), failed pulls and the pull
 // schedule against the in-process test producer.
 // Every wrapper provides the same path-loaded crate root, the `premium` module and the
 // `bestiary_postgres_harness` module; the fence needs no Character.
