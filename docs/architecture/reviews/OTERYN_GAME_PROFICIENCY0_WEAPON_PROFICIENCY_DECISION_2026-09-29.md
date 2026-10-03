@@ -140,11 +140,13 @@ gives trees, thresholds and perks to content. Its rule 6 requires versioned defi
   - PROF-CONTENT-1 reports this coverage.
 - **Revisions (rule 6).** A new definition revision is compatible when it keeps the level count
   and each level's perk order, compared by each option's full non-value identity (the §4.2 shape). It may change values and thresholds.
-  - A compatible revision applies without a write. The track's stored revision advances with its
-    next line.
+  - A compatible revision applies without a write. The track's stored revision follows the active
+    revision on its next line.
     **Amendment (compatible refresh, architect ruling for D283c).** That next line is the track's
     next `training` or `perk_selection` line, which then carries the definition revision before and
-    after (after later than before, same definition key); §4.2's CHECKs allow exactly this. No
+    after (same definition key; the after revision is the **active** one, in either direction, so a
+    content rollback to a last-known-good revision is followed too); §4.2's CHECKs allow exactly
+    this, with the shape witness equal. No
     separate refresh cause and no write for the revision alone exist. Progress is cumulative and is
     never lowered by a refresh (a lower threshold or Mastery cap only changes the derived level).
     **Release gate (D283c).** Because a dormant track keeps its older revision until its next line,
@@ -152,8 +154,12 @@ gives trees, thresholds and perks to content. Its rule 6 requires versioned defi
     revision still present** in persisted track rows of that definition. The gate uses an index on
     the track table's (definition key, revision) and asks, for each gap between the covered
     revisions (sorted), whether any row exists there: at most (covered revisions + 1) index range
-    probes, each stopping at its first row, so its cost does not depend on the number of tracks. A compatible activation needs no gate. No
-    definition history is stored.
+    probes, each stopping at its first row, so its cost does not depend on the number of tracks. A compatible activation needs no gate,
+    whether it moves forward or rolls back to a last-known-good revision; a rollback across an
+    incompatible activation is itself an incompatible activation and passes the same gate with its
+    own migration. No definition history is stored. PROF-1 tests: r1 → r2 compatible, a training
+    line restamps to r2; rollback to r1, the next training line restamps to r1; a restamp with a
+    different shape witness is rejected by the line CHECK.
   - Anything else is incompatible. The content revision declares the migration of the selections
     (keep, remap or clear, per level). The owning session writes one `migration` receipt for the
     Character's affected tracks before it first uses any of them under the new revision, in its
@@ -203,18 +209,19 @@ gives trees, thresholds and perks to content. Its rule 6 requires versioned defi
 
   CHECKs per cause:
   - `training`: progress strictly increases; selections and the definition key are unchanged; the
-    definition revision is unchanged or advances (compatible refresh, §4.1);
+    definition revision is unchanged or restamped to the active revision in either direction, with an
+    equal shape witness (compatible refresh, §4.1);
   - `perk_selection`: progress and the definition key are unchanged; the definition revision is
-    unchanged or advances (compatible refresh); exactly one level's entry changes (set, change or
+    unchanged or restamped likewise (compatible refresh); exactly one level's entry changes (set, change or
     clear);
   - `migration`: progress is unchanged and the definition revision changes. That the selections
     follow the declared migration is a writer invariant, because the guard cannot read content.
     PROF-1 tests it, and reconcile recomputes it from the two definition revisions.
-  - A revision advance on a `training` or `perk_selection` line must be compatible (same level count
+  - A revision restamp on a `training` or `perk_selection` line, forward or back, must be compatible (same level count
     and per-level ordered option identities). The **line CHECK** enforces it without content: on those causes the
     shape after must equal the shape before, and the per-track check links each
     line's before shape to the previous line's after value. The writer computes the new
-    revision's shape from the active content, which always holds the revision it advances
+    revision's shape from the active content, which always holds the revision it restamps
     to. `verify_character_integrity` and reconcile check the same equality and chain from the stored
     lines alone, so no definition history is needed and an evicted revision never makes a receipt
     unverifiable. A `migration` line may change the shape; it is the only cause that can.

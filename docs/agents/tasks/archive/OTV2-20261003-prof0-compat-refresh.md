@@ -45,6 +45,7 @@ external_repositories: []
 - Codex round 1 on `5f1f4118`: 1 P1 (evicted revisions) and 1 P2, fixed in `ba350e28`.
 - Codex round 2 on `ba350e28`: 1 P1 (dormant tracks across activations) and 1 P2, fixed in `c6bb5d93`.
 - Codex round 3 on `c6bb5d93`: 1 P1 (witness discriminators) and 2 P2, fixed in the next head.
+- Codex round 4 on `7e9cd57e`: 1 P1 (content rollback), fixed in the next head.
 - Frozen heads are in the #1622 FREEZE_SHA entries.
 
 ## Closeout
