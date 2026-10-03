@@ -9,7 +9,7 @@ repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: arch/timed-forge-prof-packets-20261003
 issue: 162
-pr: TBD
+pr: 1687
 head_sha: "exact frozen head in the FREEZE_SHA entry"
 final_head_sha: "exact frozen head in the FREEZE_SHA entry"
 owner: claude-code-session_016c5MQoe5CoMk9fxmuuMcFJ (Sol Supervising Architect)
