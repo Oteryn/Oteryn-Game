@@ -17,7 +17,7 @@ assert manifest["compatibility"] == {
     "runtime_switch_authorized": False,
 }
 assert lock["family_counts"] == {
-    "Item": 34031, "Mount": 252,
+    "Item": 34032, "Mount": 252,
     "Creature": 1503, "Presentation": 2613, "Behavior": 2613, "Loot": 1056, "Ability": 6000, "Effect": 4599, "Formula": 4905,
     "NPC": 1110, "Dialogue": 694, "Service.Trade": 324, "Service.Travel": 56, "Encounter": 61, "Charm": 25,
     "Proficiency": 443, "RewardClaim": 231, "StarterKit": 1,

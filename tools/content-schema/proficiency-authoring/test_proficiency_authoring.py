@@ -210,10 +210,10 @@ def test_registration_is_idempotent() -> None:
 def test_item_bindings() -> None:
     bindings = pa.item_bindings(committed())
     rows = bindings["records"]
-    # ITEM-ADD-1: the donor epoch-2 Items define 22 more bound weapons.
-    assert bindings["record_count"] == len(rows) == 664
+    # ITEM-ADD-1 plus the admitted appearance-only Snowball identity.
+    assert bindings["record_count"] == len(rows) == 665
     assert bindings["excluded"] == {
-        "item_not_defined": 1,
+        "item_not_defined": 0,
         "unknown_threshold_class": 1,
     }
     items = pa.content_item_revisions()
@@ -226,6 +226,20 @@ def test_item_bindings() -> None:
         assert row["threshold_class"] in pa.THRESHOLD_CLASSES
     source = json.loads((pa.ROOT / pa.BINDING_SOURCE_REL).read_text(encoding="utf-8"))
     by_item = {row["item"]["key"]: row for row in rows}
+    assert by_item["oteryn:item.tibia.i53855"] == {
+        "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i53855",
+            "revision": "definition-r1",
+        },
+        "profile_binding": {
+            "family": "Proficiency",
+            "key": "oteryn:proficiency.tibia.p474",
+            "revision": "definition-r1",
+        },
+        "threshold_class": "standard",
+    }
+    assert "oteryn:item.tibia.i51666" not in by_item
     for row in source["bindings"]:
         bound = by_item.get(row["item_key"])
         if bound is None:
