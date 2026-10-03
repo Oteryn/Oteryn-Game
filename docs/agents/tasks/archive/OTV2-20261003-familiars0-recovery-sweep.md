@@ -39,6 +39,11 @@ row's (P1 4174310513). A failed or ambiguous reconciliation re-reads the fence a
 any admission or write (P1 4174310520). F-I7 defines `open` as an acquisition that is not yet
 closed or reconciled (P2 4174310515).
 
+Review round 2 (Codex): the cast's compare-and-set re-checks that no familiar waits to return
+(P1 4174335594). The agent test suite is recorded (P1 4174335613). After a failed reconciliation,
+a fresh clean row returns its familiar (P2 4174335602). The §5 `open` definition is aligned with
+F-I7 (P2 4174335610).
+
 ## High-risk authority/recovery qualification
 
 ```yaml
@@ -65,7 +70,7 @@ finding_family_sweep:
 ## Validation
 
 `python3 tools/agents/validate_governance.py`, `python3 tools/repository/validate_repository_policy.py`,
-`git diff --check`: pass.
+`python -m unittest discover -s tools/agents/tests` (54 tests), `git diff --check`: pass.
 
 ```yaml
 status: completed
