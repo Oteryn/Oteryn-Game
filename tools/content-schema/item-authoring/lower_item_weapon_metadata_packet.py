@@ -15,7 +15,7 @@ from weapon_metadata_source_aliases import FIELDS, build_alias_catalog, formal_w
 ROOT = base.ROOT
 COMPILER = "tools/content-schema/item-authoring/lower_item_weapon_metadata_packet.py"
 PROOF = "docs/agents/evidence/OTV2-20261002-item-weapon-metadata-source-qualification-v2.json"
-PROOF_SHA = "efd359c89c464426a10a6f729ac2e0effab6ce2410e1ee3b862c5d1da55bdbdd"
+PROOF_SHA = "bc50d64e281534e9b8026029d3ee0b78e23114ddf042e01d01401c69c1dcd02a"
 ALIASES = (
     "tools/content-schema/item-authoring/fandom-weapon-metadata-alias-supplement.json"
 )

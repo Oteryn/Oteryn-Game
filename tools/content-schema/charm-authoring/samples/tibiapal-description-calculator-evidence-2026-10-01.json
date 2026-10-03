@@ -231,7 +231,7 @@
     },
     {
       "path": "apps/game-server/src/combat/charm_effects.rs",
-      "sha256": "242e209ca6d6fb00faa26e21830f2b85678440d564bda5fafdfa16eb26fba930"
+      "sha256": "b6306e520ea654e2be9117a1475f43d427ff77c81ea21a3a426eb55e9e45151a"
     }
   ],
   "mode": "READ_ONLY_SOURCE_AND_NODE_VM",
