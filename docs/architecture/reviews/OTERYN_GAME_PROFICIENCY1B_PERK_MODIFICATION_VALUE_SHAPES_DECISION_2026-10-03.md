@@ -98,11 +98,12 @@ A modified perk is `(shaping revision, entry index)`. The entry index is stable 
   | `RANK_UP` | the step's dust cost, the next rank's values |
   | `ORB_RANK` | the orb count, rank 10 values |
   | `RESHAPE_OFFER` | the offer's dust cost, the pool and its weights |
-  | `RESHAPE_CHOOSE` | nothing beyond the paid offer (admitted with `RESHAPE_OFFER`) |
+  | `RESHAPE_CHOOSE` | nothing: it is admitted whenever the row has a pending offer, whatever the active revision's cells (the offer was admitted and paid under the row's own revision) |
   | `CLEAR` | the clear's dust cost |
 
 - A command for an operation not admitted answers `NOT_ADMITTED` (PROF-WIRE-0 §5) and writes
-  nothing. Admission is read from the active shaping revision when the occurrence is reserved.
+  nothing. Admission is read from the active shaping revision when the occurrence is reserved,
+  except `RESHAPE_CHOOSE`, which follows the pending offer, so a paid offer is never stranded.
 - **No gold.** No cost cell may be gold. A gold cost is a new fee source and needs an owner answer
   (D178) and an amendment of this decision.
 - If evidence never appears for a cell, the architect puts a declared difference to the owner in
@@ -167,8 +168,9 @@ Every operation is a command of one track and one slot, from an actor standing i
 zone, under the PROFICIENCY-0 §4.3 writer. Checks run in this order and each refusal writes nothing
 (except §6.3's terminal record):
 1. capability 2 negotiated (else `CAPABILITY_MISMATCH`, PROF-WIRE-0 §4);
-2. the rate cap `PROF1B-RL-03`, charged at reservation;
-3. replay lookup by occurrence (§6.1);
+2. replay lookup by occurrence (§6.1): a known occurrence returns its original result and is never
+   charged against the cap;
+3. the rate cap `PROF1B-RL-03`, charged when a new occurrence is reserved;
 4. revision binding (§6.2);
 5. the operation admitted (§3.3), else `NOT_ADMITTED`;
 6. the track exists, else `UNKNOWN_TRACK`; `expected_revision` equals the track's committed

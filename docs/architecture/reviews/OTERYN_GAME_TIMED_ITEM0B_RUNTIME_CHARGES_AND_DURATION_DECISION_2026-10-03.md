@@ -316,6 +316,10 @@ OFFLINE-0's checkpoint loss.
   equip}`, the same move transforms it (`PRESERVE_INSTANCE`) into the active form. The row is not
   written: it belongs to the item, and an absent row already means full values of the active
   form. The item is live after the commit, starting from the row.
+- **Amends TIMED-ITEM-0 §4's creation rule.** Its list of first writes ("its first checkpoint,
+  equip transform or expiry") loses "equip transform": an equip transform never writes the row, so
+  a ring's row is created at expected revision 0 by its first checkpoint, `SetDeadline`,
+  `ClearDeadline`, `PutOut`, expiry or repair. The other §4 invariants are unchanged.
 - **Unequip.** After the stop checkpoint, a move with `transform {trigger: unequip}` transforms it
   back. `remaining_ms` carries across both forms (the row is the item's). An active form without an
   unequip transform stays the active form, frozen.

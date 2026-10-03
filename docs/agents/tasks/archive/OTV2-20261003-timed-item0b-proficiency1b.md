@@ -8,7 +8,7 @@ status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/timed-item0b-proficiency1b-decisions
-pr: "number in the #1622 FREEZE_SHA entry"
+pr: 1662
 base_sha: d30e271b
 head_sha: "exact frozen head in the #1622 FREEZE_SHA entry"
 final_head_sha: "exact frozen head in the #1622 FREEZE_SHA entry"
