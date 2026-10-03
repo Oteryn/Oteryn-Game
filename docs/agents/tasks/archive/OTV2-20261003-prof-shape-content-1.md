@@ -8,7 +8,7 @@ status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/prof-shape-content-1
-pr: PENDING_PR
+pr: 1670
 head_sha: "exact frozen head in the #1622 FREEZE_SHA entry"
 final_head_sha: "exact frozen head in the #1622 FREEZE_SHA entry"
 owner: claude-code-session-01QFRdKvFbNsNiCzMyR75FrC (second architect lane, content packet)
