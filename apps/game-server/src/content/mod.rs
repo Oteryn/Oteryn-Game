@@ -42,6 +42,7 @@ mod fixture;
 pub mod item_admission;
 pub mod item_identity;
 pub mod item_stats_promotion;
+pub mod item_timed_promotion;
 mod model;
 mod production;
 mod project;
