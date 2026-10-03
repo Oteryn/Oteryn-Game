@@ -1,0 +1,2229 @@
+{
+  "schema": "FORGE_ONE_EXISTING_OWNER_CURRENT_CUT_PROOF/v2",
+  "mode": "SOURCE_ONLY_AUTHORING_CURRENT_PARENT_NOT_NATIVE_APPLIED",
+  "native_baseline_head": "2ec1f34f05fd89abbb041f313b0852c331ae2b53",
+  "target": {
+    "family": "Item",
+    "key": "oteryn:item.tibia.i3332",
+    "revision": "definition-r1"
+  },
+  "sourcefield_group": "FORGE_EXPLICIT_PER_ITEM_PAIR",
+  "value": {
+    "classification": 2,
+    "max_tier": 2
+  },
+  "source_pair": {
+    "artifact_path": "docs/agents/evidence/OTV2-20260925-item-enrichment-wave1-source-snapshot.json",
+    "artifact_sha256": "5d8b84eee85e226e99d516beb7b40b8dc201c923e9b63b5ef18313085c3cbdf5",
+    "artifact_schema": "OTERYN_G4_ITEM_WAVE1_SOURCE_SNAPSHOT/v1",
+    "row_ordinal": 60,
+    "retained_source_row": {
+      "external_id": "6171",
+      "fields": {
+        "classificacao": {
+          "state": "VALUE",
+          "value": "2"
+        },
+        "enchantable": {
+          "state": "VALUE",
+          "value": "não"
+        },
+        "hands": {
+          "state": "VALUE",
+          "value": "Duas"
+        },
+        "imbuement": {
+          "state": "VALUE",
+          "value": 3
+        },
+        "implemented": {
+          "state": "VALUE",
+          "value": "7.4"
+        },
+        "itemclass": {
+          "state": "VALUE",
+          "value": "Armas"
+        },
+        "levelrequired": {
+          "state": "VALUE",
+          "value": 65
+        },
+        "max_tier": {
+          "state": "VALUE",
+          "value": "2"
+        },
+        "name": {
+          "state": "VALUE",
+          "value": "Hammer of Wrath"
+        },
+        "primarytype": {
+          "state": "VALUE",
+          "value": "Clavas"
+        },
+        "type": {
+          "state": "VALUE",
+          "value": "Clava"
+        },
+        "vocrequired": {
+          "state": "VALUE",
+          "value": "Knights"
+        },
+        "weight": {
+          "state": "VALUE",
+          "value": "70"
+        }
+      },
+      "revision_id": 443875,
+      "revision_timestamp": "2026-09-10T14:41:17Z",
+      "source_digest": "5ff67e576b1716345345bb7eb03ef90037ff7029bb741e43d6edc8802c75d42b",
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.registry.i00003206",
+        "revision": "definition-r1"
+      },
+      "title": "Hammer of Wrath"
+    },
+    "source_row_canonical_sha256": "a1b52648b3919458a3ffef11ab0589095cec43e8bd9dd9e9e3c0e5c98ef8be59",
+    "whole_article_body_retained": false,
+    "source_digest_semantics": "SHA is the historical full-wikitext digest declared by the exact-revision structured source snapshot; no full article reconstruction or new network body proof is claimed.",
+    "max_tier_basis": "EXPLICIT_SOURCE_PARAMETER_max_tier_NOT_GLOBAL_CLASS_TABLE"
+  },
+  "current_selector": {
+    "qualification_cutoff": "2026-09-27T23:59:59Z",
+    "cutoff_evidence_path": "/workspace/audit-continuation/global-infobox-object-source-manifest.json",
+    "cutoff_evidence_sha256": "014f140c789e554f11cee61012932d214f7bd46dd9bc6155bca08f42f3e93629",
+    "singleton_exact_source": {
+      "source_key": "oteryn:source.tibiawiki",
+      "source_revision": "tibiawiki-item-census:389875abd364aa9bcb0b09a591989c82ece5098d63b3c23376274048f6ac2f5a",
+      "identity_namespace": "mediawiki/page_id",
+      "external_id": "6171",
+      "revision_id": 443875,
+      "revision_timestamp": "2026-09-10T14:41:17Z",
+      "source_digest": "5ff67e576b1716345345bb7eb03ef90037ff7029bb741e43d6edc8802c75d42b"
+    },
+    "immutable_old_stage_path": "docs/agents/evidence/OTV2-20260925-item-enrichment-wave1-staged.json",
+    "immutable_old_stage_sha256": "00f2acd441e9146bdd7f67821bef446c171ea67cd06f666028324b61e544cb95",
+    "old_target_cut": "2026-07-28T23:59:59Z",
+    "old_rejection_preserved": {
+      "external_id": "6171",
+      "reason": "REVISION_AFTER_TARGET_CUT",
+      "revision_id": 443875,
+      "source_digest": "5ff67e576b1716345345bb7eb03ef90037ff7029bb741e43d6edc8802c75d42b",
+      "target_key": "oteryn:item.registry.i00003206"
+    },
+    "policy": "Separate new sourcefield selector qualifies this exact retained pair under September27. It does not mutate, rerun, extend or silently weaken the July28 Wave1 packet."
+  },
+  "identity_bridge": {
+    "br_to_full_native": {
+      "file_sha256": "07fb9938e0170c596d9f34bebf78bc49b48301426823c2096f4f186ec0a22e84",
+      "row_ordinal": 109,
+      "row": {
+        "disposition": "EXACT",
+        "external_id": "6171",
+        "identity_namespace": "mediawiki/page_id",
+        "source_key": "oteryn:source.tibiawiki",
+        "source_revision": "tibiawiki-item-census:389875abd364aa9bcb0b09a591989c82ece5098d63b3c23376274048f6ac2f5a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3332",
+          "revision": "definition-r1"
+        }
+      },
+      "reverse_target_binding_count": 1
+    },
+    "crystal_appearance_to_full_native": {
+      "file_sha256": "1d19709c28a649d8a9f32bf53e5bf43ad847d7901d6c6254833f456154d2de5a",
+      "row_ordinal": 20385,
+      "row": {
+        "disposition": "EXACT",
+        "external_id": "3332",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3332",
+          "revision": "definition-r1"
+        }
+      },
+      "reverse_target_binding_count": 1
+    },
+    "retained_target_alias": {
+      "evidence": {
+        "basis": "binding",
+        "comparison_appearances": "client-15.30",
+        "identity_projection_sha256": "6a3ce09ac540a9b0e6682cf2164b1a98cad1ee0640cbd08e5933832e1e58430e",
+        "record": "EVOLVED",
+        "source_appearances": "crystal-ff7ede5",
+        "source_item_id": 3332,
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a"
+      },
+      "key": "oteryn:item.registry.i00003206",
+      "state": "ALIAS",
+      "target": "oteryn:item.tibia.i3332",
+      "version": 1
+    },
+    "alias_file_sha256": "128bc354816199702c26f83120e6fb7846fb2608fb5ee1c16085f63268e592f2",
+    "key_suffix_parsing_or_new_alias": false,
+    "binding_epoch_hold": null
+  },
+  "official_membership_and_name": {
+    "admitted_index_path": "imports/official/appearance-membership/admitted.json",
+    "admitted_index_sha256": "19f99b709d9a28c1730632e27672adb0a03ef11bf7d1f4b2647a4090f3df0718",
+    "newest_descriptor": {
+      "appearances_sha256": "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2",
+      "label": "client-15.30",
+      "manifest": "appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.json",
+      "manifest_sha256": "f37b5d3e1136ebc3edbae1fe7090c4914b1d717bfbf9fd7c8faeeee36b491fe8",
+      "object_count": 43516,
+      "order": 4
+    },
+    "membership_path": "imports/official/appearance-membership/appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.json",
+    "membership_sha256": "f37b5d3e1136ebc3edbae1fe7090c4914b1d717bfbf9fd7c8faeeee36b491fe8",
+    "entry_ordinal": 3168,
+    "entry_columns": [
+      "id",
+      "identity_projection_sha256",
+      "record_sha256"
+    ],
+    "entry": [
+      3332,
+      "6a3ce09ac540a9b0e6682cf2164b1a98cad1ee0640cbd08e5933832e1e58430e",
+      "dc32b251e10a1f418f1bb56af185b1a52d45e8e158bd5685acb47537fd5af332"
+    ],
+    "complete_official_appearance_sha256": "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2",
+    "object_sha256": "dc32b251e10a1f418f1bb56af185b1a52d45e8e158bd5685acb47537fd5af332",
+    "source_item_id": 3332,
+    "actual_name": "hammer of wrath",
+    "observed_flags": {
+      "flags.take": true,
+      "flags.upgradeclassification": true,
+      "upgradeclassification.upgrade_classification": 2
+    },
+    "native_name": {
+      "state": "KNOWN",
+      "value": "hammer of wrath"
+    },
+    "independent_sourcefield_max_tier": false
+  },
+  "current_native_identity": {
+    "reference_path": "content/world/definitions/reference.json",
+    "reference_sha256": "117fe0d6b2b9078a8ccecef1602b0f55125e7db75d56194629c6ea5b7c48891b",
+    "row_ordinal": 40006,
+    "retained_current_record": {
+      "kind": "Item",
+      "identity": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i3332",
+        "revision": "definition-r1"
+      },
+      "client_projection": "ClientSafe",
+      "materializable": false,
+      "stack_class": "Unknown",
+      "semantics": {
+        "presentation": {
+          "state": "KNOWN",
+          "value": {
+            "name": {
+              "state": "KNOWN",
+              "value": "hammer of wrath"
+            },
+            "description": {
+              "state": "UNKNOWN"
+            }
+          }
+        },
+        "classification": {
+          "state": "UNKNOWN"
+        },
+        "physical": {
+          "state": "KNOWN",
+          "value": {
+            "weight": {
+              "state": "KNOWN",
+              "value": 7000
+            },
+            "movable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "pickupable": {
+              "state": "KNOWN",
+              "value": true
+            }
+          }
+        },
+        "stack": {
+          "state": "KNOWN",
+          "value": {
+            "stackable": {
+              "state": "KNOWN",
+              "value": false
+            },
+            "stack_max": {
+              "state": "UNKNOWN"
+            }
+          }
+        },
+        "equipment": {
+          "state": "KNOWN",
+          "value": {
+            "patterns": {
+              "state": "KNOWN",
+              "value": [
+                {
+                  "pattern_id": 1,
+                  "primary_slot": {
+                    "state": "KNOWN",
+                    "value": "WEAPON"
+                  },
+                  "additional_reserved_slots": {
+                    "state": "KNOWN",
+                    "value": [
+                      "SHIELD"
+                    ]
+                  },
+                  "mutually_exclusive_groups": {
+                    "state": "UNKNOWN"
+                  },
+                  "vocations": {
+                    "state": "KNOWN",
+                    "value": [
+                      "KNIGHT"
+                    ]
+                  },
+                  "level": {
+                    "state": "KNOWN",
+                    "value": 65
+                  },
+                  "compatibility_rule": {
+                    "state": "UNKNOWN"
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "weapon": {
+          "state": "KNOWN",
+          "value": {
+            "weapon_type": {
+              "state": "KNOWN",
+              "value": "CLUB"
+            },
+            "attack": {
+              "state": "KNOWN",
+              "value": 48
+            },
+            "defense": {
+              "state": "KNOWN",
+              "value": 12
+            },
+            "extra_defense": {
+              "state": "UNKNOWN"
+            },
+            "range": {
+              "state": "UNKNOWN"
+            },
+            "hit_chance": {
+              "state": "UNKNOWN"
+            },
+            "max_hit_chance": {
+              "state": "UNKNOWN"
+            },
+            "ammunition": {
+              "state": "UNKNOWN"
+            },
+            "elemental": {
+              "state": "UNKNOWN"
+            }
+          }
+        },
+        "protection": {
+          "state": "UNKNOWN"
+        },
+        "skill_modifiers": {
+          "state": "UNKNOWN"
+        },
+        "charges": {
+          "state": "UNKNOWN"
+        },
+        "temporal": {
+          "state": "UNKNOWN"
+        },
+        "container": {
+          "state": "UNKNOWN"
+        },
+        "imbuement": {
+          "state": "KNOWN",
+          "value": {
+            "slot_count": {
+              "state": "KNOWN",
+              "value": 3
+            },
+            "allowed_family_tiers": {
+              "state": "UNKNOWN"
+            },
+            "excluded_families": {
+              "state": "UNKNOWN"
+            }
+          }
+        },
+        "use_transform": {
+          "state": "UNKNOWN"
+        },
+        "trade_restrictions": {
+          "state": "KNOWN",
+          "value": {
+            "tradeable": {
+              "state": "UNKNOWN"
+            },
+            "marketable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "vocations": {
+              "state": "UNKNOWN"
+            },
+            "account_binding_policy": {
+              "state": "UNKNOWN"
+            },
+            "character_binding_policy": {
+              "state": "UNKNOWN"
+            }
+          }
+        },
+        "fluid": {
+          "state": "UNKNOWN"
+        },
+        "readable_writeable": {
+          "state": "UNKNOWN"
+        }
+      }
+    },
+    "row_canonical_sha256": "5dc4ba82904655c914b2ad3cef800ec648cda05ec7a43473d411a115a0c9fa42",
+    "item_shard_path": "content/items/definitions/items-20000-20499.json",
+    "item_shard_sha256": "5d3f64922a662edbf20ef88ce9603d9be040a50c068b22e033bd019c6ede135a",
+    "item_shard_row_ordinal": 386,
+    "item_shard_record": {
+      "definition": {
+        "client_projection": "ClientSafe",
+        "identity": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3332",
+          "revision": "definition-r1"
+        },
+        "kind": "Item",
+        "materializable": false,
+        "semantics": {
+          "charges": {
+            "state": "UNKNOWN"
+          },
+          "classification": {
+            "state": "UNKNOWN"
+          },
+          "container": {
+            "state": "UNKNOWN"
+          },
+          "equipment": {
+            "state": "KNOWN",
+            "value": {
+              "patterns": {
+                "state": "KNOWN",
+                "value": [
+                  {
+                    "additional_reserved_slots": {
+                      "state": "KNOWN",
+                      "value": [
+                        "SHIELD"
+                      ]
+                    },
+                    "compatibility_rule": {
+                      "state": "UNKNOWN"
+                    },
+                    "level": {
+                      "state": "KNOWN",
+                      "value": 65
+                    },
+                    "mutually_exclusive_groups": {
+                      "state": "UNKNOWN"
+                    },
+                    "pattern_id": 1,
+                    "primary_slot": {
+                      "state": "KNOWN",
+                      "value": "WEAPON"
+                    },
+                    "vocations": {
+                      "state": "KNOWN",
+                      "value": [
+                        "KNIGHT"
+                      ]
+                    }
+                  }
+                ]
+              }
+            }
+          },
+          "fluid": {
+            "state": "UNKNOWN"
+          },
+          "imbuement": {
+            "state": "KNOWN",
+            "value": {
+              "allowed_family_tiers": {
+                "state": "UNKNOWN"
+              },
+              "excluded_families": {
+                "state": "UNKNOWN"
+              },
+              "slot_count": {
+                "state": "KNOWN",
+                "value": 3
+              }
+            }
+          },
+          "physical": {
+            "state": "KNOWN",
+            "value": {
+              "movable": {
+                "state": "KNOWN",
+                "value": true
+              },
+              "pickupable": {
+                "state": "KNOWN",
+                "value": true
+              },
+              "weight": {
+                "state": "KNOWN",
+                "value": 7000
+              }
+            }
+          },
+          "presentation": {
+            "state": "KNOWN",
+            "value": {
+              "description": {
+                "state": "UNKNOWN"
+              },
+              "name": {
+                "state": "KNOWN",
+                "value": "hammer of wrath"
+              }
+            }
+          },
+          "protection": {
+            "state": "UNKNOWN"
+          },
+          "readable_writeable": {
+            "state": "UNKNOWN"
+          },
+          "skill_modifiers": {
+            "state": "UNKNOWN"
+          },
+          "stack": {
+            "state": "KNOWN",
+            "value": {
+              "stack_max": {
+                "state": "UNKNOWN"
+              },
+              "stackable": {
+                "state": "KNOWN",
+                "value": false
+              }
+            }
+          },
+          "temporal": {
+            "state": "UNKNOWN"
+          },
+          "trade_restrictions": {
+            "state": "KNOWN",
+            "value": {
+              "account_binding_policy": {
+                "state": "UNKNOWN"
+              },
+              "character_binding_policy": {
+                "state": "UNKNOWN"
+              },
+              "marketable": {
+                "state": "KNOWN",
+                "value": true
+              },
+              "tradeable": {
+                "state": "UNKNOWN"
+              },
+              "vocations": {
+                "state": "UNKNOWN"
+              }
+            }
+          },
+          "use_transform": {
+            "state": "UNKNOWN"
+          },
+          "weapon": {
+            "state": "KNOWN",
+            "value": {
+              "ammunition": {
+                "state": "UNKNOWN"
+              },
+              "attack": {
+                "state": "KNOWN",
+                "value": 48
+              },
+              "defense": {
+                "state": "KNOWN",
+                "value": 12
+              },
+              "elemental": {
+                "state": "UNKNOWN"
+              },
+              "extra_defense": {
+                "state": "UNKNOWN"
+              },
+              "hit_chance": {
+                "state": "UNKNOWN"
+              },
+              "max_hit_chance": {
+                "state": "UNKNOWN"
+              },
+              "range": {
+                "state": "UNKNOWN"
+              },
+              "weapon_type": {
+                "state": "KNOWN",
+                "value": "CLUB"
+              }
+            }
+          }
+        },
+        "stack_class": "Unknown"
+      },
+      "editor": {
+        "aliases": [],
+        "categories": [],
+        "description": "",
+        "display_name": "Hammer of Wrath",
+        "notes": [],
+        "tags": [
+          "oteryn:editor.item"
+        ],
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3332",
+          "revision": "definition-r1"
+        }
+      },
+      "source_bindings": [
+        {
+          "disposition": "EXACT",
+          "external_id": "6171",
+          "identity_namespace": "mediawiki/page_id",
+          "source_key": "oteryn:source.tibiawiki",
+          "source_revision": "tibiawiki-item-census:389875abd364aa9bcb0b09a591989c82ece5098d63b3c23376274048f6ac2f5a",
+          "target": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i3332",
+            "revision": "definition-r1"
+          }
+        }
+      ]
+    }
+  },
+  "existing_owner": {
+    "rust_type": "ProjectV2ItemAuthoring",
+    "rust_member": "forge: Option<ProjectV2ItemForgeProfile>",
+    "forge_type_members": {
+      "classification": "u8",
+      "max_tier": "u8"
+    },
+    "draft_path": "ProjectV2Draft.state.item_authoring: Vec<ProjectV2ItemAuthoring>",
+    "ProjectV2ItemAuthoringDraft_type_exists": false,
+    "canonical_owner_path": "content/world/definitions/declarations.json#/item_authoring",
+    "canonical_owner_file_sha256": "01c03a2c2c73ad28d82756a5aebac0ad75bfbf1bd263f1488accf21319917722",
+    "current_item_authoring_entry_present": false,
+    "current_item_shard_forge_profile_present": false,
+    "current_authoring_count": 164,
+    "existing_forge_profiles": 146,
+    "incoming_forge_is_nonzero_u8": true,
+    "incoming_class_is_formal_enum_member": true,
+    "minimum_incoming_owner_row": {
+      "item": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i3332",
+        "revision": "definition-r1"
+      },
+      "forge": {
+        "classification": 2,
+        "max_tier": 2
+      }
+    },
+    "source_bridge_and_owner_contract_hold": null,
+    "new_native_semantics_member_or_contract_required": false
+  },
+  "world_owner_exclusion": {
+    "native_parent": "2ec1f34f05fd89abbb041f313b0852c331ae2b53",
+    "actual_current_files": [
+      {
+        "path": "content/world/terrain/index.json",
+        "sha256": "89ae879da01b6a81e1e6a1c6a06b2632a2678066e0eb71404a5a7882bd516c44",
+        "exact_item_pointer_hits": 0
+      },
+      {
+        "path": "content/world/terrain/terrain-00000-00499.json",
+        "sha256": "8219d3d93af9791f0277608921041743f9a95e8ce182ef52bdaf859064d0322e",
+        "exact_item_pointer_hits": 0
+      },
+      {
+        "path": "content/world/terrain/terrain-00500-00999.json",
+        "sha256": "21dff9929f9e287eb070ac7b2c6666c4e3fb2002614dee22707daad6d0be033d",
+        "exact_item_pointer_hits": 0
+      },
+      {
+        "path": "content/world/terrain/terrain-01000-01499.json",
+        "sha256": "f2c02951b6e217960127adac3e99f7a2835d8220cdec5e3149be7f4ec5cb111b",
+        "exact_item_pointer_hits": 0
+      },
+      {
+        "path": "content/world/terrain/terrain-01500-01999.json",
+        "sha256": "54c8a17c14e01845f366f397c882ed432c9fa8cc2b8c3300e61d84a7f39999db",
+        "exact_item_pointer_hits": 0
+      },
+      {
+        "path": "content/world/terrain/terrain-02000-02499.json",
+        "sha256": "b5bfa07a608332e21de5f0e00a76506e251e226bf358d56cec8c7977d42cc258",
+        "exact_item_pointer_hits": 0
+      },
+      {
+        "path": "content/world/terrain/terrain-02500-02999.json",
+        "sha256": "f7438a43c2ac9bd1c5aaed5e97905741273486d055299383a54a499d4133770c",
+        "exact_item_pointer_hits": 0
+      },
+      {
+        "path": "content/world/terrain/terrain-03000-03499.json",
+        "sha256": "3c0504ee2998d278d61e84d888e4647c72b6c9029261916a1539b7555c4650b2",
+        "exact_item_pointer_hits": 0
+      },
+      {
+        "path": "content/world/terrain/terrain-03500-03999.json",
+        "sha256": "e82e8aa080cf43975e9f406b6e907f9d77c5dbe1c85dcd7eb83f622a3338fb3c",
+        "exact_item_pointer_hits": 0
+      },
+      {
+        "path": "content/world/terrain/terrain-04000-04499.json",
+        "sha256": "63c1b34729be8f3e3f5dc74cf22d0ea2299ee86753413d8ecc4681e58e3d8d99",
+        "exact_item_pointer_hits": 0
+      },
+      {
+        "path": "content/world/terrain/terrain-04500-04999.json",
+        "sha256": "a90057d127b279703be7252b4a7f7d336506716cd0218908e6377d262d23b31e",
+        "exact_item_pointer_hits": 0
+      },
+      {
+        "path": "content/world/terrain/terrain-05000-05499.json",
+        "sha256": "dba1216f5ff2461c949bb78058d2aa9939265bdb747445d0e5b5767844346b07",
+        "exact_item_pointer_hits": 0
+      },
+      {
+        "path": "content/world/terrain/terrain-05500-05999.json",
+        "sha256": "c5081d0589d6e65a40baf89178c4e29f81089147d463d168474ac286d546a66a",
+        "exact_item_pointer_hits": 0
+      },
+      {
+        "path": "content/world/terrain/terrain-06000-06499.json",
+        "sha256": "a5845d01e5f3599cf11e265af28e3f3c8de5eacde44e408d44a14c69d7cf8d22",
+        "exact_item_pointer_hits": 0
+      },
+      {
+        "path": "content/world/terrain/terrain-06500-06999.json",
+        "sha256": "cfd84788ad5cc0fa3b870a9b22accca570f4cdf3615f55275452897055734b52",
+        "exact_item_pointer_hits": 0
+      },
+      {
+        "path": "content/world/terrain/terrain-07000-07499.json",
+        "sha256": "d5445a472792b7afda405bc8f416a5bb1ee0351613585d13548a2b1a4474ae6b",
+        "exact_item_pointer_hits": 0
+      },
+      {
+        "path": "content/world/terrain/terrain-07500-07999.json",
+        "sha256": "71d590c5c7b69e7e0fb09d797d21ba18c3649e4c3b52ccf57627b85fa4cac8fd",
+        "exact_item_pointer_hits": 0
+      },
+      {
+        "path": "content/world/terrain/terrain-08000-08499.json",
+        "sha256": "92d35db1d4c783d0a05d48e56b6616d429b4da85f76e5ae179bb7ea2eee339a8",
+        "exact_item_pointer_hits": 0
+      },
+      {
+        "path": "content/world/terrain/terrain-08500-08547.json",
+        "sha256": "0a3742d9431f50123f14963c5529ea700eebc22c9b5cde52ef7bea57729e6ca9",
+        "exact_item_pointer_hits": 0
+      },
+      {
+        "path": "content/world/objects/index.json",
+        "sha256": "a0dbd7f2c0c0b09b5457b189128c7cbd7dd2a4553e2a3c00063092372c3b65d7",
+        "exact_item_pointer_hits": 0
+      },
+      {
+        "path": "content/world/objects/objects-00000-00499.json",
+        "sha256": "76b4489d66b2affaa0929dc449e9a5f21c7f454d2fb66453e3a6757861f8fd9f",
+        "exact_item_pointer_hits": 0
+      },
+      {
+        "path": "content/world/objects/objects-00500-00999.json",
+        "sha256": "2ebd31bd6ba0bb6cd3f1561258b61893954891e9b907ef918444ddbb4206c1fb",
+        "exact_item_pointer_hits": 0
+      },
+      {
+        "path": "content/world/objects/objects-01000-01499.json",
+        "sha256": "8e62410f9edc1cc3e4a58080b1916403931bf6248ad8e2f16b2aa0aee67238cd",
+        "exact_item_pointer_hits": 0
+      },
+      {
+        "path": "content/world/objects/objects-01500-01999.json",
+        "sha256": "a0bd18bd67e763d6be89ad62c86752e700a660068044036f4629ad11e7374c3f",
+        "exact_item_pointer_hits": 0
+      },
+      {
+        "path": "content/world/objects/objects-02000-02499.json",
+        "sha256": "252593e541ea1227637922eafdff911229c7b13606c40c18653377919bd3b0de",
+        "exact_item_pointer_hits": 0
+      },
+      {
+        "path": "content/world/objects/objects-02500-02999.json",
+        "sha256": "815206da28a1ddcb3da87ffee5df33f031ed19ca038be0d407cc9f928e7b1466",
+        "exact_item_pointer_hits": 0
+      },
+      {
+        "path": "content/world/objects/objects-03000-03499.json",
+        "sha256": "1609164d335c881603bbe4c876198bf07dcbf5397f3785a83b168f1b147e9eee",
+        "exact_item_pointer_hits": 0
+      },
+      {
+        "path": "content/world/objects/objects-03500-03999.json",
+        "sha256": "a9bab2879801ad3db6e438ba90c17ebfedfc19763ac167c49740b2bc83245a39",
+        "exact_item_pointer_hits": 0
+      },
+      {
+        "path": "content/world/objects/objects-04000-04499.json",
+        "sha256": "1d0c497e8ae0c368db09bac89b03f861ac68879fb510bbeb95ffd90c29cd36e5",
+        "exact_item_pointer_hits": 0
+      },
+      {
+        "path": "content/world/objects/objects-04500-04999.json",
+        "sha256": "fd8201ca7bd0b8aba8be92d51c18844c9c0e8b610aeedb50c2674ac6b318c40a",
+        "exact_item_pointer_hits": 0
+      },
+      {
+        "path": "content/world/objects/objects-05000-05499.json",
+        "sha256": "16ca20953a7820a4e5be2fb0af3128f03c9272cf396eb4320cb82ea30e33fdba",
+        "exact_item_pointer_hits": 0
+      },
+      {
+        "path": "content/world/objects/objects-05500-05999.json",
+        "sha256": "f2779a7bb5c5e101365d532fd8420a0e467dbccd6505fa7591554124baa7333e",
+        "exact_item_pointer_hits": 0
+      },
+      {
+        "path": "content/world/objects/objects-06000-06499.json",
+        "sha256": "3c683e1b85baea62c8ff0f6c89f2745e4e4d5e56d089e7c9ac988399377f90e8",
+        "exact_item_pointer_hits": 0
+      },
+      {
+        "path": "content/world/objects/objects-06500-06999.json",
+        "sha256": "edfb10890a94e2b3e7038cadf2fc4b123125978d429fd38d998033d19690c3e0",
+        "exact_item_pointer_hits": 0
+      },
+      {
+        "path": "content/world/objects/objects-07000-07499.json",
+        "sha256": "b330c3125b15da9e6a70dc8921df35de12cf23fe73aa0c098cc1523dfe838ec4",
+        "exact_item_pointer_hits": 0
+      },
+      {
+        "path": "content/world/objects/objects-07500-07999.json",
+        "sha256": "79c4a5ae8cd81c936e78e260d8516df43e866f6ac133c0931fcce19d3bff7d09",
+        "exact_item_pointer_hits": 0
+      },
+      {
+        "path": "content/world/objects/objects-08000-08499.json",
+        "sha256": "eaf65a8ebffc93be179e942efff2e93e9049382e808a907685e11c6c18f1215a",
+        "exact_item_pointer_hits": 0
+      },
+      {
+        "path": "content/world/objects/objects-08500-08999.json",
+        "sha256": "8c3b94ff21c6a294e3f851f78aa95e9a8382ec1e1703f7c6541bfc9389e132e3",
+        "exact_item_pointer_hits": 0
+      },
+      {
+        "path": "content/world/objects/objects-09000-09499.json",
+        "sha256": "d5c80080a119e6db62bb73067279ef49868e6bc99813b7c2760553d8711bfb9b",
+        "exact_item_pointer_hits": 0
+      },
+      {
+        "path": "content/world/objects/objects-09500-09999.json",
+        "sha256": "2f487d3948825373dd6ed069ff1d2a952d53014e8e8d8718247d5fcdcbd85cd5",
+        "exact_item_pointer_hits": 0
+      },
+      {
+        "path": "content/world/objects/objects-10000-10499.json",
+        "sha256": "400abc71605fbe4d47c365befb87e5e446afc74a592c75aa3d4ebec746a24a65",
+        "exact_item_pointer_hits": 0
+      },
+      {
+        "path": "content/world/objects/objects-10500-10999.json",
+        "sha256": "53f8ce9a2d50ef46262f3f6eedb2618e1cf3a5adcf89c06eae90fcef84e5de8c",
+        "exact_item_pointer_hits": 0
+      },
+      {
+        "path": "content/world/objects/objects-11000-11499.json",
+        "sha256": "3017066e3e44140ec427bfd985e0e4bda90a12e9c56df75ca2b3cefa858e9bec",
+        "exact_item_pointer_hits": 0
+      },
+      {
+        "path": "content/world/objects/objects-11500-11999.json",
+        "sha256": "049b9891ade9c74e9383db7b87e434643c8a6c994453667def5431da2fb9e923",
+        "exact_item_pointer_hits": 0
+      },
+      {
+        "path": "content/world/objects/objects-12000-12499.json",
+        "sha256": "9d14651b26891c52bd3405cb011be2dd14fcf0c08a0fd39f248e45adc4066a39",
+        "exact_item_pointer_hits": 0
+      },
+      {
+        "path": "content/world/objects/objects-12500-12781.json",
+        "sha256": "bd43b46df4504b714ea636663bdb48dbd147842d97bebb8ebdaa40fcb3aac97e",
+        "exact_item_pointer_hits": 0
+      }
+    ],
+    "current_exact_pointer_hits": 0,
+    "historical_proof_retained": true
+  },
+  "retained_own_wiki_classification_witnesses": [
+    {
+      "capture_path": "/workspace/audit-continuation/global-infobox-object-source-part-005.json",
+      "capture_sha256": "895158a54a475451710484fb53664a5470921e0f3b940bed779257c24d8df291",
+      "page_ordinal": 18,
+      "page_id": 2694,
+      "title": "Hammer of Wrath",
+      "revision_id": 1147268,
+      "revision_timestamp": "2025-12-08T14:28:03Z",
+      "whole_article_sha256_declared_in_capture": "cdd7525e7cf5b44ed295c7f42e522128c6c19091573da6c5a9bf89b129b7299a",
+      "raw_own_template": "{{Infobox Object|List={{{1|}}}|GetValue={{{GetValue|}}}\n| name          = Hammer of Wrath\n| article       = a\n| actualname    = hammer of wrath\n| plural        = ?\n| itemid        = 3332\n| objectclass   = Weapons\n| primarytype   = Club Weapons\n| slot          = Both Hands\n| secondarytype = Two-Handed Club Weapons\n| flavortext    = A giant is said to have forged this hammer to take revenge for the death of his brother.\n| sounds        = {{Sound List|}}\n| implemented   = 7.3\n| immobile      = no\n| walkable      = yes\n| pickupable    = yes\n| usable        = yes\n| levelrequired = 65\n| vocrequired   = knights\n| hands         = Two\n| weapontype    = Club\n| attack        = 48\n| defense       = 12\n| imbueslots    = 3\n| upgradeclass  = 2\n| enchantable   = no\n| weight        = 70.00\n| marketable    = yes\n| droppedby     = {{Dropped By|Ashmunrah|Branchy Crawler|Cliff Strider|Courage Leech|Crape Man|Gore Horn|Melting Frozen Horror|Plaguesmith|Sight of Surrender|The Shatterer}}\n| value         = 30,000 - 100,000\n| npcvalue      = 30000\n| npcprice      = 0\n| buyfrom       = --\n| sellto        = Rashid\n| notes         = Formerly exclusively dropped by [[Ashmunrah]], the price of this weapon decreased significantly with the introduction of [[Plaguesmith]]s - turning it into arguably the most common of the [[Pharaoh Rares]].\n}}",
+      "raw_own_template_sha256": "cdd7525e7cf5b44ed295c7f42e522128c6c19091573da6c5a9bf89b129b7299a",
+      "raw_parameters": {
+        "itemid": [
+          "3332"
+        ],
+        "upgradeclass": [
+          "2"
+        ],
+        "name": [
+          "Hammer of Wrath"
+        ],
+        "actualname": [
+          "hammer of wrath"
+        ]
+      }
+    }
+  ],
+  "opposition": "Exact retained own Fandom classification is2; no retained independent opposing max_tier witness exists in qualified inputs. Missing Wiki max_tier is not a fact. Global table is excluded.",
+  "implementation_proposal": {
+    "closed_packet_rows": 1,
+    "sourcefield_atoms": 2,
+    "affected_items": 1,
+    "expected_existing_forge_count_after": 147,
+    "expected_item_authoring_count_after": 165,
+    "insert_after": "after A12 apply_tibia_id_key_rule and current Item data promotion; before CanonicalProjectDocuments::from_v2_draft",
+    "minimal_changes": [
+      "One standalone SHA-pinned qualification proof and one deterministic singleton source-pair compiler/packet for i3332 only; preserve old Wave1 snapshot/stage digests and files.",
+      "A small separate Rust apply_item_forge_pair function validates packet row and full native identity plus exact existing BR source binding, then inserts minimal ProjectV2ItemAuthoring if missing or fills its absent forge member preserving every sibling; identical2/2 is idempotent; conflicting pair, duplicate item authoring target, wrong revision/family/source binding or missing Item rejects before mutation.",
+      "Add one call in materializer and mod export; keep Document208 compiler, packet, target fields and counts separate.",
+      "Materialize through existing ProjectV2ItemAuthoring owner; migration automatically attaches authoring.forge to Item shard and existing Forge capability relation. No new ReferenceItemSemantics group, schema or runtime enablement.",
+      "Keep native-reference-only census denominator separate: Forge adds2 authored fields on1 Item, not2 Known ReferenceItemSemantics leaves. Combine with Document208 only as independently counted sourcefield groups."
+    ],
+    "minimum_tests": [
+      "Python: exact snapshot digest and row selection; separate Sept27 accepts Sep10 singleton while untouched old July28 stage remains rejection; missing/changed max_tier, row/pin/identity/alias/membership/name/owner drift fail closed.",
+      "Rust: absent Forge→exact2/2, identical2/2 idempotent; preserve existing authoring siblings and all Item semantics/admission. Conflicting pair, wrong full target/revision/binding, missing Item and duplicate owner fail without changing draft.",
+      "Exact generated semantic comparison: source group changes only one canonical authoring.forge profile and corresponding Item shard Forge authoring/capability relation. New ReferenceItemSemantics, identity, materializable, class, document fields, old164 Wave1 data and every other existing profile remain unchanged by Forge.",
+      "Existing library/repository materialization validations plus fmt/Clippy and canonical tree checks run only in Root-granted Cargo slot."
+    ]
+  },
+  "hold": "SOURCE_AUTHORING_AUTHORIZED_BY_ROOT; RUST_AND_FINAL_GENERATION_AWAIT_USE_OBSERVATION_PREDECESSOR_CARRY",
+  "historical_qualification": {
+    "path": "docs/agents/evidence/OTV2-20261001-item-forge3332-source-qualification-v1.json",
+    "sha256": "b9b022271012af6d7afc6e54f6ee1f8ec528994dc32cc773dfb10a55c89cd0c7",
+    "native_baseline_head": "46af72720b8c0fcf7cec8edba497e84405b1ce6d",
+    "immutable": true
+  },
+  "historical_input_digests": {
+    "docs/agents/evidence/OTV2-20260925-item-enrichment-wave1-source-snapshot.json": "5d8b84eee85e226e99d516beb7b40b8dc201c923e9b63b5ef18313085c3cbdf5",
+    "content/items/aliases.json": "128bc354816199702c26f83120e6fb7846fb2608fb5ee1c16085f63268e592f2",
+    "content/world/definitions/reference.json": "b48b7cd0ad48bc4ec54777b8c449fbae647d8e5d93068fc1b956f054b824007e",
+    "content/items/definitions/items-20000-20499.json": "d9b7d9ab3d879047c9141a995e34aa8d812d62dc04fd741900998ed658bf4fa4",
+    "content/world/definitions/declarations.json": "01c03a2c2c73ad28d82756a5aebac0ad75bfbf1bd263f1488accf21319917722",
+    "imports/official/appearance-membership/admitted.json": "19f99b709d9a28c1730632e27672adb0a03ef11bf7d1f4b2647a4090f3df0718",
+    "imports/official/appearance-membership/appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.json": "f37b5d3e1136ebc3edbae1fe7090c4914b1d717bfbf9fd7c8faeeee36b491fe8",
+    "docs/agents/evidence/OTV2-20260925-item-enrichment-wave1-staged.json": "00f2acd441e9146bdd7f67821bef446c171ea67cd06f666028324b61e544cb95",
+    "apps/game-server/src/content/project/v2.rs": "b066f883bcf6925be8ea2d8df428312376fc397a73d704229be2fe5a6782752b",
+    "apps/game-server/src/content/reference_playable.rs": "e50682b67ca36431f9a6b9eb018a8cb17a08cf7e4fdc66c33a5831dc83f4e3ad",
+    "apps/game-server/examples/materialize_content_world_project_v2.rs": "5609df8ac6db72cde3047ef96b1dce8e1e9daf4ba5bdf833d8951fc7d3f9c9e4",
+    "tools/content-migration/world_project_v2_to_tree.py": "3711abdc8b6e3aabd46b6a3afc06bfdca5ace7c095beba390240bcaa374fd5e8",
+    "tools/content-schema/item-authoring/item.schema.json": "a7147e948459563f83a13d11a9a4b0e4f424393f438da1d0e1ae08f274352997",
+    "docs/architecture/OTERYN_ITEM_AUTHORING_FORMAL_SCHEMA_V1.md": "bf46ab3d1906184b231849f7c92551f046767bac2bae9f7a165aeeba1bc9cedc"
+  },
+  "input_digests": {
+    "docs/agents/evidence/OTV2-20260925-item-enrichment-wave1-source-snapshot.json": "5d8b84eee85e226e99d516beb7b40b8dc201c923e9b63b5ef18313085c3cbdf5",
+    "content/items/aliases.json": "128bc354816199702c26f83120e6fb7846fb2608fb5ee1c16085f63268e592f2",
+    "imports/official/appearance-membership/admitted.json": "19f99b709d9a28c1730632e27672adb0a03ef11bf7d1f4b2647a4090f3df0718",
+    "imports/official/appearance-membership/appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.json": "f37b5d3e1136ebc3edbae1fe7090c4914b1d717bfbf9fd7c8faeeee36b491fe8",
+    "docs/agents/evidence/OTV2-20260925-item-enrichment-wave1-staged.json": "00f2acd441e9146bdd7f67821bef446c171ea67cd06f666028324b61e544cb95"
+  },
+  "historical_current_native_identity": {
+    "reference_path": "content/world/definitions/reference.json",
+    "reference_sha256": "b48b7cd0ad48bc4ec54777b8c449fbae647d8e5d93068fc1b956f054b824007e",
+    "row_ordinal": 40006,
+    "retained_current_record": {
+      "kind": "Item",
+      "identity": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i3332",
+        "revision": "definition-r1"
+      },
+      "client_projection": "ClientSafe",
+      "materializable": false,
+      "stack_class": "Unknown",
+      "semantics": {
+        "presentation": {
+          "state": "KNOWN",
+          "value": {
+            "name": {
+              "state": "KNOWN",
+              "value": "hammer of wrath"
+            },
+            "description": {
+              "state": "UNKNOWN"
+            }
+          }
+        },
+        "classification": {
+          "state": "UNKNOWN"
+        },
+        "physical": {
+          "state": "KNOWN",
+          "value": {
+            "weight": {
+              "state": "KNOWN",
+              "value": 7000
+            },
+            "movable": {
+              "state": "UNKNOWN"
+            },
+            "pickupable": {
+              "state": "KNOWN",
+              "value": true
+            }
+          }
+        },
+        "stack": {
+          "state": "KNOWN",
+          "value": {
+            "stackable": {
+              "state": "KNOWN",
+              "value": false
+            },
+            "stack_max": {
+              "state": "UNKNOWN"
+            }
+          }
+        },
+        "equipment": {
+          "state": "KNOWN",
+          "value": {
+            "patterns": {
+              "state": "KNOWN",
+              "value": [
+                {
+                  "pattern_id": 1,
+                  "primary_slot": {
+                    "state": "KNOWN",
+                    "value": "WEAPON"
+                  },
+                  "additional_reserved_slots": {
+                    "state": "KNOWN",
+                    "value": [
+                      "SHIELD"
+                    ]
+                  },
+                  "mutually_exclusive_groups": {
+                    "state": "UNKNOWN"
+                  },
+                  "vocations": {
+                    "state": "KNOWN",
+                    "value": [
+                      "KNIGHT"
+                    ]
+                  },
+                  "level": {
+                    "state": "KNOWN",
+                    "value": 65
+                  },
+                  "compatibility_rule": {
+                    "state": "UNKNOWN"
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "weapon": {
+          "state": "KNOWN",
+          "value": {
+            "weapon_type": {
+              "state": "KNOWN",
+              "value": "CLUB"
+            },
+            "attack": {
+              "state": "KNOWN",
+              "value": 48
+            },
+            "defense": {
+              "state": "KNOWN",
+              "value": 12
+            },
+            "extra_defense": {
+              "state": "UNKNOWN"
+            },
+            "range": {
+              "state": "UNKNOWN"
+            },
+            "hit_chance": {
+              "state": "UNKNOWN"
+            },
+            "max_hit_chance": {
+              "state": "UNKNOWN"
+            },
+            "ammunition": {
+              "state": "UNKNOWN"
+            },
+            "elemental": {
+              "state": "UNKNOWN"
+            }
+          }
+        },
+        "protection": {
+          "state": "UNKNOWN"
+        },
+        "skill_modifiers": {
+          "state": "UNKNOWN"
+        },
+        "charges": {
+          "state": "UNKNOWN"
+        },
+        "temporal": {
+          "state": "UNKNOWN"
+        },
+        "container": {
+          "state": "UNKNOWN"
+        },
+        "imbuement": {
+          "state": "KNOWN",
+          "value": {
+            "slot_count": {
+              "state": "KNOWN",
+              "value": 3
+            },
+            "allowed_family_tiers": {
+              "state": "UNKNOWN"
+            },
+            "excluded_families": {
+              "state": "UNKNOWN"
+            }
+          }
+        },
+        "use_transform": {
+          "state": "UNKNOWN"
+        },
+        "trade_restrictions": {
+          "state": "KNOWN",
+          "value": {
+            "tradeable": {
+              "state": "UNKNOWN"
+            },
+            "marketable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "vocations": {
+              "state": "UNKNOWN"
+            },
+            "account_binding_policy": {
+              "state": "UNKNOWN"
+            },
+            "character_binding_policy": {
+              "state": "UNKNOWN"
+            }
+          }
+        },
+        "fluid": {
+          "state": "UNKNOWN"
+        },
+        "readable_writeable": {
+          "state": "UNKNOWN"
+        }
+      }
+    },
+    "row_canonical_sha256": "59683fe9e4907988def5b8c280d6e7161735ce489b058070a306f6c9b0440473",
+    "item_shard_path": "content/items/definitions/items-20000-20499.json",
+    "item_shard_sha256": "d9b7d9ab3d879047c9141a995e34aa8d812d62dc04fd741900998ed658bf4fa4",
+    "item_shard_row_ordinal": 386,
+    "item_shard_record": {
+      "definition": {
+        "client_projection": "ClientSafe",
+        "identity": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3332",
+          "revision": "definition-r1"
+        },
+        "kind": "Item",
+        "materializable": false,
+        "semantics": {
+          "charges": {
+            "state": "UNKNOWN"
+          },
+          "classification": {
+            "state": "UNKNOWN"
+          },
+          "container": {
+            "state": "UNKNOWN"
+          },
+          "equipment": {
+            "state": "KNOWN",
+            "value": {
+              "patterns": {
+                "state": "KNOWN",
+                "value": [
+                  {
+                    "additional_reserved_slots": {
+                      "state": "KNOWN",
+                      "value": [
+                        "SHIELD"
+                      ]
+                    },
+                    "compatibility_rule": {
+                      "state": "UNKNOWN"
+                    },
+                    "level": {
+                      "state": "KNOWN",
+                      "value": 65
+                    },
+                    "mutually_exclusive_groups": {
+                      "state": "UNKNOWN"
+                    },
+                    "pattern_id": 1,
+                    "primary_slot": {
+                      "state": "KNOWN",
+                      "value": "WEAPON"
+                    },
+                    "vocations": {
+                      "state": "KNOWN",
+                      "value": [
+                        "KNIGHT"
+                      ]
+                    }
+                  }
+                ]
+              }
+            }
+          },
+          "fluid": {
+            "state": "UNKNOWN"
+          },
+          "imbuement": {
+            "state": "KNOWN",
+            "value": {
+              "allowed_family_tiers": {
+                "state": "UNKNOWN"
+              },
+              "excluded_families": {
+                "state": "UNKNOWN"
+              },
+              "slot_count": {
+                "state": "KNOWN",
+                "value": 3
+              }
+            }
+          },
+          "physical": {
+            "state": "KNOWN",
+            "value": {
+              "movable": {
+                "state": "UNKNOWN"
+              },
+              "pickupable": {
+                "state": "KNOWN",
+                "value": true
+              },
+              "weight": {
+                "state": "KNOWN",
+                "value": 7000
+              }
+            }
+          },
+          "presentation": {
+            "state": "KNOWN",
+            "value": {
+              "description": {
+                "state": "UNKNOWN"
+              },
+              "name": {
+                "state": "KNOWN",
+                "value": "hammer of wrath"
+              }
+            }
+          },
+          "protection": {
+            "state": "UNKNOWN"
+          },
+          "readable_writeable": {
+            "state": "UNKNOWN"
+          },
+          "skill_modifiers": {
+            "state": "UNKNOWN"
+          },
+          "stack": {
+            "state": "KNOWN",
+            "value": {
+              "stack_max": {
+                "state": "UNKNOWN"
+              },
+              "stackable": {
+                "state": "KNOWN",
+                "value": false
+              }
+            }
+          },
+          "temporal": {
+            "state": "UNKNOWN"
+          },
+          "trade_restrictions": {
+            "state": "KNOWN",
+            "value": {
+              "account_binding_policy": {
+                "state": "UNKNOWN"
+              },
+              "character_binding_policy": {
+                "state": "UNKNOWN"
+              },
+              "marketable": {
+                "state": "KNOWN",
+                "value": true
+              },
+              "tradeable": {
+                "state": "UNKNOWN"
+              },
+              "vocations": {
+                "state": "UNKNOWN"
+              }
+            }
+          },
+          "use_transform": {
+            "state": "UNKNOWN"
+          },
+          "weapon": {
+            "state": "KNOWN",
+            "value": {
+              "ammunition": {
+                "state": "UNKNOWN"
+              },
+              "attack": {
+                "state": "KNOWN",
+                "value": 48
+              },
+              "defense": {
+                "state": "KNOWN",
+                "value": 12
+              },
+              "elemental": {
+                "state": "UNKNOWN"
+              },
+              "extra_defense": {
+                "state": "UNKNOWN"
+              },
+              "hit_chance": {
+                "state": "UNKNOWN"
+              },
+              "max_hit_chance": {
+                "state": "UNKNOWN"
+              },
+              "range": {
+                "state": "UNKNOWN"
+              },
+              "weapon_type": {
+                "state": "KNOWN",
+                "value": "CLUB"
+              }
+            }
+          }
+        },
+        "stack_class": "Unknown"
+      },
+      "editor": {
+        "aliases": [],
+        "categories": [],
+        "description": "",
+        "display_name": "Hammer of Wrath",
+        "notes": [],
+        "tags": [
+          "oteryn:editor.item"
+        ],
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3332",
+          "revision": "definition-r1"
+        }
+      },
+      "source_bindings": [
+        {
+          "disposition": "EXACT",
+          "external_id": "6171",
+          "identity_namespace": "mediawiki/page_id",
+          "source_key": "oteryn:source.tibiawiki",
+          "source_revision": "tibiawiki-item-census:389875abd364aa9bcb0b09a591989c82ece5098d63b3c23376274048f6ac2f5a",
+          "target": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i3332",
+            "revision": "definition-r1"
+          }
+        }
+      ]
+    }
+  },
+  "historical_existing_owner": {
+    "rust_type": "ProjectV2ItemAuthoring",
+    "rust_member": "forge: Option<ProjectV2ItemForgeProfile>",
+    "forge_type_members": {
+      "classification": "u8",
+      "max_tier": "u8"
+    },
+    "draft_path": "ProjectV2Draft.state.item_authoring: Vec<ProjectV2ItemAuthoring>",
+    "ProjectV2ItemAuthoringDraft_type_exists": false,
+    "canonical_owner_path": "content/world/definitions/declarations.json#/item_authoring",
+    "canonical_owner_file_sha256": "01c03a2c2c73ad28d82756a5aebac0ad75bfbf1bd263f1488accf21319917722",
+    "current_item_authoring_entry_present": false,
+    "current_item_shard_forge_profile_present": false,
+    "current_authoring_count": 164,
+    "existing_forge_profiles": 146,
+    "incoming_forge_is_nonzero_u8": true,
+    "incoming_class_is_formal_enum_member": true,
+    "minimum_incoming_owner_row": {
+      "item": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i3332",
+        "revision": "definition-r1"
+      },
+      "forge": {
+        "classification": 2,
+        "max_tier": 2
+      }
+    },
+    "source_bridge_and_owner_contract_hold": null,
+    "new_native_semantics_member_or_contract_required": false
+  },
+  "evidence_classification": {
+    "retained_structured_pair_bytes": "PROVEN_EXACT_RETAINED_ARTIFACT",
+    "br_article_body": "NOT_RETAINED; full_article_sha_is_declared_capture_coordinate",
+    "identity_bridge": "DERIVED_BY_EXISTING_EXACT_SOURCE_BINDING_AND_RETAINED_ALIAS; no_numeric_ID_from_name_or_suffix",
+    "current_parent": "ACTUAL2ec_RECORD_SHARD_AND_OWNER_PROJECTION; full-document hashes are parent observations, not dynamic leaf pins",
+    "sept27_selector": "DERIVED_CLOSED_SINGLETON_SUPPLEMENT; July28 source packet and rejection remain immutable"
+  },
+  "historical_world_owner_exclusion": {
+    "target": {
+      "family": "Item",
+      "key": "oteryn:item.tibia.i3332",
+      "revision": "definition-r1"
+    },
+    "scope": "all exact item-pointer key matches in frozen and current WorldObject/Terrain record files",
+    "complete_file_manifest": [
+      {
+        "origin": "frozen_taxonomy",
+        "owner": "objects",
+        "path": "/workspace/audit-continuation/frozen-taxonomy-df777898/content/world/objects/index.json",
+        "sha256": "a0dbd7f2c0c0b09b5457b189128c7cbd7dd2a4553e2a3c00063092372c3b65d7",
+        "record_count": 0,
+        "exact_item_pointer_hits": 0
+      },
+      {
+        "origin": "frozen_taxonomy",
+        "owner": "objects",
+        "path": "/workspace/audit-continuation/frozen-taxonomy-df777898/content/world/objects/objects-00000-00499.json",
+        "sha256": "76b4489d66b2affaa0929dc449e9a5f21c7f454d2fb66453e3a6757861f8fd9f",
+        "record_count": 500,
+        "exact_item_pointer_hits": 0
+      },
+      {
+        "origin": "frozen_taxonomy",
+        "owner": "objects",
+        "path": "/workspace/audit-continuation/frozen-taxonomy-df777898/content/world/objects/objects-00500-00999.json",
+        "sha256": "2ebd31bd6ba0bb6cd3f1561258b61893954891e9b907ef918444ddbb4206c1fb",
+        "record_count": 500,
+        "exact_item_pointer_hits": 0
+      },
+      {
+        "origin": "frozen_taxonomy",
+        "owner": "objects",
+        "path": "/workspace/audit-continuation/frozen-taxonomy-df777898/content/world/objects/objects-01000-01499.json",
+        "sha256": "8e62410f9edc1cc3e4a58080b1916403931bf6248ad8e2f16b2aa0aee67238cd",
+        "record_count": 500,
+        "exact_item_pointer_hits": 0
+      },
+      {
+        "origin": "frozen_taxonomy",
+        "owner": "objects",
+        "path": "/workspace/audit-continuation/frozen-taxonomy-df777898/content/world/objects/objects-01500-01999.json",
+        "sha256": "a0bd18bd67e763d6be89ad62c86752e700a660068044036f4629ad11e7374c3f",
+        "record_count": 500,
+        "exact_item_pointer_hits": 0
+      },
+      {
+        "origin": "frozen_taxonomy",
+        "owner": "objects",
+        "path": "/workspace/audit-continuation/frozen-taxonomy-df777898/content/world/objects/objects-02000-02499.json",
+        "sha256": "252593e541ea1227637922eafdff911229c7b13606c40c18653377919bd3b0de",
+        "record_count": 500,
+        "exact_item_pointer_hits": 0
+      },
+      {
+        "origin": "frozen_taxonomy",
+        "owner": "objects",
+        "path": "/workspace/audit-continuation/frozen-taxonomy-df777898/content/world/objects/objects-02500-02999.json",
+        "sha256": "815206da28a1ddcb3da87ffee5df33f031ed19ca038be0d407cc9f928e7b1466",
+        "record_count": 500,
+        "exact_item_pointer_hits": 0
+      },
+      {
+        "origin": "frozen_taxonomy",
+        "owner": "objects",
+        "path": "/workspace/audit-continuation/frozen-taxonomy-df777898/content/world/objects/objects-03000-03499.json",
+        "sha256": "1609164d335c881603bbe4c876198bf07dcbf5397f3785a83b168f1b147e9eee",
+        "record_count": 500,
+        "exact_item_pointer_hits": 0
+      },
+      {
+        "origin": "frozen_taxonomy",
+        "owner": "objects",
+        "path": "/workspace/audit-continuation/frozen-taxonomy-df777898/content/world/objects/objects-03500-03999.json",
+        "sha256": "a9bab2879801ad3db6e438ba90c17ebfedfc19763ac167c49740b2bc83245a39",
+        "record_count": 500,
+        "exact_item_pointer_hits": 0
+      },
+      {
+        "origin": "frozen_taxonomy",
+        "owner": "objects",
+        "path": "/workspace/audit-continuation/frozen-taxonomy-df777898/content/world/objects/objects-04000-04499.json",
+        "sha256": "1d0c497e8ae0c368db09bac89b03f861ac68879fb510bbeb95ffd90c29cd36e5",
+        "record_count": 500,
+        "exact_item_pointer_hits": 0
+      },
+      {
+        "origin": "frozen_taxonomy",
+        "owner": "objects",
+        "path": "/workspace/audit-continuation/frozen-taxonomy-df777898/content/world/objects/objects-04500-04999.json",
+        "sha256": "fd8201ca7bd0b8aba8be92d51c18844c9c0e8b610aeedb50c2674ac6b318c40a",
+        "record_count": 500,
+        "exact_item_pointer_hits": 0
+      },
+      {
+        "origin": "frozen_taxonomy",
+        "owner": "objects",
+        "path": "/workspace/audit-continuation/frozen-taxonomy-df777898/content/world/objects/objects-05000-05499.json",
+        "sha256": "16ca20953a7820a4e5be2fb0af3128f03c9272cf396eb4320cb82ea30e33fdba",
+        "record_count": 500,
+        "exact_item_pointer_hits": 0
+      },
+      {
+        "origin": "frozen_taxonomy",
+        "owner": "objects",
+        "path": "/workspace/audit-continuation/frozen-taxonomy-df777898/content/world/objects/objects-05500-05999.json",
+        "sha256": "f2779a7bb5c5e101365d532fd8420a0e467dbccd6505fa7591554124baa7333e",
+        "record_count": 500,
+        "exact_item_pointer_hits": 0
+      },
+      {
+        "origin": "frozen_taxonomy",
+        "owner": "objects",
+        "path": "/workspace/audit-continuation/frozen-taxonomy-df777898/content/world/objects/objects-06000-06499.json",
+        "sha256": "3c683e1b85baea62c8ff0f6c89f2745e4e4d5e56d089e7c9ac988399377f90e8",
+        "record_count": 500,
+        "exact_item_pointer_hits": 0
+      },
+      {
+        "origin": "frozen_taxonomy",
+        "owner": "objects",
+        "path": "/workspace/audit-continuation/frozen-taxonomy-df777898/content/world/objects/objects-06500-06999.json",
+        "sha256": "edfb10890a94e2b3e7038cadf2fc4b123125978d429fd38d998033d19690c3e0",
+        "record_count": 500,
+        "exact_item_pointer_hits": 0
+      },
+      {
+        "origin": "frozen_taxonomy",
+        "owner": "objects",
+        "path": "/workspace/audit-continuation/frozen-taxonomy-df777898/content/world/objects/objects-07000-07499.json",
+        "sha256": "b330c3125b15da9e6a70dc8921df35de12cf23fe73aa0c098cc1523dfe838ec4",
+        "record_count": 500,
+        "exact_item_pointer_hits": 0
+      },
+      {
+        "origin": "frozen_taxonomy",
+        "owner": "objects",
+        "path": "/workspace/audit-continuation/frozen-taxonomy-df777898/content/world/objects/objects-07500-07999.json",
+        "sha256": "79c4a5ae8cd81c936e78e260d8516df43e866f6ac133c0931fcce19d3bff7d09",
+        "record_count": 500,
+        "exact_item_pointer_hits": 0
+      },
+      {
+        "origin": "frozen_taxonomy",
+        "owner": "objects",
+        "path": "/workspace/audit-continuation/frozen-taxonomy-df777898/content/world/objects/objects-08000-08499.json",
+        "sha256": "eaf65a8ebffc93be179e942efff2e93e9049382e808a907685e11c6c18f1215a",
+        "record_count": 500,
+        "exact_item_pointer_hits": 0
+      },
+      {
+        "origin": "frozen_taxonomy",
+        "owner": "objects",
+        "path": "/workspace/audit-continuation/frozen-taxonomy-df777898/content/world/objects/objects-08500-08999.json",
+        "sha256": "8c3b94ff21c6a294e3f851f78aa95e9a8382ec1e1703f7c6541bfc9389e132e3",
+        "record_count": 500,
+        "exact_item_pointer_hits": 0
+      },
+      {
+        "origin": "frozen_taxonomy",
+        "owner": "objects",
+        "path": "/workspace/audit-continuation/frozen-taxonomy-df777898/content/world/objects/objects-09000-09499.json",
+        "sha256": "d5c80080a119e6db62bb73067279ef49868e6bc99813b7c2760553d8711bfb9b",
+        "record_count": 500,
+        "exact_item_pointer_hits": 0
+      },
+      {
+        "origin": "frozen_taxonomy",
+        "owner": "objects",
+        "path": "/workspace/audit-continuation/frozen-taxonomy-df777898/content/world/objects/objects-09500-09999.json",
+        "sha256": "2f487d3948825373dd6ed069ff1d2a952d53014e8e8d8718247d5fcdcbd85cd5",
+        "record_count": 500,
+        "exact_item_pointer_hits": 0
+      },
+      {
+        "origin": "frozen_taxonomy",
+        "owner": "objects",
+        "path": "/workspace/audit-continuation/frozen-taxonomy-df777898/content/world/objects/objects-10000-10499.json",
+        "sha256": "400abc71605fbe4d47c365befb87e5e446afc74a592c75aa3d4ebec746a24a65",
+        "record_count": 500,
+        "exact_item_pointer_hits": 0
+      },
+      {
+        "origin": "frozen_taxonomy",
+        "owner": "objects",
+        "path": "/workspace/audit-continuation/frozen-taxonomy-df777898/content/world/objects/objects-10500-10999.json",
+        "sha256": "53f8ce9a2d50ef46262f3f6eedb2618e1cf3a5adcf89c06eae90fcef84e5de8c",
+        "record_count": 500,
+        "exact_item_pointer_hits": 0
+      },
+      {
+        "origin": "frozen_taxonomy",
+        "owner": "objects",
+        "path": "/workspace/audit-continuation/frozen-taxonomy-df777898/content/world/objects/objects-11000-11499.json",
+        "sha256": "3017066e3e44140ec427bfd985e0e4bda90a12e9c56df75ca2b3cefa858e9bec",
+        "record_count": 500,
+        "exact_item_pointer_hits": 0
+      },
+      {
+        "origin": "frozen_taxonomy",
+        "owner": "objects",
+        "path": "/workspace/audit-continuation/frozen-taxonomy-df777898/content/world/objects/objects-11500-11999.json",
+        "sha256": "049b9891ade9c74e9383db7b87e434643c8a6c994453667def5431da2fb9e923",
+        "record_count": 500,
+        "exact_item_pointer_hits": 0
+      },
+      {
+        "origin": "frozen_taxonomy",
+        "owner": "objects",
+        "path": "/workspace/audit-continuation/frozen-taxonomy-df777898/content/world/objects/objects-12000-12499.json",
+        "sha256": "9d14651b26891c52bd3405cb011be2dd14fcf0c08a0fd39f248e45adc4066a39",
+        "record_count": 500,
+        "exact_item_pointer_hits": 0
+      },
+      {
+        "origin": "frozen_taxonomy",
+        "owner": "objects",
+        "path": "/workspace/audit-continuation/frozen-taxonomy-df777898/content/world/objects/objects-12500-12781.json",
+        "sha256": "bd43b46df4504b714ea636663bdb48dbd147842d97bebb8ebdaa40fcb3aac97e",
+        "record_count": 282,
+        "exact_item_pointer_hits": 0
+      },
+      {
+        "origin": "frozen_taxonomy",
+        "owner": "objects",
+        "path": "/workspace/audit-continuation/frozen-taxonomy-df777898/content/world/objects/objects-12782-12876.json",
+        "sha256": "a5b1b3f7fb8beb9b82b089f099bd401a62372a9a6602a2c5b4eb5bd6ac9a0a3a",
+        "record_count": 95,
+        "exact_item_pointer_hits": 0
+      },
+      {
+        "origin": "frozen_taxonomy",
+        "owner": "objects",
+        "path": "/workspace/audit-continuation/frozen-taxonomy-df777898/content/world/objects/objects-12877-12916.json",
+        "sha256": "2c190feb8bf04817077ffe9126360e1aac81652221ccd232d7436616ad9ddcaa",
+        "record_count": 40,
+        "exact_item_pointer_hits": 0
+      },
+      {
+        "origin": "frozen_taxonomy",
+        "owner": "terrain",
+        "path": "/workspace/audit-continuation/frozen-taxonomy-df777898/content/world/terrain/index.json",
+        "sha256": "89ae879da01b6a81e1e6a1c6a06b2632a2678066e0eb71404a5a7882bd516c44",
+        "record_count": 0,
+        "exact_item_pointer_hits": 0
+      },
+      {
+        "origin": "frozen_taxonomy",
+        "owner": "terrain",
+        "path": "/workspace/audit-continuation/frozen-taxonomy-df777898/content/world/terrain/terrain-00000-00499.json",
+        "sha256": "8219d3d93af9791f0277608921041743f9a95e8ce182ef52bdaf859064d0322e",
+        "record_count": 500,
+        "exact_item_pointer_hits": 0
+      },
+      {
+        "origin": "frozen_taxonomy",
+        "owner": "terrain",
+        "path": "/workspace/audit-continuation/frozen-taxonomy-df777898/content/world/terrain/terrain-00500-00999.json",
+        "sha256": "21dff9929f9e287eb070ac7b2c6666c4e3fb2002614dee22707daad6d0be033d",
+        "record_count": 500,
+        "exact_item_pointer_hits": 0
+      },
+      {
+        "origin": "frozen_taxonomy",
+        "owner": "terrain",
+        "path": "/workspace/audit-continuation/frozen-taxonomy-df777898/content/world/terrain/terrain-01000-01499.json",
+        "sha256": "f2c02951b6e217960127adac3e99f7a2835d8220cdec5e3149be7f4ec5cb111b",
+        "record_count": 500,
+        "exact_item_pointer_hits": 0
+      },
+      {
+        "origin": "frozen_taxonomy",
+        "owner": "terrain",
+        "path": "/workspace/audit-continuation/frozen-taxonomy-df777898/content/world/terrain/terrain-01500-01999.json",
+        "sha256": "54c8a17c14e01845f366f397c882ed432c9fa8cc2b8c3300e61d84a7f39999db",
+        "record_count": 500,
+        "exact_item_pointer_hits": 0
+      },
+      {
+        "origin": "frozen_taxonomy",
+        "owner": "terrain",
+        "path": "/workspace/audit-continuation/frozen-taxonomy-df777898/content/world/terrain/terrain-02000-02499.json",
+        "sha256": "b5bfa07a608332e21de5f0e00a76506e251e226bf358d56cec8c7977d42cc258",
+        "record_count": 500,
+        "exact_item_pointer_hits": 0
+      },
+      {
+        "origin": "frozen_taxonomy",
+        "owner": "terrain",
+        "path": "/workspace/audit-continuation/frozen-taxonomy-df777898/content/world/terrain/terrain-02500-02999.json",
+        "sha256": "f7438a43c2ac9bd1c5aaed5e97905741273486d055299383a54a499d4133770c",
+        "record_count": 500,
+        "exact_item_pointer_hits": 0
+      },
+      {
+        "origin": "frozen_taxonomy",
+        "owner": "terrain",
+        "path": "/workspace/audit-continuation/frozen-taxonomy-df777898/content/world/terrain/terrain-03000-03499.json",
+        "sha256": "3c0504ee2998d278d61e84d888e4647c72b6c9029261916a1539b7555c4650b2",
+        "record_count": 500,
+        "exact_item_pointer_hits": 0
+      },
+      {
+        "origin": "frozen_taxonomy",
+        "owner": "terrain",
+        "path": "/workspace/audit-continuation/frozen-taxonomy-df777898/content/world/terrain/terrain-03500-03999.json",
+        "sha256": "e82e8aa080cf43975e9f406b6e907f9d77c5dbe1c85dcd7eb83f622a3338fb3c",
+        "record_count": 500,
+        "exact_item_pointer_hits": 0
+      },
+      {
+        "origin": "frozen_taxonomy",
+        "owner": "terrain",
+        "path": "/workspace/audit-continuation/frozen-taxonomy-df777898/content/world/terrain/terrain-04000-04499.json",
+        "sha256": "63c1b34729be8f3e3f5dc74cf22d0ea2299ee86753413d8ecc4681e58e3d8d99",
+        "record_count": 500,
+        "exact_item_pointer_hits": 0
+      },
+      {
+        "origin": "frozen_taxonomy",
+        "owner": "terrain",
+        "path": "/workspace/audit-continuation/frozen-taxonomy-df777898/content/world/terrain/terrain-04500-04999.json",
+        "sha256": "a90057d127b279703be7252b4a7f7d336506716cd0218908e6377d262d23b31e",
+        "record_count": 500,
+        "exact_item_pointer_hits": 0
+      },
+      {
+        "origin": "frozen_taxonomy",
+        "owner": "terrain",
+        "path": "/workspace/audit-continuation/frozen-taxonomy-df777898/content/world/terrain/terrain-05000-05499.json",
+        "sha256": "dba1216f5ff2461c949bb78058d2aa9939265bdb747445d0e5b5767844346b07",
+        "record_count": 500,
+        "exact_item_pointer_hits": 0
+      },
+      {
+        "origin": "frozen_taxonomy",
+        "owner": "terrain",
+        "path": "/workspace/audit-continuation/frozen-taxonomy-df777898/content/world/terrain/terrain-05500-05999.json",
+        "sha256": "c5081d0589d6e65a40baf89178c4e29f81089147d463d168474ac286d546a66a",
+        "record_count": 500,
+        "exact_item_pointer_hits": 0
+      },
+      {
+        "origin": "frozen_taxonomy",
+        "owner": "terrain",
+        "path": "/workspace/audit-continuation/frozen-taxonomy-df777898/content/world/terrain/terrain-06000-06499.json",
+        "sha256": "a5845d01e5f3599cf11e265af28e3f3c8de5eacde44e408d44a14c69d7cf8d22",
+        "record_count": 500,
+        "exact_item_pointer_hits": 0
+      },
+      {
+        "origin": "frozen_taxonomy",
+        "owner": "terrain",
+        "path": "/workspace/audit-continuation/frozen-taxonomy-df777898/content/world/terrain/terrain-06500-06999.json",
+        "sha256": "cfd84788ad5cc0fa3b870a9b22accca570f4cdf3615f55275452897055734b52",
+        "record_count": 500,
+        "exact_item_pointer_hits": 0
+      },
+      {
+        "origin": "frozen_taxonomy",
+        "owner": "terrain",
+        "path": "/workspace/audit-continuation/frozen-taxonomy-df777898/content/world/terrain/terrain-07000-07499.json",
+        "sha256": "d5445a472792b7afda405bc8f416a5bb1ee0351613585d13548a2b1a4474ae6b",
+        "record_count": 500,
+        "exact_item_pointer_hits": 0
+      },
+      {
+        "origin": "frozen_taxonomy",
+        "owner": "terrain",
+        "path": "/workspace/audit-continuation/frozen-taxonomy-df777898/content/world/terrain/terrain-07500-07999.json",
+        "sha256": "71d590c5c7b69e7e0fb09d797d21ba18c3649e4c3b52ccf57627b85fa4cac8fd",
+        "record_count": 500,
+        "exact_item_pointer_hits": 0
+      },
+      {
+        "origin": "frozen_taxonomy",
+        "owner": "terrain",
+        "path": "/workspace/audit-continuation/frozen-taxonomy-df777898/content/world/terrain/terrain-08000-08499.json",
+        "sha256": "92d35db1d4c783d0a05d48e56b6616d429b4da85f76e5ae179bb7ea2eee339a8",
+        "record_count": 500,
+        "exact_item_pointer_hits": 0
+      },
+      {
+        "origin": "frozen_taxonomy",
+        "owner": "terrain",
+        "path": "/workspace/audit-continuation/frozen-taxonomy-df777898/content/world/terrain/terrain-08500-08547.json",
+        "sha256": "0a3742d9431f50123f14963c5529ea700eebc22c9b5cde52ef7bea57729e6ca9",
+        "record_count": 48,
+        "exact_item_pointer_hits": 0
+      },
+      {
+        "origin": "frozen_taxonomy",
+        "owner": "terrain",
+        "path": "/workspace/audit-continuation/frozen-taxonomy-df777898/content/world/terrain/terrain-08548-08577.json",
+        "sha256": "5f2dca58c5b7e16dc66e2278ade5f8b23c4a30605c4390cdfe5b7a72377d7357",
+        "record_count": 30,
+        "exact_item_pointer_hits": 0
+      },
+      {
+        "origin": "current_native",
+        "owner": "objects",
+        "path": "/workspace/pr1437-native-publish/content/world/objects/index.json",
+        "sha256": "a0dbd7f2c0c0b09b5457b189128c7cbd7dd2a4553e2a3c00063092372c3b65d7",
+        "record_count": 0,
+        "exact_item_pointer_hits": 0
+      },
+      {
+        "origin": "current_native",
+        "owner": "objects",
+        "path": "/workspace/pr1437-native-publish/content/world/objects/objects-00000-00499.json",
+        "sha256": "76b4489d66b2affaa0929dc449e9a5f21c7f454d2fb66453e3a6757861f8fd9f",
+        "record_count": 500,
+        "exact_item_pointer_hits": 0
+      },
+      {
+        "origin": "current_native",
+        "owner": "objects",
+        "path": "/workspace/pr1437-native-publish/content/world/objects/objects-00500-00999.json",
+        "sha256": "2ebd31bd6ba0bb6cd3f1561258b61893954891e9b907ef918444ddbb4206c1fb",
+        "record_count": 500,
+        "exact_item_pointer_hits": 0
+      },
+      {
+        "origin": "current_native",
+        "owner": "objects",
+        "path": "/workspace/pr1437-native-publish/content/world/objects/objects-01000-01499.json",
+        "sha256": "8e62410f9edc1cc3e4a58080b1916403931bf6248ad8e2f16b2aa0aee67238cd",
+        "record_count": 500,
+        "exact_item_pointer_hits": 0
+      },
+      {
+        "origin": "current_native",
+        "owner": "objects",
+        "path": "/workspace/pr1437-native-publish/content/world/objects/objects-01500-01999.json",
+        "sha256": "a0bd18bd67e763d6be89ad62c86752e700a660068044036f4629ad11e7374c3f",
+        "record_count": 500,
+        "exact_item_pointer_hits": 0
+      },
+      {
+        "origin": "current_native",
+        "owner": "objects",
+        "path": "/workspace/pr1437-native-publish/content/world/objects/objects-02000-02499.json",
+        "sha256": "252593e541ea1227637922eafdff911229c7b13606c40c18653377919bd3b0de",
+        "record_count": 500,
+        "exact_item_pointer_hits": 0
+      },
+      {
+        "origin": "current_native",
+        "owner": "objects",
+        "path": "/workspace/pr1437-native-publish/content/world/objects/objects-02500-02999.json",
+        "sha256": "815206da28a1ddcb3da87ffee5df33f031ed19ca038be0d407cc9f928e7b1466",
+        "record_count": 500,
+        "exact_item_pointer_hits": 0
+      },
+      {
+        "origin": "current_native",
+        "owner": "objects",
+        "path": "/workspace/pr1437-native-publish/content/world/objects/objects-03000-03499.json",
+        "sha256": "1609164d335c881603bbe4c876198bf07dcbf5397f3785a83b168f1b147e9eee",
+        "record_count": 500,
+        "exact_item_pointer_hits": 0
+      },
+      {
+        "origin": "current_native",
+        "owner": "objects",
+        "path": "/workspace/pr1437-native-publish/content/world/objects/objects-03500-03999.json",
+        "sha256": "a9bab2879801ad3db6e438ba90c17ebfedfc19763ac167c49740b2bc83245a39",
+        "record_count": 500,
+        "exact_item_pointer_hits": 0
+      },
+      {
+        "origin": "current_native",
+        "owner": "objects",
+        "path": "/workspace/pr1437-native-publish/content/world/objects/objects-04000-04499.json",
+        "sha256": "1d0c497e8ae0c368db09bac89b03f861ac68879fb510bbeb95ffd90c29cd36e5",
+        "record_count": 500,
+        "exact_item_pointer_hits": 0
+      },
+      {
+        "origin": "current_native",
+        "owner": "objects",
+        "path": "/workspace/pr1437-native-publish/content/world/objects/objects-04500-04999.json",
+        "sha256": "fd8201ca7bd0b8aba8be92d51c18844c9c0e8b610aeedb50c2674ac6b318c40a",
+        "record_count": 500,
+        "exact_item_pointer_hits": 0
+      },
+      {
+        "origin": "current_native",
+        "owner": "objects",
+        "path": "/workspace/pr1437-native-publish/content/world/objects/objects-05000-05499.json",
+        "sha256": "16ca20953a7820a4e5be2fb0af3128f03c9272cf396eb4320cb82ea30e33fdba",
+        "record_count": 500,
+        "exact_item_pointer_hits": 0
+      },
+      {
+        "origin": "current_native",
+        "owner": "objects",
+        "path": "/workspace/pr1437-native-publish/content/world/objects/objects-05500-05999.json",
+        "sha256": "f2779a7bb5c5e101365d532fd8420a0e467dbccd6505fa7591554124baa7333e",
+        "record_count": 500,
+        "exact_item_pointer_hits": 0
+      },
+      {
+        "origin": "current_native",
+        "owner": "objects",
+        "path": "/workspace/pr1437-native-publish/content/world/objects/objects-06000-06499.json",
+        "sha256": "3c683e1b85baea62c8ff0f6c89f2745e4e4d5e56d089e7c9ac988399377f90e8",
+        "record_count": 500,
+        "exact_item_pointer_hits": 0
+      },
+      {
+        "origin": "current_native",
+        "owner": "objects",
+        "path": "/workspace/pr1437-native-publish/content/world/objects/objects-06500-06999.json",
+        "sha256": "edfb10890a94e2b3e7038cadf2fc4b123125978d429fd38d998033d19690c3e0",
+        "record_count": 500,
+        "exact_item_pointer_hits": 0
+      },
+      {
+        "origin": "current_native",
+        "owner": "objects",
+        "path": "/workspace/pr1437-native-publish/content/world/objects/objects-07000-07499.json",
+        "sha256": "b330c3125b15da9e6a70dc8921df35de12cf23fe73aa0c098cc1523dfe838ec4",
+        "record_count": 500,
+        "exact_item_pointer_hits": 0
+      },
+      {
+        "origin": "current_native",
+        "owner": "objects",
+        "path": "/workspace/pr1437-native-publish/content/world/objects/objects-07500-07999.json",
+        "sha256": "79c4a5ae8cd81c936e78e260d8516df43e866f6ac133c0931fcce19d3bff7d09",
+        "record_count": 500,
+        "exact_item_pointer_hits": 0
+      },
+      {
+        "origin": "current_native",
+        "owner": "objects",
+        "path": "/workspace/pr1437-native-publish/content/world/objects/objects-08000-08499.json",
+        "sha256": "eaf65a8ebffc93be179e942efff2e93e9049382e808a907685e11c6c18f1215a",
+        "record_count": 500,
+        "exact_item_pointer_hits": 0
+      },
+      {
+        "origin": "current_native",
+        "owner": "objects",
+        "path": "/workspace/pr1437-native-publish/content/world/objects/objects-08500-08999.json",
+        "sha256": "8c3b94ff21c6a294e3f851f78aa95e9a8382ec1e1703f7c6541bfc9389e132e3",
+        "record_count": 500,
+        "exact_item_pointer_hits": 0
+      },
+      {
+        "origin": "current_native",
+        "owner": "objects",
+        "path": "/workspace/pr1437-native-publish/content/world/objects/objects-09000-09499.json",
+        "sha256": "d5c80080a119e6db62bb73067279ef49868e6bc99813b7c2760553d8711bfb9b",
+        "record_count": 500,
+        "exact_item_pointer_hits": 0
+      },
+      {
+        "origin": "current_native",
+        "owner": "objects",
+        "path": "/workspace/pr1437-native-publish/content/world/objects/objects-09500-09999.json",
+        "sha256": "2f487d3948825373dd6ed069ff1d2a952d53014e8e8d8718247d5fcdcbd85cd5",
+        "record_count": 500,
+        "exact_item_pointer_hits": 0
+      },
+      {
+        "origin": "current_native",
+        "owner": "objects",
+        "path": "/workspace/pr1437-native-publish/content/world/objects/objects-10000-10499.json",
+        "sha256": "400abc71605fbe4d47c365befb87e5e446afc74a592c75aa3d4ebec746a24a65",
+        "record_count": 500,
+        "exact_item_pointer_hits": 0
+      },
+      {
+        "origin": "current_native",
+        "owner": "objects",
+        "path": "/workspace/pr1437-native-publish/content/world/objects/objects-10500-10999.json",
+        "sha256": "53f8ce9a2d50ef46262f3f6eedb2618e1cf3a5adcf89c06eae90fcef84e5de8c",
+        "record_count": 500,
+        "exact_item_pointer_hits": 0
+      },
+      {
+        "origin": "current_native",
+        "owner": "objects",
+        "path": "/workspace/pr1437-native-publish/content/world/objects/objects-11000-11499.json",
+        "sha256": "3017066e3e44140ec427bfd985e0e4bda90a12e9c56df75ca2b3cefa858e9bec",
+        "record_count": 500,
+        "exact_item_pointer_hits": 0
+      },
+      {
+        "origin": "current_native",
+        "owner": "objects",
+        "path": "/workspace/pr1437-native-publish/content/world/objects/objects-11500-11999.json",
+        "sha256": "049b9891ade9c74e9383db7b87e434643c8a6c994453667def5431da2fb9e923",
+        "record_count": 500,
+        "exact_item_pointer_hits": 0
+      },
+      {
+        "origin": "current_native",
+        "owner": "objects",
+        "path": "/workspace/pr1437-native-publish/content/world/objects/objects-12000-12499.json",
+        "sha256": "9d14651b26891c52bd3405cb011be2dd14fcf0c08a0fd39f248e45adc4066a39",
+        "record_count": 500,
+        "exact_item_pointer_hits": 0
+      },
+      {
+        "origin": "current_native",
+        "owner": "objects",
+        "path": "/workspace/pr1437-native-publish/content/world/objects/objects-12500-12781.json",
+        "sha256": "bd43b46df4504b714ea636663bdb48dbd147842d97bebb8ebdaa40fcb3aac97e",
+        "record_count": 282,
+        "exact_item_pointer_hits": 0
+      },
+      {
+        "origin": "current_native",
+        "owner": "terrain",
+        "path": "/workspace/pr1437-native-publish/content/world/terrain/index.json",
+        "sha256": "89ae879da01b6a81e1e6a1c6a06b2632a2678066e0eb71404a5a7882bd516c44",
+        "record_count": 0,
+        "exact_item_pointer_hits": 0
+      },
+      {
+        "origin": "current_native",
+        "owner": "terrain",
+        "path": "/workspace/pr1437-native-publish/content/world/terrain/terrain-00000-00499.json",
+        "sha256": "8219d3d93af9791f0277608921041743f9a95e8ce182ef52bdaf859064d0322e",
+        "record_count": 500,
+        "exact_item_pointer_hits": 0
+      },
+      {
+        "origin": "current_native",
+        "owner": "terrain",
+        "path": "/workspace/pr1437-native-publish/content/world/terrain/terrain-00500-00999.json",
+        "sha256": "21dff9929f9e287eb070ac7b2c6666c4e3fb2002614dee22707daad6d0be033d",
+        "record_count": 500,
+        "exact_item_pointer_hits": 0
+      },
+      {
+        "origin": "current_native",
+        "owner": "terrain",
+        "path": "/workspace/pr1437-native-publish/content/world/terrain/terrain-01000-01499.json",
+        "sha256": "f2c02951b6e217960127adac3e99f7a2835d8220cdec5e3149be7f4ec5cb111b",
+        "record_count": 500,
+        "exact_item_pointer_hits": 0
+      },
+      {
+        "origin": "current_native",
+        "owner": "terrain",
+        "path": "/workspace/pr1437-native-publish/content/world/terrain/terrain-01500-01999.json",
+        "sha256": "54c8a17c14e01845f366f397c882ed432c9fa8cc2b8c3300e61d84a7f39999db",
+        "record_count": 500,
+        "exact_item_pointer_hits": 0
+      },
+      {
+        "origin": "current_native",
+        "owner": "terrain",
+        "path": "/workspace/pr1437-native-publish/content/world/terrain/terrain-02000-02499.json",
+        "sha256": "b5bfa07a608332e21de5f0e00a76506e251e226bf358d56cec8c7977d42cc258",
+        "record_count": 500,
+        "exact_item_pointer_hits": 0
+      },
+      {
+        "origin": "current_native",
+        "owner": "terrain",
+        "path": "/workspace/pr1437-native-publish/content/world/terrain/terrain-02500-02999.json",
+        "sha256": "f7438a43c2ac9bd1c5aaed5e97905741273486d055299383a54a499d4133770c",
+        "record_count": 500,
+        "exact_item_pointer_hits": 0
+      },
+      {
+        "origin": "current_native",
+        "owner": "terrain",
+        "path": "/workspace/pr1437-native-publish/content/world/terrain/terrain-03000-03499.json",
+        "sha256": "3c0504ee2998d278d61e84d888e4647c72b6c9029261916a1539b7555c4650b2",
+        "record_count": 500,
+        "exact_item_pointer_hits": 0
+      },
+      {
+        "origin": "current_native",
+        "owner": "terrain",
+        "path": "/workspace/pr1437-native-publish/content/world/terrain/terrain-03500-03999.json",
+        "sha256": "e82e8aa080cf43975e9f406b6e907f9d77c5dbe1c85dcd7eb83f622a3338fb3c",
+        "record_count": 500,
+        "exact_item_pointer_hits": 0
+      },
+      {
+        "origin": "current_native",
+        "owner": "terrain",
+        "path": "/workspace/pr1437-native-publish/content/world/terrain/terrain-04000-04499.json",
+        "sha256": "63c1b34729be8f3e3f5dc74cf22d0ea2299ee86753413d8ecc4681e58e3d8d99",
+        "record_count": 500,
+        "exact_item_pointer_hits": 0
+      },
+      {
+        "origin": "current_native",
+        "owner": "terrain",
+        "path": "/workspace/pr1437-native-publish/content/world/terrain/terrain-04500-04999.json",
+        "sha256": "a90057d127b279703be7252b4a7f7d336506716cd0218908e6377d262d23b31e",
+        "record_count": 500,
+        "exact_item_pointer_hits": 0
+      },
+      {
+        "origin": "current_native",
+        "owner": "terrain",
+        "path": "/workspace/pr1437-native-publish/content/world/terrain/terrain-05000-05499.json",
+        "sha256": "dba1216f5ff2461c949bb78058d2aa9939265bdb747445d0e5b5767844346b07",
+        "record_count": 500,
+        "exact_item_pointer_hits": 0
+      },
+      {
+        "origin": "current_native",
+        "owner": "terrain",
+        "path": "/workspace/pr1437-native-publish/content/world/terrain/terrain-05500-05999.json",
+        "sha256": "c5081d0589d6e65a40baf89178c4e29f81089147d463d168474ac286d546a66a",
+        "record_count": 500,
+        "exact_item_pointer_hits": 0
+      },
+      {
+        "origin": "current_native",
+        "owner": "terrain",
+        "path": "/workspace/pr1437-native-publish/content/world/terrain/terrain-06000-06499.json",
+        "sha256": "a5845d01e5f3599cf11e265af28e3f3c8de5eacde44e408d44a14c69d7cf8d22",
+        "record_count": 500,
+        "exact_item_pointer_hits": 0
+      },
+      {
+        "origin": "current_native",
+        "owner": "terrain",
+        "path": "/workspace/pr1437-native-publish/content/world/terrain/terrain-06500-06999.json",
+        "sha256": "cfd84788ad5cc0fa3b870a9b22accca570f4cdf3615f55275452897055734b52",
+        "record_count": 500,
+        "exact_item_pointer_hits": 0
+      },
+      {
+        "origin": "current_native",
+        "owner": "terrain",
+        "path": "/workspace/pr1437-native-publish/content/world/terrain/terrain-07000-07499.json",
+        "sha256": "d5445a472792b7afda405bc8f416a5bb1ee0351613585d13548a2b1a4474ae6b",
+        "record_count": 500,
+        "exact_item_pointer_hits": 0
+      },
+      {
+        "origin": "current_native",
+        "owner": "terrain",
+        "path": "/workspace/pr1437-native-publish/content/world/terrain/terrain-07500-07999.json",
+        "sha256": "71d590c5c7b69e7e0fb09d797d21ba18c3649e4c3b52ccf57627b85fa4cac8fd",
+        "record_count": 500,
+        "exact_item_pointer_hits": 0
+      },
+      {
+        "origin": "current_native",
+        "owner": "terrain",
+        "path": "/workspace/pr1437-native-publish/content/world/terrain/terrain-08000-08499.json",
+        "sha256": "92d35db1d4c783d0a05d48e56b6616d429b4da85f76e5ae179bb7ea2eee339a8",
+        "record_count": 500,
+        "exact_item_pointer_hits": 0
+      },
+      {
+        "origin": "current_native",
+        "owner": "terrain",
+        "path": "/workspace/pr1437-native-publish/content/world/terrain/terrain-08500-08547.json",
+        "sha256": "0a3742d9431f50123f14963c5529ea700eebc22c9b5cde52ef7bea57729e6ca9",
+        "record_count": 48,
+        "exact_item_pointer_hits": 0
+      }
+    ],
+    "current_exact_pointer_hits": 0,
+    "frozen_exact_pointer_hits": 0
+  },
+  "current_draft_binding_role": {
+    "parent_projection_path": "content/world/provenance/sources.json",
+    "parent_projection_sha256": "8319dc455ec284809447e1d50b0dba984ff451c45ad305fa117269def60f1bb1",
+    "retained_actual_bindings": [
+      {
+        "source_key": "oteryn:source.tibiawiki",
+        "source_revision": "tibiawiki-item-census:389875abd364aa9bcb0b09a591989c82ece5098d63b3c23376274048f6ac2f5a",
+        "identity_namespace": "mediawiki/page_id",
+        "external_id": "6171",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3332",
+          "revision": "definition-r1"
+        },
+        "disposition": "EXACT"
+      }
+    ],
+    "runtime_checked_binding": "existing actual BR page6171 source binding only",
+    "crystal_binding_role": "checked imported identity bridge manifest; NOT PRESENT in parent draftstate; no invented binding insertion"
+  }
+}

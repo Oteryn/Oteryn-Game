@@ -1719,10 +1719,21 @@ impl ChannelRuntimeV1 {
         &mut self,
         position: MovementLocalPosition,
     ) -> Result<ExactActorRef, CarrierError> {
+        self.admit_monster_lab_creature(position, "test:creature", 20)
+    }
+
+    /// Test-only parameterized admission for the native monster laboratory.
+    #[cfg(test)]
+    pub(crate) fn admit_monster_lab_creature(
+        &mut self,
+        position: MovementLocalPosition,
+        creature_key: &str,
+        health: i64,
+    ) -> Result<ExactActorRef, CarrierError> {
         let context = self.test_position_context();
         let actor =
             self.carrier
-                .admit_creature(&self.continuity, ActorState(0), "test:creature", 20)?;
+                .admit_creature(&self.continuity, ActorState(0), creature_key, health)?;
         self.carrier.initialize_position(
             &self.continuity,
             actor,
@@ -3764,6 +3775,16 @@ impl CombatDeathFixture {
         channel_id: ChannelId,
         scope_generation: ScopeOwnershipGeneration,
     ) -> Result<Self, CarrierError> {
+        Self::new_with_health(world_id, channel_id, scope_generation, Self::HEALTH)
+    }
+
+    /// Test-only source-health variant; default fixture and all production paths stay intact.
+    pub(crate) fn new_with_health(
+        world_id: WorldId,
+        channel_id: ChannelId,
+        scope_generation: ScopeOwnershipGeneration,
+        health: i64,
+    ) -> Result<Self, CarrierError> {
         let mut owner =
             NamespaceContinuityGuard::from_pre_production_grant(PreProductionContinuityGrant {
                 world_id,
@@ -3771,7 +3792,7 @@ impl CombatDeathFixture {
                 scope_generation,
             });
         let mut carrier = ChannelActorCarrier::bootstrap_pre_production(&mut owner, 1)?;
-        let actor = carrier.admit_creature(&owner, ActorState(1), Self::TARGET, Self::HEALTH)?;
+        let actor = carrier.admit_creature(&owner, ActorState(1), Self::TARGET, health)?;
         let context = PreProductionPositionContext {
             world_id,
             channel_id,

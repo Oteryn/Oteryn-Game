@@ -1,0 +1,685 @@
+{
+  "accepted_policy": "Root accepts only fixed15 explicit official-numeric/proven-import-literal Known name correction; ownWikiID is ABSENT, family15 NAV/BR3 remain held; every unrelated Known override is prohibited. Existing Name139 remains immutable.",
+  "authoring_baseline": "1b026969a8b2236737bff537b3eddb3c909781b2",
+  "counts": {
+    "fields": 15,
+    "items": 15,
+    "materializable_false_preserved": 15,
+    "native_applied": 0,
+    "own_Wiki_ID_absence": 15
+  },
+  "current_parent_receipt": {
+    "commit": "1b026969a8b2236737bff537b3eddb3c909781b2",
+    "scope": "Identity, four structural headers, exact old or incoming Known name, current owner/World guards; no unrelated whole Native sibling equality"
+  },
+  "global_own_id_frame": {
+    "path": "docs/agents/evidence/OTV2-20261001-item-movable-source-qualification-v1.json",
+    "sha256": "ae0698adc7df7e25b88569b22de87a020661381a0623ea84d5333a576b12be06"
+  },
+  "historical_source": {
+    "native_definition_digests_historical_only": true,
+    "path": "docs/agents/evidence/OTV2-20261002-item-name15-historical-source-v1.json",
+    "sha256": "294760f3f064da10cdb5b1c38398706b1a6db471af2027d317de840a939cfeb0"
+  },
+  "independent_source_peer": {
+    "path": "/workspace/audit-continuation/family-name15-br3-independent-source-proposal-peer.json",
+    "sha256": "20cc6407be8d811348c151c5fcd4814d858dfef5f11a5cdf0f18be43fe27b179"
+  },
+  "input_digests": {
+    "apps/game-server/src/content/item_name_promotion.rs": "0e35a7d6f83f98aadbd1672775e558d254629b8919727f58a8ef6f12b21927fb",
+    "content/items/aliases.json": "128bc354816199702c26f83120e6fb7846fb2608fb5ee1c16085f63268e592f2",
+    "docs/agents/evidence/OTV2-20261002-item-name-promotion-v1.json": "df202253ef9b0a4817eba98dcacb5a65960828e022e34b9590efdb96952f4383",
+    "docs/agents/evidence/OTV2-20261002-item-name-source-qualification-v1.json": "9a22bb2e4238c42ebcbd5714d6c6f08c39f5a140ae67ee61c78223d7952ca7fc",
+    "imports/crystalserver/bindings/items.json": "1d19709c28a649d8a9f32bf53e5bf43ad847d7901d6c6254833f456154d2de5a",
+    "imports/official/appearance-membership/admitted.json": "19f99b709d9a28c1730632e27672adb0a03ef11bf7d1f4b2647a4090f3df0718",
+    "imports/official/appearance-membership/appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.json": "f37b5d3e1136ebc3edbae1fe7090c4914b1d717bfbf9fd7c8faeeee36b491fe8",
+    "tools/content-schema/item-authoring/appearance_membership.py": "0746bb0e350fb04503919295a718907afc87866b0299fa277b914c74e85cfc09",
+    "tools/content-schema/item-authoring/engine_items.py": "0a494fd64d7774507b4d9e493492a7ffc9d99d751dd2ed4fec73561cb06f5b06",
+    "tools/content-schema/item-authoring/lower_client_market_packet.py": "850ee01d3b4831c412856b77720c0996122e4f67ed4603b0e6337637dc09457e",
+    "tools/content-schema/item-authoring/lower_item_name_packet.py": "d79622c4b307e76e701cc15890b99c61a1c56294b0db5ab49b98cfbd7dc955eb",
+    "tools/content-schema/item-authoring/lower_wiki_movable_packet.py": "dc9a9c622f8d8081c7245f4600405b18bd20e5a8459b77686119a585a8977476",
+    "tools/content-schema/item-authoring/lower_wiki_stack_default_packet.py": "5969b009ed326991e6db310b3e3c48640ae5a5ac361c9c34f5619740bff8ce2e",
+    "tools/content-schema/item-authoring/samples/promotion-crystal-ff7ede5.json": "69d5c1ff24b979658fc24a310d6715c131cfca6abe759ff1fa29479da0ecffe2"
+  },
+  "protected_XML_source": {
+    "attributes": {
+      "fromid": "23577",
+      "name": "weapon of mayhem",
+      "toid": "23667"
+    },
+    "correction_scope": [
+      23577,
+      23583,
+      23589,
+      23596,
+      23605,
+      23609,
+      23619,
+      23624,
+      23638,
+      23641,
+      23644,
+      23656,
+      23659,
+      23662,
+      23665
+    ],
+    "digest_mode": "text_lf_normalized",
+    "path": "data/items/items.xml",
+    "range_widening_permitted": false,
+    "raw_range": "<item fromid=\"23577\" toid=\"23667\" name=\"weapon of mayhem\">\n\t\t<attribute key=\"description\" value=\"This weapon is overcharged\" />\n\t</item>",
+    "raw_range_sha256": "c6f6b38336382bbb450cca210982f629438ae948aa5a5bcfa94b0975078a3b92",
+    "source_repository": "zimbadev/crystalserver",
+    "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+    "whole_raw_sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb"
+  },
+  "qualification_cutoff": "2026-09-27T23:59:59Z",
+  "records": [
+    {
+      "binding": {
+        "disposition": "EXACT",
+        "external_id": "23577",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i23577",
+          "revision": "definition-r1"
+        }
+      },
+      "imported_name_proof": {
+        "field_path": "presentation.name",
+        "native_key": "oteryn:item.registry.i00022765",
+        "source_item_id": 23577,
+        "source_value": "weapon of mayhem",
+        "typed_value": {
+          "kind": "TEXT",
+          "value": "weapon of mayhem"
+        }
+      },
+      "name": "blade of mayhem",
+      "native_header_guard": {
+        "client_projection": "ClientSafe",
+        "kind": "Item",
+        "materializable": false,
+        "stack_class": "Unknown"
+      },
+      "official_identity_projection_sha256": "d8cac216e526a966ba8717ecd1d44e7fbf979e3612b5807b9c843c040872eac4",
+      "official_object_sha256": "ce9bc8f01240aeebd59bae00bb8c4c3f317e14bee598204b4123ce76a0f55f86",
+      "previous_imported_name": "weapon of mayhem",
+      "source_item_id": 23577,
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i23577",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "binding": {
+        "disposition": "EXACT",
+        "external_id": "23583",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i23583",
+          "revision": "definition-r1"
+        }
+      },
+      "imported_name_proof": {
+        "field_path": "presentation.name",
+        "native_key": "oteryn:item.registry.i00022771",
+        "source_item_id": 23583,
+        "source_value": "weapon of mayhem",
+        "typed_value": {
+          "kind": "TEXT",
+          "value": "weapon of mayhem"
+        }
+      },
+      "name": "axe of mayhem",
+      "native_header_guard": {
+        "client_projection": "ClientSafe",
+        "kind": "Item",
+        "materializable": false,
+        "stack_class": "Unknown"
+      },
+      "official_identity_projection_sha256": "46466b6077b8b2038baa0abeacaa969cc6bf495dd11c030549994919df424127",
+      "official_object_sha256": "575317e1bfc424a64e3557fac0446766c7c1d99935010a6d0bae75252e496e76",
+      "previous_imported_name": "weapon of mayhem",
+      "source_item_id": 23583,
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i23583",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "binding": {
+        "disposition": "EXACT",
+        "external_id": "23589",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i23589",
+          "revision": "definition-r1"
+        }
+      },
+      "imported_name_proof": {
+        "field_path": "presentation.name",
+        "native_key": "oteryn:item.registry.i00022777",
+        "source_item_id": 23589,
+        "source_value": "weapon of mayhem",
+        "typed_value": {
+          "kind": "TEXT",
+          "value": "weapon of mayhem"
+        }
+      },
+      "name": "mace of mayhem",
+      "native_header_guard": {
+        "client_projection": "ClientSafe",
+        "kind": "Item",
+        "materializable": false,
+        "stack_class": "Unknown"
+      },
+      "official_identity_projection_sha256": "9991cdf927e6802a7270ef323897ef59e4776fc33e2254a3a7edcb10083c1d7c",
+      "official_object_sha256": "3dadf9ffed86ce69512bd1064a61546a2f8d27d59b3b4b6138c23641cef2e7dd",
+      "previous_imported_name": "weapon of mayhem",
+      "source_item_id": 23589,
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i23589",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "binding": {
+        "disposition": "EXACT",
+        "external_id": "23596",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i23596",
+          "revision": "definition-r1"
+        }
+      },
+      "imported_name_proof": {
+        "field_path": "presentation.name",
+        "native_key": "oteryn:item.registry.i00022784",
+        "source_item_id": 23596,
+        "source_value": "weapon of mayhem",
+        "typed_value": {
+          "kind": "TEXT",
+          "value": "weapon of mayhem"
+        }
+      },
+      "name": "blade of remedy",
+      "native_header_guard": {
+        "client_projection": "ClientSafe",
+        "kind": "Item",
+        "materializable": false,
+        "stack_class": "Unknown"
+      },
+      "official_identity_projection_sha256": "b2a5cda4f387e45d7651f1f91d91f5da53a311ab2267ec719a5d6c716d4b9b47",
+      "official_object_sha256": "6d5be7040d155426ead0c3282259ccfe0aea330018e2254b3b89723b300cc8ec",
+      "previous_imported_name": "weapon of mayhem",
+      "source_item_id": 23596,
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i23596",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "binding": {
+        "disposition": "EXACT",
+        "external_id": "23605",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i23605",
+          "revision": "definition-r1"
+        }
+      },
+      "imported_name_proof": {
+        "field_path": "presentation.name",
+        "native_key": "oteryn:item.registry.i00022793",
+        "source_item_id": 23605,
+        "source_value": "weapon of mayhem",
+        "typed_value": {
+          "kind": "TEXT",
+          "value": "weapon of mayhem"
+        }
+      },
+      "name": "blade of carving",
+      "native_header_guard": {
+        "client_projection": "ClientSafe",
+        "kind": "Item",
+        "materializable": false,
+        "stack_class": "Unknown"
+      },
+      "official_identity_projection_sha256": "62e6615469155d8137ef0a81996ec5611958d82ad903e35b042c52181f2a518d",
+      "official_object_sha256": "76d6f76e60bedbf3ce9b7415f5e4e21ffb636d291cce0c56f119b7d06ff02ecd",
+      "previous_imported_name": "weapon of mayhem",
+      "source_item_id": 23605,
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i23605",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "binding": {
+        "disposition": "EXACT",
+        "external_id": "23609",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i23609",
+          "revision": "definition-r1"
+        }
+      },
+      "imported_name_proof": {
+        "field_path": "presentation.name",
+        "native_key": "oteryn:item.registry.i00022797",
+        "source_item_id": 23609,
+        "source_value": "weapon of mayhem",
+        "typed_value": {
+          "kind": "TEXT",
+          "value": "weapon of mayhem"
+        }
+      },
+      "name": "blade of carving",
+      "native_header_guard": {
+        "client_projection": "ClientSafe",
+        "kind": "Item",
+        "materializable": false,
+        "stack_class": "Unknown"
+      },
+      "official_identity_projection_sha256": "62e6615469155d8137ef0a81996ec5611958d82ad903e35b042c52181f2a518d",
+      "official_object_sha256": "c7563ed4170e724ea38f45b8535d5780ef805d61c4170d4037321437d9f5b202",
+      "previous_imported_name": "weapon of mayhem",
+      "source_item_id": 23609,
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i23609",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "binding": {
+        "disposition": "EXACT",
+        "external_id": "23619",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i23619",
+          "revision": "definition-r1"
+        }
+      },
+      "imported_name_proof": {
+        "field_path": "presentation.name",
+        "native_key": "oteryn:item.registry.i00022807",
+        "source_item_id": 23619,
+        "source_value": "weapon of mayhem",
+        "typed_value": {
+          "kind": "TEXT",
+          "value": "weapon of mayhem"
+        }
+      },
+      "name": "mace of remedy",
+      "native_header_guard": {
+        "client_projection": "ClientSafe",
+        "kind": "Item",
+        "materializable": false,
+        "stack_class": "Unknown"
+      },
+      "official_identity_projection_sha256": "2bdd19e3431acd3aaa69acc394ffa58d14c43c243dda938990702cee408f6064",
+      "official_object_sha256": "47be3f69f5c03e6bd74c7b91e73d04659dfed649ff7b8260be7678d263fcba02",
+      "previous_imported_name": "weapon of mayhem",
+      "source_item_id": 23619,
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i23619",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "binding": {
+        "disposition": "EXACT",
+        "external_id": "23624",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i23624",
+          "revision": "definition-r1"
+        }
+      },
+      "imported_name_proof": {
+        "field_path": "presentation.name",
+        "native_key": "oteryn:item.registry.i00022812",
+        "source_item_id": 23624,
+        "source_value": "weapon of mayhem",
+        "typed_value": {
+          "kind": "TEXT",
+          "value": "weapon of mayhem"
+        }
+      },
+      "name": "axe of carving",
+      "native_header_guard": {
+        "client_projection": "ClientSafe",
+        "kind": "Item",
+        "materializable": false,
+        "stack_class": "Unknown"
+      },
+      "official_identity_projection_sha256": "328ee7f508415e4bd0d7e03b53679076b4f2fae39d429d87b6a2ab9da2d8a0ad",
+      "official_object_sha256": "ec1e99e6988b560fa8c7934f72a397fe0e21ca826888fb516822e9ed49132504",
+      "previous_imported_name": "weapon of mayhem",
+      "source_item_id": 23624,
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i23624",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "binding": {
+        "disposition": "EXACT",
+        "external_id": "23638",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i23638",
+          "revision": "definition-r1"
+        }
+      },
+      "imported_name_proof": {
+        "field_path": "presentation.name",
+        "native_key": "oteryn:item.registry.i00022826",
+        "source_item_id": 23638,
+        "source_value": "weapon of mayhem",
+        "typed_value": {
+          "kind": "TEXT",
+          "value": "weapon of mayhem"
+        }
+      },
+      "name": "wand of remedy",
+      "native_header_guard": {
+        "client_projection": "ClientSafe",
+        "kind": "Item",
+        "materializable": false,
+        "stack_class": "Unknown"
+      },
+      "official_identity_projection_sha256": "d8171e46e3a57088247ff1b9427d6b12543894dac5b3bbd873efe112d77d627f",
+      "official_object_sha256": "80f99a0f5cee2f05474cfd7ca3e9ddae70ee26d42f28d05a68360b662a03eb6f",
+      "previous_imported_name": "weapon of mayhem",
+      "source_item_id": 23638,
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i23638",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "binding": {
+        "disposition": "EXACT",
+        "external_id": "23641",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i23641",
+          "revision": "definition-r1"
+        }
+      },
+      "imported_name_proof": {
+        "field_path": "presentation.name",
+        "native_key": "oteryn:item.registry.i00022829",
+        "source_item_id": 23641,
+        "source_value": "weapon of mayhem",
+        "typed_value": {
+          "kind": "TEXT",
+          "value": "weapon of mayhem"
+        }
+      },
+      "name": "wand of remedy",
+      "native_header_guard": {
+        "client_projection": "ClientSafe",
+        "kind": "Item",
+        "materializable": false,
+        "stack_class": "Unknown"
+      },
+      "official_identity_projection_sha256": "d8171e46e3a57088247ff1b9427d6b12543894dac5b3bbd873efe112d77d627f",
+      "official_object_sha256": "18d9214d4a9f90e10c0ef406b8d2f8f53e421f8261665fedc7d8e046e11eb681",
+      "previous_imported_name": "weapon of mayhem",
+      "source_item_id": 23641,
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i23641",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "binding": {
+        "disposition": "EXACT",
+        "external_id": "23644",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i23644",
+          "revision": "definition-r1"
+        }
+      },
+      "imported_name_proof": {
+        "field_path": "presentation.name",
+        "native_key": "oteryn:item.registry.i00022832",
+        "source_item_id": 23644,
+        "source_value": "weapon of mayhem",
+        "typed_value": {
+          "kind": "TEXT",
+          "value": "weapon of mayhem"
+        }
+      },
+      "name": "mace of carving",
+      "native_header_guard": {
+        "client_projection": "ClientSafe",
+        "kind": "Item",
+        "materializable": false,
+        "stack_class": "Unknown"
+      },
+      "official_identity_projection_sha256": "fda9a8139ac401dbaffd0f3c3d64fde1c3ebe55c0c3e6b0faaf92eafbbe6c237",
+      "official_object_sha256": "7fd0a9cbf04e7aad3ea816a6fbc0f17d726ebe2f4cebc2c3f29deb8bf9e339de",
+      "previous_imported_name": "weapon of mayhem",
+      "source_item_id": 23644,
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i23644",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "binding": {
+        "disposition": "EXACT",
+        "external_id": "23656",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i23656",
+          "revision": "definition-r1"
+        }
+      },
+      "imported_name_proof": {
+        "field_path": "presentation.name",
+        "native_key": "oteryn:item.registry.i00022844",
+        "source_item_id": 23656,
+        "source_value": "weapon of mayhem",
+        "typed_value": {
+          "kind": "TEXT",
+          "value": "weapon of mayhem"
+        }
+      },
+      "name": "wand of carving",
+      "native_header_guard": {
+        "client_projection": "ClientSafe",
+        "kind": "Item",
+        "materializable": false,
+        "stack_class": "Unknown"
+      },
+      "official_identity_projection_sha256": "2ed6bbe62a61b4c4782de6bfdc24efb75f7f5acffc4a47d15e7a0ab0a031221c",
+      "official_object_sha256": "09d94bb71882d3d26c60a171ce6adb6b97c9df8eb670d243f48f30a9b6ea4d43",
+      "previous_imported_name": "weapon of mayhem",
+      "source_item_id": 23656,
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i23656",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "binding": {
+        "disposition": "EXACT",
+        "external_id": "23659",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i23659",
+          "revision": "definition-r1"
+        }
+      },
+      "imported_name_proof": {
+        "field_path": "presentation.name",
+        "native_key": "oteryn:item.registry.i00022847",
+        "source_item_id": 23659,
+        "source_value": "weapon of mayhem",
+        "typed_value": {
+          "kind": "TEXT",
+          "value": "weapon of mayhem"
+        }
+      },
+      "name": "rod of carving",
+      "native_header_guard": {
+        "client_projection": "ClientSafe",
+        "kind": "Item",
+        "materializable": false,
+        "stack_class": "Unknown"
+      },
+      "official_identity_projection_sha256": "321d0fa19ea35a18cfcecfb3384f79d1fd64f4023aa66c066619b89f39035fe8",
+      "official_object_sha256": "1282eb2bf8011b6a3a0ecb1b05b4c7d9794568ebef7579db4656d5f6d96365f1",
+      "previous_imported_name": "weapon of mayhem",
+      "source_item_id": 23659,
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i23659",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "binding": {
+        "disposition": "EXACT",
+        "external_id": "23662",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i23662",
+          "revision": "definition-r1"
+        }
+      },
+      "imported_name_proof": {
+        "field_path": "presentation.name",
+        "native_key": "oteryn:item.registry.i00022850",
+        "source_item_id": 23662,
+        "source_value": "weapon of mayhem",
+        "typed_value": {
+          "kind": "TEXT",
+          "value": "weapon of mayhem"
+        }
+      },
+      "name": "wand of mayhem",
+      "native_header_guard": {
+        "client_projection": "ClientSafe",
+        "kind": "Item",
+        "materializable": false,
+        "stack_class": "Unknown"
+      },
+      "official_identity_projection_sha256": "cc0caf55619ed1382cea36c2e1ec0a6026ce1610e39e6c7a81f0fefd8aede38a",
+      "official_object_sha256": "ecc9ebbbdcc26abd5b96d57b9a128a150f8c07b2b178c05808f862e86896c35a",
+      "previous_imported_name": "weapon of mayhem",
+      "source_item_id": 23662,
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i23662",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "binding": {
+        "disposition": "EXACT",
+        "external_id": "23665",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i23665",
+          "revision": "definition-r1"
+        }
+      },
+      "imported_name_proof": {
+        "field_path": "presentation.name",
+        "native_key": "oteryn:item.registry.i00022853",
+        "source_item_id": 23665,
+        "source_value": "weapon of mayhem",
+        "typed_value": {
+          "kind": "TEXT",
+          "value": "weapon of mayhem"
+        }
+      },
+      "name": "rod of mayhem",
+      "native_header_guard": {
+        "client_projection": "ClientSafe",
+        "kind": "Item",
+        "materializable": false,
+        "stack_class": "Unknown"
+      },
+      "official_identity_projection_sha256": "ca9ae23e9332a03e42085512298079ee8f495c06869bccaff525543d39d41383",
+      "official_object_sha256": "70462340ded9f0db786f8236432979cc98da3945819c8a4d011204ddf353cd08",
+      "previous_imported_name": "weapon of mayhem",
+      "source_item_id": 23665,
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i23665",
+        "revision": "definition-r1"
+      }
+    }
+  ],
+  "runtime_and_family_changes": false,
+  "schema": "OTERYN_CLOSED_OFFICIAL_IMPORTED_NAME15_SOURCE_QUALIFICATION/v1",
+  "source_revisions": [
+    "ff7ede593c69d4c658b382c97443e8155926924a",
+    "00ce02a57ca5a12e48f32a3476e37471167e4c3f"
+  ]
+}

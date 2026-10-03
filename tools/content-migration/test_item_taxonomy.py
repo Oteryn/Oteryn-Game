@@ -7,6 +7,7 @@ import unittest
 from pathlib import Path
 
 from item_taxonomy import (
+    cite_owner_review,
     BULK_FALLBACK_PATH,
     FALLBACK_PATH,
     build_taxonomy,
@@ -283,6 +284,48 @@ class TaxonomyTests(unittest.TestCase):
             "different item"
         )
         self.assertEqual(build_taxonomy(*args, set()), [])
+
+    def test_owner_prose_quoting_an_item_key_is_cited_not_copied(self):
+        retired = "oteryn:item.registry.i00018670"
+        target = {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i36586",
+            "revision": "definition-r1",
+        }
+        review = {
+            "name": "aligned opticording sphere",
+            "profile": "quest_item",
+            "reason": f"Intermediate quest state. Old key: `{retired}`.",
+            "source": {"facts": "No own page.", "wiki_url": None},
+        }
+        row = {
+            "target": target,
+            "family_profile": "quest_item",
+            "source_evidence": {"scope": "NAVIGATION_ONLY", "owner_review": review},
+        }
+        cited = cite_owner_review(row)
+        text = json.dumps(cited)
+        self.assertNotIn(retired, text)
+        self.assertNotIn("Old key", text)
+        owner = cited["source_evidence"]["owner_review"]
+        self.assertEqual(
+            owner["reason_ref"],
+            {
+                "decision": target["key"],
+                "field": "reason",
+                "sha256": hashlib.sha256(
+                    json.dumps(review["reason"], ensure_ascii=False).encode()
+                ).hexdigest(),
+            },
+        )
+        self.assertEqual(
+            {field: owner[field] for field in ("name", "profile", "source")},
+            {field: review[field] for field in ("name", "profile", "source")},
+        )
+        self.assertEqual(row["source_evidence"]["owner_review"], review)
+        self.assertEqual(cite_owner_review(cited), cited)
+        plain = {"target": target, "source_evidence": {"scope": "NAVIGATION_ONLY"}}
+        self.assertIs(cite_owner_review(plain), plain)
 
 
 if __name__ == "__main__":
