@@ -165,11 +165,12 @@ pub const MAX_SNAPSHOT_ASSEMBLED_BYTES: u64 = 16_777_216;
 
 // The optional capabilities PROTOCOL_OTERYN_V1_REGISTRY.json registers: 1 BESTIARY_CHARMS_V1
 // (CHARM-5, not offered before CHARM-6), 6 WORLD_SPATIAL_ENTITIES (VIS-2, not offered before the
-// server composes it), 7 CHAT_V1 (CHAT-1, not offered before CHAT-1b-2 composes it) and 10
-// ANALYSER_V1 (ANALYSER-WIRE-1, not offered before ANALYSER-EMIT-1). Registered is not offered:
+// server composes it), 7 CHAT_V1 (CHAT-1, not offered before CHAT-1b-2 composes it), 8
+// ACHIEVEMENT_NOTICES_V1 (ACH-NOTIFY-1, not offered before capability negotiation is composed) and
+// 10 ANALYSER_V1 (ANALYSER-WIRE-1, not offered before ANALYSER-EMIT-1). Registered is not offered:
 // the server selects none today.
 // Keep this sorted when a later owning gate allocates an additive capability ID.
-const REGISTERED_CAPABILITY_IDS_V1: &[u32] = &[1, 6, 7, 10];
+const REGISTERED_CAPABILITY_IDS_V1: &[u32] = &[1, 6, 7, 8, 10];
 
 fn decode_uuid_v7(input: &[u8]) -> Result<[u8; 16], FoundationProtocolError> {
     let value: [u8; 16] = input
@@ -2234,6 +2235,7 @@ pub fn decode_framed_envelope(
 }
 
 pub mod account_achievements;
+pub mod achievement_notices;
 pub mod actor_spell;
 pub mod analyser;
 pub mod bestiary;
@@ -2993,15 +2995,16 @@ mod tests {
             ))
             .is_ok()
         );
-        // 1 BESTIARY_CHARMS_V1, 6 WORLD_SPATIAL_ENTITIES, 7 CHAT_V1 and 10 ANALYSER_V1 are
-        // registered; 2 is reserved for PROF-WIRE-1 and 8 is unallocated: a selected capability
-        // this build does not know fails.
+        // 1 BESTIARY_CHARMS_V1, 6 WORLD_SPATIAL_ENTITIES, 7 CHAT_V1, 8 ACHIEVEMENT_NOTICES_V1 and
+        // 10 ANALYSER_V1 are registered; 2 is reserved for PROF-WIRE-1 and 1000 is unallocated: a
+        // selected capability this build does not know fails.
         for selected in [
             &[6_usize][..],
             &[1, 6][..],
             &[7][..],
+            &[8][..],
             &[10][..],
-            &[1, 6, 7, 10][..],
+            &[1, 6, 7, 8, 10][..],
         ] {
             assert!(
                 decode_wire_envelope(&test_envelope(
@@ -3014,7 +3017,7 @@ mod tests {
         assert_eq!(
             decode_wire_envelope(&test_envelope(
                 2,
-                &test_server_accepted_payload(1, 1, 1, [&session, &world, &channel], &[8])
+                &test_server_accepted_payload(1, 1, 1, [&session, &world, &channel], &[1000])
             )),
             Err(FoundationProtocolError::CapabilityMismatch)
         );

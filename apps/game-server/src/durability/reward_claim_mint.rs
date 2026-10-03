@@ -53,10 +53,19 @@
 //! replay can never request it twice. A key the catalogue lacks is refused
 //! before anything is reserved; a retired key grants nothing and the claim
 //! commits.
+//!
+//! Notice (ACHIEVEMENT-0 §5, ACH-NOTIFY-1): a commit whose grant is `Granted`
+//! also returns a [`GrantedAchievementNotice`]. It holds the key and the
+//! account's fact keys, read in the same transaction after the insert. Every
+//! commit pass takes the EXCLUSIVE admission locks first, so concurrent
+//! reward-claim grants are serialized and each one reads an exact watermark.
+//! The read is bounded and read-only. `AlreadyHeld`, `Retired` and a replayed
+//! CommandRef return no notice.
 
 use super::account_achievement::{
-    AchievementCatalogueLookup, AchievementGrantError, AchievementGrantRequest,
-    AchievementSourceEvent, FencedGrantingCharacter, record_achievement_grant, valid_key,
+    AchievementCatalogueLookup, AchievementGrantError, AchievementGrantOutcome,
+    AchievementGrantRequest, AchievementSourceEvent, FencedGrantingCharacter,
+    record_achievement_grant, valid_key,
 };
 use super::character_authority::{
     ReconciledCharacterAuthority, SERVER_BUILD_ID, assert_recovery_fence,
@@ -152,6 +161,18 @@ pub enum RewardClaimRefusal {
     UnsupportedContainerCapacity,
     /// No free direct entry in the main backpack (D92).
     MainBackpackFull,
+}
+
+/// At most this many fact keys are read for a notice. An account holding more
+/// gets no notice, and the panel query still shows its facts.
+pub const NOTICE_ACCOUNT_FACTS_MAX: usize = 4_096;
+
+/// The facts of one `Granted` grant, for its post-commit notice (ACH-NOTIFY-1).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct GrantedAchievementNotice {
+    pub achievement_key: String,
+    /// Every fact key of the account after the grant, in key order.
+    pub account_fact_keys: Vec<String>,
 }
 
 /// Terminal committed result of one CommandRef.
@@ -568,6 +589,20 @@ impl DurabilityRoot {
         fence: CurrentCharacterItemFence,
         candidate: &mut RewardClaimMintCandidate,
     ) -> Result<RewardClaimMintOutcome> {
+        self.commit_reward_claim_mint_noticed(authority, node, fence, candidate)
+            .await
+            .map(|(outcome, _)| outcome)
+    }
+
+    /// [`Self::commit_reward_claim_mint`], with the notice of a `Granted`
+    /// grant this commit made.
+    pub async fn commit_reward_claim_mint_noticed(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterItemFence,
+        candidate: &mut RewardClaimMintCandidate,
+    ) -> Result<(RewardClaimMintOutcome, Option<GrantedAchievementNotice>)> {
         let recovery = authority
             .record_for(self)
             .map_err(|_| RewardClaimMintError::AuthorityRejected)?;
@@ -592,7 +627,10 @@ impl DurabilityRoot {
                         }
                         let committed = decode_receipt(&row)?;
                         commit_semantic_transaction(tx, deadline).await?;
-                        return Ok(Ok(RewardClaimMintOutcome::AlreadyCommitted(committed)));
+                        return Ok(Ok((
+                            RewardClaimMintOutcome::AlreadyCommitted(committed),
+                            None,
+                        )));
                     }
 
                     let Some(row) = load_reservation(&mut tx, command).await? else {
@@ -654,6 +692,7 @@ impl DurabilityRoot {
                     // With the token `admit` minted after the fence and the
                     // `character_root` row lock in this transaction; an error
                     // drops the whole transaction.
+                    let mut notice = None;
                     if let Some(achievement) = &frozen.request.achievement {
                         let grant = match achievement_grant(
                             achievement,
@@ -663,16 +702,18 @@ impl DurabilityRoot {
                             Ok(grant) => grant,
                             Err(error) => return Ok(Err(error)),
                         };
-                        if let Err(error) =
-                            record_achievement_grant(&mut tx, granter, &grant).await?
-                        {
-                            return Ok(Err(error.into()));
+                        match record_achievement_grant(&mut tx, granter, &grant).await? {
+                            Ok(AchievementGrantOutcome::Granted(fact)) => {
+                                notice = granted_notice(&mut tx, fact.account_id, grant).await?;
+                            }
+                            Ok(_) => {}
+                            Err(error) => return Ok(Err(error.into())),
                         }
                     }
                     let committed =
                         apply_claim(&mut tx, &frozen, &reservation, destination, &envelope).await?;
                     commit_semantic_transaction(tx, deadline).await?;
-                    Ok(Ok(RewardClaimMintOutcome::Committed(committed)))
+                    Ok(Ok((RewardClaimMintOutcome::Committed(committed), notice)))
                 })
             })
             .await?
@@ -714,6 +755,32 @@ impl DurabilityRoot {
             })
             .await?
     }
+}
+
+/// The notice of a `Granted` grant: the account's fact keys, read in the
+/// granting transaction after the insert. Read-only, bounded by
+/// [`NOTICE_ACCOUNT_FACTS_MAX`]; `None` above the bound.
+async fn granted_notice(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    account_id: [u8; 16],
+    grant: AchievementGrantRequest,
+) -> std::result::Result<Option<GrantedAchievementNotice>, DurabilityError> {
+    let limit = i64::try_from(NOTICE_ACCOUNT_FACTS_MAX + 1)
+        .map_err(|_| DurabilityError::InvalidStoredState)?;
+    let account_fact_keys: Vec<String> = sqlx::query_scalar(
+        "SELECT achievement_key FROM game_account_achievements \
+          WHERE account_id = encode($1,'hex')::uuid ORDER BY achievement_key LIMIT $2",
+    )
+    .bind(account_id.as_slice())
+    .bind(limit)
+    .fetch_all(&mut **tx)
+    .await?;
+    Ok(
+        (account_fact_keys.len() <= NOTICE_ACCOUNT_FACTS_MAX).then_some(GrantedAchievementNotice {
+            achievement_key: grant.achievement_key,
+            account_fact_keys,
+        }),
+    )
 }
 
 /// Witness that [`admit`] found the complete current item fence in its
