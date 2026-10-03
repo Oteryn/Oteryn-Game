@@ -7,6 +7,7 @@ date: 2026-10-03
 owner: Sol Supervising Architect
 requested_by: control plane (D358 topic request after FAMILIARS-0-FIX-3)
 writes_on_other_prs: none
+amended_by: ARCH-PACKET-FIX-1 (§2.3 rows, §2.5 RL-04, §2.6 rows; #1687 round-3 P1s 4174692081 and 4174692089)
 ```
 
 This bundle splits and packets three requested topics:
@@ -314,7 +315,7 @@ Acceptance:
 
 ```yaml
 task_id: OTV2-20261003-timed-rt-1b
-decision: TIMED-ITEM-0B §5.1 (places 1-3), §5.2-§5.3, §6.1, §8, §12 (expiry shapes); this bundle §1.1
+decision: TIMED-ITEM-0B §5.1 (places 1-3), §5.2-§5.3, §6.1, §8, §12 (checkpoint and expiry shapes), §14; this bundle §1.1
 worker: oteryn-hard-worker   # persistence, session-generation fencing, runtime ownership
 review: independent persistence and determinism review (Codex, final frozen head)
 branch: claude/timed-rt-1b-20261003
@@ -331,8 +332,8 @@ owned_paths:
   - apps/game-server/src/durability/mod.rs             # shared register (§0)
   - apps/game-server/tests/item_timed_state_postgres.rs
   - apps/game-server/tests/support/item_timed_state_postgres_cases.rs
-  - docs/contracts/RESOURCE_LIMITS_REGISTRY.json       # expiry shape rows (§12); own rows only
-  - docs/architecture/DUR-03_ITEM_TRANSACTION_AND_ANTI_DUPLICATION_CONTRACT.md  # §39.3 expiry shapes; own paragraphs only
+  - docs/contracts/RESOURCE_LIMITS_REGISTRY.json       # §12 checkpoint and expiry shape rows; RL-01/-02/-04/-05 only where #1681 did not register them; own rows only
+  - docs/architecture/DUR-03_ITEM_TRANSACTION_AND_ANTI_DUPLICATION_CONTRACT.md  # §39.3 checkpoint and expiry shapes; own paragraphs only
   - docs/agents/tasks/archive/OTV2-20261003-timed-rt-1b.md
 call_sites: login, respawn, arrival, logout, channel transfer and death settlement call into timed_item_host; the worker names each file at allocation and adds only the call. It does not edit foundation/runtime_actor_carrier.rs while #1675 or #1682 is open.
 validation:
@@ -365,7 +366,26 @@ Acceptance:
   - Logout, channel transfer and death wait for every lane of the actor to be empty.
   - A crash returns at most one checkpoint interval (§6.2).
 - **Evidence.** One audit event per expiry (§8).
-- **Rows.** Max and max+1 tests for the expiry rows of §12.
+- **Rows (TIMED-ITEM-0B §12, §14).**
+  - RT-1b registers the §12 shape rows it admits: checkpoint, composed checkpoint, expiry
+    transform (`DUR03-RL-04-TIMED-EXPIRY`), expiry burn and composed expiry burn. Each has max and
+    max+1 tests on the DUR-03 ceilings §12 names (`DUR03-RL-01` 1, `DUR03-RL-07-EVENTS` 1,
+    `DUR03-RL-08` 3, the location lines, transform I/O, participants and work units). #1681 left
+    every shape ceiling to RT-1b, so RT-1b registers the two checkpoint shapes even though their
+    writer is RT-1a's.
+  - `TIMEDITEM0B-RL-01`, `-02`, `-04` and `-05` are registered by #1681 (RT-1a), with unit tests
+    on the lane. RT-1b proves each one again at the host boundary it adds, with max and max+1
+    tests:
+    - **RL-01:** the host's checkpoint cadence is accepted at 60 s and refused at 61 s, and a live
+      item hosted at login, respawn or arrival checkpoints within 60 s;
+    - **RL-02:** a host write whose outcome is known by 2,000 ms keeps the lane open, and one
+      still unknown at 2,001 ms holds the lane for reconciliation;
+    - **RL-04:** 11 live items for one actor (ten equipment slots plus the exercise binding) are
+      hosted, and a 12th is refused before any lane opens;
+    - **RL-05:** a host expiry or checkpoint issued while the lane has a write in flight waits
+      for it and is never sent as a second write.
+  - If #1681 merges without one of those rows, RT-1b registers it, with the same tests.
+  - The use form and put out rows of §12 are RT-1c's (§2.6).
 - **Not in scope.** RT-1c's causes and forms (§1.1), charge use by protection and every active
   effect (TIMED-FX-1), and the wire (TIMED-WIRE-1).
 
@@ -436,7 +456,7 @@ owned_paths:
   - apps/game-server/tests/item_forge_postgres.rs
   - apps/game-server/tests/support/item_forge_postgres_cases.rs
   - apps/game-server/tests/durability_postgres.rs      # shared register (§0)
-  - docs/contracts/RESOURCE_LIMITS_REGISTRY.json       # DUR03-RL-01/-03-FORGE, IMBFORGE0-RL-03/-07/-11/-12, the forge DUR03-RL-06 rows (DustLimit included); own rows only
+  - docs/contracts/RESOURCE_LIMITS_REGISTRY.json       # DUR03-RL-01/-03-FORGE, IMBFORGE0-RL-03/-04/-07/-11/-12, the forge DUR03-RL-06 rows (DustLimit included); own rows only
   - docs/architecture/DUR-03_ITEM_TRANSACTION_AND_ANTI_DUPLICATION_CONTRACT.md  # §15 ForgeCause, §39.3 forge shapes; own paragraphs only
   - docs/agents/tasks/active/OTV2-YYYYMMDD-forge-1b.md
 validation: as FORGE-1a, with --test item_forge_postgres
@@ -454,7 +474,22 @@ Acceptance: IMBUE-FORGE-0 §8-§10 operation by operation, `DustLimit` included:
 - the terminal `REVISION_CHANGED` is written receipt-only;
 - every refusal comes before the transaction;
 - history rows are capped by `IMBFORGE0-RL-12`;
-- the bonuses are content with Canary rates (`PARITY_PENDING`).
+- the bonuses are content with Canary rates (`PARITY_PENDING`);
+- **throughput (`IMBFORGE0-RL-04`, IMBUE-FORGE-0 §15: measured before FORGE-1 ships):**
+  - A PostgreSQL measurement case in `item_forge_postgres_cases.rs` runs concurrent forge
+    commits for distinct characters on one channel. It covers every forge shape FORGE-1b admits,
+    `DustLimit` included, on the PostgreSQL version CI pins.
+  - It reports sustained commits per second and the database p99 commit latency. The full run
+    is selected by an environment variable; CI runs a short version that checks only that the
+    harness completes and asserts no timing.
+  - The worker records the method, the host and the measured values in the task record. It
+    registers `IMBFORGE0-RL-04` with the measured rate as a qualification budget at p99, not a
+    runtime cutoff, as `MAP01-VIEWPORT-US` is registered. Its boundary tests are "a measured p99
+    within the budget passes qualification" and "over the budget fails it".
+  - The worker reports the measured value in its FREEZE. The architect accepts it there; the
+    worker does not pick the number. If no measurement can run, the worker stops and reports, and
+    FORGE-1b does not merge without one. IMBUE-1 measures the imbuing part of RL-04 under its own
+    packet.
 
 The owned paths are refreshed at allocation against the GOLD-FEE-2 and ITEM-MOVE-2a modules
 then on `main`.
@@ -474,4 +509,5 @@ validation: as TIMED-RT-1b
 ```
 
 Acceptance: TIMED-ITEM-0B §15 conditions 3 and 5, D360's tests, and the max and max+1 tests for
-the §9.2 and §10.5 rows and for `TIMEDITEM0B-RL-06`.
+the §9.2 and §10.5 rows, the §12 use form (`ItemUseCause::Light`) and put out (`PutOut`) shape
+rows, and `TIMEDITEM0B-RL-06`. RT-1c registers each row it admits.
