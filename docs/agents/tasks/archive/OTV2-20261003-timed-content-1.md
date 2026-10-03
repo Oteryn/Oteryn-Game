@@ -9,7 +9,7 @@ repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/timed-content-1
 issue: 1622   # allocation D384
-pr: PENDING_PR
+pr: 1699
 owned_paths:
   - tools/content-schema/item-authoring/{lower_timed_item_packet.py,test_lower_timed_item_packet.py,README.md}
   - docs/agents/evidence/OTV2-20261003-timed-item-facts-v1.json
