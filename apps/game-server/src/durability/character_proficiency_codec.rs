@@ -73,12 +73,7 @@ pub(in crate::durability) fn decode_state(
     )
 }
 fn cause(value: &str) -> StoredResult<ProficiencyCause> {
-    match value {
-        "training" => Ok(ProficiencyCause::Training),
-        "perk_selection" => Ok(ProficiencyCause::PerkSelection),
-        "migration" => Ok(ProficiencyCause::Migration),
-        _ => Err(DurabilityError::InvalidStoredState),
-    }
+    ProficiencyCause::from_key(value).ok_or(DurabilityError::InvalidStoredState)
 }
 fn revision(row: &sqlx::postgres::PgRow, key: &str) -> StoredResult<CharacterRevision> {
     CharacterRevision::new(numeric_u64(row, key)?).map_err(|_| DurabilityError::InvalidStoredState)
@@ -193,6 +188,10 @@ pub(in crate::durability) async fn verify_track_history(
         );
     }
     for (id, (cause, original, digest, binding, expected_track, lines)) in intents {
+        // A perk_modification binding covers its modification line; that verifier checks it.
+        if cause == ProficiencyCause::PerkModification {
+            continue;
+        }
         let occurrence = ProficiencyOccurrence::from_bytes(id)
             .map_err(|_| DurabilityError::InvalidStoredState)?;
         let request =
