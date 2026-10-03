@@ -2,6 +2,7 @@
 import copy
 import importlib.util
 import json
+import copy
 import re
 import subprocess
 import sys
@@ -125,14 +126,18 @@ if quest_families:
     assert "Quest" in project["migrated_families"] and "Quest" not in project["next_population_families"]
     assert set(quest_paths).issubset({row["path"] for row in manifest["managed_files"]})
 
+reference = json.loads((ROOT / 'content/world/definitions/reference.json').read_text())
+creature_families = ['Creature', 'Presentation', 'Behavior', 'Loot', 'Ability', 'Effect', 'Formula']
+family_counts = {family: sum(row['identity']['family'] == family for row in reference['records']) for family in creature_families}
+assert family_counts['Creature'] == 1763
 assert lock["family_counts"] == {
     "Item": 34031, "Mount": 252,
-    "Creature": 1503, "Presentation": 2613, "Behavior": 2613, "Loot": 1056, "Ability": 6000, "Effect": 4599, "Formula": 4905,
-    "NPC": 1110, "Dialogue": 694, "Service.Trade": 324, "Service.Travel": 56, "Encounter": 61, "Charm": 25,
+    **family_counts, "Document": 1609,
+    "NPC": 1110, "Dialogue": 694, "Service.Trade": 324, "Service.Travel": 56, "Encounter": 104, "Charm": 25,
     "Proficiency": 443, "RewardClaim": source_claim_count, "StarterKit": 1,
     **{family: value["records"] for family, value in quest_families.items()},
 }
-assert lock["source_binding_counts"] == {"Item": 454, "Mount": 252, "Creature": 1503, "Encounter": 61, "NPC": 2376}
+assert lock["source_binding_counts"] == {"Item": 454, "Mount": 252, "Creature": 1763, "Encounter": 104, "NPC": 2376}
 assert lock["editor_entry_counts"] == {"Item": 165, "Mount": 252}
 
 paths = [row["path"] for row in manifest["managed_files"]]
@@ -181,6 +186,36 @@ subprocess.run([sys.executable, str(ROOT / "tools/content-migration/test_quest_r
 # Core Item admission is a separate accepted data overlay, retained by every regeneration.
 subprocess.run([sys.executable, str(ROOT / "tools/content-migration/test_quest_reward_item_semantics.py")], check=True)
 subprocess.run([sys.executable, str(ROOT / "tools/content-migration/quest_reward_item_semantics.py"), "--check"], check=True)
+
+assert manifest['families']['Document'] == {'records': 1609, 'index': 'content/documents/index.json'}
+assert 'Document' in project['migrated_families']
+assert sum(path.startswith('content/documents/documents-') for path in paths) == 4
+assert 'content/documents/index.json' in paths and 'Document' not in lock['source_binding_counts']
+
+
+def test_document_roundtrip_negatives(declarations, sources):
+    import validate_world_project_v2_to_tree as validator
+    docs = [row for row in declarations['records'] if row.get('kind') == 'Document']
+    rows = [{'declaration': row} for row in docs]
+    assert validator.validate_document_rows(rows, declarations, sources) == 1609
+    bad_rows = copy.deepcopy(rows); bad_rows[0]['declaration']['content'][0] += ' altered'
+    bad_reference = copy.deepcopy(declarations)
+    creature = next(row for row in bad_reference['authoring_profiles'] if row['data']['kind'] == 'Creature')
+    creature['data']['profile'].setdefault('details', {})['encyclopedia_document'] = {'family': 'Document', 'key': 'oteryn:document/missing', 'revision': 'definition-r1'}
+    bad_binding = copy.deepcopy(sources)
+    bad_binding['source_identity_bindings'].append({'target': {'family': 'Document', **docs[0]['identity']}})
+    for args in [(rows[:-1], declarations, sources), (bad_rows, declarations, sources),
+                 (rows, bad_reference, sources), (rows, declarations, bad_binding)]:
+        try:
+            validator.validate_document_rows(*args)
+        except validator.ValidationError:
+            pass
+        else:
+            raise AssertionError('Dropped/rewritten Document, dangling ref or fabricated binding was accepted')
+
+
+test_document_roundtrip_negatives(json.loads((ROOT / 'content/world/definitions/declarations.json').read_text()),
+                                  json.loads((ROOT / 'content/world/provenance/sources.json').read_text()))
 
 # The RewardClaim family has no legacy source: its own authoring tool must reproduce it exactly.
 reward_claim_tool = ROOT / "tools" / "content-schema" / "reward-claim-authoring"

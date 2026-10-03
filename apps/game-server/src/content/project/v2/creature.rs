@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 
 use super::{
     ProjectError, ProjectEvidenceLimits, ProjectV2DefinitionRef, ProjectV2ExactRatio,
-    ProjectV2Family, validate_v2_ratio, validate_v2_source_text,
+    ProjectV2Family, validate_v2_dialogue_text, validate_v2_ratio, validate_v2_source_text,
 };
 
 pub const PROJECT_V2_PPM_SCALE: u32 = 1_000_000;
@@ -108,6 +108,9 @@ pub struct ProjectV2BestiaryDetails {
     /// Original editorial location text, not world spawn coordinates.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub locations: Option<String>,
+    /// Optional Oteryn-authored narrative, distinct from source location text.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub notes: Option<String>,
 }
 
 /// Bosstiary with the points of each stage (the base profile carries a single value).
@@ -582,6 +585,33 @@ pub struct ProjectV2Condition {
     pub speed_formula: Option<ProjectV2DefinitionRef>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub attribute_modifiers: Vec<ProjectV2AttributeModifier>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub light: Option<ProjectV2ConditionLight>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub regeneration: Option<ProjectV2ConditionRegeneration>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub buff_spell: Option<bool>,
+}
+
+/// S17 declarative condition parameters; no runtime execution is implied.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ProjectV2ConditionLight {
+    pub level: u8,
+    pub color: u8,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ProjectV2ConditionRegeneration {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub health_gain: Option<u64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub health_interval_ms: Option<u64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub mana_gain: Option<u64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub mana_interval_ms: Option<u64>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -866,6 +896,12 @@ pub(super) fn validate_creature_details(
         if let Some(locations) = &bestiary.locations {
             validate_v2_source_text("v2 Bestiary locations", locations, limits)?;
         }
+        if let Some(notes) = &bestiary.notes {
+            // Narrative text preserves paragraph breaks, like existing dialogue text.
+            limits.check("v2 Bestiary notes", notes.len(), limits.max_string_bytes)?;
+            validate_v2_dialogue_text("v2 Bestiary notes", notes, limits)
+                .map_err(|_| ProjectError::InvalidProject("invalid v2 Bestiary notes"))?;
+        }
     }
     if let Some(bosstiary) = &details.bosstiary {
         validate_v2_source_text("v2 Bosstiary category", &bosstiary.category, limits)?;
@@ -973,6 +1009,12 @@ pub(super) fn validate_behavior(
     if let Some(change) = targeting.change_target {
         ppm(change.chance_ppm, "v2 change target chance exceeds 100%")?;
     }
+    // CREATUREAI0-RL-07 requires these limits at content validation.
+    if behavior.attacks.len() > 16 || behavior.defenses.len() > 8 {
+        return Err(ProjectError::InvalidProject(
+            "v2 behavior exceeds 16 attacks or 8 defenses",
+        ));
+    }
     schedules(&behavior.attacks, require_ref, limits)?;
     schedules(&behavior.defenses, require_ref, limits)?;
     if let Some(voices) = &behavior.voices {
@@ -982,6 +1024,12 @@ pub(super) fn validate_behavior(
         if summons.max_summons == 0 || summons.entries.is_empty() {
             return Err(ProjectError::InvalidProject(
                 "v2 summons require a positive limit and an entry",
+            ));
+        }
+        // CREATUREAI0-RL-08 also bounds authored summon counts and entries.
+        if summons.max_summons > 16 || summons.entries.len() > 8 {
+            return Err(ProjectError::InvalidProject(
+                "v2 summons exceed a limit of 16 creatures or 8 entries",
             ));
         }
         limits.check(
@@ -999,6 +1047,11 @@ pub(super) fn validate_behavior(
             positive(entry.interval_ms, "v2 summon interval must be positive")?;
             ppm(entry.chance_ppm, "v2 summon chance exceeds 100%")?;
             positive(u64::from(entry.count), "v2 summon count must be positive")?;
+            if entry.count > 16 {
+                return Err(ProjectError::InvalidProject(
+                    "v2 summon entry count exceeds 16",
+                ));
+            }
         }
     }
     if let Some(audio) = &behavior.periodic_audio {
@@ -1175,9 +1228,12 @@ fn condition(
             if value.damage_over_time.is_none()
                 || value.speed_formula.is_some()
                 || duration_ms.is_some()
+                || value.light.is_some()
+                || value.regeneration.is_some()
+                || value.buff_spell.is_some()
             {
                 return Err(ProjectError::InvalidProject(
-                    "v2 damage-schedule condition needs a schedule and no duration or speed formula",
+                    "v2 damage-schedule condition needs a schedule and no duration, speed formula, light, regeneration or buff flag",
                 ));
             }
         }
@@ -1188,6 +1244,35 @@ fn condition(
                     "v2 fixed-duration condition needs a positive duration and no damage schedule",
                 ));
             }
+        }
+    }
+    if (value.condition_type == "light") != value.light.is_some()
+        || value.light.is_some_and(|light| light.level == 0)
+    {
+        return Err(ProjectError::InvalidProject(
+            "v2 light condition needs positive light only on its own type",
+        ));
+    }
+    if (value.condition_type == "regeneration") != value.regeneration.is_some() {
+        return Err(ProjectError::InvalidProject(
+            "v2 regeneration condition needs regeneration only on its own type",
+        ));
+    }
+    if let Some(regeneration) = value.regeneration {
+        let pairs = [
+            (regeneration.health_gain, regeneration.health_interval_ms),
+            (regeneration.mana_gain, regeneration.mana_interval_ms),
+        ];
+        if pairs
+            .iter()
+            .all(|(gain, interval)| gain.is_none() && interval.is_none())
+            || pairs.iter().any(|(gain, interval)| {
+                gain.is_some() != interval.is_some() || *gain == Some(0) || *interval == Some(0)
+            })
+        {
+            return Err(ProjectError::InvalidProject(
+                "v2 regeneration needs at least one complete positive gain/interval pair",
+            ));
         }
     }
     if let Some(formula) = &value.speed_formula {

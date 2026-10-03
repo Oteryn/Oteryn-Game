@@ -1,0 +1,11 @@
+{
+  "status": "PASS",
+  "archive_sha256": "66b044d87501c56ac13cf0c7f9dee1ebf1d9fdfae3c0ed0fd265db0616945373",
+  "archive_bytes": 34222184,
+  "verified_members": 6867,
+  "whole_patch_sha256": "1e392c8b96d2898a646030ec664e8f1ce8ac241dc467a69e361972a00116016d",
+  "raw_wiki_included": false,
+  "third_party_binary_assets_included": false,
+  "runtime_qualified": false,
+  "remote_publication": false
+}

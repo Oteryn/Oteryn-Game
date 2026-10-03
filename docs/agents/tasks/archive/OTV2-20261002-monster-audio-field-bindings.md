@@ -1,0 +1,5 @@
+# OTV2-20261002-monster-audio-field-bindings
+
+Owner-directed audio field completion, root sole publisher; depends on #1565. Scope exact-donor sound producer/tests plus task record. PROVEN9618 guarded patches:6308 Abilities/1655 actors,1655 Presentation and1655 catalog declarations,6921 event bindings. Six focused tests and six representative complete authoring actors PASS. Exact Git blobs pin donor source/loader/enum evidence; actual monster manifest donor selects namespace.
+
+DERIVED owner-accepted non-Global deterministic source-registration RNG choice and6284 default impact-routing corrections: donor registration writes impact through castSound, Oteryn uses typed impact slot. Source cue declaration is not binary asset admission; assets_admitted=false/runtime_qualified=false. Nineteen exact abilities unresolved,1343 source no-audio receipts explicit. No sound media redistributed, no runtime contracts changed; high-risk authority/recovery NOT_APPLICABLE offline producer. Full population follows in aggregate snapshot; live asset/client execution and protected integration remain #162. Stacked-base requires main retarget by coordinator after parent integration.

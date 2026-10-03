@@ -155,6 +155,7 @@ FIELDS = {
     'changeTarget': ([], 'target changes'),
     'strategiesTarget': ([], 'targeting strategy'),
     'light': ([], 'no light'),
+    'loot': ([('br.monster', 'loot'), ('fandom.monster', 'loot')], None),
     'elements': ([('br.monster', f'{element}DmgMod') for element in ('physical', 'earth', 'fire', 'death', 'energy', 'holy', 'ice')]
                  + [('fandom.monster', 'hpDrainDmgMod'), ('fandom.monster', 'drownDmgMod'),
                     ('br.monster', 'healDmgMod'), ('fandom.monster', 'healMod')],
@@ -173,8 +174,9 @@ FIELDS = {
 OMITTED = [('br.monster', 'hab_earth', '[[Magias de Criaturas#Wave|Wave costas]] (0-???).',
             'TibiaWiki BR lists an earth wave with unknown damage (0-???); it is left out until a '
             'source gives its damage (NEEDS VERIFICATION, D44).'),
-           ('br.monster', 'loot', 'Nenhum.', 'TibiaWiki BR gives no loot ("Nenhum"); the corpse is the only drop.'),
-           ('fandom.monster', 'loot', '{{Loot Table|}}', 'Fandom gives an empty loot table; the corpse is the only drop.')]
+]
+# These facts support the converter's explicit empty-loot disposition, not template assumptions.
+EMPTY_LOOT_FACTS = {'br.monster': 'Nenhum.', 'fandom.monster': '{{Loot Table|}}'}
 
 
 def fetch_fandom(title, revision_id):
@@ -327,6 +329,7 @@ AUTHORED_FOR = {
     ('br.monster', 'ignoresfields'): 'Poison, Fire, Energy',
     ('br.monster', 'immunities'): 'Invisibility, Paralysis',
     ('br.monster', 'name'): 'Dark Merudri',
+    ('br.monster', 'loot'): 'Nenhum.',
     ('br.monster', 'physicalDmgMod'): '100%',
     ('fandom.corpse', 'itemid'): '50311',
     ('fandom.monster', 'actualname'): 'dark merudri',
@@ -340,6 +343,7 @@ AUTHORED_FOR = {
     ('fandom.monster', 'illusionable'): 'no',
     ('fandom.monster', 'isboss'): 'no',
     ('fandom.monster', 'name'): 'Dark Merudri',
+    ('fandom.monster', 'loot'): '{{Loot Table|}}',
     ('fandom.monster', 'notes'): 'It becomes [[Good Remains of a Merudri]] when it dies.',
     ('fandom.monster', 'paraimmune'): 'yes',
     ('fandom.monster', 'pushable'): 'no',
@@ -388,7 +392,14 @@ def unread_cited_facts(sources):
     return sorted(cited_facts() - used)
 
 
+def verify_empty_loot_facts(sources):
+    for source_name, expected in EMPTY_LOOT_FACTS.items():
+        if sources[source_name]['facts']['loot']['value'] != expected:
+            raise ValueError(f'{source_name} loot changed from the reviewed empty value: re-author it')
+
+
 def lua_text(sources):
+    verify_empty_loot_facts(sources)
     fandom, br = sources['fandom.monster']['facts'], sources['br.monster']['facts']
     if fandom['hp']['value'] != br['hp']['value']:
         raise ValueError('Fandom and TibiaWiki BR disagree on hp')
@@ -418,8 +429,8 @@ IMPLICIT = {
     'manaCost': {'kind': 'field', 'status': 'approved_omission',
                  'resolution': 'manaCost 0: the creature can be neither summoned nor convinced, so no summoning mana cost is stored.'},
 }
-# Authored keys whose provenance is an OMITTED row instead of a converted one.
-OMITTED_KEYS = {'loot'}
+# Empty loot now carries an explicit converted disposition bound to both wiki facts.
+OMITTED_KEYS = set()
 # Outfit keys the converter maps in rows of their own; the other outfit keys are part of the `outfit` row.
 OUTFIT_OWN_ROWS = ('lookAddons', 'lookMount')
 
@@ -433,6 +444,10 @@ def uncovered_keys(text, fields):
 
 def manifest_for(sources, rows, template_lines):
     """Rows of the converted file re-pointed at the wiki sources (and the template for the NEEDS VERIFICATION part)."""
+    verify_empty_loot_facts(sources)
+    for row in rows:
+        if row['source_field'] == 'loot' and (row.get('status') != 'approved_omission' or row.get('destination')):
+            raise ValueError('wiki-authored loot must preserve the explicit empty-source omission')
     emitted = {row['source_field'] for row in rows}
     rows = rows + [{'source_field': field, **row} for field, row in IMPLICIT.items() if field not in emitted]
     order = ['fandom.monster', 'br.monster', 'fandom.corpse', 'fandom.outfit']
@@ -574,8 +589,8 @@ def self_test():
     else:
         raise AssertionError('a summonable wiki monster was authored without a mana cost')
     assert text.startswith('local mType = Game.createMonsterType("Dark Merudri")'), text[:60]
-    rows = [{'source_field': field, 'kind': 'field', 'status': 'approved_omission' if field == 'voices' else 'mapped',
-             'destination': '/x', 'resolution': 'r'} for field in FIELDS if field not in IMPLICIT]
+    rows = [{'source_field': field, 'kind': 'field', 'status': 'approved_omission' if field in ('voices', 'loot') else 'mapped',
+             **({} if field == 'loot' else {'destination': '/x'}), 'resolution': 'r'} for field in FIELDS if field not in IMPLICIT]
     manifest = manifest_for(sample['sources'], rows, {})
     template = len(manifest['sources']) - 1
     assert all(e['resolution'].startswith('NEEDS VERIFICATION') for e in manifest['entries'] if e['source_index'] == template)

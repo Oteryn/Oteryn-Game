@@ -30,7 +30,10 @@ use oteryn_game_server::content::{
     item_forge289_promotion::apply_item_forge289_promotion_v1,
     item_forge3332_promotion::apply_item_forge3332_promotion_v1,
     item_hit_magic_promotion::apply_item_hit_magic_promotion_v1,
-    item_identity::{ItemKeyAliasTable, apply_tibia_id_key_rule, tibia_item_key},
+    item_identity::{
+        APPEARANCE_ONLY_ITEM_IDS, ItemKeyAliasTable, apply_tibia_id_key_rule_with_appearance_items,
+        tibia_item_key,
+    },
     item_mantra_bond_modifier_promotion::apply_item_mantra_bond_modifier_promotion_v1,
     item_market_true_promotion::apply_item_market_true_promotion_v1,
     item_movable_promotion::apply_item_movable_promotion_v1,
@@ -66,15 +69,6 @@ const DONOR_EPOCH2_CENSUS: &[u8] = include_bytes!(
 const DONOR_EPOCH2_CROSSWALK: &[u8] = include_bytes!(
     "../../../docs/agents/evidence/OTV2-20260928-item-donor-identity-b1b-alias-crosswalk.json"
 );
-/// ITEM-ADD-1 (owner decision 2a): ids defined in no pinned items.xml whose CipSoft appearance is
-/// current in the newest admitted client. Each gets the A12 §4.1 key and no semantics beyond it.
-const APPEARANCE_ONLY_ITEM_IDS: [u64; 60] = [
-    21887, 35384, 35388, 35600, 35846, 36929, 39949, 40522, 43666, 43762, 43771, 43778, 43779,
-    43780, 43781, 43782, 43946, 43947, 43959, 44048, 44432, 44433, 44447, 44664, 44665, 44666,
-    44667, 44668, 44669, 44670, 44671, 44684, 44685, 44686, 44687, 44709, 44713, 44717, 48108,
-    48112, 48271, 48349, 48353, 48366, 48382, 48403, 48404, 48405, 48406, 48414, 48416, 49124,
-    51276, 51302, 51560, 53197, 53199, 53201, 53203, 53205,
-];
 const ITEM_KEYS: usize = ITEM_TIBIA_KEYS + APPEARANCE_ONLY_ITEM_IDS.len();
 const ADMITTED_APPEARANCES: &[u8] =
     include_bytes!("../../../imports/official/appearance-membership/admitted.json");
@@ -120,12 +114,12 @@ const OUTFIT_CROSSWALK_SHA256: &str =
 const OUTFIT_SOURCE_REVISION: &str = MOUNT_SOURCE_REVISION;
 const OUTFIT_SOURCE_SHA256: &str = MOUNT_SOURCE_SHA256;
 const CREATURE_STAGED: &[u8] = include_bytes!(
-    "../../../docs/agents/evidence/OTV2-20260927-creature-admission-wave-a-staged.json"
+    "../../../docs/agents/evidence/monster-server-import-20261002/creature-admission-stage.json"
 );
 const CREATURE_STAGED_SHA256: &str =
-    "ae54c36b41d172e1af512fe9d26780f3e25f194c3c23b11096476841cce65664";
+    "7bf45bf02db42220edb9665331ab6e8fefc1d55ba538a9c84a6b2e9765980857";
 const CREATURE_STAGE_TOOL_SHA256: &str =
-    "5a03273ab74f22bc175ad78d1efa3000c87f674248ee11c2196051e86c444322";
+    "3679ab87a31ad5f8e02aae38505819afb39e16de8a3d6028642438ead9a8c511";
 const CANARY_REVISION: &str = "47dfd51f45280a59a1d3e50ba7edd573d7234446";
 /// D44: creatures Tibia has at the target and Canary lacks, authored from TibiaWiki (`wiki_authored.py`).
 const CREATURE_WIKI_SAMPLE_SHA256: &str =
@@ -141,9 +135,9 @@ const CREATURE_CRYSTAL_REVISION: &str = "00ce02a57ca5a12e48f32a3476e37471167e4c3
 /// source revision, which keeps the commit, as the TibiaWiki batches of one source do.
 const CREATURE_CRYSTAL_SOURCE_REVISION: &str =
     "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f";
-const CREATURE_CRYSTAL_COUNT: usize = 37;
+const CREATURE_CRYSTAL_COUNT: usize = 96;
 const CANARY_BUNDLE_INDEX_SHA256: &str =
-    "d55ce674137cafe339cef65968439a14b5d82d86618456f5962174f0bd1b1233";
+    "0117ce9b1996a21c609c62d7ba9680614fb1f1fb2337e30d50a4ba1ab2bc049f";
 const ITEM_ALLOCATION_SHA256: &str =
     "ee9219ccf9d8b2350911abca321507ff924ccd4cb83196efd08b91fbdf098966";
 const NPC_STAGED: &[u8] =
@@ -181,11 +175,13 @@ const NPC_DIALOGUE_STAGED_SHA256: &str =
 const NPC_DIALOGUES: usize = 694;
 const NPC_DIALOGUE_NODES: usize = 6306;
 const NPC_BINDINGS: usize = 2376;
-const CREATURE_COUNT: usize = 1503;
-const CREATURE_RECORDS: usize = 21069;
-const CREATURE_PROFILES: usize = 20097;
+const CREATURE_COUNT: usize = 1763;
+const CREATURE_RECORDS: usize = 24933;
+const CREATURE_PROFILES: usize = 23823;
 /// Encounter admission E1-E5: encounters admitted with the creatures they cover.
-const ENCOUNTER_COUNT: usize = 61;
+const ENCOUNTER_COUNT: usize = 104;
+/// Logical encyclopedia declarations; DOCUMENT_COUNT remains the canonical tree file count.
+const CREATURE_DOCUMENT_COUNT: usize = 1609;
 
 fn limits() -> ProjectEvidenceLimits {
     ProjectEvidenceLimits {
@@ -1235,11 +1231,7 @@ struct CreaturePopulation {
     bindings: Vec<ProjectV2SourceIdentityBinding>,
 }
 
-fn populate_creatures() -> Result<CreaturePopulation, Box<dyn std::error::Error>> {
-    if hex_sha256(CREATURE_STAGED) != CREATURE_STAGED_SHA256 {
-        return Err("staged creature admission input digest drifted".into());
-    }
-    let packet: Value = serde_json::from_slice(CREATURE_STAGED)?;
+fn validate_creature_packet_source(packet: &Value) -> Result<(), Box<dyn std::error::Error>> {
     let counts = &packet["counts"];
     if packet["schema"] != "OTERYN_CREATURE_ADMISSION_STAGED/v1"
         || packet["wave"] != "A"
@@ -1251,6 +1243,7 @@ fn populate_creatures() -> Result<CreaturePopulation, Box<dyn std::error::Error>
         || counts["records"] != CREATURE_RECORDS
         || counts["profiles"] != CREATURE_PROFILES
         || counts["encounters"] != ENCOUNTER_COUNT
+        || counts["documents"] != CREATURE_DOCUMENT_COUNT
         || packet["source"]["wiki_authored"]["revision"] != CREATURE_WIKI_REVISION
         || packet["source"]["wiki_authored"]["sample_sha256"] != CREATURE_WIKI_SAMPLE_SHA256
         || packet["source"]["crystal"]["repository"] != "zimbadev/crystalserver"
@@ -1261,6 +1254,35 @@ fn populate_creatures() -> Result<CreaturePopulation, Box<dyn std::error::Error>
     {
         return Err("staged creature admission source identity drifted".into());
     }
+    Ok(())
+}
+
+fn validate_creature_declarations(
+    declarations: &[ProjectV2Declaration],
+) -> Result<(), Box<dyn std::error::Error>> {
+    let encounters = declarations
+        .iter()
+        .filter(|value| matches!(value, ProjectV2Declaration::Encounter { .. }))
+        .count();
+    let documents = declarations
+        .iter()
+        .filter(|value| matches!(value, ProjectV2Declaration::Document { .. }))
+        .count();
+    if declarations.len() != ENCOUNTER_COUNT + CREATURE_DOCUMENT_COUNT
+        || encounters != ENCOUNTER_COUNT
+        || documents != CREATURE_DOCUMENT_COUNT
+    {
+        return Err("staged creature declaration types or counts drifted".into());
+    }
+    Ok(())
+}
+
+fn populate_creatures() -> Result<CreaturePopulation, Box<dyn std::error::Error>> {
+    if hex_sha256(CREATURE_STAGED) != CREATURE_STAGED_SHA256 {
+        return Err("staged creature admission input digest drifted".into());
+    }
+    let packet: Value = serde_json::from_slice(CREATURE_STAGED)?;
+    validate_creature_packet_source(&packet)?;
     let records: Vec<ProjectReferenceRecord> = serde_json::from_value(packet["records"].clone())?;
     let profiles: Vec<ProjectV2AuthoringProfile> =
         serde_json::from_value(packet["authoring_profiles"].clone())?;
@@ -1268,13 +1290,7 @@ fn populate_creatures() -> Result<CreaturePopulation, Box<dyn std::error::Error>
         serde_json::from_value(packet["source_identity_bindings"].clone())?;
     let declarations: Vec<ProjectV2Declaration> =
         serde_json::from_value(packet["declarations"].clone())?;
-    if declarations.len() != ENCOUNTER_COUNT
-        || declarations
-            .iter()
-            .any(|declaration| !matches!(declaration, ProjectV2Declaration::Encounter { .. }))
-    {
-        return Err("staged encounter declarations drifted".into());
-    }
+    validate_creature_declarations(&declarations)?;
     let creatures = records
         .iter()
         .filter(|record| matches!(record, ProjectReferenceRecord::Creature { .. }))
@@ -1711,7 +1727,6 @@ fn populate_npcs() -> Result<NpcPopulation, Box<dyn std::error::Error>> {
 /// semantics.
 fn appearance_only_items(
     source_ids: &BTreeMap<String, u64>,
-    canonical: &BTreeSet<String>,
 ) -> Result<Vec<ProjectReferenceRecord>, Box<dyn std::error::Error>> {
     if hex_sha256(ADMITTED_APPEARANCES) != ADMITTED_APPEARANCES_SHA256 {
         return Err("admitted appearance set digest drifted".into());
@@ -1743,7 +1758,7 @@ fn appearance_only_items(
     }
     for id in APPEARANCE_ONLY_ITEM_IDS {
         let key = tibia_item_key(id).ok_or("appearance-only id has no Tibia key")?;
-        if !current.contains(&id) || known_source_ids.contains(&id) || canonical.contains(&key) {
+        if !current.contains(&id) || known_source_ids.contains(&id) {
             return Err(format!("appearance-only id {id} is not a new current CipSoft id").into());
         }
         records.push(ProjectReferenceRecord::Item {
@@ -1940,24 +1955,18 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
     // A12 §4.1: every Item key becomes its Tibia key and the D149 records leave content.
     let aliases = ItemKeyAliasTable::parse(ITEM_KEY_ALIASES)?;
-    let switch = apply_tibia_id_key_rule(&mut draft, &aliases, &item_source_ids)?;
-    if switch.item_records != ITEM_TIBIA_KEYS
-        || switch.removed_without_successor != ITEM_D149_REMOVED
-    {
+    // ITEM-ADD-1 owner 2a: verify the minimal current appearance Items before reference
+    // closure, so newly admitted creatures may already reference these canonical identities.
+    let appearance_only = appearance_only_items(&item_source_ids)?;
+    let switch = apply_tibia_id_key_rule_with_appearance_items(
+        &mut draft,
+        &aliases,
+        &item_source_ids,
+        appearance_only,
+    )?;
+    if switch.item_records != ITEM_KEYS || switch.removed_without_successor != ITEM_D149_REMOVED {
         return Err(format!("Item key switch drifted: {switch:?}").into());
     }
-    // ITEM-ADD-1 (owner decision 2a): §4.1 keys need no alias entry, so they join after the switch.
-    let canonical = draft
-        .core
-        .records
-        .iter()
-        .filter_map(|record| match record {
-            ProjectReferenceRecord::Item { identity, .. } => Some(identity.key.clone()),
-            _ => None,
-        })
-        .collect::<BTreeSet<_>>();
-    let appearance_only = appearance_only_items(&item_source_ids, &canonical)?;
-    draft.core.records.extend(appearance_only);
     let item_keys = draft
         .core
         .records
@@ -2000,7 +2009,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
     let tree_sha256 = write_documents(&root, &documents)?;
     println!(
-        "documents={DOCUMENT_COUNT} items={ITEM_KEYS} donor_epoch2_items={CW2_B1_DONOR_EPOCH2_MINTED_COUNT} appearance_only_items={} d149_removed={ITEM_D149_REMOVED} promoted_items={} promoted_fields={} wiki_stat_items={} wiki_stat_fields={} wiki_stat_replaced={} admitted_items={} pilot_item_bindings=165 pilot_item_fields=12 wave1_items={ITEM_WAVE1_ITEMS} wave1_promoted={wave1_promoted} mounts=252 mount_fields=0 outfits=133 outfit_fields=0 outfit_blocked_post_cut=1 creatures={CREATURE_COUNT} creature_records={CREATURE_RECORDS} creature_profiles={CREATURE_PROFILES} encounters={ENCOUNTER_COUNT} npcs={NPC_COUNT} npc_declarations={NPC_DECLARATIONS} tree_sha256={tree_sha256}",
+        "documents={DOCUMENT_COUNT} items={ITEM_KEYS} donor_epoch2_items={CW2_B1_DONOR_EPOCH2_MINTED_COUNT} appearance_only_items={} d149_removed={ITEM_D149_REMOVED} promoted_items={} promoted_fields={} wiki_stat_items={} wiki_stat_fields={} wiki_stat_replaced={} admitted_items={} pilot_item_bindings=165 pilot_item_fields=12 wave1_items={ITEM_WAVE1_ITEMS} wave1_promoted={wave1_promoted} mounts=252 mount_fields=0 outfits=133 outfit_fields=0 outfit_blocked_post_cut=1 creatures={CREATURE_COUNT} creature_records={CREATURE_RECORDS} creature_profiles={CREATURE_PROFILES} encounters={ENCOUNTER_COUNT} creature_documents={CREATURE_DOCUMENT_COUNT} npcs={NPC_COUNT} npc_declarations={NPC_DECLARATIONS} tree_sha256={tree_sha256}",
         APPEARANCE_ONLY_ITEM_IDS.len(),
         promoted.promoted_items,
         promoted.promoted_fields,
@@ -2010,4 +2019,70 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         admitted
     );
     Ok(())
+}
+
+#[cfg(test)]
+mod creature_snapshot_tests {
+    use super::*;
+
+    #[test]
+    fn current_creature_header_and_typed_declarations_are_admitted()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let packet: Value = serde_json::from_slice(CREATURE_STAGED)?;
+        assert_eq!(hex_sha256(CREATURE_STAGED), CREATURE_STAGED_SHA256);
+        validate_creature_packet_source(&packet)?;
+        let declarations: Vec<ProjectV2Declaration> =
+            serde_json::from_value(packet["declarations"].clone())?;
+        validate_creature_declarations(&declarations)?;
+        assert_eq!(DOCUMENT_COUNT, 11);
+        Ok(())
+    }
+
+    #[test]
+    fn creature_source_item_allocation_and_document_count_drift_are_rejected()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let baseline: Value = serde_json::from_slice(CREATURE_STAGED)?;
+        for pointer in [
+            "/source/census_index_sha256",
+            "/source/item_allocation_sha256",
+            "/source/revision",
+            "/source/crystal/revision",
+            "/source/wiki_authored/revision",
+        ] {
+            let mut packet = baseline.clone();
+            *packet
+                .pointer_mut(pointer)
+                .ok_or("missing source pointer")? = Value::String("drift".to_owned());
+            assert!(
+                validate_creature_packet_source(&packet).is_err(),
+                "{pointer}"
+            );
+        }
+        let mut packet = baseline.clone();
+        packet["counts"]["documents"] = Value::from(CREATURE_DOCUMENT_COUNT - 1);
+        assert!(validate_creature_packet_source(&packet).is_err());
+        Ok(())
+    }
+
+    #[test]
+    fn missing_document_or_extra_encounter_cannot_replace_a_typed_declaration()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let packet: Value = serde_json::from_slice(CREATURE_STAGED)?;
+        let mut declarations: Vec<ProjectV2Declaration> =
+            serde_json::from_value(packet["declarations"].clone())?;
+        let position = declarations
+            .iter()
+            .position(|value| matches!(value, ProjectV2Declaration::Document { .. }))
+            .ok_or("missing Document")?;
+        declarations.remove(position);
+        assert!(validate_creature_declarations(&declarations).is_err());
+        let encounter = declarations
+            .iter()
+            .find(|value| matches!(value, ProjectV2Declaration::Encounter { .. }))
+            .ok_or("missing Encounter")?
+            .clone();
+        declarations.push(encounter);
+        assert!(validate_creature_declarations(&declarations).is_err());
+        Ok(())
+    }
 }

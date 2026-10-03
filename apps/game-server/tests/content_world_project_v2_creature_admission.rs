@@ -196,6 +196,7 @@ fn creature_profile() -> ProjectV2AuthoringProfile {
                     taxonomy: "dragon".into(),
                     stars: Some(3),
                     locations: Some("Darashia Dragon Lair.".into()),
+                    notes: None,
                 }),
                 bosstiary: None,
                 corpse_item: Some(reference(ProjectV2Family::Item, CORPSE)),
@@ -340,6 +341,9 @@ fn profiles() -> Vec<ProjectV2AuthoringProfile> {
                                         SPEED_FORMULA,
                                     )),
                                     attribute_modifiers: vec![],
+                                    light: None,
+                                    regeneration: None,
+                                    buff_spell: None,
                                 },
                             },
                             presentation: Some(ProjectV2EffectPresentation {
@@ -474,6 +478,83 @@ fn admitted_monster_round_trips_and_lowers_only_its_reference_records() {
         .lower_reference_source()
         .expect("reference projection stays executable-only");
     assert_eq!(reference.definitions.len(), records().len());
+}
+
+#[test]
+fn initial_health_split_round_trips_without_changing_reference_records() {
+    let baseline = admit(draft())
+        .expect("legacy profile")
+        .lower_reference_source()
+        .expect("legacy reference");
+    for initial in [1, 1_000] {
+        let mut candidate = draft();
+        let creature = match profile_mut(&mut candidate, CREATURE) {
+            ProjectV2AuthoringProfileData::Creature(creature) => Some(creature),
+            _ => None,
+        }
+        .expect("creature profile");
+        creature.initial_health = Some(initial);
+        let documents = CanonicalProjectDocuments::from_v2_draft(candidate, limits())
+            .expect("initial health documents");
+        let parsed = ProjectSnapshot::new(documents.documents().clone(), limits())
+            .expect("initial health snapshot")
+            .parse(limits())
+            .expect("initial health admitted");
+        let profile = parsed
+            .v2()
+            .expect("v2")
+            .authoring_profiles
+            .iter()
+            .find(|profile| profile.target.key == CREATURE)
+            .expect("creature profile");
+        let creature = match &profile.data {
+            ProjectV2AuthoringProfileData::Creature(creature) => Some(creature),
+            _ => None,
+        }
+        .expect("creature profile");
+        assert_eq!(creature.health, Some(1_000));
+        assert_eq!(creature.initial_health, Some(initial));
+        assert_eq!(
+            parsed
+                .canonical_documents(limits())
+                .expect("rewrite")
+                .documents(),
+            documents.documents()
+        );
+        assert_eq!(
+            parsed
+                .lower_reference_source()
+                .expect("reference projection")
+                .definitions,
+            baseline.definitions
+        );
+    }
+    let legacy = serde_json::to_value(creature_profile()).expect("legacy serialization");
+    assert!(legacy["data"]["profile"].get("initial_health").is_none());
+}
+
+#[test]
+fn invalid_initial_health_bounds_and_missing_maximum_fail_closed() {
+    for (maximum, initial) in [(Some(1_000), 0), (Some(1_000), 1_001), (None, 1)] {
+        let mut candidate = draft();
+        let creature = match profile_mut(&mut candidate, CREATURE) {
+            ProjectV2AuthoringProfileData::Creature(creature) => Some(creature),
+            _ => None,
+        }
+        .expect("creature profile");
+        creature.health = maximum;
+        creature.initial_health = Some(initial);
+        assert!(
+            admit(candidate)
+                .expect_err("invalid initial health")
+                .contains("initial health requires")
+        );
+    }
+    for initial in [json!(-1), json!(true), json!(1.5), json!("1")] {
+        let mut profile = serde_json::to_value(creature_profile()).expect("profile value");
+        profile["data"]["profile"]["initial_health"] = initial;
+        assert!(serde_json::from_value::<ProjectV2AuthoringProfile>(profile).is_err());
+    }
 }
 
 #[test]
@@ -831,5 +912,196 @@ fn windup_admits_only_on_a_single_target_ability() {
     for (key, delay_ms) in [(MELEE, 0), (WAVE, 2_000)] {
         let error = with_windup(key, delay_ms).expect_err("windup must fail closed");
         assert!(error.contains("v2 Ability windup"), "{error}");
+    }
+}
+
+fn with_condition(value: Value) -> ProjectV2Draft {
+    let mut changed = draft();
+    let mut found = false;
+    if let ProjectV2AuthoringProfileData::Ability(ability) = profile_mut(&mut changed, WAVE) {
+        for effect in &mut ability.details.as_mut().expect("details").effects {
+            if let ProjectV2AbilityEffect::Inline(effect) = effect
+                && let ProjectV2InlineEffectOperation::Condition {
+                    condition,
+                    duration_ms,
+                } = &mut effect.operation
+            {
+                *condition = serde_json::from_value(value.clone()).expect("typed condition");
+                *duration_ms = if condition.lifetime == ProjectV2ConditionLifetime::DamageSchedule {
+                    None
+                } else {
+                    Some(120_000)
+                };
+                found = true;
+                break;
+            }
+        }
+    }
+    assert!(found, "condition fixture missing");
+    changed
+}
+
+#[test]
+fn s17_condition_payloads_round_trip_through_validated_admission() {
+    for value in [
+        json!({"condition_type": "light", "lifetime": "FixedDuration",
+               "light": {"level": 9, "color": 215}, "buff_spell": false}),
+        json!({"condition_type": "regeneration", "lifetime": "FixedDuration",
+               "regeneration": {"health_gain": 20, "health_interval_ms": 2000}, "buff_spell": true}),
+        json!({"condition_type": "regeneration", "lifetime": "FixedDuration",
+               "regeneration": {"mana_gain": 5, "mana_interval_ms": 3000}}),
+        json!({"condition_type": "regeneration", "lifetime": "FixedDuration",
+               "regeneration": {"health_gain": 20, "health_interval_ms": 2000,
+                                "mana_gain": 5, "mana_interval_ms": 3000}}),
+        json!({"condition_type": "attributes", "lifetime": "FixedDuration", "buff_spell": true,
+               "attribute_modifiers": [{"attribute": "shield", "mode": "Add", "value": 3}]}),
+    ] {
+        let changed = with_condition(value);
+        let mut expected = changed.state.authoring_profiles.clone();
+        expected.sort_by(|left, right| left.target.cmp(&right.target));
+        let admitted = admit(changed).expect("S17 declaration admits");
+        assert_eq!(admitted.v2().expect("v2").authoring_profiles, expected);
+    }
+}
+
+#[test]
+fn s17_invalid_type_pairing_bounds_and_damage_schedule_fail_closed() {
+    for (value, message) in [
+        (
+            json!({"condition_type": "light", "lifetime": "FixedDuration"}),
+            "v2 light condition",
+        ),
+        (
+            json!({"condition_type": "light", "lifetime": "FixedDuration",
+                "light": {"level": 0, "color": 215}}),
+            "v2 light condition",
+        ),
+        (
+            json!({"condition_type": "invisible", "lifetime": "FixedDuration",
+                "light": {"level": 9, "color": 215}}),
+            "v2 light condition",
+        ),
+        (
+            json!({"condition_type": "regeneration", "lifetime": "FixedDuration"}),
+            "v2 regeneration condition",
+        ),
+        (
+            json!({"condition_type": "regeneration", "lifetime": "FixedDuration",
+                "regeneration": {}}),
+            "complete positive gain/interval pair",
+        ),
+        (
+            json!({"condition_type": "regeneration", "lifetime": "FixedDuration",
+                "regeneration": {"health_gain": 20}}),
+            "complete positive gain/interval pair",
+        ),
+        (
+            json!({"condition_type": "regeneration", "lifetime": "FixedDuration",
+                "regeneration": {"mana_gain": 0, "mana_interval_ms": 3000}}),
+            "complete positive gain/interval pair",
+        ),
+        (
+            json!({"condition_type": "invisible", "lifetime": "FixedDuration",
+                "regeneration": {"mana_gain": 5, "mana_interval_ms": 3000}}),
+            "v2 regeneration condition",
+        ),
+        (
+            json!({"condition_type": "fire", "lifetime": "DamageSchedule", "buff_spell": false,
+                "damage_over_time": {"tick_profile": "Fixed", "first_tick": "AfterInterval",
+                                     "ticks": [{"count": 1, "interval_ms": 1000, "amount": 10}]}}),
+            "v2 damage-schedule condition",
+        ),
+    ] {
+        let error = admit(with_condition(value)).expect_err("invalid S17 payload");
+        assert!(error.contains(message), "wrong rejection: {error}");
+    }
+    for light in [
+        json!({"level": 256, "color": 215}),
+        json!({"level": 9, "color": -1}),
+        json!({"level": 9, "color": 215, "unknown": 1}),
+    ] {
+        assert!(serde_json::from_value::<ProjectV2ConditionLight>(light).is_err());
+    }
+}
+
+#[test]
+fn authored_bestiary_notes_round_trip_and_invalid_source_text_is_rejected() {
+    fn with_notes(notes: &str) -> ProjectV2Draft {
+        let mut changed = draft();
+        if let ProjectV2AuthoringProfileData::Creature(creature) =
+            profile_mut(&mut changed, CREATURE)
+        {
+            creature
+                .details
+                .as_mut()
+                .expect("details")
+                .bestiary
+                .as_mut()
+                .expect("bestiary")
+                .notes = Some(notes.into());
+        }
+        changed
+    }
+    let changed = with_notes("Original Oteryn narrative.\nSecond paragraph.");
+    let mut expected = changed.state.authoring_profiles.clone();
+    expected.sort_by(|left, right| left.target.cmp(&right.target));
+    let admitted = admit(changed).expect("authored notes admit");
+    assert_eq!(admitted.v2().expect("v2").authoring_profiles, expected);
+    for notes in ["", " surrounding spaces "] {
+        let error = admit(with_notes(notes)).expect_err("invalid notes");
+        assert!(error.contains("v2 Bestiary notes"), "{error}");
+    }
+}
+
+#[test]
+fn accepted_creature_ai_content_limits_reject_first_excess_at_admission() {
+    // CREATURE-AI-0 §10 RL07/RL08 apply at content admission, not only AI preparation.
+    for (field, maximum) in [
+        ("attacks", 16),
+        ("defenses", 8),
+        ("summon_entries", 8),
+        ("max_summons", 16),
+        ("summon_count", 16),
+    ] {
+        for value in [maximum, maximum + 1] {
+            let mut candidate = draft();
+            if let ProjectV2AuthoringProfileData::Behavior(behavior) =
+                profile_mut(&mut candidate, BEHAVIOR)
+            {
+                match field {
+                    "attacks" => behavior.attacks = vec![schedule(WAVE, 1_000_000); value],
+                    "defenses" => behavior.defenses = vec![schedule(WAVE, 1_000_000); value],
+                    _ => {
+                        behavior.summons = Some(ProjectV2Summons {
+                            max_summons: if field == "max_summons" {
+                                u32::try_from(value).expect("bounded fixture")
+                            } else {
+                                16
+                            },
+                            entries: vec![
+                                ProjectV2SummonEntry {
+                                    creature: reference(ProjectV2Family::Creature, CREATURE),
+                                    interval_ms: 1_000,
+                                    chance_ppm: 1_000_000,
+                                    count: if field == "summon_count" {
+                                        u32::try_from(value).expect("bounded fixture")
+                                    } else {
+                                        16
+                                    },
+                                };
+                                if field == "summon_entries" { value } else { 1 }
+                            ],
+                        });
+                    }
+                }
+            }
+            let result = admit(candidate);
+            assert_eq!(
+                result.is_ok(),
+                value == maximum,
+                "{field}={value}: {:?}",
+                result.as_ref().err()
+            );
+        }
     }
 }

@@ -163,8 +163,15 @@ def validate(monster,deps,catalog=None,manifest=None):
             v=formula['speed'];minimum=v['minimum_multiplier'];maximum=v['maximum_multiplier']
             if Fraction(minimum['numerator'],minimum['denominator'])>Fraction(maximum['numerator'],maximum['denominator']):errors.append('formula/speed: minimum multiplier exceeds maximum')
     for effect in deps['effects']:
-        damage=effect.get('condition',{}).get('damage_over_time',{}).get('total_damage_range')
+        condition=effect.get('condition',{})
+        dot=condition.get('damage_over_time',{})
+        damage=dot.get('total_damage_range')
         if damage and damage['minimum']>damage['maximum']:errors.append('effect/condition/damage_over_time/total_damage_range: minimum exceeds maximum')
+        base=dot.get('geometric',{}).get('base_range')
+        if base and base['minimum']>base['maximum']:errors.append('effect/condition/damage_over_time/geometric/base_range: minimum exceeds maximum')
+        if 'speed_formula' in condition:
+            speed=formulas.get(ident('Formula',condition['speed_formula']))
+            if speed is not None and speed['kind']!='speed_modifier':errors.append('effect/condition/speed_formula: requires a speed_modifier Formula')
     for key,value in local.items():
         if key[0]=='Loot':
             for entry in value['entries']:

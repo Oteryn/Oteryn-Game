@@ -118,12 +118,14 @@ const TREE_SHA256: &str = "b9b6df294fc46645c06ce0fe8a79dd50407fee0bed810abf5f2f4
 /// A12 (ITEM-ID-1b): the protected Item family less the 4,590 D149 records, on Tibia keys,
 /// plus the 404 donor epoch-2 records and the 60 appearance-only records (ITEM-ADD-1).
 const ITEMS: usize = 34_031;
-const FULL_FAMILY_MAX_DECODED_FIELDS: usize = 2_120_000;
+/// Actual canonical package: 2,286,109 JSON values; retain a bounded 2.4M budget.
+const FULL_FAMILY_MAX_DECODED_FIELDS: usize = 2_400_000;
 const FULL_FAMILY_MAX_STRING_BYTES: usize = 43_000_000;
 /// Canary creature admission pilot (OTERYN_WORLD_PROJECT_V2_CREATURE_ADMISSION_V1 §7 slice 3).
-const CREATURES: usize = 1503;
-const CREATURE_RECORDS: usize = 21069;
-const CREATURE_PROFILES: usize = 20097;
+/// Full generated population, including qualified source proxies and Wiki metadata.
+const CREATURES: usize = 1_763;
+const CREATURE_RECORDS: usize = 24_933;
+const CREATURE_PROFILES: usize = 23_823;
 /// NPC admission wave A (OTERYN_WORLD_PROJECT_V2_NPC_ADMISSION_V1 §7 slice 4).
 const NPCS: usize = 1110;
 const NPC_RECORDS: usize = 2220;
@@ -131,7 +133,9 @@ const NPC_DECLARATIONS: usize = 2184;
 const NPC_DIALOGUES: usize = 694;
 const NPC_BINDINGS: usize = 2376;
 /// Encounter admission (OTERYN_WORLD_PROJECT_V2_ENCOUNTER_ADMISSION_V1 §5 slice 4).
-const ENCOUNTERS: usize = 61;
+const ENCOUNTERS: usize = 104;
+/// Source-bound encyclopedia Documents, referenced by exactly the same number of creatures.
+const ENCYCLOPEDIA_DOCUMENTS: usize = 1_609;
 
 fn repository_root() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("../..")
@@ -454,7 +458,28 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     assert!(mount_import.reimport_states.is_empty());
 
     let v2 = project.v2().expect("WorldProject/v2 state");
-    assert_eq!(v2.declarations.len(), 385 + NPC_DECLARATIONS + ENCOUNTERS);
+    assert_eq!(
+        v2.declarations.len(),
+        385 + NPC_DECLARATIONS + ENCOUNTERS + ENCYCLOPEDIA_DOCUMENTS
+    );
+    assert_eq!(
+        v2.declarations
+            .iter()
+            .filter(|declaration| matches!(declaration, ProjectV2Declaration::Document { .. }))
+            .count(),
+        ENCYCLOPEDIA_DOCUMENTS
+    );
+    assert_eq!(
+        v2.authoring_profiles
+            .iter()
+            .filter(|profile| matches!(
+                &profile.data,
+                ProjectV2AuthoringProfileData::Creature(creature)
+                    if creature.details.as_ref().is_some_and(|details| details.encyclopedia_document.is_some())
+            ))
+            .count(),
+        ENCYCLOPEDIA_DOCUMENTS
+    );
     assert_eq!(
         v2.declarations
             .iter()
@@ -530,8 +555,49 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
             recipes, fields, ..
         } => recipes.is_empty() && fields.is_empty(),
         ProjectV2Declaration::Encounter { fields, .. } => fields.is_empty(),
+        ProjectV2Declaration::Document {
+            identity,
+            document_type: ProjectV2DocumentType::Report,
+            title: Some(title),
+            author: Some(author),
+            language: Some(language),
+            content,
+            fields,
+        } => {
+            identity
+                .key
+                .starts_with("oteryn:document/monster-encyclopedia/")
+                && !title.is_empty()
+                && author == "TibiaWiki BR contributors"
+                && language == "pt-BR"
+                && !content.is_empty()
+                && content.iter().all(|paragraph| !paragraph.is_empty())
+                && fields.is_empty()
+        }
         _ => false,
     }));
+    let encyclopedia_keys = v2
+        .declarations
+        .iter()
+        .filter_map(|declaration| match declaration {
+            ProjectV2Declaration::Document { identity, .. } => Some(identity.key.as_str()),
+            _ => None,
+        })
+        .collect::<BTreeSet<_>>();
+    let creature_encyclopedia_keys = v2
+        .authoring_profiles
+        .iter()
+        .filter_map(|profile| match &profile.data {
+            ProjectV2AuthoringProfileData::Creature(creature) => creature
+                .details
+                .as_ref()
+                .and_then(|details| details.encyclopedia_document.as_ref())
+                .map(|document| document.key.as_str()),
+            _ => None,
+        })
+        .collect::<BTreeSet<_>>();
+    assert_eq!(encyclopedia_keys.len(), ENCYCLOPEDIA_DOCUMENTS);
+    assert_eq!(creature_encyclopedia_keys, encyclopedia_keys);
     let default8_packet: serde_json::Value = serde_json::from_slice(
         item_stack_default_successor8_promotion::ITEM_STACK_DEFAULT_SUCCESSOR8_PACKET,
     )
@@ -1154,7 +1220,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     assert_eq!(creature_files.len(), CREATURES - 1);
     assert_eq!(npc_bindings, NPC_BINDINGS);
     assert_eq!(encounter_bindings, ENCOUNTERS);
-    assert_eq!(crystal_creatures, 37);
+    assert_eq!(crystal_creatures, 96);
     assert_eq!(item_ids.len(), 165);
     assert_eq!(outfit_ids.len(), 133);
     assert!(outfit_ids.iter().all(|id| id.as_str() != "68724"));
