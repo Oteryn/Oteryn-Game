@@ -381,7 +381,7 @@ impl<'a, 'f, 's, F: CharmFacts + Clone> NativeCharmProgressionPort<'a, 'f, 's, F
             catalogue: self.content.catalogue.clone(),
         };
         let result = slot
-            .commit_charm_command(
+            .commit_charm(
                 self.root,
                 self.authority,
                 self.node,
@@ -405,7 +405,7 @@ impl<'a, 'f, 's, F: CharmFacts + Clone> NativeCharmProgressionPort<'a, 'f, 's, F
                 return Err(CharmStateError::ConflictingOccurrence);
             }
             return slot
-                .commit_charm_command(
+                .commit_charm(
                     self.root,
                     self.authority,
                     self.node,

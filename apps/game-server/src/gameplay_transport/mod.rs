@@ -419,6 +419,8 @@ pub async fn serve_gameplay(
         spell_states: Mutex::default(),
         clock_origin: std::time::Instant::now(),
         lost: std::sync::Mutex::default(),
+        revision_sequencer:
+            crate::durability::character_revision_sequencer::CharacterRevisionSequencer::new(),
     };
     serve_listener(
         listener,
@@ -505,6 +507,10 @@ pub(crate) struct ComposedFreshAdmission<'a, 'f, 's> {
     /// Ended admitted sessions whose loss is durably recorded and whose grace has not ended:
     /// the only sessions a `ClientResume` can name. At most one entry per admitted session.
     pub(crate) lost: std::sync::Mutex<std::collections::HashMap<GameSessionId, AdmittedSession>>,
+    /// One revision-advancing write in flight per Character (CHAR-REV-SEQ-1). Never awaited
+    /// while `runtime` is locked.
+    pub(crate) revision_sequencer:
+        crate::durability::character_revision_sequencer::CharacterRevisionSequencer,
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {

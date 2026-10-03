@@ -18,6 +18,12 @@
 //! ([`settle_creature_death_rewards_with_bestiary`]): the principal's
 //! Bestiary kill through `durability::bestiary_progress`, under the same
 //! gameplay fence and the same memoized (death, character) occurrence.
+//!
+//! Both revision-advancing descendants run in the principal's revision slot
+//! (CHAR-REV-SEQ-1), which the caller acquires before it takes the runtime
+//! lock and holds for the whole chain: XP commits at the slot's cursor, and
+//! Bestiary takes the revision XP committed, so no other Character write can
+//! commit between them.
 
 use super::loot_plan::{
     LootDefinitionRef, LootPlan, LootPlanDeathKey, LootPlanError, LootTableDefinition,
@@ -30,12 +36,15 @@ use crate::durability::DurabilityRoot;
 use crate::durability::bestiary_progress::{
     BestiaryKillOccurrence, BestiaryKillOutcome, BestiaryKillRequest, BestiaryProgressError,
 };
-use crate::durability::character_authority::ReconciledCharacterAuthority;
+use crate::durability::character_authority::{
+    CharacterAuthorityError, ReconciledCharacterAuthority,
+};
 use crate::durability::character_progression::{
     CharacterProgressionError, CurrentCharacterGameplayFence, ExperienceAwardRequest,
     ExperienceCommitOutcome, ExperienceRewardOccurrence, ProgressionInitializationOutcome,
     ProgressionInitializationRequest,
 };
+use crate::durability::character_revision_sequencer::RevisionSlot;
 use crate::durability::item_mint::{
     CORPSE_CONTAINER_ENTRIES_MAX, CORPSE_MATERIALIZATION_PURPOSE_KEY, CommittedItemMint,
     CorpseContainerPlacement, CorpseLootMintRequest, GroundPlacement, ItemMintCause, ItemMintError,
@@ -428,6 +437,7 @@ fn committed(outcome: ItemMintOutcome) -> CommittedItemMint {
 /// progression row is missing.
 async fn settle_experience<const N: usize>(
     session: &DurabilitySession<'_, '_, '_>,
+    slot: &mut RevisionSlot,
     owner: &mut CurrentOwnerCombatDeath<'_>,
     actor: ExactActorRef,
     principal: &RewardPrincipal,
@@ -435,28 +445,60 @@ async fn settle_experience<const N: usize>(
     amount: ExactI64,
 ) -> Result<ExperienceCommitOutcome, CombatDeathRewardXpError> {
     // The occurrence is memoized per (death, character), so a retry replays
-    // the same award. The award is attempted first: its own occurrence-keyed
-    // replay resolves a retry without re-asserting the caller's revision.
-    // Only a missing progression row runs the D88 initializer, and the award
-    // is then attempted once more. A failed earlier initialization therefore
-    // never strands the award (a retry re-initializes), and an already
-    // advanced revision never rejects a legitimate replay.
+    // the same award: a retained receipt is replayed at its original revision
+    // (the award's binding includes it), a new award commits at the slot's
+    // cursor. Only a missing progression row runs the D88 initializer, and
+    // the award is then attempted once more. A failed earlier initialization
+    // therefore never strands the award (a retry re-initializes), and an
+    // already advanced revision never rejects a legitimate replay.
     let (occurrence_bytes, _) = owner
         .reward_occurrence(actor, *principal.gameplay_fence.character_id.as_bytes())
         .map_err(CombatDeathRewardXpError::Occurrence)?;
     let occurrence = ExperienceRewardOccurrence::from_bytes(occurrence_bytes)
         .map_err(|_| CombatDeathRewardXpError::InvalidOccurrence)?;
 
-    match commit_experience(session, principal, progression, occurrence, amount).await {
+    let original = session
+        .root
+        .reconcile_character_experience(session.authority, occurrence)
+        .await
+        .map_err(CombatDeathRewardXpError::Progression)?
+        .map(|award| award.original_character_revision);
+
+    match commit_experience(
+        session,
+        slot,
+        principal,
+        progression,
+        occurrence,
+        amount,
+        original,
+    )
+    .await
+    {
         Err(CharacterProgressionError::MissingProgressionState) => {}
         result => return result.map_err(CombatDeathRewardXpError::Progression),
     }
+    // The initializer writes no revision; it is fenced at the slot's cursor.
+    let expected_character_revision =
+        slot.cursor(session.root, session.authority)
+            .await
+            .map_err(|error| {
+                CombatDeathRewardXpError::Progression(match error {
+                    CharacterAuthorityError::Unavailable(error) => {
+                        CharacterProgressionError::Unavailable(error)
+                    }
+                    _ => CharacterProgressionError::AuthorityRejected,
+                })
+            })?;
     match session
         .root
         .initialize_character_progression(
             session.authority,
             session.node,
-            principal.gameplay_fence,
+            CurrentCharacterGameplayFence {
+                expected_character_revision,
+                ..principal.gameplay_fence
+            },
             progression.initialization_request(),
         )
         .await
@@ -465,27 +507,37 @@ async fn settle_experience<const N: usize>(
         | Ok(ProgressionInitializationOutcome::AlreadyInitialized(_)) => {}
         Err(error) => return Err(CombatDeathRewardXpError::Progression(error)),
     }
-    commit_experience(session, principal, progression, occurrence, amount)
-        .await
-        .map_err(CombatDeathRewardXpError::Progression)
+    commit_experience(
+        session,
+        slot,
+        principal,
+        progression,
+        occurrence,
+        amount,
+        None,
+    )
+    .await
+    .map_err(CombatDeathRewardXpError::Progression)
 }
 
 async fn commit_experience<const N: usize>(
     session: &DurabilitySession<'_, '_, '_>,
+    slot: &mut RevisionSlot,
     principal: &RewardPrincipal,
     progression: &RewardProgressionBinding<N>,
     occurrence: ExperienceRewardOccurrence,
     amount: ExactI64,
+    original: Option<CharacterRevision>,
 ) -> Result<ExperienceCommitOutcome, CharacterProgressionError> {
-    session
-        .root
-        .commit_character_experience(
-            session.authority,
-            session.node,
-            principal.gameplay_fence,
-            progression.award_request(occurrence, amount),
-        )
-        .await
+    slot.commit_experience(
+        session.root,
+        session.authority,
+        session.node,
+        principal.gameplay_fence,
+        progression.award_request(occurrence, amount),
+        original,
+    )
+    .await
 }
 
 /// The three durability handles every descendant call needs, bundled to keep
@@ -503,11 +555,13 @@ pub(crate) struct DurabilitySession<'a, 'f, 's> {
 /// `corpse` as owned `Copy` values first so this call does not conflict with
 /// that earlier borrow. `COMBAT01-REWARD-PRINCIPALS` is checked before
 /// anything else runs; loot and XP then always both run, independently,
-/// regardless of whether the other fails.
+/// regardless of whether the other fails. `slot` is the reward principal's
+/// revision slot, acquired before the runtime lock.
 pub(crate) async fn settle_creature_death_rewards<const N: usize>(
     actor: ExactActorRef,
     owner: &mut CurrentOwnerCombatDeath<'_>,
     session: &DurabilitySession<'_, '_, '_>,
+    slot: &mut RevisionSlot,
     input: CreatureDeathRewardInput<N>,
 ) -> Result<CreatureDeathRewardOutcome, CreatureDeathRewardAdmissionError> {
     check_reward_principal_count(input.reward_principals.len())
@@ -546,6 +600,7 @@ pub(crate) async fn settle_creature_death_rewards<const N: usize>(
 
     let xp = settle_experience(
         session,
+        slot,
         owner,
         actor,
         &principal,
@@ -599,11 +654,13 @@ pub(crate) struct CreatureDeathRewardWithBestiaryOutcome {
 /// more independent descendant, the Bestiary kill of the death's single
 /// reward principal. It runs after loot and XP have reached their terminal
 /// results, in its own Character transaction, so it never blocks, retries or
-/// rolls back either of them; an admission refusal refuses all three.
+/// rolls back either of them; an admission refusal refuses all three. The
+/// same held `slot` covers XP and Bestiary.
 pub(crate) async fn settle_creature_death_rewards_with_bestiary<const N: usize>(
     actor: ExactActorRef,
     owner: &mut CurrentOwnerCombatDeath<'_>,
     session: &DurabilitySession<'_, '_, '_>,
+    slot: &mut RevisionSlot,
     input: CreatureDeathRewardInput<N>,
     bestiary: CreatureDeathBestiaryInput,
 ) -> Result<CreatureDeathRewardWithBestiaryOutcome, CreatureDeathRewardAdmissionError> {
@@ -615,20 +672,12 @@ pub(crate) async fn settle_creature_death_rewards_with_bestiary<const N: usize>(
     // The admission check inside refuses anything but exactly one principal
     // before any descendant runs, so `first` is that principal on success.
     let principal = input.reward_principals.first().copied();
-    let rewards = settle_creature_death_rewards(actor, owner, session, input).await?;
+    let rewards = settle_creature_death_rewards(actor, owner, session, slot, input).await?;
     let principal = principal.ok_or(CreatureDeathRewardAdmissionError::Limit(
         CombatResourceLimitError::RewardPrincipalsExceeded,
     ))?;
-    let bestiary = settle_bestiary(
-        session,
-        owner,
-        actor,
-        &principal,
-        &rewards.xp,
-        &binding,
-        bestiary,
-    )
-    .await;
+    let bestiary =
+        settle_bestiary(session, slot, owner, actor, &principal, &binding, bestiary).await;
     Ok(CreatureDeathRewardWithBestiaryOutcome { rewards, bestiary })
 }
 
@@ -640,31 +689,15 @@ struct BestiaryProgressionBinding {
     reward_revision: String,
 }
 
-/// The CharacterRevision the Bestiary write expects. XP runs first in the
-/// same composition and advances the revision when it commits, so a
-/// committed (or replayed) award's own committed revision is the current one
-/// the principal's fence would otherwise name; without an award the fence's
-/// own expected revision is kept. The Bestiary receipt binding excludes this
-/// revision, so a replay resolves whichever way it is derived.
-fn bestiary_expected_revision(
-    principal: &RewardPrincipal,
-    xp: &Result<ExperienceCommitOutcome, CombatDeathRewardXpError>,
-) -> CharacterRevision {
-    match xp {
-        Ok(ExperienceCommitOutcome::Committed(award))
-        | Ok(ExperienceCommitOutcome::AlreadyCommitted(award)) => {
-            award.committed_character_revision
-        }
-        Err(_) => principal.gameplay_fence.expected_character_revision,
-    }
-}
-
+/// The Bestiary write takes the slot's cursor: the revision the XP award
+/// committed when it did, else the Character's current one. Its binding
+/// excludes the revision, so a replay resolves at either.
 async fn settle_bestiary(
     session: &DurabilitySession<'_, '_, '_>,
+    slot: &mut RevisionSlot,
     owner: &mut CurrentOwnerCombatDeath<'_>,
     actor: ExactActorRef,
     principal: &RewardPrincipal,
-    xp: &Result<ExperienceCommitOutcome, CombatDeathRewardXpError>,
     binding: &BestiaryProgressionBinding,
     input: CreatureDeathBestiaryInput,
 ) -> Result<CombatBestiaryOutcome, CombatDeathRewardBestiaryError> {
@@ -685,25 +718,22 @@ async fn settle_bestiary(
         .map_err(CombatDeathRewardBestiaryError::Occurrence)?;
     let occurrence = BestiaryKillOccurrence::from_bytes(occurrence_bytes)
         .map_err(|_| CombatDeathRewardBestiaryError::InvalidOccurrence)?;
-    let mut fence = principal.gameplay_fence;
-    fence.expected_character_revision = bestiary_expected_revision(principal, xp);
-    session
-        .root
-        .commit_bestiary_kill(
-            session.authority,
-            session.node,
-            fence,
-            BestiaryKillRequest {
-                occurrence,
-                race,
-                context: binding.context.clone(),
-                policy_revision: binding.policy_revision.clone(),
-                reward_revision: binding.reward_revision.clone(),
-            },
-        )
-        .await
-        .map(CombatBestiaryOutcome::Recorded)
-        .map_err(CombatDeathRewardBestiaryError::Progress)
+    slot.commit_bestiary(
+        session.root,
+        session.authority,
+        session.node,
+        principal.gameplay_fence,
+        BestiaryKillRequest {
+            occurrence,
+            race,
+            context: binding.context.clone(),
+            policy_revision: binding.policy_revision.clone(),
+            reward_revision: binding.reward_revision.clone(),
+        },
+    )
+    .await
+    .map(CombatBestiaryOutcome::Recorded)
+    .map_err(CombatDeathRewardBestiaryError::Progress)
 }
 
 #[cfg(test)]
@@ -754,74 +784,6 @@ mod tests {
         assert_eq!(
             check_corpse_container_capacity(GAMEITEM01_CORPSE_CONTAINER_ENTRIES_MAX + 1),
             Err(CombatResourceLimitError::CorpseContainerEntriesExceeded)
-        );
-    }
-
-    #[test]
-    fn bestiary_expects_the_revision_the_xp_award_left_or_the_fence_without_one() {
-        use crate::domain::CharacterId;
-        use crate::durability::character_progression::{
-            CharacterProgressionError, CommittedExperienceAward, CurrentCharacterGameplayFence,
-            ExperienceRewardOccurrence,
-        };
-        use crate::foundation::{
-            ChannelId, ConnectionGeneration, GameSessionId, RuntimeScopeRefV1,
-            ScopeOwnershipGeneration, WorldId,
-        };
-
-        fn id(seed: u8) -> [u8; 16] {
-            [
-                seed, 2, 3, 4, 5, 6, 0x70, 8, 0x80, 10, 11, 12, 13, 14, 15, seed,
-            ]
-        }
-        let revision = |value| CharacterRevision::new(value).expect("revision");
-        let principal = RewardPrincipal {
-            gameplay_fence: CurrentCharacterGameplayFence {
-                character_id: CharacterId::from_bytes(id(2)).expect("character"),
-                game_session_id: GameSessionId::decode(&id(3)).expect("session"),
-                connection_generation: ConnectionGeneration::new(1).expect("connection"),
-                character_lease_generation: 1,
-                runtime_scope: RuntimeScopeRefV1::channel(
-                    WorldId::decode(&id(4)).expect("world"),
-                    ChannelId::decode(&id(5)).expect("channel"),
-                ),
-                scope_ownership_generation: ScopeOwnershipGeneration::new(1).expect("scope"),
-                expected_character_revision: revision(3),
-            },
-        };
-        let award = CommittedExperienceAward {
-            occurrence: ExperienceRewardOccurrence::from_bytes(id(1)).expect("occurrence"),
-            character_id: principal.gameplay_fence.character_id,
-            original_character_revision: revision(3),
-            committed_character_revision: revision(4),
-            level_before: 1,
-            level_after: 1,
-            experience_before: ExactI64::new(0),
-            experience_after: ExactI64::new(5),
-            experience_awarded: ExactI64::new(5),
-        };
-        assert_eq!(
-            bestiary_expected_revision(
-                &principal,
-                &Ok(ExperienceCommitOutcome::Committed(award.clone()))
-            ),
-            revision(4)
-        );
-        assert_eq!(
-            bestiary_expected_revision(
-                &principal,
-                &Ok(ExperienceCommitOutcome::AlreadyCommitted(award))
-            ),
-            revision(4)
-        );
-        assert_eq!(
-            bestiary_expected_revision(
-                &principal,
-                &Err(CombatDeathRewardXpError::Progression(
-                    CharacterProgressionError::AuthorityRejected
-                ))
-            ),
-            revision(3)
         );
     }
 

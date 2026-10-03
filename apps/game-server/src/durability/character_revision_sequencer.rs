@@ -174,7 +174,7 @@ impl RevisionSlot {
 
     /// One Bestiary kill at the cursor. Its binding excludes the revision, so a mismatch reloads
     /// the cursor and retries once.
-    pub async fn commit_bestiary_kill(
+    pub async fn commit_bestiary(
         &mut self,
         root: &DurabilityRoot,
         authority: &ReconciledCharacterAuthority<'_, '_>,
@@ -193,7 +193,11 @@ impl RevisionSlot {
 
     /// One Charm command (with any fee burn it runs in its transaction) at the cursor, or the
     /// exact replay of a retained receipt at its `original` revision. A mismatch fails closed.
-    pub async fn commit_charm_command<F: CharmFacts + Clone>(
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "the Charm writer's own arguments plus the replay revision"
+    )]
+    pub async fn commit_charm<F: CharmFacts + Clone>(
         &mut self,
         root: &DurabilityRoot,
         authority: &ReconciledCharacterAuthority<'_, '_>,
@@ -207,7 +211,9 @@ impl RevisionSlot {
             root_revision(root, authority),
             fence,
             Expect::from(original, OnMismatch::FailClosed),
-            |fence| root.commit_charm_command(authority, node, fence, request.clone(), facts.clone()),
+            |fence| {
+                root.commit_charm_command(authority, node, fence, request.clone(), facts.clone())
+            },
         )
         .await
     }
@@ -277,7 +283,9 @@ impl RevisionSlot {
         match result {
             Ok(outcome) => {
                 if let Some(committed) = outcome.committed_revision() {
-                    let cursor = self.cursor.map_or(committed, |cursor| cursor.max(committed));
+                    let cursor = self
+                        .cursor
+                        .map_or(committed, |cursor| cursor.max(committed));
                     *self.cursor = Some(cursor);
                 }
             }
@@ -300,7 +308,9 @@ impl RevisionSlot {
 fn root_revision<'r>(
     root: &'r DurabilityRoot,
     authority: &'r ReconciledCharacterAuthority<'_, '_>,
-) -> impl FnMut(CharacterId) -> std::pin::Pin<
+) -> impl FnMut(
+    CharacterId,
+) -> std::pin::Pin<
     Box<dyn Future<Output = Result<CharacterRevision, CharacterAuthorityError>> + Send + 'r>,
 > + 'r {
     move |character_id| {
@@ -428,6 +438,7 @@ impl SequencedError for CharmStateError {
 }
 
 #[cfg(test)]
+#[allow(clippy::expect_used)]
 mod tests {
     use super::*;
     use std::cell::Cell;
@@ -527,7 +538,13 @@ mod tests {
     struct Durable(AtomicU64);
 
     impl Durable {
-        fn load(&self) -> impl FnMut(CharacterId) -> std::future::Ready<Result<CharacterRevision, CharacterAuthorityError>> + '_ {
+        fn load(
+            &self,
+        ) -> impl FnMut(
+            CharacterId,
+        )
+            -> std::future::Ready<Result<CharacterRevision, CharacterAuthorityError>>
+        + '_ {
             |_| std::future::ready(Ok(revision(self.0.load(Ordering::SeqCst))))
         }
 
@@ -559,9 +576,12 @@ mod tests {
         let id = character(1);
         let writer = || async {
             let mut slot = sequencer.acquire(id).await;
-            slot.sequenced(durable.load(), fence(id), Expect::Cursor(OnMismatch::FailClosed), |fence| {
-                durable.write(fence.expected_character_revision)
-            })
+            slot.sequenced(
+                durable.load(),
+                fence(id),
+                Expect::Cursor(OnMismatch::FailClosed),
+                |fence| durable.write(fence.expected_character_revision),
+            )
             .await
         };
         // An XP award and a charm command arriving together, interleaved at every await.
@@ -592,17 +612,25 @@ mod tests {
             let chain = async {
                 let mut slot = sequencer.acquire(id).await;
                 let xp = slot
-                    .sequenced(durable.load(), fence(id), Expect::Cursor(OnMismatch::FailClosed), |fence| {
-                        durable.write(fence.expected_character_revision)
-                    })
+                    .sequenced(
+                        durable.load(),
+                        fence(id),
+                        Expect::Cursor(OnMismatch::FailClosed),
+                        |fence| durable.write(fence.expected_character_revision),
+                    )
                     .await
                     .expect("XP commits");
                 tokio::task::yield_now().await;
                 let bestiary_expected = Cell::new(None);
-                slot.sequenced(durable.load(), fence(id), Expect::Cursor(OnMismatch::RetryOnce), |fence| {
-                    bestiary_expected.set(Some(fence.expected_character_revision));
-                    durable.write(fence.expected_character_revision)
-                })
+                slot.sequenced(
+                    durable.load(),
+                    fence(id),
+                    Expect::Cursor(OnMismatch::RetryOnce),
+                    |fence| {
+                        bestiary_expected.set(Some(fence.expected_character_revision));
+                        durable.write(fence.expected_character_revision)
+                    },
+                )
                 .await
                 .expect("Bestiary commits");
                 // Bestiary takes the revision XP committed.
@@ -628,10 +656,15 @@ mod tests {
         let result = block_on(async {
             let mut slot = sequencer.acquire(id).await;
             *slot.cursor = Some(revision(9)); // a bypass moved the root under the cursor
-            slot.sequenced(durable.load(), fence(id), Expect::Cursor(OnMismatch::RetryOnce), |fence| {
-                attempts.set(attempts.get() + 1);
-                durable.write(fence.expected_character_revision)
-            })
+            slot.sequenced(
+                durable.load(),
+                fence(id),
+                Expect::Cursor(OnMismatch::RetryOnce),
+                |fence| {
+                    attempts.set(attempts.get() + 1);
+                    durable.write(fence.expected_character_revision)
+                },
+            )
             .await
         });
         assert_eq!(attempts.get(), 2);
@@ -641,10 +674,15 @@ mod tests {
         let attempts = Cell::new(0);
         let result = block_on(async {
             let mut slot = sequencer.acquire(id).await;
-            slot.sequenced(durable.load(), fence(id), Expect::Cursor(OnMismatch::RetryOnce), |_| {
-                attempts.set(attempts.get() + 1);
-                std::future::ready(Err::<Receipt, _>(Failure::Mismatch))
-            })
+            slot.sequenced(
+                durable.load(),
+                fence(id),
+                Expect::Cursor(OnMismatch::RetryOnce),
+                |_| {
+                    attempts.set(attempts.get() + 1);
+                    std::future::ready(Err::<Receipt, _>(Failure::Mismatch))
+                },
+            )
             .await
         });
         assert_eq!((attempts.get(), result), (2, Err(Failure::Mismatch)));
@@ -660,10 +698,15 @@ mod tests {
             let mut slot = sequencer.acquire(id).await;
             *slot.cursor = Some(revision(9));
             let result = slot
-                .sequenced(durable.load(), fence(id), Expect::Cursor(OnMismatch::FailClosed), |fence| {
-                    attempts.set(attempts.get() + 1);
-                    durable.write(fence.expected_character_revision)
-                })
+                .sequenced(
+                    durable.load(),
+                    fence(id),
+                    Expect::Cursor(OnMismatch::FailClosed),
+                    |fence| {
+                        attempts.set(attempts.get() + 1);
+                        durable.write(fence.expected_character_revision)
+                    },
+                )
                 .await;
             assert_eq!(result, Err(Failure::Mismatch));
             // The cursor is dropped, so the next write reloads it from the root.
@@ -749,20 +792,48 @@ mod tests {
     /// Revision-advancing durable writers and the only non-test source files allowed to call
     /// them. Every other writer reaches them through a [`RevisionSlot`].
     const SEQUENCED_WRITERS: [(&str, &str); 6] = [
-        (".commit_character_experience(", "durability/character_revision_sequencer.rs"),
-        (".commit_character_death(", "durability/character_revision_sequencer.rs"),
-        (".commit_bestiary_kill(", "durability/character_revision_sequencer.rs"),
-        (".commit_charm_command(", "durability/character_revision_sequencer.rs"),
-        (".commit_character_monk_state_save(", "durability/character_revision_sequencer.rs"),
+        (
+            ".commit_character_experience(",
+            "durability/character_revision_sequencer.rs",
+        ),
+        (
+            ".commit_character_death(",
+            "durability/character_revision_sequencer.rs",
+        ),
+        (
+            ".commit_bestiary_kill(",
+            "durability/character_revision_sequencer.rs",
+        ),
+        (
+            ".commit_charm_command(",
+            "durability/character_revision_sequencer.rs",
+        ),
+        (
+            ".commit_character_monk_state_save(",
+            "durability/character_revision_sequencer.rs",
+        ),
         // The fee burn runs only inside its source's sequenced Character transaction.
         ("burn_fee_in_transaction(", "durability/charm_state.rs"),
     ];
 
-    /// The non-test part of a source file: `#[cfg(test)]` modules are cut off.
+    /// The non-test part of a source file: from the first `#[cfg(test)]` that, after any other
+    /// attributes, opens a `mod`, the rest is cut off.
     fn production_source(source: &str) -> &str {
+        let mut offset = 0;
+        let mut lines = source.lines();
+        while let Some(line) = lines.next() {
+            if line.trim() == "#[cfg(test)]" {
+                let mut ahead = lines.clone().map(str::trim);
+                if ahead
+                    .find(|next| !next.starts_with("#["))
+                    .is_some_and(|next| next.starts_with("mod "))
+                {
+                    return &source[..offset];
+                }
+            }
+            offset += line.len() + 1;
+        }
         source
-            .find("#[cfg(test)]\nmod ")
-            .map_or(source, |end| &source[..end])
     }
 
     fn bypasses(path: &str, source: &str) -> Vec<String> {
@@ -801,7 +872,10 @@ mod tests {
         let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("src");
         let mut files = Vec::new();
         sources(&root, &mut files);
-        assert!(files.len() > 100, "the scan must see the game-server sources");
+        assert!(
+            files.len() > 100,
+            "the scan must see the game-server sources"
+        );
         let mut found = Vec::new();
         for file in files {
             let source = std::fs::read_to_string(&file).expect("source file");
@@ -823,7 +897,7 @@ mod tests {
         assert_eq!(bypasses("src/durability/item_transfer.rs", fee).len(), 1);
         assert!(bypasses("src/durability/charm_state.rs", fee).is_empty());
         // Test modules and definitions are not writers.
-        let tested = "pub async fn commit_charm_command(\n#[cfg(test)]\nmod tests { x.commit_charm_command(); }";
+        let tested = "pub async fn commit_charm_command(\n#[cfg(test)]\n#[allow(clippy::expect_used)]\nmod tests { x.commit_charm_command(); }";
         assert!(bypasses("src/durability/charm_state.rs", tested).is_empty());
         assert!(bypasses("src/gameplay_transport/charm_native.rs", tested).is_empty());
     }
