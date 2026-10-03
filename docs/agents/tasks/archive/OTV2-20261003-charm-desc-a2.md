@@ -8,7 +8,7 @@ status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/charm-desc-a2-20261003
-pr: PR_NUMBER
+pr: 1682
 base_sha: 98a2f95
 head_sha: "exact frozen head in the FREEZE_SHA report to the control plane"
 final_head_sha: "exact frozen head in the FREEZE_SHA report to the control plane"
@@ -106,7 +106,18 @@ D295 item 4 (option A2) with the CHARM-DESC-FENCE-LEASE lifecycle (D324, #1651).
 
 ## Validation
 
-VALIDATION_RESULTS
+Local results on the candidate:
+
+- `cargo fmt --check`: pass.
+- `cargo clippy --workspace --all-targets -- -D warnings`: pass.
+- `cargo test -p oteryn-game-server`: pass. The library has 1419 passed and 2 ignored, and every
+  integration target passes. This includes the D295 gate (`charm_desc_fence_gate_tests`), the
+  CHAR-REV-SEQ-1 structural gate, `attacker_fence_tests` and `ability_engine` (49 passed).
+- `cargo test -p oteryn-protocol-oteryn`: 115 passed.
+- `python tools/agents/validate_governance.py`: pass.
+- `python -m unittest discover -s tools/agents/tests`: pass.
+- The PostgreSQL cases, including fresh admission, run under repository CI; there is no local
+  server.
 
 ## Review
 
