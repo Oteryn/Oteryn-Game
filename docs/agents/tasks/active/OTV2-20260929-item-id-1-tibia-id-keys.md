@@ -8,7 +8,7 @@ status: implementing
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/item-id-1b-key-switch   # 1a: claude/item-id-1-tibia-id-keys (#1279, merged 47e865d4)
-issue: 162
+issue: 1622
 lane_id: Content/World item identity
 pr: null   # each slice's PR is recorded in its FREEZE_SHA packet on #162
 base_sha: c0f7e238   # 1b admission main

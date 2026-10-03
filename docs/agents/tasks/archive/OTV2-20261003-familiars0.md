@@ -46,6 +46,11 @@ loses it and keeps the cooldown. Children FAMILIAR-CONTENT-1 and FAMILIAR-1.
 
 ## High-risk authority/recovery qualification
 
+The complete finding-family sweep is FAMILIARS-0 §5.2 and record
+`OTV2-20261003-familiars0-recovery-sweep` (review 4173381895). The cases below are its
+summary.
+
+
 The decision defines a durable Character write path, so FAMILIAR-1 must prove these cases (§5):
 - **Stale generation.** A write from an older `session_generation` (a late clean-end save or a
   removal after a takeover) is refused and changes no column.
