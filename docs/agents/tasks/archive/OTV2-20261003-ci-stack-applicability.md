@@ -4,13 +4,13 @@
 task_id: OTV2-20261003-ci-stack-applicability
 title: Qualify native prepared-branch preflight explicitly
 mode: REPAIR
-status: blocked
+status: completed
 repository: Oteryn/Oteryn-Game
-base_branch: codex/ci-stack-audit-approval-20261003
+base_branch: main
 branch: codex/ci-stack-applicability-20261003
 pr: 1634
 issue: 1622
-base_sha: 4bac053d3c712ca50ee649df7b976d1d2eea7217
+base_sha: bec95a921e9a2051b707d597dcf91334f176980f
 head_sha: null
 final_head_sha: null
 final_head_frozen_at: null
@@ -61,24 +61,31 @@ before their repair. Final local applicability10 and hosted admission16 PASS; fu
 agent/governance/lifecycle43 PASS. Repository policy, metadata-edit/consumer-routing,
 actual PowerShell PR/queue PG/SIM failure canaries and semantic dispatch37 PASS.
 Implementer whole-diff self-review accepted and repaired both related P1 findings.
-Separate local reviewer found the retarget gap; META author self-review is additional
-verification, not independent external review. Required provider review remains pending
+An independent whole-diff local reviewer found no new P0/P1 on the repaired
+2ae0e03b candidate. META author self-review is additional verification, not the
+required independent provider review. Required provider review remains pending
 until the final candidate is frozen. No paid provider trigger has been sent by this worker.
 
 High-risk production authority/recovery qualification: NOT_APPLICABLE; no production
 state/controller is operated. CI trust-boundary independent review remains REQUIRED.
-Current native draft checks are authoring feedback, not final-head qualification.
+Native prepared-base preflight passed on 2ae0e03b; it is preliminary evidence, not final main qualification.
 
-## Blocker and next action
+## Final authoring and closeout
 
-AUTHORING, not frozen. Wait for #1632 qualification, exact owner self-file exception and
-terminal Merge Queue integration. Then normally merge its accepted main result into
-this branch and retarget to main. Squash integration does not retain parent ancestry:
-verify the remote main-relative changed-file set excludes the already-accepted audit
-file before freeze. Move this record to archive with actual PR1634 in the final authoring
-commit, rerun affected validation, freeze returned exact remote head, and hand off one
-required provider review through the unique active control plane. Full main native CI
-and Merge Queue remain mandatory; stack preflight grants no merge authority.
+Parent #1632 has terminal protected-main integration. Normal accepted-main merge
+aligns the squash ancestry; the remote main-relative delta must exclude its already-
+accepted audit file. The independent main pin approval is not included as a second
+self-file mutation. This task's authored gate remains exact blob
+6089ea21beb7b0305c51027797d603b75d9e77dd. Final source review is limited to the
+bounded activation delta plus this truthful task archive.
 
-Merge result: pending. No ownership release before terminal protected-main readback.
-Broad feature refresh and writes to active programme/held data branches stay stopped.
+This record is archived in the final authoring commit before freeze, with actual
+PR1634. Exact final SHA/freeze are recorded outside Git. Independent provider review
+REQUIRED on that head through the unique active control plane after live same-head
+de-duplication; pending at authoring. Native full-main CI, green protected audit and
+Merge Queue are mandatory. The parent exception is NOT used by this activation.
+
+Merge result: squash merge of #1634, pending review/qualification/MQ at authoring.
+The archive reaches main only if this PR merges. Ownership releases after verified
+terminal protected-main readback. No bulk feature refresh/held lane mutation is
+claimed; only the two owner-requested CI PRs are being closed out here.
