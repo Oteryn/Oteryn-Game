@@ -39,7 +39,9 @@ SNAPSHOT = ROOT / "imports" / "tibiawiki" / "facts" / "items-stats.json"
 CANARY = ROOT / "imports" / "canary" / "items-xml" / "items.xml"
 ITEM_INDEX = ROOT / "content" / "items" / "index.json"
 SOURCE_BINDINGS = ROOT / "imports" / "crystalserver" / "bindings" / "items.json"
-OUTPUT = ROOT / "docs" / "agents" / "evidence" / "OTV2-20261003-timed-item-facts-v1.json"
+OUTPUT = (
+    ROOT / "docs" / "agents" / "evidence" / "OTV2-20261003-timed-item-facts-v1.json"
+)
 COMPILER_PATH = "tools/content-schema/item-authoring/lower_timed_item_packet.py"
 SCHEMA = "OTERYN_ITEM_TIMED_PROMOTION/v1"
 ITEM_KEY = "oteryn:item.tibia.i{}"
@@ -72,7 +74,8 @@ def load_canary():
     out = {}
     for item in ET.parse(CANARY).getroot().iter("item"):
         attrs = {
-            node.get("key").lower(): node.get("value") for node in item.iter("attribute")
+            node.get("key").lower(): node.get("value")
+            for node in item.iter("attribute")
         }
         if item.get("id"):
             ids = [int(item.get("id"))]
@@ -99,7 +102,11 @@ def content_items():
             item_id = int(key.rsplit(".i", 1)[1])
             ids.add(item_id)
             stack = definition.get("semantics", {}).get("stack", {})
-            value = stack.get("value", {}).get("stackable") if stack.get("state") == "KNOWN" else None
+            value = (
+                stack.get("value", {}).get("stackable")
+                if stack.get("state") == "KNOWN"
+                else None
+            )
             if value == {"state": "KNOWN", "value": True}:
                 stackable.add(item_id)
     return ids, stackable
@@ -143,7 +150,10 @@ def wiki_facts(snapshot, report):
                 report["wiki_blocked"].add((record["item_id"], name))
                 note(report, f"wiki_conflict:{name}", record["item_id"])
             else:
-                facts[record["item_id"]][name] = (values.pop(), [obs for obs, _raw in seen])
+                facts[record["item_id"]][name] = (
+                    values.pop(),
+                    [obs for obs, _raw in seen],
+                )
     return facts
 
 
@@ -194,13 +204,17 @@ def categories(canary, wiki_primary):
     light_names = set(light.values())
     for item_id, (name, attrs) in canary.items():
         lowered = name.lower()
-        if item_id in light or (lowered.startswith("lit ") and lowered[4:] in light_names):
+        if item_id in light or (
+            lowered.startswith("lit ") and lowered[4:] in light_names
+        ):
             scoped.add(item_id)
     for item_id, kinds in wiki_primary.items():
         if kinds & WIKI_CATEGORIES:
             scoped.add(item_id)
     return scoped, set(light) | {
-        i for i, (n, _a) in canary.items() if n.lower().startswith("lit ") and n.lower()[4:] in light_names
+        i
+        for i, (n, _a) in canary.items()
+        if n.lower().startswith("lit ") and n.lower()[4:] in light_names
     }
 
 
@@ -234,7 +248,7 @@ def build(snapshot, canary, item_ids, stackable_ids):
 
     timed = {}  # item id -> facts for an admitted timed definition
     for item_id in sorted(scoped & item_ids):
-        name, attrs = canary.get(item_id, ("", {}))
+        _name, attrs = canary.get(item_id, ("", {}))
         if canary_int(attrs, "transformequipto") is not None:
             # An inactive form carries no timed value; its paired active form does (TIMED-ITEM-0 s4).
             continue
@@ -245,21 +259,39 @@ def build(snapshot, canary, item_ids, stackable_ids):
         elif (item_id, "charges") in report["wiki_blocked"]:
             pass  # the wiki disagrees with itself: reported, never a row
         elif canary_int(attrs, "charges") is not None:
-            charges = (canary_int(attrs, "charges"), canary_source(item_id, attrs, ("charges",)))
-        if charges and "charges" in wiki.get(item_id, {}) and canary_int(attrs, "charges") not in (None, charges[0]):
+            charges = (
+                canary_int(attrs, "charges"),
+                canary_source(item_id, attrs, ("charges",)),
+            )
+        if (
+            charges
+            and "charges" in wiki.get(item_id, {})
+            and canary_int(attrs, "charges") not in (None, charges[0])
+        ):
             report["wiki_canary_disagree"]["charges"] += 1
             note(report, "wiki_canary_disagree:charges", item_id)
         canary_ms = canary_int(attrs, "duration")
         canary_ms = canary_ms * 1000 if canary_ms else None
-        wiki_item = item_id if "duration" in wiki.get(item_id, {}) else next(
-            (i for i in inactive_of.get(item_id, []) if "duration" in wiki.get(i, {})), None
+        wiki_item = (
+            item_id
+            if "duration" in wiki.get(item_id, {})
+            else next(
+                (
+                    i
+                    for i in inactive_of.get(item_id, [])
+                    if "duration" in wiki.get(i, {})
+                ),
+                None,
+            )
         )
         if wiki_item is not None:
             value, observations = wiki[wiki_item]["duration"]
             duration = (value, wiki_source(observations))
             if canary_ms is not None and canary_ms != value:
                 report["wiki_canary_disagree"]["duration"] += 1
-                note(report, "wiki_canary_disagree:duration", [item_id, value, canary_ms])
+                note(
+                    report, "wiki_canary_disagree:duration", [item_id, value, canary_ms]
+                )
         elif (item_id, "duration") in report["wiki_blocked"]:
             pass
         elif canary_ms is not None:
@@ -297,7 +329,9 @@ def build(snapshot, canary, item_ids, stackable_ids):
         if item_id in scoped or not any(key in attrs for key in TIMED_KEYS):
             continue
         if item_id in item_ids and ("duration" in attrs or "charges" in attrs):
-            report["out_of_scope_timed_canary_items"][attrs.get("primarytype") or "-"] += 1
+            report["out_of_scope_timed_canary_items"][
+                attrs.get("primarytype") or "-"
+            ] += 1
 
     rows = []
 
@@ -331,12 +365,19 @@ def build(snapshot, canary, item_ids, stackable_ids):
         attrs = facts["attrs"]
         if facts["charges"]:
             value, sources = facts["charges"]
-            add(item_id, "charges.count", {"kind": "COUNT_U32", "value": value}, sources)
+            add(
+                item_id, "charges.count", {"kind": "COUNT_U32", "value": value}, sources
+            )
             if attrs.get("showcharges") == "1":
                 report["show_count_not_modelled"] += 1
         if facts["duration"]:
             value, sources = facts["duration"]
-            add(item_id, "temporal.duration_ms", {"kind": "MILLISECONDS", "value": value}, sources)
+            add(
+                item_id,
+                "temporal.duration_ms",
+                {"kind": "MILLISECONDS", "value": value},
+                sources,
+            )
             evidence = canary_source(
                 item_id,
                 attrs,
@@ -360,8 +401,16 @@ def build(snapshot, canary, item_ids, stackable_ids):
                 transform(item_id, "decay", decay, attrs, "decayto")
             else:
                 skip("DECAY_WITHOUT_DURATION", item_id)
-        transform(item_id, "unequip", canary_int(attrs, "transformdeequipto"), attrs, "transformdeequipto")
-        transform(item_id, "use", canary_int(attrs, "transformonuse"), attrs, "transformonuse")
+        transform(
+            item_id,
+            "unequip",
+            canary_int(attrs, "transformdeequipto"),
+            attrs,
+            "transformdeequipto",
+        )
+        transform(
+            item_id, "use", canary_int(attrs, "transformonuse"), attrs, "transformonuse"
+        )
     # inactive forms: the equip transform into an admitted timed form
     for item_id in sorted(scoped & item_ids):
         attrs = canary.get(item_id, ("", {}))[1]
@@ -401,7 +450,9 @@ def packet_bytes(snapshot, canary, item_ids, stackable_ids, compiler_sha256):
         "report": {
             "wiki_conflict": dict(sorted(report["wiki_conflict"].items())),
             "wiki_malformed": dict(sorted(report["wiki_malformed"].items())),
-            "wiki_canary_disagree": dict(sorted(report["wiki_canary_disagree"].items())),
+            "wiki_canary_disagree": dict(
+                sorted(report["wiki_canary_disagree"].items())
+            ),
             "skipped": dict(sorted(report["skipped"].items())),
             "out_of_scope_timed_canary_items": dict(
                 sorted(report["out_of_scope_timed_canary_items"].items())
@@ -423,7 +474,8 @@ def packet_bytes(snapshot, canary, item_ids, stackable_ids, compiler_sha256):
         },
     }
     return (
-        json.dumps(packet, sort_keys=True, ensure_ascii=False, separators=(",", ":")) + "\n"
+        json.dumps(packet, sort_keys=True, ensure_ascii=False, separators=(",", ":"))
+        + "\n"
     ).encode("utf-8")
 
 
@@ -435,7 +487,9 @@ def main(argv=None):
     snapshot = json.loads(SNAPSHOT.read_text(encoding="utf-8"))
     compiler_sha256 = hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
     item_ids, stackable_ids = content_items()
-    data = packet_bytes(snapshot, load_canary(), item_ids, stackable_ids, compiler_sha256)
+    data = packet_bytes(
+        snapshot, load_canary(), item_ids, stackable_ids, compiler_sha256
+    )
     if args.check:
         if args.output.read_bytes() != data:
             print(f"packet drift against {args.output}", file=sys.stderr)
@@ -444,7 +498,11 @@ def main(argv=None):
         return 0
     args.output.write_bytes(data)
     packet = json.loads(data)
-    print(json.dumps({"counts": packet["counts"], "report": packet["report"], "bytes": len(data)}))
+    print(
+        json.dumps(
+            {"counts": packet["counts"], "report": packet["report"], "bytes": len(data)}
+        )
+    )
     return 0
 
 

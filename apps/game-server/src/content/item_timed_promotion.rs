@@ -26,7 +26,7 @@ use std::collections::{BTreeMap, BTreeSet};
 pub const ITEM_TIMED_PROMOTION_V1_PACKET: &[u8] =
     include_bytes!("../../../../docs/agents/evidence/OTV2-20261003-timed-item-facts-v1.json");
 pub const ITEM_TIMED_PROMOTION_V1_PACKET_SHA256: &str =
-    "4a2aad9c3abc86a5e1f4181b18f9511d93c39bce0ad0b7a013a4e1adb84b34c7";
+    "9aa3247f57f35de0142e9470ed08267945269fbb6e64a92a6d31bda504f251e0";
 pub const ITEM_TIMED_PROMOTION_V1_FIELD_COUNT: usize = 276;
 pub const ITEM_TIMED_PROMOTION_V1_ITEM_COUNT: usize = 111;
 const SCHEMA: &str = "OTERYN_ITEM_TIMED_PROMOTION/v1";
@@ -75,6 +75,9 @@ pub struct ItemTimedPromotion {
     pub items: usize,
     /// Rows whose field already held a different value (an earlier promotion).
     pub replaced: usize,
+    /// Inactive equip forms whose inherited `temporal` group was cleared: such a form is defined
+    /// only through its paired active form (TIMED-ITEM-0 §4), never by its own duration.
+    pub inactive_temporal_cleared: usize,
 }
 
 #[derive(Deserialize)]
@@ -193,6 +196,7 @@ fn apply_rows<'a>(
         fields: 0,
         items: 0,
         replaced: 0,
+        inactive_temporal_cleared: 0,
     };
     for (key, semantics) in items {
         let Some(rows) = by_item.remove(key) else {
@@ -220,6 +224,14 @@ fn apply_rows<'a>(
         let packet_temporal = rows
             .iter()
             .any(|row| row.field_path.starts_with("temporal."));
+        // An inactive equip form carries only `transform.equip`; a duration an earlier promotion
+        // gave it (a wiki page listing the ring's time on its unworn form) is the active form's,
+        // so the inactive form keeps no temporal group of its own.
+        let inactive_form = rows.iter().any(|row| row.field_path == "transform.equip");
+        if inactive_form && !packet_temporal && semantics.temporal != ReferenceItemField::Unknown {
+            semantics.temporal = ReferenceItemField::Unknown;
+            applied.inactive_temporal_cleared += 1;
+        }
         // An earlier stats promotion may have set `temporal.duration` alone on the inactive form
         // of a pair; only items this packet gives temporal rows must end complete.
         if packet_temporal && let ReferenceItemField::Known(temporal) = &semantics.temporal {
@@ -464,7 +476,8 @@ mod tests {
             ItemTimedPromotion {
                 fields: 5,
                 items: 1,
-                replaced: 0
+                replaced: 0,
+                inactive_temporal_cleared: 0,
             }
         );
         let ReferenceItemField::Known(charges) = &semantics.charges else {
@@ -650,6 +663,31 @@ mod tests {
             ..ReferenceItemSemantics::default()
         };
         assert!(apply(&decay, &mut conflicting).is_err());
+    }
+
+    #[test]
+    fn clears_inherited_temporal_on_inactive_equip_forms() {
+        let equip = packet(
+            &row(
+                KEY,
+                "transform.equip",
+                &format!(r#"{{"kind":"ITEM_TARGET","value":"{OTHER}"}}"#),
+            ),
+            1,
+            1,
+        );
+        let mut inactive = ReferenceItemSemantics {
+            temporal: ReferenceItemField::Known(ReferenceItemTemporal {
+                consumption_mode: ReferenceItemField::Unknown,
+                duration: ReferenceItemField::Known(ReferenceMilliseconds(1_200_000)),
+                stop_duration: ReferenceItemField::Unknown,
+                decay_target: ReferenceItemField::Unknown,
+            }),
+            ..ReferenceItemSemantics::default()
+        };
+        let applied = apply(&equip, &mut inactive).expect("applies");
+        assert_eq!(applied.inactive_temporal_cleared, 1);
+        assert_eq!(inactive.temporal, ReferenceItemField::Unknown);
     }
 
     #[test]

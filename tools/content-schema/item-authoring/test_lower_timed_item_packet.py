@@ -42,7 +42,10 @@ def key(item_id):
 
 
 RING_PAIR = {
-    1: ("life ring", {"primarytype": "rings", "stopduration": "1", "transformequipto": "2"}),
+    1: (
+        "life ring",
+        {"primarytype": "rings", "stopduration": "1", "transformequipto": "2"},
+    ),
     2: (
         "life ring",
         {
@@ -64,7 +67,9 @@ def test_ring_pair_is_on_equip_with_inactive_equip_transform():
         "temporal.stop_duration_while_unequipped": True,
         "transform.unequip": key(1),
     }
-    inactive = {p: r["typed_value"]["value"] for (k, p), r in rows.items() if k == key(1)}
+    inactive = {
+        p: r["typed_value"]["value"] for (k, p), r in rows.items() if k == key(1)
+    }
     assert inactive == {"transform.equip": key(2)}
     assert rows[(key(2), "temporal.duration_ms")]["evidence"] == "OTS_HYPOTHESIS_ONLY"
     assert not report["skipped"]
@@ -72,11 +77,17 @@ def test_ring_pair_is_on_equip_with_inactive_equip_transform():
 
 def test_wiki_first_with_canary_fallback_and_disagreement_report():
     canary = {
-        3: ("strange talisman", {"primarytype": "amulets and necklaces", "charges": "100"}),
+        3: (
+            "strange talisman",
+            {"primarytype": "amulets and necklaces", "charges": "100"},
+        ),
         4: ("bronze amulet", {"primarytype": "amulets and necklaces", "charges": "7"}),
     }
     rows, report = build({3: [(1, {"charges": "200"})]}, canary)
-    assert rows[(key(3), "charges.count")]["typed_value"] == {"kind": "COUNT_U32", "value": 200}
+    assert rows[(key(3), "charges.count")]["typed_value"] == {
+        "kind": "COUNT_U32",
+        "value": 200,
+    }
     assert rows[(key(3), "charges.count")]["evidence"] == "TIBIAWIKI"
     assert rows[(key(4), "charges.count")]["evidence"] == "OTS_HYPOTHESIS_ONLY"
     assert report["wiki_canary_disagree"] == {"charges": 1}
@@ -97,27 +108,45 @@ def test_wiki_conflict_and_malformed_never_become_rows():
         canary,
     )
     assert report["wiki_conflict"] == {"charges": 1}
-    assert not rows  # a wiki conflict is reported, never a row and never a silent fallback
-    rows, report = build({5: [(1, {"charges": "ten"})]}, {5: ("x", {"primarytype": "rings"})})
+    assert (
+        not rows
+    )  # a wiki conflict is reported, never a row and never a silent fallback
+    rows, report = build(
+        {5: [(1, {"charges": "ten"})]}, {5: ("x", {"primarytype": "rings"})}
+    )
     assert report["wiki_malformed"] == {"charges": 1} and not rows
 
 
 def test_lit_torch_is_continuous_and_decays():
     canary = {
         10: ("torch", {"primarytype": "light sources", "stopduration": "1"}),
-        11: ("lit torch", {"primarytype": "light sources", "duration": "600", "decayto": "12"}),
+        11: (
+            "lit torch",
+            {"primarytype": "light sources", "duration": "600", "decayto": "12"},
+        ),
         12: ("burnt down torch", {"primarytype": "light sources"}),
     }
     rows, _report = build({}, canary)
-    assert rows[(key(11), "temporal.consumption_mode")]["typed_value"]["value"] == "CONTINUOUS"
-    assert rows[(key(11), "temporal.stop_duration_while_unequipped")]["typed_value"]["value"] is False
+    assert (
+        rows[(key(11), "temporal.consumption_mode")]["typed_value"]["value"]
+        == "CONTINUOUS"
+    )
+    assert (
+        rows[(key(11), "temporal.stop_duration_while_unequipped")]["typed_value"][
+            "value"
+        ]
+        is False
+    )
     assert rows[(key(11), "transform.decay")]["typed_value"]["value"] == key(12)
     assert not [k for k in rows if k[0] in (key(10), key(12))]
 
 
 def test_limits_stackable_and_undetermined_mode_are_reported_not_rows():
     canary = {
-        20: ("ring", {"primarytype": "rings", "duration": "604801", "transformdeequipto": "1"}),
+        20: (
+            "ring",
+            {"primarytype": "rings", "duration": "604801", "transformdeequipto": "1"},
+        ),
         21: ("ring", {"primarytype": "rings", "charges": "65536"}),
         22: ("ring", {"primarytype": "rings", "duration": "30"}),
         23: ("necklace", {"primarytype": "amulets and necklaces", "charges": "5"}),
