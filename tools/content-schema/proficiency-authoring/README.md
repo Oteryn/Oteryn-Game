@@ -127,8 +127,8 @@ WorldProject v2 (PROF-CONTENT-1b). `content/world` stays unmodified.
 ## Content population
 
 `tools/content-migration/world_project_v2_to_tree.py` registers the committed Proficiency family (no legacy
-source), as it does Charm, so `content --check` and the generator agree byte for byte. Nothing loads
-`content/proficiencies/` at runtime; `runtime_source` stays `legacy_until_separately_qualified`.
+source), as it does Charm, so `content --check` and the generator agree byte for byte. The native data-only importer now reads the committed Proficiency shards and bindings.
+Gameplay activation remains separate; `runtime_source` stays `legacy_until_separately_qualified`.
 
 ```sh
 pip install -r requirements.txt
@@ -137,3 +137,21 @@ python proficiency_authoring.py validate samples/proficiencies-candidate.json
 python proficiency_authoring.py content --check
 python test_proficiency_authoring.py
 ```
+
+## Native server data import
+
+The server API `import_committed_weapon_proficiency_data()` imports 443 definitions, 3671
+source-ordered perks, 664 admitted weapon bindings and the complete accepted progression ruleset
+(including all three threshold tables, source/revision, kill-credit and points data).
+It retains definition revisions and source provenance and converts decimals to exact ratios.
+Unresolved revisions, duplicate definitions/weapons, malformed perk shapes and ruleset drift
+refuse the complete import. Ink Sword and Snowball (no admitted Item identity yet) stay unbound.
+
+Export the actual server import as JSON:
+
+```sh
+cargo run --locked -p oteryn-game-server --bin oteryn-game-import-proficiencies > weapon-proficiency.server.json
+```
+
+This imports static data only. Character progress, perk selection/execution, wire, activation
+and production deployment are separate. No database migration or live-server mutation runs.
