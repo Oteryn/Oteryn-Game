@@ -18,13 +18,21 @@ use crate::movement::{
 };
 use crate::spell::actor_conditions;
 
+/// Initialized player state on qualified ground: pacing applies, so an unavailable
+/// equipment pace fails closed instead of committing an unpaced step.
+fn unpaced_step_refused(ground: Option<u16>, equipment_delta: Option<i32>) -> bool {
+    ground.is_some() && equipment_delta.is_none()
+}
+
 pub(crate) enum StepInChannel {
     Completed(Result<MovementPositionSnapshot, MovementError>),
     Pending { ready_at: u64 },
 }
 /// Equipment delta is supplied only by the actual persisted-equipment owner.
-/// Absent pace metadata preserves the established baseline for an actor without
-/// a speed condition; it never permits a speed spell to bypass its consumer.
+/// An actor without spell state, or a step without qualified ground cost, keeps the
+/// established baseline Movement path. On qualified ground an initialized player refuses
+/// the step when its equipment pace is unavailable, so a failed or unqualified equipment
+/// read never commits a step outside `StepPacing`.
 #[allow(
     clippy::too_many_arguments,
     reason = "the owner turn binds every independently resolved fact explicitly"
@@ -139,7 +147,10 @@ pub(crate) fn step_in_channel_with_source_step(
         .as_ref()
         .and_then(|proof| proof.origin_ground_speed())
         .or_else(|| qualified_ground_cost(runtime, cells, actor, expected).ok());
-    let pacing_enabled = ground.is_some() && equipment_delta.is_some();
+    if unpaced_step_refused(ground, equipment_delta) {
+        return failure(MovementError::NotQualified);
+    }
+    let pacing_enabled = ground.is_some();
     if !pacing_enabled && actor_conditions::has_speed_condition(state, now_us) {
         return failure(MovementError::NotQualified);
     }
@@ -419,6 +430,53 @@ mod tests {
                 .x,
             1
         );
+    }
+    #[test]
+    fn unavailable_equipment_pace_refuses_only_where_pacing_applies() {
+        // Qualified ground: a failed or unqualified equipment read must not commit an
+        // unpaced step, however often the command repeats.
+        assert!(unpaced_step_refused(Some(150), None));
+        assert!(!unpaced_step_refused(Some(150), Some(0)));
+        // No qualified ground cost: the established baseline is unchanged.
+        assert!(!unpaced_step_refused(None, None));
+        assert!(!unpaced_step_refused(None, Some(20)));
+    }
+    #[test]
+    fn initialized_player_on_unqualified_ground_keeps_the_baseline_step() {
+        let (mut runtime, mut states, room, actor, session) = owner();
+        let facts = CharacterCastFacts {
+            vocation: crate::spell::Vocation::Knight,
+            level: 291,
+            magic_level: 10,
+            max_health: 1000,
+            max_mana: 500,
+            max_soul: 100,
+        };
+        states
+            .initialize(
+                &runtime,
+                actor,
+                session,
+                facts,
+                (0, 0),
+                SemanticTimeMicros::from_micros(0),
+            )
+            .unwrap();
+        assert!(matches!(
+            step_in_channel(
+                &mut runtime,
+                &mut states,
+                room.movement_cells(),
+                actor,
+                session,
+                CommandId::new(1).unwrap(),
+                1,
+                CardinalStep::East,
+                &std::collections::BTreeSet::new(),
+                None
+            ),
+            StepInChannel::Completed(Ok(_))
+        ));
     }
     #[test]
     fn actual_speed_condition_cannot_move_without_qualified_pacing_consumer() {
