@@ -775,17 +775,17 @@ jobs:
       - name: Install Rust toolchain
         run: rustup toolchain install 1.94.0 --profile minimal --component clippy,rustfmt
 
-      - name: Restore Cargo cache saved by protected main
-        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      - name: Restore trimmed Cargo cache from protected main
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
         with:
           path: |
             ~/.cargo/registry/index/
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
             target/
-          key: rust-linux-1.94.0-${{ hashFiles('Cargo.lock') }}
+          key: rust-linux-v2-1.94.0-${{ hashFiles('Cargo.lock') }}-${{ github.sha }}
           restore-keys: |
-            rust-linux-1.94.0-
+            rust-linux-v2-1.94.0-${{ hashFiles('Cargo.lock') }}-
 
       - name: Build workspace
         run: cargo +1.94.0 build --locked --workspace --all-targets
@@ -839,6 +839,9 @@ jobs:
               if not isinstance(targets, list):
                   raise ValueError('package targets is not a list')
               matches = [target for target in targets if target.get('name') == name]
+              global_matches = [target for package in packages for target in package.get('targets', []) if target.get('name') == name and target.get('kind') == ['test']]
+              if len(global_matches) != 1:
+                  raise ValueError('expected exactly one workspace integration-test target')
               if len(matches) != 1 or matches[0].get('kind') != ['test']:
                   raise ValueError('expected exactly one integration-test target')
               expected = (pathlib.Path.cwd() / registered_path).resolve(strict=True)
@@ -868,7 +871,7 @@ jobs:
                   exit 1
                 fi
                 verify_registered_target_binding "$name" "$path"
-                cargo +1.94.0 test --locked -p oteryn-game-server --test "$name"
+                cargo +1.94.0 test --locked --workspace --test "$name"
                 ;;
               false)
                 if [[ -e "$path" || -L "$path" || -n "$classified_blob" ]]; then
