@@ -25,16 +25,16 @@
 
 | Child | Worker | Builds | Depends on |
 |---|---|---|---|
-| PROF-SHAPE-1 | hard (persistence), persistence review | the modification table and its constraints (§3), the reserved causes (§3) | PROF-1 |
 | PROF-SHAPE-CONTENT-1 | content lane | evidence for pools, odds, rank values, costs and catalyst effects (§2), each with its evidence class | PROF-CONTENT-1 |
 
-The operations themselves, their receipts and their wire are built after PROFICIENCY-1B.
+Nothing persistent or runtime is built from this decision (playable-first: no table without a
+consumer). The modification table, the operations, their receipts and their wire are built after
+PROFICIENCY-1B. Migration lease 0032 stays with WP A2 and is not used here.
 
 ## 1. Question
 
-What state, causes and gate does Weapon Proficiency perk modification need now, so that PROF-1 and
-PROF-2 can land without it and the value operations can be added later without a migration of their
-shape?
+What must be fixed now about Weapon Proficiency perk modification, so that PROF-1 and PROF-2 can
+land without it and PROFICIENCY-1B can add it later under known names, shape and entry conditions?
 
 ## 2. Facts
 
@@ -62,9 +62,10 @@ operation costs gold; the modification pool, the reroll and reshape odds, the va
 rank; what a catalyst does and how it is consumed. Canary's shaping opcodes are no-ops and Crystal's
 are empty; neither is evidence (packet 5936420312).
 
-## 3. State (PROF-SHAPE-1)
+## 3. The modification state shape (built by PROFICIENCY-1B)
 
-Table `game_character_proficiency_modifications`:
+No table is created by this decision. PROFICIENCY-1B creates it, with this shape and these rules as
+entry conditions (§6 item 13):
 
 | Column | Meaning |
 |---|---|
@@ -75,28 +76,18 @@ Table `game_character_proficiency_modifications`:
 | `rank` | 1..10 |
 | `pending_offer` | NULL, or up to 3 entries of the same shaping revision |
 
-- **Keys.** Primary key `(character_id, item_key, slot)`, and **UNIQUE `(character_id, item_key,
-  level)`**: at most 2 rows per track, and two slots never modify the same level.
+- **Keys.** Primary key `(character_id, item_key, slot)`, and UNIQUE `(character_id, item_key,
+  level)`: at most 2 rows per track, and two slots never modify the same level.
 - **Unlock.** Slot 1 is unlocked while the derived level is at least 3, slot 2 while the track has
-  Mastery. A modified level must have a selection (PROFICIENCY-0 `selections`); while active, the
-  modified perk replaces that level's selected perk. A row whose level or slot is no longer unlocked
-  stays stored and inactive.
-- **Modified levels keep their selection.** A `perk_selection` that changes or clears the selection
-  of a level with a row is refused `MODIFIED_LEVEL`. Amended: PROFICIENCY-0 §4.4's result codes.
-- **Shaping revisions.** `modified_perk` and `pending_offer` name entries of the shaping revision they
-  were drawn from. **Invariant:** a shaping revision is retained while any row references it, so a
-  stored row always resolves to the same perk, and a row is evaluated against its own stored
-  revision. Since no row can exist before PROFICIENCY-1B, the check that enforces this is a 1B entry
-  condition (§6 item 10): it must be serialized with content activation and proficiency writes, not
-  only run at build time.
+  Mastery. A modified level must have a selection; while active, the modified perk replaces that
+  level's selected perk. A row whose level or slot is no longer unlocked stays stored and inactive.
+- **Shaping revisions (invariant).** A shaping revision is retained while any row references it,
+  and a row is evaluated against its own stored revision (§6 item 10 enforces it).
 - **Definition revisions.** An incompatible definition revision whose migration changes a modified
-  level clears that row in its `migration` receipt (PROFICIENCY-0 §4.1), with no refund
-  (`PARITY_PENDING`, R2); the migration line carries both slots' rows before and after.
-- **Reserved causes.** The receipt cause `perk_modification` (PROFICIENCY-0's chain) and the DUR-03
-  burn cause `ProficiencyCause {track, slot, operation, occurrence}` are reserved names. Their lines,
-  CHECKs and shapes are PROFICIENCY-1B's.
-- While no operation exists at runtime (§4), no row is ever written; the table, keys and
-  retention invariant exist so that PROFICIENCY-1B adds behaviour, not a schema change.
+  level clears that row in its `migration` receipt, with no refund (`PARITY_PENDING`, R2).
+- **Reserved names.** The receipt cause `perk_modification` and the DUR-03 burn cause
+  `ProficiencyCause {track, slot, operation, occurrence}` are reserved now, so no other decision
+  takes them. Their lines, CHECKs and shapes are PROFICIENCY-1B's.
 
 ## 4. Operations and the gate
 
@@ -122,8 +113,8 @@ evidence shows it exists on Global servers.
 | `PROF1-RL-01` modification slots per track | 2 |
 | `PROF1-RL-02` rank | 1..10 |
 
-Each with max and max+1 tests, plus: a second row for an already modified level violates the
-UNIQUE key; a catalyst use writes nothing.
+Registered by PROFICIENCY-1B with max and max+1 tests, together with the table. This decision adds
+only one test: a catalyst use writes nothing.
 
 ## 6. Entry conditions for PROFICIENCY-1B
 
@@ -158,6 +149,11 @@ PROFICIENCY-1B, the value-shape amendment, is accepted only when it states and t
 11. **Integrity.** PROFICIENCY-0's per-track current-state guard, the shared receipt-chain guard,
     reconciliation and `verify_character_integrity` are extended to the modification rows and the
     `perk_modification` cause, so each row equals the after value of its latest line.
+13. **State.** The §3 table with its keys, unlock rule, retention invariant and migration clear, in
+    the same migration as the operations that write it.
+14. **Selections at modified levels.** The existing `PROFICIENCY_SELECT_PERK` path refuses a change
+    or clear at a level with an active modification, with a `MODIFIED_LEVEL` result allocated in
+    PROF-WIRE-0's result codes and a test; until 1B no modification exists, so the path is unchanged.
 
 ## 7. Rejected options
 
@@ -165,8 +161,8 @@ PROFICIENCY-1B, the value-shape amendment, is accepted only when it states and t
   behaviour.
 - **Deciding operation semantics now.** Five review rounds showed the receipt, offer and wire detail
   belongs with the value shapes that use it; nothing can run before those exist.
-- **No table until 1B.** The keys and retention rule are cheap now and keep 1B from changing the
-  schema.
+- **Creating the table now.** It would have no consumer before 1B (playable-first); its shape is
+  fixed here as an entry condition instead.
 - **Dust as an item.** IMBUE-FORGE-0 keeps it a capped Character balance.
 
 ## 8. Architect rulings (owner rule 5905825574)
@@ -183,25 +179,24 @@ None now. A gold cost, or a value that evidence never settles, comes back to the
 
 ## 10. Decision test
 
-- **Must decide now:** YES. PROF-1 and PROF-2 are allocated (D281); the track, its migration line and
-  the selection rule must know the modification rows exist.
-- **Blocked:** PROF-1's migration line and `MODIFIED_LEVEL`; PROFICIENCY-1B.
-- **Minimum sufficient:** one table with its keys, two reserved causes, a closed list of operation names whose commands
-  exist only in 1B, a retention invariant and the entry conditions for 1B.
-- **Harder later:** the table and its keys join the Character state, so changing them needs a
-  migration; the retained shaping revisions grow the content build while referenced; the six
-  operation names are fixed.
+- **Must decide now:** YES, in this narrowed form: PROF-1 and PROF-2 (D281) proceed without perk
+  modification, and PROFICIENCY-1B needs fixed names, a fixed shape and its entry conditions.
+- **Blocked:** PROFICIENCY-1B.
+- **Minimum sufficient:** two reserved names, a closed list of six operation names, the state shape
+  and the entry conditions for 1B; nothing built.
+- **Harder later:** the reserved names and the six operation names are fixed; PROF-1 ships without
+  modification rows, so 1B adds them by its own migration and extends the existing guards (entry
+  conditions 11 and 13).
 - **Superseding evidence:** official or owner-verified costs, pools, odds and catalyst effects.
 - **Deliberately not decided:** all operation semantics, receipts, offers and wire (PROFICIENCY-1B);
   values; gold costs; catalysts.
 
 ## 11. Before-freeze checklist
 
-1. **Contract amendments:** PROFICIENCY-0 §4.4 and §4.5 (the rows, `MODIFIED_LEVEL`, migration
-   lines, the gate); DUR-03 §15 (the reserved `ProficiencyCause`); IMBUE-FORGE-0 §9 (a future dust
-   sink). Applied in this PR.
+1. **Contract amendments:** PROFICIENCY-0 §4.5 (pointer to 1B and its entry conditions); DUR-03 §15
+   (the reserved `ProficiencyCause`); IMBUE-FORGE-0 §9 (a future dust sink). Applied in this PR.
 2. **Serialization:** no write in this decision; PROFICIENCY-1B defines the transactions.
 3. **Restart:** nothing new.
-4. **Typed references:** track (CharacterId, item key), shaping revision and entry.
+4. **Typed references:** none new.
 5. **Wire:** none; the commands, their results and payloads are PROFICIENCY-1B's.
 6. **Split work:** PROFICIENCY-1B.

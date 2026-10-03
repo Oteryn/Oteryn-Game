@@ -33,10 +33,11 @@ external_repositories: []
 
 ## Outcome
 
-- Narrowed at Codex round 5 (control-plane scope cut): state shape, reserved causes, closed operation
-  list and fail-closed gate only.
-- Table `game_character_proficiency_modifications`: PK (character, item key, slot), UNIQUE
-  (character, item key, level); slot 1 at level 3, slot 2 at Mastery; `MODIFIED_LEVEL`.
+- Narrowed at Codex rounds 5 and 10 (control-plane scope cut): reserved names, six operation names,
+  the state shape and the 1B entry conditions; nothing persistent or runtime is built here.
+- State shape for 1B: `game_character_proficiency_modifications`, PK (character, item key, slot),
+  UNIQUE (character, item key, level); slot 1 at level 3, slot 2 at Mastery; `MODIFIED_LEVEL` on the
+  existing select path (entry condition 14).
 - Shaping revisions retained while referenced; incompatible definition revisions clear the row in the
   migration receipt.
 - Reserved `perk_modification` and `ProficiencyCause`; no operation command, refusal or wire exists
