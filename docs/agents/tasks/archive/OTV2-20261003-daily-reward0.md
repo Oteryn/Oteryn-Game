@@ -44,6 +44,10 @@ Store-bound refusal deferrals with DAILY-REWARD-0.
   Items mint into the `CharacterInbox` with a `game_item_bindings` row; missing sinks keep durable
   `PENDING` lines delivered once later.
 - **Bound items.** Refused by trade, Market, mail, Stash, NPC sale and Ground drop.
+  A split copies the binding onto the new item; only equally bound stacks merge.
+- **Claim key.** (character, World, reset epoch): reset epochs are World-scoped (ADR-0021).
+- **Review round (Codex on 1d477035).** P1 binding propagation through STACK-0 splits and merges;
+  P2 `world_id` in the claim key and record. Both fixed in one push.
 - **Deferred.** Resting-area bonuses, XP boost, converter and scroll use, Instant Reward Access,
   house shrines, the Store Inbox, Double Daily Reward events.
 

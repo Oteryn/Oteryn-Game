@@ -29,6 +29,8 @@
   - DUR-03 §14-§15 and the §38 rewards row (`DailyRewardCause`);
   - PLAYER-TRADE-0, MARKET-0 §3.1, MAIL-0, NPC-0, SUPPLY-STASH-0 §4 and ITEM-MOVE-WIRE-1 (the
     bound-item refusal, §6).
+  - STACK-0 §4.1 and §5.3 (a split copies the binding; a stack with another binding is not a
+    receiver, §6).
 - Runtime, migration and production authority: NONE. Each child needs its own #162/#1622
   allocation.
 - `MERGE_AUTHORITY: WORK_COORDINATOR_ONLY`
@@ -126,7 +128,9 @@ How does a character collect a daily reward, keep a streak and receive Tibia's r
 ### 3.2 The claim window
 
 - One claim per character per World reset epoch: the claim is keyed by (`character_id`,
-  `reset_epoch`) and is unique. A second claim in the same epoch is `ALREADY_CLAIMED`.
+  `world_id`, `reset_epoch`) and is unique, because reset epochs are World-scoped (ADR-0021). A
+  second claim in the same World and epoch is `ALREADY_CLAIMED`. A character that moves to another
+  World starts that World's state row (§5) with no claim in its current epoch.
 - A crash restart is not a reset, so it neither opens a new window nor breaks a streak.
 
 ### 3.3 Lane, streak and jokers
@@ -203,8 +207,8 @@ decided with their use.
 - `game_account_daily_reward_jokers`: one row per (`account_id`, `world_id`): `jokers` 0..3,
   `last_grant_month`, `last_entry_id`; with an immutable entry ledger (`GRANT`, `SPEND`), as in
   BANK-0 §3.
-- `game_character_daily_reward_claims`: one row per (`character_id`, `reset_epoch`), unique:
-  TransactionId, a SHA-256 binding of the request (picks), lane day, streak before and after,
+- `game_character_daily_reward_claims`: one row per (`character_id`, `world_id`, `reset_epoch`),
+  unique, with `world_id` stored on the claim: TransactionId, a SHA-256 binding of the request (picks), lane day, streak before and after,
   jokers spent, the Premium flag read.
 - `game_character_daily_reward_lines`: (claim, line), kind, definition, quantity, status, and the
   delivering TransactionId.
@@ -219,7 +223,12 @@ decided with their use.
   (`DAILY_REWARD`). It is written in the mint transaction and goes only with the item's
   retirement. It is the first DUR-03 §5.5 binding and the Store-sourced marker that SUPPLY-STASH-0
   §4 reads; the Store decision reuses it.
-- **Refused** (`NOT_TRADEABLE`, or the site's own refusal): player trade, a Market offer, mail, the
+- **Splits and merges (STACK-0).** A split of a bound stack copies the binding row onto the new
+  ItemInstanceId in the same transaction as the split; a split that cannot write it commits
+  nothing. A merge needs equal bindings (none, or the same World, `character_id` and cause) on the
+  source and the receiver; a stack with another binding is not a receiver (STACK-0 §4.1), so the
+  moved part goes to the next receiver or a new entry. A binding is never lost or dropped by a
+  split, merge or move, so no refused site below can be reached through a stack.- **Refused** (`NOT_TRADEABLE`, or the site's own refusal): player trade, a Market offer, mail, the
   Stash, an NPC sale, and a drop to the Ground (`PARITY_PENDING`).
 - **Allowed:** Inbox and depot moves, moves within the character's own containers, use and
   training.
@@ -289,9 +298,11 @@ None. Every choice above is a reversible architect ruling under owner rule 59058
 
 1. **Contract amendments:** PREY-0 §4, DUR-03 §14-§15 and §38, and the §6 refusal sites; each
    pending on acceptance, written by DAILY-1 and DAILY-BIND-1.
-2. **Serialization:** one transaction per claim, Character fence, root lock, joker row lock.
+2. **Serialization:** one transaction per claim; the binding row in the same transaction as each
+   mint, split and merge; Character fence, root lock, joker row lock.
 3. **Restart:** claims, lines and state are durable; a replayed claim returns its first outcome;
    a pending line is delivered once.
-4. **Typed references:** CharacterId, AccountId, WorldId, reset epoch, definition keys.
+4. **Typed references:** CharacterId, AccountId, WorldId, reset epoch (per World), ItemInstanceId,
+   definition keys.
 5. **Wire:** §7, capability `DAILY_REWARD_V1`.
 6. **Split work:** at most 20 item outputs per claim; one claim per epoch.
