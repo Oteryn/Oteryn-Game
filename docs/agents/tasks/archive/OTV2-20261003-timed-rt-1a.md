@@ -66,9 +66,12 @@ WORLD-INTERACTION-0 amendments. `TIMEDITEM0B-RL-03` is TIMED-WIRE-1's.
 
 ## Validation
 
-- `cargo fmt --all --check`; `cargo clippy --locked -p oteryn-game-server --all-targets --quiet -- -D warnings`
-- `cargo test --locked -p oteryn-game-server --lib -- timed`
+- `cargo fmt --all --check`: pass
+- `cargo clippy --locked -p oteryn-game-server --all-targets --quiet -- -D warnings`: pass
+- `cargo test --locked -p oteryn-game-server --quiet`: pass
 - `cargo test --locked -p oteryn-game-server --test item_timed_state_postgres` and
-  `--test check_function_privileges_postgres` against a local PostgreSQL 17.11 (the version
-  assertion relaxed locally only; CI runs 17.6)
-- `python tools/agents/validate_governance.py`; `git diff --check`
+  `--test check_function_privileges_postgres` against a local PostgreSQL 17.11 (the 17.6 version
+  assertion relaxed locally only; CI runs 17.6): pass
+- `python tools/agents/validate_governance.py`: pass
+- `python -m unittest discover -s tools/agents/tests`: OK
+- `git diff --check`: pass
