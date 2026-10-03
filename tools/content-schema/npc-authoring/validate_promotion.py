@@ -17,9 +17,11 @@ Semantic rules:
   plain source offer;
 - D16: 'D16' always; rule 'WIKI_MAJORITY_ARBITER' (with tibiopedia_facts_sha256) names a plain `trade.<item>`
   offer, a provenance source, 2-3 sorted wikis, the registered item name and each priced direction's status
-  (CONFIRMED with its wikis, or UNCONFIRMED with the stating source; owner 1c), re-derived with the pinned facts;
+  (CONFIRMED with its wikis, or UNCONFIRMED with the stating source; owner 1c), re-derived with the pinned facts,
+  and those directions and prices are exactly the ones of the admitted offer;
   a WIKI_IMAGE_FIT score is at most 35; rules 'WIKI_IMAGE' / 'OWNER_REVIEW' are exactly the
-  DEFINITION_REVIEWED row of that NPC and field (`definition.<field>`), choosing one of two sources, and a row with
+  DEFINITION_REVIEWED row of that NPC and field (`definition.<field>`), choosing one of two sources, the field holds
+  the pinned REVIEWED_VALUES value of the chosen source, and a row with
   `colours` (WIKI_IMAGE_FIT) puts those colours on the outfit; a single-source WIKI_IMAGE_FIT row is exactly the
   WIKI_IMAGE_FIT table entry and the outfit carries its colours; `source_unconfirmed` is the SOURCE_UNCONFIRMED row of
   a single-source Crystal NPC, without 'outfit' once WIKI_IMAGE_FIT settles it;
@@ -94,6 +96,28 @@ ITEM_RULES = PRICE_RULES + ('WIKI_OFFER',)  # rows that name an offer's register
 WIKIS = {'fandom', 'br', 'tibiopedia'}
 WIKI_IMAGE_FIT_MAX_SCORE = 35  # D16(c): a fit scoring above this is not used
 WIKI_PRICE_FACT = re.compile(r'trade\.(\d+)(?:x(\d+))?(?:s(-?\d+))?\.(SellToPlayer|BuyFromPlayer)')
+
+
+# D16: the value each WIKI_IMAGE / OWNER_REVIEW row selects, read from its chosen source at the pinned revisions;
+# errors() holds the candidate to it without the source bundles, and the rebuild (--canary/--crystal) proves it is
+# the source's value. A reviewed row without a pinned value fails.
+REVIEWED_VALUES = {
+    ('Ambassador Manop', 'movement'): {'floor_change': False, 'walk_interval_ms': 2000, 'walk_radius': 2},
+    ('Enpa-Deia Pema', 'outfit'): {'addons': 1, 'body': 9, 'feet': 63, 'head': 40, 'legs': 63, 'look_type': 1817,
+                                   'mount': None},
+    ('Flickering Soul', 'movement'): {'floor_change': False, 'walk_interval_ms': 0, 'walk_radius': 0},
+    ('Grumpy Stone', 'outfit'): {'item_look': 25446},
+    ('Omrabas', 'movement'): {'floor_change': False, 'walk_interval_ms': 0, 'walk_radius': 2},
+    ('Storkus', 'outfit'): {'addons': 0, 'body': 59, 'feet': 114, 'head': 57, 'legs': 118, 'look_type': 69,
+                            'mount': None},
+}
+
+
+def definition_field(candidate, field):
+    """A merged definition field as the candidate carries it: the outfit under presentation, the rest at the top."""
+    if field in ('outfit', 'speech_bubble'):
+        return (candidate.get('presentation') or {}).get(field)
+    return candidate.get(field)
 
 
 def named_offers(candidate, match):
@@ -367,6 +391,10 @@ def candidate_errors(candidate, index):
                 errs.append(f"{alabel}: outfit colours are not the fitted wiki colours {reviewed['colours']!r}")
             elif len(provenance) != 2 or chosen not in provenance:
                 errs.append(f"{alabel}: {rule} chooses {chosen!r} between two sources, provenance has {sorted(provenance)}")
+            elif rule in ('WIKI_IMAGE', 'OWNER_REVIEW') and definition_field(candidate, field) != \
+                    REVIEWED_VALUES.get((candidate.get('name'), field)):
+                errs.append(f"{alabel}: {field} {definition_field(candidate, field)!r} is not the reviewed value of the "
+                            f"chosen {chosen!r} source {REVIEWED_VALUES.get((candidate.get('name'), field))!r} (D16)")
         elif rule == 'WIKI_MAJORITY_ARBITER':
             wikis = row.get('wikis')
             if not isinstance(fact, str) or not re.fullmatch(r'trade\.\d+', fact):
@@ -377,6 +405,16 @@ def candidate_errors(candidate, index):
                     or not set(wikis) <= WIKIS):
                 errs.append(f"{alabel}: wikis {wikis!r} are not 2-3 sorted wikis from fandom/br/tibiopedia")
             errs += arbiter_direction_errors(alabel, row, chosen)
+            if isinstance(fact, str) and re.fullmatch(r'trade\.\d+', fact):
+                offered = sorted(((offer.get('direction'), offer.get('unit_price'))
+                                  for offer in (candidate.get('trade_service') or {}).get('offers') or []
+                                  if offer.get('source_item_id') == int(fact[len('trade.'):])
+                                  and offer.get('count') is None and offer.get('sub_type') is None), key=str)
+                stated = sorted(((entry.get('direction'), entry.get('price'))
+                                 for entry in row.get('directions') or [] if isinstance(entry, dict)), key=str)
+                if stated != offered:
+                    errs.append(f"{alabel}: directions {stated!r} are not every direction and price of the admitted "
+                                f"offer {fact} {offered!r}")
         elif rule == 'FAN_WIKI_CONFIRMED':
             wikis, pages = row.get('wikis'), row.get('pages')
             if fact != 'identity':
