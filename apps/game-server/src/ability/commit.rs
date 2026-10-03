@@ -463,22 +463,30 @@ impl OwnerCharmDamagePlan {
 }
 
 /// Commit only the actual descendant entry 1 through the same physical owner boundary. Immutable
-/// parent provenance never supplies current authority: owner, attacker, lease and command are
+/// parent provenance never supplies current authority: owner, attacker lease and command are
 /// independently supplied and checked at this call, then revalidated by the owner at its write.
+/// `current_lease` is the attacker's current `CharacterLease` (`GameSession::character_lease()`
+/// or the current admission authority), resolved at this write, never from `frozen`. A lease
+/// generation other than the frozen primary's means the attacker's session was superseded after
+/// the primary commit; the creature's high-water mark alone cannot see that, so it is refused
+/// here before the owner write.
 #[allow(dead_code)]
 pub(crate) fn commit_exact_owner_charm_damage(
     owner: &mut crate::foundation::CurrentOwnerExactActorCommit<'_>,
     frozen: &OwnerCharmDamagePlan,
-    attacker: crate::foundation::CharacterId,
-    lease_generation: u64,
+    current_lease: crate::foundation::CharacterLease,
     command: crate::foundation::CommandRef,
 ) -> Result<OwnerCharmDamageResult, OwnerCommitError> {
-    if attacker != frozen.attacker
-        || lease_generation != frozen.lease_generation
-        || command != frozen.command
-    {
+    let attacker = current_lease.character_id();
+    if attacker != frozen.attacker || command != frozen.command {
         return Err(OwnerCommitError::InvalidPlan);
     }
+    if !current_lease.accepts_generation(frozen.lease_generation) {
+        return Err(OwnerCommitError::Owner(
+            crate::foundation::CarrierError::SupersededAttackerSession,
+        ));
+    }
+    let lease_generation = current_lease.generation();
     let Effect::Damage { target, magnitude } = &frozen.plan.effects()[1] else {
         return Err(OwnerCommitError::InvalidPlan);
     };

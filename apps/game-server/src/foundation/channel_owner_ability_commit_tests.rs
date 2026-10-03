@@ -1,4 +1,5 @@
 //! Isolated preproduction composition of typed Ability and the physical owner slot.
+use super::super::CharacterLease;
 use super::super::exact_actor_test_ability::commit::{
     OwnerCharmDamagePlan, OwnerCharmDamageResult, OwnerCharmDamageSource, OwnerCommitError,
     OwnerCommittedPrimaryDamage, commit_exact_owner_charm_damage, commit_exact_owner_damage,
@@ -632,8 +633,7 @@ fn native_charm_commit(
     commit_exact_owner_charm_damage(
         &mut carrier.current_owner_exact_commit(continuity),
         plan,
-        who(1),
-        1,
+        CharacterLease::new(who(1), 1).expect("current attacker lease"),
         charm_command(),
     )
 }
@@ -908,9 +908,14 @@ fn charm_native_frozen_proof_never_supplies_current_owner_or_command_authority()
         .expect("prepare")
         .expect("live");
     let before = carrier.slots.clone();
-    for (character, lease, command) in [
-        (who(2), 1, charm_command()),
-        (who(1), 2, charm_command()),
+    for (character, lease, command, refused) in [
+        (who(2), 1, charm_command(), OwnerCommitError::InvalidPlan),
+        (
+            who(1),
+            2,
+            charm_command(),
+            OwnerCommitError::Owner(CarrierError::SupersededAttackerSession),
+        ),
         (
             who(1),
             1,
@@ -918,17 +923,17 @@ fn charm_native_frozen_proof_never_supplies_current_owner_or_command_authority()
                 session(1),
                 super::super::CommandId::new(2).expect("different command"),
             ),
+            OwnerCommitError::InvalidPlan,
         ),
     ] {
         assert_eq!(
             commit_exact_owner_charm_damage(
                 &mut carrier.current_owner_exact_commit(&continuity),
                 &frozen,
-                character,
-                lease,
+                CharacterLease::new(character, lease).expect("lease"),
                 command
             ),
-            Err(OwnerCommitError::InvalidPlan)
+            Err(refused)
         );
         assert_eq!(carrier.slots, before);
     }
@@ -940,6 +945,43 @@ fn charm_native_frozen_proof_never_supplies_current_owner_or_command_authority()
         Err(OwnerCommitError::Owner(CarrierError::WrongScope))
     );
     assert_eq!(carrier.slots, before);
+}
+
+#[test]
+fn charm_native_superseded_attacker_lease_after_primary_is_refused_without_hp_change() {
+    let (continuity, mut carrier, actor) = fixture(525);
+    let cast = occurrence("attack:lease", "rules:1");
+    let resolved = resolve(&carrier, &continuity, actor, &cast);
+    let primary_plan = plan(cast, "target:one", 3);
+    let parent = sealed_primary(&mut carrier, &continuity, &resolved, &primary_plan);
+    let frozen = OwnerCharmDamagePlan::prepare(&parent, charm_child(&primary_plan, 9))
+        .expect("prepare")
+        .expect("live");
+    let before = carrier.slots.clone();
+    let hp = health(&carrier);
+    // The attacker's lease advanced to generation 2 after the primary at generation 1. The
+    // creature's high-water mark still holds generation 1, so only the current lease shows the
+    // frozen tuple is stale.
+    assert_eq!(
+        commit_exact_owner_charm_damage(
+            &mut carrier.current_owner_exact_commit(&continuity),
+            &frozen,
+            CharacterLease::new(who(1), 2).expect("superseding lease"),
+            charm_command(),
+        ),
+        Err(OwnerCommitError::Owner(
+            CarrierError::SupersededAttackerSession
+        ))
+    );
+    assert_eq!(carrier.slots, before);
+    assert_eq!(health(&carrier), hp);
+    // The still-current lease commits exactly the descendant.
+    let result = native_charm_commit(&mut carrier, &continuity, &frozen).expect("current lease");
+    assert_eq!(
+        charm_hp(&result.result),
+        (hp.expect("hp"), hp.expect("hp") - 9)
+    );
+    assert_eq!(health(&carrier), Some(hp.expect("hp") - 9));
 }
 
 #[test]

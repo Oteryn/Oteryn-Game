@@ -84,6 +84,19 @@ mod foundation {
     #[derive(Debug, Clone, Copy, PartialEq, Eq)]
     pub(crate) struct CommandRef;
     #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    pub(crate) struct CharacterLease;
+    impl CharacterLease {
+        pub(crate) const fn character_id(self) -> CharacterId {
+            CharacterId
+        }
+        pub(crate) const fn generation(self) -> u64 {
+            1
+        }
+        pub(crate) const fn accepts_generation(self, generation: u64) -> bool {
+            generation == 1
+        }
+    }
+    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
     pub(crate) struct AttackerCommand;
     impl AttackerCommand {
         pub(crate) const fn new(_: CharacterId, _: u64, _: CommandRef, _: u16) -> Self {
@@ -99,6 +112,7 @@ mod foundation {
     #[derive(Debug, PartialEq, Eq)]
     pub(crate) enum CarrierError {
         Invalid,
+        SupersededAttackerSession,
     }
     pub(crate) struct CurrentOwnerExactActorCommit<'a>(pub(crate) &'a mut Option<Vec<u8>>);
     impl CurrentOwnerExactActorCommit<'_> {
