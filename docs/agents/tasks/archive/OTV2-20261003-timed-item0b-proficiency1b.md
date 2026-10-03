@@ -24,9 +24,9 @@ owned_paths:
 public_contracts: []
 depends_on:
   - "control-plane leases D353: migrations 0054 (TIMED-RT-1) and 0055 (PROF-SHAPE-1); capability 11 (TIMED_ITEMS_V1); command types 15-20 under capability 2"
-  - "owner question 1 (carried torches), sent to the control plane; working assumption a)"
+  - "owner answer D360 (carried torches: c, Ground-deadline model; a lit item goes out in any container)"
 blocks:
-  - TIMED-RT-1, TIMED-FX-1, TIMED-WIRE-1, TIMED-PARITY-1, TIMED-REPAIR-1, EXERCISE-1
+  - TIMED-RT-1, TIMED-FX-1, TIMED-WIRE-1, TIMED-PARITY-1, TIMED-HOUSE-1, TIMED-REPAIR-1, EXERCISE-1
   - PROF-SHAPE-CONTENT-1, PROF-SHAPE-1, PROF-SHAPE-WIRE-1
 cross_repository_coordination_id: null
 external_repositories: []
@@ -41,8 +41,10 @@ Allocation: D351 (#1622, owner 1b), an exception to D252. Two decisions in one P
   revision); checkpoints at the A13 cadence, logout, handoff and death; stop before leaving a slot;
   one-item expiry shapes; equip and use forms with ceilings and `SWAP_TIMED_BOTH` as `BLOCKED`;
   the EQUIP-0 active rule, `ITEM_REGENERATION` and the item mana shield; `TIMED_ITEMS_V1`;
-  carried torches burning only in an equipment slot (owner question 1, assumption a); the
-  EXERCISE-0 composed checkpoint and expiry.
+  torches per owner answer D360 (live in a slot, a durable database-time deadline on Ground and
+  house tiles, put out in any container, so no container-tree shape); the EXERCISE-0 composed
+  checkpoint and expiry. The first freeze (4e442b72) assumed equipped-only torches; D360 superseded
+  it and the head was re-frozen.
 - **PROFICIENCY-1B** answers PROFICIENCY-1 §6's fourteen entry conditions: the shaping content
   family with per-cell evidence classes; the modification table, lines and terminal records; the
   six operations with typed results; draws under `proficiency_shaping`; composed dust and orb

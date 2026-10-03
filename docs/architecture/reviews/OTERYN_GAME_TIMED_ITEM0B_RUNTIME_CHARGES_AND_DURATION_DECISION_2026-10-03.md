@@ -13,18 +13,23 @@
   - EXERCISE-0 §5.1 (the one composed checkpoint writer TIMED-ITEM-0B must admit) and §5.3 (the
     expiry BURN sink);
   - ITEM-USE-0 §6 (continuous forms refused until this decision);
-  - WORLD-INTERACTION-0 §11.4 (carried torches wait for the timed-item decision).
+  - WORLD-INTERACTION-0 §11.4 (carried torches wait for the timed-item decision);
+  - owner answer D360 (#1622, question 1 c with one addition: a lit torch burns in a hand or the
+    Extra slot, on the ground and in houses, with the Ground-deadline model; put into any container
+    it goes out).
 - Builds on:
   - TIMED-ITEM-0 §4 (the timed-row table and its invariants, unchanged here) and §7 (the repair);
   - the round 1-12 runtime draft of #1471 (head `d708a63c`), as TIMED-ITEM-0 §5 directs;
   - GAME-ITEM-01 §4.2 and §4.4; EQUIP-0 §3; CONDITIONS-0 §3, §3.2, §3.3 and §6;
   - DUR-03 §7, §11.1, §15, §16.2, §24, §25, §28, §33 and §39.3;
-  - ITEM-MOVE-WIRE-1 §3, §4 and §6; ITEM-USE-0 §4-§6; A13 §4.5 (checkpoints); OFFLINE-0
+  - ITEM-MOVE-WIRE-1 §3-§6 (equip, drop, pickup); GROUND-MOVE-1 (WORLD-INTERACTION-0 §7.2);
+    HOUSE-CUSTODY-0 (house tiles); D3 (corpse decay as a resumable step); ITEM-USE-0 §4-§6; A13 §4.5 (checkpoints); OFFLINE-0
     (the logout marker); EXERCISE-0 §4-§5;
   - owner rule 5905825574.
 - Amends, each pending on acceptance of TIMED-ITEM-0B and written by the named child in its own
   docs commit (this PR adds only this file, PROFICIENCY-1B and the task record):
-  - TIMED-ITEM-0 implementation brief (TIMED-RT-1 creates the table; TIMED-REPAIR-1 follows it);
+  - TIMED-ITEM-0 implementation brief and §4 (TIMED-RT-1 creates the table with the added
+    `deadline_at` column; TIMED-REPAIR-1 follows it);
   - EQUIP-0 §3.1 and §3.2 (TIMED-FX-1); CONDITIONS-0 §3, §3.2 and §3.3 (TIMED-FX-1);
   - DUR-03 §15, §33 and §39.3 (TIMED-RT-1); ITEM-MOVE-WIRE-1 §3 and §6 (TIMED-RT-1);
   - ITEM-USE-0 §6 (TIMED-RT-1); MARKET-0 §3.1 (TIMED-RT-1); WORLD-INTERACTION-0 §11.4 (TIMED-RT-1).
@@ -35,7 +40,8 @@
 
 | Child | Worker | Builds | Depends on |
 |---|---|---|---|
-| TIMED-RT-1 | hard (persistence), persistence and determinism review | the timed-row table, its guard and the write records (§4, TIMED-ITEM-0 §4); the per-item write lane (§5); checkpoints (§6); charge use (§7); expiry (§8); equip and use forms with their ceilings (§9); carried torches (§10); the causes and DUR-03 shapes (§12) | TIMED-CONTENT-1; ITEM-MOVE-2a; EQUIP-RT-1 |
+| TIMED-RT-1 | hard (persistence), persistence and determinism review | the timed-row table with `deadline_at`, its guard and the write records (§4, TIMED-ITEM-0 §4); the per-item write lane (§5); checkpoints (§6); charge use (§7); expiry (§8); equip and use forms with their ceilings (§9); torches in slots and on Ground (§10.1-§10.5); the causes and DUR-03 shapes (§12) | TIMED-CONTENT-1; ITEM-MOVE-2a; ITEM-MOVE-2b (drop and pickup); EQUIP-RT-1 |
+| TIMED-HOUSE-1 | impl, persistence review | lit torches on house tiles (§10.6), reusing §10's deadline shapes under the house scope | TIMED-RT-1; the house-lane item placement (HOUSE-CUSTODY-0) |
 | TIMED-FX-1 | hard (combat), combat and determinism review | the EQUIP-0 active rule for timed items, `ITEM_REGENERATION` and the item mana shield (§11) | TIMED-RT-1; COND-1 |
 | TIMED-WIRE-1 | impl, protocol review | capability `TIMED_ITEMS_V1`, the item fields and the Look text (§13) | TIMED-RT-1 |
 | TIMED-PARITY-1 | impl | fixtures: ring and soft boots durations, protection charges per hit, a torch's burn time, against TibiaWiki | TIMED-FX-1 |
@@ -76,11 +82,13 @@ EQUIP-0 can finally let rings, amulets, soft boots and torches do something?
 - A lit torch decays to a burnt-out torch wherever it lies; decay runs only for items in the game
   world, so a logged-out character's items keep their time.
 
+**OWNER** (D360): a lit torch burns in a hand or the Extra slot, on the ground and in houses; put
+into a backpack or any container it goes out (it becomes the unlit item and its time stops).
+
 **UNKNOWN** (TIMED-PARITY-1 checks against TibiaWiki; TibiaWiki was unreachable from this lane's
 container, HTTP 402)
 
 - Per-item durations and charges (TIMED-CONTENT-1 carries them, TibiaWiki first);
-- whether a lit torch burns inside a backpack and on the ground on Global (§10, owner question 1);
 - whether a protection charge is spent per hit or per absorbed hit on Global.
 
 ## 3. Vocabulary
@@ -92,13 +100,31 @@ container, HTTP 402)
   nothing changes them.
 - **Live values:** the runtime's current charges and remaining time of a live item. They are never
   read by another runtime and never written except through the item's lane (§5).
-- **Lane:** the ordered write queue of one live item (§5.2).
+- **Lane:** the ordered write queue of one live or deadline item (§5.2).
+- **Deadline item:** a lit `continuous` item lying directly on a Ground tile or a house tile. Its
+  time runs on a durable absolute deadline (`deadline_at`) on database time, not in a runtime's
+  memory (§10).
 
 ## 4. State (TIMED-RT-1)
 
-- **The table** is TIMED-ITEM-0 §4's `game_item_timed_states`, unchanged: columns, lazy rows,
-  absent row = revision 0, monotonic revision, rows never deleted while the item lives, the guard.
-  TIMED-RT-1 creates it with its guard (the first child to need it; amends TIMED-ITEM-0's brief).
+- **The table** is TIMED-ITEM-0 §4's `game_item_timed_states` with its invariants unchanged (lazy
+  rows, absent row = revision 0, monotonic revision, rows never deleted while the item lives, the
+  guard), plus one nullable column for D360:
+
+  | Column | Meaning |
+  |---|---|
+  | `deadline_at` | NULL, or the database time (UTC ms) at which a deadline item expires (§10.3) |
+
+  TIMED-RT-1 creates the table with its guard (the first child to need it; amends TIMED-ITEM-0's
+  brief and §4), with a partial index on `deadline_at` where it is not NULL.
+- **Guard arms for D360.** `deadline_at` is non-NULL exactly when the current definition is a lit
+  `continuous` form and the item's immediate location is a Ground or house tile; while it is
+  non-NULL, `remaining_ms` holds the budget at the moment the deadline was set. A lit `continuous`
+  item never has a container as its immediate location. Both are checked at commit.
+- **Unlit forms.** TIMED-ITEM-0 §4's "inactive form" (a definition with `transform {trigger: equip}`
+  into an admitted timed one) also covers a definition with `transform {trigger: use}` into an
+  admitted `continuous` one (an unlit torch). Its row, when it has one, holds the lit form's values,
+  so putting out and relighting keep the remaining time.
 - **Write records.** A new immutable table `game_item_timed_state_writes`, one row per committed
   write of a timed row:
 
@@ -110,6 +136,7 @@ container, HTTP 402)
   | `definition_before`, `definition_after` | definition keys (equal unless the write is part of a transform) |
   | `charges_before`, `remaining_ms_before` | the row before, or the definition's full values for an absent row |
   | `charges_after`, `remaining_ms_after` | the row after (NULL, NULL for spent; the before values for a BURN, whose row stays inert) |
+  | `deadline_before`, `deadline_after` | `deadline_at` before and after |
   | `committed_at` | commit time |
 
   - The guard gains one arm: a commit that inserts or updates a timed row inserts exactly one write
@@ -142,13 +169,16 @@ container, HTTP 402)
      charges are live, spent only by §7;
   3. an exercise weapon bound to a running EXERCISE-0 session (charges only);
   4. a `continuous` lit form in a `CharacterEquipment` slot (carried torches, §10).
+
+  A deadline item (§10.3) is not live: its time runs on its durable deadline, and its lane is
+  kept by the scope that owns its tile (the channel's Ground owner, DUR-03 §32, or the house scope).
 - **One owner.** The hosting runtime is the only writer of a live item's row. While an item is
   live it is **reserved** (DUR-03 §7.1) against every other writer: a trade offer, a market
   listing, a repair, a burn or any move that is not an equip move of §9 first stops the item
   (§5.3) and runs only after its lane is empty, or is refused when it cannot wait (a trade offer
   of a live item answers its existing `NOT_TRADEABLE`).
-- **Frozen items** are written only by an equip or use transform that makes them live (§9), by the
-  repair (TIMED-ITEM-0 §7), or never.
+- **Frozen items** are written only by an equip or use transform that makes them live (§9), by a
+  pickup of a deadline item (§10.4), by the repair (TIMED-ITEM-0 §7), or never.
 
 ### 5.2 The lane (entry condition 1)
 
@@ -273,7 +303,12 @@ OFFLINE-0's checkpoint loss.
   exercise weapon leaving the session) runs only after the item was stopped (§5.3) and its lane is
   empty. The move then writes no timed value line.
 - If the move fails, the item is still in its slot: the runtime makes it live again from the row.
-- A death drop therefore writes no timed line, and a dropped item lies frozen.
+- A death drop therefore writes no timed line, and a dropped item lies frozen. A lit torch is put
+  out before the death settlement (§10.4), so it never reaches the corpse lit.
+- **Exceptions (D360, §10):** a drop of a lit item onto a Ground or house tile carries one timed
+  line that sets its deadline, a pickup of a deadline item carries one that clears it, and a move
+  of a lit item into a container carries the put-out `TRANSFORM`. Each comes after the stop, so
+  none carries a live value: the values come from the row.
 
 ### 9.2 Equip forms
 
@@ -303,27 +338,94 @@ OFFLINE-0's checkpoint loss.
 ### 9.3 Use forms (lighting and putting out)
 
 - A use whose `transform {trigger: use}` turns an item into a `continuous` form (lighting a torch or
-  a lamp), or out of one (putting it out), is admitted. It is one one-item `TRANSFORM`
-  (`PRESERVE_INSTANCE`) under `ItemUseCause::Light` (amends ITEM-USE-0 §4.2 and §6), with the
-  ITEM-USE-0 reservation and in-flight rules. No row is written: the row belongs to the item.
+  a lamp), or out of one (putting it out), is admitted for an item in a `CharacterEquipment` slot.
+  It is one one-item `TRANSFORM` (`PRESERVE_INSTANCE`) under `ItemUseCause::Light` (amends
+  ITEM-USE-0 §4.2 and §6), with the ITEM-USE-0 reservation and in-flight rules. No row is written:
+  the row belongs to the item.
+- Lighting an item in a container is refused, writing nothing, and answers the existing
+  `REJECTED`: it would go out at once (D360). The hotkey form (ITEM-USE-0 field 5) searches the
+  equipment slots first, so it lights an equipped torch.
 - Putting out a live item first stops it (§5.3); the transform then runs.
 - A transform never resets the time; only an expiry into a new form, a repair or a new item does.
 
-## 10. Carried torches and continuous duration (TIMED-RT-1)
+## 10. Torches and continuous duration (TIMED-RT-1, TIMED-HOUSE-1; owner answer D360)
 
-- **Admitted.** A `continuous` definition is admitted. It replaces TIMED-ITEM-0 §3's
-  `NOT_ADMITTED` and ITEM-USE-0 §6's refusal.
-- **Where its time runs (R1, owner question 1):** only while the lit form is in a
-  `CharacterEquipment` slot of an in-world actor (§5.1 item 4): a hand or the Extra slot, where it
-  also gives `LIGHT` (EQUIP-0 §3.2, WORLD-INTERACTION-0 §11.4). Everywhere else (a container, the
-  ground, a house, the depot) a lit item is frozen and gives no light.
-- So a torch is an `on_equip` timed item without an equip transform: it is made live by being
-  equipped while lit, or lit while equipped, and stopped by leaving the slot. It needs no Ground
-  deadline, no container-tree clock and no backfill.
-- **Declared difference** pending owner answer 1: Canary decays a lit torch wherever it lies; on
-  Global a lit torch in a backpack or on the floor is believed to burn too (UNKNOWN, §2). Option
-  b) of question 1 (the whole carried tree) needs a bounded tree-stop shape and is not designed
-  here; option c) (everywhere, with Ground deadlines) reopens the round 1-6 model.
+### 10.1 Admission
+
+A `continuous` definition is admitted. It replaces TIMED-ITEM-0 §3's `NOT_ADMITTED` and ITEM-USE-0
+§6's refusal. Content validation refuses a MINT source (loot, rewards, NPC offers) of a lit form:
+items are minted unlit.
+
+### 10.2 Where a lit item is, and how its time runs
+
+| Where the lit item is | Its time |
+|---|---|
+| a `CharacterEquipment` slot of an in-world actor (a hand, the Extra slot) | live, in the hosting runtime (§5); it gives `LIGHT` (EQUIP-0 §3.2, WORLD-INTERACTION-0 §11.4) |
+| a `CharacterEquipment` slot of a character not in the world | frozen (its row) |
+| directly on a Ground tile (a channel or an instance) or a house tile | a deadline item: `deadline_at` on database time (§10.3) |
+| any container (backpack, bag, corpse, depot, inbox, escrow) | never: a lit item put into a container goes out (§10.4) |
+
+### 10.3 Deadline items
+
+- **Setting the deadline.** A drop of a lit item from a slot onto a tile (ITEM-MOVE-WIRE-1 §5,
+  ITEM-MOVE-2b) first stops it (§5.3), so the row holds the exact live budget. The drop transaction
+  then carries one timed line under `TimedItemCause::SetDeadline {item, expected_revision}`:
+  `deadline_at = database time + remaining_ms`, `remaining_ms` unchanged, revision + 1. Dropping and
+  picking up never wins back time.
+- **Moving on the ground.** A Ground-to-Ground move (GROUND-MOVE-1) keeps `deadline_at` and writes
+  no timed line.
+- **Expiry at the deadline.** The scope that owns the tile (the channel's Ground owner, or the
+  house scope) keeps a lane per deadline item and expires it at `deadline_at` as a resumable step
+  from durable state, the D3 corpse decay pattern, under `TimedItemCause::Expire {reason:
+  Deadline}` (§8's shapes: a lit torch becomes a burnt-out torch in place). At most
+  `TIMEDITEM0B-RL-06` (64) expiry steps run per scope per simulation tick; the rest wait for the next
+  tick. A scope that loads late, or a house that activates, expires its overdue items first, from
+  the index.
+- **Database time (R5).** The deadline runs on database time, so scope downtime and an inactive
+  house count against the item, as in Tibia, where items in houses decay. No write is needed to keep
+  it running.
+- A tile owner's moves and expiries of one deadline item run through its one lane (§5.2), so a
+  pickup never races its expiry.
+
+### 10.4 Going out (D360)
+
+- **Into a container.** A move of a lit item from a slot into any container entry (an unequip into
+  the backpack, a move into a bag) first stops it (§5.3), then the move carries one `TRANSFORM`
+  (`PRESERVE_INSTANCE`) to its unlit form (its `transform {trigger: use}` target), like an equip
+  form (§9.2). The row keeps `remaining_ms`; nothing else is written.
+- **A pickup** of a deadline item (Ground or a house tile into the main backpack) carries its
+  `TRANSFORM` to the unlit form and one timed line under `TimedItemCause::ClearDeadline {item,
+  expected_revision}`: `remaining_ms = deadline_at − database time`, `deadline_at` NULL, revision + 1.
+  If the deadline has passed, the pickup writes nothing and the tile owner runs the expiry first;
+  the pickup then sees the expired form.
+- **Death.** Before a death settlement the dying actor's runtime puts out every lit item it wears:
+  each is stopped and transformed to its unlit form by a one-item `TRANSFORM` under
+  `TimedItemCause::PutOut {item, expected_revision}` on its lane. The settlement then moves unlit
+  items into the corpse and stays unchanged.
+- **Logout** keeps an equipped lit item lit and frozen (§10.2); it burns again at the next login.
+- **Slot to slot** (a hand to the Extra slot) keeps it lit: stop, move, live again.
+- **Ground to a slot** is not admitted by ITEM-MOVE-WIRE-1 today. When a later move decision admits
+  it, it clears the deadline as a pickup does, without the transform, and the item becomes live.
+
+### 10.5 Ceilings (DUR-03 §28)
+
+Registered by TIMED-RT-1 with max and max+1 tests, on top of the base move shape's own rows:
+
+| Shape | Extra transform I/O | Extra timed row lines | Extra work units |
+|---|---|---|---|
+| drop of a lit item (`DUR03-RL-0x-TIMED-DROP`) | 0 / 0 | 1 | 1 |
+| pickup of a deadline item (`DUR03-RL-0x-TIMED-PICKUP`) | 1 / 1 | 1 | 2 |
+| move of a lit item into a container (`DUR03-RL-0x-TIMED-CONTAIN`) | 1 / 1 | 0 | 1 |
+| put out (`TimedItemCause::PutOut`, one-item) | 1 / 1 | 0 | 1 / 3 total |
+
+Each timed line is fixed-size, at most 64 bytes; payload and envelope stay within `DUR03-RL-07`,
+measured by the child.
+
+### 10.6 Houses (TIMED-HOUSE-1)
+
+House tiles use §10.3 and §10.4 unchanged under the house scope's fence. TIMED-HOUSE-1 starts when the
+house lane admits player item placement on house tiles (HOUSE-CUSTODY-0); until then no item lies
+on a house tile, so nothing waits on it.
 
 ## 11. When a timed item is active (TIMED-FX-1, entry condition 6)
 
@@ -365,7 +467,10 @@ two the active forms need.
 
 - **`TimedItemCause`** (the reserved name, DUR-03 §15), closed:
   - `Checkpoint {item, expected_revision}`;
-  - `Expire {item, expected_revision, reason: TimeExhausted | ChargesExhausted}`.
+  - `Expire {item, expected_revision, reason: TimeExhausted | ChargesExhausted | Deadline}`;
+  - `SetDeadline {item, expected_revision}` and `ClearDeadline {item, expected_revision}` (lines
+    inside a drop or a pickup, §10.3-§10.4);
+  - `PutOut {item, expected_revision}` (§10.4).
 
   No generic or caller-chosen reason. Equip forms carry the move's own cause; use forms carry
   `ItemUseCause::Light`. The repair keeps `FeeBurnCause::NpcRepair`.
@@ -381,6 +486,9 @@ two the active forms need.
   | expiry burn | 1 | 0 / 0 | 1 / 4 |
   | composed expiry burn | 1 | 0 / 0 | 1 / 4, plus the build receipt's own rows |
   | use form (`ItemUseCause::Light`) | 0 | 1 / 1 | 1 / 3 |
+  | put out (`PutOut`) | 0 | 1 / 1 | 1 / 3 |
+
+  The deadline lines inside a drop and a pickup are §10.5's rows.
 
   They supersede the §39.1 exclusions of burn and transform for these shapes only. The equip form
   rows are §9.2's.
@@ -392,7 +500,8 @@ two the active forms need.
 - **Fields.** Every item presentation that carries a count (inventory, container views, equipment,
   ground, trade and Look) gains optional `charges` (uint32, at most RL-01 65,535) and `remaining_s`
   (uint32, at most 604,800), sent only when the definition shows charges (`show_count`) or duration.
-  The values are the row's, or the live values for a live item.
+  The values are the row's, or the live values for a live item; a deadline item's `remaining_s` is
+  `deadline_at` minus the current time.
 - **Updates.** A live item's remaining time is sent at every form change and at most once per
   `TIMEDITEM0B-RL-03` (60 s); the client counts down between updates. A charge change is sent with
   the next presentation update of that item, at most once per second per item.
@@ -411,6 +520,9 @@ two the active forms need.
 | `TIMEDITEM0B-RL-03` remaining-time updates to the client per live item | 1 per 60 s |
 | `TIMEDITEM0B-RL-04` live timed items per actor | 11 (ten equipment slots plus one exercise weapon) |
 | `TIMEDITEM0B-RL-05` timed writes in flight per lane | 1 |
+| `TIMEDITEM0B-RL-06` deadline expiry steps per scope per simulation tick | 64 |
+
+Deadline items per channel are bounded by the dropped-item bound `ITEMMOVE1-RL-02` (20,000).
 
 TIMED-ITEM-0's `TIMEDITEM0-RL-01` (65,535 charges) and `RL-02` (7 days) are unchanged. Each row is
 registered by its child with max and max+1 tests.
@@ -430,9 +542,15 @@ registered by its child with max and max+1 tests.
 
 Also: a composed exercise checkpoint commits the receipt and the row together, and a revision
 mismatch on either writes neither (EXERCISE-1 repeats it); a lit torch in a hand burns and gives
-light, and in a backpack is frozen and gives none; lighting a torch is admitted and writes no row;
+light; lighting an equipped torch is admitted and writes no row;
 putting out a live torch checkpoints first; a content revision lowering a ring's duration is
-refused.
+refused. D360: a torch dropped 30 s after a checkpoint gets `deadline_at` from the stopped budget, and
+a drop and pickup cycle never adds time; a deadline item expires at its deadline into a burnt-out
+torch, and one overdue at scope load expires first; a pickup after the deadline writes nothing and
+sees the expired form; a lit torch moved into a bag becomes unlit with its budget kept; lighting a
+torch in a bag answers `REJECTED`; a death puts out a lit torch before the settlement and the corpse
+holds the unlit torch; the guard refuses a lit item in a container and a deadline on a non-tile
+item; each §10.5 row at max and max+1; more than 64 overdue items expire over several ticks.
 
 ## 16. Rejected options
 
@@ -442,48 +560,50 @@ refused.
   checkpoint commits in between, the expiry is stale, and the live zero is lost (D285).
 - **Live values written inside moves.** Every move shape would need a timed line; stopping first
   keeps moves unchanged.
-- **Ground deadlines and container-tree clocks for torches.** Rounds 1-7 of #1471 needed a tree
-  shape, a backfill and trade rules for them; the equipped-only rule needs none (R1).
+- **Container-tree clocks for torches.** Rounds 1-7 of #1471 needed a tree shape, a backfill and
+  trade rules for lit items inside bags; D360 puts a lit item out in any container, so no tree
+  ever holds one.
+- **Freezing deadline items while their scope is down.** Every scope restart would need a write per
+  deadline item; database time needs none (R5).
 - **Time running for logged-out characters or in the depot.** Canary decays only in the game world,
   and players expect a ring to keep its time while offline.
 - **A two-transform swap shape.** Refusing `SWAP_TIMED_BOTH` costs one extra move and adds no shape.
 
 ## 17. Architect rulings (owner rule 5905825574)
 
-- **R1. Where a lit torch burns.** a) Only in an equipment slot (recommended: no tree or Ground
-  shape); b) anywhere in the carried tree; c) everywhere. **Ruled a) as the working assumption**;
-  it is a parity difference, so it goes to the owner (question 1) and the ruling follows the answer.
+- **R1. Where a lit torch burns.** Owner answer D360: c) in slots, on the ground and in houses,
+  with the Ground-deadline model; put into any container it goes out.
 - **R2. Crash loss.** a) At most one checkpoint interval, in the player's favour (as A13 and
   OFFLINE-0); b) a write per change. **Ruled a)**, `PARITY_PENDING`.
 - **R3. Ring-for-ring swap.** a) Refuse `SWAP_TIMED_BOTH` as `BLOCKED`; b) a two-transform shape.
   **Ruled a)**, a declared difference (TIMED-ITEM-0 §5 item 5 already fixed it).
+- **R5. Deadline clock.** a) Database time, so downtime counts (recommended: no write per restart,
+  as rounds 1-6 ruled); b) frozen while the scope is down. **Ruled a).**
 - **R4. Integrity fault on a live expiry.** a) Retry the expiry once at the current revision while
   the runtime holds authority; b) drop the live zero. **Ruled a)** (D285).
 
-## 18. Owner questions (sent to the control plane in one batch)
+## 18. Owner questions
 
-1. **Carried torches.** Where does a lit torch burn down? a) only in a hand or the Extra slot
-   (recommended: simplest, no new durable shape; a declared difference if Global burns them
-   everywhere); b) also inside the character's bags (needs a bounded tree-stop shape, one more
-   review area); c) also on the ground and in houses (the deadline model of #1471 rounds 1-6).
-
-No new gold fee or sink is added.
+None open. Question 1 (carried torches) was answered by D360 (§10). No new gold fee or sink is
+added.
 
 ## 19. Decision test
 
 - **Must decide now:** YES (D351). Without it every ring, charged amulet, soft boots and torch
   grants nothing (EQUIP-0 R2), EXERCISE-1 cannot start, and TIMED-REPAIR-1 has no table.
-- **Blocked:** TIMED-RT-1, TIMED-FX-1, TIMED-WIRE-1, TIMED-PARITY-1, TIMED-REPAIR-1, EXERCISE-1.
-- **Minimum sufficient:** one write-record table beside the existing row table, one lane per live
-  item, checkpoints at existing moments, one-item shapes, two closed causes, one capability with two
-  fields.
-- **Harder later:** the write records and their key bind every later timed writer; equipped-only
-  torches become player-visible behaviour; `TIMED_ITEMS_V1` fields join the wire compatibility
+- **Blocked:** TIMED-RT-1, TIMED-FX-1, TIMED-WIRE-1, TIMED-PARITY-1, TIMED-HOUSE-1, TIMED-REPAIR-1,
+  EXERCISE-1.
+- **Minimum sufficient:** one write-record table and one deadline column beside the existing row
+  table, one lane per live or deadline item, checkpoints at existing moments, one-item shapes and
+  three bounded move lines, one closed cause, one capability with two fields. Putting lit items out
+  in containers (D360) removes every container-tree shape.
+- **Harder later:** the write records and their key bind every later timed writer; database-time
+  deadlines (R5) would need a migration of every live deadline to change; torches going out in
+  containers become player-visible behaviour; `TIMED_ITEMS_V1` fields join the wire compatibility
   surface.
-- **Superseding evidence:** a TibiaWiki or official source on where torches burn or how protection
-  charges are spent.
-- **Deliberately not decided:** torches outside equipment slots (question 1 b and c), invisibility
-  from equipment, imbuement durations (IMBUE-FORGE-0), other charge consumers.
+- **Superseding evidence:** a TibiaWiki or official source on how protection charges are spent.
+- **Deliberately not decided:** Ground-to-slot moves (a later move decision), invisibility from
+  equipment, imbuement durations (IMBUE-FORGE-0), other charge consumers.
 
 ## 20. Before-freeze checklist
 
@@ -492,8 +612,8 @@ No new gold fee or sink is added.
    keyed by (item, expected revision) under the item writer's fence and the holder's
    `character_root` lock; the composed checkpoint and expiry add the build receipt in the same
    transaction.
-3. **Restart:** live items lose at most one checkpoint, in the player's favour; frozen items never
-   change; durable exhaustion is final.
+3. **Restart:** live items lose at most one checkpoint, in the player's favour; deadline items
+   expire from their durable deadline; frozen items never change; durable exhaustion is final.
 4. **Typed references:** ItemInstanceId, definition keys, TransactionId.
 5. **Wire:** one capability, two optional fields, no command, no domain.
 6. **Leases:** migration `0054` (D353) and capability 11 (D353) from the control
@@ -508,7 +628,7 @@ task_id: OTV2-YYYYMMDD-timed-rt-1
 decision: TIMEDITEM0B-RUNTIME-CHARGES-AND-DURATION-V1 §4-§10, §12, §14-§15
 worker: oteryn-hard-worker (persistence, session-generation fencing)
 review: independent persistence and determinism review
-depends_on: [TIMED-CONTENT-1, ITEM-MOVE-2a, EQUIP-RT-1, this decision accepted]
+depends_on: [TIMED-CONTENT-1, ITEM-MOVE-2a, ITEM-MOVE-2b, EQUIP-RT-1, this decision accepted]
 migration_lease: 0054
 owned_paths:
   - apps/game-server/migrations/0054_item_timed_states.sql
@@ -517,7 +637,8 @@ owned_paths:
   - apps/game-server/src/durability/mod.rs            # one mod line
   - apps/game-server/src/domain/timed_item.rs          # live values, the lane, stop
   - apps/game-server/src/domain/mod.rs                # one mod line
-  - the ITEM-MOVE-2a equip move module                 # stop-before-move and equip transforms, named at allocation
+  - the ITEM-MOVE-2a/2b move modules                    # stop-before-move, equip and put-out transforms, drop/pickup deadline lines; named at allocation
+  - the channel Ground owner's step scheduler           # deadline expiry steps (§10.3); named at allocation
   - apps/game-server/tests/item_timed_state_postgres.rs
   - apps/game-server/tests/durability_postgres.rs      # one mod line
   - docs/contracts/RESOURCE_LIMITS_REGISTRY.json       # §9.2, §12 and §14 rows
@@ -534,7 +655,7 @@ validation:
   - cargo test --locked -p oteryn-game-server --quiet
   - OTERYN_TEST_POSTGRES_ADMIN_URL=... cargo test --locked -p oteryn-game-server --test item_timed_state_postgres --quiet (PostgreSQL 17.6)
   - python tools/agents/validate_governance.py; git diff --check
-acceptance: every §15 row's tests for conditions 1-5 and 8, plus the §15 extra tests
+acceptance: every §15 row's tests for conditions 1-5 and 8, plus the §15 extra tests, including D360's
 ```
 
 ### TIMED-FX-1
@@ -571,6 +692,10 @@ owned_paths:
 validation: cargo fmt/clippy/test for protocol-oteryn and oteryn-game-server; registry validator; git diff --check
 acceptance: §15 condition 7 tests
 ```
+
+TIMED-HOUSE-1 is an impl packet (persistence review) after TIMED-RT-1 and the house lane's item
+placement: the house scope's deadline lane and expiry steps, reusing §10.3-§10.5; its owned paths
+are named at allocation.
 
 TIMED-PARITY-1 is an ordinary impl packet after TIMED-FX-1: fixtures only, under
 `apps/game-server/tests/`, no production code.
