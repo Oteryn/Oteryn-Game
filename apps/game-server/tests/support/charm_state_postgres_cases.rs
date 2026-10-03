@@ -20,6 +20,7 @@ use crate::durability::character_progression::{
     CurrentCharacterGameplayFence, ExperienceAwardRequest, ExperienceCommitOutcome,
     ExperienceRewardOccurrence,
 };
+use crate::durability::character_revision_sequencer::CharacterRevisionSequencer;
 use crate::durability::charm_state::{
     BestiaryCharmEntry, BestiaryCharmFacts, CharmCommand, CharmCommandEffect,
     CharmCommandOccurrence, CharmCommandOutcome, CharmCommandRequest, CharmFacts,
@@ -1048,10 +1049,12 @@ fn bestiary_kill_counters_earn_points_and_admit_assignments() -> TestResult {
         // Only the completed rat entry earns points: its 300 buy wound stage 1 (240); zap
         // (320) would then need 560.
         let content = native_content(vec![bestiary_race("wolf")?, bestiary_race("rat")?])?;
+        let sequencer = CharacterRevisionSequencer::new();
         let mut port = NativeCharmProgressionPort::bind(
             &harness.root,
             &authority,
             &harness.node,
+            &sequencer,
             fence(6)?,
             &content,
             facts.clone(),
@@ -1071,6 +1074,7 @@ fn bestiary_kill_counters_earn_points_and_admit_assignments() -> TestResult {
             &simultaneous_root,
             &simultaneous_authority,
             &harness.node,
+            &sequencer,
             fence(6)?,
             &content,
             facts.clone(),
@@ -1270,6 +1274,7 @@ fn bestiary_kill_counters_earn_points_and_admit_assignments() -> TestResult {
                     &harness.root,
                     &authority,
                     &harness.node,
+                    &sequencer,
                     refused_fence,
                     &content,
                     facts.clone(),
@@ -1445,6 +1450,7 @@ fn bestiary_kill_counters_earn_points_and_admit_assignments() -> TestResult {
             &restarted,
             &restart_authority,
             &harness.node,
+            &sequencer,
             fence(8)?,
             &content,
             facts.clone(),

@@ -157,6 +157,37 @@ class GovernanceLifecycleTests(unittest.TestCase):
             )
         )
 
+    def test_archived_task_records_require_pr_number_and_agent_suite(self) -> None:
+        validation = (
+            "## Validation\n\n- `python tools/agents/validate_governance.py`: pass\n"
+            "- `python -m unittest discover -s tools/agents/tests`: pass\n\n## Self-review\n"
+        )
+        archive = "docs/agents/tasks/archive/"
+        self.write(archive + "OTV2-20261004-complete.md", f"```yaml\npr: 1700\n```\n{validation}")
+        self.write(archive + "OTV2-20261004-quoted.md", f'```yaml\npr: "1701"  # note\n```\n{validation}')
+        self.write(
+            archive + "OTV2-20261004-placeholder.md",
+            f'```yaml\npr: "the PR on this branch"\n```\n{validation}',
+        )
+        self.write(
+            archive + "OTV2-20261004-no-suite.md",
+            "```yaml\npr: 1702\n```\n## Validation\n\n"
+            "- `python tools/agents/validate_governance.py`: pass\n\n## Self-review\n"
+            "- `python -m unittest discover -s tools/agents/tests`: outside Validation\n",
+        )
+        self.write(archive + "OTV2-20261003-legacy.md", "```yaml\npr: null\n```\n")
+        errors: list[str] = []
+        validator.validate_archived_task_closeout(errors)
+        self.assertEqual(
+            errors,
+            [
+                "archived task record docs/agents/tasks/archive/OTV2-20261004-no-suite.md "
+                "Validation must record `python -m unittest discover -s tools/agents/tests`",
+                "archived task record docs/agents/tasks/archive/OTV2-20261004-placeholder.md "
+                "must record its positive canonical pr",
+            ],
+        )
+
     def test_active_task_live_state_rejects_terminal_canonical_authority(self) -> None:
         self.write(
             "docs/agents/tasks/active/OTV2-merged-pr.md",

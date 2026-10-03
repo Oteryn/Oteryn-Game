@@ -54,13 +54,15 @@
 //! before anything is reserved; a retired key grants nothing and the claim
 //! commits.
 //!
-//! Notice (ACHIEVEMENT-0 §5, ACH-NOTIFY-1): a commit whose grant is `Granted`
-//! also returns a [`GrantedAchievementNotice`]. It holds the key and the
-//! account's fact keys, read in the same transaction after the insert. Every
-//! commit pass takes the EXCLUSIVE admission locks first, so concurrent
-//! reward-claim grants are serialized and each one reads an exact watermark.
-//! The read is bounded and read-only. `AlreadyHeld`, `Retired` and a replayed
-//! CommandRef return no notice.
+//! Notice (ACHIEVEMENT-0 §5, ACH-NOTIFY-1, ACH-NOTIFY-2): a commit returns a
+//! [`GrantNotice`]. A `Granted` grant carries its key and the account's fact
+//! keys, read in the same transaction after the insert. Every commit pass
+//! takes the EXCLUSIVE admission locks first, so concurrent reward-claim
+//! grants are serialized and each one reads an exact watermark. The read is
+//! read-only and bounded by the caller's catalogue size plus one: more rows
+//! than catalogue keys is an invalid state, reported as
+//! [`GrantNotice::Unknown`], never truncated. `AlreadyHeld`, `Retired` and a
+//! replayed CommandRef return [`GrantNotice::None`].
 
 use super::account_achievement::{
     AchievementCatalogueLookup, AchievementGrantError, AchievementGrantOutcome,
@@ -163,16 +165,25 @@ pub enum RewardClaimRefusal {
     MainBackpackFull,
 }
 
-/// At most this many fact keys are read for a notice. An account holding more
-/// gets no notice, and the panel query still shows its facts.
-pub const NOTICE_ACCOUNT_FACTS_MAX: usize = 4_096;
-
 /// The facts of one `Granted` grant, for its post-commit notice (ACH-NOTIFY-1).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct GrantedAchievementNotice {
     pub achievement_key: String,
     /// Every fact key of the account after the grant, in key order.
     pub account_fact_keys: Vec<String>,
+}
+
+/// What a commit's grant tells its post-commit notice (ACH-NOTIFY-2).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum GrantNotice {
+    /// No grant applied, or it was `AlreadyHeld` or `Retired`, or the
+    /// CommandRef was a replay.
+    None,
+    /// The grant committed with `Granted`.
+    Granted(GrantedAchievementNotice),
+    /// The grant committed with `Granted`, but the account held more facts
+    /// than the catalogue has keys: an invalid state. The grant stays durable.
+    Unknown,
 }
 
 /// Terminal committed result of one CommandRef.
@@ -589,20 +600,23 @@ impl DurabilityRoot {
         fence: CurrentCharacterItemFence,
         candidate: &mut RewardClaimMintCandidate,
     ) -> Result<RewardClaimMintOutcome> {
-        self.commit_reward_claim_mint_noticed(authority, node, fence, candidate)
+        self.commit_reward_claim_mint_noticed(authority, node, fence, candidate, None)
             .await
             .map(|(outcome, _)| outcome)
     }
 
-    /// [`Self::commit_reward_claim_mint`], with the notice of a `Granted`
-    /// grant this commit made.
+    /// [`Self::commit_reward_claim_mint`], with the notice of the grant this
+    /// commit made. `catalogue_len` is the size of the loaded Achievement
+    /// catalogue, which bounds the account's fact keys; `None` reads nothing
+    /// and returns [`GrantNotice::None`].
     pub async fn commit_reward_claim_mint_noticed(
         &self,
         authority: &ReconciledCharacterAuthority<'_, '_>,
         node: &NodeIncarnationProof,
         fence: CurrentCharacterItemFence,
         candidate: &mut RewardClaimMintCandidate,
-    ) -> Result<(RewardClaimMintOutcome, Option<GrantedAchievementNotice>)> {
+        catalogue_len: Option<usize>,
+    ) -> Result<(RewardClaimMintOutcome, GrantNotice)> {
         let recovery = authority
             .record_for(self)
             .map_err(|_| RewardClaimMintError::AuthorityRejected)?;
@@ -629,7 +643,7 @@ impl DurabilityRoot {
                         commit_semantic_transaction(tx, deadline).await?;
                         return Ok(Ok((
                             RewardClaimMintOutcome::AlreadyCommitted(committed),
-                            None,
+                            GrantNotice::None,
                         )));
                     }
 
@@ -692,7 +706,7 @@ impl DurabilityRoot {
                     // With the token `admit` minted after the fence and the
                     // `character_root` row lock in this transaction; an error
                     // drops the whole transaction.
-                    let mut notice = None;
+                    let mut notice = GrantNotice::None;
                     if let Some(achievement) = &frozen.request.achievement {
                         let grant = match achievement_grant(
                             achievement,
@@ -704,7 +718,15 @@ impl DurabilityRoot {
                         };
                         match record_achievement_grant(&mut tx, granter, &grant).await? {
                             Ok(AchievementGrantOutcome::Granted(fact)) => {
-                                notice = granted_notice(&mut tx, fact.account_id, grant).await?;
+                                if let Some(catalogue_len) = catalogue_len {
+                                    notice = granted_notice(
+                                        &mut tx,
+                                        fact.account_id,
+                                        grant,
+                                        catalogue_len,
+                                    )
+                                    .await?;
+                                }
                             }
                             Ok(_) => {}
                             Err(error) => return Ok(Err(error.into())),
@@ -758,15 +780,16 @@ impl DurabilityRoot {
 }
 
 /// The notice of a `Granted` grant: the account's fact keys, read in the
-/// granting transaction after the insert. Read-only, bounded by
-/// [`NOTICE_ACCOUNT_FACTS_MAX`]; `None` above the bound.
+/// granting transaction after the insert. Read-only and bounded at
+/// `catalogue_len + 1` rows; more than `catalogue_len` is
+/// [`GrantNotice::Unknown`].
 async fn granted_notice(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     account_id: [u8; 16],
     grant: AchievementGrantRequest,
-) -> std::result::Result<Option<GrantedAchievementNotice>, DurabilityError> {
-    let limit = i64::try_from(NOTICE_ACCOUNT_FACTS_MAX + 1)
-        .map_err(|_| DurabilityError::InvalidStoredState)?;
+    catalogue_len: usize,
+) -> std::result::Result<GrantNotice, DurabilityError> {
+    let limit = i64::try_from(catalogue_len.saturating_add(1)).unwrap_or(i64::MAX);
     let account_fact_keys: Vec<String> = sqlx::query_scalar(
         "SELECT achievement_key FROM game_account_achievements \
           WHERE account_id = encode($1,'hex')::uuid ORDER BY achievement_key LIMIT $2",
@@ -775,12 +798,13 @@ async fn granted_notice(
     .bind(limit)
     .fetch_all(&mut **tx)
     .await?;
-    Ok(
-        (account_fact_keys.len() <= NOTICE_ACCOUNT_FACTS_MAX).then_some(GrantedAchievementNotice {
-            achievement_key: grant.achievement_key,
-            account_fact_keys,
-        }),
-    )
+    if account_fact_keys.len() > catalogue_len {
+        return Ok(GrantNotice::Unknown);
+    }
+    Ok(GrantNotice::Granted(GrantedAchievementNotice {
+        achievement_key: grant.achievement_key,
+        account_fact_keys,
+    }))
 }
 
 /// Witness that [`admit`] found the complete current item fence in its

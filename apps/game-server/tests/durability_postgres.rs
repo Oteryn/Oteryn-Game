@@ -21,6 +21,8 @@ pub mod native_admission_source;
 mod authority_matrix;
 #[path = "support/authority_recovery.rs"]
 mod authority_recovery;
+#[path = "support/character_revision_sequencer_postgres_cases.rs"]
+mod character_revision_sequencer_postgres_cases;
 #[allow(dead_code, unused_imports)]
 #[path = "../src/durability/mod.rs"]
 mod durability;

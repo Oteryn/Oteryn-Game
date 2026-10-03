@@ -946,6 +946,9 @@ mod writer {
         /// complete 0032 gate. Runtime PZ checks are PROF-2's responsibility; no caller bool is used.
         /// Arc keeps the immutable semantic source alive through the asynchronous pass, while
         /// permitting all source queries to occur after exact replay lookup. It grants no authority.
+        /// Runtime callers reach it only through a
+        /// [`RevisionSlot`](crate::durability::character_revision_sequencer::RevisionSlot)
+        /// (CHAR-REV-SEQ-1).
         pub async fn commit_character_proficiency(
             &self,
             authority: &ReconciledCharacterAuthority<'_, '_>,

@@ -15,6 +15,7 @@ use crate::durability::character_progression::{
     CurrentCharacterGameplayFence, ExperienceAwardRequest, ExperienceRewardOccurrence,
     ProgressionInitializationRequest,
 };
+use crate::durability::character_revision_sequencer::CharacterRevisionSequencer;
 use crate::durability::runtime_scope_assignment::NodeIncarnationProof;
 use crate::foundation::{AuthenticatedTransportRefV1, GameSessionAuthoritySnapshot};
 use oteryn_simulation_determinism::{ExactI64, RoundingMode};
@@ -126,6 +127,9 @@ pub(super) async fn prepare_free_character(
     let character =
         CharacterId::from_bytes(*current.current_character_lease().character_id().as_bytes())
             .map_err(debug)?;
+    // CHAR-REV-SEQ-1: the fixture's revision writes run through one slot of this Character.
+    let sequencer = CharacterRevisionSequencer::new();
+    let mut slot = sequencer.acquire(character).await;
     let before = root
         .read_character_build_state(authority, character)
         .await
@@ -167,7 +171,8 @@ pub(super) async fn prepare_free_character(
     .await
     .map_err(debug)?;
     if level > 1 {
-        root.commit_character_experience(
+        slot.commit_experience(
+            root,
             authority,
             node,
             fence,
@@ -179,6 +184,7 @@ pub(super) async fn prepare_free_character(
                 reward_revision: policy.reward_revision.clone(),
                 policy,
             },
+            None,
         )
         .await
         .map_err(debug)?;
@@ -194,7 +200,8 @@ pub(super) async fn prepare_free_character(
     )
     .map_err(debug)?;
     let after = convert_vocation(&formula, &before, vocation).map_err(debug)?;
-    root.commit_character_build(
+    slot.commit_build(
+        root,
         authority,
         node,
         fence,
@@ -206,6 +213,7 @@ pub(super) async fn prepare_free_character(
             pruned_stance: None,
         },
         &formula,
+        None,
     )
     .await
     .map_err(debug)?;
@@ -234,6 +242,8 @@ pub(super) async fn advance_source_level(
     let character =
         CharacterId::from_bytes(*current.current_character_lease().character_id().as_bytes())
             .map_err(debug)?;
+    let sequencer = CharacterRevisionSequencer::new();
+    let mut slot = sequencer.acquire(character).await;
     let before = root
         .read_character_progression(authority, character)
         .await
@@ -262,7 +272,8 @@ pub(super) async fn advance_source_level(
             .map_err(debug)?
             .revision,
     };
-    root.commit_character_experience(
+    slot.commit_experience(
+        root,
         authority,
         node,
         fence,
@@ -274,6 +285,7 @@ pub(super) async fn advance_source_level(
             reward_revision: policy.reward_revision.clone(),
             policy,
         },
+        None,
     )
     .await
     .map_err(debug)?;

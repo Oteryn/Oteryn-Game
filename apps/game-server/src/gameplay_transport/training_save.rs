@@ -41,6 +41,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         else {
             return TrainingSave::Unknown;
         };
+        // CHAR-REV-SEQ-1: this Character's revision writer, held across the save and its
+        // reconciliation and taken before the runtime lock.
+        let mut slot = self.revision_sequencer.acquire(character).await;
         let Ok(root) = self
             .root
             .read_current_character(self.character, character)
@@ -106,14 +109,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         // The Channel lock preserves this exact actor/training predecessor through
         // one bounded semantic pass; all current DB fences are independently read.
-        let outcome = self
-            .root
-            .commit_character_build(
+        // A retained checkpoint replays at the exact revision it was prepared for.
+        let outcome = slot
+            .commit_build(
+                self.root,
                 self.character,
                 self.holder,
                 retained.fence,
                 retained.prepared.request.clone(),
                 formula,
+                Some(retained.fence.expected_character_revision),
             )
             .await;
         let receipt = match outcome {

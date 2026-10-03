@@ -446,6 +446,8 @@ pub async fn serve_gameplay(
         spell_states: Mutex::default(),
         clock_origin: std::time::Instant::now(),
         lost: std::sync::Mutex::default(),
+        revision_sequencer:
+            crate::durability::character_revision_sequencer::CharacterRevisionSequencer::new(),
     };
     let serving = serve_listener(
         listener,
@@ -552,6 +554,10 @@ pub(crate) struct ComposedFreshAdmission<'a, 'f, 's> {
     /// Ended admitted sessions whose loss is durably recorded and whose grace has not ended:
     /// the only sessions a `ClientResume` can name. At most one entry per admitted session.
     pub(crate) lost: std::sync::Mutex<std::collections::HashMap<GameSessionId, AdmittedSession>>,
+    /// One revision-advancing write in flight per Character (CHAR-REV-SEQ-1). Never awaited
+    /// while `runtime` is locked.
+    pub(crate) revision_sequencer:
+        crate::durability::character_revision_sequencer::CharacterRevisionSequencer,
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {
@@ -782,7 +788,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return UseOutcome {
                     disposition: world_object::UseDisposition::TooFar,
                     committed: None,
-                    earned: None,
+                    earned: connection::EarnedNotice::NoneEarned,
                 };
             }
         }
@@ -812,7 +818,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         UseOutcome {
             disposition,
             committed: None,
-            earned: notice.and_then(|notice| achievement_earned(self.achievements, &notice)),
+            earned: earned_notice(self.achievements, notice, &mut operator_event),
         }
     }
 }
@@ -885,6 +891,29 @@ fn achievement_earned(
             name: granted.rows.into_iter().next()?.name,
             watermark: achievement_watermark(catalogue, &facts)?,
         },
+    )
+}
+
+/// ACH-NOTIFY-2: the notice of a `USE`'s grant. A `Granted` grant whose notice cannot be derived
+/// (a fact key the catalogue lacks) and an `Unknown` read are both `Unknown`, never
+/// `NoneEarned`, and each is one operator defect event through `log`.
+fn earned_notice(
+    catalogue: &crate::achievement_catalogue::AchievementCatalogue,
+    notice: crate::durability::reward_claim_mint::GrantNotice,
+    log: &mut dyn FnMut(&str),
+) -> connection::EarnedNotice {
+    use crate::durability::reward_claim_mint::GrantNotice;
+    let earned = match notice {
+        GrantNotice::None => return connection::EarnedNotice::NoneEarned,
+        GrantNotice::Granted(notice) => achievement_earned(catalogue, &notice),
+        GrantNotice::Unknown => None,
+    };
+    earned.map_or_else(
+        || {
+            log("event=achievement_notice_unknown level=error");
+            connection::EarnedNotice::Unknown
+        },
+        connection::EarnedNotice::Earned,
     )
 }
 
@@ -1057,7 +1086,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             return UseOutcome {
                 disposition: world_object::UseDisposition::NothingToUse,
                 committed: None,
-                earned: None,
+                earned: connection::EarnedNotice::NoneEarned,
             };
         }
         let actor_floor = i32::from(position.floor);
@@ -1066,7 +1095,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             return UseOutcome {
                 disposition: world_object::UseDisposition::TooFar,
                 committed: None,
-                earned: None,
+                earned: connection::EarnedNotice::NoneEarned,
             };
         }
         // #162 5868482467 (shared-lease P1 repair r4121956127): occupancy is every currently
@@ -1095,23 +1124,23 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
                         state: state.as_str().as_bytes().to_vec(),
                         revision,
                     }),
-                    earned: None,
+                    earned: connection::EarnedNotice::NoneEarned,
                 }
             }
             Ok(crate::world_runtime::LocalObjectUseOutcome::NothingToUse) => UseOutcome {
                 disposition: world_object::UseDisposition::NothingToUse,
                 committed: None,
-                earned: None,
+                earned: connection::EarnedNotice::NoneEarned,
             },
             Ok(crate::world_runtime::LocalObjectUseOutcome::Occupied) => UseOutcome {
                 disposition: world_object::UseDisposition::Occupied,
                 committed: None,
-                earned: None,
+                earned: connection::EarnedNotice::NoneEarned,
             },
             Ok(crate::world_runtime::LocalObjectUseOutcome::StaleState) => UseOutcome {
                 disposition: world_object::UseDisposition::StaleState,
                 committed: None,
-                earned: None,
+                earned: connection::EarnedNotice::NoneEarned,
             },
             Ok(crate::world_runtime::LocalObjectUseOutcome::Rejected) | Err(_) => {
                 UseOutcome::rejected()
@@ -2412,6 +2441,39 @@ mod tests {
         );
         assert!(achievement_earned(&catalogue, &notice("absent", &["absent"])).is_none());
         assert!(achievement_earned(&catalogue, &notice("first", &["first", "absent"])).is_none());
+
+        // ACH-NOTIFY-2: the three states. An underivable `Granted` and an `Unknown` read are both
+        // `Unknown` with one operator event each; nothing granted is `NoneEarned` and logs nothing.
+        use crate::durability::reward_claim_mint::GrantNotice;
+        let mut events = Vec::new();
+        let mut log = |line: &str| events.push(line.to_owned());
+        assert_eq!(
+            earned_notice(&catalogue, GrantNotice::None, &mut log),
+            connection::EarnedNotice::NoneEarned
+        );
+        assert_eq!(
+            earned_notice(
+                &catalogue,
+                GrantNotice::Granted(notice("second", &["first", "second"])),
+                &mut log
+            ),
+            connection::EarnedNotice::Earned(earned)
+        );
+        for unknown in [
+            GrantNotice::Granted(notice("first", &["first", "absent"])),
+            GrantNotice::Unknown,
+        ] {
+            assert_eq!(
+                earned_notice(&catalogue, unknown, &mut log),
+                connection::EarnedNotice::Unknown
+            );
+        }
+        assert_eq!(events.len(), 2);
+        assert!(
+            events
+                .iter()
+                .all(|line| line.starts_with("event=achievement_notice_unknown level=error"))
+        );
         Ok(())
     }
 

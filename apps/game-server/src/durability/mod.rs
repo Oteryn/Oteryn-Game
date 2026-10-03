@@ -17,6 +17,7 @@ pub mod character_equipment;
 pub mod character_familiar;
 pub mod character_proficiency;
 pub mod character_progression;
+pub mod character_revision_sequencer;
 pub mod character_stance;
 pub(crate) mod character_wheel;
 pub mod charm_state;

@@ -2,6 +2,8 @@
 from __future__ import annotations
 
 import importlib.util
+import subprocess
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -46,6 +48,48 @@ class DecisionIndexTests(unittest.TestCase):
     def test_documents_disagree_fails(self) -> None:
         with self.assertRaises(bdi.DecisionConflict):
             bdi.merge_ids([], {"a.md": "D292", "b.md": "D293"}, "#1")
+
+    def test_lane_local_subject_does_not_hide_document_conflict(self) -> None:
+        with self.assertRaises(bdi.DecisionConflict):
+            bdi.merge_ids(["MONSTER-D15"], {"a.md": "D286", "b.md": "D287"}, "#1")
+
+    def test_shallow_boundary_is_detected(self) -> None:
+        def run(cwd: Path, *args: str) -> str:
+            return subprocess.run(args, cwd=cwd, check=True, capture_output=True, text=True).stdout.strip()
+
+        with tempfile.TemporaryDirectory() as tmp:
+            src, clone = Path(tmp, "src"), Path(tmp, "clone")
+            src.mkdir()
+            run(src, "git", "init", "-q")
+            for n in (1, 2):
+                Path(src, "f").write_text(str(n))
+                run(src, "git", "add", "f")
+                run(src, "git", "-c", "user.name=t", "-c", "user.email=t@t", "commit", "-q", "-m", str(n))
+            self.assertEqual(bdi.shallow_commits(src), set())
+            run(Path(tmp), "git", "clone", "-q", "--depth", "1", src.as_uri(), "clone")
+            self.assertEqual(bdi.shallow_commits(clone), {run(clone, "git", "rev-parse", "HEAD")})
+
+    def test_shallow_boundary_merge_refuses_unless_indexed(self) -> None:
+        def run(cwd: Path, *args: str) -> str:
+            return subprocess.run(args, cwd=cwd, check=True, capture_output=True, text=True).stdout.strip()
+
+        with tempfile.TemporaryDirectory() as tmp:
+            src, clone = Path(tmp, "src"), Path(tmp, "clone")
+            src.mkdir()
+            run(src, "git", "init", "-q")
+            for n, subject in ((1, "base"), (2, "docs(arch): decision (D9) (#7)")):
+                Path(src, "f").write_text(str(n))
+                run(src, "git", "add", "f")
+                run(src, "git", "-c", "user.name=t", "-c", "user.email=t@t", "commit", "-q", "-m", subject)
+            run(Path(tmp), "git", "clone", "-q", "--depth", "1", src.as_uri(), "clone")
+            saved = bdi.ROOT
+            bdi.ROOT = clone
+            try:
+                with self.assertRaises(bdi.ShallowHistory):
+                    bdi.scan("HEAD")
+                self.assertEqual(bdi.scan("HEAD", known={7}), {})
+            finally:
+                bdi.ROOT = saved
 
 
 if __name__ == "__main__":

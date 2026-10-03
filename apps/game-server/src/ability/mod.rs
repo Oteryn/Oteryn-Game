@@ -88,6 +88,8 @@ impl Display for AbilityError {
 impl Error for AbilityError {}
 
 #[cfg(test)]
+mod charm_desc_fence_gate_tests;
+#[cfg(test)]
 mod tests;
 
 pub(crate) mod field_condition;

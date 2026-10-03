@@ -63,7 +63,7 @@ use crate::content::{
 use crate::durability::item_mint::TypedDefinitionRef;
 use crate::durability::item_transfer::{CurrentCharacterItemFence, ItemTransferError};
 use crate::durability::reward_claim_mint::{
-    GrantedAchievementNotice, RewardClaimAchievement, RewardClaimMintError, RewardClaimMintOutcome,
+    GrantNotice, RewardClaimAchievement, RewardClaimMintError, RewardClaimMintOutcome,
     RewardClaimMintRequest, RewardClaimRefusal,
 };
 use crate::foundation::CommandRef;
@@ -93,8 +93,8 @@ pub(crate) struct ChestUseRequest {
 pub(crate) struct ChestUseOutcome {
     pub(crate) child: ChildOccurrenceRef,
     pub(crate) mint: RewardClaimMintOutcome,
-    /// ACH-NOTIFY-1: the `Granted` grant this commit made, if any; never on a replay.
-    pub(crate) notice: Option<GrantedAchievementNotice>,
+    /// ACH-NOTIFY-1/2: the notice of the grant this commit made; `None` on a replay.
+    pub(crate) notice: GrantNotice,
 }
 
 #[derive(Debug)]
@@ -332,7 +332,13 @@ pub(crate) async fn settle_chest_use(
         .await?;
     let (mint, notice) = session
         .root
-        .commit_reward_claim_mint_noticed(session.authority, session.node, fence, &mut candidate)
+        .commit_reward_claim_mint_noticed(
+            session.authority,
+            session.node,
+            fence,
+            &mut candidate,
+            Some(achievements.len()),
+        )
         .await?;
     Ok(ChestUseOutcome {
         child,
@@ -509,36 +515,48 @@ const CHEST_USE_ATTEMPTS: usize = 3;
 /// is `Committed` with no overlay delta; a claim this Character already took is `NothingToUse`;
 /// every other refusal, a missing fence and an unproven outcome are `Rejected`, and nothing was
 /// written unless DUR-03 committed. Production refuses `NoMainBackpack` until STARTER-BACKPACK.
-/// The third value is the notice of a `Granted` grant this commit made (ACH-NOTIFY-1).
+/// The third value is the notice of the grant this `USE` made (ACH-NOTIFY-2). After an unproven
+/// attempt, a replayed outcome may hide a committed `Granted`, so its notice is `Unknown`.
 pub(crate) async fn use_chest(
     session: &DurabilitySession<'_, '_, '_>,
     content: &CanonicalReferencePlayableContent,
     achievements: &AchievementCatalogue,
     fence: Option<CurrentCharacterItemFence>,
     request: ChestUseRequest,
-) -> (
-    UseDisposition,
-    Option<ChestUseError>,
-    Option<GrantedAchievementNotice>,
-) {
+) -> (UseDisposition, Option<ChestUseError>, GrantNotice) {
     let Some(fence) = fence else {
-        return (UseDisposition::Rejected, None, None);
+        return (UseDisposition::Rejected, None, GrantNotice::None);
     };
     let mut last = None;
     for _ in 0..CHEST_USE_ATTEMPTS {
         let outcome =
             settle_chest_use(session, content, achievements, fence, request.clone()).await;
         match outcome {
-            Ok(settled) => return (UseDisposition::Committed, None, settled.notice),
+            Ok(settled) => {
+                let notice = match settled.mint {
+                    RewardClaimMintOutcome::AlreadyCommitted(_) if last.is_some() => {
+                        GrantNotice::Unknown
+                    }
+                    _ => settled.notice,
+                };
+                return (UseDisposition::Committed, None, notice);
+            }
             Err(ChestUseError::Mint(RewardClaimMintError::Unavailable(error))) => {
                 last = Some(ChestUseError::Mint(RewardClaimMintError::Unavailable(
                     error,
                 )));
             }
-            Err(error) => return (chest_use_disposition(&error), Some(error), None),
+            Err(error) => {
+                return (
+                    chest_use_disposition(&error),
+                    Some(error),
+                    GrantNotice::None,
+                );
+            }
         }
     }
-    (UseDisposition::Rejected, last, None)
+    // Every attempt was unproven: a grant may have committed.
+    (UseDisposition::Rejected, last, GrantNotice::Unknown)
 }
 
 /// The wire disposition of a chest `USE` that did not mint.

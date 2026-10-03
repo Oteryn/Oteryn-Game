@@ -6,7 +6,7 @@
 //! this mutation and replace it infallibly afterwards. This helper alone is not a whole-cast
 //! atomic commit, and must not be used as admission for area, chain, heal or side effects.
 
-use crate::ability::commit::{OwnerCommitError, commit_exact_owner_damage};
+use crate::ability::commit::OwnerCommitError;
 use crate::ability::exact_actor_resolution::{
     ExactActorProposal, ExactActorResolutionError, ResolvedExactActor, resolve_exact_actor,
 };
@@ -27,6 +27,9 @@ pub(crate) enum Error {
     Resolution(ExactActorResolutionError),
     Owner(CarrierError),
     Commit(OwnerCommitError),
+    /// D295: spell Damage reaches the Ability damage bridge only through CHARM-DESC-A2
+    /// (#1635), which adds the live attacker fence.
+    AwaitingLiveAttackerFence,
 }
 
 /// Immutable prepared effect, not an authority capability. Retain this exact value on a
@@ -140,19 +143,23 @@ pub(crate) fn commit(
     attacker: CharacterId,
     lease_generation: u64,
 ) -> Result<OwnerDamageResult, Error> {
+    precheck_commit(runtime, prepared, lease_generation)?;
+    let _ = attacker;
+    // A2 seam (CHARM-DESC-A2, #1635): the physical damage commit is wired here together with
+    // the live attacker fence; until then this owner refuses instead of bypassing the D295 gate.
+    Err(Error::AwaitingLiveAttackerFence)
+}
+
+/// The commit preconditions that hold before and after A2: a real lease and the current caster.
+fn precheck_commit(
+    runtime: &ChannelRuntimeV1,
+    prepared: &PreparedOwnerDamage,
+    lease_generation: u64,
+) -> Result<(), Error> {
     if lease_generation == 0 {
         return Err(Error::InvalidLeaseGeneration);
     }
-    check_current_caster(runtime, prepared.caster, prepared.command)?;
-    commit_exact_owner_damage(
-        &mut runtime.borrow_exact_actor_commit(),
-        &prepared.resolved,
-        &prepared.plan,
-        attacker,
-        lease_generation,
-        prepared.command,
-    )
-    .map_err(Error::Commit)
+    check_current_caster(runtime, prepared.caster, prepared.command)
 }
 
 #[cfg(test)]

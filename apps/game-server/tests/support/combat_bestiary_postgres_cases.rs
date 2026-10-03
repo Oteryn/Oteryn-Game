@@ -20,6 +20,7 @@ use crate::durability::bestiary_progress::BestiaryKillOutcome;
 use crate::durability::character_progression::{
     CharacterProgressionError, ExperienceCommitOutcome,
 };
+use crate::durability::character_revision_sequencer::CharacterRevisionSequencer;
 use crate::foundation::{ChannelId, CombatDeathFixture, ScopeOwnershipGeneration, WorldId};
 use oteryn_simulation_determinism::{ExactI64, RoundingMode};
 
@@ -154,10 +155,14 @@ fn a_credited_death_counts_its_race_once_after_loot_and_xp_and_replays() -> Test
         for attempt in 0..2 {
             fixture.project_death().map_err(debug)?;
             // A replay resends the exact same request (fence revision 1).
+            let mut slot = CharacterRevisionSequencer::new()
+                .acquire(fence(1)?.character_id)
+                .await;
             let outcome = settle_creature_death_rewards_with_bestiary(
                 actor,
                 &mut fixture.borrow_combat_death(),
                 &session,
+                &mut slot,
                 input(RAT_XP)?,
                 bestiary(true, 300_000)?,
             )
@@ -238,10 +243,14 @@ fn a_non_bestiary_or_uncredited_death_counts_nothing_and_never_touches_loot_or_x
                 .map_err(debug)?;
             fixture.project_death().map_err(debug)?;
             let actor = fixture.actor();
+            let mut slot = CharacterRevisionSequencer::new()
+                .acquire(fence(1)?.character_id)
+                .await;
             let outcome = settle_creature_death_rewards_with_bestiary(
                 actor,
                 &mut fixture.borrow_combat_death(),
                 &session,
+                &mut slot,
                 input(RAT_XP)?,
                 bestiary(race, last_damage_before_death_ms)?,
             )
@@ -305,10 +314,14 @@ fn a_failed_xp_award_neither_blocks_the_kill_nor_is_rolled_back_by_it() -> TestR
         let actor = fixture.actor();
         // Past the policy's terminal experience: the award is refused by the
         // calculator after initialization; the revision stays at one.
+        let mut slot = CharacterRevisionSequencer::new()
+            .acquire(fence(1)?.character_id)
+            .await;
         let outcome = settle_creature_death_rewards_with_bestiary(
             actor,
             &mut fixture.borrow_combat_death(),
             &session,
+            &mut slot,
             input(5_000)?,
             bestiary(true, 0)?,
         )

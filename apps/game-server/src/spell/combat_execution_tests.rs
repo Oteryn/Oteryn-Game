@@ -6,6 +6,26 @@ use crate::foundation::{
 };
 use crate::spell::ResolvedEffect;
 
+/// Test-only physical commit through the Ability damage bridge, standing in for the A2 wiring
+/// (#1635) so the owner's replay, lethal and staleness semantics stay qualified meanwhile.
+fn commit(
+    runtime: &mut ChannelRuntimeV1,
+    prepared: &PreparedOwnerDamage,
+    attacker: CharacterId,
+    lease_generation: u64,
+) -> Result<OwnerDamageResult, Error> {
+    precheck_commit(runtime, prepared, lease_generation)?;
+    crate::ability::commit::commit_exact_owner_damage(
+        &mut runtime.borrow_exact_actor_commit(),
+        &prepared.resolved,
+        &prepared.plan,
+        attacker,
+        lease_generation,
+        prepared.command,
+    )
+    .map_err(Error::Commit)
+}
+
 fn uuid(tag: u8) -> [u8; 16] {
     [1, 0x90, 0, 0, 0, tag, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, tag]
 }
@@ -107,6 +127,22 @@ fn prepared(owner: &Owner, magnitude: i64) -> PreparedOwnerDamage {
         &damage(owner, magnitude),
     )
     .expect("current owner preparation")
+}
+
+#[test]
+fn production_commit_refuses_at_the_a2_seam_without_touching_health() {
+    let mut owner = make_owner(0x4f, 1);
+    let prepared = prepared(&owner, 7);
+    assert!(matches!(
+        super::commit(&mut owner.runtime, &prepared, owner.character, 1),
+        Err(Error::AwaitingLiveAttackerFence)
+    ));
+    assert!(matches!(
+        super::commit(&mut owner.runtime, &prepared, owner.character, 0),
+        Err(Error::InvalidLeaseGeneration)
+    ));
+    let first = commit(&mut owner.runtime, &prepared, owner.character, 1).expect("damage");
+    assert_eq!((first.applied, first.health_before), (true, 20));
 }
 
 #[test]

@@ -4,7 +4,7 @@
 task_id: OTV2-20261003-decision-index-d236-d301
 title: "Decision index refresh D236-D301 and allocation-line source"
 mode: TOOLING
-status: validating
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/decision-index-d236-d301
