@@ -154,6 +154,17 @@ class FollowupTests(unittest.TestCase):
             with self.subTest(code=code), patch.object(wheel,'read',side_effect=supplied), self.assertRaisesRegex(ValueError,code):
                 wheel.validate_evidence(self.candidate,(wheel.ROOT/'samples/wheel-candidate.json').read_bytes())
 
+    def test_browser_audit_selections_match_reference_selection(self):
+        original_read=wheel.read
+        original=original_read(wheel.ROOT/'samples/browser-source-audit.json')
+        mutations=[lambda b:b['canary_guiding_reference']['findings']['mystic_repulse_ii'].update(selected_value=40),
+            lambda b:b['architect_ruling']['applied_reference_values'].update(supreme_grade_iii_gold=12500000)]
+        for index,mutate in enumerate(mutations):
+            browser=copy.deepcopy(original);mutate(browser)
+            def supplied(path):return browser if path.name=='browser-source-audit.json' else original_read(path)
+            with self.subTest(index=index), patch.object(wheel,'read',side_effect=supplied), self.assertRaisesRegex(ValueError,'EVIDENCE_BROWSER_SELECTION_DRIFT'):
+                wheel.validate_evidence(self.candidate,(wheel.ROOT/'samples/wheel-candidate.json').read_bytes())
+
     def test_compatible_declaration_cannot_reinterpret_paid_mods(self):
         candidate = self.successor()
         candidate['gems']['basic_mods'][0]['effects'][0]['values_by_vocation']['knight'][0] += 1

@@ -513,14 +513,19 @@
   },
   "architect_ruling": {
     "reference": "https://github.com/Oteryn/Oteryn-Game/issues/162#issuecomment-5933264015",
-    "formula_precedence": "official > English TibiaWiki > pinned Canary; BR/planner corroboration only",
-    "gem_price_cap_application": "DEFERRED_BY_COORDINATOR_STATE_5897165704_PENDING_ARCHITECT_WHEEL_GEM0_AMENDMENT; 225/12.5M are architect reference selections, candidate250/12M unchanged",
+    "formula_precedence": "Historical5933264015: official > EnglishWiki > pinnedCanary. Owner-directed Oct1 authoring repair recognizes Tibia.com planner as an official source; no native architecture admission is inferred.",
+    "gem_price_cap_application": "Cap225 applied; SupremeIII12.5M from#1472 superseded in authoring by direct owner12M+15Greater Fragments correction; architect decision sync pending",
     "task_shop_and_grade_iv_maximum": "OUT_OF_SCOPE_REFERENCE_ONLY; no accepted runtime value",
-    "deferred_reference_values": {
+    "coordinator_state": "https://github.com/Oteryn/Oteryn-Game/issues/162#issuecomment-5897165704",
+    "applied_reference_values": {
+      "revealed_gem_limit": 225,
+      "supreme_grade_iii_gold": 12000000
+    },
+    "historical_deferred_reference_values": {
       "revealed_gem_limit": 225,
       "supreme_grade_iii_gold": 12500000
     },
-    "coordinator_state": "https://github.com/Oteryn/Oteryn-Game/issues/162#issuecomment-5897165704"
+    "historical_state": "Superseded by the Oct1 owner-directed authoring repair; samples/reference-selection.json architect_ruling is the current selection."
   },
   "canary_guiding_reference": {
     "pinned_canary_commit": "99902524e052f37574194466c2949c576e4ab269",
@@ -534,11 +539,13 @@
     },
     "findings": {
       "mystic_repulse_ii": {
-        "selected_value": 40,
-        "source": "English TibiaWiki Conviction r1206174",
+        "selected_value": 60,
+        "source": "Current official Tibia.com planner (owner-directed Oct1 authoring repair); samples/reference-selection.json mystic_repulse_ii",
+        "english_wiki_value": 40,
+        "english_wiki_source": "English TibiaWiki Conviction r1206174",
         "browser_body_sha256": "92616710a5cfa6e9ea43cef56ee7b2721e8d512b462423895e7b114ab0ad1de4",
         "observation": "Mystic Repulse\tCooldown reduced by 6 seconds\t+40% Base damage",
-        "state": "ENGLISH_WIKI_SELECTION_CONFIRMED; BR15_AND_PLANNER60_CORROBORATION_ONLY"
+        "state": "OFFICIAL_PLANNER60_SELECTED; ENGLISH_WIKI40_AND_BR15_RETAINED_AS_CONFLICTS"
       },
       "guiding_presence": {
         "wiki_literal_percent": 33,
