@@ -155,9 +155,9 @@ gives trees, thresholds and perks to content. Its rule 6 requires versioned defi
     the track table's (definition key, revision) and asks, for each gap between the covered
     revisions (sorted), whether any row exists there: at most (covered revisions + 1) index range
     probes, each stopping at its first row, so its cost does not depend on the number of tracks. A compatible activation needs no gate,
-    whether it moves forward or rolls back to a last-known-good revision; a rollback across an
-    incompatible activation is itself an incompatible activation and passes the same gate with its
-    own migration. No definition history is stored. PROF-1 tests: r1 → r2 compatible, a training
+    whether it moves forward or rolls back to a last-known-good revision; rollback follows the
+    content contract, which allows it only between compatible generations, so a compatible restamp
+    in either direction covers it. No definition history is stored. PROF-1 tests: r1 → r2 compatible, a training
     line restamps to r2; rollback to r1, the next training line restamps to r1; a restamp with a
     different shape witness is rejected by the line CHECK.
   - Anything else is incompatible. The content revision declares the migration of the selections

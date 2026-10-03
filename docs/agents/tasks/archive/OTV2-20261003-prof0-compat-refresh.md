@@ -29,10 +29,13 @@ external_repositories: []
 
 ## Outcome
 
-- D283c: a compatible definition revision advances on the track's next `training` or
-  `perk_selection` line; §4.2 CHECKs allow the advance (same key, later revision); compatibility is a
-  writer invariant rechecked by reconcile and `verify_character_integrity`; no refresh cause; progress
-  never lowered.
+- D283c: a compatible definition revision is followed on the track's next `training` or
+  `perk_selection` line, which restamps to the **active** revision in either direction (compatible
+  generations only, so content rollback is covered); the line CHECK requires an equal shape witness
+  (each option's full non-value identity, per level), so verification needs no definition history;
+  no refresh cause; progress never lowered.
+- Release gate: an incompatible activation must cover every source revision still persisted, found
+  by bounded index range probes.
 - P3 follow-ups: "harder later" for BED-0, a decision test for WHEEL-GEM-0A.
 
 ## Validation
@@ -45,7 +48,8 @@ external_repositories: []
 - Codex round 1 on `5f1f4118`: 1 P1 (evicted revisions) and 1 P2, fixed in `ba350e28`.
 - Codex round 2 on `ba350e28`: 1 P1 (dormant tracks across activations) and 1 P2, fixed in `c6bb5d93`.
 - Codex round 3 on `c6bb5d93`: 1 P1 (witness discriminators) and 2 P2, fixed in the next head.
-- Codex round 4 on `7e9cd57e`: 1 P1 (content rollback), fixed in the next head.
+- Codex round 4 on `7e9cd57e`: 1 P1 (content rollback), fixed in `00713d93`.
+- Codex round 5 on `00713d93`: 1 P1 (incompatible-rollback text) and 1 P2, fixed in the next head.
 - Frozen heads are in the #1622 FREEZE_SHA entries.
 
 ## Closeout
