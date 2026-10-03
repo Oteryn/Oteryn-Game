@@ -301,6 +301,122 @@ def test_exact_candidate_reference_scan(module):
     print("Exact candidate reference scan PASS: file, directory, package and canonical-control consumers")
 
 
+def test_documentation_fast_path(module):
+    """Docs-only candidates skip product lanes; anything else stays conservative."""
+    with tempfile.TemporaryDirectory() as directory:
+        root = Path(directory)
+        git(root, "init", "-q")
+        git(root, "config", "user.email", "ci@example.invalid")
+        git(root, "config", "user.name", "CI")
+        metadata = fixture()
+        metadata_root = PurePosixPath(metadata["workspace_root"])
+        for package in metadata["packages"]:
+            relative_manifest = PurePosixPath(package["manifest_path"]).relative_to(metadata_root)
+            manifest = root.joinpath(*relative_manifest.parts)
+            manifest.parent.mkdir(parents=True, exist_ok=True)
+            manifest.write_text("[package]\n", encoding="utf-8")
+        files = {
+            # Doc-comment prose citing documentation directories (the #1636 shape).
+            "apps/game-server/src/lib.rs": (
+                "//! Decision (`docs/architecture/reviews/\n"
+                "//! OTERYN_GAME_EXAMPLE.md`) and docs/architecture/ index.\n"
+                "//! See docs/agents/tasks/archive/ for task records.\n"
+            ),
+            # A quoted directory literal and an exact Markdown file remain consumers.
+            "apps/client/src/lib.rs": (
+                'fn guides() { let _ = std::fs::read_dir("../../docs/guides"); }\n'
+                'const NOTE: &str = include_str!("../../../docs/contracts/NOTE.md");\n'
+            ),
+            "docs/architecture/reviews/OTERYN_GAME_EXAMPLE.md": "# old\n",
+            "docs/guides/old.md": "# old\n",
+            "docs/contracts/NOTE.md": "# old\n",
+        }
+        for control_name in sorted(module.CANONICAL_CONTROL_PATHS):
+            files[control_name] = "name: control\n"
+        for path, text in files.items():
+            target = root / path
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_text(text, encoding="utf-8")
+        git(root, "add", ".")
+        git(root, "commit", "-qm", "base")
+        base = git(root, "rev-parse", "HEAD")
+
+        def candidate(changes):
+            git(root, "checkout", "-q", "--detach", base)
+            for path, text in changes.items():
+                target = root / path
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.write_text(text, encoding="utf-8")
+            git(root, "add", ".")
+            git(root, "commit", "-qm", "candidate")
+            head = git(root, "rev-parse", "HEAD")
+            old_cwd = os.getcwd()
+            os.chdir(root)
+            try:
+                records = module.git_diff_records(base, head)
+                return module.classify(
+                    records,
+                    len(records),
+                    metadata,
+                    candidate_modes_verified=module.candidate_modes_safe(head),
+                    candidate_sha=head,
+                )
+            finally:
+                os.chdir(old_cwd)
+
+        docs_only = {
+            "docs/architecture/reviews/OTERYN_GAME_NEW_DECISION.md": "# decision\n",
+            "docs/agents/tasks/archive/OTV2-example.md": "# task\n",
+            "README.md": "# readme\n",
+        }
+        result = candidate(docs_only)
+        assert result["rust"] is False and result["windows"] is False, result
+        assert result["reason"] == "unconsumed-auxiliary-inputs", result
+
+        # Mixed documentation and code never takes the documentation skip.
+        result = candidate(docs_only | {"apps/game-server/src/lib.rs": "//! changed\n"})
+        assert result["rust"] is True and result["reason"] != "unconsumed-auxiliary-inputs", result
+        result = candidate(docs_only | {"apps/client/src/main.rs": "fn main() {}\n"})
+        assert result["rust"] is True and result["windows"] is True, result
+
+        # Canonical workflow, composite action and classifier changes run FULL.
+        for control in (
+            ".github/workflows/merge-group-gate.yml",
+            ".github/workflows/merge-gate.yml",
+            ".github/actions/setup/action.yml",
+            "tools/repository/classify_pr_test_lanes.py",
+        ):
+            result = candidate(docs_only | {control: "changed\n"})
+            assert result["rust"] is True and result["windows"] is True, (control, result)
+
+        # Unknown roots stay FULL even next to documentation.
+        result = candidate(docs_only | {"unowned/input.bin": "x\n"})
+        assert result["rust"] is True and result["windows"] is True, result
+        assert result["reason"] == "unmodelled-input", result
+
+        # Documentation a package really consumes keeps its consumer lanes.
+        for consumed in ("docs/guides/new.md", "docs/contracts/NOTE.md"):
+            result = candidate({consumed: "# changed\n"})
+            assert result["rust"] is True and result["windows"] is True, (consumed, result)
+
+    for path in (
+        "docs/architecture/reviews/X.md", "docs/agents/tasks/archive/T.md",
+        "README.md", "CONTRIBUTING.md",
+    ):
+        assert module.documentation_path(path), path
+    for path in (
+        "docs/agents/evidence/E.md", "docs/migration/M.md", "docs/AGENTS.md",
+        "AGENTS.md", "docs/contracts/R.json", ".github/workflows/x.md",
+        ".github/pull_request_template.md", "apps/client/README.md", "tools/x/README.md",
+    ):
+        assert not module.documentation_path(path), path
+    assert module.quoted_directory_reference(b'read_dir("../docs/guides")', "docs/guides")
+    assert module.quoted_directory_reference(b"'docs/guides/'", "docs/guides")
+    assert not module.quoted_directory_reference(b"//! see docs/guides/\n", "docs/guides")
+    assert not module.quoted_directory_reference(b"`docs/guides`", "docs/guides")
+    print("Documentation fast path PASS: docs-only skip, mixed/control/unknown/consumed FULL")
+
+
 def test_candidate_modes(module):
     with tempfile.TemporaryDirectory() as directory:
         root = Path(directory)
@@ -610,6 +726,7 @@ def main() -> int:
     test_repository_tool_dependencies(module)
     test_routing_matrix(module)
     test_exact_candidate_reference_scan(module)
+    test_documentation_fast_path(module)
     test_candidate_modes(module)
     test_large_pr_fallback(module)
     test_aggregate()
