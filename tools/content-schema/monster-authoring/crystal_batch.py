@@ -29,9 +29,10 @@ READ = '2026-09-28'
 MONSTER_ROOT = 'data-global/monster'
 MONSTER_DIR = MONSTER_ROOT + '/summer_update_2026'
 # Ordinary client 15.30 monsters that Canary lacks and CrystalServer keeps outside MONSTER_DIR (paths under MONSTER_ROOT). An
-# explicit allow-list, not a directory widening: the 28 `real monster` rows with a `crystal_other_dir` of
-# samples/wiki-only-candidates-2026-09-30.json (test_crystal_batch.py compares them). Quest, event, raid and summon-like
-# creatures of the same directories stay out until they are decided one by one.
+# explicit allow-list, not a directory widening: the original 28 ordinary candidates plus 18 ordinary creatures
+# reclassified from dated canonical Creature pages (25-page batch, 2026-10-01). The sample retains a real-monster
+# classification for Imperial confirmed through its accepted exact client-staticdata identity route.
+# Quest, event, boss and summon-like source-data candidates retain their separate admission/mechanics boundaries.
 EXTRA_MONSTERS = (
     'inkborn/bluebeak', 'inkborn/bramble_wyrmling', 'inkborn/cinder_wyrmling', 'inkborn/crusader', 'inkborn/hawk_hopper',
     'inkborn/headwalker', 'inkborn/ink_splash', 'inkborn/lion_hydra', 'inkborn/shell_drake',
@@ -42,6 +43,16 @@ EXTRA_MONSTERS = (
     'winter_update_2025/night_harpy', 'winter_update_2025/raubritter_chastener', 'winter_update_2025/raubritter_marksman',
     'winter_update_2025/raubritter_skirmisher', 'winter_update_2025/roaming_dread', 'winter_update_2025/stag',
     'winter_update_2025/walking_dread',
+    'winter_update_2025/imperial',
+    'quests/cults_of_tibia/goldhanded_cultist_bride',
+    'newhaven_update_2025/corrupted_skeleton', 'newhaven_update_2025/corrupted_ghost',
+    'targuna/hidden_lizard_temple/lizard_henchman', 'targuna/hidden_lizard_temple/lizard_swordmaster',
+    'targuna/hidden_lizard_temple/lizard_magician', 'targuna/hidden_lizard_temple/lizard_executioner',
+    'targuna/crimson_court/infernoid_blob', 'targuna/crimson_court/infernoid_hound',
+    'targuna/crimson_court/infernoid_soul', 'targuna/crimson_court/infernoid_spiritual',
+    'targuna/aragonia/pirate_navigator', 'targuna/aragonia/pirate_gunner',
+    'targuna/aragonia/pirate_quartermaster', 'targuna/aragonia/pirate_cook',
+    'targuna/aragonia/sea_captain', 'targuna/hidden_lizard_temple/lizard_commander',
 )
 WIKI = ROOT / 'samples' / 'wiki-population-crystal-00ce02a5-2026-09-27.json'
 SHARED_SOURCES = ('data/items/items.xml', 'data/items/appearances.dat')

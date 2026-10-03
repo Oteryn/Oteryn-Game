@@ -58,8 +58,9 @@ def span(maximum):
 
 # E2: an anchor's location in Canary map coordinates (the project frame on admission): a point, or boxes of whole
 # tiles, each on one floor.
+BOX = obj({'x': span(65535), 'y': span(65535), 'floor': integer(0, 15)}, ('x', 'y', 'floor'))
 LOCATION = {'oneOf': [obj({'x': integer(0, 65535), 'y': integer(0, 65535), 'floor': integer(0, 15)}, ('x', 'y', 'floor')),
-                      obj({'boxes': array(obj({'x': span(65535), 'y': span(65535), 'floor': integer(0, 15)}, ('x', 'y', 'floor')), 1)},
+                      obj({'boxes': array(BOX, 1), 'minus': array(BOX, 1)},
                           ('boxes',))]}
 
 
@@ -73,7 +74,8 @@ d = {
     'ItemRef': obj({'family': const('Item'), 'key': KEY, 'revision': TEXT}, ('family', 'key', 'revision')),
     'AbilityRef': obj({'family': const('Ability'), 'key': KEY, 'revision': TEXT}, ('family', 'key', 'revision')),
     'subject': {'oneOf': [obj({'role': NAME}, ('role',)), obj({'killer': const(True)}, ('killer',)),
-                          obj({'spawned': const(True)}, ('spawned',))]},
+                          obj({'spawned': const(True)}, ('spawned',)), obj({'picked': const(True)}, ('picked',))]},
+    'candidate': obj({'candidate': const(True)}, ('candidate',)),
     'health': {'oneOf': [enum('full', 'keep_percent', 'keep_absolute', 'remembered'), obj({'percent': integer(1, 100)}, ('percent',))]},
     # D34: the base vocation of a player (a promoted vocation counts as its base).
     'baseVocation': enum('knight', 'paladin', 'sorcerer', 'druid', 'monk'),
@@ -97,12 +99,12 @@ d['trigger'] = {'oneOf': [
     kinded('health_crossed', {'role': NAME, 'percent': PERCENT, 'health': integer(1)}, ('role',)),
     kinded('creature_spawned', {'role': NAME}, ('role',)),
     kinded('ability_cast', {'role': NAME, 'ability': use('AbilityRef')}, ('role', 'ability')),
-    kinded('damage_taken', {'role': NAME, 'source': enum('player', 'non_player', 'any')}, ('role', 'source')),
+    kinded('damage_taken', {'role': NAME, 'source': enum('player', 'non_player', 'any'), 'base_vocation': use('baseVocation')}, ('role', 'source')),
     kinded('heal_received', {'role': NAME, 'source': enum('player', 'non_player', 'any')}, ('role', 'source')),
     # D34: a fixed amount, or a percent of the creature's maximum health (the resolved definition's, after wiki adoption).
     {**kinded('damage_accumulated', {'role': NAME, 'amount': integer(1), 'percent': PERCENT}, ('role',)),
      'oneOf': [{'required': ['amount']}, {'required': ['percent']}]},
-    kinded('timer_elapsed', {'timer': NAME}, ('timer',)),
+    kinded('timer_elapsed', {'timer': NAME, 'each': NAME}, ('timer',)),
     kinded('counter_reached', {'counter': NAME, 'value': {'type': 'integer'}}, ('counter', 'value')),
     kinded('area_entered', {'anchor': NAME, 'who': enum('player', 'role'), 'role': NAME}, ('anchor', 'who')),
     kinded('area_left', {'anchor': NAME, 'who': enum('player', 'role'), 'role': NAME}, ('anchor', 'who')),
@@ -114,6 +116,11 @@ d['trigger'] = {'oneOf': [
      'oneOf': [{'required': ['item']}, {'required': ['corpse_of']}]},
     kinded('encounter_started'), kinded('encounter_reset')]}
 
+# SW-3: only these candidate-scoped conditions filter the players before a farthest pick.
+d['candidateCondition'] = {'oneOf': [
+    kinded('killer_progress', {'subject': use('candidate'), 'progress': KEY, 'op': OP,
+                               'value': {'type': ['integer', 'boolean']}}, ('subject', 'progress', 'op', 'value')),
+    kinded('in_anchor', {'subject': use('candidate'), 'anchor': NAME}, ('subject', 'anchor'))]}
 d['condition'] = {'oneOf': [
     kinded('chance_percent', {'value': {'type': 'number', 'exclusiveMinimum': 0, 'maximum': 100}}, ('value',)),
     kinded('chance_from_amount', {'per': integer(1)}, ('per',)),
@@ -123,11 +130,16 @@ d['condition'] = {'oneOf': [
                                                                      'dazzled', 'cursed'), 1, True), 'present': BOOL},
            ('role', 'conditions', 'present')),
     kinded('flag', {'flag': NAME, 'value': BOOL}, ('flag', 'value')),
-    kinded('creature_present', {'role': NAME, 'anchor': NAME, 'near': obj({'role': NAME, 'radius': integer(0), 'shape': enum('square', 'circle')}, ('role', 'radius')),
-                                 'present': BOOL}, ('role', 'present')),
+    {**kinded('creature_present', {'role': NAME, 'players': const(True), 'anchor': NAME,
+                                 'near': {**obj({'role': NAME, 'triggering': const(True), 'radius': integer(0),
+                                                'shape': enum('square', 'circle')}, ('radius',)),
+                                          'oneOf': [{'required': ['role']}, {'required': ['triggering']}]},
+                                 'where': array(use('candidateCondition'), 1), 'pick': enum('farthest'),
+                                 'present': BOOL}, ('present',)),
+     'oneOf': [{'required': ['role']}, {'required': ['players']}]},
     kinded('world_state', {'state': KEY, 'op': OP, 'value': {'type': ['integer', 'boolean']}}, ('state', 'op', 'value')),
-    kinded('in_anchor', {'subject': {'oneOf': [use('subject'), use('triggering')]}, 'anchor': NAME}, ('subject', 'anchor')),
-    kinded('killer_is_player'),
+    kinded('in_anchor', {'subject': {'oneOf': [use('subject'), use('triggering'), use('candidate')]}, 'anchor': NAME}, ('subject', 'anchor')),
+    kinded('killer_is_player', {'value': BOOL}),
     kinded('has_master', {'role': NAME, 'value': BOOL}, ('role', 'value')),
     kinded('summon_count', {'role': NAME, 'op': OP, 'value': integer(0)}, ('role', 'op', 'value')),
     kinded('health_percent', {'role': NAME, 'op': OP, 'value': {'type': 'number', 'minimum': 0, 'maximum': 100}},
@@ -135,7 +147,8 @@ d['condition'] = {'oneOf': [
     kinded('attacker_wears', {'item': use('ItemRef'), 'wears': BOOL,
                                'slot': enum('head', 'necklace', 'armor', 'right_hand', 'left_hand', 'legs', 'feet', 'ring', 'ammo')},
            ('item', 'wears')),
-    kinded('killer_progress', {'progress': KEY, 'op': OP, 'value': {'type': ['integer', 'boolean']}},
+    kinded('killer_progress', {'subject': {'oneOf': [use('subject'), use('candidate')]},
+                              'progress': KEY, 'op': OP, 'value': {'type': ['integer', 'boolean']}},
            ('progress', 'op', 'value'))]}
 
 d['action'] = {'oneOf': [
@@ -162,10 +175,13 @@ d['action'] = {'oneOf': [
     kinded('reflect_damage', {'role': NAME, 'percent': integer(1, 100), 'damage_types': array(NAME, 0, True)}, ('role', 'percent')),
     kinded('convert_damage_to_heal', {'role': NAME, 'damage_types': array(NAME, 0, True), 'component': COMPONENT}, ('role',)),
     kinded('teleport', {'who': {'oneOf': [obj({'role': NAME}, ('role',)), obj({'players_in': NAME}, ('players_in',)), use('triggering')]},
-                        'to': NAME}, ('who', 'to')),
+                        'to': {'oneOf': [NAME, obj({'picked_position': const(True)}, ('picked_position',))]},
+                        'after_ms': integer(1), 'picked_cooldown_ms': integer(1), 'warning_effect': TEXT,
+                        'say': TEXT, 'arrival_effect': TEXT}, ('who', 'to')),
     # CW2-3: `triggering` removes the item that fired a `stepped_on` rule, in place of `item` and a place.
     {**kinded('map_item', {'operation': enum('create', 'transform', 'remove'), 'item': use('ItemRef'), 'triggering': const(True),
-                           'into': use('ItemRef'), 'anchor': NAME, 'at': const('death_position'), 'revert_after_ms': integer(1),
+                           'into': use('ItemRef'), 'anchor': NAME, 'at': enum('death_position', 'subject_position'),
+                           'unless_present': BOOL, 'revert_after_ms': integer(1),
                            'destination': NAME, 'revert_destination': NAME, 'effect': TEXT, 'interaction': KEY}, ('operation',)),
      'oneOf': [{'required': ['item']}, {'required': ['triggering']}]},
     kinded('counter', {'counter': NAME, 'operation': enum('set', 'add'), 'value': {'type': 'integer'}}, ('counter', 'operation', 'value')),
@@ -210,7 +226,7 @@ schema = obj({
     'reset_after_ms': integer(1)},
     ('identity', 'display_name', 'scope', 'participants', 'anchors', 'phases', 'state', 'rules', 'outcomes'),
     **{'$schema': 'https://json-schema.org/draft/2020-12/schema', '$id': 'oteryn:encounter-authoring/v1', '$defs': d,
-       'description': 'Oteryn Encounter authoring format v1 (CANDIDATE, D20/D26-D31, D34; CW2-1..4 accepted in section 12).'})
+       'description': 'Oteryn Encounter authoring format v1 (CANDIDATE, D20/D26-D31, D34; CW2-1..4 and SW-3..6 accepted in sections 12-13).'})
 
 
 if __name__ == '__main__':

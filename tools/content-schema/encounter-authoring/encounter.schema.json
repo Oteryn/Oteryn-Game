@@ -132,6 +132,46 @@
                       ]
                     },
                     "minItems": 1
+                  },
+                  "minus": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "x": {
+                          "type": "array",
+                          "items": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 65535
+                          },
+                          "minItems": 2,
+                          "maxItems": 2
+                        },
+                        "y": {
+                          "type": "array",
+                          "items": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 65535
+                          },
+                          "minItems": 2,
+                          "maxItems": 2
+                        },
+                        "floor": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 15
+                        }
+                      },
+                      "required": [
+                        "x",
+                        "y",
+                        "floor"
+                      ]
+                    },
+                    "minItems": 1
                   }
                 },
                 "required": [
@@ -504,7 +544,31 @@
           "required": [
             "spawned"
           ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "picked": {
+              "const": true
+            }
+          },
+          "required": [
+            "picked"
+          ]
         }
+      ]
+    },
+    "candidate": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "candidate": {
+          "const": true
+        }
+      },
+      "required": [
+        "candidate"
       ]
     },
     "health": {
@@ -767,6 +831,9 @@
                 "non_player",
                 "any"
               ]
+            },
+            "base_vocation": {
+              "$ref": "#/$defs/baseVocation"
             }
           },
           "required": [
@@ -846,6 +913,10 @@
               "const": "timer_elapsed"
             },
             "timer": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_]*$"
+            },
+            "each": {
               "type": "string",
               "pattern": "^[a-z][a-z0-9_]*$"
             }
@@ -1035,6 +1106,70 @@
         }
       ]
     },
+    "candidateCondition": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "killer_progress"
+            },
+            "subject": {
+              "$ref": "#/$defs/candidate"
+            },
+            "progress": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_.-]*:[a-z0-9_./-]+$"
+            },
+            "op": {
+              "enum": [
+                "==",
+                "!=",
+                "<",
+                "<=",
+                ">",
+                ">="
+              ]
+            },
+            "value": {
+              "type": [
+                "integer",
+                "boolean"
+              ]
+            }
+          },
+          "required": [
+            "kind",
+            "subject",
+            "progress",
+            "op",
+            "value"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "in_anchor"
+            },
+            "subject": {
+              "$ref": "#/$defs/candidate"
+            },
+            "anchor": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_]*$"
+            }
+          },
+          "required": [
+            "kind",
+            "subject",
+            "anchor"
+          ]
+        }
+      ]
+    },
     "condition": {
       "oneOf": [
         {
@@ -1175,6 +1310,9 @@
               "type": "string",
               "pattern": "^[a-z][a-z0-9_]*$"
             },
+            "players": {
+              "const": true
+            },
             "anchor": {
               "type": "string",
               "pattern": "^[a-z][a-z0-9_]*$"
@@ -1186,6 +1324,9 @@
                 "role": {
                   "type": "string",
                   "pattern": "^[a-z][a-z0-9_]*$"
+                },
+                "triggering": {
+                  "const": true
                 },
                 "radius": {
                   "type": "integer",
@@ -1199,8 +1340,31 @@
                 }
               },
               "required": [
-                "role",
                 "radius"
+              ],
+              "oneOf": [
+                {
+                  "required": [
+                    "role"
+                  ]
+                },
+                {
+                  "required": [
+                    "triggering"
+                  ]
+                }
+              ]
+            },
+            "where": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/candidateCondition"
+              },
+              "minItems": 1
+            },
+            "pick": {
+              "enum": [
+                "farthest"
               ]
             },
             "present": {
@@ -1209,8 +1373,19 @@
           },
           "required": [
             "kind",
-            "role",
             "present"
+          ],
+          "oneOf": [
+            {
+              "required": [
+                "role"
+              ]
+            },
+            {
+              "required": [
+                "players"
+              ]
+            }
           ]
         },
         {
@@ -1262,6 +1437,9 @@
                 },
                 {
                   "$ref": "#/$defs/triggering"
+                },
+                {
+                  "$ref": "#/$defs/candidate"
                 }
               ]
             },
@@ -1282,6 +1460,9 @@
           "properties": {
             "kind": {
               "const": "killer_is_player"
+            },
+            "value": {
+              "type": "boolean"
             }
           },
           "required": [
@@ -1415,6 +1596,16 @@
           "properties": {
             "kind": {
               "const": "killer_progress"
+            },
+            "subject": {
+              "oneOf": [
+                {
+                  "$ref": "#/$defs/subject"
+                },
+                {
+                  "$ref": "#/$defs/candidate"
+                }
+              ]
             },
             "progress": {
               "type": "string",
@@ -1954,8 +2145,44 @@
               ]
             },
             "to": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "pattern": "^[a-z][a-z0-9_]*$"
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "picked_position": {
+                      "const": true
+                    }
+                  },
+                  "required": [
+                    "picked_position"
+                  ]
+                }
+              ]
+            },
+            "after_ms": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "picked_cooldown_ms": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "warning_effect": {
               "type": "string",
-              "pattern": "^[a-z][a-z0-9_]*$"
+              "minLength": 1
+            },
+            "say": {
+              "type": "string",
+              "minLength": 1
+            },
+            "arrival_effect": {
+              "type": "string",
+              "minLength": 1
             }
           },
           "required": [
@@ -1992,7 +2219,13 @@
               "pattern": "^[a-z][a-z0-9_]*$"
             },
             "at": {
-              "const": "death_position"
+              "enum": [
+                "death_position",
+                "subject_position"
+              ]
+            },
+            "unless_present": {
+              "type": "boolean"
             },
             "revert_after_ms": {
               "type": "integer",
@@ -2449,5 +2682,5 @@
       ]
     }
   },
-  "description": "Oteryn Encounter authoring format v1 (CANDIDATE, D20/D26-D31, D34; CW2-1..4 accepted in section 12)."
+  "description": "Oteryn Encounter authoring format v1 (CANDIDATE, D20/D26-D31, D34; CW2-1..4 and SW-3..6 accepted in sections 12-13)."
 }

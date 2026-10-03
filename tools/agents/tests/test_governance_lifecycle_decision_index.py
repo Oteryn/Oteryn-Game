@@ -69,6 +69,28 @@ class DecisionIndexTests(unittest.TestCase):
             run(Path(tmp), "git", "clone", "-q", "--depth", "1", src.as_uri(), "clone")
             self.assertEqual(bdi.shallow_commits(clone), {run(clone, "git", "rev-parse", "HEAD")})
 
+    def test_shallow_boundary_merge_refuses_unless_indexed(self) -> None:
+        def run(cwd: Path, *args: str) -> str:
+            return subprocess.run(args, cwd=cwd, check=True, capture_output=True, text=True).stdout.strip()
+
+        with tempfile.TemporaryDirectory() as tmp:
+            src, clone = Path(tmp, "src"), Path(tmp, "clone")
+            src.mkdir()
+            run(src, "git", "init", "-q")
+            for n, subject in ((1, "base"), (2, "docs(arch): decision (D9) (#7)")):
+                Path(src, "f").write_text(str(n))
+                run(src, "git", "add", "f")
+                run(src, "git", "-c", "user.name=t", "-c", "user.email=t@t", "commit", "-q", "-m", subject)
+            run(Path(tmp), "git", "clone", "-q", "--depth", "1", src.as_uri(), "clone")
+            saved = bdi.ROOT
+            bdi.ROOT = clone
+            try:
+                with self.assertRaises(bdi.ShallowHistory):
+                    bdi.scan("HEAD")
+                self.assertEqual(bdi.scan("HEAD", known={7}), {})
+            finally:
+                bdi.ROOT = saved
+
 
 if __name__ == "__main__":
     unittest.main()

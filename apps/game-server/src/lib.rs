@@ -5,6 +5,10 @@
 
 extern crate self as oteryn_game_server;
 
+// Offline monster laboratory: reuse native components without enabling production AI dispatch.
+#[cfg(test)]
+mod monster_lab;
+
 #[allow(dead_code)]
 #[allow(clippy::duplicate_mod)] // Foundation's standalone tests include Ability source.
 mod ability;

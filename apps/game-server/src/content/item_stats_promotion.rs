@@ -6,15 +6,25 @@
 //! Item keys (A12). The materializer applies it once, after [`super::item_identity`]'s key
 //! switch: each row sets its field to the wiki value, replacing whatever an earlier promotion
 //! put there. A field the wiki is silent on is left as it is.
+//! Equipment rows contain one source-qualified pattern; absent restrictions remain Unknown.
+//! They do not grant materialization or a legal destination, and the main backpack retains
+//! its separately qualified starter admission. Declared charges and duration do not infer
+//! consumption, decay, activation, materialization or any other temporal behavior.
+//! Resistance percentages are signed percentage points; they do not activate Combat behavior.
 //!
 //! Every row is decoded strictly (exact shape, bounds and closed enums), must name an existing
 //! Item record, and a field may appear once per item; anything else fails closed.
 
 use super::{
-    ProjectReferenceRecord, ProjectV2Draft, ReferenceCells, ReferenceElementalAttack,
-    ReferenceItemField, ReferenceItemImbuement, ReferenceItemPhysical, ReferenceItemProtection,
-    ReferenceItemSemantics, ReferenceItemWeapon, ReferenceSignedPoints, ReferenceWeaponElement,
-    ReferenceWeaponType, world_project_sha256,
+    ProjectReferenceRecord, ProjectV2Draft, REFERENCE_ITEM_MAX_MODIFIERS,
+    REFERENCE_ITEM_MAX_RESISTANCES, ReferenceCells, ReferenceElementalAttack,
+    ReferenceEquipmentPattern, ReferenceEquipmentSlot, ReferenceItemCharges,
+    ReferenceItemEquipment, ReferenceItemField, ReferenceItemImbuement, ReferenceItemPhysical,
+    ReferenceItemProtection, ReferenceItemSemantics, ReferenceItemSkillModifiers,
+    ReferenceItemTemporal, ReferenceItemWeapon, ReferenceMilliseconds, ReferenceModifierBinding,
+    ReferenceModifierParameter, ReferenceRationalPercent, ReferenceResistance,
+    ReferenceResistanceKind, ReferenceSignedPoints, ReferenceSkillModifierKind,
+    ReferenceWeaponElement, ReferenceWeaponType, world_project_sha256,
 };
 use serde::Deserialize;
 use std::collections::{BTreeMap, BTreeSet};
@@ -23,9 +33,9 @@ use std::collections::{BTreeMap, BTreeSet};
 pub const ITEM_STATS_PROMOTION_V2_PACKET: &[u8] =
     include_bytes!("../../../../docs/agents/evidence/OTV2-20260930-item-stats-promotion-v2.json");
 pub const ITEM_STATS_PROMOTION_V2_PACKET_SHA256: &str =
-    "89402ad7af593f2277008c1f0175dbcc3bfc9133cc330e90689cdfb1a92a521c";
-pub const ITEM_STATS_PROMOTION_V2_FIELD_COUNT: usize = 10_502;
-pub const ITEM_STATS_PROMOTION_V2_ITEM_COUNT: usize = 6_524;
+    "aeed35542222289537e3eafe0dbf279b8f17d09ba3a210a3818e194642f7e1fc";
+pub const ITEM_STATS_PROMOTION_V2_FIELD_COUNT: usize = 13_298;
+pub const ITEM_STATS_PROMOTION_V2_ITEM_COUNT: usize = 6_533;
 const SCHEMA: &str = "OTERYN_ITEM_STATS_PROMOTION/v2";
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -99,12 +109,24 @@ struct Row {
     deny_unknown_fields
 )]
 enum TypedValue {
+    EquipmentPatterns(Vec<ReferenceEquipmentPattern>),
     SignedPoints(i32),
     Cells(u16),
     WeaponType(ReferenceWeaponType),
     ElementalAttacks(Vec<ElementalAttack>),
     CountU8(u8),
+    CountU32(u32),
+    DurationMs(u64),
+    Resistances(Vec<DeclaredResistance>),
+    Modifiers(Vec<ReferenceModifierBinding>),
     WeightCentiOz(u32),
+}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct DeclaredResistance {
+    kind: ReferenceResistanceKind,
+    percent: ReferenceRationalPercent,
 }
 
 #[derive(Deserialize)]
@@ -131,7 +153,7 @@ pub fn apply_item_stats_promotion_v2(
     Ok(applied)
 }
 
-fn apply_packet(
+pub(super) fn apply_packet(
     draft: &mut ProjectV2Draft,
     bytes: &[u8],
 ) -> Result<ItemStatsPromotion, ItemStatsPromotionError> {
@@ -172,6 +194,25 @@ fn apply_rows<'a>(
         return Err(ItemStatsPromotionError::Counts);
     }
 
+    // Validate every binding and row against a private candidate before any mutation.
+    // This also makes a late conflict or missing Item key reject the whole packet.
+    let items = items.collect::<Vec<_>>();
+    let mut unmatched = by_item.clone();
+    for (key, semantics) in &items {
+        if let Some(rows) = unmatched.remove(key) {
+            let mut candidate = (**semantics).clone();
+            for row in rows {
+                set_field(&mut candidate, row)?;
+            }
+        }
+    }
+    if let Some((item_key, rows)) = unmatched.into_iter().next() {
+        return Err(ItemStatsPromotionError::Row {
+            item_key: item_key.to_owned(),
+            field_path: rows[0].field_path.clone(),
+            reason: "no Item record with this key",
+        });
+    }
     let mut applied = ItemStatsPromotion {
         fields: 0,
         items: 0,
@@ -214,12 +255,45 @@ fn set<T: PartialEq>(field: &mut ReferenceItemField<T>, value: T) -> bool {
     replaced
 }
 
+// Declared count/time values only fill unknowns or repeat the same known value.
+// A blocked leaf must not become known just because its containing group is known.
+fn set_declared<T: PartialEq>(
+    field: &mut ReferenceItemField<T>,
+    value: T,
+    row: &Row,
+) -> Result<bool, ItemStatsPromotionError> {
+    match field {
+        ReferenceItemField::Unknown => {
+            *field = ReferenceItemField::Known(value);
+            Ok(false)
+        }
+        ReferenceItemField::Known(old) if *old == value => Ok(false),
+        _ => Err(row_error(
+            row,
+            "declared field is blocked or has a conflicting known value",
+        )),
+    }
+}
+
 fn set_field(
     semantics: &mut ReferenceItemSemantics,
     row: &Row,
 ) -> Result<bool, ItemStatsPromotionError> {
     let wrong = || row_error(row, "typed value does not fit the field");
     Ok(match (row.field_path.as_str(), &row.typed_value) {
+        ("equipment.patterns", TypedValue::EquipmentPatterns(patterns)) => {
+            if patterns.len() != 1 || !qualified_equipment_pattern(&patterns[0]) {
+                return Err(wrong());
+            }
+            let equipment = group(
+                &mut semantics.equipment,
+                || ReferenceItemEquipment {
+                    patterns: ReferenceItemField::Unknown,
+                },
+                row,
+            )?;
+            set(&mut equipment.patterns, patterns.clone())
+        }
         ("weapon.attack", TypedValue::SignedPoints(points)) => set(
             &mut weapon(semantics, row)?.attack,
             ReferenceSignedPoints(*points),
@@ -265,8 +339,152 @@ fn set_field(
         ("physical.weight", TypedValue::WeightCentiOz(weight)) => {
             set(&mut physical(semantics, row)?.weight, *weight)
         }
+        ("charges.count", TypedValue::CountU32(count)) => {
+            let charges = group(
+                &mut semantics.charges,
+                || ReferenceItemCharges {
+                    count: ReferenceItemField::Unknown,
+                },
+                row,
+            )?;
+            set_declared(&mut charges.count, *count, row)?
+        }
+        ("temporal.duration", TypedValue::DurationMs(milliseconds)) => {
+            let temporal = group(
+                &mut semantics.temporal,
+                || ReferenceItemTemporal {
+                    consumption_mode: ReferenceItemField::Unknown,
+                    duration: ReferenceItemField::Unknown,
+                    stop_duration: ReferenceItemField::Unknown,
+                    decay_target: ReferenceItemField::Unknown,
+                },
+                row,
+            )?;
+            set_declared(
+                &mut temporal.duration,
+                ReferenceMilliseconds(*milliseconds),
+                row,
+            )?
+        }
+        ("skill_modifiers.modifiers", TypedValue::Modifiers(entries)) => {
+            use ReferenceItemField::{Known, Unknown};
+            use ReferenceModifierParameter::{Element, RationalPercent, SignedPoints};
+            use ReferenceSkillModifierKind as Kind;
+            if entries.is_empty()
+                || entries.len() > REFERENCE_ITEM_MAX_MODIFIERS
+                || entries.windows(2).any(|pair| pair[0].kind >= pair[1].kind)
+                || entries.iter().any(|entry| {
+                    let parameter = match (entry.kind, &entry.parameter) {
+                        (Kind::Mantra, Known(SignedPoints(points))) => {
+                            i16::try_from(points.0).is_ok()
+                        }
+                        (Kind::ElementalBond, Known(Element(value))) => matches!(
+                            value,
+                            super::ReferenceModifierElement::Earth
+                                | super::ReferenceModifierElement::Energy
+                        ),
+                        (
+                            Kind::DeathMagicLevelPoints
+                            | Kind::EarthMagicLevelPoints
+                            | Kind::EnergyMagicLevelPoints
+                            | Kind::FireMagicLevelPoints
+                            | Kind::HealingMagicLevelPoints
+                            | Kind::HolyMagicLevelPoints
+                            | Kind::IceMagicLevelPoints
+                            | Kind::MagicLevelPoints
+                            | Kind::SkillAxe
+                            | Kind::SkillClub
+                            | Kind::SkillDistance
+                            | Kind::SkillFist
+                            | Kind::SkillShield
+                            | Kind::SkillSword
+                            | Kind::Speed,
+                            Known(SignedPoints(_)),
+                        ) => true,
+                        (
+                            Kind::CriticalHitChance
+                            | Kind::CriticalHitDamage
+                            | Kind::LifeLeechAmount
+                            | Kind::LifeLeechChance
+                            | Kind::ManaLeechAmount
+                            | Kind::ManaLeechChance,
+                            Known(RationalPercent(value)),
+                        ) => {
+                            value.validate().is_ok()
+                                && value.numerator >= 0
+                                && i128::from(value.numerator)
+                                    <= 100 * i128::from(value.denominator)
+                        }
+                        _ => false,
+                    };
+                    !parameter
+                        || !matches!(&entry.target_domain, Unknown)
+                        || !matches!(&entry.evaluation_phase, Unknown)
+                        || !matches!(&entry.priority, Unknown)
+                })
+            {
+                return Err(wrong());
+            }
+            let modifiers = group(
+                &mut semantics.skill_modifiers,
+                || ReferenceItemSkillModifiers { modifiers: Unknown },
+                row,
+            )?;
+            set_declared(&mut modifiers.modifiers, entries.clone(), row)?
+        }
+        ("protection.resistances", TypedValue::Resistances(entries)) => {
+            if entries.is_empty()
+                || entries.len() > REFERENCE_ITEM_MAX_RESISTANCES
+                || entries.windows(2).any(|pair| pair[0].kind >= pair[1].kind)
+                || entries.iter().any(|entry| {
+                    entry.percent.validate().is_err()
+                        || i128::from(entry.percent.numerator).abs()
+                            > 100 * i128::from(entry.percent.denominator)
+                })
+            {
+                return Err(wrong());
+            }
+            let value = entries
+                .iter()
+                .map(|entry| ReferenceResistance {
+                    kind: entry.kind,
+                    percent: ReferenceItemField::Known(entry.percent),
+                })
+                .collect();
+            set_declared(&mut protection(semantics, row)?.resistances, value, row)?
+        }
         _ => return Err(wrong()),
     })
+}
+
+// This packet lowers one observed equip pattern, never an arbitrary grammar.
+fn qualified_equipment_pattern(pattern: &ReferenceEquipmentPattern) -> bool {
+    use ReferenceItemField::{Known, Unknown};
+    let Known(primary) = pattern.primary_slot else {
+        return false;
+    };
+    pattern.pattern_id == 1
+        && matches!(pattern.mutually_exclusive_groups, Unknown)
+        && matches!(pattern.compatibility_rule, Unknown)
+        && matches!(pattern.level, Known(_) | Unknown)
+        && match &pattern.additional_reserved_slots {
+            Unknown => true,
+            Known(slots) => {
+                slots.is_empty()
+                    || (primary == ReferenceEquipmentSlot::Weapon
+                        && slots.as_slice() == [ReferenceEquipmentSlot::Shield])
+            }
+            _ => false,
+        }
+        && match &pattern.vocations {
+            Unknown => true,
+            Known(values) => {
+                !values.is_empty()
+                    && values.len() <= 5
+                    && values.windows(2).all(|pair| pair[0] < pair[1])
+            }
+            _ => false,
+        }
 }
 
 /// The Known group of `field`, created (all members Unknown) when the group is Unknown.
@@ -444,6 +662,513 @@ mod tests {
     }
 
     #[test]
+    fn equipment_is_typed_and_rejects_invalid_claims() {
+        let pattern = serde_json::json!({
+            "pattern_id": 1,
+            "primary_slot": {"state": "KNOWN", "value": "WEAPON"},
+            "additional_reserved_slots": {"state": "KNOWN", "value": ["SHIELD"]},
+            "mutually_exclusive_groups": {"state": "UNKNOWN"},
+            "vocations": {"state": "KNOWN", "value": ["KNIGHT", "PALADIN"]},
+            "level": {"state": "KNOWN", "value": 400},
+            "compatibility_rule": {"state": "UNKNOWN"}
+        });
+        let apply_pattern = |value: serde_json::Value| {
+            let typed = serde_json::json!({"kind": "EQUIPMENT_PATTERNS", "value": [value]});
+            let bytes = packet(&row(KEY, "equipment.patterns", &typed.to_string()), 1, 1);
+            let mut semantics = ReferenceItemSemantics::default();
+            apply(&bytes, &mut semantics).map(|_| semantics)
+        };
+        let semantics = apply_pattern(pattern.clone()).expect("qualified pattern");
+        assert!(matches!(semantics.equipment, ReferenceItemField::Known(_)));
+        for (field, bad) in [
+            (
+                "primary_slot",
+                serde_json::json!({"state": "KNOWN", "value": "AMMO"}),
+            ),
+            (
+                "additional_reserved_slots",
+                serde_json::json!({"state": "KNOWN", "value": ["WEAPON"]}),
+            ),
+            (
+                "vocations",
+                serde_json::json!({"state": "KNOWN", "value": ["PALADIN", "KNIGHT"]}),
+            ),
+            (
+                "vocations",
+                serde_json::json!({"state": "KNOWN", "value": ["KNIGHT", "KNIGHT"]}),
+            ),
+            (
+                "level",
+                serde_json::json!({"state": "KNOWN", "value": 65536}),
+            ),
+            (
+                "compatibility_rule",
+                serde_json::json!({"state": "KNOWN", "value": null}),
+            ),
+        ] {
+            let mut invalid = pattern.clone();
+            invalid[field] = bad;
+            assert!(apply_pattern(invalid).is_err(), "{field}");
+        }
+    }
+
+    #[test]
+    fn declared_count_and_milliseconds_preserve_unknowns_and_are_idempotent() {
+        let rows = format!(
+            "{},{}",
+            row(KEY, "charges.count", r#"{"kind":"COUNT_U32","value":100}"#),
+            row(
+                KEY,
+                "temporal.duration",
+                r#"{"kind":"DURATION_MS","value":450000}"#
+            )
+        );
+        let bytes = packet(&rows, 2, 1);
+        let mut semantics = ReferenceItemSemantics::default();
+        for _ in 0..2 {
+            assert_eq!(
+                apply(&bytes, &mut semantics)
+                    .expect("declared values")
+                    .replaced,
+                0
+            );
+        }
+        let expected = ReferenceItemSemantics {
+            charges: ReferenceItemField::Known(ReferenceItemCharges {
+                count: ReferenceItemField::Known(100),
+            }),
+            temporal: ReferenceItemField::Known(ReferenceItemTemporal {
+                consumption_mode: ReferenceItemField::Unknown,
+                duration: ReferenceItemField::Known(ReferenceMilliseconds(450000)),
+                stop_duration: ReferenceItemField::Unknown,
+                decay_target: ReferenceItemField::Unknown,
+            }),
+            ..ReferenceItemSemantics::default()
+        };
+        assert_eq!(semantics, expected);
+    }
+
+    fn modifier_value() -> serde_json::Value {
+        serde_json::json!({"kind":"MODIFIERS", "value":[
+            {"kind":"MAGIC_LEVEL_POINTS", "target_domain":{"state":"UNKNOWN"},
+             "evaluation_phase":{"state":"UNKNOWN"}, "priority":{"state":"UNKNOWN"},
+             "parameter":{"state":"KNOWN", "value":{"kind":"SIGNED_POINTS", "value":1}}},
+            {"kind":"MANA_LEECH_AMOUNT", "target_domain":{"state":"UNKNOWN"},
+             "evaluation_phase":{"state":"UNKNOWN"}, "priority":{"state":"UNKNOWN"},
+             "parameter":{"state":"KNOWN", "value":{"kind":"RATIONAL_PERCENT", "value":{"numerator":1,"denominator":8}}}}
+        ]})
+    }
+
+    #[test]
+    fn modifier_metadata_preserves_unknown_context_and_other_groups_idempotently() {
+        let value = modifier_value();
+        let bytes = packet(
+            &row(KEY, "skill_modifiers.modifiers", &value.to_string()),
+            1,
+            1,
+        );
+        let mut semantics = ReferenceItemSemantics::default();
+        let before = semantics.clone();
+        apply(&bytes, &mut semantics).expect("qualified source metadata");
+        let expected = semantics.clone();
+        assert_eq!(
+            apply(&bytes, &mut semantics)
+                .expect("idempotent metadata")
+                .replaced,
+            0
+        );
+        assert_eq!(semantics, expected);
+        let ReferenceItemField::Known(group) = &semantics.skill_modifiers else {
+            panic!("modifier group")
+        };
+        let ReferenceItemField::Known(entries) = &group.modifiers else {
+            panic!("modifier vector")
+        };
+        assert_eq!(
+            serde_json::to_value(entries).expect("metadata serialization"),
+            value["value"]
+        );
+        semantics.skill_modifiers = ReferenceItemField::Unknown;
+        assert_eq!(semantics, before);
+    }
+
+    #[test]
+    fn modifier_wrong_context_parameter_order_or_late_row_is_atomic() {
+        let valid = modifier_value();
+        let mut invalid = vec![serde_json::json!({"kind":"MODIFIERS", "value":[]})];
+        for field in ["target_domain", "evaluation_phase", "priority"] {
+            let mut value = valid.clone();
+            value["value"][0][field] = serde_json::json!({"state":"KNOWN", "value":1});
+            invalid.push(value);
+        }
+        let mut reversed = valid.clone();
+        reversed["value"].as_array_mut().expect("array").reverse();
+        invalid.push(reversed);
+        let mut duplicate = valid.clone();
+        duplicate["value"][1] = duplicate["value"][0].clone();
+        invalid.push(duplicate);
+        for parameter in [
+            serde_json::json!({"state":"UNKNOWN"}),
+            serde_json::json!({"state":"KNOWN", "value":{"kind":"SIGNED_POINTS", "value":1}}),
+            serde_json::json!({"state":"KNOWN", "value":{"kind":"RATIONAL_PERCENT", "value":{"numerator":2,"denominator":2}}}),
+            serde_json::json!({"state":"KNOWN", "value":{"kind":"RATIONAL_PERCENT", "value":{"numerator":101,"denominator":1}}}),
+        ] {
+            let mut value = valid.clone();
+            value["value"][1]["parameter"] = parameter;
+            invalid.push(value);
+        }
+        for value in invalid {
+            let rows = format!(
+                "{},{}",
+                row(
+                    KEY,
+                    "physical.weight",
+                    r#"{"kind":"WEIGHT_CENTI_OZ","value":4100}"#
+                ),
+                row(KEY, "skill_modifiers.modifiers", &value.to_string())
+            );
+            let bytes = packet(&rows, 2, 1);
+            let mut semantics = ReferenceItemSemantics::default();
+            let before = semantics.clone();
+            assert!(apply(&bytes, &mut semantics).is_err());
+            assert_eq!(semantics, before);
+        }
+    }
+
+    #[test]
+    fn elemental_magic_points_use_existing_atomic_metadata_guards() {
+        for kind in [
+            "DEATH_MAGIC_LEVEL_POINTS",
+            "EARTH_MAGIC_LEVEL_POINTS",
+            "ENERGY_MAGIC_LEVEL_POINTS",
+            "FIRE_MAGIC_LEVEL_POINTS",
+            "HEALING_MAGIC_LEVEL_POINTS",
+            "HOLY_MAGIC_LEVEL_POINTS",
+            "ICE_MAGIC_LEVEL_POINTS",
+        ] {
+            let mut value = modifier_value();
+            value["value"][0]["kind"] = serde_json::json!(kind);
+            let bytes = packet(
+                &row(KEY, "skill_modifiers.modifiers", &value.to_string()),
+                1,
+                1,
+            );
+            let mut semantics = ReferenceItemSemantics::default();
+            apply(&bytes, &mut semantics).expect("existing signed-point kind");
+            let before = semantics.clone();
+            assert!(apply(&bytes, &mut semantics).is_ok());
+            assert_eq!(semantics, before);
+            value["value"][0]["parameter"] = value["value"][1]["parameter"].clone();
+            let wrong = packet(
+                &row(KEY, "skill_modifiers.modifiers", &value.to_string()),
+                1,
+                1,
+            );
+            assert!(apply(&wrong, &mut semantics).is_err());
+            assert_eq!(semantics, before);
+        }
+    }
+
+    #[test]
+    fn modifier_existing_known_or_blocked_vector_never_overwrites() {
+        let value = modifier_value();
+        let bytes = packet(
+            &row(KEY, "skill_modifiers.modifiers", &value.to_string()),
+            1,
+            1,
+        );
+        let mut semantics = ReferenceItemSemantics::default();
+        apply(&bytes, &mut semantics).expect("qualified metadata");
+        let ReferenceItemField::Known(group) = &mut semantics.skill_modifiers else {
+            panic!("group")
+        };
+        let ReferenceItemField::Known(entries) = &mut group.modifiers else {
+            panic!("vector")
+        };
+        entries[0].parameter = ReferenceItemField::Known(ReferenceModifierParameter::SignedPoints(
+            ReferenceSignedPoints(2),
+        ));
+        let before = semantics.clone();
+        assert!(apply(&bytes, &mut semantics).is_err());
+        assert_eq!(semantics, before);
+        for state in [
+            ReferenceItemField::Conflict,
+            ReferenceItemField::NotApplicable,
+        ] {
+            semantics.skill_modifiers =
+                ReferenceItemField::Known(ReferenceItemSkillModifiers { modifiers: state });
+            let before = semantics.clone();
+            assert!(apply(&bytes, &mut semantics).is_err());
+            assert_eq!(semantics, before);
+        }
+    }
+
+    fn resistance_value() -> serde_json::Value {
+        serde_json::json!({"kind":"RESISTANCES", "value":[
+            {"kind":"FIRE", "percent":{"numerator":5,"denominator":1}},
+            {"kind":"ICE", "percent":{"numerator":-3,"denominator":2}}
+        ]})
+    }
+
+    fn resistance_packet(value: &serde_json::Value) -> Vec<u8> {
+        packet(
+            &row(KEY, "protection.resistances", &value.to_string()),
+            1,
+            1,
+        )
+    }
+
+    #[test]
+    fn resistance_points_preserve_armor_unknowns_and_are_idempotent() {
+        let bytes = resistance_packet(&resistance_value());
+        let expected_values = serde_json::json!({"state":"KNOWN","value":[
+            {"kind":"FIRE","percent":{"state":"KNOWN","value":{"numerator":5,"denominator":1}}},
+            {"kind":"ICE","percent":{"state":"KNOWN","value":{"numerator":-3,"denominator":2}}}
+        ]});
+        for armor in [
+            ReferenceItemField::Unknown,
+            ReferenceItemField::Known(ReferenceSignedPoints(17)),
+        ] {
+            let mut semantics = ReferenceItemSemantics {
+                protection: ReferenceItemField::Known(ReferenceItemProtection {
+                    armor: armor.clone(),
+                    resistances: ReferenceItemField::Unknown,
+                }),
+                ..ReferenceItemSemantics::default()
+            };
+            let mut expected = semantics.clone();
+            expected.protection = ReferenceItemField::Known(ReferenceItemProtection {
+                armor,
+                resistances: serde_json::from_value(expected_values.clone())
+                    .expect("native expected percentages"),
+            });
+            for _ in 0..2 {
+                assert_eq!(
+                    apply(&bytes, &mut semantics)
+                        .expect("qualified resistance points")
+                        .replaced,
+                    0
+                );
+                assert_eq!(semantics, expected);
+            }
+        }
+    }
+
+    #[test]
+    fn resistance_shape_order_rationals_and_bounds_fail_closed() {
+        let valid = resistance_value();
+        let mut invalid = vec![serde_json::json!({"kind":"RESISTANCES", "value":[]})];
+        let mut reversed = valid.clone();
+        reversed["value"].as_array_mut().expect("array").reverse();
+        invalid.push(reversed);
+        let mut duplicate = valid.clone();
+        duplicate["value"][1] = duplicate["value"][0].clone();
+        invalid.push(duplicate);
+        let mut oversized = valid.clone();
+        oversized["value"] = serde_json::json!(vec![valid["value"][0].clone(); 13]);
+        invalid.push(oversized);
+        for percent in [
+            serde_json::json!({"numerator":1,"denominator":0}),
+            serde_json::json!({"numerator":2,"denominator":2}),
+            serde_json::json!({"numerator":0,"denominator":2}),
+            serde_json::json!({"numerator":101,"denominator":1}),
+            serde_json::json!({"numerator":-101,"denominator":1}),
+            serde_json::json!({"numerator":1,"denominator":-1}),
+            serde_json::json!({"numerator":9223372036854775808u64,"denominator":1}),
+            serde_json::json!({"numerator":1,"denominator":1,"extra":0}),
+        ] {
+            let mut value = valid.clone();
+            value["value"][0]["percent"] = percent;
+            invalid.push(value);
+        }
+        let mut unknown_kind = valid.clone();
+        unknown_kind["value"][0]["kind"] = serde_json::json!("CRITICAL_HIT_CHANCE");
+        invalid.push(unknown_kind);
+        let mut unknown_field = valid.clone();
+        unknown_field["value"][0]["extra"] = serde_json::json!(0);
+        invalid.push(unknown_field);
+        for value in invalid {
+            let mut semantics = ReferenceItemSemantics::default();
+            assert!(
+                apply(&resistance_packet(&value), &mut semantics).is_err(),
+                "{value}"
+            );
+            assert!(semantics.is_all_unknown());
+        }
+    }
+
+    #[test]
+    fn resistance_conflicts_and_late_errors_reject_without_partial_mutation() {
+        let bytes = packet(
+            &format!(
+                "{},{}",
+                row(
+                    KEY,
+                    "weapon.attack",
+                    r#"{"kind":"SIGNED_POINTS","value":6}"#
+                ),
+                row(
+                    KEY,
+                    "protection.resistances",
+                    &resistance_value().to_string()
+                )
+            ),
+            2,
+            1,
+        );
+        for blocked in [
+            serde_json::json!({"state":"CONFLICT"}),
+            serde_json::json!({"state":"NOT_APPLICABLE"}),
+            serde_json::json!({"state":"KNOWN","value":[{"kind":"FIRE","percent":{"state":"UNKNOWN"}}]}),
+            serde_json::json!({"state":"KNOWN","value":[{"kind":"FIRE","percent":{"state":"KNOWN","value":{"numerator":4,"denominator":1}}}]}),
+        ] {
+            let resistances = serde_json::from_value(blocked).expect("native blocked fixture");
+            let mut semantics = ReferenceItemSemantics {
+                protection: ReferenceItemField::Known(ReferenceItemProtection {
+                    armor: ReferenceItemField::Known(ReferenceSignedPoints(17)),
+                    resistances,
+                }),
+                ..ReferenceItemSemantics::default()
+            };
+            let before = semantics.clone();
+            assert!(apply(&bytes, &mut semantics).is_err());
+            assert_eq!(semantics, before);
+        }
+        for protection in [
+            ReferenceItemField::Conflict,
+            ReferenceItemField::NotApplicable,
+        ] {
+            let mut semantics = ReferenceItemSemantics {
+                protection,
+                ..ReferenceItemSemantics::default()
+            };
+            let before = semantics.clone();
+            assert!(apply(&bytes, &mut semantics).is_err());
+            assert_eq!(semantics, before);
+        }
+        let first = row(
+            KEY,
+            "weapon.attack",
+            r#"{"kind":"SIGNED_POINTS","value":6}"#,
+        );
+        for second in [
+            row(
+                KEY,
+                "protection.resistances",
+                r#"{"kind":"RESISTANCES","value":[]}"#,
+            ),
+            row(
+                "oteryn:item.test.missing",
+                "protection.resistances",
+                &resistance_value().to_string(),
+            ),
+        ] {
+            let mut semantics = ReferenceItemSemantics::default();
+            let item_count = 1 + usize::from(second.contains("item.test.missing\""));
+            assert!(
+                apply(
+                    &packet(&format!("{first},{second}"), 2, item_count),
+                    &mut semantics
+                )
+                .is_err()
+            );
+            assert!(semantics.is_all_unknown());
+        }
+    }
+
+    #[test]
+    fn declared_values_reject_wrong_tags_and_numeric_bounds_without_mutation() {
+        for (path, typed) in [
+            ("charges.count", r#"{"kind":"COUNT_U8","value":100}"#),
+            (
+                "temporal.duration",
+                r#"{"kind":"COUNT_U32","value":450000}"#,
+            ),
+            (
+                "charges.count",
+                r#"{"kind":"COUNT_U32","value":4294967296}"#,
+            ),
+            ("temporal.duration", r#"{"kind":"DURATION_MS","value":-1}"#),
+            (
+                "temporal.duration",
+                r#"{"kind":"DURATION_SECONDS","value":450}"#,
+            ),
+        ] {
+            let mut semantics = ReferenceItemSemantics::default();
+            assert!(apply(&packet(&row(KEY, path, typed), 1, 1), &mut semantics).is_err());
+            assert!(semantics.is_all_unknown());
+        }
+    }
+
+    #[test]
+    fn declared_fields_hold_blocked_groups_leaves_and_conflicting_known_values() {
+        let charge = packet(
+            &row(KEY, "charges.count", r#"{"kind":"COUNT_U32","value":100}"#),
+            1,
+            1,
+        );
+        let duration = packet(
+            &row(
+                KEY,
+                "temporal.duration",
+                r#"{"kind":"DURATION_MS","value":450000}"#,
+            ),
+            1,
+            1,
+        );
+        for blocked in [
+            ReferenceItemField::Conflict,
+            ReferenceItemField::NotApplicable,
+            ReferenceItemField::Known(99),
+        ] {
+            let mut semantics = ReferenceItemSemantics {
+                charges: ReferenceItemField::Known(ReferenceItemCharges { count: blocked }),
+                ..ReferenceItemSemantics::default()
+            };
+            let before = semantics.clone();
+            assert!(apply(&charge, &mut semantics).is_err());
+            assert_eq!(semantics, before);
+        }
+        for blocked in [
+            ReferenceItemField::Conflict,
+            ReferenceItemField::NotApplicable,
+            ReferenceItemField::Known(ReferenceMilliseconds(449999)),
+        ] {
+            let mut semantics = ReferenceItemSemantics {
+                temporal: ReferenceItemField::Known(ReferenceItemTemporal {
+                    consumption_mode: ReferenceItemField::Unknown,
+                    duration: blocked,
+                    stop_duration: ReferenceItemField::Known(true),
+                    decay_target: ReferenceItemField::Unknown,
+                }),
+                ..ReferenceItemSemantics::default()
+            };
+            let before = semantics.clone();
+            assert!(apply(&duration, &mut semantics).is_err());
+            assert_eq!(semantics, before);
+        }
+        for in_conflict in [false, true] {
+            let mut semantics = ReferenceItemSemantics {
+                charges: if in_conflict {
+                    ReferenceItemField::Conflict
+                } else {
+                    ReferenceItemField::NotApplicable
+                },
+                temporal: if in_conflict {
+                    ReferenceItemField::Conflict
+                } else {
+                    ReferenceItemField::NotApplicable
+                },
+                ..ReferenceItemSemantics::default()
+            };
+            let before = semantics.clone();
+            assert!(apply(&charge, &mut semantics).is_err());
+            assert!(apply(&duration, &mut semantics).is_err());
+            assert_eq!(semantics, before);
+        }
+    }
+
+    #[test]
     fn rejects_bad_rows() {
         let attack = row(
             KEY,
@@ -533,5 +1258,102 @@ mod tests {
         assert_eq!(packet.counts.fields, ITEM_STATS_PROMOTION_V2_FIELD_COUNT);
         assert_eq!(packet.counts.items, ITEM_STATS_PROMOTION_V2_ITEM_COUNT);
         assert_eq!(packet.promotions.len(), ITEM_STATS_PROMOTION_V2_FIELD_COUNT);
+    }
+    #[test]
+    fn mantra_bond_metadata_is_idempotent_with_unknown_context() {
+        for (kind, parameter) in [
+            (
+                "MANTRA",
+                serde_json::json!({"kind":"SIGNED_POINTS", "value":-32768}),
+            ),
+            (
+                "MANTRA",
+                serde_json::json!({"kind":"SIGNED_POINTS", "value":32767}),
+            ),
+            (
+                "ELEMENTAL_BOND",
+                serde_json::json!({"kind":"ELEMENT", "value":"EARTH"}),
+            ),
+            (
+                "ELEMENTAL_BOND",
+                serde_json::json!({"kind":"ELEMENT", "value":"ENERGY"}),
+            ),
+        ] {
+            let mut value = modifier_value();
+            value["value"] = serde_json::json!([value["value"][0]]);
+            value["value"][0]["kind"] = serde_json::json!(kind);
+            value["value"][0]["parameter"]["value"] = parameter;
+            let bytes = packet(
+                &row(KEY, "skill_modifiers.modifiers", &value.to_string()),
+                1,
+                1,
+            );
+            let mut semantics = ReferenceItemSemantics::default();
+            apply(&bytes, &mut semantics).expect("source-qualified typed metadata");
+            let before = semantics.clone();
+            assert_eq!(
+                apply(&bytes, &mut semantics)
+                    .expect("same-vector idempotence")
+                    .replaced,
+                0
+            );
+            assert_eq!(semantics, before);
+            assert_eq!(
+                serde_json::to_value(&semantics.skill_modifiers).expect("metadata")["value"]["modifiers"]
+                    ["value"],
+                value["value"]
+            );
+            semantics.skill_modifiers = ReferenceItemField::Unknown;
+            assert_eq!(semantics, ReferenceItemSemantics::default());
+        }
+    }
+
+    #[test]
+    fn mantra_bond_wrong_unit_bounds_element_and_late_conflict_are_atomic() {
+        for (kind, parameter) in [
+            (
+                "MANTRA",
+                serde_json::json!({"kind":"SIGNED_POINTS", "value":32768}),
+            ),
+            (
+                "MANTRA",
+                serde_json::json!({"kind":"SIGNED_POINTS", "value":-32769}),
+            ),
+            (
+                "MANTRA",
+                serde_json::json!({"kind":"RATIONAL_PERCENT", "value":{"numerator":1,"denominator":1}}),
+            ),
+            (
+                "ELEMENTAL_BOND",
+                serde_json::json!({"kind":"SIGNED_POINTS", "value":1}),
+            ),
+            (
+                "ELEMENTAL_BOND",
+                serde_json::json!({"kind":"ELEMENT", "value":"FIRE"}),
+            ),
+            (
+                "ELEMENTAL_BOND",
+                serde_json::json!({"kind":"ELEMENT", "value":"PHYSICAL"}),
+            ),
+        ] {
+            let mut value = modifier_value();
+            value["value"] = serde_json::json!([value["value"][0]]);
+            value["value"][0]["kind"] = serde_json::json!(kind);
+            value["value"][0]["parameter"]["value"] = parameter;
+            let rows = format!(
+                "{},{}",
+                row(
+                    KEY,
+                    "physical.weight",
+                    r#"{"kind":"WEIGHT_CENTI_OZ","value":4100}"#
+                ),
+                row(KEY, "skill_modifiers.modifiers", &value.to_string())
+            );
+            let bytes = packet(&rows, 2, 1);
+            let mut semantics = ReferenceItemSemantics::default();
+            let before = semantics.clone();
+            assert!(apply(&bytes, &mut semantics).is_err());
+            assert_eq!(semantics, before);
+        }
     }
 }

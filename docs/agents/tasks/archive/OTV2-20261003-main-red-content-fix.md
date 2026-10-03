@@ -55,6 +55,10 @@ No edits to owner decision text, to checks, or to code.
 - `python -m unittest discover -s tools/agents/tests`: OK
 - `git diff --check`: clean
 
+## Merge with main (after #1675)
+
+Merged `origin/main` (merge commit). Five derived files conflicted and were regenerated, not hand-merged: `convert_world_base.py` (pinned crystalserver `00ce02a5`, pinned tibiamaps files incl. the minimap_draft floors), `convert_appearance_only_ids.py`, `convert_islands.py` (palette 35600 -> `oteryn:item.tibia.i35600`, capture summaries, base-map sha) and `regenerate_content.py` (taxonomy equals main: #1675 already carried the digest fix, so the taxonomy delta is gone; the G4 14 RETIRED_KEY also pass on main now). Still needed: main's palette keeps 35600 as the WorldObject key. On the merged tree: validate_world_base and validate_world_metadata PASS, 6 world-authoring test files OK (55 in test_world_base, incl. the item-pointer test), ruff clean, `validate_world_project_v2_to_tree` and its test PASS, `item_key_references` PASS, governance pass, `git diff --check` clean.
+
 ## Self-review
 
 Compared each regenerated file field by field with main. Palette: one entry changed (19313, to the Item key). World-base summary: item +1, provisional -1. Every other pointed catalogue record already resolves to its bound Item key, so nothing else moves. Appearance-only: one id leaves the decoration class. Islands: the base-map sha256 is re-pinned. Taxonomy: only `canonical_definitions_sha256` in 119 rows. No old digest is pinned anywhere else.

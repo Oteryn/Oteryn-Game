@@ -438,6 +438,50 @@ def validate_active_task_live_state(
                 )
     return errors
 
+ARCHIVE_CLOSEOUT_RULES_FROM = "20261004"
+ARCHIVE_REQUIRED_VALIDATION = (
+    "python tools/agents/validate_governance.py",
+    "python -m unittest discover -s tools/agents/tests",
+)
+# The text after the command on its line states the result on the candidate.
+ARCHIVE_PASS_RESULT = re.compile(r"(?i)\b(?:pass|passed|ok)\b")
+ARCHIVE_NOT_PASSED = re.compile(
+    r"(?i)\b(?:fail\w*|error\w*|not run|pending|skipped)\b"
+    r"|\b(?:not|never|no|did\s+not|didn't|does\s+not|doesn't)\s+(?:pass\w*|ok)\b"
+)
+
+
+def validate_archived_task_closeout(errors: list[str]) -> None:
+    archive_dir = ROOT / "docs/agents/tasks/archive"
+    if not archive_dir.is_dir():
+        return
+    for path in sorted(archive_dir.glob("*.md")):
+        dated = re.match(r"OTV2-([0-9]{8})-", path.name)
+        if dated is None or dated.group(1) < ARCHIVE_CLOSEOUT_RULES_FROM:
+            continue
+        relative = path.relative_to(ROOT).as_posix()
+        text = path.read_text(encoding="utf-8")
+        pr = re.search(r"(?m)^pr:([^#\n]*)", text)
+        value = pr.group(1).strip().strip("\"'") if pr is not None else ""
+        if re.fullmatch(r"[1-9][0-9]*", value) is None:
+            errors.append(f"archived task record {relative} must record its positive canonical pr")
+        validation = _markdown_section(text, "Validation")
+        for command in ARCHIVE_REQUIRED_VALIDATION:
+            results = [
+                line.split(command, 1)[1]
+                for line in validation.splitlines()
+                if command in line
+            ]
+            if not any(
+                ARCHIVE_PASS_RESULT.search(result) and not ARCHIVE_NOT_PASSED.search(result)
+                for result in results
+            ):
+                errors.append(
+                    f"archived task record {relative} Validation must record `{command}` "
+                    "with a pass result"
+                )
+
+
 def _markdown_section(text: str, heading: str) -> str:
     marker = f"## {heading}\n"
     start = text.find(marker)
@@ -552,6 +596,7 @@ def main() -> int:
         task_modes=contract.get("task_modes"),
         limits=contract.get("active_task_limits"),
     )
+    validate_archived_task_closeout(errors)
     validate_context_economy(errors)
     validate_current_state_hygiene(errors)
 

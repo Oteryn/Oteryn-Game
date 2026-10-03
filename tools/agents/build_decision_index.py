@@ -9,7 +9,9 @@ The index is derived from two sources on protected main:
 Two different owner-sequence D numbers for one document or one merge fail the
 build instead of picking one. Rows already in the index are kept, so a shallow
 clone only adds rows; it never drops history it cannot see. A shallow-boundary
-commit is skipped: Git treats it as a root, so its diff would list the whole tree.
+commit cannot be read (Git treats it as a root, so its diff would list the whole
+tree): it is skipped only when the index already has its PR's row, and otherwise
+the build fails and asks for deeper history instead of silently missing a row.
 
 Usage: python tools/agents/build_decision_index.py [--ref origin/main] [--gaps]
 """
@@ -82,15 +84,23 @@ def merge_ids(subject_ids: list[str], header_ids: dict[str, str], where: str) ->
     return ids
 
 
-def scan(ref: str, gaps: list[str] | None = None) -> dict[int, dict]:
+class ShallowHistory(Exception):
+    pass
+
+
+def scan(ref: str, gaps: list[str] | None = None, known: set[int] | frozenset[int] = frozenset()) -> dict[int, dict]:
     rows: dict[int, dict] = {}
-    boundary = shallow_commits()
+    boundary = shallow_commits(ROOT)
     log = git("log", ref, "--format=%H%x1f%ad%x1f%s", "--date=short")
     for line in log.splitlines():
         sha, date, subject = line.split("\x1f", 2)
         pr = PR_RE.search(subject)
-        if not pr or SLICE_RE.match(subject) or SKIP_RE.search(subject) or sha in boundary:
+        if not pr or SLICE_RE.match(subject) or SKIP_RE.search(subject):
             continue
+        if sha in boundary:
+            if int(pr.group(1)) in known:
+                continue
+            raise ShallowHistory(f"#{pr.group(1)} ({sha[:12]}) is at the shallow boundary; deepen history (git fetch --deepen or --unshallow) and rerun")
         status = git("show", "--name-status", "--format=", sha).splitlines()
         added = [parts[-1] for parts in (l.split("\t") for l in status) if parts[0] == "A" and DECISION_DOC_RE.match(parts[-1])]
         header_ids: dict[str, str] = {}
@@ -174,9 +184,11 @@ def main() -> None:
     gaps: list[str] = []
     rows = existing()
     try:
-        rows.update(scan(args.ref, gaps))
+        rows.update(scan(args.ref, gaps, set(rows)))
     except DecisionConflict as exc:
         raise SystemExit(f"decision number conflict: {exc}")
+    except ShallowHistory as exc:
+        raise SystemExit(f"shallow history: {exc}")
     INDEX.write_text(render(rows), encoding="utf-8")
     print(f"{INDEX.relative_to(ROOT)}: {len(rows)} rows")
     if args.gaps:

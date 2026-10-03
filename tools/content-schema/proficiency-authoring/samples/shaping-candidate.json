@@ -1,0 +1,78 @@
+{
+  "decision": "PROFICIENCY1B-PERK-MODIFICATION-VALUE-SHAPES-V1",
+  "schema": "OTERYN_PROFICIENCY_SHAPING_CATALOGUE/v1",
+  "shapings": [
+    {
+      "costs": {
+        "clear": {
+          "state": "UNKNOWN"
+        },
+        "modify": {
+          "slot_1": {
+            "dust": 250,
+            "evidence": {
+              "class": "TIBIAWIKI_EN",
+              "source_ref": "https://tibia.fandom.com/wiki/Weapon_Proficiency (read 2026-10-01; PROFICIENCY-1 section 2)"
+            },
+            "state": "KNOWN"
+          },
+          "slot_2": {
+            "dust": 1000,
+            "evidence": {
+              "class": "TIBIAWIKI_EN",
+              "source_ref": "https://tibia.fandom.com/wiki/Weapon_Proficiency (read 2026-10-01; PROFICIENCY-1 section 2)"
+            },
+            "state": "KNOWN"
+          }
+        },
+        "orb_rank": {
+          "state": "UNKNOWN"
+        },
+        "rank_steps": [
+          {
+            "state": "UNKNOWN"
+          },
+          {
+            "state": "UNKNOWN"
+          },
+          {
+            "state": "UNKNOWN"
+          },
+          {
+            "state": "UNKNOWN"
+          },
+          {
+            "state": "UNKNOWN"
+          },
+          {
+            "state": "UNKNOWN"
+          },
+          {
+            "state": "UNKNOWN"
+          },
+          {
+            "state": "UNKNOWN"
+          },
+          {
+            "state": "UNKNOWN"
+          }
+        ],
+        "reshape_offer": {
+          "state": "UNKNOWN"
+        }
+      },
+      "identity": {
+        "family": "ProficiencyShaping",
+        "key": "oteryn:proficiency-shaping.tibia.p6",
+        "revision": "shaping-r1"
+      },
+      "pool": {
+        "state": "UNKNOWN"
+      },
+      "proficiency": {
+        "key": "oteryn:proficiency.tibia.p6",
+        "revision": "definition-r1"
+      }
+    }
+  ]
+}

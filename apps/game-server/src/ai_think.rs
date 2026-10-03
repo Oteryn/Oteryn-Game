@@ -69,6 +69,8 @@
 //! fence to exercise it end-to-end in a test; that needs a `foundation`-owned follow-up (a
 //! `ChannelRuntimeV1` accessor), outside this task's owned paths.
 
+pub mod profile_schedule;
+
 use crate::ai::{
     AiError, AiProvenance, Candidate, CandidateId, PathRequest, RouteStep, build_path_proposal,
     canonicalize_perception,
