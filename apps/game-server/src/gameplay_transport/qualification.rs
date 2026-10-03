@@ -1169,7 +1169,8 @@ fn server_seam_real_owners_over_tcp_tls() -> TestResult {
     tokio::runtime::Builder::new_multi_thread()
         .enable_all()
         .build()?
-        .block_on(seam_flow(&accounts, &key_id, &signing))
+        // The composed seam scenario is one large future; keep it off the test-thread stack.
+        .block_on(Box::pin(seam_flow(&accounts, &key_id, &signing)))
 }
 
 async fn seam_flow(accounts: &[String; 2], key_id: &str, signing: &SigningKey) -> TestResult {
