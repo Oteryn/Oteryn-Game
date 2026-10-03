@@ -157,7 +157,7 @@ admitted timed definition whose `count` differs from the definition's charges. T
 repairing worn soft boots writes a full-value row with revision + 1, or inserts it at expected
 revision 0; a second insert at revision 0 writes nothing; soft boots in a bag are not found and are
 found once moved to the main backpack; a repair paid from 19 coin stacks commits and from 20 is
-refused; `DUR03-RL-04-NPC-REPAIR` and `DUR03-RL-06-NPC-REPAIR` at max and max+1; lighting a torch is
+refused; the repair's audit event carries the item id, the transform before and after and the timed row before and after (including "absent → revision 1"); `DUR03-RL-04-NPC-REPAIR` and `DUR03-RL-06-NPC-REPAIR` at max and max+1; lighting a torch is
 refused `NOT_ADMITTED`.
 
 ## 7. Repair (TIMED-REPAIR-1; owner answer 1a)
@@ -186,7 +186,10 @@ refused `NOT_ADMITTED`.
     registered by TIMED-REPAIR-1 with max and max+1 tests: `DUR03-RL-04-NPC-REPAIR` transform I/O
     1 / 1; `DUR03-RL-05` 0; `DUR03-RL-06-NPC-REPAIR` 22 participants / 68 work units (the fee plan's
     64 plus the item's transform, its timed-row reset and its participant check); payload and
-    envelope within `DUR03-RL-07`, measured at 19 inputs. 10,000 gold fits in one crystal coin, so this only refuses a
+    envelope within `DUR03-RL-07`, measured at 19 inputs including the repair's own audit lines.
+  - **Evidence.** The transaction's one audit event (DUR-03 §27) carries the fee evidence and also
+    the repaired item's ItemInstanceId, the `TRANSFORM` line (definition before and after) and the
+    timed row before and after (charges, remaining time and revision, or "absent → revision 1"). 10,000 gold fits in one crystal coin, so this only refuses a
     player who pays from 20 or more small stacks.
   - Insufficient funds, more than 19 coin inputs, or no such item rejects the whole transaction and
     writes nothing.

@@ -1398,7 +1398,11 @@ authority, conservation) is unchanged.
   item check), with `DUR03-RL-04-NPC-REPAIR` 1 / 1 transform I/O and `DUR03-RL-05` 0, the repaired
   item being a direct main-backpack entry. Its one timed-row write sets the row to full values with
   the revision + 1, or inserts it at expected revision 0 (absent row = revision 0; rows are never
-  deleted while the item lives, so the revision is monotonic; TIMED-ITEM-0 §4). Every other timed
+  deleted while the item lives, so the revision is monotonic; TIMED-ITEM-0 §4). Its one audit
+  event (§27, part of the atomic effect set) carries, besides the fee evidence below: the repaired
+  item's ItemInstanceId; the `TRANSFORM` line with its definition before and after; and the timed
+  row before and after (charges, remaining time and revision, or "absent → revision 1"). These
+  lines count in the measured payload of `DUR03-RL-07` at 19 coin inputs. Every other timed
   shape (checkpoints, expiry, equip forms) is TIMED-ITEM-0B's (D285).
   No generic fee cause or reason code. A new fee source needs an amendment of this paragraph and
   the decision.
