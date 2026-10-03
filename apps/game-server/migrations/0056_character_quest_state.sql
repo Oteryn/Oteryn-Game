@@ -15,8 +15,9 @@
 --     and every effect's track, value before and value after.
 --   * `game_character_quest_obligations`: the reward-claim obligation (§5.4), an item-only
 --     claim's companion row outside the revision chain: inserted `PENDING` only with its claim's
---     MINT receipt, deleted only with the quest receipt that names it, set to `REFUSED`
---     (terminal) or `WAITING_MIGRATION` by a refused attempt.
+--     MINT receipt, set to `CONSUMED` (terminal) only with the quest receipt that names it, set
+--     to `REFUSED` (terminal) or `WAITING_MIGRATION` by a refused attempt. Never deleted, so a
+--     `claim_obligation` receipt is proven against the row it consumed.
 --
 -- A cause is (kind, id, ordinal): a CommandRef is (GameSessionId, CommandId) under `command`,
 -- `use` or `claim_obligation`; a creature-death reward occurrence is (occurrence, 0). The 0012
@@ -60,7 +61,7 @@ CREATE TABLE game_character_quest_receipts (
     policy_revision TEXT NOT NULL CHECK (policy_revision ~ '^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$'),
     reward_revision TEXT NOT NULL CHECK (reward_revision ~ '^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$'),
     committed_at BIGINT NOT NULL CHECK (committed_at >= 0),
-    -- Stamped by the 0011 trigger, never caller-supplied: the obligation delete guard proves
+    -- Stamped by the 0011 trigger, never caller-supplied: the obligation consume guard proves
     -- its receipt was inserted by the same physical transaction.
     created_xact_id xid8 NOT NULL DEFAULT pg_current_xact_id(),
     -- A CommandRef has a CommandId of at least 1; a creature-death occurrence has none.
@@ -123,13 +124,14 @@ CREATE TABLE game_character_quest_obligations (
     character_id UUID NOT NULL REFERENCES game_character_roots(character_id),
     transition_key TEXT NOT NULL
         CHECK (transition_key ~ '^oteryn:[A-Za-z0-9._:/-]+$' AND octet_length(transition_key) <= 128),
-    state TEXT NOT NULL CHECK (state IN ('PENDING', 'REFUSED', 'WAITING_MIGRATION')),
+    state TEXT NOT NULL CHECK (state IN ('PENDING', 'CONSUMED', 'REFUSED', 'WAITING_MIGRATION')),
     result_code TEXT NULL,
     created_at BIGINT NOT NULL CHECK (created_at >= 0),
     updated_at BIGINT NOT NULL CHECK (updated_at >= created_at),
     created_xact_id xid8 NOT NULL DEFAULT pg_current_xact_id(),
     CONSTRAINT game_character_quest_obligation_result CHECK (CASE state
         WHEN 'PENDING' THEN result_code IS NULL
+        WHEN 'CONSUMED' THEN result_code IS NULL
         WHEN 'WAITING_MIGRATION' THEN result_code = 'REVISION_MISMATCH'
         ELSE result_code IN ('STAGE_MISMATCH', 'OUT_OF_RANGE', 'NOT_SUPPORTED', 'CAPACITY_EXCEEDED')
     END),
@@ -190,10 +192,13 @@ BEGIN
                 WHERE r.game_session_id = NEW.cause_id
                   AND r.command_id = NEW.cause_ordinal
                   AND r.character_id = NEW.character_id)
-           OR EXISTS (
+           OR NOT EXISTS (
                SELECT 1 FROM game_character_quest_obligations o
                 WHERE o.claim_game_session_id = NEW.cause_id
-                  AND o.claim_command_id = NEW.cause_ordinal)) THEN
+                  AND o.claim_command_id = NEW.cause_ordinal
+                  AND o.character_id = NEW.character_id
+                  AND o.transition_key = NEW.transition_key
+                  AND o.state = 'CONSUMED')) THEN
         RAISE EXCEPTION 'quest obligation receipt must consume the obligation of its claim'
             USING ERRCODE = '23514';
     END IF;
@@ -284,8 +289,9 @@ END;
 $$;
 
 -- An obligation is born PENDING; it moves only PENDING -> REFUSED (terminal),
--- PENDING -> WAITING_MIGRATION and back (a DUR-04 migration); it is deleted only while PENDING
--- and only with the quest receipt naming it, inserted by the same physical transaction.
+-- PENDING -> WAITING_MIGRATION and back (a DUR-04 migration), and PENDING -> CONSUMED (terminal)
+-- only with the quest receipt naming it, inserted by the same physical transaction. It is never
+-- deleted: the CONSUMED row is the receipt guard's proof that the obligation existed.
 CREATE FUNCTION game_character_quest_obligation_row_guard() RETURNS trigger
 LANGUAGE plpgsql AS $$
 BEGIN
@@ -300,18 +306,17 @@ BEGIN
               OLD.transition_key, OLD.created_at, OLD.created_xact_id)
            AND NEW.updated_at >= OLD.updated_at
            AND ((OLD.state = 'PENDING' AND NEW.state IN ('REFUSED', 'WAITING_MIGRATION'))
-                OR (OLD.state = 'WAITING_MIGRATION' AND NEW.state = 'PENDING')) THEN
+                OR (OLD.state = 'WAITING_MIGRATION' AND NEW.state = 'PENDING')
+                OR (OLD.state = 'PENDING' AND NEW.state = 'CONSUMED' AND EXISTS (
+                    SELECT 1 FROM game_character_quest_receipts r
+                     WHERE r.character_id = OLD.character_id
+                       AND r.cause_kind = 'claim_obligation'
+                       AND r.cause_id = OLD.claim_game_session_id
+                       AND r.cause_ordinal = OLD.claim_command_id
+                       AND r.transition_key = OLD.transition_key
+                       AND r.created_xact_id = pg_current_xact_id()))) THEN
             RETURN NEW;
         END IF;
-    ELSIF OLD.state = 'PENDING' AND EXISTS (
-            SELECT 1 FROM game_character_quest_receipts r
-             WHERE r.character_id = OLD.character_id
-               AND r.cause_kind = 'claim_obligation'
-               AND r.cause_id = OLD.claim_game_session_id
-               AND r.cause_ordinal = OLD.claim_command_id
-               AND r.transition_key = OLD.transition_key
-               AND r.created_xact_id = pg_current_xact_id()) THEN
-        RETURN OLD;
     END IF;
     RAISE EXCEPTION 'quest obligation transition is not allowed' USING ERRCODE = '23514';
 END;
@@ -926,7 +931,7 @@ REVOKE ALL ON FUNCTION game_character_progression_consistency_guard(),
 GRANT SELECT, INSERT ON game_character_quest_receipts TO oteryn_game_runtime;
 GRANT SELECT, INSERT, UPDATE ON game_character_quest_tracks, game_character_quest_states
     TO oteryn_game_runtime;
-GRANT SELECT, INSERT, DELETE ON game_character_quest_obligations TO oteryn_game_runtime;
+GRANT SELECT, INSERT ON game_character_quest_obligations TO oteryn_game_runtime;
 GRANT UPDATE (state, result_code, updated_at) ON game_character_quest_obligations
     TO oteryn_game_runtime;
 GRANT SELECT ON game_character_quest_receipts, game_character_quest_tracks,

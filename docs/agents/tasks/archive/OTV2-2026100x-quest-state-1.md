@@ -67,8 +67,10 @@ QUEST-STATE-0 §3-§6 and §13 as packet §14 states them, with account completi
     receipts are immutable; nothing is truncated.
   - Obligations: born `PENDING` only as the companion of its claim's MINT receipt in the same
     physical transaction; `PENDING -> REFUSED` (terminal, with its code) or
-    `PENDING -> WAITING_MIGRATION` and back; deleted only while `PENDING` with the quest receipt
-    that names it, inserted by the same physical transaction.
+    `PENDING -> WAITING_MIGRATION` and back; `PENDING -> CONSUMED` (terminal) only with the quest
+    receipt that names it, inserted by the same physical transaction. Never deleted: a
+    `claim_obligation` receipt requires its claim's `CONSUMED` row for the same Character and
+    transition.
   - The shared consistency guard is replaced by the `0032` body with a ninth arm (§13.1); the
     `0012` claim guard `game_reward_claim_mint_consistency_guard` gets a new body with one arm for
     the obligation companion. No applied migration is edited.
@@ -137,11 +139,13 @@ Independent persistence review (Codex) on the final frozen head; the control pla
     read failure now keeps the copy and schedules a retry; only a proven terminal session clears
     it.
   - 4174685213: the admission load read tracks, states and obligations in separate snapshots.
-    It now holds `character_root` FOR SHARE first; every quest writer and obligation-inserting
-    claim holds it FOR UPDATE, so the copy is coherent.
-  - 4174685217 (P2, deferred to the next quest batch): database proof that a consumed obligation
-    existed. Today the writer checks it under lock; the guard cannot see rows deleted in the
-    transaction.
+    The three reads run in one transaction that first holds `character_root` FOR SHARE; every
+    quest writer and obligation-inserting claim holds it FOR UPDATE until commit, so the copy is
+    coherent. (REPEATABLE READ cannot be set there: the semantic transaction's first statement
+    sets its timeouts.)
+  - 4174685217 (P2, folded in at the control plane's direction): the database now proves a
+    consumed obligation existed. The writer sets it `CONSUMED` instead of deleting it, and the
+    receipt guard requires that row.
 
 ## Deviations and open points
 
@@ -150,3 +154,6 @@ Independent persistence review (Codex) on the final frozen head; the control pla
   drives `ComposedFreshAdmission` itself against a database, since no harness for it exists
   outside the WP5 topology.
 - `src/lib.rs` is unchanged: the catalogue is path-loaded under `durability`.
+- QUEST-STATE-0 §5.4 says the committing transition deletes the obligation row. It is set
+  `CONSUMED` (terminal, kept) instead, so the receipt guard can prove the obligation existed
+  (Codex 4174685217); it no longer counts toward RL-07, as a deleted row would not.

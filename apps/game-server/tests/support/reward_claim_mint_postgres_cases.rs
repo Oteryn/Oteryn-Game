@@ -2812,13 +2812,17 @@ mod quest_obligations {
             ));
             assert_eq!(obligations(pool).await?, pending);
 
-            // The row is never deleted without its receipt, never inserted without its claim,
-            // and moves only PENDING -> REFUSED or WAITING_MIGRATION.
+            // The row is never deleted, never inserted without its claim, never consumed
+            // without its receipt, and moves only PENDING -> REFUSED or WAITING_MIGRATION.
             let character = uuid_text(id(CHARACTER));
             let session = uuid_text(id(SESSION));
             for (script, message) in [
                 (
                     "DELETE FROM game_character_quest_obligations;".to_owned(),
+                    NOT_ALLOWED,
+                ),
+                (
+                    "UPDATE game_character_quest_obligations SET state = 'CONSUMED';".to_owned(),
                     NOT_ALLOWED,
                 ),
                 (
@@ -2863,15 +2867,28 @@ mod quest_obligations {
             assert!(!admission.retry);
             assert_eq!(obligations(pool).await?, pending);
 
-            // Admission with it requests the obligation again: one receipt, the row consumed
+            // Admission with it requests the obligation again: one receipt, the row CONSUMED
             // in the same transaction, the copy advanced.
             let admission = admit(&harness, &authority, &sequencer, Some(&catalogue)).await?;
             let copy = admission.copy.ok_or("copy")?;
             assert!(!admission.retry);
             assert_eq!(copy.tracks().get(STAGE), Some(&1));
             assert!(copy.obligations().is_empty());
-            assert!(obligations(pool).await?.is_empty());
+            let consumed = (
+                "3".to_owned(),
+                START.to_owned(),
+                "CONSUMED".to_owned(),
+                "-".to_owned(),
+            );
+            assert_eq!(obligations(pool).await?, vec![consumed.clone()]);
             assert_eq!(harness.character_revision().await?, "2");
+            // CONSUMED is terminal and kept: the receipt's proof.
+            for script in [
+                "DELETE FROM game_character_quest_obligations;",
+                "UPDATE game_character_quest_obligations SET state = 'PENDING';",
+            ] {
+                rejected_sql(pool, script, NOT_ALLOWED).await?;
+            }
             let kind: String = sqlx::query_scalar(
                 "SELECT cause_kind FROM game_character_quest_receipts \
                   WHERE cause_ordinal = 3 AND transition_key = $1",
@@ -2901,12 +2918,15 @@ mod quest_obligations {
             );
             assert_eq!(
                 obligations(pool).await?,
-                vec![(
-                    "4".to_owned(),
-                    START.to_owned(),
-                    "REFUSED".to_owned(),
-                    "STAGE_MISMATCH".to_owned()
-                )]
+                vec![
+                    consumed,
+                    (
+                        "4".to_owned(),
+                        START.to_owned(),
+                        "REFUSED".to_owned(),
+                        "STAGE_MISMATCH".to_owned()
+                    )
+                ]
             );
             assert_eq!(harness.character_revision().await?, "2");
             assert_eq!(
@@ -2937,7 +2957,7 @@ mod quest_obligations {
             assert_eq!(copy.pending_obligations().count(), 0);
             let waiting = obligations(pool).await?;
             assert_eq!(
-                waiting[1],
+                waiting[2],
                 (
                     "5".to_owned(),
                     STEP.to_owned(),

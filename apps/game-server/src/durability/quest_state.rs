@@ -632,9 +632,13 @@ impl DurabilityRoot {
                     }
                     if let Some(claim) = obligation {
                         let consumed = sqlx::query(
-                            "DELETE FROM game_character_quest_obligations \
+                            "UPDATE game_character_quest_obligations \
+                                SET state = 'CONSUMED', \
+                                    updated_at = greatest(updated_at, \
+                                      floor(extract(epoch FROM statement_timestamp())*1000)::bigint) \
                               WHERE claim_game_session_id = encode($1,'hex')::uuid \
-                                AND claim_command_id = $2::text::numeric(20,0)",
+                                AND claim_command_id = $2::text::numeric(20,0) \
+                                AND state = 'PENDING'",
                         )
                         .bind(claim.game_session_id().as_bytes().as_slice())
                         .bind(claim.command_id().get().to_string())
