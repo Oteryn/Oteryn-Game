@@ -35,7 +35,7 @@ The same browser read the rawWikiBR **Etcher revision 428283** (published 30 Jul
 
 Ordinary public HTTP additionally read **[QA16927](https://www.tibiaqa.com/16927/does-damage-dealt-when-charm-activated-triggers-your-leech-imbuements)** (2020, edited2021) and **[QA24854](https://www.tibiaqa.com/24854/how-does-armor-of-creatures-affect-damage-taken-by-players)** (2023, edited2024). Named historical charm/leech exclusions and armor ordering are retained with their stated age; they do not resolve current universal formulas or the armor-source conflict.
 
-The packet now contains **35 bounded facts and 32 sources**. Source dates remain distinct from the 2026-10-01 research target; historical observations are not relabelled as new 2026 measurements.
+The packet now contains **35 bounded facts and 31 sources**. Source dates remain distinct from the 2026-10-01 research target; historical observations are not relabelled as new 2026 measurements.
 
 The final targeted source sweep resolved another formerly unqualified current rule: **Druid/Blessing of the Grove permits critical healing**, using critical hit chance and critical extra damage. [Official release state 8833](https://www.tibia.com/news/?subtopic=newsarchive&id=8833#druid), published 2 June 2026, is linked by [live release 8849](https://www.tibia.com/news/?subtopic=newsarchive&id=8849), published 16 June 2026, which explicitly announces availability to all players. Both primary articles were read through Chrome/CDP after ordinary HTTP 403. Terra Wave II now grants 10% Life Leech instead of 5%; numerous wand/rod Strike restrictions were removed. The earlier May 5 test remains historical evidence; these named live rules no longer remain test-only. Fine RNG/composition and universal per-item allowlist claims are still unasserted.
 
@@ -43,7 +43,7 @@ Video-event qualification: the121.000–122.350icon change is not identified as 
 
 ## Targeted completion evidence, 2026-10-01
 
-The packet contains **35 bounded facts and 32 sources**. This batch adds these source-qualified results:
+The packet contains **35 bounded facts and 31 sources**. This batch adds these source-qualified results:
 
 - **101 equipment differences:** [Mirade’s official reply, 3 July 2026](https://www.tibia.com/forum/?action=thread&postid=39592694#post39592694), read with ordinary HTTP 200, gives the Dream Blossom Staff threshold and five named Strike exceptions. It corroborates the selected Strike III for Deepling Ceremonial Dagger and Energized Limb. It names Deepling Fork as an exception; the item’s current table supplies its exact exclusion. All 101 rows have explicit source-choice dispositions. Nine priority item tables were freshly reread and unchanged. The WandsRods helper is dated 16 June 2026; other helpers are mostly from 2024. No exhaustive official allowlist is invented.
 - **Physical order:** [TibiaTools’ immutable authored test report](https://github.com/kik-tibia/tibiatools/blob/a1d368906caa8ae98bcb7123f2431733d318d710/src/lib/damage-calc/calc.ts#L21), read with ordinary HTTP, reports resistance before armor in tests on Gazer Spectres and spike traps. Its executable companion models outgoing player-to-creature damage. Current Formulae corroborates a named equipment example; QA87’s dissent remains visible. This selects a scoped reference. All attack types, incoming equipment pipelines and universal rounding remain unproved. The file modification date, 17 September, is not the unknown test date.

@@ -10,6 +10,10 @@ from urllib.parse import urlsplit
 from behavior_answers import QUESTION_IDS, TARGET
 
 PACKET = Path(__file__).parent / "samples/global-research-closure.json"
+EXCERPT_SCOPE = "Bounded excerpt: quoted passages only, whitespace normalized"
+EXCERPT_SEPARATOR = " … "
+MAX_EXCERPT_CHARS = 1000
+MAX_PASSAGE_CHARS = 450
 
 QUALIFIED_COMPLETION_VALUES = {'wand_rod_strike_current_primary_threshold_and_exceptions': {'scope': 'OFFICIAL_POST_RELEASE_WAND_ROD_STRIKE_RULE',
                                                               'threshold_reference_item': 'Dream '
@@ -74,6 +78,11 @@ def validate(packet: dict) -> None:
                 "unqualified source access method")
         require("OTS" not in source["source_role"], "OTS code cannot certify a public Global fact")
         require(source["captured_text"] and source["captured_text_scope"], "missing capture scope/body")
+        require(source["captured_text_scope"] == EXCERPT_SCOPE, "captured text must be a bounded quoted excerpt")
+        require(len(source["captured_text"]) <= MAX_EXCERPT_CHARS, "captured excerpt exceeds its source bound")
+        require(all(len(passage) <= MAX_PASSAGE_CHARS
+                    for passage in source["captured_text"].split(EXCERPT_SEPARATOR)),
+                "captured excerpt passage exceeds its bound")
         require(hashlib.sha256(source["captured_text"].encode()).hexdigest() == source["captured_text_sha256"],
                 "captured public text digest mismatch")
         require(source["original_digest"] and source["original_digest_scope"], "missing original capture identity")

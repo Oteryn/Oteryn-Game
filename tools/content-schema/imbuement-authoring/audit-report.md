@@ -307,7 +307,7 @@ Final source review repairs bind the explicit Mana/health Prey quote, remove an 
 
 ## Targeted completion evidence, 2026-10-01
 
-The packet contains **35 bounded facts and 32 sources**. This batch adds these source-qualified results:
+The packet contains **35 bounded facts and 31 sources**. This batch adds these source-qualified results:
 
 - **101 equipment differences:** [Mirade’s official reply, 3 July 2026](https://www.tibia.com/forum/?action=thread&postid=39592694#post39592694), read with ordinary HTTP 200, gives the Dream Blossom Staff threshold and five named Strike exceptions. It corroborates the selected Strike III for Deepling Ceremonial Dagger and Energized Limb. It names Deepling Fork as an exception; the item’s current table supplies its exact exclusion. All 101 rows have explicit source-choice dispositions. Nine priority item tables were freshly reread and unchanged. The WandsRods helper is dated 16 June 2026; other helpers are mostly from 2024. No exhaustive official allowlist is invented.
 - **Physical order:** [TibiaTools’ immutable authored test report](https://github.com/kik-tibia/tibiatools/blob/a1d368906caa8ae98bcb7123f2431733d318d710/src/lib/damage-calc/calc.ts#L21), read with ordinary HTTP, reports resistance before armor in tests on Gazer Spectres and spike traps. Its executable companion models outgoing player-to-creature damage. Current Formulae corroborates a named equipment example; QA87’s dissent remains visible. This selects a scoped reference. All attack types, incoming equipment pipelines and universal rounding remain unproved. The file modification date, 17 September, is not the unknown test date.
