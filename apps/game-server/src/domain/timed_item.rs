@@ -181,6 +181,8 @@ pub struct TimedItemLane {
     pending_expiry: Option<ExpireReason>,
     expiry_retried: bool,
     last_checkpoint_ms: u64,
+    /// When the write in flight took its snapshot; a committed checkpoint dates from it.
+    issued_ms: u64,
 }
 
 impl TimedItemLane {
@@ -197,6 +199,7 @@ impl TimedItemLane {
             pending_expiry: stored.exhausted(),
             expiry_retried: false,
             last_checkpoint_ms: now_ms,
+            issued_ms: now_ms,
         }
     }
 
@@ -302,20 +305,17 @@ impl TimedItemLane {
             transaction_id,
         };
         self.in_flight = Some(InFlight::Issued(write));
+        self.issued_ms = now_ms;
         LaneStep::Write(write)
     }
 
     /// Report the outcome of the write in flight.
-    pub fn on_outcome(
-        &mut self,
-        outcome: LaneWriteOutcome,
-        now_ms: u64,
-    ) -> Result<(), TimedItemError> {
+    pub fn on_outcome(&mut self, outcome: LaneWriteOutcome) -> Result<(), TimedItemError> {
         let Some(InFlight::Issued(write)) = self.in_flight else {
             return Err(TimedItemError::NoWriteInFlight);
         };
         match outcome {
-            LaneWriteOutcome::Committed => self.committed(write, now_ms),
+            LaneWriteOutcome::Committed => self.committed(write),
             LaneWriteOutcome::NotCommitted => {}
             LaneWriteOutcome::Ambiguous => {
                 self.in_flight = Some(InFlight::AwaitingLookup(write));
@@ -325,17 +325,13 @@ impl TimedItemLane {
     }
 
     /// Report what the record lookup of the ambiguous write found.
-    pub fn on_lookup(
-        &mut self,
-        lookup: AmbiguousLookup,
-        now_ms: u64,
-    ) -> Result<(), TimedItemError> {
+    pub fn on_lookup(&mut self, lookup: AmbiguousLookup) -> Result<(), TimedItemError> {
         let write = match self.in_flight {
             Some(InFlight::AwaitingLookup(write) | InFlight::Held(write)) => write,
             _ => return Err(TimedItemError::NoWriteInFlight),
         };
         match lookup {
-            AmbiguousLookup::FoundSameTransaction => self.committed(write, now_ms),
+            AmbiguousLookup::FoundSameTransaction => self.committed(write),
             AmbiguousLookup::NotFoundAtExpected => {
                 self.in_flight = Some(InFlight::Issued(write));
             }
@@ -383,13 +379,15 @@ impl TimedItemLane {
         Ok(())
     }
 
-    fn committed(&mut self, write: LaneWrite, now_ms: u64) {
+    fn committed(&mut self, write: LaneWrite) {
         self.in_flight = None;
         self.revision = write.expected_revision.saturating_add(1);
         match write.kind {
             LaneWriteKind::Checkpoint { values } => {
                 self.stored = values;
-                self.last_checkpoint_ms = now_ms;
+                // The stored values are the snapshot taken at issue, so the next interval runs
+                // from then, however long the write took or was retried.
+                self.last_checkpoint_ms = self.issued_ms;
             }
             LaneWriteKind::Expire { .. } => {
                 self.pending_expiry = None;
@@ -542,6 +540,30 @@ mod tests {
     }
 
     #[test]
+    fn the_next_interval_runs_from_the_snapshot_not_the_commit() {
+        let mut lane = TimedItemLane::live_from_row(0, values(None, Some(600_000)), 0);
+        lane.advance(60_000);
+        let write = write_of(lane.next_step(60_000, TX1));
+        // Retried for 50 s while the clock keeps running.
+        lane.on_outcome(LaneWriteOutcome::NotCommitted)
+            .expect("in flight");
+        assert_eq!(lane.next_step(80_000, TX2), LaneStep::Write(write));
+        lane.advance(50_000);
+        lane.on_outcome(LaneWriteOutcome::Committed)
+            .expect("in flight");
+        // The usage after the snapshot is due one interval after the snapshot (120 s), not
+        // one interval after the commit (170 s).
+        assert_eq!(lane.next_step(119_999, TX2), LaneStep::Idle);
+        let next = write_of(lane.next_step(120_000, TX2));
+        assert_eq!(
+            next.kind,
+            LaneWriteKind::Checkpoint {
+                values: values(None, Some(490_000))
+            }
+        );
+    }
+
+    #[test]
     fn a_second_write_in_flight_is_impossible() {
         let mut lane = TimedItemLane::live_from_row(0, values(Some(2), None), 0);
         lane.spend_charge();
@@ -563,7 +585,7 @@ mod tests {
         assert!(lane.spend_charge());
         assert!(!lane.is_active());
         assert_eq!(lane.next_step(60_001, TX2), LaneStep::Write(checkpoint));
-        lane.on_outcome(LaneWriteOutcome::Committed, 60_002)
+        lane.on_outcome(LaneWriteOutcome::Committed)
             .expect("in flight");
         let expiry = write_of(lane.next_step(60_003, TX2));
         assert_eq!(expiry.expected_revision, 5);
@@ -573,7 +595,7 @@ mod tests {
                 reason: ExpireReason::ChargesExhausted
             }
         );
-        lane.on_outcome(LaneWriteOutcome::Committed, 60_004)
+        lane.on_outcome(LaneWriteOutcome::Committed)
             .expect("in flight");
         assert_eq!(lane.next_step(60_005, TX1), LaneStep::Expired);
         assert!(!lane.is_active());
@@ -609,7 +631,7 @@ mod tests {
         lane.spend_charge();
         lane.stop();
         let write = write_of(lane.next_step(0, TX1));
-        lane.on_outcome(LaneWriteOutcome::NotCommitted, 1)
+        lane.on_outcome(LaneWriteOutcome::NotCommitted)
             .expect("in flight");
         assert_eq!(lane.next_step(2, TX2), LaneStep::Write(write));
     }
@@ -620,10 +642,10 @@ mod tests {
         lane.spend_charge();
         lane.stop();
         let write = write_of(lane.next_step(0, TX1));
-        lane.on_outcome(LaneWriteOutcome::Ambiguous, 1)
+        lane.on_outcome(LaneWriteOutcome::Ambiguous)
             .expect("in flight");
         assert_eq!(lane.next_step(2, TX2), LaneStep::LookUpRecord(write));
-        lane.on_lookup(AmbiguousLookup::FoundSameTransaction, 3)
+        lane.on_lookup(AmbiguousLookup::FoundSameTransaction)
             .expect("awaiting lookup");
         assert_eq!(lane.revision(), 1);
         assert_eq!(lane.next_step(4, TX2), LaneStep::Stopped);
@@ -634,14 +656,14 @@ mod tests {
         let mut lane = TimedItemLane::live_from_row(0, values(Some(3), None), 0);
         lane.spend_charge();
         let write = write_of(lane.next_step(60_000, TX1));
-        lane.on_outcome(LaneWriteOutcome::Ambiguous, 60_001)
+        lane.on_outcome(LaneWriteOutcome::Ambiguous)
             .expect("in flight");
-        lane.on_lookup(AmbiguousLookup::Unknown, 62_001)
+        lane.on_lookup(AmbiguousLookup::Unknown)
             .expect("awaiting lookup");
         assert!(!lane.is_active());
         assert!(!lane.spend_charge());
         assert_eq!(lane.next_step(62_002, TX2), LaneStep::HeldForReconciliation);
-        lane.on_lookup(AmbiguousLookup::NotFoundAtExpected, 70_000)
+        lane.on_lookup(AmbiguousLookup::NotFoundAtExpected)
             .expect("held");
         assert_eq!(lane.next_step(70_001, TX2), LaneStep::Write(write));
     }
@@ -702,7 +724,7 @@ mod tests {
                 values: values(None, Some(41_000))
             }
         );
-        lane.on_outcome(LaneWriteOutcome::Committed, 59_001)
+        lane.on_outcome(LaneWriteOutcome::Committed)
             .expect("in flight");
         assert_eq!(lane.next_step(59_002, TX2), LaneStep::Stopped);
         let relived = TimedItemLane::live_from_row(2, values(None, Some(41_000)), 59_003);
@@ -752,7 +774,7 @@ mod tests {
         lanes
             .get_mut(&[1; 16])
             .expect("present")
-            .on_outcome(LaneWriteOutcome::Committed, 11)
+            .on_outcome(LaneWriteOutcome::Committed)
             .expect("in flight");
         // The ring's stop committed but has not reported Stopped yet; the unchanged lane has
         // not run its step either.
@@ -777,7 +799,7 @@ mod tests {
         assert!(!lane.is_empty());
         let expiry = write_of(lane.next_step(1, TX1));
         assert!(matches!(expiry.kind, LaneWriteKind::Expire { .. }));
-        lane.on_outcome(LaneWriteOutcome::Committed, 2)
+        lane.on_outcome(LaneWriteOutcome::Committed)
             .expect("in flight");
         assert!(lane.is_empty());
         assert_eq!(lane.next_step(3, TX2), LaneStep::Expired);

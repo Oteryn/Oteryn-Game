@@ -60,6 +60,8 @@ them (TIMED-ITEM-0B §4, §5.2-§5.3, §6, §12, §14):
   or a pending expiry is never empty).
 - Codex round 1 (#1681): P1 4174557660 (fence evidence at the checkpoint boundary) and P1
   4174557664 (a stopping lane counted as empty) fixed.
+- Codex round 2 (#1681): P1 4174631121 (a committed checkpoint dated from its commit, not its
+  snapshot) fixed.
 - Registry rows `TIMEDITEM0B-RL-01`, `-02`, `-04`, `-05` with max and max+1 tests.
 
 Left to TIMED-RT-1b (after its dependencies): the Expire, SetDeadline, ClearDeadline and PutOut
