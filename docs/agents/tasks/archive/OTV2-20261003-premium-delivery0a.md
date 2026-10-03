@@ -52,7 +52,7 @@ The #1662 findings 4174228267 and 4174228270 went to lane 2 (TIMED-PROF-0C, D370
 ## Validation
 
 `python3 tools/agents/validate_governance.py`, `python3 tools/repository/validate_repository_policy.py`,
-`git diff --check`: pass.
+`python -m unittest discover -s tools/agents/tests` (54 tests), `git diff --check`: pass.
 
 ```yaml
 status: completed
