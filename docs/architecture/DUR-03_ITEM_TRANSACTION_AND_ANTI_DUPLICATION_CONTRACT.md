@@ -413,6 +413,11 @@ The weapon use amendment in §39.3 admits the closed `WeaponUseCause {Ammunition
 `TimedItemCause` is reserved; its variants, including any expiry BURN sink, are admitted by
 TIMED-ITEM-0B (D285).
 
+**Amendment (pending on acceptance of PROFICIENCY-1; `reviews/OTERYN_GAME_PROFICIENCY1_PERK_MODIFICATION_AND_CATALYSTS_DECISION_2026-10-01.md` §3, §4).** The cause name `ProficiencyCause {track, slot, operation,
+occurrence}` is reserved for Weapon Proficiency modification burns (forge dust, the Lunar Ascension
+Orb). No shape is admitted yet: each composed §39.3 shape (a proficiency receipt with its burn) is
+admitted by PROFICIENCY-1B together with its value evidence.
+
 ## 16. Transform semantics
 
 ### 16.1 Explicit internal Oteryn identity policy

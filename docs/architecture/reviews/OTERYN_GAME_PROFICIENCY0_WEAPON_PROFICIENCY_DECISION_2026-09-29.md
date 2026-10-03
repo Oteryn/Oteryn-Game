@@ -304,6 +304,12 @@ until admitted).
 
 ### 4.5 Parity gates and deferred work
 
+**Amendment (pending on acceptance of PROFICIENCY-1; `reviews/OTERYN_GAME_PROFICIENCY1_PERK_MODIFICATION_AND_CATALYSTS_DECISION_2026-10-01.md` §3-§6).** Perk modification, ranks, reshape, clear, the
+Lunar Ascension Orb and catalysts are scoped there: the reserved `perk_modification` and
+`ProficiencyCause`, the six operation names, the state shape (up to 2 rows per track, one per level)
+and the entry conditions of PROFICIENCY-1B, which builds the table, `MODIFIED_LEVEL`, the migration
+lines and every operation. PROF-1 ships without modification rows, and no catalyst has a use.
+
 - **Parity gates (Stage B decision 10).** The point table, the thresholds of levels 2-6 and of
   Mastery, and multi-player weighting are UNKNOWN. PROF-2 may build them behind a versioned
   policy, but proficiency is not enabled in production, nor claimed as Reference behaviour, until
