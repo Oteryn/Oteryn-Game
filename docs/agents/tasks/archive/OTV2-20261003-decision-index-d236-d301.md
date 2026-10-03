@@ -4,11 +4,11 @@
 task_id: OTV2-20261003-decision-index-d236-d301
 title: "Decision index refresh D236-D301 and allocation-line source"
 mode: TOOLING
-status: authoring
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/decision-index-d236-d301
-pr: null
+pr: "1646"
 base_sha: bec95a92
 head_sha: "exact frozen head in the #1622 FREEZE_SHA entry"
 final_head_sha: "exact frozen head in the #1622 FREEZE_SHA entry"
@@ -33,14 +33,16 @@ external_repositories: []
 
 Control-plane allocation D288 (#1622), with its answer D302 = a): the builder keeps the merge-subject
 mapping and adds a second source, the allocation line in the header of a decision document the merge
-adds (`- Allocation: D286 ...` or `- control-plane allocation D300 (#1622)`). Two different
+adds (`- Allocation: D286 ...`, `- control-plane allocation D300 (#1622)` or
+`- Answers: control-plane allocation D292 (#1622)`). Two different
 owner-sequence numbers for one document or one merge fail the build. No hand-written rows.
 `--gaps` lists added decision documents with no number from either source.
 
 ## State
 
-Unfrozen until the open decision PRs (#1637-#1645) merge; then regenerate the index on the new
-`main`, freeze and report to #1622.
+#1637-#1645 merged. The index was regenerated on `main` after #1638 (107 rows, D291-D300 added)
+and the head frozen; the FREEZE_SHA is on #1622. The `--gaps` list (114 documents, mostly before
+D236 or owner batches) stays a report, not rows.
 
 ## Validation
 

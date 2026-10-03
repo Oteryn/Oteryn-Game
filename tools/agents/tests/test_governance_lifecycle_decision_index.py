@@ -22,6 +22,8 @@ class DecisionIndexTests(unittest.TestCase):
         self.assertEqual(bdi.header_allocation(cp, "a.md"), "D300")
         alloc = "# X\n- Allocation: D286 (#1622 comment 1), an exception to D252.\n## 1\n"
         self.assertEqual(bdi.header_allocation(alloc, "b.md"), "D286")
+        inline = "# X\n- Answers: control-plane allocation D292 (#1622) and a ruling.\n## 1\n"
+        self.assertEqual(bdi.header_allocation(inline, "d.md"), "D292")
 
     def test_header_ignores_references_and_body(self) -> None:
         text = "# X\n- Builds on: owner decision D238.\n## 1\n- Allocation: D9\n"

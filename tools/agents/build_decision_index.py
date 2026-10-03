@@ -28,7 +28,7 @@ D_RE = re.compile(r"(?<![A-Za-z0-9-])(?:([A-Z]{2,}[A-Z0-9]*)-)?D(\d{1,3})(?:\s*[
 SLICE_RE = re.compile(r"^D\d+-\d+:")
 SKIP_RE = re.compile(r"\b(?:Combat|combat) D\d|archive the ", re.IGNORECASE)
 DOC_PREFIXES = ("docs/architecture/", "docs/agents/programs/", "docs/product/", "docs/content/", "docs/contracts/")
-ALLOC_RE = re.compile(r"^\s*-\s+(?:Allocation:\s*|control-plane allocation\s+)D(\d{1,3})\b", re.IGNORECASE)
+ALLOC_RE = re.compile(r"^\s*-\s+(?:Allocation:\s*|(?:Answers:\s*)?control-plane allocation\s+)D(\d{1,3})\b", re.IGNORECASE)
 DECISION_DOC_RE = re.compile(r"^docs/architecture/reviews/.*DECISION.*\.md$")
 ROW_RE = re.compile(r"^\| (?P<ids>[^|]+) \| #(?P<pr>\d+) \| (?P<date>[^|]+) \| (?P<subject>.*) \| (?P<docs>[^|]*) \|$")
 
