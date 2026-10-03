@@ -818,6 +818,16 @@ fn retention_serializes_with_activation() -> TestResult {
                 .await
                 .map_err(debug)?
         );
+        // A content source that has not seen the newer activation cannot commit under the
+        // superseded revision: the durable activation moved, so the occurrence is terminal.
+        assert_eq!(
+            a.modify(4, command(53, 1, Kind::RankUp, 4, "shaping-1"))
+                .await
+                .map_err(debug)?,
+            Outcome::RevisionChanged
+        );
+        // Activation treats its inputs as a set: duplicates and the activated revision itself.
+        activate(a.h, "shaping-2", &["shaping-1", "shaping-2", "shaping-1"]).await?;
         let newer = Shaping {
             revision: "shaping-2",
             ..Shaping::default()

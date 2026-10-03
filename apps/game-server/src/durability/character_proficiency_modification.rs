@@ -486,6 +486,27 @@ async fn retained(
     .await?)
 }
 
+/// The durably active revision of a shaping key, after taking the key's shared retention lock
+/// until commit (§8), so no activation can move it before this transaction ends.
+async fn durable_active_revision(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    shaping_key: &str,
+) -> StoredResult<Option<String>> {
+    sqlx::query(
+        "SELECT pg_advisory_xact_lock_shared(hashtextextended('proficiency_shaping:' || $1, 0))",
+    )
+    .bind(shaping_key)
+    .execute(&mut **tx)
+    .await?;
+    Ok(sqlx::query_scalar(
+        "SELECT shaping_revision FROM game_proficiency_shaping_revisions \
+         WHERE shaping_key=$1 AND active",
+    )
+    .bind(shaping_key)
+    .fetch_optional(&mut **tx)
+    .await?)
+}
+
 enum Replay {
     Unseen,
     Conflict,
@@ -685,10 +706,20 @@ impl DurabilityRoot {
                             })
                         });
                     let simulation: String = state.try_get("simulation_revision")?;
+                    // §8: the durable activation, read under the key's shared retention lock, so
+                    // a content source that has not seen a newer activation cannot commit.
+                    let durable_active = match resolved
+                        .as_ref()
+                        .and_then(|resolved| proficiency_shaping_key(&resolved.definition_key))
+                    {
+                        Some(key) => durable_active_revision(&mut tx, &key).await?,
+                        None => None,
+                    };
                     // §6.2: compare the bound set before admission; a moved set is terminal. A
                     // bound member that no longer resolves has moved too, so a later reappearance
                     // can never commit this occurrence.
-                    if resolved.as_ref().map(|resolved| resolved.definition_revision.as_str())
+                    if durable_active.as_deref() != Some(command.bound().shaping_revision.as_str())
+                        || resolved.as_ref().map(|resolved| resolved.definition_revision.as_str())
                         != Some(command.bound().definition_revision.as_str())
                         || active.as_ref().map(|active| active.revision.as_str())
                             != Some(command.bound().shaping_revision.as_str())
@@ -701,9 +732,7 @@ impl DurabilityRoot {
                     let (Some(resolved), Some(active)) = (resolved, active) else {
                         return refuse(ProficiencyModificationResult::NotAdmitted);
                     };
-                    if resolved.canonical_item_key != command.item_key()
-                        || !retained(&mut tx, &active.shaping_key, &active.revision).await?
-                    {
+                    if resolved.canonical_item_key != command.item_key() {
                         return refuse(ProficiencyModificationResult::NotAdmitted);
                     }
                     let track = sqlx::query(

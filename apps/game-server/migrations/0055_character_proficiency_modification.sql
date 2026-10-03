@@ -416,7 +416,7 @@ BEGIN
     UPDATE game_proficiency_shaping_revisions SET active = FALSE
      WHERE shaping_key = p_key AND active AND shaping_revision <> p_revision;
     INSERT INTO game_proficiency_shaping_revisions (shaping_key, shaping_revision, active)
-    SELECT p_key, r, r = p_revision
+    SELECT DISTINCT p_key, r, r = p_revision
       FROM unnest(array_append(coalesce(p_retained, ARRAY[]::TEXT[]), p_revision)) AS r
     ON CONFLICT (shaping_key, shaping_revision) DO UPDATE SET active = EXCLUDED.active;
 END;
