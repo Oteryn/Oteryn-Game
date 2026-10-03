@@ -23,7 +23,8 @@ owned_paths:
 public_contracts: []
 depends_on: []
 blocks:
-  - "PR #1625 reply to Codex P1 4173012827"
+  - "CHARM-DESC-FENCE-1 structural gate test (follow-up)"
+  - "A2 live attacker fence (follow-up)"
 cross_repository_coordination_id: null
 external_repositories: []
 ```
@@ -56,7 +57,8 @@ grace-expiry path.
 
 ## Excluded scope
 
-- Code. The structural gate check is added by #1625 (decision item 3); the fence is A2's.
+- Code. The structural gate check is CHARM-DESC-FENCE-1's (decision item 3); the fence is A2's.
+  #1625 merged before this decision, without the check.
 
 ## Validation
 
@@ -74,7 +76,9 @@ grace-expiry path.
 - required: YES (authority and fencing decision). The control plane triggers it on the frozen head.
 - Round on 7a26bec3/8bf2ce08: in-place rebind for A2 (fixed in 7bcf8e48).
 - Round on 7bcf8e48: P1 4173284936 (the gate trigger is a non-test production reference, checked
-  structurally) and P2 4173284940 (this record's sections); both fixed in one push.
+  structurally) and P2 4173284940 (this record's sections); both fixed in 4d191ecd.
+- Control-plane amendment on 4d191ecd: #1625 had merged; the check moves to the follow-up
+  CHARM-DESC-FENCE-1 and the #1625 HOLD lines are removed.
 
 ## PR and closeout
 
