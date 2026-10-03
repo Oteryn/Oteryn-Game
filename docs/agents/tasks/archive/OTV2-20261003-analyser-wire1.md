@@ -22,12 +22,14 @@ owned_paths:
   - docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json
   - docs/contracts/RESOURCE_LIMITS_REGISTRY.json
   - docs/contracts/protocol-oteryn/v1/analyser_v1.proto
-  - crates/protocol-oteryn/src/{lib,analyser,analyser_tests}.rs
+  - docs/contracts/protocol-oteryn/v1/damage_element_v1.proto
+  - crates/protocol-oteryn/src/{lib,analyser,analyser_tests,damage_element}.rs
   - docs/agents/tasks/archive/OTV2-20261003-analyser-wire1.md
 public_contracts:
   - docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json
   - docs/contracts/RESOURCE_LIMITS_REGISTRY.json
   - docs/contracts/protocol-oteryn/v1/analyser_v1.proto
+  - docs/contracts/protocol-oteryn/v1/damage_element_v1.proto
 depends_on: ["ANALYSERS-0 D298 (merged, 1e0134d9)"]
 blocks: [ANALYSER-EMIT-1, ANALYSER-CLIENT-1]
 cross_repository_coordination_id: null
@@ -50,13 +52,18 @@ ANALYSER-WIRE-1 registers the ANALYSERS-0 §4 and §6 wire, using the numbers th
   - At 1,024 it drops the oldest and counts it.
   - `take_batch` opens with `dropped {count}`, then adds facts while there are fewer than 64 and the batch stays within 4,096 bytes. The rest wait for the next sync unit, never dropped for size.
 
-## Decisions for protocol review (control-plane answers)
+## Decisions for protocol review (rulings)
 
-1. `race` is the Bestiary race index, `1..=1024`. 0 means a creature with no Bestiary race. It is allowed only for a `CREATURE` source.
-2. `AnalyserElement` is a closed enum of the SPELL-PRESENT-0 §2 content damage types, healing excluded. It is required for damage and absent for healing.
-3. `item_type` is a non-zero uint32 content item type id. `count` is `1..=65535`.
-4. Experience and gold are uint64, and 0 is allowed. `value` and `dropped.count` are non-zero.
-5. RL-03 measurement: 64 worst-case `kill_loot` facts are about 25.9 KiB, so the batch is also byte-bounded at 4,096 and the builder splits by bytes.
+The architect ruled on 2026-10-03 and the CP confirmed 5a. The ruling also added `damage_element` to the owned paths.
+
+1. `race` is the 1-based Bestiary race index (`1..=1024`, as in `charm_bestiary_v1`). 0 or absent means a creature with no Bestiary race. A race on a source other than `CREATURE` fails closed.
+2. The element is one shared `DamageElement`, in `damage_element.rs` and `damage_element_v1.proto`. It lists the SPELL-PRESENT-0 §2 content damage types, healing excluded. `analyser_v1.proto` imports it, and PRESENT-WIRE-1 must reuse it.
+   - Required for damage and `damage_input`.
+   - On healing, it fails closed.
+3. `item_type` is a non-zero uint32 in the server content item type id space. `count` is `1..=65535`.
+4. Experience is uint64 and emitted only with `raw >= 1`; `gained` may be 0. Gold is uint64, and 0 is allowed. `value` and `dropped.count` are non-zero.
+5. RL-03: 64 worst-case `kill_loot` facts are about 25.9 KiB, so the batch is also byte-bounded at 4,096. The builder splits by bytes and continues in the next sync unit.
+6. `ANALYSERS0-RL-04` numbers the §6 pending row, which the decision lists without a number.
 
 ## Excluded scope
 
@@ -71,7 +78,7 @@ ANALYSER-WIRE-1 registers the ANALYSERS-0 §4 and §6 wire, using the numbers th
 
 - `cargo fmt --all -- --check`: PASS.
 - `cargo clippy -p oteryn-protocol-oteryn --all-targets -- -D warnings`: PASS.
-- `cargo test -p oteryn-protocol-oteryn`: 108 passed, 7 of them analyser tests (round trip, the RL-03 measurement, the bounds, fail-closed, the queue drop and split, and the registry binding).
+- `cargo test -p oteryn-protocol-oteryn`: 109 passed: 7 analyser tests (round trip, the RL-03 measurement, the bounds, fail-closed, the queue drop and split, and the registry binding) and 1 `damage_element` test, which binds the enum to its proto.
 - `cargo check --workspace --all-targets`: PASS.
 - `python3 tools/agents/validate_governance.py`: PASS.
 - `git diff --check`: clean.

@@ -2240,6 +2240,7 @@ pub mod bestiary;
 pub mod charm;
 mod charm_wire;
 pub mod chat;
+pub mod damage_element;
 pub mod world_object;
 pub mod world_spatial;
 pub mod world_spatial_entities;

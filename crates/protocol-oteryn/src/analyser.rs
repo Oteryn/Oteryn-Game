@@ -5,7 +5,7 @@
 //! control plane; the server does not offer the capability before ANALYSER-EMIT-1.
 //!
 //! Decoding is strict, and encoding refuses the same values as a server fault before any byte is
-//! emitted: an empty or doubled oneof, zero or unknown enums, zero values, counts or item types,
+//! emitted: an empty or doubled oneof, zero or unknown enums, experience with `raw` 0, zero values, counts or item types,
 //! a race above the Bestiary bound or on a non-creature source, a healing element, an empty batch,
 //! any value over its bound, and unknown or repeated fields all fail closed.
 
@@ -18,6 +18,7 @@ use crate::charm_wire::{
     WireResult, push_message_field, push_nonzero_varint_field, push_varint_field, read_bytes,
     read_uint32_fields, read_varint, set_once,
 };
+use crate::damage_element::DamageElement;
 
 /// Registered capability `ANALYSER_V1`: state domain 15, no command type.
 pub const CAPABILITY_ANALYSER_V1: u32 = 10;
@@ -40,41 +41,6 @@ pub const MAX_ANALYSER_FACT_BYTES: usize = 401;
 /// The ANALYSERS-0 §6 pending cap per session; above it the oldest facts are dropped.
 pub const MAX_ANALYSER_PENDING_FACTS: usize = 1_024;
 
-/// `AnalyserElement`: the content damage types, healing excluded.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum AnalyserElement {
-    Physical = 1,
-    Fire = 2,
-    Earth = 3,
-    Energy = 4,
-    Ice = 5,
-    Holy = 6,
-    Death = 7,
-    LifeDrain = 8,
-    ManaDrain = 9,
-    Drowning = 10,
-    Untyped = 11,
-}
-
-impl AnalyserElement {
-    fn from_wire(value: u32) -> WireResult<Self> {
-        Ok(match value {
-            1 => Self::Physical,
-            2 => Self::Fire,
-            3 => Self::Earth,
-            4 => Self::Energy,
-            5 => Self::Ice,
-            6 => Self::Holy,
-            7 => Self::Death,
-            8 => Self::LifeDrain,
-            9 => Self::ManaDrain,
-            10 => Self::Drowning,
-            11 => Self::Untyped,
-            _ => return Err(AnalyserWireError::Malformed),
-        })
-    }
-}
-
 /// A Bestiary race index, `1..=`[`MAX_BESTIARY_RACE`]; `None` for a creature without one.
 pub type AnalyserRace = Option<NonZeroU32>;
 
@@ -90,7 +56,7 @@ pub struct AnalyserItemCount {
 pub enum AnalyserImpact {
     Damage {
         value: NonZeroU32,
-        element: AnalyserElement,
+        element: DamageElement,
     },
     Healing(NonZeroU32),
 }
@@ -119,7 +85,7 @@ pub enum AnalyserFact {
     Impact(AnalyserImpact),
     DamageInput {
         value: NonZeroU32,
-        element: AnalyserElement,
+        element: DamageElement,
         source: AnalyserDamageSource,
     },
     /// Facts lost to the pending cap since the last batch.
@@ -136,6 +102,10 @@ fn race_from_wire(value: u64) -> WireResult<AnalyserRace> {
 
 fn race_to_wire(race: AnalyserRace) -> u64 {
     race.map_or(0, |race| u64::from(race.get()))
+}
+
+fn element_from_wire(value: u32) -> WireResult<DamageElement> {
+    DamageElement::from_wire(value).ok_or(AnalyserWireError::Malformed)
 }
 
 fn nonzero(value: u32) -> WireResult<NonZeroU32> {
@@ -164,7 +134,10 @@ pub fn encode_analyser_fact(fact: &AnalyserFact) -> WireResult<Vec<u8>> {
     let mut inner = Vec::new();
     let field = match fact {
         AnalyserFact::Experience { raw, gained } => {
-            push_nonzero_varint_field(&mut inner, 1, *raw);
+            if *raw == 0 {
+                return Err(AnalyserWireError::Malformed);
+            }
+            push_varint_field(&mut inner, 1, *raw);
             push_nonzero_varint_field(&mut inner, 2, *gained);
             1
         }
@@ -190,7 +163,7 @@ pub fn encode_analyser_fact(fact: &AnalyserFact) -> WireResult<Vec<u8>> {
         }
         AnalyserFact::Impact(impact) => {
             let (kind, value, element) = match impact {
-                AnalyserImpact::Damage { value, element } => (1, value, *element as u64),
+                AnalyserImpact::Damage { value, element } => (1, value, u64::from(element.wire())),
                 AnalyserImpact::Healing(value) => (2, value, 0),
             };
             push_varint_field(&mut inner, 1, kind);
@@ -210,7 +183,7 @@ pub fn encode_analyser_fact(fact: &AnalyserFact) -> WireResult<Vec<u8>> {
             };
             race_from_wire(race_to_wire(race))?;
             push_varint_field(&mut inner, 1, u64::from(value.get()));
-            push_varint_field(&mut inner, 2, *element as u64);
+            push_varint_field(&mut inner, 2, u64::from(element.wire()));
             push_varint_field(&mut inner, 3, source);
             push_nonzero_varint_field(&mut inner, 4, race_to_wire(race));
             5
@@ -272,6 +245,9 @@ fn decode_variant(field: u64, inner: &[u8]) -> WireResult<AnalyserFact> {
     Ok(match field {
         1 => {
             let ([raw, gained, _], _) = read_varints_and_items(inner, false)?;
+            if raw == 0 {
+                return Err(AnalyserWireError::Malformed);
+            }
             AnalyserFact::Experience { raw, gained }
         }
         2 => {
@@ -289,7 +265,7 @@ fn decode_variant(field: u64, inner: &[u8]) -> WireResult<AnalyserFact> {
             AnalyserFact::Impact(match (kind, element) {
                 (1, element) => AnalyserImpact::Damage {
                     value,
-                    element: AnalyserElement::from_wire(element)?,
+                    element: element_from_wire(element)?,
                 },
                 (2, 0) => AnalyserImpact::Healing(value),
                 _ => return Err(AnalyserWireError::Malformed),
@@ -299,7 +275,7 @@ fn decode_variant(field: u64, inner: &[u8]) -> WireResult<AnalyserFact> {
             let [value, element, source, race] = read_uint32_fields::<4>(inner)?;
             AnalyserFact::DamageInput {
                 value: nonzero(value)?,
-                element: AnalyserElement::from_wire(element)?,
+                element: element_from_wire(element)?,
                 source: match (source, race) {
                     (1, race) => AnalyserDamageSource::Creature(race_from_wire(race.into())?),
                     (2, 0) => AnalyserDamageSource::Player,

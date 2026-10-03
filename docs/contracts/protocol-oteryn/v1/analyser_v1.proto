@@ -10,21 +10,7 @@ syntax = "proto3";
 
 package oteryn.protocol.v1.analyser;
 
-// The content damage types (SPELL-PRESENT-0 §2), healing excluded.
-enum AnalyserElement {
-  ANALYSER_ELEMENT_UNSPECIFIED = 0;
-  ANALYSER_ELEMENT_PHYSICAL = 1;
-  ANALYSER_ELEMENT_FIRE = 2;
-  ANALYSER_ELEMENT_EARTH = 3;
-  ANALYSER_ELEMENT_ENERGY = 4;
-  ANALYSER_ELEMENT_ICE = 5;
-  ANALYSER_ELEMENT_HOLY = 6;
-  ANALYSER_ELEMENT_DEATH = 7;
-  ANALYSER_ELEMENT_LIFE_DRAIN = 8;
-  ANALYSER_ELEMENT_MANA_DRAIN = 9;
-  ANALYSER_ELEMENT_DROWNING = 10;
-  ANALYSER_ELEMENT_UNTYPED = 11;
-}
+import "damage_element_v1.proto";
 
 enum AnalyserImpactKind {
   ANALYSER_IMPACT_KIND_UNSPECIFIED = 0;
@@ -39,14 +25,14 @@ enum AnalyserDamageSource {
   ANALYSER_DAMAGE_SOURCE_NONE = 3;
 }
 
-// Experience before and after modifiers, as committed.
+// Experience before and after modifiers, as committed. Emitted only when raw >= 1.
 message AnalyserExperienceV1 {
-  uint64 raw = 1;
+  uint64 raw = 1;    // >= 1
   uint64 gained = 2;
 }
 
 message AnalyserItemCountV1 {
-  uint32 item_type = 1; // content item type id, non-zero
+  uint32 item_type = 1; // server content item type id, non-zero
   uint32 count = 2;     // 1..=65535
 }
 
@@ -59,12 +45,12 @@ message AnalyserKillLootV1 {
 message AnalyserImpactV1 {
   AnalyserImpactKind kind = 1;
   uint32 value = 2;           // final applied value, non-zero
-  AnalyserElement element = 3; // required for DAMAGE, absent for HEALING
+  oteryn.protocol.v1.damage_element.DamageElement element = 3; // required for DAMAGE, absent for HEALING
 }
 
 message AnalyserDamageInputV1 {
   uint32 value = 1; // final applied value, non-zero
-  AnalyserElement element = 2;
+  oteryn.protocol.v1.damage_element.DamageElement element = 2;
   AnalyserDamageSource source = 3;
   uint32 race = 4; // Bestiary race index 1..=1024; only for CREATURE, 0 = none
 }

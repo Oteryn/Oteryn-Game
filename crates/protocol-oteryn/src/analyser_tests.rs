@@ -5,6 +5,7 @@ use std::num::{NonZeroU16, NonZeroU32};
 use serde_json::Value;
 
 use super::*;
+use crate::damage_element::DamageElement;
 
 const PROTOCOL_REGISTRY: &str =
     include_str!("../../../docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json");
@@ -39,7 +40,7 @@ fn every_kind() -> Vec<AnalyserFact> {
             raw: 1_200,
             gained: 1_800,
         },
-        AnalyserFact::Experience { raw: 0, gained: 0 },
+        AnalyserFact::Experience { raw: 1, gained: 0 },
         worst_kill_loot(),
         AnalyserFact::KillLoot {
             race: None,
@@ -49,27 +50,27 @@ fn every_kind() -> Vec<AnalyserFact> {
         AnalyserFact::SupplyUsed(item(268, 1)),
         AnalyserFact::Impact(AnalyserImpact::Damage {
             value: nz(250),
-            element: AnalyserElement::Ice,
+            element: DamageElement::Ice,
         }),
         AnalyserFact::Impact(AnalyserImpact::Healing(nz(90))),
         AnalyserFact::DamageInput {
             value: nz(40),
-            element: AnalyserElement::Physical,
+            element: DamageElement::Physical,
             source: AnalyserDamageSource::Creature(Some(nz(12))),
         },
         AnalyserFact::DamageInput {
             value: nz(40),
-            element: AnalyserElement::Fire,
+            element: DamageElement::Fire,
             source: AnalyserDamageSource::Creature(None),
         },
         AnalyserFact::DamageInput {
             value: nz(7),
-            element: AnalyserElement::Untyped,
+            element: DamageElement::Untyped,
             source: AnalyserDamageSource::Player,
         },
         AnalyserFact::DamageInput {
             value: nz(7),
-            element: AnalyserElement::Drowning,
+            element: DamageElement::Drowning,
             source: AnalyserDamageSource::None,
         },
         AnalyserFact::Dropped(nz(3)),
@@ -110,7 +111,7 @@ fn the_largest_fact_is_measured_and_batches_stay_within_four_kib() {
         },
         AnalyserFact::DamageInput {
             value: nz(u32::MAX),
-            element: AnalyserElement::Untyped,
+            element: DamageElement::Untyped,
             source: AnalyserDamageSource::Creature(Some(nz(MAX_BESTIARY_RACE))),
         },
     ];
@@ -213,6 +214,7 @@ fn malformed_facts_fail_closed() {
         &[0x2a, 0x08, 0x08, 0x05, 0x10, 0x01, 0x18, 0x03, 0x20, 0x01], // race on no source
         &[0x2a, 0x06, 0x08, 0x05, 0x10, 0x01, 0x18, 0x04], // unknown source 4
         &[0x2a, 0x04, 0x08, 0x05, 0x10, 0x01], // no source
+        &[0x0a, 0x02, 0x10, 0x05], // experience with raw 0
         &[0x32, 0x00],             // dropped count 0
         &[0x0a, 0x04, 0x08, 0x01, 0x08, 0x01], // experience raw twice
         &[0x0a, 0x02, 0x18, 0x01], // unknown experience field
@@ -245,7 +247,10 @@ fn pending_queue_drops_the_oldest_and_reports_the_count() {
     let mut queue = AnalyserPendingQueue::default();
     assert!(queue.is_empty());
     assert_eq!(queue.take_batch(), None);
-    let fact = |raw| AnalyserFact::Experience { raw, gained: raw };
+    let fact = |n: u64| AnalyserFact::Experience {
+        raw: n + 1,
+        gained: n,
+    };
     for raw in 0..MAX_ANALYSER_PENDING_FACTS as u64 {
         queue.push(&fact(raw)).expect("push");
     }
@@ -261,6 +266,10 @@ fn pending_queue_drops_the_oldest_and_reports_the_count() {
     let second = decode_analyser_facts(&queue.take_batch().expect("batch")).expect("decode");
     assert_eq!(second[0], fact(65), "dropped is reported once");
     assert!(queue.push(&worst_kill_loot()).is_ok());
+    assert_eq!(
+        encode_analyser_fact(&AnalyserFact::Experience { raw: 0, gained: 5 }),
+        Err(AnalyserWireError::Malformed)
+    );
     let invalid = AnalyserFact::KillLoot {
         race: None,
         corpse_items: vec![item(1, 1); MAX_ANALYSER_LOOT_ITEMS + 1],
