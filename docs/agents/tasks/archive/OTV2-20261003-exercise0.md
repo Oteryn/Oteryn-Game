@@ -8,7 +8,7 @@ status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: arch/exercise0-decision-20261003
-pr: null
+pr: 1636
 base_sha: 4728c4679df6b5dcfa98895342234391d4acd873
 head_sha: "exact frozen head in the #1622 FREEZE_SHA entry"
 final_head_sha: "exact frozen head in the #1622 FREEZE_SHA entry"
