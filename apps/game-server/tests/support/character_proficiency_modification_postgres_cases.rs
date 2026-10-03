@@ -1,13 +1,14 @@
 #![allow(clippy::expect_used)]
-// PROF-SHAPE-1a PostgreSQL cases (PROFICIENCY-1B §13 rows 1-7, 9-11, 13, 14 as far as this
-// slice reaches; the dust and orb shapes wait for PROF-SHAPE-1b).
+// PROF-SHAPE-1a and -1b PostgreSQL cases (PROFICIENCY-1B §13 rows 1-7, 9-11, 13, 14 as far as
+// these slices reach; the orb BURN shape waits for a later slice).
 use crate::bestiary_postgres_harness::{
     CHARACTER, Harness, TestResult, configured_admin, debug, fence, id, runtime,
 };
 use crate::domain::weapon_proficiency::{
-    ProficiencyModificationCommandKind as Kind, ProficiencyModificationOperation as Operation,
-    ProficiencyModificationResult as R, ProficiencySelectionShape, ProficiencyShapingEntry,
-    ProficiencyShapingRevision, ProficiencyThresholdClass,
+    ProficiencyModificationCommandKind as Kind, ProficiencyModificationCost as Cost,
+    ProficiencyModificationOperation as Operation, ProficiencyModificationResult as R,
+    ProficiencySelectionShape, ProficiencyShapingEntry, ProficiencyShapingRevision,
+    ProficiencyThresholdClass,
 };
 use crate::domain::{CharacterId, CharacterRevision};
 use crate::durability::character_authority::ReconciledCharacterAuthority;
@@ -20,7 +21,7 @@ use crate::durability::character_proficiency::{
 use crate::durability::character_proficiency_modification::{
     ProficiencyModificationBoundRevisions as Bound, ProficiencyModificationCommand as Command,
     ProficiencyModificationContext as Context, ProficiencyModificationOutcome as Outcome,
-    ProficiencyShapingSource,
+    ProficiencyModificationUsage as Usage, ProficiencyShapingSource,
 };
 use crate::durability::character_progression::CharacterProgressionError as Error;
 use std::sync::Arc;
@@ -317,7 +318,38 @@ async fn snapshot(h: &Harness) -> TestResult<String> {
         'tracks',(SELECT jsonb_agg(to_jsonb(t) ORDER BY item_key) FROM game_character_proficiency t), \
         'rows',(SELECT jsonb_agg(to_jsonb(m) ORDER BY item_key, slot) FROM game_character_proficiency_modifications m), \
         'lines',(SELECT jsonb_agg(to_jsonb(l) ORDER BY proficiency_occurrence_id) FROM game_character_proficiency_modification_lines l), \
-        'terminals',(SELECT jsonb_agg(to_jsonb(t) ORDER BY proficiency_occurrence_id) FROM game_character_proficiency_modification_terminals t))::text",
+        'terminals',(SELECT jsonb_agg(to_jsonb(t) ORDER BY proficiency_occurrence_id) FROM game_character_proficiency_modification_terminals t), \
+        'dust',(SELECT jsonb_agg(to_jsonb(d) ORDER BY character_id) FROM game_character_forge_dust d), \
+        'dust_entries',(SELECT jsonb_agg(to_jsonb(e) ORDER BY entry_id) FROM game_character_forge_dust_entries e))::text",
+    )
+    .fetch_one(&h.pool)
+    .await?)
+}
+
+/// Credit the Character `amount` dust (one creature_kill GAIN, the chain's first entry).
+async fn seed_dust(h: &Harness, amount: i64) -> TestResult {
+    let mut tx = h.pool.begin().await?;
+    for sql in [
+        "INSERT INTO game_character_forge_dust (character_id, balance, dust_limit) \
+         SELECT character_id, 0, 100 FROM game_character_roots",
+        "INSERT INTO game_character_forge_dust_entries (entry_id, character_id, kind, cause, \
+            cause_occurrence_id, transaction_id, amount, lost_amount, balance_before, \
+            balance_after, dust_limit_before, dust_limit_after) \
+         SELECT '01020304-0506-7008-8000-0000000000e1', character_id, 'GAIN', 'creature_kill', \
+            '01020304-0506-7008-8000-0000000000e2', '01020304-0506-7008-8000-0000000000e3', \
+            $1, 0, 0, $1, 100, 100 FROM game_character_roots",
+        "UPDATE game_character_forge_dust SET balance = $1, \
+            last_entry_id = '01020304-0506-7008-8000-0000000000e1'",
+    ] {
+        sqlx::query(sql).bind(amount).execute(&mut *tx).await?;
+    }
+    tx.commit().await?;
+    Ok(())
+}
+
+async fn dust_balance(h: &Harness) -> TestResult<i64> {
+    Ok(sqlx::query_scalar(
+        "SELECT coalesce(sum(balance), 0)::bigint FROM game_character_forge_dust",
     )
     .fetch_one(&h.pool)
     .await?)
@@ -645,19 +677,6 @@ fn refusals_follow_the_order_and_write_nothing() -> TestResult {
             R::NotModified,
         )
         .await?;
-        let costly = Shaping {
-            clear_dust: 1_000,
-            ..Shaping::default()
-        };
-        a.refuse(
-            "a dust cost before the ledger",
-            3,
-            command(30, 1, Kind::Clear, 3, "shaping-1"),
-            costly,
-            IN_ZONE,
-            R::NotAdmitted,
-        )
-        .await?;
         // A pool with fewer than 3 entries other than the current one refuses before any write
         // (the 3-entry case is a domain test).
         a.accept(3, modify(31, 1, 0)).await?;
@@ -672,6 +691,19 @@ fn refusals_follow_the_order_and_write_nothing() -> TestResult {
             small,
             IN_ZONE,
             R::PoolTooSmall,
+        )
+        .await?;
+        let costly = Shaping {
+            clear_dust: 1_000,
+            ..Shaping::default()
+        };
+        a.refuse(
+            "a dust cost without the dust",
+            4,
+            command(32, 1, Kind::Clear, 4, "shaping-1"),
+            costly,
+            IN_ZONE,
+            R::InsufficientDust,
         )
         .await?;
         a.refuse(
@@ -739,6 +771,28 @@ fn a_moved_revision_set_is_terminal_and_outside_the_chain() -> TestResult {
                 .await?,
             1
         );
+        // The PROF-1 writer and its reconciliation see the terminal occurrence as known with
+        // another binding.
+        let reused = selection(40, [Some(0), None, None], [Some(1), None, None], 3)?;
+        let error = a
+            .proficiency(3, reused.clone(), Definitions::default())
+            .await
+            .expect_err("a terminal occurrence commits through PROF-1");
+        assert!(
+            error.to_string().contains("ConflictingOccurrence"),
+            "{error}"
+        );
+        assert!(matches!(
+            a.h.root
+                .reconcile_character_proficiency(
+                    a.authority,
+                    CharacterId::from_bytes(id(CHARACTER)).map_err(debug)?,
+                    revision(3),
+                    reused
+                )
+                .await,
+            Err(Error::ConflictingOccurrence)
+        ));
         // A bound member that no longer resolves (the axe has no shaping content) has moved
         // too: the occurrence is terminal, so reappearing content can never commit it.
         let axe = Command::new(
@@ -786,6 +840,226 @@ fn a_moved_revision_set_is_terminal_and_outside_the_chain() -> TestResult {
         );
         Ok(())
     })
+}
+
+#[test]
+fn a_dust_cost_is_spent_with_its_receipt_and_once() -> TestResult {
+    run("profshape_dust", async |a| {
+        seed_dust(a.h, 100).await?;
+        a.accept(3, command(40, 1, Kind::Modify { level: 0 }, 3, "shaping-1"))
+            .await?;
+        let costly = Shaping {
+            clear_dust: 60,
+            ..Shaping::default()
+        };
+        let clear = command(41, 1, Kind::Clear, 4, "shaping-1");
+        let outcome = a
+            .modify_with(4, clear.clone(), IN_ZONE, costly.clone())
+            .await
+            .map_err(debug)?;
+        let Outcome::Committed(first) = outcome else {
+            unreachable!("{outcome:?}")
+        };
+        assert_eq!(first.cost, Cost { dust: 60, orbs: 0 });
+        assert_eq!(dust_balance(a.h).await?, 40);
+        let spent: (String, String, i64, bool) = sqlx::query_as(
+            "SELECT e.kind, e.cause, e.amount, e.cause_occurrence_id = m.proficiency_occurrence_id \
+             FROM game_character_forge_dust_entries e \
+             JOIN game_character_proficiency_modification_lines m ON m.dust_spent > 0 \
+             WHERE e.cause = 'proficiency'",
+        )
+        .fetch_one(&a.h.pool)
+        .await?;
+        assert_eq!(spent, ("SPEND".into(), "proficiency".into(), 60, true));
+        // A replay pays nothing more.
+        assert_eq!(
+            a.modify_with(5, clear, IN_ZONE, costly.clone())
+                .await
+                .map_err(debug)?,
+            Outcome::AlreadyCommitted(first)
+        );
+        assert_eq!(dust_balance(a.h).await?, 40);
+        assert_eq!(a.h.count("game_character_forge_dust_entries").await?, 2);
+        // Check 9: 40 dust cannot pay 60; nothing is written.
+        a.accept(5, command(42, 1, Kind::Modify { level: 0 }, 5, "shaping-1"))
+            .await?;
+        a.refuse(
+            "insufficient dust",
+            6,
+            command(43, 1, Kind::Clear, 6, "shaping-1"),
+            costly,
+            IN_ZONE,
+            R::InsufficientDust,
+        )
+        .await?;
+        a.verify().await
+    })
+}
+
+/// One hand-written `perk_modification` CLEAR of slot 1 at global revision 5 whose line binds
+/// `cost` dust and whose transaction spends `spend` (if any); the deferred guards run at the end
+/// and the transaction is rolled back.
+async fn forged_clear(
+    h: &Harness,
+    cost: i64,
+    spend: Option<i64>,
+) -> TestResult<Result<(), String>> {
+    const NEW: &str = "'01020304-0506-7008-8000-0000000000f1'::uuid";
+    let mut tx = h.pool.begin().await?;
+    let mut statements = vec![
+        "UPDATE game_character_roots SET character_revision = 5".to_owned(),
+        "UPDATE game_character_progression_state SET character_revision = 5".to_owned(),
+        format!(
+            "INSERT INTO game_character_proficiency_receipts SELECT (jsonb_populate_record( \
+             NULL::game_character_proficiency_receipts, to_jsonb(h) || jsonb_build_object( \
+             'proficiency_occurrence_id', {NEW}, 'original_character_revision', 4, \
+             'committed_character_revision', 5))).* FROM game_character_proficiency_receipts h \
+             WHERE committed_character_revision = 4"
+        ),
+        format!(
+            "INSERT INTO game_character_proficiency_receipt_lines SELECT (jsonb_populate_record( \
+             NULL::game_character_proficiency_receipt_lines, to_jsonb(l) || jsonb_build_object( \
+             'proficiency_occurrence_id', {NEW}, 'committed_character_revision', 5))).* \
+             FROM game_character_proficiency_receipt_lines l WHERE committed_character_revision = 4"
+        ),
+        format!(
+            "UPDATE game_character_proficiency SET committed_character_revision = 5, \
+             last_proficiency_occurrence_id = {NEW}"
+        ),
+        format!(
+            "INSERT INTO game_character_proficiency_modification_lines SELECT (jsonb_populate_record( \
+             NULL::game_character_proficiency_modification_lines, to_jsonb(m) || jsonb_build_object( \
+             'proficiency_occurrence_id', {NEW}, 'committed_character_revision', 5, \
+             'operation', 'CLEAR', 'level_before', m.level_after, \
+             'shaping_key_before', m.shaping_key_after, \
+             'shaping_revision_before', m.shaping_revision_after, \
+             'entry_index_before', m.entry_index_after, 'rank_before', m.rank_after, \
+             'pending_offer_before', m.pending_offer_after, 'level_after', NULL, \
+             'shaping_key_after', NULL, 'shaping_revision_after', NULL, \
+             'entry_index_after', NULL, 'rank_after', NULL, 'pending_offer_after', NULL, \
+             'dust_cost', {cost}, 'dust_spent', {cost}))).* \
+             FROM game_character_proficiency_modification_lines m \
+             WHERE committed_character_revision = 4"
+        ),
+        format!(
+            "UPDATE game_character_proficiency_modifications SET level = NULL, shaping_key = NULL, \
+             shaping_revision = NULL, entry_index = NULL, rank = NULL, pending_offer = NULL, \
+             committed_character_revision = 5, last_proficiency_occurrence_id = {NEW}"
+        ),
+    ];
+    if let Some(amount) = spend {
+        statements.push(format!(
+            "INSERT INTO game_character_forge_dust_entries (entry_id, character_id, \
+                previous_entry_id, kind, cause, cause_occurrence_id, transaction_id, amount, \
+                lost_amount, balance_before, balance_after, dust_limit_before, dust_limit_after) \
+             SELECT '01020304-0506-7008-8000-0000000000f2', character_id, last_entry_id, 'SPEND', \
+                'proficiency', {NEW}, '01020304-0506-7008-8000-0000000000f3', {amount}, 0, \
+                balance, balance - {amount}, dust_limit, dust_limit FROM game_character_forge_dust"
+        ));
+        statements.push(format!(
+            "UPDATE game_character_forge_dust SET balance = balance - {amount}, \
+             last_entry_id = '01020304-0506-7008-8000-0000000000f2'"
+        ));
+    }
+    statements.push("SET CONSTRAINTS ALL IMMEDIATE".to_owned());
+    let mut result = Ok(());
+    for sql in statements {
+        if let Err(error) = sqlx::query(sqlx::AssertSqlSafe(sql))
+            .execute(&mut *tx)
+            .await
+        {
+            result = Err(format!("{error:?}"));
+            break;
+        }
+    }
+    tx.rollback().await?;
+    Ok(result)
+}
+
+#[test]
+fn the_dust_guard_requires_the_spend_to_equal_the_line() -> TestResult {
+    run("profshape_dust_guard", async |a| {
+        seed_dust(a.h, 100).await?;
+        a.accept(3, command(50, 1, Kind::Modify { level: 0 }, 3, "shaping-1"))
+            .await?;
+        // The control: the same transaction with a matching spend passes every guard.
+        assert_eq!(forged_clear(a.h, 60, Some(60)).await?, Ok(()));
+        assert_eq!(forged_clear(a.h, 0, None).await?, Ok(()));
+        for (cost, spend, name) in [
+            (
+                1_000,
+                Some(1),
+                "a writer recording 1 dust for a 1,000-dust operation",
+            ),
+            (60, None, "a dust cost with no spend"),
+            (0, Some(1), "a spend for a free operation"),
+            (60, Some(59), "a spend below the cost"),
+        ] {
+            let error = forged_clear(a.h, cost, spend).await?.expect_err(name);
+            assert!(
+                error.contains("does not equal its forge dust SPEND"),
+                "{name}: {error}"
+            );
+        }
+        // DUR03-RL-03-PROF: a second value line for one receipt is refused (one entry per
+        // cause occurrence).
+        let mut tx = a.h.pool.begin().await?;
+        let error = sqlx::query(
+            "INSERT INTO game_character_forge_dust_entries (entry_id, character_id, \
+                previous_entry_id, kind, cause, cause_occurrence_id, transaction_id, amount, \
+                lost_amount, balance_before, balance_after, dust_limit_before, dust_limit_after) \
+             SELECT '01020304-0506-7008-8000-0000000000f4', character_id, last_entry_id, 'SPEND', \
+                'proficiency', '01020304-0506-7008-8000-0000000000e2', \
+                '01020304-0506-7008-8000-0000000000f5', 1, 0, balance, balance - 1, dust_limit, \
+                dust_limit FROM game_character_forge_dust",
+        )
+        .execute(&mut *tx)
+        .await
+        .map(drop);
+        let error = match error {
+            Err(error) => format!("{error:?}"),
+            Ok(()) => format!(
+                "{:?}",
+                tx.commit().await.expect_err("an orphan spend commits")
+            ),
+        };
+        assert!(
+            error.contains("does not equal its forge dust SPEND"),
+            "{error}"
+        );
+        a.verify().await
+    })
+}
+
+#[test]
+fn value_rows_admit_their_maxima_only() {
+    // DUR03-RL-03-PROF (1) and DUR03-RL-06-PROF (1 participant, 4 work units): the dust shape
+    // is the maximum; one more of any is rejected.
+    let dust = Usage::of(Cost { dust: 60, orbs: 0 });
+    assert_eq!(dust, Usage::MAX);
+    assert!(dust.admitted());
+    let free = Usage::of(Cost { dust: 0, orbs: 0 });
+    assert_eq!(
+        (free.value_lines, free.participants, free.work_units),
+        (0, 1, 3)
+    );
+    assert!(free.admitted());
+    for over in [
+        Usage {
+            value_lines: 2,
+            ..Usage::MAX
+        },
+        Usage {
+            participants: 2,
+            ..Usage::MAX
+        },
+        Usage {
+            work_units: 5,
+            ..Usage::MAX
+        },
+    ] {
+        assert!(!over.admitted(), "{over:?}");
+    }
 }
 
 #[test]
@@ -983,7 +1257,7 @@ fn database_checks_refuse_forbidden_shapes() -> TestResult {
                 .await?
                 .contains("does not equal its latest line")
         );
-        // Each operation changing a forbidden field, and any cost before the ledger, fails its CHECK.
+        // Each operation changing a forbidden field, and any orb before the orb BURN, fails its CHECK.
         let line = "INSERT INTO game_character_proficiency_modification_lines SELECT \
             proficiency_occurrence_id, character_id, committed_character_revision, cause, item_key, 2, ";
         for (tail, name) in [
@@ -996,8 +1270,8 @@ fn database_checks_refuse_forbidden_shapes() -> TestResult {
                 "cost",
             ),
             (
-                "'CLEAR', bound_shaping_revision, level_after, shaping_key_after, shaping_revision_after, entry_index_after, rank_after, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1000, 1000, 0, 0",
-                "line_no_ledger",
+                "'ORB_RANK', bound_shaping_revision, level_after, shaping_key_after, shaping_revision_after, entry_index_after, rank_after, NULL, level_after, shaping_key_after, shaping_revision_after, entry_index_after, 10, NULL, 0, 0, 1, 1",
+                "line_no_orb_burn",
             ),
             (
                 "'RESHAPE_DECLINE', bound_shaping_revision, level_after, shaping_key_after, shaping_revision_after, entry_index_after, rank_after, NULL, level_after, shaping_key_after, shaping_revision_after, entry_index_after, rank_after, NULL, 0, 0, 0, 0",

@@ -5907,6 +5907,75 @@
       "notes": "CHARACTER-GOLD-FEE-BOUNDARY-V1 \u00a74.6 (D174-D178 and the \u00a72 at-most-2-change-outputs interpretation); fee shape only, the one-item DUR03-RL-01..08 rows are unchanged; registered by OTV2-20260930-gold-fee-1a. GOLD-FEE-1b (OTV2-20260930-gold-fee-1b) admits platinum/crystal and the change MINTs within these rows and re-measured this RL-07 byte row (was 24,181 / 24,495 B for gold only)."
     },
     {
+      "id": "DUR03-RL-03-PROF",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_PROFICIENCY1B_PERK_MODIFICATION_VALUE_SHAPES_DECISION_2026-10-03.md",
+      "resource": "Value lines in one perk modification receipt",
+      "unit": "value lines per receipt",
+      "hard_maximum": 1,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 1
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Checked before any write; never truncated; the shape is fixed, so a plan over it fails closed (InvalidStoredState) before any write. One line carries the receipt's dust cost; 0060 re-proves it at commit.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=1 admitted",
+        "max+1=2 rejected (CAPACITY_EXCEEDED)"
+      ],
+      "consumers": [
+        "apps/game-server/src/durability/character_proficiency_modification.rs (ProficiencyModificationUsage: checked after the plan, before any write)",
+        "apps/game-server/migrations/0060_proficiency_modification_value_lines.sql (dust guard: a receipt with dust has exactly one line and one equal SPEND entry)"
+      ],
+      "notes": "PROFICIENCY-1B composed dust burn shape (DUR-03 \u00a739.3 amendment); dust SPEND only, the orb BURN is not admitted and its DUR03-RL-01/02-PROF rows are registered by the orb slice; registered by OTV2-20261003-prof-shape-1b."
+    },
+    {
+      "id": "DUR03-RL-06-PROF-PARTICIPANTS",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_PROFICIENCY1B_PERK_MODIFICATION_VALUE_SHAPES_DECISION_2026-10-03.md",
+      "resource": "Plan participants in one perk modification transaction",
+      "unit": "participants per logical transaction",
+      "hard_maximum": 1,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 1
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Checked before any write; never truncated; the shape is fixed, so a plan over it fails closed (InvalidStoredState) before any write. The acting Character is the only participant.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=1 admitted",
+        "max+1=2 rejected (CAPACITY_EXCEEDED)"
+      ],
+      "consumers": [
+        "apps/game-server/src/durability/character_proficiency_modification.rs (ProficiencyModificationUsage: checked after the plan, before any write)",
+        "apps/game-server/migrations/0060_proficiency_modification_value_lines.sql (dust guard: a receipt with dust has exactly one line and one equal SPEND entry)"
+      ],
+      "notes": "PROFICIENCY-1B composed dust burn shape (DUR-03 \u00a739.3 amendment); dust SPEND only, the orb BURN is not admitted and its DUR03-RL-01/02-PROF rows are registered by the orb slice; registered by OTV2-20261003-prof-shape-1b."
+    },
+    {
+      "id": "DUR03-RL-06-PROF-EFFECT-WORK-UNITS",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_PROFICIENCY1B_PERK_MODIFICATION_VALUE_SHAPES_DECISION_2026-10-03.md",
+      "resource": "Effect work units in one perk modification transaction",
+      "unit": "work units per logical transaction",
+      "hard_maximum": 4,
+      "configurable_range": {
+        "minimum": 3,
+        "maximum": 4
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Checked before any write; never truncated; the shape is fixed, so a plan over it fails closed (InvalidStoredState) before any write. Receipt, slot state and audit 3, plus 1 for the dust line and its SPEND entry.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=4 admitted",
+        "max+1=5 rejected (CAPACITY_EXCEEDED)"
+      ],
+      "consumers": [
+        "apps/game-server/src/durability/character_proficiency_modification.rs (ProficiencyModificationUsage: checked after the plan, before any write)",
+        "apps/game-server/migrations/0060_proficiency_modification_value_lines.sql (dust guard: a receipt with dust has exactly one line and one equal SPEND entry)"
+      ],
+      "notes": "PROFICIENCY-1B composed dust burn shape (DUR-03 \u00a739.3 amendment); dust SPEND only, the orb BURN is not admitted and its DUR03-RL-01/02-PROF rows are registered by the orb slice; registered by OTV2-20261003-prof-shape-1b."
+    },
+    {
       "id": "DUR03-AUDIT-RETENTION-S",
       "owner_contract": "../architecture/reviews/OTERYN_GAME_DUR03_RESOURCE_MAXIMA_AND_CREATURE_DEATH_IDENTITY_DECISION_2026-09-28.md",
       "resource": "Ordinary retention ceiling of one event type 2 durable-audit event (profile DUR03_ONE_ITEM_DURABLE_AUDIT_RETENTION_V1)",

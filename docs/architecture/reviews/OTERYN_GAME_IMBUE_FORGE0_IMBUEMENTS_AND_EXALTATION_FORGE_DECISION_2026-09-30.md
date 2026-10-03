@@ -274,6 +274,10 @@ counts. Items already carried stay carried when capacity falls (Global).
   **Amendment (pending on acceptance of PROFICIENCY-1; `reviews/OTERYN_GAME_PROFICIENCY1_PERK_MODIFICATION_AND_CATALYSTS_DECISION_2026-10-01.md` §4).** Weapon Proficiency modifications, ranks and
   reshape offers will become a second dust sink under `ProficiencyCause`, using the same ledger and
   lock, once a later DUR-03 amendment admits their shape; nothing is admitted yet.
+  **Amendment (PROF-SHAPE-1b; `reviews/OTERYN_GAME_PROFICIENCY1B_PERK_MODIFICATION_VALUE_SHAPES_DECISION_2026-10-03.md`).**
+  The perk modification dust sink is admitted: a modification line with a dust cost carries one
+  `SPEND` entry with cause `proficiency`, under the same ledger and dust row lock (DUR-03 §15,
+  migration 0060). The orb BURN, ranks and reshape offers stay unadmitted.
 - **Slivers and exalted cores are items**: stackable, marketable and tradeable per content.
 - **Dust limit:** raised by one for (limit − 75) dust, up to 225 (Canary; `PARITY_PENDING`). A
   gain above the limit is lost, as in Global; the lost part is recorded in the ledger entry.
