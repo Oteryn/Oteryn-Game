@@ -155,21 +155,34 @@ fence. There are two tables:
   - the positions are drawn under the RNG purpose `cyclopedia_poi`, from the pool minus the
     positions inside the character's current game window, and stored in the row.
 - **Shuffle** draws new positions for the open subarea and resets its found mask.
-- Each command is one idempotent Character write with a request id.
+- Each command is one idempotent Character write with a request id. Its draws are bound to the
+  occurrence (CharacterId, request id, `cyclopedia_poi`, draw index) under SIM-DETERMINISM-01 §12,
+  so a retried command reproduces the same positions.
 
 ### 4.2a Content revision change
 
-The exploration row pins the pool content revision. When a new World Bundle revision changes that
-subarea's tiles or pool, the change is classified `READ_COMPATIBLE_NORMALIZE` (DUR-04 §12) and the
-next load of the character normalizes the row in one Character write:
+Discovery progress is never reinterpreted downwards. A new World Bundle revision is classified
+under DUR-04 §12 by what it changes:
 
-- found positions stay found and keep counting, so progress never decreases;
-- unfound positions that are no longer in the new pool are redrawn from it under `cyclopedia_poi`;
-- if the subarea is no longer discoverable, the row is deleted with its found count recorded in the
-  write's evidence; no grant is made or taken back.
+- **Tiles or pool inside a subarea that stays discoverable in the same area:**
+  `READ_COMPATIBLE_NORMALIZE`. The exploration row pins the pool content revision. The next load of
+  the character normalizes it in one Character write: found positions stay found and keep counting,
+  and unfound positions that are no longer in the new pool are redrawn under the occurrence
+  (CharacterId, normalize revision, `cyclopedia_poi`, draw index). Discovered subarea rows and
+  derived values do not change.
+- **The set of discoverable subareas, their area membership, the set of areas, or the title and
+  reward thresholds**, in a world that holds discovery state: `INCOMPATIBLE_REQUIRES_PRODUCT_DECISION`.
+  Such a revision is not admitted until that decision exists. Its preserving default is fixed now:
+  - no character's area percentage, 30%, 70% or 100% unlock, count of fully discovered areas,
+    speed bonus eligibility or title may fall;
+  - discovered subarea rows are never rewritten or deleted;
+  - grants already made stay;
+  - an active exploration row on a subarea that stops being discoverable stays pinned to its
+    revision until the decision says how it ends.
+- In a world with no discovery state, any revision is `COMPATIBLE_NO_MIGRATION`.
 
-Discovered subarea rows are never rewritten. A subarea removed from content stays recorded and is
-left out of derived values. Grants already made stay.
+CYC-CONTENT-1's report lists each such change between two revisions, so the classification is
+checked, not assumed.
 
 ### 4.3 Finding a POI
 
@@ -244,22 +257,24 @@ This decision adds `AreaDonation` as a new fee source and gold sink to the D178 
 
 ### 5.4 Selection at server save
 
-The `WorldReset` job of the world (ADR-0021 §4.7, CREATURE-AI-0 §6.5) does these steps before the
-channels activate:
+The `WorldReset` job of the world (ADR-0021 §4.7, CREATURE-AI-0 §6.5) runs the selection as **one
+transaction** before the channels activate:
 
-1. Eligible = the donation-eligible areas minus the areas improved in the ending epoch.
-2. **Donation area:** the eligible area with the highest total of at least 10,000,000
-   (`CYC0-RL-05`, TibiaWiki). A tie is drawn under the RNG purpose `improved_respawn_tie`.
-3. **Random area:** with chance 33%, drawn under the RNG purpose `improved_respawn_random`, one
-   area uniformly from eligible minus the donation area.
-4. **One transaction** commits the selection: the epoch row insert (both areas, the RNG records
-   and the pool revisions read), and the donation winner's total set to 0 at the revision read in
-   step 2. The other totals stay. The order of steps 2 and 3 is `PARITY_PENDING`.
+1. It locks every `game_world_area_donations` row of the world, in area id order. A donation
+   (§5.3) takes the same row lock, so the selection reads one stable snapshot and no donation
+   lands between the read and the commit.
+2. Eligible = the donation-eligible areas minus the areas improved in the ending epoch.
+3. **Donation area:** the eligible area with the highest total of at least 10,000,000
+   (`CYC0-RL-05`, TibiaWiki). A tie is drawn under `improved_respawn_tie`.
+4. **Random area:** with chance 33%, drawn under `improved_respawn_random`, one area uniformly from
+   eligible minus the donation area.
+5. It inserts the epoch row (both areas, the RNG records and every pool revision read) and sets the
+   winner's total to 0. The other totals stay. The order of steps 3 and 4 is `PARITY_PENDING`.
 
-Steps 1-3 compute only and write nothing. A crash before step 4 commits leaves no trace, and the
-retry draws from the same unchanged state. A crash after it leaves the epoch row, so a retried job
-reads it and never draws or resets again. A donation that moved the winner's revision in between
-fails step 4, and the job recomputes. The epoch's channels activate only after step 4 commits.
+Every draw is bound to the occurrence (WorldId, reset epoch, purpose, draw index) under
+SIM-DETERMINISM-01 §12, so a retry reproduces the same outcome from the same snapshot. A crash
+before the commit leaves no trace. A crash after it leaves the epoch row, so a retried job reads it
+and never draws or resets again. The epoch's channels activate only after the commit.
 
 ### 5.5 Effect (CYC-RESPAWN-1)
 
