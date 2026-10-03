@@ -9,7 +9,7 @@ repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: arch/premium-delivery0a-followups-20261003
 issue: 162
-pr: "exact PR in the control plane FREEZE_SHA entry"
+pr: 1668
 head_sha: "exact frozen head in the control plane FREEZE_SHA entry"
 owner: Sol Supervising Architect
 created_at: 2026-10-03
