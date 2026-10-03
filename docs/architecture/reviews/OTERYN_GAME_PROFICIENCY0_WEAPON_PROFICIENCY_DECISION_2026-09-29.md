@@ -183,6 +183,10 @@ gives trees, thresholds and perks to content. Its rule 6 requires versioned defi
   - `proficiency_occurrence_id`, `character_id`, `committed_character_revision` and `item_key`,
     with a composite FK (occurrence, character, revision) to its receipt;
   - the definition key and revision, before and after;
+  - the **shape fingerprint** before and after (amendment for D283c): a fixed-size digest of the
+    definition revision's level count and, per level, the ordered perk kinds. It is computed by the
+    writer from the active content when that revision is first written to the track, and the track
+    row stores the current one, so it never needs the revision's content again;
   - `progress` and `selections`, before and after.
 
   CHECKs per cause:
@@ -195,9 +199,13 @@ gives trees, thresholds and perks to content. Its rule 6 requires versioned defi
     follow the declared migration is a writer invariant, because the guard cannot read content.
     PROF-1 tests it, and reconcile recomputes it from the two definition revisions.
   - A revision advance on a `training` or `perk_selection` line must be compatible (same level count
-    and per-level perk order). The guard cannot read content, so this too is a writer invariant:
-    PROF-1 tests it, and reconcile and `verify_character_integrity` recheck it from the two retained
-    definition revisions. An incompatible advance only ever appears on a `migration` line.
+    and per-level perk order). The **line CHECK** enforces it without content: on those causes the
+    shape fingerprint after must equal the fingerprint before, and the per-track check links each
+    line's before fingerprint to the previous line's after value. The writer computes the new
+    revision's fingerprint from the active content, which always holds the revision it advances
+    to. `verify_character_integrity` and reconcile check the same equality and chain from the stored
+    lines alone, so no definition history is needed and an evicted revision never makes a receipt
+    unverifiable. A `migration` line may change the fingerprint; it is the only cause that can.
 
   The receipt trigger checks the line count: 1 to N for `training` and `migration`, and exactly 1
   for `perk_selection`. N is bounded by the weapons with a proficiency in the active content.

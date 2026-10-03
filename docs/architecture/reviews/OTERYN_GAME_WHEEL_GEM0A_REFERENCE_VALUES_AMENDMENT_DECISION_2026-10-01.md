@@ -59,8 +59,14 @@ on WHEEL-GEM-0A).
 
 - **Must decide now:** YES. GEM-1 and the W-R/GEM-R content need the values before their first
   revision.
-- **Harder later:** these values become the first revision of W-R and GEM-R; changing them after
-  characters hold gems or grades needs a WHEEL-GEM-0 §5.3 migration.
+- **Harder later**, per kind of value:
+  - Wheel W-R values: value-only changes later apply as a new W-R revision with no re-stamp of
+    stored state (WHEEL-0 §5.1), so they stay cheap to change.
+  - GEM-R values (grade costs, the slot-2 list): once characters hold revealed gems or grades, a
+    change needs a WHEEL-GEM-0 §5.3 migration of the stored rows.
+  - The revealed-gem cap: raising it is free, but lowering it below what characters already hold
+    needs an explicit migration rule for the excess gems (keep or remove), which no decision
+    defines yet.
 - **Superseding evidence:** an official source that differs from the owner-verified values.
 - **Deliberately not decided:** anything outside the listed values and the Guiding Presence rule.
 
