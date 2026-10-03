@@ -50,3 +50,16 @@ owned_paths:
 See the lead's report for the candidate; local checks run on this branch: `test_lower_timed_item_packet.py`
 and `--check`, `cargo fmt --all --check`, clippy on `oteryn-game-server`, `cargo test` (content),
 `git diff --check`, `python tools/agents/validate_governance.py`.
+
+## Rulings applied (D396, D397)
+
+- D397: no reference-artifact codec change. Both `ON_EQUIP` and `CONTINUOUS` packet rows map to
+  `AuthoritativeActiveTimeBudget` (TIMED-ITEM-0B §10.2: budget in a slot). A continuous form is the
+  one with `stop_duration = false`; `show_count` stays in the packet until TIMED-WIRE-1.
+- Lighting pairs (`transform {trigger: use}` unlit → lit) are not in Canary `items.xml` (Canary
+  lights torches from scripts), so no use rows exist; ITEM-USE-0's lighting stays without content
+  until a use pair is evidenced.
+- D396: the materializer call site and the content-tree regeneration, with one mechanical re-pin of
+  the navigation digests, wait for the content carrier (#1599/#1630) to merge; then merge main,
+  re-pin, FREEZE.
+- Carries #1671 P2 4174387005 (`-text` on the pinned Canary files).

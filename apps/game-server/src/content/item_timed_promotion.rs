@@ -275,9 +275,13 @@ fn set_field(
             )
         }
         ("temporal.consumption_mode", TypedValue::ConsumptionMode(mode)) => {
+            // D397: both modes run on an active-time budget in a slot (TIMED-ITEM-0B §10.2);
+            // the codec is unchanged, and a continuous form is the one with
+            // `stop_duration = false` (the Ground deadline is runtime state, not content).
             let mode = match mode {
-                ConsumptionMode::OnEquip => ReferenceTemporalMode::AuthoritativeActiveTimeBudget,
-                ConsumptionMode::Continuous => ReferenceTemporalMode::DurableAbsoluteDeadline,
+                ConsumptionMode::OnEquip | ConsumptionMode::Continuous => {
+                    ReferenceTemporalMode::AuthoritativeActiveTimeBudget
+                }
             };
             set(&mut temporal(semantics, row)?.consumption_mode, mode)
         }
