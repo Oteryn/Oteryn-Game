@@ -7,7 +7,7 @@ date: 2026-10-03
 owner: Sol Supervising Architect
 requested_by: control plane (D358 topic request after FAMILIARS-0-FIX-3)
 writes_on_other_prs: none
-amended_by: ARCH-PACKET-FIX-1 (§2.3 rows, §2.5 RL-04, §2.6 rows; #1687 round-3 P1s 4174692081 and 4174692089)
+amended_by: ARCH-PACKET-FIX-1 (§2.3 rows, §2.5 RL-04, §2.6 rows and the Light owner; #1687 round-3 P1s 4174692081 and 4174692089; #1689 P1s 4174761344 and 4174761349)
 ```
 
 This bundle splits and packets three requested topics:
@@ -47,7 +47,7 @@ Order:
 | PROF-SHAPE-1b | #1685 and FORGE-1a have merged |
 | TIMED-WIRE-1 | TIMED-RT-1b and carrier #1675 have merged |
 | FORGE-1b | FORGE-1a, FORGE-CONTENT-1, GOLD-FEE-2 and ITEM-MOVE-2a have merged |
-| TIMED-RT-1c | TIMED-RT-1b, ITEM-MOVE-2a, ITEM-MOVE-2b and the ITEM-USE `Light` form have merged |
+| TIMED-RT-1c | TIMED-RT-1b, ITEM-MOVE-2a, ITEM-MOVE-2b and ITEM-USE-1 have merged |
 
 **Shared files.** The packets own disjoint code paths. Four files are append-only registers that
 every persistence slice touches:
@@ -482,12 +482,19 @@ Acceptance: IMBUE-FORGE-0 §8-§10 operation by operation, `DustLimit` included:
   - It reports sustained commits per second and the database p99 commit latency. The full run
     is selected by an environment variable; CI runs a short version that checks only that the
     harness completes and asserts no timing.
-  - The worker records the method, the host and the measured values in the task record. It
-    registers `IMBFORGE0-RL-04` with the measured rate as a qualification budget at p99, not a
-    runtime cutoff, as `MAP01-VIEWPORT-US` is registered. Its boundary tests are "a measured p99
-    within the budget passes qualification" and "over the budget fails it".
-  - The worker reports the measured value in its FREEZE. The architect accepts it there; the
-    worker does not pick the number. If no measurement can run, the worker stops and reports, and
+  - The worker records the method, the host and the measured values in the task record.
+  - `IMBFORGE0-RL-04` registers one metric: the database p99 forge commit latency, in
+    milliseconds. It is a qualification budget, not a runtime cutoff, as `MAP01-VIEWPORT-US` is
+    registered.
+  - The throughput is the load at which that budget holds, not a second hard maximum. The row's
+    `resource` names the qualified rate (forge commits per channel per second) and its `notes`
+    record it.
+  - Boundary tests:
+    - a full run at the qualified rate whose p99 is within the budget passes qualification;
+    - a p99 over the budget fails it;
+    - a run that cannot sustain the qualified rate fails it.
+  - The worker reports both values in its FREEZE. The architect accepts them there; the worker
+    does not pick either number. If no measurement can run, the worker stops and reports, and
     FORGE-1b does not merge without one. IMBUE-1 measures the imbuing part of RL-04 under its own
     packet.
 
@@ -501,9 +508,9 @@ task_id: OTV2-YYYYMMDD-timed-rt-1c
 decision: TIMED-ITEM-0B §9, §10.1-§10.5, §12 (causes 4-7); this bundle §1.1
 worker: oteryn-hard-worker
 review: independent persistence and determinism review
-base: main after TIMED-RT-1b, ITEM-MOVE-2a, ITEM-MOVE-2b and the ITEM-USE Light form merge
+base: main after TIMED-RT-1b, ITEM-MOVE-2a, ITEM-MOVE-2b and ITEM-USE-1 merge
 migration_lease: 0062
-depends_on: [TIMED-RT-1b, ITEM-MOVE-2a, ITEM-MOVE-2b, ITEM-USE Light form]
+depends_on: [TIMED-RT-1b, ITEM-MOVE-2a, ITEM-MOVE-2b, ITEM-USE-1]
 owned_paths: the remainder of the TIMED-RT-1 packet in TIMED-ITEM-0B §21: the move modules, the Ground step scheduler, and the ITEM-MOVE-WIRE-1, ITEM-USE-0, MARKET-0 and WORLD-INTERACTION-0 pointers, named at allocation; plus 0062 and the RT-1b modules
 validation: as TIMED-RT-1b
 ```
@@ -511,3 +518,8 @@ validation: as TIMED-RT-1b
 Acceptance: TIMED-ITEM-0B §15 conditions 3 and 5, D360's tests, and the max and max+1 tests for
 the §9.2 and §10.5 rows, the §12 use form (`ItemUseCause::Light`) and put out (`PutOut`) shape
 rows, and `TIMEDITEM0B-RL-06`. RT-1c registers each row it admits.
+
+`ItemUseCause::Light` is RT-1c's, not ITEM-USE-1's. ITEM-USE-1 provides the `ItemUseCause` shapes
+and the use path (ITEM-USE-0 §4) without `Light`. RT-1c adds the `Light` variant and its §9.3 use
+form (the TIMED-ITEM-0B amendment of ITEM-USE-0 §4.2 and §6). It registers the use form row in the
+same PR, before the variant can be reached. No `Light` form merges ahead of its §12 row.

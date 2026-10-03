@@ -40,7 +40,15 @@ change no code, no contract, no wire and no resource value.
   `MAP01-VIEWPORT-US`. The architect accepts the measured value at FREEZE, so the worker does not
   pick it.
 
+- **#1689 review (Codex, `9f6e5c80`).**
+  - 4174761344 (P1): `IMBFORGE0-RL-04` now registers one metric, the database p99 commit latency
+    in milliseconds. The qualified rate is the load the budget holds at, with its own fail test.
+  - 4174761349 (P1): `ItemUseCause::Light` is RT-1c's. RT-1c depends on ITEM-USE-1, which has no
+    `Light`, and registers the use form row in the same PR as the variant.
+  - 4174761354 (P2): the `tools/agents/tests` suite is run and recorded below.
+
 ## Validation
 
 - `python3 tools/agents/validate_governance.py`: pass
+- `python3 -m unittest discover -s tools/agents/tests`: 54 tests, OK
 - `git diff --check`: pass
