@@ -5758,7 +5758,8 @@ fn complete_reconnect_resumes_an_owning_loss_session_exactly_once()
     if !postgres_e2e_is_configured()? {
         return Ok(());
     }
-    tokio::runtime::Builder::new_current_thread().enable_all().build()?.block_on(async {
+    // The whole reconnect scenario is one large future; keep it off the test-thread stack.
+    tokio::runtime::Builder::new_current_thread().enable_all().build()?.block_on(Box::pin(async {
         let database = postgres::IsolatedPostgres::create("complete_reconnect").await?;
         let result = async {
             let url = database.database_url()?;
@@ -6041,7 +6042,7 @@ fn complete_reconnect_resumes_an_owning_loss_session_exactly_once()
         }.await;
         database.cleanup().await?;
         result
-    })
+    }))
 }
 
 #[test]
