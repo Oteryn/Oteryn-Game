@@ -9,7 +9,7 @@
 - Role: Sol Supervising Architect (`OTV2_SOL_SUPERVISING_ARCHITECT` 1.3)
 - Amended (2026-09-30): §3.1, the request and response handling, answering PREM-1b's
   `ARCHITECTURE_ESCALATION_REQUIRED` (#162 5916078350).
-- Amended (2026-10-03): §10, reconciled with `main` after PREM-1a (#1391), and §11, the PREM-1b
+- Amended (2026-10-03): §4, the `refresh_after` bound; §10, reconciled with `main` after PREM-1a (#1391), and §11, the PREM-1b
   packet, for Game-side acceptance (control plane D350, owner answer 1a).
 - Answers: the owner's direction to start Premium now (2026-09-30, verbatim: "no to wydaj takie
   decyzje i przygotuj zeby to ruszylo", answering the recommendation to start the Platform lane and
@@ -179,7 +179,7 @@ effective_from:        RFC 3339 UTC, absolute; null (NONE only)
 effective_until:       RFC 3339 UTC, absolute (the paid-up end of Premium time); null (NONE only)
 authority_issued_at:   RFC 3339 UTC
 authority_valid_until: RFC 3339 UTC, at most issued_at + max_authority_lease
-refresh_after:         RFC 3339 UTC
+refresh_after:         RFC 3339 UTC, authority_issued_at <= refresh_after <= authority_valid_until
 ```
 
 - **The `NONE` variant** (an account that has never held a Premium entitlement) is closed:
@@ -312,7 +312,7 @@ matches §4-§6:
 
 ### 10.2 Corrections
 
-- **Two PREM-1a defects; PREM-1b fixes both (§11 scope item 6).** Neither is reachable in
+- **Three PREM-1a defects; PREM-1b fixes them (§11 scope items 6 and 7).** Neither is reachable in
   production yet: PREM-1a has no client, so no evidence has been ingested.
   1. **The decoder rejects the canonical `NONE`.** `snapshot::Wire` declares `effective_from` and
      `effective_until` as strings, so the producer's `NONE` form (§4: both null,
@@ -326,6 +326,21 @@ matches §4-§6:
      `authority_revision` is a replay. §3.1 stands: two snapshots under one revision that differ in
      their refresh schedule are a contradiction, and the response is `INVALID_OR_CONFLICTING`,
      not a successful pull. The stored fingerprint must cover `refresh_after`.
+  3. **An unsupported response is not durable.** §3.1 rule 2 (unknown or downgraded `schema`,
+     `producer_profile`, `product_id` or `product_version`) needs the same sticky, durable marker
+     as rule 1, but `PremiumConsumer::ingest` sets `AccountView.unsupported` in memory only:
+     `release` or a restart drops it, and a later compatible pull re-proves cached `ACTIVE`
+     evidence without reconciliation. The account fence cannot hold it either, since
+     `game_premium_account_fence` requires an accepted evidence row and a first-ever response can
+     be the unsupported one. A new migration adds the durable representation (§11 scope item 7).
+- **`refresh_after` bound (§4).** The producer sets it within the snapshot's own authority
+  interval; one outside fails as malformed (a failed pull, under the §3 backoff). The client also
+  waits at least 60 seconds after a successful pull before the next scheduled one, so an
+  authenticated producer cannot drive a request loop.
+- **Security audit (§3.1; consumer contract §15).** Every semantic failure, a same-revision
+  contradiction against the current or a retained historical revision and an unsupported or
+  downgraded response, records a durable security audit row before the denial is visible. PREM-1a
+  has none.
 - **`PREMDEL0-RL-04`.** The evidence log is never deleted, so every accepted revision's
   fingerprint is kept for the fence's life, which satisfies "at least 30 days". That is the
   recorded horizon: PREM-1a claims equivocation detection for every retained revision, and §6's
@@ -369,10 +384,11 @@ lane_id: premium
 depends_on: ["PREMIUM-DELIVERY-0 Game-side acceptance", "PREM-1a (#1391, merged)"]
 cross_repository_coordination_id: OTV2-PREMIUM-DELIVERY
 external_repositories: []
-leases: none (no migration; ask the control plane if one proves necessary)
+leases: one migration number from the control plane at allocation (the semantic conflict and audit tables, scope item 7)
 owned_paths:
   - apps/game-server/src/premium/            # new client.rs, refresh.rs, test_producer.rs; mod.rs; snapshot.rs, tests.rs (§10.2)
-  - apps/game-server/src/durability/premium_fence.rs            # fingerprint only (§10.2)
+  - apps/game-server/migrations/<lease>_premium_semantic_conflict.sql
+  - apps/game-server/src/durability/premium_fence.rs            # fingerprint, conflict and audit rows (§10.2)
   - apps/game-server/tests/support/premium_fence_postgres_cases.rs
   - apps/game-server/src/lib.rs              # module wiring only
   - apps/game-server/Cargo.toml              # reqwest (workspace, rustls) only
@@ -400,7 +416,8 @@ owned_paths:
    win over it. It never changes `premium_entitlement_ended`. In memory only: after a restart the
    re-proof pull (§9 item 3) is required anyway.
 4. **Scheduling.** A pull at fresh admission and reconnect before any Premium read; then one at
-   each snapshot's `refresh_after` while the account is online. At most one request in flight
+   each snapshot's `refresh_after`, and never sooner than 60 seconds after the last successful
+   pull, while the account is online. At most one request in flight
    per account. Retry with capped exponential backoff and jitter; a 429 or 503 `Retry-After` is
    honoured within the cap. `release` cancels the account's schedule.
 5. **Test producer.** An in-process mutual-TLS server speaking exactly §3.1 and §4, scriptable
@@ -410,6 +427,17 @@ owned_paths:
    `effective_until`, null `entitlement_id`, `lifecycle_revision` 0) and still rejects a null
    interval in any other state; the evidence fingerprint covers `refresh_after`. No migration:
    the fingerprint column is unchanged, and no production evidence exists to re-fingerprint.
+   A `refresh_after` outside `[authority_issued_at, authority_valid_until]` is `Malformed`.
+7. **Durable semantic conflict and audit (§10.2).** Migration `<lease>` adds
+   `game_premium_account_conflict` (one row per account, keyed by account alone so it needs no
+   evidence row: kind `CONTRADICTION` or `UNSUPPORTED`, the response's `authority_revision`,
+   `schema`, `producer_profile`, `product_id` and `product_version`, database time; no update
+   and no delete) and `game_premium_security_audit` (append-only, unique per account, kind and
+   `authority_revision`, bounded columns without the payload or any credential; no update and no
+   delete). Every §3.1 semantic failure writes both in one transaction before the outcome
+   returns; a fence write failure quarantines as today. Any conflict row denies Premium, and
+   the restart re-proof (§9 item 3) loads it before any benefit, alongside the existing
+   `conflict_authority_revision`. No path clears it (§3.1 declared deferral).
 
 **Required tests** (fail closed in each case): wrong nonce or account; oversize, malformed or
 wrong content type; redirect; timeout; TLS failure and an untrusted server; a 500 or 429 with
@@ -419,7 +447,12 @@ after a newer failure does not restore it; a conflict stays denied after success
 request in flight per account; admission does not wait on or fail from a pull; the exact
 producer-form `NONE` is accepted as Free and a `NONE` with any non-null interval, entitlement id or
 non-zero `lifecycle_revision` fails closed; a changed `refresh_after` at an accepted
-`authority_revision` sets the conflict marker (replacing PREM-1a's replay assertion).
+`authority_revision` sets the conflict marker (replacing PREM-1a's replay assertion); a
+first-ever unsupported response, and one after accepted `ACTIVE` evidence, stays denied after
+`release`, a restart and a later compatible pull; a `refresh_after` before issue or after the
+lease fails closed, and a valid past one does not schedule a pull within 60 seconds; current and
+historical-revision contradictions and an unsupported response each leave exactly one audit row
+(a repeat adds none).
 
 **Validation.** `cargo fmt --all --check`; `cargo clippy --locked -p oteryn-game-server
 --all-targets -- -D warnings`; `cargo test --locked -p oteryn-game-server` with PostgreSQL; the

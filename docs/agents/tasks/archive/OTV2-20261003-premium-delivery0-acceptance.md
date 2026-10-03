@@ -37,6 +37,10 @@ decoder rejects the canonical `NONE`; the fingerprint omits `refresh_after`), bo
 (§11 scope item 6, owned paths and tests added); §10.3 carries the `PROD-ENTITLEMENTS-01` §6.6
 rollout and rollback evidence into the activation record.
 
+Review round 2 (Codex, D317): §10.2 adds a third PREM-1a defect (an unsupported response is not
+durable), the `refresh_after` bound with a 60-second minimum delay, and the security audit; §11
+scope item 7 takes a migration lease for the durable conflict and audit tables, with tests.
+
 ## Validation
 
 `python3 tools/agents/validate_governance.py`, `python3 tools/repository/validate_repository_policy.py`,
