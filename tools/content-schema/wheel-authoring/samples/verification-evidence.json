@@ -65,7 +65,7 @@
       "stage": 2,
       "planner_value": 25.5,
       "selected_value": 22.5,
-      "evidence": "OTERYN_SPELL_NATIVE_BEHAVIOURS_CANDIDATE_V1.md appendix A.1: pinned Canary and native source; planner typo is retained in reference text. Live BR wiki r436992 plus Master of Decay base 30 corroborates 22.5 pp via total 52.5 minus base 30; see samples/live-source-audit.json.",
+      "evidence": "Official8833 directly states Master of Decay +15/22.5/30% (combined45/52.5/60%). Selected22.5 overrides the public planner typo25.5. Original TibiaPal description remains in source-wheel-reference.json; candidate descriptions use selected22.5.",
       "planner_parameter": "mastery_decay_critical_extra_damage"
     },
     {
@@ -92,8 +92,8 @@
       "planner_parameter": "base_damage_bonus",
       "stage": 2,
       "planner_value": 60,
-      "selected_value": 40,
-      "evidence": "FORMULA_SELECTION_CONFIRMED: English TibiaWiki Conviction r1206174 explicitly gives +40% base damage; official > English wiki > Canary per architect ruling #162/5933264015. BR r443774 +15% and planner +60% are retained conflicting corroboration, not selected authority. Runtime and current Global parity remain unadmitted."
+      "selected_value": 60,
+      "evidence": "CURRENT_OFFICIAL_PLANNER_SELECTED: Tibia.com public planner MediumPerkInfos46 Aug2Info +60% Base Damage, independently re-read2026-10-01 through Chrome/CDP and normalHTTPS JSON. Explicit owner-directed authoring repair selects60; prior EnglishWiki1206174 40 and BR443774 15 remain conflicting observations; runtime and broad Global parity remain unadmitted."
     }
   ],
   "classification": {
@@ -110,7 +110,8 @@
     "special_spell_secondary_cooldown": "OTS_HYPOTHESIS_ONLY_NOT_SELECTED",
     "flurry_cast_range": "CONFLICT_NOT_SELECTED; AFFECTED_AREA_REFERENCE_SELECTED",
     "guiding_presence_arithmetic": "PARITY_PENDING: WIKI_LITERAL_ONLY; PINNED_CANARY_INSPECTED_PATHS_LACK_NEW_PLUS33; NO_OWNER_GATE",
-    "mystic_repulse_selection": "ENGLISH_WIKI_1206174_EXPLICIT40_CONFIRMS_FORMULA_SELECTION; RUNTIME_UNADMITTED"
+    "mystic_repulse_selection": "ENGLISH_WIKI_1206174_EXPLICIT40_CONFIRMS_FORMULA_SELECTION; RUNTIME_UNADMITTED",
+    "basic_mod_position_2": "UPSTREAM_SOURCE_CONFLICT_RECORDED; ENGLISH_WIKI_PROSE_CORROBORATES_TIBIAPAL; EXACT_LIST_PENDING_NATIVE_ADMISSION"
   },
   "live_verification": {
     "tibiapal": true,
@@ -136,7 +137,7 @@
     "The original raw capture predates the completed slot crosswalk and graph extraction. Its historical limitation messages do not supersede source-graph.json or the candidate.",
     "The original source descriptions are retained; the selected Lord of Destruction numerical correction is explicit."
   ],
-  "candidate_sha256": "51da970d2fd39c2094287114b593a491d76f0668a8262d6076047778a8ba3649",
+  "candidate_sha256": "01a8d04a493d50c9de18b3139c5bdf12f95fd685077a7ea83e66e694ca0fe061",
   "live_source_audit": {
     "file": "samples/live-source-audit.json",
     "sha256": "b912583964a8fb874afd5aab034cbd8845445b5c16f59dca15d5d3257b372e25"
@@ -147,14 +148,14 @@
   },
   "client_icon_manifest": {
     "file": "samples/client-icon-manifest.json",
-    "sha256": "cad3cf9282789a29d4da8598ea4936f24b447801a5e1e46074c7e947f2549b6e"
+    "sha256": "e291d94c3b41a599caafcafa25a526e8c6295ccdd9fab56657b066aae719f3d6"
   },
   "reference_selection": {
     "file": "samples/reference-selection.json",
-    "sha256": "2937f6ae21ac9fe883501de30e6b3aa0728845e1bf1389840e5804ba59c50c30"
+    "sha256": "c29ecf3f5bc948d5431bd3fc262a97293f438aa72fd84d2467050e3bfd073316"
   },
   "browser_source_audit": {
     "file": "samples/browser-source-audit.json",
-    "sha256": "60c8a899ca2bd4bb4e33df2884d61f7b8b665175d5b480d6f908bc3268094e97"
+    "sha256": "3f7ee588767a5b6c09ee4094018497a9201096b5c403c82ef91825964ca14ad4"
   }
 }

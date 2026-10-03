@@ -65,6 +65,22 @@ class ClientIconTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'SELECTION_VALUE'):
             client_icons.validate_selection(self.candidate)
 
+    def test_spell_copy_cannot_keep_superseded_damage_with_a_matching_digest(self):
+        source_path = ROOT.parent / 'spell-authoring/wheel-augments.json'
+        source = read(source_path)
+        row = next(r for r in source['augments'] if r['spell'] == 'Mystic Repulse' and r['augment'] == 2)
+        original_read = client_icons.read
+        def stale_spell(path):
+            return source if path == source_path else original_read(path)
+        for field, value in [('value', 40), ('unit', 'seconds')]:
+            with self.subTest(field=field):
+                previous = row[field]
+                row[field] = value
+                with patch.object(client_icons, 'read', side_effect=stale_spell):
+                    with self.assertRaisesRegex(ValueError, 'SELECTION_SPELL_VALUE'):
+                        client_icons.validate_selection(self.candidate)
+                row[field] = previous
+
     def test_stale_source_sheet_digest_rejected(self):
         self.candidate['icon_evidence']['reference_sheet_sha256'] = '0' * 64
         with self.assertRaisesRegex(ValueError, 'ICON_SOURCE_DIGEST'):

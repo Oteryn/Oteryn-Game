@@ -103,6 +103,11 @@ def validate_selection(candidate):
                       if c['key'] == 'augmented_mystic_repulse' and c['stage'] == 2)
     if selection['mystic_repulse_ii']['selected_percent'] != correction['selected_value']:
         raise ValueError('SELECTION_VALUE')
+    spell_rows = [row for row in source['augments']
+                  if row['spell'] == 'Mystic Repulse' and row['augment'] == 2]
+    if (len(spell_rows) != 1 or spell_rows[0]['unit'] != 'percent_base_damage' or
+            spell_rows[0]['value'] != correction['selected_value']):
+        raise ValueError('SELECTION_SPELL_VALUE')
     if selection['live_global_parity_confirmed'] or selection['runtime_admitted']:
         raise ValueError('SELECTION_ADMISSION')
 
