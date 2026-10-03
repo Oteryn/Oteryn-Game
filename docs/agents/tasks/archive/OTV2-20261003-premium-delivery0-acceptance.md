@@ -32,6 +32,11 @@ PREMIUM-ACTIVATION amendments take effect. §11 is the PREM-1b packet (hard work
 The status stays `CANDIDATE` until the independent review (security, cross-repository) passes on
 the exact head. Nothing is written to Oteryn-Platform; PREM-P stays with its coordinator.
 
+Review round 1 (Codex, D365): §10.2 records two PREM-1a defects found against §3.1 and §4 (the
+decoder rejects the canonical `NONE`; the fingerprint omits `refresh_after`), both fixed by PREM-1b
+(§11 scope item 6, owned paths and tests added); §10.3 carries the `PROD-ENTITLEMENTS-01` §6.6
+rollout and rollback evidence into the activation record.
+
 ## Validation
 
 `python3 tools/agents/validate_governance.py`, `python3 tools/repository/validate_repository_policy.py`,

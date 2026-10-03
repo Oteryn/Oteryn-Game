@@ -292,7 +292,8 @@ matches §4-§6:
   entitlement) `lifecycle_revision` high water and lifecycle fingerprint. Triggers let rows only
   advance, reject clearing the marker, and reject deletes.
 - **Message (§4).** `premium::snapshot` validates `oteryn.premium_snapshot.v1` at most 1,024 bytes
-  (`PREMDEL0-RL-01`), the nonce and account binding, the closed `NONE` variant and the lease bound.
+  (`PREMDEL0-RL-01`), the nonce and account binding, the closed `NONE` variant and the lease bound
+  (with the defects in §10.2).
   The compatibility pair PREM-1 records (§4) is `producer_profile`
   `"oteryn.entitlement.profile_b.v1"`, `product_version` 1, with `product_id`
   `"oteryn.premium_time"`.
@@ -311,6 +312,20 @@ matches §4-§6:
 
 ### 10.2 Corrections
 
+- **Two PREM-1a defects; PREM-1b fixes both (§11 scope item 6).** Neither is reachable in
+  production yet: PREM-1a has no client, so no evidence has been ingested.
+  1. **The decoder rejects the canonical `NONE`.** `snapshot::Wire` declares `effective_from` and
+     `effective_until` as strings, so the producer's `NONE` form (§4: both null,
+     `entitlement_id` null, `lifecycle_revision` 0) fails as `Malformed` before the closed-variant
+     check, and every free account would count as a failed pull. PREM-1a's `NONE` test leaves both
+     times set and `lifecycle_revision` 3, which hides this. §4 stands; the decoder must accept the
+     null interval in `NONE` only.
+  2. **The fingerprint omits `refresh_after`.** §3.1 rule 1 compares every field except `nonce` and
+     `producer_revision`. `PremiumEvidence::fingerprint` excludes `refresh_after_us` as
+     scheduling-only, and a PostgreSQL case asserts that a changed `refresh_after` at the same
+     `authority_revision` is a replay. §3.1 stands: two snapshots under one revision that differ in
+     their refresh schedule are a contradiction, and the response is `INVALID_OR_CONFLICTING`,
+     not a successful pull. The stored fingerprint must cover `refresh_after`.
 - **`PREMDEL0-RL-04`.** The evidence log is never deleted, so every accepted revision's
   fingerprint is kept for the fence's life, which satisfies "at least 30 days". That is the
   recorded horizon: PREM-1a claims equivocation detection for every retained revision, and §6's
@@ -331,9 +346,15 @@ matches §4-§6:
 
 - **PREM-P** (Platform's coordinator; this repository writes nothing there) accepts or amends §3,
   §3.1, §4 and §5. A change of path, form or value updates this document before activation.
-- **Activation** of Premium for players needs PREM-1b merged, PREM-P live, and the
-  cross-repository end-to-end test (§3.1) passing; PREM-1's activation record then names the
-  switch-over date (§6). Until then `premium_current` is false for every account.
+- **Activation** of Premium for players needs PREM-1b merged, PREM-P live, the
+  cross-repository end-to-end test (§3.1) passing, and the rollout evidence that
+  `PROD-ENTITLEMENTS-01` §6.6 requires: the exact Platform producer and Game consumer revisions,
+  the entitlement contract and profile revision (the §4 compatibility pair), the mixed-version
+  compatibility rules, the rollout classification (producer first, consumer first or atomic), the
+  rollback order, the treatment of evidence issued before a rollback, and the deterministic
+  failure when one side does not understand the validity semantics, with no fail-open that
+  restores unbounded stale authority. PREM-1's activation record carries all of it and only then
+  names the switch-over date (§6). Until then `premium_current` is false for every account.
 
 ## 11. PREM-1b packet (for the control plane)
 
@@ -350,7 +371,9 @@ cross_repository_coordination_id: OTV2-PREMIUM-DELIVERY
 external_repositories: []
 leases: none (no migration; ask the control plane if one proves necessary)
 owned_paths:
-  - apps/game-server/src/premium/            # new client.rs, refresh.rs, test_producer.rs; mod.rs
+  - apps/game-server/src/premium/            # new client.rs, refresh.rs, test_producer.rs; mod.rs; snapshot.rs, tests.rs (§10.2)
+  - apps/game-server/src/durability/premium_fence.rs            # fingerprint only (§10.2)
+  - apps/game-server/tests/support/premium_fence_postgres_cases.rs
   - apps/game-server/src/lib.rs              # module wiring only
   - apps/game-server/Cargo.toml              # reqwest (workspace, rustls) only
   - Cargo.lock
@@ -383,13 +406,20 @@ owned_paths:
 5. **Test producer.** An in-process mutual-TLS server speaking exactly §3.1 and §4, scriptable
    per request (status, body, delay, wrong nonce or account), used by PREM-1b's tests and by the
    Game half of the end-to-end test. Test-only: not reachable from the production binary.
+6. **PREM-1a fixes (§10.2).** The decoder accepts the canonical `NONE` (null `effective_from` and
+   `effective_until`, null `entitlement_id`, `lifecycle_revision` 0) and still rejects a null
+   interval in any other state; the evidence fingerprint covers `refresh_after`. No migration:
+   the fingerprint column is unchanged, and no production evidence exists to re-fingerprint.
 
 **Required tests** (fail closed in each case): wrong nonce or account; oversize, malformed or
 wrong content type; redirect; timeout; TLS failure and an untrusted server; a 500 or 429 with
 `Retry-After`; a stale response; failure while cached `ACTIVE` is in its interval reads
 `AUTHORITY_UNAVAILABLE` and a later success restores `CURRENT_AUTHORITY`; an older pull finishing
 after a newer failure does not restore it; a conflict stays denied after successful pulls; one
-request in flight per account; admission does not wait on or fail from a pull.
+request in flight per account; admission does not wait on or fail from a pull; the exact
+producer-form `NONE` is accepted as Free and a `NONE` with any non-null interval, entitlement id or
+non-zero `lifecycle_revision` fails closed; a changed `refresh_after` at an accepted
+`authority_revision` sets the conflict marker (replacing PREM-1a's replay assertion).
 
 **Validation.** `cargo fmt --all --check`; `cargo clippy --locked -p oteryn-game-server
 --all-targets -- -D warnings`; `cargo test --locked -p oteryn-game-server` with PostgreSQL; the
