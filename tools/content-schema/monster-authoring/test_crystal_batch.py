@@ -22,14 +22,16 @@ CANARY, CRYSTAL = os.environ.get('OTERYN_CANARY'), os.environ.get('OTERYN_CRYSTA
 class AllowList(unittest.TestCase):
     def test_is_exactly_the_ordinary_rows_of_the_candidate_sample(self):
         expected = sorted(m['crystal_other_dir'][:-len('.lua')] for m in SAMPLE['monsters']
-                          if m.get('kind') == 'real monster' and m['crystal_other_dir'])
-        self.assertEqual(28, len(expected))
+                          if m.get('kind') == 'real monster' and m['crystal_other_dir']
+                          and m.get('canonical_classification', {}).get('source_wiki_identity_status', 'COMPARED') == 'COMPARED')
+        self.assertEqual(46, len(expected))
         self.assertEqual(expected, sorted(crystal_batch.EXTRA_MONSTERS))
 
     def test_has_no_duplicate_and_leaves_the_summer_directory_alone(self):
         self.assertEqual(len(crystal_batch.EXTRA_MONSTERS), len(set(crystal_batch.EXTRA_MONSTERS)))
         self.assertFalse(any(r.startswith('summer_update_2026/') for r in crystal_batch.EXTRA_MONSTERS))
-        self.assertTrue(all(r.count('/') == 1 and not r.startswith('.') for r in crystal_batch.EXTRA_MONSTERS))
+        self.assertTrue(all(not Path(r).is_absolute() and '..' not in Path(r).parts and not r.startswith('.')
+                            for r in crystal_batch.EXTRA_MONSTERS))
 
     def test_quest_event_and_summon_like_rows_stay_out(self):
         others = {m['crystal_other_dir'][:-len('.lua')] for m in SAMPLE['monsters']
@@ -37,19 +39,47 @@ class AllowList(unittest.TestCase):
         self.assertTrue(others)
         self.assertFalse(others & set(crystal_batch.EXTRA_MONSTERS))
 
+    def test_new_regular_classifications_have_dated_canonical_identity(self):
+        new = [m for m in SAMPLE['monsters'] if m.get('canonical_classification')
+               and m['kind'] == 'real monster'
+               and m['canonical_classification']['source_wiki_identity_status'] == 'COMPARED']
+        self.assertEqual(18, len(new))
+        by_slug = {m['monster']: m for m in WIKI['monsters']}
+        for row in new:
+            proof = row['canonical_classification']
+            self.assertEqual('no', proof['isboss'], row['name'])
+            self.assertIn('Regular', proof['spawntype'], row['name'])
+            self.assertEqual('2026-09-27', proof['reference_cut'])
+            self.assertRegex(proof['content_sha256'], r'^[a-f0-9]{64}$')
+            compared = by_slug[row['name'].replace(' ', '_')]
+            self.assertEqual('VERIFIED', compared['creature_identity']['status'])
+            self.assertEqual(proof['page_id'], compared['page_id'])
+            self.assertEqual(proof['revision_id'], compared['cut_revision_id'])
+            self.assertEqual(proof['content_sha256'], compared['cut_content_sha256'])
+
+    def test_imperial_missing_wiki_race_uses_the_explicit_staticdata_identity(self):
+        imperial = next(m for m in SAMPLE['monsters'] if m['name'] == 'imperial')
+        self.assertEqual('real monster', imperial['kind'])
+        self.assertEqual('COMPARED', imperial['canonical_classification']['source_wiki_identity_status'])
+        self.assertIn(imperial['crystal_other_dir'][:-len('.lua')], crystal_batch.EXTRA_MONSTERS)
+        compared = next(m for m in WIKI['monsters'] if m['monster'] == 'imperial')
+        self.assertEqual('ExactAcceptedStaticdataAndCanonicalCreature', compared['creature_identity']['method'])
+        self.assertEqual('UNSPECIFIED', compared['creature_identity']['wiki_race_id_status'])
+        self.assertEqual(2775, compared['creature_identity']['source_race_id'])
+
     def test_monsters_are_under_the_converter_root(self):
         self.assertTrue(crystal_batch.MONSTER_DIR.startswith(crystal_batch.MONSTER_ROOT + '/'))
 
     def test_wiki_reference_holds_every_allow_listed_monster(self):
         slugs = {m['monster'] for m in WIKI['monsters']}
-        missing = [r for r in crystal_batch.EXTRA_MONSTERS if r.split('/')[1] not in slugs]
+        missing = [r for r in crystal_batch.EXTRA_MONSTERS if r.split('/')[-1] not in slugs]
         self.assertEqual([], missing)
 
     def test_wiki_reference_has_the_sample_values_for_the_allow_listed_monsters(self):
         by_slug = {m['monster']: m for m in WIKI['monsters']}
         checked = 0
         for row in SAMPLE['monsters']:
-            if row['crystal_other_dir'] and row.get('kind') == 'real monster':
+            if row['crystal_other_dir'] and row.get('kind') == 'real monster' and row['name'].replace(' ', '_') in by_slug:
                 rows = {r['field']: r for r in by_slug[row['name'].replace(' ', '_')]['rows']}
                 if 'experience' in rows:  # a row is compact only when the wiki differs from or is unknown next to Crystal
                     checked += 1
@@ -61,9 +91,13 @@ class OfficialLibraryExtra(unittest.TestCase):
     def test_sample_covers_the_allow_list_with_a_news_check(self):
         sample = json.loads(official_library.CRYSTAL_EXTRA_SAMPLE.read_text(encoding='utf-8'))
         slugs = {m['monster'] for m in sample['monsters']}
-        allowed = {r.split('/')[1] for r in crystal_batch.EXTRA_MONSTERS}
+        allowed = {r.split('/')[-1] for r in crystal_batch.EXTRA_MONSTERS}
         self.assertLessEqual(slugs, allowed)
-        self.assertEqual({'ink_splash'}, allowed - slugs)  # Tibia.com has no library entry for it
+        # The original dated official-library batch covers 27 of the original 28 entries.
+        # New ordinary sources have explicit canonical Wiki health; they need no invented library capture.
+        new = {m['name'].replace(' ', '_') for m in SAMPLE['monsters']
+               if m.get('canonical_classification') and m.get('kind') == 'real monster'}
+        self.assertEqual({'ink_splash'}, allowed - slugs - new)
         self.assertEqual('2026-09-30', sample['captured'])
         self.assertIn(8980, {n['id'] for n in sample['news_checked']})
         self.assertTrue(all(m['captured'] == '2026-09-30' and m['fields'] for m in sample['monsters']))

@@ -1,0 +1,49 @@
+{
+  "schema": "OTERYN_ITEM_RESISTANCE_SOURCE_HOLD/v1",
+  "checked_at": "2026-10-01T16:16:50.038238+00:00",
+  "method": "Anonymous public browser/CDP same-origin MediaWiki API plus ordinary urllib HTTP for Tibiopedia; no repository edits",
+  "research_capture_sha256": "9915ea2867a477bbbf47ae9b5298900a657f18b8c07f544cb7423bcab49ced66",
+  "item_key": "oteryn:item.tibia.i50275",
+  "field_path": "protection.resistances",
+  "classification": "CONFLICT",
+  "reason": "EXTERNAL_SOURCE_DISAGREEMENT",
+  "expected_snapshot_sources": [
+    {
+      "page_id": 108172,
+      "revision_id": 1148695,
+      "content_sha256": "14faba437a5b652e8dcbc92422f6abd2dac496101706d38ed72cdffd7cedd4fb",
+      "values": {
+        "resist": "ice +7%, energy -7%"
+      }
+    }
+  ],
+  "research_sources": [
+    {
+      "url": "https://tibia.fandom.com/wiki/Ghazbaran_Oyoroi?oldid=1148695",
+      "pageid": 108172,
+      "revid": 1148695,
+      "revision_timestamp": "2025-12-08T18:11:50Z",
+      "wikitext_sha256": "14faba437a5b652e8dcbc92422f6abd2dac496101706d38ed72cdffd7cedd4fb",
+      "quotes": [
+        "| itemid        = 50275",
+        "| implemented   = 15.00.249ccc",
+        "| primarytype   = Armors",
+        "| resist        = ice +7%, energy -7%"
+      ]
+    },
+    {
+      "url": "https://www.tibiawiki.com.br/wiki/Ghazbaran_Oyoroi?oldid=427620",
+      "pageid": 64044,
+      "revid": 427620,
+      "revision_timestamp": "2025-07-11T12:06:53Z",
+      "wikitext_sha256": "e8b626f6718b0392259dcf5bbbc55cee8d99479e8dba460236fa9a7830670dc2",
+      "quotes": [
+        "| primarytype    = Armaduras",
+        "| resist         = [[Energy Damage|Energy]] +7%, [[Ice Damage|Ice]] -7%",
+        "| implemented    = 15.00.249ccc"
+      ],
+      "binding_limit": "No raw itemid field; corroboration only, not new canonical binding"
+    }
+  ],
+  "scope_limit": "Whole resistance vector held. BR has no canonical itemid binding and is not a replacement value; neither wiki is official gameplay proof."
+}

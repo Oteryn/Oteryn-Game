@@ -129,4 +129,47 @@ impl DurabilityRoot {
             })
             .await
     }
+
+    /// Control-plane: activate `revision` of a `ProficiencyShaping` definition and retain
+    /// exactly `retained` plus `revision` (PROFICIENCY-1B §8). The activation takes the key's
+    /// exclusive retention lock, which every modification write holds shared until commit; a
+    /// revision some modification row still references is never dropped, and the refusal,
+    /// `Ok(false)`, changes nothing. A missing grant is also `Ok(false)`.
+    pub async fn record_proficiency_shaping_activation(
+        &self,
+        shaping_key: &str,
+        revision: &str,
+        retained: &[String],
+    ) -> Result<bool> {
+        let (shaping_key, revision, retained) = (
+            shaping_key.to_owned(),
+            revision.to_owned(),
+            retained.to_vec(),
+        );
+        self.try_issue_semantic_pass()?
+            .run(move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    let recorded =
+                        sqlx::query("SELECT game_proficiency_shaping_activate($1, $2, $3)")
+                            .bind(&shaping_key)
+                            .bind(&revision)
+                            .bind(&retained)
+                            .execute(&mut *tx)
+                            .await;
+                    match recorded {
+                        Ok(_) => {}
+                        Err(sqlx::Error::Database(error))
+                            if matches!(error.code().as_deref(), Some("OTC01" | "42501")) =>
+                        {
+                            return Ok(false);
+                        }
+                        Err(error) => return Err(error.into()),
+                    }
+                    commit_semantic_transaction(tx, deadline).await?;
+                    Ok(true)
+                })
+            })
+            .await
+    }
 }

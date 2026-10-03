@@ -1,0 +1,18 @@
+{
+  "schema": "ROOT_OPTIONAL_MONSTER_CLOSEOUT/v1",
+  "source_head": "3362ebfc7cd492fe3aabd7f16a6e7c166dc94302",
+  "index_sha256": "0117ce9b1996a21c609c62d7ba9680614fb1f1fb2337e30d50a4ba1ab2bc049f",
+  "stage_sha256": "8d906e69c1e111852e75c7c427d1da68cdf83dfc906e450696d2f0767e0895be",
+  "monsters": 1763,
+  "encounters": 104,
+  "documents": 1609,
+  "changed_actors": 1620,
+  "guarded_patches": 3888,
+  "focused_tests_passed": 58,
+  "governance_tests_passed": 36,
+  "governance_validator_passed": true,
+  "independent_review_sha256": "cd384c0d4421722dc700c4d4326fbb58acbf1667effdc327165ce5d4e3081660",
+  "qualification_sha256": "7cf7102604c1d9882fb149d57f844f64928a251f9f06e113cd28ecd4a7ae282b",
+  "production_activated": false,
+  "full_global_parity": false
+}
