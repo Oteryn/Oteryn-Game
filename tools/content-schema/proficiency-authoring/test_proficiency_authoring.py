@@ -372,6 +372,9 @@ def test_shaping_admission() -> None:
     # RANK_MAX and POOL_TOO_SMALL are runtime checks, not admission (4174328919).
     assert sa.admitted(full, "RANK_UP", rank=10, entry=0)
     assert sa.admitted(full, "ORB_RANK", rank=10, entry=0)
+    unknown = shaping_sample()["shapings"][0]
+    assert sa.admitted(unknown, "RANK_UP", rank=10, entry=0)
+    assert sa.admitted(unknown, "ORB_RANK", rank=10, entry=0)
     assert sa.admitted(full, "ORB_RANK", rank=3, entry=2)
     assert sa.admitted(full, "RESHAPE_OFFER", rank=5)
     assert sa.admitted(full, "CLEAR")
