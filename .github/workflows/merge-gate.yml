@@ -1183,13 +1183,53 @@ jobs:
   game_gate:
     name: game-gate
     if: always()
-    needs: validate
+    needs: [scope, validate]
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:
       contents: read
+      pull-requests: read
     steps:
       - name: Require canonical aggregate success
         env:
           LEGACY_VALIDATE: ${{ needs.validate.result }}
         run: test "$LEGACY_VALIDATE" = "success"
+      - name: Revalidate isolated edit target before publishing game-gate
+        if: github.event.action == 'edited' && github.event.changes.base == null
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          EXPECTED_HEAD: ${{ needs.scope.outputs.target_sha }}
+          EXPECTED_BASE: ${{ needs.scope.outputs.base_sha }}
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          import re
+          import urllib.request
+
+          repository = os.environ['REPOSITORY']
+          number = os.environ['PR_NUMBER']
+          expected_head = os.environ['EXPECTED_HEAD']
+          expected_base = os.environ['EXPECTED_BASE']
+          if re.fullmatch(r'[1-9][0-9]*', number) is None or any(
+              re.fullmatch(r'[0-9a-f]{40}', sha) is None for sha in (expected_head, expected_base)
+          ):
+              raise SystemExit('isolated edit has invalid scope identity')
+          request = urllib.request.Request(
+              f'https://api.github.com/repos/{repository}/pulls/{number}',
+              headers={'Accept': 'application/vnd.github+json',
+                       'Authorization': f"Bearer {os.environ['GH_TOKEN']}",
+                       'X-GitHub-Api-Version': '2022-11-28'},
+          )
+          with urllib.request.urlopen(request, timeout=30) as response:
+              pull = json.load(response)
+          if (pull.get('number') != int(number) or pull.get('state') != 'open'
+              or pull.get('head', {}).get('sha') != expected_head
+              or pull.get('head', {}).get('repo', {}).get('full_name') != repository
+              or pull.get('base', {}).get('ref') != 'main'
+              or pull.get('base', {}).get('sha') != expected_base):
+              raise SystemExit('isolated edit target changed after qualification; current qualification is required')
+          print('Isolated edit still matches the qualified live head and base.')
+          PY

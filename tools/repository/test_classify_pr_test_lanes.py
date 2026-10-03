@@ -385,7 +385,7 @@ def test_metadata_events():
     aggregate = core.indented_yaml_mapping_block(gate, "validate", 2)
     final = core.indented_yaml_mapping_block(gate, "game_gate", 2)
     assert "    if: always()\n" in aggregate and "    if: always()\n" in final
-    assert "    name: game-gate\n" in final and "    needs: validate\n" in final
+    assert "    name: game-gate\n" in final and "    needs: [scope, validate]\n" in final
     assert '        run: test "$LEGACY_VALIDATE" = "success"\n' in final
 
     # Evaluate the exact hosted group expression for overlapping runs. An edit
@@ -412,6 +412,38 @@ def test_metadata_events():
     assert group("edited", True, 42, 4) == product
     assert group("synchronize", False, 42, 5) == product
     assert group("synchronize", False, 43, 6) != product
+    # Execute the actual final fence with fresh/retargeted live responses. A
+    # returning main with a newer base must never publish the old edit's gate.
+    import urllib.request
+    script = textwrap.dedent(final.split("python - <<'PY'\n", 1)[1].rsplit("          PY", 1)[0])
+    expected_head, expected_base = "a" * 40, "b" * 40
+    live = {"number": 42, "state": "open", "head": {
+        "sha": expected_head, "repo": {"full_name": "Oteryn/Oteryn-Game"}},
+        "base": {"ref": "main", "sha": expected_base}}
+    def accepts_live(pull):
+        response = io.StringIO(json.dumps(pull))
+        env = {"REPOSITORY": "Oteryn/Oteryn-Game", "PR_NUMBER": "42",
+               "EXPECTED_HEAD": expected_head, "EXPECTED_BASE": expected_base, "GH_TOKEN": "fixture"}
+        with patch.dict(os.environ, env), patch.object(urllib.request, "urlopen", return_value=response), contextlib.redirect_stdout(io.StringIO()):
+            try:
+                exec(compile(script, "isolated-edit-live-fence", "exec"), {})
+                return True
+            except (SystemExit, AttributeError, TypeError, ValueError):
+                return False
+    assert accepts_live(live)
+    for changed in (
+        {"number": 43}, {"state": "closed"},
+        {"base": {"ref": "stack", "sha": expected_base}},
+        {"base": {"ref": "main", "sha": "c" * 40}},
+        {"head": {"sha": "d" * 40, "repo": {"full_name": "Oteryn/Oteryn-Game"}}},
+        {"head": {"sha": expected_head, "repo": {"full_name": "fork/Game"}}},
+        {"base": None}, {"head": None},
+    ):
+        assert not accepts_live(dict(live, **changed)), changed
+    assert not accepts_live({}) and not accepts_live(None)
+    assert "        if: github.event.action == 'edited' && github.event.changes.base == null\n" in final
+    assert "          EXPECTED_BASE: ${{ needs.scope.outputs.base_sha }}\n" in final
+    assert "      pull-requests: read\n" in final
     print("Metadata concurrency PASS: isolated edits, retarget cancellation and canonical full game-gate")
 
 

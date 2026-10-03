@@ -46,6 +46,7 @@ EXPECTED_MERGE_GATE_SCOPE_JOB_SHA256 = (
 EXPECTED_MERGE_GATE_VALIDATE_JOB_SHA256 = (
     "eeb3e5f3c8244d412096b770071c2e1757505d9f0f180b10f36f5b9597beab13"
 )
+EXPECTED_MERGE_GATE_FINAL_JOB_SHA256 = "3f521f187d0a9b8e998e9fa022a3a16e7b988ec5ba873cb2955562230043efaa"
 EXPECTED_MERGE_GATE_LANES_JOB_SHA256 = "c8564e6c8ce3df2a9ea57fdf17306cc23d7350fd712a8f55bf2b0215e27caccd"
 EXPECTED_MERGE_GATE_ROUTING_CONTRACT_JOB_SHA256 = "3db16b5afec9a2786506e7558af09b298d878a0cb5b0a8b20748f4a3afaddbd6"
 EXPECTED_ROUTING_CONTRACT_VALIDATOR_BLOB = "ce2fc840f22fd75c0ccb067d9807698a87650f77"
@@ -428,12 +429,15 @@ def main() -> int:
             for fragment in (
                 "    name: game-gate\n",
                 "    if: always()\n",
-                "    needs: validate\n",
+                "    needs: [scope, validate]\n",
                 "          LEGACY_VALIDATE: ${{ needs.validate.result }}\n",
                 "        run: test \"$LEGACY_VALIDATE\" = \"success\"\n",
             ):
                 if fragment not in game_gate_block:
                     errors.append(f"game-gate aggregate missing canonical fragment: {fragment.strip()}")
+        final_digest = hashlib.sha256(game_gate_block.encode("utf-8")).hexdigest() if game_gate_block else None
+        if final_digest != EXPECTED_MERGE_GATE_FINAL_JOB_SHA256:
+            errors.append("game-gate must retain canonical aggregation and the isolated edit live-target fence")
         for required_fragment in (
             "pull request head moved after event head was resolved",
             "changed_files = pull.get('changed_files')",
