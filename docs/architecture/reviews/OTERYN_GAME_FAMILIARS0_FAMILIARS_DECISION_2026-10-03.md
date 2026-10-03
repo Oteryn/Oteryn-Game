@@ -124,7 +124,8 @@ one ordinary summon (R1).
   write commits, as TIMED-ITEM-0B §6.1 orders its checkpoints: if that write fails, the session
   stays and the familiar is kept. `WorldReset` writes as a removal with the time kept
   (`open = false`).
-- **Session end fences return admission.** A logout or channel transfer first closes return
+- **Session end fences return admission.** Every clean-end path (logout, channel transfer, and the
+  terminal release at the end of the in-fight deadline) first closes return
   admission for its session, then waits for a return acquisition already in flight to commit or
   abort, and only then makes its clean-end write. A return that reaches admission after the close
   is refused and stays stored; it returns at the next login or arrival. The close holds until
@@ -215,6 +216,8 @@ qualification and proves every row of §5.1 and of this section, one invariant p
 | A cast racing a delayed return for the same character | direct, concurrent | F-I7: the cast's compare-and-set re-checks check 4 against the row it replaces and commits only over a row with `familiar_remaining_ms = 0`, so it never replaces a familiar that waits to return. |
 | A cast refused by that compare-and-set (it lost, or it found stored time) | direct, concurrent | F-I9: mana, admission and row commit together or not at all, so the refused cast spends no mana and starts no cooldown. |
 | A delayed return in flight while logout or channel transfer makes its clean-end write | direct, concurrent | F-I11: session end closes return admission and drains the in-flight return before its clean-end write (§5). The return either committed first, and the clean-end write closes the row it reopened, or it is refused and stays stored. No return reopens the row after the clean-end write, so the next login never reads a clean exit as a crash. |
+| A delayed return in flight when a disconnected owner reaches the end of the in-fight deadline | direct, concurrent | F-I11: the terminal release is a clean-end path and closes and drains return admission like logout (§5); no return reopens the row after its clean-end write. |
+| The clean-end write commits but its response is lost (unknown commit outcome), then a delayed return is attempted | direct, concurrent, PostgreSQL | F-I11: the session reconciles from durable state before it reopens admission (§5). The row, closed under its own generation and revision, proves the commit, so admission stays closed, the session end completes and the return is refused and stays stored. |
 | A channel-transfer arrival that loads before the departure's clean-end write commits | reconciled, concurrent | The transfer completes only after that write (§5 writes), so the arrival never sees the departing `open = true` row. If it does, the transfer was not admitted, and the arrival is refused as a stale owner (F-I3). |
 | `WorldReset` with the owner online | direct | F-I7: the removal writes `open = false` with the time kept. A later crash is then not a loss of the stored time. |
 | A familiar creature created by any path other than a familiar spell or return (Summon Creature, convince, an administrative creature command) | sibling API | F-I6: it is an ordinary creature or summon, and nothing about it becomes durable familiar state; content marks the familiars as not summonable and not convinceable (§3). |
