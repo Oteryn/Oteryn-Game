@@ -40,6 +40,13 @@ external_repositories: []
 - `python3 tools/agents/validate_governance.py`: PASS on the authoring tree.
 - `python3 tools/repository/validate_repository_policy.py`: PASS on the authoring tree.
 
+## Review state
+
+- Codex round 1 on `5f1f4118`: 1 P1 (evicted revisions) and 1 P2, fixed in `ba350e28`.
+- Codex round 2 on `ba350e28`: 1 P1 (dormant tracks across activations) and 1 P2, fixed in `c6bb5d93`.
+- Codex round 3 on `c6bb5d93`: 1 P1 (witness discriminators) and 2 P2, fixed in the next head.
+- Frozen heads are in the #1622 FREEZE_SHA entries.
+
 ## Closeout
 
 - Archived in the PR's final authoring commit (`docs/agents/tasks/archive/README.md`).

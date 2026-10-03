@@ -139,7 +139,7 @@ gives trees, thresholds and perks to content. Its rule 6 requires versioned defi
     nothing is stored.
   - PROF-CONTENT-1 reports this coverage.
 - **Revisions (rule 6).** A new definition revision is compatible when it keeps the level count
-  and each level's perk order. It may change values and thresholds.
+  and each level's perk order, compared by each option's full non-value identity (the §4.2 shape). It may change values and thresholds.
   - A compatible revision applies without a write. The track's stored revision advances with its
     next line.
     **Amendment (compatible refresh, architect ruling for D283c).** That next line is the track's
@@ -149,8 +149,10 @@ gives trees, thresholds and perks to content. Its rule 6 requires versioned defi
     never lowered by a refresh (a lower threshold or Mastery cap only changes the derived level).
     **Release gate (D283c).** Because a dormant track keeps its older revision until its next line,
     an incompatible activation is refused unless its declared migration covers **every source
-    revision still present** in persisted track rows of that definition, found by one bounded
-    `DISTINCT` revision query at the activation gate. A compatible activation needs no gate. No
+    revision still present** in persisted track rows of that definition. The gate uses an index on
+    the track table's (definition key, revision) and asks, for each gap between the covered
+    revisions (sorted), whether any row exists there: at most (covered revisions + 1) index range
+    probes, each stopping at its first row, so its cost does not depend on the number of tracks. A compatible activation needs no gate. No
     definition history is stored.
   - Anything else is incompatible. The content revision declares the migration of the selections
     (keep, remap or clear, per level). The owning session writes one `migration` receipt for the
@@ -188,8 +190,12 @@ gives trees, thresholds and perks to content. Its rule 6 requires versioned defi
   - `proficiency_occurrence_id`, `character_id`, `committed_character_revision` and `item_key`,
     with a composite FK (occurrence, character, revision) to its receipt;
   - the definition key and revision, before and after;
-  - the **shape** before and after (amendment for D283c): the explicit ordered perk-kind list of the
-    definition revision, one list per level (at most 7 levels of at most 3 kinds, so bounded), not a
+  - the **shape** before and after (amendment for D283c): per level, the ordered list of each perk
+    option's full **non-value identity tuple**, meaning its kind plus every identity or
+    discriminator field the proficiency schema requires for that kind (for example a
+    `spell_augment`'s `spell_client_id` and `augment`, a skill, an element, a Bestiary class, a
+    range), and every field except numeric values. Defined generically by the schema, so a new kind
+    is covered without amending this rule. At most 7 levels of at most 3 options, so bounded; not a
     digest, so reconcile has the mapping data without the revision's content. It is computed by the
     writer from the active content when that revision is first written to the track, and the track
     row stores the current one, so it never needs the revision's content again;
@@ -205,7 +211,7 @@ gives trees, thresholds and perks to content. Its rule 6 requires versioned defi
     follow the declared migration is a writer invariant, because the guard cannot read content.
     PROF-1 tests it, and reconcile recomputes it from the two definition revisions.
   - A revision advance on a `training` or `perk_selection` line must be compatible (same level count
-    and per-level perk order). The **line CHECK** enforces it without content: on those causes the
+    and per-level ordered option identities). The **line CHECK** enforces it without content: on those causes the
     shape after must equal the shape before, and the per-track check links each
     line's before shape to the previous line's after value. The writer computes the new
     revision's shape from the active content, which always holds the revision it advances
