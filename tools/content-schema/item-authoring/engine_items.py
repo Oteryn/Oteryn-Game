@@ -2187,30 +2187,18 @@ def build_modifiers(attrs):
     # SKILL_*_LEECH_CHANCE/AMOUNT (item_parse.cpp parseLifeAndManaLeech) store raw
     # hundredths of a percent, e.g. 1800 -> 18.00%; no such division exists for
     # absorbpercent*/hitchance/breakchance, which item_parse.cpp casts unscaled.
-    if "lifeleechamount" in attrs or "lifeleechchance" in attrs:
-        modifiers.setdefault("leech", []).append(
-            {
-                "resource": "health",
-                "chance_percent": ratio_value(
-                    to_int(attrs.get("lifeleechchance", 0)), 100
-                ),
-                "amount_percent": ratio_value(
-                    to_int(attrs.get("lifeleechamount", 0)), 100
-                ),
-            }
-        )
-    if "manaleechamount" in attrs or "manaleechchance" in attrs:
-        modifiers.setdefault("leech", []).append(
-            {
-                "resource": "mana",
-                "chance_percent": ratio_value(
-                    to_int(attrs.get("manaleechchance", 0)), 100
-                ),
-                "amount_percent": ratio_value(
-                    to_int(attrs.get("manaleechamount", 0)), 100
-                ),
-            }
-        )
+    for prefix, resource in (("life", "health"), ("mana", "mana")):
+        leech = {"resource": resource}
+        for source_suffix, destination in (
+            ("chance", "chance_percent"),
+            ("amount", "amount_percent"),
+        ):
+            field = f"{prefix}leech{source_suffix}"
+            if field in attrs:
+                leech[destination] = ratio_value(to_int(attrs[field]), 100)
+        # A missing companion field is unknown; it is never an observed zero.
+        if len(leech) > 1:
+            modifiers.setdefault("leech", []).append(leech)
     if "healthgain" in attrs and "healthticks" in attrs:
         modifiers.setdefault("regeneration", []).append(
             {

@@ -3,7 +3,7 @@
     "key": "canary:encounter/soul_war_taint_zones",
     "revision": "canary-47dfd51f"
   },
-  "display_name": "Soul War hunting zones: fourth taint lethal heal",
+  "display_name": "Soul War taints and Mirror Image: accepted SW-3/4/5 draft",
   "scope": "channel_shared",
   "participants": [
     {
@@ -92,16 +92,6 @@
       ]
     },
     {
-      "role": "cloak_of_terror",
-      "creatures": [
-        {
-          "family": "Creature",
-          "key": "canary:creature/cloak_of_terror",
-          "revision": "canary-47dfd51f"
-        }
-      ]
-    },
-    {
       "role": "bony_sea_devil",
       "creatures": [
         {
@@ -127,6 +117,16 @@
         {
           "family": "Creature",
           "key": "canary:creature/branchy_crawler",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "role": "cloak_of_terror",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/cloak_of_terror",
           "revision": "canary-47dfd51f"
         }
       ]
@@ -166,7 +166,7 @@
     {
       "key": "soul_war_taint_zones",
       "kind": "area",
-      "description": "The eleven Canary zones of SoulWarQuest.areaZones.monsters (five hunting grounds and six Goshnar boss rooms), minus five safe entrance areas; Rotten Wasteland uses the whole rectangle (Q2 a).",
+      "description": "Accepted SW-5/Q2a: five hunting grounds and six boss rooms minus safe areas.",
       "location": {
         "boxes": [
           {
@@ -539,6 +539,426 @@
             "role": "hunting_monster"
           },
           "amount": "full"
+        }
+      ]
+    },
+    {
+      "key": "taint_check_runs",
+      "trigger": {
+        "kind": "encounter_started"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "timer",
+          "timer": "taint_check",
+          "operation": "start"
+        }
+      ]
+    },
+    {
+      "key": "bony_sea_devil_taint_teleport",
+      "trigger": {
+        "kind": "timer_elapsed",
+        "timer": "taint_check",
+        "each": "bony_sea_devil"
+      },
+      "conditions": [
+        {
+          "kind": "creature_present",
+          "players": true,
+          "near": {
+            "triggering": true,
+            "radius": 30
+          },
+          "where": [
+            {
+              "kind": "killer_progress",
+              "subject": {
+                "candidate": true
+              },
+              "progress": "canary:quest-progress/soul_war_taint_1",
+              "op": "==",
+              "value": true
+            },
+            {
+              "kind": "in_anchor",
+              "subject": {
+                "candidate": true
+              },
+              "anchor": "soul_war_taint_zones"
+            }
+          ],
+          "pick": "farthest",
+          "present": true
+        },
+        {
+          "kind": "chance_percent",
+          "value": 10
+        }
+      ],
+      "actions": [
+        {
+          "kind": "teleport",
+          "who": {
+            "triggering": true
+          },
+          "to": {
+            "picked_position": true
+          },
+          "after_ms": 2000,
+          "picked_cooldown_ms": 10000,
+          "say": "Get out the way!",
+          "warning_effect": "canary.appearance:effect/mortarea",
+          "arrival_effect": "canary.appearance:effect/teleport"
+        }
+      ]
+    },
+    {
+      "key": "brachiodemon_taint_teleport",
+      "trigger": {
+        "kind": "timer_elapsed",
+        "timer": "taint_check",
+        "each": "brachiodemon"
+      },
+      "conditions": [
+        {
+          "kind": "creature_present",
+          "players": true,
+          "near": {
+            "triggering": true,
+            "radius": 30
+          },
+          "where": [
+            {
+              "kind": "killer_progress",
+              "subject": {
+                "candidate": true
+              },
+              "progress": "canary:quest-progress/soul_war_taint_1",
+              "op": "==",
+              "value": true
+            },
+            {
+              "kind": "in_anchor",
+              "subject": {
+                "candidate": true
+              },
+              "anchor": "soul_war_taint_zones"
+            }
+          ],
+          "pick": "farthest",
+          "present": true
+        },
+        {
+          "kind": "chance_percent",
+          "value": 10
+        }
+      ],
+      "actions": [
+        {
+          "kind": "teleport",
+          "who": {
+            "triggering": true
+          },
+          "to": {
+            "picked_position": true
+          },
+          "after_ms": 2000,
+          "picked_cooldown_ms": 10000,
+          "say": "Burn in hell!",
+          "warning_effect": "canary.appearance:effect/mortarea",
+          "arrival_effect": "canary.appearance:effect/teleport"
+        }
+      ]
+    },
+    {
+      "key": "branchy_crawler_taint_teleport",
+      "trigger": {
+        "kind": "timer_elapsed",
+        "timer": "taint_check",
+        "each": "branchy_crawler"
+      },
+      "conditions": [
+        {
+          "kind": "creature_present",
+          "players": true,
+          "near": {
+            "triggering": true,
+            "radius": 30
+          },
+          "where": [
+            {
+              "kind": "killer_progress",
+              "subject": {
+                "candidate": true
+              },
+              "progress": "canary:quest-progress/soul_war_taint_1",
+              "op": "==",
+              "value": true
+            },
+            {
+              "kind": "in_anchor",
+              "subject": {
+                "candidate": true
+              },
+              "anchor": "soul_war_taint_zones"
+            }
+          ],
+          "pick": "farthest",
+          "present": true
+        },
+        {
+          "kind": "chance_percent",
+          "value": 10
+        }
+      ],
+      "actions": [
+        {
+          "kind": "teleport",
+          "who": {
+            "triggering": true
+          },
+          "to": {
+            "picked_position": true
+          },
+          "after_ms": 2000,
+          "picked_cooldown_ms": 10000,
+          "say": "My growth is your death!",
+          "warning_effect": "canary.appearance:effect/mortarea",
+          "arrival_effect": "canary.appearance:effect/teleport"
+        }
+      ]
+    },
+    {
+      "key": "cloak_of_terror_taint_teleport",
+      "trigger": {
+        "kind": "timer_elapsed",
+        "timer": "taint_check",
+        "each": "cloak_of_terror"
+      },
+      "conditions": [
+        {
+          "kind": "creature_present",
+          "players": true,
+          "near": {
+            "triggering": true,
+            "radius": 30
+          },
+          "where": [
+            {
+              "kind": "killer_progress",
+              "subject": {
+                "candidate": true
+              },
+              "progress": "canary:quest-progress/soul_war_taint_1",
+              "op": "==",
+              "value": true
+            },
+            {
+              "kind": "in_anchor",
+              "subject": {
+                "candidate": true
+              },
+              "anchor": "soul_war_taint_zones"
+            }
+          ],
+          "pick": "farthest",
+          "present": true
+        },
+        {
+          "kind": "chance_percent",
+          "value": 10
+        }
+      ],
+      "actions": [
+        {
+          "kind": "teleport",
+          "who": {
+            "triggering": true
+          },
+          "to": {
+            "picked_position": true
+          },
+          "after_ms": 2000,
+          "picked_cooldown_ms": 10000,
+          "say": "I am your terror!",
+          "warning_effect": "canary.appearance:effect/mortarea",
+          "arrival_effect": "canary.appearance:effect/teleport"
+        }
+      ]
+    },
+    {
+      "key": "many_faces_taint_teleport",
+      "trigger": {
+        "kind": "timer_elapsed",
+        "timer": "taint_check",
+        "each": "many_faces"
+      },
+      "conditions": [
+        {
+          "kind": "creature_present",
+          "players": true,
+          "near": {
+            "triggering": true,
+            "radius": 30
+          },
+          "where": [
+            {
+              "kind": "killer_progress",
+              "subject": {
+                "candidate": true
+              },
+              "progress": "canary:quest-progress/soul_war_taint_1",
+              "op": "==",
+              "value": true
+            },
+            {
+              "kind": "in_anchor",
+              "subject": {
+                "candidate": true
+              },
+              "anchor": "soul_war_taint_zones"
+            }
+          ],
+          "pick": "farthest",
+          "present": true
+        },
+        {
+          "kind": "chance_percent",
+          "value": 10
+        }
+      ],
+      "actions": [
+        {
+          "kind": "teleport",
+          "who": {
+            "triggering": true
+          },
+          "to": {
+            "picked_position": true
+          },
+          "after_ms": 2000,
+          "picked_cooldown_ms": 10000,
+          "say": "Hands off my comrades!",
+          "warning_effect": "canary.appearance:effect/mortarea",
+          "arrival_effect": "canary.appearance:effect/teleport"
+        }
+      ]
+    },
+    {
+      "key": "spiteful_spitter_taint_teleport",
+      "trigger": {
+        "kind": "timer_elapsed",
+        "timer": "taint_check",
+        "each": "spiteful_spitter"
+      },
+      "conditions": [
+        {
+          "kind": "creature_present",
+          "players": true,
+          "near": {
+            "triggering": true,
+            "radius": 30
+          },
+          "where": [
+            {
+              "kind": "killer_progress",
+              "subject": {
+                "candidate": true
+              },
+              "progress": "canary:quest-progress/soul_war_taint_1",
+              "op": "==",
+              "value": true
+            },
+            {
+              "kind": "in_anchor",
+              "subject": {
+                "candidate": true
+              },
+              "anchor": "soul_war_taint_zones"
+            }
+          ],
+          "pick": "farthest",
+          "present": true
+        },
+        {
+          "kind": "chance_percent",
+          "value": 10
+        }
+      ],
+      "actions": [
+        {
+          "kind": "teleport",
+          "who": {
+            "triggering": true
+          },
+          "to": {
+            "picked_position": true
+          },
+          "after_ms": 2000,
+          "picked_cooldown_ms": 10000,
+          "say": "You have been chosen for a harvest!",
+          "warning_effect": "canary.appearance:effect/mortarea",
+          "arrival_effect": "canary.appearance:effect/teleport"
+        }
+      ]
+    },
+    {
+      "key": "dreadful_harvester_taint_teleport",
+      "trigger": {
+        "kind": "timer_elapsed",
+        "timer": "taint_check",
+        "each": "dreadful_harvester"
+      },
+      "conditions": [
+        {
+          "kind": "creature_present",
+          "players": true,
+          "near": {
+            "triggering": true,
+            "radius": 30
+          },
+          "where": [
+            {
+              "kind": "killer_progress",
+              "subject": {
+                "candidate": true
+              },
+              "progress": "canary:quest-progress/soul_war_taint_1",
+              "op": "==",
+              "value": true
+            },
+            {
+              "kind": "in_anchor",
+              "subject": {
+                "candidate": true
+              },
+              "anchor": "soul_war_taint_zones"
+            }
+          ],
+          "pick": "farthest",
+          "present": true
+        },
+        {
+          "kind": "chance_percent",
+          "value": 10
+        }
+      ],
+      "actions": [
+        {
+          "kind": "teleport",
+          "who": {
+            "triggering": true
+          },
+          "to": {
+            "picked_position": true
+          },
+          "after_ms": 2000,
+          "picked_cooldown_ms": 10000,
+          "say": "You have been chosen for a harvest!",
+          "warning_effect": "canary.appearance:effect/mortarea",
+          "arrival_effect": "canary.appearance:effect/teleport"
         }
       ]
     },
@@ -1003,7 +1423,7 @@
       ]
     },
     {
-      "key": "mirror_image_non_player_floor",
+      "key": "mirror_image_floor",
       "trigger": {
         "kind": "lethal_damage",
         "role": "mirror_image"
@@ -1018,449 +1438,6 @@
         {
           "kind": "prevent_death",
           "role": "mirror_image"
-        }
-      ]
-    },
-    {
-      "key": "cloak_of_terror_bleeds",
-      "trigger": {
-        "kind": "damage_taken",
-        "role": "cloak_of_terror",
-        "source": "player"
-      },
-      "conditions": [],
-      "actions": [
-        {
-          "kind": "map_item",
-          "operation": "create",
-          "at": "subject_position",
-          "unless_present": true,
-          "item": {
-            "family": "Item",
-            "key": "canary:item/33854",
-            "revision": "canary-47dfd51f"
-          },
-          "interaction": "canary:interaction/blood_of_cloak_of_terror"
-        }
-      ]
-    },
-    {
-      "key": "taint_check_runs",
-      "trigger": {
-        "kind": "encounter_started"
-      },
-      "conditions": [],
-      "actions": [
-        {
-          "kind": "timer",
-          "timer": "taint_check",
-          "operation": "start"
-        }
-      ]
-    },
-    {
-      "key": "bony_sea_devil_taint_teleport",
-      "trigger": {
-        "kind": "timer_elapsed",
-        "timer": "taint_check",
-        "each": "bony_sea_devil"
-      },
-      "conditions": [
-        {
-          "kind": "creature_present",
-          "players": true,
-          "near": {
-            "triggering": true,
-            "radius": 30
-          },
-          "where": [
-            {
-              "kind": "killer_progress",
-              "subject": {
-                "candidate": true
-              },
-              "progress": "canary:quest-progress/soul_war_taint_1",
-              "op": "==",
-              "value": true
-            },
-            {
-              "kind": "in_anchor",
-              "subject": {
-                "candidate": true
-              },
-              "anchor": "soul_war_taint_zones"
-            }
-          ],
-          "pick": "farthest",
-          "present": true
-        },
-        {
-          "kind": "chance_percent",
-          "value": 10
-        }
-      ],
-      "actions": [
-        {
-          "kind": "teleport",
-          "who": {
-            "triggering": true
-          },
-          "to": {
-            "picked_position": true
-          },
-          "after_ms": 2000,
-          "picked_cooldown_ms": 10000,
-          "say": "Get out the way!",
-          "warning_effect": "canary.appearance:effect/mortarea",
-          "arrival_effect": "canary.appearance:effect/teleport"
-        }
-      ]
-    },
-    {
-      "key": "brachiodemon_taint_teleport",
-      "trigger": {
-        "kind": "timer_elapsed",
-        "timer": "taint_check",
-        "each": "brachiodemon"
-      },
-      "conditions": [
-        {
-          "kind": "creature_present",
-          "players": true,
-          "near": {
-            "triggering": true,
-            "radius": 30
-          },
-          "where": [
-            {
-              "kind": "killer_progress",
-              "subject": {
-                "candidate": true
-              },
-              "progress": "canary:quest-progress/soul_war_taint_1",
-              "op": "==",
-              "value": true
-            },
-            {
-              "kind": "in_anchor",
-              "subject": {
-                "candidate": true
-              },
-              "anchor": "soul_war_taint_zones"
-            }
-          ],
-          "pick": "farthest",
-          "present": true
-        },
-        {
-          "kind": "chance_percent",
-          "value": 10
-        }
-      ],
-      "actions": [
-        {
-          "kind": "teleport",
-          "who": {
-            "triggering": true
-          },
-          "to": {
-            "picked_position": true
-          },
-          "after_ms": 2000,
-          "picked_cooldown_ms": 10000,
-          "say": "Burn in hell!",
-          "warning_effect": "canary.appearance:effect/mortarea",
-          "arrival_effect": "canary.appearance:effect/teleport"
-        }
-      ]
-    },
-    {
-      "key": "branchy_crawler_taint_teleport",
-      "trigger": {
-        "kind": "timer_elapsed",
-        "timer": "taint_check",
-        "each": "branchy_crawler"
-      },
-      "conditions": [
-        {
-          "kind": "creature_present",
-          "players": true,
-          "near": {
-            "triggering": true,
-            "radius": 30
-          },
-          "where": [
-            {
-              "kind": "killer_progress",
-              "subject": {
-                "candidate": true
-              },
-              "progress": "canary:quest-progress/soul_war_taint_1",
-              "op": "==",
-              "value": true
-            },
-            {
-              "kind": "in_anchor",
-              "subject": {
-                "candidate": true
-              },
-              "anchor": "soul_war_taint_zones"
-            }
-          ],
-          "pick": "farthest",
-          "present": true
-        },
-        {
-          "kind": "chance_percent",
-          "value": 10
-        }
-      ],
-      "actions": [
-        {
-          "kind": "teleport",
-          "who": {
-            "triggering": true
-          },
-          "to": {
-            "picked_position": true
-          },
-          "after_ms": 2000,
-          "picked_cooldown_ms": 10000,
-          "say": "My growth is your death!",
-          "warning_effect": "canary.appearance:effect/mortarea",
-          "arrival_effect": "canary.appearance:effect/teleport"
-        }
-      ]
-    },
-    {
-      "key": "cloak_of_terror_taint_teleport",
-      "trigger": {
-        "kind": "timer_elapsed",
-        "timer": "taint_check",
-        "each": "cloak_of_terror"
-      },
-      "conditions": [
-        {
-          "kind": "creature_present",
-          "players": true,
-          "near": {
-            "triggering": true,
-            "radius": 30
-          },
-          "where": [
-            {
-              "kind": "killer_progress",
-              "subject": {
-                "candidate": true
-              },
-              "progress": "canary:quest-progress/soul_war_taint_1",
-              "op": "==",
-              "value": true
-            },
-            {
-              "kind": "in_anchor",
-              "subject": {
-                "candidate": true
-              },
-              "anchor": "soul_war_taint_zones"
-            }
-          ],
-          "pick": "farthest",
-          "present": true
-        },
-        {
-          "kind": "chance_percent",
-          "value": 10
-        }
-      ],
-      "actions": [
-        {
-          "kind": "teleport",
-          "who": {
-            "triggering": true
-          },
-          "to": {
-            "picked_position": true
-          },
-          "after_ms": 2000,
-          "picked_cooldown_ms": 10000,
-          "say": "I am your terror!",
-          "warning_effect": "canary.appearance:effect/mortarea",
-          "arrival_effect": "canary.appearance:effect/teleport"
-        }
-      ]
-    },
-    {
-      "key": "many_faces_taint_teleport",
-      "trigger": {
-        "kind": "timer_elapsed",
-        "timer": "taint_check",
-        "each": "many_faces"
-      },
-      "conditions": [
-        {
-          "kind": "creature_present",
-          "players": true,
-          "near": {
-            "triggering": true,
-            "radius": 30
-          },
-          "where": [
-            {
-              "kind": "killer_progress",
-              "subject": {
-                "candidate": true
-              },
-              "progress": "canary:quest-progress/soul_war_taint_1",
-              "op": "==",
-              "value": true
-            },
-            {
-              "kind": "in_anchor",
-              "subject": {
-                "candidate": true
-              },
-              "anchor": "soul_war_taint_zones"
-            }
-          ],
-          "pick": "farthest",
-          "present": true
-        },
-        {
-          "kind": "chance_percent",
-          "value": 10
-        }
-      ],
-      "actions": [
-        {
-          "kind": "teleport",
-          "who": {
-            "triggering": true
-          },
-          "to": {
-            "picked_position": true
-          },
-          "after_ms": 2000,
-          "picked_cooldown_ms": 10000,
-          "say": "Hands off my comrades!",
-          "warning_effect": "canary.appearance:effect/mortarea",
-          "arrival_effect": "canary.appearance:effect/teleport"
-        }
-      ]
-    },
-    {
-      "key": "spiteful_spitter_taint_teleport",
-      "trigger": {
-        "kind": "timer_elapsed",
-        "timer": "taint_check",
-        "each": "spiteful_spitter"
-      },
-      "conditions": [
-        {
-          "kind": "creature_present",
-          "players": true,
-          "near": {
-            "triggering": true,
-            "radius": 30
-          },
-          "where": [
-            {
-              "kind": "killer_progress",
-              "subject": {
-                "candidate": true
-              },
-              "progress": "canary:quest-progress/soul_war_taint_1",
-              "op": "==",
-              "value": true
-            },
-            {
-              "kind": "in_anchor",
-              "subject": {
-                "candidate": true
-              },
-              "anchor": "soul_war_taint_zones"
-            }
-          ],
-          "pick": "farthest",
-          "present": true
-        },
-        {
-          "kind": "chance_percent",
-          "value": 10
-        }
-      ],
-      "actions": [
-        {
-          "kind": "teleport",
-          "who": {
-            "triggering": true
-          },
-          "to": {
-            "picked_position": true
-          },
-          "after_ms": 2000,
-          "picked_cooldown_ms": 10000,
-          "say": "You have been chosen for a harvest!",
-          "warning_effect": "canary.appearance:effect/purpleelectricity",
-          "arrival_effect": "canary.appearance:effect/teleport"
-        }
-      ]
-    },
-    {
-      "key": "dreadful_harvester_taint_teleport",
-      "trigger": {
-        "kind": "timer_elapsed",
-        "timer": "taint_check",
-        "each": "dreadful_harvester"
-      },
-      "conditions": [
-        {
-          "kind": "creature_present",
-          "players": true,
-          "near": {
-            "triggering": true,
-            "radius": 30
-          },
-          "where": [
-            {
-              "kind": "killer_progress",
-              "subject": {
-                "candidate": true
-              },
-              "progress": "canary:quest-progress/soul_war_taint_1",
-              "op": "==",
-              "value": true
-            },
-            {
-              "kind": "in_anchor",
-              "subject": {
-                "candidate": true
-              },
-              "anchor": "soul_war_taint_zones"
-            }
-          ],
-          "pick": "farthest",
-          "present": true
-        },
-        {
-          "kind": "chance_percent",
-          "value": 10
-        }
-      ],
-      "actions": [
-        {
-          "kind": "teleport",
-          "who": {
-            "triggering": true
-          },
-          "to": {
-            "picked_position": true
-          },
-          "after_ms": 2000,
-          "picked_cooldown_ms": 10000,
-          "say": "You have been chosen for a harvest!",
-          "warning_effect": "canary.appearance:effect/purpleelectricity",
-          "arrival_effect": "canary.appearance:effect/teleport"
         }
       ]
     }

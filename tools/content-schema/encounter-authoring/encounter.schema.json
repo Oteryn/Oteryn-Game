@@ -544,7 +544,31 @@
           "required": [
             "spawned"
           ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "picked": {
+              "const": true
+            }
+          },
+          "required": [
+            "picked"
+          ]
         }
+      ]
+    },
+    "candidate": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "candidate": {
+          "const": true
+        }
+      },
+      "required": [
+        "candidate"
       ]
     },
     "health": {
@@ -1082,6 +1106,70 @@
         }
       ]
     },
+    "candidateCondition": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "killer_progress"
+            },
+            "subject": {
+              "$ref": "#/$defs/candidate"
+            },
+            "progress": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_.-]*:[a-z0-9_./-]+$"
+            },
+            "op": {
+              "enum": [
+                "==",
+                "!=",
+                "<",
+                "<=",
+                ">",
+                ">="
+              ]
+            },
+            "value": {
+              "type": [
+                "integer",
+                "boolean"
+              ]
+            }
+          },
+          "required": [
+            "kind",
+            "subject",
+            "progress",
+            "op",
+            "value"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "in_anchor"
+            },
+            "subject": {
+              "$ref": "#/$defs/candidate"
+            },
+            "anchor": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_]*$"
+            }
+          },
+          "required": [
+            "kind",
+            "subject",
+            "anchor"
+          ]
+        }
+      ]
+    },
     "condition": {
       "oneOf": [
         {
@@ -1222,6 +1310,9 @@
               "type": "string",
               "pattern": "^[a-z][a-z0-9_]*$"
             },
+            "players": {
+              "const": true
+            },
             "anchor": {
               "type": "string",
               "pattern": "^[a-z][a-z0-9_]*$"
@@ -1234,6 +1325,9 @@
                   "type": "string",
                   "pattern": "^[a-z][a-z0-9_]*$"
                 },
+                "triggering": {
+                  "const": true
+                },
                 "radius": {
                   "type": "integer",
                   "minimum": 0
@@ -1243,9 +1337,6 @@
                     "square",
                     "circle"
                   ]
-                },
-                "triggering": {
-                  "const": true
                 }
               },
               "required": [
@@ -1264,21 +1355,20 @@
                 }
               ]
             },
-            "present": {
-              "type": "boolean"
-            },
-            "players": {
-              "const": true
-            },
             "where": {
               "type": "array",
-              "minItems": 1,
               "items": {
-                "$ref": "#/$defs/condition"
-              }
+                "$ref": "#/$defs/candidateCondition"
+              },
+              "minItems": 1
             },
             "pick": {
-              "const": "farthest"
+              "enum": [
+                "farthest"
+              ]
+            },
+            "present": {
+              "type": "boolean"
             }
           },
           "required": [
@@ -1507,6 +1597,16 @@
             "kind": {
               "const": "killer_progress"
             },
+            "subject": {
+              "oneOf": [
+                {
+                  "$ref": "#/$defs/subject"
+                },
+                {
+                  "$ref": "#/$defs/candidate"
+                }
+              ]
+            },
             "progress": {
               "type": "string",
               "pattern": "^[a-z][a-z0-9_.-]*:[a-z0-9_./-]+$"
@@ -1526,9 +1626,6 @@
                 "integer",
                 "boolean"
               ]
-            },
-            "subject": {
-              "$ref": "#/$defs/candidate"
             }
           },
           "required": [
@@ -2079,11 +2176,11 @@
               "type": "string",
               "minLength": 1
             },
-            "arrival_effect": {
+            "say": {
               "type": "string",
               "minLength": 1
             },
-            "say": {
+            "arrival_effect": {
               "type": "string",
               "minLength": 1
             }
@@ -2127,6 +2224,9 @@
                 "subject_position"
               ]
             },
+            "unless_present": {
+              "type": "boolean"
+            },
             "revert_after_ms": {
               "type": "integer",
               "minimum": 1
@@ -2146,9 +2246,6 @@
             "interaction": {
               "type": "string",
               "pattern": "^[a-z][a-z0-9_.-]*:[a-z0-9_./-]+$"
-            },
-            "unless_present": {
-              "const": true
             }
           },
           "required": [
@@ -2583,31 +2680,7 @@
         "conditions",
         "actions"
       ]
-    },
-    "candidate": {
-      "type": "object",
-      "additionalProperties": false,
-      "properties": {
-        "candidate": {
-          "const": true
-        }
-      },
-      "required": [
-        "candidate"
-      ]
-    },
-    "picked": {
-      "type": "object",
-      "additionalProperties": false,
-      "properties": {
-        "picked": {
-          "const": true
-        }
-      },
-      "required": [
-        "picked"
-      ]
     }
   },
-  "description": "Oteryn Encounter authoring format v1 (CANDIDATE, D20/D26-D31, D34; CW2-1..4 accepted in section 12)."
+  "description": "Oteryn Encounter authoring format v1 (CANDIDATE, D20/D26-D31, D34; CW2-1..4 and SW-3..6 accepted in sections 12-13)."
 }

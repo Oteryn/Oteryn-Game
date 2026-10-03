@@ -12,7 +12,9 @@ Usage: python canary_batch.py --canary <checkout of opentibiabr/canary at REVISI
 import argparse
 import hashlib
 import json
+import os
 import re
+import subprocess
 import xml.etree.ElementTree as ET
 from decimal import ROUND_HALF_EVEN, Decimal
 from fractions import Fraction
@@ -21,6 +23,7 @@ from pathlib import Path
 from normalize_monster_fields import cast_geometry
 import spell_probes
 import spell_scripts
+import secondary_mitigation
 
 ROOT = Path(__file__).resolve().parent
 REPOSITORY = 'opentibiabr/canary'
@@ -33,6 +36,10 @@ CASTER_MAGNITUDE = 'canary:formula/caster-magnitude'
 
 class SpellUnresolved(Exception):
     pass
+
+
+class NonRegisteringSourceError(ValueError):
+    """A helper Lua source is not a registered monster definition."""
 
 
 def match_windup(probe):
@@ -219,8 +226,9 @@ BOSSTIARY = {'RARITY_BANE': ('bane', (25, 100, 300), (5, 15, 30)), 'RARITY_ARCHF
              'RARITY_NEMESIS': ('nemesis', (1, 3, 5), (10, 30, 60))}
 FAMILIAR_DEFAULT_LOOK = {'sorcerer': 994, 'druid': 993, 'paladin': 992, 'knight': 991, 'monk': 1818}
 FAMILIAR_DURATION_MS = 60 * 30 // 2 * 1000
-FAMILIAR_SPELLS = {'knight': ('knight', 1000), 'druid': ('druid', 1000), 'paladin': ('paladin', 1000),
-                   'sorcerer': ('sorcerer', 1000), 'monk': ('monk', 1000)}
+FAMILIAR_SPELLS = {vocation: f'Summon {vocation.title()} Familiar'
+                   for vocation in ('knight', 'druid', 'paladin', 'sorcerer')}
+FAMILIAR_SPELLS['monk'] = 'Monk familiar'
 DAMAGE = {'PHYSICALDAMAGE': 'physical', 'ENERGYDAMAGE': 'energy', 'EARTHDAMAGE': 'earth', 'FIREDAMAGE': 'fire',
           'LIFEDRAIN': 'life_drain', 'MANADRAIN': 'mana_drain', 'DROWNDAMAGE': 'drowning', 'ICEDAMAGE': 'ice',
           'HOLYDAMAGE': 'holy', 'DEATHDAMAGE': 'death', 'AGONYDAMAGE': 'agony', 'NEUTRALDAMAGE': 'neutral',
@@ -231,17 +239,84 @@ FIELD_ITEMS = {'firefield': 2118, 'poisonfield': 105, 'energyfield': 2122}
 OCCURRENCE = {0: 'common', 1: 'uncommon', 2: 'rare', 3: 'very_rare'}
 DIFFICULTY = {0: 'harmless', 1: 'trivial', 2: 'easy', 3: 'medium', 4: 'hard', 5: 'challenging'}
 PERIOD = {'RESPAWNPERIOD_ALL': 'all', 'RESPAWNPERIOD_DAY': 'day', 'RESPAWNPERIOD_NIGHT': 'night'}
+# Registered Faction_t labels at the pinned Canary revision (game_definitions.hpp,
+# lua_enums.cpp). Native Behavior carries source labels, not foreign numeric IDs.
+FACTIONS = frozenset('FACTION_' + name for name in
+    ('DEFAULT', 'PLAYER', 'LION', 'LIONUSURPERS', 'MARID', 'EFREET', 'DEEPLING', 'DEATHLING', 'ANUMA', 'FAFNAR'))
+FACTION_FIELDS = {'faction': 'faction', 'enemyFactions': 'enemy_factions',
+                  'targetPreferPlayer': 'prefer_player', 'targetPreferMaster': 'prefer_master'}
+
+
+def faction_preferences(monster):
+    """Preserve registered labels and registrar set semantics; unknown encodings fail closed."""
+    if not any(field in monster for field in FACTION_FIELDS):
+        return None, {}
+    errors = {}
+
+    def label(value, field):
+        if isinstance(value, str) and value.startswith('@') and value[1:] in FACTIONS:
+            return value[1:]
+        errors[field] = f'Unqualified faction value {value!r}; needs a registered source-enum label, not a guessed native identity.'
+        return None
+
+    # Lua registrar ignores false masks. MonsterInfo defaults are FACTION_DEFAULT,
+    # an empty enemy set, and false for both preferences.
+    own = monster.get('faction', False)
+    faction = 'FACTION_DEFAULT' if own is False else label(own, 'faction')
+    enemies = monster.get('enemyFactions', [])
+    enemy_labels = []
+    if enemies is False:
+        enemies = []
+    if not isinstance(enemies, list):
+        errors['enemyFactions'] = 'Enemy factions are not a source array; native set semantics require qualification.'
+    else:
+        for value in enemies:
+            if value is False:  # Registrar logs/skips a false enemy entry.
+                continue
+            enemy = label(value, 'enemyFactions')
+            if enemy is not None:
+                enemy_labels.append(enemy)
+    preferences = {}
+    for source, target in (('targetPreferPlayer', 'prefer_player'), ('targetPreferMaster', 'prefer_master')):
+        value = monster.get(source, False)
+        if not isinstance(value, bool):
+            errors[source] = f'Unqualified target preference {value!r}; boolean source semantics require verification.'
+        preferences[target] = value
+    if errors:
+        return None, errors
+    return {'faction': faction, 'enemy_factions': sorted(set(enemy_labels)), **preferences}, {}
 
 LUA_PRELUDE = r'''
 local registered = {}
 local callbacks = {}
 setmetatable(_G, {__index = function(_, k) return "@" .. k end})
 Game = {createMonsterType = function(name)
+  registered.created_name = name
   local mt = {}
+  registered.created_type = mt
   mt.register = function(self, monster) registered.name = name; registered.monster = monster end
   return setmetatable(mt, {__newindex = function(t, k, v) rawset(callbacks, k, type(v)) end})
 end}
-return registered, callbacks
+-- A failed source may still contain a partially built local monster table.
+-- Read that exact table at the error site; never supply missing quest globals.
+local function capture_error(message)
+  for level = 2, 64 do
+    if not debug.getinfo(level) then break end
+    local monster, mType
+    for index = 1, 128 do
+      local name, value = debug.getlocal(level, index)
+      if not name then break end
+      if name == 'monster' and type(value) == 'table' then monster = value end
+      if name == 'mType' then mType = value end
+    end
+    if monster and mType == registered.created_type then
+      registered.partial_monster = monster
+      return message
+    end
+  end
+  return message
+end
+return registered, callbacks, capture_error
 '''
 
 
@@ -265,17 +340,33 @@ def lua_value(value):
 
 
 def load_monster(path, errors=None):
-    """Evaluate one monster file. With `errors` (a list), a Lua error raised after `mType:register`
-    is appended to it instead of raised, because Canary keeps a monster type that registered."""
+    """Evaluate one source. Strict callers require a successful registration.
+
+    With an explicit error ledger, preserve a registered table after a late failure,
+    or the already evaluated local table before registration. The latter is partial
+    evidence only: its PRE_REGISTER error must keep conversion blocked.
+    """
     from lupa.luajit21 import LuaRuntime
     lua = LuaRuntime(unpack_returned_tuples=True)
-    registered, callbacks = lua.execute(LUA_PRELUDE)
+    registered, callbacks, capture_error = lua.execute(LUA_PRELUDE)
+    lua.globals()['__capture_source_error'] = capture_error
     try:
-        lua.execute(path.read_text(encoding='utf-8'))
+        source = path.read_text(encoding='utf-8')
+        lua.execute('local ok, message = xpcall(function() ' + source
+                    + '\nend, __capture_source_error)\nif not ok then error(message, 0) end')
     except Exception as exc:
-        if errors is None or registered['monster'] is None:
+        if errors is None:
             raise
-        errors.append(str(exc).splitlines()[0][:160])
+        if registered['monster'] is None:
+            if registered['partial_monster'] is None or not isinstance(registered['created_name'], str):
+                raise
+            registered['name'] = registered['created_name']
+            registered['monster'] = registered['partial_monster']
+            errors.append('PRE_REGISTER: ' + str(exc).splitlines()[0][:160])
+        else:
+            errors.append(str(exc).splitlines()[0][:160])
+    if registered['monster'] is None or not isinstance(registered['name'], str):
+        raise NonRegisteringSourceError('source did not register a monster type: ' + path.name)
     return registered['name'], lua_value(registered['monster']), dict(callbacks.items())
 
 
@@ -398,6 +489,214 @@ def ratio(value):
     return {'numerator': fraction.numerator, 'denominator': fraction.denominator}
 
 
+def default_registration_profile(root):
+    """Read the exact pinned distribution profile, never a live server configuration."""
+    paths = ('config.lua.dist', 'src/config/configmanager.cpp')
+    evidence, texts = [], []
+    for relative in paths:
+        data = (root / relative).read_bytes()
+        pinned = subprocess.check_output(['git', '-C', str(root), 'show', f'{REVISION}:{relative}'],
+                                         stderr=subprocess.DEVNULL)
+        if data != pinned:
+            raise ValueError('reflection profile differs from pinned source: ' + relative)
+        texts.append(data.decode('utf-8'))
+        evidence.append({'file': relative, 'git_blob': blob_id(data)})
+    settings, defaults = {}, {}
+    for name, enum in (('maxDamageReflection', 'MAX_DAMAGE_REFLECTION'),
+                       ('minElementalResistance', 'MIN_ELEMENTAL_RESISTANCE'),
+                       ('maxElementalResistance', 'MAX_ELEMENTAL_RESISTANCE')):
+        declaration = re.findall(r'^\s*' + name + r'\s*=\s*([^\n]+)', texts[0], re.M)
+        fallback = re.findall(r'loadIntConfig\(L,\s*' + enum + r',\s*"' + name + r'",\s*(-?\d+)\s*\)', texts[1])
+        if len(declaration) != 1 or len(fallback) != 1:
+            raise ValueError('registration profile requires one literal setting/default: ' + name)
+        literal = re.fullmatch(r'(-?\d+)\s*(?:--[^\n]*)?', declaration[0])
+        if not literal or not -2147483648 <= int(literal[1]) <= 2147483647:
+            raise ValueError('registration configuration cannot be faithfully represented: ' + name)
+        settings[name], defaults[name] = int(literal[1]), int(fallback[0])
+        for index, pattern in enumerate((r'^\s*'+name+r'\s*=', r'loadIntConfig\(L,\s*'+enum+',')):
+            evidence[index].setdefault('setting_lines', {})[name] = texts[index][:re.search(pattern, texts[index], re.M).start()].count('\n') + 1
+    if settings['maxDamageReflection'] < 0 or settings['minElementalResistance'] > settings['maxElementalResistance']:
+        raise ValueError('unqualified registration configuration bounds')
+    return {'settings': settings, 'loader_defaults': defaults, 'evidence': evidence,
+            'repository': REPOSITORY, 'revision': REVISION, 'profile': 'PINNED_DISTRIBUTION_DEFAULT',
+            'evidence_class': 'OTS_HYPOTHESIS_ONLY'}
+
+
+def familiar_spell_profile(root, vocation):
+    """Only the exact pinned registered special player spell defines this carrier's mana."""
+    if vocation not in FAMILIAR_SPELLS:
+        raise ValueError('No accepted special familiar spell for vocation ' + vocation)
+    relative = f'data/scripts/spells/familiar/{vocation}_familiar.lua'
+    data = (root / relative).read_bytes()
+    pinned = subprocess.check_output(['git', '-C', str(root), 'show', f'{REVISION}:{relative}'],
+                                     stderr=subprocess.DEVNULL)
+    if data != pinned:
+        raise ValueError('Familiar player spell differs from pinned source: ' + relative)
+    text = data.decode('utf-8')
+    calls = {}
+    for method in ('name', 'mana', 'vocation', 'register'):
+        matches = list(re.finditer(r'^\s*spell:' + method + r'\(([^\n]*)\)\s*(?:--[^\n]*)?$', text, re.M))
+        if len(matches) != 1:
+            raise ValueError('Familiar spell requires one literal registered ' + method + ' declaration')
+        calls[method] = matches[0]
+    if (calls['name'][1] != json.dumps(FAMILIAR_SPELLS[vocation]) or calls['register'][1]
+            or not re.fullmatch(r'[1-9]\d*', calls['mana'][1])
+            or not re.fullmatch(r'"' + vocation + r';true", "[^"\n]+;true"', calls['vocation'][1])
+            or calls['register'].start() < max(calls[key].start() for key in ('name', 'mana', 'vocation'))
+            or not re.search(r'local spell = Spell\("instant"\)', text)
+            or not re.search(r'return player:CreateFamiliarSpell\(spellId\)', text)
+            or not re.search(r'^spell:id\(spellId\)$', text, re.M)):
+        raise ValueError('Unsupported special familiar spell identity, mana or registration')
+    mana = int(calls['mana'][1])
+    if mana > 2147483647:
+        raise ValueError('Familiar mana cannot be faithfully represented')
+    return {'file': relative, 'git_blob': blob_id(data), 'sha256': hashlib.sha256(data).hexdigest(),
+            'registered_name': FAMILIAR_SPELLS[vocation], 'registered_vocations': calls['vocation'][1],
+            'mana_cost': mana, 'mana_line': text[:calls['mana'].start()].count('\n') + 1,
+            'register_line': text[:calls['register'].start()].count('\n') + 1}
+
+
+def normalized_reflection(percent, limit):
+    if type(percent) is not int or type(limit) is not int or not 0 <= percent <= 2147483647 or not 0 <= limit <= 2147483647:
+        raise ValueError('reflection percent and limit require nonnegative int32 source values')
+    return min(percent, limit)
+
+
+def elemental_can_clip(elements):
+    """Registrar checks the first entry for each of seven player damage types."""
+    for kind in ('PHYSICALDAMAGE', 'ENERGYDAMAGE', 'EARTHDAMAGE', 'FIREDAMAGE', 'ICEDAMAGE', 'HOLYDAMAGE', 'DEATHDAMAGE'):
+        first = next((row for row in elements if row.get('type') == '@COMBAT_' + kind), None)
+        if first is None or first.get('percent') != 100:
+            return True
+    return False
+
+
+def normalized_element(percent, minimum, maximum):
+    if any(type(v) is not int or not -2147483648 <= v <= 2147483647 for v in (percent, minimum, maximum)) or minimum > maximum:
+        raise ValueError('elemental percent and bounds require ordered int32 source values')
+    return min(max(percent, minimum), maximum)
+
+
+def literal_active_monster_names(lua_sources):
+    """Closed default-pack creation calls, not a filename or guessed species index.
+
+    The pinned Game API inserts a type at createMonsterType, before register().
+    The separately pinned Primal helper can only append " (Primal)"; all
+    other dynamic/aliased/non-top-level creators invalidate this bounded proof.
+    """
+    names = set()
+    creators = 0
+    for relative, text in sorted(lua_sources.items()):
+        if Path(relative).name.startswith('#'):
+            continue  # Scripts::loadScripts skips this basename before loading Lua.
+        if 'createMonsterType' not in text:
+            continue
+        if (relative == 'data-otservbr-global/lib/quests/the_primal_ordeal.lua'
+                and blob_id(text.encode()) == '24324e1147b4c66deca468cbedfb9f8987428272'):
+            continue  # Its one creation argument always ends in " (Primal)".
+        lines = text.splitlines()
+        calls = [i for i, line in enumerate(lines) if 'createMonsterType' in line]
+        if (calls != [0] or not relative.startswith(MONSTER_DIR + '/')
+                or Path(relative).parent.name in ('lib', 'events')):
+            raise ValueError('unqualified dynamic/aliased creator or load scope: ' + relative)
+        match = re.fullmatch(r'local mType = Game\.createMonsterType\(("[^"\n]+")\)', lines[0])
+        if not match:
+            raise ValueError('creator is not one top-level literal name: ' + relative)
+        name = json.loads(match[1])
+        names.add(name.lower())
+        creators += 1
+    return names, creators
+
+
+def qualified_missing_outfit_source(root, target):
+    """Only a clean pinned default-source registry can prove an absent lazy outfit.
+
+    This is source-profile evidence, never a claim about modified live servers.
+    Custom config, source additions, alternate loaders and dynamic creators fail closed.
+    """
+    if target != 'Devovorga' or (root / 'config.lua').exists():
+        return None
+    engine = ('config.lua.dist', 'src/canary_server.cpp', 'src/lua/scripts/scripts.cpp',
+              'src/lua/functions/core/game/game_functions.cpp', 'src/creatures/monsters/monsters.cpp',
+              'src/creatures/combat/condition.cpp', 'src/creatures/combat/combat.cpp')
+    scopes = ('data', 'data-otservbr-global', *engine)
+    try:
+        if subprocess.check_output(['git', '-C', str(root), 'rev-parse', 'HEAD'], text=True).strip() != REVISION:
+            return None
+        if subprocess.check_output(['git', '-C', str(root), 'status', '--porcelain',
+                                    '--untracked-files=all', '--ignored', '--', *scopes], text=True).strip():
+            return None
+        listing = subprocess.check_output(['git', '-C', str(root), 'ls-tree', '-rz', REVISION, '--', *scopes])
+        blobs, pins, selected = {}, {}, []
+        for entry in listing.split(b'\0'):
+            if not entry:
+                continue
+            metadata, encoded = entry.split(b'\t', 1)
+            mode, kind, object_id = metadata.decode().split()
+            relative = encoded.decode()
+            if not relative.endswith('.lua') and relative not in engine:
+                continue
+            if mode not in ('100644', '100755') or kind != 'blob':
+                return None
+            selected.append((relative, object_id))
+        # Sparse/promisor Git checkouts cannot prove absence by their files alone.
+        # A separately downloaded complete source tree is allowed only when every
+        # required byte matches this immutable Git roster; never fetch/write Git.
+        complete = Path(os.environ.get('OTERYN_CANARY_COMPLETE_SOURCE_TREE', str(root)))
+        for relative, object_id in selected:
+            path = complete / relative
+            if path.is_symlink():
+                return None
+            data = path.read_bytes()
+            original = root / relative
+            if original.exists() and original.read_bytes() != data:
+                return None
+            if blob_id(data) != object_id:
+                return None
+            blobs[relative] = data.decode('utf-8')
+            pins[relative] = object_id
+        config = re.findall(r'^dataPackDirectory\s*=\s*"([^"]+)"\s*$', blobs['config.lua.dist'], re.M)
+        if config != ['data-otservbr-global']:
+            return None
+        witnesses = {
+            'src/canary_server.cpp': ('loadScripts(coreFolder + "/scripts/lib", true, false)',
+                'loadScripts(coreFolder + "/scripts", false, false)',
+                'loadScripts(datapackFolder + "/scripts/lib", true, false)',
+                'loadScripts(datapackFolder + "/scripts", false, false)',
+                'loadScripts(datapackFolder + "/monster", false, false)'),
+            'src/lua/scripts/scripts.cpp': ('std::filesystem::recursive_directory_iterator(dir)',
+                "file.front() == '#'", 'continue;', 'fileFolder != "lib" && fileFolder != "events"'),
+            'src/lua/functions/core/game/game_functions.cpp': (
+                'Lua::registerMethod(L, "Game", "createMonsterType", GameFunctions::luaGameCreateMonsterType)',
+                'names.insert(uniqueName)', 'names.insert(alternateName)',
+                'g_monsters().tryAddMonsterType(alternateName, monsterType)'),
+            'src/creatures/monsters/monsters.cpp': ('std::string lowerCaseName = asLowerCaseString(name);',
+                'const std::string lowerName = asLowerCaseString(name);', 'monsters[lowerName] = mType;'),
+            'src/creatures/combat/condition.cpp': ('g_monsters().getMonsterType(monsterName)',
+                '[ConditionOutfit::startCondition] Monster {} does not exist',
+                'g_game().internalCreatureChangeOutfit(creature, outfit)'),
+            'src/creatures/combat/combat.cpp': ('Combat::sendCombatEffect(caster, target->getPosition(), params.impactEffect)',
+                'CombatConditionFunc(caster, target, params, nullptr)'),
+        }
+        if any(fragment not in blobs[path] for path, fragments in witnesses.items() for fragment in fragments):
+            return None
+        names, creators = literal_active_monster_names({p: text for p, text in blobs.items() if p.endswith('.lua')})
+        if target.lower() in names:
+            return None
+        return {'repository': REPOSITORY, 'revision': REVISION, 'profile': 'PINNED_COMPLETE_DEFAULT_SOURCE_TREE_REGISTRY',
+                'target': target, 'target_registered': False, 'active_literal_creation_calls': creators, 'verified_source_files': len(pins),
+                'derived_creation_exclusion': {'file': 'data-otservbr-global/lib/quests/the_primal_ordeal.lua',
+                    'git_blob': pins['data-otservbr-global/lib/quests/the_primal_ordeal.lua'],
+                    'name_suffix': ' (Primal)', 'cannot_equal_target': True},
+                'registered_names_sha256': hashlib.sha256(json.dumps(sorted(names)).encode()).hexdigest(),
+                'lua_creation_closure_sha256': hashlib.sha256(json.dumps(pins, sort_keys=True).encode()).hexdigest(),
+                'engine_git_blobs': {path: pins[path] for path in engine},
+                'scope': 'All tracked default-pack/core Lua creation sites plus pinned active loader/API/lookup. '
+                         'No runtime configuration or arbitrary Lua parity claim.'}
+    except (OSError, UnicodeError, ValueError, KeyError, subprocess.CalledProcessError):
+        return None
+
+
 def fraction_ratio(fraction):
     return {'numerator': fraction.numerator, 'denominator': fraction.denominator}
 
@@ -413,9 +712,11 @@ class Converter:
         self.wiki = {}
         self.br = {}
         self.official = {}
+        self.secondary_mitigation_root = None
         # Where the monster files come from; another source (crystal_batch.py) keeps the Canary engine rules.
         self.monster_root, self.monster_dir, self.source = canary, MONSTER_DIR, {'repository': REPOSITORY, 'revision': REVISION}
         self.spell_scripts = None
+        self.registration_profile = None
         self.magic_effects, self.missiles = load_effect_constants(canary / EFFECT_CONSTANTS)
         self.item_ids = spell_scripts.enum_values((canary / EFFECT_CONSTANTS).read_text(encoding='utf-8'), 'ItemID_t')
         self.magic_effect_names = {v: k for k, v in self.magic_effects.items()}
@@ -446,10 +747,17 @@ class Converter:
         lines = text.splitlines()
         late_errors = []
         name, m, callbacks = load_monster(path, late_errors)
+        if any(error.startswith('PRE_REGISTER: ') for error in late_errors):
+            missing = [field for field in ('health', 'maxHealth', 'outfit') if field not in m]
+            if missing:
+                raise ValueError('partial source needs observations only; required facts were not evaluated: '
+                                 + ', '.join(missing))
         s = slug(name)
         self.current_slug = s
         source_file = f'{self.monster_dir}/{relative}.lua'
         rows = []
+        registration_evidence = None
+        familiar_evidence = None
         assets = set()
         definitions = set()
 
@@ -473,6 +781,12 @@ class Converter:
             return key
 
         for error in late_errors:
+            if error.startswith('PRE_REGISTER: '):
+                row('top-level script before mType:register', 'unresolved_semantics', 'script', line=1,
+                    resolution='Source evaluation failed before registration. This bundle preserves only the local monster '
+                               'table evaluated up to the error; later fields and callbacks may be absent. No missing quest '
+                               'configuration was substituted and the bundle must not be admitted: ' + error[14:])
+                continue
             if 'RegisterPrimalPackBeast' in error:
                 row('RegisterPrimalPackBeast(monster)', 'approved_omission', 'script', line=line_of(r'^RegisterPrimalPackBeast'),
                     resolution=RULES['primal_pack_beast'] + '.')
@@ -536,13 +850,20 @@ class Converter:
         if corpse_id:
             chain = corpse_id
             seen = set()
+            decay_notes = []
             while chain and chain not in seen:
                 seen.add(chain)
                 payload, chain, note = self.item_payload(chain, asset)
                 deps['items'].append(payload)
+                if note:
+                    decay_notes.append(note)
             row('corpse', 'mapped', destination='/monster/creature/corpse_item', line=line_of(r'^monster\.corpse'),
                 resolution='Corpse and its decay chain are local capability projections from appearances.dat + items.xml; '
-                           + RULES['item_flags'] + '. Weight absent in items.xml is the engine default 0. Duration seconds -> ms.')
+                           + RULES['item_flags'] + '. Weight absent in items.xml is the engine default 0. Duration seconds -> ms.'
+                           + ''.join(' ' + note for note in decay_notes))
+        elif 'corpse' in m and type(corpse_id) is int and corpse_id == 0:
+            row('corpse', 'approved_omission', resolution='Explicit source corpse=0: creature.cpp Creature::getCorpse '
+                'returns nullptr when getLookCorpse()==0; no corpse Item is created. Death residue is independent.')
 
         # Loot (sorted as the registrar does).
         loot_entries = []
@@ -589,9 +910,13 @@ class Converter:
 
         # Creature.
         bestiary = m.get('Bestiary')
+        # The registration name identifies the type, while mask.name changes only its display name.
+        # Game.createMonsterType initializes nameDescription before either registrar setter runs.
+        display_name = m.get('name', name)
+        description = m.get('description', 'a ' + name)
         creature = {
-            'identity': ident(f'canary:creature/{s}'), 'display_name': name,
-            'inspection': {'description': m.get('description', name)},
+            'identity': ident(f'canary:creature/{s}'), 'display_name': display_name,
+            'inspection': {'description': description},
             'stats': {'max_health': m.get('maxHealth', 100), 'initial_health': m.get('health', 100),
                       'experience': m.get('experience', 0), 'speed': m.get('speed', 110),
                       'armor': defenses.get('armor', 0), 'defense': defenses.get('defense', 0),
@@ -610,15 +935,16 @@ class Converter:
                                   'ignore_period_underground': m.get('respawnType', {}).get('underground', False),
                                   'blocked_by_nearby_players': flags.get('isBlockable', False)},
         }
-        description = m.get('description', name)
         article = description.split(' ', 1)[0]
-        if article in ('a', 'an') and description[len(article) + 1:].lower() == name.lower():
+        if article in ('a', 'an') and description[len(article) + 1:].lower() == display_name.lower():
             creature['name_forms'] = {'article': article}
         if 'mitigation' in defenses:
             creature['stats']['mitigation_percent'] = ratio(defenses['mitigation'])
         if creature['summoning']['summonable'] or creature['summoning']['convinceable']:
             creature['summoning']['mana_cost'] = m.get('manaCost', 0)
-        for element in m.get('elements', []):
+        source_elements = m.get('elements', [])
+        can_clip = elemental_can_clip(source_elements)
+        for number, element in enumerate(source_elements, 1):
             kind = element.get('type')
             if isinstance(kind, str) and kind.startswith('@COMBAT_') and kind[8:] not in DAMAGE:
                 row(f'elements.type={kind[1:]}', 'approved_omission', line=line_of(re.escape(kind[1:])),
@@ -627,14 +953,46 @@ class Converter:
             if kind is None or not element.get('percent'):
                 continue
             percent = element['percent']
+            if can_clip:
+                try:
+                    if self.registration_profile is None:
+                        self.registration_profile = default_registration_profile(self.canary)
+                    registration_evidence = self.registration_profile
+                    settings = registration_evidence['settings']
+                    percent = normalized_element(percent, settings['minElementalResistance'], settings['maxElementalResistance'])
+                except (OSError, ValueError, subprocess.CalledProcessError) as exc:
+                    row(f'elements[{number}]', 'unresolved_semantics', resolution='Unqualified elemental configuration; '
+                        f'raw source={json.dumps(element, sort_keys=True)}; {exc}. No setting was substituted.')
+                    continue
+                if percent != element['percent']:
+                    row(f'elements[{number}]', 'mapped', destination='/monster/creature/resistances',
+                        resolution=f'Raw source percent={element["percent"]}; canClip=true; prepared percent={percent}; '
+                        f'profile={json.dumps(registration_evidence, sort_keys=True)}. Pinned OTS default hypothesis only.')
             if percent > 100:
                 row(f'elements.{kind[1:]}.percent', 'mapped', destination='/monster/creature/resistances', line=line_of(re.escape(kind[1:])),
                     resolution=f'{percent}% stored as 100%: ' + RULES['element_over_100'] + '.')
                 percent = 100
             creature['resistances'].append({'damage_type': DAMAGE[constant(kind, 'COMBAT_')], 'reduction_percent': ratio(percent)})
         for source, target in (('reflects', 'damage_reflection'), ('heals', 'healing_from_damage')):
-            for element in m.get(source, []):
-                creature[target].append({'damage_type': DAMAGE[constant(element['type'], 'COMBAT_')], 'percent': ratio(element['percent'])})
+            for number, element in enumerate(m.get(source, []), 1):
+                percent = element['percent']
+                note = 'Source type maps to the damage type and percent to an exact ratio; no runtime qualification.'
+                if source == 'reflects':
+                    try:
+                        if self.registration_profile is None:
+                            self.registration_profile = default_registration_profile(self.canary)
+                        registration_evidence = self.registration_profile
+                        percent = normalized_reflection(percent, registration_evidence['settings']['maxDamageReflection'])
+                    except (OSError, ValueError, subprocess.CalledProcessError) as exc:
+                        row(f'{source}[{number}]', 'unresolved_semantics', resolution='Unqualified reflection configuration; '
+                            f'raw source={json.dumps(element, sort_keys=True)}; {exc}. No setting was substituted.')
+                        continue
+                    note = (f'Raw source percent={element["percent"]}; registrar applies min(percent, MAX_DAMAGE_REFLECTION). '
+                            f'Prepared percent={percent}; profile={json.dumps(registration_evidence, sort_keys=True)}. '
+                            'This is pinned OTS default-profile evidence, not a configured-server or Tibia Global claim.')
+                position = len(creature[target])
+                creature[target].append({'damage_type': DAMAGE[constant(element['type'], 'COMBAT_')], 'percent': ratio(percent)})
+                row(f'{source}[{number}]', 'mapped', destination=f'/monster/creature/{target}/{position}', resolution=note)
         race = bestiary.get('race') if bestiary else None
         self.pending_bestiary = None
         if bestiary and not (isinstance(race, str) and race.startswith('@BESTY_RACE_')):
@@ -656,17 +1014,24 @@ class Converter:
             row('bosstiary.bossRaceId', 'metadata_only', line=line_of(r'bossRaceId'), resolution='Foreign identifier; provenance only.')
         if creature['summoning']['is_familiar']:
             vocation = slug(name).split('_')[0]
-            if vocation in FAMILIAR_SPELLS:
-                voc, mana = FAMILIAR_SPELLS[vocation]
-                spell_key = f'canary:ability/spell/summon_{voc}_familiar'
+            try:
+                if name.casefold() != f'{vocation} familiar':
+                    raise ValueError('Registration name is not an accepted vocation familiar')
+                familiar_evidence = familiar_spell_profile(self.canary, vocation)
+            except (OSError, ValueError, subprocess.SubprocessError) as error:
+                row('flags.familiar', 'unresolved_dependency', 'dependency', line=line_of(r'familiar\s*=\s*true'),
+                    resolution='Special familiar player spell is not qualified: ' + str(error))
+            else:
+                spell_key = f'canary:ability/spell/summon_{vocation}_familiar'
                 definitions.add(('Ability', spell_key))
-                creature['summoning']['familiar'] = {'vocation': voc, 'summon_ability': ref('Ability', spell_key),
-                                                     'duration_ms': FAMILIAR_DURATION_MS, 'mana_cost': mana}
+                creature['summoning']['familiar'] = {'vocation': vocation, 'summon_ability': ref('Ability', spell_key),
+                    'duration_ms': FAMILIAR_DURATION_MS, 'mana_cost': familiar_evidence['mana_cost']}
                 row('flags.familiar', 'mapped', destination='/monster/creature/summoning/familiar', line=line_of(r'familiar\s*=\s*true'),
                     resolution='The monster file only flags the familiar; the profile comes from ' + RULES['familiar'] + '.')
-            else:
-                row('flags.familiar', 'unresolved_dependency', 'dependency', line=line_of(r'familiar\s*=\s*true'),
-                    resolution='No familiar summon spell found for this monster name.')
+            if 'manaCost' in m and not creature['summoning']['summonable'] and not creature['summoning']['convinceable']:
+                row('manaCost', 'approved_omission', line=line_of(r'^monster\.manaCost'),
+                    resolution=f'Raw monster manaCost={m["manaCost"]}; generic summon/convince flags are false. '
+                    'D16 special familiar mana comes from its registered player spell, not this unused generic cost.')
         if corpse_id:
             creature['corpse_item'] = ref('Item', f'canary:item/{corpse_id}')
         fluid = RACE_RESIDUE.get(m.get('race', 'blood'))
@@ -697,6 +1062,22 @@ class Converter:
             behavior['targeting']['change_target'] = {'interval_ms': m['changeTarget']['interval'], 'chance_percent': m['changeTarget']['chance']}
         if target:
             behavior['targeting']['strategy_weights'] = {k: target.get(k, 0) for k in ('nearest', 'damage', 'health', 'random')}
+        faction, faction_errors = faction_preferences(m)
+        if faction is not None:
+            behavior['faction_and_preferences'] = faction
+        for source, destination in FACTION_FIELDS.items():
+            if source not in m:
+                continue
+            if faction_errors:
+                row(source, 'unresolved_semantics', line=line_of(r'^monster\.' + source + r'\s*='),
+                    resolution=faction_errors.get(source, 'Faction/preferences section is blocked by an unqualified member: '
+                                                  + ', '.join(sorted(faction_errors))))
+            else:
+                row(source, 'mapped', destination='/monster/behavior/faction_and_preferences/' + destination,
+                    line=line_of(r'^monster\.' + source + r'\s*='),
+                    resolution='Registered Faction_t labels preserved verbatim; enemy factions sorted and unique '
+                               'as the registrar/MonsterInfo vector_set. Absent members take monsters.hpp defaults '
+                               '(FACTION_DEFAULT, empty enemy set, false preferences).')
         voices = m.get('voices')
         if voices and voices.get('_list'):
             entries = [{'text': v['text'], 'mode': 'yell' if v.get('yell') else 'say'} for v in voices['_list'] if v.get('text')]
@@ -793,7 +1174,32 @@ class Converter:
             monster['loot'] = {'identity': ident(f'canary:loot/{s}'), 'algorithm': 'IndependentBernoulli', 'entries': loot_entries}
 
         # Remaining source rows.
+        for field in ('loot', 'attacks', 'voices', 'summon'):
+            if field in m and isinstance(m[field], (list, dict)) and not m[field]:
+                row(field, 'approved_omission', resolution='Explicit empty source collection; registrar has no entries '
+                    'to register, so this field produces no loot, attacks, speech or summons.')
+        if 'events' in m and isinstance(m['events'], (list, dict)) and not m['events']:
+            row('events', 'approved_omission', line=line_of(r'^\s*monster\.events\s*='),
+                resolution='Explicit empty source events table: register_monster_type.lua iterates mask.events '
+                'and registers no CreatureEvent names. This does not describe other callbacks or handler semantics.')
+        for field in ('maxSummons', 'summons'):
+            if field in m and (type(m[field]) is int and m[field] == 0 if field == 'maxSummons' else isinstance(m[field], (list, dict)) and not m[field]):
+                row(field, 'approved_omission', resolution='Unused top-level source field: register_monster_type.lua '
+                    'reads mask.summon.maxSummons and mask.summon.summons, not mask.' + field + '.')
+        if 'voices' in m and 'voices' not in behavior and any(r['source_field'] == 'voices.text' and r['status'] == 'approved_omission' for r in rows):
+            row('voices', 'approved_omission', resolution='All source utterances have empty text; the existing voices.text '
+                'omission covers the schedule and yell flag as well. No replacement utterance is fabricated.')
+        if 'onSpawn' in m:
+            row('onSpawn', 'approved_omission', 'script', resolution='Unused monster table member: the pinned registrar '
+                'does not read mask.onSpawn. MonsterType onSpawn callbacks are registered on mType, not this mask field.')
+        if outfit and not appearance_key:
+            row('outfit', 'mapped', destination='/monster/presentation/appearance', resolution='D24 invisible appearance '
+                'carrier; lookType=0 without lookTypeEx. Zero palette/addon/mount fields do not create an asset binding.')
+        if 'respawnType' in m:
+            row('respawnType', 'mapped', destination='/monster/creature/spawn_eligibility', resolution='Registrar period '
+                'enum maps to all/day/night; underground maps to ignore_period_underground (not an underground prohibition).')
         for field, destination, note in (
+                ('name', '/monster/creature/display_name', 'Registrar name override; the registration name remains the identity key.'),
                 ('description', '/monster/creature/inspection/description', 'Original source text, unchanged.'),
                 ('health', '/monster/creature/stats/initial_health', None), ('maxHealth', '/monster/creature/stats/max_health', None),
                 ('experience', '/monster/creature/stats/experience', None), ('speed', '/monster/creature/stats/speed', None),
@@ -822,7 +1228,7 @@ class Converter:
                 line=line_of(r'^\s*(monster\.)?' + re.escape(key) + r'\s*='))
         if 'description' not in m:
             row('description', 'mapped', destination='/monster/creature/inspection/description', line=1,
-                resolution='No description in the source; monsters.hpp MonsterType sets nameDescription to the monster name.')
+                resolution='No description in the source; Game.createMonsterType sets nameDescription to "a " + the registration name; a name override leaves it unchanged.')
         row('raceId', 'metadata_only', line=line_of(r'^monster\.raceId'), resolution='Foreign identifier; provenance only.') if 'raceId' in m else None
         if m.get('race', 'blood') not in RACE_RESIDUE:
             row('race', 'unresolved_dependency', 'dependency', line=line_of(r'^monster\.race\s*='),
@@ -878,9 +1284,32 @@ class Converter:
                     resolution='Inline Lua callback; needs an explicit native behaviour resolution.')
 
         sources = [dict(self.source)]
+        if familiar_evidence:
+            engine_source = {'repository': REPOSITORY, 'revision': REVISION}
+            if engine_source not in sources:
+                sources.append(engine_source)
+            rows.append({'source_index': sources.index(engine_source), 'source_file': familiar_evidence['file'],
+                'source_line': familiar_evidence['mana_line'], 'source_field': 'spell:mana()',
+                'kind': 'field', 'status': 'mapped', 'destination': '/monster/creature/summoning/familiar/mana_cost',
+                'resolution': 'D16 registered special player Familiar spell; exact source proof: '
+                              + json.dumps(familiar_evidence, sort_keys=True)})
         self.adopt_wiki(s, monster, rows, sources, definitions, line_of)
+        secondary_mitigation.adopt_secondary_mitigation(
+            relative, name, m, path, creature, rows, sources,
+            crystal_root=self.secondary_mitigation_root, primary_source=self.source)
         self.adopt_br(s, monster, rows, sources, line_of)
         self.adopt_official(s, monster, rows, sources, line_of)
+        if m.get('Bestiary') and creature.get('bestiary') and not any(r['source_field'] == 'Bestiary' for r in rows):
+            row('Bestiary', 'mapped', destination='/monster/creature/bestiary', resolution='Source Bestiary sibling fields '
+                'use the existing Bestiary carrier; taxonomy resolution and any source overrides retain their separate rows.')
+        if registration_evidence:
+            engine_source = {'repository': REPOSITORY, 'revision': REVISION}
+            if engine_source not in sources:
+                sources.append(engine_source)
+            rows.append({'source_index': sources.index(engine_source), 'source_file': 'config.lua.dist',
+                         'source_line': registration_evidence['evidence'][0]['setting_lines']['maxDamageReflection'], 'source_field': 'maxDamageReflection/minElementalResistance/maxElementalResistance',
+                         'kind': 'field', 'status': 'mapped', 'destination': '/monster/creature',
+                         'resolution': 'Pinned distribution-default profile only; ' + json.dumps(registration_evidence, sort_keys=True)})
         definitions.discard(('Creature', creature['identity']['key']))
         catalog = {'definitions': [ref(f, k) for f, k in sorted(definitions)], 'assets': sorted(assets)}
         manifest = {'sources': sources, 'entries': rows}
@@ -971,6 +1400,18 @@ class Converter:
         record = self.wiki.get(s)
         if not record or record.get('status') != 'COMPARED':
             return
+        qualified_fields = record.get('qualified_fields')
+        if qualified_fields is not None:
+            if (qualified_fields != ['mitigation_percent'] or len(record.get('rows', [])) != 1
+                    or record['rows'][0].get('field') != 'mitigation_percent'
+                    or record.get('loot_chances') or record.get('loot_statistics')
+                    or record.get('abilities')):
+                raise ValueError('Scoped Wiki mitigation evidence contains unqualified fields')
+            scoped_row = record['rows'][0]
+            if (scoped_row.get('status') == 'DIFF'
+                    and (type(scoped_row.get('wiki')) not in (int, float)
+                         or not 0 <= scoped_row['wiki'] <= 100)):
+                raise ValueError('Scoped Wiki mitigation must be a certain numeric percentage')
 
         def source(title, page_id, revision_id, sha256):
             sources.append({'kind': 'mediawiki', 'api': WIKI_API, 'title': title, 'page_id': page_id,
@@ -1009,7 +1450,7 @@ class Converter:
 
         for diff in (r for r in record['rows'] if r['status'] == 'DIFF'):
             field, value = diff['field'], diff.get('wiki')
-            if field == 'mitigation_percent' and isinstance(value, (int, float)) and 0 <= value <= 100:
+            if field == 'mitigation_percent' and type(value) in (int, float) and 0 <= value <= 100:
                 creature['stats']['mitigation_percent'] = ratio(value)
                 adopt(diff, '/monster/creature/stats/mitigation_percent', 'defenses.mitigation', r'mitigation\s*=', 'mitigation')
             elif field == 'max_health' and isinstance(value, int) and value > 0:
@@ -1070,13 +1511,88 @@ class Converter:
                     creature['bestiary'][key] = value
                     adopt(diff, f'/monster/creature/bestiary/{key}', f'Bestiary.{key}', r'^monster\.Bestiary',
                           'bestiarylevel' if key == 'difficulty' else 'occurrence')
+        if qualified_fields is not None:
+            return
+        self.adopt_wiki_bestiary_matrix(record, creature, rows, sources, page)
         self.adopt_wiki_summoning(record, creature, adopt, lambda diff, destination, label: wiki_row(
             page, title, diff.get('wiki_line', 1), f'Infobox Creature.{label}', destination,
-            f'Wiki {label} "{diff["wiki_raw"]}" ({WIKI_ADOPTION}).'))
+            f'Wiki {label} "{diff["wiki_raw"]}" ({WIKI_ADOPTION}).'),
+            lambda diff, label: wiki_row(page, title, diff.get('wiki_line', 1), f'Infobox Creature.{label}', None,
+                'Wiki familiar summon/convince observation retained only: D16 separates its special player '
+                'Ability from generic Summon Creature/convince eligibility and mana.', status='metadata_only'))
         self.adopt_wiki_loot(record, monster, rows, source, wiki_row, definitions)
 
     @staticmethod
-    def adopt_wiki_summoning(record, creature, adopt, wiki_only):
+    def adopt_wiki_bestiary_matrix(record, creature, rows, sources, creature_page):
+        """Use explicit full canonical facts; an absent compact DIFF never proves a MATCH.
+
+        The field set is already part of the accepted authoring/native Bestiary shape.
+        Creature labels and derived values keep separate immutable public source pins.
+        """
+        facts = record.get('qualified_bestiary_facts')
+        if (not facts or 'bestiary' not in creature or record.get('qualified_fields') is not None
+                or record.get('status') != 'COMPARED'
+                or record.get('creature_identity', {}).get('status') != 'VERIFIED'):
+            return
+        expected = (record.get('page_id'), record.get('cut_revision_id'), record.get('cut_content_sha256'))
+        if (facts.get('page_id'), facts.get('revision_id'), facts.get('content_sha256')) != expected:
+            raise ValueError('Canonical Bestiary facts do not match the compared Creature source pin')
+        difficulty, occurrence = facts['difficulty'], facts['occurrence']
+        if (difficulty.get('value') not in DIFFICULTY.values() or occurrence.get('value') not in OCCURRENCE.values()
+                or difficulty.get('raw', '').lower().replace(' ', '_') != difficulty['value']
+                or occurrence.get('raw', '').lower().replace(' ', '_') != occurrence['value']
+                or type(difficulty.get('wiki_line')) is not int or difficulty['wiki_line'] <= 0
+                or type(occurrence.get('wiki_line')) is not int or occurrence['wiki_line'] <= 0):
+            raise ValueError('Canonical Bestiary labels are unknown, uncertain or lack exact source lines')
+        matrix = json.loads((ROOT / 'samples/source-bestiary-matrix-2026-09-27.json').read_text(encoding='utf-8'))
+        rarity = 'very_rare' if occurrence['value'] == 'very_rare' else 'regular'
+        profile = matrix['profiles'][difficulty['value']].get(rarity)
+        if profile is None:
+            raise ValueError('Bestiary occurrence has no qualified public threshold triplet')
+        indexes = {}
+        for index in {profile['charm_source_index'], profile['threshold_source_index'],
+                      profile['completion_source_index']}:
+            source = matrix['sources'][index]
+            if source not in sources:
+                sources.append(source)
+            indexes[index] = sources.index(source)
+        previous = {key: creature['bestiary'].get(key) for key in
+                    ('difficulty', 'occurrence', 'stars', 'kill_thresholds', 'charm_points')}
+        creature['bestiary'].update(difficulty=difficulty['value'], occurrence=occurrence['value'],
+                                   stars=profile['stars'], kill_thresholds=profile['kill_thresholds'],
+                                   charm_points=profile['charm_points'])
+        explanation = (f'Canonical Bestiary matrix supersedes pre-matrix authoring fields {previous}; labels come from '
+                       'the exact Creature revision, thresholds/points from the separately pinned public '
+                       'Bestiary templates. Other Bestiary fields retain their existing provenance (D15).')
+        for entry in rows:
+            if entry['source_index'] == 0 and entry['source_field'] == 'Bestiary':
+                entry['resolution'] += ' ' + explanation
+        for field, fact in [('difficulty', difficulty), ('occurrence', occurrence)]:
+            rows.append({'source_index': creature_page, 'source_file': record['wiki_title'],
+                         'source_line': fact['wiki_line'], 'source_field': 'Infobox Creature.bestiarylevel' if field == 'difficulty' else 'Infobox Creature.occurrence',
+                         'kind': 'field', 'status': 'mapped', 'destination': f'/monster/creature/bestiary/{field}',
+                         'resolution': explanation})
+        rows.append({'source_index': creature_page, 'source_file': record['wiki_title'],
+                     'source_line': difficulty['wiki_line'], 'source_field': 'Infobox Creature.bestiarylevel.enum_stars',
+                     'kind': 'field', 'status': 'mapped', 'destination': '/monster/creature/bestiary/stars',
+                     'resolution': explanation + ' Stars use the accepted DIFFICULTY enum0..5 mapping.'})
+        for field, index in [('kill_thresholds', profile['threshold_source_index']),
+                             ('charm_points', profile['charm_source_index'])]:
+            rows.append({'source_index': indexes[index], 'source_file': matrix['sources'][index]['title'],
+                         'source_line': profile['threshold_wiki_line'] if field == 'kill_thresholds' else profile['charm_wiki_line'],
+                         'source_field': f'Bestiary matrix.{difficulty["value"]}.{rarity}.{field}',
+                         'kind': 'field', 'status': 'mapped', 'destination': f'/monster/creature/bestiary/{field}',
+                         'resolution': explanation})
+
+        rows.append({'source_index': indexes[profile['completion_source_index']],
+                     'source_file': matrix['sources'][profile['completion_source_index']]['title'],
+                     'source_line': profile['completion_wiki_line'],
+                     'source_field': f'Kills to Unlock.{difficulty["value"]}.{rarity}',
+                     'kind': 'field', 'status': 'mapped',
+                     'destination': '/monster/creature/bestiary/kill_thresholds/2', 'resolution': explanation})
+
+    @staticmethod
+    def adopt_wiki_summoning(record, creature, adopt, wiki_only, familiar_observation=None):
         """D15 for the wiki summon/convince mana costs: "--" means not possible, a number sets the flag and the cost.
 
         The authoring profile has one mana cost for both, so two different reference-date costs are left unadopted."""
@@ -1085,6 +1601,11 @@ class Converter:
         if not diffs:
             return
         summoning = creature['summoning']
+        if summoning.get('is_familiar'):
+            if familiar_observation:
+                for field, diff in sorted(diffs.items()):
+                    familiar_observation(diff, 'summon' if field == 'summon_mana_cost' else 'convince')
+            return
         flags = {'summon_mana_cost': 'summonable', 'convince_mana_cost': 'convinceable'}
         costs = {d['wiki'] for d in diffs.values() if isinstance(d['wiki'], int) and d['wiki'] > 0}
         kept = {summoning.get('mana_cost') for field, flag in flags.items() if field not in diffs and summoning[flag]}
@@ -2197,14 +2718,27 @@ class Converter:
                 note += RULES['speed'] + '. '
             elif name == 'outfit':
                 if spell.get('outfitMonster'):
-                    target_ref = ref('Creature', f'canary:creature/{slug(spell["outfitMonster"])}')
-                    transform = {'creature': target_ref}
+                    missing = None
+                    if (getattr(self, 'current_slug', None) == 'chayenne'
+                            and self.source == {'repository': REPOSITORY, 'revision': REVISION}
+                            and self.monster_root == self.canary and self.monster_dir == MONSTER_DIR):
+                        missing = qualified_missing_outfit_source(self.canary, spell['outfitMonster'])
+                    if missing and visual:
+                        body = {'operation': 'presentation_only'}
+                        note += ('Pinned ConditionOutfit::startCondition returns false before changing outfit when '
+                                 'the lazy monster type is absent. Retain the cast, schedule and ENERGYHIT visual; '
+                                 'do not fabricate a Creature dependency or a duration for the failed condition. '
+                                 + json.dumps(missing, sort_keys=True) + '. ')
+                    else:
+                        target_ref = ref('Creature', f'canary:creature/{slug(spell["outfitMonster"])}')
+                        transform = {'creature': target_ref}
                 else:
                     target_ref = ref('Item', f'canary:item/{spell["outfitItem"]}')
                     transform = {'item': target_ref}
-                self.pending_definitions.add((target_ref['family'], target_ref['key']))
-                body = {'operation': 'appearance_transform', 'appearance_transform': transform, 'duration_ms': duration}
-                note += RULES['fixed_conditions'] + '. '
+                if body is None:
+                    self.pending_definitions.add((target_ref['family'], target_ref['key']))
+                    body = {'operation': 'appearance_transform', 'appearance_transform': transform, 'duration_ms': duration}
+                    note += RULES['fixed_conditions'] + '. '
             elif name in ('invisible', 'drunk'):
                 body = {'operation': 'condition', 'duration_ms': duration,
                         'condition': {'type': name, 'lifetime': 'fixed_duration'}}
@@ -2275,14 +2809,24 @@ class Converter:
         if flags.get('container') and attributes.get('containersize'):
             payload['container'] = {'capacity': int(attributes['containersize'])}
         next_id = None
+        note = None
         if 'decayto' in attributes and int(attributes.get('duration', 0)) > 0:
             next_id = int(attributes['decayto'])
             payload['temporal']['duration_ms'] = int(attributes['duration']) * 1000
-            if next_id:
+            if next_id == item_id:
+                # ITEM-ADD-1 owner decision 3a: self-decay is terminal removal.
+                # Keep other edges intact: multi-item cycles must still fail validation.
+                payload['temporal']['decay_action'] = 'remove'
+                next_id = None
+                note = (f'items.xml item {item_id}: decayTo={attributes["decayto"]}, '
+                        f'duration={attributes["duration"]} seconds; self-decay lowered to terminal removal '
+                        '(ITEM-ADD-1 accepted owner decision 3a; '
+                        'docs/agents/tasks/archive/OTV2-20260930-item-add-1-donor-and-appearance-items.md).')
+            elif next_id:
                 payload['temporal'].update(decay_action='transform', decay_target=ref('Item', f'canary:item/{next_id}'))
             else:
                 payload['temporal']['decay_action'] = 'remove'
-        return payload, next_id, None
+        return payload, next_id, note
 
 
 def main():

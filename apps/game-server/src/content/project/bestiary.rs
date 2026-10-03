@@ -24,12 +24,12 @@ const SHARDS: [(&str, &[u8]); 4] = [
         include_bytes!("../../../../../content/creatures/definitions/creatures-01000-01499.json"),
     ),
     (
-        "content/creatures/definitions/creatures-01500-01502.json",
-        include_bytes!("../../../../../content/creatures/definitions/creatures-01500-01502.json"),
+        "content/creatures/definitions/creatures-01500-01762.json",
+        include_bytes!("../../../../../content/creatures/definitions/creatures-01500-01762.json"),
     ),
 ];
-const CREATURE_COUNT: usize = 1_503;
-const BESTIARY_COUNT: usize = 710;
+const CREATURE_COUNT: usize = 1_763;
+const BESTIARY_COUNT: usize = 819;
 
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -222,14 +222,14 @@ mod tests {
     fn limits() -> ProjectEvidenceLimits {
         ProjectEvidenceLimits {
             max_documents: 5,
-            max_document_bytes: 1_300_000,
-            max_total_bytes: 3_700_000,
+            max_document_bytes: 1_400_000,
+            max_total_bytes: 4_700_000,
             max_json_depth: 10,
-            max_decoded_fields: 60_000,
-            max_string_bytes: 900_000,
+            max_decoded_fields: 65_000,
+            max_string_bytes: 1_000_000,
             max_locator_bytes: 128,
             max_locator_segments: 5,
-            max_reference_records: 1_503,
+            max_reference_records: 1_763,
             max_import_records: 1,
             max_reimport_states: 1,
         }
@@ -253,9 +253,9 @@ mod tests {
     }
 
     #[test]
-    fn canonical_projection_retains_all_710_real_bestiary_blocks() -> TestResult {
+    fn canonical_projection_retains_all_819_real_bestiary_blocks() -> TestResult {
         let rows = canonical_bestiary_rows(limits())?;
-        assert_eq!(rows.len(), 710);
+        assert_eq!(rows.len(), 819);
         assert!(
             rows.windows(2)
                 .all(|pair| pair[0].0.key() < pair[1].0.key())
@@ -365,13 +365,16 @@ mod tests {
             Err(ProjectError::LimitExceeded { .. })
         ));
         changed = limits();
-        changed.max_reference_records = 1_502;
+        changed.max_reference_records = 1_762;
         assert!(matches!(
             canonical_bestiary_rows(changed),
             Err(ProjectError::LimitExceeded { .. })
         ));
-        for (depth, fields, strings) in [(9, 60_000, 900_000), (10, 50, 900_000), (10, 60_000, 100)]
-        {
+        for (depth, fields, strings) in [
+            (9, 65_000, 1_000_000),
+            (10, 50, 1_000_000),
+            (10, 65_000, 100),
+        ] {
             changed = limits();
             changed.max_json_depth = depth;
             changed.max_decoded_fields = fields;

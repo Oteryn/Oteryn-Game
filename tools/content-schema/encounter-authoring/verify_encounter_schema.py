@@ -371,61 +371,148 @@ case('a box floor stays on the map', locate('arena', {'boxes': [{**BOX, 'floor':
 case('an area needs a box', locate('arena', {'boxes': []}))
 case('a point needs its floor', locate('exit', {'x': 100, 'y': 200}))
 
-case('SW5 safe area subtraction accepted', locate('arena', {'boxes': [BOX],
-     'minus': [{**BOX, 'x': [102, 105]}]}), True)
-case('SW5 safe area must overlap same floor', locate('arena', {'boxes': [BOX],
-     'minus': [{**BOX, 'floor': 8}]}), error='overlaps no area box')
-case('SW5 cannot subtract whole area', locate('arena', {'boxes': [BOX], 'minus': [BOX]}),
-     error='minus removes the whole area')
-case('SW5 union of cuts cannot remove whole area', locate('arena', {'boxes': [BOX],
-     'minus': [{**BOX, 'x': [100, 105]}, {**BOX, 'x': [106, 110]}]}),
-     error='minus removes the whole area')
-case('SW5 one remaining tile survives', locate('arena', {'boxes': [BOX],
-     'minus': [{**BOX, 'x': [100, 109]}, {**BOX, 'x': [110, 110], 'y': [200, 209]}]}), True)
-case('SW5 point cannot subtract boxes', locate('exit', {'x': 100, 'y': 200, 'floor': 7, 'minus': [BOX]}))
-case('SW5 empty subtraction list forbidden', locate('arena', {'boxes': [BOX], 'minus': []}))
+# Accepted Soul War authoring forms (§13); these are synthetic fixtures, not encounter transcription.
+TAINT_PICK = {'kind': 'creature_present', 'players': True, 'near': {'triggering': True, 'radius': 30},
+              'where': [{'kind': 'killer_progress', 'subject': {'candidate': True},
+                         'progress': 'canary:quest-progress/soul_war_taint_1', 'op': '==', 'value': True},
+                        {'kind': 'in_anchor', 'subject': {'candidate': True}, 'anchor': 'arena'}],
+              'pick': 'farthest', 'present': True}
+TAINT_MOVE = {'kind': 'teleport', 'who': TRIGGERING, 'to': {'picked_position': True},
+              'after_ms': 2000, 'picked_cooldown_ms': 10000, 'say': 'Get out the way!',
+              'warning_effect': 'canary.appearance:effect/mortarea', 'arrival_effect': 'canary.appearance:effect/teleport'}
+TAINT_TRIGGER = {'kind': 'timer_elapsed', 'timer': 'enrage', 'each': 'boss'}
 
-case('SW4 vocation damage trigger accepted', rule(trigger={'kind': 'damage_taken', 'role': 'boss',
-     'source': 'player', 'base_vocation': 'monk'}), True)
-case('SW4 vocation cannot filter non-player damage', rule(trigger={'kind': 'damage_taken', 'role': 'boss',
-     'source': 'any', 'base_vocation': 'monk'}), error='base_vocation needs source player')
-case('SW4 non-player lethal floor accepted', rule(trigger={'kind': 'lethal_damage', 'role': 'boss'},
-     conditions=[{'kind': 'killer_is_player', 'value': False}]), True)
-case('SW4 lethal floor polarity is boolean', rule(trigger={'kind': 'lethal_damage', 'role': 'boss'},
-     conditions=[{'kind': 'killer_is_player', 'value': 'false'}]))
 
-SW6_POOL = {'kind': 'map_item', 'operation': 'create', 'item': ref('Item', 'vortex'),
-            'at': 'subject_position', 'unless_present': True}
-case('SW6 hit leaves one blood pool', rule([SW6_POOL], trigger={'kind': 'damage_taken',
-     'role': 'boss', 'source': 'player'}), True)
-case('SW6 pool needs one-creature trigger', rule([SW6_POOL]),
-     error='subject_position needs a trigger fired by one creature')
-case('SW6 existing-pool check only creates', rule([{**SW6_POOL, 'operation': 'remove'}],
-     trigger={'kind': 'damage_taken', 'role': 'boss', 'source': 'player'}), error='unless_present needs operation create')
+def taint_teleport(e, c):
+    e['state']['timers'][0].update(duration_ms=2000, repeat=True)
+    rule([copy.deepcopy(TAINT_MOVE)], trigger=copy.deepcopy(TAINT_TRIGGER),
+         conditions=[copy.deepcopy(TAINT_PICK), {'kind': 'chance_percent', 'value': 10}])(e, c)
 
-SW3_TRIGGER = {'kind': 'timer_elapsed', 'timer': 'enrage', 'each': 'boss'}
-SW3_PICK = {'kind': 'creature_present', 'players': True, 'near': {'triggering': True, 'radius': 30},
-    'where': [{'kind': 'killer_progress', 'subject': {'candidate': True}, 'progress': 'oteryn:quest/taint_1',
-               'op': '==', 'value': True}, {'kind': 'in_anchor', 'subject': {'candidate': True}, 'anchor': 'arena'}],
-    'pick': 'farthest', 'present': True}
-SW3_MOVE = {'kind': 'teleport', 'who': {'triggering': True}, 'to': {'picked_position': True},
-            'after_ms': 2000, 'picked_cooldown_ms': 10000, 'say': 'Harvest!', 'warning_effect': 'death',
-            'arrival_effect': 'teleport'}
-case('SW3 taint-gated delayed teleport accepted', rule([SW3_MOVE], SW3_TRIGGER, [SW3_PICK]), True)
-case('SW3 unknown timer fan-out role rejected', rule([SW3_MOVE], {**SW3_TRIGGER, 'each': 'stranger'}, [SW3_PICK]),
-     error='unknown role')
-case('SW3 picked position without prior pick rejected', rule([SW3_MOVE], SW3_TRIGGER),
-     error='needs an earlier player pick')
-case('SW3 cannot pick missing players', rule([SW3_MOVE], SW3_TRIGGER, [{**SW3_PICK, 'present': False}]),
-     error='pick needs players true and present true')
-case('SW3 candidate cannot escape where', rule(trigger=SW3_TRIGGER, conditions=[SW3_PICK['where'][0]]),
-     error='candidate is valid only inside where')
-case('SW3 nested where forbids unrelated conditions', rule([SW3_MOVE], SW3_TRIGGER,
-     [{**SW3_PICK, 'where': [{'kind': 'chance_percent', 'value': 10}]}]), error='only candidate progress')
-case('SW3 delay cannot widen ordinary anchor teleport', rule([{**SW3_MOVE, 'to': 'exit'}], SW3_TRIGGER, [SW3_PICK]),
-     error='delayed teleport fields need picked_position')
-case('SW3 triggering centre requires a triggering creature', rule(conditions=[SW3_PICK]),
-     error='near triggering needs a creature trigger')
+
+def changed_taint(section, mutate):
+    def change(e, c):
+        taint_teleport(e, c)
+        mutate(e['rules'][-1][section])
+    return change
+
+
+case('taint teleport full accepted form (SW-3)', taint_teleport, True)
+case('timer each needs a known role', changed_taint('trigger', lambda t: t.update(each='ghost')), error="unknown role 'ghost'")
+case('timer each only on timer_elapsed', rule(trigger={'kind': 'encounter_started', 'each': 'boss'}), error='schema')
+case('picked_position needs a pick', changed_taint('conditions', lambda conditions: conditions[0].pop('pick')),
+     error='picked_position needs an earlier')
+case('pick requires present true', changed_taint('conditions', lambda conditions: conditions[0].update(present=False)),
+     error='pick requires present true')
+case('pick requires players true', changed_taint('conditions', lambda conditions: (
+    conditions[0].pop('players'), conditions[0].update(role='boss'))), error='require players true')
+case('presence selects a role or players, not both', changed_taint('conditions', lambda conditions: conditions[0].update(role='boss')),
+     error='schema')
+case('where requires players true', rule(trigger=died, conditions=[{
+    'kind': 'creature_present', 'role': 'boss', 'anchor': 'arena', 'present': True, 'where': TAINT_PICK['where']}]),
+     error='require players true')
+case('candidate outside where rejected', rule(trigger=died, conditions=[TAINT_PICK['where'][0]]),
+     error='candidate is valid only inside')
+case('in_anchor candidate outside where rejected', rule(trigger=died, conditions=[TAINT_PICK['where'][1]]),
+     error='candidate is valid only inside')
+case('candidate where admits only progress or anchor conditions', changed_taint('conditions', lambda conditions:
+    conditions[0]['where'].append({'kind': 'chance_percent', 'value': 10})), error='schema')
+case('where requires a candidate subject', changed_taint('conditions', lambda conditions:
+    conditions[0]['where'][0].update(subject={'role': 'boss'})), error='schema')
+case('near triggering needs a per-creature trigger', changed_taint('trigger', lambda trigger: trigger.pop('each')),
+     error='near triggering needs a trigger fired')
+case('near has one centre', changed_taint('conditions', lambda conditions: conditions[0]['near'].update(role='boss')),
+     error='schema')
+case('where anchor must be an area', changed_taint('conditions', lambda conditions: conditions[0]['where'][1].update(anchor='exit')),
+     error='an area is required')
+case('picked subject after a pick accepted', changed_taint('conditions', lambda conditions:
+    conditions.append({'kind': 'in_anchor', 'subject': {'picked': True}, 'anchor': 'arena'})), True)
+case('picked subject before a pick rejected', changed_taint('conditions', lambda conditions:
+    conditions.insert(0, {'kind': 'in_anchor', 'subject': {'picked': True}, 'anchor': 'arena'})), error='picked needs an earlier')
+case('picked action subject accepted', changed_taint('actions', lambda actions:
+    actions.append({'kind': 'say', 'subject': {'picked': True}, 'text': 'Marked!', 'mode': 'say'})), True)
+case('picked does not escape its rule', lambda e, c: (
+    taint_teleport(e, c), rule([{'kind': 'heal', 'subject': {'picked': True}, 'amount': 'full'}])(e, c)),
+     error='picked needs an earlier')
+case('picked player progress after a pick accepted', changed_taint('conditions', lambda conditions:
+    conditions.append({**TAINT_PICK['where'][0], 'subject': {'picked': True}})), True)
+case('role player-progress subject accepted outside damage trigger', rule(conditions=[{
+    **TAINT_PICK['where'][0], 'subject': {'role': 'boss'}}]), True)
+case('killer_progress default on heal remains accepted', rule(trigger={
+    'kind': 'heal_received', 'role': 'boss', 'source': 'player'}, conditions=[{
+    'kind': 'killer_progress', 'progress': 'oteryn:quest/x', 'op': '==', 'value': True}]), True)
+case('action killer subject scope does not widen to healing', rule([{
+    'kind': 'say', 'subject': {'killer': True}, 'text': 'Hello!', 'mode': 'say'}], trigger={
+    'kind': 'heal_received', 'role': 'boss', 'source': 'player'}), error='the killer exists only')
+case('Infernal retarget selection is not invented', changed_taint('conditions', lambda conditions:
+    conditions[0].update(pick='lowest_max_health')), error='schema')
+for field in ('after_ms', 'picked_cooldown_ms', 'warning_effect', 'say', 'arrival_effect'):
+    case('teleport '+field+' requires picked_position', rule([{
+        'kind': 'teleport', 'who': {'role': 'boss'}, 'to': 'exit', field: TAINT_MOVE[field]}]),
+        error='require picked_position')
+for field in ('after_ms', 'picked_cooldown_ms'):
+    case('teleport '+field+' must be positive', changed_taint('actions', lambda actions, field=field:
+        actions[0].update({field: 0})), error='schema')
+
+
+def mirror_image(vocation):
+    def mutate(e, c):
+        vocations = ('knight', 'paladin', 'sorcerer', 'druid', 'monk')
+        c['definitions'].extend(ref('Creature', v + '_apparition') for v in vocations)
+        branches = [{'weight': 28 if v == vocation else 3, 'actions': [
+            {'kind': 'transform', 'role': 'boss', 'health': 'full', 'into': ref('Creature', v + '_apparition')}]} for v in vocations]
+        rule([{'kind': 'one_of', 'branches': branches}],
+             trigger={'kind': 'damage_taken', 'role': 'boss', 'source': 'player', 'base_vocation': vocation})(e, c)
+        e['rules'].append({'key': 'mirror_floor', 'trigger': {'kind': 'lethal_damage', 'role': 'boss'},
+                           'conditions': [{'kind': 'killer_is_player', 'value': False}],
+                           'actions': [{'kind': 'prevent_death', 'role': 'boss'}]})
+    return mutate
+
+
+for vocation in ('knight', 'paladin', 'sorcerer', 'druid', 'monk'):
+    case('Mirror Image weighted '+vocation+' transform and floor accepted (SW-4)', mirror_image(vocation), True)
+for source in ('any', 'non_player'):
+    case('damage vocation rejects source '+source, rule(trigger={
+        'kind': 'damage_taken', 'role': 'boss', 'source': source, 'base_vocation': 'druid'}), error='base_vocation needs source player')
+case('killer_is_player default stays accepted', rule(trigger=died, conditions=[{'kind': 'killer_is_player'}]), True)
+case('killer_is_player true accepted', rule(trigger=died, conditions=[{'kind': 'killer_is_player', 'value': True}]), True)
+case('killer_is_player value must be boolean', rule(trigger=died, conditions=[{'kind': 'killer_is_player', 'value': 0}]), error='schema')
+case('damage vocation is a base vocation', rule(trigger={
+    'kind': 'damage_taken', 'role': 'boss', 'source': 'player', 'base_vocation': 'elder_druid'}), error='schema')
+
+HOLE = {'x': [103, 107], 'y': [203, 207], 'floor': 7}
+case('area with safe hole accepted (SW-5)', locate('arena', {'boxes': [BOX], 'minus': [HOLE]}), True)
+case('minus box must overlap the area', locate('arena', {'boxes': [BOX], 'minus': [{**HOLE, 'x': [111, 120]}]}),
+     error='minus box must overlap')
+case('minus box must overlap on its floor', locate('arena', {'boxes': [BOX], 'minus': [{**HOLE, 'floor': 8}]}),
+     error='minus box must overlap')
+case('minus cannot remove the entire area', locate('arena', {'boxes': [BOX], 'minus': [BOX]}), error='minus removes every tile')
+case('two minus boxes together cannot remove the entire area', locate('arena', {'boxes': [BOX], 'minus': [
+    {**BOX, 'x': [100, 105]}, {**BOX, 'x': [106, 110]}]}), error='minus removes every tile')
+case('overlapping minus boxes are unioned', locate('arena', {'boxes': [BOX], 'minus': [
+    {**BOX, 'x': [100, 106]}, {**BOX, 'x': [105, 110]}]}), error='minus removes every tile')
+case('one remaining tile suffices', locate('arena', {'boxes': [BOX], 'minus': [
+    {**BOX, 'x': [100, 109]}, {**BOX, 'x': [110, 110], 'y': [200, 209]}]}), True)
+case('other floor can retain tiles', locate('arena', {'boxes': [BOX, {**BOX, 'floor': 8}], 'minus': [BOX]}), True)
+case('minus can overlap only part of an area box', locate('arena', {'boxes': [BOX], 'minus': [{**HOLE, 'x': [107, 120]}]}), True)
+case('minus box bounds are ordered', locate('arena', {'boxes': [BOX], 'minus': [{**HOLE, 'y': [207, 203]}]}),
+     error='a box starts after it ends')
+case('minus list cannot be empty', locate('arena', {'boxes': [BOX], 'minus': []}), error='schema')
+case('point cannot carry minus', locate('exit', {'x': 100, 'y': 200, 'floor': 7, 'minus': [HOLE]}), error='schema')
+case('large map boxes do not require tile enumeration', locate('arena', {'boxes': [
+    {'x': [0, 65535], 'y': [0, 65535], 'floor': 7}], 'minus': [
+    {'x': [0, 65534], 'y': [0, 65535], 'floor': 7}]}), True)
+
+BLOOD = {'kind': 'map_item', 'operation': 'create', 'at': 'subject_position', 'unless_present': True,
+         'item': ref('Item', 'vortex'), 'interaction': 'canary:interaction/blood_of_cloak_of_terror'}
+case('Cloak blood accepted schema form (SW-6, stacking still unverified)', rule([BLOOD], trigger={
+    'kind': 'damage_taken', 'role': 'boss', 'source': 'player'}), True)
+case('map_item subject_position needs a per-creature trigger', rule([BLOOD]), error='needs a trigger fired by one creature')
+case('map_item subject_position with timer each accepted', rule([BLOOD], trigger=TAINT_TRIGGER), True)
+for operation in ('remove', 'transform'):
+    case('unless_present rejects map_item '+operation, rule([{
+        **BLOOD, 'operation': operation, **({'into': ref('Item', 'vortex')} if operation == 'transform' else {})}],
+        trigger=died), error='unless_present is valid only with operation create')
+case('unless_present is boolean', rule([{**BLOOD, 'unless_present': 'yes'}], trigger=died), error='schema')
 
 if __name__ == '__main__':
     report = {'scope': 'Encounter schema and semantic validator, synthetic fixtures only; no Lua or Oteryn runtime executed',
@@ -434,3 +521,4 @@ if __name__ == '__main__':
     print(json.dumps({k: v for k, v in report.items() if k != 'failed'} | {'failed': len(report['failed'])}))
     for failure in report['failed']:
         print('FAILED', failure)
+    raise SystemExit(bool(report['failed']))

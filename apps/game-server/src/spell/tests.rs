@@ -489,6 +489,59 @@ fn a_conjure_has_no_ability_effects() {
 }
 
 #[test]
+fn monster_inline_operations_do_not_become_executable_ability_effects() {
+    // Partial player-core qualification only: these candidates have no monster runtime
+    // dispatch receipt. A supported heal beside an unresolved operation cannot hide it.
+    let book = book();
+    let mut spell = book.spoken("exura").expect("exura").spell.clone();
+    let effects = match &mut spell.execution {
+        Execution::Effects(effects) => Some(effects),
+        _ => None,
+    }
+    .expect("exura has effects");
+    effects.retain(|effect| matches!(effect, SpellEffect::Heal { .. }));
+    let operations = ["condition", "create_item", "summon_creature"];
+    for operation in operations {
+        effects.push(SpellEffect::Other {
+            operation: operation.into(),
+            effect: format!("candidate:{operation}"),
+        });
+    }
+    let cast = resolve_cast(
+        &spell,
+        &caster(Vocation::Druid, 8, 0, 20),
+        &Cooldowns::default(),
+        at(0),
+        false,
+        &mut highest,
+    )
+    .expect("player core resolves the supported primitive");
+    let plan = effect_plan(
+        &spell,
+        &cast,
+        "actor:druid",
+        None,
+        occurrence("candidate-inline-boundary"),
+        "channel:test",
+    )
+    .expect("unsupported operations stay beside the supported plan");
+    assert!(matches!(
+        plan.effects.expect("heal plan").effects(),
+        [crate::ability::Effect::Heal { .. }]
+    ));
+    assert_eq!(
+        plan.side_effects,
+        operations
+            .into_iter()
+            .map(|operation| ResolvedEffect::Unresolved {
+                operation: operation.into(),
+                effect: format!("candidate:{operation}"),
+            })
+            .collect::<Vec<_>>()
+    );
+}
+
+#[test]
 fn a_wheel_spell_retains_its_requirement_and_refuses_missing_owner_facts() {
     let (spell, dependencies) = STARTER[0];
     let mut spell: Value = serde_json::from_str(spell).expect("spell");

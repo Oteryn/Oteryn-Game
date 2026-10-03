@@ -140,6 +140,42 @@
               "content_sha256"
             ],
             "description": "A dated, hashed capture of a community reference without immutable page revisions. This is supplementary evidence, not an official publisher source. source_file is the entry title; the source selection rule remains with the importer."
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "kind": {
+                "const": "oteryn_balance_estimate"
+              },
+              "ledger_sha256": {
+                "type": "string",
+                "minLength": 1,
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "qualification": {
+                "const": "OWNER_ACCEPTED_NON_GLOBAL_ESTIMATE"
+              },
+              "evidence_classification": {
+                "const": "DERIVED"
+              },
+              "global_parity": {
+                "const": false
+              },
+              "owner_acceptance": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "kind",
+              "ledger_sha256",
+              "qualification",
+              "evidence_classification",
+              "global_parity",
+              "owner_acceptance"
+            ],
+            "description": "Owner-accepted Oteryn balance estimate, bound to its calculation ledger; no assertion of Global parity or external source fact."
           }
         ]
       },

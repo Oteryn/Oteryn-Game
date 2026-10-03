@@ -18,12 +18,6 @@
       "canary:creature/rotten_golem",
       "canary:creature/turbulent_elemental"
     ],
-    "MirrorImageTransform": [
-      "canary:creature/mirror_image"
-    ],
-    "CloakOfTerrorHealthLoss": [
-      "canary:creature/cloak_of_terror"
-    ],
     "mType.onThink": [
       "canary:creature/bony_sea_devil",
       "canary:creature/brachiodemon",
@@ -31,9 +25,22 @@
       "canary:creature/cloak_of_terror",
       "canary:creature/many_faces",
       "canary:creature/spiteful_spitter"
+    ],
+    "mType.onPlayerAttack": [
+      "canary:creature/mirror_image"
+    ],
+    "MirrorImageTransform": [
+      "canary:creature/mirror_image"
     ]
   },
   "sources": [
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/monster/quests/soul_war/mirror_image.lua",
+      "blob_sha1": "f2979ff97df7145f99d948616672a2663d8b54fd"
+    },
     {
       "kind": "git",
       "repository": "opentibiabr/canary",
@@ -150,20 +157,6 @@
       "kind": "git",
       "repository": "opentibiabr/canary",
       "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
-      "path": "data-otservbr-global/monster/quests/soul_war/mirror_image.lua",
-      "blob_sha1": "f2979ff97df7145f99d948616672a2663d8b54fd"
-    },
-    {
-      "kind": "git",
-      "repository": "opentibiabr/canary",
-      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
-      "path": "data-otservbr-global/scripts/creaturescripts/monster/mirror_image_transform.lua",
-      "blob_sha1": "14259511cfc360be03e22edb083d651324791121"
-    },
-    {
-      "kind": "git",
-      "repository": "opentibiabr/canary",
-      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
       "path": "data-otservbr-global/monster/quests/soul_war/spiteful_spitter.lua",
       "blob_sha1": "d51b52e2e84f46e3653d7854e5726463d188dc98"
     },
@@ -173,11 +166,18 @@
       "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
       "path": "data-otservbr-global/monster/quests/soul_war/dreadful_harvester.lua",
       "blob_sha1": "64bd8a98008ff3adca6f05eeb2bc8a21d1d6532e"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/scripts/creaturescripts/monster/mirror_image_transform.lua",
+      "blob_sha1": "14259511cfc360be03e22edb083d651324791121"
     }
   ],
   "entries": [
     {
-      "source_index": 0,
+      "source_index": 1,
       "source_lines": [
         30
       ],
@@ -186,7 +186,7 @@
       "destination": "/encounter/participants/0/creatures"
     },
     {
-      "source_index": 1,
+      "source_index": 2,
       "source_lines": [
         30
       ],
@@ -195,7 +195,7 @@
       "destination": "/encounter/participants/0/creatures"
     },
     {
-      "source_index": 2,
+      "source_index": 3,
       "source_lines": [
         30
       ],
@@ -204,7 +204,7 @@
       "destination": "/encounter/participants/0/creatures"
     },
     {
-      "source_index": 3,
+      "source_index": 4,
       "source_lines": [
         30
       ],
@@ -213,7 +213,7 @@
       "destination": "/encounter/participants/0/creatures"
     },
     {
-      "source_index": 4,
+      "source_index": 5,
       "source_lines": [
         30
       ],
@@ -222,7 +222,7 @@
       "destination": "/encounter/participants/0/creatures"
     },
     {
-      "source_index": 5,
+      "source_index": 6,
       "source_lines": [
         30
       ],
@@ -231,7 +231,7 @@
       "destination": "/encounter/participants/0/creatures"
     },
     {
-      "source_index": 6,
+      "source_index": 7,
       "source_lines": [
         30
       ],
@@ -240,7 +240,7 @@
       "destination": "/encounter/participants/0/creatures"
     },
     {
-      "source_index": 7,
+      "source_index": 8,
       "source_lines": [
         30
       ],
@@ -249,7 +249,7 @@
       "destination": "/encounter/participants/0/creatures"
     },
     {
-      "source_index": 8,
+      "source_index": 9,
       "source_lines": [
         30
       ],
@@ -258,7 +258,7 @@
       "destination": "/encounter/participants/0/creatures"
     },
     {
-      "source_index": 9,
+      "source_index": 10,
       "source_lines": [
         30
       ],
@@ -267,7 +267,7 @@
       "destination": "/encounter/participants/0/creatures"
     },
     {
-      "source_index": 10,
+      "source_index": 11,
       "source_lines": [
         30
       ],
@@ -276,7 +276,7 @@
       "destination": "/encounter/participants/0/creatures"
     },
     {
-      "source_index": 11,
+      "source_index": 12,
       "source_lines": [
         30
       ],
@@ -285,7 +285,7 @@
       "destination": "/encounter/participants/0/creatures"
     },
     {
-      "source_index": 12,
+      "source_index": 13,
       "source_lines": [
         30
       ],
@@ -294,7 +294,7 @@
       "destination": "/encounter/participants/0/creatures"
     },
     {
-      "source_index": 13,
+      "source_index": 14,
       "source_lines": [
         30
       ],
@@ -303,7 +303,7 @@
       "destination": "/encounter/participants/0/creatures"
     },
     {
-      "source_index": 14,
+      "source_index": 15,
       "source_lines": [
         65,
         67
@@ -313,7 +313,7 @@
       "destination": "/encounter/rules/0/trigger"
     },
     {
-      "source_index": 14,
+      "source_index": 15,
       "source_lines": [
         68,
         69,
@@ -324,7 +324,7 @@
       "destination": "/encounter/rules/0/conditions/0"
     },
     {
-      "source_index": 14,
+      "source_index": 15,
       "source_lines": [
         72
       ],
@@ -333,7 +333,7 @@
       "destination": "/encounter/rules/0/trigger"
     },
     {
-      "source_index": 14,
+      "source_index": 15,
       "source_lines": [
         73
       ],
@@ -342,7 +342,7 @@
       "destination": "/encounter/rules/0/conditions/1"
     },
     {
-      "source_index": 14,
+      "source_index": 15,
       "source_lines": [
         74,
         75
@@ -352,7 +352,7 @@
       "destination": "/encounter/rules/0/conditions/2"
     },
     {
-      "source_index": 14,
+      "source_index": 15,
       "source_lines": [
         76,
         77
@@ -362,7 +362,7 @@
       "destination": "/encounter/rules/0/conditions/3"
     },
     {
-      "source_index": 14,
+      "source_index": 15,
       "source_lines": [
         78
       ],
@@ -371,7 +371,7 @@
       "destination": "/encounter/rules/0/actions/0"
     },
     {
-      "source_index": 14,
+      "source_index": 15,
       "source_lines": [
         79
       ],
@@ -380,7 +380,7 @@
       "destination": "/encounter/rules/0/actions/1"
     },
     {
-      "source_index": 15,
+      "source_index": 16,
       "source_lines": [
         229,
         230,
@@ -402,7 +402,88 @@
       "destination": "/encounter/anchors/0"
     },
     {
-      "source_index": 15,
+      "source_index": 0,
+      "source_lines": [
+        16,
+        17,
+        109,
+        110,
+        111
+      ],
+      "status": "approved_omission",
+      "resolution": "The last monster.events assignment replaces the first; Mirror Image leaves hunting_monster and has only MirrorImageTransform."
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        143,
+        145
+      ],
+      "status": "mapped",
+      "resolution": "The entire onThink is tryTeleportToPlayer; relocated under SW-3 and Q1a.",
+      "destination": "/encounter/rules/2"
+    },
+    {
+      "source_index": 2,
+      "source_lines": [
+        144,
+        146
+      ],
+      "status": "mapped",
+      "resolution": "The entire onThink is tryTeleportToPlayer; relocated under SW-3 and Q1a.",
+      "destination": "/encounter/rules/3"
+    },
+    {
+      "source_index": 3,
+      "source_lines": [
+        139,
+        141
+      ],
+      "status": "mapped",
+      "resolution": "The entire onThink is tryTeleportToPlayer; relocated under SW-3 and Q1a.",
+      "destination": "/encounter/rules/4"
+    },
+    {
+      "source_index": 6,
+      "source_lines": [
+        139,
+        141
+      ],
+      "status": "mapped",
+      "resolution": "The entire onThink is tryTeleportToPlayer; relocated under SW-3 and Q1a.",
+      "destination": "/encounter/rules/5"
+    },
+    {
+      "source_index": 11,
+      "source_lines": [
+        140,
+        142
+      ],
+      "status": "mapped",
+      "resolution": "The entire onThink is tryTeleportToPlayer; relocated under SW-3 and Q1a.",
+      "destination": "/encounter/rules/6"
+    },
+    {
+      "source_index": 17,
+      "source_lines": [
+        102,
+        104
+      ],
+      "status": "mapped",
+      "resolution": "The entire onThink is tryTeleportToPlayer; relocated under SW-3 and Q1a.",
+      "destination": "/encounter/rules/7"
+    },
+    {
+      "source_index": 18,
+      "source_lines": [
+        64
+      ],
+      "status": "mapped",
+      "resolution": "Accepted Q1a adds Dreadful Harvester from the cited wiki evidence; text is DERIVED from this voice line, not an existing Canary teleport callback. (§13.1/13.6)",
+      "destination": "/encounter/rules/8"
+    },
+    {
+      "source_index": 16,
       "source_lines": [
         862,
         863,
@@ -423,41 +504,80 @@
         878,
         879,
         880,
-        881,
-        274,
-        275,
-        276,
-        310,
-        311,
-        312,
-        333,
-        334,
-        335,
-        362,
-        363,
-        364,
-        390,
-        391,
-        392,
-        418,
-        419,
-        420
+        881
       ],
       "status": "mapped",
-      "resolution": "SW-5: 17 hunting-floor boxes plus six lever specPos rooms, minus five safe areas. Accepted Q2 a corrects the reversed Rotten Wasteland x corners to include the complete rectangle; quest/runtime map binding remains outside this authoring record.",
+      "resolution": "SW-5 reads addArea/subtractArea and six lever specPos; Q2a normalizes Rotten Wasteland reversed x corners to the stated full rectangle.",
       "destination": "/encounter/anchors/0/location"
     },
     {
       "source_index": 16,
       "source_lines": [
-        110
+        1241,
+        1242,
+        1243,
+        1244,
+        1245,
+        1246,
+        1247,
+        1248,
+        1249,
+        1250,
+        1251,
+        1252,
+        1253,
+        1254,
+        1255,
+        1256,
+        1257,
+        1258,
+        1259,
+        1260,
+        1261,
+        1262,
+        1263,
+        1264,
+        1265,
+        1266,
+        1267,
+        1268,
+        1269,
+        1270,
+        1271,
+        1272,
+        1273,
+        1274,
+        1275,
+        1276,
+        1277,
+        1278,
+        1279,
+        1280,
+        1281,
+        1282,
+        1283,
+        1284,
+        1285,
+        1286,
+        1287,
+        1288,
+        1289,
+        1290,
+        1291,
+        1292,
+        1293,
+        1294,
+        1295,
+        1296,
+        1297,
+        1298
       ],
       "status": "mapped",
-      "resolution": "Mirror Image is the mirror_image participant; its file registers MirrorImageTransform.",
-      "destination": "/encounter/participants/1/creatures"
+      "resolution": "SW-3/Q1a: first-taint holders only; 2-second repeating checks; farthest candidate; 10% chance, 2-second warning, 10-second cooldown after a successful move. The skipped taint test, 1-second check and logout-stuck cooldown are accepted source deviations; no path requirement.",
+      "destination": "/encounter/rules"
     },
     {
-      "source_index": 16,
+      "source_index": 0,
       "source_lines": [
         113,
         114,
@@ -492,167 +612,11 @@
         143
       ],
       "status": "mapped",
-      "resolution": "SW-4/Q5 b: 28:3:3:3:3 weights preserve the 70% own-vocation source choice; apparitions start at full health. This accepted transcription unifies player hit and DoT paths; vocationless disappearance and health-preserving DoT conversion are omitted.",
-      "destination": "/encounter/rules/1"
+      "resolution": "SW-4/Q5b: own player damage transforms by base vocation; weights 28:3:3:3:3 produce 70%/7.5%; full health. Other damage cannot kill it. No-vocation removal is omitted as an accepted deviation.",
+      "destination": "/encounter/rules"
     },
     {
-      "source_index": 16,
-      "source_lines": [
-        113,
-        114,
-        115,
-        116,
-        117,
-        118,
-        119,
-        120,
-        121,
-        122,
-        123,
-        124,
-        125,
-        126,
-        127,
-        128,
-        129,
-        130,
-        131,
-        132,
-        133,
-        134,
-        135,
-        136,
-        137,
-        138,
-        139,
-        140,
-        141,
-        142,
-        143
-      ],
-      "status": "mapped",
-      "resolution": "SW-4/Q5 b: 28:3:3:3:3 weights preserve the 70% own-vocation source choice; apparitions start at full health. This accepted transcription unifies player hit and DoT paths; vocationless disappearance and health-preserving DoT conversion are omitted.",
-      "destination": "/encounter/rules/2"
-    },
-    {
-      "source_index": 16,
-      "source_lines": [
-        113,
-        114,
-        115,
-        116,
-        117,
-        118,
-        119,
-        120,
-        121,
-        122,
-        123,
-        124,
-        125,
-        126,
-        127,
-        128,
-        129,
-        130,
-        131,
-        132,
-        133,
-        134,
-        135,
-        136,
-        137,
-        138,
-        139,
-        140,
-        141,
-        142,
-        143
-      ],
-      "status": "mapped",
-      "resolution": "SW-4/Q5 b: 28:3:3:3:3 weights preserve the 70% own-vocation source choice; apparitions start at full health. This accepted transcription unifies player hit and DoT paths; vocationless disappearance and health-preserving DoT conversion are omitted.",
-      "destination": "/encounter/rules/3"
-    },
-    {
-      "source_index": 16,
-      "source_lines": [
-        113,
-        114,
-        115,
-        116,
-        117,
-        118,
-        119,
-        120,
-        121,
-        122,
-        123,
-        124,
-        125,
-        126,
-        127,
-        128,
-        129,
-        130,
-        131,
-        132,
-        133,
-        134,
-        135,
-        136,
-        137,
-        138,
-        139,
-        140,
-        141,
-        142,
-        143
-      ],
-      "status": "mapped",
-      "resolution": "SW-4/Q5 b: 28:3:3:3:3 weights preserve the 70% own-vocation source choice; apparitions start at full health. This accepted transcription unifies player hit and DoT paths; vocationless disappearance and health-preserving DoT conversion are omitted.",
-      "destination": "/encounter/rules/4"
-    },
-    {
-      "source_index": 16,
-      "source_lines": [
-        113,
-        114,
-        115,
-        116,
-        117,
-        118,
-        119,
-        120,
-        121,
-        122,
-        123,
-        124,
-        125,
-        126,
-        127,
-        128,
-        129,
-        130,
-        131,
-        132,
-        133,
-        134,
-        135,
-        136,
-        137,
-        138,
-        139,
-        140,
-        141,
-        142,
-        143
-      ],
-      "status": "mapped",
-      "resolution": "SW-4/Q5 b: 28:3:3:3:3 weights preserve the 70% own-vocation source choice; apparitions start at full health. This accepted transcription unifies player hit and DoT paths; vocationless disappearance and health-preserving DoT conversion are omitted.",
-      "destination": "/encounter/rules/5"
-    },
-    {
-      "source_index": 17,
+      "source_index": 19,
       "source_lines": [
         1,
         2,
@@ -678,30 +642,10 @@
         22
       ],
       "status": "approved_omission",
-      "resolution": "Accepted Q5 b applies the unified vocation-weighted full-health transform to own player damage instead of the separate guaranteed same-vocation health-preserving DoT path; summons/familiars do not transform the image. No-vocation disappearance is not authored."
+      "resolution": "The separate player DoT path is superseded by accepted Q5b: all own player damage follows the same weighted full-health transformation."
     },
     {
-      "source_index": 16,
-      "source_lines": [
-        109,
-        110,
-        111
-      ],
-      "status": "mapped",
-      "resolution": "Accepted SW-4/Q5 b adds the wiki 1HP floor for damage not owned by a player, including summons and familiars; this floor is an explicit deviation from Canary. Mirror Image is not a fourth-taint hunting participant: the final monster.events assignment replaces the earlier one.",
-      "destination": "/encounter/rules/6"
-    },
-    {
-      "source_index": 5,
-      "source_lines": [
-        31
-      ],
-      "status": "mapped",
-      "resolution": "Cloak of Terror is the cloak_of_terror participant; its file registers CloakOfTerrorHealthLoss.",
-      "destination": "/encounter/participants/2/creatures"
-    },
-    {
-      "source_index": 14,
+      "source_index": 15,
       "source_lines": [
         785,
         786,
@@ -723,15 +667,8 @@
         802,
         803,
         804,
-        805
-      ],
-      "status": "mapped",
-      "resolution": "SW-6/Q6 a corrects the health-change sign defect to a player hit. Source getItemById blocks a duplicate large pool on the same tile; source no-stacking is preserved as an explicit approximation pending independent confirmation of the stacking/enlargement reports.",
-      "destination": "/encounter/rules/7"
-    },
-    {
-      "source_index": 14,
-      "source_lines": [
+        805,
+        806,
         807,
         808,
         809,
@@ -762,542 +699,8 @@
         834,
         835
       ],
-      "status": "approved_omission",
-      "resolution": "The interaction owner handles pool step-in: IDs 33854/34006/34007 harm players by 20/15/10% maximum HP as energy, heal Cloak of Terror 1500-2000 HP and remove the pool. Those effects are reference evidence; the encounter does not invent an interaction executor."
-    },
-    {
-      "source_index": 0,
-      "source_lines": [
-        143
-      ],
-      "status": "mapped",
-      "resolution": "Bony Sea Devil is the bony_sea_devil participant; its file registers mType.onThink.",
-      "destination": "/encounter/participants/3/creatures"
-    },
-    {
-      "source_index": 15,
-      "source_lines": [
-        1241,
-        1242,
-        1243,
-        1244,
-        1245,
-        1246,
-        1247,
-        1248,
-        1249,
-        1250,
-        1251,
-        1252,
-        1253,
-        1254,
-        1255,
-        1256,
-        1257,
-        1258,
-        1259,
-        1260,
-        1261,
-        1262,
-        1263,
-        1264,
-        1265,
-        1266,
-        1267,
-        1268,
-        1269,
-        1270,
-        1271,
-        1272,
-        1273,
-        1274,
-        1275,
-        1276,
-        1277,
-        1278,
-        1279,
-        1280,
-        1281,
-        1282,
-        1283,
-        1284,
-        1285,
-        1286,
-        1287,
-        1288,
-        1289,
-        1290,
-        1291,
-        1292,
-        1293,
-        1294,
-        1295,
-        1296,
-        1297,
-        1298
-      ],
-      "status": "mapped",
-      "resolution": "Accepted SW-3/Q1 a corrects the skipped taint test and logout cooldown leak: each role checks every 2s, picks the farthest eligible player (Chebyshev distance, lowest creature-ID tie), warns 2s and lands at current picked position if both remain and no solid/projectile blocker. Successful movement starts a 10s cooldown; cancelled moves start none. No generic path authority.",
-      "destination": "/encounter/rules/9"
-    },
-    {
-      "source_index": 1,
-      "source_lines": [
-        144
-      ],
-      "status": "mapped",
-      "resolution": "Brachiodemon is the brachiodemon participant; its file registers mType.onThink.",
-      "destination": "/encounter/participants/4/creatures"
-    },
-    {
-      "source_index": 15,
-      "source_lines": [
-        1241,
-        1242,
-        1243,
-        1244,
-        1245,
-        1246,
-        1247,
-        1248,
-        1249,
-        1250,
-        1251,
-        1252,
-        1253,
-        1254,
-        1255,
-        1256,
-        1257,
-        1258,
-        1259,
-        1260,
-        1261,
-        1262,
-        1263,
-        1264,
-        1265,
-        1266,
-        1267,
-        1268,
-        1269,
-        1270,
-        1271,
-        1272,
-        1273,
-        1274,
-        1275,
-        1276,
-        1277,
-        1278,
-        1279,
-        1280,
-        1281,
-        1282,
-        1283,
-        1284,
-        1285,
-        1286,
-        1287,
-        1288,
-        1289,
-        1290,
-        1291,
-        1292,
-        1293,
-        1294,
-        1295,
-        1296,
-        1297,
-        1298
-      ],
-      "status": "mapped",
-      "resolution": "Accepted SW-3/Q1 a corrects the skipped taint test and logout cooldown leak: each role checks every 2s, picks the farthest eligible player (Chebyshev distance, lowest creature-ID tie), warns 2s and lands at current picked position if both remain and no solid/projectile blocker. Successful movement starts a 10s cooldown; cancelled moves start none. No generic path authority.",
-      "destination": "/encounter/rules/10"
-    },
-    {
-      "source_index": 2,
-      "source_lines": [
-        139
-      ],
-      "status": "mapped",
-      "resolution": "Branchy Crawler is the branchy_crawler participant; its file registers mType.onThink.",
-      "destination": "/encounter/participants/5/creatures"
-    },
-    {
-      "source_index": 15,
-      "source_lines": [
-        1241,
-        1242,
-        1243,
-        1244,
-        1245,
-        1246,
-        1247,
-        1248,
-        1249,
-        1250,
-        1251,
-        1252,
-        1253,
-        1254,
-        1255,
-        1256,
-        1257,
-        1258,
-        1259,
-        1260,
-        1261,
-        1262,
-        1263,
-        1264,
-        1265,
-        1266,
-        1267,
-        1268,
-        1269,
-        1270,
-        1271,
-        1272,
-        1273,
-        1274,
-        1275,
-        1276,
-        1277,
-        1278,
-        1279,
-        1280,
-        1281,
-        1282,
-        1283,
-        1284,
-        1285,
-        1286,
-        1287,
-        1288,
-        1289,
-        1290,
-        1291,
-        1292,
-        1293,
-        1294,
-        1295,
-        1296,
-        1297,
-        1298
-      ],
-      "status": "mapped",
-      "resolution": "Accepted SW-3/Q1 a corrects the skipped taint test and logout cooldown leak: each role checks every 2s, picks the farthest eligible player (Chebyshev distance, lowest creature-ID tie), warns 2s and lands at current picked position if both remain and no solid/projectile blocker. Successful movement starts a 10s cooldown; cancelled moves start none. No generic path authority.",
-      "destination": "/encounter/rules/11"
-    },
-    {
-      "source_index": 5,
-      "source_lines": [
-        139
-      ],
-      "status": "mapped",
-      "resolution": "Cloak of Terror is the cloak_of_terror participant; its file registers mType.onThink.",
-      "destination": "/encounter/participants/2/creatures"
-    },
-    {
-      "source_index": 15,
-      "source_lines": [
-        1241,
-        1242,
-        1243,
-        1244,
-        1245,
-        1246,
-        1247,
-        1248,
-        1249,
-        1250,
-        1251,
-        1252,
-        1253,
-        1254,
-        1255,
-        1256,
-        1257,
-        1258,
-        1259,
-        1260,
-        1261,
-        1262,
-        1263,
-        1264,
-        1265,
-        1266,
-        1267,
-        1268,
-        1269,
-        1270,
-        1271,
-        1272,
-        1273,
-        1274,
-        1275,
-        1276,
-        1277,
-        1278,
-        1279,
-        1280,
-        1281,
-        1282,
-        1283,
-        1284,
-        1285,
-        1286,
-        1287,
-        1288,
-        1289,
-        1290,
-        1291,
-        1292,
-        1293,
-        1294,
-        1295,
-        1296,
-        1297,
-        1298
-      ],
-      "status": "mapped",
-      "resolution": "Accepted SW-3/Q1 a corrects the skipped taint test and logout cooldown leak: each role checks every 2s, picks the farthest eligible player (Chebyshev distance, lowest creature-ID tie), warns 2s and lands at current picked position if both remain and no solid/projectile blocker. Successful movement starts a 10s cooldown; cancelled moves start none. No generic path authority.",
-      "destination": "/encounter/rules/12"
-    },
-    {
-      "source_index": 10,
-      "source_lines": [
-        140
-      ],
-      "status": "mapped",
-      "resolution": "Many Faces is the many_faces participant; its file registers mType.onThink.",
-      "destination": "/encounter/participants/6/creatures"
-    },
-    {
-      "source_index": 15,
-      "source_lines": [
-        1241,
-        1242,
-        1243,
-        1244,
-        1245,
-        1246,
-        1247,
-        1248,
-        1249,
-        1250,
-        1251,
-        1252,
-        1253,
-        1254,
-        1255,
-        1256,
-        1257,
-        1258,
-        1259,
-        1260,
-        1261,
-        1262,
-        1263,
-        1264,
-        1265,
-        1266,
-        1267,
-        1268,
-        1269,
-        1270,
-        1271,
-        1272,
-        1273,
-        1274,
-        1275,
-        1276,
-        1277,
-        1278,
-        1279,
-        1280,
-        1281,
-        1282,
-        1283,
-        1284,
-        1285,
-        1286,
-        1287,
-        1288,
-        1289,
-        1290,
-        1291,
-        1292,
-        1293,
-        1294,
-        1295,
-        1296,
-        1297,
-        1298
-      ],
-      "status": "mapped",
-      "resolution": "Accepted SW-3/Q1 a corrects the skipped taint test and logout cooldown leak: each role checks every 2s, picks the farthest eligible player (Chebyshev distance, lowest creature-ID tie), warns 2s and lands at current picked position if both remain and no solid/projectile blocker. Successful movement starts a 10s cooldown; cancelled moves start none. No generic path authority.",
-      "destination": "/encounter/rules/13"
-    },
-    {
-      "source_index": 18,
-      "source_lines": [
-        102
-      ],
-      "status": "mapped",
-      "resolution": "Spiteful Spitter is the spiteful_spitter participant; its file registers mType.onThink.",
-      "destination": "/encounter/participants/7/creatures"
-    },
-    {
-      "source_index": 15,
-      "source_lines": [
-        1241,
-        1242,
-        1243,
-        1244,
-        1245,
-        1246,
-        1247,
-        1248,
-        1249,
-        1250,
-        1251,
-        1252,
-        1253,
-        1254,
-        1255,
-        1256,
-        1257,
-        1258,
-        1259,
-        1260,
-        1261,
-        1262,
-        1263,
-        1264,
-        1265,
-        1266,
-        1267,
-        1268,
-        1269,
-        1270,
-        1271,
-        1272,
-        1273,
-        1274,
-        1275,
-        1276,
-        1277,
-        1278,
-        1279,
-        1280,
-        1281,
-        1282,
-        1283,
-        1284,
-        1285,
-        1286,
-        1287,
-        1288,
-        1289,
-        1290,
-        1291,
-        1292,
-        1293,
-        1294,
-        1295,
-        1296,
-        1297,
-        1298
-      ],
-      "status": "mapped",
-      "resolution": "Accepted SW-3/Q1 a corrects the skipped taint test and logout cooldown leak: each role checks every 2s, picks the farthest eligible player (Chebyshev distance, lowest creature-ID tie), warns 2s and lands at current picked position if both remain and no solid/projectile blocker. Successful movement starts a 10s cooldown; cancelled moves start none. No generic path authority.",
-      "destination": "/encounter/rules/14"
-    },
-    {
-      "source_index": 19,
-      "source_lines": [
-        1
-      ],
-      "status": "mapped",
-      "resolution": "Dreadful Harvester is the dreadful_harvester participant.",
-      "destination": "/encounter/participants/8/creatures"
-    },
-    {
-      "source_index": 15,
-      "source_lines": [
-        1241,
-        1242,
-        1243,
-        1244,
-        1245,
-        1246,
-        1247,
-        1248,
-        1249,
-        1250,
-        1251,
-        1252,
-        1253,
-        1254,
-        1255,
-        1256,
-        1257,
-        1258,
-        1259,
-        1260,
-        1261,
-        1262,
-        1263,
-        1264,
-        1265,
-        1266,
-        1267,
-        1268,
-        1269,
-        1270,
-        1271,
-        1272,
-        1273,
-        1274,
-        1275,
-        1276,
-        1277,
-        1278,
-        1279,
-        1280,
-        1281,
-        1282,
-        1283,
-        1284,
-        1285,
-        1286,
-        1287,
-        1288,
-        1289,
-        1290,
-        1291,
-        1292,
-        1293,
-        1294,
-        1295,
-        1296,
-        1297,
-        1298
-      ],
-      "status": "mapped",
-      "resolution": "Accepted SW-3/Q1 a corrects the skipped taint test and logout cooldown leak: each role checks every 2s, picks the farthest eligible player (Chebyshev distance, lowest creature-ID tie), warns 2s and lands at current picked position if both remain and no solid/projectile blocker. Successful movement starts a 10s cooldown; cancelled moves start none. No generic path authority.",
-      "destination": "/encounter/rules/15"
-    },
-    {
-      "source_index": 19,
-      "source_lines": [
-        64
-      ],
-      "status": "mapped",
-      "resolution": "Dreadful Harvester teleport is the accepted wiki addition (Q1 a); the source voice gives the harvest text, also used by Spiteful Spitter. This is a source-labelled derived addition.",
-      "destination": "/encounter/rules/15"
+      "status": "unresolved_semantics",
+      "resolution": "SW-6/Q6a pool creation remains blocked: whether repeated hits stack pools or enlarge one pool is unverified. No unless_present choice or covers claim is made."
     }
   ],
   "outcome_evidence": []

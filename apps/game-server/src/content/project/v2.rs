@@ -1,6 +1,7 @@
 //! Versioned editable-source additions. Declarative v2 records never become runtime definitions
 //! by appearing in the project: only the existing Reference linker owns executable lowering.
 
+use super::super::ReferenceSignedPoints;
 use super::*;
 
 mod creature;
@@ -657,8 +658,13 @@ pub struct ProjectV2FamiliarProfile {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(deny_unknown_fields)]
 pub struct ProjectV2CreatureAuthoring {
+    /// Maximum health (monster authoring D4), retained under the existing profile field name.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub health: Option<u64>,
+    /// Spawn health when explicitly authored; absence preserves the existing full-health default.
+    /// This candidate profile does not itself initialize runtime creature vitals.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub initial_health: Option<u64>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub experience: Option<u64>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -1074,6 +1080,10 @@ pub struct ProjectV2ItemAuthoring {
     pub use_ability: Option<ProjectV2DefinitionRef>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub required_magic_level: Option<u16>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub weapon_attack_modifier_points: Option<ReferenceSignedPoints>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub weapon_absolute_hit_chance_percent: Option<ProjectV2ExactRatio>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub consumable: Option<ProjectV2ItemConsumableProfile>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -2309,6 +2319,16 @@ fn validate_v2_item_authoring(
         ));
     }
     require_ref(&item.item)?;
+    if let Some(value) = item.weapon_absolute_hit_chance_percent {
+        validate_v2_ratio(value, "v2 absolute weapon hit percent is not canonical")?;
+        if value.numerator < 0
+            || u128::from(value.numerator.unsigned_abs()) > 100 * u128::from(value.denominator)
+        {
+            return Err(ProjectError::InvalidProject(
+                "v2 absolute weapon hit percent is outside 0..100",
+            ));
+        }
+    }
     if let Some(presentation) = &item.presentation {
         if presentation.family != ProjectV2Family::Presentation {
             return Err(ProjectError::InvalidProject(
@@ -2468,6 +2488,14 @@ fn validate_v2_authoring_profile(
             if value.health == Some(0) {
                 return Err(ProjectError::InvalidProject(
                     "v2 Creature health must be positive when present",
+                ));
+            }
+            if let Some(initial_health) = value.initial_health
+                && (initial_health == 0
+                    || value.health.is_none_or(|maximum| initial_health > maximum))
+            {
+                return Err(ProjectError::InvalidProject(
+                    "v2 Creature initial health requires positive health and must be in 1..=health",
                 ));
             }
             if let Some(ratio) = value.mitigation {

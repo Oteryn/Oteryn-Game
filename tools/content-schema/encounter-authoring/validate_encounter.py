@@ -51,27 +51,37 @@ CREATURE_TRIGGERS = ('creature_died', 'lethal_damage', 'health_crossed', 'creatu
                      'heal_received', 'damage_accumulated', 'item_used', 'stepped_on')
 # CW2-1: `triggering` in `teleport.who` and the `in_anchor` subject also works in area triggers, which fire per creature.
 TRIGGERING_TRIGGERS = CREATURE_TRIGGERS + ('area_entered', 'area_left')
-
-def creature_trigger(trigger):
-    return trigger['kind'] in CREATURE_TRIGGERS or (trigger['kind'] == 'timer_elapsed' and 'each' in trigger)
-
-def triggering_trigger(trigger):
-    return creature_trigger(trigger) or trigger['kind'] in ('area_entered', 'area_left')
 # CW2-3: what `map_item` with `triggering` forbids: the item it removes is the one the `stepped_on` rule fired on.
 MAP_ITEM_TRIGGERING_FORBIDS = ('item', 'into', 'anchor', 'at', 'destination', 'revert_after_ms', 'revert_destination', 'effect',
                                'interaction', 'unless_present')
+TELEPORT_PICKED_FIELDS = ('after_ms', 'picked_cooldown_ms', 'warning_effect', 'say', 'arrival_effect')
 
 
-def area_has_tile(box, minus):
-    """Exact inclusive rectangle subtraction with bounded coordinate compression."""
-    cuts = [c for c in minus if c['floor'] == box['floor']]
-    edges = {}
-    for axis in ('x', 'y'):
-        low, high = box[axis]
-        edges[axis] = sorted({low, high + 1} | {
-            max(low, min(high + 1, edge)) for c in cuts for edge in (c[axis][0], c[axis][1] + 1)})
-    return any(not any(c['x'][0] <= x <= c['x'][1] and c['y'][0] <= y <= c['y'][1] for c in cuts)
-               for x in edges['x'][:-1] for y in edges['y'][:-1])
+def one_creature(trigger):
+    return trigger['kind'] in CREATURE_TRIGGERS or (trigger['kind'] == 'timer_elapsed' and 'each' in trigger)
+
+
+def overlaps(a, b):
+    return a['floor'] == b['floor'] and all(a[axis][0] <= b[axis][1] and b[axis][0] <= a[axis][1] for axis in ('x', 'y'))
+
+
+def tiles_remain(box, exclusions):
+    """Check inclusive rectangle subtraction with coordinate intervals, without enumerating map tiles."""
+    holes = [hole for hole in exclusions if overlaps(box, hole)]
+    xs = {box['x'][0], box['x'][1] + 1}
+    for hole in holes:
+        xs.update((max(box['x'][0], hole['x'][0]), min(box['x'][1], hole['x'][1]) + 1))
+    for x in sorted(xs)[:-1]:
+        covered = sorted((max(box['y'][0], h['y'][0]), min(box['y'][1], h['y'][1]))
+                         for h in holes if h['x'][0] <= x <= h['x'][1])
+        next_y = box['y'][0]
+        for low, high in covered:
+            if low > next_y:
+                return True
+            next_y = max(next_y, high + 1)
+        if next_y <= box['y'][1]:
+            return True
+    return False
 
 
 def semantic(e, catalog):
@@ -94,20 +104,19 @@ def semantic(e, catalog):
             continue
         if ('boxes' in location) != (anchor['kind'] == 'area'):
             errors.append(f"anchor {anchor['key']!r}: a {anchor['kind']} needs a {'box' if anchor['kind'] == 'area' else 'point'} location")
-        for box in location.get('boxes', []) + location.get('minus', []):
+        boxes = location.get('boxes', [])
+        minus = location.get('minus', [])
+        ordered = True
+        for box in boxes + minus:
             if any(box[axis][0] > box[axis][1] for axis in ('x', 'y')):
                 errors.append(f"anchor {anchor['key']!r}: a box starts after it ends")
-        boxes, minus = location.get('boxes', []), location.get('minus', [])
-        def overlaps(a, b):
-            return a['floor'] == b['floor'] and all(
-                max(a[axis][0], b[axis][0]) <= min(a[axis][1], b[axis][1]) for axis in ('x', 'y'))
-        for cut in minus:
-            if not any(overlaps(cut, b) for b in boxes):
-                errors.append(f"anchor {anchor['key']!r}: a minus box overlaps no area box")
-        # Partition at rectangle edges, rather than enumerating up to 65536**2 tiles.
-        # Membership is constant within each resulting whole-tile rectangle.
-        if minus and not any(area_has_tile(b, minus) for b in boxes):
-            errors.append(f"anchor {anchor['key']!r}: minus removes the whole area")
+                ordered = False
+        if ordered and minus:
+            for hole in minus:
+                if not any(overlaps(hole, box) for box in boxes):
+                    errors.append(f"anchor {anchor['key']!r}: a minus box must overlap an area box on its floor")
+            if not any(tiles_remain(box, minus) for box in boxes):
+                errors.append(f"anchor {anchor['key']!r}: minus removes every tile of the area")
     spawned = {a['role'] for r in e['rules'] for _, a in walk(r['actions'], '') if a['kind'] == 'spawn' and 'role' in a}
     known_roles = set(roles) | spawned
 
@@ -120,19 +129,26 @@ def semantic(e, catalog):
         if anchors.get(name) == 'point':
             errors.append(f'{where}: anchor {name!r} is a point, an area is required')
 
-    def subject(value, where, trigger):
+    def subject(value, where, trigger, picked=False, candidate=False, killer_on_heal=False):
         if 'role' in value:
             need('role', value['role'], known_roles, where)
+        elif 'candidate' in value:
+            if not candidate:
+                errors.append(f'{where}: candidate is valid only inside creature_present where')
+        elif 'picked' in value:
+            if not picked:
+                errors.append(f'{where}: picked needs an earlier creature_present with pick in this rule')
         elif 'spawned' in value:
             pass  # checked with the action list: a preceding spawn of exactly one creature
-        elif trigger['kind'] not in ('creature_died', 'lethal_damage', 'damage_taken'):
+        elif trigger['kind'] not in ('creature_died', 'lethal_damage', 'damage_taken') and not (
+                killer_on_heal and trigger['kind'] == 'heal_received'):
             errors.append(f'{where}: the killer exists only for death, lethal damage and damage triggers')
 
     def position(value, where, rule):
         # D46: positions measured from the subject need a trigger fired by one creature.
         relative_to_subject = value in ('subject_position', 'closest_free_tile') or (
             isinstance(value, dict) and ('offset_tiles' in value or 'relative' in value))
-        if relative_to_subject and not creature_trigger(rule['trigger']):
+        if relative_to_subject and not one_creature(rule['trigger']):
             errors.append(f'{where}: a position measured from the subject needs a trigger fired by one creature')
         if isinstance(value, dict):
             if 'anchor' in value:
@@ -154,14 +170,14 @@ def semantic(e, catalog):
         kind = trigger['kind']
         if 'role' in trigger:
             need('role', trigger['role'], known_roles, where + '/trigger')
-        if kind == 'damage_taken' and 'base_vocation' in trigger and trigger['source'] != 'player':
-            errors.append(f'{where}/trigger: base_vocation needs source player')
         if kind == 'health_crossed' and ('percent' in trigger) == ('health' in trigger):
             errors.append(f'{where}/trigger: health_crossed takes exactly one of percent and health')
         if kind == 'timer_elapsed':
             need('timer', trigger['timer'], timers, where + '/trigger')
             if 'each' in trigger:
                 need('role', trigger['each'], known_roles, where + '/trigger/each')
+        if kind == 'damage_taken' and 'base_vocation' in trigger and trigger['source'] != 'player':
+            errors.append(f'{where}/trigger: base_vocation needs source player')
         if kind == 'counter_reached':
             need('counter', trigger['counter'], counters, where + '/trigger')
         if kind == 'phase_entered':
@@ -173,8 +189,9 @@ def semantic(e, catalog):
             if (trigger['who'] == 'role') != ('role' in trigger):
                 errors.append(f'{where}/trigger: a role is required exactly when who is role')
         picked = False
-        for n, condition in enumerate(rule['conditions']):
-            at = f'{where}/conditions/{n}'
+        triggering = one_creature(trigger) or kind in TRIGGERING_TRIGGERS
+
+        def check_condition(condition, at, candidate=False):
             ck = condition['kind']
             if ck == 'counter_compare':
                 need('counter', condition['counter'], counters, at)
@@ -190,40 +207,37 @@ def semantic(e, catalog):
                 if 'near' in condition:
                     if 'role' in condition['near']:
                         need('role', condition['near']['role'], known_roles, at)
-                    elif not triggering_trigger(trigger):
-                        errors.append(f'{at}: near triggering needs a creature trigger')
-                if 'where' in condition and not condition.get('players'):
-                    errors.append(f'{at}: where needs players true')
-                if 'pick' in condition:
-                    if not condition.get('players') or not condition['present']:
-                        errors.append(f'{at}: pick needs players true and present true')
-                    picked = True
-                for child in condition.get('where', []):
-                    if child['kind'] not in ('killer_progress', 'in_anchor') or child.get('subject') != {'candidate': True}:
-                        errors.append(f'{at}: where permits only candidate progress and anchor predicates')
-                    elif child['kind'] == 'in_anchor':
-                        need_area(child['anchor'], at + '/where')
+                    elif not triggering:
+                        errors.append(f'{at}: near triggering needs a trigger fired by one creature or an area trigger')
+                if any(field in condition for field in ('where', 'pick')) and not condition.get('players'):
+                    errors.append(f'{at}: where and pick require players true')
+                if 'pick' in condition and not condition['present']:
+                    errors.append(f'{at}: pick requires present true')
+                for index, filtered in enumerate(condition.get('where', [])):
+                    check_condition(filtered, f'{at}/where/{index}', candidate=True)
             elif ck == 'in_anchor':
-                if 'candidate' in condition['subject']:
-                    errors.append(f'{at}: candidate is valid only inside where')
-                elif 'triggering' in condition['subject']:
-                    if not triggering_trigger(trigger):
+                if 'triggering' in condition['subject']:
+                    if not triggering:
                         errors.append(f'{at}: in_anchor of triggering needs a trigger fired by one creature or an area trigger')
                 else:
-                    subject(condition['subject'], at, trigger)
+                    subject(condition['subject'], at, trigger, picked, candidate)
                 need_area(condition['anchor'], at)
-            elif ck == 'killer_progress' and 'subject' in condition:
-                errors.append(f'{at}: candidate is valid only inside where')
             elif ck in ('has_master', 'summon_count', 'has_condition'):
                 need('role', condition['role'], known_roles, at)
             elif ck == 'health_percent':
                 need('role', condition['role'], known_roles, at)
-            elif ck in ('killer_is_player', 'killer_progress') and kind not in ('creature_died', 'lethal_damage', 'damage_taken', 'heal_received'):
+            elif ck == 'killer_progress':
+                subject(condition.get('subject', {'killer': True}), at, trigger, picked, candidate, killer_on_heal=True)
+            elif ck == 'killer_is_player' and kind not in ('creature_died', 'lethal_damage', 'damage_taken', 'heal_received'):
                 errors.append(f'{at}: {ck} needs a death, lethal damage, damage or heal trigger')
             elif ck == 'chance_from_amount' and kind not in ('damage_taken', 'heal_received'):
                 errors.append(f'{at}: chance_from_amount needs a damage or heal trigger')
             elif ck == 'attacker_wears' and kind not in ('damage_taken', 'damage_accumulated', 'lethal_damage', 'heal_received'):
                 errors.append(f'{at}: attacker_wears needs a damage or heal trigger')
+        for n, condition in enumerate(rule['conditions']):
+            check_condition(condition, f'{where}/conditions/{n}')
+            if condition['kind'] == 'creature_present' and 'pick' in condition and condition['present']:
+                picked = True
         def spawned_speaker(actions, base):
             for n, action in enumerate(actions):
                 if action.get('subject', {}).get('spawned') and not any(
@@ -238,7 +252,7 @@ def semantic(e, catalog):
                 if field in action and ak != 'spawn':
                     need('role', action[field], known_roles, at)
             if 'subject' in action:
-                subject(action['subject'], at, trigger)
+                subject(action['subject'], at, trigger, picked)
             if 'at' in action:
                 position(action['at'], at, rule)
             if action.get('owner') == 'death_master' and kind not in ('creature_died', 'lethal_damage'):
@@ -247,7 +261,7 @@ def semantic(e, catalog):
                 errors.append(f'{at}: prevent_death is valid only in a lethal_damage rule for the same role')
             if ak == 'remove' and sum(field in action for field in ('role', 'all_in', 'triggering')) != 1:
                 errors.append(f'{at}: remove takes exactly one of role, all_in and triggering')
-            if ak == 'remove' and 'triggering' in action and kind not in CREATURE_TRIGGERS:
+            if ak == 'remove' and 'triggering' in action and not one_creature(trigger):
                 errors.append(f'{at}: remove triggering needs a trigger fired by one creature')
             if ak == 'remove' and 'triggering' in action and trigger.get('who') == 'player':
                 errors.append(f'{at}: remove triggering never removes a player')
@@ -264,16 +278,17 @@ def semantic(e, catalog):
             if ak == 'remove' and 'all_in' in action:
                 need_area(action['all_in'], at)
             if ak == 'teleport':
-                if isinstance(action['to'], str):
+                if isinstance(action['to'], dict):
+                    if not picked:
+                        errors.append(f'{at}: picked_position needs an earlier creature_present with pick in this rule')
+                else:
                     need('anchor', action['to'], anchors, at)
-                    if any(field in action for field in ('after_ms', 'picked_cooldown_ms', 'say', 'warning_effect', 'arrival_effect')):
-                        errors.append(f'{at}: delayed teleport fields need picked_position')
-                elif not picked:
-                    errors.append(f'{at}: picked_position needs an earlier player pick')
+                    if any(field in action for field in TELEPORT_PICKED_FIELDS):
+                        errors.append(f'{at}: delayed teleport fields require picked_position')
                 if 'players_in' in action['who']:
                     need_area(action['who']['players_in'], at)
                 elif 'triggering' in action['who']:
-                    if not triggering_trigger(trigger):
+                    if not triggering:
                         errors.append(f'{at}: teleport triggering needs a trigger fired by one creature or an area trigger')
                 else:
                     need('role', action['who']['role'], known_roles, at)
@@ -292,10 +307,8 @@ def semantic(e, catalog):
                     need('anchor', action['anchor'], anchors, at)
                 if action.get('at') == 'death_position' and kind not in ('creature_died', 'lethal_damage'):
                     errors.append(f'{at}: a death position exists only for death and lethal damage triggers')
-                if action.get('at') == 'subject_position' and kind not in CREATURE_TRIGGERS:
-                    errors.append(f'{at}: map_item subject_position needs a trigger fired by one creature')
                 if 'unless_present' in action and action['operation'] != 'create':
-                    errors.append(f'{at}: unless_present needs operation create')
+                    errors.append(f'{at}: unless_present is valid only with operation create')
                 if (action['operation'] == 'transform') != ('into' in action):
                     errors.append(f'{at}: map_item transform needs into, create/remove forbid it')
                 for field in ('destination', 'revert_destination'):

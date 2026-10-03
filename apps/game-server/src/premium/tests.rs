@@ -543,3 +543,72 @@ fn the_request_is_the_exact_bounded_section_3_1_body() {
     );
     assert_eq!(client::request_body(ACCOUNT, &"x".repeat(200)), None);
 }
+
+#[test]
+fn retry_after_is_honoured_in_either_form() {
+    use client::parse_retry_after;
+    // 1994-11-06T08:49:37Z.
+    let at = 784_111_777_000_000;
+    assert_eq!(parse_retry_after("7", at), Some(Duration::from_secs(7)));
+    assert_eq!(
+        parse_retry_after(" 120 ", at),
+        Some(Duration::from_secs(120))
+    );
+    let date = "Sun, 06 Nov 1994 08:49:37 GMT";
+    assert_eq!(
+        parse_retry_after(date, at - 30_000_000),
+        Some(Duration::from_secs(30))
+    );
+    assert_eq!(parse_retry_after(date, at + 1), Some(Duration::ZERO));
+    for other in [
+        "Sunday, 06-Nov-94 08:49:37 GMT",
+        "Sun Nov  6 08:49:37 1994",
+        "Sun, 06 Nov 1994 08:49:37 UTC",
+        "Sun, 31 Feb 1994 08:49:37 GMT",
+        "-1",
+        "",
+        "soon",
+    ] {
+        assert_eq!(parse_retry_after(other, at), None, "{other}");
+    }
+}
+
+#[test]
+fn a_partial_client_configuration_is_an_error() {
+    use client::{IDENTITY_VAR, PLATFORM_CA_VAR, PremiumClientConfig, URL_VAR};
+    use std::ffi::OsString;
+    let some = |text: &str| Some(OsString::from(text));
+    assert_eq!(
+        PremiumClientConfig::from_vars(None, None, None)
+            .unwrap()
+            .map(|c| c.origin),
+        None
+    );
+    let invalid =
+        |url, identity, ca| PremiumClientConfig::from_vars(url, identity, ca).unwrap_err();
+    assert_eq!(
+        invalid(None, some("/id.pem"), some("/ca.pem")),
+        client::ClientConfigError::Invalid(URL_VAR)
+    );
+    assert_eq!(
+        invalid(some("https://p:1"), None, some("/ca.pem")),
+        client::ClientConfigError::Invalid(IDENTITY_VAR)
+    );
+    assert_eq!(
+        invalid(some("https://p:1"), some("/id.pem"), None),
+        client::ClientConfigError::Invalid(PLATFORM_CA_VAR)
+    );
+    assert_eq!(
+        invalid(None, None, some("/ca.pem")),
+        client::ClientConfigError::Invalid(URL_VAR)
+    );
+    // An unreadable file is an error too.
+    assert_eq!(
+        invalid(
+            some("https://p:1"),
+            some("/nonexistent/oteryn-premium-id.pem"),
+            some("/nonexistent/oteryn-premium-ca.pem")
+        ),
+        client::ClientConfigError::Invalid(IDENTITY_VAR)
+    );
+}

@@ -1,0 +1,286 @@
+{
+  "format_version": 1,
+  "classification": "SOURCE_BACKED_CORE_SUMMON_WITH_RUNTIME_GAPS",
+  "live_gameplay_verified": false,
+  "unrepresented_player_semantics": [
+    "player premium, level 200, vocation and no-other-summons cast admission (God bypass omitted)",
+    "owner-selected familiar identity/look and owner speed synchronization",
+    "timed familiar removal and 60/10-second notifications (duration retained on Creature)",
+    "config/VIP/rate-dependent spell cooldown and support group cooldown",
+    "mana payment and player summon persistence/death/login lifecycle"
+  ],
+  "canary_revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+  "crystal_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+  "creatures": [
+    {
+      "slug": "knight_familiar",
+      "ability": {
+        "family": "Ability",
+        "key": "canary:ability/spell/summon_knight_familiar",
+        "revision": "canary-47dfd51f"
+      },
+      "flags": [
+        "PLAYER_FAMILIAR_RUNTIME_INTEGRATION_PENDING",
+        "SOURCE_BACKED_CORE_SUMMON"
+      ],
+      "canary": {
+        "spell_id": 194,
+        "name": "Summon Knight Familiar",
+        "words": "utevo gran res eq",
+        "mana_cost": 1000,
+        "minimum_level": 200,
+        "vocations": [
+          "knight",
+          "elite knight"
+        ],
+        "duration_ms": 900000,
+        "group_cooldown_expression": "2 * 1000",
+        "cast_sound_expression": "SOUND_EFFECT_TYPE_SPELL_SUMMON_KNIGHT_FAMILIAR",
+        "evidence": [
+          {
+            "file": "data/scripts/spells/familiar/knight_familiar.lua",
+            "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+            "sha256": "a2804dcee352441ef3bed52d47981a3d3271ecee4f2df816a6e6235f5d4ae37e",
+            "git_blob": "3d8b503f767010c0f0c2ee694a1e28379786f313"
+          },
+          {
+            "file": "data/libs/functions/player.lua",
+            "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+            "sha256": "26e85b0c577b76ef42c429a459428758a6a8dfc3e019bb771403bc33fbbf5c0c",
+            "git_blob": "0ca29c387806995913db9d955e59f627b50341bd"
+          },
+          {
+            "file": "config.lua.dist",
+            "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+            "sha256": "5ad741b00ff26c0200a9d0c3a4f056801647be5a59a45b0ef687c87887a762d3",
+            "git_blob": "55ccf0802351aa84a98bfe59e176a5f98f94a56b"
+          }
+        ]
+      },
+      "crystal": {
+        "spell_id": 194,
+        "name": "Summon Knight Familiar",
+        "words": "utevo gran res eq",
+        "mana_cost": 1000,
+        "minimum_level": 200,
+        "vocations": [
+          "knight",
+          "elite knight"
+        ],
+        "duration_ms": 900000,
+        "group_cooldown_expression": "2 * 1000",
+        "cast_sound_expression": "SOUND_EFFECT_TYPE_SPELL_SUMMON_KNIGHT_FAMILIAR",
+        "evidence": [
+          {
+            "file": "data/scripts/spells/familiar/knight_familiar.lua",
+            "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+            "sha256": "6df8b1e444ebd75d8b598002c977d310dcb25437245a8132ea024c90284c3559",
+            "git_blob": "f3116eb60bba09e0e77c00197a87107f3b43753d"
+          },
+          {
+            "file": "data/libs/functions/player.lua",
+            "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+            "sha256": "897edd1b4509622480dfc713d226ae54dbef1ce06c7a4a7af556fbc6744f6a0e",
+            "git_blob": "6edaa6b2ac2814634bde69782353b0a3c3396bc3"
+          },
+          {
+            "file": "config.lua.dist",
+            "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+            "sha256": "a3d2678eb6f63e502ef72b3f1ac37bdf40a8dc6eacea735bc6ee92f32092d0eb",
+            "git_blob": "ca04a5833bda872bc93f97c3a74284a0ff5d8ce6"
+          }
+        ]
+      },
+      "differences": {},
+      "baseline_sha256": {
+        "monster.json": "103bc6aab3d806c8d35248297497f40c492350533c9597375b30aff15efaed6b",
+        "dependencies.json": "f06e9733b6c830013ccea6c2c2a27ab2185f4d71099b5c3aeba055b9c27d72c9",
+        "catalog.json": "f68c27903448795f77e204997c75021922dd9e8da36512f3af890aef992cd024",
+        "manifest.json": "6b44046e0667d76a9cc1d82d4b62af6c8f2c0c63efd763b959c1c14561130700"
+      }
+    },
+    {
+      "slug": "monk_familiar",
+      "ability": {
+        "family": "Ability",
+        "key": "canary:ability/spell/summon_monk_familiar",
+        "revision": "canary-47dfd51f"
+      },
+      "flags": [
+        "PLAYER_FAMILIAR_RUNTIME_INTEGRATION_PENDING",
+        "SOURCE_BACKED_CORE_SUMMON"
+      ],
+      "canary": {
+        "spell_id": 282,
+        "name": "Monk familiar",
+        "words": "utevo gran res tio",
+        "mana_cost": 1500,
+        "minimum_level": 200,
+        "vocations": [
+          "monk",
+          "exalted monk"
+        ],
+        "duration_ms": 900000,
+        "group_cooldown_expression": "2 * 1000",
+        "cast_sound_expression": "SOUND_EFFECT_TYPE_SPELL_SUMMON_DRUID_FAMILIAR",
+        "evidence": [
+          {
+            "file": "data/scripts/spells/familiar/monk_familiar.lua",
+            "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+            "sha256": "3ecf699a021029d263d675366b426738d27044b248813efa54fcbb0af9ca18db",
+            "git_blob": "781b6a855314f99ed651e68243a601f97bbebd82"
+          },
+          {
+            "file": "data/libs/functions/player.lua",
+            "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+            "sha256": "26e85b0c577b76ef42c429a459428758a6a8dfc3e019bb771403bc33fbbf5c0c",
+            "git_blob": "0ca29c387806995913db9d955e59f627b50341bd"
+          },
+          {
+            "file": "config.lua.dist",
+            "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+            "sha256": "5ad741b00ff26c0200a9d0c3a4f056801647be5a59a45b0ef687c87887a762d3",
+            "git_blob": "55ccf0802351aa84a98bfe59e176a5f98f94a56b"
+          }
+        ]
+      },
+      "crystal": {
+        "spell_id": 282,
+        "name": "Monk Familiar",
+        "words": "utevo gran res tio",
+        "mana_cost": 1500,
+        "minimum_level": 200,
+        "vocations": [
+          "monk",
+          "exalted monk"
+        ],
+        "duration_ms": 900000,
+        "group_cooldown_expression": "2 * 1000",
+        "cast_sound_expression": "SOUND_EFFECT_TYPE_SPELL_SUMMON_MONK_FAMILIAR",
+        "evidence": [
+          {
+            "file": "data/scripts/spells/familiar/monk_familiar.lua",
+            "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+            "sha256": "15c1707b450ea3513c6fe58ce033005573c65574991b3c0f7d6b335c30d0e5a3",
+            "git_blob": "f1b719bdbaf3ff3fd3b5c62c2b4920e8b34023dc"
+          },
+          {
+            "file": "data/libs/functions/player.lua",
+            "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+            "sha256": "897edd1b4509622480dfc713d226ae54dbef1ce06c7a4a7af556fbc6744f6a0e",
+            "git_blob": "6edaa6b2ac2814634bde69782353b0a3c3396bc3"
+          },
+          {
+            "file": "config.lua.dist",
+            "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+            "sha256": "a3d2678eb6f63e502ef72b3f1ac37bdf40a8dc6eacea735bc6ee92f32092d0eb",
+            "git_blob": "ca04a5833bda872bc93f97c3a74284a0ff5d8ce6"
+          }
+        ]
+      },
+      "differences": {
+        "name": {
+          "canary": "Monk familiar",
+          "crystal": "Monk Familiar"
+        },
+        "cast_sound_expression": {
+          "canary": "SOUND_EFFECT_TYPE_SPELL_SUMMON_DRUID_FAMILIAR",
+          "crystal": "SOUND_EFFECT_TYPE_SPELL_SUMMON_MONK_FAMILIAR"
+        }
+      },
+      "baseline_sha256": {
+        "monster.json": "d7739bd6d8d21b85b9e54cfabedb65b2fdecdd2cadef73d5a10164b2beee127f",
+        "dependencies.json": "74f12a66920d4fe2b118b7ae4d8c5dba03a3b639c465bac65845f4bc94c4d276",
+        "catalog.json": "3e60143d179de5d5e668e72896e2bcaea921bc05c738fcde0b9f279e83db4d12",
+        "manifest.json": "f1a0861a10cfc5a86c837c476210f70747bfe7a843d15cadc35c9abf5c1b71f5"
+      }
+    },
+    {
+      "slug": "paladin_familiar",
+      "ability": {
+        "family": "Ability",
+        "key": "canary:ability/spell/summon_paladin_familiar",
+        "revision": "canary-47dfd51f"
+      },
+      "flags": [
+        "PLAYER_FAMILIAR_RUNTIME_INTEGRATION_PENDING",
+        "SOURCE_BACKED_CORE_SUMMON"
+      ],
+      "canary": {
+        "spell_id": 195,
+        "name": "Summon Paladin Familiar",
+        "words": "utevo gran res sac",
+        "mana_cost": 2000,
+        "minimum_level": 200,
+        "vocations": [
+          "paladin",
+          "royal paladin"
+        ],
+        "duration_ms": 900000,
+        "group_cooldown_expression": "2 * 1000",
+        "cast_sound_expression": "SOUND_EFFECT_TYPE_SPELL_SUMMON_PALADIN_FAMILIAR",
+        "evidence": [
+          {
+            "file": "data/scripts/spells/familiar/paladin_familiar.lua",
+            "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+            "sha256": "995b73c15ddc718d4c316aa92d4b514d5a69fbc3fdfa921d1b63578aa68e81c9",
+            "git_blob": "fe6d7b43339571d212904b0ea8b6db1d15773fe1"
+          },
+          {
+            "file": "data/libs/functions/player.lua",
+            "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+            "sha256": "26e85b0c577b76ef42c429a459428758a6a8dfc3e019bb771403bc33fbbf5c0c",
+            "git_blob": "0ca29c387806995913db9d955e59f627b50341bd"
+          },
+          {
+            "file": "config.lua.dist",
+            "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+            "sha256": "5ad741b00ff26c0200a9d0c3a4f056801647be5a59a45b0ef687c87887a762d3",
+            "git_blob": "55ccf0802351aa84a98bfe59e176a5f98f94a56b"
+          }
+        ]
+      },
+      "crystal": {
+        "spell_id": 195,
+        "name": "Summon Paladin Familiar",
+        "words": "utevo gran res sac",
+        "mana_cost": 2000,
+        "minimum_level": 200,
+        "vocations": [
+          "paladin",
+          "royal paladin"
+        ],
+        "duration_ms": 900000,
+        "group_cooldown_expression": "2 * 1000",
+        "cast_sound_expression": "SOUND_EFFECT_TYPE_SPELL_SUMMON_PALADIN_FAMILIAR",
+        "evidence": [
+          {
+            "file": "data/scripts/spells/familiar/paladin_familiar.lua",
+            "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+            "sha256": "16e21ac293e7bb915eb6acea0f9449c8973a5f4b68abad8097bda5e399214870",
+            "git_blob": "b0ea97b122989f3e5702db67f9c637a48a762307"
+          },
+          {
+            "file": "data/libs/functions/player.lua",
+            "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+            "sha256": "897edd1b4509622480dfc713d226ae54dbef1ce06c7a4a7af556fbc6744f6a0e",
+            "git_blob": "6edaa6b2ac2814634bde69782353b0a3c3396bc3"
+          },
+          {
+            "file": "config.lua.dist",
+            "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+            "sha256": "a3d2678eb6f63e502ef72b3f1ac37bdf40a8dc6eacea735bc6ee92f32092d0eb",
+            "git_blob": "ca04a5833bda872bc93f97c3a74284a0ff5d8ce6"
+          }
+        ]
+      },
+      "differences": {},
+      "baseline_sha256": {
+        "monster.json": "e0d1342beb685c87fedcfd150f1494ea11a17a471ac835562fa12c559e48d8fd",
+        "dependencies.json": "13a45246dd2a081ad2911a0aa81839fa8e4e0bf1f6ef787aeb2ccbd2facd6d17",
+        "catalog.json": "66c3d7905a2a8927bb76998d7db1087ce85b6820a1ac9dfb0a3821e9ffb62cac",
+        "manifest.json": "9fb5b1c61f6c838fcec39745b78a414658099f41eb59e4efd0fced382af778d7"
+      }
+    }
+  ]
+}

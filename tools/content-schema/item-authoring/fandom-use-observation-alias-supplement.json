@@ -1,0 +1,30 @@
+{
+  "accepted_owner": "ProjectV2ItemAuthoring.use_observation",
+  "contract": "OTERYN_WORLD_PROJECT_SOURCE_PROFILE_V2_DECISION.md:65",
+  "fields": [
+    {
+      "allowed_destinations": [
+        "/item/use/damage"
+      ],
+      "canonical_source_property": "damage",
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "reason": "Exact Integer/Range/Text observation; Text remains unevaluated",
+      "source_field": "damagerange",
+      "status": "mapped"
+    },
+    {
+      "allowed_destinations": [
+        "/item/use/mana_cost"
+      ],
+      "canonical_source_property": "mana_cost",
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "reason": "Exact u32 observation; cost purpose/consumption is not inferred",
+      "source_field": "manacost",
+      "status": "mapped"
+    }
+  ],
+  "purpose": "SOURCE_ONLY_NONEXECUTABLE_OBSERVATIONS",
+  "schema": "OTERYN_FANDOM_USE_OBSERVATION_ALIAS_SUPPLEMENT/v1"
+}
