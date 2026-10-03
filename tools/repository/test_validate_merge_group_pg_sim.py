@@ -20,7 +20,7 @@ from unittest.mock import patch
 ROOT = Path(__file__).resolve().parents[2]
 GATE = ROOT / ".github/workflows/merge-group-gate.yml"
 LIFECYCLE = ROOT / "tools/agents/tests/test_governance_lifecycle_discovery.py"
-APPROVED = "ecbc78bf20e8db2c13eca31dd54cedc6c971bd2e"
+APPROVED = "860a684e5ec71f50ae899f9db36b7c07f9fca623"
 LIFECYCLE_COMMAND = "python tools/agents/tests/test_governance_lifecycle_discovery.py"
 REGISTERED_POSTGRES_TARGETS = (
     ("durability_postgres", "apps/game-server/tests/durability_postgres.rs"),
@@ -91,6 +91,7 @@ def _queue_lane_routing_canaries(candidate: str) -> None:
         (server, ("true", "false", "server")),
         (dict(server, surface="durability"), ("true", "false", "durability")),
         (dict(rust=False, windows=False, surface="auxiliary"), ("false", "false", "auxiliary")),
+        (dict(rust=False, windows=False, surface="atlas-fullworld"), ("false", "false", "atlas-fullworld")),
         (dict(server, windows=True), ("true", "true", "full")),
         (dict(server, rust=False, windows=True), ("true", "true", "full")),
         (dict(server, reason="unmodelled-input"), ("true", "true", "full")),
@@ -153,6 +154,74 @@ def _postgres_cache_consumer_regressions() -> None:
         assert block.index("Restore trimmed Cargo cache") < block.index("Verify locked metadata")
 
 
+def _atlas_queue_canaries(original: str, core) -> None:
+    """Execute protected routing and prove Atlas cannot be skipped after selection."""
+    candidate = core.indented_yaml_mapping_block(original, "candidate", 2)
+    start = candidate.index("          atlas_fullworld = 'true'")
+    end = candidate.index("          # Use protected-base exact-consumer routing", start)
+    source = textwrap.dedent(candidate[start:end])
+    spec = importlib.util.spec_from_file_location(
+        "atlas_lanes", ROOT / "tools/repository/classify_pr_test_lanes.py"
+    )
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    atlas = "tools/game-atlas-fullworld-source/producer.py"
+    cases = (
+        ([{"filename": atlas, "status": "modified"}], "true"),
+        ([{"filename": atlas, "status": "removed"}], "true"),
+        ([{"filename": "docs/a.md", "previous_filename": atlas, "status": "renamed"}], "true"),
+        ([{"filename": "docs/a.md"}], "false"),
+        ([{"filename": "docs/a.md"}, {"filename": atlas}], "true"),
+        ([{"filename": "../a"}], "true"),
+        ([], "true"),
+        (None, "true"),
+    )
+    for records, expected in cases:
+        namespace = {"module": module, "records": records}
+        exec(compile(source, "<queue Atlas routing>", "exec"), namespace)
+        assert namespace["atlas_fullworld"] == expected, (records, namespace)
+    for returned in (None, "false", 0, True):
+        namespace = dict(records=[{"filename": "docs/a.md"}], module=SimpleNamespace(
+            atlas_fullworld_required=lambda *args: returned,
+        ))
+        exec(compile(source, "<queue Atlas routing>", "exec"), namespace)
+        assert namespace["atlas_fullworld"] == "true", returned
+    namespace = dict(records=[{"filename": "docs/a.md"}], module=SimpleNamespace())
+    exec(compile(source, "<queue Atlas routing>", "exec"), namespace)
+    assert namespace["atlas_fullworld"] == "true"
+
+    job = core.indented_yaml_mapping_block(original, "atlas_fullworld", 2)
+    assert "    if: needs.candidate.outputs.atlas_fullworld != 'false'\n" in job
+    assert "ref: ${{ github.event.merge_group.head_sha }}" in job
+    gate = core.indented_yaml_mapping_block(original, "game_gate", 2)
+    assert "codeql, atlas_fullworld, rust_linux" in gate
+    assert "ATLAS_FULLWORLD: ${{ needs.atlas_fullworld.result }}" in gate
+    script = textwrap.dedent(gate.split("        run: |\n", 1)[1])
+    base = dict(os.environ, **dict.fromkeys((
+        "CANDIDATE", "DEPENDENCY_REVIEW", "CODEQL", "RUST_LINUX",
+        "DURABILITY_POSTGRES", "RUST_WINDOWS", "RUST_SUPPLY_CHAIN",
+        "NODE_BOOT", "SERVER_SEAM",
+    ), "success"))
+    for required in ("true", "", "invalid", "False", "0", "false"):
+        for result in ("success", "skipped", "failure", "cancelled", ""):
+            env = dict(base, ATLAS_FULLWORLD_REQUIRED=required, ATLAS_FULLWORLD=result)
+            actual = subprocess.run(["bash", "-c", script], env=env, capture_output=True).returncode == 0
+            expected = result == "success" or (required == "false" and result == "skipped")
+            assert actual == expected, (required, result, actual)
+    base.pop("ATLAS_FULLWORLD_REQUIRED", None)
+    base.pop("ATLAS_FULLWORLD", None)
+    assert subprocess.run(["bash", "-c", script], env=base, capture_output=True).returncode != 0
+    atlas_only = dict(base, RUST_REQUIRED="false", WINDOWS_REQUIRED="false",
+        SERVER_QUALIFICATION_REQUIRED="false", ATLAS_FULLWORLD_REQUIRED="true",
+        RUST_LINUX="skipped", DURABILITY_POSTGRES="skipped", RUST_WINDOWS="skipped",
+        RUST_SUPPLY_CHAIN="skipped", NODE_BOOT="skipped", SERVER_SEAM="skipped")
+    for result in ("success", "skipped"):
+        env = dict(atlas_only, ATLAS_FULLWORLD=result)
+        actual = subprocess.run(["bash", "-c", script], env=env, capture_output=True).returncode == 0
+        assert actual == (result == "success"), ("atlas-only", result)
+    print("Atlas MQ PASS: protected routing, exact synthetic checkout and 32 fail-closed fan-in cases")
+
+
 def main() -> int:
     _postgres_cache_consumer_regressions()
     spec = importlib.util.spec_from_file_location(
@@ -164,6 +233,7 @@ def main() -> int:
     original = GATE.read_text(encoding="utf-8")
     assert core.git_blob_sha(original.encode()) == APPROVED, "queue protected blob pin drifted"
     assert core.main() == 0, "approved queue workflow must pass full policy"
+    _atlas_queue_canaries(original, core)
 
     candidate = core.indented_yaml_mapping_block(original, "candidate", 2)
     assert candidate is not None
@@ -362,7 +432,7 @@ def main() -> int:
     assert block is not None
     script = textwrap.dedent(block.split("        run: |\n", 1)[1])
     predicates = (
-        "CANDIDATE", "DEPENDENCY_REVIEW", "CODEQL", "RUST_LINUX",
+        "CANDIDATE", "DEPENDENCY_REVIEW", "CODEQL", "ATLAS_FULLWORLD", "RUST_LINUX",
         "DURABILITY_POSTGRES", "RUST_WINDOWS", "RUST_SUPPLY_CHAIN",
         "NODE_BOOT", "SERVER_SEAM",
     )
@@ -386,6 +456,8 @@ def main() -> int:
         SERVER_QUALIFICATION_REQUIRED="false",
         NODE_BOOT="skipped",
         SERVER_SEAM="skipped",
+        ATLAS_FULLWORLD_REQUIRED="false",
+        ATLAS_FULLWORLD="skipped",
     )
     assert subprocess.run(["bash", "-c", script], env=docs_env, check=False).returncode == 0
     server_env = dict(env, RUST_REQUIRED="true", WINDOWS_REQUIRED="false", RUST_WINDOWS="skipped")

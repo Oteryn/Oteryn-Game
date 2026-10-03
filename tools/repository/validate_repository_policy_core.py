@@ -52,7 +52,7 @@ EXPECTED_ROUTING_CONTRACT_VALIDATOR_BLOB = "ce2fc840f22fd75c0ccb067d9807698a8765
 EXPECTED_MERGE_GATE_ATLAS_FULLWORLD_JOB_SHA256 = "0910d3ef6afed2e689c687d1c6692963336c4b737def32fea41bbb5c4c08eb40"
 EXPECTED_MERGE_GATE_NODE_BOOT_JOB_SHA256 = "3f59ad249da2e820f23495120e88f7456a63a47655810adfcf3345764bf68d68"
 EXPECTED_MERGE_GATE_SERVER_SEAM_JOB_SHA256 = "a62f892daddbbaa96f764ecd22ab0c2edf0084c4d40415d46d1dc12f00ecff4e"
-EXPECTED_MERGE_GROUP_GATE_BLOB = "ecbc78bf20e8db2c13eca31dd54cedc6c971bd2e"
+EXPECTED_MERGE_GROUP_GATE_BLOB = "860a684e5ec71f50ae899f9db36b7c07f9fca623"
 EXPECTED_POST_MERGE_RUST_SHA256 = "d942814a212cd1697ca02da71c17cd0bdf29589f557b80bd0fead2a88dfba5fb"
 EXPECTED_MERGE_GROUP_GATE_TOP_LEVEL_KEYS = [
     "name",
@@ -69,6 +69,7 @@ EXPECTED_MERGE_GROUP_JOB_KEYS = [
     "candidate",
     "dependency_review",
     "codeql",
+    "atlas_fullworld",
     "rust_linux",
     "durability_postgres",
     "rust_windows",
@@ -502,6 +503,21 @@ def main() -> int:
                 "github/codeql-action/init@2892aa5e19bbd11bc0cff5427e3b750a04d9e3c2",
                 "github/codeql-action/analyze@2892aa5e19bbd11bc0cff5427e3b750a04d9e3c2",
             ),
+            "atlas_fullworld": (
+                "    name: Merge Queue / Atlas fullworld source\n",
+                "    needs: candidate\n",
+                "    if: needs.candidate.outputs.atlas_fullworld != 'false'\n",
+                "ref: ${{ github.event.merge_group.head_sha }}",
+                "EXPECTED_SHA: ${{ github.event.merge_group.head_sha }}",
+                'run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"',
+                "python -S -m py_compile",
+                "tools/game-atlas-fullworld-source/producer.py",
+                "tools/game-atlas-fullworld-source/self_test.py",
+                "tools/reference-world-corridor-census/content_source_batch.py",
+                "tools/reference-world-corridor-census/content_source_batch_self_test.py",
+                "run: python -S tools/game-atlas-fullworld-source/self_test.py",
+                "run: python -S tools/reference-world-corridor-census/content_source_batch_self_test.py",
+            ),
             "rust_linux": (
                 "    name: Merge Queue / Rust Linux workspace\n",
                 "cargo +1.94.0 build --locked --workspace --all-targets",
@@ -573,10 +589,12 @@ def main() -> int:
             "game_gate": (
                 "    name: game-gate\n",
                 "    if: always()\n",
-                "    needs: [candidate, dependency_review, codeql, rust_linux, durability_postgres, rust_windows, rust_supply_chain, node_boot, server_seam]\n",
+                "    needs: [candidate, dependency_review, codeql, atlas_fullworld, rust_linux, durability_postgres, rust_windows, rust_supply_chain, node_boot, server_seam]\n",
                 "          CANDIDATE: ${{ needs.candidate.result }}\n",
                 "          DEPENDENCY_REVIEW: ${{ needs.dependency_review.result }}\n",
                 "          CODEQL: ${{ needs.codeql.result }}\n",
+                "          ATLAS_FULLWORLD_REQUIRED: ${{ needs.candidate.outputs.atlas_fullworld }}\n",
+                "          ATLAS_FULLWORLD: ${{ needs.atlas_fullworld.result }}\n",
                 "          RUST_LINUX: ${{ needs.rust_linux.result }}\n",
                 "          DURABILITY_POSTGRES: ${{ needs.durability_postgres.result }}\n",
                 "          RUST_WINDOWS: ${{ needs.rust_windows.result }}\n",
