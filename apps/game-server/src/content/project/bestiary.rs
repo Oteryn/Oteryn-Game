@@ -219,11 +219,11 @@ mod tests {
     fn limits() -> ProjectEvidenceLimits {
         ProjectEvidenceLimits {
             max_documents: 5,
-            max_document_bytes: 1_300_000,
-            max_total_bytes: 3_700_000,
+            max_document_bytes: 1_400_000,
+            max_total_bytes: 4_700_000,
             max_json_depth: 10,
-            max_decoded_fields: 60_000,
-            max_string_bytes: 900_000,
+            max_decoded_fields: 65_000,
+            max_string_bytes: 1_000_000,
             max_locator_bytes: 128,
             max_locator_segments: 5,
             max_reference_records: 1_763,
@@ -362,13 +362,16 @@ mod tests {
             Err(ProjectError::LimitExceeded { .. })
         ));
         changed = limits();
-        changed.max_reference_records = 1_502;
+        changed.max_reference_records = 1_762;
         assert!(matches!(
             canonical_bestiary_rows(changed),
             Err(ProjectError::LimitExceeded { .. })
         ));
-        for (depth, fields, strings) in [(9, 60_000, 900_000), (10, 50, 900_000), (10, 60_000, 100)]
-        {
+        for (depth, fields, strings) in [
+            (9, 65_000, 1_000_000),
+            (10, 50, 1_000_000),
+            (10, 65_000, 100),
+        ] {
             changed = limits();
             changed.max_json_depth = depth;
             changed.max_decoded_fields = fields;
