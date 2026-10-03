@@ -3000,3 +3000,55 @@ mod item_fee_burn_postgres_cases;
 // no CI-run PostgreSQL target includes. Runs without a database.
 #[path = "support/postgres_target_aggregation.rs"]
 mod postgres_target_aggregation;
+
+// Both new inert public consumers resolve current recovery evidence independently of history.
+#[test]
+fn proficiency_read_public_consumers_reject_current_recovery_provenance_substitution()
+-> bestiary_postgres_harness::TestResult {
+    use bestiary_postgres_harness::{CHARACTER, Harness, configured_admin, debug, runtime};
+    use durability::DurabilityError;
+    use durability::character_progression::CharacterProgressionError::Unavailable;
+    let Some(admin) = configured_admin() else {
+        return Ok(());
+    };
+    runtime()?.block_on(async {
+        let harness = Harness::create(admin, "proficiency_inert_read_fence", true).await?;
+        {
+            let seal = harness.recovery.seal_current().map_err(debug)?;
+            let authority = harness
+                .root
+                .open_character_authority(&seal)
+                .await
+                .map_err(debug)?;
+            let mut restore = harness.pool.begin().await?;
+            sqlx::query("SET LOCAL session_replication_role=replica")
+                .execute(&mut *restore)
+                .await?;
+            // Only current DB issuance changes; the independent sealed record stays untouched.
+            sqlx::query("UPDATE game_character_recovery_admissions SET issued_at=issued_at+1")
+                .execute(&mut *restore)
+                .await?;
+            restore.commit().await?;
+            let character = CharacterId::from_bytes(id(CHARACTER)).map_err(debug)?;
+            let root = &harness.root;
+            for outcome in [
+                root.read_character_proficiency_state(&authority, character)
+                    .await
+                    .map(|_| ()),
+                root.read_character_proficiency_occurrence(&authority, character, id(90))
+                    .await
+                    .map(|_| ()),
+            ] {
+                // Require the actual fence disposition, not absent migration/schema 42P01.
+                assert!(
+                    matches!(outcome, Err(Unavailable(DurabilityError::Unavailable))),
+                    "{outcome:?}"
+                );
+            }
+        }
+        harness.cleanup().await
+    })
+}
+
+#[path = "support/character_proficiency_postgres_cases.rs"]
+mod character_proficiency_postgres_cases;
