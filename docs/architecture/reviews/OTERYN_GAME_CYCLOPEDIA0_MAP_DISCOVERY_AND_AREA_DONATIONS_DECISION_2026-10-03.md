@@ -194,35 +194,52 @@ CYC-CONTENT-1's report lists each such change between two revisions. The classif
 function of the two revisions and of whether the world holds any of the state above. The race
 between that check and the reset is removed at its source:
 
-- **Freeze row.** `game_world_cyclopedia_freeze` holds one row per World: the staged structural
-  revision, or none. Every Cyclopedia write (§4.2, §4.3, the §4.2a normalization, §5.3, the
-  Charos and achievement grants) reads this row with a shared lock inside its own transaction. If
-  it names a revision, the write is refused with the typed result `CyclopediaFrozen` and writes
-  nothing.
+- **Freeze row.** `game_world_cyclopedia_freeze` holds one row per World: none, or the staged
+  structural revision with its staging id. A staging id is new and increasing for each staging, so
+  staging the same revision twice gives two different ids. Every Cyclopedia write (§4.2, §4.3, the
+  §4.2a normalization, §5.3, the Charos and achievement grants) reads this row with a shared lock
+  inside its own transaction. If the row is set, the write is refused with the typed result
+  `CyclopediaFrozen` and writes nothing.
 - **Staging.** For a revision that is structural against the active one, staging is one
   transaction. It locks the freeze row exclusively, which waits for every Cyclopedia write in
   flight. It then checks that the world holds none of the state above, and sets the row to the
-  revision. If the world holds state, the revision is `INCOMPATIBLE_REQUIRES_PRODUCT_DECISION`:
-  nothing is set and the revision is not staged. After a successful staging the state cannot grow.
-  A revision that is not structural (`READ_COMPATIBLE_NORMALIZE`) is staged without a freeze.
-- **Reset start.** For a structurally staged target, ADR-0021 §4.7 step 1 is one transaction that
-  holds the freeze row exclusively. It confirms that the row still names the target, checks again
-  that the world holds no state, and writes the RETIRING record. If either check fails, it writes
-  no RETIRING record: it unstages the revision and sets the row to none, and the world keeps
-  running on the active bundle. While admission is still open, a Cyclopedia write either commits
-  before this transaction takes the lock, and is then seen by the check, or waits and is refused.
-- **Lifting.** Before RETIRING is recorded, unstaging is the only way to lift the freeze. It
-  clears the staged revision and the row in one transaction under the exclusive lock. Once
-  RETIRING is recorded, unstaging is refused, and the freeze is lifted only by step 4, which sets
-  the row to none in its activation transaction. A crash while RETIRING takes the ADR-0021 recovery
-  path: boot refuses admission, resumes from step 2 and ends in that same step 4. A crash at any
-  other time leaves the row as committed. A frozen world keeps running until it is unstaged or
-  reset, and it never stops because of Cyclopedia.
-- **Invariant.** From staging until step 4 commits, a world with a structurally staged revision
-  always has the freeze row set to that revision. Staging, reset start, unstaging and activation
-  each change the staged revision and the row in the same transaction. No committed state has a
-  structurally staged revision and an unset row. So step 4 needs no Cyclopedia check, and no
-  Cyclopedia write commits between the reset start and activation.
+  revision and a new staging id. If the world holds state, the revision is
+  `INCOMPATIBLE_REQUIRES_PRODUCT_DECISION`: nothing is set and the revision is not staged. After a
+  successful staging, the state cannot grow. A revision that is not structural
+  (`READ_COMPATIBLE_NORMALIZE`) is staged without a freeze.
+- **Reset start.** A reset worker carries the staging id of its target. For a structurally staged
+  target, ADR-0021 §4.7 step 1 is one transaction that holds the freeze row exclusively:
+  1. If a RETIRING record already exists for the world, or the row does not name this worker's
+     staging id, the worker writes nothing and exits. A stale worker therefore never touches
+     another staging, even one of the same revision.
+  2. Otherwise it checks again that the world holds no state.
+  3. If the world still holds no state, it writes the RETIRING record with that staging id.
+  4. If the world now holds state, it writes no RETIRING record. It unstages its own staging and
+     sets the row to none, and the world keeps running on the active bundle.
+
+  While admission is still open, a Cyclopedia write either commits before this transaction takes
+  the lock, and is then seen by the check, or waits and is refused.
+- **Lifting.** Before RETIRING is recorded, the freeze is lifted only by unstaging, or by the
+  failed check in step 4 of reset start. Both clear the row only if it names their own staging
+  id, under the exclusive lock, in the same transaction as the unstage. Once RETIRING is
+  recorded, unstaging is refused. The freeze is then lifted only by ADR-0021 step 4, which sets the
+  row to none in its activation transaction. A crash while RETIRING takes the ADR-0021 recovery
+  path: boot refuses admission, resumes from step 2 and ends in that same step 4. A crash in any
+  other transaction rolls it back, and a retry with the same staging id meets the checks above
+  again. A frozen world keeps running until it is unstaged or reset. It never stops because of
+  Cyclopedia.
+- **Interleavings.**
+  - Stale A, staged B: A's worker sees B's staging id and exits. B stays staged and frozen.
+  - A, unstaged, B, unstaged, A again: the second A has a new staging id. The first worker exits.
+  - Two workers for the same staging: the first writes RETIRING, and the second sees it and
+    exits.
+  - A crash between staging and reset start: the row stays set and the world keeps running frozen.
+- **Invariant.** A transaction changes the freeze row only for the staging id it owns, and in the
+  same transaction as that staging's own change: staging, unstage, reset start or activation. So
+  from staging until step 4 commits, a world with a structurally staged revision always has the
+  row set to that staging. No committed state has a structural staging and an unset row, or a row
+  naming a different staging. Step 4 therefore needs no Cyclopedia check, and no Cyclopedia write
+  commits between reset start and activation.
 
 **Ordering against a reset.** Every Cyclopedia write (start, shuffle, POI found, normalize,
 donate, Charos) is a write of an admitted session under its session-generation fence, and a
