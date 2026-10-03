@@ -8,7 +8,7 @@ status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/canary-items-xml-pin
-pr: PENDING_PR
+pr: 1671
 head_sha: "exact frozen head in the #1622 FREEZE_SHA entry"
 owner: claude-code-session-01QFRdKvFbNsNiCzMyR75FrC (second architect lane)
 created_at: 2026-10-03
