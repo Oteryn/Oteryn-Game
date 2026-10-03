@@ -7,6 +7,7 @@ import copy
 import json
 
 import proficiency_authoring as pa
+import shaping_authoring as sa
 
 
 def expect_error(fn, *args, fragment: str) -> None:
@@ -234,6 +235,165 @@ def test_item_bindings() -> None:
         assert bound["profile_binding"]["key"] == (
             f"oteryn:proficiency.tibia.p{row['proficiency_id']}"
         )
+
+
+# PROFICIENCY-1B section 3: shaping catalogue and operation admission (PROF-SHAPE-CONTENT-1).
+
+
+def shaping_sample() -> dict:
+    return json.loads(sa.SAMPLE.read_text(encoding="utf-8"))
+
+
+def known_cell(field: str, value: object) -> dict:
+    return {
+        "state": "KNOWN",
+        field: value,
+        "evidence": {"class": "TIBIAWIKI_EN", "source_ref": "fixture"},
+    }
+
+
+def full_shaping(entries: int = 4) -> dict:
+    shaping = copy.deepcopy(shaping_sample()["shapings"][0])
+    skills = ["sword", "axe", "club", "distance", "shielding", "fist"]
+    shaping["pool"] = known_cell(
+        "entries",
+        [
+            {
+                "identity": {"kind": "skill_bonus", "skill": skills[i]},
+                "weight": known_cell("weight", 1),
+                "rank_values": [
+                    known_cell("values", {"value": r}) for r in range(1, 11)
+                ],
+            }
+            for i in range(entries)
+        ],
+    )
+    costs = shaping["costs"]
+    costs["rank_steps"] = [known_cell("dust", 10 * r) for r in range(1, 10)]
+    costs["reshape_offer"] = known_cell("dust", 100)
+    costs["clear"] = known_cell("dust", 0)
+    costs["orb_rank"] = known_cell("orbs", 1)
+    return shaping
+
+
+def expect_shaping_invalid(shaping: dict, fragment: str) -> None:
+    catalogue = shaping_sample()
+    catalogue["shapings"] = [shaping]
+    errors = sa.validate(catalogue, sa.committed_proficiencies())
+    assert any(fragment in e for e in errors), f"{fragment!r} not in {errors}"
+
+
+def test_shaping_sample_is_valid() -> None:
+    assert sa.validate(shaping_sample(), sa.committed_proficiencies()) == []
+    catalogue = shaping_sample()
+    catalogue["shapings"] = [full_shaping()]
+    assert sa.validate(catalogue, sa.committed_proficiencies()) == []
+
+
+def test_shaping_evidence_classes() -> None:
+    shaping = full_shaping()
+    shaping["costs"]["clear"]["evidence"]["class"] = "OTS_HYPOTHESIS_ONLY"
+    expect_shaping_invalid(shaping, "costs/clear")
+    shaping = full_shaping()
+    shaping["costs"]["clear"] = {
+        "state": "KNOWN",
+        "gold": 1000,
+        "evidence": {"class": "TIBIAWIKI_EN", "source_ref": "x"},
+    }
+    expect_shaping_invalid(shaping, "costs/clear")
+
+
+def test_shaping_semantic_rules() -> None:
+    shaping = full_shaping()
+    shaping["proficiency"]["key"] = "oteryn:proficiency.tibia.p7"
+    expect_shaping_invalid(shaping, "does not shape")
+    shaping = full_shaping()
+    shaping["proficiency"]["revision"] = "definition-r9"
+    expect_shaping_invalid(shaping, "revision differs")
+    shaping = full_shaping()
+    shaping["pool"]["entries"][1]["identity"] = {
+        "kind": "skill_bonus",
+        "skill": "sword",
+    }
+    expect_shaping_invalid(shaping, "distinct identities")
+    shaping = full_shaping()
+    shaping["pool"]["entries"][0]["identity"] = {
+        "kind": "skill_bonus",
+        "skill": "cooking",
+    }
+    expect_shaping_invalid(shaping, "not a perk")
+    shaping = full_shaping()
+    shaping["pool"]["entries"][0]["identity"]["value"] = 1
+    expect_shaping_invalid(shaping, "carries value fields")
+    shaping = full_shaping()
+    shaping["pool"]["entries"][0]["rank_values"][3]["values"] = {"probability": 0.1}
+    expect_shaping_invalid(shaping, "rank 4: values must be exactly")
+    # The actual rank values are checked as a perk and by the sign rules (4174328922).
+    shaping = full_shaping()
+    shaping["pool"]["entries"][0]["rank_values"][2]["values"] = {"value": -1}
+    expect_shaping_invalid(shaping, "rank 3: skill_bonus value must be positive")
+    shaping = full_shaping()
+    shaping["pool"]["entries"][0] = {
+        "identity": {
+            "kind": "homing_missile",
+            "element": "fire",
+            "missile_client_id": 1,
+        },
+        "weight": known_cell("weight", 1),
+        "rank_values": [
+            known_cell("values", {"probability": 0.01, "multiplier": 2.0})
+            for _ in range(10)
+        ],
+    }
+    catalogue = shaping_sample()
+    catalogue["shapings"] = [shaping]
+    assert sa.validate(catalogue, sa.committed_proficiencies()) == []
+    shaping["pool"]["entries"][0]["rank_values"][0]["values"] = {
+        "probability": 2,
+        "multiplier": -1,
+    }
+    expect_shaping_invalid(shaping, "rank 1: values are not a valid perk")
+    shaping = full_shaping()
+    shaping["pool"]["entries"] = (
+        shaping["pool"]["entries"] * 16 + shaping["pool"]["entries"][:1]
+    )
+    expect_shaping_invalid(shaping, "pool")
+
+
+def test_shaping_admission() -> None:
+    sample = shaping_sample()["shapings"][0]
+    for operation in ("MODIFY",):
+        assert not sa.admitted(sample, operation, slot=1)
+    assert not sa.admitted(sample, "CLEAR")
+    assert sa.admitted(sample, "RESHAPE_CHOOSE")
+    full = full_shaping()
+    assert sa.admitted(full, "MODIFY", slot=1) and sa.admitted(full, "MODIFY", slot=2)
+    assert sa.admitted(full, "RANK_UP", rank=1, entry=0)
+    # RANK_MAX and POOL_TOO_SMALL are runtime checks, not admission (4174328919).
+    assert sa.admitted(full, "RANK_UP", rank=10, entry=0)
+    assert sa.admitted(full, "ORB_RANK", rank=10, entry=0)
+    assert sa.admitted(full, "ORB_RANK", rank=3, entry=2)
+    assert sa.admitted(full, "RESHAPE_OFFER", rank=5)
+    assert sa.admitted(full, "CLEAR")
+    assert sa.admitted(full_shaping(entries=3), "RESHAPE_OFFER", rank=1)
+    # One entry without a value at the row's rank closes the offer (4174160821).
+    gap = full_shaping()
+    gap["pool"]["entries"][3]["rank_values"][4] = {"state": "UNKNOWN"}
+    assert not sa.admitted(gap, "RESHAPE_OFFER", rank=5)
+    assert sa.admitted(gap, "RESHAPE_OFFER", rank=4)
+    # A rank step and the next rank's value are read by RANK_UP.
+    step = full_shaping()
+    step["costs"]["rank_steps"][1] = {"state": "UNKNOWN"}
+    assert not sa.admitted(step, "RANK_UP", rank=2, entry=0)
+    assert sa.admitted(step, "RANK_UP", rank=3, entry=0)
+    weight = full_shaping()
+    weight["pool"]["entries"][0]["weight"] = {"state": "UNKNOWN"}
+    assert not sa.admitted(weight, "MODIFY", slot=1)
+    orb = full_shaping()
+    orb["costs"]["orb_rank"] = {"state": "UNKNOWN"}
+    assert not sa.admitted(orb, "ORB_RANK", rank=1, entry=0)
+    expect_error(sa.admitted, full, "REFINE", fragment="unknown operation")
+    expect_error(sa.admitted, full, "MODIFY", fragment="slot 1 or 2")
 
 
 if __name__ == "__main__":
