@@ -33,9 +33,8 @@ external_repositories: []
 
 ## Outcome
 
-PROFICIENCY-1B §7.1, §7.2 and §9, option (a): the dust SPEND is admitted; the orb BURN is not
-(this option is pending the CP's confirmation; option (b) or (c) adds the orb BURN in this or a
-later slice).
+PROFICIENCY-1B §7.1, §7.2 and §9, option (a) (CP decision): the dust SPEND is admitted; the orb
+BURN is not, and orb ranks stay `NOT_ADMITTED`.
 
 - Migration 0060: `..._line_no_ledger` replaced by `..._line_no_orb_burn` (`orb_cost = 0`) and a
   deferred guard on lines and `proficiency` dust entries: a receipt with dust has exactly one line
@@ -52,7 +51,7 @@ later slice).
 - DUR-03 §15 and §39.3 amendments; IMBUE-FORGE-0 §9 amendment; registry rows `DUR03-RL-03-PROF`,
   `DUR03-RL-06-PROF-PARTICIPANTS` and `DUR03-RL-06-PROF-EFFECT-WORK-UNITS`.
 
-Left: the orb BURN shape, ORB_RANK and the `DUR03-RL-01/02-PROF` rows.
+Left to follow-up PROF-ORB-BURN-1: the orb BURN shape, ORB_RANK and the `DUR03-RL-01/02-PROF` rows.
 
 ## Validation
 
