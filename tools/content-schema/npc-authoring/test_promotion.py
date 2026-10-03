@@ -905,6 +905,41 @@ class PromotionValidatorTests(unittest.TestCase):
         self.assertEqual(check([confirmed, {'direction': 'BuyFromPlayer', 'price': 40, 'status': 'CONFIRMED',
                                             'wikis': ['fandom', 'tibiopedia']}], fandom_sell=40), [])
 
+    def test_arbiter_rows_cover_every_direction_of_the_offer(self):
+        # #1358 4149546495: a row lists each admitted direction and price of the offer its fact names
+        report = load_sample()
+        self.assertEqual(validate_promotion.errors(report), [])
+        baltim = find_candidate(report, 'Baltim')
+        row = next(r for r in baltim['arbitration'] if r['rule'] == 'WIKI_MAJORITY_ARBITER'
+                   and any(d['direction'] == 'BuyFromPlayer' and d['status'] == 'UNCONFIRMED' for d in r['directions']))
+        broken = copy.deepcopy(report)
+        broken_row = next(r for r in find_candidate(broken, 'Baltim')['arbitration'] if r == row)
+        broken_row['directions'] = [d for d in broken_row['directions'] if d['direction'] != 'BuyFromPlayer']
+        self.assertTrue(any('directions' in e and 'offer' in e for e in validate_promotion.errors(broken)))
+        broken = copy.deepcopy(report)
+        broken_row = next(r for r in find_candidate(broken, 'Baltim')['arbitration'] if r == row)
+        broken_row['directions'][0]['price'] += 1
+        self.assertTrue(validate_promotion.errors(broken))
+        # a direction the wikis add later (D13, origin 'wiki') is not part of the arbitrated source offer
+        added = copy.deepcopy(report)
+        offers = find_candidate(added, 'Albinius')['trade_service']['offers']
+        source = next(o for o in offers if o['source_item_id'] == 51442 and o['direction'] == 'SellToPlayer')
+        offers.append({**source, 'direction': 'BuyFromPlayer', 'unit_price': 100, 'origin': 'wiki'})
+        self.assertFalse([e for e in validate_promotion.errors(added) if 'are not every direction' in e])
+
+    def test_owner_review_rows_keep_the_selected_value(self):
+        # #1358 4149546503: without the rebuild inputs, the reviewed field still equals the chosen source's value
+        report = load_sample()
+        for name, path in (('Storkus', ('presentation', 'outfit', 'look_type')),
+                           ('Flickering Soul', ('movement', 'walk_radius')),
+                           ('Grumpy Stone', ('presentation', 'outfit', 'item_look'))):
+            broken = copy.deepcopy(report)
+            target = find_candidate(broken, name)
+            for key in path[:-1]:
+                target = target[key]
+            target[path[-1]] += 1
+            self.assertTrue(any('reviewed' in e and 'value' in e for e in validate_promotion.errors(broken)), name)
+
     def test_image_fit_scores_are_at_most_35(self):
         self.assertTrue(all(fit['score'] <= validate_promotion.WIKI_IMAGE_FIT_MAX_SCORE
                             for fit in promotion_candidates.WIKI_IMAGE_FIT.values()))
