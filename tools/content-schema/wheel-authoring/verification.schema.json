@@ -376,6 +376,11 @@
           "type": "string",
           "minLength": 1,
           "maxLength": 20000
+        },
+        "basic_mod_position_2": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 20000
         }
       },
       "required": [
@@ -392,7 +397,8 @@
         "special_spell_secondary_cooldown",
         "flurry_cast_range",
         "guiding_presence_arithmetic",
-        "mystic_repulse_selection"
+        "mystic_repulse_selection",
+        "basic_mod_position_2"
       ]
     },
     "live_verification": {

@@ -78,3 +78,13 @@ NPCs. `.github/workflows/spell-wiki-capture.yml` runs `wiki_spells.py fetch --wi
 `facts --wiki br --all-fields` on a hosted runner and uploads the infobox fields (cut to 200
 characters, the `effect` and `notes` mechanics text up to 4000, with revision ids) as the `spell-wiki-br-<sha>` artifact; the same workflow runs the schema
 checks above.
+
+### Mystic Repulse II source synchronization (2026-10-01)
+
+`wheel-augments.json` now selects **+60% base damage** for Mystic Repulse II,
+matching Wheel authoring and the current official Tibia.com planner
+(`MediumPerkInfos.46.Aug2Info`). The former EnglishWiki/Canary +40% row is
+retained as superseded evidence. The Oct1 source identity and observation date
+apply to this row; other rows retain their recorded target-date sources.
+The Wheel evidence check binds this file's digest and refuses a value/unit
+disagreement between Spell and Wheel. This does not admit a native spell effect.

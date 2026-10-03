@@ -24,7 +24,7 @@
     {
       "url": "https://www.tibiawiki.com.br/wiki/Mystic_Repulse",
       "requested_url": "https://www.tibiawiki.com.br/wiki/Mystic_Repulse",
-      "title": "Mystic Repulse - Tibia Wiki - A Enciclop\u00e9dia do Tibia",
+      "title": "Mystic Repulse - Tibia Wiki - A Enciclopédia do Tibia",
       "method": "REMOTE_DESKTOP_CHROME_CDP",
       "revision": "NOT_EXPOSED",
       "sha256": "e1cc51e60b35601c667f5956ba216867f1086f1b877d185cb8c2cb834abd96b5",
@@ -84,7 +84,7 @@
     {
       "url": "https://www.tibiawiki.com.br/wiki/Augmented_Mystic_Repulse",
       "requested_url": "https://www.tibiawiki.com.br/wiki/Augmented_Mystic_Repulse",
-      "title": "Augmented Mystic Repulse - Tibia Wiki - A Enciclop\u00e9dia do Tibia",
+      "title": "Augmented Mystic Repulse - Tibia Wiki - A Enciclopédia do Tibia",
       "method": "REMOTE_DESKTOP_CHROME_CDP",
       "revision": "443774",
       "sha256": "6d6ac9097978985631e2ffd1aba3ec03a62a40a71b7d2078ced682f047c66203",
@@ -157,27 +157,48 @@
     }
   },
   "source_conflicts": {
-    "mystic_repulse_ii": {
-      "selected_project_percent": 40,
-      "fandom_1206174_percent": 40,
-      "br_443774_percent": 15,
-      "planner_percent": 60,
-      "state": "ENGLISH_WIKI_40_SELECTED_BY_FORMULA; BR_AND_PLANNER_CONFLICTS_RETAINED; NO_GLOBAL_RUNTIME_ADMISSION"
-    },
-    "battle_instinct": "Fandom r1206174 section repeats Battle Healing prose; do not overwrite Battle Instinct from that anomalous paragraph. Preserve source identities and flag for native content review.",
-    "healing_link": "Fandom r1206174 still says 10%; original released official 8833 explicitly supersedes it with 25%, which candidate already selects.",
-    "atelier_gem_cap": {
-      "selected_project": 250,
-      "fandom_1151969": 225,
-      "state": "FORMULA_REFERENCE_SELECTION_CONFIRMED; CANDIDATE_CHANGE_DEFERRED_PENDING_WHEEL_GEM0_AMENDMENT"
-    },
-    "supreme_grade_iii_gold": {
-      "selected_project": 12000000,
-      "fandom_1151969": 12500000,
-      "state": "FORMULA_REFERENCE_SELECTION_CONFIRMED; CANDIDATE_CHANGE_DEFERRED_PENDING_WHEEL_GEM0_AMENDMENT"
-    },
-    "guiding_presence_interpretation": "Official8833 full mantra share100%; official8944/EnglishWiki1206174 literal party+33%. EnglishWiki gives no arithmetic; pinnedCanary99902524 party.cpp308-321 implements mantra sharing but combat.cpp824-835/game.cpp210-223 has no Guiding+33 bonus. Arithmetic/rounding/self-copy PARITY_PENDING; runtime unadmitted; no owner gate.",
-    "hunting_task_shop_points": "Fandom overview states up to 50 points: recorded as an unadmitted reference; no new Task Shop dependency or runtime point grant is allocated."
+    "basic_mod_position_2": {
+      "classification": "PROVEN_UPSTREAM_DISAGREEMENT_WITH_ENGLISH_WIKI_PROSE_CORROBORATION",
+      "scope": "all_five_vocations",
+      "difference": {
+        "selected_only": [
+          {
+            "id": 2,
+            "name": "Death Resistance"
+          }
+        ],
+        "upstream_only": [
+          {
+            "id": 30,
+            "name": "Mitigation Multiplier"
+          }
+        ]
+      },
+      "selection": "RETAIN_CAPTURED_TIBIAPAL_AUTHORING_REFERENCE; DO_NOT_SILENTLY_REPLACE_SOURCE_OBSERVATIONS",
+      "qualification": "ENGLISH_WIKI_PROSE_CORROBORATES_SELECTED_POSITION; EXACT_LIST_NATIVE_ADMISSION_PARITY_PENDING",
+      "runtime_admitted": false,
+      "live_global_parity_confirmed": false,
+      "architect_recommendation": "Retain TibiaPal authoring selection: English TibiaWiki positional prose corroborates DeathResistance in slot2 and Mitigation only in slot1 under FORMULA precedence. Preserve all four conflicting upstream lists as evidence. Qualify exact ID mapping/revision for GEM-R admission before paid rows reveal or migrate; no currentGlobal or target-date proof is asserted.",
+      "wiki_corroboration": {
+        "url": "https://tibia.fandom.com/wiki/Basic_Mod",
+        "requested_url": "https://tibia.fandom.com/wiki/Basic_Mod",
+        "title": "Basic Mod | TibiaWiki | Fandom",
+        "method": "REMOTE_DESKTOP_CHROME_CDP",
+        "sha256": "14994c2b473b7b341761948dd7ae84bbddb1a4518e5be390e2dfb161e3e972da",
+        "characters": 9646,
+        "revision": "NOT_OBTAINED",
+        "observed_on": "2026-10-01",
+        "runtime_admitted": false,
+        "live_global_parity_confirmed": false,
+        "status": "READ",
+        "observation": "English prose limits second Basic mod to resistances including Death; Mitigation is listed among first-mod choices. This corroborates selected ID2 inclusion and ID30 exclusion; no exact ID0..29 vector is enumerated.",
+        "value_scope": "Old mitigation5/5.5/6/7.5 table cannot override released official8833 mitigation20/22/24/30; no target-date or currentGlobal qualification."
+      },
+      "evidence": {
+        "file": "samples/basic-mod-position-2-conflict.json",
+        "sha256": "e570937db95765593e82ec6e6e60a5f8579cbc2d7dd499db24bb6c4364f9ceaa"
+      }
+    }
   },
   "manual_scope": "Fresh official manual corroborates operation/fragment/effective-grade facts; it does not state the numeric gem cap or grade prices in the read text.",
   "ignored_pages": [
@@ -536,5 +557,104 @@
       "game.cpp": "https://raw.githubusercontent.com/opentibiabr/canary/99902524e052f37574194466c2949c576e4ab269/src/game/game.cpp",
       "player_wheel.cpp": "https://raw.githubusercontent.com/opentibiabr/canary/99902524e052f37574194466c2949c576e4ab269/src/creatures/players/components/wheel/player_wheel.cpp"
     }
-  }
+  },
+  "upstream_static_comparison": {
+    "method": "NORMAL_HTTPS_RAW_GITHUB_PINNED_SHA",
+    "verified_source_blobs": 142,
+    "runtime_admitted": false,
+    "live_global_parity_confirmed": false,
+    "revisions": {
+      "canary-pinned": {
+        "repository": "https://github.com/opentibiabr/canary",
+        "commit": "99902524e052f37574194466c2949c576e4ab269"
+      },
+      "canary-current": {
+        "repository": "https://github.com/opentibiabr/canary",
+        "commit": "04b83b512114bfd888000d6e1433ed8ecaec7c5b"
+      },
+      "crystal-summer": {
+        "repository": "https://github.com/zimbadev/crystalserver",
+        "commit": "00ce02a57ca5a12e48f32a3476e37471167e4c3f"
+      },
+      "crystal-main": {
+        "repository": "https://github.com/zimbadev/crystalserver",
+        "commit": "96d13eff5a1afef17b11b9abc7d574020381cc53"
+      }
+    },
+    "interpretation_notes": [
+      "Crystal main/summer ten Wheel/Gem core files match; seven broader integration/config files differ.",
+      "Canary current/pinned differ in17 of35 compared selected paths; latest branch has old augmentation identities and cannot replace official/wiki selections silently.",
+      "BattleHealing active consumers differ: Crystal shield healing+30 versus pinnedCanary+20; Focus group cooldown helper exists in pinned, removed in current; official authoring selection wins.",
+      "Guiding Presence currentCanary shares half mantra, pinned shares full; no+33 party arithmetic established in audited paths. Do not infer Global absence or native admission.",
+      "Crystal ShieldSlamII damageReduction field explicitly TODO/inert; old DrainBody helper intentionally disabled. Data presence is not combat execution proof.",
+      "Native paid-gem revision/migration, protected RNG/economy, Character generation fencing and newprotocol/client integration are Oteryn owner work, not established by thirdparty KV/wire code.",
+      "Source yield/price/loot discrepancies are already bounded official/wiki overrides or labelledOTS hypotheses; no silent nativepolicy import."
+    ],
+    "evidence": {
+      "file": "samples/upstream-variation-summary.json",
+      "sha256": "0becc890417016eafd1debf87061d64a7555929d677a2530dd3163f3795a357d"
+    },
+    "source_anchors": 34
+  },
+  "positional_public_http": [
+    {
+      "url": "https://tibia.fandom.com/wiki/Basic_Mod?action=raw",
+      "method": "NORMAL_HTTPS",
+      "status": 402,
+      "clarifies_positional_availability": false
+    },
+    {
+      "url": "https://www.tibiapal.com/wheelplanner/",
+      "method": "NORMAL_HTTPS",
+      "status": 404,
+      "clarifies_positional_availability": false
+    },
+    {
+      "url": "https://www.tibiawiki.com.br/wiki/Gem_Atelier",
+      "method": "NORMAL_HTTPS",
+      "status": 403,
+      "clarifies_positional_availability": false
+    },
+    {
+      "url": "https://tibiapal.com/wheel-planner",
+      "final_url": "https://tibiapal.com/wheel-planner",
+      "method": "NORMAL_HTTPS",
+      "status": 200,
+      "sha256": "9e1b1d61282d60a7be7fba0c3563145524e7bf644bdc87fd47653bb707390898",
+      "bytes": 55073,
+      "clarifies_positional_availability": false,
+      "note": "Planner landing HTML; catalogue values require embedded JS/WASM replay already qualified for pinned planner; not independent Global evidence"
+    }
+  ],
+  "positional_browser_observations": [
+    {
+      "url": "https://tibia.fandom.com/wiki/Basic_Mod",
+      "requested_url": "https://tibia.fandom.com/wiki/Basic_Mod",
+      "title": "Basic Mod | TibiaWiki | Fandom",
+      "method": "REMOTE_DESKTOP_CHROME_CDP",
+      "sha256": "14994c2b473b7b341761948dd7ae84bbddb1a4518e5be390e2dfb161e3e972da",
+      "characters": 9646,
+      "revision": "NOT_OBTAINED",
+      "observed_on": "2026-10-01",
+      "runtime_admitted": false,
+      "live_global_parity_confirmed": false,
+      "status": "READ",
+      "observation": "English prose limits second Basic mod to resistances including Death; Mitigation is listed among first-mod choices. This corroborates selected ID2 inclusion and ID30 exclusion; no exact ID0..29 vector is enumerated.",
+      "value_scope": "Old mitigation5/5.5/6/7.5 table cannot override released official8833 mitigation20/22/24/30; no target-date or currentGlobal qualification."
+    },
+    {
+      "url": "https://www.tibiawiki.com.br/wiki/Gem_Atelier",
+      "requested_url": "https://www.tibiawiki.com.br/wiki/Gem_Atelier",
+      "title": "Gem Atelier - Tibia Wiki - A Enciclop�dia do Tibia",
+      "method": "REMOTE_DESKTOP_CHROME_CDP",
+      "sha256": "6f485f00544d4f34ceda6c7cba8f4866831c93f82f78fba0f344a82312131055",
+      "characters": 2347,
+      "revision": "NOT_OBTAINED",
+      "observed_on": "2026-10-01",
+      "runtime_admitted": false,
+      "live_global_parity_confirmed": false,
+      "status": "PAGE_LOADED_NO_ARTICLE_TEXT",
+      "observation": "BR Gem_Atelier page loads but has no article text; not positional catalogue proof."
+    }
+  ]
 }
