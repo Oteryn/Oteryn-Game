@@ -104,25 +104,35 @@ fn item_end(code: &[u8], mut i: usize) -> usize {
     code.len()
 }
 
-/// End of the `[...]` group starting at `i`, or `i` when no group starts there.
-fn bracket_end(code: &[u8], i: usize) -> usize {
-    if code.get(i) != Some(&b'[') {
-        return i;
-    }
+/// End of the `(..)`, `[..]` or `{..}` group starting at `i`, or `i` when no group starts there.
+fn group_end(code: &[u8], i: usize) -> usize {
+    let (open, close) = match code.get(i) {
+        Some(b'(') => (b'(', b')'),
+        Some(b'[') => (b'[', b']'),
+        Some(b'{') => (b'{', b'}'),
+        _ => return i,
+    };
     let mut depth = 0usize;
     for (j, c) in code.iter().enumerate().skip(i) {
-        match c {
-            b'[' => depth += 1,
-            b']' => {
-                depth -= 1;
-                if depth == 0 {
-                    return j + 1;
-                }
+        if *c == open {
+            depth += 1;
+        } else if *c == close {
+            depth -= 1;
+            if depth == 0 {
+                return j + 1;
             }
-            _ => {}
         }
     }
     code.len()
+}
+
+/// End of the `[...]` group starting at `i`, or `i` when no group starts there.
+fn bracket_end(code: &[u8], i: usize) -> usize {
+    if code.get(i) == Some(&b'[') {
+        group_end(code, i)
+    } else {
+        i
+    }
 }
 
 /// Identifier byte; any non-ASCII byte counts, as Rust identifiers may be Unicode.
@@ -295,6 +305,39 @@ fn inner_cfg_test(code: &[u8]) -> bool {
     }
 }
 
+fn skip_ws(code: &[u8], mut i: usize) -> usize {
+    while code.get(i).is_some_and(u8::is_ascii_whitespace) {
+        i += 1;
+    }
+    i
+}
+
+/// Ranges that `#[cfg(test)]` removes from production: attributed items and `let` statements
+/// outside macro token trees. On any other node (array or tuple element, field, variant, match
+/// arm, expression) it exempts nothing.
+fn cfg_test_ranges(code: &[u8], macros: &[(usize, usize)]) -> Vec<(usize, usize)> {
+    let in_macro = |at: usize| macros.iter().any(|(from, to)| (*from..*to).contains(&at));
+    let mut ranges = Vec::new();
+    let mut i = 0;
+    while let Some(off) = code[i..].iter().position(|c| *c == b'#') {
+        let at = i + off;
+        let attr_end = bracket_end(code, at + 1);
+        let item_start = code[..at]
+            .trim_ascii_end()
+            .last()
+            .is_none_or(|c| matches!(c, b';' | b'{' | b'}' | b']'));
+        if compact(&code[at..attr_end]) == b"#[cfg(test)]"
+            && item_start
+            && !in_macro(at)
+            && attributes_item(code, attr_end)
+        {
+            ranges.push((at, item_end(code, attr_end)));
+        }
+        i = at + 1;
+    }
+    ranges
+}
+
 /// 1-based lines of non-test production references to the bridges in one source file.
 /// `bridge_module` is true only for `src/ability/commit.rs`, the sole home of the canonical bridge
 /// definitions; a same-named function anywhere else is a reference, not an exempt definition.
@@ -305,26 +348,7 @@ fn production_references(src: &str, bridge_module: bool) -> Vec<usize> {
     }
     let macros = macro_ranges(&code);
     let in_macro = |at: usize| macros.iter().any(|(from, to)| (*from..*to).contains(&at));
-    let mut exempt = Vec::new();
-    // `#[cfg(test)]` outer attributes on an item or `let` statement, never macro tokens; on any
-    // other node (array or tuple element, field, variant, match arm, expression) it exempts nothing.
-    let mut i = 0;
-    while let Some(off) = code[i..].iter().position(|c| *c == b'#') {
-        let at = i + off;
-        let attr_end = bracket_end(&code, at + 1);
-        let item_start = code[..at]
-            .trim_ascii_end()
-            .last()
-            .is_none_or(|c| matches!(c, b';' | b'{' | b'}' | b']'));
-        if compact(&code[at..attr_end]) == b"#[cfg(test)]"
-            && item_start
-            && !in_macro(at)
-            && attributes_item(&code, attr_end)
-        {
-            exempt.push((at, item_end(&code, attr_end)));
-        }
-        i = at + 1;
-    }
+    let mut exempt = cfg_test_ranges(&code, &macros);
     // The canonical bridges' own definitions and bodies: exactly one each, outside macros.
     if bridge_module {
         for name in BRIDGES {
@@ -359,22 +383,182 @@ fn production_references(src: &str, bridge_module: bool) -> Vec<usize> {
     lines
 }
 
-fn scan(dir: &Path, root: &Path, found: &mut Vec<String>) -> std::io::Result<()> {
+/// What a declaration may load into the crate: one file by basename, or any file when the
+/// declaration cannot be resolved lexically (macro-built names, non-literal or `cfg_attr` paths).
+#[derive(Debug, PartialEq, Eq)]
+enum Loads {
+    File(String),
+    Any,
+}
+
+/// Every construct in one source file that can load another file (`mod name;`, a `path`
+/// attribute, `include!`), each with whether `#[cfg(test)]` keeps it out of production and whether
+/// it names its file explicitly (a `path` or `include!`, which may reach outside `src/`).
+/// Declarations are found by name anywhere, including inside inline `mod` blocks and macros, so
+/// directory resolution never hides one; a macro-carried `#[cfg(test)]` token gates nothing.
+fn file_declarations(src: &str) -> Vec<(Loads, bool, bool)> {
+    let code = sanitize(src);
+    let test_only = inner_cfg_test(&code);
+    let macros = macro_ranges(&code);
+    let ranges = cfg_test_ranges(&code, &macros);
+    let gated = |at: usize| test_only || ranges.iter().any(|(from, to)| (*from..*to).contains(&at));
+    // `sanitize` blanks literals in place, so a group that compacts to its delimiters holds at most
+    // one string literal, read back from the same offsets in `src`.
+    let literal = |from: usize, to: usize| {
+        let raw = &src.as_bytes()[from..to];
+        let open = raw.iter().position(|c| *c == b'"')?;
+        let len = raw[open + 1..].iter().position(|c| *c == b'"')?;
+        let value = std::str::from_utf8(&raw[open + 1..open + 1 + len]).ok()?;
+        // An escape could spell any name, so only a plain literal names a file.
+        (!value.contains('\\')).then(|| value.rsplit('/').next().unwrap_or(value).to_owned())
+    };
+    let mut decls = Vec::new();
+    for at in word_hits(&code, "mod") {
+        let mut i = skip_ws(&code, at + 3);
+        if code[i..].starts_with(b"r#") {
+            i += 2;
+        }
+        if code.get(i) == Some(&b'$') {
+            decls.push((Loads::Any, gated(at), false));
+            continue;
+        }
+        let start = i;
+        while code.get(i).copied().is_some_and(is_ident) {
+            i += 1;
+        }
+        if start < i && code.get(skip_ws(&code, i)) == Some(&b';') {
+            decls.push((
+                Loads::File(format!("{}.rs", &src[start..i])),
+                gated(at),
+                false,
+            ));
+        }
+    }
+    let mut i = 0;
+    while let Some(off) = code[i..].iter().position(|c| *c == b'#') {
+        let at = i + off;
+        let end = bracket_end(&code, skip_ws(&code, at + 1));
+        let attr = compact(&code[at..end]);
+        if attr.windows(5).any(|w| w == b"path=") {
+            let loads = match literal(at, end) {
+                Some(name) if attr == b"#[path=]" => Loads::File(name),
+                _ => Loads::Any,
+            };
+            decls.push((loads, gated(at), true));
+        }
+        i = at + 1;
+    }
+    for at in word_hits(&code, "include") {
+        let bang = skip_ws(&code, at + 7);
+        if code.get(bang) != Some(&b'!') {
+            continue;
+        }
+        let open = skip_ws(&code, bang + 1);
+        let end = group_end(&code, open);
+        let loads = match literal(open, end) {
+            Some(name) if end > open && compact(&code[open + 1..end - 1]).is_empty() => {
+                Loads::File(name)
+            }
+            _ => Loads::Any,
+        };
+        decls.push((loads, gated(at), true));
+    }
+    decls
+}
+
+fn test_named(rel: &Path) -> bool {
+    let name = rel.file_name().and_then(|n| n.to_str()).unwrap_or("");
+    name.ends_with("_tests.rs") || name == "tests.rs"
+}
+
+/// `path:line` of every production reference in `files` (crate-relative path, source). A
+/// test-named file is skipped only when every declaration that may load it is gated by
+/// `#[cfg(test)]` or sits in a file already skipped; one declared nowhere is not in the crate.
+/// Any other file, test-named or not, is scanned (an inner `#![cfg(test)]` still exempts it), and a
+/// production `path` or `include!` to a file outside `src/` is itself a finding.
+fn gate_findings(files: &[(std::path::PathBuf, String)]) -> Vec<String> {
+    let decls: Vec<(usize, Loads, bool, bool)> = files
+        .iter()
+        .enumerate()
+        .flat_map(|(from, (_, src))| {
+            file_declarations(src)
+                .into_iter()
+                .map(move |(loads, gated, explicit)| (from, loads, gated, explicit))
+        })
+        .collect();
+    let mut skipped = vec![false; files.len()];
+    loop {
+        let mut changed = false;
+        for (n, (rel, _)) in files.iter().enumerate() {
+            if skipped[n] || !test_named(rel) {
+                continue;
+            }
+            let name = rel.file_name().and_then(|n| n.to_str()).unwrap_or("");
+            let test_only = decls
+                .iter()
+                .filter(|(_, loads, _, _)| match loads {
+                    Loads::File(file) => file == name,
+                    Loads::Any => true,
+                })
+                .all(|(from, _, gated, _)| *gated || (*from != n && skipped[*from]));
+            if test_only {
+                skipped[n] = true;
+                changed = true;
+            }
+        }
+        if !changed {
+            break;
+        }
+    }
+    // A production `path` or `include!` naming no file under `src/` loads code this gate cannot see.
+    let unseen = decls
+        .iter()
+        .filter_map(|(from, loads, gated, explicit)| match loads {
+            Loads::File(name)
+                if *explicit
+                    && !*gated
+                    && !skipped[*from]
+                    && !files
+                        .iter()
+                        .any(|(rel, _)| rel.file_name().is_some_and(|f| f == name.as_str())) =>
+            {
+                Some(format!(
+                    "{}: loads unscanned {name}",
+                    files[*from].0.display()
+                ))
+            }
+            _ => None,
+        });
+    let unseen: Vec<String> = unseen.collect();
+    files
+        .iter()
+        .zip(skipped.iter().copied())
+        .filter(|(_, skipped)| !skipped)
+        .flat_map(|((rel, src), _)| {
+            let bridge_module = rel == Path::new("src/ability/commit.rs");
+            production_references(src, bridge_module)
+                .into_iter()
+                .map(move |line| format!("{}:{line}", rel.display()))
+        })
+        .chain(unseen)
+        .collect()
+}
+
+fn collect(
+    dir: &Path,
+    root: &Path,
+    files: &mut Vec<(std::path::PathBuf, String)>,
+) -> std::io::Result<()> {
     let mut entries = std::fs::read_dir(dir)?
         .map(|e| e.map(|e| e.path()))
         .collect::<std::io::Result<Vec<_>>>()?;
     entries.sort();
     for path in entries {
-        let name = path.file_name().and_then(|n| n.to_str()).unwrap_or("");
         if path.is_dir() {
-            scan(&path, root, found)?;
-        } else if name.ends_with(".rs") && !name.ends_with("_tests.rs") && name != "tests.rs" {
-            let src = std::fs::read_to_string(&path)?;
-            let rel = path.strip_prefix(root).unwrap_or(&path);
-            let bridge_module = rel == Path::new("src/ability/commit.rs");
-            for line in production_references(&src, bridge_module) {
-                found.push(format!("{}:{line}", rel.display()));
-            }
+            collect(&path, root, files)?;
+        } else if path.extension().is_some_and(|e| e == "rs") {
+            let rel = path.strip_prefix(root).unwrap_or(&path).to_path_buf();
+            files.push((rel, std::fs::read_to_string(&path)?));
         }
     }
     Ok(())
@@ -383,8 +567,9 @@ fn scan(dir: &Path, root: &Path, found: &mut Vec<String>) -> std::io::Result<()>
 #[test]
 fn no_production_caller_of_ability_damage_bridges_before_a2() -> std::io::Result<()> {
     let root = Path::new(env!("CARGO_MANIFEST_DIR"));
-    let mut found = Vec::new();
-    scan(&root.join("src"), root, &mut found)?;
+    let mut files = Vec::new();
+    collect(&root.join("src"), root, &mut files)?;
+    let found = gate_findings(&files);
     assert!(
         found.is_empty(),
         "D295 §3 item 3 hard wiring gate: production references to the Ability damage bridges \
@@ -469,4 +654,85 @@ fn body() {
     ] {
         assert_eq!(production_references(test_file, false), Vec::<usize>::new());
     }
+}
+
+#[test]
+fn test_named_files_are_skipped_only_when_test_only() {
+    let call = "fn live() { commit_exact_owner_damage(); }\n";
+    let run = |decl: &str, extra: &[(&str, &str)]| {
+        let mut files = vec![
+            ("src/lib.rs".into(), decl.to_owned()),
+            ("src/live_tests.rs".into(), call.to_owned()),
+        ];
+        files.extend(extra.iter().map(|(p, s)| ((*p).into(), (*s).to_owned())));
+        gate_findings(&files)
+    };
+    let flagged = vec!["src/live_tests.rs:1".to_owned()];
+    // Unconditional declarations put the file in production.
+    for decl in [
+        "mod live_tests;",
+        "pub(crate) mod r#live_tests ;",
+        "mod outer { mod live_tests; }",
+        "#[path = \"live_tests.rs\"]\nmod live;",
+        "#[cfg_attr(not(test), path = \"other.rs\")]\nmod other;",
+        "include!(\"live_tests.rs\");",
+        "include!(concat!(\"live\", \"_tests.rs\"));",
+        "#[path = \"live\\x5ftests.rs\"]\nmod live;",
+        "macro_rules! m { ($n:ident) => { mod $n; }; }\nm!(live_tests);",
+        "m! { #[cfg(test)] mod live_tests; }",
+        "#[cfg(not(test))]\nmod live_tests;",
+        // `#[cfg(test)]` on a macro invocation is not trusted to gate what it expands to.
+        "#[cfg(test)]\ninclude!(\"live_tests.rs\");",
+    ] {
+        assert_eq!(run(decl, &[]), flagged, "{decl}");
+    }
+    // Test-only declarations, transitively, or none at all keep it out of production.
+    for (decl, extra) in [
+        ("#[cfg(test)]\nmod live_tests;", &[][..]),
+        ("#[cfg(test)]\nmod outer {\n    mod live_tests;\n}", &[]),
+        (
+            "#[cfg(test)]\n#[path = \"../src/live_tests.rs\"]\nmod live;",
+            &[],
+        ),
+        ("", &[]),
+        (
+            "#[cfg(test)]\nmod a_tests;",
+            &[("src/a_tests.rs", "mod live_tests;")],
+        ),
+        (
+            "mod a;",
+            &[(
+                "src/a.rs",
+                "#![allow(dead_code)]\n#![cfg(test)]\nmod live_tests;",
+            )],
+        ),
+    ] {
+        assert_eq!(run(decl, extra), Vec::<String>::new(), "{decl}");
+    }
+    // A production file declaring it unconditionally overrides a gated sibling declaration.
+    assert_eq!(
+        run(
+            "#[cfg(test)]\nmod live_tests;",
+            &[("src/b.rs", "mod live_tests;")]
+        ),
+        flagged
+    );
+    // A production load of a file outside `src/` is reported; a test-only one is not.
+    assert_eq!(
+        run("#[path = \"../../elsewhere/live.rs\"]\nmod live;", &[]),
+        vec!["src/lib.rs: loads unscanned live.rs".to_owned()]
+    );
+    assert_eq!(
+        run(
+            "#[cfg(test)]\n#[path = \"../tests/support.rs\"]\nmod support;",
+            &[]
+        ),
+        Vec::<String>::new()
+    );
+    // An inner `#![cfg(test)]` exempts the file's own body wherever it is declared.
+    let inner = vec![
+        ("src/lib.rs".into(), "mod live_tests;".to_owned()),
+        ("src/live_tests.rs".into(), format!("#![cfg(test)]\n{call}")),
+    ];
+    assert_eq!(gate_findings(&inner), Vec::<String>::new());
 }

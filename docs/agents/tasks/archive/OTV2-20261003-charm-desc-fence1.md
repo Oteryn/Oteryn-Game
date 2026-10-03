@@ -38,7 +38,11 @@ a `game-server` test scans `src/` and fails on any non-test production reference
 `src/ability/commit.rs` only (exactly one each), comments, string and char literals,
 `#[cfg(test)]` outer attributes on an item or `let` statement only (never on elements, fields,
 variants, arms or expressions, and never as macro tokens), files whose
-leading inner attributes include `#![cfg(test)]`, and `*_tests.rs`/`tests.rs` modules.
+leading inner attributes include `#![cfg(test)]`, and `*_tests.rs`/`tests.rs` files only when
+every declaration that may load them (`mod`, `path`, `include!`, found by name anywhere) is
+`#[cfg(test)]`-gated or sits in an already-skipped file. A production `path`/`include!` to a file
+outside `src/` is itself a finding; unresolvable loads (macro-built names, non-literal, escaped or
+`cfg_attr` paths) count as loading any file.
 `#[cfg(not(test))]`, `#[allow(dead_code)]` and same-named wrappers elsewhere are not exemptions.
 The failure message names D295 and A2. Only the A2 PR, with the fence, may relax it.
 
@@ -84,6 +88,12 @@ No production change: one new test module and its `#[cfg(test)]` mod line.
   identifier and a `(`/`[`/`{` group is a macro token tree, whatever precedes it, except an inner
   attribute's `#!`. Over-matching (unary `!(..)`, `if !x {..}`) only withholds exemptions.
   Sweep: identifier boundaries now treat non-ASCII bytes as identifier bytes throughout.
+- Codex on ac803b36: P1 4173866055 (a test-named file compiled into production by an unconditional
+  `mod` was skipped by name) accepted; the owner approved one more round via the control plane.
+  Fixed: a test-named file is skipped only when all declarations that may load it are test-only,
+  transitively; undeclared files stay skipped. Adversarial sweep of the family (module resolution,
+  `#[path]`, `include!`, nested `mod` blocks, macro-built declarations, `cfg_attr` paths, escaped
+  literals, loads outside `src/`), each closed fail-closed with a regression case.
 
 ## PR and closeout
 
