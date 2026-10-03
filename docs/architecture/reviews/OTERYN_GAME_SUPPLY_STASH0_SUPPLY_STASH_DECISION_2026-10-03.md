@@ -130,7 +130,7 @@ rev 1057910)
 - **Guards** (deferred constraint triggers): the balance equals the after value of its latest
   entry, and each entry's before equals the previous after; the units of an operation's input lines
   equal its credit, and the units of its output lines equal its debit; an operation has exactly the
-  entries and lines its kind needs; the character is a live root of the entry's World.
+  entries and lines its kind needs when its outcome is a success, and none when it is a refusal; the character is a live root of the entry's World.
 - **No cross-asset conversion** (a commit-time guard): an operation has exactly one entry, on
   exactly one balance row; the entry's (`definition_key`, `definition_revision`) equals that row's;
   and every item line of the operation has that same pair. For a stow, the pair is also the input
@@ -174,9 +174,15 @@ Anything else is `NOT_SUPPORTED`. Stackable and non-stackable wares are both adm
   - A stow inserts the row if absent (`ON CONFLICT DO NOTHING`), then locks it FOR UPDATE; the
     insert is part of the stow and commits only with it.
 - No `CharacterRevision` advance (§9).
-- **A refusal writes nothing.** A refused operation rolls back its whole transaction, any
-  provisional balance row included, and persists no zero-balance row. This departs from BANK-0
-  §4.1's zero row on purpose: a Stash refusal has no balance to fence.
+- **A refusal persists its outcome, and nothing else.** A refusal decided under the fence
+  (`NO_ROOM`, `STALE`, `SEALED`, `NOT_SUPPORTED`, an amount beyond the balance) rolls back to a
+  savepoint taken before any provisional change: balance values, a provisionally inserted balance
+  row, item retirements and output entries all go. The same transaction then inserts the
+  operation row (§3) with the refused outcome and commits it, with no entry and no item line. A
+  replay of the same occurrence and binding returns that first refusal; a changed binding
+  conflicts. No zero-balance row is persisted by a refusal, which departs from BANK-0 §4.1's zero
+  row on purpose: a Stash refusal has no balance to fence. A fence failure has no authority to
+  write and persists nothing.
 
 ### 5.2 Stow
 
@@ -200,8 +206,11 @@ Anything else is `NOT_SUPPORTED`. Stackable and non-stackable wares are both adm
 
 ## 6. Depot capacity (amends DEPOT-0 §3)
 
-- The counted depot total of a character is its depot entries plus, for each stash balance,
-  `ceil(quantity / 100)`.
+- The counted depot total of a character is its depot entries plus, for each `definition_key`,
+  `ceil(q / 100)`, where `q` is the sum of the quantities of that key's balance rows over the
+  revisions the active content declares compatible. A `MIGRATION_REQUIRED` row is summed on its
+  own. Splitting a key across compatible revisions therefore never costs extra slots. Value
+  ledgers, entries and rows stay separate per revision (§3).
 - DEPOT-1's deferred guard counts both, under the `character_root` lock it already holds, against
   `DEPOT0-RL-01`. The runtime applies the account limit to stows into the depot and into the Stash
   alike.
@@ -225,11 +234,13 @@ Anything else is `NOT_SUPPORTED`. Stackable and non-stackable wares are both adm
 
 - **Capability `STASH_V1`**, number reserved by the control plane before STASH-WIRE-1, requiring
   `DEPOT_V1`. Without it, the locker view shows no Stash.
-- The locker view lists the Stash beside the 17 boxes, with its row count.
+- The locker view lists the Stash beside the 17 boxes, with its row count: the balance rows with
+  `quantity > 0`. A row at 0 (a full withdraw) stays in the ledger and is never deleted; it is not
+  counted, not listed and has no handle, and a later stow credits it again.
 - **Pages.** A Stash target `StashPageTargetV1 {page}`, a new `UseIntentV1` field whose number
   STASH-WIRE-1 assigns under protocol review, opens one page in domain 11, as a box target does
   (DEPOT-0 §4.1).
-  - A page holds at most `DEPOT0-RL-02` (32) rows, ordered by (`definition_key`,
+  - A page holds at most `DEPOT0-RL-02` (32) rows with `quantity > 0`, ordered by (`definition_key`,
     `definition_revision`); the server reads at most `DEPOT0-RL-03` (1) page per open.
   - Each row carries `{definition_key, definition_revision, quantity, migration_required}` and a
     handle bound to the row's `last_entry_id`.
@@ -312,7 +323,8 @@ None. R2 follows Tibia; PREM-3 opens stowing with no further decision.
    acceptance, written by STASH-1.
 2. **Serialization:** one transaction per operation, Character fence and root lock, balance row
    last.
-3. **Restart:** balances and ledger are durable; a replayed occurrence returns the first outcome.
+3. **Restart:** balances, ledger and refused outcomes are durable; a replayed occurrence returns
+   the first outcome, a refusal included.
 4. **Typed references:** CharacterId, WorldId, definition key, amount, handles.
 5. **Wire:** §8, capability `STASH_V1`.
 6. **Split work:** one source item per stow; at most 20 outputs per withdraw; one page per view.

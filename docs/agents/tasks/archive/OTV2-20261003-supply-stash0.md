@@ -41,7 +41,12 @@ IMBUE-FORGE-0 with SUPPLY-STASH-0.
 - **Operations.** Stow one whole item from the backpack or a depot box (Premium, fail closed until
   PREM-3); withdraw up to 20 fresh outputs (no Premium). Both are `CONVERSION` lines under
   `StashConversionCause`, at a locker only.
-- **Capacity.** `ceil(quantity / 100)` per definition counts toward the depot limit.
+- **Capacity.** `ceil(q / 100)` per definition key, summed over compatible revisions, counts
+  toward the depot limit; only positive balances are counted and paged.
+- **Refusals.** A refused operation persists its operation row with the refused outcome (no entry,
+  no line, no zero row) so a replay returns it.
+- **Review round (Codex on b607bfd9).** P1 4173294933, P2 4173294936 and P2 4173294938, all fixed
+  in one push.
 - **Deferred.** Inbox stow, stow all, container stow, loot routing, filters, Market and imbuing
   sources, Steward, Cyclopedia summary, depot search.
 
