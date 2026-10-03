@@ -103,20 +103,22 @@ one ordinary summon (R1).
 - `game_character_familiar_state`: `character_id` (primary key), `familiar_remaining_ms`
   (0 = none), `cooldown_remaining_ms`, `open` (the clean-end discriminator), `revision`, and the
   writing `session_generation`.
-- **`open`.** The cast write sets `open = true`: a live familiar exists for that generation. A
-  clean session-end write and a removal write set `open = false`. So a row that is still
+- **`open`.** The cast write and the return write (§7) set `open = true`: a live familiar exists
+  for that generation. A clean session-end write and a removal write set `open = false`. So a row that is still
   `open = true` from an older generation at the next login was never closed: its session did not
   end cleanly.
 - **Remaining, not wall clock.** Both values are stored as time left, because both freeze while
   offline (R2). The runtime counts them down while the owner is online.
-- **Writes** are session-generation fenced Character writes: at the cast; at a clean session end
+- **Writes** are session-generation fenced Character writes: at the cast; at a return (§7); at a
+  clean session end
   (logout, channel transfer, the end of the in-fight deadline); and at removal (§7). A write from
   a stale generation is refused.
 - **Crash.** At login, the new session's fenced load reads the row. If `open = true` and its
   `session_generation` is older than the new one, the earlier session crashed: the load writes
   `familiar_remaining_ms = 0` and `open = false` under the new generation (the familiar is lost),
   and keeps `cooldown_remaining_ms` as last written, so a crash never shortens it. If
-  `open = false`, the row is a clean save and a positive `familiar_remaining_ms` returns (§7).
+  `open = false`, the row is a clean save and a positive `familiar_remaining_ms` returns (§7);
+  until that return is admitted the row stays `open = false`, and a crash before it loses nothing.
 - **Fencing and replay.** Every write is a compare-and-set on `revision` under the writer's
   session generation; a write from an older generation is refused and changes nothing. The cast
   write is part of the cast acquisition, so a retried cast command replays its first outcome and
@@ -153,7 +155,11 @@ one ordinary summon (R1).
 | crash | lost | 0 (§5) |
 
 A returning familiar is admitted by SUMMON-1's placement; with no free tile it stays stored and
-returns on the owner's next step that frees one (`PARITY_PENDING`).
+returns on the owner's next step that frees one (`PARITY_PENDING`). Every admission of a return,
+immediate or delayed, writes the state row in the same SUMMON-1 acquisition: `open = true` and the
+new session generation, by compare-and-set on `revision` (§5). The familiar and the reopened row
+commit together or not at all, so a crash after a return is seen as a crash at the next login,
+never as a clean save.
 
 ## 8. Wire
 
@@ -212,8 +218,9 @@ None. Every choice above is a reversible architect ruling under owner rule 59058
 1. **Contracts:** none amended.
 2. **Serialization:** the row is written in the cast acquisition and at session end, fenced by
    session generation.
-3. **Restart:** a clean end (`open = false`) keeps the familiar's time; a crash (`open = true`
-   from an older generation) loses the familiar and keeps the cooldown.
+3. **Restart:** a clean end (`open = false`) keeps the familiar's time; a return reopens the row
+   (`open = true`) in its admission; a crash (`open = true` from an older generation) loses the
+   familiar and keeps the cooldown.
 4. **Typed references:** CharacterId, spell id, creature key.
 5. **Wire:** none new (§8).
 6. **Split work:** one row per character; one familiar per owner.
