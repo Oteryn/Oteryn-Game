@@ -7,7 +7,7 @@ date: 2026-10-03
 owner: Sol Supervising Architect
 requested_by: control plane (D358 topic request after FAMILIARS-0-FIX-3)
 writes_on_other_prs: none
-amended_by: ARCH-PACKET-FIX-1 (§2.3 rows, §2.5 RL-04, §2.6 rows and the Light owner; #1687 round-3 P1s 4174692081 and 4174692089; #1689 P1s 4174761344, 4174761349, 4174781962 and 4174781965); ARCH-RT-CHECKPOINT-ROWS-1 (§1.1 and §2.3: the first item and the narrowed RT-1b scope; #1689 P1 4174803489; #1692 P1 4174859933)
+amended_by: ARCH-PACKET-FIX-1 (§2.3 rows, §2.5 RL-04, §2.6 rows and the Light owner; #1687 round-3 P1s 4174692081 and 4174692089; #1689 P1s 4174761344, 4174761349, 4174781962 and 4174781965); ARCH-RT-CHECKPOINT-ROWS-1 (§1.1 and §2.3: the first item and the narrowed RT-1b scope; #1689 P1 4174803489; #1692 P1s 4174859933 and 4174875997)
 ```
 
 This bundle splits and packets three requested topics:
@@ -78,9 +78,11 @@ EQUIP-RT-1". Most of it does not need those slices. The minimum-sufficient split
     audit event.
   - With this, soft boots worn at login run down and become worn soft boots. That is a playable
     effect without any move slice.
-  - **Narrowed (ARCH-RT-CHECKPOINT-ROWS-1).** RT-1b hosts at login and logout only (§2.3). The
-    respawn, arrival, slot, channel transfer and death call sites move to ITEM-MOVE-2a. The
-    exercise binding and the composed writers move to EXERCISE-1.
+  - **Narrowed (ARCH-RT-CHECKPOINT-ROWS-1).** RT-1b hosts at login and logout only (§2.3).
+    - The slot call sites move to ITEM-MOVE-2a.
+    - The exercise binding and the composed writers move to EXERCISE-1.
+    - `main` has no character channel transfer, death, respawn or arrival path. Whichever PR adds
+      one wires the timed host for it, as a merge condition (§2.3 Scope).
 - **RT-1c: everything that rides a move or a use.**
   - `SetDeadline`, `ClearDeadline`, `PutOut` and `Expire {Deadline}` (causes 4-7), the equip forms
     (§9.2) and the `Light` use form (§9.3).
@@ -338,7 +340,7 @@ owned_paths:
   - docs/contracts/RESOURCE_LIMITS_REGISTRY.json       # §12 checkpoint and expiry shape rows; RL-01/-02/-04/-05 only where #1681 did not register them; own rows only
   - docs/architecture/DUR-03_ITEM_TRANSACTION_AND_ANTI_DUPLICATION_CONTRACT.md  # §39.3 checkpoint and expiry shapes; own paragraphs only
   - docs/agents/tasks/archive/OTV2-20261003-timed-rt-1b.md
-call_sites: login and logout only call into timed_item_host; the worker names each file at allocation and adds only the call. Respawn, arrival, slot, channel transfer and death are ITEM-MOVE-2a's. It does not edit foundation/runtime_actor_carrier.rs while #1675 or #1682 is open.
+call_sites: login and logout only call into timed_item_host; the worker names each file at allocation and adds only the call. `main` has no character channel transfer, death, respawn or arrival path to call from; slot call sites are ITEM-MOVE-2a's (§2.3 Scope). It does not edit foundation/runtime_actor_carrier.rs while #1675 or #1682 is open.
 validation:
   - cargo fmt --all --check
   - cargo clippy --locked -p oteryn-game-server --all-targets --quiet -- -D warnings
@@ -357,11 +359,23 @@ Acceptance:
     expiry burn);
   - a `timed_item_host` lib wired at login and logout only.
 
-  Moved out of RT-1b:
-  - The respawn, arrival, slot, channel transfer and death call sites move to ITEM-MOVE-2a.
-  - The exercise binding (place 3) moves to EXERCISE-1, with the two composed writers (composed
-    checkpoint and composed expiry burn). Each of those slices carries what it receives here,
-    with its tests.
+  Moved out of RT-1b (#1692 P1 4174875997):
+  - **Slot call sites** (equip, unequip, swap) move to ITEM-MOVE-2a.
+    - An item moved into a slot stays non-live until ITEM-MOVE-2a wires the host.
+    - Leaving a slot drains its lane first.
+  - **The exercise binding** (place 3) moves to EXERCISE-1, with the two composed writers
+    (composed checkpoint and composed expiry burn).
+  - **Lifecycle paths: the owner is whichever PR adds them.** `main` has no character channel
+    transfer, death, respawn or arrival path. RT-1b therefore has no call site to wire for them,
+    and no live item can pass through one. The first PR that adds any of these paths must wire
+    the timed host for that path, as a merge condition, with tests:
+    - channel transfer and death drain every lane of the actor first (TIMED-ITEM-0B §6.1);
+    - respawn and arrival rehost the items in their slots (§5.1 place 2), from the last durable
+      checkpoint.
+
+    That PR may be ITEM-MOVE-2a, EXERCISE-1 or the lifecycle path's own slice.
+
+  Each receiving slice carries what it receives here, with its tests.
 - **First item: the checkpoint rows (#1689 P1 4174803489, D317 follow-up).**
   - #1681 (RT-1a) merged its checkpoint writer without the §12 checkpoint and composed checkpoint
     shape rows. RT-1b's first commit registers both, before any other RT-1b work.

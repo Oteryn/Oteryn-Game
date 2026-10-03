@@ -47,8 +47,13 @@ without the §12 checkpoint and composed checkpoint shape rows.
   - the five §12 rows;
   - a `timed_item_host` lib wired at login and logout only.
 
-  The respawn, arrival, slot, channel transfer and death call sites move to ITEM-MOVE-2a. The
-  exercise binding and the composed writers move to EXERCISE-1.
+  The slot call sites move to ITEM-MOVE-2a. The exercise binding and the composed writers move to
+  EXERCISE-1.
+- **#1692 round 2 (Codex, `802d87b3`), the last under D317.** P1 4174875997: the lifecycle
+  calls had no owner. `main` has no character channel transfer, death, respawn or arrival path,
+  and the packet now says so. The first PR that adds one of those paths must wire the timed-host
+  drain or rehost (TIMED-ITEM-0B §5.1, §6.1) as a merge condition. That PR may be ITEM-MOVE-2a,
+  EXERCISE-1 or the path's own slice.
 
 This changes no code, no contract, no wire and no resource value.
 
