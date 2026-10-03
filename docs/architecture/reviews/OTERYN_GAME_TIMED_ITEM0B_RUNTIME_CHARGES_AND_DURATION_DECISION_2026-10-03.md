@@ -165,8 +165,12 @@ container, HTTP 402)
 - **Live items.** An item is live only in one of these places, and only while its holder's actor
   is in the world on the hosting runtime (the ChannelRuntime, or the house scope that hosts it):
   1. an `on_equip` active form in its definition's `CharacterEquipment` slot (rings, soft boots);
-  2. a charged item that is active under §11.1 in its slot (charged amulets and rings): its
-     charges are live, spent only by §7;
+  2. a charged item in its definition's `CharacterEquipment` slot that meets EQUIP-0 §3.2's other
+     conditions (requirements met at equip, Premium held now), with charges above 0 (charged
+     amulets and rings): its charges are live, spent only by §7.
+
+  Live eligibility is decided from these placement and ownership facts alone, at equip, login,
+  respawn and transfer; §11.1 then derives "active" from "live", never the reverse.
   3. an exercise weapon bound to a running EXERCISE-0 session (charges only);
   4. a `continuous` lit form in a `CharacterEquipment` slot (carried torches, §10).
 
