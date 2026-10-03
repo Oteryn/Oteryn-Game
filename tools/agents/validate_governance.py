@@ -445,7 +445,10 @@ ARCHIVE_REQUIRED_VALIDATION = (
 )
 # The text after the command on its line states the result on the candidate.
 ARCHIVE_PASS_RESULT = re.compile(r"(?i)\b(?:pass|passed|ok)\b")
-ARCHIVE_NOT_PASSED = re.compile(r"(?i)\b(?:fail\w*|error\w*|not run|pending|skipped)\b")
+ARCHIVE_NOT_PASSED = re.compile(
+    r"(?i)\b(?:fail\w*|error\w*|not run|pending|skipped)\b"
+    r"|\b(?:not|never|no|did\s+not|didn't|does\s+not|doesn't)\s+(?:pass\w*|ok)\b"
+)
 
 
 def validate_archived_task_closeout(errors: list[str]) -> None:
