@@ -116,18 +116,21 @@ or the GOLD-FEE-2 bank part.
   - The composition amendment (rule 1 covers the acting character's dust rows; lock order: rule
     4's, then the dust row).
   - The DUR-03 §18 naming of forge dust.
-  - The `DustLimit` operation with its receipt keyed by (occurrence, character), its revision
-    binding and its terminal `REVISION_CHANGED` record (IMBUE-FORGE-0 §10).
+  - The `dust_limit` column (initial 100, `IMBFORGE0-RL-08`). Nothing in FORGE-1a raises it;
+    the `CONVERT` and `LIMIT_RAISE` entry kinds are reserved for FORGE-1b.
   - A `SPEND` API with a closed spending cause, and the `GAIN` writer with a closed cause
     reserved for FORGE-CREATURE-1. Production wires no gain yet; PostgreSQL cases exercise it.
+- **`DustLimit` is a forge operation, so it is FORGE-1b's.** IMBUE-FORGE-0 §10 gives every forge
+  operation a `ForgeCause`, its DUR-03 §15/§39.3 admission and a history row (`IMBFORGE0-RL-12`).
+  Splitting those from the other forge operations would build the forge operation frame twice.
 - **The dust limit price is a ruleset formula, not content.**
   - Raising the limit by one costs (limit − 75) dust, up to 225 (`IMBFORGE0-RL-08`, Canary,
     `PARITY_PENDING`).
   - It is bound by the ruleset/formula revision of the occurrence (IMBUE-FORGE-0 §10), so
-    FORGE-1a needs no FORGE-CONTENT-1.
-- **FORGE-1b: everything else in IMBUE-FORGE-0 §8-§10.** The tier table, fusion, convergence,
-  transfer, the conversions, `ForgeCause`, the `FeeBurnCause` forge variants, the history and the
-  forge DUR-03 rows. It keeps the original FORGE-1 dependencies.
+    `DustLimit` needs no FORGE-CONTENT-1 row.
+- **FORGE-1b: everything else in IMBUE-FORGE-0 §8-§10.** `DustLimit`, the tier table, fusion,
+  convergence, transfer, the conversions, `ForgeCause`, the `FeeBurnCause` forge variants, the
+  history and the forge DUR-03 rows. It keeps the original FORGE-1 dependencies.
 
 ### 1.4 PROF-SHAPE-1b replaces 0055's zero-cost pin
 
@@ -179,7 +182,8 @@ ARCHITECTURE_DECISION_DISCIPLINE.md applies to each ruling above.
 - Problem: PROF-SHAPE-1b needs only dust (D394), but FORGE-1 waits on FORGE-CONTENT-1,
   GOLD-FEE-2 and ITEM-MOVE-2a.
 - Constraints: IMBUE-FORGE-0 §9-§10 and §15; BANK-0 §3; DUR-03 §28.
-- Options: (a) one FORGE-1; (b) FORGE-1a (dust and `DustLimit`) now, FORGE-1b later.
+- Options: (a) one FORGE-1; (b) FORGE-1a (the dust asset only) now, FORGE-1b (every forge
+  operation, `DustLimit` included) later.
 - Trade-offs: (a) one review, but PROF-SHAPE-1b waits on three unrelated slices; (b) one more
   packet, and PROF-SHAPE-1b is unblocked.
 - Risks: a dust schema FORGE-1b must change. Mitigation: FORGE-1a implements IMBUE-FORGE-0 §9 as
@@ -209,7 +213,7 @@ ARCHITECTURE_DECISION_DISCIPLINE.md applies to each ruling above.
 
 ```yaml
 task_id: OTV2-20261003-forge-1a
-decision: IMBUE-FORGE0 §9, §10 (DustLimit only); this bundle §1.3
+decision: IMBUE-FORGE0 §9 (the dust asset; no forge operation); this bundle §1.3
 worker: oteryn-hard-worker   # persistence, a new value asset
 review: independent persistence and economy review (Codex, final frozen head)
 branch: claude/forge-1a-20261003
@@ -226,7 +230,7 @@ owned_paths:
   - apps/game-server/tests/character_forge_dust_postgres.rs
   - apps/game-server/tests/support/character_forge_dust_postgres_cases.rs
   - apps/game-server/tests/durability_postgres.rs      # shared register (§0)
-  - docs/contracts/RESOURCE_LIMITS_REGISTRY.json       # IMBFORGE0-RL-03, -RL-08, -RL-11, DUR03-RL-03-FORGE, the DustLimit DUR03-RL-06 rows; own rows only
+  - docs/contracts/RESOURCE_LIMITS_REGISTRY.json       # IMBFORGE0-RL-08; own rows only
   - docs/architecture/DUR-03_ITEM_TRANSACTION_AND_ANTI_DUPLICATION_CONTRACT.md  # §18 forge dust; own paragraphs only
   - the composition decision's rule 1 paragraph (the file BANK-0 §7.2 amended; named at allocation)
   - docs/agents/tasks/archive/OTV2-20261003-forge-1a.md
@@ -248,29 +252,14 @@ Acceptance:
   - Grants as BANK-0 §3: the runtime role never deletes.
 - **Gain above the limit.** A gain above the limit credits up to the limit and records the lost
   part in the entry (IMBUE-FORGE-0 §9).
-- **`DustLimit` operation.**
-  - It costs (limit − 75) dust and raises the limit by 1, in one transaction with one receipt.
-  - A replay of the same occurrence returns the receipt and writes nothing.
-  - A changed ruleset revision gives a terminal `REVISION_CHANGED` that every later replay
-    returns.
-  - Refusals (insufficient dust, the limit at 225) come before the transaction and write nothing.
-- **Rows registered here** (IMBUE-FORGE-0 §15, DUR-03 §28), each with max and max+1 tests:
-  - `IMBFORGE0-RL-08` dust limit, 100-225;
-  - `IMBFORGE0-RL-03` forge operations in flight per actor, 1 (`DustLimit` is the first forge
-    operation);
-  - `DUR03-RL-03-FORGE` value lines, 3 (IMBUE-FORGE-0 §15); `DustLimit` uses 2 (the dust `SPEND`
-    and the limit raise);
-  - `DUR03-RL-06-FORGE-DUSTLIMIT-PARTICIPANTS`, 0: `DustLimit` touches no ItemInstance and the
-    Character is the actor, as `DUR03-RL-06-PARTICIPANTS` counts; a plan with a participant is
-    rejected;
-  - `DUR03-RL-06-FORGE-DUSTLIMIT-EFFECT-WORK-UNITS`, 2: the dust `SPEND` and the limit raise;
-    3 rejected;
-  - `IMBFORGE0-RL-11` operation ambiguity bound, 2,000 ms.
-  FORGE-1b reuses `IMBFORGE0-RL-03` and `DUR03-RL-03-FORGE` and registers its own shapes' rows.
-- **Tests.** Lock order: rule 4's locks, then the dust row; a
-  concurrent spend and gain serialize. An ambiguous commit is reconciled from the receipt
-  (`IMBFORGE0-RL-11`).
-- **Not in scope.** Tiers, fusion, transfer, conversions (FORGE-1b), the wire (FORGE-WIRE-1),
+- **No forge operation.** FORGE-1a writes no `ForgeCause`, receipt or history. `SPEND` and `GAIN`
+  run inside the caller's transaction under the caller's cause, receipt and DUR-03 admission
+  (PROF-SHAPE-1b's `ProficiencyCause`, later FORGE-1b and FORGE-CREATURE-1).
+- **Rows.** `IMBFORGE0-RL-08` (dust limit 100-225) is registered here, with tests that 100 and 225
+  are accepted and 99 and 226 rejected by the CHECK.
+- **Tests.** Lock order: rule 4's locks, then the dust row; a concurrent spend and gain
+  serialize. A `SPEND` above the balance is refused before any write.
+- **Not in scope.** `DustLimit`, tiers, fusion, transfer, conversions (FORGE-1b), the wire (FORGE-WIRE-1),
   dust from kills (FORGE-CREATURE-1) and the proficiency sink (PROF-SHAPE-1b).
 
 ### 2.2 PROF-SHAPE-1b
@@ -447,13 +436,17 @@ owned_paths:
   - apps/game-server/tests/item_forge_postgres.rs
   - apps/game-server/tests/support/item_forge_postgres_cases.rs
   - apps/game-server/tests/durability_postgres.rs      # shared register (§0)
-  - docs/contracts/RESOURCE_LIMITS_REGISTRY.json       # DUR03-RL-01-FORGE, IMBFORGE0-RL-07/-12, the tier, fusion, transfer and conversion DUR03-RL-06 rows; own rows only (RL-03 and DUR03-RL-03-FORGE are FORGE-1a's)
+  - docs/contracts/RESOURCE_LIMITS_REGISTRY.json       # DUR03-RL-01/-03-FORGE, IMBFORGE0-RL-03/-07/-11/-12, the forge DUR03-RL-06 rows (DustLimit included); own rows only
   - docs/architecture/DUR-03_ITEM_TRANSACTION_AND_ANTI_DUPLICATION_CONTRACT.md  # §15 ForgeCause, §39.3 forge shapes; own paragraphs only
   - docs/agents/tasks/active/OTV2-YYYYMMDD-forge-1b.md
 validation: as FORGE-1a, with --test item_forge_postgres
 ```
 
-Acceptance: IMBUE-FORGE-0 §8-§10 operation by operation:
+Acceptance: IMBUE-FORGE-0 §8-§10 operation by operation, `DustLimit` included:
+
+- `DustLimit` costs (limit − 75) dust and raises the limit by 1 under `ForgeCause::DustLimit`,
+  with one receipt and one history row; a replay returns the receipt; refusals (insufficient dust,
+  the limit at 225) come before the transaction;
 
 - each operation's lines are in one transaction;
 - costs are spent on failure;

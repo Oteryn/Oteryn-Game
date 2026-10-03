@@ -35,9 +35,9 @@ external_repositories: []
   - EQUIP-RT-1 is not an RT-1b dependency.
 - **`show_count` (D397).** TIMED-WIRE-1 adds a server-authoritative-only item group, so the
   client projection is unchanged. It starts after carrier #1675.
-- **FORGE-1 is split at the dust asset.** FORGE-1a covers the balance, ledger, composition,
-  DustLimit and the gain and spend APIs; the dust limit price is a ruleset formula. It can start
-  now. FORGE-1b keeps the original dependencies. PROF-SHAPE-1b follows FORGE-1a and #1685.
+- **FORGE-1 is split at the dust asset.** FORGE-1a covers the balance, ledger, composition
+  and the gain and spend APIs, with no forge operation. It can start now. FORGE-1b adds every
+  forge operation, `DustLimit` included (its price is a ruleset formula), and keeps the original dependencies. PROF-SHAPE-1b follows FORGE-1a and #1685.
 - **Proposed leases.** Migrations 0058 (RT-1b), 0059 (FORGE-1a), 0060 (PROF-SHAPE-1b),
   0061 (FORGE-1b) and 0062 (RT-1c). TIMED-WIRE-1 keeps capability 11 (D353). Cap 12, cmd 21 and
   domain 14 stay free.
@@ -47,6 +47,10 @@ external_repositories: []
   and test for each ruling. 4174637294: FORGE-1a registers `IMBFORGE0-RL-03`,
   `DUR03-RL-03-FORGE` and the DustLimit `DUR03-RL-06` rows. 4174637298: PROF-SHAPE-1b lists
   `DUR03-RL-06-PROF` (1 / 4).
+- **Codex round 2 (2 × P1), fixed in one push.** 4174663367 and 4174663373: `DustLimit` needs
+  `ForgeCause`, its DUR-03 admission and a history row, so it moves to FORGE-1b with its rows
+  (`IMBFORGE0-RL-03/-11`, `DUR03-RL-03-FORGE`, its `DUR03-RL-06` rows). FORGE-1a keeps the dust
+  asset and `IMBFORGE0-RL-08`.
 
 ## Validation
 
