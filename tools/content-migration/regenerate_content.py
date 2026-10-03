@@ -55,6 +55,7 @@ HAND_MAINTAINED_PREFIXES = ("imports/",)
 HAND_MAINTAINED = ("content/interactions/index.json",)
 
 AUTHORING_TOOLS = (
+    "tools/content-schema/imbuement-authoring/imbuement_content.py",
     "tools/content-schema/charm-authoring/charm_authoring.py",
     "tools/content-schema/proficiency-authoring/proficiency_authoring.py",
     "tools/content-schema/reward-claim-authoring/reward_claim_authoring.py",
