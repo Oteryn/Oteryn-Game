@@ -30,7 +30,7 @@
 | Child | Worker | Builds | Depends on |
 |---|---|---|---|
 | ACH-QUEST-1 | impl, persistence review | the `achievement` field on a quest transition and its grant in the transition transaction (§3.2) | QUEST-STATE-1 |
-| ACH-ENC-1 | impl, persistence review | the `achievement` outcome consumer of an encounter (§3.3) | ENC-OUTCOME-1 |
+| ACH-ENC-1 | hard (persistence), persistence review | the `achievement` outcome consumer of an encounter and its durable outcome receipt table (§3.3) | ENC-OUTCOME-1 |
 | ACH-COUNTER-1 | impl, persistence review | the batch grant API (§3.1), the threshold table and the grant at a counter's durable commit, first for level and skill receipts (§3.4) | the XP receipt; SKILLS-0's build receipts |
 | ACH-NOTIFY-1 | impl, protocol review | capability 8 `ACHIEVEMENT_NOTICES_V1` and state domain 13 `ACCOUNT_ACHIEVEMENT_NOTICES` in the FND-02 registry, with the delta after a `Granted` commit (§5) | the FND-02 state-domain path |
 | ACH-COVERAGE-1 | content tooling | the coverage report (§4) in `validate_achievements.py` | none |
@@ -143,9 +143,20 @@ single-owner, same-transaction rule.
 
 - **Binding.** An encounter manifest may bind an outcome name to the `achievement` consumer with
   one key (the `achievement_domain` block already authored in the Tirecz sample).
-- **Grant.** For each credited CharacterId, the consumer commits one fenced transaction of that
-  character with source `(oteryn:encounter-outcome, H(outcome key, character_id))`. That
-  transaction holds only the grant, and nothing else changes.
+- **Grant on a durable earning commit.** For each credited CharacterId, the consumer commits one
+  fenced transaction of that character that composes two writes:
+  - **the occurrence receipt**: one immutable row in `game_character_encounter_outcome_receipts`
+    (ACH-ENC-1): `character_id`, the outcome key `(encounter instance, occurrence sequence, action
+    index)`, the outcome name, the boss death key when there is one, and the commit time; unique
+    per (outcome key, `character_id`); never updated or deleted; `oteryn_game_runtime` SELECT and
+    INSERT only;
+  - **the grant**, with source `(oteryn:encounter-outcome, H(outcome key, character_id))`.
+
+  The receipt is the earning event's durable commit (§3.1, and the `0021` invariant that a grant
+  request rides its granting event's transaction and fence). A deferred guard refuses a grant with
+  source `oteryn:encounter-outcome` whose transaction has not inserted the matching receipt. A
+  replay finds the receipt and grants nothing new; a crash before the commit leaves neither. No
+  asynchronous grant exception is defined.
 - **Delivery.** It follows ENCOUNTER-RT-0 §6.4:
   - a reward-boss death outcome resumes from its death record after a restart;
   - every other outcome is at most once. Its achievement is lost with the fight on a crash, as the
@@ -209,8 +220,12 @@ single-owner, same-transaction rule.
   The numbers are the control plane's next free leases in STATE (cmd 14, domain 13, cap 8). This
   decision uses domain 13 and cap 8 and no command type.
 - **The domain's state** is the account's achievement watermark: `fact_count` and `total_points`
-  (the display contract's watermark), with the domain revision equal to the session's count of
-  `Granted` notices since its last snapshot.
+  (the display contract's watermark).
+- **Revision (FND-02 §15).** The domain revision is one cumulative, monotonic `uint64` per
+  GameSession: 0 at the session's initial snapshot, plus 1 for each delta sent. It is never reset,
+  reused or wound back, not at a resync snapshot and not at a reconnect within the same
+  GameSession. Every snapshot carries the current revision, and the next delta's `base_revision`
+  equals it. A new GameSession starts its own stream.
 - **When.** After a granting transaction commits with `Granted`, and only then, the earning
   character's live session, if it selected capability 8, receives one delta for each `Granted`
   outcome, in the session's server sequence after the commit, under the session's current
@@ -304,4 +319,7 @@ owner contract.
    contracts.
 3. **Split work:** ACH-QUEST-1, ACH-ENC-1, ACH-COUNTER-1, ACH-NOTIFY-1, ACH-COVERAGE-1.
 4. **Rows:** `ACHIEVEMENT0-RL-01` grant requests per call = 64.
-5. **Wire:** capability 8 and state domain 13 (§5), registered by ACH-NOTIFY-1.
+5. **Wire:** capability 8 and state domain 13 (§5), registered by ACH-NOTIFY-1; the domain
+   revision is cumulative per GameSession.
+6. **Persistence:** the encounter outcome receipt (§3.3) is the one new table, written by
+   ACH-ENC-1 in the grant's transaction.

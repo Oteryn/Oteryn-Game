@@ -38,11 +38,15 @@ progression lane as the runtime owner.
   `record_achievement_grant`:
   - quest transitions gain an optional `achievement` field, which also covers map and dialogue
     interactions;
-  - encounter outcomes bind an `achievement` consumer;
+  - encounter outcomes bind an `achievement` consumer, whose grant rides a durable per-character
+    outcome receipt in the same transaction;
   - counter thresholds grant at the counter owner's durable commit, first for level and skills.
 - **Coverage.** A coverage report lists unearnable keys.
-- **Notification.** A post-commit `ACHIEVEMENT_EARNED_V1` push announces only a `Granted` fact.
+- **Notification.** A post-commit delta of state domain 13 (capability 8) announces only a
+  `Granted` fact; the domain revision is cumulative per GameSession and never reset at a snapshot.
 - **Unchanged.** The reward-claim grant, the chest `USE` path and both contracts.
+- **Review round (Codex on c2f2547d).** P1 4173296253 (durable earning commit for encounter
+  grants) and P1 4173296257 (cumulative notice revision); both fixed in one push.
 
 ## Architecture and source of truth
 
