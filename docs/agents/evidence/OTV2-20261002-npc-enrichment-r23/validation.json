@@ -1,0 +1,304 @@
+{
+  "scope": "BASIC_AUTHORING_READY_APPROXIMATE_NOT_GAMEPLAY_OR_CANONICAL_COMPLETE",
+  "baseline_head": "3f3cacd8e38353e5f821498657a931ccbf5f7934",
+  "counts": {
+    "actors": 133,
+    "basic_components": 532,
+    "source_component_upgrades": 13,
+    "original_component_replies": 296,
+    "retained_components": 223,
+    "source_inferred_new_roles": 7,
+    "project_default_new_roles": 21,
+    "source_informed_approximate_appearances": 99,
+    "neutral_project_appearances": 13,
+    "source_selected_dialogues": 96,
+    "original_only_dialogues": 37,
+    "unselected_roles": 0,
+    "appearance_placeholders": 0,
+    "basic_dialogue_placeholders": 0
+  },
+  "npc_catalogue": 1282,
+  "dialogue_catalogue": 836,
+  "wiki_known_professions": 47,
+  "wiki_unknown_professions_preserved": 86,
+  "source_inferred_roles_total": 65,
+  "project_default_roles": 21,
+  "literal_donor_appearances": 21,
+  "runtime_loaded": 0,
+  "interaction_smoke_passed": 0,
+  "checks": {
+    "phase": "AUTHORING",
+    "result": "PASS",
+    "checks": [
+      {
+        "check": "prepare",
+        "exit_code": 0,
+        "log_sha256": "489866bf6ff062366b54765d49c99061a1ce90da6856e44398a57d0221c2ca2f",
+        "command": [
+          "/workspace/npc-r7-work/presentation/venv/bin/python",
+          "tools/content-schema/npc-authoring/bulk_workbench.py",
+          "prepare",
+          "--workdir",
+          "/workspace/npc-enrichment-r23/workbench"
+        ]
+      },
+      {
+        "check": "format",
+        "exit_code": 0,
+        "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "command": [
+          "cargo",
+          "fmt",
+          "--all",
+          "--check"
+        ]
+      },
+      {
+        "check": "clippy",
+        "exit_code": 0,
+        "log_sha256": "984a0050d7b0091cd2c5701c8ec6e6b74b8587417704637c594d8849234b24a1",
+        "command": [
+          "cargo",
+          "clippy",
+          "--offline",
+          "--locked",
+          "--quiet",
+          "-p",
+          "oteryn-game-server",
+          "--all-targets",
+          "--",
+          "-D",
+          "warnings"
+        ]
+      },
+      {
+        "check": "native",
+        "exit_code": 0,
+        "log_sha256": "dcd7f21b7b4e4273b0fae2f469778fcfddc7fa21469388085fe8060b4456427e",
+        "command": [
+          "cargo",
+          "test",
+          "--offline",
+          "--locked",
+          "--quiet",
+          "-p",
+          "oteryn-game-server",
+          "--example",
+          "materialize_content_world_project_v2",
+          "--test",
+          "content_world_project_repository",
+          "--test",
+          "content_native_entry_room"
+        ]
+      },
+      {
+        "check": "stage",
+        "exit_code": 0,
+        "log_sha256": "69b3e11ae65851b76a2e665a0561e0d5ed1bdf34a59169374910e09636f480ab",
+        "command": [
+          "/workspace/npc-r7-work/presentation/venv/bin/python",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tools/content-migration",
+          "-p",
+          "test_npc_bulk_finish.py"
+        ]
+      },
+      {
+        "check": "successor-validate",
+        "exit_code": 0,
+        "log_sha256": "888db9e97c139e244f281dd6246ac1d7ac102bde8e4ddf43fbfdcd9bfd982305",
+        "command": [
+          "/workspace/npc-r7-work/presentation/venv/bin/python",
+          "tools/content-migration/validate_world_project_v2_to_tree.py"
+        ]
+      },
+      {
+        "check": "successor-test",
+        "exit_code": 0,
+        "log_sha256": "a51bf448332667ae7a481793ecc857e07293b12931ac7c5175f916eb9ea2de2e",
+        "command": [
+          "/workspace/npc-r7-work/presentation/venv/bin/python",
+          "tools/content-migration/test_world_project_v2_to_tree.py"
+        ]
+      },
+      {
+        "check": "workbench",
+        "exit_code": 0,
+        "log_sha256": "46c8014dac72eec691501d504fda95fafeb4fe51b7db90753ca9acdbb9a28dd4",
+        "command": [
+          "/workspace/npc-r7-work/presentation/venv/bin/python",
+          "tools/content-schema/npc-authoring/bulk_workbench.py",
+          "check",
+          "--workdir",
+          "/workspace/npc-enrichment-r23/workbench"
+        ]
+      },
+      {
+        "check": "authoring-smoke",
+        "exit_code": 0,
+        "log_sha256": "dd06a044ce8759b16bee85425c29057f90d6eea46b537e052600303b3c0c270b",
+        "command": [
+          "/workspace/npc-r7-work/presentation/venv/bin/python",
+          "tools/content-schema/npc-authoring/bulk_workbench.py",
+          "smoke",
+          "--workdir",
+          "/workspace/npc-enrichment-r23/workbench"
+        ]
+      },
+      {
+        "check": "governance",
+        "exit_code": 0,
+        "log_sha256": "ed5de0b194f14550187fbb13e78364869d9be5848032f691f807fecb2abe0a1f",
+        "command": [
+          "/workspace/npc-r7-work/presentation/venv/bin/python",
+          "tools/agents/validate_governance.py"
+        ]
+      },
+      {
+        "check": "governance-tests",
+        "exit_code": 0,
+        "log_sha256": "ff981689a00cb4d34aba8869cc4270222014451139c31dffbab4820f76dec3f9",
+        "command": [
+          "/workspace/npc-r7-work/presentation/venv/bin/python",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tools/agents/tests"
+        ]
+      },
+      {
+        "check": "diff",
+        "exit_code": 0,
+        "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "command": [
+          "git",
+          "diff",
+          "--check"
+        ]
+      }
+    ]
+  },
+  "previous_stage_checks": [
+    {
+      "log": "previous-original-stage.log",
+      "sha256": "0f875586b2ea6d91d7e81c1fd56f66fc34d797fa4ab7924ebd1fcecbbeee2b4e",
+      "passed": 7
+    },
+    {
+      "log": "previous-enrichment-stage.log",
+      "sha256": "4c342a8263eb5114cec4a93c5122a0a281078b79e2f41817f66351d6c1b4c540",
+      "passed": 5
+    },
+    {
+      "log": "previous-followup-stage.log",
+      "sha256": "4a37ea6efeb8f4a6eae7065c90bed5e4841ec906c23b3f9ad98611c7d58395e1",
+      "passed": 5
+    }
+  ],
+  "full_fast_parity": {
+    "result": "PASS",
+    "canonical_documents": 11,
+    "tree_sha256": "c6a6e609c63e8965bce3ceb08df2681f4d00c0182384193fa68a3cd3ff64cb28",
+    "full_log_sha256": "620f3bab32eec672649cf09b5d2289cab2616e132bfb66acc587c38e18c4db6a",
+    "fast_log_sha256": "526184d85bdbb1908fc7db42dfa686b0a9aabc2d56d4b3b785b0b9e758af3a61"
+  },
+  "generation_preservation": {
+    "result": "PASS",
+    "tree_sha256": "c6a6e609c63e8965bce3ceb08df2681f4d00c0182384193fa68a3cd3ff64cb28",
+    "documents": [
+      {
+        "path": "assets/catalog.json",
+        "bytes": 56,
+        "sha256": "fa61df1076ef66e8c69b6182db1b13fe2ccb92653ab16a148d1fbaf773adb344"
+      },
+      {
+        "path": "content.lock.json",
+        "bytes": 415,
+        "sha256": "419a4a797edfd366395ff61f34235a364f70e79bafc3c1e3573e39384a2d77f3"
+      },
+      {
+        "path": "definitions/declarations.json",
+        "bytes": 19959864,
+        "sha256": "9c2587d3b5fca686d4771687964e5c6628d13ed17fbee93b08dcc9fed74e8e33"
+      },
+      {
+        "path": "definitions/reference.json",
+        "bytes": 22591819,
+        "sha256": "e96cbd5baa1690a54d73ecde228c18008f16b6cf352bc5001bf8b3fac45b9a97"
+      },
+      {
+        "path": "editor/author.json",
+        "bytes": 120557,
+        "sha256": "14c6e3163baf17096545daa897a866df0b5ee23721c26312867ffa73447bbfdb"
+      },
+      {
+        "path": "manifest.json",
+        "bytes": 1954,
+        "sha256": "f0ea16cd16c4d1137b3a24de3fb084a5d434e561657eb709c1a36e100d39da8c"
+      },
+      {
+        "path": "presentations/bindings.json",
+        "bytes": 73,
+        "sha256": "b7d27b2d7fde6370b7ae56c2c60412f2b213a4a5e92e7db82dd4b59a64359cd7"
+      },
+      {
+        "path": "project.json",
+        "bytes": 407,
+        "sha256": "34df5d660fda3e852b37833b970768edd5e3a22935771b7d10a1ca65e4520842"
+      },
+      {
+        "path": "provenance/imports.json",
+        "bytes": 41360,
+        "sha256": "27cb79a06ac9ade63e9a447dc35e44b4267510c0d5fca0bccb40c383ac31e595"
+      },
+      {
+        "path": "provenance/sources.json",
+        "bytes": 1425775,
+        "sha256": "1ccf2a4b85d78540e142e991b42f4c005e236478dd74ac95c488b2d9c8750c9b"
+      },
+      {
+        "path": "worlds/world.json",
+        "bytes": 72,
+        "sha256": "0dcc223c4a904834a58b3ad2b1c7882636cc66c9123aafdb25bb69a1d4670dfa"
+      }
+    ],
+    "changed_declarations": 266,
+    "changed_profiles": 99,
+    "unrelated_declarations_profiles_sources_imports_assets_world_editor_preserved": true,
+    "closed_declaration_repairs": 266,
+    "closed_profile_repairs": 112
+  },
+  "independent_authoring_reviews": {
+    "source-review.json": {
+      "sha256": "7ff0badc9e6323ae964023faa5e5a67c0475fd4c10d2b7921d7e9d85be4917c1",
+      "verdict": "PASS"
+    },
+    "native-review.json": {
+      "sha256": "eccfc3809a6cf0f6dbc722750bbe986701b68ebd3d61bb72e1aa0f4fc025fb55",
+      "verdict": "PASS_BOUNDED_NATIVE_SCOPE_REVIEW"
+    }
+  },
+  "native_cases": {
+    "materializer_passed": 78,
+    "repository_passed": 4,
+    "map_mechanics_passed": 2,
+    "map_real_issued_world_ignored": 1,
+    "npc_interactions_passed": 0
+  },
+  "source_access": {
+    "public_git_http": "New pinned source/template/transcript reads plus retained Canary/Crystal/wiki",
+    "tibiasecrets": "FreshMozillaUAHTTP200index+4pages; differentUA403",
+    "tibiawiki_br": "NormalHTTP403 thenRemoteDesktop+realChrome+CDP18completepublicarticle reads includinghiddenDOM",
+    "tibiopedia": "Fresh200setup page excluded; retained publiccaptures",
+    "remote_computer_scope": "Onlybrowserlaunch/control/publicarticle reads; noproject/system/privatefile/install/build/cleanup actions"
+  },
+  "limits": [
+    "Source unknowns preserved; original project replies nottranscripts; template actor nottargetequivalence",
+    "All133 completeonlybasic authoringchoices; nativeplacement/services/quests/interaction/ambientscheduling deferred",
+    "Formal coordinator review/protectedCI/currentmain integration/MQ pending; no live activation or new runtimelease"
+  ]
+}

@@ -1,60 +1,58 @@
 {
   "admission_main": "ec0e12a7927dcd4d98f7d1151f6b8ee100c1b65c",
   "authoring_profile_counts": {
-    "Ability": 7060,
-    "Behavior": 2873,
-    "Creature": 1763,
-    "Effect": 5507,
-    "Encounter": 104,
-    "Formula": 5823,
-    "Loot": 40,
-    "Presentation": 2873
+    "Ability": 6000,
+    "Behavior": 2785,
+    "Creature": 1503,
+    "Effect": 4599,
+    "Encounter": 61,
+    "Formula": 4905,
+    "Loot": 23,
+    "Presentation": 2785
   },
   "editor_entry_counts": {
     "Item": 165,
     "Mount": 252
   },
   "family_counts": {
-    "Ability": 7060,
-    "Behavior": 2873,
+    "Ability": 6000,
+    "Behavior": 2785,
     "Charm": 25,
-    "Creature": 1763,
-    "Dialogue": 694,
-    "Document": 1609,
-    "Effect": 5507,
-    "Encounter": 104,
-    "Formula": 5823,
+    "Creature": 1503,
+    "Dialogue": 836,
+    "Effect": 4599,
+    "Encounter": 61,
+    "Formula": 4905,
     "Item": 34031,
-    "Loot": 1254,
+    "Loot": 1056,
     "Mount": 252,
-    "NPC": 1110,
-    "Presentation": 2873,
+    "NPC": 1282,
+    "Presentation": 2785,
     "Proficiency": 443,
-    "Quest": 352,
-    "RewardClaim": 336,
+    "RewardClaim": 231,
     "Service.Trade": 324,
     "Service.Travel": 56,
     "StarterKit": 1
   },
   "item_authoring_counts": {
-    "authoring": 700,
-    "relation_sources": 880,
-    "taxonomy": 12252
+    "authoring": 164,
+    "relation_sources": 147,
+    "taxonomy": 164
   },
   "legacy_blobs": {
-    "declarations": "803ee25def726a8df3a1658d9b0d3f5c4b3d4c8d",
+    "declarations": "bf2dc678b308b57881f5b6e386df3a3c4dd78795",
     "editor": "ec0ee6cb9195cb6db3f12b1f226fbbf0cac536e7",
-    "imports": "a8030abd08237f9687bca15ff7b5348217797865",
-    "reference": "399481eabaf96f531921ff910b1b168f5690a733",
-    "sources": "795d778f166d826b6a794c52ddc91363fc7bd3cb"
+    "imports": "4f1b4e2a2256868b5597ca05c9aa4dd7ad5ca280",
+    "reference": "b03100bbe7d3ff51f499da27ce051f9774081829",
+    "sources": "b303d302f53592bac2af0dfb356c54b56817a101"
   },
   "project_revision": "tree-npc-reviewed-definitions-r1",
   "schema": "OTERYN_GAME_CONTENT_TREE_LOCK/v1",
   "source_binding_counts": {
-    "Creature": 1763,
-    "Encounter": 104,
-    "Item": 454,
+    "Creature": 1503,
+    "Encounter": 61,
+    "Item": 165,
     "Mount": 252,
-    "NPC": 2376
+    "NPC": 2747
   }
 }

@@ -1,0 +1,54 @@
+{
+  "schema": "NPC_R7_FINAL_SEMANTIC_REVIEW/v1",
+  "review_base_sha": "8fd47a57183e2728dd85330f11646790105417da",
+  "combined_packet_sha256": "89a85ec112b25e898566597f95e1f4bcfb21ea427671e8d1ece44d284d5b550e",
+  "canonical_declarations_sha256": "0959a4dddcb92714d1902cc1e9faa9d3a4ce5d835a37a97955d925b3052d2433",
+  "tree_expected_sha256": "bb21fcf2cf4a4526544a231a72612fa82e789abfefaae2780698d639fd9ac0ec",
+  "changed_declarations": 43,
+  "changed_profiles": 2,
+  "unchanged_declarations": 2587,
+  "unchanged_profiles": 22315,
+  "offers_before": 12268,
+  "offers_after": 12267,
+  "pending_before": 78,
+  "pending_after": 0,
+  "preserved_original_source_fields": 30,
+  "verified_staged_receipt_locators": 12,
+  "wiki_prose_raw_copies": [],
+  "r4_r5_artifacts_preserved": true,
+  "qualified_price_rows": 76,
+  "removed_unqualified_rows": 2,
+  "new_giri_amethyst_offer": 1,
+  "runtime_or_questids_created": false,
+  "findings": [],
+  "status": "PASS_SCOPED_SEMANTIC_REVIEW",
+  "independent_tests": {
+    "official_price_packet_tests": {
+      "passed": 14,
+      "failed": 0
+    },
+    "explicit_outfit_frame_group_tests": {
+      "passed": 5,
+      "failed": 0
+    }
+  },
+  "d3_selected_report_audit": {
+    "reports": [
+      "dialogue/d10-conflict-report-r7.json",
+      "identities/identity-candidates-r7.json",
+      "identities/identity-lifecycle-r7.json",
+      "quests/service-condition-report.json",
+      "quests/manifest.json"
+    ],
+    "wiki_notes_or_prose_copied": false,
+    "retained_raw_variant_literals": "Quest report raw variant rows contain shop data literals, not wiki note/prose. Source qualification holds remain false runtime."
+  },
+  "canonical_packet_normalization": "Canonical offer/field vector ordering normalized during generation; exact before fence matches baseline, packet after compared by full preserved tuple/field values.",
+  "candidate_fence_review": {
+    "embedded_packet_digest": "MATCH",
+    "43_exact_before_declarations": "MATCH",
+    "2_exact_before_profiles": "MATCH",
+    "atomicity": "All declaration/profile preflight loops complete before assignments. Existing loaded canonical source roundtrip before R7 preserves same-head before fence.",
+    "runtime_source_binding": "No new runtime readers or quest identities."
+  }
+}

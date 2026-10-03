@@ -1,0 +1,47 @@
+{
+  "verdict": "PASS",
+  "findings": [],
+  "baseline_head": "6d50b05b47d7351043e93b495d24d645a3d974b3",
+  "reviewer": "/root/enrich_dialogues",
+  "reviewed_file_sha256": {
+    "apps/game-server/src/content/npc_catalogue.rs": "049d495d7ce495a9d7e484fc5bec3125d93c656ae05c0217b7481d0d161d0af7",
+    "apps/game-server/src/content/mod.rs": "2e9d6be024e5c2a79e84755351ddd9472c506df26670dee0ec0fbe2109dc2a92",
+    "apps/game-server/src/main.rs": "a23cd171c77f46e07b1eac4c23359bce0f21c9db7d4a8a4b92a8239675ba85e5",
+    "apps/game-server/src/node/serve.rs": "c089388409816c6eaf1d4c1375459db9faa18b164d3f1926705913baec1bf6f8",
+    "apps/game-server/tests/content_npc_catalogue.rs": "6d7b7065f627edc2e3c153a83471f97b5a36743456817e19e30979cd69c8ea7c"
+  },
+  "source_tree_sha256": "3fcab27b778849cb2453d34161fd16c9cbd58c0bff0d00c54fc12e5583c78148",
+  "source_document_sha256": {
+    "content/world/assets/catalog.json": "fa61df1076ef66e8c69b6182db1b13fe2ccb92653ab16a148d1fbaf773adb344",
+    "content/world/content.lock.json": "9af2c3f9812945a2238b3c25e98ee507e7b621805981084f840b2e172786ee5d",
+    "content/world/definitions/declarations.json": "20bcc0e2d8010178ecc1f20d31a9d6aeb43dbc929509672846cea4109c2291a5",
+    "content/world/definitions/reference.json": "e96cbd5baa1690a54d73ecde228c18008f16b6cf352bc5001bf8b3fac45b9a97",
+    "content/world/editor/author.json": "14c6e3163baf17096545daa897a866df0b5ee23721c26312867ffa73447bbfdb",
+    "content/world/manifest.json": "01e291260f6edc151555c45b2ef4c989b5814aa07bf5c710c9be5067a092ef65",
+    "content/world/presentations/bindings.json": "b7d27b2d7fde6370b7ae56c2c60412f2b213a4a5e92e7db82dd4b59a64359cd7",
+    "content/world/project.json": "66882f0c8da55bd539478bea5ad8662e44599eb975dae880bbc9ae43ad539153",
+    "content/world/provenance/imports.json": "27cb79a06ac9ade63e9a447dc35e44b4267510c0d5fca0bccb40c383ac31e595",
+    "content/world/provenance/sources.json": "1ccf2a4b85d78540e142e991b42f4c005e236478dd74ac95c488b2d9c8750c9b",
+    "content/world/worlds/world.json": "0dcc223c4a904834a58b3ad2b1c7882636cc66c9123aafdb25bb69a1d4670dfa"
+  },
+  "read_only_source_closure_counts": {
+    "NPC": 1282,
+    "Dialogue": 836,
+    "Service": 380
+  },
+  "checks": {
+    "data_tree_unchanged_vs_frozen_baseline": true,
+    "typed_identity_family_key_revision_preserved": true,
+    "dangling_and_duplicate_identity_validation_delegates_existing_parser": true,
+    "lowercase_fullSHA_pin_and_canonical_same_value_digest": true,
+    "no_second_filesystem_read_for_digest": true,
+    "catalogue_retained_before_DB_until_shutdown": true,
+    "early_boot_errors_drop_catalogue_without_activation": true,
+    "ordinary_serve_and_public_run_preserve_None_behavior": true,
+    "no_spawn_activation_services_or_handlers_added": true,
+    "existing_provenance_approximation_flags_owned_without_reinterpretation": true,
+    "sha2_hex_fix_reviewed": true,
+    "data_budget_preproduction_explicit": true
+  },
+  "qualification": "Independent bounded read-only code/source integration review. No build/tests run by reviewer; parent owns compile/clippy/tests. Source tree digest is exactly11 canonical manifest/control documents; unrelated successor files under content/world are not included in canonical project digest."
+}

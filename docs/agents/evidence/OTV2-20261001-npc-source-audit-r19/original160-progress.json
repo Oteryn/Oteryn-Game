@@ -1,0 +1,3605 @@
+{
+  "actors": [
+    {
+      "baseline_pointer": "/actors/0",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.a_blue_stone",
+      "name": "a blue stone",
+      "native_runtime_authority": false,
+      "original_index": 1,
+      "predecessor_status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES",
+      "r19_batch": 1,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 63298,
+          "path": "/workspace/npc-r19-research/batch1/batch1-source-coverage.json",
+          "sha256": "303f38631dc45fded1aa3b5505c8ee2fde07427e835401a46bd55cc1985af108"
+        },
+        "pointer": "/records/0"
+      },
+      "reasons": [
+        "No admitted literal actor-definition lead was established for this target in the recorded bounded source scopes. This is not a Global absence or silence claim."
+      ],
+      "status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES"
+    },
+    {
+      "baseline_pointer": "/actors/1",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.a_captive_forest_fury",
+      "name": "A Captive Forest Fury",
+      "native_runtime_authority": false,
+      "original_index": 2,
+      "predecessor_status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES",
+      "r19_batch": 1,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 63298,
+          "path": "/workspace/npc-r19-research/batch1/batch1-source-coverage.json",
+          "sha256": "303f38631dc45fded1aa3b5505c8ee2fde07427e835401a46bd55cc1985af108"
+        },
+        "pointer": "/records/1"
+      },
+      "reasons": [
+        "No admitted literal actor-definition lead was established for this target in the recorded bounded source scopes. This is not a Global absence or silence claim."
+      ],
+      "status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES"
+    },
+    {
+      "baseline_pointer": "/actors/2",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.a_runaway_goblin",
+      "name": "A Runaway Goblin",
+      "native_runtime_authority": false,
+      "original_index": 3,
+      "predecessor_status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES",
+      "r19_batch": 1,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 63298,
+          "path": "/workspace/npc-r19-research/batch1/batch1-source-coverage.json",
+          "sha256": "303f38631dc45fded1aa3b5505c8ee2fde07427e835401a46bd55cc1985af108"
+        },
+        "pointer": "/records/2"
+      },
+      "reasons": [
+        "No admitted literal actor-definition lead was established for this target in the recorded bounded source scopes. This is not a Global absence or silence claim."
+      ],
+      "status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES"
+    },
+    {
+      "baseline_pointer": "/actors/3",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.a_skull",
+      "name": "A Skull",
+      "native_runtime_authority": false,
+      "original_index": 4,
+      "predecessor_status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES",
+      "r19_batch": 1,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 63298,
+          "path": "/workspace/npc-r19-research/batch1/batch1-source-coverage.json",
+          "sha256": "303f38631dc45fded1aa3b5505c8ee2fde07427e835401a46bd55cc1985af108"
+        },
+        "pointer": "/records/3"
+      },
+      "reasons": [
+        "No admitted literal actor-definition lead was established for this target in the recorded bounded source scopes. This is not a Global absence or silence claim."
+      ],
+      "status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES"
+    },
+    {
+      "baseline_pointer": "/actors/4",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.a_stressed_sugar_cube_worker",
+      "name": "A Stressed Sugar Cube Worker",
+      "native_runtime_authority": false,
+      "original_index": 5,
+      "predecessor_status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES",
+      "r19_batch": 1,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 63298,
+          "path": "/workspace/npc-r19-research/batch1/batch1-source-coverage.json",
+          "sha256": "303f38631dc45fded1aa3b5505c8ee2fde07427e835401a46bd55cc1985af108"
+        },
+        "pointer": "/records/4"
+      },
+      "reasons": [
+        "No admitted literal actor-definition lead was established for this target in the recorded bounded source scopes. This is not a Global absence or silence claim."
+      ],
+      "status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES"
+    },
+    {
+      "baseline_pointer": "/actors/5",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.a_taffy_bunny",
+      "name": "A Taffy Bunny",
+      "native_runtime_authority": false,
+      "original_index": 6,
+      "predecessor_status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES",
+      "r19_batch": 1,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 63298,
+          "path": "/workspace/npc-r19-research/batch1/batch1-source-coverage.json",
+          "sha256": "303f38631dc45fded1aa3b5505c8ee2fde07427e835401a46bd55cc1985af108"
+        },
+        "pointer": "/records/5"
+      },
+      "reasons": [
+        "No admitted literal actor-definition lead was established for this target in the recorded bounded source scopes. This is not a Global absence or silence claim."
+      ],
+      "status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES"
+    },
+    {
+      "baseline_pointer": "/actors/6",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.a_vision_of_the_past",
+      "name": "A Vision Of The Past",
+      "native_runtime_authority": false,
+      "original_index": 7,
+      "predecessor_status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES",
+      "r19_batch": 1,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 63298,
+          "path": "/workspace/npc-r19-research/batch1/batch1-source-coverage.json",
+          "sha256": "303f38631dc45fded1aa3b5505c8ee2fde07427e835401a46bd55cc1985af108"
+        },
+        "pointer": "/records/6"
+      },
+      "reasons": [
+        "No admitted literal actor-definition lead was established for this target in the recorded bounded source scopes. This is not a Global absence or silence claim."
+      ],
+      "status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES"
+    },
+    {
+      "baseline_pointer": "/actors/7",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.absaan",
+      "name": "Absaan",
+      "native_runtime_authority": false,
+      "original_index": 8,
+      "predecessor_status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES",
+      "r19_batch": 1,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 63298,
+          "path": "/workspace/npc-r19-research/batch1/batch1-source-coverage.json",
+          "sha256": "303f38631dc45fded1aa3b5505c8ee2fde07427e835401a46bd55cc1985af108"
+        },
+        "pointer": "/records/7"
+      },
+      "reasons": [
+        "No admitted literal actor-definition lead was established for this target in the recorded bounded source scopes. This is not a Global absence or silence claim."
+      ],
+      "status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES"
+    },
+    {
+      "baseline_pointer": "/actors/8",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.absentminded_assistant",
+      "name": "Absentminded Assistant",
+      "native_runtime_authority": false,
+      "original_index": 9,
+      "predecessor_status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES",
+      "r19_batch": 1,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 63298,
+          "path": "/workspace/npc-r19-research/batch1/batch1-source-coverage.json",
+          "sha256": "303f38631dc45fded1aa3b5505c8ee2fde07427e835401a46bd55cc1985af108"
+        },
+        "pointer": "/records/8"
+      },
+      "reasons": [
+        "No admitted literal actor-definition lead was established for this target in the recorded bounded source scopes. This is not a Global absence or silence claim."
+      ],
+      "status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES"
+    },
+    {
+      "appearance_hold": {
+        "artifact": {
+          "bytes": 43963,
+          "path": "/workspace/npc-r19-research/batch4/valeria-five/five-current-tibiopedia-source-bound-fits.json",
+          "sha256": "3bd115a8b0e598c1bda70178db3b729d8898402f8479bfcbd4ef4cd195093f14"
+        },
+        "pointer": "/records/1"
+      },
+      "baseline_pointer": "/actors/9",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.agostina",
+      "name": "Agostina",
+      "native_runtime_authority": false,
+      "original_index": 10,
+      "predecessor_status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES",
+      "r19_batch": 1,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 63298,
+          "path": "/workspace/npc-r19-research/batch1/batch1-source-coverage.json",
+          "sha256": "303f38631dc45fded1aa3b5505c8ee2fde07427e835401a46bd55cc1985af108"
+        },
+        "pointer": "/records/9"
+      },
+      "reasons": [
+        "Literal source movement is available; current Tibiopedia portrait fit has no qualified probe. No appearance/default palette promotion."
+      ],
+      "status": "HELD_CURRENT_APPEARANCE"
+    },
+    {
+      "baseline_pointer": "/actors/10",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.ahau_s_dead_chamberlain",
+      "name": "Ahau's Dead Chamberlain",
+      "native_runtime_authority": false,
+      "original_index": 11,
+      "predecessor_status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES",
+      "r19_batch": 1,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 63298,
+          "path": "/workspace/npc-r19-research/batch1/batch1-source-coverage.json",
+          "sha256": "303f38631dc45fded1aa3b5505c8ee2fde07427e835401a46bd55cc1985af108"
+        },
+        "pointer": "/records/10"
+      },
+      "reasons": [
+        "No admitted literal actor-definition lead was established for this target in the recorded bounded source scopes. This is not a Global absence or silence claim."
+      ],
+      "status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES"
+    },
+    {
+      "baseline_pointer": "/actors/11",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.airclairebear",
+      "name": "Airclairebear",
+      "native_runtime_authority": false,
+      "original_index": 12,
+      "predecessor_status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES",
+      "r19_batch": 1,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 63298,
+          "path": "/workspace/npc-r19-research/batch1/batch1-source-coverage.json",
+          "sha256": "303f38631dc45fded1aa3b5505c8ee2fde07427e835401a46bd55cc1985af108"
+        },
+        "pointer": "/records/11"
+      },
+      "reasons": [
+        "No admitted literal actor-definition lead was established for this target in the recorded bounded source scopes. This is not a Global absence or silence claim."
+      ],
+      "status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES"
+    },
+    {
+      "baseline_pointer": "/actors/12",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.alberto",
+      "name": "Alberto",
+      "native_runtime_authority": false,
+      "original_index": 13,
+      "predecessor_status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES",
+      "r19_batch": 1,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 63298,
+          "path": "/workspace/npc-r19-research/batch1/batch1-source-coverage.json",
+          "sha256": "303f38631dc45fded1aa3b5505c8ee2fde07427e835401a46bd55cc1985af108"
+        },
+        "pointer": "/records/12"
+      },
+      "reasons": [
+        "Root-authorized source-qualified structural candidate; source-key repair independently closed and typed17 checks passed per root. Frozen native review, integration and publication remain owning-writer work. No Dialogue/Service/Quest/placement/runtime admission."
+      ],
+      "status": "QUALIFIED_EIGHT_CANDIDATE"
+    },
+    {
+      "baseline_pointer": "/actors/13",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.aletta",
+      "name": "Aletta",
+      "native_runtime_authority": false,
+      "original_index": 14,
+      "predecessor_status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES",
+      "r19_batch": 1,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 63298,
+          "path": "/workspace/npc-r19-research/batch1/batch1-source-coverage.json",
+          "sha256": "303f38631dc45fded1aa3b5505c8ee2fde07427e835401a46bd55cc1985af108"
+        },
+        "pointer": "/records/13"
+      },
+      "reasons": [
+        "No admitted literal actor-definition lead was established for this target in the recorded bounded source scopes. This is not a Global absence or silence claim."
+      ],
+      "status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES"
+    },
+    {
+      "baseline_pointer": "/actors/14",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.arenamaster",
+      "name": "Arenamaster",
+      "native_runtime_authority": false,
+      "original_index": 15,
+      "predecessor_status": "HELD_CURRENT_APPEARANCE",
+      "r19_batch": 1,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 63298,
+          "path": "/workspace/npc-r19-research/batch1/batch1-source-coverage.json",
+          "sha256": "303f38631dc45fded1aa3b5505c8ee2fde07427e835401a46bd55cc1985af108"
+        },
+        "pointer": "/records/14"
+      },
+      "reasons": [
+        "Root-authorized source-qualified structural candidate; source-key repair independently closed and typed17 checks passed per root. Frozen native review, integration and publication remain owning-writer work. No Dialogue/Service/Quest/placement/runtime admission."
+      ],
+      "status": "QUALIFIED_EIGHT_CANDIDATE"
+    },
+    {
+      "baseline_pointer": "/actors/15",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.atui",
+      "name": "Atui",
+      "native_runtime_authority": false,
+      "original_index": 16,
+      "predecessor_status": "DEFINITION_ADMITTED_PREDECESSOR",
+      "r19_batch": null,
+      "reasons": [
+        "Structural definition admitted in published c2f9cf88/61fb5301 predecessors; runtime completeness is not implied."
+      ],
+      "status": "DEFINITION_ADMITTED_PREDECESSOR"
+    },
+    {
+      "baseline_pointer": "/actors/16",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.avan",
+      "name": "Avan",
+      "native_runtime_authority": false,
+      "original_index": 17,
+      "predecessor_status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES",
+      "r19_batch": 1,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 63298,
+          "path": "/workspace/npc-r19-research/batch1/batch1-source-coverage.json",
+          "sha256": "303f38631dc45fded1aa3b5505c8ee2fde07427e835401a46bd55cc1985af108"
+        },
+        "pointer": "/records/15"
+      },
+      "reasons": [
+        "No admitted literal actor-definition lead was established for this target in the recorded bounded source scopes. This is not a Global absence or silence claim."
+      ],
+      "status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES"
+    },
+    {
+      "baseline_pointer": "/actors/17",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.barzak",
+      "name": "Barzak",
+      "native_runtime_authority": false,
+      "original_index": 18,
+      "predecessor_status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES",
+      "r19_batch": 1,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 63298,
+          "path": "/workspace/npc-r19-research/batch1/batch1-source-coverage.json",
+          "sha256": "303f38631dc45fded1aa3b5505c8ee2fde07427e835401a46bd55cc1985af108"
+        },
+        "pointer": "/records/16"
+      },
+      "reasons": [
+        "No admitted literal actor-definition lead was established for this target in the recorded bounded source scopes. This is not a Global absence or silence claim."
+      ],
+      "status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES"
+    },
+    {
+      "baseline_pointer": "/actors/18",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.ben",
+      "name": "Ben",
+      "native_runtime_authority": false,
+      "original_index": 19,
+      "predecessor_status": "HELD_CURRENT_APPEARANCE",
+      "r19_batch": 1,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 63298,
+          "path": "/workspace/npc-r19-research/batch1/batch1-source-coverage.json",
+          "sha256": "303f38631dc45fded1aa3b5505c8ee2fde07427e835401a46bd55cc1985af108"
+        },
+        "pointer": "/records/17"
+      },
+      "reasons": [
+        "Root-authorized source-qualified structural candidate; source-key repair independently closed and typed17 checks passed per root. Frozen native review, integration and publication remain owning-writer work. No Dialogue/Service/Quest/placement/runtime admission."
+      ],
+      "status": "QUALIFIED_EIGHT_CANDIDATE"
+    },
+    {
+      "baseline_pointer": "/actors/19",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.blubster",
+      "name": "Blubster",
+      "native_runtime_authority": false,
+      "original_index": 20,
+      "predecessor_status": "HELD_MISSING_RADIUS",
+      "r19_batch": 1,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 63298,
+          "path": "/workspace/npc-r19-research/batch1/batch1-source-coverage.json",
+          "sha256": "303f38631dc45fded1aa3b5505c8ee2fde07427e835401a46bd55cc1985af108"
+        },
+        "pointer": "/records/18"
+      },
+      "reasons": [
+        "Actor-specific numeric walkradius is absent from captured literal definitions. Engine default2 is not an actor fact; appearance/other holds may also remain."
+      ],
+      "status": "HELD_MISSING_RADIUS"
+    },
+    {
+      "baseline_pointer": "/actors/20",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.boasty_twoeyes",
+      "name": "Boasty Twoeyes",
+      "native_runtime_authority": false,
+      "original_index": 21,
+      "predecessor_status": "HELD_MISSING_RADIUS",
+      "r19_batch": 1,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 63298,
+          "path": "/workspace/npc-r19-research/batch1/batch1-source-coverage.json",
+          "sha256": "303f38631dc45fded1aa3b5505c8ee2fde07427e835401a46bd55cc1985af108"
+        },
+        "pointer": "/records/19"
+      },
+      "reasons": [
+        "Actor-specific numeric walkradius is absent from captured literal definitions. Engine default2 is not an actor fact; appearance/other holds may also remain."
+      ],
+      "status": "HELD_MISSING_RADIUS"
+    },
+    {
+      "baseline_pointer": "/actors/21",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.brodraem_orcbeard",
+      "name": "Brodraem Orcbeard",
+      "native_runtime_authority": false,
+      "original_index": 22,
+      "predecessor_status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES",
+      "r19_batch": 1,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 63298,
+          "path": "/workspace/npc-r19-research/batch1/batch1-source-coverage.json",
+          "sha256": "303f38631dc45fded1aa3b5505c8ee2fde07427e835401a46bd55cc1985af108"
+        },
+        "pointer": "/records/20"
+      },
+      "reasons": [
+        "No admitted literal actor-definition lead was established for this target in the recorded bounded source scopes. This is not a Global absence or silence claim."
+      ],
+      "status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES"
+    },
+    {
+      "baseline_pointer": "/actors/22",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.bulltus",
+      "name": "Bulltus",
+      "native_runtime_authority": false,
+      "original_index": 23,
+      "predecessor_status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES",
+      "r19_batch": 1,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 63298,
+          "path": "/workspace/npc-r19-research/batch1/batch1-source-coverage.json",
+          "sha256": "303f38631dc45fded1aa3b5505c8ee2fde07427e835401a46bd55cc1985af108"
+        },
+        "pointer": "/records/21"
+      },
+      "reasons": [
+        "No admitted literal actor-definition lead was established for this target in the recorded bounded source scopes. This is not a Global absence or silence claim."
+      ],
+      "status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES"
+    },
+    {
+      "baseline_pointer": "/actors/23",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.candis",
+      "name": "Candis",
+      "native_runtime_authority": false,
+      "original_index": 24,
+      "predecessor_status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES",
+      "r19_batch": 1,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 63298,
+          "path": "/workspace/npc-r19-research/batch1/batch1-source-coverage.json",
+          "sha256": "303f38631dc45fded1aa3b5505c8ee2fde07427e835401a46bd55cc1985af108"
+        },
+        "pointer": "/records/22"
+      },
+      "reasons": [
+        "No admitted literal actor-definition lead was established for this target in the recorded bounded source scopes. This is not a Global absence or silence claim."
+      ],
+      "status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES"
+    },
+    {
+      "baseline_pointer": "/actors/24",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.candra",
+      "name": "Candra",
+      "native_runtime_authority": false,
+      "original_index": 25,
+      "predecessor_status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES",
+      "r19_batch": 1,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 63298,
+          "path": "/workspace/npc-r19-research/batch1/batch1-source-coverage.json",
+          "sha256": "303f38631dc45fded1aa3b5505c8ee2fde07427e835401a46bd55cc1985af108"
+        },
+        "pointer": "/records/23"
+      },
+      "reasons": [
+        "No admitted literal actor-definition lead was established for this target in the recorded bounded source scopes. This is not a Global absence or silence claim."
+      ],
+      "status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES"
+    },
+    {
+      "baseline_pointer": "/actors/25",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.captain_coohan",
+      "name": "Captain Coohan",
+      "native_runtime_authority": false,
+      "original_index": 26,
+      "predecessor_status": "SOURCE_LEAD_ONLY",
+      "r19_batch": 1,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 63298,
+          "path": "/workspace/npc-r19-research/batch1/batch1-source-coverage.json",
+          "sha256": "303f38631dc45fded1aa3b5505c8ee2fde07427e835401a46bd55cc1985af108"
+        },
+        "pointer": "/records/24"
+      },
+      "reasons": [
+        "Source references undeclared callbacks and lacks a literal display-name assignment; current appearance/program binding is not complete."
+      ],
+      "status": "SOURCE_LEAD_ONLY"
+    },
+    {
+      "baseline_pointer": "/actors/26",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.casper",
+      "name": "Casper",
+      "native_runtime_authority": false,
+      "original_index": 27,
+      "predecessor_status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES",
+      "r19_batch": 1,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 63298,
+          "path": "/workspace/npc-r19-research/batch1/batch1-source-coverage.json",
+          "sha256": "303f38631dc45fded1aa3b5505c8ee2fde07427e835401a46bd55cc1985af108"
+        },
+        "pointer": "/records/25"
+      },
+      "reasons": [
+        "No admitted literal actor-definition lead was established for this target in the recorded bounded source scopes. This is not a Global absence or silence claim."
+      ],
+      "status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES"
+    },
+    {
+      "baseline_pointer": "/actors/27",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.cheaty",
+      "name": "Cheaty",
+      "native_runtime_authority": false,
+      "original_index": 28,
+      "predecessor_status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES",
+      "r19_batch": 1,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 63298,
+          "path": "/workspace/npc-r19-research/batch1/batch1-source-coverage.json",
+          "sha256": "303f38631dc45fded1aa3b5505c8ee2fde07427e835401a46bd55cc1985af108"
+        },
+        "pointer": "/records/26"
+      },
+      "reasons": [
+        "No admitted literal actor-definition lead was established for this target in the recorded bounded source scopes. This is not a Global absence or silence claim."
+      ],
+      "status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES"
+    },
+    {
+      "baseline_pointer": "/actors/28",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.cheesy_the_chosen",
+      "name": "Cheesy The Chosen",
+      "native_runtime_authority": false,
+      "original_index": 29,
+      "predecessor_status": "HELD_MISSING_RADIUS",
+      "r19_batch": 1,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 63298,
+          "path": "/workspace/npc-r19-research/batch1/batch1-source-coverage.json",
+          "sha256": "303f38631dc45fded1aa3b5505c8ee2fde07427e835401a46bd55cc1985af108"
+        },
+        "pointer": "/records/27"
+      },
+      "reasons": [
+        "Actor-specific numeric walkradius is absent from captured literal definitions. Engine default2 is not an actor fact; appearance/other holds may also remain."
+      ],
+      "status": "HELD_MISSING_RADIUS"
+    },
+    {
+      "baseline_pointer": "/actors/29",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.chip",
+      "name": "Chip",
+      "native_runtime_authority": false,
+      "original_index": 30,
+      "predecessor_status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES",
+      "r19_batch": 2,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 51669,
+          "path": "/workspace/npc-r19-research/batch2/findings.json",
+          "sha256": "7d3846b98beaa264e82ddde3925f66737e794b6b8cde3d8dc46af91f4f3c7015"
+        },
+        "pointer": "/actors/0"
+      },
+      "reasons": [
+        "No admitted literal actor-definition lead was established for this target in the recorded bounded source scopes. This is not a Global absence or silence claim."
+      ],
+      "status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES"
+    },
+    {
+      "baseline_pointer": "/actors/30",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.coco",
+      "name": "Coco",
+      "native_runtime_authority": false,
+      "original_index": 31,
+      "predecessor_status": "QUALIFIED_NINE_CANDIDATE",
+      "r19_batch": null,
+      "reasons": [
+        "Structural definition admitted in published c2f9cf88/61fb5301 predecessors; runtime completeness is not implied."
+      ],
+      "status": "DEFINITION_ADMITTED_PREDECESSOR"
+    },
+    {
+      "baseline_pointer": "/actors/31",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.death_npc",
+      "name": "Death (NPC)",
+      "native_runtime_authority": false,
+      "original_index": 32,
+      "predecessor_status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES",
+      "r19_batch": 2,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 51669,
+          "path": "/workspace/npc-r19-research/batch2/findings.json",
+          "sha256": "7d3846b98beaa264e82ddde3925f66737e794b6b8cde3d8dc46af91f4f3c7015"
+        },
+        "pointer": "/actors/1"
+      },
+      "reasons": [
+        "No admitted literal actor-definition lead was established for this target in the recorded bounded source scopes. This is not a Global absence or silence claim."
+      ],
+      "status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES"
+    },
+    {
+      "baseline_pointer": "/actors/32",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.deepling_idol",
+      "name": "Deepling Idol",
+      "native_runtime_authority": false,
+      "original_index": 33,
+      "predecessor_status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES",
+      "r19_batch": 2,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 51669,
+          "path": "/workspace/npc-r19-research/batch2/findings.json",
+          "sha256": "7d3846b98beaa264e82ddde3925f66737e794b6b8cde3d8dc46af91f4f3c7015"
+        },
+        "pointer": "/actors/2"
+      },
+      "reasons": [
+        "No admitted literal actor-definition lead was established for this target in the recorded bounded source scopes. This is not a Global absence or silence claim."
+      ],
+      "status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES"
+    },
+    {
+      "baseline_pointer": "/actors/33",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.demon_mother",
+      "name": "Demon Mother",
+      "native_runtime_authority": false,
+      "original_index": 34,
+      "predecessor_status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES",
+      "r19_batch": 2,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 51669,
+          "path": "/workspace/npc-r19-research/batch2/findings.json",
+          "sha256": "7d3846b98beaa264e82ddde3925f66737e794b6b8cde3d8dc46af91f4f3c7015"
+        },
+        "pointer": "/actors/3"
+      },
+      "reasons": [
+        "No admitted literal actor-definition lead was established for this target in the recorded bounded source scopes. This is not a Global absence or silence claim."
+      ],
+      "status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES"
+    },
+    {
+      "baseline_pointer": "/actors/34",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.demonic_messenger",
+      "name": "Demonic Messenger",
+      "native_runtime_authority": false,
+      "original_index": 35,
+      "predecessor_status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES",
+      "r19_batch": 2,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 51669,
+          "path": "/workspace/npc-r19-research/batch2/findings.json",
+          "sha256": "7d3846b98beaa264e82ddde3925f66737e794b6b8cde3d8dc46af91f4f3c7015"
+        },
+        "pointer": "/actors/4"
+      },
+      "reasons": [
+        "No admitted literal actor-definition lead was established for this target in the recorded bounded source scopes. This is not a Global absence or silence claim."
+      ],
+      "status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES"
+    },
+    {
+      "baseline_pointer": "/actors/35",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.dino",
+      "name": "Dino",
+      "native_runtime_authority": false,
+      "original_index": 36,
+      "predecessor_status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES",
+      "r19_batch": 2,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 51669,
+          "path": "/workspace/npc-r19-research/batch2/findings.json",
+          "sha256": "7d3846b98beaa264e82ddde3925f66737e794b6b8cde3d8dc46af91f4f3c7015"
+        },
+        "pointer": "/actors/5"
+      },
+      "reasons": [
+        "No admitted literal actor-definition lead was established for this target in the recorded bounded source scopes. This is not a Global absence or silence claim."
+      ],
+      "status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES"
+    },
+    {
+      "baseline_pointer": "/actors/36",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.dog_lady",
+      "name": "Dog Lady",
+      "native_runtime_authority": false,
+      "original_index": 37,
+      "predecessor_status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES",
+      "r19_batch": 2,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 51669,
+          "path": "/workspace/npc-r19-research/batch2/findings.json",
+          "sha256": "7d3846b98beaa264e82ddde3925f66737e794b6b8cde3d8dc46af91f4f3c7015"
+        },
+        "pointer": "/actors/6"
+      },
+      "reasons": [
+        "No admitted literal actor-definition lead was established for this target in the recorded bounded source scopes. This is not a Global absence or silence claim."
+      ],
+      "status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES"
+    },
+    {
+      "baseline_pointer": "/actors/37",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.domizian",
+      "name": "Domizian",
+      "native_runtime_authority": false,
+      "original_index": 38,
+      "predecessor_status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES",
+      "r19_batch": 2,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 51669,
+          "path": "/workspace/npc-r19-research/batch2/findings.json",
+          "sha256": "7d3846b98beaa264e82ddde3925f66737e794b6b8cde3d8dc46af91f4f3c7015"
+        },
+        "pointer": "/actors/7"
+      },
+      "reasons": [
+        "No admitted literal actor-definition lead was established for this target in the recorded bounded source scopes. This is not a Global absence or silence claim."
+      ],
+      "status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES"
+    },
+    {
+      "baseline_pointer": "/actors/38",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.dread_guardian",
+      "name": "Dread Guardian",
+      "native_runtime_authority": false,
+      "original_index": 39,
+      "predecessor_status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES",
+      "r19_batch": 2,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 51669,
+          "path": "/workspace/npc-r19-research/batch2/findings.json",
+          "sha256": "7d3846b98beaa264e82ddde3925f66737e794b6b8cde3d8dc46af91f4f3c7015"
+        },
+        "pointer": "/actors/8"
+      },
+      "reasons": [
+        "No admitted literal actor-definition lead was established for this target in the recorded bounded source scopes. This is not a Global absence or silence claim."
+      ],
+      "status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES"
+    },
+    {
+      "baseline_pointer": "/actors/39",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.dulcineo",
+      "name": "Dulcineo",
+      "native_runtime_authority": false,
+      "original_index": 40,
+      "predecessor_status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES",
+      "r19_batch": 2,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 51669,
+          "path": "/workspace/npc-r19-research/batch2/findings.json",
+          "sha256": "7d3846b98beaa264e82ddde3925f66737e794b6b8cde3d8dc46af91f4f3c7015"
+        },
+        "pointer": "/actors/9"
+      },
+      "reasons": [
+        "No admitted literal actor-definition lead was established for this target in the recorded bounded source scopes. This is not a Global absence or silence claim."
+      ],
+      "status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES"
+    },
+    {
+      "baseline_pointer": "/actors/40",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.dwarf_captain",
+      "name": "Dwarf Captain",
+      "native_runtime_authority": false,
+      "original_index": 41,
+      "predecessor_status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES",
+      "r19_batch": 2,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 51669,
+          "path": "/workspace/npc-r19-research/batch2/findings.json",
+          "sha256": "7d3846b98beaa264e82ddde3925f66737e794b6b8cde3d8dc46af91f4f3c7015"
+        },
+        "pointer": "/actors/10"
+      },
+      "reasons": [
+        "No admitted literal actor-definition lead was established for this target in the recorded bounded source scopes. This is not a Global absence or silence claim."
+      ],
+      "status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES"
+    },
+    {
+      "baseline_pointer": "/actors/41",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.dwarf_deep_guard",
+      "name": "Dwarf Deep Guard",
+      "native_runtime_authority": false,
+      "original_index": 42,
+      "predecessor_status": "HELD_MISSING_RADIUS",
+      "r19_batch": 2,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 51669,
+          "path": "/workspace/npc-r19-research/batch2/findings.json",
+          "sha256": "7d3846b98beaa264e82ddde3925f66737e794b6b8cde3d8dc46af91f4f3c7015"
+        },
+        "pointer": "/actors/11"
+      },
+      "reasons": [
+        "Actor-specific numeric walkradius is absent from captured literal definitions. Engine default2 is not an actor fact; appearance/other holds may also remain."
+      ],
+      "status": "HELD_MISSING_RADIUS"
+    },
+    {
+      "baseline_pointer": "/actors/42",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.dwarf_explorer",
+      "name": "Dwarf Explorer",
+      "native_runtime_authority": false,
+      "original_index": 43,
+      "predecessor_status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES",
+      "r19_batch": 2,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 51669,
+          "path": "/workspace/npc-r19-research/batch2/findings.json",
+          "sha256": "7d3846b98beaa264e82ddde3925f66737e794b6b8cde3d8dc46af91f4f3c7015"
+        },
+        "pointer": "/actors/12"
+      },
+      "reasons": [
+        "No admitted literal actor-definition lead was established for this target in the recorded bounded source scopes. This is not a Global absence or silence claim."
+      ],
+      "status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES"
+    },
+    {
+      "baseline_pointer": "/actors/43",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.dwarf_guard_day_shift",
+      "name": "Dwarf Guard Day Shift",
+      "native_runtime_authority": false,
+      "original_index": 44,
+      "predecessor_status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES",
+      "r19_batch": 2,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 51669,
+          "path": "/workspace/npc-r19-research/batch2/findings.json",
+          "sha256": "7d3846b98beaa264e82ddde3925f66737e794b6b8cde3d8dc46af91f4f3c7015"
+        },
+        "pointer": "/actors/13"
+      },
+      "reasons": [
+        "No admitted literal actor-definition lead was established for this target in the recorded bounded source scopes. This is not a Global absence or silence claim."
+      ],
+      "status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES"
+    },
+    {
+      "baseline_pointer": "/actors/44",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.dwarf_guard_night_shift",
+      "name": "Dwarf Guard Night Shift",
+      "native_runtime_authority": false,
+      "original_index": 45,
+      "predecessor_status": "HELD_MISSING_RADIUS",
+      "r19_batch": 2,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 51669,
+          "path": "/workspace/npc-r19-research/batch2/findings.json",
+          "sha256": "7d3846b98beaa264e82ddde3925f66737e794b6b8cde3d8dc46af91f4f3c7015"
+        },
+        "pointer": "/actors/14"
+      },
+      "reasons": [
+        "Actor-specific numeric walkradius is absent from captured literal definitions. Engine default2 is not an actor fact; appearance/other holds may also remain."
+      ],
+      "status": "HELD_MISSING_RADIUS"
+    },
+    {
+      "baseline_pointer": "/actors/45",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.dwarf_outpost_soldier",
+      "name": "Dwarf Outpost Soldier",
+      "native_runtime_authority": false,
+      "original_index": 46,
+      "predecessor_status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES",
+      "r19_batch": 2,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 51669,
+          "path": "/workspace/npc-r19-research/batch2/findings.json",
+          "sha256": "7d3846b98beaa264e82ddde3925f66737e794b6b8cde3d8dc46af91f4f3c7015"
+        },
+        "pointer": "/actors/15"
+      },
+      "reasons": [
+        "No admitted literal actor-definition lead was established for this target in the recorded bounded source scopes. This is not a Global absence or silence claim."
+      ],
+      "status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES"
+    },
+    {
+      "baseline_pointer": "/actors/46",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.dwarven_guard",
+      "name": "Dwarven Guard",
+      "native_runtime_authority": false,
+      "original_index": 47,
+      "predecessor_status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES",
+      "r19_batch": 2,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 51669,
+          "path": "/workspace/npc-r19-research/batch2/findings.json",
+          "sha256": "7d3846b98beaa264e82ddde3925f66737e794b6b8cde3d8dc46af91f4f3c7015"
+        },
+        "pointer": "/actors/16"
+      },
+      "reasons": [
+        "No admitted literal actor-definition lead was established for this target in the recorded bounded source scopes. This is not a Global absence or silence claim."
+      ],
+      "status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES"
+    },
+    {
+      "baseline_pointer": "/actors/47",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.emilie",
+      "name": "Emilie",
+      "native_runtime_authority": false,
+      "original_index": 48,
+      "predecessor_status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES",
+      "r19_batch": 2,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 51669,
+          "path": "/workspace/npc-r19-research/batch2/findings.json",
+          "sha256": "7d3846b98beaa264e82ddde3925f66737e794b6b8cde3d8dc46af91f4f3c7015"
+        },
+        "pointer": "/actors/17"
+      },
+      "reasons": [
+        "No admitted literal actor-definition lead was established for this target in the recorded bounded source scopes. This is not a Global absence or silence claim."
+      ],
+      "status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES"
+    },
+    {
+      "baseline_pointer": "/actors/48",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.emilio",
+      "name": "Emilio",
+      "native_runtime_authority": false,
+      "original_index": 49,
+      "predecessor_status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES",
+      "r19_batch": 2,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 51669,
+          "path": "/workspace/npc-r19-research/batch2/findings.json",
+          "sha256": "7d3846b98beaa264e82ddde3925f66737e794b6b8cde3d8dc46af91f4f3c7015"
+        },
+        "pointer": "/actors/18"
+      },
+      "reasons": [
+        "Root-authorized source-qualified structural candidate; source-key repair independently closed and typed17 checks passed per root. Frozen native review, integration and publication remain owning-writer work. No Dialogue/Service/Quest/placement/runtime admission."
+      ],
+      "status": "QUALIFIED_EIGHT_CANDIDATE"
+    },
+    {
+      "baseline_pointer": "/actors/49",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.escaped_rascoohan",
+      "name": "Escaped Rascoohan",
+      "native_runtime_authority": false,
+      "original_index": 50,
+      "predecessor_status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES",
+      "r19_batch": 2,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 51669,
+          "path": "/workspace/npc-r19-research/batch2/findings.json",
+          "sha256": "7d3846b98beaa264e82ddde3925f66737e794b6b8cde3d8dc46af91f4f3c7015"
+        },
+        "pointer": "/actors/19"
+      },
+      "reasons": [
+        "No admitted literal actor-definition lead was established for this target in the recorded bounded source scopes. This is not a Global absence or silence claim."
+      ],
+      "status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES"
+    },
+    {
+      "baseline_pointer": "/actors/50",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.fabiana",
+      "name": "Fabiana",
+      "native_runtime_authority": false,
+      "original_index": 51,
+      "predecessor_status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES",
+      "r19_batch": 2,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 51669,
+          "path": "/workspace/npc-r19-research/batch2/findings.json",
+          "sha256": "7d3846b98beaa264e82ddde3925f66737e794b6b8cde3d8dc46af91f4f3c7015"
+        },
+        "pointer": "/actors/20"
+      },
+      "reasons": [
+        "Root-authorized source-qualified structural candidate; source-key repair independently closed and typed17 checks passed per root. Frozen native review, integration and publication remain owning-writer work. No Dialogue/Service/Quest/placement/runtime admission."
+      ],
+      "status": "QUALIFIED_EIGHT_CANDIDATE"
+    },
+    {
+      "baseline_pointer": "/actors/51",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.fernlor",
+      "name": "Fernlor",
+      "native_runtime_authority": false,
+      "original_index": 52,
+      "predecessor_status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES",
+      "r19_batch": 2,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 51669,
+          "path": "/workspace/npc-r19-research/batch2/findings.json",
+          "sha256": "7d3846b98beaa264e82ddde3925f66737e794b6b8cde3d8dc46af91f4f3c7015"
+        },
+        "pointer": "/actors/21"
+      },
+      "reasons": [
+        "No admitted literal actor-definition lead was established for this target in the recorded bounded source scopes. This is not a Global absence or silence claim."
+      ],
+      "status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES"
+    },
+    {
+      "baseline_pointer": "/actors/52",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.friedolin",
+      "name": "Friedolin",
+      "native_runtime_authority": false,
+      "original_index": 53,
+      "predecessor_status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES",
+      "r19_batch": 2,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 51669,
+          "path": "/workspace/npc-r19-research/batch2/findings.json",
+          "sha256": "7d3846b98beaa264e82ddde3925f66737e794b6b8cde3d8dc46af91f4f3c7015"
+        },
+        "pointer": "/actors/22"
+      },
+      "reasons": [
+        "No admitted literal actor-definition lead was established for this target in the recorded bounded source scopes. This is not a Global absence or silence claim."
+      ],
+      "status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES"
+    },
+    {
+      "baseline_pointer": "/actors/53",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.gaberiel",
+      "name": "Gaberiel",
+      "native_runtime_authority": false,
+      "original_index": 54,
+      "predecessor_status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES",
+      "r19_batch": 2,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 51669,
+          "path": "/workspace/npc-r19-research/batch2/findings.json",
+          "sha256": "7d3846b98beaa264e82ddde3925f66737e794b6b8cde3d8dc46af91f4f3c7015"
+        },
+        "pointer": "/actors/23"
+      },
+      "reasons": [
+        "No admitted literal actor-definition lead was established for this target in the recorded bounded source scopes. This is not a Global absence or silence claim."
+      ],
+      "status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES"
+    },
+    {
+      "baseline_pointer": "/actors/54",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.garzon",
+      "name": "Garzon",
+      "native_runtime_authority": false,
+      "original_index": 55,
+      "predecessor_status": "DEFINITION_ADMITTED_PREDECESSOR",
+      "r19_batch": null,
+      "reasons": [
+        "Structural definition admitted in published c2f9cf88/61fb5301 predecessors; runtime completeness is not implied."
+      ],
+      "status": "DEFINITION_ADMITTED_PREDECESSOR"
+    },
+    {
+      "baseline_pointer": "/actors/55",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.geoffray",
+      "name": "Geoffray",
+      "native_runtime_authority": false,
+      "original_index": 56,
+      "predecessor_status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES",
+      "r19_batch": 2,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 51669,
+          "path": "/workspace/npc-r19-research/batch2/findings.json",
+          "sha256": "7d3846b98beaa264e82ddde3925f66737e794b6b8cde3d8dc46af91f4f3c7015"
+        },
+        "pointer": "/actors/24"
+      },
+      "reasons": [
+        "No admitted literal actor-definition lead was established for this target in the recorded bounded source scopes. This is not a Global absence or silence claim."
+      ],
+      "status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES"
+    },
+    {
+      "baseline_pointer": "/actors/56",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.georgia_rainbird",
+      "name": "Georgia Rainbird",
+      "native_runtime_authority": false,
+      "original_index": 57,
+      "predecessor_status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES",
+      "r19_batch": 2,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 51669,
+          "path": "/workspace/npc-r19-research/batch2/findings.json",
+          "sha256": "7d3846b98beaa264e82ddde3925f66737e794b6b8cde3d8dc46af91f4f3c7015"
+        },
+        "pointer": "/actors/25"
+      },
+      "reasons": [
+        "No admitted literal actor-definition lead was established for this target in the recorded bounded source scopes. This is not a Global absence or silence claim."
+      ],
+      "status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES"
+    },
+    {
+      "baseline_pointer": "/actors/57",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.gerib",
+      "name": "Gerib",
+      "native_runtime_authority": false,
+      "original_index": 58,
+      "predecessor_status": "SOURCE_LEAD_ONLY",
+      "r19_batch": 2,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 51669,
+          "path": "/workspace/npc-r19-research/batch2/findings.json",
+          "sha256": "7d3846b98beaa264e82ddde3925f66737e794b6b8cde3d8dc46af91f4f3c7015"
+        },
+        "pointer": "/actors/26"
+      },
+      "reasons": [
+        "Root-authorized source-qualified structural candidate; source-key repair independently closed and typed17 checks passed per root. Frozen native review, integration and publication remain owning-writer work. No Dialogue/Service/Quest/placement/runtime admission."
+      ],
+      "status": "QUALIFIED_EIGHT_CANDIDATE"
+    },
+    {
+      "baseline_pointer": "/actors/58",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.ghost_captain",
+      "name": "Ghost Captain",
+      "native_runtime_authority": false,
+      "original_index": 59,
+      "predecessor_status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES",
+      "r19_batch": 2,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 51669,
+          "path": "/workspace/npc-r19-research/batch2/findings.json",
+          "sha256": "7d3846b98beaa264e82ddde3925f66737e794b6b8cde3d8dc46af91f4f3c7015"
+        },
+        "pointer": "/actors/27"
+      },
+      "reasons": [
+        "No admitted literal actor-definition lead was established for this target in the recorded bounded source scopes. This is not a Global absence or silence claim."
+      ],
+      "status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES"
+    },
+    {
+      "baseline_pointer": "/actors/59",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.gilmak_copperbeard",
+      "name": "Gilmak Copperbeard",
+      "native_runtime_authority": false,
+      "original_index": 60,
+      "predecessor_status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES",
+      "r19_batch": 3,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 132947,
+          "path": "/workspace/npc-r19-research/batch3/batch3-source-summary.json",
+          "sha256": "0f108e95f780df1bffb6008861eafbb88d702a1e8cd2b3a80c2d6b559c2a657d"
+        },
+        "pointer": "/rows/0"
+      },
+      "reasons": [
+        "New literal XML actor profile is held: omitted movement radius, unqualified current appearance, and linked donor dialogue program actor-role mismatch."
+      ],
+      "status": "SOURCE_LEAD_ONLY"
+    },
+    {
+      "baseline_pointer": "/actors/60",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.gnomcruiter",
+      "name": "Gnomcruiter",
+      "native_runtime_authority": false,
+      "original_index": 61,
+      "predecessor_status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES",
+      "r19_batch": 3,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 132947,
+          "path": "/workspace/npc-r19-research/batch3/batch3-source-summary.json",
+          "sha256": "0f108e95f780df1bffb6008861eafbb88d702a1e8cd2b3a80c2d6b559c2a657d"
+        },
+        "pointer": "/rows/1"
+      },
+      "reasons": [
+        "No admitted literal actor-definition lead was established for this target in the recorded bounded source scopes. This is not a Global absence or silence claim."
+      ],
+      "status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES"
+    },
+    {
+      "baseline_pointer": "/actors/61",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.gnome_crystalomancer",
+      "name": "Gnome Crystalomancer",
+      "native_runtime_authority": false,
+      "original_index": 62,
+      "predecessor_status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES",
+      "r19_batch": 3,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 132947,
+          "path": "/workspace/npc-r19-research/batch3/batch3-source-summary.json",
+          "sha256": "0f108e95f780df1bffb6008861eafbb88d702a1e8cd2b3a80c2d6b559c2a657d"
+        },
+        "pointer": "/rows/2"
+      },
+      "reasons": [
+        "No admitted literal actor-definition lead was established for this target in the recorded bounded source scopes. This is not a Global absence or silence claim."
+      ],
+      "status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES"
+    },
+    {
+      "baseline_pointer": "/actors/62",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.gnome_explorer",
+      "name": "Gnome Explorer",
+      "native_runtime_authority": false,
+      "original_index": 63,
+      "predecessor_status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES",
+      "r19_batch": 3,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 132947,
+          "path": "/workspace/npc-r19-research/batch3/batch3-source-summary.json",
+          "sha256": "0f108e95f780df1bffb6008861eafbb88d702a1e8cd2b3a80c2d6b559c2a657d"
+        },
+        "pointer": "/rows/3"
+      },
+      "reasons": [
+        "No admitted literal actor-definition lead was established for this target in the recorded bounded source scopes. This is not a Global absence or silence claim."
+      ],
+      "status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES"
+    },
+    {
+      "baseline_pointer": "/actors/63",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.gnome_gemsplicer",
+      "name": "Gnome Gemsplicer",
+      "native_runtime_authority": false,
+      "original_index": 64,
+      "predecessor_status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES",
+      "r19_batch": 3,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 132947,
+          "path": "/workspace/npc-r19-research/batch3/batch3-source-summary.json",
+          "sha256": "0f108e95f780df1bffb6008861eafbb88d702a1e8cd2b3a80c2d6b559c2a657d"
+        },
+        "pointer": "/rows/4"
+      },
+      "reasons": [
+        "No admitted literal actor-definition lead was established for this target in the recorded bounded source scopes. This is not a Global absence or silence claim."
+      ],
+      "status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES"
+    },
+    {
+      "baseline_pointer": "/actors/64",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.gnome_guard",
+      "name": "Gnome Guard",
+      "native_runtime_authority": false,
+      "original_index": 65,
+      "predecessor_status": "HELD_MISSING_RADIUS",
+      "r19_batch": 3,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 132947,
+          "path": "/workspace/npc-r19-research/batch3/batch3-source-summary.json",
+          "sha256": "0f108e95f780df1bffb6008861eafbb88d702a1e8cd2b3a80c2d6b559c2a657d"
+        },
+        "pointer": "/rows/5"
+      },
+      "reasons": [
+        "Actor-specific numeric walkradius is absent from captured literal definitions. Engine default2 is not an actor fact; appearance/other holds may also remain."
+      ],
+      "status": "HELD_MISSING_RADIUS"
+    },
+    {
+      "baseline_pointer": "/actors/65",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.gnome_guard_captain",
+      "name": "Gnome Guard Captain",
+      "native_runtime_authority": false,
+      "original_index": 66,
+      "predecessor_status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES",
+      "r19_batch": 3,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 132947,
+          "path": "/workspace/npc-r19-research/batch3/batch3-source-summary.json",
+          "sha256": "0f108e95f780df1bffb6008861eafbb88d702a1e8cd2b3a80c2d6b559c2a657d"
+        },
+        "pointer": "/rows/6"
+      },
+      "reasons": [
+        "No admitted literal actor-definition lead was established for this target in the recorded bounded source scopes. This is not a Global absence or silence claim."
+      ],
+      "status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES"
+    },
+    {
+      "baseline_pointer": "/actors/66",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.gnome_guard_night_shift",
+      "name": "Gnome Guard Night Shift",
+      "native_runtime_authority": false,
+      "original_index": 67,
+      "predecessor_status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES",
+      "r19_batch": 3,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 132947,
+          "path": "/workspace/npc-r19-research/batch3/batch3-source-summary.json",
+          "sha256": "0f108e95f780df1bffb6008861eafbb88d702a1e8cd2b3a80c2d6b559c2a657d"
+        },
+        "pointer": "/rows/7"
+      },
+      "reasons": [
+        "No admitted literal actor-definition lead was established for this target in the recorded bounded source scopes. This is not a Global absence or silence claim."
+      ],
+      "status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES"
+    },
+    {
+      "baseline_pointer": "/actors/67",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.gnome_outer_guard",
+      "name": "Gnome Outer Guard",
+      "native_runtime_authority": false,
+      "original_index": 68,
+      "predecessor_status": "HELD_MISSING_RADIUS",
+      "r19_batch": 3,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 132947,
+          "path": "/workspace/npc-r19-research/batch3/batch3-source-summary.json",
+          "sha256": "0f108e95f780df1bffb6008861eafbb88d702a1e8cd2b3a80c2d6b559c2a657d"
+        },
+        "pointer": "/rows/8"
+      },
+      "reasons": [
+        "Actor-specific numeric walkradius is absent from captured literal definitions. Engine default2 is not an actor fact; appearance/other holds may also remain."
+      ],
+      "status": "HELD_MISSING_RADIUS"
+    },
+    {
+      "baseline_pointer": "/actors/68",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.gnomenace",
+      "name": "Gnomenace",
+      "native_runtime_authority": false,
+      "original_index": 69,
+      "predecessor_status": "HELD_MISSING_RADIUS",
+      "r19_batch": 3,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 132947,
+          "path": "/workspace/npc-r19-research/batch3/batch3-source-summary.json",
+          "sha256": "0f108e95f780df1bffb6008861eafbb88d702a1e8cd2b3a80c2d6b559c2a657d"
+        },
+        "pointer": "/rows/9"
+      },
+      "reasons": [
+        "Actor-specific numeric walkradius is absent from captured literal definitions. Engine default2 is not an actor fact; appearance/other holds may also remain."
+      ],
+      "status": "HELD_MISSING_RADIUS"
+    },
+    {
+      "baseline_pointer": "/actors/69",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.gnomenezer",
+      "name": "Gnomenezer",
+      "native_runtime_authority": false,
+      "original_index": 70,
+      "predecessor_status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES",
+      "r19_batch": 3,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 132947,
+          "path": "/workspace/npc-r19-research/batch3/batch3-source-summary.json",
+          "sha256": "0f108e95f780df1bffb6008861eafbb88d702a1e8cd2b3a80c2d6b559c2a657d"
+        },
+        "pointer": "/rows/10"
+      },
+      "reasons": [
+        "No admitted literal actor-definition lead was established for this target in the recorded bounded source scopes. This is not a Global absence or silence claim."
+      ],
+      "status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES"
+    },
+    {
+      "baseline_pointer": "/actors/70",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.gnomevisor",
+      "name": "Gnomevisor",
+      "native_runtime_authority": false,
+      "original_index": 71,
+      "predecessor_status": "HELD_CURRENT_APPEARANCE",
+      "r19_batch": 3,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 132947,
+          "path": "/workspace/npc-r19-research/batch3/batch3-source-summary.json",
+          "sha256": "0f108e95f780df1bffb6008861eafbb88d702a1e8cd2b3a80c2d6b559c2a657d"
+        },
+        "pointer": "/rows/11"
+      },
+      "reasons": [
+        "Literal donor profile interval2000/radius2 exists; current BR appearance qualification remains held."
+      ],
+      "status": "HELD_CURRENT_APPEARANCE"
+    },
+    {
+      "baseline_pointer": "/actors/71",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.gnominimus",
+      "name": "Gnominimus",
+      "native_runtime_authority": false,
+      "original_index": 72,
+      "predecessor_status": "SOURCE_LEAD_ONLY",
+      "r19_batch": 3,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 132947,
+          "path": "/workspace/npc-r19-research/batch3/batch3-source-summary.json",
+          "sha256": "0f108e95f780df1bffb6008861eafbb88d702a1e8cd2b3a80c2d6b559c2a657d"
+        },
+        "pointer": "/rows/12"
+      },
+      "reasons": [
+        "Movement conflict: legacy XML interval0/radius omitted versus donor Lua2000/radius2. Current appearance and source selection cannot be resolved by voting."
+      ],
+      "status": "SOURCE_LEAD_ONLY"
+    },
+    {
+      "baseline_pointer": "/actors/72",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.gnomnerdia",
+      "name": "Gnomnerdia",
+      "native_runtime_authority": false,
+      "original_index": 73,
+      "predecessor_status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES",
+      "r19_batch": 3,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 132947,
+          "path": "/workspace/npc-r19-research/batch3/batch3-source-summary.json",
+          "sha256": "0f108e95f780df1bffb6008861eafbb88d702a1e8cd2b3a80c2d6b559c2a657d"
+        },
+        "pointer": "/rows/13"
+      },
+      "reasons": [
+        "No admitted literal actor-definition lead was established for this target in the recorded bounded source scopes. This is not a Global absence or silence claim."
+      ],
+      "status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES"
+    },
+    {
+      "baseline_pointer": "/actors/73",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.gnomoney",
+      "name": "Gnomoney",
+      "native_runtime_authority": false,
+      "original_index": 74,
+      "predecessor_status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES",
+      "r19_batch": 3,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 132947,
+          "path": "/workspace/npc-r19-research/batch3/batch3-source-summary.json",
+          "sha256": "0f108e95f780df1bffb6008861eafbb88d702a1e8cd2b3a80c2d6b559c2a657d"
+        },
+        "pointer": "/rows/14"
+      },
+      "reasons": [
+        "No admitted literal actor-definition lead was established for this target in the recorded bounded source scopes. This is not a Global absence or silence claim."
+      ],
+      "status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES"
+    },
+    {
+      "baseline_pointer": "/actors/74",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.gnomonster",
+      "name": "Gnomonster",
+      "native_runtime_authority": false,
+      "original_index": 75,
+      "predecessor_status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES",
+      "r19_batch": 3,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 132947,
+          "path": "/workspace/npc-r19-research/batch3/batch3-source-summary.json",
+          "sha256": "0f108e95f780df1bffb6008861eafbb88d702a1e8cd2b3a80c2d6b559c2a657d"
+        },
+        "pointer": "/rows/15"
+      },
+      "reasons": [
+        "No admitted literal actor-definition lead was established for this target in the recorded bounded source scopes. This is not a Global absence or silence claim."
+      ],
+      "status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES"
+    },
+    {
+      "baseline_pointer": "/actors/75",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.gnomystery",
+      "name": "Gnomystery",
+      "native_runtime_authority": false,
+      "original_index": 76,
+      "predecessor_status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES",
+      "r19_batch": 3,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 132947,
+          "path": "/workspace/npc-r19-research/batch3/batch3-source-summary.json",
+          "sha256": "0f108e95f780df1bffb6008861eafbb88d702a1e8cd2b3a80c2d6b559c2a657d"
+        },
+        "pointer": "/rows/16"
+      },
+      "reasons": [
+        "No admitted literal actor-definition lead was established for this target in the recorded bounded source scopes. This is not a Global absence or silence claim."
+      ],
+      "status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES"
+    },
+    {
+      "baseline_pointer": "/actors/76",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.gnops_member",
+      "name": "GNOPS Member",
+      "native_runtime_authority": false,
+      "original_index": 77,
+      "predecessor_status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES",
+      "r19_batch": 3,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 132947,
+          "path": "/workspace/npc-r19-research/batch3/batch3-source-summary.json",
+          "sha256": "0f108e95f780df1bffb6008861eafbb88d702a1e8cd2b3a80c2d6b559c2a657d"
+        },
+        "pointer": "/rows/17"
+      },
+      "reasons": [
+        "No admitted literal actor-definition lead was established for this target in the recorded bounded source scopes. This is not a Global absence or silence claim."
+      ],
+      "status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES"
+    },
+    {
+      "baseline_pointer": "/actors/77",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.grovebeast_npc",
+      "name": "Grovebeast (NPC)",
+      "native_runtime_authority": false,
+      "original_index": 78,
+      "predecessor_status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES",
+      "r19_batch": 3,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 132947,
+          "path": "/workspace/npc-r19-research/batch3/batch3-source-summary.json",
+          "sha256": "0f108e95f780df1bffb6008861eafbb88d702a1e8cd2b3a80c2d6b559c2a657d"
+        },
+        "pointer": "/rows/18"
+      },
+      "reasons": [
+        "No admitted literal actor-definition lead was established for this target in the recorded bounded source scopes. This is not a Global absence or silence claim."
+      ],
+      "status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES"
+    },
+    {
+      "baseline_pointer": "/actors/78",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.gruffy",
+      "name": "Gruffy",
+      "native_runtime_authority": false,
+      "original_index": 79,
+      "predecessor_status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES",
+      "r19_batch": 3,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 132947,
+          "path": "/workspace/npc-r19-research/batch3/batch3-source-summary.json",
+          "sha256": "0f108e95f780df1bffb6008861eafbb88d702a1e8cd2b3a80c2d6b559c2a657d"
+        },
+        "pointer": "/rows/19"
+      },
+      "reasons": [
+        "No admitted literal actor-definition lead was established for this target in the recorded bounded source scopes. This is not a Global absence or silence claim."
+      ],
+      "status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES"
+    },
+    {
+      "baseline_pointer": "/actors/79",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.gunther",
+      "name": "Gunther",
+      "native_runtime_authority": false,
+      "original_index": 80,
+      "predecessor_status": "QUALIFIED_NINE_CANDIDATE",
+      "r19_batch": null,
+      "reasons": [
+        "Structural definition admitted in published c2f9cf88/61fb5301 predecessors; runtime completeness is not implied."
+      ],
+      "status": "DEFINITION_ADMITTED_PREDECESSOR"
+    },
+    {
+      "baseline_pointer": "/actors/80",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.heliodor",
+      "name": "Heliodor",
+      "native_runtime_authority": false,
+      "original_index": 81,
+      "predecessor_status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES",
+      "r19_batch": 3,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 132947,
+          "path": "/workspace/npc-r19-research/batch3/batch3-source-summary.json",
+          "sha256": "0f108e95f780df1bffb6008861eafbb88d702a1e8cd2b3a80c2d6b559c2a657d"
+        },
+        "pointer": "/rows/20"
+      },
+      "reasons": [
+        "No admitted literal actor-definition lead was established for this target in the recorded bounded source scopes. This is not a Global absence or silence claim."
+      ],
+      "status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES"
+    },
+    {
+      "baseline_pointer": "/actors/81",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.hoaxette",
+      "name": "Hoaxette",
+      "native_runtime_authority": false,
+      "original_index": 82,
+      "predecessor_status": "HELD_MISSING_RADIUS",
+      "r19_batch": 3,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 132947,
+          "path": "/workspace/npc-r19-research/batch3/batch3-source-summary.json",
+          "sha256": "0f108e95f780df1bffb6008861eafbb88d702a1e8cd2b3a80c2d6b559c2a657d"
+        },
+        "pointer": "/rows/21"
+      },
+      "reasons": [
+        "Actor-specific numeric walkradius is absent from captured literal definitions. Engine default2 is not an actor fact; appearance/other holds may also remain."
+      ],
+      "status": "HELD_MISSING_RADIUS"
+    },
+    {
+      "baseline_pointer": "/actors/82",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.inquisition_guardsman",
+      "name": "Inquisition Guardsman",
+      "native_runtime_authority": false,
+      "original_index": 83,
+      "predecessor_status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES",
+      "r19_batch": 3,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 132947,
+          "path": "/workspace/npc-r19-research/batch3/batch3-source-summary.json",
+          "sha256": "0f108e95f780df1bffb6008861eafbb88d702a1e8cd2b3a80c2d6b559c2a657d"
+        },
+        "pointer": "/rows/22"
+      },
+      "reasons": [
+        "No admitted literal actor-definition lead was established for this target in the recorded bounded source scopes. This is not a Global absence or silence claim."
+      ],
+      "status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES"
+    },
+    {
+      "baseline_pointer": "/actors/83",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.ivora",
+      "name": "Ivora",
+      "native_runtime_authority": false,
+      "original_index": 84,
+      "predecessor_status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES",
+      "r19_batch": 3,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 132947,
+          "path": "/workspace/npc-r19-research/batch3/batch3-source-summary.json",
+          "sha256": "0f108e95f780df1bffb6008861eafbb88d702a1e8cd2b3a80c2d6b559c2a657d"
+        },
+        "pointer": "/rows/23"
+      },
+      "reasons": [
+        "No admitted literal actor-definition lead was established for this target in the recorded bounded source scopes. This is not a Global absence or silence claim."
+      ],
+      "status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES"
+    },
+    {
+      "baseline_pointer": "/actors/84",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.izzkl",
+      "name": "Izzkl",
+      "native_runtime_authority": false,
+      "original_index": 85,
+      "predecessor_status": "HELD_MISSING_RADIUS",
+      "r19_batch": 3,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 132947,
+          "path": "/workspace/npc-r19-research/batch3/batch3-source-summary.json",
+          "sha256": "0f108e95f780df1bffb6008861eafbb88d702a1e8cd2b3a80c2d6b559c2a657d"
+        },
+        "pointer": "/rows/24"
+      },
+      "reasons": [
+        "Actor-specific numeric walkradius is absent from captured literal definitions. Engine default2 is not an actor fact; appearance/other holds may also remain."
+      ],
+      "status": "HELD_MISSING_RADIUS"
+    },
+    {
+      "baseline_pointer": "/actors/85",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.jata",
+      "name": "Jata",
+      "native_runtime_authority": false,
+      "original_index": 86,
+      "predecessor_status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES",
+      "r19_batch": 3,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 132947,
+          "path": "/workspace/npc-r19-research/batch3/batch3-source-summary.json",
+          "sha256": "0f108e95f780df1bffb6008861eafbb88d702a1e8cd2b3a80c2d6b559c2a657d"
+        },
+        "pointer": "/rows/25"
+      },
+      "reasons": [
+        "No admitted literal actor-definition lead was established for this target in the recorded bounded source scopes. This is not a Global absence or silence claim."
+      ],
+      "status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES"
+    },
+    {
+      "baseline_pointer": "/actors/86",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.jelly",
+      "name": "Jelly",
+      "native_runtime_authority": false,
+      "original_index": 87,
+      "predecessor_status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES",
+      "r19_batch": 3,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 132947,
+          "path": "/workspace/npc-r19-research/batch3/batch3-source-summary.json",
+          "sha256": "0f108e95f780df1bffb6008861eafbb88d702a1e8cd2b3a80c2d6b559c2a657d"
+        },
+        "pointer": "/rows/26"
+      },
+      "reasons": [
+        "No admitted literal actor-definition lead was established for this target in the recorded bounded source scopes. This is not a Global absence or silence claim."
+      ],
+      "status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES"
+    },
+    {
+      "baseline_pointer": "/actors/87",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.john_the_carpenter",
+      "name": "John The Carpenter",
+      "native_runtime_authority": false,
+      "original_index": 88,
+      "predecessor_status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES",
+      "r19_batch": 3,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 132947,
+          "path": "/workspace/npc-r19-research/batch3/batch3-source-summary.json",
+          "sha256": "0f108e95f780df1bffb6008861eafbb88d702a1e8cd2b3a80c2d6b559c2a657d"
+        },
+        "pointer": "/rows/27"
+      },
+      "reasons": [
+        "No admitted literal actor-definition lead was established for this target in the recorded bounded source scopes. This is not a Global absence or silence claim."
+      ],
+      "status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES"
+    },
+    {
+      "baseline_pointer": "/actors/88",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.kalissa",
+      "name": "Kalissa",
+      "native_runtime_authority": false,
+      "original_index": 89,
+      "predecessor_status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES",
+      "r19_batch": 4,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 23174,
+          "path": "/workspace/npc-r19-research/batch4/batch4-new-source-findings.json",
+          "sha256": "cccb0792567aeb1866c42125b9531a5f0de308abc8d337ffd5cff1901c8f845d"
+        },
+        "pointer": "/records/0"
+      },
+      "reasons": [
+        "No admitted literal actor-definition lead was established for this target in the recorded bounded source scopes. This is not a Global absence or silence claim."
+      ],
+      "status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES"
+    },
+    {
+      "baseline_pointer": "/actors/89",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.kaumudi",
+      "name": "Kaumudi",
+      "native_runtime_authority": false,
+      "original_index": 90,
+      "predecessor_status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES",
+      "r19_batch": 4,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 23174,
+          "path": "/workspace/npc-r19-research/batch4/batch4-new-source-findings.json",
+          "sha256": "cccb0792567aeb1866c42125b9531a5f0de308abc8d337ffd5cff1901c8f845d"
+        },
+        "pointer": "/records/1"
+      },
+      "reasons": [
+        "No admitted literal actor-definition lead was established for this target in the recorded bounded source scopes. This is not a Global absence or silence claim."
+      ],
+      "status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES"
+    },
+    {
+      "baseline_pointer": "/actors/90",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.kiru",
+      "name": "Kiru",
+      "native_runtime_authority": false,
+      "original_index": 91,
+      "predecessor_status": "QUALIFIED_NINE_CANDIDATE",
+      "r19_batch": null,
+      "reasons": [
+        "Structural definition admitted in published c2f9cf88/61fb5301 predecessors; runtime completeness is not implied."
+      ],
+      "status": "DEFINITION_ADMITTED_PREDECESSOR"
+    },
+    {
+      "baseline_pointer": "/actors/91",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.kito",
+      "name": "Kito",
+      "native_runtime_authority": false,
+      "original_index": 92,
+      "predecessor_status": "DEFINITION_ADMITTED_PREDECESSOR",
+      "r19_batch": null,
+      "reasons": [
+        "Structural definition admitted in published c2f9cf88/61fb5301 predecessors; runtime completeness is not implied."
+      ],
+      "status": "DEFINITION_ADMITTED_PREDECESSOR"
+    },
+    {
+      "baseline_pointer": "/actors/92",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.knightmare_npc",
+      "name": "Knightmare (NPC)",
+      "native_runtime_authority": false,
+      "original_index": 93,
+      "predecessor_status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES",
+      "r19_batch": 4,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 23174,
+          "path": "/workspace/npc-r19-research/batch4/batch4-new-source-findings.json",
+          "sha256": "cccb0792567aeb1866c42125b9531a5f0de308abc8d337ffd5cff1901c8f845d"
+        },
+        "pointer": "/records/2"
+      },
+      "reasons": [
+        "No admitted literal actor-definition lead was established for this target in the recorded bounded source scopes. This is not a Global absence or silence claim."
+      ],
+      "status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES"
+    },
+    {
+      "baseline_pointer": "/actors/93",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.lai",
+      "name": "Lai",
+      "native_runtime_authority": false,
+      "original_index": 94,
+      "predecessor_status": "SOURCE_LEAD_ONLY",
+      "r19_batch": 4,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 23174,
+          "path": "/workspace/npc-r19-research/batch4/batch4-new-source-findings.json",
+          "sha256": "cccb0792567aeb1866c42125b9531a5f0de308abc8d337ffd5cff1901c8f845d"
+        },
+        "pointer": "/records/3"
+      },
+      "reasons": [
+        "Root-authorized source-qualified structural candidate; source-key repair independently closed and typed17 checks passed per root. Frozen native review, integration and publication remain owning-writer work. No Dialogue/Service/Quest/placement/runtime admission."
+      ],
+      "status": "QUALIFIED_EIGHT_CANDIDATE"
+    },
+    {
+      "baseline_pointer": "/actors/94",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.lorenzo",
+      "name": "Lorenzo",
+      "native_runtime_authority": false,
+      "original_index": 95,
+      "predecessor_status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES",
+      "r19_batch": 4,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 23174,
+          "path": "/workspace/npc-r19-research/batch4/batch4-new-source-findings.json",
+          "sha256": "cccb0792567aeb1866c42125b9531a5f0de308abc8d337ffd5cff1901c8f845d"
+        },
+        "pointer": "/records/4"
+      },
+      "reasons": [
+        "Root-authorized source-qualified structural candidate; source-key repair independently closed and typed17 checks passed per root. Frozen native review, integration and publication remain owning-writer work. No Dialogue/Service/Quest/placement/runtime admission."
+      ],
+      "status": "QUALIFIED_EIGHT_CANDIDATE"
+    },
+    {
+      "baseline_pointer": "/actors/95",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.lost_traveler",
+      "name": "Lost Traveler",
+      "native_runtime_authority": false,
+      "original_index": 96,
+      "predecessor_status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES",
+      "r19_batch": 4,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 23174,
+          "path": "/workspace/npc-r19-research/batch4/batch4-new-source-findings.json",
+          "sha256": "cccb0792567aeb1866c42125b9531a5f0de308abc8d337ffd5cff1901c8f845d"
+        },
+        "pointer": "/records/5"
+      },
+      "reasons": [
+        "No admitted literal actor-definition lead was established for this target in the recorded bounded source scopes. This is not a Global absence or silence claim."
+      ],
+      "status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES"
+    },
+    {
+      "baseline_pointer": "/actors/96",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.makao",
+      "name": "Makao",
+      "native_runtime_authority": false,
+      "original_index": 97,
+      "predecessor_status": "DEFINITION_ADMITTED_PREDECESSOR",
+      "r19_batch": null,
+      "reasons": [
+        "Structural definition admitted in published c2f9cf88/61fb5301 predecessors; runtime completeness is not implied."
+      ],
+      "status": "DEFINITION_ADMITTED_PREDECESSOR"
+    },
+    {
+      "baseline_pointer": "/actors/97",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.malech",
+      "name": "Malech",
+      "native_runtime_authority": false,
+      "original_index": 98,
+      "predecessor_status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES",
+      "r19_batch": 4,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 23174,
+          "path": "/workspace/npc-r19-research/batch4/batch4-new-source-findings.json",
+          "sha256": "cccb0792567aeb1866c42125b9531a5f0de308abc8d337ffd5cff1901c8f845d"
+        },
+        "pointer": "/records/6"
+      },
+      "reasons": [
+        "No admitted literal actor-definition lead was established for this target in the recorded bounded source scopes. This is not a Global absence or silence claim."
+      ],
+      "status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES"
+    },
+    {
+      "baseline_pointer": "/actors/98",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.mandly",
+      "name": "Mandly",
+      "native_runtime_authority": false,
+      "original_index": 99,
+      "predecessor_status": "HELD_MISSING_RADIUS",
+      "r19_batch": 4,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 23174,
+          "path": "/workspace/npc-r19-research/batch4/batch4-new-source-findings.json",
+          "sha256": "cccb0792567aeb1866c42125b9531a5f0de308abc8d337ffd5cff1901c8f845d"
+        },
+        "pointer": "/records/7"
+      },
+      "reasons": [
+        "Actor-specific numeric walkradius is absent from captured literal definitions. Engine default2 is not an actor fact; appearance/other holds may also remain."
+      ],
+      "status": "HELD_MISSING_RADIUS"
+    },
+    {
+      "baseline_pointer": "/actors/99",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.minzy",
+      "name": "Minzy",
+      "native_runtime_authority": false,
+      "original_index": 100,
+      "predecessor_status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES",
+      "r19_batch": 4,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 23174,
+          "path": "/workspace/npc-r19-research/batch4/batch4-new-source-findings.json",
+          "sha256": "cccb0792567aeb1866c42125b9531a5f0de308abc8d337ffd5cff1901c8f845d"
+        },
+        "pointer": "/records/8"
+      },
+      "reasons": [
+        "No admitted literal actor-definition lead was established for this target in the recorded bounded source scopes. This is not a Global absence or silence claim."
+      ],
+      "status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES"
+    },
+    {
+      "baseline_pointer": "/actors/100",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.mud",
+      "name": "MUD",
+      "native_runtime_authority": false,
+      "original_index": 101,
+      "predecessor_status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES",
+      "r19_batch": 4,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 23174,
+          "path": "/workspace/npc-r19-research/batch4/batch4-new-source-findings.json",
+          "sha256": "cccb0792567aeb1866c42125b9531a5f0de308abc8d337ffd5cff1901c8f845d"
+        },
+        "pointer": "/records/9"
+      },
+      "reasons": [
+        "No admitted literal actor-definition lead was established for this target in the recorded bounded source scopes. This is not a Global absence or silence claim."
+      ],
+      "status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES"
+    },
+    {
+      "baseline_pointer": "/actors/101",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.mutated_assistant",
+      "name": "Mutated Assistant",
+      "native_runtime_authority": false,
+      "original_index": 102,
+      "predecessor_status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES",
+      "r19_batch": 4,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 23174,
+          "path": "/workspace/npc-r19-research/batch4/batch4-new-source-findings.json",
+          "sha256": "cccb0792567aeb1866c42125b9531a5f0de308abc8d337ffd5cff1901c8f845d"
+        },
+        "pointer": "/records/10"
+      },
+      "reasons": [
+        "No admitted literal actor-definition lead was established for this target in the recorded bounded source scopes. This is not a Global absence or silence claim."
+      ],
+      "status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES"
+    },
+    {
+      "baseline_pointer": "/actors/102",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.mysterious_device",
+      "name": "Mysterious Device",
+      "native_runtime_authority": false,
+      "original_index": 103,
+      "predecessor_status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES",
+      "r19_batch": 4,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 23174,
+          "path": "/workspace/npc-r19-research/batch4/batch4-new-source-findings.json",
+          "sha256": "cccb0792567aeb1866c42125b9531a5f0de308abc8d337ffd5cff1901c8f845d"
+        },
+        "pointer": "/records/11"
+      },
+      "reasons": [
+        "No admitted literal actor-definition lead was established for this target in the recorded bounded source scopes. This is not a Global absence or silence claim."
+      ],
+      "status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES"
+    },
+    {
+      "baseline_pointer": "/actors/103",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.nagging_naga",
+      "name": "Nagging Naga",
+      "native_runtime_authority": false,
+      "original_index": 104,
+      "predecessor_status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES",
+      "r19_batch": 4,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 23174,
+          "path": "/workspace/npc-r19-research/batch4/batch4-new-source-findings.json",
+          "sha256": "cccb0792567aeb1866c42125b9531a5f0de308abc8d337ffd5cff1901c8f845d"
+        },
+        "pointer": "/records/12"
+      },
+      "reasons": [
+        "No admitted literal actor-definition lead was established for this target in the recorded bounded source scopes. This is not a Global absence or silence claim."
+      ],
+      "status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES"
+    },
+    {
+      "baseline_pointer": "/actors/104",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.namasa",
+      "name": "Namasa",
+      "native_runtime_authority": false,
+      "original_index": 105,
+      "predecessor_status": "DEFINITION_ADMITTED_PREDECESSOR",
+      "r19_batch": null,
+      "reasons": [
+        "Structural definition admitted in published c2f9cf88/61fb5301 predecessors; runtime completeness is not implied."
+      ],
+      "status": "DEFINITION_ADMITTED_PREDECESSOR"
+    },
+    {
+      "baseline_pointer": "/actors/105",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.nathaniel",
+      "name": "Nathaniel",
+      "native_runtime_authority": false,
+      "original_index": 106,
+      "predecessor_status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES",
+      "r19_batch": 4,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 23174,
+          "path": "/workspace/npc-r19-research/batch4/batch4-new-source-findings.json",
+          "sha256": "cccb0792567aeb1866c42125b9531a5f0de308abc8d337ffd5cff1901c8f845d"
+        },
+        "pointer": "/records/13"
+      },
+      "reasons": [
+        "No admitted literal actor-definition lead was established for this target in the recorded bounded source scopes. This is not a Global absence or silence claim."
+      ],
+      "status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES"
+    },
+    {
+      "baseline_pointer": "/actors/106",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.ned_nobel",
+      "name": "Ned Nobel",
+      "native_runtime_authority": false,
+      "original_index": 107,
+      "predecessor_status": "HELD_MISSING_RADIUS",
+      "r19_batch": 4,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 23174,
+          "path": "/workspace/npc-r19-research/batch4/batch4-new-source-findings.json",
+          "sha256": "cccb0792567aeb1866c42125b9531a5f0de308abc8d337ffd5cff1901c8f845d"
+        },
+        "pointer": "/records/14"
+      },
+      "reasons": [
+        "Actor-specific numeric walkradius is absent from captured literal definitions. Engine default2 is not an actor fact; appearance/other holds may also remain."
+      ],
+      "status": "HELD_MISSING_RADIUS"
+    },
+    {
+      "baseline_pointer": "/actors/107",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.nihaka",
+      "name": "Nihaka",
+      "native_runtime_authority": false,
+      "original_index": 108,
+      "predecessor_status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES",
+      "r19_batch": 4,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 23174,
+          "path": "/workspace/npc-r19-research/batch4/batch4-new-source-findings.json",
+          "sha256": "cccb0792567aeb1866c42125b9531a5f0de308abc8d337ffd5cff1901c8f845d"
+        },
+        "pointer": "/records/15"
+      },
+      "reasons": [
+        "No admitted literal actor-definition lead was established for this target in the recorded bounded source scopes. This is not a Global absence or silence claim."
+      ],
+      "status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES"
+    },
+    {
+      "baseline_pointer": "/actors/108",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.olhan",
+      "name": "Olhan",
+      "native_runtime_authority": false,
+      "original_index": 109,
+      "predecessor_status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES",
+      "r19_batch": 4,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 23174,
+          "path": "/workspace/npc-r19-research/batch4/batch4-new-source-findings.json",
+          "sha256": "cccb0792567aeb1866c42125b9531a5f0de308abc8d337ffd5cff1901c8f845d"
+        },
+        "pointer": "/records/16"
+      },
+      "reasons": [
+        "No admitted literal actor-definition lead was established for this target in the recorded bounded source scopes. This is not a Global absence or silence claim."
+      ],
+      "status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES"
+    },
+    {
+      "baseline_pointer": "/actors/109",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.om_wake_naha",
+      "name": "Om'Wake Naha",
+      "native_runtime_authority": false,
+      "original_index": 110,
+      "predecessor_status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES",
+      "r19_batch": 4,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 23174,
+          "path": "/workspace/npc-r19-research/batch4/batch4-new-source-findings.json",
+          "sha256": "cccb0792567aeb1866c42125b9531a5f0de308abc8d337ffd5cff1901c8f845d"
+        },
+        "pointer": "/records/17"
+      },
+      "reasons": [
+        "No admitted literal actor-definition lead was established for this target in the recorded bounded source scopes. This is not a Global absence or silence claim."
+      ],
+      "status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES"
+    },
+    {
+      "baseline_pointer": "/actors/110",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.opticorder_forge_npc",
+      "name": "Opticorder Forge (NPC)",
+      "native_runtime_authority": false,
+      "original_index": 111,
+      "predecessor_status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES",
+      "r19_batch": 4,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 23174,
+          "path": "/workspace/npc-r19-research/batch4/batch4-new-source-findings.json",
+          "sha256": "cccb0792567aeb1866c42125b9531a5f0de308abc8d337ffd5cff1901c8f845d"
+        },
+        "pointer": "/records/18"
+      },
+      "reasons": [
+        "No admitted literal actor-definition lead was established for this target in the recorded bounded source scopes. This is not a Global absence or silence claim."
+      ],
+      "status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES"
+    },
+    {
+      "baseline_pointer": "/actors/111",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.owin",
+      "name": "Owin",
+      "native_runtime_authority": false,
+      "original_index": 112,
+      "predecessor_status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES",
+      "r19_batch": 4,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 23174,
+          "path": "/workspace/npc-r19-research/batch4/batch4-new-source-findings.json",
+          "sha256": "cccb0792567aeb1866c42125b9531a5f0de308abc8d337ffd5cff1901c8f845d"
+        },
+        "pointer": "/records/19"
+      },
+      "reasons": [
+        "No admitted literal actor-definition lead was established for this target in the recorded bounded source scopes. This is not a Global absence or silence claim."
+      ],
+      "status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES"
+    },
+    {
+      "baseline_pointer": "/actors/112",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.para_norbert",
+      "name": "Para Norbert",
+      "native_runtime_authority": false,
+      "original_index": 113,
+      "predecessor_status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES",
+      "r19_batch": 4,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 23174,
+          "path": "/workspace/npc-r19-research/batch4/batch4-new-source-findings.json",
+          "sha256": "cccb0792567aeb1866c42125b9531a5f0de308abc8d337ffd5cff1901c8f845d"
+        },
+        "pointer": "/records/20"
+      },
+      "reasons": [
+        "No admitted literal actor-definition lead was established for this target in the recorded bounded source scopes. This is not a Global absence or silence claim."
+      ],
+      "status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES"
+    },
+    {
+      "baseline_pointer": "/actors/113",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.paulette",
+      "name": "Paulette",
+      "native_runtime_authority": false,
+      "original_index": 114,
+      "predecessor_status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES",
+      "r19_batch": 4,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 23174,
+          "path": "/workspace/npc-r19-research/batch4/batch4-new-source-findings.json",
+          "sha256": "cccb0792567aeb1866c42125b9531a5f0de308abc8d337ffd5cff1901c8f845d"
+        },
+        "pointer": "/records/21"
+      },
+      "reasons": [
+        "No admitted literal actor-definition lead was established for this target in the recorded bounded source scopes. This is not a Global absence or silence claim."
+      ],
+      "status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES"
+    },
+    {
+      "baseline_pointer": "/actors/114",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.petaloid",
+      "name": "Petaloid",
+      "native_runtime_authority": false,
+      "original_index": 115,
+      "predecessor_status": "DEFINITION_ADMITTED_PREDECESSOR",
+      "r19_batch": null,
+      "reasons": [
+        "Structural definition admitted in published c2f9cf88/61fb5301 predecessors; runtime completeness is not implied."
+      ],
+      "status": "DEFINITION_ADMITTED_PREDECESSOR"
+    },
+    {
+      "baseline_pointer": "/actors/115",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.planestrider_npc",
+      "name": "Planestrider (NPC)",
+      "native_runtime_authority": false,
+      "original_index": 116,
+      "predecessor_status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES",
+      "r19_batch": 4,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 23174,
+          "path": "/workspace/npc-r19-research/batch4/batch4-new-source-findings.json",
+          "sha256": "cccb0792567aeb1866c42125b9531a5f0de308abc8d337ffd5cff1901c8f845d"
+        },
+        "pointer": "/records/22"
+      },
+      "reasons": [
+        "No admitted literal actor-definition lead was established for this target in the recorded bounded source scopes. This is not a Global absence or silence claim."
+      ],
+      "status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES"
+    },
+    {
+      "baseline_pointer": "/actors/116",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.player_level_1000",
+      "name": "Player Level 1000",
+      "native_runtime_authority": false,
+      "original_index": 117,
+      "predecessor_status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES",
+      "r19_batch": 4,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 23174,
+          "path": "/workspace/npc-r19-research/batch4/batch4-new-source-findings.json",
+          "sha256": "cccb0792567aeb1866c42125b9531a5f0de308abc8d337ffd5cff1901c8f845d"
+        },
+        "pointer": "/records/23"
+      },
+      "reasons": [
+        "No admitted literal actor-definition lead was established for this target in the recorded bounded source scopes. This is not a Global absence or silence claim."
+      ],
+      "status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES"
+    },
+    {
+      "baseline_pointer": "/actors/117",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.player_level_1001",
+      "name": "Player Level 1001",
+      "native_runtime_authority": false,
+      "original_index": 118,
+      "predecessor_status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES",
+      "r19_batch": 4,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 23174,
+          "path": "/workspace/npc-r19-research/batch4/batch4-new-source-findings.json",
+          "sha256": "cccb0792567aeb1866c42125b9531a5f0de308abc8d337ffd5cff1901c8f845d"
+        },
+        "pointer": "/records/24"
+      },
+      "reasons": [
+        "No admitted literal actor-definition lead was established for this target in the recorded bounded source scopes. This is not a Global absence or silence claim."
+      ],
+      "status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES"
+    },
+    {
+      "baseline_pointer": "/actors/118",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.player_level_1003",
+      "name": "Player Level 1003",
+      "native_runtime_authority": false,
+      "original_index": 119,
+      "predecessor_status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES",
+      "r19_batch": 4,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 23174,
+          "path": "/workspace/npc-r19-research/batch4/batch4-new-source-findings.json",
+          "sha256": "cccb0792567aeb1866c42125b9531a5f0de308abc8d337ffd5cff1901c8f845d"
+        },
+        "pointer": "/records/25"
+      },
+      "reasons": [
+        "No admitted literal actor-definition lead was established for this target in the recorded bounded source scopes. This is not a Global absence or silence claim."
+      ],
+      "status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES"
+    },
+    {
+      "baseline_pointer": "/actors/119",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.player_level_999_female",
+      "name": "Player Level 999 (Female)",
+      "native_runtime_authority": false,
+      "original_index": 120,
+      "predecessor_status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES",
+      "r19_batch": 4,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 23174,
+          "path": "/workspace/npc-r19-research/batch4/batch4-new-source-findings.json",
+          "sha256": "cccb0792567aeb1866c42125b9531a5f0de308abc8d337ffd5cff1901c8f845d"
+        },
+        "pointer": "/records/26"
+      },
+      "reasons": [
+        "No admitted literal actor-definition lead was established for this target in the recorded bounded source scopes. This is not a Global absence or silence claim."
+      ],
+      "status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES"
+    },
+    {
+      "baseline_pointer": "/actors/120",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.player_level_999_male",
+      "name": "Player Level 999 (Male)",
+      "native_runtime_authority": false,
+      "original_index": 121,
+      "predecessor_status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES",
+      "r19_batch": 4,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 23174,
+          "path": "/workspace/npc-r19-research/batch4/batch4-new-source-findings.json",
+          "sha256": "cccb0792567aeb1866c42125b9531a5f0de308abc8d337ffd5cff1901c8f845d"
+        },
+        "pointer": "/records/27"
+      },
+      "reasons": [
+        "No admitted literal actor-definition lead was established for this target in the recorded bounded source scopes. This is not a Global absence or silence claim."
+      ],
+      "status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES"
+    },
+    {
+      "baseline_pointer": "/actors/121",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.praline",
+      "name": "Praline",
+      "native_runtime_authority": false,
+      "original_index": 122,
+      "predecessor_status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES",
+      "r19_batch": 5,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 81637,
+          "path": "/workspace/npc-r19-research/batch5/batch5-source-research.json",
+          "sha256": "d983427b2b5f969e5489ba365c16ce3ff46203e3d3292d46bebb1f0f99691717"
+        },
+        "pointer": "/records/0"
+      },
+      "reasons": [
+        "No admitted literal actor-definition lead was established for this target in the recorded bounded source scopes. This is not a Global absence or silence claim."
+      ],
+      "status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES"
+    },
+    {
+      "baseline_pointer": "/actors/122",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.proprietor_piers",
+      "name": "Proprietor Piers",
+      "native_runtime_authority": false,
+      "original_index": 123,
+      "predecessor_status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES",
+      "r19_batch": 5,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 81637,
+          "path": "/workspace/npc-r19-research/batch5/batch5-source-research.json",
+          "sha256": "d983427b2b5f969e5489ba365c16ce3ff46203e3d3292d46bebb1f0f99691717"
+        },
+        "pointer": "/records/1"
+      },
+      "reasons": [
+        "No admitted literal actor-definition lead was established for this target in the recorded bounded source scopes. This is not a Global absence or silence claim."
+      ],
+      "status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES"
+    },
+    {
+      "baseline_pointer": "/actors/123",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.ra_clette",
+      "name": "Ra'Clette",
+      "native_runtime_authority": false,
+      "original_index": 124,
+      "predecessor_status": "QUALIFIED_NINE_CANDIDATE",
+      "r19_batch": null,
+      "reasons": [
+        "Structural definition admitted in published c2f9cf88/61fb5301 predecessors; runtime completeness is not implied."
+      ],
+      "status": "DEFINITION_ADMITTED_PREDECESSOR"
+    },
+    {
+      "baseline_pointer": "/actors/124",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.rascalio",
+      "name": "Rascalio",
+      "native_runtime_authority": false,
+      "original_index": 125,
+      "predecessor_status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES",
+      "r19_batch": 5,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 81637,
+          "path": "/workspace/npc-r19-research/batch5/batch5-source-research.json",
+          "sha256": "d983427b2b5f969e5489ba365c16ce3ff46203e3d3292d46bebb1f0f99691717"
+        },
+        "pointer": "/records/2"
+      },
+      "reasons": [
+        "No admitted literal actor-definition lead was established for this target in the recorded bounded source scopes. This is not a Global absence or silence claim."
+      ],
+      "status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES"
+    },
+    {
+      "baseline_pointer": "/actors/125",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.red_robert",
+      "name": "Red Robert",
+      "native_runtime_authority": false,
+      "original_index": 126,
+      "predecessor_status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES",
+      "r19_batch": 5,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 81637,
+          "path": "/workspace/npc-r19-research/batch5/batch5-source-research.json",
+          "sha256": "d983427b2b5f969e5489ba365c16ce3ff46203e3d3292d46bebb1f0f99691717"
+        },
+        "pointer": "/records/3"
+      },
+      "reasons": [
+        "No admitted literal actor-definition lead was established for this target in the recorded bounded source scopes. This is not a Global absence or silence claim."
+      ],
+      "status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES"
+    },
+    {
+      "baseline_pointer": "/actors/126",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.relaxed_bartender",
+      "name": "Relaxed Bartender",
+      "native_runtime_authority": false,
+      "original_index": 127,
+      "predecessor_status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES",
+      "r19_batch": 5,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 81637,
+          "path": "/workspace/npc-r19-research/batch5/batch5-source-research.json",
+          "sha256": "d983427b2b5f969e5489ba365c16ce3ff46203e3d3292d46bebb1f0f99691717"
+        },
+        "pointer": "/records/4"
+      },
+      "reasons": [
+        "No admitted literal actor-definition lead was established for this target in the recorded bounded source scopes. This is not a Global absence or silence claim."
+      ],
+      "status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES"
+    },
+    {
+      "baseline_pointer": "/actors/127",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.rhargu",
+      "name": "Rhargu",
+      "native_runtime_authority": false,
+      "original_index": 128,
+      "predecessor_status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES",
+      "r19_batch": 5,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 81637,
+          "path": "/workspace/npc-r19-research/batch5/batch5-source-research.json",
+          "sha256": "d983427b2b5f969e5489ba365c16ce3ff46203e3d3292d46bebb1f0f99691717"
+        },
+        "pointer": "/records/5"
+      },
+      "reasons": [
+        "No admitted literal actor-definition lead was established for this target in the recorded bounded source scopes. This is not a Global absence or silence claim."
+      ],
+      "status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES"
+    },
+    {
+      "baseline_pointer": "/actors/128",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.secretive_rascoohan",
+      "name": "Secretive Rascoohan",
+      "native_runtime_authority": false,
+      "original_index": 129,
+      "predecessor_status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES",
+      "r19_batch": 5,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 81637,
+          "path": "/workspace/npc-r19-research/batch5/batch5-source-research.json",
+          "sha256": "d983427b2b5f969e5489ba365c16ce3ff46203e3d3292d46bebb1f0f99691717"
+        },
+        "pointer": "/records/6"
+      },
+      "reasons": [
+        "No admitted literal actor-definition lead was established for this target in the recorded bounded source scopes. This is not a Global absence or silence claim."
+      ],
+      "status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES"
+    },
+    {
+      "baseline_pointer": "/actors/129",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.skullfrost_npc",
+      "name": "Skullfrost (NPC)",
+      "native_runtime_authority": false,
+      "original_index": 130,
+      "predecessor_status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES",
+      "r19_batch": 5,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 81637,
+          "path": "/workspace/npc-r19-research/batch5/batch5-source-research.json",
+          "sha256": "d983427b2b5f969e5489ba365c16ce3ff46203e3d3292d46bebb1f0f99691717"
+        },
+        "pointer": "/records/7"
+      },
+      "reasons": [
+        "No admitted literal actor-definition lead was established for this target in the recorded bounded source scopes. This is not a Global absence or silence claim."
+      ],
+      "status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES"
+    },
+    {
+      "baseline_pointer": "/actors/130",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.smaralda",
+      "name": "Smaralda",
+      "native_runtime_authority": false,
+      "original_index": 131,
+      "predecessor_status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES",
+      "r19_batch": 5,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 81637,
+          "path": "/workspace/npc-r19-research/batch5/batch5-source-research.json",
+          "sha256": "d983427b2b5f969e5489ba365c16ce3ff46203e3d3292d46bebb1f0f99691717"
+        },
+        "pointer": "/records/8"
+      },
+      "reasons": [
+        "No admitted literal actor-definition lead was established for this target in the recorded bounded source scopes. This is not a Global absence or silence claim."
+      ],
+      "status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES"
+    },
+    {
+      "baseline_pointer": "/actors/131",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.sniff",
+      "name": "Sniff",
+      "native_runtime_authority": false,
+      "original_index": 132,
+      "predecessor_status": "QUALIFIED_NINE_CANDIDATE",
+      "r19_batch": null,
+      "reasons": [
+        "Structural definition admitted in published c2f9cf88/61fb5301 predecessors; runtime completeness is not implied."
+      ],
+      "status": "DEFINITION_ADMITTED_PREDECESSOR"
+    },
+    {
+      "baseline_pointer": "/actors/132",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.spirit_speaker",
+      "name": "Spirit Speaker",
+      "native_runtime_authority": false,
+      "original_index": 133,
+      "predecessor_status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES",
+      "r19_batch": 5,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 81637,
+          "path": "/workspace/npc-r19-research/batch5/batch5-source-research.json",
+          "sha256": "d983427b2b5f969e5489ba365c16ce3ff46203e3d3292d46bebb1f0f99691717"
+        },
+        "pointer": "/records/9"
+      },
+      "reasons": [
+        "No admitted literal actor-definition lead was established for this target in the recorded bounded source scopes. This is not a Global absence or silence claim."
+      ],
+      "status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES"
+    },
+    {
+      "baseline_pointer": "/actors/133",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.sprout_sentinel",
+      "name": "Sprout Sentinel",
+      "native_runtime_authority": false,
+      "original_index": 134,
+      "predecessor_status": "DEFINITION_ADMITTED_PREDECESSOR",
+      "r19_batch": null,
+      "reasons": [
+        "Structural definition admitted in published c2f9cf88/61fb5301 predecessors; runtime completeness is not implied."
+      ],
+      "status": "DEFINITION_ADMITTED_PREDECESSOR"
+    },
+    {
+      "baseline_pointer": "/actors/134",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.stressed_storeman",
+      "name": "Stressed Storeman",
+      "native_runtime_authority": false,
+      "original_index": 135,
+      "predecessor_status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES",
+      "r19_batch": 5,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 81637,
+          "path": "/workspace/npc-r19-research/batch5/batch5-source-research.json",
+          "sha256": "d983427b2b5f969e5489ba365c16ce3ff46203e3d3292d46bebb1f0f99691717"
+        },
+        "pointer": "/records/10"
+      },
+      "reasons": [
+        "No admitted literal actor-definition lead was established for this target in the recorded bounded source scopes. This is not a Global absence or silence claim."
+      ],
+      "status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES"
+    },
+    {
+      "baseline_pointer": "/actors/135",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.sugar_plum_fairy",
+      "name": "Sugar Plum Fairy",
+      "native_runtime_authority": false,
+      "original_index": 136,
+      "predecessor_status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES",
+      "r19_batch": 5,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 81637,
+          "path": "/workspace/npc-r19-research/batch5/batch5-source-research.json",
+          "sha256": "d983427b2b5f969e5489ba365c16ce3ff46203e3d3292d46bebb1f0f99691717"
+        },
+        "pointer": "/records/11"
+      },
+      "reasons": [
+        "No admitted literal actor-definition lead was established for this target in the recorded bounded source scopes. This is not a Global absence or silence claim."
+      ],
+      "status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES"
+    },
+    {
+      "baseline_pointer": "/actors/136",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.tamru",
+      "name": "Tamru",
+      "native_runtime_authority": false,
+      "original_index": 137,
+      "predecessor_status": "QUALIFIED_NINE_CANDIDATE",
+      "r19_batch": null,
+      "reasons": [
+        "Structural definition admitted in published c2f9cf88/61fb5301 predecessors; runtime completeness is not implied."
+      ],
+      "status": "DEFINITION_ADMITTED_PREDECESSOR"
+    },
+    {
+      "baseline_pointer": "/actors/137",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.tatak",
+      "name": "Tatak",
+      "native_runtime_authority": false,
+      "original_index": 138,
+      "predecessor_status": "DEFINITION_ADMITTED_PREDECESSOR",
+      "r19_batch": null,
+      "reasons": [
+        "Structural definition admitted in published c2f9cf88/61fb5301 predecessors; runtime completeness is not implied."
+      ],
+      "status": "DEFINITION_ADMITTED_PREDECESSOR"
+    },
+    {
+      "baseline_pointer": "/actors/138",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.taya",
+      "name": "Taya",
+      "native_runtime_authority": false,
+      "original_index": 139,
+      "predecessor_status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES",
+      "r19_batch": 5,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 81637,
+          "path": "/workspace/npc-r19-research/batch5/batch5-source-research.json",
+          "sha256": "d983427b2b5f969e5489ba365c16ce3ff46203e3d3292d46bebb1f0f99691717"
+        },
+        "pointer": "/records/12"
+      },
+      "reasons": [
+        "No admitted literal actor-definition lead was established for this target in the recorded bounded source scopes. This is not a Global absence or silence claim."
+      ],
+      "status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES"
+    },
+    {
+      "baseline_pointer": "/actors/139",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.the_dentist",
+      "name": "The Dentist",
+      "native_runtime_authority": false,
+      "original_index": 140,
+      "predecessor_status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES",
+      "r19_batch": 5,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 81637,
+          "path": "/workspace/npc-r19-research/batch5/batch5-source-research.json",
+          "sha256": "d983427b2b5f969e5489ba365c16ce3ff46203e3d3292d46bebb1f0f99691717"
+        },
+        "pointer": "/records/13"
+      },
+      "reasons": [
+        "No admitted literal actor-definition lead was established for this target in the recorded bounded source scopes. This is not a Global absence or silence claim."
+      ],
+      "status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES"
+    },
+    {
+      "baseline_pointer": "/actors/140",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.the_draccoon_npc",
+      "name": "The Draccoon (NPC)",
+      "native_runtime_authority": false,
+      "original_index": 141,
+      "predecessor_status": "QUALIFIED_NINE_CANDIDATE",
+      "r19_batch": null,
+      "reasons": [
+        "Structural definition admitted in published c2f9cf88/61fb5301 predecessors; runtime completeness is not implied."
+      ],
+      "status": "DEFINITION_ADMITTED_PREDECESSOR"
+    },
+    {
+      "baseline_pointer": "/actors/141",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.the_thaian",
+      "name": "The Thaian",
+      "native_runtime_authority": false,
+      "original_index": 142,
+      "predecessor_status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES",
+      "r19_batch": 5,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 81637,
+          "path": "/workspace/npc-r19-research/batch5/batch5-source-research.json",
+          "sha256": "d983427b2b5f969e5489ba365c16ce3ff46203e3d3292d46bebb1f0f99691717"
+        },
+        "pointer": "/records/14"
+      },
+      "reasons": [
+        "No admitted literal actor-definition lead was established for this target in the recorded bounded source scopes. This is not a Global absence or silence claim."
+      ],
+      "status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES"
+    },
+    {
+      "baseline_pointer": "/actors/142",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.theodora",
+      "name": "Theodora",
+      "native_runtime_authority": false,
+      "original_index": 143,
+      "predecessor_status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES",
+      "r19_batch": 5,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 81637,
+          "path": "/workspace/npc-r19-research/batch5/batch5-source-research.json",
+          "sha256": "d983427b2b5f969e5489ba365c16ce3ff46203e3d3292d46bebb1f0f99691717"
+        },
+        "pointer": "/records/15"
+      },
+      "reasons": [
+        "No admitted literal actor-definition lead was established for this target in the recorded bounded source scopes. This is not a Global absence or silence claim."
+      ],
+      "status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES"
+    },
+    {
+      "baseline_pointer": "/actors/143",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.thundergiant_npc",
+      "name": "Thundergiant (NPC)",
+      "native_runtime_authority": false,
+      "original_index": 144,
+      "predecessor_status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES",
+      "r19_batch": 5,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 81637,
+          "path": "/workspace/npc-r19-research/batch5/batch5-source-research.json",
+          "sha256": "d983427b2b5f969e5489ba365c16ce3ff46203e3d3292d46bebb1f0f99691717"
+        },
+        "pointer": "/records/16"
+      },
+      "reasons": [
+        "No admitted literal actor-definition lead was established for this target in the recorded bounded source scopes. This is not a Global absence or silence claim."
+      ],
+      "status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES"
+    },
+    {
+      "baseline_pointer": "/actors/144",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.tik_hi_tak_he",
+      "name": "Tik'hi Tak'he",
+      "native_runtime_authority": false,
+      "original_index": 145,
+      "predecessor_status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES",
+      "r19_batch": 5,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 81637,
+          "path": "/workspace/npc-r19-research/batch5/batch5-source-research.json",
+          "sha256": "d983427b2b5f969e5489ba365c16ce3ff46203e3d3292d46bebb1f0f99691717"
+        },
+        "pointer": "/records/17"
+      },
+      "reasons": [
+        "No admitted literal actor-definition lead was established for this target in the recorded bounded source scopes. This is not a Global absence or silence claim."
+      ],
+      "status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES"
+    },
+    {
+      "baseline_pointer": "/actors/145",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.timira",
+      "name": "Timira",
+      "native_runtime_authority": false,
+      "original_index": 146,
+      "predecessor_status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES",
+      "r19_batch": 5,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 81637,
+          "path": "/workspace/npc-r19-research/batch5/batch5-source-research.json",
+          "sha256": "d983427b2b5f969e5489ba365c16ce3ff46203e3d3292d46bebb1f0f99691717"
+        },
+        "pointer": "/records/18"
+      },
+      "reasons": [
+        "No admitted literal actor-definition lead was established for this target in the recorded bounded source scopes. This is not a Global absence or silence claim."
+      ],
+      "status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES"
+    },
+    {
+      "baseline_pointer": "/actors/146",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.toffee",
+      "name": "Toffee",
+      "native_runtime_authority": false,
+      "original_index": 147,
+      "predecessor_status": "QUALIFIED_NINE_CANDIDATE",
+      "r19_batch": null,
+      "reasons": [
+        "Structural definition admitted in published c2f9cf88/61fb5301 predecessors; runtime completeness is not implied."
+      ],
+      "status": "DEFINITION_ADMITTED_PREDECESSOR"
+    },
+    {
+      "baseline_pointer": "/actors/147",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.two_lips",
+      "name": "Two Lips",
+      "native_runtime_authority": false,
+      "original_index": 148,
+      "predecessor_status": "DEFINITION_ADMITTED_PREDECESSOR",
+      "r19_batch": null,
+      "reasons": [
+        "Structural definition admitted in published c2f9cf88/61fb5301 predecessors; runtime completeness is not implied."
+      ],
+      "status": "DEFINITION_ADMITTED_PREDECESSOR"
+    },
+    {
+      "baseline_pointer": "/actors/148",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.vasko",
+      "name": "Vasko",
+      "native_runtime_authority": false,
+      "original_index": 149,
+      "predecessor_status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES",
+      "r19_batch": 5,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 81637,
+          "path": "/workspace/npc-r19-research/batch5/batch5-source-research.json",
+          "sha256": "d983427b2b5f969e5489ba365c16ce3ff46203e3d3292d46bebb1f0f99691717"
+        },
+        "pointer": "/records/19"
+      },
+      "reasons": [
+        "No admitted literal actor-definition lead was established for this target in the recorded bounded source scopes. This is not a Global absence or silence claim."
+      ],
+      "status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES"
+    },
+    {
+      "baseline_pointer": "/actors/149",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.vrisaki",
+      "name": "Vrisaki",
+      "native_runtime_authority": false,
+      "original_index": 150,
+      "predecessor_status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES",
+      "r19_batch": 5,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 81637,
+          "path": "/workspace/npc-r19-research/batch5/batch5-source-research.json",
+          "sha256": "d983427b2b5f969e5489ba365c16ce3ff46203e3d3292d46bebb1f0f99691717"
+        },
+        "pointer": "/records/20"
+      },
+      "reasons": [
+        "No admitted literal actor-definition lead was established for this target in the recorded bounded source scopes. This is not a Global absence or silence claim."
+      ],
+      "status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES"
+    },
+    {
+      "baseline_pointer": "/actors/150",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.wounded_atui",
+      "name": "Wounded Atui",
+      "native_runtime_authority": false,
+      "original_index": 151,
+      "predecessor_status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES",
+      "r19_batch": 5,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 81637,
+          "path": "/workspace/npc-r19-research/batch5/batch5-source-research.json",
+          "sha256": "d983427b2b5f969e5489ba365c16ce3ff46203e3d3292d46bebb1f0f99691717"
+        },
+        "pointer": "/records/21"
+      },
+      "reasons": [
+        "No admitted literal actor-definition lead was established for this target in the recorded bounded source scopes. This is not a Global absence or silence claim."
+      ],
+      "status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES"
+    },
+    {
+      "baseline_pointer": "/actors/151",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.wyrdins_apprentice",
+      "name": "Wyrdin’s Apprentice",
+      "native_runtime_authority": false,
+      "original_index": 152,
+      "predecessor_status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES",
+      "r19_batch": 5,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 81637,
+          "path": "/workspace/npc-r19-research/batch5/batch5-source-research.json",
+          "sha256": "d983427b2b5f969e5489ba365c16ce3ff46203e3d3292d46bebb1f0f99691717"
+        },
+        "pointer": "/records/22"
+      },
+      "reasons": [
+        "No admitted literal actor-definition lead was established for this target in the recorded bounded source scopes. This is not a Global absence or silence claim."
+      ],
+      "status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES"
+    },
+    {
+      "baseline_pointer": "/actors/152",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.xaver",
+      "name": "Xaver",
+      "native_runtime_authority": false,
+      "original_index": 153,
+      "predecessor_status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES",
+      "r19_batch": 5,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 81637,
+          "path": "/workspace/npc-r19-research/batch5/batch5-source-research.json",
+          "sha256": "d983427b2b5f969e5489ba365c16ce3ff46203e3d3292d46bebb1f0f99691717"
+        },
+        "pointer": "/records/23"
+      },
+      "reasons": [
+        "No admitted literal actor-definition lead was established for this target in the recorded bounded source scopes. This is not a Global absence or silence claim."
+      ],
+      "status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES"
+    },
+    {
+      "baseline_pointer": "/actors/153",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.yeo",
+      "name": "Yeo",
+      "native_runtime_authority": false,
+      "original_index": 154,
+      "predecessor_status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES",
+      "r19_batch": 5,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 81637,
+          "path": "/workspace/npc-r19-research/batch5/batch5-source-research.json",
+          "sha256": "d983427b2b5f969e5489ba365c16ce3ff46203e3d3292d46bebb1f0f99691717"
+        },
+        "pointer": "/records/24"
+      },
+      "reasons": [
+        "No admitted literal actor-definition lead was established for this target in the recorded bounded source scopes. This is not a Global absence or silence claim."
+      ],
+      "status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES"
+    },
+    {
+      "baseline_pointer": "/actors/154",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.yerga",
+      "name": "Yerga",
+      "native_runtime_authority": false,
+      "original_index": 155,
+      "predecessor_status": "QUALIFIED_NINE_CANDIDATE",
+      "r19_batch": null,
+      "reasons": [
+        "Structural definition admitted in published c2f9cf88/61fb5301 predecessors; runtime completeness is not implied."
+      ],
+      "status": "DEFINITION_ADMITTED_PREDECESSOR"
+    },
+    {
+      "baseline_pointer": "/actors/155",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.yrlin",
+      "name": "Yrlin",
+      "native_runtime_authority": false,
+      "original_index": 156,
+      "predecessor_status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES",
+      "r19_batch": 5,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 81637,
+          "path": "/workspace/npc-r19-research/batch5/batch5-source-research.json",
+          "sha256": "d983427b2b5f969e5489ba365c16ce3ff46203e3d3292d46bebb1f0f99691717"
+        },
+        "pointer": "/records/25"
+      },
+      "reasons": [
+        "No admitted literal actor-definition lead was established for this target in the recorded bounded source scopes. This is not a Global absence or silence claim."
+      ],
+      "status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES"
+    },
+    {
+      "baseline_pointer": "/actors/156",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.ysbasra",
+      "name": "Ysbasra",
+      "native_runtime_authority": false,
+      "original_index": 157,
+      "predecessor_status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES",
+      "r19_batch": 5,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 81637,
+          "path": "/workspace/npc-r19-research/batch5/batch5-source-research.json",
+          "sha256": "d983427b2b5f969e5489ba365c16ce3ff46203e3d3292d46bebb1f0f99691717"
+        },
+        "pointer": "/records/26"
+      },
+      "reasons": [
+        "No admitted literal actor-definition lead was established for this target in the recorded bounded source scopes. This is not a Global absence or silence claim."
+      ],
+      "status": "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES"
+    },
+    {
+      "baseline_pointer": "/actors/157",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.yselda",
+      "name": "Yselda",
+      "native_runtime_authority": false,
+      "original_index": 158,
+      "predecessor_status": "DEFINITION_ADMITTED_PREDECESSOR",
+      "r19_batch": null,
+      "reasons": [
+        "Structural definition admitted in published c2f9cf88/61fb5301 predecessors; runtime completeness is not implied."
+      ],
+      "status": "DEFINITION_ADMITTED_PREDECESSOR"
+    },
+    {
+      "baseline_pointer": "/actors/158",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.dragon_ancestor_spirit",
+      "name": "Dragon Ancestor Spirit",
+      "native_runtime_authority": false,
+      "original_index": 159,
+      "predecessor_status": "AUTHOR_TODO",
+      "r19_batch": 5,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 81637,
+          "path": "/workspace/npc-r19-research/batch5/batch5-source-research.json",
+          "sha256": "d983427b2b5f969e5489ba365c16ce3ff46203e3d3292d46bebb1f0f99691717"
+        },
+        "pointer": "/records/27"
+      },
+      "reasons": [
+        "Crystal TODO source has movement assignments in comments; no active interval/radius fact. Original deferred actor remains outside qualified definition batches."
+      ],
+      "status": "AUTHOR_TODO"
+    },
+    {
+      "baseline_pointer": "/actors/159",
+      "global_absence_claim": false,
+      "global_silence_claim": false,
+      "key": "oteryn:npc.s_zallar_m_andar",
+      "name": "S'Zallar M'Andar",
+      "native_runtime_authority": false,
+      "original_index": 160,
+      "predecessor_status": "AUTHOR_TODO",
+      "r19_batch": 5,
+      "r19_bounded_research": {
+        "artifact": {
+          "bytes": 81637,
+          "path": "/workspace/npc-r19-research/batch5/batch5-source-research.json",
+          "sha256": "d983427b2b5f969e5489ba365c16ce3ff46203e3d3292d46bebb1f0f99691717"
+        },
+        "pointer": "/records/28"
+      },
+      "reasons": [
+        "Crystal TODO source has movement assignments in comments; duplicate donor lineage does not qualify them. Original deferred actor remains outside qualified definition batches."
+      ],
+      "status": "AUTHOR_TODO"
+    }
+  ],
+  "baseline": {
+    "bytes": 1416844,
+    "path": "/workspace/npc-r13-publish/docs/agents/evidence/OTV2-20261001-npc-source-audit-r18/original160-progress.json",
+    "repository": "Oteryn/Oteryn-Game",
+    "repository_path": "docs/agents/evidence/OTV2-20261001-npc-source-audit-r18/original160-progress.json",
+    "revision": "61fb530104d42800aecbebbd2feb7f816b450b46",
+    "sha256": "8464b0dcd433da7dade12ea811fdd41cc43f76ab5c31e85129badecc81ec1d87"
+  },
+  "final_source_packet_binding": {
+    "bytes": 2675318,
+    "path": "/workspace/npc-r19-research/batch1/structural-eight-definition-bridge.json",
+    "sha256": "c1935ff30c2c61cd7ba5ef0a800d31d41d8295295f48a7be93361193f69ea21d"
+  },
+  "final_source_packet_binding_reason": "Corrected final source packet hash independently verified against external bytes; superseded packet digest is not used. This is not a frozen native apply/review claim.",
+  "publication_performed": false,
+  "published_predecessors": [
+    "c2f9cf880a014ca494a32cce97bb0a19ed8b80c9",
+    "61fb530104d42800aecbebbd2feb7f816b450b46"
+  ],
+  "repo_written": false,
+  "retained_baseline_custody": "All omitted historical actor proofs and facts remain available at the immutable baseline artifact and per-actor JSON pointer.",
+  "schema": "OTERYN_ORIGINAL160_SOURCE_PROGRESS_LEDGER/v1",
+  "scope_boundaries": [
+    "All160 original keys appear exactly once across disjoint53+53+54 scopes.",
+    "No filename-only identity qualification, implicit radius/defaults, donor majority, native QuestID inference or silence inference.",
+    "Duplicate Johncore/tyndy blobs are one lineage. Current/source retained image fits remain distinct.",
+    "All source access modes distinguish retained imports, public GitHub raw captures, public browser custody and offline authoring proposals.",
+    "Five disjoint batches28+28+28+28+29 cover141 remaining actors; no broad fresh-TP coverage is inferred from batch assignment.",
+    "Agostina remains held; guarded dialogue, reward programs and services remain source-only with no invented native Quest/Currency/Effect IDs."
+  ],
+  "snapshot_boundary": "Published predecessor contains 19 structural definitions. Eight qualified candidates are prospective until root integration/review/publication. 27/133 is candidate arithmetic, not a claim that this external ledger applied native changes.",
+  "source_key_repair": {
+    "literal_upstream_repository": "ValeriaOT/Test",
+    "literal_upstream_repository_preserved": true,
+    "mapper": {
+      "bytes": 34370,
+      "path": "/workspace/npc-r19-research/batch1/build_structural_bridge.py",
+      "sha256": "3f98bbdd656be5a4e3ee0a0f9bcfaad050605cfbdf5aaa537d6c66518edc8492"
+    },
+    "native_source_key": "oteryn:source.valeria_ot",
+    "review": {
+      "bytes": 2171,
+      "path": "/workspace/npc-r19-research/shared-review/eight-source-compiler-corrected-independent-review.json",
+      "sha256": "4700fe8e204c215eb6f3963ed0b75aef8acddba37cc1d8dfab457c231a2f8ca4"
+    },
+    "status": "FIXED_INDEPENDENTLY_REVIEWED"
+  },
+  "summary": {
+    "definitions_without_admission_after_this_candidate": 133,
+    "new_runtime_admissions": 0,
+    "original160": 160,
+    "published_predecessor_definitions": 19,
+    "qualified_definitions_in_this_candidate": 8,
+    "r19_disjoint_bounded_research_actors": 141,
+    "status_counts": {
+      "AUTHOR_TODO": 2,
+      "DEFINITION_ADMITTED_PREDECESSOR": 19,
+      "HELD_CURRENT_APPEARANCE": 2,
+      "HELD_MISSING_RADIUS": 12,
+      "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES": 114,
+      "QUALIFIED_EIGHT_CANDIDATE": 8,
+      "SOURCE_LEAD_ONLY": 3
+    },
+    "structural_definitions_after_candidate_integration": 27
+  }
+}

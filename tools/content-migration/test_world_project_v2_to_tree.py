@@ -133,11 +133,11 @@ assert family_counts['Creature'] == 1763
 assert lock["family_counts"] == {
     "Item": 34031, "Mount": 252,
     **family_counts, "Document": 1609,
-    "NPC": 1110, "Dialogue": 694, "Service.Trade": 324, "Service.Travel": 56, "Encounter": 104, "Charm": 25,
+    "NPC": 1282, "Dialogue": 836, "Service.Trade": 324, "Service.Travel": 56, "Encounter": 104, "Charm": 25,
     "Proficiency": 443, "RewardClaim": source_claim_count, "StarterKit": 1,
     **{family: value["records"] for family, value in quest_families.items()},
 }
-assert lock["source_binding_counts"] == {"Item": 454, "Mount": 252, "Creature": 1763, "Encounter": 104, "NPC": 2376}
+assert lock["source_binding_counts"] == {"Item": 454, "Mount": 252, "Creature": 1763, "Encounter": 104, "NPC": 2747}
 assert lock["editor_entry_counts"] == {"Item": 165, "Mount": 252}
 
 paths = [row["path"] for row in manifest["managed_files"]]
@@ -159,8 +159,8 @@ assert "imports/canary/bindings/creatures.json" in paths
 assert "imports/tibiawiki/bindings/creatures.json" in paths
 assert all(not path.startswith("content/world/") for path in paths)
 
-assert manifest["families"]["NPC"] == {"records": 1110, "index": "content/npcs/definitions/index.json"}
-assert manifest["families"]["Dialogue"] == {"records": 694, "index": "content/dialogues/definitions/index.json"}
+assert manifest["families"]["NPC"] == {"records": 1282, "index": "content/npcs/definitions/index.json"}
+assert manifest["families"]["Dialogue"] == {"records": 836, "index": "content/dialogues/definitions/index.json"}
 assert manifest["families"]["Service.Trade"] == {"records": 324, "index": "content/services/trade/index.json"}
 assert manifest["families"]["Service.Travel"] == {"records": 56, "index": "content/services/travel/index.json"}
 assert manifest["families"]["Charm"] == {"records": 25, "index": "content/charms/index.json"}

@@ -1,0 +1,63 @@
+{
+  "schema": "NPC_R8_IMMUTABLE_EVIDENCE_MANIFEST/v1",
+  "baseline_head": "e9e69656dbe33ca2666248e23f7638be880f6bc9",
+  "files": [
+    {
+      "path": "README.md",
+      "bytes": 4099,
+      "sha256": "09e64d08fec6541d101c9cf006a2ce0c1dd71172557441c98da57ed01b99c91a"
+    },
+    {
+      "path": "capture-validation.json",
+      "bytes": 229,
+      "sha256": "e9302b8acaae4db163209331ddc689d5ed2f7121dfea915513f526e2d3ed6a02"
+    },
+    {
+      "path": "d10-typed-validation.json",
+      "bytes": 1253,
+      "sha256": "faf9e273eac822e00a2303af8a7b4853ff3c22d63bee7db7eb6feef22fab978f"
+    },
+    {
+      "path": "dialogue-qualification.json",
+      "bytes": 18920,
+      "sha256": "f6f1d739c6fa505f0fdd52150ddb3d9453ef8e1aa9c27e239b1702fa51161adc"
+    },
+    {
+      "path": "integrated-review.json",
+      "bytes": 14053,
+      "sha256": "bc07d104703a88b7faab893ae7158e1b99ffde5093a6c786f4d8738b0dc6092c"
+    },
+    {
+      "path": "native-materialization.json",
+      "bytes": 661,
+      "sha256": "47e22d977442888756df49bb720ec212e93b1454ba649e4a2579c4cca3bb03fa"
+    },
+    {
+      "path": "native-repairs.json",
+      "bytes": 21894,
+      "sha256": "604606715f06362547beedd41ea5fa54856e8dbfadf14f0de67ff144c27ff2ed"
+    },
+    {
+      "path": "proposal-review.json",
+      "bytes": 4988,
+      "sha256": "f81e7642fae7a5690d95d326c46c754d5bda7a803efef0a80949e91e1bc92e41"
+    },
+    {
+      "path": "source-manifest.json",
+      "bytes": 14656,
+      "sha256": "95725a0fbcae290852cdf35b5cb3cd9a70d7e34afed212380468cb5188e5253a"
+    },
+    {
+      "path": "tibiasecrets-source-facts.json",
+      "bytes": 35634,
+      "sha256": "4e88bad9ea7426bc0626e22eab31c4dd55788d74bba0e4c1e007f24b59b267c8"
+    },
+    {
+      "path": "validation.json",
+      "bytes": 3776,
+      "sha256": "5dfebf6a46c32b563d4aef33993b464349d909175303ddedab8c6af81c44fba9"
+    }
+  ],
+  "manifest_self_hash_excluded": true,
+  "raw_wiki_prose_assets_redistributed": false
+}

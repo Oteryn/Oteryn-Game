@@ -1,0 +1,175 @@
+{
+  "phase": "AUTHORING",
+  "status": "PASS",
+  "baseline_head": "6d50b05b47d7351043e93b495d24d645a3d974b3",
+  "checks": [
+    {
+      "check": "clippy",
+      "command": [
+        "cargo",
+        "clippy",
+        "--offline",
+        "--locked",
+        "--quiet",
+        "-p",
+        "oteryn-game-server",
+        "--all-targets",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "exit_code": 0,
+      "expected_exit_code": 0,
+      "log_sha256": "984a0050d7b0091cd2c5701c8ec6e6b74b8587417704637c594d8849234b24a1"
+    },
+    {
+      "check": "format",
+      "command": [
+        "cargo",
+        "fmt",
+        "--all",
+        "--check"
+      ],
+      "exit_code": 0,
+      "expected_exit_code": 0,
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "check": "catalogue",
+      "command": [
+        "cargo",
+        "test",
+        "--offline",
+        "--locked",
+        "--quiet",
+        "-p",
+        "oteryn-game-server",
+        "--test",
+        "content_npc_catalogue"
+      ],
+      "exit_code": 0,
+      "expected_exit_code": 0,
+      "log_sha256": "f1653ed0ae9831930d42015fe64817784a1abb18a227ee53adfb4a444b2a685a"
+    },
+    {
+      "check": "import",
+      "command": [
+        "cargo",
+        "run",
+        "--offline",
+        "--locked",
+        "--quiet",
+        "-p",
+        "oteryn-game-server",
+        "--",
+        "npc-import",
+        "--project-root",
+        "content/world",
+        "--expected-tree-sha256",
+        "3fcab27b778849cb2453d34161fd16c9cbd58c0bff0d00c54fc12e5583c78148"
+      ],
+      "exit_code": 0,
+      "expected_exit_code": 0,
+      "log_sha256": "984a0050d7b0091cd2c5701c8ec6e6b74b8587417704637c594d8849234b24a1"
+    },
+    {
+      "check": "governance",
+      "command": [
+        "python",
+        "tools/agents/validate_governance.py"
+      ],
+      "exit_code": 0,
+      "expected_exit_code": 0,
+      "log_sha256": "ed5de0b194f14550187fbb13e78364869d9be5848032f691f807fecb2abe0a1f"
+    },
+    {
+      "check": "wrong-pin",
+      "command": [
+        "/workspace/Oteryn-Game/target/debug/oteryn-game-server",
+        "npc-import",
+        "--project-root",
+        "content/world",
+        "--expected-tree-sha256",
+        "0000000000000000000000000000000000000000000000000000000000000000"
+      ],
+      "exit_code": 19,
+      "expected_exit_code": 19,
+      "log_sha256": "cd21ae386629841e7ea07f7c8d3840899d4cfa077898314a4d01320b40d95443"
+    },
+    {
+      "check": "bootstrap-smoke",
+      "command": [
+        "/workspace/Oteryn-Game/target/debug/oteryn-game-server",
+        "--smoke"
+      ],
+      "exit_code": 0,
+      "expected_exit_code": 0,
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "check": "serve-missing-pin",
+      "command": [
+        "/workspace/Oteryn-Game/target/debug/oteryn-game-server",
+        "serve",
+        "--config",
+        "/nonexistent/npc-import-node.toml",
+        "--npc-data-project",
+        "content/world"
+      ],
+      "exit_code": 2,
+      "expected_exit_code": 2,
+      "log_sha256": "a22e8c09b224d31f511d13f9d11b04e556d9c38ae3c934e6b7e0a79167b3e638"
+    },
+    {
+      "check": "governance-tests",
+      "command": [
+        "python",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tools/agents/tests"
+      ],
+      "exit_code": 0,
+      "expected_exit_code": 0,
+      "log_sha256": "5f33576d2863f468a7efc274c6794b972748e24b19d9ce6275d3b765cbfe9de2"
+    },
+    {
+      "check": "diff",
+      "command": [
+        "git",
+        "diff",
+        "--check"
+      ],
+      "exit_code": 0,
+      "expected_exit_code": 0,
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  ],
+  "catalogue_tests": 4,
+  "actual_server_binary_import": {
+    "activated_services": 0,
+    "dialogues": 836,
+    "npcs": 1282,
+    "profiles": 2564,
+    "project_revision": "g4-npc-provisional-enrichment-r28",
+    "services": 380,
+    "source_tree_sha256": "3fcab27b778849cb2453d34161fd16c9cbd58c0bff0d00c54fc12e5583c78148",
+    "spawned_actors": 0,
+    "status": "IMPORTED_DATA_ONLY"
+  },
+  "source_content_unchanged": true,
+  "independent_code_review": {
+    "verdict": "PASS",
+    "receipt_sha256": "22d1b8eac203c7959f6c490d37bcdcbdb4df16a373343c3dd9ba8479c87e0389"
+  },
+  "live_node_startup": "NOT_RUN",
+  "production_deployment": "NOT_RUN",
+  "NPC_gameplay_activation": "NOT_RUN",
+  "limits": [
+    "Bounded preproduction data-only source catalogue",
+    "Serving-process retention reviewed; full DB/Platform-backed startup not qualified",
+    "Existing native-entry world/map and readiness unchanged",
+    "Formal coordinator162/protectedCI/main/Merge Queue/Jira integration pending"
+  ]
+}

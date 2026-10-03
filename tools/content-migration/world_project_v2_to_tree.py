@@ -353,7 +353,7 @@ def main() -> int:
     })
 
     npc_declarations = [row for row in declarations["records"] if row.get("kind") == "NPC"]
-    if len(npc_declarations) != 1110:
+    if len(npc_declarations) != 1282:
         raise RuntimeError(f"NPC_SOURCE_COUNT_MISMATCH:{len(npc_declarations)}")
 
     npc_rows = []
@@ -433,7 +433,7 @@ def main() -> int:
     })
 
     dialogue_declarations = [row for row in declarations["records"] if row.get("kind") == "Dialogue"]
-    if len(dialogue_declarations) != 694:
+    if len(dialogue_declarations) != 836:
         raise RuntimeError(f"DIALOGUE_SOURCE_COUNT_MISMATCH:{len(dialogue_declarations)}")
 
     # No source bindings exist for Dialogue declarations (WorldProject/v2 NPC admission wave A).
@@ -489,7 +489,10 @@ def main() -> int:
     service_shards: dict[str, list[str]] = {}
     service_counts: dict[str, int] = {}
     for family, (node, stem, field) in SERVICE_FAMILIES.items():
-        records = [row for row in service_records if field in row]
+        # Native serialization omits empty arrays; source-held merchants keep their
+        # existing trade identities and Service declarations even with no offers.
+        records = [row for row in service_records
+                   if field in row or row["identity"]["key"].startswith(f"oteryn:service.{stem}.")]
         service_counts[family] = len(records)
         service_shards[family] = []
         for start in range(0, len(records), ITEM_SHARD_SIZE):

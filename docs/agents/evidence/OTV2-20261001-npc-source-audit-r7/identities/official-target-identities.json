@@ -1,0 +1,4782 @@
+[
+  {
+    "npc_key": "oteryn:npc.a_blue_stone",
+    "name": "a blue stone",
+    "rows": [
+      {
+        "appearance_object_id": 54503,
+        "npc_entry_ordinal": 0,
+        "location": "Murmuring Wilderness",
+        "npc_entry_sha256": "396adf79fd8d563f819ec1177d833ad3746f5ec42045de258ab73040c07fdc06",
+        "sale_price": 2500,
+        "buy_price": 0,
+        "currency_object_id": 54128,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 54504,
+        "npc_entry_ordinal": 0,
+        "location": "Murmuring Wilderness",
+        "npc_entry_sha256": "0d719efb288f583bcaaa42c4cf7b173f7e73e535339c46ed9263f2b27ff9fdd8",
+        "sale_price": 1250,
+        "buy_price": 0,
+        "currency_object_id": 54128,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 54505,
+        "npc_entry_ordinal": 0,
+        "location": "Murmuring Wilderness",
+        "npc_entry_sha256": "178c073593eb3c5666d2713a37944d826d2b16ecaef1da6ebc37bd8c683700d8",
+        "sale_price": 7500,
+        "buy_price": 0,
+        "currency_object_id": 54128,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 54506,
+        "npc_entry_ordinal": 0,
+        "location": "Murmuring Wilderness",
+        "npc_entry_sha256": "84b72d7e2f84f247bb99fed6f30be6385568fc1232d2896f258f4aab29eed2ed",
+        "sale_price": 5000,
+        "buy_price": 0,
+        "currency_object_id": 54128,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 54507,
+        "npc_entry_ordinal": 0,
+        "location": "Murmuring Wilderness",
+        "npc_entry_sha256": "8d25e404c92491ca9a3576f008b59fc4f39a2acd809ad381baeb49967b54480c",
+        "sale_price": 10000,
+        "buy_price": 0,
+        "currency_object_id": 54128,
+        "quest_flag_display_name": null
+      }
+    ]
+  },
+  {
+    "npc_key": "oteryn:npc.avan",
+    "name": "Avan",
+    "rows": [
+      {
+        "appearance_object_id": 40582,
+        "npc_entry_ordinal": 3,
+        "location": "Ingol",
+        "npc_entry_sha256": "7428ee92faaa465623695f1ef58f301bde9a203dc9fb45dfac7b919882b29313",
+        "sale_price": 0,
+        "buy_price": 550,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 40583,
+        "npc_entry_ordinal": 3,
+        "location": "Ingol",
+        "npc_entry_sha256": "c2ad63221da7cb3612eb3a7d5cb9ab00a8b6cc0a5455ead9bff2e03baa622d2b",
+        "sale_price": 0,
+        "buy_price": 480,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 40584,
+        "npc_entry_ordinal": 3,
+        "location": "Ingol",
+        "npc_entry_sha256": "15bf6cdb96f164e3aa63d893e78eb26896655a891089fa79a727a5dd57bb7b78",
+        "sale_price": 0,
+        "buy_price": 600,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 40585,
+        "npc_entry_ordinal": 3,
+        "location": "Ingol",
+        "npc_entry_sha256": "5a56cee8170d4b460580245f5a2954beeae4c620012c90c3ffbc7cee73199ffb",
+        "sale_price": 0,
+        "buy_price": 730,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 40586,
+        "npc_entry_ordinal": 3,
+        "location": "Ingol",
+        "npc_entry_sha256": "a164ab24c959890d2a482e53922a42cdccf82af3822ba873828302a8b64b3114",
+        "sale_price": 0,
+        "buy_price": 630,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 40587,
+        "npc_entry_ordinal": 3,
+        "location": "Ingol",
+        "npc_entry_sha256": "0cf54bb95b8ba58d427430c67d91ce6d8200924e709f970b0dbffd85ccbbea84",
+        "sale_price": 0,
+        "buy_price": 680,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      }
+    ]
+  },
+  {
+    "npc_key": "oteryn:npc.chip",
+    "name": "Chip",
+    "rows": [
+      {
+        "appearance_object_id": 5901,
+        "npc_entry_ordinal": 0,
+        "location": "Fields of Glory",
+        "npc_entry_sha256": "c6c623f4546580ec84137840dcc139f0fea2017ae45defcabe0ab5dc39e2b9a3",
+        "sale_price": 0,
+        "buy_price": 50,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      }
+    ]
+  },
+  {
+    "npc_key": "oteryn:npc.coco",
+    "name": "Coco",
+    "rows": [
+      {
+        "appearance_object_id": 45639,
+        "npc_entry_ordinal": 0,
+        "location": "Candia",
+        "npc_entry_sha256": "834b35a9fd877e5428d963cb4124bd743acfa703b05310333199c9f7b23f7aab",
+        "sale_price": 8000,
+        "buy_price": 0,
+        "currency_object_id": 48250,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 45640,
+        "npc_entry_ordinal": 0,
+        "location": "Candia",
+        "npc_entry_sha256": "2dcf78f9e05c55ee71c60b967470fddc7128ecc9a98a98d93a3450915969df80",
+        "sale_price": 8000,
+        "buy_price": 0,
+        "currency_object_id": 48249,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 45641,
+        "npc_entry_ordinal": 0,
+        "location": "Candia",
+        "npc_entry_sha256": "0c338a3063aac0f308867d92cd73c9b97905e657034e6a99d06e424ea2dfe7b4",
+        "sale_price": 5000,
+        "buy_price": 0,
+        "currency_object_id": 48249,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 45642,
+        "npc_entry_ordinal": 0,
+        "location": "Candia",
+        "npc_entry_sha256": "ca99e11255ab1a5ca8f88914c975526c436cbc84048211610a5e3191a252ae86",
+        "sale_price": 250,
+        "buy_price": 0,
+        "currency_object_id": 48250,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 45643,
+        "npc_entry_ordinal": 0,
+        "location": "Candia",
+        "npc_entry_sha256": "834b35a9fd877e5428d963cb4124bd743acfa703b05310333199c9f7b23f7aab",
+        "sale_price": 8000,
+        "buy_price": 0,
+        "currency_object_id": 48250,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 45644,
+        "npc_entry_ordinal": 0,
+        "location": "Candia",
+        "npc_entry_sha256": "2dcf78f9e05c55ee71c60b967470fddc7128ecc9a98a98d93a3450915969df80",
+        "sale_price": 8000,
+        "buy_price": 0,
+        "currency_object_id": 48249,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 48427,
+        "npc_entry_ordinal": 0,
+        "location": "Candia",
+        "npc_entry_sha256": "c56d0695aeee59bc5eb1321045323f89082c4145db8e55ea6ab65f9347b469bb",
+        "sale_price": 1500,
+        "buy_price": 0,
+        "currency_object_id": 48249,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 48430,
+        "npc_entry_ordinal": 0,
+        "location": "Candia",
+        "npc_entry_sha256": "c56d0695aeee59bc5eb1321045323f89082c4145db8e55ea6ab65f9347b469bb",
+        "sale_price": 1500,
+        "buy_price": 0,
+        "currency_object_id": 48249,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 48431,
+        "npc_entry_ordinal": 0,
+        "location": "Candia",
+        "npc_entry_sha256": "243e08451e917287cbf048e2afa1dbeabac635016ef4f71e49e38649173ab204",
+        "sale_price": 1500,
+        "buy_price": 0,
+        "currency_object_id": 48250,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 48433,
+        "npc_entry_ordinal": 0,
+        "location": "Candia",
+        "npc_entry_sha256": "c56d0695aeee59bc5eb1321045323f89082c4145db8e55ea6ab65f9347b469bb",
+        "sale_price": 1500,
+        "buy_price": 0,
+        "currency_object_id": 48249,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 48434,
+        "npc_entry_ordinal": 0,
+        "location": "Candia",
+        "npc_entry_sha256": "243e08451e917287cbf048e2afa1dbeabac635016ef4f71e49e38649173ab204",
+        "sale_price": 1500,
+        "buy_price": 0,
+        "currency_object_id": 48250,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 48435,
+        "npc_entry_ordinal": 0,
+        "location": "Candia",
+        "npc_entry_sha256": "cefd855b3490a1aa551986ce955170c8c48d868340b413be8a02dfd169dc85f1",
+        "sale_price": 1125,
+        "buy_price": 0,
+        "currency_object_id": 48250,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 48437,
+        "npc_entry_ordinal": 0,
+        "location": "Candia",
+        "npc_entry_sha256": "cefd855b3490a1aa551986ce955170c8c48d868340b413be8a02dfd169dc85f1",
+        "sale_price": 1125,
+        "buy_price": 0,
+        "currency_object_id": 48250,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 48439,
+        "npc_entry_ordinal": 0,
+        "location": "Candia",
+        "npc_entry_sha256": "cefd855b3490a1aa551986ce955170c8c48d868340b413be8a02dfd169dc85f1",
+        "sale_price": 1125,
+        "buy_price": 0,
+        "currency_object_id": 48250,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 48449,
+        "npc_entry_ordinal": 0,
+        "location": "Candia",
+        "npc_entry_sha256": "c56d0695aeee59bc5eb1321045323f89082c4145db8e55ea6ab65f9347b469bb",
+        "sale_price": 1500,
+        "buy_price": 0,
+        "currency_object_id": 48249,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 48450,
+        "npc_entry_ordinal": 0,
+        "location": "Candia",
+        "npc_entry_sha256": "c56d0695aeee59bc5eb1321045323f89082c4145db8e55ea6ab65f9347b469bb",
+        "sale_price": 1500,
+        "buy_price": 0,
+        "currency_object_id": 48249,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 49166,
+        "npc_entry_ordinal": 0,
+        "location": "Candia",
+        "npc_entry_sha256": "06b37585553348c72c5b332a4d4e8500c956b03c1bb8ef45ae85f5a7e1d97979",
+        "sale_price": 3000,
+        "buy_price": 0,
+        "currency_object_id": 48249,
+        "quest_flag_display_name": null
+      }
+    ]
+  },
+  {
+    "npc_key": "oteryn:npc.domizian",
+    "name": "Domizian",
+    "rows": [
+      {
+        "appearance_object_id": 9691,
+        "npc_entry_ordinal": 0,
+        "location": "Darashia City",
+        "npc_entry_sha256": "5ee2707916f762490e80b0feca63b5cad53870fe8e92a9063ad81fd430229567",
+        "sale_price": 0,
+        "buy_price": 60,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 10317,
+        "npc_entry_ordinal": 0,
+        "location": "Darashia City",
+        "npc_entry_sha256": "327ae9cb3f10bccfcb7e1b166c6a9a4051844953faef2b1f7f69c969a30c58d0",
+        "sale_price": 0,
+        "buy_price": 380,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 22051,
+        "npc_entry_ordinal": 0,
+        "location": "Darashia City",
+        "npc_entry_sha256": "75ca2b304cb7bc0d47fb1d8e7e30c03cf20f275b470019c2685f5c25dc4eb69e",
+        "sale_price": 0,
+        "buy_price": 160,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 22052,
+        "npc_entry_ordinal": 0,
+        "location": "Darashia City",
+        "npc_entry_sha256": "6c94729aef041c0fff80b5d29410fdb34bed6945b270343560ffc85b7f03d1d0",
+        "sale_price": 0,
+        "buy_price": 180,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 22053,
+        "npc_entry_ordinal": 0,
+        "location": "Darashia City",
+        "npc_entry_sha256": "b1c58ea1c9165eed183f897b86d952fe184d3a2f3e4da2403366637660cd4f2f",
+        "sale_price": 0,
+        "buy_price": 175,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 22054,
+        "npc_entry_ordinal": 0,
+        "location": "Darashia City",
+        "npc_entry_sha256": "ceb40bd6da18d187ad1c4c8e31e38c1ffad684f34e1b849926cec2c20ca8e0d6",
+        "sale_price": 0,
+        "buy_price": 165,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 22055,
+        "npc_entry_ordinal": 0,
+        "location": "Darashia City",
+        "npc_entry_sha256": "ffc9803fd5b514cdb7d77204f707df79277702969bc67ec3bc92678077c46a7f",
+        "sale_price": 0,
+        "buy_price": 185,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 22056,
+        "npc_entry_ordinal": 0,
+        "location": "Darashia City",
+        "npc_entry_sha256": "b8c0b93cc13884a7a0fff0ff2fac21a969b70e7a2470198dd7123279d632bf43",
+        "sale_price": 0,
+        "buy_price": 195,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 22057,
+        "npc_entry_ordinal": 0,
+        "location": "Darashia City",
+        "npc_entry_sha256": "ffc9803fd5b514cdb7d77204f707df79277702969bc67ec3bc92678077c46a7f",
+        "sale_price": 0,
+        "buy_price": 185,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 22060,
+        "npc_entry_ordinal": 0,
+        "location": "Darashia City",
+        "npc_entry_sha256": "bf1be183964b13743d70881dff5fcb72a390eba200096caef46eeb6f61adf530",
+        "sale_price": 0,
+        "buy_price": 3000,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 22085,
+        "npc_entry_ordinal": 0,
+        "location": "Darashia City",
+        "npc_entry_sha256": "06fc566e05fa30de2d0dab546ffb4a7a373a1bbfb4fb30aebf9f8cbd4ce70c0a",
+        "sale_price": 0,
+        "buy_price": 5000,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 22086,
+        "npc_entry_ordinal": 0,
+        "location": "Darashia City",
+        "npc_entry_sha256": "c960c9d4d893f807d0b1edf5a7dc592495b307fed242726fbd75cefbb827d429",
+        "sale_price": 0,
+        "buy_price": 7500,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 22087,
+        "npc_entry_ordinal": 0,
+        "location": "Darashia City",
+        "npc_entry_sha256": "e184ffb8eac686f5ea7e82c115afb29adca77af1130338694b1ea5d049ced14f",
+        "sale_price": 0,
+        "buy_price": 1500,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 27462,
+        "npc_entry_ordinal": 0,
+        "location": "Darashia City",
+        "npc_entry_sha256": "8add3d7da5b6146fc953271a61fb591f3a634c56310ad23c0507af3a636ec908",
+        "sale_price": 0,
+        "buy_price": 100,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 27463,
+        "npc_entry_ordinal": 0,
+        "location": "Darashia City",
+        "npc_entry_sha256": "0a285928067c297ed5c6fd4ad037735b805559e5597fde88c35aff319967dc37",
+        "sale_price": 0,
+        "buy_price": 200,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 33943,
+        "npc_entry_ordinal": 0,
+        "location": "Darashia City",
+        "npc_entry_sha256": "cc7dc2cbed6ed80a2dd57d12f89d9303e62b7f263a1d24ced32fcb50616dfc81",
+        "sale_price": 0,
+        "buy_price": 220,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 33944,
+        "npc_entry_ordinal": 0,
+        "location": "Darashia City",
+        "npc_entry_sha256": "1a1ba658cf14f7812bd09a0dc5c37ce9f5e96521eca1b7e1399c77510888cd9d",
+        "sale_price": 0,
+        "buy_price": 350,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 33945,
+        "npc_entry_ordinal": 0,
+        "location": "Darashia City",
+        "npc_entry_sha256": "4a561d83765d8d4ec1253bdd8419715d0f9247611830c8c95dbe3ac2bd54cafe",
+        "sale_price": 0,
+        "buy_price": 300,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      }
+    ]
+  },
+  {
+    "npc_key": "oteryn:npc.gerib",
+    "name": "Gerib",
+    "rows": [
+      {
+        "appearance_object_id": 3503,
+        "npc_entry_ordinal": 23,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "1722fed99bcf349e9613a3ffb6304270ad4e22ab59cf10ecb3970585d8ce343b",
+        "sale_price": 15,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 3503,
+        "npc_entry_ordinal": 47,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "b8fffc458829ac095f6e965bc0e8493e482beaa539b9cb14ddcda23a489e0fd1",
+        "sale_price": 10,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 3505,
+        "npc_entry_ordinal": 22,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "43833957891ad0fd85ec5320379847d41e5ae3fa13f48b393712b90885bed2f4",
+        "sale_price": 8,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 3505,
+        "npc_entry_ordinal": 46,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "2f65260b6be58f4f7ab5379bb650e95cdc5cce8a56649d626bb26ad6b36946cc",
+        "sale_price": 5,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 3507,
+        "npc_entry_ordinal": 23,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "08f1e535d4969731fa1b6a0070f86a753e196774a7ca4c62c416ae6399bbe880",
+        "sale_price": 1,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      }
+    ]
+  },
+  {
+    "npc_key": "oteryn:npc.hoaxette",
+    "name": "Hoaxette",
+    "rows": [
+      {
+        "appearance_object_id": 651,
+        "npc_entry_ordinal": 0,
+        "location": "Thais City",
+        "npc_entry_sha256": "a8d3c982f65bd447657f8023a1df94b99b78470b8f803d5bbc7e4bd5ada59bf6",
+        "sale_price": 299,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 900,
+        "npc_entry_ordinal": 0,
+        "location": "Thais City",
+        "npc_entry_sha256": "a8d3c982f65bd447657f8023a1df94b99b78470b8f803d5bbc7e4bd5ada59bf6",
+        "sale_price": 299,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 906,
+        "npc_entry_ordinal": 0,
+        "location": "Thais City",
+        "npc_entry_sha256": "489a0f8daa281f4d54cb90f687bcd01e3b5108a21c52bffc0e34f70788c38e7c",
+        "sale_price": 199,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      }
+    ]
+  },
+  {
+    "npc_key": "oteryn:npc.kiru",
+    "name": "Kiru",
+    "rows": [
+      {
+        "appearance_object_id": 281,
+        "npc_entry_ordinal": 17,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "a0894edbd6192cacbb9ae765237e2b36de9d5a9f4f641c5c1e52006c1a934dc2",
+        "sale_price": 0,
+        "buy_price": 3000,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 282,
+        "npc_entry_ordinal": 17,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "a0894edbd6192cacbb9ae765237e2b36de9d5a9f4f641c5c1e52006c1a934dc2",
+        "sale_price": 0,
+        "buy_price": 3000,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 675,
+        "npc_entry_ordinal": 17,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "d5cbdfd86137072c2a6e00c38c21879870a187600f818b88e9dc393ab50d0aa6",
+        "sale_price": 0,
+        "buy_price": 250,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 676,
+        "npc_entry_ordinal": 17,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "d5cbdfd86137072c2a6e00c38c21879870a187600f818b88e9dc393ab50d0aa6",
+        "sale_price": 0,
+        "buy_price": 250,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 677,
+        "npc_entry_ordinal": 17,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "d5cbdfd86137072c2a6e00c38c21879870a187600f818b88e9dc393ab50d0aa6",
+        "sale_price": 0,
+        "buy_price": 250,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 678,
+        "npc_entry_ordinal": 17,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "92e61316c7bf577fa68e8654a824c4a1572c997d8b12283af0ef70e4f2aebdbf",
+        "sale_price": 0,
+        "buy_price": 200,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 761,
+        "npc_entry_ordinal": 18,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "0aeda8cd8fd6261a0ba065327e0d44a96800501336a2daa7d446c41b3c228ac2",
+        "sale_price": 5,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 762,
+        "npc_entry_ordinal": 18,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "0aeda8cd8fd6261a0ba065327e0d44a96800501336a2daa7d446c41b3c228ac2",
+        "sale_price": 5,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 763,
+        "npc_entry_ordinal": 18,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "0aeda8cd8fd6261a0ba065327e0d44a96800501336a2daa7d446c41b3c228ac2",
+        "sale_price": 5,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 774,
+        "npc_entry_ordinal": 18,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "0aeda8cd8fd6261a0ba065327e0d44a96800501336a2daa7d446c41b3c228ac2",
+        "sale_price": 5,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 2920,
+        "npc_entry_ordinal": 35,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "64734bf05e6d879b0ac0b0ffc0fecbb5daf971bbdec61e7664f6a030101f9058",
+        "sale_price": 2,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 3004,
+        "npc_entry_ordinal": 18,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "a1cc965ce865be29006e81f867e945529a0446335abe3e234681ee0ff9dcba7b",
+        "sale_price": 990,
+        "buy_price": 100,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 3013,
+        "npc_entry_ordinal": 19,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "ee987a0b8529ce8dd8b4ad06821592874e934e4e76303c8191cddc8b7c5d2167",
+        "sale_price": 6600,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 3016,
+        "npc_entry_ordinal": 19,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "7a30dd7164723b7b898982a70948bb822d8e9c1a7164dcdf0e2f26441a3c2d30",
+        "sale_price": 3560,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 3026,
+        "npc_entry_ordinal": 19,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "e4dcc7f3f46e7e71a706205ea5cd422d0f96655cb6a9b248e3a1426b5209b0d0",
+        "sale_price": 320,
+        "buy_price": 160,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 3027,
+        "npc_entry_ordinal": 19,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "6745abff65443bd00a9a9042f3caa805b2e9a85d9becbd2bc5b2b90fccc1bb40",
+        "sale_price": 560,
+        "buy_price": 280,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 3028,
+        "npc_entry_ordinal": 18,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "aa916a946cd5f95bbf610a58c66c1bb47c96cb6a220749470ae55c1803cfd683",
+        "sale_price": 600,
+        "buy_price": 300,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 3029,
+        "npc_entry_ordinal": 18,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "6f8cba097b7dcdc8d1c1c02e618a9689f958d1c7482b286af396b8258d7bac90",
+        "sale_price": 500,
+        "buy_price": 250,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 3030,
+        "npc_entry_ordinal": 19,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "6f8cba097b7dcdc8d1c1c02e618a9689f958d1c7482b286af396b8258d7bac90",
+        "sale_price": 500,
+        "buy_price": 250,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 3032,
+        "npc_entry_ordinal": 18,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "6f8cba097b7dcdc8d1c1c02e618a9689f958d1c7482b286af396b8258d7bac90",
+        "sale_price": 500,
+        "buy_price": 250,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 3033,
+        "npc_entry_ordinal": 18,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "80bd2fc1a0cb7e519cd0b18090d2ab94ab72baed9684596c71be10c361a74ad4",
+        "sale_price": 400,
+        "buy_price": 200,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 3040,
+        "npc_entry_ordinal": 17,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "87b3bd9d22b7e2fa42852911c2c0d79e0078c4c18a4fcc7dc8e1ce0cb3dc2af8",
+        "sale_price": 0,
+        "buy_price": 850,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 3277,
+        "npc_entry_ordinal": 16,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "b35588ab8681694f64f2a1d7ec8c26ac6454c05eb93a277d209d5119ffcd4dc2",
+        "sale_price": 9,
+        "buy_price": 3,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 3287,
+        "npc_entry_ordinal": 21,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "a3e7d6fac83315f0e43529305d02d6eb06a300e11ff19f8ca6716c0b352247b7",
+        "sale_price": 42,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 3349,
+        "npc_entry_ordinal": 15,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "c76f6afc6624e54eaa2cb55eef9dc749c042ee219e16b1c7b12fc71576e57e61",
+        "sale_price": 500,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 3349,
+        "npc_entry_ordinal": 34,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "c16471d6dffc4dd8ce05a9d48c4f0c4bab693c662e92d2258834b9d0747703ca",
+        "sale_price": 500,
+        "buy_price": 120,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 3350,
+        "npc_entry_ordinal": 14,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "48d967808de96dbe0cf98505423aa145525b7618f1d5800fe4003588b8365904",
+        "sale_price": 400,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 3350,
+        "npc_entry_ordinal": 33,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "86b0a4bbe0b182d1034adff2a7ed489564e92b41ed6d9378fc332de4fb6ea6cc",
+        "sale_price": 400,
+        "buy_price": 100,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 3446,
+        "npc_entry_ordinal": 14,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "e86e93e979b5755ed24180b5f1b0b7c20ba5734883829e6db91f9f2cf3d6d1c9",
+        "sale_price": 4,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 3447,
+        "npc_entry_ordinal": 14,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "7c923b14c5808a6a0234f97823b42d1336f40becd3c49a3ad6a989f32ae3a443",
+        "sale_price": 3,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 3450,
+        "npc_entry_ordinal": 18,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "4e08935677e7abef35c9d19341b0c1776273c119a391fab18ca34ac0b5458117",
+        "sale_price": 7,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 5799,
+        "npc_entry_ordinal": 7,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "a0894edbd6192cacbb9ae765237e2b36de9d5a9f4f641c5c1e52006c1a934dc2",
+        "sale_price": 0,
+        "buy_price": 3000,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 5805,
+        "npc_entry_ordinal": 17,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "eba80b94d074b78d9c79504b03ffd66480e647ad12fd1ff85ce93c528e7985f0",
+        "sale_price": 5000,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 5806,
+        "npc_entry_ordinal": 17,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "e1fadec11a5babfb87998d0553ca4146630f2b52a08c53114b2bec358ec0a7b7",
+        "sale_price": 3000,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 5807,
+        "npc_entry_ordinal": 17,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "9f5202d06e3b2ff1b5a2cd4de52102249eb566b49860ebc416b674ef339e1693",
+        "sale_price": 2000,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 7363,
+        "npc_entry_ordinal": 18,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "0aeda8cd8fd6261a0ba065327e0d44a96800501336a2daa7d446c41b3c228ac2",
+        "sale_price": 5,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 7364,
+        "npc_entry_ordinal": 18,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "0aeda8cd8fd6261a0ba065327e0d44a96800501336a2daa7d446c41b3c228ac2",
+        "sale_price": 5,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 7365,
+        "npc_entry_ordinal": 18,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "4e08935677e7abef35c9d19341b0c1776273c119a391fab18ca34ac0b5458117",
+        "sale_price": 7,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 7378,
+        "npc_entry_ordinal": 18,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "438870abe0759d17610989eb1a3679e80146dd0575722b9178439017d66b3146",
+        "sale_price": 15,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 9057,
+        "npc_entry_ordinal": 18,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "92e61316c7bf577fa68e8654a824c4a1572c997d8b12283af0ef70e4f2aebdbf",
+        "sale_price": 0,
+        "buy_price": 200,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 9058,
+        "npc_entry_ordinal": 17,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "38f6f910c38acc20bb6919e8d929c25cc3ecece2e43715bd909b4f790ebdaf1d",
+        "sale_price": 0,
+        "buy_price": 5000,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 14112,
+        "npc_entry_ordinal": 7,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "8519f8e5ed8e32e946e4d1ff74283f947bc6d7057a6a78510cb59a7972214396",
+        "sale_price": 0,
+        "buy_price": 10000,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 14251,
+        "npc_entry_ordinal": 18,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "5a288043f50627313955fc04fb9d10d4500396a860f80630dc41051da7fe0ca8",
+        "sale_price": 6,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 14252,
+        "npc_entry_ordinal": 18,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "5a288043f50627313955fc04fb9d10d4500396a860f80630dc41051da7fe0ca8",
+        "sale_price": 6,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 15793,
+        "npc_entry_ordinal": 18,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "43d17fa77a037ff9d3d247548eba0e9b62edf0f03acabcf5208522ad06c7d648",
+        "sale_price": 20,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 16119,
+        "npc_entry_ordinal": 17,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "8c0cd877fb4185d8cf3adc4e13be550eb820ad958ed6b2776b744a1d91741cee",
+        "sale_price": 0,
+        "buy_price": 1500,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 16120,
+        "npc_entry_ordinal": 17,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "8c0cd877fb4185d8cf3adc4e13be550eb820ad958ed6b2776b744a1d91741cee",
+        "sale_price": 0,
+        "buy_price": 1500,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 16121,
+        "npc_entry_ordinal": 17,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "8c0cd877fb4185d8cf3adc4e13be550eb820ad958ed6b2776b744a1d91741cee",
+        "sale_price": 0,
+        "buy_price": 1500,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 16122,
+        "npc_entry_ordinal": 17,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "9cc574d207860a0ff414864a878c40d6485ea21c99a6db5c98c4ddc7aa670482",
+        "sale_price": 0,
+        "buy_price": 400,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 16123,
+        "npc_entry_ordinal": 17,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "9cc574d207860a0ff414864a878c40d6485ea21c99a6db5c98c4ddc7aa670482",
+        "sale_price": 0,
+        "buy_price": 400,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 16124,
+        "npc_entry_ordinal": 17,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "9cc574d207860a0ff414864a878c40d6485ea21c99a6db5c98c4ddc7aa670482",
+        "sale_price": 0,
+        "buy_price": 400,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 16125,
+        "npc_entry_ordinal": 17,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "7a8702e91fb7ee3ec8654ad17e4c6eea6309f67802d5966c46ca463ca01d357d",
+        "sale_price": 0,
+        "buy_price": 800,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 16126,
+        "npc_entry_ordinal": 17,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "7a8702e91fb7ee3ec8654ad17e4c6eea6309f67802d5966c46ca463ca01d357d",
+        "sale_price": 0,
+        "buy_price": 800,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 16127,
+        "npc_entry_ordinal": 17,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "7a8702e91fb7ee3ec8654ad17e4c6eea6309f67802d5966c46ca463ca01d357d",
+        "sale_price": 0,
+        "buy_price": 800,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 16141,
+        "npc_entry_ordinal": 18,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "43d17fa77a037ff9d3d247548eba0e9b62edf0f03acabcf5208522ad06c7d648",
+        "sale_price": 20,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 16142,
+        "npc_entry_ordinal": 18,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "14222fc1cc51bb8b8bc1b8cddfdee797885f21204c36244ea023aaf808ca2fbd",
+        "sale_price": 12,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 16143,
+        "npc_entry_ordinal": 18,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "14222fc1cc51bb8b8bc1b8cddfdee797885f21204c36244ea023aaf808ca2fbd",
+        "sale_price": 12,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 22193,
+        "npc_entry_ordinal": 18,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "eb4cf153bef1781df0d868abcc6de15899ee0f3146ffb496a40ebfcefa008b70",
+        "sale_price": 0,
+        "buy_price": 500,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 22194,
+        "npc_entry_ordinal": 18,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "eb4cf153bef1781df0d868abcc6de15899ee0f3146ffb496a40ebfcefa008b70",
+        "sale_price": 0,
+        "buy_price": 500,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 24390,
+        "npc_entry_ordinal": 17,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "e07046139df62200291045a958962306fa8909821e0761f0b256b0c161f3efa9",
+        "sale_price": 0,
+        "buy_price": 350,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 24391,
+        "npc_entry_ordinal": 17,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "270d96e6a0eabef354925c637a12e473089fe2bb62fe6b2966106273e6c1c041",
+        "sale_price": 0,
+        "buy_price": 750,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 24392,
+        "npc_entry_ordinal": 17,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "16f20951f96a2d0f09c1d3bc6dbd7261a4f214245ef45236ce701609e42b344f",
+        "sale_price": 0,
+        "buy_price": 3500,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 24961,
+        "npc_entry_ordinal": 17,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "e07046139df62200291045a958962306fa8909821e0761f0b256b0c161f3efa9",
+        "sale_price": 0,
+        "buy_price": 350,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 24962,
+        "npc_entry_ordinal": 17,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "82b7f6e4aee70bbc6746c0d57901fd08d60311190c85a67ca1ed3b5baebc381f",
+        "sale_price": 0,
+        "buy_price": 450,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 25737,
+        "npc_entry_ordinal": 17,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "eb4cf153bef1781df0d868abcc6de15899ee0f3146ffb496a40ebfcefa008b70",
+        "sale_price": 0,
+        "buy_price": 500,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 30053,
+        "npc_entry_ordinal": 17,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "dbde8924acf6e2dba03dc247b3b6dcb04bd5b2c3f81657304be97595b4d7182c",
+        "sale_price": 0,
+        "buy_price": 45000,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 30054,
+        "npc_entry_ordinal": 17,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "6bfb5b0ae1a454c4138accbf585be424583b61893506bc710387e9eb5dfe7229",
+        "sale_price": 0,
+        "buy_price": 50000,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 30055,
+        "npc_entry_ordinal": 17,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "1a6fbc03d53bdab701b5fae0d22e65bdcf621a85ffde3368846f093e27d0654e",
+        "sale_price": 0,
+        "buy_price": 30000,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 30056,
+        "npc_entry_ordinal": 17,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "e15be92878c0dba937e8498784d570dc0785b137e67d7d3eba3875c78d77e870",
+        "sale_price": 0,
+        "buy_price": 18000,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 30059,
+        "npc_entry_ordinal": 17,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "efd1ac21ebb139524e8e9992b1aa80c91f716fc0361554e6e82945d10c933b24",
+        "sale_price": 0,
+        "buy_price": 70000,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 30060,
+        "npc_entry_ordinal": 17,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "c4d7909c7048717a793c6f34d3ebc1c9c20f04f48b2b8190545266ec6786d329",
+        "sale_price": 0,
+        "buy_price": 90000,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 30061,
+        "npc_entry_ordinal": 17,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "6bfb5b0ae1a454c4138accbf585be424583b61893506bc710387e9eb5dfe7229",
+        "sale_price": 0,
+        "buy_price": 50000,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 30180,
+        "npc_entry_ordinal": 7,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "1a6fbc03d53bdab701b5fae0d22e65bdcf621a85ffde3368846f093e27d0654e",
+        "sale_price": 0,
+        "buy_price": 30000,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 32583,
+        "npc_entry_ordinal": 17,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "8987639561337c52c41cb5c98f6ab73344b3c389ce0f301f1267675565871a42",
+        "sale_price": 0,
+        "buy_price": 12000,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 32622,
+        "npc_entry_ordinal": 17,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "9f00ebcdd5c731df07912e75aeb3d7e19d78e50a1e0f0201421284a92b7824f3",
+        "sale_price": 0,
+        "buy_price": 60000,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 32623,
+        "npc_entry_ordinal": 17,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "dfe1ae5e5b937572b9c66b09304ad5555655e3afaaa8c1690233060f3cf54a65",
+        "sale_price": 0,
+        "buy_price": 80000,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 32624,
+        "npc_entry_ordinal": 17,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "c5edba7c01856fe3ecc33d3d8e58668a29c04148955fc455c3d001464802a437",
+        "sale_price": 0,
+        "buy_price": 41000,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 32625,
+        "npc_entry_ordinal": 17,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "613a6a244210bb6bd43a1eb38f20d859ae5a43d8092c0126c8ae9ccf24fd01a3",
+        "sale_price": 0,
+        "buy_price": 56000,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 32626,
+        "npc_entry_ordinal": 17,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "bbbe77a54b2f494efdf2bab58b5a900c3de8d2925c892103ab97bdf221081ace",
+        "sale_price": 0,
+        "buy_price": 20000,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 32769,
+        "npc_entry_ordinal": 9,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "8987639561337c52c41cb5c98f6ab73344b3c389ce0f301f1267675565871a42",
+        "sale_price": 0,
+        "buy_price": 12000,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 32770,
+        "npc_entry_ordinal": 7,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "bb8f13209f5cf6ca320c3d10b43835dc6cb0d207402e61c7d70ecde6e07910c6",
+        "sale_price": 0,
+        "buy_price": 15000,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 32771,
+        "npc_entry_ordinal": 7,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "78f65f14a33afded937658eda3e22ad6d18f287941ab5840c726571a78195ad7",
+        "sale_price": 0,
+        "buy_price": 13000,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 33779,
+        "npc_entry_ordinal": 17,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "1a6fbc03d53bdab701b5fae0d22e65bdcf621a85ffde3368846f093e27d0654e",
+        "sale_price": 0,
+        "buy_price": 30000,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 33780,
+        "npc_entry_ordinal": 17,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "204921f6e69d8a9b43fd1dde2f22d0aa68cc191be3f2feed8bb2bce0b98bd1af",
+        "sale_price": 0,
+        "buy_price": 230000,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 33781,
+        "npc_entry_ordinal": 17,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "8519f8e5ed8e32e946e4d1ff74283f947bc6d7057a6a78510cb59a7972214396",
+        "sale_price": 0,
+        "buy_price": 10000,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 34008,
+        "npc_entry_ordinal": 17,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "8eefd9957baf30b9e8d9bd9fe9278bfe0db8e43aac1b2da0295f040053b49174",
+        "sale_price": 0,
+        "buy_price": 9000,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 35562,
+        "npc_entry_ordinal": 12,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "48d967808de96dbe0cf98505423aa145525b7618f1d5800fe4003588b8365904",
+        "sale_price": 400,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 35848,
+        "npc_entry_ordinal": 12,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "48d967808de96dbe0cf98505423aa145525b7618f1d5800fe4003588b8365904",
+        "sale_price": 400,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 35849,
+        "npc_entry_ordinal": 12,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "48d967808de96dbe0cf98505423aa145525b7618f1d5800fe4003588b8365904",
+        "sale_price": 400,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 35901,
+        "npc_entry_ordinal": 18,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "844ab41067104a9d08e7f44f8f1859ebb311134ed344b2be3bf6deba0393d9a2",
+        "sale_price": 130,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 35902,
+        "npc_entry_ordinal": 18,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "c26b9cb0431d6ac66ce9b7b2824ba38b05d38b4f18adfdfa0a2f8f2fe2ce93a7",
+        "sale_price": 70,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 36835,
+        "npc_entry_ordinal": 17,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "669f807dbd06bc49e8b1178e19c0abd8d07860b3ca04225df4b50e6eace14c4d",
+        "sale_price": 0,
+        "buy_price": 48000,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 39038,
+        "npc_entry_ordinal": 17,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "e6084b3941179467820fcf393dfe7a8172556b6f0cd8c0bb664252112405df1c",
+        "sale_price": 0,
+        "buy_price": 460000,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 39040,
+        "npc_entry_ordinal": 17,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "de5c1a4117c7892b47cb7f3915ab7b74c2b0896bc78b8805a42a58ac00f562dd",
+        "sale_price": 0,
+        "buy_price": 1070000,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 44602,
+        "npc_entry_ordinal": 17,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "9c69be03ed8787fe99876fbb6aba4e84fa405498118b6b5a59adb483e4a6b8c2",
+        "sale_price": 0,
+        "buy_price": 2500,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 44603,
+        "npc_entry_ordinal": 17,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "38f6f910c38acc20bb6919e8d929c25cc3ecece2e43715bd909b4f790ebdaf1d",
+        "sale_price": 0,
+        "buy_price": 5000,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 44604,
+        "npc_entry_ordinal": 17,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "8519f8e5ed8e32e946e4d1ff74283f947bc6d7057a6a78510cb59a7972214396",
+        "sale_price": 0,
+        "buy_price": 10000,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 44605,
+        "npc_entry_ordinal": 17,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "9c69be03ed8787fe99876fbb6aba4e84fa405498118b6b5a59adb483e4a6b8c2",
+        "sale_price": 0,
+        "buy_price": 2500,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 44606,
+        "npc_entry_ordinal": 17,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "38f6f910c38acc20bb6919e8d929c25cc3ecece2e43715bd909b4f790ebdaf1d",
+        "sale_price": 0,
+        "buy_price": 5000,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 44607,
+        "npc_entry_ordinal": 17,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "8519f8e5ed8e32e946e4d1ff74283f947bc6d7057a6a78510cb59a7972214396",
+        "sale_price": 0,
+        "buy_price": 10000,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 44608,
+        "npc_entry_ordinal": 17,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "9c69be03ed8787fe99876fbb6aba4e84fa405498118b6b5a59adb483e4a6b8c2",
+        "sale_price": 0,
+        "buy_price": 2500,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 44609,
+        "npc_entry_ordinal": 17,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "38f6f910c38acc20bb6919e8d929c25cc3ecece2e43715bd909b4f790ebdaf1d",
+        "sale_price": 0,
+        "buy_price": 5000,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 44610,
+        "npc_entry_ordinal": 17,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "8519f8e5ed8e32e946e4d1ff74283f947bc6d7057a6a78510cb59a7972214396",
+        "sale_price": 0,
+        "buy_price": 10000,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 44611,
+        "npc_entry_ordinal": 17,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "9c69be03ed8787fe99876fbb6aba4e84fa405498118b6b5a59adb483e4a6b8c2",
+        "sale_price": 0,
+        "buy_price": 2500,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 44612,
+        "npc_entry_ordinal": 17,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "38f6f910c38acc20bb6919e8d929c25cc3ecece2e43715bd909b4f790ebdaf1d",
+        "sale_price": 0,
+        "buy_price": 5000,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 44613,
+        "npc_entry_ordinal": 17,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "8519f8e5ed8e32e946e4d1ff74283f947bc6d7057a6a78510cb59a7972214396",
+        "sale_price": 0,
+        "buy_price": 10000,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 46625,
+        "npc_entry_ordinal": 17,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "30817db71353b0fddbfbdd8a2adea1ce32f5023466b702efe760582ce019bf2a",
+        "sale_price": 750000,
+        "buy_price": 500,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 46626,
+        "npc_entry_ordinal": 17,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "e06a8484fcbc8c26524b0371ad936be0522b54dc5a4f30f24a65437023d406d0",
+        "sale_price": 2250000,
+        "buy_price": 2500,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 49371,
+        "npc_entry_ordinal": 17,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "9c69be03ed8787fe99876fbb6aba4e84fa405498118b6b5a59adb483e4a6b8c2",
+        "sale_price": 0,
+        "buy_price": 2500,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 49372,
+        "npc_entry_ordinal": 17,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "38f6f910c38acc20bb6919e8d929c25cc3ecece2e43715bd909b4f790ebdaf1d",
+        "sale_price": 0,
+        "buy_price": 5000,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 49373,
+        "npc_entry_ordinal": 17,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "8519f8e5ed8e32e946e4d1ff74283f947bc6d7057a6a78510cb59a7972214396",
+        "sale_price": 0,
+        "buy_price": 10000,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 51760,
+        "npc_entry_ordinal": 11,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "ec7a0a7a9fbf9ca174eeca7fb511aa9746c9990d954b1bf580f851e1e6b0dddf",
+        "sale_price": 600,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 51978,
+        "npc_entry_ordinal": 18,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "eba80b94d074b78d9c79504b03ffd66480e647ad12fd1ff85ce93c528e7985f0",
+        "sale_price": 5000,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 53168,
+        "npc_entry_ordinal": 18,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "772243650ea168a16a647d979aaf0983937b84951b453d0813cb8c95e7467b57",
+        "sale_price": 45,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 53169,
+        "npc_entry_ordinal": 18,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "619a5d27e94fd78e3c7c97c6d9ee049f8a451768988517a06456ce3c806e33e9",
+        "sale_price": 75,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 53170,
+        "npc_entry_ordinal": 18,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "619a5d27e94fd78e3c7c97c6d9ee049f8a451768988517a06456ce3c806e33e9",
+        "sale_price": 75,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 53171,
+        "npc_entry_ordinal": 18,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "619a5d27e94fd78e3c7c97c6d9ee049f8a451768988517a06456ce3c806e33e9",
+        "sale_price": 75,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 53172,
+        "npc_entry_ordinal": 18,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "619a5d27e94fd78e3c7c97c6d9ee049f8a451768988517a06456ce3c806e33e9",
+        "sale_price": 75,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      }
+    ]
+  },
+  {
+    "npc_key": "oteryn:npc.minzy",
+    "name": "Minzy",
+    "rows": [
+      {
+        "appearance_object_id": 236,
+        "npc_entry_ordinal": 0,
+        "location": "Green Claw Swamp",
+        "npc_entry_sha256": "8c3eb1fe23c59f3be24d085abaca9a971cce598fc0ab6a31bab5842eca1ed198",
+        "sale_price": 10,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": "Favour"
+      },
+      {
+        "appearance_object_id": 237,
+        "npc_entry_ordinal": 0,
+        "location": "Green Claw Swamp",
+        "npc_entry_sha256": "d1e71dbdc6a43a737077df5973229108b9cc72ad0fb5046c1580f3580aef7e85",
+        "sale_price": 8,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": "Favour"
+      },
+      {
+        "appearance_object_id": 238,
+        "npc_entry_ordinal": 0,
+        "location": "Green Claw Swamp",
+        "npc_entry_sha256": "38ec5e6106ebbb05eeb104d9567fdb3bd428e71e2496f6644b81107919f8947b",
+        "sale_price": 12,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": "Favour"
+      },
+      {
+        "appearance_object_id": 239,
+        "npc_entry_ordinal": 0,
+        "location": "Green Claw Swamp",
+        "npc_entry_sha256": "dda42ee877897d1f01d00b0f934598cba607b45c990f832b134578d901699b2d",
+        "sale_price": 19,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": "Favour"
+      },
+      {
+        "appearance_object_id": 266,
+        "npc_entry_ordinal": 1,
+        "location": "Green Claw Swamp",
+        "npc_entry_sha256": "d609f00d9dd093be702a18e21124b8b8d5350316ce64aacef5909f34a9443e18",
+        "sale_price": 5,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": "Favour"
+      },
+      {
+        "appearance_object_id": 268,
+        "npc_entry_ordinal": 1,
+        "location": "Green Claw Swamp",
+        "npc_entry_sha256": "d609f00d9dd093be702a18e21124b8b8d5350316ce64aacef5909f34a9443e18",
+        "sale_price": 5,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": "Favour"
+      },
+      {
+        "appearance_object_id": 7642,
+        "npc_entry_ordinal": 0,
+        "location": "Green Claw Swamp",
+        "npc_entry_sha256": "dda42ee877897d1f01d00b0f934598cba607b45c990f832b134578d901699b2d",
+        "sale_price": 19,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": "Favour"
+      },
+      {
+        "appearance_object_id": 7643,
+        "npc_entry_ordinal": 0,
+        "location": "Green Claw Swamp",
+        "npc_entry_sha256": "f3d9dd8ccdc7904bd32cbfdab521d4bbd0ca0632d7482c7526dc515fa1d9be70",
+        "sale_price": 31,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": "Favour"
+      },
+      {
+        "appearance_object_id": 23373,
+        "npc_entry_ordinal": 0,
+        "location": "Green Claw Swamp",
+        "npc_entry_sha256": "81e903dc330a50362ef9dc8ebecad87d6139b27e823af90743b10f9ca887b2e9",
+        "sale_price": 37,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": "Favour"
+      },
+      {
+        "appearance_object_id": 23374,
+        "npc_entry_ordinal": 0,
+        "location": "Green Claw Swamp",
+        "npc_entry_sha256": "346c78a7aa49bd8e720048e2ffc68b3c4a3e6da59efb29f85d2329673e0fc8cb",
+        "sale_price": 35,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": "Favour"
+      },
+      {
+        "appearance_object_id": 23375,
+        "npc_entry_ordinal": 0,
+        "location": "Green Claw Swamp",
+        "npc_entry_sha256": "8109d3fcba3cee4b3887e6ac78de54162c4b0e19f7c092fb0a6930d8ba0155e9",
+        "sale_price": 51,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": "Favour"
+      },
+      {
+        "appearance_object_id": 53162,
+        "npc_entry_ordinal": 0,
+        "location": "Green Claw Swamp",
+        "npc_entry_sha256": "dda42ee877897d1f01d00b0f934598cba607b45c990f832b134578d901699b2d",
+        "sale_price": 19,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": "Favour"
+      },
+      {
+        "appearance_object_id": 53163,
+        "npc_entry_ordinal": 0,
+        "location": "Green Claw Swamp",
+        "npc_entry_sha256": "faedf3f045b54e7cbe6c2fcbc7510a25d8b22fc1633a6ed8ad7ebc403cfbf3ac",
+        "sale_price": 29,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": "Favour"
+      },
+      {
+        "appearance_object_id": 53164,
+        "npc_entry_ordinal": 0,
+        "location": "Green Claw Swamp",
+        "npc_entry_sha256": "409a00b44717195e3912f20b5250f88ea86e4e4207bdbd29a8b029490b0855e9",
+        "sale_price": 56,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": "Favour"
+      }
+    ]
+  },
+  {
+    "npc_key": "oteryn:npc.ned_nobel",
+    "name": "Ned Nobel",
+    "rows": [
+      {
+        "appearance_object_id": 6576,
+        "npc_entry_ordinal": 0,
+        "location": "Ab'Dendriel City",
+        "npc_entry_sha256": "f7685a59f9fb4f3564da7c51af4b43221a77443c2713346f0e9a76faaddeb6c0",
+        "sale_price": 50,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      }
+    ]
+  },
+  {
+    "npc_key": "oteryn:npc.proprietor_piers",
+    "name": "Proprietor Piers",
+    "rows": [
+      {
+        "appearance_object_id": 53174,
+        "npc_entry_ordinal": 0,
+        "location": "Great Expedition Wharf",
+        "npc_entry_sha256": "93a8ca98b819484d8e41cfeb9231dcaac89286bb85d41e271484fca35a4ece79",
+        "sale_price": 25,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": "Event Points"
+      },
+      {
+        "appearance_object_id": 53175,
+        "npc_entry_ordinal": 0,
+        "location": "Great Expedition Wharf",
+        "npc_entry_sha256": "93a8ca98b819484d8e41cfeb9231dcaac89286bb85d41e271484fca35a4ece79",
+        "sale_price": 25,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": "Event Points"
+      },
+      {
+        "appearance_object_id": 53176,
+        "npc_entry_ordinal": 0,
+        "location": "Great Expedition Wharf",
+        "npc_entry_sha256": "93a8ca98b819484d8e41cfeb9231dcaac89286bb85d41e271484fca35a4ece79",
+        "sale_price": 25,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": "Event Points"
+      },
+      {
+        "appearance_object_id": 53177,
+        "npc_entry_ordinal": 0,
+        "location": "Great Expedition Wharf",
+        "npc_entry_sha256": "93a8ca98b819484d8e41cfeb9231dcaac89286bb85d41e271484fca35a4ece79",
+        "sale_price": 25,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": "Event Points"
+      },
+      {
+        "appearance_object_id": 53178,
+        "npc_entry_ordinal": 0,
+        "location": "Great Expedition Wharf",
+        "npc_entry_sha256": "93a8ca98b819484d8e41cfeb9231dcaac89286bb85d41e271484fca35a4ece79",
+        "sale_price": 25,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": "Event Points"
+      },
+      {
+        "appearance_object_id": 53180,
+        "npc_entry_ordinal": 0,
+        "location": "Great Expedition Wharf",
+        "npc_entry_sha256": "93a8ca98b819484d8e41cfeb9231dcaac89286bb85d41e271484fca35a4ece79",
+        "sale_price": 25,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": "Event Points"
+      },
+      {
+        "appearance_object_id": 53181,
+        "npc_entry_ordinal": 0,
+        "location": "Great Expedition Wharf",
+        "npc_entry_sha256": "93a8ca98b819484d8e41cfeb9231dcaac89286bb85d41e271484fca35a4ece79",
+        "sale_price": 25,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": "Event Points"
+      },
+      {
+        "appearance_object_id": 53183,
+        "npc_entry_ordinal": 0,
+        "location": "Great Expedition Wharf",
+        "npc_entry_sha256": "93a8ca98b819484d8e41cfeb9231dcaac89286bb85d41e271484fca35a4ece79",
+        "sale_price": 25,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": "Event Points"
+      },
+      {
+        "appearance_object_id": 53184,
+        "npc_entry_ordinal": 0,
+        "location": "Great Expedition Wharf",
+        "npc_entry_sha256": "93a8ca98b819484d8e41cfeb9231dcaac89286bb85d41e271484fca35a4ece79",
+        "sale_price": 25,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": "Event Points"
+      },
+      {
+        "appearance_object_id": 53185,
+        "npc_entry_ordinal": 0,
+        "location": "Great Expedition Wharf",
+        "npc_entry_sha256": "93a8ca98b819484d8e41cfeb9231dcaac89286bb85d41e271484fca35a4ece79",
+        "sale_price": 25,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": "Event Points"
+      },
+      {
+        "appearance_object_id": 53190,
+        "npc_entry_ordinal": 0,
+        "location": "Great Expedition Wharf",
+        "npc_entry_sha256": "d245342d7b416df2782666c1b321056c50f1cee35ea3f062a48c78eb6cf6992a",
+        "sale_price": 280,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": "Event Points"
+      },
+      {
+        "appearance_object_id": 53191,
+        "npc_entry_ordinal": 0,
+        "location": "Great Expedition Wharf",
+        "npc_entry_sha256": "ff60f0c2f70acdca79131c44152556fea5a89bc3282e9e479c29a5cb3e795b56",
+        "sale_price": 560,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": "Event Points"
+      },
+      {
+        "appearance_object_id": 53192,
+        "npc_entry_ordinal": 0,
+        "location": "Great Expedition Wharf",
+        "npc_entry_sha256": "146d0ac47b750a9b1ce8abf4cabbe9adfc9593ee60814f6a821299eb5f6d31c5",
+        "sale_price": 90,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": "Event Points"
+      },
+      {
+        "appearance_object_id": 53287,
+        "npc_entry_ordinal": 0,
+        "location": "Great Expedition Wharf",
+        "npc_entry_sha256": "7c519245aece599be4f9d5d65171065416a159f26a223f553ad2fe9513b92112",
+        "sale_price": 30,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": "Event Points"
+      },
+      {
+        "appearance_object_id": 53288,
+        "npc_entry_ordinal": 0,
+        "location": "Great Expedition Wharf",
+        "npc_entry_sha256": "32ab49f3319a4f4ae4f20d3b693c226e0482c26be8e271391912e65c85e9de40",
+        "sale_price": 70,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": "Event Points"
+      },
+      {
+        "appearance_object_id": 53423,
+        "npc_entry_ordinal": 0,
+        "location": "Great Expedition Wharf",
+        "npc_entry_sha256": "32ab49f3319a4f4ae4f20d3b693c226e0482c26be8e271391912e65c85e9de40",
+        "sale_price": 70,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": "Event Points"
+      }
+    ]
+  },
+  {
+    "npc_key": "oteryn:npc.relaxed_bartender",
+    "name": "Relaxed Bartender",
+    "rows": [
+      {
+        "appearance_object_id": 2874,
+        "npc_entry_ordinal": 0,
+        "location": "Secret Subarea",
+        "npc_entry_sha256": "65e8151c41aec579d323a85d3e17f0b2c09772a58a974368fe366d95c8fc5279",
+        "sale_price": 10,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 2874,
+        "npc_entry_ordinal": 1,
+        "location": "Secret Subarea",
+        "npc_entry_sha256": "e0c9f3c611903beea264c7b9e7139f57ab5a71c0158b426031e68f4283a39380",
+        "sale_price": 15,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 2952,
+        "npc_entry_ordinal": 0,
+        "location": "Secret Subarea",
+        "npc_entry_sha256": "cb284d85ea4dfbd78b29ca1fca05e2860e4adacd5fcfbc2ac4a3144e5f002e16",
+        "sale_price": 140,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 3587,
+        "npc_entry_ordinal": 0,
+        "location": "Secret Subarea",
+        "npc_entry_sha256": "3691a086b9b53c1f3cd73ef5038462fb1c943f9e5c33d1121f0e551093543af9",
+        "sale_price": 2,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 3598,
+        "npc_entry_ordinal": 0,
+        "location": "Secret Subarea",
+        "npc_entry_sha256": "3691a086b9b53c1f3cd73ef5038462fb1c943f9e5c33d1121f0e551093543af9",
+        "sale_price": 2,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 5096,
+        "npc_entry_ordinal": 0,
+        "location": "Secret Subarea",
+        "npc_entry_sha256": "65e8151c41aec579d323a85d3e17f0b2c09772a58a974368fe366d95c8fc5279",
+        "sale_price": 10,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 5949,
+        "npc_entry_ordinal": 0,
+        "location": "Secret Subarea",
+        "npc_entry_sha256": "8249efda057df33b18546689e4419844c5989191b03f02d2bb09886c5e4c2cef",
+        "sale_price": 20,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 5950,
+        "npc_entry_ordinal": 0,
+        "location": "Secret Subarea",
+        "npc_entry_sha256": "e90dd3cd4385867429b4963023f9480459234dbce6805c76d61e36d7f30b4566",
+        "sale_price": 4,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 6279,
+        "npc_entry_ordinal": 0,
+        "location": "Secret Subarea",
+        "npc_entry_sha256": "9259cd525f129e9edb724d8082245abeeae8aeb9c5fe0d0b17e06fa4718d0a29",
+        "sale_price": 50,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 11459,
+        "npc_entry_ordinal": 0,
+        "location": "Secret Subarea",
+        "npc_entry_sha256": "453948e8700d3cf339f747310c5a6817583cf98fd81a4f6df8f41d1da58703fa",
+        "sale_price": 12,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 11682,
+        "npc_entry_ordinal": 0,
+        "location": "Secret Subarea",
+        "npc_entry_sha256": "3bc656ec9f95454186835405483d605b9e54229a7ab1a061320a52cce2c951d7",
+        "sale_price": 5,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      }
+    ]
+  },
+  {
+    "npc_key": "oteryn:npc.smaralda",
+    "name": "Smaralda",
+    "rows": [
+      {
+        "appearance_object_id": 12237,
+        "npc_entry_ordinal": 0,
+        "location": "Thais Surroundings",
+        "npc_entry_sha256": "5face18246a24d616970181219f330af03af8ae8f77551178985feb965913d4f",
+        "sale_price": 500,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      }
+    ]
+  },
+  {
+    "npc_key": "oteryn:npc.tamru",
+    "name": "Tamru",
+    "rows": [
+      {
+        "appearance_object_id": 2855,
+        "npc_entry_ordinal": 25,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "df8375da8032776854714b2a4c2b0225aad26ef7a0a8b2ff502ad3f92a158cd2",
+        "sale_price": 6,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 2856,
+        "npc_entry_ordinal": 25,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "27833ed20c3b5bd02c6f0203a0ded462da55fc07c93627bca3f100b37f650d44",
+        "sale_price": 10,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 2873,
+        "npc_entry_ordinal": 26,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "32d9057c09ee92d922657007b3f1cfc7c868f3c4d3f4a2db6cf01fa594109050",
+        "sale_price": 4,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 2875,
+        "npc_entry_ordinal": 31,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "75d933b013e137e629d4699cac456e699bffde9476c2d7ea275e68bb410dc255",
+        "sale_price": 3,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 2906,
+        "npc_entry_ordinal": 26,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "aae948d9701ca7ab849bc3d33aefe6442e054ef73bbe40d1f6208c48b2fde789",
+        "sale_price": 20,
+        "buy_price": 6,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 2911,
+        "npc_entry_ordinal": 24,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "9ef8d15e0ddfa601eae333cefe59d559e9bc71546f74fa44cccb0df09a740506",
+        "sale_price": 8,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 2917,
+        "npc_entry_ordinal": 26,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "e2b7f4450288d8fe7069abaca290b2204db81e7af2a973e8a2b14b61d46d097a",
+        "sale_price": 2,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 2920,
+        "npc_entry_ordinal": 34,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "e2b7f4450288d8fe7069abaca290b2204db81e7af2a973e8a2b14b61d46d097a",
+        "sale_price": 2,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 3003,
+        "npc_entry_ordinal": 36,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "4b8d40d740de5e0c6c0ded0f3a1ae40cfa655d822a81de67db301d67e453dce1",
+        "sale_price": 50,
+        "buy_price": 15,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 3304,
+        "npc_entry_ordinal": 47,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "955a68c913441161b75a1c89af24506437c831d31a0edde572a0df42862bea10",
+        "sale_price": 260,
+        "buy_price": 50,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 3308,
+        "npc_entry_ordinal": 28,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "cc3a9106ef999fa22d2d35ede80406c4bcf7f09f2f1617f1c70df47907a7553c",
+        "sale_price": 35,
+        "buy_price": 6,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 3453,
+        "npc_entry_ordinal": 33,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "e9d477f7e1d0974c02e4410671b51c66840d8de4195801d3af2fe5f6c51672d6",
+        "sale_price": 50,
+        "buy_price": 10,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 3456,
+        "npc_entry_ordinal": 28,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "4b8d40d740de5e0c6c0ded0f3a1ae40cfa655d822a81de67db301d67e453dce1",
+        "sale_price": 50,
+        "buy_price": 15,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 3457,
+        "npc_entry_ordinal": 37,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "afd2e9c2be137d5c97e40832567fc19c9d5feae4e09b4c0ead8bcef74248811e",
+        "sale_price": 50,
+        "buy_price": 8,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 3459,
+        "npc_entry_ordinal": 23,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "361033e17c1511f898083103aa65c03eb741b555f18b94c6608d3bd1cd88c507",
+        "sale_price": 0,
+        "buy_price": 15,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 3481,
+        "npc_entry_ordinal": 25,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "318eab7772f37f32305dfbd80abadddeb94fea655d0423b1a8e629db0eba232a",
+        "sale_price": 280,
+        "buy_price": 75,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 3483,
+        "npc_entry_ordinal": 36,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "9dc285fffc00bee1dbaaead48c8bf4c37ab0146478f2e5a191fcd3db8cb58cad",
+        "sale_price": 150,
+        "buy_price": 40,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 3492,
+        "npc_entry_ordinal": 37,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "dab0562281bf0ef7b434a77e6c41990de3c996a6def52b73bda0c828f3a87d95",
+        "sale_price": 1,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 31334,
+        "npc_entry_ordinal": 22,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "1b34e76d6174032382cdf21a7f246353a6c67cb4c7f1bc6376908e443621e12d",
+        "sale_price": 25,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 31489,
+        "npc_entry_ordinal": 22,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "9b80ad027b7102218a9a543a00f238bf7dcba16292f01219d244a0aa50fe70b7",
+        "sale_price": 50,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 43729,
+        "npc_entry_ordinal": 3,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "0597903ae61c0a6e3dcc8f2e3bf12671a01d3926787d407a59bc42837d70b53d",
+        "sale_price": 0,
+        "buy_price": 570,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 43730,
+        "npc_entry_ordinal": 3,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "cf174cde6d732053f2566e9b1dd3a4c1968ccd5bbc2fb0104c8acb40a51103b6",
+        "sale_price": 0,
+        "buy_price": 490,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 43731,
+        "npc_entry_ordinal": 3,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "d7d4cbf0105299631c4f47ecd18d2896d531113936a7156ac4bc2cc9179204be",
+        "sale_price": 0,
+        "buy_price": 280,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 43732,
+        "npc_entry_ordinal": 3,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "335cb38572e8ee3b64791f244b584a4da2480faca00b88eb9bb347dc5de21d0a",
+        "sale_price": 0,
+        "buy_price": 11000,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 43733,
+        "npc_entry_ordinal": 3,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "335cb38572e8ee3b64791f244b584a4da2480faca00b88eb9bb347dc5de21d0a",
+        "sale_price": 0,
+        "buy_price": 11000,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 43734,
+        "npc_entry_ordinal": 3,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "335cb38572e8ee3b64791f244b584a4da2480faca00b88eb9bb347dc5de21d0a",
+        "sale_price": 0,
+        "buy_price": 11000,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 43735,
+        "npc_entry_ordinal": 3,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "335cb38572e8ee3b64791f244b584a4da2480faca00b88eb9bb347dc5de21d0a",
+        "sale_price": 0,
+        "buy_price": 11000,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 43736,
+        "npc_entry_ordinal": 3,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "9b9e8eace315dda0268e043635d479cb00b32ceff697d27ef98f14aff42ecf4c",
+        "sale_price": 0,
+        "buy_price": 18000,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 43737,
+        "npc_entry_ordinal": 3,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "9b9e8eace315dda0268e043635d479cb00b32ceff697d27ef98f14aff42ecf4c",
+        "sale_price": 0,
+        "buy_price": 18000,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 43739,
+        "npc_entry_ordinal": 3,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "5382a7cfeac012b30fa207a4e24e94339f0ee57fa4a784277ee938e24132c9d3",
+        "sale_price": 0,
+        "buy_price": 5000,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 43888,
+        "npc_entry_ordinal": 3,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "5382a7cfeac012b30fa207a4e24e94339f0ee57fa4a784277ee938e24132c9d3",
+        "sale_price": 0,
+        "buy_price": 5000,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 46627,
+        "npc_entry_ordinal": 22,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "d4af8bd2b03cda55236d416043c07b598837dd7fca8d9686e4957b5a7747c740",
+        "sale_price": 500,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      }
+    ]
+  },
+  {
+    "npc_key": "oteryn:npc.the_thaian",
+    "name": "The Thaian",
+    "rows": [
+      {
+        "appearance_object_id": 2880,
+        "npc_entry_ordinal": 42,
+        "location": "Edron Surroundings",
+        "npc_entry_sha256": "e967dfa1ec9df8321b1839e2f0c9c19f63f11b00d1a1e2b73c3ee266397ce3b6",
+        "sale_price": 2,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 2880,
+        "npc_entry_ordinal": 43,
+        "location": "Edron Surroundings",
+        "npc_entry_sha256": "e9531f8087c14f4a9cd94128b2f3422025d17fc2a3b1ad606affba08faae12b8",
+        "sale_price": 1,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 2880,
+        "npc_entry_ordinal": 44,
+        "location": "Edron Surroundings",
+        "npc_entry_sha256": "67225bc225b1a27e852ad5b9b6a177c2048508a5a33d4bd58d094cb8ab1188d2",
+        "sale_price": 3,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 3577,
+        "npc_entry_ordinal": 32,
+        "location": "Edron Surroundings",
+        "npc_entry_sha256": "41a553c96dfc9593bd656dfa523ee171e3fd6482810f594698868bc46cccf9b2",
+        "sale_price": 5,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 3582,
+        "npc_entry_ordinal": 31,
+        "location": "Edron Surroundings",
+        "npc_entry_sha256": "2445f31daa720a6c135bf546f6aca1d87afe1eff8dc96503da786f0e9ac383d8",
+        "sale_price": 8,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 3596,
+        "npc_entry_ordinal": 7,
+        "location": "Edron Surroundings",
+        "npc_entry_sha256": "67225bc225b1a27e852ad5b9b6a177c2048508a5a33d4bd58d094cb8ab1188d2",
+        "sale_price": 3,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 3598,
+        "npc_entry_ordinal": 11,
+        "location": "Edron Surroundings",
+        "npc_entry_sha256": "e967dfa1ec9df8321b1839e2f0c9c19f63f11b00d1a1e2b73c3ee266397ce3b6",
+        "sale_price": 2,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 3600,
+        "npc_entry_ordinal": 23,
+        "location": "Edron Surroundings",
+        "npc_entry_sha256": "2cbb063062c585ed7f1df1b6c0d3050d1a64d16a1eb9b83dd153ca042b157450",
+        "sale_price": 4,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 3606,
+        "npc_entry_ordinal": 12,
+        "location": "Edron Surroundings",
+        "npc_entry_sha256": "e967dfa1ec9df8321b1839e2f0c9c19f63f11b00d1a1e2b73c3ee266397ce3b6",
+        "sale_price": 2,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 3607,
+        "npc_entry_ordinal": 27,
+        "location": "Edron Surroundings",
+        "npc_entry_sha256": "8e4d5e4944506f91ccd45270886f437e67b55732f0b4944e88329ab87933e333",
+        "sale_price": 6,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      }
+    ]
+  },
+  {
+    "npc_key": "oteryn:npc.theodora",
+    "name": "Theodora",
+    "rows": [
+      {
+        "appearance_object_id": 37354,
+        "npc_entry_ordinal": 0,
+        "location": "Thais City",
+        "npc_entry_sha256": "b1c38e6257924c91d69823e17053bb1b2a08e71972b9093d960b73174c2af4b6",
+        "sale_price": 800,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": "Theons"
+      },
+      {
+        "appearance_object_id": 37357,
+        "npc_entry_ordinal": 0,
+        "location": "Thais City",
+        "npc_entry_sha256": "b1c38e6257924c91d69823e17053bb1b2a08e71972b9093d960b73174c2af4b6",
+        "sale_price": 800,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": "Theons"
+      },
+      {
+        "appearance_object_id": 37358,
+        "npc_entry_ordinal": 0,
+        "location": "Thais City",
+        "npc_entry_sha256": "b1c38e6257924c91d69823e17053bb1b2a08e71972b9093d960b73174c2af4b6",
+        "sale_price": 800,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": "Theons"
+      },
+      {
+        "appearance_object_id": 37360,
+        "npc_entry_ordinal": 0,
+        "location": "Thais City",
+        "npc_entry_sha256": "b1c38e6257924c91d69823e17053bb1b2a08e71972b9093d960b73174c2af4b6",
+        "sale_price": 800,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": "Theons"
+      },
+      {
+        "appearance_object_id": 37362,
+        "npc_entry_ordinal": 0,
+        "location": "Thais City",
+        "npc_entry_sha256": "b1c38e6257924c91d69823e17053bb1b2a08e71972b9093d960b73174c2af4b6",
+        "sale_price": 800,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": "Theons"
+      },
+      {
+        "appearance_object_id": 37364,
+        "npc_entry_ordinal": 0,
+        "location": "Thais City",
+        "npc_entry_sha256": "b1c38e6257924c91d69823e17053bb1b2a08e71972b9093d960b73174c2af4b6",
+        "sale_price": 800,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": "Theons"
+      },
+      {
+        "appearance_object_id": 37366,
+        "npc_entry_ordinal": 0,
+        "location": "Thais City",
+        "npc_entry_sha256": "fdcb60c2ef215d4cd5dac7e0526d23bb7e8a679b721c6b4e4edc6478d1812c84",
+        "sale_price": 400,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": "Theons"
+      },
+      {
+        "appearance_object_id": 37374,
+        "npc_entry_ordinal": 0,
+        "location": "Thais City",
+        "npc_entry_sha256": "fdcb60c2ef215d4cd5dac7e0526d23bb7e8a679b721c6b4e4edc6478d1812c84",
+        "sale_price": 400,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": "Theons"
+      },
+      {
+        "appearance_object_id": 37375,
+        "npc_entry_ordinal": 0,
+        "location": "Thais City",
+        "npc_entry_sha256": "fdcb60c2ef215d4cd5dac7e0526d23bb7e8a679b721c6b4e4edc6478d1812c84",
+        "sale_price": 400,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": "Theons"
+      },
+      {
+        "appearance_object_id": 37376,
+        "npc_entry_ordinal": 0,
+        "location": "Thais City",
+        "npc_entry_sha256": "fdcb60c2ef215d4cd5dac7e0526d23bb7e8a679b721c6b4e4edc6478d1812c84",
+        "sale_price": 400,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": "Theons"
+      },
+      {
+        "appearance_object_id": 37377,
+        "npc_entry_ordinal": 0,
+        "location": "Thais City",
+        "npc_entry_sha256": "fdcb60c2ef215d4cd5dac7e0526d23bb7e8a679b721c6b4e4edc6478d1812c84",
+        "sale_price": 400,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": "Theons"
+      },
+      {
+        "appearance_object_id": 37378,
+        "npc_entry_ordinal": 0,
+        "location": "Thais City",
+        "npc_entry_sha256": "fdcb60c2ef215d4cd5dac7e0526d23bb7e8a679b721c6b4e4edc6478d1812c84",
+        "sale_price": 400,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": "Theons"
+      },
+      {
+        "appearance_object_id": 37379,
+        "npc_entry_ordinal": 0,
+        "location": "Thais City",
+        "npc_entry_sha256": "fdcb60c2ef215d4cd5dac7e0526d23bb7e8a679b721c6b4e4edc6478d1812c84",
+        "sale_price": 400,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": "Theons"
+      },
+      {
+        "appearance_object_id": 37380,
+        "npc_entry_ordinal": 0,
+        "location": "Thais City",
+        "npc_entry_sha256": "fdcb60c2ef215d4cd5dac7e0526d23bb7e8a679b721c6b4e4edc6478d1812c84",
+        "sale_price": 400,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": "Theons"
+      },
+      {
+        "appearance_object_id": 37382,
+        "npc_entry_ordinal": 0,
+        "location": "Thais City",
+        "npc_entry_sha256": "fdcb60c2ef215d4cd5dac7e0526d23bb7e8a679b721c6b4e4edc6478d1812c84",
+        "sale_price": 400,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": "Theons"
+      },
+      {
+        "appearance_object_id": 37390,
+        "npc_entry_ordinal": 0,
+        "location": "Thais City",
+        "npc_entry_sha256": "fdcb60c2ef215d4cd5dac7e0526d23bb7e8a679b721c6b4e4edc6478d1812c84",
+        "sale_price": 400,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": "Theons"
+      },
+      {
+        "appearance_object_id": 37391,
+        "npc_entry_ordinal": 0,
+        "location": "Thais City",
+        "npc_entry_sha256": "fdcb60c2ef215d4cd5dac7e0526d23bb7e8a679b721c6b4e4edc6478d1812c84",
+        "sale_price": 400,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": "Theons"
+      },
+      {
+        "appearance_object_id": 37392,
+        "npc_entry_ordinal": 0,
+        "location": "Thais City",
+        "npc_entry_sha256": "fdcb60c2ef215d4cd5dac7e0526d23bb7e8a679b721c6b4e4edc6478d1812c84",
+        "sale_price": 400,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": "Theons"
+      },
+      {
+        "appearance_object_id": 37393,
+        "npc_entry_ordinal": 0,
+        "location": "Thais City",
+        "npc_entry_sha256": "fdcb60c2ef215d4cd5dac7e0526d23bb7e8a679b721c6b4e4edc6478d1812c84",
+        "sale_price": 400,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": "Theons"
+      },
+      {
+        "appearance_object_id": 37394,
+        "npc_entry_ordinal": 0,
+        "location": "Thais City",
+        "npc_entry_sha256": "fdcb60c2ef215d4cd5dac7e0526d23bb7e8a679b721c6b4e4edc6478d1812c84",
+        "sale_price": 400,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": "Theons"
+      },
+      {
+        "appearance_object_id": 37395,
+        "npc_entry_ordinal": 0,
+        "location": "Thais City",
+        "npc_entry_sha256": "fdcb60c2ef215d4cd5dac7e0526d23bb7e8a679b721c6b4e4edc6478d1812c84",
+        "sale_price": 400,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": "Theons"
+      },
+      {
+        "appearance_object_id": 37396,
+        "npc_entry_ordinal": 0,
+        "location": "Thais City",
+        "npc_entry_sha256": "fdcb60c2ef215d4cd5dac7e0526d23bb7e8a679b721c6b4e4edc6478d1812c84",
+        "sale_price": 400,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": "Theons"
+      },
+      {
+        "appearance_object_id": 37448,
+        "npc_entry_ordinal": 0,
+        "location": "Thais City",
+        "npc_entry_sha256": "63527e0fa4c694ddfaae8464aff34959af065df1077f52280e8dad2d40fa3730",
+        "sale_price": 750,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": "Theons"
+      },
+      {
+        "appearance_object_id": 37450,
+        "npc_entry_ordinal": 0,
+        "location": "Thais City",
+        "npc_entry_sha256": "63527e0fa4c694ddfaae8464aff34959af065df1077f52280e8dad2d40fa3730",
+        "sale_price": 750,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": "Theons"
+      },
+      {
+        "appearance_object_id": 37451,
+        "npc_entry_ordinal": 0,
+        "location": "Thais City",
+        "npc_entry_sha256": "63527e0fa4c694ddfaae8464aff34959af065df1077f52280e8dad2d40fa3730",
+        "sale_price": 750,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": "Theons"
+      },
+      {
+        "appearance_object_id": 37452,
+        "npc_entry_ordinal": 0,
+        "location": "Thais City",
+        "npc_entry_sha256": "63527e0fa4c694ddfaae8464aff34959af065df1077f52280e8dad2d40fa3730",
+        "sale_price": 750,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": "Theons"
+      },
+      {
+        "appearance_object_id": 37453,
+        "npc_entry_ordinal": 0,
+        "location": "Thais City",
+        "npc_entry_sha256": "63527e0fa4c694ddfaae8464aff34959af065df1077f52280e8dad2d40fa3730",
+        "sale_price": 750,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": "Theons"
+      },
+      {
+        "appearance_object_id": 37454,
+        "npc_entry_ordinal": 0,
+        "location": "Thais City",
+        "npc_entry_sha256": "63527e0fa4c694ddfaae8464aff34959af065df1077f52280e8dad2d40fa3730",
+        "sale_price": 750,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": "Theons"
+      },
+      {
+        "appearance_object_id": 37455,
+        "npc_entry_ordinal": 0,
+        "location": "Thais City",
+        "npc_entry_sha256": "63527e0fa4c694ddfaae8464aff34959af065df1077f52280e8dad2d40fa3730",
+        "sale_price": 750,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": "Theons"
+      },
+      {
+        "appearance_object_id": 37456,
+        "npc_entry_ordinal": 0,
+        "location": "Thais City",
+        "npc_entry_sha256": "63527e0fa4c694ddfaae8464aff34959af065df1077f52280e8dad2d40fa3730",
+        "sale_price": 750,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": "Theons"
+      },
+      {
+        "appearance_object_id": 37458,
+        "npc_entry_ordinal": 0,
+        "location": "Thais City",
+        "npc_entry_sha256": "63527e0fa4c694ddfaae8464aff34959af065df1077f52280e8dad2d40fa3730",
+        "sale_price": 750,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": "Theons"
+      },
+      {
+        "appearance_object_id": 37459,
+        "npc_entry_ordinal": 0,
+        "location": "Thais City",
+        "npc_entry_sha256": "63527e0fa4c694ddfaae8464aff34959af065df1077f52280e8dad2d40fa3730",
+        "sale_price": 750,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": "Theons"
+      },
+      {
+        "appearance_object_id": 37460,
+        "npc_entry_ordinal": 0,
+        "location": "Thais City",
+        "npc_entry_sha256": "63527e0fa4c694ddfaae8464aff34959af065df1077f52280e8dad2d40fa3730",
+        "sale_price": 750,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": "Theons"
+      },
+      {
+        "appearance_object_id": 37471,
+        "npc_entry_ordinal": 0,
+        "location": "Thais City",
+        "npc_entry_sha256": "f8539fdf5d19b4899e63ffb3369aab11dc0163bc9554bf596ae8dd831531ab15",
+        "sale_price": 200,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": "Theons"
+      },
+      {
+        "appearance_object_id": 37472,
+        "npc_entry_ordinal": 0,
+        "location": "Thais City",
+        "npc_entry_sha256": "f8539fdf5d19b4899e63ffb3369aab11dc0163bc9554bf596ae8dd831531ab15",
+        "sale_price": 200,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": "Theons"
+      },
+      {
+        "appearance_object_id": 37491,
+        "npc_entry_ordinal": 0,
+        "location": "Thais City",
+        "npc_entry_sha256": "f8539fdf5d19b4899e63ffb3369aab11dc0163bc9554bf596ae8dd831531ab15",
+        "sale_price": 200,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": "Theons"
+      },
+      {
+        "appearance_object_id": 37496,
+        "npc_entry_ordinal": 0,
+        "location": "Thais City",
+        "npc_entry_sha256": "f8539fdf5d19b4899e63ffb3369aab11dc0163bc9554bf596ae8dd831531ab15",
+        "sale_price": 200,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": "Theons"
+      },
+      {
+        "appearance_object_id": 37497,
+        "npc_entry_ordinal": 0,
+        "location": "Thais City",
+        "npc_entry_sha256": "f8539fdf5d19b4899e63ffb3369aab11dc0163bc9554bf596ae8dd831531ab15",
+        "sale_price": 200,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": "Theons"
+      },
+      {
+        "appearance_object_id": 37498,
+        "npc_entry_ordinal": 0,
+        "location": "Thais City",
+        "npc_entry_sha256": "f8539fdf5d19b4899e63ffb3369aab11dc0163bc9554bf596ae8dd831531ab15",
+        "sale_price": 200,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": "Theons"
+      },
+      {
+        "appearance_object_id": 37499,
+        "npc_entry_ordinal": 0,
+        "location": "Thais City",
+        "npc_entry_sha256": "f8539fdf5d19b4899e63ffb3369aab11dc0163bc9554bf596ae8dd831531ab15",
+        "sale_price": 200,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": "Theons"
+      },
+      {
+        "appearance_object_id": 37500,
+        "npc_entry_ordinal": 0,
+        "location": "Thais City",
+        "npc_entry_sha256": "f8539fdf5d19b4899e63ffb3369aab11dc0163bc9554bf596ae8dd831531ab15",
+        "sale_price": 200,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": "Theons"
+      },
+      {
+        "appearance_object_id": 37501,
+        "npc_entry_ordinal": 0,
+        "location": "Thais City",
+        "npc_entry_sha256": "f8539fdf5d19b4899e63ffb3369aab11dc0163bc9554bf596ae8dd831531ab15",
+        "sale_price": 200,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": "Theons"
+      },
+      {
+        "appearance_object_id": 37502,
+        "npc_entry_ordinal": 0,
+        "location": "Thais City",
+        "npc_entry_sha256": "fdcb60c2ef215d4cd5dac7e0526d23bb7e8a679b721c6b4e4edc6478d1812c84",
+        "sale_price": 400,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": "Theons"
+      },
+      {
+        "appearance_object_id": 37503,
+        "npc_entry_ordinal": 0,
+        "location": "Thais City",
+        "npc_entry_sha256": "fdcb60c2ef215d4cd5dac7e0526d23bb7e8a679b721c6b4e4edc6478d1812c84",
+        "sale_price": 400,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": "Theons"
+      },
+      {
+        "appearance_object_id": 37504,
+        "npc_entry_ordinal": 0,
+        "location": "Thais City",
+        "npc_entry_sha256": "fdcb60c2ef215d4cd5dac7e0526d23bb7e8a679b721c6b4e4edc6478d1812c84",
+        "sale_price": 400,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": "Theons"
+      },
+      {
+        "appearance_object_id": 37505,
+        "npc_entry_ordinal": 0,
+        "location": "Thais City",
+        "npc_entry_sha256": "fdcb60c2ef215d4cd5dac7e0526d23bb7e8a679b721c6b4e4edc6478d1812c84",
+        "sale_price": 400,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": "Theons"
+      },
+      {
+        "appearance_object_id": 37506,
+        "npc_entry_ordinal": 0,
+        "location": "Thais City",
+        "npc_entry_sha256": "fdcb60c2ef215d4cd5dac7e0526d23bb7e8a679b721c6b4e4edc6478d1812c84",
+        "sale_price": 400,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": "Theons"
+      },
+      {
+        "appearance_object_id": 37507,
+        "npc_entry_ordinal": 0,
+        "location": "Thais City",
+        "npc_entry_sha256": "fdcb60c2ef215d4cd5dac7e0526d23bb7e8a679b721c6b4e4edc6478d1812c84",
+        "sale_price": 400,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": "Theons"
+      },
+      {
+        "appearance_object_id": 37508,
+        "npc_entry_ordinal": 0,
+        "location": "Thais City",
+        "npc_entry_sha256": "fdcb60c2ef215d4cd5dac7e0526d23bb7e8a679b721c6b4e4edc6478d1812c84",
+        "sale_price": 400,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": "Theons"
+      },
+      {
+        "appearance_object_id": 37509,
+        "npc_entry_ordinal": 0,
+        "location": "Thais City",
+        "npc_entry_sha256": "fdcb60c2ef215d4cd5dac7e0526d23bb7e8a679b721c6b4e4edc6478d1812c84",
+        "sale_price": 400,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": "Theons"
+      },
+      {
+        "appearance_object_id": 37510,
+        "npc_entry_ordinal": 0,
+        "location": "Thais City",
+        "npc_entry_sha256": "fdcb60c2ef215d4cd5dac7e0526d23bb7e8a679b721c6b4e4edc6478d1812c84",
+        "sale_price": 400,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": "Theons"
+      },
+      {
+        "appearance_object_id": 37511,
+        "npc_entry_ordinal": 0,
+        "location": "Thais City",
+        "npc_entry_sha256": "fdcb60c2ef215d4cd5dac7e0526d23bb7e8a679b721c6b4e4edc6478d1812c84",
+        "sale_price": 400,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": "Theons"
+      },
+      {
+        "appearance_object_id": 37512,
+        "npc_entry_ordinal": 0,
+        "location": "Thais City",
+        "npc_entry_sha256": "fdcb60c2ef215d4cd5dac7e0526d23bb7e8a679b721c6b4e4edc6478d1812c84",
+        "sale_price": 400,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": "Theons"
+      },
+      {
+        "appearance_object_id": 37513,
+        "npc_entry_ordinal": 0,
+        "location": "Thais City",
+        "npc_entry_sha256": "f8539fdf5d19b4899e63ffb3369aab11dc0163bc9554bf596ae8dd831531ab15",
+        "sale_price": 200,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": "Theons"
+      },
+      {
+        "appearance_object_id": 37514,
+        "npc_entry_ordinal": 0,
+        "location": "Thais City",
+        "npc_entry_sha256": "f8539fdf5d19b4899e63ffb3369aab11dc0163bc9554bf596ae8dd831531ab15",
+        "sale_price": 200,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": "Theons"
+      },
+      {
+        "appearance_object_id": 37515,
+        "npc_entry_ordinal": 0,
+        "location": "Thais City",
+        "npc_entry_sha256": "f8539fdf5d19b4899e63ffb3369aab11dc0163bc9554bf596ae8dd831531ab15",
+        "sale_price": 200,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": "Theons"
+      },
+      {
+        "appearance_object_id": 37516,
+        "npc_entry_ordinal": 0,
+        "location": "Thais City",
+        "npc_entry_sha256": "f8539fdf5d19b4899e63ffb3369aab11dc0163bc9554bf596ae8dd831531ab15",
+        "sale_price": 200,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": "Theons"
+      },
+      {
+        "appearance_object_id": 37517,
+        "npc_entry_ordinal": 0,
+        "location": "Thais City",
+        "npc_entry_sha256": "f8539fdf5d19b4899e63ffb3369aab11dc0163bc9554bf596ae8dd831531ab15",
+        "sale_price": 200,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": "Theons"
+      },
+      {
+        "appearance_object_id": 37518,
+        "npc_entry_ordinal": 0,
+        "location": "Thais City",
+        "npc_entry_sha256": "f8539fdf5d19b4899e63ffb3369aab11dc0163bc9554bf596ae8dd831531ab15",
+        "sale_price": 200,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": "Theons"
+      },
+      {
+        "appearance_object_id": 37530,
+        "npc_entry_ordinal": 0,
+        "location": "Thais City",
+        "npc_entry_sha256": "79ec7f845e16f9979ded9c768ddbcfea81282d63b33b656ebb469d3188e6203f",
+        "sale_price": 10,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": "Theons"
+      },
+      {
+        "appearance_object_id": 37531,
+        "npc_entry_ordinal": 0,
+        "location": "Thais City",
+        "npc_entry_sha256": "79ec7f845e16f9979ded9c768ddbcfea81282d63b33b656ebb469d3188e6203f",
+        "sale_price": 10,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": "Theons"
+      },
+      {
+        "appearance_object_id": 37532,
+        "npc_entry_ordinal": 0,
+        "location": "Thais City",
+        "npc_entry_sha256": "79ec7f845e16f9979ded9c768ddbcfea81282d63b33b656ebb469d3188e6203f",
+        "sale_price": 10,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": "Theons"
+      },
+      {
+        "appearance_object_id": 37533,
+        "npc_entry_ordinal": 0,
+        "location": "Thais City",
+        "npc_entry_sha256": "79ec7f845e16f9979ded9c768ddbcfea81282d63b33b656ebb469d3188e6203f",
+        "sale_price": 10,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": "Theons"
+      },
+      {
+        "appearance_object_id": 37536,
+        "npc_entry_ordinal": 0,
+        "location": "Thais City",
+        "npc_entry_sha256": "bced76590ddab8874010c3edcce9d079af398000ccbc73190c418c0fc6cd4638",
+        "sale_price": 5000,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": "Theons"
+      },
+      {
+        "appearance_object_id": 37540,
+        "npc_entry_ordinal": 0,
+        "location": "Thais City",
+        "npc_entry_sha256": "bdc7699c20c4ac9887136416843b2fee42cfc358da6783f7162dff2a98f46de8",
+        "sale_price": 275,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": "Theons"
+      },
+      {
+        "appearance_object_id": 37541,
+        "npc_entry_ordinal": 0,
+        "location": "Thais City",
+        "npc_entry_sha256": "bdc7699c20c4ac9887136416843b2fee42cfc358da6783f7162dff2a98f46de8",
+        "sale_price": 275,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": "Theons"
+      },
+      {
+        "appearance_object_id": 37542,
+        "npc_entry_ordinal": 0,
+        "location": "Thais City",
+        "npc_entry_sha256": "bdc7699c20c4ac9887136416843b2fee42cfc358da6783f7162dff2a98f46de8",
+        "sale_price": 275,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": "Theons"
+      },
+      {
+        "appearance_object_id": 37543,
+        "npc_entry_ordinal": 0,
+        "location": "Thais City",
+        "npc_entry_sha256": "818778f437acc337c0b4b061eed44eeb960dc4fd5d5e0fb07bfe8d6c279e16c0",
+        "sale_price": 225,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": "Theons"
+      },
+      {
+        "appearance_object_id": 37544,
+        "npc_entry_ordinal": 0,
+        "location": "Thais City",
+        "npc_entry_sha256": "818778f437acc337c0b4b061eed44eeb960dc4fd5d5e0fb07bfe8d6c279e16c0",
+        "sale_price": 225,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": "Theons"
+      },
+      {
+        "appearance_object_id": 37545,
+        "npc_entry_ordinal": 0,
+        "location": "Thais City",
+        "npc_entry_sha256": "818778f437acc337c0b4b061eed44eeb960dc4fd5d5e0fb07bfe8d6c279e16c0",
+        "sale_price": 225,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": "Theons"
+      },
+      {
+        "appearance_object_id": 37562,
+        "npc_entry_ordinal": 0,
+        "location": "Thais City",
+        "npc_entry_sha256": "f8539fdf5d19b4899e63ffb3369aab11dc0163bc9554bf596ae8dd831531ab15",
+        "sale_price": 200,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": "Theons"
+      },
+      {
+        "appearance_object_id": 37563,
+        "npc_entry_ordinal": 0,
+        "location": "Thais City",
+        "npc_entry_sha256": "f8539fdf5d19b4899e63ffb3369aab11dc0163bc9554bf596ae8dd831531ab15",
+        "sale_price": 200,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": "Theons"
+      },
+      {
+        "appearance_object_id": 37564,
+        "npc_entry_ordinal": 0,
+        "location": "Thais City",
+        "npc_entry_sha256": "f8539fdf5d19b4899e63ffb3369aab11dc0163bc9554bf596ae8dd831531ab15",
+        "sale_price": 200,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": "Theons"
+      },
+      {
+        "appearance_object_id": 37565,
+        "npc_entry_ordinal": 0,
+        "location": "Thais City",
+        "npc_entry_sha256": "f8539fdf5d19b4899e63ffb3369aab11dc0163bc9554bf596ae8dd831531ab15",
+        "sale_price": 200,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": "Theons"
+      },
+      {
+        "appearance_object_id": 37566,
+        "npc_entry_ordinal": 0,
+        "location": "Thais City",
+        "npc_entry_sha256": "f8539fdf5d19b4899e63ffb3369aab11dc0163bc9554bf596ae8dd831531ab15",
+        "sale_price": 200,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": "Theons"
+      },
+      {
+        "appearance_object_id": 37567,
+        "npc_entry_ordinal": 0,
+        "location": "Thais City",
+        "npc_entry_sha256": "f8539fdf5d19b4899e63ffb3369aab11dc0163bc9554bf596ae8dd831531ab15",
+        "sale_price": 200,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": "Theons"
+      },
+      {
+        "appearance_object_id": 37568,
+        "npc_entry_ordinal": 0,
+        "location": "Thais City",
+        "npc_entry_sha256": "f8539fdf5d19b4899e63ffb3369aab11dc0163bc9554bf596ae8dd831531ab15",
+        "sale_price": 200,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": "Theons"
+      },
+      {
+        "appearance_object_id": 37569,
+        "npc_entry_ordinal": 0,
+        "location": "Thais City",
+        "npc_entry_sha256": "f8539fdf5d19b4899e63ffb3369aab11dc0163bc9554bf596ae8dd831531ab15",
+        "sale_price": 200,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": "Theons"
+      },
+      {
+        "appearance_object_id": 37570,
+        "npc_entry_ordinal": 0,
+        "location": "Thais City",
+        "npc_entry_sha256": "f8539fdf5d19b4899e63ffb3369aab11dc0163bc9554bf596ae8dd831531ab15",
+        "sale_price": 200,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": "Theons"
+      },
+      {
+        "appearance_object_id": 37571,
+        "npc_entry_ordinal": 0,
+        "location": "Thais City",
+        "npc_entry_sha256": "f8539fdf5d19b4899e63ffb3369aab11dc0163bc9554bf596ae8dd831531ab15",
+        "sale_price": 200,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": "Theons"
+      },
+      {
+        "appearance_object_id": 37572,
+        "npc_entry_ordinal": 0,
+        "location": "Thais City",
+        "npc_entry_sha256": "d7f4b966617464b21ac763f7d7b3e7b3fa5ae70d804e06953e8c40a236ed9cd2",
+        "sale_price": 1250,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": "Theons"
+      },
+      {
+        "appearance_object_id": 37573,
+        "npc_entry_ordinal": 0,
+        "location": "Thais City",
+        "npc_entry_sha256": "d7f4b966617464b21ac763f7d7b3e7b3fa5ae70d804e06953e8c40a236ed9cd2",
+        "sale_price": 1250,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": "Theons"
+      },
+      {
+        "appearance_object_id": 37574,
+        "npc_entry_ordinal": 0,
+        "location": "Thais City",
+        "npc_entry_sha256": "d7f4b966617464b21ac763f7d7b3e7b3fa5ae70d804e06953e8c40a236ed9cd2",
+        "sale_price": 1250,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": "Theons"
+      },
+      {
+        "appearance_object_id": 37575,
+        "npc_entry_ordinal": 0,
+        "location": "Thais City",
+        "npc_entry_sha256": "d7f4b966617464b21ac763f7d7b3e7b3fa5ae70d804e06953e8c40a236ed9cd2",
+        "sale_price": 1250,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": "Theons"
+      },
+      {
+        "appearance_object_id": 37576,
+        "npc_entry_ordinal": 0,
+        "location": "Thais City",
+        "npc_entry_sha256": "d7f4b966617464b21ac763f7d7b3e7b3fa5ae70d804e06953e8c40a236ed9cd2",
+        "sale_price": 1250,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": "Theons"
+      },
+      {
+        "appearance_object_id": 37717,
+        "npc_entry_ordinal": 0,
+        "location": "Thais City",
+        "npc_entry_sha256": "46e53d0703272adb55294d32a8ff24ddde875fa8c7c0899fc8e1b4678db147bf",
+        "sale_price": 10000,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": "Theons"
+      },
+      {
+        "appearance_object_id": 39669,
+        "npc_entry_ordinal": 0,
+        "location": "Thais City",
+        "npc_entry_sha256": "f8539fdf5d19b4899e63ffb3369aab11dc0163bc9554bf596ae8dd831531ab15",
+        "sale_price": 200,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": "Theons"
+      },
+      {
+        "appearance_object_id": 39670,
+        "npc_entry_ordinal": 0,
+        "location": "Thais City",
+        "npc_entry_sha256": "f8539fdf5d19b4899e63ffb3369aab11dc0163bc9554bf596ae8dd831531ab15",
+        "sale_price": 200,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": "Theons"
+      },
+      {
+        "appearance_object_id": 39671,
+        "npc_entry_ordinal": 0,
+        "location": "Thais City",
+        "npc_entry_sha256": "2d9ac4b7d3e91874d3218b3a8e5ea38f4a4797e6e2ca2a4149bb818c7bca97cd",
+        "sale_price": 250,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": "Theons"
+      },
+      {
+        "appearance_object_id": 39672,
+        "npc_entry_ordinal": 0,
+        "location": "Thais City",
+        "npc_entry_sha256": "2d9ac4b7d3e91874d3218b3a8e5ea38f4a4797e6e2ca2a4149bb818c7bca97cd",
+        "sale_price": 250,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": "Theons"
+      },
+      {
+        "appearance_object_id": 39673,
+        "npc_entry_ordinal": 0,
+        "location": "Thais City",
+        "npc_entry_sha256": "2d9ac4b7d3e91874d3218b3a8e5ea38f4a4797e6e2ca2a4149bb818c7bca97cd",
+        "sale_price": 250,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": "Theons"
+      },
+      {
+        "appearance_object_id": 39674,
+        "npc_entry_ordinal": 0,
+        "location": "Thais City",
+        "npc_entry_sha256": "2d9ac4b7d3e91874d3218b3a8e5ea38f4a4797e6e2ca2a4149bb818c7bca97cd",
+        "sale_price": 250,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": "Theons"
+      },
+      {
+        "appearance_object_id": 39675,
+        "npc_entry_ordinal": 0,
+        "location": "Thais City",
+        "npc_entry_sha256": "2d9ac4b7d3e91874d3218b3a8e5ea38f4a4797e6e2ca2a4149bb818c7bca97cd",
+        "sale_price": 250,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": "Theons"
+      },
+      {
+        "appearance_object_id": 39676,
+        "npc_entry_ordinal": 0,
+        "location": "Thais City",
+        "npc_entry_sha256": "2d9ac4b7d3e91874d3218b3a8e5ea38f4a4797e6e2ca2a4149bb818c7bca97cd",
+        "sale_price": 250,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": "Theons"
+      },
+      {
+        "appearance_object_id": 39677,
+        "npc_entry_ordinal": 0,
+        "location": "Thais City",
+        "npc_entry_sha256": "2d9ac4b7d3e91874d3218b3a8e5ea38f4a4797e6e2ca2a4149bb818c7bca97cd",
+        "sale_price": 250,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": "Theons"
+      },
+      {
+        "appearance_object_id": 39678,
+        "npc_entry_ordinal": 0,
+        "location": "Thais City",
+        "npc_entry_sha256": "2d9ac4b7d3e91874d3218b3a8e5ea38f4a4797e6e2ca2a4149bb818c7bca97cd",
+        "sale_price": 250,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": "Theons"
+      },
+      {
+        "appearance_object_id": 39679,
+        "npc_entry_ordinal": 0,
+        "location": "Thais City",
+        "npc_entry_sha256": "2d9ac4b7d3e91874d3218b3a8e5ea38f4a4797e6e2ca2a4149bb818c7bca97cd",
+        "sale_price": 250,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": "Theons"
+      },
+      {
+        "appearance_object_id": 39680,
+        "npc_entry_ordinal": 0,
+        "location": "Thais City",
+        "npc_entry_sha256": "2d9ac4b7d3e91874d3218b3a8e5ea38f4a4797e6e2ca2a4149bb818c7bca97cd",
+        "sale_price": 250,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": "Theons"
+      },
+      {
+        "appearance_object_id": 39693,
+        "npc_entry_ordinal": 0,
+        "location": "Thais City",
+        "npc_entry_sha256": "0e23e64160f0030fa9fa8f9df45d92bbcf01748b437bfe5ffc7102e43fef5f82",
+        "sale_price": 7197,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": "Theons"
+      },
+      {
+        "appearance_object_id": 39695,
+        "npc_entry_ordinal": 0,
+        "location": "Thais City",
+        "npc_entry_sha256": "8edbb80c20819647d0852ce2013f02bd98dd939b3041ea570f95380085773ef6",
+        "sale_price": 50000,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": "Theons"
+      },
+      {
+        "appearance_object_id": 39697,
+        "npc_entry_ordinal": 0,
+        "location": "Thais City",
+        "npc_entry_sha256": "46e53d0703272adb55294d32a8ff24ddde875fa8c7c0899fc8e1b4678db147bf",
+        "sale_price": 10000,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": "Theons"
+      },
+      {
+        "appearance_object_id": 39706,
+        "npc_entry_ordinal": 0,
+        "location": "Thais City",
+        "npc_entry_sha256": "ec8b9a10c9186710c0ae2cdfcddecae45a0f13c38713314d75a87b38f326c8e2",
+        "sale_price": 2000,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": "Theons"
+      }
+    ]
+  },
+  {
+    "npc_key": "oteryn:npc.tik_hi_tak_he",
+    "name": "Tik'hi Tak'he",
+    "rows": [
+      {
+        "appearance_object_id": 35577,
+        "npc_entry_ordinal": 0,
+        "location": "Rascacoon",
+        "npc_entry_sha256": "44f9d8e0795e78379883543d429412c489fbaf64619d559242085d207004550f",
+        "sale_price": 15000,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": "trust points"
+      },
+      {
+        "appearance_object_id": 35604,
+        "npc_entry_ordinal": 0,
+        "location": "Rascacoon",
+        "npc_entry_sha256": "465960a28c60a33d22bb140c54b9d62286b36cacf53ca3534431af2b504e7f37",
+        "sale_price": 4000,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": "trust points"
+      },
+      {
+        "appearance_object_id": 35605,
+        "npc_entry_ordinal": 0,
+        "location": "Rascacoon",
+        "npc_entry_sha256": "465960a28c60a33d22bb140c54b9d62286b36cacf53ca3534431af2b504e7f37",
+        "sale_price": 4000,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": "trust points"
+      },
+      {
+        "appearance_object_id": 35606,
+        "npc_entry_ordinal": 0,
+        "location": "Rascacoon",
+        "npc_entry_sha256": "465960a28c60a33d22bb140c54b9d62286b36cacf53ca3534431af2b504e7f37",
+        "sale_price": 4000,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": "trust points"
+      },
+      {
+        "appearance_object_id": 35607,
+        "npc_entry_ordinal": 0,
+        "location": "Rascacoon",
+        "npc_entry_sha256": "c349a5de45060496fd28a3ea800266643b7e611c24044b493ea8e4480f310d34",
+        "sale_price": 10000,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": "trust points"
+      },
+      {
+        "appearance_object_id": 35608,
+        "npc_entry_ordinal": 0,
+        "location": "Rascacoon",
+        "npc_entry_sha256": "465960a28c60a33d22bb140c54b9d62286b36cacf53ca3534431af2b504e7f37",
+        "sale_price": 4000,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": "trust points"
+      },
+      {
+        "appearance_object_id": 35609,
+        "npc_entry_ordinal": 0,
+        "location": "Rascacoon",
+        "npc_entry_sha256": "465960a28c60a33d22bb140c54b9d62286b36cacf53ca3534431af2b504e7f37",
+        "sale_price": 4000,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": "trust points"
+      }
+    ]
+  },
+  {
+    "npc_key": "oteryn:npc.toffee",
+    "name": "Toffee",
+    "rows": [
+      {
+        "appearance_object_id": 3584,
+        "npc_entry_ordinal": 3,
+        "location": "Candia",
+        "npc_entry_sha256": "fddacc7de813895b9bd9e3e17a8293e0b287ec1237d98f775d65ed1530368145",
+        "sale_price": 5,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 3585,
+        "npc_entry_ordinal": 7,
+        "location": "Candia",
+        "npc_entry_sha256": "fddacc7de813895b9bd9e3e17a8293e0b287ec1237d98f775d65ed1530368145",
+        "sale_price": 5,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 3587,
+        "npc_entry_ordinal": 14,
+        "location": "Candia",
+        "npc_entry_sha256": "fddacc7de813895b9bd9e3e17a8293e0b287ec1237d98f775d65ed1530368145",
+        "sale_price": 5,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 3588,
+        "npc_entry_ordinal": 4,
+        "location": "Candia",
+        "npc_entry_sha256": "a249e74c6b8f96a6de672faa519c8170848230c2b0adf52e1dfaf5c33e380179",
+        "sale_price": 1,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 3590,
+        "npc_entry_ordinal": 10,
+        "location": "Candia",
+        "npc_entry_sha256": "a249e74c6b8f96a6de672faa519c8170848230c2b0adf52e1dfaf5c33e380179",
+        "sale_price": 1,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 3591,
+        "npc_entry_ordinal": 5,
+        "location": "Candia",
+        "npc_entry_sha256": "bceb2a916a05cf64d5cef0b36b4fe8bbe615f5e344b102ad162f2ca2a20fc46e",
+        "sale_price": 2,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 3592,
+        "npc_entry_ordinal": 9,
+        "location": "Candia",
+        "npc_entry_sha256": "c33108cca7a139dc244300a88fe3635d43a55b4ea17e225abf8fe8db1aed1cbf",
+        "sale_price": 3,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 3598,
+        "npc_entry_ordinal": 17,
+        "location": "Candia",
+        "npc_entry_sha256": "bceb2a916a05cf64d5cef0b36b4fe8bbe615f5e344b102ad162f2ca2a20fc46e",
+        "sale_price": 2,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 6277,
+        "npc_entry_ordinal": 3,
+        "location": "Candia",
+        "npc_entry_sha256": "4a06ed7d6a1e4a842c9e6cb12d18c415f089210fa17b95bdcbb0a5c26172cd0d",
+        "sale_price": 50,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 6392,
+        "npc_entry_ordinal": 4,
+        "location": "Candia",
+        "npc_entry_sha256": "461e693137f8a0e1d4f55045f9ed8e65ff29eb6e128f414db831a1e04a18f121",
+        "sale_price": 100,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 8011,
+        "npc_entry_ordinal": 2,
+        "location": "Candia",
+        "npc_entry_sha256": "c33108cca7a139dc244300a88fe3635d43a55b4ea17e225abf8fe8db1aed1cbf",
+        "sale_price": 3,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 8012,
+        "npc_entry_ordinal": 4,
+        "location": "Candia",
+        "npc_entry_sha256": "bceb2a916a05cf64d5cef0b36b4fe8bbe615f5e344b102ad162f2ca2a20fc46e",
+        "sale_price": 2,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 48179,
+        "npc_entry_ordinal": 0,
+        "location": "Candia",
+        "npc_entry_sha256": "20c28664a40cfe6cc727609611638ea09d188ae5e3272242f6947dd7a3f2e57a",
+        "sale_price": 10,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 48251,
+        "npc_entry_ordinal": 3,
+        "location": "Candia",
+        "npc_entry_sha256": "7b822cd14542feabc40192347b3d41f22b6b2e768957b781f39f4e4a85b8d895",
+        "sale_price": 0,
+        "buy_price": 2350,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 48252,
+        "npc_entry_ordinal": 3,
+        "location": "Candia",
+        "npc_entry_sha256": "28a8dbcffad6e80947f44d095addd4a65dc2c8140e4e2d30a337e07cdb2b528b",
+        "sale_price": 0,
+        "buy_price": 2640,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 48253,
+        "npc_entry_ordinal": 3,
+        "location": "Candia",
+        "npc_entry_sha256": "9c338136c2bfd16d6236b103dc9eb76e51def4ef750cdbd7137f000f45c2585b",
+        "sale_price": 0,
+        "buy_price": 2780,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 48254,
+        "npc_entry_ordinal": 3,
+        "location": "Candia",
+        "npc_entry_sha256": "e57e6c4f09408c3e92f6e9118815ccd4f0d6943ddb1d2e1dbaa2868648c3455d",
+        "sale_price": 0,
+        "buy_price": 2680,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 48255,
+        "npc_entry_ordinal": 3,
+        "location": "Candia",
+        "npc_entry_sha256": "1e7bce5afdb24e4fd642d6ce1145457c4b2b47b99c32cc1a9983ecf3084d8f36",
+        "sale_price": 0,
+        "buy_price": 1870,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 48256,
+        "npc_entry_ordinal": 3,
+        "location": "Candia",
+        "npc_entry_sha256": "72509017ba90ed38f39ba937779d63a99da8192db1a4177deba1af4da1e21062",
+        "sale_price": 0,
+        "buy_price": 95000,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 48273,
+        "npc_entry_ordinal": 3,
+        "location": "Candia",
+        "npc_entry_sha256": "a035db70349da362f270390d729af40fb4ae45866d1bb4551f99a68308b2a044",
+        "sale_price": 0,
+        "buy_price": 6750,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 48544,
+        "npc_entry_ordinal": 3,
+        "location": "Candia",
+        "npc_entry_sha256": "dc300badb69f5b6dd39a43cc2eec177eeaeeff7d00e047fd607fc817f3b8b498",
+        "sale_price": 0,
+        "buy_price": 2910,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      }
+    ]
+  },
+  {
+    "npc_key": "oteryn:npc.xaver",
+    "name": "Xaver",
+    "rows": [
+      {
+        "appearance_object_id": 3492,
+        "npc_entry_ordinal": 13,
+        "location": "Secluded Island",
+        "npc_entry_sha256": "71f595f26d0dc0e71de42858935e10a50e473e9a8f930b525f2794d9a8e0fb0f",
+        "sale_price": 1,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      }
+    ]
+  },
+  {
+    "npc_key": "oteryn:npc.yerga",
+    "name": "Yerga",
+    "rows": [
+      {
+        "appearance_object_id": 236,
+        "npc_entry_ordinal": 32,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "ad9e83cec942b24bdc6c35b88a0ecedc401bdb43bac69b004972a5cfc0723789",
+        "sale_price": 115,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 237,
+        "npc_entry_ordinal": 32,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "838453b2a1b5b88f04a5dc49d118f7b5d9d75a3d16bf9522b324b31fd6e8d2f1",
+        "sale_price": 108,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 238,
+        "npc_entry_ordinal": 32,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "8dc0fdb98840af874d1619595e0b7cae0cfb64c36caf5498d9f0bbdb63e9522b",
+        "sale_price": 158,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 239,
+        "npc_entry_ordinal": 32,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "53782e0d2e9fe5b710194063c1ca5e110b4ddcfcbb739a666135739be56da237",
+        "sale_price": 225,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 266,
+        "npc_entry_ordinal": 34,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "f52d3eb506cfa62fadc3dfe7917e3c95951491911ce87f3611191e6679bc2991",
+        "sale_price": 50,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 268,
+        "npc_entry_ordinal": 34,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "8ce7f61fbdf8c3cfef82ac1c108741f29c93f9b267c7365c85beaab9e4c6d34e",
+        "sale_price": 56,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 283,
+        "npc_entry_ordinal": 31,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "47ba5dae66bfeb3051cedefae3d781fcb253344d847c6e32ecf2a6a61f524c8c",
+        "sale_price": 0,
+        "buy_price": 5,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 284,
+        "npc_entry_ordinal": 31,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "47ba5dae66bfeb3051cedefae3d781fcb253344d847c6e32ecf2a6a61f524c8c",
+        "sale_price": 0,
+        "buy_price": 5,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 285,
+        "npc_entry_ordinal": 34,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "47ba5dae66bfeb3051cedefae3d781fcb253344d847c6e32ecf2a6a61f524c8c",
+        "sale_price": 0,
+        "buy_price": 5,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 651,
+        "npc_entry_ordinal": 24,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "2a3464d1bd28b185f8d397be8e968bc491eebc8b0799ab149bfd9e7ce13e111b",
+        "sale_price": 0,
+        "buy_price": 299,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 2874,
+        "npc_entry_ordinal": 58,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "47ba5dae66bfeb3051cedefae3d781fcb253344d847c6e32ecf2a6a61f524c8c",
+        "sale_price": 0,
+        "buy_price": 5,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 3065,
+        "npc_entry_ordinal": 24,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "a3c27c66119b9cf9440fd20267888ff850c06a4618e46882d33c9d9efb66778a",
+        "sale_price": 10000,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 3066,
+        "npc_entry_ordinal": 26,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "dad8810e8b6fe21cf8ffefcbe359d2033a23f172a91e5dfd0d3ec6114a60d00e",
+        "sale_price": 500,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 3067,
+        "npc_entry_ordinal": 17,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "86d863029b4bfbaf3893efb258c77753a55f2d8923f170da83ef9aab2ac847f1",
+        "sale_price": 15000,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 3069,
+        "npc_entry_ordinal": 25,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "2e2cdfb622d8df616930789c75056d5c141b966ba7c3c03bcd6899ec4a648fb2",
+        "sale_price": 5000,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 3070,
+        "npc_entry_ordinal": 25,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "bdde0de046d22fed9c97bd22817a88e22995b71c19b335906515cc6a9c6a99dd",
+        "sale_price": 1000,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 3071,
+        "npc_entry_ordinal": 17,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "86d863029b4bfbaf3893efb258c77753a55f2d8923f170da83ef9aab2ac847f1",
+        "sale_price": 15000,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 3072,
+        "npc_entry_ordinal": 25,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "2e2cdfb622d8df616930789c75056d5c141b966ba7c3c03bcd6899ec4a648fb2",
+        "sale_price": 5000,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 3073,
+        "npc_entry_ordinal": 24,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "a3c27c66119b9cf9440fd20267888ff850c06a4618e46882d33c9d9efb66778a",
+        "sale_price": 10000,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 3074,
+        "npc_entry_ordinal": 26,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "dad8810e8b6fe21cf8ffefcbe359d2033a23f172a91e5dfd0d3ec6114a60d00e",
+        "sale_price": 500,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 3075,
+        "npc_entry_ordinal": 25,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "bdde0de046d22fed9c97bd22817a88e22995b71c19b335906515cc6a9c6a99dd",
+        "sale_price": 1000,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 3147,
+        "npc_entry_ordinal": 25,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "0639f412ab2cdecc143f5afdc3e53df7058409d3baf79ae5a7d3ee3f85a72518",
+        "sale_price": 20,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 3148,
+        "npc_entry_ordinal": 28,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "e288bf97d5d9d8ec00d0587c8e2f9afe156243d139a0168167f1445c06e8278d",
+        "sale_price": 15,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 3149,
+        "npc_entry_ordinal": 13,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "0db0d03b81724049ca08fe6b0d448e48383543011725b4d0e68140aa4af7cd63",
+        "sale_price": 203,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 3152,
+        "npc_entry_ordinal": 28,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "f3ef34e099278f48e915e419b86ba9561f0d2bf1e36be09279c3d6b3679b5c24",
+        "sale_price": 95,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 3153,
+        "npc_entry_ordinal": 28,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "9375c0570a9f6210bc0a7e059b124e67fb73f5df554bbea9489aa3a2445cb463",
+        "sale_price": 65,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 3155,
+        "npc_entry_ordinal": 27,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "3528341634b974dc4a5fa410e2b8b7e91edc2d000199246046aad2e5f37494ba",
+        "sale_price": 162,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 3156,
+        "npc_entry_ordinal": 13,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "fdf64c648c3420a8f214257ba4c7e4ff8d228d352e35d0137f9b96f1d78343f7",
+        "sale_price": 160,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 3158,
+        "npc_entry_ordinal": 13,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "a93318895557eb9f65628751ae68b7da6d425aa91b803a5c9950df64db616bc4",
+        "sale_price": 30,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 3160,
+        "npc_entry_ordinal": 27,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "d266aaecb134954fa3c79cfb4ee711600e2a3ca150b36edc4c8d99f01c88e58a",
+        "sale_price": 175,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 3161,
+        "npc_entry_ordinal": 27,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "5e1c1e067d763bdeabb4138beb5d10f80da5e02e2813d8d0a09dade040b671d5",
+        "sale_price": 64,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 3164,
+        "npc_entry_ordinal": 28,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "b5ee2b87d789e2eda6f445f2d5bf2b5d61b7210886c3f08aef8d54c9f9c7ed58",
+        "sale_price": 38,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 3165,
+        "npc_entry_ordinal": 13,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "b9b90554b6c0aee98d356f84bf57d5360d33ef53d6f523deee20c8153d722a6d",
+        "sale_price": 700,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 3166,
+        "npc_entry_ordinal": 27,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "b03167a359af9c9db6bce92936da9ff6d4a98dfa00cb8242839ceeb1cf6ff115",
+        "sale_price": 85,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 3172,
+        "npc_entry_ordinal": 28,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "37551357bc065faad7e570205a054b9a4a8f136f36776cd1d2ddae3c5171a758",
+        "sale_price": 21,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 3173,
+        "npc_entry_ordinal": 13,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "b03167a359af9c9db6bce92936da9ff6d4a98dfa00cb8242839ceeb1cf6ff115",
+        "sale_price": 85,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 3174,
+        "npc_entry_ordinal": 27,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "eb600a0429fae34b26191614efcb719bab827c553e6df6b90ffbc561850e8f44",
+        "sale_price": 4,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 3175,
+        "npc_entry_ordinal": 13,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "e85beb1c4f982920c64b49bb62e55b7bbfc7ef6961c0d2967837d3488861dedf",
+        "sale_price": 41,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 3176,
+        "npc_entry_ordinal": 27,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "d3676b6ae006f6dc93d52a5c0b58edba843d6a0279b78aee78b04512860bfe85",
+        "sale_price": 52,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 3177,
+        "npc_entry_ordinal": 27,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "432679ec94ba64bf4776ff7000027837101b10dafd61a0fc1b2049fd389cca4b",
+        "sale_price": 80,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 3178,
+        "npc_entry_ordinal": 27,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "04fc8767865bf9a41a00911dba8b0ea632a0b532b5ec182d368830cd7253bbf3",
+        "sale_price": 210,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 3179,
+        "npc_entry_ordinal": 27,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "2892ed0648085a89bfee93618c27937b1b7acad9ec9e2894af7099b6f9bdbf99",
+        "sale_price": 12,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 3180,
+        "npc_entry_ordinal": 13,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "a7f70228b24742cae8ed01cc287de6a9e07964be263cc73db959846f6914c802",
+        "sale_price": 116,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 3182,
+        "npc_entry_ordinal": 13,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "73d50269717ee3b45d78262c401dfaca54d9ffdccfb5da885b0d090da671efff",
+        "sale_price": 16,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 3188,
+        "npc_entry_ordinal": 28,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "9360184bd0748addb61b759fb9fe7ab9d6a7a29a86fff83e397e96e566c59832",
+        "sale_price": 28,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 3189,
+        "npc_entry_ordinal": 13,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "a93318895557eb9f65628751ae68b7da6d425aa91b803a5c9950df64db616bc4",
+        "sale_price": 30,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 3190,
+        "npc_entry_ordinal": 27,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "8e1c0b56572fc5a54edc40fb5f6900382675b8133839b73f985bde3ed0a88f9c",
+        "sale_price": 61,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 3191,
+        "npc_entry_ordinal": 27,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "5e1c1e067d763bdeabb4138beb5d10f80da5e02e2813d8d0a09dade040b671d5",
+        "sale_price": 64,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 3192,
+        "npc_entry_ordinal": 27,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "98e71be0acf060d379e18dac3d260aa7fc011e6d0166934af6562471c8fdafda",
+        "sale_price": 147,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 3195,
+        "npc_entry_ordinal": 13,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "0e83ea796bbf5b54f4ae49781c8842e203c80ce0898ca3aa92fd75e57ddda8f2",
+        "sale_price": 46,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 3197,
+        "npc_entry_ordinal": 13,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "ca283d9913bbcc419477dadfd76d58844248bc475840cb69a42818a171a109ec",
+        "sale_price": 26,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 3198,
+        "npc_entry_ordinal": 27,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "2892ed0648085a89bfee93618c27937b1b7acad9ec9e2894af7099b6f9bdbf99",
+        "sale_price": 12,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 3200,
+        "npc_entry_ordinal": 27,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "5bab016161e9242d58b09d77378caa5e0c176ac0c5d137ff0023e8c039a7a47b",
+        "sale_price": 31,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 3202,
+        "npc_entry_ordinal": 13,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "d3676b6ae006f6dc93d52a5c0b58edba843d6a0279b78aee78b04512860bfe85",
+        "sale_price": 52,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 3203,
+        "npc_entry_ordinal": 13,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "e69f9d430c33163f62e4f00e5c19aefc664a5a5f82bfa96fa63129d7d318f5ec",
+        "sale_price": 375,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 7642,
+        "npc_entry_ordinal": 32,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "cd57cf2041ecf918a04bb78c5426e723db75fb4a81d92ae2a3381ddf0f27b6f8",
+        "sale_price": 254,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 7643,
+        "npc_entry_ordinal": 32,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "c5cf57902ef49bcce3e9c20c513036cdd981bb56fe71add35f47f649239462c9",
+        "sale_price": 379,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 8082,
+        "npc_entry_ordinal": 17,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "960f492252066bf04e1e1d508184374ff763c38fff6c37bdeb3bb620ba41e50f",
+        "sale_price": 22000,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 8083,
+        "npc_entry_ordinal": 17,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "99620762d14f6303b0dc849c1336998b666728543fc18d764ecaac0fc049f3bc",
+        "sale_price": 7500,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 8084,
+        "npc_entry_ordinal": 17,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "f46af9216dd51d6fed48574737de5b890070725ce4088e68b4b47030d58c1a52",
+        "sale_price": 18000,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 8092,
+        "npc_entry_ordinal": 17,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "f46af9216dd51d6fed48574737de5b890070725ce4088e68b4b47030d58c1a52",
+        "sale_price": 18000,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 8093,
+        "npc_entry_ordinal": 17,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "99620762d14f6303b0dc849c1336998b666728543fc18d764ecaac0fc049f3bc",
+        "sale_price": 7500,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 8094,
+        "npc_entry_ordinal": 17,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "960f492252066bf04e1e1d508184374ff763c38fff6c37bdeb3bb620ba41e50f",
+        "sale_price": 22000,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 21348,
+        "npc_entry_ordinal": 23,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "b04228db6156a7256697eac43034202f01de78b80351e4a112a19c2e2b96b0fb",
+        "sale_price": 250,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 21350,
+        "npc_entry_ordinal": 23,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "b04228db6156a7256697eac43034202f01de78b80351e4a112a19c2e2b96b0fb",
+        "sale_price": 250,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 23373,
+        "npc_entry_ordinal": 25,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "7da0ef1dfceb56d555b62e6760edddf2c617e0ebcaa28cd8918a754e5ae0f668",
+        "sale_price": 488,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 23374,
+        "npc_entry_ordinal": 25,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "7da0ef1dfceb56d555b62e6760edddf2c617e0ebcaa28cd8918a754e5ae0f668",
+        "sale_price": 488,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 23375,
+        "npc_entry_ordinal": 25,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "1f834ee08e81999f9987b7ea7a35d6af2cf3f09970779531d25e0eaa889a1052",
+        "sale_price": 650,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 28556,
+        "npc_entry_ordinal": 22,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "6b02ebbd4a6d89ae9b1af8091b2df0a0c9ef976e6166d85bf4ac744ab6d39bb7",
+        "sale_price": 347222,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 28557,
+        "npc_entry_ordinal": 22,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "6b02ebbd4a6d89ae9b1af8091b2df0a0c9ef976e6166d85bf4ac744ab6d39bb7",
+        "sale_price": 347222,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 35283,
+        "npc_entry_ordinal": 22,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "9f29f3ef64edf69caec74ef45b0ba76b401e89d39fe17d98e4886689987f3a27",
+        "sale_price": 1250000,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 35284,
+        "npc_entry_ordinal": 22,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "9f29f3ef64edf69caec74ef45b0ba76b401e89d39fe17d98e4886689987f3a27",
+        "sale_price": 1250000,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 35289,
+        "npc_entry_ordinal": 22,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "0d12e52be93b2625749f44cc9e58eef15d681c5e45818a1899f769b4e5d7df7c",
+        "sale_price": 10000000,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 35290,
+        "npc_entry_ordinal": 22,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "0d12e52be93b2625749f44cc9e58eef15d681c5e45818a1899f769b4e5d7df7c",
+        "sale_price": 10000000,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 53162,
+        "npc_entry_ordinal": 32,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "cd57cf2041ecf918a04bb78c5426e723db75fb4a81d92ae2a3381ddf0f27b6f8",
+        "sale_price": 254,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 53163,
+        "npc_entry_ordinal": 25,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "038be41546aa7d582ea4a7a6909f18e67de3ffcd2968b7ba6bf07bc61501e81e",
+        "sale_price": 381,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      },
+      {
+        "appearance_object_id": 53164,
+        "npc_entry_ordinal": 25,
+        "location": "Oskayaat",
+        "npc_entry_sha256": "69c0a98fdc25c02a431612c52b2a33d5696a10a0e70522075314aced9f784585",
+        "sale_price": 732,
+        "buy_price": 0,
+        "currency_object_id": null,
+        "quest_flag_display_name": null
+      }
+    ]
+  }
+]

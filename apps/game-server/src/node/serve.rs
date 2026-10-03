@@ -1017,8 +1017,31 @@ async fn termination() {
 
 /// Run the serving node until shutdown.
 pub async fn run(config_path: &Path) -> Result<(), BootError> {
+    run_with_npc_data_project(config_path, None).await
+}
+
+/// Optionally retain a pinned NPC authoring catalogue for the process lifetime.
+/// This imports data only; the active world and NPC gameplay capabilities are unchanged.
+pub async fn run_with_npc_data_project(
+    config_path: &Path,
+    npc_data: Option<(&Path, &str)>,
+) -> Result<(), BootError> {
     // D3 step 1: everything is read and checked before a socket is bound.
     let material = load(config_path)?;
+    let npc_catalogue = npc_data
+        .map(|(root, digest)| crate::content::load_data_only_npc_catalogue(root, digest))
+        .transpose()
+        .map_err(|_| BootError::Readiness("NPC data import"))?;
+    if let Some(catalogue) = &npc_catalogue {
+        event(&format!(
+            "event=npc_data_imported mode=data_only npcs={} dialogues={} services={} profiles={} source_tree_sha256={} spawned_actors=0 activated_services=0",
+            catalogue.npc_count(),
+            catalogue.dialogue_count(),
+            catalogue.service_count(),
+            catalogue.profile_count(),
+            catalogue.source_tree_digest(),
+        ));
+    }
     let config = &material.config;
     event(&format!(
         "event=configuration_accepted world_id={} channel_id={}",
@@ -1040,6 +1063,7 @@ pub async fn run(config_path: &Path) -> Result<(), BootError> {
     stop_maintenance.cancel();
     let _ = maintenance.await;
     watcher.abort();
+    drop(npc_catalogue);
     result
 }
 

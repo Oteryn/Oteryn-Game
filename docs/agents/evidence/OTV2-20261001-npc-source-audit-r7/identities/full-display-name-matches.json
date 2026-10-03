@@ -1,0 +1,116 @@
+[
+  {
+    "source": "canary",
+    "repository": "opentibiabr/canary",
+    "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+    "path": "data-otservbr-global/npc/bloodshade_rotten.lua",
+    "git_blob_sha1": "5621777898685baf59daedee435790ed31ed92ce",
+    "source_url": "https://raw.githubusercontent.com/opentibiabr/canary/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data-otservbr-global/npc/bloodshade_rotten.lua",
+    "local_path": "/workspace/npc-r7-work/dialogue/raw/canary-current/data-otservbr-global/npc/bloodshade_rotten.lua",
+    "source_sha256": "cc3da7e3680ef02775675ebd3de24aa5a136b8579b9de6df8ec59d0182e24dba",
+    "source_bytes": 2343,
+    "git_blob_verified": true,
+    "registered_name": "Bloodshade Rotten",
+    "display_name": "A Bloodshade",
+    "display_assignment_literal": true,
+    "literal_name_discovery_only": true,
+    "proposal_matches": [
+      "oteryn:npc.a_bloodshade"
+    ]
+  },
+  {
+    "source": "canary",
+    "repository": "opentibiabr/canary",
+    "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+    "path": "data-otservbr-global/npc/bloodshade_sacrifice.lua",
+    "git_blob_sha1": "c23ec96b8614e633a17322d6f8489ff7d7f5dd1c",
+    "source_url": "https://raw.githubusercontent.com/opentibiabr/canary/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data-otservbr-global/npc/bloodshade_sacrifice.lua",
+    "local_path": "/workspace/npc-r7-work/dialogue/raw/canary-current/data-otservbr-global/npc/bloodshade_sacrifice.lua",
+    "source_sha256": "53141c4f46fdbdbd69c8efe18f1d63ac14eee48c662908dc0b091e7c063e59d4",
+    "source_bytes": 3757,
+    "git_blob_verified": true,
+    "registered_name": "Bloodshade Sacrifice",
+    "display_name": "A Bloodshade",
+    "display_assignment_literal": true,
+    "literal_name_discovery_only": true,
+    "proposal_matches": [
+      "oteryn:npc.a_bloodshade"
+    ]
+  },
+  {
+    "source": "crystal",
+    "repository": "zimbadev/crystalserver",
+    "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+    "path": "data-global/npc/bloodshade_rotten.lua",
+    "git_blob_sha1": "a118adfefac23897b11e2c9d760a0dff3e1ddf21",
+    "source_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/00ce02a57ca5a12e48f32a3476e37471167e4c3f/data-global/npc/bloodshade_rotten.lua",
+    "local_path": "/workspace/npc-r7-work/dialogue/raw/crystal-summer/data-global/npc/bloodshade_rotten.lua",
+    "source_sha256": "153105638eeaa55321f4e30caf4f5796291c89329092b32b3d4e6d6f9103df7c",
+    "source_bytes": 5515,
+    "git_blob_verified": true,
+    "registered_name": "Bloodshade Rotten",
+    "display_name": "A Bloodshade",
+    "display_assignment_literal": true,
+    "literal_name_discovery_only": true,
+    "proposal_matches": [
+      "oteryn:npc.a_bloodshade"
+    ]
+  },
+  {
+    "source": "crystal",
+    "repository": "zimbadev/crystalserver",
+    "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+    "path": "data-global/npc/bloodshade_sacrifice.lua",
+    "git_blob_sha1": "37e1cf0fe7b0bade82497e7a249666c9e34f1412",
+    "source_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/00ce02a57ca5a12e48f32a3476e37471167e4c3f/data-global/npc/bloodshade_sacrifice.lua",
+    "local_path": "/workspace/npc-r7-work/dialogue/raw/crystal-summer/data-global/npc/bloodshade_sacrifice.lua",
+    "source_sha256": "e24d8e7d21af9e18e631975374625c1514c11f8a279e1e259ab7e7417616dd27",
+    "source_bytes": 3688,
+    "git_blob_verified": true,
+    "registered_name": "Bloodshade Sacrifice",
+    "display_name": "A Bloodshade",
+    "display_assignment_literal": true,
+    "literal_name_discovery_only": true,
+    "proposal_matches": [
+      "oteryn:npc.a_bloodshade"
+    ]
+  },
+  {
+    "source": "crystal",
+    "repository": "zimbadev/crystalserver",
+    "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+    "path": "data-global/npc/dragon_ancestor_spirit.lua",
+    "git_blob_sha1": "1e5a6238b8825188ed1f71448cd2bddc44505b36",
+    "source_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/00ce02a57ca5a12e48f32a3476e37471167e4c3f/data-global/npc/dragon_ancestor_spirit.lua",
+    "local_path": "/workspace/npc-r7-work/dialogue/raw/crystal-summer/data-global/npc/dragon_ancestor_spirit.lua",
+    "source_sha256": "b7ad237012e48305f8ea9aff03436adfbed979e88ca6aee2748d002e2fc3bd14",
+    "source_bytes": 3596,
+    "git_blob_verified": true,
+    "registered_name": "Dragon Ancestor Spirit",
+    "display_name": "Dragon Ancestor Spirit",
+    "display_assignment_literal": true,
+    "literal_name_discovery_only": true,
+    "proposal_matches": [
+      "oteryn:npc.dragon_ancestor_spirit"
+    ]
+  },
+  {
+    "source": "crystal",
+    "repository": "zimbadev/crystalserver",
+    "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+    "path": "data-global/npc/szallar_mandar.lua",
+    "git_blob_sha1": "2e493047c06b8a92c5b7161e07fbc81bcd94963d",
+    "source_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/00ce02a57ca5a12e48f32a3476e37471167e4c3f/data-global/npc/szallar_mandar.lua",
+    "local_path": "/workspace/npc-r7-work/dialogue/raw/crystal-summer/data-global/npc/szallar_mandar.lua",
+    "source_sha256": "83bd1c9c99a53cabe23ab044fa5cc0c89f66879b1be2a61fd0ae78ea45a52bd4",
+    "source_bytes": 3328,
+    "git_blob_verified": true,
+    "registered_name": "S'Zallar M'Andar",
+    "display_name": "S'Zallar M'Andar",
+    "display_assignment_literal": true,
+    "literal_name_discovery_only": true,
+    "proposal_matches": [
+      "oteryn:npc.s_zallar_m_andar"
+    ]
+  }
+]
