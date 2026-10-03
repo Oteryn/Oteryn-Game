@@ -8,6 +8,7 @@ No downloaded JavaScript is executed, and this module makes no network requests.
 """
 import argparse
 import hashlib
+from html.parser import HTMLParser
 import json
 import math
 from pathlib import Path
@@ -51,6 +52,34 @@ def _variables(expression):
     return variables
 
 
+class _ScriptBodies(HTMLParser):
+    """Collect raw inline script bodies with the HTML tokenizer, not a tag regex."""
+
+    def __init__(self):
+        super().__init__(convert_charrefs=False)
+        self.bodies, self._current = [], None
+
+    def handle_starttag(self, tag, attrs):
+        if tag == 'script':
+            self._current = []
+
+    def handle_endtag(self, tag):
+        if tag == 'script' and self._current is not None:
+            self.bodies.append(''.join(self._current))
+            self._current = None
+
+    def handle_data(self, data):
+        if self._current is not None:
+            self._current.append(data)
+
+
+def _script_bodies(text):
+    parser = _ScriptBodies()
+    parser.feed(text)
+    parser.close()
+    return parser.bodies
+
+
 def extract_snapshot(html, expected_sha256=None):
     """Extract only the recognized calculator grammar; fail on helper changes.
 
@@ -63,7 +92,7 @@ def extract_snapshot(html, expected_sha256=None):
     if expected_sha256 is not None and digest != expected_sha256:
         raise ValueError('GuildStats HTML capture hash mismatch')
     text = html.decode('utf-8')
-    scripts = re.findall(r'<script\b[^>]*>(.*?)</script>', text, re.S | re.I)
+    scripts = _script_bodies(text)
     candidates = [script for script in scripts if 'function hitsCalc()' in script]
     if len(candidates) != 1:
         raise ValueError('expected one inline hitsCalc calculator')

@@ -87,6 +87,16 @@ class GuildStatsComparisonTests(unittest.TestCase):
             with self.subTest(change=old), self.assertRaises(ValueError):
                 extract_snapshot(FIXTURE.replace(old, new))
 
+    def test_script_end_tags_with_whitespace_or_case_still_close_the_calculator(self):
+        # A regex for `</script>` misses `</script >`; the HTML tokenizer does not.
+        for end in ('</script >', '</SCRIPT\n>', '</script\t>'):
+            with self.subTest(end=end):
+                html = FIXTURE.replace('</script>', end) + '<script>function hitsCalc() {}</script>'
+                with self.assertRaises(ValueError):
+                    extract_snapshot(html)
+                self.assertEqual(extract_snapshot(FIXTURE.replace('</script>', end))['spells'],
+                                 self.snapshot['spells'])
+
     def test_skill_maxima_are_explicitly_excluded_from_magic_bounds(self):
         self.assertEqual(len(self.snapshot['spells']), 3)
         self.assertEqual(self.snapshot['unsupported'][0]['name'], 'Berserk')
