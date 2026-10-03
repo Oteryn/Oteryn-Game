@@ -25,6 +25,8 @@
   - DUR-03 §18 (the stash asset) and the §38 depot row;
   - DEPOT-0 §3 (the capacity count);
   - the composition decision rule 1.
+- Amended by the D309 P2 bundle (clarifying, review finding 4173377198): a refused operation
+  writes no stash event (§7).
 - Runtime, migration and production authority: NONE. Each child needs its own #162/#1622
   allocation.
 - `MERGE_AUTHORITY: WORK_COORDINATOR_ONLY`
@@ -232,8 +234,10 @@ Anything else is `NOT_SUPPORTED`. Stackable and non-stackable wares are both adm
 - **Cause.** Closed `StashConversionCause {Stow | Withdraw, occurrence}`.
 - **Value line.** A closed message: entry, asset (`stash:<definition_key>@<definition_revision>`), character, World,
   kind, class, amount, quantity before and after.
-- **Event.** One stash event per operation, carrying its item and value lines, in a stash outbox,
-  under the `ECONOMY_LEDGER` purpose that BANK-RET-0 defines.
+- **Event.** One stash event per successful operation, carrying its item and value lines, in a
+  stash outbox, under the `ECONOMY_LEDGER` purpose that BANK-RET-0 defines. A refused operation
+  (§5.1) writes no event: it changes no value and has no lines, and its durable trace is the
+  refused operation row alone.
 - **Supersession.** For the stash shapes only, the §39.1 exclusions of non-item accounts and
   multiple touched items, and the §39.1 and §39.3 source limits (a depot box source). Every other
   §39 obligation is unchanged; `DUR03-RL-03` stays 0 for every existing shape.

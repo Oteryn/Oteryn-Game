@@ -18,6 +18,9 @@
   - FND-02 (domains, sync units, resync);
   - owner rule 5905825574.
 - Amends: none.
+- Amended by the D309 P2 bundle (clarifying, review findings 4173342722 and 4173342727): a
+  replacement snapshot marks the client's totals incomplete (§4); `kill_loot` reports the loot
+  actually committed (§5). It also records the ANALYSER-WIRE-1 layout rulings (§5.1).
 - Runtime, migration and production authority: NONE. Each child needs its own #1622 allocation.
 - `MERGE_AUTHORITY: WORK_COORDINATOR_ONLY`
 
@@ -100,6 +103,11 @@ nothing.
 - **Snapshot empty.** Delta type 1 is one batch of facts for one sync unit. A resync or reconnect
   loses facts not yet sent; the client keeps its totals. Analysers are advisory; the stream never
   carries state.
+- **Loss after recovery.** When a snapshot arrives whose revision is greater than the revision of
+  the last delta the client applied in this GameSession (0 before any delta), facts were skipped:
+  the client marks its totals incomplete, as for `dropped`. A snapshot with an equal revision
+  (nothing skipped, for example the initial one) marks nothing. No wire field is added; the
+  revision already carries the fact.
 - **Revision (FND-02 §15).** One cumulative, monotonic `uint64` per GameSession: 0 at the
   session's initial snapshot, plus 1 per delta sent; never reset or reused at a resync snapshot or
   a reconnect. The empty snapshot carries the current revision, and the next delta's
@@ -112,7 +120,8 @@ nothing.
   - `experience {raw, gained}`: the experience before and after modifiers (stamina, boosts, party
     share), as committed;
   - `kill_loot {race, corpse_items[(item_type, count) <= 32], gold}`: sent to the holder of the
-    loot right when the corpse is minted; `gold` is the coin value in gold;
+    loot right after the corpse's loot is settled, listing only the entries actually committed
+    (§5); `gold` is the coin value in gold;
   - `supply_used {item_type, count}`: a consumed potion, rune or ammunition, when its use commits;
   - `impact {kind (DAMAGE | HEALING), value, element}`: damage the character dealt, or healing it
     gave (to itself or another);
@@ -129,6 +138,24 @@ nothing.
 - `impact` and `damage_input` report the final value applied (after mitigation and PvP factor),
   not the attempted one.
 - A kill with no loot-right holder in a session (the holder left) emits no `kill_loot`.
+- **Committed loot only.** `kill_loot` is built from the corpse entries whose MINT committed, never
+  from the loot plan. When an entry MINT fails after earlier entries committed, the fact lists the
+  committed entries; ANALYSER-EMIT-1 makes the loot settlement return that committed partial list
+  with its error (or emits per committed entry). A corpse with no committed entry emits nothing.
+
+### 5.1 Wire layout of §4 (ANALYSER-WIRE-1, architect rulings of 2026-10-03)
+
+- `race`: the 1-based Bestiary race index, as in `charm_bestiary_v1`; 0 or absent is a creature
+  with no Bestiary race; present with a source other than CREATURE fails closed.
+- `element`: one shared enum `DamageElement` (0 unspecified fails closed; PHYSICAL 1 to UNTYPED 11
+  in SPELL-PRESENT-0 §2's content order, without healing) in a neutral protocol module and
+  `.proto`. PRESENT-WIRE-1 reuses it and defines no second element enum. Required for DAMAGE and
+  `damage_input`, absent for HEALING.
+- `item_type`: a non-zero `uint32` in the server content item type id space.
+- Widths: experience and gold `uint64`; counts `uint32` 1 to 65,535; values `uint32` at least 1;
+  `dropped` count at least 1; `experience` only when `raw` is at least 1 (`gained` may be 0).
+- RL-03 is a hard 4,096-byte batch bound: a batch takes facts while it has fewer than 64 and the
+  next fact still fits; the rest go to the next sync unit and are never dropped for size.
 
 ## 6. Bounds and rows (registered by ANALYSER-WIRE-1)
 
@@ -175,7 +202,8 @@ None. Every choice above is a reversible architect ruling under owner rule 59058
 
 1. **Contracts:** none amended.
 2. **Serialization:** facts follow the committed outcome in its sync unit; no new write.
-3. **Restart:** nothing durable; a resync loses unsent facts only.
+3. **Restart:** nothing durable; a resync loses unsent facts only, and the client marks its
+   totals incomplete when the snapshot revision shows skipped deltas.
 4. **Typed references:** CharacterId, race, item type, element.
 5. **Wire:** §4, capability 10 `ANALYSER_V1`, state domain 15 `ACTOR_ANALYSER`; no command type.
 6. **Split work:** 64 facts per batch, 32 items per fact, 1,024 pending per session.

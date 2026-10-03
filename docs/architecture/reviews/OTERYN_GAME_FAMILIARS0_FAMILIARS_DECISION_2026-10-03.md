@@ -21,6 +21,8 @@
   - SPELL-PRESENT-0 §10 (cooldown display; durable cooldowns not decided);
   - owner rule 5905825574.
 - Amends: none. CREATURE-AI-0 §8.4 already defers familiars here.
+- Amended by the D309 P2 bundle (clarifying, review finding 4173381895): the recovery
+  qualification sweep of §5.1.
 - Runtime, migration and production authority: NONE. Each child needs its own #1622 allocation.
 - `MERGE_AUTHORITY: WORK_COORDINATOR_ONLY`
 
@@ -128,6 +130,25 @@ one ordinary summon (R1).
 - The row is gameplay state, not a DUR-03 value. A missing row means no familiar and no cooldown.
 - The familiar spell's in-memory cooldown is the row's value; SPELL-D2's runtime cooldown is not
   used for these five spells.
+
+### 5.1 Recovery qualification (negative cases, FAMILIAR-1 proves each)
+
+Each case names one invariant. FAMILIAR-1 has one test per case, on PostgreSQL where it says so.
+
+| Case | Path | Invariant |
+|---|---|---|
+| Write for another character (the row's `character_id` is not the writer session's character) | direct | A row is written only inside the fenced Character transaction of its own character; the write is refused and changes nothing. |
+| Same cast or return occurrence replayed with a different binding (spell, caster, placement) | direct | One occurrence has one outcome: the replay conflicts and writes nothing. |
+| Client-supplied remaining time, cooldown, generation or familiar creature | direct | Durable values come only from the row, the content definition and the session's own generation; nothing from the client is stored. The returning familiar is the caster's vocation familiar from content, never a named creature. |
+| Write from an older `session_generation` (late clean-end save, removal after a takeover) | direct | Refused by the generation fence; no column changes. |
+| Two writes of one generation race (timer removal and logout save) | direct, concurrent | The compare-and-set on `revision` admits one; the other re-reads and re-applies to the new row or becomes a no-op when the row is already closed; never two writes for one revision. |
+| Takeover: the new session's fenced load races the old session's clean-end save | reconciled vs direct, concurrent | The load raises the generation first; the old save is then stale and refused. If the old save commits first, the load sees `open = false` and returns the familiar (§7). |
+| Row `open = true` with the same generation as the loading session (a resume inside one GameSession) | reconciled | Not a crash: no reconciliation write; the familiar continues. |
+| Row `open = true` with an older generation | reconciled | Crash: one write under the new generation sets remaining 0 and `open = false`; the cooldown is kept. |
+| Server restart, then login (PostgreSQL reload) | reconciled, PostgreSQL | Nothing in memory survives; every session after the restart has a newer generation, so an open row loads as a crash. Timers restart from the stored remaining values only. |
+| Missing row | reconciled | No familiar and no cooldown; a load never inserts a row. |
+| Any recovery path | reconciled | `cooldown_remaining_ms` is never lowered by a recovery write. |
+| Return refused in a lever boss room, immediate or delayed | direct | One fenced write ends the familiar (remaining 0, `open = false`, cooldown kept); no creature is placed. |
 
 ## 6. Lifetime and behaviour (FAMILIAR-1)
 

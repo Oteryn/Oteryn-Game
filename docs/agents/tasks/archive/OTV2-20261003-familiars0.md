@@ -58,6 +58,10 @@ The decision defines a durable Character write path, so FAMILIAR-1 must prove th
 - **Fenced write.** Every write is a compare-and-set on `revision` inside the writer's fenced
   Character transaction; the cast write commits only with the mana and the admission.
 
+The full negative-case sweep (identity and binding mismatch, provenance substitution, direct
+versus reconciled paths, concurrency and PostgreSQL reload, one invariant per case) is the
+decision's §5.1, added by the D309 P2 bundle (review finding 4173381895).
+
 ## Acceptance criteria
 
 - [ ] Exact-head validation and independent review of the frozen head.
