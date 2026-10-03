@@ -433,6 +433,12 @@ def test_server_qualification(module):
         "apps/game-server/src/content/project/v2/creature.rs",
         "apps/game-server/migrations/0009_character_progression.sql",
         "apps/game-server/Cargo.toml",
+        "crates/foundation/src/lib.rs",
+        "crates/protocol-oteryn/src/lib.rs",
+        "crates/simulation-determinism/src/lib.rs",
+        "crates/foundation/Cargo.toml",
+        "crates/protocol-oteryn/Cargo.toml",
+        "crates/simulation-determinism/Cargo.toml",
         "Cargo.lock",
         "vendor/tokio-1.53.1/src/lib.rs",
         "tools/qualification/node_boot/run.sh",
@@ -452,10 +458,20 @@ def test_server_qualification(module):
         "apps/client/src/main.rs",
         "docs/architecture/FND-04B_RECONNECT_RECOVERY_CONTINUITY_CONTRACT.md",
         "tools/content/quests.py",
+        "crates/input-platform/src/lib.rs",
     ):
         assert required(path) is False, path
     assert required("docs/a.md", "apps/game-server/src/ai/mod.rs") is False
     assert required("docs/a.md", previous="apps/game-server/src/durability/mod.rs") is True
+    # Both sides of a rename and removals can change the shipped dependency.
+    for crate in ("foundation", "protocol-oteryn", "simulation-determinism"):
+        path = f"crates/{crate}/src/lib.rs"
+        assert required("docs/removed.md", previous=path) is True, path
+        assert required(path, previous="docs/added.md") is True, path
+        assert module.server_qualification_required([
+            {"filename": path, "status": "removed"},
+        ], 1) is True, path
+        assert required("docs/a.md", path) is True, path
     # Fail closed on incomplete or malformed enumeration.
     assert module.server_qualification_required([], 0) is True
     assert module.server_qualification_required([{"filename": "docs/a.md"}], 2) is True
