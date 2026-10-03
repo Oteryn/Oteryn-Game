@@ -17,7 +17,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "content.lock.json",
         364,
-        "ea62d8cb699b3ab977442f8fce3510ed11fd0ae5eb596a1247f65ab06bc4859b",
+        "6cea1e76bdd2d91a8eb7d89f498e6b25b9bf4f2ab35cd6733663a8b780394ac6",
     ),
     (
         "definitions/declarations.json",
@@ -26,8 +26,8 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "definitions/reference.json",
-        26_479_115,
-        "5c97615d1cbc3932843a1eb35a31b3774932d7b55e19aba955126decdca2e09d",
+        26_479_300,
+        "be6564ad6ae102abaa384e8d8c93808f32fceab98e33492e2195ceefd3d384e0",
     ),
     (
         "editor/author.json",
@@ -37,7 +37,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "manifest.json",
         1_939,
-        "cde820c18a449c0709bac9de6e2b49e933faa2ff8f60e16cb4ae7cb17de21f79",
+        "3a1aef986c94490fe6eff0b2116165661840aa209196e3982709785b95611e2b",
     ),
     (
         "presentations/bindings.json",
@@ -47,7 +47,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "project.json",
         390,
-        "9da853a6f3e328515c5474487f71b03640baff64abd0b1ff21b423b9ca201e63",
+        "42c8a7b84f21a928546bd970c445e5eb1b0cff794eb59f7c87cb47f5d72723fe",
     ),
     (
         "provenance/imports.json",
@@ -114,10 +114,10 @@ const WORLD_CATALOGUE_SHARDS: [(&str, &str); 4] = [
 const TREE_CONTRACT: &str =
     "docs/agents/evidence/OTV2-20260925-full-game-content-ruleset-tree-v1.json";
 const TREE_DIRECTORY_NODES: usize = 97;
-const TREE_SHA256: &str = "84f00fdcf47a88378e229b4fae436b1e8573d1a7226a31163ed0c60edf707f5f";
+const TREE_SHA256: &str = "48e7d671b4db6cf1e654041c5440da26cd98781d56adaf5e567561418b74be0c";
 /// A12 (ITEM-ID-1b): the protected Item family less the 4,590 D149 records, on Tibia keys,
-/// plus the 404 donor epoch-2 records and the 60 appearance-only records (ITEM-ADD-1).
-const ITEMS: usize = 34_031;
+/// plus the 404 donor epoch-2 records and the 61 appearance-only records (ITEM-ADD-1, Snowball 53855).
+const ITEMS: usize = 34_032;
 /// Actual canonical package: 2,286,109 JSON values; retain a bounded 2.4M budget.
 const FULL_FAMILY_MAX_DECODED_FIELDS: usize = 2_400_000;
 const FULL_FAMILY_MAX_STRING_BYTES: usize = 43_000_000;

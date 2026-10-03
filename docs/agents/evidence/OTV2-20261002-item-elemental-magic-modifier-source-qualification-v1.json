@@ -119,7 +119,7 @@
     },
     {
       "path": "imports/tibiawiki/facts/items-stats.json",
-      "sha256": "49d43cbe6957e6edc16aeda72e05152c55606e9381452ea74d7a63b5a5e91e4a"
+      "sha256": "379f2d468fdb8e5ec7b40d98e4ec62f1b1b189b4b2ad9c40c4a69869123c5864"
     },
     {
       "path": "content/assets/files/appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.dat",
@@ -131,7 +131,7 @@
     },
     {
       "path": "docs/agents/evidence/OTV2-20260930-item-stats-promotion-v2.json",
-      "sha256": "aeed35542222289537e3eafe0dbf279b8f17d09ba3a210a3818e194642f7e1fc"
+      "sha256": "4a757c686615dbb7276027077020264415934d839cdf69117623f17ae0765d33"
     }
   ],
   "original_external_qualification": {
