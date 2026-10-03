@@ -1,0 +1,73 @@
+{
+  "achievement_source_bindings": [
+    {
+      "name": "Annihilator",
+      "source_id": 57,
+      "source_key": "canary:achievement/annihilator",
+      "sources": [
+        {
+          "classification": "OTS_HYPOTHESIS_ONLY",
+          "line": 58,
+          "name": "Annihilator",
+          "path": "data/scripts/lib/register_achievements.lua",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "sha256": "de33d7341d17e3410da5346c229ce68317526d70785b0a2e277f3fff546f1f7d",
+          "source": "canary",
+          "source_id": 57
+        },
+        {
+          "classification": "OTS_HYPOTHESIS_ONLY",
+          "line": 58,
+          "name": "Annihilator",
+          "path": "data/scripts/lib/register_achievements.lua",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "sha256": "24ca189087f6403ab994720763b69ee04eab0397ff917ff7700edb9063d6de37",
+          "source": "crystalserver",
+          "source_id": 57
+        }
+      ]
+    }
+  ],
+  "author_login": "blakinio",
+  "body_sha256": "2dfccda677ff1ab5db3a90ad222130eea73933115b9a4c615dd26774e53b6ee9",
+  "classification": "ACCEPTED_ARCHITECT_RULING",
+  "closed_contracts": {
+    "achievement": [
+      "Achievement owner contract \u00a73 typed grant request",
+      "Reward chest \u00a76; Achievement owner architecture after close-out"
+    ],
+    "charges": [
+      "Item definition charges.count",
+      "EQUIP-0 \u00a73.1",
+      "TIMED-ITEM-0"
+    ],
+    "container": [
+      "BAGS-0: containers with contents",
+      "Reward chest \u00a75.1; contents field child after close-out"
+    ],
+    "cooldown": [
+      "Quest authoring format repeat: cooldown(hours)",
+      "Reward chest \u00a75.1 claim/character/cycle ordinal"
+    ],
+    "key_binding": [
+      "Quest authoring format \u00a73/\u00a73.1 reward.key_binding",
+      "DUR-03 \u00a739.3"
+    ],
+    "random_one_of": [
+      "Quest authoring format \u00a73 reward.random_one_of",
+      "QUEST-STATE-0 \u00a78 CHEST-RANDOM-1"
+    ],
+    "written_text": [
+      "Quest authoring format \u00a73 reward.written_text",
+      "WRITE-0"
+    ]
+  },
+  "comment_id": 5933264015,
+  "created_at": "2026-10-01T14:13:19Z",
+  "decision": "D277",
+  "quest_data_excerpt": "| Case | Ruling |\n|---|---|\n| Container chests (a filled container) | **Covered.** BAGS-0 (containers with contents) is the nested-bags decision that the reward-chest slice \u00a75.1 waited on. A contents field in the quest reward schema is a content-lane child after close-out. Until then, these rows stay `waiting_data`. |\n| Key chests | **Covered.** Quest format \u00a73/\u00a73.1 `reward.key_binding` (`\u2026:door-key/<n>`) and DUR-03 \u00a739.3. Author them now. |\n| Text chests (book or letter) | **Covered.** Quest format \u00a73 `reward.written_text` and WRITE-0 (merged). Author them now. |\n| Random chests | **Covered.** Quest format \u00a73 `reward.random_one_of` and QUEST-STATE-0 \u00a78 (CHEST-RANDOM-1). Author them now. |\n| Cooldown chests | **Covered.** Quest format `repeat: cooldown(hours)`, with identity per reward-chest \u00a75.1 (claim, character, cycle ordinal). Author the data now; the runtime is a later child. |\n| Achievement chests | **New architecture item after close-out** (an Achievement owner, per reward-chest \u00a76). Author the typed grant reference; the claim records the grant request. Runtime admission waits for that item. |\n| Item 3081 (charged amulet) | **Covered.** The reward is **one** ItemInstance with count 1. Its 5 charges come from the Item definition's `charges.count` (item schema; EQUIP-0 \u00a73.1), never from the reward line. Add the charges fact from TibiaWiki first. The charge behaviour itself waits for TIMED-ITEM-0 (EQUIP-0: `timed` items grant nothing until then). |\n| Conditions or effects outside the closed vocabulary | **Stay `unresolved`/`waiting_data`.** Group them by kind in the closeout packet. Each new kind is a new architecture item after close-out. Do not widen the vocabulary in data. |\n\nIntegrating this owner-directed continuation into the D252 close-out schedule is the control plane's call.",
+  "updated_at": "2026-10-01T14:13:19Z",
+  "url": "https://github.com/Oteryn/Oteryn-Game/issues/162#issuecomment-5933264015"
+}

@@ -11,43 +11,42 @@
       "USE": 599
     },
     "children_by_owner": {
-      "Ability": 208,
-      "Achievement": 36,
+      "Ability": 222,
+      "Achievement": 28,
       "Experience": 9,
-      "Item": 345,
-      "Mount": 5,
-      "Movement": 800,
-      "Outfit": 14,
-      "Presentation": 2679,
-      "Quest": 947,
-      "WorldObject": 844
+      "Item": 377,
+      "Mount": 2,
+      "Movement": 807,
+      "Outfit": 10,
+      "Presentation": 2687,
+      "Quest": 862,
+      "WorldObject": 874
     },
     "blocked_children": {
-      "Movement": 380,
-      "WorldObject": 166
+      "Movement": 294,
+      "WorldObject": 172
     },
     "relocation_children": {
-      "anchor": 217,
-      "previous_position": 203
+      "anchor": 304,
+      "previous_position": 209
     },
     "overlay_operations": {
-      "CREATE": 27,
-      "REMOVE": 133,
+      "CREATE": 50,
+      "REMOVE": 134,
       "RETAG": 39,
       "TRANSFORM": 479
     },
     "overlay_operations_with_revert_after": 0,
-    "quest_children_naming_a_transition": 215,
-    "unresolved_lines": 1902,
-    "unresolved_conditions": 1786,
+    "quest_children_naming_a_transition": 207,
+    "unresolved_lines": 1924,
+    "unresolved_conditions": 1723,
     "by_status": {
-      "mapped": 267,
-      "unresolved_semantics": 954
+      "conflict": 2,
+      "mapped": 245,
+      "unresolved_semantics": 974
     }
   },
-  "undeclared_progress_tracks": [
-    "canary:quest-progress/quest/u10_37/tinder_box_quest_chyllfroest/obedience"
-  ],
+  "undeclared_progress_tracks": [],
   "entries": [
     {
       "destination": "crystalserver:interaction/25_years_of_tibia_quest/actions_lion_statue",
@@ -569,7 +568,7 @@
     },
     {
       "destination": "canary:interaction/adventures_of_galthen/actions_mitmah_vanguard_exit",
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "identical in both servers",
       "sources": [
         {
@@ -1631,7 +1630,7 @@
     },
     {
       "destination": "canary:interaction/children_of_the_revolution/actions_zalamon_door",
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "identical in both servers",
       "sources": [
         {
@@ -3348,7 +3347,7 @@
     },
     {
       "destination": "canary:interaction/deeplings_worldchange/actions_crystalvortex",
-      "status": "unresolved_semantics",
+      "status": "mapped",
       "resolution": "identical in both servers",
       "sources": [
         {
@@ -3405,7 +3404,7 @@
     },
     {
       "destination": "canary:interaction/deeplings_worldchange/actions_statue",
-      "status": "unresolved_semantics",
+      "status": "mapped",
       "resolution": "identical in both servers",
       "sources": [
         {
@@ -3538,7 +3537,7 @@
     },
     {
       "destination": "canary:interaction/demon_oak/actions_demon_oak_gravestone",
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "identical in both servers",
       "sources": [
         {
@@ -3671,7 +3670,7 @@
     },
     {
       "destination": "canary:interaction/draconia/action_lever_lever1",
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "identical in both servers",
       "sources": [
         {
@@ -3690,7 +3689,7 @@
     },
     {
       "destination": "canary:interaction/draconia/action_lever_lever2",
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "identical in both servers",
       "sources": [
         {
@@ -4089,7 +4088,7 @@
     },
     {
       "destination": "canary:interaction/dreamers_challenge_quest/movement_teleport",
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "identical in both servers",
       "sources": [
         {
@@ -5904,7 +5903,7 @@
     },
     {
       "destination": "canary:interaction/forgotten_knowledge/actions_old_desk",
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "identical in both servers",
       "sources": [
         {
@@ -7803,7 +7802,7 @@
     },
     {
       "destination": "canary:interaction/hidden_threats/action_key_forge",
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "identical in both servers",
       "sources": [
         {
@@ -7841,7 +7840,7 @@
     },
     {
       "destination": "canary:interaction/hidden_threats/movement_chests_check",
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "identical in both servers",
       "sources": [
         {
@@ -7955,7 +7954,7 @@
     },
     {
       "destination": "canary:interaction/in_service_of_yalahar/actions_formula",
-      "status": "unresolved_semantics",
+      "status": "mapped",
       "resolution": "identical in both servers",
       "sources": [
         {
@@ -8012,8 +8011,8 @@
     },
     {
       "destination": "canary:interaction/in_service_of_yalahar/actions_matrix",
-      "status": "unresolved_semantics",
-      "resolution": "identical in both servers",
+      "status": "conflict",
+      "resolution": "the servers differ; the Canary transcription is kept",
       "sources": [
         {
           "source": "canary",
@@ -8026,6 +8025,320 @@
           "path": "data-global/scripts/quests/in_service_of_yalahar/actions_matrix.lua",
           "callback_line": 2,
           "blob_sha1": "b90790b9491ee1ab86d82bb35574aafb8e9ab36c"
+        }
+      ],
+      "conflict_alternatives": [
+        {
+          "source": "canary",
+          "interaction": {
+            "identity": {
+              "key": "canary:interaction/in_service_of_yalahar/actions_matrix",
+              "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+            },
+            "source": {
+              "edge": "USE",
+              "callback": "onUse",
+              "target_registrations": [
+                "id(8828, 8829)"
+              ]
+            },
+            "rules": [
+              {
+                "branch": [
+                  {
+                    "when": {
+                      "all": [
+                        {
+                          "any": [
+                            {
+                              "object": {
+                                "role": "use_target",
+                                "field": "item_type",
+                                "op": "==",
+                                "item": {
+                                  "family": "Item",
+                                  "key": "canary:item/842",
+                                  "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                                }
+                              },
+                              "negate": false
+                            },
+                            {
+                              "object": {
+                                "role": "use_target",
+                                "field": "item_type",
+                                "op": "==",
+                                "item": {
+                                  "family": "Item",
+                                  "key": "canary:item/843",
+                                  "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                                }
+                              },
+                              "negate": false
+                            }
+                          ]
+                        },
+                        {
+                          "object": {
+                            "role": "use_target",
+                            "field": "action_id",
+                            "op": "==",
+                            "value": 100
+                          },
+                          "negate": false
+                        }
+                      ]
+                    },
+                    "then": [
+                      {
+                        "branch": [
+                          {
+                            "when": {
+                              "all": [
+                                {
+                                  "any": [
+                                    {
+                                      "object": {
+                                        "role": "source",
+                                        "field": "item_type",
+                                        "op": "==",
+                                        "item": {
+                                          "family": "Item",
+                                          "key": "canary:item/8828",
+                                          "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                                        }
+                                      },
+                                      "negate": false
+                                    },
+                                    {
+                                      "object": {
+                                        "role": "source",
+                                        "field": "item_type",
+                                        "op": "==",
+                                        "item": {
+                                          "family": "Item",
+                                          "key": "canary:item/8829",
+                                          "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                                        }
+                                      },
+                                      "negate": false
+                                    }
+                                  ]
+                                },
+                                {
+                                  "quest_stage": {
+                                    "progress": "canary:quest-progress/quest/u8_4/in_service_of_yalahar/matrix_state",
+                                    "op": "<",
+                                    "value": 1
+                                  },
+                                  "negate": false
+                                }
+                              ]
+                            },
+                            "then": [
+                              {
+                                "owner": "Quest",
+                                "request": "set_progress",
+                                "progress": "canary:quest-progress/quest/u8_4/in_service_of_yalahar/matrix_state",
+                                "to": 1
+                              },
+                              {
+                                "owner": "Item",
+                                "request": "consume",
+                                "object": "used_item"
+                              },
+                              {
+                                "owner": "Presentation",
+                                "effect": "magic_effect",
+                                "authoritative": false
+                              },
+                              {
+                                "owner": "Presentation",
+                                "effect": "message",
+                                "authoritative": false,
+                                "source_line": 8
+                              },
+                              {
+                                "owner": "Quest",
+                                "request": "set_progress",
+                                "progress": "canary:quest-progress/quest/u8_4/in_service_of_yalahar/questline",
+                                "to": 46
+                              },
+                              {
+                                "owner": "Quest",
+                                "request": "set_progress",
+                                "progress": "canary:quest-progress/quest/u8_4/in_service_of_yalahar/mission08",
+                                "to": 3,
+                                "transition": "canary:quest/in_service_of_yalahar_quest#mission_08_dangerous_machinations:action_1"
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ],
+            "anchors": [],
+            "unresolved": []
+          }
+        },
+        {
+          "source": "crystalserver",
+          "interaction": {
+            "identity": {
+              "key": "crystalserver:interaction/in_service_of_yalahar/actions_matrix",
+              "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+            },
+            "source": {
+              "edge": "USE",
+              "callback": "onUse",
+              "target_registrations": [
+                "id(8828, 8829)"
+              ]
+            },
+            "rules": [
+              {
+                "branch": [
+                  {
+                    "when": {
+                      "all": [
+                        {
+                          "any": [
+                            {
+                              "object": {
+                                "role": "use_target",
+                                "field": "item_type",
+                                "op": "==",
+                                "item": {
+                                  "family": "Item",
+                                  "key": "crystalserver:item/846",
+                                  "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                                }
+                              },
+                              "negate": false
+                            },
+                            {
+                              "object": {
+                                "role": "use_target",
+                                "field": "item_type",
+                                "op": "==",
+                                "item": {
+                                  "family": "Item",
+                                  "key": "crystalserver:item/847",
+                                  "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                                }
+                              },
+                              "negate": false
+                            }
+                          ]
+                        },
+                        {
+                          "object": {
+                            "role": "use_target",
+                            "field": "action_id",
+                            "op": "==",
+                            "value": 100
+                          },
+                          "negate": false
+                        }
+                      ]
+                    },
+                    "then": [
+                      {
+                        "branch": [
+                          {
+                            "when": {
+                              "all": [
+                                {
+                                  "any": [
+                                    {
+                                      "object": {
+                                        "role": "source",
+                                        "field": "item_type",
+                                        "op": "==",
+                                        "item": {
+                                          "family": "Item",
+                                          "key": "crystalserver:item/8828",
+                                          "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                                        }
+                                      },
+                                      "negate": false
+                                    },
+                                    {
+                                      "object": {
+                                        "role": "source",
+                                        "field": "item_type",
+                                        "op": "==",
+                                        "item": {
+                                          "family": "Item",
+                                          "key": "crystalserver:item/8829",
+                                          "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                                        }
+                                      },
+                                      "negate": false
+                                    }
+                                  ]
+                                },
+                                {
+                                  "quest_stage": {
+                                    "progress": "canary:quest-progress/quest/u8_4/in_service_of_yalahar/matrix_state",
+                                    "op": "<",
+                                    "value": 1
+                                  },
+                                  "negate": false
+                                }
+                              ]
+                            },
+                            "then": [
+                              {
+                                "owner": "Quest",
+                                "request": "set_progress",
+                                "progress": "canary:quest-progress/quest/u8_4/in_service_of_yalahar/matrix_state",
+                                "to": 1
+                              },
+                              {
+                                "owner": "Item",
+                                "request": "consume",
+                                "object": "used_item"
+                              },
+                              {
+                                "owner": "Presentation",
+                                "effect": "magic_effect",
+                                "authoritative": false
+                              },
+                              {
+                                "owner": "Presentation",
+                                "effect": "message",
+                                "authoritative": false,
+                                "source_line": 8
+                              },
+                              {
+                                "owner": "Quest",
+                                "request": "set_progress",
+                                "progress": "canary:quest-progress/quest/u8_4/in_service_of_yalahar/questline",
+                                "to": 46
+                              },
+                              {
+                                "owner": "Quest",
+                                "request": "set_progress",
+                                "progress": "canary:quest-progress/quest/u8_4/in_service_of_yalahar/mission08",
+                                "to": 3,
+                                "transition": "canary:quest/in_service_of_yalahar_quest#mission_08_dangerous_machinations:action_1"
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ],
+            "anchors": [],
+            "unresolved": []
+          }
         }
       ]
     },
@@ -8069,7 +8382,7 @@
     },
     {
       "destination": "canary:interaction/in_service_of_yalahar/actions_mr_west_door",
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "identical in both servers",
       "sources": [
         {
@@ -8368,7 +8681,7 @@
     },
     {
       "destination": "crystalserver:interaction/kilmaresh/1_fafnars_wrath/2_ambassadors_treason_roof_top",
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present only in crystalserver",
       "sources": [
         {
@@ -8485,7 +8798,7 @@
     },
     {
       "destination": "crystalserver:interaction/kilmaresh/actions_augerfun",
-      "status": "unresolved_semantics",
+      "status": "mapped",
       "resolution": "present only in crystalserver",
       "sources": [
         {
@@ -8550,7 +8863,7 @@
     },
     {
       "destination": "crystalserver:interaction/kilmaresh/actions_glasshoneyfun",
-      "status": "unresolved_semantics",
+      "status": "mapped",
       "resolution": "present only in crystalserver",
       "sources": [
         {
@@ -8589,7 +8902,7 @@
     },
     {
       "destination": "crystalserver:interaction/kilmaresh/actions_peelerfun",
-      "status": "unresolved_semantics",
+      "status": "mapped",
       "resolution": "present only in crystalserver",
       "sources": [
         {
@@ -8602,7 +8915,7 @@
     },
     {
       "destination": "crystalserver:interaction/kilmaresh/actions_pickenchanted",
-      "status": "unresolved_semantics",
+      "status": "mapped",
       "resolution": "present only in crystalserver",
       "sources": [
         {
@@ -8823,7 +9136,7 @@
     },
     {
       "destination": "canary:interaction/kilmaresh_quest/1_fafnars_wrath/2_ambassadors_treason_roof_top",
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present only in canary",
       "sources": [
         {
@@ -8940,7 +9253,7 @@
     },
     {
       "destination": "canary:interaction/kilmaresh_quest/actions_augerfun",
-      "status": "unresolved_semantics",
+      "status": "mapped",
       "resolution": "present only in canary",
       "sources": [
         {
@@ -8992,7 +9305,7 @@
     },
     {
       "destination": "canary:interaction/kilmaresh_quest/actions_glasshoneyfun",
-      "status": "unresolved_semantics",
+      "status": "mapped",
       "resolution": "present only in canary",
       "sources": [
         {
@@ -9031,7 +9344,7 @@
     },
     {
       "destination": "canary:interaction/kilmaresh_quest/actions_peelerfun",
-      "status": "unresolved_semantics",
+      "status": "mapped",
       "resolution": "present only in canary",
       "sources": [
         {
@@ -9044,7 +9357,7 @@
     },
     {
       "destination": "canary:interaction/kilmaresh_quest/actions_pickenchanted",
-      "status": "unresolved_semantics",
+      "status": "mapped",
       "resolution": "present only in canary",
       "sources": [
         {
@@ -9676,7 +9989,7 @@
     },
     {
       "destination": "canary:interaction/marapur/movements_ramp_to_north_temple",
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "identical in both servers",
       "sources": [
         {
@@ -9785,7 +10098,7 @@
     },
     {
       "destination": "crystalserver:interaction/newhaven/on_use_newhaven",
-      "status": "unresolved_semantics",
+      "status": "mapped",
       "resolution": "present only in crystalserver",
       "sources": [
         {
@@ -10598,7 +10911,7 @@
     },
     {
       "destination": "canary:interaction/roshamuul_quest/movements_lower_roshamuul_lower_roshamuul1500",
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "identical in both servers",
       "sources": [
         {
@@ -10617,7 +10930,7 @@
     },
     {
       "destination": "canary:interaction/roshamuul_quest/movements_lower_roshamuul_lower_roshamuul20122",
-      "status": "unresolved_semantics",
+      "status": "mapped",
       "resolution": "identical in both servers",
       "sources": [
         {
@@ -10675,7 +10988,7 @@
     },
     {
       "destination": "crystalserver:interaction/rotten_blood_quest/actions_putrefactory_enter_putrefactory",
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present only in crystalserver",
       "sources": [
         {
@@ -10688,7 +11001,7 @@
     },
     {
       "destination": "crystalserver:interaction/rotten_blood_quest/actions_putrefactory_exit_putrefactory",
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present only in crystalserver",
       "sources": [
         {
@@ -10701,7 +11014,7 @@
     },
     {
       "destination": "crystalserver:interaction/rotten_blood_quest/actions_putrefactory_exit_putrefactory_lever",
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present only in crystalserver",
       "sources": [
         {
@@ -11112,7 +11425,7 @@
     },
     {
       "destination": "canary:interaction/secret_service/actions_rust_bugs",
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "identical in both servers",
       "sources": [
         {
@@ -12352,7 +12665,7 @@
     },
     {
       "destination": "canary:interaction/svargrond_arena/creaturescripts_player_death",
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "identical in both servers",
       "sources": [
         {
@@ -12519,7 +12832,7 @@
     },
     {
       "destination": "crystalserver:interaction/targuna/movements_aragonia_matilda_return",
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present only in crystalserver",
       "sources": [
         {
@@ -12584,7 +12897,7 @@
     },
     {
       "destination": "crystalserver:interaction/targuna/movements_crimson_court_mv",
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present only in crystalserver",
       "sources": [
         {
@@ -13105,7 +13418,7 @@
     },
     {
       "destination": "crystalserver:interaction/the_ancient_tombs/movements_oasis_lever_door",
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present only in crystalserver",
       "sources": [
         {
@@ -13403,7 +13716,7 @@
     },
     {
       "destination": "canary:interaction/the_djinn_war_quest/action_water_fountain",
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "identical in both servers",
       "sources": [
         {
@@ -14923,7 +15236,7 @@
     },
     {
       "destination": "canary:interaction/the_gravedigger_of_drefia/actions_key1",
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "identical in both servers",
       "sources": [
         {
@@ -15759,8 +16072,8 @@
     },
     {
       "destination": "canary:interaction/the_inquisition_quest/actions_rewards",
-      "status": "mapped",
-      "resolution": "identical in both servers",
+      "status": "conflict",
+      "resolution": "the servers differ; the Canary transcription is kept",
       "sources": [
         {
           "source": "canary",
@@ -15773,6 +16086,671 @@
           "path": "data-global/scripts/quests/the_inquisition_quest/actions_rewards.lua",
           "callback_line": 15,
           "blob_sha1": "b65defb2ff8848b3e91b2628f3d9ad1a6ab3b4fe"
+        }
+      ],
+      "conflict_alternatives": [
+        {
+          "source": "canary",
+          "interaction": {
+            "identity": {
+              "key": "canary:interaction/the_inquisition_quest/actions_rewards",
+              "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+            },
+            "source": {
+              "edge": "USE",
+              "callback": "onUse",
+              "target_registrations": [
+                "uid(uniqueId)"
+              ]
+            },
+            "rules": [
+              {
+                "branch": [
+                  {
+                    "when": {
+                      "quest_stage": {
+                        "progress": "canary:quest-progress/quest/u8_2/the_inquisition_quest/reward",
+                        "op": "<",
+                        "value": 1
+                      },
+                      "negate": false
+                    },
+                    "then": [
+                      {
+                        "owner": "Quest",
+                        "request": "set_progress",
+                        "progress": "canary:quest-progress/quest/u8_2/the_inquisition_quest/reward",
+                        "to": 1
+                      },
+                      {
+                        "owner": "Quest",
+                        "request": "set_progress",
+                        "progress": "canary:quest-progress/quest/u8_2/the_inquisition_quest/questline",
+                        "to": 25
+                      },
+                      {
+                        "owner": "Quest",
+                        "request": "set_progress",
+                        "progress": "canary:quest-progress/quest/u8_2/the_inquisition_quest/mission07",
+                        "to": 5,
+                        "transition": "canary:quest/the_inquisition_quest#mission_7_the_shadow_nexus:action_2"
+                      },
+                      {
+                        "branch": [
+                          {
+                            "when": {
+                              "object": {
+                                "role": "source",
+                                "op": "==",
+                                "field": "unique_id",
+                                "value": 1300
+                              },
+                              "negate": false
+                            },
+                            "then": [
+                              {
+                                "owner": "Item",
+                                "request": "hand_out",
+                                "item": {
+                                  "family": "Item",
+                                  "key": "canary:item/8062",
+                                  "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                                },
+                                "count": 1
+                              }
+                            ]
+                          },
+                          {
+                            "when": {
+                              "object": {
+                                "role": "source",
+                                "op": "==",
+                                "field": "unique_id",
+                                "value": 1301
+                              },
+                              "negate": false
+                            },
+                            "then": [
+                              {
+                                "owner": "Item",
+                                "request": "hand_out",
+                                "item": {
+                                  "family": "Item",
+                                  "key": "canary:item/8090",
+                                  "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                                },
+                                "count": 1
+                              }
+                            ]
+                          },
+                          {
+                            "when": {
+                              "object": {
+                                "role": "source",
+                                "op": "==",
+                                "field": "unique_id",
+                                "value": 1302
+                              },
+                              "negate": false
+                            },
+                            "then": [
+                              {
+                                "owner": "Item",
+                                "request": "hand_out",
+                                "item": {
+                                  "family": "Item",
+                                  "key": "canary:item/8053",
+                                  "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                                },
+                                "count": 1
+                              }
+                            ]
+                          },
+                          {
+                            "when": {
+                              "object": {
+                                "role": "source",
+                                "op": "==",
+                                "field": "unique_id",
+                                "value": 1303
+                              },
+                              "negate": false
+                            },
+                            "then": [
+                              {
+                                "owner": "Item",
+                                "request": "hand_out",
+                                "item": {
+                                  "family": "Item",
+                                  "key": "canary:item/8060",
+                                  "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                                },
+                                "count": 1
+                              }
+                            ]
+                          },
+                          {
+                            "when": {
+                              "object": {
+                                "role": "source",
+                                "op": "==",
+                                "field": "unique_id",
+                                "value": 1304
+                              },
+                              "negate": false
+                            },
+                            "then": [
+                              {
+                                "owner": "Item",
+                                "request": "hand_out",
+                                "item": {
+                                  "family": "Item",
+                                  "key": "canary:item/8023",
+                                  "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                                },
+                                "count": 1
+                              }
+                            ]
+                          },
+                          {
+                            "when": {
+                              "object": {
+                                "role": "source",
+                                "op": "==",
+                                "field": "unique_id",
+                                "value": 1305
+                              },
+                              "negate": false
+                            },
+                            "then": [
+                              {
+                                "owner": "Item",
+                                "request": "hand_out",
+                                "item": {
+                                  "family": "Item",
+                                  "key": "canary:item/8096",
+                                  "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                                },
+                                "count": 1
+                              }
+                            ]
+                          },
+                          {
+                            "when": {
+                              "object": {
+                                "role": "source",
+                                "op": "==",
+                                "field": "unique_id",
+                                "value": 1306
+                              },
+                              "negate": false
+                            },
+                            "then": [
+                              {
+                                "owner": "Item",
+                                "request": "hand_out",
+                                "item": {
+                                  "family": "Item",
+                                  "key": "canary:item/8100",
+                                  "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                                },
+                                "count": 1
+                              }
+                            ]
+                          },
+                          {
+                            "when": {
+                              "object": {
+                                "role": "source",
+                                "op": "==",
+                                "field": "unique_id",
+                                "value": 1307
+                              },
+                              "negate": false
+                            },
+                            "then": [
+                              {
+                                "owner": "Item",
+                                "request": "hand_out",
+                                "item": {
+                                  "family": "Item",
+                                  "key": "canary:item/8102",
+                                  "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                                },
+                                "count": 1
+                              }
+                            ]
+                          },
+                          {
+                            "when": {
+                              "object": {
+                                "role": "source",
+                                "op": "==",
+                                "field": "unique_id",
+                                "value": 1308
+                              },
+                              "negate": false
+                            },
+                            "then": [
+                              {
+                                "owner": "Item",
+                                "request": "hand_out",
+                                "item": {
+                                  "family": "Item",
+                                  "key": "canary:item/8026",
+                                  "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                                },
+                                "count": 1
+                              }
+                            ]
+                          }
+                        ],
+                        "otherwise": [
+                          {
+                            "owner": "Item",
+                            "request": "hand_out",
+                            "value_source_line": 19
+                          }
+                        ]
+                      },
+                      {
+                        "owner": "Presentation",
+                        "effect": "message",
+                        "authoritative": false,
+                        "source_line": 20
+                      },
+                      {
+                        "owner": "Achievement",
+                        "request": "grant",
+                        "achievement": {
+                          "family": "Achievement",
+                          "key": "canary:achievement/master_of_the_nexus",
+                          "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                        }
+                      },
+                      {
+                        "owner": "Outfit",
+                        "request": "grant",
+                        "looktype": 288,
+                        "addon": 2
+                      },
+                      {
+                        "owner": "Outfit",
+                        "request": "grant",
+                        "looktype": 288,
+                        "addon": 1
+                      },
+                      {
+                        "owner": "Outfit",
+                        "request": "grant",
+                        "looktype": 289,
+                        "addon": 1
+                      },
+                      {
+                        "owner": "Outfit",
+                        "request": "grant",
+                        "looktype": 289,
+                        "addon": 2
+                      }
+                    ]
+                  }
+                ],
+                "otherwise": [
+                  {
+                    "owner": "Presentation",
+                    "effect": "message",
+                    "authoritative": false,
+                    "source_line": 27
+                  }
+                ]
+              }
+            ],
+            "anchors": [],
+            "unresolved": []
+          }
+        },
+        {
+          "source": "crystalserver",
+          "interaction": {
+            "identity": {
+              "key": "crystalserver:interaction/the_inquisition_quest/actions_rewards",
+              "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+            },
+            "source": {
+              "edge": "USE",
+              "callback": "onUse",
+              "target_registrations": [
+                "uid(uniqueId)"
+              ]
+            },
+            "rules": [
+              {
+                "branch": [
+                  {
+                    "when": {
+                      "quest_stage": {
+                        "progress": "canary:quest-progress/quest/u8_2/the_inquisition_quest/reward",
+                        "op": "<",
+                        "value": 1
+                      },
+                      "negate": false
+                    },
+                    "then": [
+                      {
+                        "owner": "Quest",
+                        "request": "set_progress",
+                        "progress": "canary:quest-progress/quest/u8_2/the_inquisition_quest/reward",
+                        "to": 1
+                      },
+                      {
+                        "owner": "Quest",
+                        "request": "set_progress",
+                        "progress": "canary:quest-progress/quest/u8_2/the_inquisition_quest/questline",
+                        "to": 25
+                      },
+                      {
+                        "owner": "Quest",
+                        "request": "set_progress",
+                        "progress": "canary:quest-progress/quest/u8_2/the_inquisition_quest/mission07",
+                        "to": 5,
+                        "transition": "canary:quest/the_inquisition_quest#mission_7_the_shadow_nexus:action_2"
+                      },
+                      {
+                        "branch": [
+                          {
+                            "when": {
+                              "object": {
+                                "role": "source",
+                                "op": "==",
+                                "field": "unique_id",
+                                "value": 1300
+                              },
+                              "negate": false
+                            },
+                            "then": [
+                              {
+                                "owner": "Item",
+                                "request": "hand_out",
+                                "item": {
+                                  "family": "Item",
+                                  "key": "crystalserver:item/8062",
+                                  "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                                },
+                                "count": 1
+                              }
+                            ]
+                          },
+                          {
+                            "when": {
+                              "object": {
+                                "role": "source",
+                                "op": "==",
+                                "field": "unique_id",
+                                "value": 1301
+                              },
+                              "negate": false
+                            },
+                            "then": [
+                              {
+                                "owner": "Item",
+                                "request": "hand_out",
+                                "item": {
+                                  "family": "Item",
+                                  "key": "crystalserver:item/8090",
+                                  "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                                },
+                                "count": 1
+                              }
+                            ]
+                          },
+                          {
+                            "when": {
+                              "object": {
+                                "role": "source",
+                                "op": "==",
+                                "field": "unique_id",
+                                "value": 1302
+                              },
+                              "negate": false
+                            },
+                            "then": [
+                              {
+                                "owner": "Item",
+                                "request": "hand_out",
+                                "item": {
+                                  "family": "Item",
+                                  "key": "crystalserver:item/8053",
+                                  "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                                },
+                                "count": 1
+                              }
+                            ]
+                          },
+                          {
+                            "when": {
+                              "object": {
+                                "role": "source",
+                                "op": "==",
+                                "field": "unique_id",
+                                "value": 1303
+                              },
+                              "negate": false
+                            },
+                            "then": [
+                              {
+                                "owner": "Item",
+                                "request": "hand_out",
+                                "item": {
+                                  "family": "Item",
+                                  "key": "crystalserver:item/8060",
+                                  "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                                },
+                                "count": 1
+                              }
+                            ]
+                          },
+                          {
+                            "when": {
+                              "object": {
+                                "role": "source",
+                                "op": "==",
+                                "field": "unique_id",
+                                "value": 1304
+                              },
+                              "negate": false
+                            },
+                            "then": [
+                              {
+                                "owner": "Item",
+                                "request": "hand_out",
+                                "item": {
+                                  "family": "Item",
+                                  "key": "crystalserver:item/8023",
+                                  "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                                },
+                                "count": 1
+                              }
+                            ]
+                          },
+                          {
+                            "when": {
+                              "object": {
+                                "role": "source",
+                                "op": "==",
+                                "field": "unique_id",
+                                "value": 1305
+                              },
+                              "negate": false
+                            },
+                            "then": [
+                              {
+                                "owner": "Item",
+                                "request": "hand_out",
+                                "item": {
+                                  "family": "Item",
+                                  "key": "crystalserver:item/8096",
+                                  "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                                },
+                                "count": 1
+                              }
+                            ]
+                          },
+                          {
+                            "when": {
+                              "object": {
+                                "role": "source",
+                                "op": "==",
+                                "field": "unique_id",
+                                "value": 1306
+                              },
+                              "negate": false
+                            },
+                            "then": [
+                              {
+                                "owner": "Item",
+                                "request": "hand_out",
+                                "item": {
+                                  "family": "Item",
+                                  "key": "crystalserver:item/8100",
+                                  "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                                },
+                                "count": 1
+                              }
+                            ]
+                          },
+                          {
+                            "when": {
+                              "object": {
+                                "role": "source",
+                                "op": "==",
+                                "field": "unique_id",
+                                "value": 1307
+                              },
+                              "negate": false
+                            },
+                            "then": [
+                              {
+                                "owner": "Item",
+                                "request": "hand_out",
+                                "item": {
+                                  "family": "Item",
+                                  "key": "crystalserver:item/8102",
+                                  "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                                },
+                                "count": 1
+                              }
+                            ]
+                          },
+                          {
+                            "when": {
+                              "object": {
+                                "role": "source",
+                                "op": "==",
+                                "field": "unique_id",
+                                "value": 1308
+                              },
+                              "negate": false
+                            },
+                            "then": [
+                              {
+                                "owner": "Item",
+                                "request": "hand_out",
+                                "item": {
+                                  "family": "Item",
+                                  "key": "crystalserver:item/8026",
+                                  "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                                },
+                                "count": 1
+                              }
+                            ]
+                          },
+                          {
+                            "when": {
+                              "object": {
+                                "role": "source",
+                                "op": "==",
+                                "field": "unique_id",
+                                "value": 1309
+                              },
+                              "negate": false
+                            },
+                            "then": [
+                              {
+                                "owner": "Item",
+                                "request": "hand_out",
+                                "item": {
+                                  "family": "Item",
+                                  "key": "crystalserver:item/50261",
+                                  "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                                },
+                                "count": 1
+                              }
+                            ]
+                          }
+                        ],
+                        "otherwise": [
+                          {
+                            "owner": "Item",
+                            "request": "hand_out",
+                            "value_source_line": 20
+                          }
+                        ]
+                      },
+                      {
+                        "owner": "Presentation",
+                        "effect": "message",
+                        "authoritative": false,
+                        "source_line": 21
+                      },
+                      {
+                        "owner": "Achievement",
+                        "request": "grant",
+                        "achievement": {
+                          "family": "Achievement",
+                          "key": "crystalserver:achievement/master_of_the_nexus",
+                          "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                        }
+                      },
+                      {
+                        "owner": "Outfit",
+                        "request": "grant",
+                        "looktype": 288,
+                        "addon": 2
+                      },
+                      {
+                        "owner": "Outfit",
+                        "request": "grant",
+                        "looktype": 288,
+                        "addon": 1
+                      },
+                      {
+                        "owner": "Outfit",
+                        "request": "grant",
+                        "looktype": 289,
+                        "addon": 1
+                      },
+                      {
+                        "owner": "Outfit",
+                        "request": "grant",
+                        "looktype": 289,
+                        "addon": 2
+                      }
+                    ]
+                  }
+                ],
+                "otherwise": [
+                  {
+                    "owner": "Presentation",
+                    "effect": "message",
+                    "authoritative": false,
+                    "source_line": 28
+                  }
+                ]
+              }
+            ],
+            "anchors": [],
+            "unresolved": []
+          }
         }
       ]
     },
@@ -16371,7 +17349,7 @@
     },
     {
       "destination": "canary:interaction/the_order_of_lion/creatureevent_commander_kills_usurper_commander_death",
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present only in canary",
       "sources": [
         {
@@ -16449,7 +17427,7 @@
     },
     {
       "destination": "crystalserver:interaction/the_order_of_lion_quest/creaturescripts_commander_kills_usurper_commander_death",
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present only in crystalserver",
       "sources": [
         {
@@ -17225,7 +18203,7 @@
     },
     {
       "destination": "canary:interaction/the_pits_of_inferno_quest/movements_holy_tible_tile",
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "identical in both servers",
       "sources": [
         {
@@ -17377,7 +18355,7 @@
     },
     {
       "destination": "canary:interaction/the_pits_of_inferno_quest/movements_tile_teleport",
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "identical in both servers",
       "sources": [
         {
@@ -17599,7 +18577,7 @@
     },
     {
       "destination": "canary:interaction/the_queen_of_the_banshees/movement_1_first_seal_close_mw_first_seal_close_mw_3",
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present only in canary",
       "sources": [
         {
@@ -17714,7 +18692,7 @@
     },
     {
       "destination": "canary:interaction/the_queen_of_the_banshees/movement_3_third_seal_flame",
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "identical in both servers",
       "sources": [
         {
@@ -17809,7 +18787,7 @@
     },
     {
       "destination": "canary:interaction/the_queen_of_the_banshees/movement_5_fifth_seal_path",
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "identical in both servers",
       "sources": [
         {
@@ -19589,7 +20567,7 @@
     },
     {
       "destination": "canary:interaction/the_tainted_soul/actions_star_herb",
-      "status": "unresolved_semantics",
+      "status": "mapped",
       "resolution": "identical in both servers",
       "sources": [
         {
@@ -19716,7 +20694,7 @@
     },
     {
       "destination": "canary:interaction/the_travelling_trader/actions_outlaw_camp_door",
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "identical in both servers",
       "sources": [
         {
@@ -19928,7 +20906,7 @@
     },
     {
       "destination": "canary:interaction/threatened_dreams/action_poacher_book",
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present only in canary",
       "sources": [
         {
@@ -19980,7 +20958,7 @@
     },
     {
       "destination": "canary:interaction/threatened_dreams/action_whelp_fur",
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present only in canary",
       "sources": [
         {
@@ -20110,7 +21088,7 @@
     },
     {
       "destination": "crystalserver:interaction/threatened_dreams_quest/action_poacher_book",
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present only in crystalserver",
       "sources": [
         {
@@ -20188,7 +21166,7 @@
     },
     {
       "destination": "crystalserver:interaction/threatened_dreams_quest/action_whelp_fur",
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "present only in crystalserver",
       "sources": [
         {
@@ -20317,7 +21295,7 @@
     },
     {
       "destination": "canary:interaction/tinder_box_quest_chyllfroest/actions_tinder_box",
-      "status": "unresolved_semantics",
+      "status": "mapped",
       "resolution": "identical in both servers",
       "sources": [
         {
@@ -21094,5 +22072,6 @@
         }
       ]
     }
-  ]
+  ],
+  "source_checks": []
 }

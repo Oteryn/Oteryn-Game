@@ -1,0 +1,202 @@
+{
+  "arena_crystal_missions_attributed": 3,
+  "canonical_definitions": 352,
+  "changed_core_keys": [
+    "oteryn:quest.an_uneasy_alliance_quest",
+    "oteryn:quest.rottin_wood_and_the_married_men_quest",
+    "oteryn:quest.shadows_of_yalahar_quest",
+    "oteryn:quest.steal_from_thieves_quest",
+    "oteryn:quest.the_gravedigger_of_drefia_quest",
+    "oteryn:quest.the_hidden_city_of_beregar_quest",
+    "oteryn:quest.the_thieves_guild_quest",
+    "oteryn:quest.targuna_quest"
+  ],
+  "changed_owner_tracks": [
+    "canary:quest-progress/quest/u8_2/the_thieves_guild_quest/steal_from_thieves",
+    "canary:quest-progress/quest/u10_10/the_gravedigger_of_drefia/mission05"
+  ],
+  "changed_selected_graphs": [
+    {
+      "delta": {
+        "known_conditions": 1,
+        "quest_children": 1,
+        "unresolved_conditions": -1,
+        "unresolved_statements": -1
+      },
+      "key": "canary:interaction/an_uneasy_alliance/actions_crystal_ball",
+      "new_sha256": "f703bcf1e1d335a45c96ca5d169b2ff7104f1804a0b241040887cb2d1687a26e",
+      "old_sha256": "bc5d8d0b4906f0b06557270cdc1103f106e427c8bfd2500d2f6c35cdcff68bb7",
+      "sources": {
+        "callback": "onUse",
+        "edge": "USE",
+        "target_registrations": [
+          "aid(40030)"
+        ]
+      }
+    },
+    {
+      "delta": {
+        "known_conditions": 1,
+        "quest_children": 0,
+        "unresolved_conditions": -1,
+        "unresolved_statements": 0
+      },
+      "key": "canary:interaction/rottin_wood_and_married_men/actions_trap",
+      "new_sha256": "f838d7d45283aed99aa21985af495d462eb1f0cf2d3a695bdcffa88c0908b7da",
+      "old_sha256": "23fbafdbcb237149c78c0467d71d196b67f8bdc248b2bcc00dae093c62acc4eb",
+      "sources": {
+        "callback": "onUse",
+        "edge": "USE",
+        "target_registrations": [
+          "id(12186)"
+        ]
+      }
+    },
+    {
+      "delta": {
+        "known_conditions": 1,
+        "quest_children": 0,
+        "unresolved_conditions": -1,
+        "unresolved_statements": 0
+      },
+      "key": "crystalserver:interaction/shadows_of_yalahar_quest/actions_mission02_yalahar_core_dispenser",
+      "new_sha256": "4c6d94f882935f457941c57ed9488e1b171a361bd52e19ee6217584252860c59",
+      "old_sha256": "08b9c1059aa988652898ba3beac4e103239898f12dc22cb31785e7c22838bf8e",
+      "sources": {
+        "callback": "onUse",
+        "edge": "USE",
+        "target_registrations": [
+          "aid(4970)"
+        ]
+      }
+    },
+    {
+      "delta": {
+        "known_conditions": 1,
+        "quest_children": 0,
+        "unresolved_conditions": -1,
+        "unresolved_statements": 0
+      },
+      "key": "crystalserver:interaction/shadows_of_yalahar_quest/actions_mission02_yalahar_telescope",
+      "new_sha256": "4527b53fce396e09e10b6239683d8a9f7b39d74bd87d4c1cfb1d96ccbf23bbc4",
+      "old_sha256": "a0a9ff1d1f93080a2837ca7a7fbe7582ac3ceda945eefc050ba2e6bd4dea96ae",
+      "sources": {
+        "callback": "onUse",
+        "edge": "USE",
+        "target_registrations": [
+          "aid(4969)"
+        ]
+      }
+    },
+    {
+      "delta": {
+        "known_conditions": 0,
+        "quest_children": 1,
+        "unresolved_conditions": 0,
+        "unresolved_statements": -1
+      },
+      "key": "crystalserver:interaction/targuna/actions_tortoise_eggs",
+      "new_sha256": "2fd3738e3f1a82d8a2014712f47ec13fbe962b6796b31b1de5a97f753b2b867e",
+      "old_sha256": "bbc4a3773a11bba55752919970dd5cc458af7ef8447bb09874975c3656114b03",
+      "sources": {
+        "callback": "onUse",
+        "edge": "USE",
+        "target_registrations": [
+          "position(pos)"
+        ]
+      }
+    },
+    {
+      "delta": {
+        "known_conditions": 0,
+        "quest_children": 4,
+        "unresolved_conditions": 0,
+        "unresolved_statements": -4
+      },
+      "key": "canary:interaction/the_hidden_city_of_beregar/actions_ore_wagon",
+      "new_sha256": "ae1888aa4ed1e52494a01da161c317aa02b3c85917866a8165e75b4156ee6887",
+      "old_sha256": "66d37c9cf03cccd05ed015ff9115e9cd4d9b749d284a87dc1964aff6784ca8cf",
+      "sources": {
+        "callback": "onUse",
+        "edge": "USE",
+        "target_registrations": [
+          "aid(40023)"
+        ]
+      }
+    }
+  ],
+  "chosen_recipe_payloads_and_evidence_unchanged": 242,
+  "classification": "DERIVED_FROM_PINNED_SOURCE_AND_OFFLINE_REPLAY",
+  "immutable_original_inputs_preserved": 3,
+  "inputs": [
+    {
+      "path": "tools/content-schema/quest-authoring/ots_questlog.py",
+      "sha256": "d00cdb880acb85c8fb9dab8981cd2f7c5d51831d375a68c1dca7b1573ffc7ffb"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/ots_interactions.py",
+      "sha256": "2ec7eaa2e05222c999f2ab0a9b349e2feba478fd133f25a7bd59ac0d4d416dc1"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/track_owners.json",
+      "sha256": "36a752baec9088935c14e2c4bfca04ca7c2ce0a22169ce5c0690fc49da59d09a"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/source_owner_guard.py",
+      "sha256": "1abbd590fc4dbdb5372b4c15ce01967642fbae1eccd894715f8fa37c2aafab82"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/source_fix_guard.py",
+      "sha256": "c4eb0b5007200cd56abe343441c8ad32d67c8254f5d23746d65ae2999f7c0394"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/samples/questlog/quests.json",
+      "sha256": "4c1a0f22fdb2f2bc943910ce39bf9aaedd8f999c0ca2db4a0b0914d7c63d4848"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/samples/questlog/progress.json",
+      "sha256": "23e2ed24fca83e3faf14155fcd67deca478c5d888f5af1cc53de15371af7f4b2"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/samples/questlog/manifest.json",
+      "sha256": "f4eb3f0e80dcfa10b4564796342549bc93397e42282e98777e0dd37a5d374dfa"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/samples/interactions/interactions.json",
+      "sha256": "e2c89e1275ed8e2de15fc0b245698bff6742310d1b152ad86219caa0602a07f7"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/samples/interactions/manifest.json",
+      "sha256": "f8358fe0d700f5d11cac372a5fbb3a7107aad36c25915e043d9f340cadcb1717"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/samples/readiness/readiness.json",
+      "sha256": "0c1046128c4ed900e76f2a30633fac6cab65155644aa167cad0f54b4c0a22717"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/samples/gap-triage/triage.json",
+      "sha256": "f9dc7fe8e655e857e18add715a51eac6e7a37dc897e79e4b6ecdca02addd2259"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/samples/source_migration/bundle.json",
+      "sha256": "a5966b07c77150accbeecdc43c44c356dba0328f79f30aac9613c3d64b5226a8"
+    }
+  ],
+  "original_source_quest_values_unchanged": 284,
+  "parent_frozen_head": "604b880de39c85b81fd694cb3e68057f054ed742",
+  "runtime_enabled": false,
+  "schema": "OTERYN_R12_PINNED_SOURCE_REPAIR_QUALIFICATION/v1",
+  "selected_delta": {
+    "known_conditions": 4,
+    "quest_children": 6,
+    "unresolved_conditions": -4,
+    "unresolved_statements": -6
+  },
+  "selected_interaction_graphs": 1221,
+  "server_smokes": "NOT_RUN",
+  "source_progress_tracks": 1491,
+  "source_transition_effects_unchanged": true,
+  "source_write_occurrences": 6636,
+  "status": "PASS",
+  "unchanged_cores": 344
+}

@@ -1,0 +1,1752 @@
+{
+  "schema": "OTERYN_PROGRESS_SOURCE_COMPLETION_EVIDENCE/v1",
+  "handoff_sha256": "95bf28328396d249333db21d11773cd845c073aa9fdfc694dfc53026351b94a2",
+  "handoff": {
+    "baseline_head": "503bba9e",
+    "derived_samples_shipped": false,
+    "files": [
+      {
+        "added_lines": 78,
+        "baseline_sha256": "174d6916651e72427689a284c697c732b762826974b167dc5d273e00473474f9",
+        "bytes": 23557,
+        "maximum_added_removed": 78,
+        "path": "tools/content-schema/quest-authoring/lua_writers.py",
+        "removed_lines": 7,
+        "role": "handwritten_source_or_regression",
+        "sha256": "bc6239ffc21bc4461b23a50aeb1f603fcfc7e48dddb258bf19b37a8b95e38343"
+      },
+      {
+        "added_lines": 4,
+        "baseline_sha256": "dee262645381f6c33e0f2af02949473aec17d3a5482c545746bcd04f32e20885",
+        "bytes": 41409,
+        "maximum_added_removed": 4,
+        "path": "tools/content-schema/quest-authoring/ots_questlog.py",
+        "removed_lines": 4,
+        "role": "handwritten_source_or_regression",
+        "sha256": "fecdb3d7dcec4b3569dd54009e353978374f6fdc84a8d19501adb98c04a56321"
+      },
+      {
+        "added_lines": 949,
+        "baseline_sha256": "1c96bca14ea26da92ee8ffb6945b76d192e4db64d9097164038dcf26255e3a79",
+        "bytes": 128649,
+        "maximum_added_removed": 949,
+        "path": "tools/content-schema/quest-authoring/track_owners.json",
+        "removed_lines": 201,
+        "role": "generated_source_curation",
+        "sha256": "e0d70bb6763f96150fd0018f3733aa7c04c68afc136227ca2a26371d7277efbc"
+      },
+      {
+        "added_lines": 130,
+        "baseline_sha256": null,
+        "bytes": 6291,
+        "maximum_added_removed": 130,
+        "path": "tools/content-schema/quest-authoring/scoped_storage_aliases.py",
+        "removed_lines": 0,
+        "role": "handwritten_source_or_regression",
+        "sha256": "bd4de58f4a60ab14ae57285bde15673baf4626c6da2721311b34bb6228d77e20"
+      },
+      {
+        "added_lines": 206,
+        "baseline_sha256": null,
+        "bytes": 13099,
+        "maximum_added_removed": 206,
+        "path": "tools/content-schema/quest-authoring/test_legacy_procedural_writers.py",
+        "removed_lines": 0,
+        "role": "handwritten_source_or_regression",
+        "sha256": "a03413f34a23494cd6f80fa86c5580af9952a82cf4d481b391d21f4db2abec69"
+      },
+      {
+        "added_lines": 62,
+        "baseline_sha256": null,
+        "bytes": 4656,
+        "maximum_added_removed": 62,
+        "path": "tools/content-schema/quest-authoring/test_scoped_storage_aliases.py",
+        "removed_lines": 0,
+        "role": "handwritten_source_or_regression",
+        "sha256": "d9f3f3763f1f0882a203b7ac56029428b200931309e74a38f3a8347c75f5011b"
+      }
+    ],
+    "handwritten_lines": {
+      "added": 480,
+      "maximum_added_removed_by_file": 480,
+      "removed": 11
+    },
+    "new_focused_tests": 23,
+    "qualification": "Pre-receiver-fix derived scratch snapshots are not part of this handoff. Root must regenerate in actual R/S/P tree; no baseline M prose or derived content is copied.",
+    "regeneration_required": true,
+    "root": "/tmp/quest-completion-round3/progress-supplement/handoff",
+    "runtime_promotion": false,
+    "schema": "OTERYN_PROGRESS_SUPPLEMENT_HANDOFF/v1",
+    "scoped_tests": 10,
+    "selected_existing_tests": 90,
+    "source_evidence": [
+      {
+        "bytes": 5661,
+        "path": "curation-evidence.json",
+        "sha256": "bf51131f5378ce09e564cc962e7739a0328143157159f93bc237e737c80ff5f0"
+      },
+      {
+        "bytes": 21354,
+        "path": "procedural-source-inventory.json",
+        "sha256": "7e8547925d96af0f502fc761ffcc45826f1bc9c1250ecef84128f004067a4e45"
+      }
+    ],
+    "source_procedural_counts": {
+      "canary": 35,
+      "crystalserver": 14
+    }
+  },
+  "source_evidence": {
+    "curation-evidence.json": {
+      "custom_Inquisition_source_spelling": {
+        "classification": "PROVEN_SOURCE",
+        "global_pack_path": "quest/u8_2/the_inquisition_quest/enter_teleport",
+        "logical_path": "quest/u8_0/the_inquisition_quest/enter_teleport",
+        "numeric_id_equality_is_not_alias_proof": true,
+        "source": [
+          {
+            "classification": "OTS_HYPOTHESIS_ONLY",
+            "expression": "Storage.Quest.U8_0.TheInquisitionQuest.EnterTeleport",
+            "line": 143,
+            "path": "data-crystal/lib/core/storages.lua",
+            "repository": "zimbadev/crystalserver",
+            "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+            "role": "exact_storage_declaration",
+            "source": "crystalserver",
+            "storage_id": 41706
+          },
+          {
+            "classification": "OTS_HYPOTHESIS_ONLY",
+            "line": 55,
+            "path": "data-crystal/scripts/quests/inqusition_quest/teleport_boss.lua",
+            "repository": "zimbadev/crystalserver",
+            "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+            "role": "exact_executable_writer",
+            "source": "crystalserver"
+          }
+        ],
+        "target_expression": "teleport.storage",
+        "writes": [
+          55,
+          62
+        ]
+      },
+      "dark_mission_writers": {
+        "quest/u10_50/dark_trails/mission01": [
+          {
+            "line": 77,
+            "owner": "npc",
+            "script": "npc/a_beggar.lua",
+            "server": "canary"
+          },
+          {
+            "line": 79,
+            "owner": "npc",
+            "script": "npc/ezebeth.lua",
+            "server": "canary"
+          },
+          {
+            "line": 75,
+            "owner": "npc",
+            "script": "npc/a_beggar.lua",
+            "server": "crystalserver"
+          },
+          {
+            "line": 77,
+            "owner": "npc",
+            "script": "npc/ezebeth.lua",
+            "server": "crystalserver"
+          }
+        ],
+        "quest/u10_50/dark_trails/mission02": [
+          {
+            "line": 78,
+            "owner": "npc",
+            "script": "npc/a_beggar.lua",
+            "server": "canary"
+          },
+          {
+            "line": 98,
+            "owner": "npc",
+            "script": "npc/the_beggar_king.lua",
+            "server": "canary"
+          },
+          {
+            "line": 76,
+            "owner": "npc",
+            "script": "npc/a_beggar.lua",
+            "server": "crystalserver"
+          },
+          {
+            "line": 96,
+            "owner": "npc",
+            "script": "npc/the_beggar_king.lua",
+            "server": "crystalserver"
+          }
+        ],
+        "quest/u10_50/dark_trails/mission03": [
+          {
+            "line": 34,
+            "owner": "action",
+            "script": "scripts/quests/oramond/the_ancient_sewers/actions_the_ancient_sewers.lua",
+            "server": "canary"
+          },
+          {
+            "line": 34,
+            "owner": "action",
+            "script": "scripts/quests/oramond/the_ancient_sewers/actions_the_ancient_sewers.lua",
+            "server": "crystalserver"
+          }
+        ],
+        "quest/u10_50/dark_trails/mission04": [
+          {
+            "line": 76,
+            "owner": "npc",
+            "script": "npc/elliott.lua",
+            "server": "canary"
+          },
+          {
+            "line": 76,
+            "owner": "npc",
+            "script": "npc/jacob.lua",
+            "server": "canary"
+          },
+          {
+            "line": 74,
+            "owner": "npc",
+            "script": "npc/elliott.lua",
+            "server": "crystalserver"
+          },
+          {
+            "line": 74,
+            "owner": "npc",
+            "script": "npc/jacob.lua",
+            "server": "crystalserver"
+          }
+        ],
+        "quest/u10_50/dark_trails/mission05": [
+          {
+            "line": 11,
+            "owner": "movement",
+            "script": "scripts/quests/dark_trails/movements_necrometer_tile_access.lua",
+            "server": "canary"
+          },
+          {
+            "line": 11,
+            "owner": "movement",
+            "script": "scripts/quests/dark_trails/movements_necrometer_tile_access.lua",
+            "server": "crystalserver"
+          }
+        ],
+        "quest/u10_50/dark_trails/mission06": [
+          {
+            "line": 120,
+            "owner": "npc",
+            "script": "npc/elliott.lua",
+            "server": "canary"
+          },
+          {
+            "line": 123,
+            "owner": "npc",
+            "script": "npc/jacob.lua",
+            "server": "canary"
+          },
+          {
+            "line": 118,
+            "owner": "npc",
+            "script": "npc/elliott.lua",
+            "server": "crystalserver"
+          },
+          {
+            "line": 121,
+            "owner": "npc",
+            "script": "npc/jacob.lua",
+            "server": "crystalserver"
+          }
+        ],
+        "quest/u10_50/dark_trails/mission07": [
+          {
+            "line": 67,
+            "owner": "npc",
+            "script": "npc/barazbaz.lua",
+            "server": "canary"
+          },
+          {
+            "line": 65,
+            "owner": "npc",
+            "script": "npc/barazbaz.lua",
+            "server": "crystalserver"
+          }
+        ],
+        "quest/u10_50/dark_trails/mission08": [
+          {
+            "line": 85,
+            "owner": "npc",
+            "script": "npc/marvin.lua",
+            "server": "canary"
+          },
+          {
+            "line": 83,
+            "owner": "npc",
+            "script": "npc/marvin.lua",
+            "server": "crystalserver"
+          }
+        ],
+        "quest/u10_50/dark_trails/mission09": [
+          {
+            "line": 78,
+            "owner": "npc",
+            "script": "npc/barazbaz.lua",
+            "server": "canary"
+          },
+          {
+            "line": 76,
+            "owner": "npc",
+            "script": "npc/barazbaz.lua",
+            "server": "crystalserver"
+          }
+        ],
+        "quest/u10_50/dark_trails/mission10": [
+          {
+            "line": 70,
+            "owner": "npc",
+            "script": "npc/jondrin.lua",
+            "server": "canary"
+          },
+          {
+            "line": 68,
+            "owner": "npc",
+            "script": "npc/jondrin.lua",
+            "server": "crystalserver"
+          }
+        ],
+        "quest/u10_50/dark_trails/mission11": [
+          {
+            "line": 19,
+            "owner": "creature_event",
+            "script": "scripts/quests/dark_trails/creaturescripts_kill_the_ravager.lua",
+            "server": "canary"
+          },
+          {
+            "line": 19,
+            "owner": "creature_event",
+            "script": "scripts/quests/dark_trails/creaturescripts_kill_the_ravager.lua",
+            "server": "crystalserver"
+          }
+        ],
+        "quest/u10_50/dark_trails/mission12": [
+          {
+            "line": 85,
+            "owner": "npc",
+            "script": "npc/barazbaz.lua",
+            "server": "canary"
+          },
+          {
+            "line": 83,
+            "owner": "npc",
+            "script": "npc/barazbaz.lua",
+            "server": "crystalserver"
+          }
+        ],
+        "quest/u10_50/dark_trails/mission13": [
+          {
+            "line": 65,
+            "owner": "npc",
+            "script": "npc/sholley.lua",
+            "server": "canary"
+          },
+          {
+            "line": 63,
+            "owner": "npc",
+            "script": "npc/sholley.lua",
+            "server": "crystalserver"
+          }
+        ],
+        "quest/u10_50/dark_trails/mission14": [
+          {
+            "line": 62,
+            "owner": "npc",
+            "script": "npc/roswitha.lua",
+            "server": "canary"
+          },
+          {
+            "line": 6,
+            "owner": "action",
+            "script": "scripts/quests/dark_trails/actions_corpse.lua",
+            "server": "canary"
+          },
+          {
+            "line": 60,
+            "owner": "npc",
+            "script": "npc/roswitha.lua",
+            "server": "crystalserver"
+          },
+          {
+            "line": 6,
+            "owner": "action",
+            "script": "scripts/quests/dark_trails/actions_corpse.lua",
+            "server": "crystalserver"
+          }
+        ],
+        "quest/u10_50/dark_trails/mission15": [
+          {
+            "line": 83,
+            "owner": "npc",
+            "script": "npc/barnabas_dee.lua",
+            "server": "canary"
+          },
+          {
+            "line": 120,
+            "owner": "npc",
+            "script": "npc/barnabas_dee.lua",
+            "server": "canary"
+          },
+          {
+            "line": 74,
+            "owner": "npc",
+            "script": "npc/sholley.lua",
+            "server": "canary"
+          },
+          {
+            "line": 81,
+            "owner": "npc",
+            "script": "npc/barnabas_dee.lua",
+            "server": "crystalserver"
+          },
+          {
+            "line": 118,
+            "owner": "npc",
+            "script": "npc/barnabas_dee.lua",
+            "server": "crystalserver"
+          },
+          {
+            "line": 72,
+            "owner": "npc",
+            "script": "npc/sholley.lua",
+            "server": "crystalserver"
+          }
+        ],
+        "quest/u10_50/dark_trails/mission16": [
+          {
+            "line": 65,
+            "owner": "npc",
+            "script": "npc/quandons_ghost.lua",
+            "server": "canary"
+          },
+          {
+            "line": 63,
+            "owner": "npc",
+            "script": "npc/quandons_ghost.lua",
+            "server": "crystalserver"
+          }
+        ],
+        "quest/u10_50/dark_trails/mission17": [
+          {
+            "line": 69,
+            "owner": "npc",
+            "script": "npc/terrence.lua",
+            "server": "canary"
+          },
+          {
+            "line": 67,
+            "owner": "npc",
+            "script": "npc/terrence.lua",
+            "server": "crystalserver"
+          }
+        ]
+      }
+    },
+    "procedural-source-inventory.json": {
+      "counts": {
+        "canary": 35,
+        "crystalserver": 14
+      },
+      "receiver_guard_scope": "Only literal CID proves guard/increment actor stability; unproved identifiers/expressions keep source occurrence but UNKNOWN from/computed RHS.",
+      "records": [
+        {
+          "blob_sha256": "0e583f857f4b4c109fb1bf266006cf0eb62a4f442d2c7339f9c0530e9bde02d8",
+          "call_form": "legacy_procedure",
+          "callback": null,
+          "dialogue": {
+            "keywords": [
+              "nose ring",
+              "ring"
+            ],
+            "topics": []
+          },
+          "from": null,
+          "line": 89,
+          "owner": "npc",
+          "path": "data-otservbr-global/npc/atrad.lua",
+          "receiver_expression": "creature",
+          "registrations": [],
+          "server": "canary",
+          "target": "Storage.Atrad",
+          "to": 2,
+          "value": "2"
+        },
+        {
+          "blob_sha256": "0e583f857f4b4c109fb1bf266006cf0eb62a4f442d2c7339f9c0530e9bde02d8",
+          "call_form": "legacy_procedure",
+          "callback": null,
+          "dialogue": {
+            "keywords": [
+              "nose ring",
+              "ring"
+            ],
+            "topics": []
+          },
+          "from": null,
+          "line": 90,
+          "owner": "npc",
+          "path": "data-otservbr-global/npc/atrad.lua",
+          "receiver_expression": "creature",
+          "registrations": [],
+          "server": "canary",
+          "target": "Storage.Quest.U7_8.AssassinOutfits.AssassinSecondAddon",
+          "to": 2,
+          "value": "2"
+        },
+        {
+          "blob_sha256": "0e583f857f4b4c109fb1bf266006cf0eb62a4f442d2c7339f9c0530e9bde02d8",
+          "call_form": "legacy_procedure",
+          "callback": null,
+          "dialogue": {
+            "keywords": [
+              "yes"
+            ],
+            "topics": [
+              3
+            ]
+          },
+          "from": null,
+          "line": 103,
+          "owner": "npc",
+          "path": "data-otservbr-global/npc/atrad.lua",
+          "receiver_expression": "creature",
+          "registrations": [],
+          "server": "canary",
+          "target": "Storage.Atrad",
+          "to": 1,
+          "value": "1"
+        },
+        {
+          "blob_sha256": "0e583f857f4b4c109fb1bf266006cf0eb62a4f442d2c7339f9c0530e9bde02d8",
+          "call_form": "legacy_procedure",
+          "callback": null,
+          "dialogue": {
+            "keywords": [
+              "yes"
+            ],
+            "topics": [
+              3
+            ]
+          },
+          "from": null,
+          "line": 104,
+          "owner": "npc",
+          "path": "data-otservbr-global/npc/atrad.lua",
+          "receiver_expression": "creature",
+          "registrations": [],
+          "server": "canary",
+          "target": "Storage.Quest.U7_8.AssassinOutfits.AssassinSecondAddon",
+          "to": 1,
+          "value": "1"
+        },
+        {
+          "blob_sha256": "84714a6ab5de45150137396cc9bb86466768abebb8f9c572cc3a27926c9bae85",
+          "call_form": "legacy_procedure",
+          "callback": null,
+          "dialogue": {
+            "keywords": [
+              "cap",
+              "mage"
+            ],
+            "topics": []
+          },
+          "from": null,
+          "line": 74,
+          "owner": "npc",
+          "path": "data-otservbr-global/npc/broken_servant_sentry.lua",
+          "receiver_expression": "creature",
+          "registrations": [],
+          "server": "canary",
+          "target": "Storage.Quest.U9_1.ElementalistOutfits.Addon1",
+          "to": 1,
+          "value": "1"
+        },
+        {
+          "blob_sha256": "84714a6ab5de45150137396cc9bb86466768abebb8f9c572cc3a27926c9bae85",
+          "call_form": "legacy_procedure",
+          "callback": null,
+          "dialogue": {
+            "keywords": [
+              "staff",
+              "spike"
+            ],
+            "topics": []
+          },
+          "from": null,
+          "line": 89,
+          "owner": "npc",
+          "path": "data-otservbr-global/npc/broken_servant_sentry.lua",
+          "receiver_expression": "creature",
+          "registrations": [],
+          "server": "canary",
+          "target": "Storage.Quest.U9_1.ElementalistOutfits.Addon2",
+          "to": 1,
+          "value": "1"
+        },
+        {
+          "blob_sha256": "84714a6ab5de45150137396cc9bb86466768abebb8f9c572cc3a27926c9bae85",
+          "call_form": "legacy_procedure",
+          "callback": null,
+          "dialogue": {
+            "keywords": [
+              "yes"
+            ],
+            "topics": [
+              2
+            ]
+          },
+          "from": null,
+          "line": 103,
+          "owner": "npc",
+          "path": "data-otservbr-global/npc/broken_servant_sentry.lua",
+          "receiver_expression": "creature",
+          "registrations": [],
+          "server": "canary",
+          "target": "Storage.Quest.U9_1.ElementalistOutfits.Outfit",
+          "to": 1,
+          "value": "1"
+        },
+        {
+          "blob_sha256": "84714a6ab5de45150137396cc9bb86466768abebb8f9c572cc3a27926c9bae85",
+          "call_form": "legacy_procedure",
+          "callback": null,
+          "dialogue": {
+            "keywords": [
+              "yes"
+            ],
+            "topics": [
+              2
+            ]
+          },
+          "from": null,
+          "line": 104,
+          "owner": "npc",
+          "path": "data-otservbr-global/npc/broken_servant_sentry.lua",
+          "receiver_expression": "creature",
+          "registrations": [],
+          "server": "canary",
+          "target": "Storage.Quest.U9_1.ElementalistOutfits.Questline",
+          "to": 1,
+          "value": "1"
+        },
+        {
+          "blob_sha256": "84714a6ab5de45150137396cc9bb86466768abebb8f9c572cc3a27926c9bae85",
+          "call_form": "legacy_procedure",
+          "callback": null,
+          "dialogue": {
+            "keywords": [
+              "yes"
+            ],
+            "topics": [
+              4
+            ]
+          },
+          "from": null,
+          "line": 115,
+          "owner": "npc",
+          "path": "data-otservbr-global/npc/broken_servant_sentry.lua",
+          "receiver_expression": "creature",
+          "registrations": [],
+          "server": "canary",
+          "target": "Storage.Quest.U9_1.ElementalistOutfits.Outfit",
+          "to": 2,
+          "value": "2"
+        },
+        {
+          "blob_sha256": "c3337bc65076922bc8d18f5fc921a74dd2ebb0ccab3c0b76673e02fd619ce305",
+          "call_form": "legacy_procedure",
+          "callback": null,
+          "dialogue": {
+            "keywords": [
+              "yes"
+            ],
+            "topics": [
+              8
+            ]
+          },
+          "from": null,
+          "line": 125,
+          "owner": "npc",
+          "path": "data-otservbr-global/npc/navigator.lua",
+          "receiver_expression": "creature",
+          "registrations": [],
+          "server": "canary",
+          "target": "Storage.Navigator",
+          "to": 4,
+          "value": "4"
+        },
+        {
+          "blob_sha256": "1629d986faa9c90a176cec2aafbc7bfe03106fe52a91a1e1673146e962690e92",
+          "call_form": "legacy_procedure",
+          "callback": null,
+          "dialogue": {
+            "keywords": [
+              "mission",
+              "task"
+            ],
+            "topics": []
+          },
+          "from": null,
+          "line": 114,
+          "owner": "npc",
+          "path": "data-otservbr-global/npc/rottin_wood.lua",
+          "receiver_expression": "creature",
+          "registrations": [],
+          "server": "canary",
+          "target": "Storage.Quest.U8_7.RottinWoodAndTheMarriedMen.FirstTime",
+          "to": 1,
+          "value": "1"
+        },
+        {
+          "blob_sha256": "1629d986faa9c90a176cec2aafbc7bfe03106fe52a91a1e1673146e962690e92",
+          "call_form": "legacy_procedure",
+          "callback": null,
+          "dialogue": {
+            "keywords": [
+              "mission",
+              "task"
+            ],
+            "topics": []
+          },
+          "from": null,
+          "line": 119,
+          "owner": "npc",
+          "path": "data-otservbr-global/npc/rottin_wood.lua",
+          "receiver_expression": "creature",
+          "registrations": [],
+          "server": "canary",
+          "target": "Storage.Quest.U8_7.RottinWoodAndTheMarriedMen.Mission03",
+          "to": -1,
+          "value": "-1"
+        },
+        {
+          "blob_sha256": "1629d986faa9c90a176cec2aafbc7bfe03106fe52a91a1e1673146e962690e92",
+          "call_form": "legacy_procedure",
+          "callback": null,
+          "dialogue": {
+            "keywords": [
+              "mission",
+              "task"
+            ],
+            "topics": []
+          },
+          "from": null,
+          "line": 120,
+          "owner": "npc",
+          "path": "data-otservbr-global/npc/rottin_wood.lua",
+          "receiver_expression": "creature",
+          "registrations": [],
+          "server": "canary",
+          "target": "Storage.Quest.U8_7.RottinWoodAndTheMarriedMen.RottinStart",
+          "to": -1,
+          "value": "-1"
+        },
+        {
+          "blob_sha256": "1629d986faa9c90a176cec2aafbc7bfe03106fe52a91a1e1673146e962690e92",
+          "call_form": "legacy_procedure",
+          "callback": null,
+          "dialogue": {
+            "keywords": [
+              "mission",
+              "task"
+            ],
+            "topics": []
+          },
+          "from": null,
+          "line": 121,
+          "owner": "npc",
+          "path": "data-otservbr-global/npc/rottin_wood.lua",
+          "receiver_expression": "creature",
+          "registrations": [],
+          "server": "canary",
+          "target": "Storage.Quest.U8_7.RottinWoodAndTheMarriedMen.Trap",
+          "to": -1,
+          "value": "-1"
+        },
+        {
+          "blob_sha256": "1629d986faa9c90a176cec2aafbc7bfe03106fe52a91a1e1673146e962690e92",
+          "call_form": "legacy_procedure",
+          "callback": null,
+          "dialogue": {
+            "keywords": [
+              "mission",
+              "task"
+            ],
+            "topics": []
+          },
+          "from": null,
+          "line": 122,
+          "owner": "npc",
+          "path": "data-otservbr-global/npc/rottin_wood.lua",
+          "receiver_expression": "creature",
+          "registrations": [],
+          "server": "canary",
+          "target": "Storage.Quest.U8_7.RottinWoodAndTheMarriedMen.Corpse",
+          "to": -1,
+          "value": "-1"
+        },
+        {
+          "blob_sha256": "1629d986faa9c90a176cec2aafbc7bfe03106fe52a91a1e1673146e962690e92",
+          "call_form": "legacy_procedure",
+          "callback": null,
+          "computed": "timestamp",
+          "dialogue": {
+            "keywords": [
+              "mission",
+              "task"
+            ],
+            "topics": []
+          },
+          "from": null,
+          "line": 124,
+          "owner": "npc",
+          "path": "data-otservbr-global/npc/rottin_wood.lua",
+          "receiver_expression": "creature",
+          "registrations": [],
+          "server": "canary",
+          "target": "Storage.Quest.U8_7.RottinWoodAndTheMarriedMen.Time",
+          "value": "os.time() + configManager.getNumber(configKeys.BOSS_DEFAULT_"
+        },
+        {
+          "blob_sha256": "1629d986faa9c90a176cec2aafbc7bfe03106fe52a91a1e1673146e962690e92",
+          "call_form": "legacy_procedure",
+          "callback": null,
+          "dialogue": {
+            "keywords": [
+              "mission",
+              "task"
+            ],
+            "topics": []
+          },
+          "from": null,
+          "line": 125,
+          "owner": "npc",
+          "path": "data-otservbr-global/npc/rottin_wood.lua",
+          "receiver_expression": "creature",
+          "registrations": [],
+          "server": "canary",
+          "target": "Storage.Quest.U8_7.RottinWoodAndTheMarriedMen.Questline",
+          "to": 2,
+          "value": "2"
+        },
+        {
+          "blob_sha256": "1629d986faa9c90a176cec2aafbc7bfe03106fe52a91a1e1673146e962690e92",
+          "call_form": "legacy_procedure",
+          "callback": null,
+          "dialogue": {
+            "keywords": [
+              "yes"
+            ],
+            "topics": [
+              2
+            ]
+          },
+          "from": null,
+          "line": 154,
+          "owner": "npc",
+          "path": "data-otservbr-global/npc/rottin_wood.lua",
+          "receiver_expression": "creature",
+          "registrations": [],
+          "server": "canary",
+          "target": "Storage.Quest.U8_7.RottinWoodAndTheMarriedMen.Mission03",
+          "to": 1,
+          "value": "1"
+        },
+        {
+          "blob_sha256": "1629d986faa9c90a176cec2aafbc7bfe03106fe52a91a1e1673146e962690e92",
+          "call_form": "legacy_procedure",
+          "callback": null,
+          "dialogue": {
+            "keywords": [
+              "yes"
+            ],
+            "topics": [
+              2
+            ]
+          },
+          "from": null,
+          "line": 155,
+          "owner": "npc",
+          "path": "data-otservbr-global/npc/rottin_wood.lua",
+          "receiver_expression": "creature",
+          "registrations": [],
+          "server": "canary",
+          "target": "Storage.Quest.U8_7.RottinWoodAndTheMarriedMen.Questline",
+          "to": 1,
+          "value": "1"
+        },
+        {
+          "blob_sha256": "1629d986faa9c90a176cec2aafbc7bfe03106fe52a91a1e1673146e962690e92",
+          "call_form": "legacy_procedure",
+          "callback": null,
+          "dialogue": {
+            "keywords": [
+              "yes"
+            ],
+            "topics": [
+              3
+            ]
+          },
+          "from": null,
+          "line": 161,
+          "owner": "npc",
+          "path": "data-otservbr-global/npc/rottin_wood.lua",
+          "receiver_expression": "creature",
+          "registrations": [],
+          "server": "canary",
+          "target": "Storage.Quest.U8_7.RottinWoodAndTheMarriedMen.Mission03",
+          "to": 2,
+          "value": "2"
+        },
+        {
+          "blob_sha256": "1629d986faa9c90a176cec2aafbc7bfe03106fe52a91a1e1673146e962690e92",
+          "call_form": "legacy_procedure",
+          "callback": null,
+          "dialogue": {
+            "keywords": [
+              "yes"
+            ],
+            "topics": [
+              3
+            ]
+          },
+          "from": null,
+          "line": 162,
+          "owner": "npc",
+          "path": "data-otservbr-global/npc/rottin_wood.lua",
+          "receiver_expression": "creature",
+          "registrations": [],
+          "server": "canary",
+          "target": "Storage.Quest.U8_7.RottinWoodAndTheMarriedMen.Questline",
+          "to": 4,
+          "value": "4"
+        },
+        {
+          "blob_sha256": "1629d986faa9c90a176cec2aafbc7bfe03106fe52a91a1e1673146e962690e92",
+          "call_form": "legacy_procedure",
+          "callback": null,
+          "computed": "timestamp",
+          "dialogue": {
+            "keywords": [
+              "yes"
+            ],
+            "topics": [
+              3
+            ]
+          },
+          "from": null,
+          "line": 163,
+          "owner": "npc",
+          "path": "data-otservbr-global/npc/rottin_wood.lua",
+          "receiver_expression": "creature",
+          "registrations": [],
+          "server": "canary",
+          "target": "Storage.Quest.U8_7.RottinWoodAndTheMarriedMen.Time",
+          "value": "os.time() + (20 * 3600)"
+        },
+        {
+          "blob_sha256": "1629d986faa9c90a176cec2aafbc7bfe03106fe52a91a1e1673146e962690e92",
+          "call_form": "legacy_procedure",
+          "callback": null,
+          "dialogue": {
+            "keywords": [
+              "yes"
+            ],
+            "topics": [
+              4
+            ]
+          },
+          "from": null,
+          "line": 170,
+          "owner": "npc",
+          "path": "data-otservbr-global/npc/rottin_wood.lua",
+          "receiver_expression": "creature",
+          "registrations": [],
+          "server": "canary",
+          "target": "Storage.Quest.U8_7.RottinWoodAndTheMarriedMen.Mission03",
+          "to": 3,
+          "value": "3"
+        },
+        {
+          "blob_sha256": "1629d986faa9c90a176cec2aafbc7bfe03106fe52a91a1e1673146e962690e92",
+          "call_form": "legacy_procedure",
+          "callback": null,
+          "dialogue": {
+            "keywords": [
+              "yes"
+            ],
+            "topics": [
+              4
+            ]
+          },
+          "from": null,
+          "line": 171,
+          "owner": "npc",
+          "path": "data-otservbr-global/npc/rottin_wood.lua",
+          "receiver_expression": "creature",
+          "registrations": [],
+          "server": "canary",
+          "target": "Storage.Quest.U8_7.RottinWoodAndTheMarriedMen.Questline",
+          "to": 3,
+          "value": "3"
+        },
+        {
+          "blob_sha256": "1629d986faa9c90a176cec2aafbc7bfe03106fe52a91a1e1673146e962690e92",
+          "call_form": "legacy_procedure",
+          "callback": null,
+          "dialogue": {
+            "keywords": [
+              "yes"
+            ],
+            "topics": [
+              5
+            ]
+          },
+          "from": null,
+          "line": 178,
+          "owner": "npc",
+          "path": "data-otservbr-global/npc/rottin_wood.lua",
+          "receiver_expression": "creature",
+          "registrations": [],
+          "server": "canary",
+          "target": "Storage.Quest.U8_7.RottinWoodAndTheMarriedMen.Mission03",
+          "to": 4,
+          "value": "4"
+        },
+        {
+          "blob_sha256": "1629d986faa9c90a176cec2aafbc7bfe03106fe52a91a1e1673146e962690e92",
+          "call_form": "legacy_procedure",
+          "callback": null,
+          "dialogue": {
+            "keywords": [
+              "yes"
+            ],
+            "topics": [
+              5
+            ]
+          },
+          "from": null,
+          "line": 179,
+          "owner": "npc",
+          "path": "data-otservbr-global/npc/rottin_wood.lua",
+          "receiver_expression": "creature",
+          "registrations": [],
+          "server": "canary",
+          "target": "Storage.Quest.U8_7.RottinWoodAndTheMarriedMen.Questline",
+          "to": 6,
+          "value": "6"
+        },
+        {
+          "blob_sha256": "1629d986faa9c90a176cec2aafbc7bfe03106fe52a91a1e1673146e962690e92",
+          "call_form": "legacy_procedure",
+          "callback": null,
+          "computed": "timestamp",
+          "dialogue": {
+            "keywords": [
+              "yes"
+            ],
+            "topics": [
+              5
+            ]
+          },
+          "from": null,
+          "line": 180,
+          "owner": "npc",
+          "path": "data-otservbr-global/npc/rottin_wood.lua",
+          "receiver_expression": "creature",
+          "registrations": [],
+          "server": "canary",
+          "target": "Storage.Quest.U8_7.RottinWoodAndTheMarriedMen.Time",
+          "value": "os.time() + (20 * 3600)"
+        },
+        {
+          "blob_sha256": "1629d986faa9c90a176cec2aafbc7bfe03106fe52a91a1e1673146e962690e92",
+          "call_form": "legacy_procedure",
+          "callback": null,
+          "dialogue": {
+            "keywords": [
+              "yes"
+            ],
+            "topics": [
+              7
+            ]
+          },
+          "from": null,
+          "line": 203,
+          "owner": "npc",
+          "path": "data-otservbr-global/npc/rottin_wood.lua",
+          "receiver_expression": "creature",
+          "registrations": [],
+          "server": "canary",
+          "target": "Storage.Quest.U8_7.RottinWoodAndTheMarriedMen.Mission03",
+          "to": 5,
+          "value": "5"
+        },
+        {
+          "blob_sha256": "1629d986faa9c90a176cec2aafbc7bfe03106fe52a91a1e1673146e962690e92",
+          "call_form": "legacy_procedure",
+          "callback": null,
+          "dialogue": {
+            "keywords": [
+              "yes"
+            ],
+            "topics": [
+              7
+            ]
+          },
+          "from": null,
+          "line": 204,
+          "owner": "npc",
+          "path": "data-otservbr-global/npc/rottin_wood.lua",
+          "receiver_expression": "creature",
+          "registrations": [],
+          "server": "canary",
+          "target": "Storage.Quest.U8_7.RottinWoodAndTheMarriedMen.Questline",
+          "to": 5,
+          "value": "5"
+        },
+        {
+          "blob_sha256": "6e47be40083c0ff174c454940382f891f96d7c304c999457e5165ab98d24751a",
+          "call_form": "legacy_procedure",
+          "callback": "onUse",
+          "computed": "timestamp",
+          "from": null,
+          "line": 32,
+          "owner": "action",
+          "path": "data-otservbr-global/scripts/actions/worldchanges/the_mummys_curse/horestis_jars.lua",
+          "receiver_expression": "cid",
+          "registrations": [
+            "aid(50006, 50007, 50008, 50009, 50010)"
+          ],
+          "server": "canary",
+          "target": "Storage.TheMummysCurse.Time1",
+          "value": "os.time() + exaustedSeconds * 1800"
+        },
+        {
+          "blob_sha256": "6e47be40083c0ff174c454940382f891f96d7c304c999457e5165ab98d24751a",
+          "call_form": "legacy_procedure",
+          "callback": "onUse",
+          "computed": "timestamp",
+          "from": null,
+          "line": 48,
+          "owner": "action",
+          "path": "data-otservbr-global/scripts/actions/worldchanges/the_mummys_curse/horestis_jars.lua",
+          "receiver_expression": "cid",
+          "registrations": [
+            "aid(50006, 50007, 50008, 50009, 50010)"
+          ],
+          "server": "canary",
+          "target": "Storage.TheMummysCurse.Time2",
+          "value": "os.time() + exaustedSeconds * 1800"
+        },
+        {
+          "blob_sha256": "6e47be40083c0ff174c454940382f891f96d7c304c999457e5165ab98d24751a",
+          "call_form": "legacy_procedure",
+          "callback": "onUse",
+          "computed": "timestamp",
+          "from": null,
+          "line": 67,
+          "owner": "action",
+          "path": "data-otservbr-global/scripts/actions/worldchanges/the_mummys_curse/horestis_jars.lua",
+          "receiver_expression": "cid",
+          "registrations": [
+            "aid(50006, 50007, 50008, 50009, 50010)"
+          ],
+          "server": "canary",
+          "target": "Storage.TheMummysCurse.Time3",
+          "value": "os.time() + exaustedSeconds * 1800"
+        },
+        {
+          "blob_sha256": "6e47be40083c0ff174c454940382f891f96d7c304c999457e5165ab98d24751a",
+          "call_form": "legacy_procedure",
+          "callback": "onUse",
+          "computed": "timestamp",
+          "from": null,
+          "line": 86,
+          "owner": "action",
+          "path": "data-otservbr-global/scripts/actions/worldchanges/the_mummys_curse/horestis_jars.lua",
+          "receiver_expression": "cid",
+          "registrations": [
+            "aid(50006, 50007, 50008, 50009, 50010)"
+          ],
+          "server": "canary",
+          "target": "Storage.TheMummysCurse.Time4",
+          "value": "os.time() + exaustedSeconds * 1800"
+        },
+        {
+          "blob_sha256": "5cf2c180c121182486f92bf947824e99449d0b5f6c253bc10ca3728b3b107ccf",
+          "call_form": "legacy_procedure",
+          "callback": null,
+          "from": null,
+          "line": 35,
+          "owner": "other",
+          "path": "data-otservbr-global/scripts/quests/rottin_wood_and_married_men/actions_trap.lua",
+          "receiver_expression": "cid",
+          "registrations": [],
+          "server": "canary",
+          "target": "Storage.Quest.U8_7.RottinWoodAndTheMarriedMen.Trap",
+          "to": -1,
+          "value": "-1"
+        },
+        {
+          "blob_sha256": "5cf2c180c121182486f92bf947824e99449d0b5f6c253bc10ca3728b3b107ccf",
+          "call_form": "legacy_procedure",
+          "callback": "onUse",
+          "computed": "expression",
+          "from": null,
+          "line": 81,
+          "owner": "action",
+          "path": "data-otservbr-global/scripts/quests/rottin_wood_and_married_men/actions_trap.lua",
+          "receiver_expression": "cid",
+          "registrations": [
+            "id(12186)"
+          ],
+          "server": "canary",
+          "target": "Storage.Quest.U8_7.RottinWoodAndTheMarriedMen.Trap",
+          "value": "getPlayerStorageValue(cid, Storage.Quest.U8_7.RottinWoodAndT"
+        },
+        {
+          "blob_sha256": "ffdc0e1b8d0d5455be4be4c6875b3f832dca3a488440ed08020bfa20bd7bde01",
+          "call_form": "legacy_procedure",
+          "callback": null,
+          "dialogue": {
+            "keywords": [
+              "nose ring",
+              "ring"
+            ],
+            "topics": []
+          },
+          "from": null,
+          "line": 87,
+          "owner": "npc",
+          "path": "data-global/npc/atrad.lua",
+          "receiver_expression": "creature",
+          "registrations": [],
+          "server": "crystalserver",
+          "target": "Storage.Atrad",
+          "to": 2,
+          "value": "2"
+        },
+        {
+          "blob_sha256": "ffdc0e1b8d0d5455be4be4c6875b3f832dca3a488440ed08020bfa20bd7bde01",
+          "call_form": "legacy_procedure",
+          "callback": null,
+          "dialogue": {
+            "keywords": [
+              "nose ring",
+              "ring"
+            ],
+            "topics": []
+          },
+          "from": null,
+          "line": 88,
+          "owner": "npc",
+          "path": "data-global/npc/atrad.lua",
+          "receiver_expression": "creature",
+          "registrations": [],
+          "server": "crystalserver",
+          "target": "Storage.Quest.U7_8.AssassinOutfits.AssassinSecondAddon",
+          "to": 2,
+          "value": "2"
+        },
+        {
+          "blob_sha256": "ffdc0e1b8d0d5455be4be4c6875b3f832dca3a488440ed08020bfa20bd7bde01",
+          "call_form": "legacy_procedure",
+          "callback": null,
+          "dialogue": {
+            "keywords": [
+              "yes"
+            ],
+            "topics": [
+              3
+            ]
+          },
+          "from": null,
+          "line": 101,
+          "owner": "npc",
+          "path": "data-global/npc/atrad.lua",
+          "receiver_expression": "creature",
+          "registrations": [],
+          "server": "crystalserver",
+          "target": "Storage.Atrad",
+          "to": 1,
+          "value": "1"
+        },
+        {
+          "blob_sha256": "ffdc0e1b8d0d5455be4be4c6875b3f832dca3a488440ed08020bfa20bd7bde01",
+          "call_form": "legacy_procedure",
+          "callback": null,
+          "dialogue": {
+            "keywords": [
+              "yes"
+            ],
+            "topics": [
+              3
+            ]
+          },
+          "from": null,
+          "line": 102,
+          "owner": "npc",
+          "path": "data-global/npc/atrad.lua",
+          "receiver_expression": "creature",
+          "registrations": [],
+          "server": "crystalserver",
+          "target": "Storage.Quest.U7_8.AssassinOutfits.AssassinSecondAddon",
+          "to": 1,
+          "value": "1"
+        },
+        {
+          "blob_sha256": "d46dec4a9ad615539e6e918d650770a9e7dbe86777e4e9c842bc94c2f8380796",
+          "call_form": "legacy_procedure",
+          "callback": null,
+          "dialogue": {
+            "keywords": [
+              "cap",
+              "mage"
+            ],
+            "topics": []
+          },
+          "from": null,
+          "line": 72,
+          "owner": "npc",
+          "path": "data-global/npc/broken_servant_sentry.lua",
+          "receiver_expression": "creature",
+          "registrations": [],
+          "server": "crystalserver",
+          "target": "Storage.Quest.U9_1.ElementalistOutfits.Addon1",
+          "to": 1,
+          "value": "1"
+        },
+        {
+          "blob_sha256": "d46dec4a9ad615539e6e918d650770a9e7dbe86777e4e9c842bc94c2f8380796",
+          "call_form": "legacy_procedure",
+          "callback": null,
+          "dialogue": {
+            "keywords": [
+              "staff",
+              "spike"
+            ],
+            "topics": []
+          },
+          "from": null,
+          "line": 87,
+          "owner": "npc",
+          "path": "data-global/npc/broken_servant_sentry.lua",
+          "receiver_expression": "creature",
+          "registrations": [],
+          "server": "crystalserver",
+          "target": "Storage.Quest.U9_1.ElementalistOutfits.Addon2",
+          "to": 1,
+          "value": "1"
+        },
+        {
+          "blob_sha256": "d46dec4a9ad615539e6e918d650770a9e7dbe86777e4e9c842bc94c2f8380796",
+          "call_form": "legacy_procedure",
+          "callback": null,
+          "dialogue": {
+            "keywords": [
+              "yes"
+            ],
+            "topics": [
+              2
+            ]
+          },
+          "from": null,
+          "line": 101,
+          "owner": "npc",
+          "path": "data-global/npc/broken_servant_sentry.lua",
+          "receiver_expression": "creature",
+          "registrations": [],
+          "server": "crystalserver",
+          "target": "Storage.Quest.U9_1.ElementalistOutfits.Outfit",
+          "to": 1,
+          "value": "1"
+        },
+        {
+          "blob_sha256": "d46dec4a9ad615539e6e918d650770a9e7dbe86777e4e9c842bc94c2f8380796",
+          "call_form": "legacy_procedure",
+          "callback": null,
+          "dialogue": {
+            "keywords": [
+              "yes"
+            ],
+            "topics": [
+              2
+            ]
+          },
+          "from": null,
+          "line": 102,
+          "owner": "npc",
+          "path": "data-global/npc/broken_servant_sentry.lua",
+          "receiver_expression": "creature",
+          "registrations": [],
+          "server": "crystalserver",
+          "target": "Storage.Quest.U9_1.ElementalistOutfits.Questline",
+          "to": 1,
+          "value": "1"
+        },
+        {
+          "blob_sha256": "d46dec4a9ad615539e6e918d650770a9e7dbe86777e4e9c842bc94c2f8380796",
+          "call_form": "legacy_procedure",
+          "callback": null,
+          "dialogue": {
+            "keywords": [
+              "yes"
+            ],
+            "topics": [
+              4
+            ]
+          },
+          "from": null,
+          "line": 113,
+          "owner": "npc",
+          "path": "data-global/npc/broken_servant_sentry.lua",
+          "receiver_expression": "creature",
+          "registrations": [],
+          "server": "crystalserver",
+          "target": "Storage.Quest.U9_1.ElementalistOutfits.Outfit",
+          "to": 2,
+          "value": "2"
+        },
+        {
+          "blob_sha256": "cc98cf86f238fd1da617e0f77184e63900d5bee6495ba593934974d538b3aca8",
+          "call_form": "legacy_procedure",
+          "callback": null,
+          "dialogue": {
+            "keywords": [
+              "yes"
+            ],
+            "topics": [
+              8
+            ]
+          },
+          "from": null,
+          "line": 123,
+          "owner": "npc",
+          "path": "data-global/npc/navigator.lua",
+          "receiver_expression": "creature",
+          "registrations": [],
+          "server": "crystalserver",
+          "target": "Storage.Navigator",
+          "to": 4,
+          "value": "4"
+        },
+        {
+          "blob_sha256": "6e47be40083c0ff174c454940382f891f96d7c304c999457e5165ab98d24751a",
+          "call_form": "legacy_procedure",
+          "callback": "onUse",
+          "computed": "timestamp",
+          "from": null,
+          "line": 32,
+          "owner": "action",
+          "path": "data-global/scripts/actions/worldchanges/the_mummys_curse/horestis_jars.lua",
+          "receiver_expression": "cid",
+          "registrations": [
+            "aid(50006, 50007, 50008, 50009, 50010)"
+          ],
+          "server": "crystalserver",
+          "target": "Storage.TheMummysCurse.Time1",
+          "value": "os.time() + exaustedSeconds * 1800"
+        },
+        {
+          "blob_sha256": "6e47be40083c0ff174c454940382f891f96d7c304c999457e5165ab98d24751a",
+          "call_form": "legacy_procedure",
+          "callback": "onUse",
+          "computed": "timestamp",
+          "from": null,
+          "line": 48,
+          "owner": "action",
+          "path": "data-global/scripts/actions/worldchanges/the_mummys_curse/horestis_jars.lua",
+          "receiver_expression": "cid",
+          "registrations": [
+            "aid(50006, 50007, 50008, 50009, 50010)"
+          ],
+          "server": "crystalserver",
+          "target": "Storage.TheMummysCurse.Time2",
+          "value": "os.time() + exaustedSeconds * 1800"
+        },
+        {
+          "blob_sha256": "6e47be40083c0ff174c454940382f891f96d7c304c999457e5165ab98d24751a",
+          "call_form": "legacy_procedure",
+          "callback": "onUse",
+          "computed": "timestamp",
+          "from": null,
+          "line": 67,
+          "owner": "action",
+          "path": "data-global/scripts/actions/worldchanges/the_mummys_curse/horestis_jars.lua",
+          "receiver_expression": "cid",
+          "registrations": [
+            "aid(50006, 50007, 50008, 50009, 50010)"
+          ],
+          "server": "crystalserver",
+          "target": "Storage.TheMummysCurse.Time3",
+          "value": "os.time() + exaustedSeconds * 1800"
+        },
+        {
+          "blob_sha256": "6e47be40083c0ff174c454940382f891f96d7c304c999457e5165ab98d24751a",
+          "call_form": "legacy_procedure",
+          "callback": "onUse",
+          "computed": "timestamp",
+          "from": null,
+          "line": 86,
+          "owner": "action",
+          "path": "data-global/scripts/actions/worldchanges/the_mummys_curse/horestis_jars.lua",
+          "receiver_expression": "cid",
+          "registrations": [
+            "aid(50006, 50007, 50008, 50009, 50010)"
+          ],
+          "server": "crystalserver",
+          "target": "Storage.TheMummysCurse.Time4",
+          "value": "os.time() + exaustedSeconds * 1800"
+        }
+      ],
+      "schema": "OTERYN_LEGACY_PROCEDURAL_STORAGE_OBSERVATIONS/v1",
+      "scope": "Accepted Canary/Crystal source candidates only; no native promotion"
+    }
+  },
+  "independent_repair_review": {
+    "sha256": "459fe24416f24f259d88f5d40780750e2def22cc289781ce4c009fb7a96865ec",
+    "receipt": {
+      "schema": "OTERYN_PROGRESS_SUPPLEMENT_REPAIR_REVIEW/v1",
+      "disposition": "PASS",
+      "resolved_finding": "P2 procedural receiver identity guard/increment",
+      "successor_manifest_sha256": "bf4fb50d81e70fd484ec41a44d0835d9c6eb01a0be9af218c9b51f7e7a54ea2d",
+      "successor_manifest_path": "/tmp/quest-completion-round3/progress-supplement/code-manifest.json",
+      "successor_code_hashes": [
+        {
+          "added_lines": 78,
+          "baseline_sha256": "174d6916651e72427689a284c697c732b762826974b167dc5d273e00473474f9",
+          "bytes": 23557,
+          "maximum_added_removed": 78,
+          "path": "tools/content-schema/quest-authoring/lua_writers.py",
+          "removed_lines": 7,
+          "role": "handwritten_source_or_regression",
+          "sha256": "bc6239ffc21bc4461b23a50aeb1f603fcfc7e48dddb258bf19b37a8b95e38343"
+        },
+        {
+          "added_lines": 4,
+          "baseline_sha256": "dee262645381f6c33e0f2af02949473aec17d3a5482c545746bcd04f32e20885",
+          "bytes": 41409,
+          "maximum_added_removed": 4,
+          "path": "tools/content-schema/quest-authoring/ots_questlog.py",
+          "removed_lines": 4,
+          "role": "handwritten_source_or_regression",
+          "sha256": "fecdb3d7dcec4b3569dd54009e353978374f6fdc84a8d19501adb98c04a56321"
+        },
+        {
+          "added_lines": 949,
+          "baseline_sha256": "1c96bca14ea26da92ee8ffb6945b76d192e4db64d9097164038dcf26255e3a79",
+          "bytes": 128649,
+          "maximum_added_removed": 949,
+          "path": "tools/content-schema/quest-authoring/track_owners.json",
+          "removed_lines": 201,
+          "role": "generated_source_curation",
+          "sha256": "e0d70bb6763f96150fd0018f3733aa7c04c68afc136227ca2a26371d7277efbc"
+        },
+        {
+          "added_lines": 130,
+          "baseline_sha256": null,
+          "bytes": 6291,
+          "maximum_added_removed": 130,
+          "path": "tools/content-schema/quest-authoring/scoped_storage_aliases.py",
+          "removed_lines": 0,
+          "role": "handwritten_source_or_regression",
+          "sha256": "bd4de58f4a60ab14ae57285bde15673baf4626c6da2721311b34bb6228d77e20"
+        },
+        {
+          "added_lines": 206,
+          "baseline_sha256": null,
+          "bytes": 13099,
+          "maximum_added_removed": 206,
+          "path": "tools/content-schema/quest-authoring/test_legacy_procedural_writers.py",
+          "removed_lines": 0,
+          "role": "handwritten_source_or_regression",
+          "sha256": "a03413f34a23494cd6f80fa86c5580af9952a82cf4d481b391d21f4db2abec69"
+        },
+        {
+          "added_lines": 62,
+          "baseline_sha256": null,
+          "bytes": 4656,
+          "maximum_added_removed": 62,
+          "path": "tools/content-schema/quest-authoring/test_scoped_storage_aliases.py",
+          "removed_lines": 0,
+          "role": "handwritten_source_or_regression",
+          "sha256": "d9f3f3763f1f0882a203b7ac56029428b200931309e74a38f3a8347c75f5011b"
+        }
+      ],
+      "affected_test_suite": {
+        "name": "test_legacy_procedural_writers.py",
+        "passed": 23,
+        "failed": 0,
+        "runs": 1
+      },
+      "bounded_repros_and_controls": [
+        {
+          "name": "effectful_receiver_guard",
+          "expectation": "unknown_guard",
+          "result": "PASS",
+          "body": "if getPlayerStorageValue(nextPlayer(),44551)==1 then\nsetPlayerStorageValue(nextPlayer(),44551,2)\nend",
+          "actual": {
+            "line": 3,
+            "target": "44551",
+            "value": "2",
+            "to": 2,
+            "from": null,
+            "owner": "npc",
+            "callback": null,
+            "registrations": [],
+            "dialogue": {
+              "keywords": [],
+              "topics": []
+            },
+            "call_form": "legacy_procedure",
+            "receiver_expression": "nextPlayer()"
+          }
+        },
+        {
+          "name": "effectful_receiver_increment",
+          "expectation": "unknown_increment",
+          "result": "PASS",
+          "body": "setPlayerStorageValue(nextPlayer(),44551,getPlayerStorageValue(nextPlayer(),44551)+1)",
+          "actual": {
+            "line": 2,
+            "target": "44551",
+            "value": "getPlayerStorageValue(nextPlayer(),44551)+1",
+            "computed": "expression",
+            "from": null,
+            "owner": "npc",
+            "callback": null,
+            "registrations": [],
+            "dialogue": {
+              "keywords": [],
+              "topics": []
+            },
+            "call_form": "legacy_procedure",
+            "receiver_expression": "nextPlayer()"
+          }
+        },
+        {
+          "name": "receiver_reassigned_guard",
+          "expectation": "unknown_guard",
+          "result": "PASS",
+          "body": "if getPlayerStorageValue(creature,44551)==1 then\ncreature=other\nsetPlayerStorageValue(creature,44551,2)\nend",
+          "actual": {
+            "line": 4,
+            "target": "44551",
+            "value": "2",
+            "to": 2,
+            "from": null,
+            "owner": "npc",
+            "callback": null,
+            "registrations": [],
+            "dialogue": {
+              "keywords": [],
+              "topics": []
+            },
+            "call_form": "legacy_procedure",
+            "receiver_expression": "creature"
+          }
+        },
+        {
+          "name": "literal_cid_guard_increment",
+          "expectation": "known_increment",
+          "result": "PASS",
+          "body": "if getPlayerStorageValue(700,44551)==1 then\nsetPlayerStorageValue(700,44551,getPlayerStorageValue(700,44551)+1)\nend",
+          "actual": {
+            "line": 3,
+            "target": "44551",
+            "value": "getPlayerStorageValue(700,44551)+1",
+            "increment": 1,
+            "from": {
+              "op": "==",
+              "value": 1,
+              "exact": true
+            },
+            "owner": "npc",
+            "callback": null,
+            "registrations": [],
+            "dialogue": {
+              "keywords": [],
+              "topics": []
+            },
+            "call_form": "legacy_procedure",
+            "receiver_expression": "700"
+          }
+        },
+        {
+          "name": "unproved_parameter_retains_literal_write",
+          "expectation": "unknown_guard",
+          "result": "PASS",
+          "body": "if getPlayerStorageValue(creature,44551)==1 then\nsetPlayerStorageValue(creature,44551,2)\nend",
+          "actual": {
+            "line": 3,
+            "target": "44551",
+            "value": "2",
+            "to": 2,
+            "from": null,
+            "owner": "npc",
+            "callback": null,
+            "registrations": [],
+            "dialogue": {
+              "keywords": [],
+              "topics": []
+            },
+            "call_form": "legacy_procedure",
+            "receiver_expression": "creature"
+          }
+        },
+        {
+          "name": "existing_character_method_control",
+          "expectation": "known_guard",
+          "result": "PASS",
+          "body": "if player:getStorageValue(Storage.Quest.Example.Track)==1 then\nplayer:setStorageValue(Storage.Quest.Example.Track,2)\nend",
+          "actual": {
+            "line": 3,
+            "target": "Storage.Quest.Example.Track",
+            "value": "2",
+            "to": 2,
+            "from": {
+              "op": "==",
+              "value": 1,
+              "exact": true
+            },
+            "owner": "npc",
+            "callback": null,
+            "registrations": [],
+            "dialogue": {
+              "keywords": [],
+              "topics": []
+            }
+          }
+        }
+      ],
+      "previous_evidence_preserved": {
+        "path": "/tmp/quest-completion-round3/review-progress/report.json",
+        "sha256": "ce83b0060d8b40718975e3808fbb5db08d51ffe955eb2e27316643347e8bf857",
+        "tests": 91,
+        "manifest_sha256": "20d890501fdeb82a5a2783868a2887e35cb3e0f1fade604490f7b3c6e46f3b56",
+        "applies_to": "PRE_REPAIR_CODE_ONLY; not a new full-suite run against successor"
+      },
+      "review_scope": "Only previously reported receiver guard/increment defect; no discovery sweep",
+      "limitations": [
+        "Unproved receiver identifiers deliberately retain source occurrences but guard/increment remain UNKNOWN.",
+        "Derived snapshots require root regeneration; this receipt does not validate final generated tree or runtime readiness."
+      ],
+      "tracked_edits": false
+    }
+  }
+}

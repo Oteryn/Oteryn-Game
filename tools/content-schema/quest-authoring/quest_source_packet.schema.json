@@ -1,0 +1,121 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "oteryn:schema/quest-source-migration-packet/v1",
+  "title": "Source Quest migration packet with complete existing quest shapes",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "classification",
+    "record_count",
+    "by_kind",
+    "canonical_admission",
+    "quest_completeness",
+    "source_schema",
+    "source_schema_sha256",
+    "source_refs",
+    "records"
+  ],
+  "properties": {
+    "schema": {"const": "OTERYN_QUEST_SOURCE_MIGRATION_PACKET/v1"},
+    "classification": {"const": "OTS_HYPOTHESIS_ONLY"},
+    "record_count": {"type": "integer", "minimum": 0},
+    "by_kind": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["reward_only", "storyline", "script_only"],
+      "properties": {
+        "reward_only": {"type": "integer", "minimum": 0},
+        "storyline": {"type": "integer", "minimum": 0},
+        "script_only": {"type": "integer", "minimum": 0}
+      }
+    },
+    "canonical_admission": {"const": "NOT_ASSESSED"},
+    "quest_completeness": {"const": "NOT_ASSESSED"},
+    "source_schema": {"const": "tools/content-schema/quest-authoring/quest_content.schema.json"},
+    "source_schema_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "source_refs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["path", "sha256"],
+        "properties": {
+          "path": {"type": "string", "minLength": 1},
+          "sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          }
+        }
+      }
+    },
+    "records": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["source_quest", "reported_source_readiness"],
+        "properties": {
+          "source_quest": {
+            "$ref": "oteryn:schema/quest-content/v1#/$defs/quest"
+          },
+          "reported_source_readiness": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "quest",
+                  "kind",
+                  "features",
+                  "interactions",
+                  "data_gaps"
+                ],
+                "properties": {
+                  "quest": {
+                    "$ref": "oteryn:schema/quest-content/v1#/$defs/identity/properties/key"
+                  },
+                  "kind": {
+                    "$ref": "oteryn:schema/quest-content/v1#/$defs/quest/properties/kind"
+                  },
+                  "features": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  },
+                  "interactions": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "data_gaps": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "interactions_with_gaps",
+                      "unresolved_items"
+                    ],
+                    "properties": {
+                      "interactions_with_gaps": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "unresolved_items": {
+                        "type": "integer",
+                        "minimum": 0
+                      }
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        }
+      }
+    }
+  }
+}

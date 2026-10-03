@@ -6,5 +6,5 @@
   "repository": "Oteryn/Oteryn-Game",
   "population_state": "POPULATED",
   "contract": "docs/architecture/OTERYN_FULL_GAME_CONTENT_AND_RULESET_TREE_V1.md",
-  "notes": "Typed interaction definitions. reward_claims/: 231 plain once RewardClaim records from the chest pilot, built by tools/content-schema/reward-claim-authoring/reward_claim_authoring.py (CHEST-CONTENT part 2b)."
+  "notes": "Typed interaction definitions. reward_claims/: 336 RewardClaim DATA records from the chest pilot, built by tools/content-schema/reward-claim-authoring/reward_claim_authoring.py (CHEST-CONTENT part 2b)."
 }

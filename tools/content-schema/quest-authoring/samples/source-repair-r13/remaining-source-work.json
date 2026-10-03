@@ -1,0 +1,105 @@
+{
+  "classification": "DERIVED_FROM_PINNED_SOURCE_NOT_GAMEPLAY",
+  "inputs": [
+    {
+      "path": "tools/content-schema/quest-authoring/samples/gap-triage/triage.json",
+      "sha256": "6f50d629dd813740500ab409426509ee179cb93f6db38c80a6217d5d72c4b22b"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/samples/source_migration/bundle.json",
+      "sha256": "ae712972ab19e7a84a32469d80f77e861e88938e080e896db16daa8f8b962323"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/samples/readiness/readiness.json",
+      "sha256": "7b4419d13391eaff5112230c2bafa1cd11af231b73fa8f5a9c8685dba960b718"
+    }
+  ],
+  "known_existing_source_association_to_review": "Canary Kilmaresh four_masks is also joined to GraveDanger through a shared version-root mission prefix; unchanged in this packet, independently identified for a separate exact owner correction.",
+  "next_data_packet": "Pemaret MarlinTrophy exact Source exchange; staged separately for R14",
+  "parent_frozen_head": "1caddc0d9e65ff502c8137264391cd43d06911b6",
+  "readiness_counts": {
+    "by_kind": {
+      "reward_only": 105,
+      "script_only": 121,
+      "storyline": 58
+    },
+    "interactions_joined": 1210,
+    "interactions_unlinked": 11,
+    "quests": 284,
+    "quests_needing_feature": {
+      "achievement": 23,
+      "boss_cooldown": 10,
+      "condition": 21,
+      "creature_removal": 17,
+      "door_progress": 55,
+      "experience": 2,
+      "item_consume": 64,
+      "item_hand_out": 50,
+      "kv_state": 8,
+      "mount": 3,
+      "npc_dialogue": 92,
+      "outfit": 4,
+      "quest_state": 114,
+      "reward_claim": 135,
+      "scheduler": 53,
+      "summon": 38,
+      "teleport": 89,
+      "trigger_kill": 50,
+      "trigger_step": 85,
+      "trigger_use": 198,
+      "world_object": 91
+    },
+    "quests_without_data_gaps": 103
+  },
+  "retained_holds": [
+    "NPC dialogue and full callback coverage",
+    "opaque source predicates and script effects",
+    "reward quantity/subtype/delivery semantics without source proof",
+    "canonical runtime binding and gameplay smokes"
+  ],
+  "runtime_enabled": false,
+  "schema": "OTERYN_REMAINING_QUEST_SOURCE_WORK_R13/v1",
+  "server_smokes": "NOT_RUN",
+  "source_counts": {
+    "claims": 336,
+    "gates": 237,
+    "interactions": 1221,
+    "progress": 1491,
+    "progress_source_transitions": 3516,
+    "quests": 284,
+    "quests_with_reported_gaps": 203,
+    "reference_gaps": 0,
+    "source_write_occurrences": 6636,
+    "unassigned_gaps": 896,
+    "wiki_quests": 373
+  },
+  "triage_counts": {
+    "blocked_children": 466,
+    "by_bucket": {
+      "bespoke": 3501,
+      "owner_pending": 467,
+      "shared_mechanism": 145
+    },
+    "interactions_unlinked_to_a_quest": 11,
+    "quests_fully_covered_by_owners_and_mechanisms": 1,
+    "quests_triaged": 284,
+    "quests_with_bespoke_work": 110,
+    "reference_gaps": 0,
+    "total_unresolved_items": 4113,
+    "unresolved_conditions": 1723,
+    "unresolved_lines": 1924
+  },
+  "unlinked_interactions": [
+    "canary:interaction/edron_rope/movements_rope",
+    "canary:interaction/extension_mota/movements_extension_mota",
+    "canary:interaction/marapur/movements_ramp_to_north_temple",
+    "canary:interaction/others/actions_gooey_mass",
+    "canary:interaction/others/actions_hellgate_lever",
+    "canary:interaction/others/actions_orc_edron_lever",
+    "canary:interaction/soulpit/exalted_core",
+    "canary:interaction/soulpit/soul_prism",
+    "canary:interaction/soulpit/soulpit_fight",
+    "crystalserver:interaction/candia_bosses/sugar_daddy_teleports",
+    "crystalserver:interaction/rookgaard_quests/quiver"
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "recorded_at": "2026-10-02T06:51:18.409640+00:00",
+  "scope": "Availability checks only; no new wiki revision body acquisition",
+  "normal_web": {
+    "tibia_fandom": {
+      "status": 402,
+      "url": "https://tibia.fandom.com/api.php?action=query&prop=revisions&revids=1048755&rvprop=ids%7Ctimestamp%7Ccontent&rvslots=main&format=json"
+    },
+    "tibiawiki_br": {
+      "status": 403,
+      "url": "https://www.tibiawiki.com.br/api.php?action=query&prop=revisions&revids=408833&rvprop=ids%7Ctimestamp%7Ccontent&rvslots=main&format=json"
+    }
+  },
+  "remote_desktop_browser": {
+    "device_online": false,
+    "attempted_browser_launch": false,
+    "reason": "Approved public-browser device offline; no computer modifications performed"
+  },
+  "tibiopedia": "HISTORICAL_UNAVAILABLE_NOT_RETRIED",
+  "new_source_bodies_verified": 0
+}
