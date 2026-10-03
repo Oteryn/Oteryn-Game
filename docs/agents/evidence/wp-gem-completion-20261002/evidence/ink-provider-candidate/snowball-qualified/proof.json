@@ -1,0 +1,46 @@
+{
+  "input_repository": "/workspace/Oteryn-WP-Snowball",
+  "frozen_head_readback": "1f2c81cdef96a3fe6d47b1fa8eec2b8817a7134d",
+  "profiles": 443,
+  "source_bindings": 666,
+  "snowball_item_defined": true,
+  "default_staging_equals_frozen_repository_bytes": true,
+  "default_staging_sha256": "a6a139e96b518f2a9e01420af193e04ff6198bcd9fe344dd2248dfb64ea487b9",
+  "prospective_staging_sha256": "aca59d3e525c79792196f77c52940023f732bed0bb4372f5cd472eb185590803",
+  "changed_staging_binding_ids": [
+    51666
+  ],
+  "class_counts_before": {
+    "crossbow": 37,
+    "knight": 158,
+    "standard": 470,
+    "unknown": 1
+  },
+  "class_counts_after": {
+    "crossbow": 37,
+    "knight": 158,
+    "standard": 471
+  },
+  "content_binding_count_before": 665,
+  "content_binding_count_after": 666,
+  "all_665_previous_content_binding_rows_unchanged": true,
+  "new_content_binding": {
+    "item": {
+      "family": "Item",
+      "key": "oteryn:item.tibia.i51666",
+      "revision": "definition-r1"
+    },
+    "profile_binding": {
+      "family": "Proficiency",
+      "key": "oteryn:proficiency.tibia.p371",
+      "revision": "definition-r1"
+    },
+    "threshold_class": "standard"
+  },
+  "other_443_profile_content_shards_index_unchanged": true,
+  "catalogue_validation_errors": [],
+  "baseline_content_bindings_sha256": "ece454f39872fb805a54c8718152a406d537a372b87ecc5a108e13a5fd70fd47",
+  "prospective_content_bindings_sha256": "10c5e10064b608adf7216de68ea968c6e05a269c95b63b6247318330293a4950",
+  "canonical_repository_staging_unchanged_after_run": true,
+  "admission": "PROSPECTIVE_EXPLICIT_PIN_ONLY_CP_PROVIDER_PATH_APPROVAL_PENDING"
+}

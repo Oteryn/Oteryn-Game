@@ -23,8 +23,8 @@ use super::runtime_scope_assignment::NodeIncarnationProof;
 use super::{DurabilityError, DurabilityRoot};
 use crate::domain::bestiary::BestiaryRace;
 use crate::domain::charm::{
-    BestiaryRaceKey, BestiaryStage, CharmCatalogue, CharmCategory, CharmKey, CharmRuleError,
-    CharmSlotEntitlement, CharmStage, derive_balance, plan_assign, plan_unlock,
+    BestiaryRaceKey, BestiaryStage, CharmBalance, CharmCatalogue, CharmCategory, CharmKey,
+    CharmRuleError, CharmSlotEntitlement, CharmStage, derive_balance, plan_assign, plan_unlock,
 };
 use crate::domain::{CharacterId, CharacterRevision};
 use crate::foundation::RuntimeScopeRefV1;
@@ -42,6 +42,8 @@ const KIND_UNLOCK: i16 = 1;
 const KIND_ASSIGN: i16 = 2;
 const CATEGORY_MAJOR: i16 = 1;
 const CATEGORY_MINOR: i16 = 2;
+const MAX_VIEW_RACES: usize = oteryn_protocol_oteryn::bestiary::MAX_BESTIARY_VIEW_ENTRIES;
+const MAX_VIEW_CHARMS: usize = oteryn_protocol_oteryn::charm::MAX_CHARMS;
 
 /// The idempotency identity of one Charm command (UUIDv7), issued once per player command.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -126,6 +128,9 @@ impl BestiaryCharmFacts {
             if map.insert(key.as_str().to_owned(), entry).is_some() {
                 return Err(CharmStateError::InvalidInput);
             }
+            if map.len() > MAX_VIEW_RACES {
+                return Err(CharmStateError::InvalidInput);
+            }
         }
         Ok(Self {
             entries: Arc::new(map),
@@ -171,11 +176,15 @@ impl CharmFacts for BestiaryCharmFacts {
         connection: &mut PgConnection,
         character: CharacterId,
     ) -> std::result::Result<Vec<u32>, DurabilityError> {
+        let keys: Vec<_> = self.entries.keys().cloned().collect();
         let rows = sqlx::query(
-            "SELECT race_key, kill_count FROM game_character_bestiary_progress \
-              WHERE character_id = encode($1,'hex')::uuid ORDER BY race_key",
+            "SELECT wanted.race_key, p.kill_count FROM unnest($2::text[]) wanted(race_key) \
+               JOIN LATERAL (SELECT kill_count FROM game_character_bestiary_progress \
+                  WHERE character_id = encode($1,'hex')::uuid AND race_key = wanted.race_key \
+                  LIMIT 1) p ON true ORDER BY wanted.race_key",
         )
         .bind(character.as_bytes().as_slice())
+        .bind(&keys)
         .fetch_all(&mut *connection)
         .await?;
         let mut points = Vec::new();
@@ -277,6 +286,33 @@ pub struct CharacterCharmState {
     pub assignments: BTreeMap<CharmKey, BestiaryRaceKey>,
 }
 
+/// The admitted content generation's bounded keys and progression catalogue.
+#[allow(
+    dead_code,
+    reason = "standalone durability suites path-load these production types without Charm cases"
+)]
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CharmProgressionReadRequest {
+    pub catalogue_revision: String,
+    pub catalogue: CharmCatalogue,
+    pub races: Vec<BestiaryRaceKey>,
+}
+
+/// Both views' durable inputs, read together under one current gameplay fence and root lock.
+#[allow(
+    dead_code,
+    reason = "standalone durability suites path-load these production types without Charm cases"
+)]
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CharacterCharmProgressionSnapshot {
+    pub character_revision: CharacterRevision,
+    pub state: CharacterCharmState,
+    /// Only races of the admitted generation. Historical counters remain in storage.
+    pub bestiary_counts: BTreeMap<BestiaryRaceKey, u32>,
+    pub balance: CharmBalance,
+    pub slot_entitlement: CharmSlotEntitlement,
+}
+
 #[derive(Debug)]
 pub enum CharmStateError {
     InvalidInput,
@@ -323,6 +359,115 @@ impl std::fmt::Display for CharmStateError {
 impl std::error::Error for CharmStateError {}
 
 impl DurabilityRoot {
+    /// Read Bestiary counters, charms, balances and entitlement at the same CharacterRevision.
+    /// The revision supplied by the caller is expected evidence; all live authority is checked
+    /// by the existing gameplay fence. Current-generation key probes bound historical reads.
+    #[allow(
+        dead_code,
+        reason = "standalone durability suites path-load these production types without Charm cases"
+    )]
+    pub async fn read_character_charm_progression<F: CharmFacts>(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        mut request: CharmProgressionReadRequest,
+        facts: F,
+    ) -> Result<CharacterCharmProgressionSnapshot> {
+        if !valid_revision(&request.catalogue_revision)
+            || request.races.len() > MAX_VIEW_RACES
+            || request
+                .catalogue
+                .definitions()
+                .take(MAX_VIEW_CHARMS + 1)
+                .count()
+                > MAX_VIEW_CHARMS
+        {
+            return Err(CharmStateError::InvalidInput);
+        }
+        request.races.sort_unstable();
+        if request.races.windows(2).any(|keys| keys[0] == keys[1]) {
+            return Err(CharmStateError::InvalidInput);
+        }
+        let recovery = authority
+            .record_for(self)
+            .map_err(|_| CharmStateError::AuthorityRejected)?;
+        let node = node.clone();
+        self.try_issue_semantic_pass()?
+            .run(move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    assert_recovery_fence(&mut tx, &recovery).await?;
+                    lock_admission_relations(&mut tx).await?;
+                    let root = match assert_gameplay_fence(&mut tx, &fence, &node).await? {
+                        Ok(root) => root,
+                        Err(error) => return Ok(Err(fence_error(error))),
+                    };
+                    let row = sqlx::query(
+                        "SELECT character_revision::text, profile_revision, ruleset_revision, \
+                                content_revision FROM game_character_progression_state \
+                          WHERE character_id = encode($1,'hex')::uuid",
+                    )
+                    .bind(fence.character_id.as_bytes().as_slice())
+                    .fetch_optional(&mut *tx)
+                    .await?;
+                    let Some(row) = row else {
+                        return Ok(Err(CharmStateError::MissingProgressionState));
+                    };
+                    if numeric_u64(&row, "character_revision")? != root.revision {
+                        return Err(DurabilityError::InvalidStoredState);
+                    }
+                    if !state_matches_root(&row, &root)
+                        || row.try_get::<String, _>("content_revision")?
+                            != request.catalogue_revision
+                    {
+                        return Ok(Err(CharmStateError::CharmContextMismatch));
+                    }
+                    let state = load_charm_state(&mut tx, fence.character_id).await?;
+                    let keys: Vec<_> = request.races.iter().map(BestiaryRaceKey::as_str).collect();
+                    let rows = sqlx::query(
+                        "SELECT wanted.race_key, p.kill_count \
+                           FROM unnest($2::text[]) wanted(race_key) \
+                           JOIN LATERAL (SELECT kill_count FROM game_character_bestiary_progress \
+                             WHERE character_id = encode($1,'hex')::uuid \
+                               AND race_key = wanted.race_key LIMIT 1) p ON true \
+                          ORDER BY wanted.race_key",
+                    )
+                    .bind(fence.character_id.as_bytes().as_slice())
+                    .bind(&keys)
+                    .fetch_all(&mut *tx)
+                    .await?;
+                    let mut bestiary_counts = BTreeMap::new();
+                    for row in rows {
+                        let key = BestiaryRaceKey::new(row.try_get::<String, _>("race_key")?)
+                            .map_err(|_| DurabilityError::InvalidStoredState)?;
+                        let count = u32::try_from(row.try_get::<i64, _>("kill_count")?)
+                            .map_err(|_| DurabilityError::InvalidStoredState)?;
+                        bestiary_counts.insert(key, count);
+                    }
+                    let points = facts
+                        .completed_entry_charm_points(&mut tx, fence.character_id)
+                        .await?;
+                    let promoted = facts.promoted(&mut tx, fence.character_id).await?;
+                    let slot_entitlement =
+                        facts.slot_entitlement(&mut tx, fence.character_id).await?;
+                    let balance =
+                        derive_balance(&request.catalogue, &state.unlocks, points, promoted)
+                            .map_err(|_| DurabilityError::InvalidStoredState)?;
+                    let result = CharacterCharmProgressionSnapshot {
+                        character_revision: fence.expected_character_revision,
+                        state,
+                        bestiary_counts,
+                        balance,
+                        slot_entitlement,
+                    };
+                    commit_semantic_transaction(tx, deadline).await?;
+                    Ok(Ok(result))
+                })
+            })
+            .await?
+    }
+
     /// Commit one Charm command. Exact occurrence replay returns its retained result without
     /// reacquiring session authority; changed semantic reuse conflicts. A new occurrence is
     /// fenced like an XP award and validated against the stored unlocks and assignments and the
@@ -816,11 +961,15 @@ async fn load_charm_state(
     let mut state = CharacterCharmState::default();
     let unlocks = sqlx::query(
         "SELECT charm_key, unlocked_stage FROM game_character_charm_unlocks \
-          WHERE character_id = encode($1,'hex')::uuid ORDER BY charm_key",
+          WHERE character_id = encode($1,'hex')::uuid ORDER BY charm_key LIMIT $2",
     )
     .bind(character_id.as_bytes().as_slice())
+    .bind(i64::try_from(MAX_VIEW_CHARMS + 1).map_err(|_| DurabilityError::InvalidStoredState)?)
     .fetch_all(&mut **tx)
     .await?;
+    if unlocks.len() > MAX_VIEW_CHARMS {
+        return Err(DurabilityError::InvalidStoredState);
+    }
     for row in unlocks {
         let key = CharmKey::new(row.try_get::<String, _>("charm_key")?)
             .map_err(|_| DurabilityError::InvalidStoredState)?;
@@ -832,11 +981,15 @@ async fn load_charm_state(
     }
     let assignments = sqlx::query(
         "SELECT charm_key, race_key FROM game_character_charm_assignments \
-          WHERE character_id = encode($1,'hex')::uuid ORDER BY charm_key",
+          WHERE character_id = encode($1,'hex')::uuid ORDER BY charm_key LIMIT $2",
     )
     .bind(character_id.as_bytes().as_slice())
+    .bind(i64::try_from(MAX_VIEW_CHARMS + 1).map_err(|_| DurabilityError::InvalidStoredState)?)
     .fetch_all(&mut **tx)
     .await?;
+    if assignments.len() > MAX_VIEW_CHARMS {
+        return Err(DurabilityError::InvalidStoredState);
+    }
     for row in assignments {
         let key = CharmKey::new(row.try_get::<String, _>("charm_key")?)
             .map_err(|_| DurabilityError::InvalidStoredState)?;
@@ -855,6 +1008,27 @@ mod tests {
     use crate::foundation::{
         ChannelId, ConnectionGeneration, GameSessionId, ScopeOwnershipGeneration, WorldId,
     };
+
+    #[test]
+    fn production_bestiary_facts_bound_current_generation_keys() {
+        let entries = |count| {
+            (0..count).map(|i| BestiaryCharmEntry {
+                race: BestiaryRace::new(
+                    format!("oteryn:creature.race{i}"),
+                    "definition-r1",
+                    vec![1, 2, 3],
+                )
+                .expect("bounded race"),
+                charm_points: 1,
+            })
+        };
+        let maximal = BestiaryCharmFacts::new(entries(MAX_VIEW_RACES)).expect("maximum");
+        assert_eq!(maximal.entries.len(), MAX_VIEW_RACES);
+        assert!(matches!(
+            BestiaryCharmFacts::new(entries(MAX_VIEW_RACES + 1)),
+            Err(CharmStateError::InvalidInput)
+        ));
+    }
 
     fn id(seed: u8) -> [u8; 16] {
         [

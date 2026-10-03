@@ -158,6 +158,7 @@ words, the effects, the numbers, the cooldowns and the refusal messages?
 |---|---|---|
 | Successful cast | `spell_words`; the Ability's `cast_cue` sound; then the rows below for its effects | SPELL-PRESENT-1, COMBAT-PRESENT-1 |
 | Projectile | `missile` from the caster to the target tile, for an Effect with `projectile_asset_binding` | COMBAT-PRESENT-1 |
+| Weapon projectile (pending on acceptance of RANGED-0, §7) | `missile` from the shooter to the landing tile with the shot item's or wand's `missile` key, at the swing's PRIMARY COMMIT, hit or miss | COMBAT-PRESENT-1 |
 | Impact and area | `magic_effect` with `impact_asset_binding` on every tile of the resolved area that the area reaches (walls excluded), and the `impact_cue` sound once at the target tile | COMBAT-PRESENT-1 |
 | Chain and windup | `missile` between chain hops with `path_asset_binding`; the windup effect on the caster | COMBAT-PRESENT-1 |
 | Committed damage | the hit effect of the damage type at the target and a `value_text` (primary and a secondary for an elemental split) | COMBAT-PRESENT-1 |

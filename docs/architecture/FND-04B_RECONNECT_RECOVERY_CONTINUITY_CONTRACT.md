@@ -277,6 +277,12 @@ fences predecessor transport authority
 
 Success is externally visible only after commit.
 
+**Amendment (pending on acceptance of ADMIT-0; `reviews/OTERYN_GAME_ADMIT0_WORLD_REQUIRED_CAPABILITIES_DECISION_2026-10-01.md` §4).** After the reconnect proof is authenticated and the
+session resolved, PREPARE eligibility (§12) and item 10 above also require the candidate's resume
+capability evidence to contain the current scope generation's effective required set; otherwise
+`RECONNECT_CAPABILITY_REQUIRED` and current authority is preserved. Every capability of the set is
+selected.
+
 ## 14. Failed/stale COMMIT
 
 Failed candidate never advances generation, revives predecessor, activates candidate proof, invalidates a current proof merely due to failure, consumes RecoveryGrantNonce as success, manufactures protection or rolls authority back to PREPARE-time state.
@@ -335,6 +341,22 @@ world_policy_revision
 ```
 
 No opaque `compatibility_revision` exists. FND-02 `schema_revision` remains diagnostic/build evidence.
+
+**Amendment (pending on acceptance of ADMIT-0; `reviews/OTERYN_GAME_ADMIT0_WORLD_REQUIRED_CAPABILITIES_DECISION_2026-10-01.md` §4).** After the recovery credential is authenticated,
+ownership and world are classified safe and §19 dispatch has chosen the path, immediately before that
+path's commit revalidation, same-session and post-grace recovery also require
+the resume capability evidence to contain the current scope generation's effective required set;
+otherwise `RECOVERY_CAPABILITY_REQUIRED` with no authority mutation. A post-grace recovery that creates
+a GameSession selects every capability of the set. When a resumed selection differs from the
+predecessor's, reconciliation uses a replacement snapshot (FND-02 §16), never replay.
+Every transfer into a channel scope (§23 handoffs, migrations, Channel to Channel) checks the
+destination's effective required set and fixes the selection before its commit. It is refused,
+whatever its source or selection, until this contract or the transfer's own contract satisfies
+ADMIT-0 §3.2's closed lifting conditions under independent protocol and security review: (a) a
+post-commit acknowledgement naming the scope (WorldId, ChannelId) with the selection; (b) a resume
+or reconnect after a lost acknowledgement that names the current authoritative scope or replays the
+durable acknowledgement first; (c) no snapshot or gated message before (a) or (b). No current
+message satisfies them.
 
 Platform-security and recovery key/profile trust evidence preserve FND-04A semantics:
 
@@ -478,6 +500,8 @@ FND-04C integrates the complete catalogue. B freezes its transition semantics.
 | `RECOVERY_GRANT_SECURITY_EVIDENCE_STALE` | `DEPENDENCY_UNAVAILABLE` | bounded `RETRYABLE` while grant/target valid | fresh authenticated non-rollback evidence | no nonce/authority mutation | `TEMPORARILY_UNAVAILABLE` | `recovery security evidence unavailable, stale or superseded` |
 | `RECOVERY_HEALTHY_CONTROLLER_PRESENT` | `CONFLICT` | `TERMINAL` | incumbent remains authority | none | `CHARACTER_ALREADY_ACTIVE` | `recovery blocked by current playable controller` |
 | `RECOVERY_TARGET_NOT_ELIGIBLE` | `SESSION_REJECTED` | `TERMINAL` | resolve current actor/session flow | none | `SESSION_UNAVAILABLE` | `recovery target is not eligible` |
+| `RECONNECT_CAPABILITY_REQUIRED` (ADMIT-0, pending on acceptance) | `UNSUPPORTED_REVISION` | `TERMINAL` for candidate | a client build supporting the channel's required capabilities, through recovery | current authority preserved | `CLIENT_UPDATE_REQUIRED` | `reconnect lacks a gameplay capability the channel requires` |
+| `RECOVERY_CAPABILITY_REQUIRED` (ADMIT-0, pending on acceptance) | `UNSUPPORTED_REVISION` | `TERMINAL` | a client build supporting the channel's required capabilities; a new recovery grant | none | `CLIENT_UPDATE_REQUIRED` | `recovery requires a gameplay capability the client lacks` |
 
 Recovery-profile malformed/binding/time/replay/security/world outcomes remain normative in the companion profile and are integrated by C.
 
@@ -519,7 +543,8 @@ Future implementation acceptance MUST independently prove at least:
 - older allow/trust cannot roll back newer deny/revoke while still <5s;
 - cache refresh cannot re-age;
 - restart without anti-rollback floor cannot authorize;
-- key/profile revoke or Platform security change after PREPARE before COMMIT -> fail before nonce/authority mutation.
+- key/profile revoke or Platform security change after PREPARE before COMMIT -> fail before nonce/authority mutation;
+- (ADMIT-0, pending on acceptance) reconnect and recovery with resume evidence lacking a required capability -> their capability codes, only after proof or credential authentication; the ids never appear before it.
 
 ### Ownership/actor/failover
 

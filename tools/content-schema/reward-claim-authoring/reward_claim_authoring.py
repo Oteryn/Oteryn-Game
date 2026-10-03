@@ -122,10 +122,152 @@ def stack_problem(definition: dict | None, count: int) -> str | None:
         return "waiting"
     if definition["stack_class"] == "NonStackable" and count != 1:
         return "NonStackable reward with count > 1"
+    if definition["stack_class"] == "StackCapable":
+        # D82 admits 100 when no smaller maximum is proven. Keep portable
+        # ReferenceItemField encoding in sync with validate_reward_claim_count.
+        semantics = definition.get("semantics", {})
+        unsupported = "StackCapable Item has unsupported stack maximum fields"
+        if not isinstance(semantics, dict):
+            return unsupported
+        stack = semantics.get("stack", {"state": "UNKNOWN"})
+
+        def valid_field(field):
+            return isinstance(field, dict) and (
+                field.get("state") == "UNKNOWN" and set(field) == {"state"}
+                or field.get("state") == "KNOWN" and set(field) == {"state", "value"}
+            )
+
+        if not valid_field(stack):
+            return unsupported
+        maximum = {"state": "UNKNOWN"}
+        if stack["state"] == "KNOWN":
+            if not isinstance(stack["value"], dict) or set(stack["value"]) != {"stackable", "stack_max"}:
+                return unsupported
+            stackable = stack["value"]["stackable"]
+            if not valid_field(stackable):
+                return unsupported
+            if stackable["state"] == "KNOWN" and (type(stackable["value"]) is not bool or not stackable["value"]):
+                return unsupported
+            maximum = stack["value"]["stack_max"]
+        if not valid_field(maximum):
+            return unsupported
+        limit = maximum["value"] if maximum["state"] == "KNOWN" else 100
+        if type(limit) is not int or not 1 <= limit <= 100:
+            return "StackCapable Item has unsupported stack maximum"
+        if count > limit:
+            return f"StackCapable reward with count > stack maximum ({limit})"
     return None
 
 
-def build_records(claims: list, manifest: dict, items: dict) -> tuple[list, list]:
+def source_subtype_problem(definition: dict | None) -> str | None:
+    """A source non-stackable charge subtype cannot be lowered to quantity-only MINT.
+
+    This is a claim admission hold, independent of Item materializability. The
+    two-argument OTS addItem helper uses its count as per-instance charges,
+    whose native initialization/persistence is not implemented (covered by D277).
+    Stackable runes
+    use quantity instead, so their definition charges do not trigger this hold.
+    """
+    if not definition or definition.get("stack_class") != "NonStackable":
+        return None
+    semantics = definition.get("semantics", {})
+    if not isinstance(semantics, dict):
+        return None
+    charges = semantics.get("charges", {})
+    if not isinstance(charges, dict) or charges.get("state") != "KNOWN":
+        return None
+    value = charges.get("value")
+    if not isinstance(value, dict):
+        return "Source charged reward has unsupported charge fields"
+    count = value.get("count", {})
+    if not isinstance(count, dict):
+        return "Source charged reward has unsupported charge fields"
+    if count.get("state") == "KNOWN":
+        maximum = count.get("value")
+        if type(maximum) is not int or maximum < 0:
+            return "Source charged reward has unsupported charge fields"
+        if maximum > 0:
+            return "NATIVE_INSTANCE_LOWERING_NOT_IMPLEMENTED"
+    return None
+
+
+SOURCE_CHARGE_EVIDENCE_SCHEMA = "OTERYN_REWARD_CLAIM_SOURCE_CHARGE_EVIDENCE/v1"
+CHARGE_RULING = "https://github.com/Oteryn/Oteryn-Game/issues/162#issuecomment-5933264015"
+
+
+def load_source_charge_evidence() -> list:
+    packet = load_json(HERE / "source_charge_evidence.json")
+    ruling = packet["ruling"]
+    if (packet["schema"] != SOURCE_CHARGE_EVIDENCE_SCHEMA or ruling["comment_id"] != 5933264015
+            or ruling["url"] != CHARGE_RULING
+            or sha256(ruling["body"].encode()) != ruling["body_sha256"]):
+        raise ValueError("SOURCE_CHARGE_EVIDENCE_BINDING")
+    return packet["rewards"]
+
+
+def charged_source_reward(definition: dict | None, pilot_key: str, position: dict,
+                          key: str, raw_count: int, evidence: list) -> tuple[int, dict | None]:
+    """D277: one instance uses definition charges, only with exact source evidence.
+
+    A numeric reward argument is preserved as source evidence; it never supplies
+    an Item charges fact. Unsupported or unproved source argument forms stay held.
+    """
+    matches = [row for row in evidence if row["pilot_key"] == pilot_key
+        and row["project_position"] == position and row["item"] == key]
+    if len(matches) > 1:
+        raise ValueError("DUPLICATE_SOURCE_CHARGE_EVIDENCE")
+    problem = source_subtype_problem(definition)
+    if problem is None and not matches:
+        return raw_count, None
+    check = {"source_count_argument": raw_count, "quantity": raw_count,
+             "project_position": dict(position), "ruling": CHARGE_RULING,
+             "classification": "UNKNOWN", "reason": "SOURCE_CHARGE_ARGUMENT_UNKNOWN"}
+    if problem is None:
+        check["reason"] = "ITEM_CHARGE_SEMANTICS_UNKNOWN"
+        return raw_count, check
+    if problem != "NATIVE_INSTANCE_LOWERING_NOT_IMPLEMENTED":
+        check["reason"] = problem
+        return raw_count, check
+    charges = definition["semantics"]["charges"]["value"]["count"]["value"]
+    check["definition_charges"] = charges
+    if not matches or type(raw_count) is not int or matches[0]["source_count_argument"] != raw_count:
+        return raw_count, check
+    proof = matches[0]
+    check["source_argument_kind"] = "CHARGES_SUBTYPE"
+    check["source_default_charges"] = proof["source_default_charges"]
+    # Exact charge-subtype evidence proves one physical instance, including
+    # when the historical source charges disagree with the Item definition.
+    check.update(quantity=1, normalization="ONE_INSTANCE_FROM_DEFINITION_CHARGES")
+    if raw_count != charges or charges != proof["source_default_charges"]:
+        check.update(reason="SOURCE_CHARGE_MISMATCH", classification="CONFLICT")
+        return 1, check
+    check.update(quantity=1, reason="NATIVE_INSTANCE_LOWERING_NOT_IMPLEMENTED",
+                 normalization="ONE_INSTANCE_FROM_DEFINITION_CHARGES")
+    return 1, check
+
+
+def legacy_uid_checks(records: list) -> list[dict]:
+    """A legacy UID is server-scoped; positions disambiguate known collisions."""
+    bindings = {}
+    for row in records:
+        claim = row["definition"]
+        for placement in claim["placements"]:
+            source = placement["source_binding"]
+            position = source["project_position"]
+            where = (claim["identity"]["key"], position["x"], position["y"], position["z"])
+            for ref in source["legacy_unique_ids"]:
+                bindings.setdefault((ref["server"], ref["unique_id"]), set()).add(where)
+    return [
+        {"reason": "duplicate legacy unique id", "server": server, "unique_id": uid,
+         "bindings": [{"claim": claim, "project_position": {"x": x, "y": y, "z": z}}
+                      for claim, x, y, z in sorted(places)]}
+        for (server, uid), places in sorted(bindings.items()) if len(places) > 1
+    ]
+
+
+def build_records(claims: list, manifest: dict, items: dict,
+                  charge_evidence: list | None = None) -> tuple[list, list]:
+    charge_evidence = load_source_charge_evidence() if charge_evidence is None else charge_evidence
     bindings: dict[tuple, list] = {}
     for entry in manifest["entries"]:
         if "destination" not in entry:
@@ -146,7 +288,9 @@ def build_records(claims: list, manifest: dict, items: dict) -> tuple[list, list
             rewards = []
             for reward in placement["reward"]["items"]:
                 key = a12(reward["item"])
-                problem = stack_problem(items.get(key), reward["count"])
+                quantity, charge_check = charged_source_reward(items.get(key),
+                    claim["identity"]["key"], position, key, reward["count"], charge_evidence)
+                problem = charge_check["reason"] if charge_check else stack_problem(items.get(key), quantity)
                 if problem and problem != "waiting":
                     source_checks.append(
                         {
@@ -154,10 +298,11 @@ def build_records(claims: list, manifest: dict, items: dict) -> tuple[list, list
                             "item": key,
                             "count": reward["count"],
                             "reason": problem,
+                            **(charge_check or {}),
                         }
                     )
                 ready &= problem is None
-                rewards.append({"count": reward["count"], "item": item_ref(key)})
+                rewards.append({"count": quantity, "item": item_ref(key)})
             placements.append(
                 {
                     "appearance_tibia_id": tibia_id(placement["appearance"]),
@@ -187,6 +332,7 @@ def build_records(claims: list, manifest: dict, items: dict) -> tuple[list, list
         if claim.get("quest"):
             record["quest"] = claim["quest"]
         records.append({"definition": record})
+    source_checks.extend(legacy_uid_checks(records))
     return records, source_checks
 
 
@@ -238,7 +384,7 @@ def directory_index(current: dict, count: int) -> dict:
     updated = dict(current)
     updated["population_state"] = "POPULATED"
     updated["notes"] = (
-        f"Typed interaction definitions. reward_claims/: {count} plain once RewardClaim records "
+        f"Typed interaction definitions. reward_claims/: {count} RewardClaim DATA records "
         "from the chest pilot, built by tools/content-schema/reward-claim-authoring/"
         "reward_claim_authoring.py (CHEST-CONTENT part 2b)."
     )
@@ -263,9 +409,19 @@ def registered(
     return project, manifest, lock
 
 
-def validate(records: list, items: dict) -> list[str]:
-    """Rules on the generated records; each error names the claim."""
+def validate(records: list, items: dict, source_checks: list | None = None,
+             source_claims: list | None = None, charge_evidence: list | None = None) -> list[str]:
+    """Rules on records; each error names the claim.
+
+    source_claims=None checks fixture record/evidence consistency only. Build and
+    committed validation supply the actual source list: a missing binding in an
+    explicit list is an error and never falls back to evidence raw arguments.
+    """
     errors = []
+    expected_charge_checks = []
+    charge_evidence = load_source_charge_evidence() if charge_evidence is None else charge_evidence
+    originals = {(c["identity"]["key"], tuple(p["position"][k] for k in ("x", "y", "z")), a12(r["item"])): r["count"]
+        for c in (source_claims or []) for p in c["placements"] for r in p.get("reward", {}).get("items", [])}
     keys, bindings = set(), set()
     for row in records:
         record = row["definition"]
@@ -311,10 +467,26 @@ def validate(records: list, items: dict) -> list[str]:
             for reward in rewards:
                 if reward["count"] < 1:
                     errors.append(f"{key}: reward count must be positive")
-                ready &= (
-                    stack_problem(items.get(reward["item"]["key"]), reward["count"])
-                    is None
-                )
+                item_key = reward["item"]["key"]
+                pilot_key = record["provenance"]["pilot_key"]
+                position = binding["project_position"]
+                proofs = [p for p in charge_evidence if p["pilot_key"] == pilot_key
+                    and p["project_position"] == position and p["item"] == item_key]
+                original_binding = (pilot_key, tuple(position[k] for k in ("x", "y", "z")), item_key)
+                if source_claims is not None and original_binding not in originals:
+                    errors.append(f"{key}: original source reward binding is missing")
+                    ready = False
+                    continue
+                raw_count = (originals[original_binding] if source_claims is not None else
+                    proofs[0]["source_count_argument"] if proofs else reward["count"])
+                quantity, charge_check = charged_source_reward(items.get(item_key), pilot_key,
+                    position, item_key, raw_count, charge_evidence)
+                if charge_check:
+                    expected_charge_checks.append({"claim": key, "item": item_key,
+                        "count": raw_count, **charge_check})
+                    if quantity != reward["count"]:
+                        errors.append(f"{key}: charged reward quantity disagrees with proved source normalization")
+                ready &= charge_check is None and stack_problem(items.get(item_key), reward["count"]) is None
         # Only a false `ready` is unsafe. A stale `waiting_item_semantics` (ITEM-SEM has since
         # covered the Items) stays valid until the next rebuild, so other lanes' content/items
         # changes never break this family.
@@ -322,6 +494,17 @@ def validate(records: list, items: dict) -> list[str]:
             errors.append(f"{key}: marked ready but an Item cannot be minted as given")
         elif record["readiness"] not in ("ready", "waiting_item_semantics"):
             errors.append(f"{key}: unknown readiness {record['readiness']}")
+    recorded_charges = [c for c in (source_checks or []) if "source_count_argument" in c]
+    if sorted(map(compact, recorded_charges)) != sorted(map(compact, expected_charge_checks)):
+        errors.append("charged source diagnostics are missing or stale in source_checks")
+    collisions = legacy_uid_checks(records)
+    if source_checks is None:
+        for collision in collisions:
+            errors.append(f"duplicate legacy unique id {collision['server']}:{collision['unique_id']}")
+    else:
+        recorded = [check for check in source_checks if check.get("reason") == "duplicate legacy unique id"]
+        if recorded != collisions:
+            errors.append("legacy unique id collisions are missing or stale in source_checks")
     return errors
 
 
@@ -331,7 +514,15 @@ def committed_errors() -> list[str]:
     records = [
         row for shard in index["shards"] for row in load_json(ROOT / shard)["records"]
     ]
-    errors = validate(records, load_items())
+    source_claims = load_json(ROOT / CLAIMS_REL)["claims"]
+    from reward_claim_variant_authoring import PROFILE, validate as validate_variants, stack_normalization_checks
+    plain = [r for r in records if r['definition'].get('definition_profile') != PROFILE]
+    variants = [r for r in records if r['definition'].get('definition_profile') == PROFILE]
+    items = load_items()
+    errors = validate(plain, items, index["source_checks"], source_claims)
+    errors += validate_variants(variants, ROOT, items, stack_problem)
+    if index.get('variant_source_checks') != legacy_uid_checks(records) + stack_normalization_checks():
+        errors.append('variant legacy UID diagnostics are missing or stale')
     if len(records) != index["record_count"]:
         errors.append(
             f"index record_count {index['record_count']} != {len(records)} records"
@@ -347,10 +538,17 @@ def generate() -> dict[str, str]:
     records, source_checks = build_records(
         claims, load_json(ROOT / MANIFEST_REL), items
     )
-    errors = validate(records, items)
+    errors = validate(records, items, source_checks, claims)
     if errors:
         raise ValueError("\n".join(errors))
     outputs = content_files(claims_bytes, records, source_checks)
+    from reward_claim_variant_authoring import derive, extend_outputs, stack_normalization_checks
+    variants = derive(ROOT, items, stack_problem)
+    extend_outputs(ROOT, outputs, variants, compact, CONTENT_DIR)
+    records += variants
+    family_index = json.loads(outputs[INDEX_PATH])
+    family_index['variant_source_checks'] = legacy_uid_checks(records) + stack_normalization_checks()
+    outputs[INDEX_PATH] = compact(family_index)
     names = ("project", "manifest", "content.lock")
     docs = [load_json(ROOT / f"content/{name}.json") for name in names]
     for name, doc in zip(

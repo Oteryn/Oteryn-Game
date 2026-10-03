@@ -1,0 +1,36 @@
+name: Quest Container Source
+
+on:
+  pull_request:
+    paths:
+      - 'tools/content-schema/reward-claim-authoring/container_source*'
+      - 'tools/content-schema/reward-claim-authoring/test_container_source.py'
+      - 'tools/content-schema/reward-claim-authoring/samples/container-source/**'
+      - '.github/workflows/quest-container-source.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  source-containers:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: '3.12'
+      - run: python -m pip install jsonschema==4.25.1
+      - name: Source selection, schema, regeneration and regressions
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        working-directory: tools/content-schema/reward-claim-authoring
+        run: |
+          python -m unittest test_container_source -v
+          python container_source.py --check --verify-upstream
+      - name: Verify clean checkout
+        run: test -z "$(git status --short --untracked-files=all)"

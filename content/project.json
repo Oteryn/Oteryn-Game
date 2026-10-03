@@ -19,10 +19,10 @@
     "Charm",
     "Proficiency",
     "RewardClaim",
-    "StarterKit"
+    "StarterKit",
+    "Quest"
   ],
   "next_population_families": [
-    "Quest",
     "Achievement",
     "Outfit",
     "Area",

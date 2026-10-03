@@ -137,6 +137,11 @@ system messages reach a player?
 
 MAIL-0 is the named owner of durable writable text for the letter and label definitions only.
 Other writable items (books, blackboards) keep GAME-INTERACTION §19.4's blocker.
+**Amendment (pending on acceptance of WRITE-0; `reviews/OTERYN_GAME_WRITE0_BOOKS_SCROLLS_AND_BLACKBOARDS_DECISION_2026-10-01.md` §4-§6).** This store
+and write transaction serve every writable ItemInstance, on every reachable location with that
+location's fence; `text_revision` comes from a separate never-deleted revision row, so a deleted
+text never lets a revision be reused; writable map objects keep volatile per-channel text; reports and moderation
+clears are WRITE-0 §6.
 
 - **Store.** `game_item_texts`: `item_instance_id` (PK, FK to item instances with RESTRICT), text,
   `writer_character_id` (NULL for a system letter), `written_at`, `text_revision`. The text belongs
@@ -287,6 +292,9 @@ Other writable items (books, blackboards) keep GAME-INTERACTION §19.4's blocker
   a container view.
 - **Command `ITEM_TEXT_WRITE {handle, text}`**: results `OK`, `NOT_WRITABLE`, `TOO_LONG`,
   `EXHAUSTED`, plus the common results.
+  **Amendment (pending on acceptance of WRITE-0; `reviews/OTERYN_GAME_WRITE0_BOOKS_SCROLLS_AND_BLACKBOARDS_DECISION_2026-10-01.md` §7).** The view and
+  the command move to capability `ITEM_TEXT_V1`, which `MAIL_V1` requires; they serve every
+  readable or writable item or map object, with the added result `NOT_REACHABLE`.
 - **Mail notice.** CHAT-2's relay gains one payload kind: a mail notice keyed by the recipient
   CharacterId, with no text. The node holding the recipient's session shows "New mail has
   arrived." when the character stands next to a depot locker (Canary parity).

@@ -956,6 +956,40 @@
     },
     {
       "identity": {
+        "key": "canary:quest/desert_dungeon_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "display_name": "The Desert Dungeon Quest",
+      "kind": "reward_only",
+      "shown_in_quest_log": true,
+      "wiki": {
+        "title": "The Desert Dungeon Quest",
+        "pageid": 2496,
+        "revid": 1103387
+      },
+      "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/kv/desert1",
+          "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/kv/desert2",
+          "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+        }
+      ],
+      "requirements_from_wiki": {
+        "premium": "no",
+        "lvl": "20"
+      },
+      "requirements": {
+        "premium": false,
+        "min_level": 20
+      }
+    },
+    {
+      "identity": {
         "key": "canary:quest/devil_helmet_quest",
         "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
@@ -3535,40 +3569,6 @@
       "requirements": {
         "premium": true,
         "min_level": 0
-      }
-    },
-    {
-      "identity": {
-        "key": "canary:quest/the_desert_dungeon_quest",
-        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
-      },
-      "display_name": "The Desert Dungeon Quest",
-      "kind": "reward_only",
-      "shown_in_quest_log": true,
-      "wiki": {
-        "title": "The Desert Dungeon Quest",
-        "pageid": 2496,
-        "revid": 1103387
-      },
-      "claims": [
-        {
-          "family": "RewardClaim",
-          "key": "canary:reward-claim/kv/desert1",
-          "revision": "canary-04b83b51+crystalserver-9f5a72c6"
-        },
-        {
-          "family": "RewardClaim",
-          "key": "canary:reward-claim/kv/desert2",
-          "revision": "canary-04b83b51+crystalserver-9f5a72c6"
-        }
-      ],
-      "requirements_from_wiki": {
-        "premium": "no",
-        "lvl": "20"
-      },
-      "requirements": {
-        "premium": false,
-        "min_level": 20
       }
     },
     {

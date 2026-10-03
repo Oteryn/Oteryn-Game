@@ -162,6 +162,12 @@ shapes are new?
 - Pending service invocations per conversation: 1. A second command while one is pending is
   refused.
 - Retained conversation state: none after close.
+- **Amendment (pending on acceptance of NPC-BEHAVIOUR-0; `reviews/OTERYN_GAME_NPC_BEHAVIOUR0_NPC_PRESENCE_WALKING_VOICES_AND_FOCUS_DECISION_2026-10-01.md` §7).** GAME-NPC-SERVICE keeps a customer queue per NPC
+  (at most `NPC0-RL-05`); on every committed move or relocation of a customer or the NPC, a customer
+  beyond the talk range `NPC0-RL-07` (4 tiles, Chebyshev, same floor) has its conversation closed;
+  the closing snapshot of domain 7 carries the walk-away line (or the generated farewell) once, then
+  the conversation is empty; a pending service invocation still resolves by replay. CHAT-0's
+  `CHAT0-RL-08` reads `NPC0-RL-07`.
 
 ## 5. Trade (NPC-TRADE-1)
 
@@ -273,6 +279,16 @@ refuses travel; the logout block alone no longer does. A travel hold stops walki
 outcome; the move follows the known commit, fenced on the scope ownership generation, and a
 fenced follow-up transaction keyed by the occurrence consumes the pending arrival. A death cancels
 the pending travel invocation, so a late commit never moves a dead actor. Travel never changes channel. The §6.1 fallback stays (no stacking); summons are removed.
+
+### 6.2 Repair
+
+**Amendment (pending on acceptance of TIMED-ITEM-0; `reviews/OTERYN_GAME_TIMED_ITEM0_CHARGES_DURATION_AND_REPAIR_DECISION_2026-10-01.md` §7).** A repair offer `{npc, keyword "repair", from_item, to_item,
+price}` is confirmed like travel and runs as an item-only transaction with
+`FeeBurnCause::NpcRepair` and one item transform. v1 content: worn soft boots to soft boots for
+10,000 gold (owner answer 1a); any other repair offer needs an owner answer (D178). The repaired item
+is a direct entry of the main backpack. Content validation refuses a BUY or SELL offer of an
+admitted timed definition whose `count` differs from the definition's charges, since a timed item
+without a row has full charges (TIMED-ITEM-0 §4).
 
 ## 7. Price evidence (boundary §15 and §19)
 

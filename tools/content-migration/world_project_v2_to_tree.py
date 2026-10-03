@@ -29,6 +29,7 @@ PROFICIENCY_BINDINGS = "content/proficiencies/bindings.json"
 REWARD_CLAIM_INDEX = "content/interactions/reward_claims/index.json"
 # StarterKit likewise (tools/content-schema/starter-kit-authoring, `starter_kit_authoring.py content`).
 STARTER_KIT_INDEX = "content/starter/index.json"
+QUEST_INDEX = "content/quests/definitions/index.json"
 # A12 (ITEM-ID-1): the staged packet is history naming retired Item keys; its targets are emitted
 # through the append-only alias table (content/items/aliases.json).
 ITEM_ALIASES = ROOT / "content" / "items" / "aliases.json"
@@ -69,6 +70,36 @@ def write_registry(relative: str, value: Any) -> None:
     # One key per line, so PRs that register different families merge without a textual conflict.
     text = json.dumps(value, ensure_ascii=False, sort_keys=True, indent=2) + "\n"
     (ROOT / relative).write_text(text, encoding="utf-8", newline="\n")
+
+def retained_quest_registration(root: Path) -> tuple[dict[str, Any], list[str]]:
+    """Retain the separately authored Quest family; never synthesize its records."""
+    manifest = load(root / "content/manifest.json")
+    if "Quest" not in manifest["families"]:
+        return {}, []
+    registration = manifest["families"]["Quest"]
+    if registration.get("index") != QUEST_INDEX:
+        raise RuntimeError("QUEST_INDEX_PATH")
+    index = load(root / QUEST_INDEX)
+    if index.get("schema") != "OTERYN_FAMILY_INDEX/v1" or index.get("family") != "Quest":
+        raise RuntimeError("QUEST_INDEX_MISSING")
+    count = index.get("record_count")
+    if type(count) is not int or count < 0 or registration.get("records") != count:
+        raise RuntimeError("QUEST_REGISTRATION_COUNT")
+    shards = index.get("shards")
+    if not isinstance(shards, list) or len(shards) != len(set(shards)):
+        raise RuntimeError("QUEST_SHARDS")
+    actual = 0
+    for relative in shards:
+        if not isinstance(relative, str) or not re.fullmatch(r"content/quests/definitions/quests-[0-9]{5}-[0-9]{5}\.json", relative):
+            raise RuntimeError("QUEST_SHARD_PATH")
+        shard = load(root / relative)
+        if shard.get("family") != "Quest" or shard.get("shard", {}).get("count") != len(shard.get("records", [])):
+            raise RuntimeError("QUEST_SHARD_COUNT")
+        actual += len(shard["records"])
+    if actual != count:
+        raise RuntimeError("QUEST_RECORD_COUNT")
+    return {"Quest": {"records": count, "index": QUEST_INDEX}}, [QUEST_INDEX, *shards]
+
 
 def target_id(target: dict[str, Any]) -> tuple[str, str, str]:
     return (target["family"], target["key"], target["revision"])
@@ -119,6 +150,9 @@ def main() -> int:
         rows.sort(key=canonical_bytes)
 
     item_records = [row for row in reference["records"] if row["identity"]["family"] == "Item"]
+    # Accepted reward Item facts are tree-first; retain them across legacy regeneration.
+    from quest_reward_item_semantics import apply_admissions
+    apply_admissions(item_records, ROOT)
     item_shards: list[str] = []
     for start in range(0, len(item_records), ITEM_SHARD_SIZE):
         rows = []
@@ -483,6 +517,7 @@ def main() -> int:
     if starter_kit_index.get("schema") != "OTERYN_FAMILY_INDEX/v1" or starter_kit_index.get("family") != "StarterKit":
         raise RuntimeError("STARTER_KIT_INDEX_MISSING")
     starter_kit_count = starter_kit_index["record_count"]
+    quest_families, quest_managed = retained_quest_registration(ROOT)
     creature_managed = [path for shards in creature_shards.values() for path in shards]
     creature_managed += [f"{node}index.json" for node, _ in CREATURE_FAMILIES.values()]
     service_managed = [path for shards in service_shards.values() for path in shards]
@@ -494,7 +529,7 @@ def main() -> int:
                       *service_managed, CHARM_INDEX, *charm_index["shards"],
                       PROFICIENCY_INDEX, *proficiency_index["shards"], PROFICIENCY_BINDINGS,
                       REWARD_CLAIM_INDEX, *reward_claim_index["shards"],
-                      STARTER_KIT_INDEX, *starter_kit_index["shards"], *outputs.keys()])
+                      STARTER_KIT_INDEX, *starter_kit_index["shards"], *quest_managed, *outputs.keys()])
     # A family that grows renames its last shard; drop the superseded shard files so every shard is managed.
     shard_name = re.compile(r"-\d{5}-\d{5}\.json$")
     managed_set = set(managed)
@@ -515,6 +550,7 @@ def main() -> int:
             "Proficiency": {"records": proficiency_count, "index": PROFICIENCY_INDEX},
             "RewardClaim": {"records": reward_claim_count, "index": REWARD_CLAIM_INDEX},
             "StarterKit": {"records": starter_kit_count, "index": STARTER_KIT_INDEX},
+            **quest_families,
             **{family: {"records": creature_counts[family], "index": f"{node}index.json"}
                for family, (node, _) in CREATURE_FAMILIES.items()},
             "NPC": {"records": len(npc_rows), "index": "content/npcs/definitions/index.json"},
@@ -539,7 +575,8 @@ def main() -> int:
         "family_counts": {"Item": len(item_records), "Mount": len(mount_rows), **creature_counts,
                            "NPC": len(npc_rows), "Encounter": len(encounter_rows), "Dialogue": len(dialogue_rows),
                            **service_counts, "Charm": charm_count, "Proficiency": proficiency_count,
-                           "RewardClaim": reward_claim_count, "StarterKit": starter_kit_count},
+                           "RewardClaim": reward_claim_count, "StarterKit": starter_kit_count,
+                           **{family: value["records"] for family, value in quest_families.items()}},
         "item_authoring_counts": {"authoring": len(authoring_by_target), "taxonomy": len(taxonomy_rows), "relation_sources": len(relation_rows)},
         "source_binding_counts": {"Item": len(item_bindings), "Mount": len(mount_bindings), "Creature": len(creature_bindings),
                                    "NPC": len(npc_bindings), "Encounter": len(encounter_bindings)},
@@ -555,12 +592,12 @@ def main() -> int:
         "manifest": "content/manifest.json",
         "content_lock": "content/content.lock.json",
         "migrated_families": ["Item", "Mount", *CREATURE_FAMILIES, "NPC", "Encounter", "Dialogue", "Service", "Charm",
-                             "Proficiency", "RewardClaim", "StarterKit"],
+                             "Proficiency", "RewardClaim", "StarterKit", *quest_families],
         "legacy_compatibility_root": "content/world",
         "runtime_source": "legacy_until_separately_qualified",
-        "next_population_families": [
-            "Quest", "Achievement", "Outfit", "Area", "House", "WorldObject",
-        ],
+        "next_population_families": [family for family in
+            ["Quest", "Achievement", "Outfit", "Area", "House", "WorldObject"]
+            if family not in quest_families],
     })
     print(f"PASS items={len(item_records)} creatures={creature_counts['Creature']} creature_records={sum(creature_counts.values())} creature_profiles={len(profiles)} item_shards={len(item_shards)} mounts={len(mount_rows)} authoring={len(authoring_by_target)} taxonomy={len(taxonomy_rows)} relation_sources={len(relation_rows)} relations={sum(len(row['relations']) for row in relation_rows)} npcs={len(npc_rows)} encounters={len(encounter_rows)} npc_bindings={len(npc_bindings)} dialogues={len(dialogue_rows)} service_trade={service_counts['Service.Trade']} service_travel={service_counts['Service.Travel']}")
     return 0

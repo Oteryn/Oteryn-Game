@@ -1104,6 +1104,18 @@ async fn boot_and_serve(
     // the Channel runtime; a book that does not load refuses readiness.
     let spells = crate::spell::cast::v1_spell_book()
         .map_err(|_| BootError::ContentActivation("spell book"))?;
+    // Data-only Charm import: retain the complete typed catalogue for this serve lifetime.
+    // A malformed source refuses readiness; importing it does not qualify a generation,
+    // advertise Charm commands or activate effects whose gameplay consumers are unfinished.
+    let imported_charms = crate::content::charm_source::CanonicalCharmCatalogue::embedded()
+        .map_err(|_| BootError::ContentActivation("charm source catalogue"))?;
+    let (charm_index, charm_shard) = imported_charms.source_bytes();
+    event(&format!(
+        "event=charm_catalogue state=imported definitions={} source_bytes={} source_sha256={}",
+        imported_charms.catalogue().definitions().count(),
+        charm_index.len() + charm_shard.len(),
+        hex(&imported_charms.source_digest()),
+    ));
     // ACHIEVEMENT: the Achievement catalogue loads with the Content activation as well; a
     // malformed catalogue, or activated Content whose RewardClaim names an achievement the
     // catalogue lacks (contract §3.3), refuses readiness. The gameplay seam takes it for the
@@ -1254,6 +1266,7 @@ async fn boot_and_serve(
         chest: &chest,
         spells: &spells,
         achievements: &achievements,
+        imported_charms: &imported_charms,
     };
     let loops_stop = CancellationToken::new();
     let mut gameplay = pin!(serve_gameplay(

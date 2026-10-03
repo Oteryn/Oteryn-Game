@@ -688,7 +688,7 @@ fn recycled_actor_and_stale_owner_reject_before_cell_lookup() {
             game_session_id: None,
             committed: true,
             position: Some(fixture.snapshot.version),
-            control_loss: None,
+            lifecycle: Box::default(),
         }
     );
 }
