@@ -7,7 +7,7 @@ date: 2026-10-03
 owner: Sol Supervising Architect
 requested_by: control plane (D358 topic request after FAMILIARS-0-FIX-3)
 writes_on_other_prs: none
-amended_by: ARCH-PACKET-FIX-1 (§2.3 rows, §2.5 RL-04 split, §2.6 rows and the Light owner; #1687 round-3 P1s 4174692081 and 4174692089; #1689 P1s 4174761344 and 4174761349)
+amended_by: ARCH-PACKET-FIX-1 (§2.3 rows, §2.5 RL-04, §2.6 rows and the Light owner; #1687 round-3 P1s 4174692081 and 4174692089; #1689 P1s 4174761344, 4174761349, 4174781962 and 4174781965)
 ```
 
 This bundle splits and packets three requested topics:
@@ -456,7 +456,7 @@ owned_paths:
   - apps/game-server/tests/item_forge_postgres.rs
   - apps/game-server/tests/support/item_forge_postgres_cases.rs
   - apps/game-server/tests/durability_postgres.rs      # shared register (§0)
-  - docs/contracts/RESOURCE_LIMITS_REGISTRY.json       # DUR03-RL-01/-03-FORGE, IMBFORGE0-RL-03/-04-RATE/-04-P99/-07/-11/-12, the forge DUR03-RL-06 rows (DustLimit included); own rows only
+  - docs/contracts/RESOURCE_LIMITS_REGISTRY.json       # DUR03-RL-01/-03-FORGE, IMBFORGE0-RL-03/-04/-07/-11/-12, the forge DUR03-RL-06 rows (DustLimit included); own rows only
   - docs/architecture/DUR-03_ITEM_TRANSACTION_AND_ANTI_DUPLICATION_CONTRACT.md  # §15 ForgeCause, §39.3 forge shapes; own paragraphs only
   - docs/agents/tasks/active/OTV2-YYYYMMDD-forge-1b.md
 validation: as FORGE-1a, with --test item_forge_postgres
@@ -483,16 +483,17 @@ Acceptance: IMBUE-FORGE-0 §8-§10 operation by operation, `DustLimit` included:
     is selected by an environment variable; CI runs a short version that checks only that the
     harness completes and asserts no timing.
   - The worker records the method, the host and the measured values in the task record.
-  - `IMBFORGE0-RL-04` is registered as two entries, each with one unit and one hard maximum.
-    Both are qualification budgets, not runtime cutoffs, as `MAP01-VIEWPORT-US` is registered:
-    - `IMBFORGE0-RL-04-RATE`: the throughput floor, in forge commits per channel per second.
-      `hard_maximum` is the most commits per channel per second the channel is qualified to
-      carry. Higher is better. A full run that sustains the registered rate passes
-      qualification; one that sustains less fails it.
-    - `IMBFORGE0-RL-04-P99`: the latency ceiling, in milliseconds. It is the database p99 forge
-      commit latency during a run at the `-RATE` rate. Lower is better. A p99 within it passes
-      qualification; a p99 over it fails it.
-  - Each boundary test compares a measured value with its own entry's unit only.
+  - `IMBFORGE0-RL-04` is one registry entry: the database p99 forge commit latency, in
+    milliseconds. Its `hard_maximum` is an upper bound, as the registry defines it. It is a
+    qualification budget, not a runtime cutoff, as `MAP01-VIEWPORT-US` is registered.
+  - The throughput is not a registry limit. A `hard_maximum` cannot express a floor. The
+    qualified rate, in forge commits per channel per second, is the entry's workload: its
+    `resource` names it and its `notes` record it.
+  - Boundary tests:
+    - a full run at the qualified rate whose p99 is within the budget passes qualification;
+    - a p99 over the budget fails it.
+  - The harness fails a run that does not sustain the qualified rate before it compares any
+    p99. That is a precondition of the measurement, not a registry comparison.
   - The worker reports both values in its FREEZE. The architect accepts them there; the worker
     does not pick either number. If no measurement can run, the worker stops and reports, and
     FORGE-1b does not merge without one. IMBUE-1 measures the imbuing part of RL-04 under its own
@@ -511,7 +512,7 @@ review: independent persistence and determinism review
 base: main after TIMED-RT-1b, ITEM-MOVE-2a, ITEM-MOVE-2b and ITEM-USE-1 merge
 migration_lease: 0062
 depends_on: [TIMED-RT-1b, ITEM-MOVE-2a, ITEM-MOVE-2b, ITEM-USE-1]
-owned_paths: the remainder of the TIMED-RT-1 packet in TIMED-ITEM-0B §21: the move modules, the Ground step scheduler, and the ITEM-MOVE-WIRE-1, ITEM-USE-0, MARKET-0 and WORLD-INTERACTION-0 pointers, named at allocation; plus 0062 and the RT-1b modules
+owned_paths: the remainder of the TIMED-RT-1 packet in TIMED-ITEM-0B §21: the move modules, the Ground step scheduler, and the ITEM-MOVE-WIRE-1, ITEM-USE-0, MARKET-0 and WORLD-INTERACTION-0 pointers, named at allocation; the ITEM-USE-1 module that defines `ItemUseCause` and its transaction mapping, for the `Light` variant and its use form only; plus 0062 and the RT-1b modules
 validation: as TIMED-RT-1b
 ```
 

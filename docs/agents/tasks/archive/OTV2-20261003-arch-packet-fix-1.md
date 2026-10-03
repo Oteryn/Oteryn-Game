@@ -41,12 +41,17 @@ change no code, no contract, no wire and no resource value.
   pick it.
 
 - **#1689 review (Codex, `9f6e5c80`).**
-  - 4174761344 (P1): `IMBFORGE0-RL-04` is split into two entries, as the control plane directed
-    for round 1. `-RATE` is a throughput floor in commits per channel per second. `-P99` is a
-    database p99 latency ceiling in milliseconds. Each boundary test compares like with like.
-  - 4174761349 (P1): `ItemUseCause::Light` is RT-1c's. RT-1c depends on ITEM-USE-1, which has no
-    `Light`, and registers the use form row in the same PR as the variant.
+  - 4174761344 (P1): `IMBFORGE0-RL-04` names one metric.
+  - 4174761349 (P1): the `Light` row ships with its form.
   - 4174761354 (P2): the `tools/agents/tests` suite is run and recorded below.
+
+- **#1689 round 2 (Codex, `af0e3f6e`).**
+  - 4174781962 (P1): the round-1 split put a floor in `hard_maximum`. The registry and
+    `tools/next-wave-limit-evidence` read that field only as an upper bound. RL-04 is one p99
+    ceiling in milliseconds again. The qualified rate is the entry's workload, and the harness
+    gates the measurement on it.
+  - 4174781965 (P1): RT-1c's owned paths name the ITEM-USE-1 `ItemUseCause` module, for `Light`
+    only.
 
 ## Validation
 
