@@ -166,6 +166,14 @@ def neutral(path: str) -> bool:
     )
 
 
+def documentation_path(path: str) -> bool:
+    """Prose documentation: Markdown under docs/ or a root project document.
+
+    Agent instructions, migration controls and evidence data are excluded.
+    """
+    return neutral(path) and not path.startswith("docs/agents/evidence/")
+
+
 def agent_governance(path: str) -> bool:
     if PurePosixPath(path).name in {"AGENTS.md", "AGENTS.override.md"}:
         return True
@@ -376,6 +384,22 @@ def standalone_directory_reference(
     )
 
 
+def quoted_directory_reference(content: bytes, pattern: str) -> bool:
+    """Require a directory literal that ends a quoted string, not prose."""
+    needle = pattern.encode("utf-8")
+    start = 0
+    while True:
+        index = content.find(needle, start)
+        if index < 0:
+            return False
+        tail = content[index + len(needle):]
+        if tail[:1] == b"/":
+            tail = tail[1:]
+        if tail[:1] in {b'"', b"'"}:
+            return True
+        start = index + 1
+
+
 def workflow_directory_reference_is_routing_only(
     consumer_path: str,
     content: bytes,
@@ -486,6 +510,10 @@ def candidate_reference_consumers(
                 )
             ):
                 continue
+            # A package names a documentation directory only through a quoted
+            # literal; doc-comment prose citing that directory is not a consumer.
+            if not control and not quoted_directory_reference(content, pattern):
+                targets = {target for target in targets if not documentation_path(target)}
             selected.update(targets)
         for target in selected:
             consumers[target].add(owner if owner is not None else CONTROL_CONSUMER)

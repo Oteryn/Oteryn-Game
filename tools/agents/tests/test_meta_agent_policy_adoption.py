@@ -76,7 +76,7 @@ class MetaPolicyAdoptionTests(unittest.TestCase):
         pull = {
             "state": "open",
             "head": {"sha": head, "repo": {"full_name": "Oteryn/Oteryn-Game"}},
-            "base": {"sha": base, "ref": "main"},
+            "base": {"sha": base, "ref": "main", "repo": {"full_name": adoption.PROVIDER}},
             "changed_files": 2,
         }
         files = [
@@ -109,7 +109,7 @@ class MetaPolicyAdoptionTests(unittest.TestCase):
         pull = {
             "state": "open",
             "head": {"sha": head, "repo": {"full_name": "Oteryn/Oteryn-Game"}},
-            "base": {"sha": base, "ref": "main"},
+            "base": {"sha": base, "ref": "main", "repo": {"full_name": adoption.PROVIDER}},
             "changed_files": 1,
         }
         malformed = (
@@ -142,7 +142,7 @@ class MetaPolicyAdoptionTests(unittest.TestCase):
         pull = {
             "state": "open",
             "head": {"sha": head, "repo": {"full_name": "Oteryn/Oteryn-Game"}},
-            "base": {"sha": base, "ref": "main"},
+            "base": {"sha": base, "ref": "main", "repo": {"full_name": adoption.PROVIDER}},
             "changed_files": 2,
         }
         duplicate = {"filename": "apps/game-server/src/lib.rs", "status": "modified"}
@@ -166,13 +166,13 @@ class MetaPolicyAdoptionTests(unittest.TestCase):
             {
                 "state": "open",
                 "head": {"sha": head, "repo": {"full_name": "Oteryn/Oteryn-Game"}},
-                "base": {"sha": first_base, "ref": "main"},
+                "base": {"sha": first_base, "ref": "main", "repo": {"full_name": adoption.PROVIDER}},
                 "changed_files": 1,
             },
             {
                 "state": "open",
                 "head": {"sha": head, "repo": {"full_name": "Oteryn/Oteryn-Game"}},
-                "base": {"sha": second_base, "ref": "main"},
+                "base": {"sha": second_base, "ref": "main", "repo": {"full_name": adoption.PROVIDER}},
                 "changed_files": 1,
             },
         ]
@@ -197,7 +197,7 @@ class MetaPolicyAdoptionTests(unittest.TestCase):
             "pull_request": {
                 "number": 88,
                 "head": {"sha": head},
-                "base": {"sha": base},
+                "base": {"sha": base, "ref": "main"},
             },
         }
         with tempfile.TemporaryDirectory() as directory:
@@ -219,7 +219,135 @@ class MetaPolicyAdoptionTests(unittest.TestCase):
                     adoption._active_task_live_scope(),
                     {"docs/agents/tasks/active/OTV2-selected.md"},
                 )
-                scoped.assert_called_once_with(88, head)
+                scoped.assert_called_once_with(88, head, expected_base_ref="main")
+
+    @staticmethod
+    def live_scope_pull(base_ref="main"):
+        return {
+            "state": "open",
+            "head": {"sha": SHA, "repo": {"full_name": adoption.PROVIDER}},
+            "base": {
+                "sha": MAIN,
+                "ref": base_ref,
+                "repo": {"full_name": adoption.PROVIDER},
+            },
+            "changed_files": 1,
+        }
+
+    def event_scope(self, event, event_name="pull_request"):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "event.json"
+            path.write_text(json.dumps(event), encoding="utf-8")
+            with mock.patch.dict(os.environ, {
+                "GITHUB_EVENT_NAME": event_name,
+                "GITHUB_EVENT_PATH": str(path),
+                "TARGET_SHA": SHA,
+            }, clear=False):
+                return adoption._active_task_live_scope()
+
+    def test_native_scope_binds_main_or_stack_ref_and_exact_head(self):
+        files = [{"filename": "docs/agents/tasks/active/OTV2-selected.md"}]
+        for base_ref in ("main", "codex/prepared-parent-20261003"):
+            with self.subTest(base_ref=base_ref):
+                pull = self.live_scope_pull(base_ref)
+                event = {"number": 88, "pull_request": {
+                    "head": {"sha": SHA},
+                    # Ordinary base movement before this snapshot is allowed.
+                    "base": {"ref": base_ref, "sha": "c" * 40},
+                }}
+                with mock.patch.object(adoption, "_request", side_effect=[pull, files, pull]) as request:
+                    self.assertEqual(self.event_scope(event), {files[0]["filename"]})
+                self.assertEqual(request.call_count, 3)
+                self.assertTrue(request.call_args_list[1].args[0].endswith("/pulls/88/files?per_page=100&page=1"))
+
+    def test_native_scope_rejects_missing_or_invalid_event_base_before_live_read(self):
+        for base in (None, {}, {"ref": None}, {"ref": 7}, {"ref": ""},
+                     {"ref": " main"}, {"ref": "codex/parent\n"},
+                     {"ref": "codex/../parent"}, {"ref": "codex/parent.lock"},
+                     {"ref": "codex//parent"}, {"ref": "codex/parent@{1}"}):
+            with self.subTest(base=base):
+                event = {"number": 88, "pull_request": {"head": {"sha": SHA}}}
+                if base is not None:
+                    event["pull_request"]["base"] = base
+                with mock.patch.object(adoption, "_request") as request:
+                    with self.assertRaisesRegex(ValueError, "base ref"):
+                        self.event_scope(event)
+                request.assert_not_called()
+
+    def test_native_scope_rejects_retarget_before_enumeration(self):
+        event = {"number": 88, "pull_request": {
+            "head": {"sha": SHA}, "base": {"ref": "codex/prepared-parent"},
+        }}
+        for live_ref in ("main", "codex/another-parent"):
+            with self.subTest(live_ref=live_ref):
+                with mock.patch.object(adoption, "_request", return_value=self.live_scope_pull(live_ref)) as request:
+                    with self.assertRaisesRegex(ValueError, "base ref"):
+                        self.event_scope(event)
+                self.assertEqual(request.call_count, 1)
+
+    def test_stack_scope_rejects_changed_live_coordinates_after_file_read(self):
+        base_ref = "codex/prepared-parent"
+        files = [{"filename": "docs/agents/tasks/active/OTV2-selected.md"}]
+        mutations = (
+            ("head SHA", lambda p: p["head"].update(sha="c" * 40)),
+            ("missing head", lambda p: p.update(head=None)),
+            ("missing base", lambda p: p.update(base=None)),
+            ("base SHA", lambda p: p["base"].update(sha="c" * 40)),
+            ("base ref", lambda p: p["base"].update(ref="main")),
+            ("state", lambda p: p.update(state="closed")),
+            ("head repository", lambda p: p["head"]["repo"].update(full_name="fork/Oteryn-Game")),
+            ("base repository", lambda p: p["base"]["repo"].update(full_name="fork/Oteryn-Game")),
+            ("file count", lambda p: p.update(changed_files=2)),
+            ("malformed file count", lambda p: p.update(changed_files=True)),
+        )
+        for label, mutate in mutations:
+            with self.subTest(coordinate=label):
+                first, after = self.live_scope_pull(base_ref), self.live_scope_pull(base_ref)
+                mutate(after)
+                with mock.patch.object(adoption, "_request", side_effect=[first, files, after]):
+                    with self.assertRaisesRegex(ValueError, "moved during"):
+                        adoption._pull_request_active_task_paths(88, SHA, expected_base_ref=base_ref)
+
+    def test_scope_rejects_fork_head_or_base_before_file_read(self):
+        for coordinate in ("head", "base"):
+            with self.subTest(coordinate=coordinate):
+                pull = self.live_scope_pull()
+                pull[coordinate]["repo"]["full_name"] = "fork/Oteryn-Game"
+                with mock.patch.object(adoption, "_request", return_value=pull) as request:
+                    with self.assertRaisesRegex(ValueError, "same-repository"):
+                        adoption._pull_request_active_task_paths(88, SHA)
+                self.assertEqual(request.call_count, 1)
+
+    def test_scope_rejects_initial_head_movement_or_invalid_base_sha(self):
+        cases = (
+            ("head", "c" * 40, "head moved"),
+            ("base", None, "base SHA"),
+            ("base", 7, "base SHA"),
+            ("base", "short", "base SHA"),
+            ("base", "B" * 40, "base SHA"),
+        )
+        for coordinate, value, message in cases:
+            with self.subTest(coordinate=coordinate, value=value):
+                pull = self.live_scope_pull()
+                pull[coordinate]["sha"] = value
+                with mock.patch.object(adoption, "_request", return_value=pull) as request:
+                    with self.assertRaisesRegex(ValueError, message):
+                        adoption._pull_request_active_task_paths(88, SHA)
+                self.assertEqual(request.call_count, 1)
+
+    def test_scope_default_keeps_direct_and_dispatch_main_only(self):
+        pull = self.live_scope_pull("codex/prepared-parent")
+        with mock.patch.object(adoption, "_request", return_value=pull):
+            with self.assertRaisesRegex(ValueError, "base ref"):
+                adoption._pull_request_active_task_paths(88, SHA)
+        event = {"inputs": {"pull_request_number": "88", "base_ref": "codex/prepared-parent"}}
+        with mock.patch.object(adoption, "_request", return_value=pull):
+            with self.assertRaisesRegex(ValueError, "base ref"):
+                self.event_scope(event, "workflow_dispatch")
+        files = [{"filename": "docs/agents/tasks/active/OTV2-selected.md"}]
+        pull = self.live_scope_pull()
+        with mock.patch.object(adoption, "_request", side_effect=[pull, files, pull]):
+            self.assertEqual(self.event_scope(event, "workflow_dispatch"), {files[0]["filename"]})
 
     def test_non_pr_live_task_scope_keeps_full_health_scan(self):
         with mock.patch.dict(os.environ, {"GITHUB_EVENT_NAME": "push"}, clear=False):

@@ -11,16 +11,18 @@ on:
       - reopened
       - synchronize
       - ready_for_review
+      - edited
 
 permissions: {}
 
 concurrency:
-  group: architecture-semantic-audit-${{ github.event.pull_request.number }}
+  group: ${{ github.event.action == 'edited' && github.event.changes.base == null && format('architecture-semantic-audit-edit-{0}-{1}', github.event.pull_request.number, github.run_id) || format('architecture-semantic-audit-{0}', github.event.pull_request.number) }}
   cancel-in-progress: true
 
 jobs:
   audit:
     name: Architecture semantic audit / validate
+    if: github.event.pull_request.base.ref == 'main' && (github.event.action != 'edited' || github.event.changes.base != null) || !github.event.pull_request.base.ref
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
