@@ -21,6 +21,8 @@
   - SPELL-PRESENT-0 §10 (cooldown display; durable cooldowns not decided);
   - owner rule 5905825574.
 - Amends: none. CREATURE-AI-0 §8.4 already defers familiars here.
+- Amended by the D309 P2 bundle (clarifying, review finding 4173381895): the recovery
+  qualification sweep of §5.1.
 - Runtime, migration and production authority: NONE. Each child needs its own #1622 allocation.
 - `MERGE_AUTHORITY: WORK_COORDINATOR_ONLY`
 
@@ -113,7 +115,8 @@ one ordinary summon (R1).
   clean session end
   (logout, channel transfer, the end of the in-fight deadline); and at removal (§7). A write from
   a stale generation is refused.
-- **Crash.** At login, the new session's fenced load reads the row. If `open = true` and its
+- **Crash.** At login, the new session's fenced load reads the row (a same-session continuation
+  after process replacement: §5.1). If `open = true` and its
   `session_generation` is older than the new one, the earlier session crashed: the load writes
   `familiar_remaining_ms = 0` and `open = false` under the new generation (the familiar is lost),
   and keeps `cooldown_remaining_ms` as last written, so a crash never shortens it. If
@@ -122,12 +125,37 @@ one ordinary summon (R1).
   A return refused because the owner is in a lever boss room ends the familiar (§7): the row is
   written `familiar_remaining_ms = 0`, `open = false`, cooldown kept.
 - **Fencing and replay.** Every write is a compare-and-set on `revision` under the writer's
-  session generation; a write from an older generation is refused and changes nothing. The cast
+  session generation, and it passes the current FND-04 authority checks (DUR-02 §5), including the
+  current RuntimeScopeAuthority ownership generation of the writing runtime owner. A write from an
+  older session generation, or from a runtime owner that has been replaced (the same session
+  generation after process replacement, FND-04B §22), is refused and changes nothing. A
+  compare-and-set loser re-applies only after it passes both checks again. The cast
   write is part of the cast acquisition, so a retried cast command replays its first outcome and
   never writes the row twice.
 - The row is gameplay state, not a DUR-03 value. A missing row means no familiar and no cooldown.
 - The familiar spell's in-memory cooldown is the row's value; SPELL-D2's runtime cooldown is not
   used for these five spells.
+
+### 5.1 Recovery qualification (negative cases, FAMILIAR-1 proves each)
+
+Each case names one invariant. FAMILIAR-1 has one test per case, on PostgreSQL where it says so.
+
+| Case | Path | Invariant |
+|---|---|---|
+| Write for another character (the row's `character_id` is not the writer session's character) | direct | A row is written only inside the fenced Character transaction of its own character; the write is refused and changes nothing. |
+| Same cast or return occurrence replayed with a different binding (spell, caster, placement) | direct | One occurrence has one outcome: the replay conflicts and writes nothing. |
+| Client-supplied remaining time, cooldown, generation or familiar creature | direct | Durable values come only from the row, the content definition and the session's own generation; nothing from the client is stored. The returning familiar is the caster's vocation familiar from content, never a named creature. |
+| Write from an older `session_generation` (late clean-end save, removal after a takeover) | direct | Refused by the generation fence; no column changes. |
+| Two writes of one generation race (timer removal and logout save) | direct, concurrent | The compare-and-set on `revision` admits one; the other re-reads, passes the session-generation and runtime-owner checks again, and re-applies to the new row or becomes a no-op when the row is already closed; never two writes for one revision. |
+| Late write from a replaced runtime owner (a clean-end save from the old process, after process replacement and the same-session recovery write) | direct, concurrent, PostgreSQL | The session generation is the same, so the RuntimeScopeAuthority ownership generation fences it: the write is refused, including on a compare-and-set retry, and the familiar never returns from it. |
+| Takeover: the new session's fenced load races the old session's clean-end save | reconciled vs direct, concurrent | The load raises the generation first; the old save is then stale and refused. If the old save commits first, the load sees `open = false` and returns the familiar (§7). |
+| Row `open = true` with the same generation, and the familiar is still in the running process (a reconnect inside one GameSession) | reconciled | Not a crash: no reconciliation write; the familiar continues. |
+| Row `open = true` with an older generation | reconciled | Crash: one write under the new generation sets remaining 0 and `open = false`; the cooldown is kept. |
+| Server restart, then a new session (PostgreSQL reload) | reconciled, PostgreSQL | The new session has a newer generation, so an open row loads as a crash (the row above). A clean row returns from its stored remaining time only. |
+| Process replacement with proven same-session continuation (FND-04B §22; PostgreSQL reload) | reconciled, PostgreSQL | The generation is unchanged, but the familiar is not part of the reconstructed state, and the stored remaining time predates the loss. An `open = true` row is therefore a crash under the same generation: one fenced write sets remaining 0 and `open = false` and keeps the cooldown. The familiar never comes back with stale time. A clean row (`open = false`) returns as usual (§7). |
+| Missing row | reconciled | No familiar and no cooldown; a load never inserts a row. |
+| Any recovery path | reconciled | `cooldown_remaining_ms` is never lowered by a recovery write. |
+| Return refused in a lever boss room, immediate or delayed | direct | One fenced write ends the familiar (remaining 0, `open = false`, cooldown kept); no creature is placed. |
 
 ## 6. Lifetime and behaviour (FAMILIAR-1)
 
@@ -226,8 +254,8 @@ None. Every choice above is a reversible architect ruling under owner rule 59058
    session generation.
 3. **Restart:** a clean end (`open = false`) keeps the familiar's time; a return reopens the row
    (`open = true`) in its admission; a return refused in a lever boss room ends it
-   (`familiar_remaining_ms = 0`, `open = false`, cooldown kept); a crash (`open = true` from an older generation) loses the
-   familiar and keeps the cooldown.
+   (`familiar_remaining_ms = 0`, `open = false`, cooldown kept); a crash (`open = true` from an older generation, or after a proven
+   same-session continuation, §5.1) loses the familiar and keeps the cooldown.
 4. **Typed references:** CharacterId, spell id, creature key.
 5. **Wire:** none new (§8).
 6. **Split work:** one row per character; one familiar per owner.
