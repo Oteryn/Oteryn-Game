@@ -2377,6 +2377,7 @@ mod tests {
                 uses: RefCell::new(Vec::new()),
                 commands: RefCell::new(Vec::new()),
                 overlay: None,
+                watermark: None,
                 outcome: UseOutcome::rejected(),
             };
             let world_id = WorldId::decode(&WORLD)?;
@@ -3346,6 +3347,7 @@ mod tests {
                     snapshot_type: SNAPSHOT_TYPE_WORLD_SPATIAL_V1,
                     payload: &encode_world_spatial(&at(0)),
                 },
+                empty_overlay_snapshot(),
                 DomainSnapshot {
                     domain_id: STATE_DOMAIN_ACCOUNT_ACHIEVEMENT_NOTICES,
                     revision,

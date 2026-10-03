@@ -143,6 +143,7 @@ pub fn decode_item_spell_cast_intent(input: &[u8]) -> Result<ItemSpellCastIntent
 
 #[cfg(test)]
 mod tests {
+    #![allow(clippy::unwrap_used)]
     use super::*;
     fn value() -> ItemSpellCastIntent {
         ItemSpellCastIntent {
@@ -197,6 +198,7 @@ mod tests {
 
 #[cfg(test)]
 mod target_tests {
+    #![allow(clippy::unwrap_used)]
     use super::*;
     #[test]
     fn target_is_full_revision_bound_and_strictly_optional() {

@@ -4,13 +4,13 @@
 task_id: OTV2-20261003-spells-1534-main-merge
 title: Bring PR 1534 (spell import r22) up to current main with one merge commit
 mode: REPAIR
-status: blocked
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: codex/spells-import-r22-20261002
 pr: 1534
 issue: 1622
-base_sha: 1e0134d9
+base_sha: 8f618385
 head_sha: null
 final_head_sha: null
 final_head_frozen_at: null
@@ -31,9 +31,12 @@ owned_paths:
   - apps/game-server/tests/support/
   - docs/contracts/ (migration-number references only)
   - tools/content-schema/native-gameplay/README.md (migration-number references only)
+  - apps/game-server/src/gameplay_transport/connection.rs
+  - crates/protocol-oteryn/src/ (merge union and test lint allows only)
+  - apps/game-server/tests/ (mount allows, D325 case, stack fix)
   - docs/agents/tasks/active/OTV2-20261003-spells-1534-main-merge.md
 public_contracts: []
-depends_on: [D313, D314]
+depends_on: [D313, D314, D319, D325, D339]
 blocks: []
 cross_repository_coordination_id: null
 external_repositories: []
@@ -86,31 +89,35 @@ No new gameplay, no change to SQL bodies, no review trigger, auto-merge or Jira 
 - `main`'s Bestiary projection denies unknown Creature index fields; it now accepts the
   PR's `spell_imports` overlay descriptors as an ignored array.
 - `CleansePlan::conflict_key` is test-only once `condition.rs` is mounted under `foundation`.
-- **CONFLICT (blocker):** `game_character_progression_consistency_guard` is replaced by
-  0030, by `main`'s 0032 (proficiency receipts) and by the PR's 0033 (familiar receipts
-  and snapshot check), each derived from 0030. Applied in order, 0033 drops proficiency
-  from the shared guard, so every proficiency write is `CommitRejected` on PostgreSQL 17.6.
-  The two additions are disjoint, so a union body is well defined, but it needs SQL that
-  D313 (byte-identical bodies) does not authorize: either a new 0053 union migration or a
-  0033 body change. Control-plane decision pending.
-- Pre-existing on the PR head `a2c5d71` (not merge-caused): `durability_postgres`
-  `complete_reconnect_resumes_an_owning_loss_session_exactly_once` overflows the default
-  test stack (passes on `main`; all 866 pass with `RUST_MIN_STACK=16777216`), and about
-  300 clippy `-D warnings` errors, identical on the merged tree.
+- D325 (control plane, option a): migration 0053 re-issues
+  `game_character_progression_consistency_guard` as the union of the 0032 proficiency and
+  0033 familiar bodies and restores its search_path pin; 0033..0052 stay byte-identical.
+  `proficiency_and_familiar_writes_share_the_0053_progression_guard` interleaves both
+  writers on one Character and re-verifies from a fresh authority (RED without 0053).
+- Join snapshot (main ACH-NOTIFY-1): the PR's always-present empty world object overlay
+  domain is kept and main's achievement notice domain follows it; main's notice
+  expectation helper includes the empty overlay domain.
+- Pre-existing PR-head defects fixed before freeze (D325): the complete-reconnect
+  scenario future is boxed off the 2 MiB test stack; `clippy -D warnings` is clean for
+  game-server and protocol-oteryn (mechanical fixes, reasoned allows matching main's
+  conventions, test-module allows). Hand-written delta about 630 added / 290 removed lines.
+- D339: merged current main once (merge, not rebase); later predecessor merges only
+  merge main.
 
 ## Validation
 
 ### Focused
 
-- command/run: fmt check; governance validator and tools/agents tests; game-server and
-  protocol-oteryn tests
-- result: PASS (game-server lib 1699 passed; protocol-oteryn 114 passed; governance 36 OK)
+- command/run: cargo fmt --all --check; cargo clippy -p oteryn-game-server -p
+  oteryn-protocol-oteryn --all-targets -D warnings; governance validator and
+  tools/agents tests; repository policy validator
+- result: PASS
 
 ### Component/integration
 
-- command/run: full game-server suite with local PostgreSQL 17.6
-- result: 9434 passed; 18 proficiency cases FAIL (guard blocker above); durability_postgres
-  stack overflow pre-existing on the PR head
+- command/run: cargo test -p oteryn-game-server (local PostgreSQL 17.6 configured) and
+  -p oteryn-protocol-oteryn
+- result: PASS (see FREEZE report on PR 1534)
 
 ### E2E
 
@@ -153,8 +160,8 @@ No new gameplay, no change to SQL bodies, no review trigger, auto-merge or Jira 
 ## Context checkpoint
 
 ```yaml
-last_progress: local merge validated; D314 measured 176 bytes; guard clash found
-status: blocked
+last_progress: single main merge plus D325 repairs validated
+status: validating
 branch: codex/spells-import-r22-20261002
 head_sha: null
 pr: 1534
@@ -174,6 +181,6 @@ repair_cycles_for_current_gate: 0
 ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
-blocker: 0032/0033 progression guard union needs a control-plane decision; D319 holds the push until #1597 merges
-next_action: on decision and #1597 merge, redo the single main merge with recorded resolutions
+blocker: null
+next_action: report FREEZE to the control plane; afterwards only merge main when predecessors land
 ```

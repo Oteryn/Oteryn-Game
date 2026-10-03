@@ -239,6 +239,7 @@ pub fn decode(input: &[u8]) -> Result<Snapshot, Error> {
 }
 #[cfg(test)]
 mod tests {
+    #![allow(clippy::expect_used)]
     use super::*;
     #[test]
     fn signed_native_frame_and_closed_item_projection_roundtrip() {

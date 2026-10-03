@@ -573,6 +573,7 @@ pub fn decode_cooldowns(bytes: &[u8]) -> Result<Cooldowns, Error> {
 }
 #[cfg(test)]
 mod tests {
+    #![allow(clippy::unwrap_used)]
     use super::*;
     #[test]
     fn bounded_effects_roundtrip_and_closed_framing() {

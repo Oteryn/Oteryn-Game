@@ -107,6 +107,7 @@ pub fn decode_parameter_spell_cast_intent(
 }
 #[cfg(test)]
 mod tests {
+    #![allow(clippy::unwrap_used)]
     use super::*;
     #[test]
     fn independent_fixture_and_absent_vs_empty() {
@@ -426,6 +427,7 @@ pub fn decode_parameter_spell_cast_result(
 }
 #[cfg(test)]
 mod result_tests {
+    #![allow(clippy::unwrap_used)]
     use super::*;
     #[test]
     fn private_feedback_independent_fixture_and_v1_refusal() {
@@ -476,6 +478,7 @@ mod result_tests {
 
 #[cfg(test)]
 mod effect_only_result_tests {
+    #![allow(clippy::unwrap_used)]
     use super::*;
     #[test]
     fn source_effect_does_not_require_fabricated_success_message() {
