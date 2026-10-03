@@ -107,8 +107,9 @@ one ordinary summon (R1).
 ## 5. Durable state (FAMILIAR-1)
 
 - `game_character_familiar_state`: `character_id` (primary key), `familiar_remaining_ms`
-  (0 = none), `cooldown_remaining_ms`, `open` (the clean-end discriminator), `revision`, and the
-  writing `session_generation`.
+  (0 = none), `cooldown_remaining_ms`, `open` (the clean-end discriminator), `revision`, the
+  writing `session_generation`, and `clean_end_generation` (nullable: the session generation whose
+  clean-end write committed last).
 - **`open`.** The cast write and the return write (§7) set `open = true`: a committed acquisition
   that is not yet cleanly closed or reconciled (§5.2 F-I7). It does not claim that the familiar is
   live: after a crash the row stays open until the next fenced load reconciles it. A clean
@@ -137,6 +138,13 @@ one ordinary summon (R1).
   row, and a row it finds closed under its own generation and revision is its committed clean end,
   so the session end completes and admission stays closed. Only a row it finds unchanged lets the
   session stay and reopen admission.
+- **The close is durable.** The clean-end write sets `clean_end_generation` to the writer's
+  session generation in the same compare-and-set. Every return admission, immediate or delayed,
+  is refused when the row's `clean_end_generation` equals the admitting session's current
+  generation. The return write clears it, and so does the cast write; a later session has a newer
+  generation, so its returns pass. A successor that continues the same session after process
+  replacement (FND-04B §22) reloads the row and finds the close. It completes the terminal release
+  and returns nothing, so the close survives the replacement without any in-memory state.
 - **Crash.** At login, the new session's fenced load reads the row (a same-session continuation
   after process replacement: §5.1). If `open = true` and its
   `session_generation` is older than the new one, the earlier session crashed: the load writes
@@ -174,7 +182,8 @@ Each case names one invariant. FAMILIAR-1 has one test per case, on PostgreSQL w
 | Row `open = true` with the same generation, and the familiar is still in the running process (a reconnect inside one GameSession) | reconciled | Not a crash: no reconciliation write; the familiar continues. |
 | Row `open = true` with an older generation | reconciled | Crash: one write under the new generation sets remaining 0 and `open = false`; the cooldown is kept. |
 | Server restart, then a new session (PostgreSQL reload) | reconciled, PostgreSQL | The new session has a newer generation, so an open row loads as a crash (the row above). A clean row returns from its stored remaining time only. |
-| Process replacement with proven same-session continuation (FND-04B §22; PostgreSQL reload) | reconciled, PostgreSQL | The generation is unchanged, but the familiar is not part of the reconstructed state, and the stored remaining time predates the loss. An `open = true` row is therefore a crash under the same generation: one fenced write sets remaining 0 and `open = false` and keeps the cooldown. The familiar never comes back with stale time. A clean row (`open = false`) returns as usual (§7). |
+| Process replacement with proven same-session continuation (FND-04B §22; PostgreSQL reload) | reconciled, PostgreSQL | The generation is unchanged, but the familiar is not part of the reconstructed state, and the stored remaining time predates the loss. An `open = true` row is therefore a crash under the same generation: one fenced write sets remaining 0 and `open = false` and keeps the cooldown. The familiar never comes back with stale time. A clean row (`open = false`) returns as usual (§7), unless its `clean_end_generation` is the current generation (the next row). |
+| Process replacement after the clean-end write commits and before authority release (FND-04B §22 same-session successor; PostgreSQL reload) | reconciled, PostgreSQL | F-I11: the successor reloads `clean_end_generation` equal to the current generation, so return admission stays closed. It completes the terminal release and places no familiar, the row stays `open = false`, and the next login returns the familiar from the stored time. |
 | Missing row | reconciled | No familiar and no cooldown; a load never inserts a row. |
 | Any recovery path | reconciled | `cooldown_remaining_ms` is never lowered by a recovery write. |
 | Return refused in a lever boss room, immediate or delayed | direct | One fenced write ends the familiar (remaining 0, `open = false`, cooldown kept); no creature is placed. |
@@ -199,7 +208,7 @@ qualification and proves every row of §5.1 and of this section, one invariant p
 | F-I8 | A recovery write never lowers `cooldown_remaining_ms` and never raises `familiar_remaining_ms`. | The row before the write. |
 | F-I9 | The cast commits mana, admission and row together; a return commits placement and row together. | The SUMMON-1 acquisition. |
 | F-I10 | A load never inserts a row, and it never returns a familiar from an unreconciled open row. | The fenced load. |
-| F-I11 | After a session's clean-end write commits, that session writes nothing more to the row until its authority is released. | The session's return-admission fence, closed by session end before the clean-end write. |
+| F-I11 | After a session's clean-end write commits, that session writes nothing more to the row until its authority is released, including through a same-session successor after process replacement. | The session's return-admission fence, closed by session end before the clean-end write, and the row's `clean_end_generation`, which a successor reloads. |
 
 **Negative cases beyond §5.1.**
 
