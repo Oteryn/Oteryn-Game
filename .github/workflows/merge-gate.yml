@@ -161,7 +161,7 @@ jobs:
               serialized = '[]'
           # The on-demand full heavy suite runs on the PR only with the full-ci label.
           # Malformed label evidence selects it: more checks, never fewer.
-          labels = pull.get('labels')
+          labels = pull.get('labels', [])
           if isinstance(labels, list) and all(isinstance(label, dict) for label in labels):
               full_ci = any(label.get('name') == 'full-ci' for label in labels)
           else:
@@ -175,8 +175,8 @@ jobs:
               output.write(f'base_sha={base_sha}\n')
               output.write(f'file_count={changed_files}\n')
               output.write(f'file_records={serialized}\n')
-              output.write(f"complete={'true' if complete else 'false'}\n")
               output.write(f"full_ci={'true' if full_ci else 'false'}\n")
+              output.write(f"complete={'true' if complete else 'false'}\n")
           PY
 
   lanes:
