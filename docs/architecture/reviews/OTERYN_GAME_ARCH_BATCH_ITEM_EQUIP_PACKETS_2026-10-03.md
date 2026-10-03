@@ -7,7 +7,7 @@ date: 2026-10-03
 owner: Sol Supervising Architect
 requested_by: control plane (after #1696: ITEM-MOVE-2a, ITEM-MOVE-2b, EQUIP-RT-1, EXERCISE-1, and what else the accepted EQUIP-0, EXERCISE-0, DEPOT-0, BAGS-0 and IMBUE-FORGE-0 allow)
 writes_on_other_prs: none
-amended_by: ARCH-ITEM-PACKETS-AMEND-1 (§0.1, §0.2, §0.3, §1.4, §1.7, §1.9-§1.12, §2.0a, §2.0b (#1702 P1s 4175377704 and 4175377707), §2.1, §2.2, §2.2a, §2.3, §2.6, §2.8, §2.9; #1698 round-3 P1 4175197224 and P2 4175197230; #1696 P1 4175041166; control plane: ITEM-SEM-2b-2 narrowed to the patterns model)
+amended_by: ARCH-ITEM-PACKETS-AMEND-1 (§0.1, §0.2, §0.3, §1.4, §1.7, §1.9-§1.12, §2.0a, §2.0b (#1702 P1s 4175377704, 4175377707, 4175398447 and 4175398456; P2 4175398450), §2.1, §2.2, §2.2a, §2.3, §2.6, §2.8, §2.9; #1698 round-3 P1 4175197224 and P2 4175197230; #1696 P1 4175041166; control plane: ITEM-SEM-2b-2 narrowed to the patterns model)
 ```
 
 This bundle packets the item chain that the four requested slices sit on, in order of playable
@@ -172,8 +172,11 @@ carry equipment only as `equipment.patterns` (`ReferenceEquipmentPattern`: `prim
 `additional_reserved_slots`, `mutually_exclusive_groups`, `vocations`, `level`), and #1675 already
 lowers slot, hands, level and vocations into it. The compact form of 2b-2 §2.2 exists only in the
 authoring schema. 2b-2 therefore writes one pattern per Item, not the compact form, and keeps
-§2.1 and §2.3 as occupancy facts of that pattern (`additional_reserved_slots: [left_hand]` for a
-two-handed weapon, `mutually_exclusive_groups: [non_quiver_left_hand]` for the rest). What the
+§2.1 and §2.3 as occupancy facts of that pattern, mapped exactly as 2b-2 §2.3 (#1702 P1
+4175398447): a two-handed weapon that is not a distance weapon gets
+`additional_reserved_slots: [left_hand]`; a two-handed distance weapon, a shield and a spellbook get
+`mutually_exclusive_groups: [non_quiver_left_hand]`, so a bow and a quiver stay legal together; a
+quiver gets neither. A test equips a bow with a quiver and refuses a bow with a shield. What the
 patterns model cannot hold moves to ITEM-SEM-2b-3 (§1.12), and 2b-2 reports those rows and writes
 no field for them:
 - the `none` vocation (2b-2 §2.5). An Item whose vocations include `without` gets no
@@ -193,8 +196,10 @@ the typed artifact profile), so it is a hard slice with contract review:
 - It then lowers the rows that 2b-2 reported: the `without` vocations into patterns, and the
   `requirements` rows of runes and ammunition.
 
-If the artifact encoding of either addition changes bytes of an existing artifact, it is a new
-typed artifact profile revision and existing artifacts still decode (test). 2b-3 and EQUIP-CONTENT-1
+Both additions are a new grammar: a v4 reader accepts only vocation values 1-5 and group ids
+1-16. 2b-3 therefore always allocates a new typed artifact profile (`OTERYN_REFERENCE_PLAYABLE_ARTIFACT/v5`
+with its compiler and canonicalization profiles), writes only v5, and keeps explicit decoding of v4
+(#1702 P1 4175398456). 2b-3 and EQUIP-CONTENT-1
 own the same lowering paths and content tree, so they are never open together: the first allocated
 goes first, and the other starts from `main` after it merges. ITEM-MOVE-2a does not wait for 2b-3;
 it admits `none` from the moment the value exists (§2.8).
@@ -455,7 +460,7 @@ migration_lease: none
 depends_on: [ITEM-SEM-2b-2]
 owned_paths:
   - apps/game-server/src/content/reference_playable.rs     # ReferenceBaseVocation::None, the use-requirements group
-  - apps/game-server/src/content/reference_artifact.rs     # their wire encoding; a profile revision only if bytes change
+  - apps/game-server/src/content/reference_artifact.rs     # their wire encoding in the new v5 profile; v4 decoding kept
   - apps/game-server/src/content/project/v2.rs             # authoring to typed lowering of the two additions
   - apps/game-server/tests/content_reference_artifact.rs
   - docs/architecture/DUR-04_CONTENT_WORLD_AND_SCRIPTING_CONTRACT.md  # own paragraph
@@ -471,9 +476,10 @@ validation:
 
 Acceptance:
 
-- `None` decodes and encodes with its new value, and an unknown value still fails closed (test).
-  Existing artifacts decode unchanged, or a new profile revision is added with a cross-revision
-  test.
+- The v5 profile is new and the compiler writes only v5. `None` and the use-requirements group
+  exist only in v5; an unknown vocation value or group id still fails closed (test).
+- A v4 artifact still decodes under its own profile, and a v4 reader refuses v5 by profile id,
+  not by a parse error (cross-profile tests).
 - The use-requirements group round-trips with each field present and absent, and
   `enforcement_mode` other than `on_use` is rejected.
 - The 2b-2 reported rows are lowered: the `without` Items (2b-2 §2.5) get their patterns with

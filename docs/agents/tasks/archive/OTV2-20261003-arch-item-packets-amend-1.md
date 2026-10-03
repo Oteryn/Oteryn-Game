@@ -52,4 +52,8 @@ external_repositories: []
   activates the server source (§1.11, ADR-0021 and MAP-WIRE-1 amendments).
 - **#1702 P1 4175377707:** VIS-3 owns the `offered` assertion in `world_spatial_entities.rs` and
   runs the protocol tests; ITEM-VIEW-1a, NPC-VIS-1 and VIS-3 edit that file serially.
+- **#1702 round 2:** two-handed distance weapons keep `non_quiver_left_hand` (P1 4175398447);
+  ITEM-SEM-2b-3 always allocates typed artifact profile v5 and keeps v4 decoding (P1 4175398456);
+  ground speed joins the MAP-WIRE-1 §3 allowlist (1..=1,000) and the §8 bounds, 229 bytes per tile
+  (P2 4175398450).
 - No code, contract or wire change.
