@@ -41,8 +41,9 @@ change no code, no contract, no wire and no resource value.
   pick it.
 
 - **#1689 review (Codex, `9f6e5c80`).**
-  - 4174761344 (P1): `IMBFORGE0-RL-04` now registers one metric, the database p99 commit latency
-    in milliseconds. The qualified rate is the load the budget holds at, with its own fail test.
+  - 4174761344 (P1): `IMBFORGE0-RL-04` is split into two entries, as the control plane directed
+    for round 1. `-RATE` is a throughput floor in commits per channel per second. `-P99` is a
+    database p99 latency ceiling in milliseconds. Each boundary test compares like with like.
   - 4174761349 (P1): `ItemUseCause::Light` is RT-1c's. RT-1c depends on ITEM-USE-1, which has no
     `Light`, and registers the use form row in the same PR as the variant.
   - 4174761354 (P2): the `tools/agents/tests` suite is run and recorded below.
