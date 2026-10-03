@@ -1,4 +1,4 @@
-//! PREM-1a: the Premium entitlement consumer (PREMIUM-ACTIVATION-V1 §4.1 as amended by
+//! PREM-1a and PREM-1b: the Premium entitlement consumer (PREMIUM-ACTIVATION-V1 §4.1 as amended by
 //! PREMIUM-DELIVERY-0; PROD-ENTITLEMENTS-01 consumer contract §6-§12).
 //!
 //! Platform is the only Premium authority. [`PremiumConsumer::ingest`] validates one snapshot
@@ -13,22 +13,30 @@
 //!   evidence or a failed pull never makes it true.
 //!
 //! After a process start, durable evidence ([`PremiumConsumer::load`]) keeps its restrictive
-//! facts, but an `ACTIVE` snapshot authorizes nothing until a snapshot is fenced or replayed in
-//! this process (consumer contract §6.3). The snapshot transport (mTLS pull, nonce, refresh
-//! scheduling) is PREM-1b.
+//! facts and any durable semantic conflict, but an `ACTIVE` snapshot authorizes nothing until a
+//! snapshot is fenced or replayed in this process (consumer contract §6.3).
+//!
+//! PREM-1b adds the transport (PREMIUM-DELIVERY-0 §3, §3.1): [`client`] pulls one snapshot over
+//! mutual TLS, [`refresh`] schedules the admission, reconnect and refresh pulls, and a failed
+//! pull marks the account `AUTHORITY_UNAVAILABLE` until a later pull succeeds
+//! ([`PremiumConsumer::pull_failed`]).
 
+pub mod client;
+pub mod refresh;
 pub mod snapshot;
+#[cfg(test)]
+pub mod test_producer;
 
 use crate::durability::premium_fence::{
-    EntitlementState, PremiumEvidence, PremiumFenceOutcome, PremiumFenceView,
+    EntitlementState, PremiumAccountRecord, PremiumEvidence, PremiumFenceOutcome, PremiumFenceView,
 };
 use crate::durability::{DurabilityError, DurabilityRoot};
-use snapshot::SnapshotRejection;
+use snapshot::{SnapshotFailure, SnapshotRejection};
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Mutex, PoisonError};
 
-pub const SNAPSHOT_SCHEMA: &str = "oteryn.premium_snapshot.v1";
+pub const SNAPSHOT_SCHEMA: &str = crate::durability::premium_fence::EVIDENCE_SCHEMA;
 pub const PRODUCT_ID: &str = "oteryn.premium_time";
 pub const PRODUCT_VERSION: u32 = 1;
 
@@ -100,37 +108,54 @@ impl TrustedNow {
     }
 }
 
+/// The ticket of one pull, taken when it starts: increasing across accounts and `release`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub struct PullTicket(u64);
+
 #[derive(Debug, Clone, Default)]
 struct AccountView {
     fence: Option<PremiumFenceView>,
     /// A snapshot was fenced or replayed at the high water in this process.
     proven: bool,
+    /// A semantic conflict (§3.1) is recorded for the account: sticky and never ignored.
+    conflicting: bool,
     /// Validated evidence could not be fenced: the fence is unsafe (§6.4,
-    /// `INVALID_OR_CONFLICTING`) until a later snapshot is fenced.
+    /// `INVALID_OR_CONFLICTING`) until a later pull is fenced.
     quarantined: bool,
-    /// The latest bound response was outside the compatibility record.
-    unsupported: bool,
-    /// The ticket of the latest ingest that set `quarantined` or `unsupported`: only proof from
-    /// an ingest started after it clears them, whatever order concurrent ingests finish in.
-    failed_at: u64,
+    /// A pull failed (§3.1): `AUTHORITY_UNAVAILABLE` until a later pull succeeds.
+    unavailable: bool,
+    /// The tickets of the latest quarantine, failed pull and proof. Only proof from a pull
+    /// started after a failure clears it, and a failure from a pull started before the latest
+    /// proof changes nothing, whatever order concurrent pulls finish in.
+    quarantined_at: u64,
+    unavailable_at: u64,
+    proven_at: u64,
 }
 
 impl AccountView {
-    fn fail(&mut self, ticket: u64, unsupported: bool) {
-        if unsupported {
-            self.unsupported = true;
-        } else {
+    fn quarantine(&mut self, ticket: PullTicket) {
+        if ticket.0 > self.proven_at {
             self.quarantined = true;
+            self.quarantined_at = self.quarantined_at.max(ticket.0);
         }
-        self.failed_at = self.failed_at.max(ticket);
     }
 
-    fn prove(&mut self, ticket: u64, fence: PremiumFenceView) {
+    fn fail_pull(&mut self, ticket: PullTicket) {
+        if ticket.0 > self.proven_at {
+            self.unavailable = true;
+            self.unavailable_at = self.unavailable_at.max(ticket.0);
+        }
+    }
+
+    fn prove(&mut self, ticket: PullTicket, fence: PremiumFenceView) {
         merge(self, Some(fence));
         self.proven = true;
-        if ticket > self.failed_at {
+        self.proven_at = self.proven_at.max(ticket.0);
+        if ticket.0 > self.quarantined_at {
             self.quarantined = false;
-            self.unsupported = false;
+        }
+        if ticket.0 > self.unavailable_at {
+            self.unavailable = false;
         }
     }
 }
@@ -154,20 +179,35 @@ pub struct PremiumConsumer {
 }
 
 impl PremiumConsumer {
-    /// Load the durable fence of `account_id`, before any Premium read at admission. An account
-    /// already in memory keeps its view.
+    /// Load the durable fence and semantic conflict of `account_id`, before any Premium read at
+    /// admission. An account already in memory keeps its view.
     pub async fn load(
         &self,
         root: &DurabilityRoot,
         account_id: [u8; 16],
     ) -> Result<(), DurabilityError> {
-        let fence = root.load_premium_fence(account_id).await?;
-        self.update(account_id, |view| merge(view, fence));
+        let PremiumAccountRecord { fence, conflicting } =
+            root.load_premium_fence(account_id).await?;
+        self.update(account_id, |view| {
+            merge(view, fence);
+            view.conflicting |= conflicting;
+        });
         Ok(())
     }
 
+    /// The ticket of a pull that starts now.
+    pub fn ticket(&self) -> PullTicket {
+        PullTicket(self.tickets.fetch_add(1, Ordering::Relaxed) + 1)
+    }
+
+    /// A pull of `account_id` started at `ticket` yielded no response to ingest (§3.1 "anything
+    /// else is unavailable"): the account is `AUTHORITY_UNAVAILABLE` until a later pull succeeds.
+    pub fn pull_failed(&self, account_id: [u8; 16], ticket: PullTicket) {
+        self.update(account_id, |view| view.fail_pull(ticket));
+    }
+
     /// Validate, fence and apply one snapshot response to a request for `account_id` with
-    /// `nonce`.
+    /// `nonce`, as a pull that starts now.
     pub async fn ingest(
         &self,
         root: &DurabilityRoot,
@@ -175,26 +215,53 @@ impl PremiumConsumer {
         nonce: &str,
         body: &[u8],
     ) -> IngestOutcome {
-        let ticket = self.tickets.fetch_add(1, Ordering::Relaxed) + 1;
+        let ticket = self.ticket();
+        self.ingest_pull(root, account_id, ticket, nonce, body)
+            .await
+    }
+
+    /// Validate, fence and apply the response of the pull started at `ticket`. A malformed or
+    /// stale response is a failed pull; an unsupported one or a contradiction is a durable
+    /// semantic conflict, recorded before this returns (§3.1).
+    pub async fn ingest_pull(
+        &self,
+        root: &DurabilityRoot,
+        account_id: [u8; 16],
+        ticket: PullTicket,
+        nonce: &str,
+        body: &[u8],
+    ) -> IngestOutcome {
         let evidence = match snapshot::validate(body, account_id, nonce) {
             Ok(evidence) => evidence,
-            Err(rejection) => {
-                if rejection == SnapshotRejection::Unsupported {
-                    self.update(account_id, |view| view.fail(ticket, true));
-                }
-                return IngestOutcome::Rejected(rejection);
+            Err(SnapshotFailure::Malformed) => {
+                self.pull_failed(account_id, ticket);
+                return IngestOutcome::Rejected(SnapshotRejection::Malformed);
+            }
+            Err(SnapshotFailure::Unsupported(failure)) => {
+                // Never ignored, whatever the ticket order: it denies Premium in this process
+                // even when the durable record could not be written.
+                self.update(account_id, |view| view.conflicting = true);
+                return match root.record_premium_semantic_failure(&failure).await {
+                    Ok(()) => IngestOutcome::Rejected(SnapshotRejection::Unsupported),
+                    Err(_) => IngestOutcome::FenceUnavailable,
+                };
             }
         };
         let Ok(outcome) = root.accept_premium_evidence(&evidence).await else {
-            self.update(account_id, |view| view.fail(ticket, false));
+            self.update(account_id, |view| view.quarantine(ticket));
             return IngestOutcome::FenceUnavailable;
         };
         self.update(account_id, |view| match outcome.clone() {
             PremiumFenceOutcome::Accepted(fence) | PremiumFenceOutcome::Replayed(fence) => {
                 view.prove(ticket, fence);
             }
-            PremiumFenceOutcome::Stale(fence) | PremiumFenceOutcome::Conflict(fence) => {
+            PremiumFenceOutcome::Stale(fence) => {
                 merge(view, Some(fence));
+                view.fail_pull(ticket);
+            }
+            PremiumFenceOutcome::Conflict(fence) => {
+                merge(view, Some(fence));
+                view.conflicting = true;
             }
         });
         match outcome {
@@ -210,6 +277,13 @@ impl PremiumConsumer {
         self.lock().remove(&account_id);
     }
 
+    /// The `refresh_after` of the account's kept evidence: when the next pull is due.
+    pub fn refresh_after_us(&self, account_id: [u8; 16]) -> Option<i64> {
+        let accounts = self.lock();
+        let fence = accounts.get(&account_id)?.fence.as_ref()?;
+        Some(fence.latest.refresh_after_us)
+    }
+
     pub fn class(&self, account_id: [u8; 16], now: Option<TrustedNow>) -> PremiumClass {
         classify(self.lock().get(&account_id), now)
     }
@@ -221,17 +295,13 @@ impl PremiumConsumer {
 
     /// True only when the latest accepted evidence says the entitlement itself ended: producer
     /// `EXPIRED`, `REVOKED` or `NONE`, or `effective_until` surely passed. False without
-    /// evidence, with conflicting or unsupported evidence, or without trusted time for a
-    /// time-based end.
+    /// evidence or without trusted time for a time-based end. It reads only the kept evidence:
+    /// a failed pull or a semantic failure neither makes it true nor clears it (§3.1, §6).
     pub fn premium_entitlement_ended(&self, account_id: [u8; 16], now: Option<TrustedNow>) -> bool {
         let accounts = self.lock();
-        let Some(view) = accounts.get(&account_id) else {
-            return false;
-        };
-        let Some(fence) = view
-            .fence
-            .as_ref()
-            .filter(|f| !f.conflicting && !view.unsupported)
+        let Some(fence) = accounts
+            .get(&account_id)
+            .and_then(|view| view.fence.as_ref())
         else {
             return false;
         };
@@ -273,7 +343,7 @@ fn classify(view: Option<&AccountView>, now: Option<TrustedNow>) -> PremiumClass
     let Some(view) = view else {
         return PremiumClass::AuthorityUnavailable;
     };
-    if view.unsupported || view.quarantined || view.fence.as_ref().is_some_and(|f| f.conflicting) {
+    if view.conflicting || view.quarantined || view.fence.as_ref().is_some_and(|f| f.conflicting) {
         return PremiumClass::InvalidOrConflicting;
     }
     let Some(fence) = &view.fence else {
@@ -297,7 +367,8 @@ fn classify(view: Option<&AccountView>, now: Option<TrustedNow>) -> PremiumClass
     if e.state == EntitlementState::NotYetEffective {
         return PremiumClass::NotYetEffective;
     }
-    if now.is_none() || !view.proven {
+    // A failed pull denies at once, even inside the kept interval (§3.1).
+    if now.is_none() || !view.proven || view.unavailable {
         return PremiumClass::AuthorityUnavailable;
     }
     PremiumClass::CurrentAuthority

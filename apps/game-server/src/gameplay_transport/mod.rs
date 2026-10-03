@@ -421,6 +421,7 @@ pub async fn serve_gameplay(
         lost: std::sync::Mutex::default(),
         revision_sequencer:
             crate::durability::character_revision_sequencer::CharacterRevisionSequencer::new(),
+        premium: premium_refresher(owners.root),
     };
     serve_listener(
         listener,
@@ -433,6 +434,22 @@ pub async fn serve_gameplay(
     )
     .await;
     Ok(())
+}
+
+/// PREM-1b: the node's Premium pulls. Without configuration, or with an invalid one, there is no
+/// client and every account reads Free; admission is never affected.
+fn premium_refresher(root: &DurabilityRoot) -> crate::premium::refresh::PremiumRefresher {
+    use crate::premium::client::{PremiumClientConfig, PremiumSnapshotClient};
+    let client = match PremiumClientConfig::from_env()
+        .and_then(|config| config.map(|c| PremiumSnapshotClient::new(&c)).transpose())
+    {
+        Ok(client) => client,
+        Err(error) => {
+            operator_event(&format!("premium_snapshot_client_disabled reason={error}"));
+            None
+        }
+    };
+    crate::premium::refresh::PremiumRefresher::new(Default::default(), root.clone(), client)
 }
 
 /// Fresh, unpredictable identifiers from the TLS provider's secure random
@@ -511,6 +528,9 @@ pub(crate) struct ComposedFreshAdmission<'a, 'f, 's> {
     /// while `runtime` is locked.
     pub(crate) revision_sequencer:
         crate::durability::character_revision_sequencer::CharacterRevisionSequencer,
+    /// PREM-1b: the account's Premium pulls, started at fresh admission and reconnect without
+    /// waiting on them, and cancelled when the session is released.
+    pub(crate) premium: crate::premium::refresh::PremiumRefresher,
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {
@@ -554,6 +574,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         .saturating_add(EXPIRY_SLACK)
                 }
                 Ok(ExpiredLossReleaseV1::Released { .. } | ExpiredLossReleaseV1::Terminal) => {
+                    // PREM-1b: the session is over; its Premium pulls stop.
+                    self.premium.release(controller.account_id);
                     // The durable TERMINAL session is the authoritative fact that
                     // allows removing the exact actor.
                     return match self
@@ -1104,7 +1126,12 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         &self,
         attempt: connection::ResumeAttempt<'_>,
     ) -> Result<AdmittedSession, AdmissionRefusal> {
-        self.resume_lost(attempt).await
+        let resumed = self.resume_lost(attempt).await?;
+        // PREM-1b: a reconnect pulls Premium again before any Premium read, without waiting.
+        if let Some(controller) = resumed.controller {
+            self.premium.admit(controller.account_id);
+        }
+        Ok(resumed)
     }
 
     async fn release_abandoned(&self, admitted: AdmittedSession) -> GraceExpiryResult {
@@ -1340,6 +1367,8 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         let (first_entry, item_fence) = self
             .initialize_first_entry(&request, attempt.game_session_id, attempt.transport, actor)
             .await;
+        // PREM-1b: pull Premium before any Premium read; admission does not wait on it.
+        self.premium.admit(*record.account_id.as_bytes());
         Ok(AdmittedSession {
             game_session_id: attempt.game_session_id,
             world_id: self.world_id,
