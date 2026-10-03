@@ -124,6 +124,14 @@ one ordinary summon (R1).
   write commits, as TIMED-ITEM-0B §6.1 orders its checkpoints: if that write fails, the session
   stays and the familiar is kept. `WorldReset` writes as a removal with the time kept
   (`open = false`).
+- **Session end fences return admission.** A logout or channel transfer first closes return
+  admission for its session, then waits for a return acquisition already in flight to commit or
+  abort, and only then makes its clean-end write. A return that reaches admission after the close
+  is refused and stays stored; it returns at the next login or arrival. The close holds until
+  authority release, so the clean-end write is the session's last write to the row (F-I11). A
+  return that committed before the close reopened the row, and the clean-end compare-and-set reads
+  that row and closes it. If the session end is abandoned (its write failed, the session stays),
+  return admission opens again.
 - **Crash.** At login, the new session's fenced load reads the row (a same-session continuation
   after process replacement: §5.1). If `open = true` and its
   `session_generation` is older than the new one, the earlier session crashed: the load writes
@@ -186,6 +194,7 @@ qualification and proves every row of §5.1 and of this section, one invariant p
 | F-I8 | A recovery write never lowers `cooldown_remaining_ms` and never raises `familiar_remaining_ms`. | The row before the write. |
 | F-I9 | The cast commits mana, admission and row together; a return commits placement and row together. | The SUMMON-1 acquisition. |
 | F-I10 | A load never inserts a row, and it never returns a familiar from an unreconciled open row. | The fenced load. |
+| F-I11 | After a session's clean-end write commits, that session writes nothing more to the row until its authority is released. | The session's return-admission fence, closed by session end before the clean-end write. |
 
 **Negative cases beyond §5.1.**
 
@@ -193,12 +202,17 @@ qualification and proves every row of §5.1 and of this section, one invariant p
 |---|---|---|
 | A load by a session whose generation is not the current one in the session-generation fence (a stale login after a takeover), whatever generation the row stores (for example row 1, loader 2, fence 3) | reconciled | F-I2: loader authority is decided first, against the fence alone. A stale load is refused before the row is classified. It neither reconciles nor returns the familiar. |
 | The crash classification is computed from the row's own `session_generation` compared with itself, or with a value the row supplied | reconciled | F-I2: "older" is decided only against the fence row's current generation. A test whose row and fence disagree classifies by the fence. |
-| A reconciliation write that loses its compare-and-set or ends in a database error, including an unknown commit outcome | reconciled, concurrent, PostgreSQL | F-I2, F-I3 and F-I10: the session is not admitted and writes nothing until it reconciles the outcome. It re-reads the fence (session generation and runtime owner) and then the row. If the loader is no longer current, it is stale and refused, and every later write from it is refused too. If it is still current, it classifies the freshly read row from scratch: a committed reconciliation reads as a clean row with remaining 0, and a row another authorized writer advanced is taken as read. Nothing is returned or written from the earlier in-memory snapshot. The fresh row then follows the normal path: a clean row with time left returns its familiar (§7), and an open row is reconciled again. |
+| A reconciliation write that loses its compare-and-set or ends in a database error, including an unknown commit outcome, and the session generation has since moved on | reconciled, concurrent, PostgreSQL | F-I2: the session is not admitted and writes nothing until it reconciles the outcome. It re-reads the fence first; a loader whose generation is no longer current is stale and refused, and every later write from it is refused too. |
+| The same failure, and the runtime owner has since been replaced (same session generation) | reconciled, concurrent, PostgreSQL | F-I3: the fence re-read finds a newer RuntimeScopeAuthority ownership generation; the loader is refused, and every later write from it is refused too. |
+| The same failure, and the loader is still current | reconciled, concurrent, PostgreSQL | F-I10: nothing is returned or written from the earlier in-memory snapshot. The loader re-reads the row and classifies it from scratch: a committed reconciliation reads as a clean row with remaining 0, and a row another authorized writer advanced is taken as read. The fresh row then follows the normal path: a clean row with time left returns its familiar (§7), and an open row is reconciled again. |
 | A cast while a familiar waits to return with no free tile | direct | F-I7: refused by check 4. A stored familiar and a new one never exist together. |
-| A delayed return racing a cast or a removal write for the same character | direct, concurrent | F-I4 and F-I7: one compare-and-set wins. The cast's compare-and-set re-checks check 4 against the row it replaces: it commits only over a row with `familiar_remaining_ms = 0`, so it can never replace a familiar that waits to return. A cast that loses, or that finds stored time, is refused with no mana spent and no cooldown started. A return that loses re-reads, and it is a no-op only when it finds `familiar_remaining_ms = 0` (a removal won) or a familiar its own acquisition already placed. |
+| A delayed return racing a removal write for the same character | direct, concurrent | F-I4: one compare-and-set wins per `revision`. A return that loses re-reads, and it is a no-op only when it finds `familiar_remaining_ms = 0` (a removal won) or a familiar its own acquisition already placed. |
+| A cast racing a delayed return for the same character | direct, concurrent | F-I7: the cast's compare-and-set re-checks check 4 against the row it replaces and commits only over a row with `familiar_remaining_ms = 0`, so it never replaces a familiar that waits to return. A cast that loses, or that finds stored time, is refused with no mana spent and no cooldown started. |
+| A delayed return in flight while logout or channel transfer makes its clean-end write | direct, concurrent | F-I11: session end closes return admission and drains the in-flight return before its clean-end write (§5). The return either committed first, and the clean-end write closes the row it reopened, or it is refused and stays stored. No return reopens the row after the clean-end write, so the next login never reads a clean exit as a crash. |
 | A channel-transfer arrival that loads before the departure's clean-end write commits | reconciled, concurrent | The transfer completes only after that write (§5 writes), so the arrival never sees the departing `open = true` row. If it does, the transfer was not admitted, and the arrival is refused as a stale owner (F-I3). |
 | `WorldReset` with the owner online | direct | F-I7: the removal writes `open = false` with the time kept. A later crash is then not a loss of the stored time. |
-| A familiar creature created by any path other than a familiar spell or return (Summon Creature, convince, an administrative creature command) | sibling API | F-I6 and F-I7: it is an ordinary creature or summon. It has no row and writes none, and content marks the familiars as not summonable and not convinceable (§3). |
+| A familiar creature created by any path other than a familiar spell or return (Summon Creature, convince, an administrative creature command) | sibling API | F-I6: it is an ordinary creature or summon, and nothing about it becomes durable familiar state; content marks the familiars as not summonable and not convinceable (§3). |
+| The same creature, checked against the row | sibling API | F-I7: it never sets `open` and writes no row; only a familiar cast or return acquisition opens one. |
 | The ordinary summon writer (SUMMON-1 without `familiar_summon`) | sibling API | F-I1: it never writes the familiar row. Only the familiar cast, return, clean-end, removal and recovery writers do. |
 | The returning creature after a vocation change while offline | direct | F-I6: it is the current vocation's familiar from content. The stored time is kept, and no creature key is stored. |
 | A familiar spell's content revision changes the duration or cooldown | direct | F-I6: the row's stored remaining times stand. New values apply from the next cast. |
