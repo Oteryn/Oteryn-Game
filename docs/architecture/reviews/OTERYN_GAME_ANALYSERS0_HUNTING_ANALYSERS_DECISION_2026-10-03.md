@@ -25,7 +25,7 @@
 
 | Child | Worker | Builds | Depends on |
 |---|---|---|---|
-| ANALYSER-WIRE-1 | impl, protocol review | capability `ANALYSER_V1`, domain `ACTOR_ANALYSER`, the fact codecs, bounds and rows (§4, §6) | this decision |
+| ANALYSER-WIRE-1 | impl, protocol review | capability 10 `ANALYSER_V1`, domain 15 `ACTOR_ANALYSER`, the fact codecs, bounds and rows (§4, §6) | this decision |
 | ANALYSER-EMIT-1 | combat and item lanes, determinism review | emission of the facts at their commit points (§5) | ANALYSER-WIRE-1; ATTACK-1; D3 corpse mint; the consuming item uses |
 | ANALYSER-CLIENT-1 | client lane (client owner) | the windows of §3: sessions, rates, prices, the Drop Tracker list | ANALYSER-WIRE-1 |
 
@@ -90,13 +90,20 @@ nothing.
 
 ## 4. The analyser stream (ANALYSER-WIRE-1)
 
-- **Capability `ANALYSER_V1`**; the domain `ACTOR_ANALYSER` and its number are reserved by the
-  control plane before ANALYSER-WIRE-1.
+- **Capability 10 `ANALYSER_V1`** (owner: the Analyser module), with no command type and state
+  domain **15** `ACTOR_ANALYSER` (delta type 1 `ANALYSER_FACTS_DELTA_V1`, snapshot type 1
+  `ANALYSER_SNAPSHOT_V1`, both gated by capability 10); not offered before ANALYSER-WIRE-1 ships.
+  The numbers are the control plane's leases in STATE (cap 10, domain 15). ANALYSER-WIRE-1
+  registers them in the FND-02 registry with its `.proto`.
 - **Own session only.** Each fact goes to the one GameSession whose character it concerns. Nothing
   about another player is sent.
 - **Snapshot empty.** Delta type 1 is one batch of facts for one sync unit. A resync or reconnect
   loses facts not yet sent; the client keeps its totals. Analysers are advisory; the stream never
   carries state.
+- **Revision (FND-02 §15).** One cumulative, monotonic `uint64` per GameSession: 0 at the
+  session's initial snapshot, plus 1 per delta sent; never reset or reused at a resync snapshot or
+  a reconnect. The empty snapshot carries the current revision, and the next delta's
+  `base_revision` equals it.
 - **Not dropped for size.** Unlike the presentation stream, a batch is never dropped for its
   size; facts beyond a batch bound continue in the next sync unit. Only the pending cap of §6
   drops facts (the oldest first), and the next batch then carries `dropped {count}` so the client
@@ -170,5 +177,5 @@ None. Every choice above is a reversible architect ruling under owner rule 59058
 2. **Serialization:** facts follow the committed outcome in its sync unit; no new write.
 3. **Restart:** nothing durable; a resync loses unsent facts only.
 4. **Typed references:** CharacterId, race, item type, element.
-5. **Wire:** §4, capability `ANALYSER_V1`.
+5. **Wire:** §4, capability 10 `ANALYSER_V1`, state domain 15 `ACTOR_ANALYSER`; no command type.
 6. **Split work:** 64 facts per batch, 32 items per fact, 1,024 pending per session.
