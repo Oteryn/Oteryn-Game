@@ -41,22 +41,14 @@ external_repositories: []
 TIMED-ITEM-0 decides items that run on charges or time, and the soft boots repair (owner answer 1a,
 #162 5932648083).
 
-- **Scope (narrowed at round 7):** charges, `on_equip` duration, equip forms, expiry and the repair;
-  `continuous` duration (lit torches, Ground and house deadlines, tree clocks) is `NOT_ADMITTED`
-  until TIMED-ITEM-0B.
-- **State:** `game_item_timed_states` (charges, active-time budget), keyed by ItemInstanceId,
-  written only by one-item DUR-03 shapes under the closed `TimedItemCause`; rows are lazy (no row means full values), so no MINT path or backfill writes one.
-- **Clocks:** time runs only while equipped in the game world; the runtime commits at A13
-  checkpoints and checkpoints a live item before it leaves its slot, so moves carry no timed value.
-- **Charges:** one per hit an active item's protection reduces; at 0 the item expires (transform, or
-  a one-item BURN aggregate when there is no decay target).
-- **Forms:** equip/unequip transform with `PRESERVE_INSTANCE`, keeping the time; a ring-for-ring
-  swap is refused `SWAP_TIMED_BOTH`.
+- **Scope (narrowed by D282 and D285):** catalogue facts, the timed-row table shape and its
+  invariants, and the NPC soft boots repair. All runtime persistence of charges and duration
+  (clocks, checkpoints, expiry, equip forms, the active rule, conditions, wire) and continuous
+  duration move to TIMED-ITEM-0B, with entry conditions in §5.
+- **State:** `game_item_timed_states`, lazy rows (no row means full values), absent row =
+  revision 0, monotonic revision, rows never deleted while the item lives.
 - **Repair:** `FeeBurnCause::NpcRepair`; worn soft boots to soft boots for 10,000 gold.
-- **Active rule:** EQUIP-0 grants a timed item's abilities while it has charges and time;
-  `REGENERATION` and `MANA_SHIELD` added.
-- **Wire:** `TIMED_ITEMS_V1` adds charges and remaining time to item presentations and Look.
-- **Rulings:** R1-R5 (exercise weapons to EXERCISE-0; continuous duration to TIMED-ITEM-0B); no open owner question.
+- **Rulings:** R1 (runtime persistence to TIMED-ITEM-0B, D285), R3, R4; no open owner question.
 
 No code, migration or content change is made.
 
@@ -90,8 +82,9 @@ No code, migration or content change is made.
 ## Closeout
 
 - PR: #1471. Review: Codex round 1 (5382769280) on `e8212a64` answered in the next head; the exact frozen heads are in the #162 FREEZE_SHA entries. Merge commit/result: its squash merge.
-- Amendments, each pending on acceptance of TIMED-ITEM-0: EQUIP-0 §3.2; PLAYER-TRADE-0 §4; DUR-03 §15, §33, §39.3;
-  ITEM-MOVE-WIRE-1 §6; ITEM-USE-0 §6; NPC-0 §6.2; CONDITIONS-0 §3; OFFLINE-0 scope.
+- Amendments, each pending on acceptance of TIMED-ITEM-0: DUR-03 §15 and §39.3; ITEM-USE-0 §6;
+  NPC-0 §6.2; OFFLINE-0 scope. The EQUIP-0, CONDITIONS-0, ITEM-MOVE-WIRE-1 and PLAYER-TRADE-0
+  amendments of earlier heads were withdrawn with D285 and go to TIMED-ITEM-0B.
 - This record was archived in the PR's final authoring commit (`docs/agents/tasks/archive/README.md`).
 
 ```yaml

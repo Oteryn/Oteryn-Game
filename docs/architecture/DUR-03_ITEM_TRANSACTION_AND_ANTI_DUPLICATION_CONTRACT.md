@@ -409,8 +409,9 @@ Rune use is a caller-chosen one-unit BURN, not `DECAY_RETIRE`.
 `reviews/OTERYN_GAME_RANGED0_DISTANCE_WEAPONS_AMMUNITION_WANDS_AND_CHASE_DECISION_2026-10-01.md` §6).**
 The weapon use amendment in §39.3 admits the closed `WeaponUseCause {Ammunition, Throwing}`.
 
-**Amendment (pending on acceptance of TIMED-ITEM-0; `reviews/OTERYN_GAME_TIMED_ITEM0_CHARGES_DURATION_AND_REPAIR_DECISION_2026-10-01.md` §4, §10).** The closed `TimedItemCause` (`Expire` without a
-`decay_target` is a BURN sink) and `FeeBurnCause::NpcRepair` are admitted.
+**Amendment (pending on acceptance of TIMED-ITEM-0; `reviews/OTERYN_GAME_TIMED_ITEM0_CHARGES_DURATION_AND_REPAIR_DECISION_2026-10-01.md` §7, §10).** `FeeBurnCause::NpcRepair` is admitted. The name
+`TimedItemCause` is reserved; its variants, including any expiry BURN sink, are admitted by
+TIMED-ITEM-0B (D285).
 
 ## 16. Transform semantics
 
@@ -669,12 +670,6 @@ between the main backpack and the nine non-container `CharacterEquipment` slots,
 with the target slot's occupant (two items, four location lines, with its own resource rows); and
 TRANSFER of a whole item from a backpack entry or a slot to `Ground`, and from Ground back to the
 main backpack, under §32. No new burn sink: dropped items are retired by `WorldReset` (D191).
-
-**Amendment (pending on acceptance of TIMED-ITEM-0; `reviews/OTERYN_GAME_TIMED_ITEM0_CHARGES_DURATION_AND_REPAIR_DECISION_2026-10-01.md` §6).** An equip or unequip of an item whose definition has a
-`transform {trigger: equip | unequip}` transforms it (`PRESERVE_INSTANCE`) in the same move
-transaction, creating its timed row on a first equip; a live item's value is checkpointed before
-it leaves its slot, so the move writes no timed value. A swap in which both items need such a
-transform is refused `SWAP_TIMED_BOTH`.
 
 ## 34. Multi-transaction typed custody
 
@@ -1400,21 +1395,11 @@ authority, conservation) is unchanged.
   its timed row; its plan admits at most 19 coin inputs, so inputs, change and the repaired item
   stay within 22 touched items, under the repair-specific work row `DUR03-RL-06-NPC-REPAIR` 22
   participants / 68 work units (the fee shape's 64 plus the transform, the timed-row reset and the
-  item check). TIMED-ITEM-0 (§10) also
-  admits these one-item shapes under the closed `TimedItemCause`, with the shape rows listed there
-  (row write 1 / 2 work units; expiry transform `DUR03-RL-04-TIMED-EXPIRY` 1 / 1 and 1 / 4; expiry
-  burn 1 location line and 1 / 4), and the repair rows `DUR03-RL-04-NPC-REPAIR` 1 / 1 and
-  `DUR03-RL-06-NPC-REPAIR` 22 / 68, the repaired item being a direct main-backpack entry:
-  a row `STATE_MUTATION` (`Checkpoint`; charges are checkpointed, never written per spend); an expiry `TRANSFORM`
-  (`PRESERVE_INSTANCE`) to the decay target; an expiry **BURN** to `RETIRED` (one location line, the
-  row left inert, one audit event with the before and after values) when there is no decay target;
-  and, inside an equip move or swap, one `EquipForm` transform and row line on an already-touched
-  item (a swap needing two is refused). For these shapes only they supersede the §39.1 exclusions of
-  burn and transform. No timed value is written by a move: the runtime checkpoints a live item before
-  it leaves its slot. Other retirement paths (`DECAY_RETIRE`, `WorldReset`, other burns) leave a timed row inert and gain
-  no line. Rows are lazy (absent means revision 0 and full values) and never deleted while the item lives,
-  so their revision is monotonic: no MINT writes one, and an item without a row has its definition's full values
-  (TIMED-ITEM-0 §4).
+  item check), with `DUR03-RL-04-NPC-REPAIR` 1 / 1 transform I/O and `DUR03-RL-05` 0, the repaired
+  item being a direct main-backpack entry. Its one timed-row write sets the row to full values with
+  the revision + 1, or inserts it at expected revision 0 (absent row = revision 0; rows are never
+  deleted while the item lives, so the revision is monotonic; TIMED-ITEM-0 §4). Every other timed
+  shape (checkpoints, expiry, equip forms) is TIMED-ITEM-0B's (D285).
   No generic fee cause or reason code. A new fee source needs an amendment of this paragraph and
   the decision.
 - **Evidence and rows.** One event: each BURN line (quantity before and after; a whole burn ends

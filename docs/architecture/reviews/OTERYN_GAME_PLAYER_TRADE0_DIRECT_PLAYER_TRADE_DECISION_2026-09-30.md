@@ -107,10 +107,6 @@ How do two players exchange items safely?
   item, and an item whose content marks it untradeable. `tradeable: UNKNOWN` is tradeable, as most
   Tibia items are (Canary default); `marketable` is not read as a trade flag. Store-bound items do not
   exist yet; their decision adds the refusal. An offer is a reference, not a move.
-  **Amendment (pending on acceptance of TIMED-ITEM-0,
-  `OTERYN_GAME_TIMED_ITEM0_CHARGES_DURATION_AND_REPAIR_DECISION_2026-10-01.md` §5).** Also refused
-  as `NOT_TRADEABLE`: an equipped item whose timed clock is running, once equipped items can be
-  offered.
 - **Accept.** Allowed only in `READY` (both offers exist). Range and sight line are checked again
   at each accept.
 - **Changes cancel** before `TRANSFERRING`: any committed or issued change to either offered item

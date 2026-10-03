@@ -89,10 +89,6 @@ What does a worn item without time or charges do for its wearer, and in what ord
   flag; content validation rejects a definition whose flag and fields disagree.
 - A `timed` item grants nothing until TIMED-ITEM-0 decides its time or charges (fail closed: no free
   rings or amulets).
-  **Amendment (pending on acceptance of TIMED-ITEM-0; `reviews/OTERYN_GAME_TIMED_ITEM0_CHARGES_DURATION_AND_REPAIR_DECISION_2026-10-01.md` §8).**
-  A timed item is active when it meets every other condition above, its charges (if any) and
-  remaining time (if any) are above 0, and an `on_equip` item is equipped; ability types
-  `REGENERATION` and `MANA_SHIELD` are added (TIMED-ITEM-0 §8).
 - An item whose designated slot is the Extra slot (`ammo`, RANGED-0 §3.3; TibiaWiki `slot = Extra
   Slot`, for example item 49176 with speed +25) contributes all its abilities there. Any other item
   merely placed in the Extra slot contributes only `LIGHT` (the manual's torch).
