@@ -33,7 +33,7 @@ external_repositories: []
 Owner decision 3b (#1622 comment 5968564302) extends D15 as schema row D48. Every Bestiary field
 comes from the reference-date English TibiaWiki, pinned by revision. Class and taxonomy come from
 `bestiaryclass`. Thresholds and charm points are derived by `Template:Bestiary Table` revision
-1152628. Membership needs both the official client race table and the wiki. Conflicts are
+1152628. The wiki decides membership; the client race table is a DERIVED cross-check. Conflicts are
 reported and ruled in batches. Allocation: D286 (#1622 comment 5968568302).
 
 No code or content change is made. The converter child MONSTER-D15B-1 needs its own allocation.

@@ -102,24 +102,25 @@ string stops the conversion. Nothing falls back to Canary silently.
 
 ### 3.3 Membership
 
-A creature has a Bestiary profile when both of these hold:
+The reference-date wiki decides membership. A creature has a Bestiary profile when its page states
+all three of `bestiaryclass`, `bestiarylevel` and `occurrence`.
 
-- it is in the client race table (`imports/cipsoft-staticdata/creatures/`, DERIVED), joined by the
-  Canary or Crystal `raceId` equal to `source_id` with the names equal case-insensitively, or, for
-  a D44 wiki-authored creature, by the exact client name;
-- its reference-date wiki page states all three of `bestiaryclass`, `bestiarylevel` and
-  `occurrence`.
+The race identity comes from the Canary or Crystal `raceId`, or, for a D44 wiki-authored creature,
+from the client race table by exact name. The client race table (`imports/cipsoft-staticdata/creatures/`,
+DERIVED) is a join and cross-check only: a creature whose `raceId` is missing from it, or whose
+name there differs case-insensitively, is reported (§3.4) and keeps its wiki-established
+membership. The table never creates, blocks or removes a profile.
 
 The outcomes:
 
-- In both sources and without a Canary profile: the profile is **created** from the wiki. This is
-  the Muglex case.
-- In both sources and with a Canary profile: the profile is **replaced** field by field under
-  §3.1.
-- In neither source and with a Canary profile: the profile is **removed** as an
-  `approved_omission` citing both sources.
-- In only one source, a failed join, or a client race with no converted creature: listed as
-  CONFLICT or UNRESOLVED (§3.4). The Canary profile, or no profile, stays.
+- Wiki member without a Canary profile: the profile is **created** from the wiki. This is the
+  Muglex case. Without a race identity it is UNRESOLVED and no profile is created.
+- Wiki member with a Canary profile: the profile is **replaced** field by field under §3.1.
+- Canary profile but the wiki page states none of the three fields: reported as CONFLICT. The
+  Canary profile stays until the architect rules on the group (§3.4). Nothing is removed
+  automatically.
+- The page states only some of the three fields: CONFLICT, and the current profile, or no profile,
+  stays.
 
 The join is never by name similarity, and a creature never takes another creature's values.
 
@@ -127,8 +128,9 @@ The join is never by name similarity, and a creature never takes another creatur
 
 The converter writes one report of every CONFLICT and UNRESOLVED row, grouped by kind:
 
-- the join failed;
-- membership is in one source only;
+- the client table join failed or the names differ;
+- a client race has no converted creature, or a wiki member is missing from the client table;
+- a Canary profile has no wiki Bestiary fields;
 - the wiki class disagrees with a valid Canary race;
 - the wiki difficulty or occurrence disagrees with the client `f4`/`f5` tier, under the inferred
   mapping already used by the converter (stars 0-5, occurrence 0-3);
@@ -154,18 +156,14 @@ difference.
   can lower a balance that was already spent. The content revision that adopts D48 is classified
   under DUR-04 §12:
   - in a world that holds no Bestiary or Charm character state, it is `COMPATIBLE_NO_MIGRATION`;
-  - in a world that holds such state, a revision where every changed entry keeps or raises its
-    charm points and keeps or lowers its thresholds, and no profile with progress is removed, is
-    `COMPATIBLE_NO_MIGRATION`;
-  - any other revision in such a world is `INCOMPATIBLE_REQUIRES_PRODUCT_DECISION` and is not
-    admitted until that decision exists. Two parts of it are fixed now. Charm unlocks already
-    bought are never revoked. The available balance never goes below 0, so a shortfall only
-    blocks new unlocks. The CHARM owner child implements both parts before such a revision ships.
-  - MONSTER-D15B-1's report lists every entry whose charm points fall, whose thresholds rise or
-    whose profile is removed, so the classification is checked, not assumed.
-- A removed profile ends further Bestiary progress, charm assignment and proficiency points for
-  that creature, under the classification above. The CHARM runtime child handles assigned charms on such races when it
-  ships. Until then no runtime consumes the content.
+  - in a world that holds such state, it is `INCOMPATIBLE_REQUIRES_PRODUCT_DECISION` and is not
+    admitted there until the CHARM owning contract decides, with its persistence review, how
+    changed or removed entries affect earned points, unlocks and balances (CHARM-0 §4.2). This
+    decision fixes no Charm economy rule;
+  - MONSTER-D15B-1's report lists every entry whose charm points or thresholds change or whose
+    profile would be removed, as input to that decision.
+- A profile removed by a later ruling ends further Bestiary progress, charm assignment and
+  proficiency points for that creature, under the classification above.
 
 ## 4. Decision test
 
@@ -189,7 +187,8 @@ difference.
 
 - The derivation table reproduces all 12 rows of revision 1152628. An unknown key fails.
 - The five pinned profiles convert to the pinned values, or each difference appears in the report.
-- Membership: one case each for create, replace, remove, one-source, failed join and a placeholder
+- Membership: one case each for create, replace, a Canary profile without wiki fields (kept,
+  CONFLICT), a client-table mismatch (kept, reported), a missing race identity and a placeholder
   field.
 - Every adopted value has a wiki or template manifest row, and every superseded value has an
   `approved_omission`.
