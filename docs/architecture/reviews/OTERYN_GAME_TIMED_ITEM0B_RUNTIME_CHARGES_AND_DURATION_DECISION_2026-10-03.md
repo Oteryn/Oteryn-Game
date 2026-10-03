@@ -117,10 +117,15 @@ container, HTTP 402)
 
   TIMED-RT-1 creates the table with its guard (the first child to need it; amends TIMED-ITEM-0's
   brief and §4), with a partial index on `deadline_at` where it is not NULL.
-- **Guard arms for D360.** `deadline_at` is non-NULL exactly when the current definition is a lit
-  `continuous` form and the item's immediate location is a Ground or house tile; while it is
-  non-NULL, `remaining_ms` holds the budget at the moment the deadline was set. A lit `continuous`
-  item never has a container as its immediate location. Both are checked at commit.
+- **Guard arms for D360.** For a **live, located** item (not `RETIRED`): `deadline_at` is non-NULL
+  exactly when the current definition is a lit `continuous` form and the item's immediate location
+  is a Ground or house tile; while it is non-NULL, `remaining_ms` holds the budget at the moment
+  the deadline was set. A lit `continuous` item never has a container as its immediate location.
+  Both are checked at commit. A `RETIRED` item's row is inert as TIMED-ITEM-0 §4 says (a
+  `WorldReset` of a dropped lit torch leaves its `deadline_at` as it was) and is outside both arms.
+- **The expiry scheduler** reads the partial `deadline_at` index joined to live, located items
+  only, so a retired item's inert deadline is never scheduled. Test: a `WorldReset` of a lit torch
+  on the ground commits, writes no timed line, passes the guard, and is never expired.
 - **Unlit forms.** TIMED-ITEM-0 §4's "inactive form" (a definition with `transform {trigger: equip}`
   into an admitted timed one) also covers a definition with `transform {trigger: use}` into an
   admitted `continuous` one (an unlit torch). Its row, when it has one, holds the lit form's values,
@@ -394,6 +399,14 @@ items are minted unlit.
   it running.
 - A tile owner's moves and expiries of one deadline item run through its one lane (§5.2), so a
   pickup never races its expiry.
+- **Fence and locks for tile items.** A deadline item has no holder, so its writes take no
+  `character_root` lock. An expiry (or any tile-owner write of a deadline item) runs under the
+  tile owner's fence instead: the channel's runtime-scope ownership generation (DUR-03 §32, the
+  InstanceRuntime scope included) or the house scope's fence. Lock order: that fence, the item's
+  location row, then its timed row. A drop and a pickup are moves between a holder and a tile, so
+  they take both: the holder's fences and `character_root`, then the tile owner's fence, then the
+  location rows and the timed row, the existing ITEM-MOVE-WIRE-1 order with the timed row last.
+  A stale tile fence writes nothing; the new owner reloads the deadlines from the index.
 
 ### 10.4 Going out (D360)
 
@@ -617,10 +630,10 @@ added.
 ## 20. Before-freeze checklist
 
 1. **Contract amendments:** listed in the header; each written by its child in its own docs commit.
-2. **Serialization:** one lane per live item; every timed write is a one-item DUR-03 transaction
-   keyed by (item, expected revision) under the item writer's fence and the holder's
-   `character_root` lock; the composed checkpoint and expiry add the build receipt in the same
-   transaction.
+2. **Serialization:** one lane per live or deadline item; every timed write is a one-item DUR-03
+   transaction keyed by (item, expected revision) under the item writer's fence and the holder's
+   `character_root` lock, or, for a deadline item, the tile owner's fence (§10.3); the composed
+   checkpoint and expiry add the build receipt in the same transaction.
 3. **Restart:** live items lose at most one checkpoint, in the player's favour; deadline items
    expire from their durable deadline; frozen items never change; durable exhaustion is final.
 4. **Typed references:** ItemInstanceId, definition keys, TransactionId.

@@ -262,6 +262,15 @@ Per operation, only the fields it may change change:
 | `RESHAPE_DECLINE` | offer to NULL | everything else equal; no cost |
 | `CLEAR`, `MIGRATION_CLEAR` | to the cleared state | `MIGRATION_CLEAR` spends nothing |
 
+**Costs are bound and checked.** At reservation the writer copies the operation's evidenced dust
+cost and orb count from the bound shaping revision into the binding and into the line as
+`dust_cost` and `orb_cost`. The line CHECK requires `dust_spent = dust_cost` and `orbs_spent =
+orb_cost` (0 for `RESHAPE_CHOOSE`, `RESHAPE_DECLINE` and `MIGRATION_CLEAR`). A deferred guard
+requires the transaction's dust ledger `SPEND` amount to equal `dust_spent` (no entry when it is 0)
+and its orb BURN quantity to equal `orbs_spent`. Reconcile and `verify_character_integrity`
+recompute `dust_cost` and `orb_cost` from the stored shaping revision, which §8 retains. Test: a
+writer that records 1 dust for a 1,000-dust operation is refused.
+
 Exactly one slot changes per `perk_modification` receipt. The per-track check (0032) extends to the
 modification row: each line's before values equal the previous modification line's after values of
 that (track, slot), or the cleared state; the row equals its latest line.
