@@ -244,7 +244,9 @@ impl RevisionSlot {
     /// `original` revision. A mismatch fails closed.
     #[allow(
         clippy::too_many_arguments,
-        reason = "the build writer's own arguments plus the replay revision"
+        dead_code,
+        reason = "the build writer's own arguments plus the replay revision; standalone durability \
+                  suites path-load this module without build cases"
     )]
     pub async fn commit_build(
         &mut self,
@@ -269,7 +271,9 @@ impl RevisionSlot {
     /// `original` revision. A mismatch fails closed; a refusal writes nothing.
     #[allow(
         clippy::too_many_arguments,
-        reason = "the proficiency writer's own arguments plus the replay revision"
+        dead_code,
+        reason = "the proficiency writer's own arguments plus the replay revision; standalone durability \
+                  suites path-load this module without proficiency cases"
     )]
     pub async fn commit_proficiency(
         &mut self,
