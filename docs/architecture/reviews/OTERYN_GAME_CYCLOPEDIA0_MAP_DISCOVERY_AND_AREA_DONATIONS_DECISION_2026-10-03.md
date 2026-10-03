@@ -191,33 +191,38 @@ A new World Bundle revision is classified under DUR-04 §12 by what it changes:
 - In a world that holds none of the state above, any revision is `COMPATIBLE_NO_MIGRATION`.
 
 CYC-CONTENT-1's report lists each such change between two revisions. The classification is a
-function of the two revisions and of whether the world holds any of the state above. It is checked
-twice:
+function of the two revisions and of whether the world holds any of the state above. The race
+between that check and the reset is removed at its source:
 
-1. **Pre-check at staging** (ADR-0021 §4.7, "staged and verified"). A revision that fails it is
-   never staged, so no reset starts with it.
-2. **Commit check at activation.** The world can gain state between staging and the reset. So the
-   classification is evaluated again against live state inside the step 4 activation transaction.
-   That point is quiescent: admission has been closed since step 1, and step 2 has ended every old
-   ownership generation, so no Cyclopedia write can commit any more (see "Ordering" below). The
-   transaction locks every pool row of the world, reads the discovery, exploration and epoch rows,
-   and classifies. If the result is `INCOMPATIBLE_REQUIRES_PRODUCT_DECISION`, the transaction
-   writes nothing: no new digest, no epoch N+1, no ACTIVATED. The record stays RETIRING and
-   admission stays closed, which is ADR-0021's fail-closed state. No Cyclopedia state is ever
-   reinterpreted under the new revision.
-
-Leaving that state needs a way to replace the target of a RETIRING record or to reactivate the
-previous bundle. ADR-0021 does not define one. Until an ADR-0021 amendment does, CYC-CONTENT-1
-stages a revision that is structural against the active one only for a world that holds none of
-the state above, and the commit check stays as the guard against a race. The amendment is listed
-in §8.
+- **Freeze row.** `game_world_cyclopedia_freeze` holds one row per World: the staged structural
+  revision, or none. Every Cyclopedia write (§4.2, §4.3, the §4.2a normalization, §5.3, the
+  Charos and achievement grants) reads this row with a shared lock inside its own transaction. If
+  it names a revision, the write is refused with the typed result `CyclopediaFrozen` and writes
+  nothing.
+- **Staging.** For a revision that is structural against the active one, staging is one
+  transaction. It locks the freeze row exclusively, which waits for every Cyclopedia write in
+  flight. It then checks that the world holds none of the state above, and sets the row to the
+  revision. If the world holds state, the revision is `INCOMPATIBLE_REQUIRES_PRODUCT_DECISION`:
+  nothing is set and the revision is not staged. After a successful staging the state cannot grow.
+  A revision that is not structural (`READ_COMPATIBLE_NORMALIZE`) is staged without a freeze.
+- **Check before the reset.** Before ADR-0021 §4.7 step 1, the reset job checks again, under the
+  shared lock, that the freeze row names the target and the world holds no state. Admission is
+  still open and the old bundle is still active. If the check fails, the reset does not start:
+  the revision is unstaged, the row is set to none in the same transaction, and the world keeps
+  running on the active bundle. Once the check passes, no Cyclopedia write can commit until
+  activation, because the freeze holds until step 4 and no session is admitted between step 1 and
+  step 4. So step 4 needs no Cyclopedia check, and no path leaves the world in RETIRING because of
+  Cyclopedia.
+- **Lifting.** Step 4 sets the row to none in its activation transaction. Unstaging sets it to none
+  in the unstaging transaction. A crash leaves the row as committed: a frozen world stays frozen
+  and running until activation or unstaging, and never stops.
 
 **Ordering against a reset.** Every Cyclopedia write (start, shuffle, POI found, normalize,
 donate, Charos) is a write of an admitted session under its session-generation fence, and a
 donation's pool increment commits in the same transaction as its fenced Character write (§5.3).
 So none can commit after step 2 of a reset has ended the old generation: an in-flight write fails
-its fence and changes nothing. Each write re-checks its own preconditions against the active
-revision inside its transaction, not before it:
+its fence and changes nothing. Each write first checks the freeze row (above), then re-checks
+its own preconditions against the active revision inside its transaction, not before it:
 
 - start and shuffle: the subarea is discoverable and undiscovered, the account is premium, and the
   expected character revision matches;
@@ -392,9 +397,6 @@ the value is set. Nothing is guessed.
 - the order of the random and donation draws;
 - how factors combine beyond event plus area;
 - confirmation of the 33% chance in official text.
-
-One open dependency is not a parity value: an ADR-0021 amendment that lets a reset whose commit
-check (§4.2a) fails leave RETIRING, by replacing the target or by reactivating the previous bundle.
 
 ## 9. Decision test
 
