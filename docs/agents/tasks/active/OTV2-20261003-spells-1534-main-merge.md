@@ -36,7 +36,7 @@ owned_paths:
   - apps/game-server/tests/ (mount allows, D325 case, stack fix)
   - docs/agents/tasks/active/OTV2-20261003-spells-1534-main-merge.md
 public_contracts: []
-depends_on: [D313, D314, D319, D325, D339]
+depends_on: [D313, D314, D319, D325, D339, D357]
 blocks: []
 cross_repository_coordination_id: null
 external_repositories: []
@@ -103,6 +103,15 @@ No new gameplay, no change to SQL bodies, no review trigger, auto-merge or Jira 
   conventions, test-module allows). Hand-written delta about 630 added / 290 removed lines.
 - D339: merged current main once (merge, not rebase); later predecessor merges only
   merge main.
+
+- D357 candidate (P1 round 1 of 2): server-seam scenario future boxed (stack); Codex P1
+  tile-aimed area visibility uses the populated sight origin; CodeQL HIGH GuildStats script
+  extraction uses html.parser; spell readiness and starter bundle samples regenerated with
+  convert_spells.py from the pinned sources.
+- D357 open: the r23 evidence-log whitespace repair was refused by the session's permission
+  policy as evidence tampering; r25 source-world non-canonical Canary item keys and two
+  dangling Item keys need a content decision. world-metadata (35600), Item+Mount
+  TAXONOMY_SOURCE_COVERAGE and the 14 retired taxonomy keys fail on main itself.
 
 ## Validation
 
