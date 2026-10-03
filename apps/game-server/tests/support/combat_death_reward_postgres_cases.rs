@@ -18,6 +18,7 @@ use crate::durability::admission_authority_guards::GuardPublicationDisposition;
 use crate::durability::character_progression::{
     CharacterProgressionError, CurrentCharacterGameplayFence, ExperienceCommitOutcome,
 };
+use crate::durability::character_revision_sequencer::CharacterRevisionSequencer;
 use crate::durability::item_mint::{
     CORPSE_MATERIALIZATION_PURPOSE_KEY, GroundPlacement, ItemMintCause, ItemMintError,
     ItemMintRequest, TypedDefinitionRef,
@@ -699,10 +700,14 @@ fn one_creature_death_mints_the_plan_and_awards_xp_once() -> TestResult {
         fixture.project_death().map_err(debug)?;
         let actor = fixture.actor();
 
+        let mut slot = CharacterRevisionSequencer::new()
+            .acquire(CharacterId::from_bytes(id(41)).map_err(debug)?)
+            .await;
         let outcome = settle_creature_death_rewards(
             actor,
             &mut fixture.borrow_combat_death(),
             &session,
+            &mut slot,
             input(rat_loot_table(), 1, 1)?,
         )
         .await
@@ -781,10 +786,14 @@ fn replay_is_idempotent_with_no_duplicate_mint_or_xp() -> TestResult {
         let mut settled = Vec::new();
         for _ in 0..2 {
             fixture.project_death().map_err(debug)?;
+            let mut slot = CharacterRevisionSequencer::new()
+                .acquire(CharacterId::from_bytes(id(41)).map_err(debug)?)
+                .await;
             let outcome = settle_creature_death_rewards(
                 actor,
                 &mut fixture.borrow_combat_death(),
                 &session,
+                &mut slot,
                 input(rat_loot_table(), 1, 1)?,
             )
             .await
@@ -861,10 +870,14 @@ fn generation_change_leaves_a_stale_death_rejected_with_no_write() -> TestResult
         };
         assert_eq!(moved.assignment.ownership_generation, 2);
 
+        let mut slot = CharacterRevisionSequencer::new()
+            .acquire(CharacterId::from_bytes(id(41)).map_err(debug)?)
+            .await;
         let outcome = settle_creature_death_rewards(
             actor,
             &mut fixture.borrow_combat_death(),
             &session,
+            &mut slot,
             input(rat_loot_table(), 1, 1)?,
         )
         .await
@@ -926,10 +939,14 @@ fn a_stale_xp_fence_rejects_xp_without_blocking_loot() -> TestResult {
         fixture.project_death().map_err(debug)?;
         let actor = fixture.actor();
 
+        let mut slot = CharacterRevisionSequencer::new()
+            .acquire(CharacterId::from_bytes(id(41)).map_err(debug)?)
+            .await;
         let outcome = settle_creature_death_rewards(
             actor,
             &mut fixture.borrow_combat_death(),
             &session,
+            &mut slot,
             input(rat_loot_table(), 1, 1)?,
         )
         .await
@@ -976,10 +993,14 @@ fn an_unsupported_loot_table_rejects_loot_without_blocking_xp() -> TestResult {
         fixture.project_death().map_err(debug)?;
         let actor = fixture.actor();
 
+        let mut slot = CharacterRevisionSequencer::new()
+            .acquire(CharacterId::from_bytes(id(41)).map_err(debug)?)
+            .await;
         let outcome = settle_creature_death_rewards(
             actor,
             &mut fixture.borrow_combat_death(),
             &session,
+            &mut slot,
             input(unsupported_algorithm_loot_table(), 1, 1)?,
         )
         .await
@@ -1036,10 +1057,14 @@ fn a_damage_free_death_names_the_reward_principal_as_the_window_winner() -> Test
         fixture.project_death().map_err(debug)?;
         let actor = fixture.actor();
 
+        let mut slot = CharacterRevisionSequencer::new()
+            .acquire(CharacterId::from_bytes(id(41)).map_err(debug)?)
+            .await;
         let outcome = settle_creature_death_rewards(
             actor,
             &mut fixture.borrow_combat_death(),
             &session,
+            &mut slot,
             input(rat_loot_table(), 1, 1)?,
         )
         .await
@@ -1086,10 +1111,14 @@ fn a_death_with_no_loot_entries_still_materializes_a_corpse() -> TestResult {
             algorithm: LootSelectionAlgorithm::IndependentBernoulliPpm,
             entries: vec![],
         };
+        let mut slot = CharacterRevisionSequencer::new()
+            .acquire(CharacterId::from_bytes(id(41)).map_err(debug)?)
+            .await;
         let outcome = settle_creature_death_rewards(
             actor,
             &mut fixture.borrow_combat_death(),
             &session,
+            &mut slot,
             input(empty, 1, 1)?,
         )
         .await
@@ -1132,10 +1161,14 @@ fn a_generation_ending_mid_plan_drops_the_remainder_with_no_duplicate() -> TestR
         let actor = fixture.actor();
 
         // Generation 1 commits the corpse and the first entry only.
+        let mut slot = CharacterRevisionSequencer::new()
+            .acquire(CharacterId::from_bytes(id(41)).map_err(debug)?)
+            .await;
         let first = settle_creature_death_rewards(
             actor,
             &mut fixture.borrow_combat_death(),
             &session,
+            &mut slot,
             input(rat_loot_table(), 1, 1)?,
         )
         .await
@@ -1173,10 +1206,14 @@ fn a_generation_ending_mid_plan_drops_the_remainder_with_no_duplicate() -> TestR
         // The same death now plans a second entry: the corpse and the first
         // entry replay to their original results; the second entry is
         // refused terminally, never minted by a later generation.
+        let mut slot = CharacterRevisionSequencer::new()
+            .acquire(CharacterId::from_bytes(id(41)).map_err(debug)?)
+            .await;
         let outcome = settle_creature_death_rewards(
             actor,
             &mut fixture.borrow_combat_death(),
             &session,
+            &mut slot,
             input(two_entry_loot_table(), 1, 1)?,
         )
         .await
@@ -1268,10 +1305,14 @@ fn at_the_corpse_cap_the_death_settles_but_no_corpse_or_loot_is_created() -> Tes
         fixture.project_death().map_err(debug)?;
         let actor = fixture.actor();
 
+        let mut slot = CharacterRevisionSequencer::new()
+            .acquire(CharacterId::from_bytes(id(41)).map_err(debug)?)
+            .await;
         let outcome = settle_creature_death_rewards(
             actor,
             &mut fixture.borrow_combat_death(),
             &session,
+            &mut slot,
             input(rat_loot_table(), 1, 1)?,
         )
         .await

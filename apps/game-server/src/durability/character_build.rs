@@ -354,6 +354,8 @@ impl DurabilityRoot {
     /// from the stored build (and stance, for a prune), and is refused while a death's respawn is
     /// pending. `after` must hold its progress within its levels under `formula`, and a vocation
     /// choice must be exactly the writer's own conversion of `before` (SKILLS-0 §3.3).
+    /// Runtime callers reach it only through a
+    /// [`RevisionSlot`](super::character_revision_sequencer::RevisionSlot) (CHAR-REV-SEQ-1).
     pub async fn commit_character_build(
         &self,
         authority: &ReconciledCharacterAuthority<'_, '_>,
