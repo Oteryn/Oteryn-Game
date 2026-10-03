@@ -37,13 +37,22 @@ external_repositories: []
   capability 4; ITEM-MOVE-1 needs no migration; 2a, 2b, BAGS-1 and EXERCISE-1 need one each;
   EQUIP-CONTENT-1 waits for ITEM-SEM-2b-2 and TIMED-CONTENT-1; 2a matches promoted vocations; the
   ARCH-SLOT-WIRING-1 call-site conditions apply as written.
-- **Proposed leases:** migrations 0063 (2a), 0064 (2b), 0065 (BAGS-1), 0066 (EXERCISE-1);
+- **Proposed leases:** migrations 0063 (2a), 0064 (BAGS-1), 0065 (2b), 0066 (EXERCISE-1);
   capabilities 12 `ITEM_EQUIP_DROP_V1`, 13 `PACED_MOVEMENT_V1`, 14 `CONTAINER_TREE_V1`; state
   domain 14 and command 21 for BAGS-WIRE-1. D212 already assigns capability 4, domains 9 and 11
   and command 9.
 - **Not packeted (§1.8):** DEPOT, IMBUE, the rest of FORGE, EXERCISE-CONTENT-1, the parity and
   later BAGS slices, each with what it waits on. MAP-LOAD-1, ITEM-USE-WIRE-1 and GOLD-FEE-2 are
   the roots that block most of them.
+
+- **Codex round 1 (2 × P1, 1 × P2), fixed in one push.**
+  - 4175114690: the leases follow the expected merge order (BAGS-1 0064, 2b 0065). A migration
+    packet merges only above every migration on `main`, and otherwise re-leases and refreezes
+    (§0.1).
+  - 4175114699: EQUIP-RT-1 owns the admission, reconnect, release and Premium-refresh paths,
+    with a test per lifecycle trigger.
+  - 4175114706: ITEM-CLIENT-2 (equipment), -3 (nested bags) and -4 (drop and Ground pickup) are
+    packeted (§2.7a).
 
 ## Validation
 

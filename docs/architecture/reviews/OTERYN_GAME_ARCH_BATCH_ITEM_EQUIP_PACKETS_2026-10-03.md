@@ -45,10 +45,19 @@ highest migration is 0057; D417 granted 0058-0062, so the proposals start at 006
 | EQUIP-CONTENT-1 | none | none |
 | SPEED-1 | none | capability 13 `PACED_MOVEMENT_V1` (proposed); no command, no domain |
 | EQUIP-RT-1 | none | none |
-| ITEM-MOVE-2b | 0064 (proposed) | none |
+| ITEM-MOVE-2b | 0065 (proposed) | none |
 | BAGS-WIRE-1 | none | capability 14 `CONTAINER_TREE_V1`, state domain 14 `CONTAINER_VIEWS`, command type 21 `CONTAINER_VIEW_INTENT` (proposed) |
-| BAGS-1 | 0065 (proposed) | none |
+| BAGS-1 | 0064 (proposed) | none |
 | EXERCISE-1 | 0066 (proposed) | none |
+| ITEM-CLIENT-2, ITEM-CLIENT-3, ITEM-CLIENT-4 | none | none |
+
+Migration numbers follow the expected merge order, and the migration history stays monotonic
+whatever order the packets actually merge in. A migration packet may merge only when its
+number is higher than every migration on `main`. If a higher-numbered packet of this bundle
+merges first (for example BAGS-1 or EXERCISE-1 while ITEM-MOVE-2b waits on MAP-OVERLAY-1),
+the waiting packet stops and asks the control plane for the next free number. It then returns
+to AUTHORING, renames its migration file and freezes again. It never merges below a number
+already applied. Each migration packet's acceptance repeats this as a merge condition.
 
 ### 0.2 Order (by playable value)
 
@@ -68,8 +77,14 @@ highest migration is 0057; D417 granted 0058-0062, so the proposals start at 006
 | 12 | BAGS-1 | hard, persistence and performance review | ITEM-MOVE-2a and BAGS-WIRE-1 have merged |
 | 13 | ITEM-MOVE-2b | hard, persistence review | ITEM-MOVE-2a and MAP-OVERLAY-1 have merged |
 | 14 | EXERCISE-1 | hard (persistence), persistence and determinism review | TIMED-RT-1b, EXERCISE-CONTENT-1 and WORLDINT-USE-1 have merged |
+| 15 | ITEM-CLIENT-2 | impl, client review | ITEM-CLIENT-1 and ITEM-MOVE-2a have merged |
+| 16 | ITEM-CLIENT-3 | impl, client review | ITEM-CLIENT-2 and BAGS-1 have merged |
+| 17 | ITEM-CLIENT-4 | impl, client review | ITEM-CLIENT-3 and ITEM-MOVE-2b have merged |
 
-Items 1-3 can run in parallel now. Items 4 and 5, and later 9 and 11, can run in parallel.
+Items 1-3 can run in parallel now. Items 4 and 5, and later 9 and 11, can run in parallel. The
+client packets 7, 15, 16 and 17 own the same client files and therefore run one at a time, in
+that order. If ITEM-MOVE-2b merges before BAGS-1, ITEM-CLIENT-4 may go before ITEM-CLIENT-3;
+the control plane swaps their bases and records the swap.
 
 ### 0.3 Shared files
 
@@ -83,7 +98,8 @@ only; the second of two open packets merges `main` as a union):
 - `docs/architecture/DUR-03_ITEM_TRANSACTION_AND_ANTI_DUPLICATION_CONTRACT.md` (own paragraphs);
 - `crates/protocol-oteryn/src/lib.rs` (one `mod` line and one `REGISTERED_CAPABILITY_IDS_V1` entry
   each);
-- `apps/game-server/src/gameplay_transport/mod.rs` (one `mod` line and one dispatch arm each).
+- `apps/game-server/src/gameplay_transport/mod.rs` (one `mod` line and one dispatch arm each;
+  EQUIP-RT-1 also adds the recompute calls at fresh admission, reconnect and release).
 
 `gameplay_transport/item_move.rs` is created by ITEM-MOVE-1 and then owned in turn by ITEM-MOVE-2a,
 BAGS-1 and ITEM-MOVE-2b; the order in §0.2 never has two of them open at once except BAGS-1 and
@@ -401,7 +417,46 @@ Acceptance:
   (command 9). Results are shown as status text.
 - A `STALE` result refreshes nothing locally; the next snapshot or delta does.
 - Test: a scripted session that opens a corpse and loots one entry against a test server.
-- Not in scope: equipment slots (they come with ITEM-MOVE-2a's client follow-up, packeted then).
+- Not in scope: equipment slots, nested bags and Ground (ITEM-CLIENT-2, -3 and -4).
+
+### 2.7a ITEM-CLIENT-2, ITEM-CLIENT-3 and ITEM-CLIENT-4
+
+```yaml
+task_id: OTV2-20261003-item-client-2   # -3, -4 as below
+decision: ITEM-MOVE-WIRE-1 §4 and §5 (client side); BAGS-0 §5 (client side); this bundle §0.2
+worker: oteryn-impl-worker
+review: client review (Codex, final frozen head)
+branch: claude/item-client-2-20261003   # -3, -4 likewise
+base: main after the packet's dependencies merge
+migration_lease: none
+depends_on:
+  ITEM-CLIENT-2: [ITEM-CLIENT-1, ITEM-MOVE-2a]
+  ITEM-CLIENT-3: [ITEM-CLIENT-2, BAGS-1]
+  ITEM-CLIENT-4: [ITEM-CLIENT-3, ITEM-MOVE-2b]
+owned_paths:
+  - apps/client/src/inventory.rs
+  - apps/client/src/{lib,scene,windows_shell,input}.rs   # the packet's own windows and drags only
+  - docs/agents/tasks/archive/OTV2-20261003-item-client-<n>.md
+validation:
+  - cargo test --locked -p oteryn-client --quiet
+```
+
+Acceptance:
+
+- **ITEM-CLIENT-2:** the client negotiates capability 12 and shows the nine equipment slots
+  from domain 9. It equips by dragging a backpack entry to a slot (the `EQUIPMENT` destination),
+  unequips by dragging a slot item to the backpack, and swaps on an occupied slot. Refusals,
+  `SLOT_MISMATCH` among them, show as status text. Test: a scripted session that equips, swaps
+  and unequips against a test server.
+- **ITEM-CLIENT-3:** the client negotiates capability 14 and opens a nested bag as its own
+  window (domain 14). It closes the bag's subtree when the bag moves, and moves an entry into or
+  out of a nested bag by drag (command 21 and command 9). Test: a scripted session that nests a
+  bag, opens it, moves an entry in and out, and closes it by moving the parent.
+- **ITEM-CLIENT-4:** the client drops a backpack entry or a slot item onto a visible tile in
+  range (the `GROUND` destination) and picks up a Ground item from an adjacent tile. Refusals
+  (`BLOCKED`, out of range, no line of sight) show as status text. Test: a scripted drop and
+  pickup against a test server.
+- In all three, a `STALE` result refreshes nothing locally; the next snapshot or delta does.
 
 ### 2.8 ITEM-MOVE-2a
 
@@ -455,6 +510,7 @@ Acceptance:
   and rejection-rehost tests.
 - Capability 12 becomes `offered: true` for the `EQUIPMENT` destination; `GROUND` stays
   `NOT_SUPPORTED` until 2b.
+- Merge condition: 0063 is higher than every migration on `main` (§0.1).
 - Not in scope: Ground, quivers (QUIVER-1), partial counts (STACK-0), equipment effects.
 
 ### 2.9 EQUIP-CONTENT-1
@@ -508,6 +564,9 @@ owned_paths:
   - apps/game-server/src/ability/{effects,condition}.rs     # the PROTECTION stage and SUPPRESS admission only
   - apps/game-server/src/movement/speed.rs                  # the equipment term only
   - apps/game-server/src/gameplay_transport/item_move.rs    # recompute calls on equip and unequip only
+  - apps/game-server/src/gameplay_transport/mod.rs          # shared register (§0.3): recompute at fresh admission and reconnect, drop at release
+  - apps/game-server/src/premium/refresh.rs                 # recompute when an account's Premium view changes (pull, expiry, not current) only
+  - apps/game-server/src/premium/tests.rs                   # the Premium-change recompute tests only
   - docs/agents/tasks/archive/OTV2-20261003-equip-rt-1.md
 validation:
   - cargo test --locked -p oteryn-game-server --quiet
@@ -515,9 +574,17 @@ validation:
 
 Acceptance:
 
-- The equipment owner keeps each actor's active set (§3.2) and recomputes it on equip, unequip,
-  Premium change, and on death, transfer and respawn where those paths exist on `main`. It writes
-  nothing durable; after a restart it is derived again (test).
+- The equipment owner keeps each actor's active set (§3.2) and recomputes it on equip and unequip,
+  and on death, transfer and respawn where those paths exist on `main`. It writes nothing durable.
+- Lifecycle triggers, each with a test:
+  - a character admitted already equipped, after a fresh login or a server restart, gets its
+    active set derived from its slot rows before its first gameplay tick;
+  - a reconnect re-derives it;
+  - a Premium change re-derives it: a successful pull that changes the view, an expiry and a
+    view that stops being current (fail closed);
+  - Premium-only effects never outlive the entitlement, while the item itself stays equipped
+    (ITEM-MOVE-2a);
+  - release drops the in-memory set.
 - A `timed` item grants nothing (fail closed); the Extra slot grants all abilities only to its own
   items, else only `LIGHT`.
 - The §3.3 plan: slot order, then definition key, then ability order; flats sum; percent stats on
@@ -572,10 +639,10 @@ worker: oteryn-hard-worker   # persistence, tree guards, locks
 review: independent persistence and performance review (Codex, final frozen head)
 branch: claude/bags-1-20261003
 base: main after ITEM-MOVE-2a and BAGS-WIRE-1 merge
-migration_lease: 0065 (proposed)
+migration_lease: 0064 (proposed)
 depends_on: [ITEM-MOVE-2a, BAGS-WIRE-1]
 owned_paths:
-  - apps/game-server/migrations/0065_item_container_trees.sql
+  - apps/game-server/migrations/0064_item_container_trees.sql
   - apps/game-server/src/durability/item_tree.rs           # new
   - apps/game-server/src/durability/item_tree_audit.rs     # new
   - apps/game-server/src/durability/mod.rs                 # shared register
@@ -598,6 +665,8 @@ Acceptance:
   order, the tree move, moves into a nested container, and the container slot with contents.
 - The `GAMEITEM01-REACHABLE-ITEMS` row is re-registered for trees as BAGS-0 §10 says.
 - Every row with max and max+1 tests, and a performance test of the worst-case tree move.
+- Merge condition: 0064 is higher than every migration on `main`; otherwise re-lease (§0.1). It
+  amends the guards as left by every lower-numbered migration on `main`.
 - Not in scope: Ground trees (BAGS-GROUND-1), depot and trade trees, nested use.
 
 ### 2.13 ITEM-MOVE-2b
@@ -609,10 +678,10 @@ worker: oteryn-hard-worker   # persistence, Ground writes, scope fence
 review: independent persistence review (Codex, final frozen head)
 branch: claude/item-move-2b-20261003
 base: main after ITEM-MOVE-2a and MAP-OVERLAY-1 merge
-migration_lease: 0064 (proposed)
+migration_lease: 0065 (proposed)
 depends_on: [ITEM-MOVE-2a, MAP-OVERLAY-1]
 owned_paths:
-  - apps/game-server/migrations/0064_item_ground_drop.sql
+  - apps/game-server/migrations/0065_item_ground_drop.sql
   - apps/game-server/src/durability/item_transfer.rs
   - apps/game-server/src/durability/item_transfer_audit.rs
   - apps/game-server/src/gameplay_transport/item_move.rs      # the GROUND destination and Ground source arms only
@@ -633,8 +702,10 @@ Acceptance:
 - Drop a whole backpack entry or slot item within 15 tiles, same floor, visible, in line of sight,
   on a tile that accepts items; house tiles `BLOCKED`. Pick up a live pickupable non-corpse Ground
   item from Chebyshev 1 by the `0011` shape.
-- Migration 0064 makes the WIRE-1 §6.2 2b deltas by replacement; the §32 scope fence on every
-  Ground write.
+- Migration 0065 makes the WIRE-1 §6.2 2b deltas by replacement; the §32 scope fence on every
+  Ground write. It amends the guards as left by every lower-numbered migration, BAGS-1's 0064
+  included.
+- Merge condition: 0065 is higher than every migration on `main`; otherwise re-lease (§0.1).
 - `ITEMMOVE1-RL-01` 10 per tile under a real tile row lock; `ITEMMOVE1-RL-02` 20,000 per channel,
   alarm at 16,000, with shard rows; the counter changes in the same transaction as each drop,
   pickup and `WorldReset` retirement (tests for each, and that the counter equals the live rows).
@@ -690,6 +761,7 @@ Acceptance:
   to their `boundary_tests` (TIMED batch §2.3 first item; merge condition).
 - `TIMEDITEM0B-RL-04` repeated with the binding as the 11th live item.
 - Crash between checkpoints loses at most one interval of charges and tries together (PG test).
+- Merge condition: 0066 is higher than every migration on `main`; otherwise re-lease (§0.1).
 - Not in scope: house dummies' single-user lane beyond check 6, parity fixtures.
 
 ## 3. Decision test
@@ -700,5 +772,9 @@ Acceptance:
   listed in §1.8 with what it waits on.
 - No packet starts before its prerequisites; no two open packets own the same path except the
   §0.3 registers.
+- Migration history stays monotonic in any merge order (§0.1 merge condition and re-lease).
+- Every server destination these packets add has a client packet (ITEM-CLIENT-1 to -4), and
+  every equipment lifecycle trigger (admission, restart, reconnect, Premium change, release) has
+  an owned path in EQUIP-RT-1.
 - No ruling widens an accepted decision; §1.1 and §1.5 only order or split work, and §1.6 applies
   ITEM-SEM-2b-2 §6 as written.
