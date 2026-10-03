@@ -1,0 +1,21 @@
+{
+  "result": "PASS",
+  "definitions": 443,
+  "ordered_perks_exact": 3671,
+  "weapon_bindings_exact": 665,
+  "threshold_classes_exact": 3,
+  "all_original_definition_metadata_preserved": true,
+  "full_progression_ruleset_preserved": true,
+  "ink_excluded": true,
+  "output_sha256": "93709a6c0f4c3f1129d8dbc10f9cad270ff115a0220681622cb932e7ab68f5ed",
+  "source_sha256": {
+    "content/proficiencies/index.json": "cd3313ca55c10357c49ba53f180cd1820ce98a618c83d27a8fb787a7a8503f5d",
+    "content/proficiencies/proficiencies-00000-00149.json": "76bfb19a9cc492a02ce2e01cd58735b0d74c32d104e13641d6e88692226af699",
+    "content/proficiencies/proficiencies-00150-00299.json": "4933213704e175d9c6b513e66e7f196032fd3148579b8336dc3063a7b108e9cb",
+    "content/proficiencies/proficiencies-00300-00442.json": "209c23cf764da9f3dfeafd2bd1a856aa65481e2d473d86efe639c1082bac904d",
+    "content/proficiencies/bindings.json": "ece454f39872fb805a54c8718152a406d537a372b87ecc5a108e13a5fd70fd47",
+    "rulesets/progression/weapon-proficiency/progression.json": "a32764eec0c4452fabc4a43d3a0a0fcfec8bf49dafde5ee9a7175442d3639209"
+  },
+  "importer_source_sha256": "6e4289ef0ca634a7d62e04ed71f68a0544b63ca2c623eb7e7a07bc5e849abf49",
+  "cli_source_sha256": "6ea557e9fc1beae69fa9b294930569318def6cdbd56bb7585ac0fcd7954abd8d"
+}
