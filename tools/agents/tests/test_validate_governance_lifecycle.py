@@ -175,6 +175,12 @@ class GovernanceLifecycleTests(unittest.TestCase):
             "- `python tools/agents/validate_governance.py`: pass\n\n## Self-review\n"
             "- `python -m unittest discover -s tools/agents/tests`: outside Validation\n",
         )
+        self.write(
+            archive + "OTV2-20261004-not-passed.md",
+            "```yaml\npr: 1703\n```\n## Validation\n\n"
+            "- `python tools/agents/validate_governance.py`: not run\n"
+            "- `python -m unittest discover -s tools/agents/tests`: FAILED (1 OK, 1 failure)\n\n## Self-review\n",
+        )
         self.write(archive + "OTV2-20261003-legacy.md", "```yaml\npr: null\n```\n")
         errors: list[str] = []
         validator.validate_archived_task_closeout(errors)
@@ -182,7 +188,11 @@ class GovernanceLifecycleTests(unittest.TestCase):
             errors,
             [
                 "archived task record docs/agents/tasks/archive/OTV2-20261004-no-suite.md "
-                "Validation must record `python -m unittest discover -s tools/agents/tests`",
+                "Validation must record `python -m unittest discover -s tools/agents/tests` with a pass result",
+                "archived task record docs/agents/tasks/archive/OTV2-20261004-not-passed.md "
+                "Validation must record `python tools/agents/validate_governance.py` with a pass result",
+                "archived task record docs/agents/tasks/archive/OTV2-20261004-not-passed.md "
+                "Validation must record `python -m unittest discover -s tools/agents/tests` with a pass result",
                 "archived task record docs/agents/tasks/archive/OTV2-20261004-placeholder.md "
                 "must record its positive canonical pr",
             ],
