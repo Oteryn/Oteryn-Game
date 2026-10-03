@@ -422,6 +422,19 @@ fn file_declarations(src: &str) -> Vec<Declaration> {
     let macros = macro_ranges(&code);
     let ranges = cfg_test_ranges(&code, &macros);
     let gated = |at: usize| test_only || ranges.iter().any(|(from, to)| (*from..*to).contains(&at));
+    // An attribute is also gated by a `#[cfg(test)]` later in the same item's attribute sequence.
+    let gated_sequence = |at: usize, end: usize| {
+        let mut i = skip_ws(&code, end);
+        while !gated(at) && code.get(i) == Some(&b'#') {
+            if ranges.iter().any(|(from, _)| *from == i) {
+                return true;
+            }
+            i = skip_ws(&code, bracket_end(&code, skip_ws(&code, i + 1)));
+        }
+        gated(at)
+    };
+    // A macro may emit its tokens anywhere, so a load inside a macro token tree has no lexical base.
+    let in_macro = |at: usize| macros.iter().any(|(from, to)| (*from..*to).contains(&at));
     // `sanitize` blanks literals in place, so a group that compacts to its delimiters holds at most
     // one string literal, read back from the same offsets in `src`. An escape could spell any
     // path, so only a plain literal names a file.
@@ -471,7 +484,7 @@ fn file_declarations(src: &str) -> Vec<Declaration> {
         let attr = compact(&code[at..end]);
         if attr.windows(5).any(|w| w == b"path=") {
             let decl = match literal(at, end) {
-                Some(path) if attr == b"#[path=]" => {
+                Some(path) if attr == b"#[path=]" && !in_macro(at) => {
                     let mut blocks: Vec<&(usize, usize, String)> = inline
                         .iter()
                         .filter(|(from, to, _)| (*from..*to).contains(&at))
@@ -490,7 +503,7 @@ fn file_declarations(src: &str) -> Vec<Declaration> {
             };
             decls.push(Declaration {
                 loads: decl.0,
-                gated: gated(at),
+                gated: gated_sequence(at, end),
                 explicit: decl.1,
             });
         }
@@ -504,10 +517,14 @@ fn file_declarations(src: &str) -> Vec<Declaration> {
         let open = skip_ws(&code, bang + 1);
         let end = group_end(&code, open);
         let decl = match literal(open, end) {
-            Some(path) if end > open && compact(&code[open + 1..end - 1]).is_empty() => (
-                Loads::File(basename(&path)),
-                Explicit::Literal(path, Vec::new()),
-            ),
+            Some(path)
+                if end > open && compact(&code[open + 1..end - 1]).is_empty() && !in_macro(at) =>
+            {
+                (
+                    Loads::File(basename(&path)),
+                    Explicit::Literal(path, Vec::new()),
+                )
+            }
             _ => (Loads::Any, Explicit::Unresolvable),
         };
         decls.push(Declaration {
@@ -517,6 +534,17 @@ fn file_declarations(src: &str) -> Vec<Declaration> {
         });
     }
     decls
+}
+
+/// A crate root Cargo builds without any declaration: the library, the main binary and every
+/// auto-discovered binary under `src/bin/`.
+fn crate_root(rel: &Path) -> bool {
+    let bin = Path::new("src/bin");
+    rel == Path::new("src/lib.rs")
+        || rel == Path::new("src/main.rs")
+        || (rel.parent() == Some(bin) && rel.extension().is_some_and(|e| e == "rs"))
+        || (rel.file_name().is_some_and(|f| f == "main.rs")
+            && rel.parent().and_then(Path::parent) == Some(bin))
 }
 
 fn test_named(rel: &Path) -> bool {
@@ -572,7 +600,8 @@ fn explicit_targets(rel: &Path, path: &str, blocks: &[String]) -> Vec<Option<std
 
 /// `path:line` of every production reference in `files` (crate-relative path, source). A
 /// test-named file is skipped only when every declaration that may load it is gated by
-/// `#[cfg(test)]` or sits in a file already skipped; one declared nowhere is not in the crate.
+/// `#[cfg(test)]` or sits in a file already skipped; one declared nowhere is not in the crate,
+/// unless it is a crate root Cargo builds on its own.
 /// Any other file, test-named or not, is scanned (an inner `#![cfg(test)]` still exempts it). A
 /// production `path` or `include!` is itself a finding unless every file it may resolve to, by
 /// exact path, is one of the scanned `files`.
@@ -586,7 +615,7 @@ fn gate_findings(files: &[(std::path::PathBuf, String)]) -> Vec<String> {
     loop {
         let mut changed = false;
         for (n, (rel, _)) in files.iter().enumerate() {
-            if skipped[n] || !test_named(rel) {
+            if skipped[n] || !test_named(rel) || crate_root(rel) {
                 continue;
             }
             let name = rel.file_name().and_then(|n| n.to_str()).unwrap_or("");
@@ -922,4 +951,50 @@ fn explicit_loads_resolve_by_exact_path() {
             "{decl}"
         );
     }
+}
+
+#[test]
+fn macro_loads_crate_roots_and_attribute_order() {
+    let call = "fn live() { commit_exact_owner_damage(); }\n";
+    let run = |files: &[(&str, &str)]| {
+        let files: Vec<(std::path::PathBuf, String)> = files
+            .iter()
+            .map(|(p, s)| ((*p).into(), (*s).to_owned()))
+            .chain([("src/ability/commit.rs".into(), String::new())])
+            .collect();
+        gate_findings(&files)
+    };
+    let unresolvable = vec!["src/lib.rs: loads an unresolvable file".to_owned()];
+    // A load inside any macro token tree has no lexical base, whatever blocks surround it.
+    for decl in [
+        "m! { mod fake { #[path = \"../ability/commit.rs\"] mod external; } }",
+        "macro_rules! m { () => { #[path = \"ability/commit.rs\"] mod c; }; }",
+        "macro_rules! m { () => { include!(\"ability/commit.rs\"); }; }",
+    ] {
+        assert_eq!(run(&[("src/lib.rs", decl)]), unresolvable, "{decl}");
+    }
+    // Auto-discovered binaries are crate roots and never skipped, test-named or not.
+    for bin in [
+        "src/bin/tool_tests.rs",
+        "src/bin/tests.rs",
+        "src/bin/tool/main.rs",
+    ] {
+        assert_eq!(run(&[(bin, call)]), vec![format!("{bin}:1")], "{bin}");
+    }
+    // An undeclared test-named file elsewhere is still not in the crate.
+    assert_eq!(run(&[("src/a/tool_tests.rs", call)]), Vec::<String>::new());
+    // `#[cfg(test)]` gates the whole attribute sequence, before or after `#[path]`.
+    for decl in [
+        "#[path = \"../tests/support.rs\"]\n#[cfg(test)]\nmod support;",
+        "#[path = \"../tests/support.rs\"]\n#[allow(dead_code)]\n#[cfg(test)]\nmod support;",
+    ] {
+        assert_eq!(run(&[("src/lib.rs", decl)]), Vec::<String>::new(), "{decl}");
+    }
+    assert_eq!(
+        run(&[(
+            "src/lib.rs",
+            "#[path = \"../tests/support.rs\"]\n#[cfg(not(test))]\nmod support;"
+        )]),
+        vec!["src/lib.rs: loads unscanned ../tests/support.rs".to_owned()]
+    );
 }

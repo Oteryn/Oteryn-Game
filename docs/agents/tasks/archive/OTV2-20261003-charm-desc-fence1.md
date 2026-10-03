@@ -102,6 +102,12 @@ No production change: one new test module and its `#[cfg(test)]` mod line.
   declaring file (normalised `.`/`..`, absolute and above-root paths refused, inline `mod` blocks
   with both `mod.rs` and stem readings) and must equal a scanned file exactly; an unresolvable
   explicit load is itself a finding. Regression cases for each.
+- Codex on 231f8c3e: P1 4174070905 (a `path` inside a macro token tree took its base from lexical
+  inline blocks) fixed: loads inside macro token trees are unresolvable. P1 4174070908
+  (auto-discovered `src/bin/*_tests.rs` binaries were skipped as undeclared) fixed: crate roots are
+  never skipped. P2 4174070918 (`#[path] #[cfg(test)] mod x;` read as ungated) fixed: gating covers
+  the whole attribute sequence. One round per owner decision D348; after it the D295 lexical gate is
+  frozen and further P1s on it are accepted residual risk (D348).
 
 ## PR and closeout
 
