@@ -17,6 +17,13 @@
 //!   matching boundary; a step back, an early step forward, or reopening an entitlement a later
 //!   snapshot withdrew (`NONE` or another entitlement), needs a new lifecycle revision.
 //!
+//! Every equivocation or lifecycle conflict also records the account's durable semantic conflict
+//! (migration 0033, keyed by account alone, first detection kept) and one security audit row per
+//! (kind, `authority_revision`) in the same transaction (PREMIUM-DELIVERY-0 §3.1, §10.2).
+//! [`DurabilityRoot::record_premium_semantic_failure`] records an unsupported response the same
+//! way; it needs no evidence row. Any conflict row makes the account conflicting for good: no path
+//! clears it (§3.1 declared deferral).
+//!
 //! Every outcome returns the durable view after the transaction. The caller authorizes benefit
 //! only from that view (fence before authorize, §6.3); this module holds no Premium policy.
 
@@ -27,6 +34,29 @@ use sqlx::Row;
 
 type Tx<'a> = sqlx::Transaction<'a, sqlx::Postgres>;
 const FINGERPRINT_VERSION: u8 = 1;
+
+/// The kind of a durable semantic conflict (PREMIUM-DELIVERY-0 §3.1): a same-revision
+/// contradiction (or a lifecycle regression) of accepted evidence, or an unsupported response.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum PremiumConflictKind {
+    Contradiction = 1,
+    Unsupported = 2,
+}
+
+/// The bounded facts of one semantic failure: never the payload or any credential.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct PremiumSemanticFailure {
+    pub account_id: [u8; 16],
+    pub kind: PremiumConflictKind,
+    pub authority_revision: u64,
+    pub schema: String,
+    pub producer_profile: String,
+    pub product_id: String,
+    pub product_version: u32,
+}
+
+/// The schema of every accepted evidence row (`oteryn.premium_snapshot.v1`).
+pub const EVIDENCE_SCHEMA: &str = "oteryn.premium_snapshot.v1";
 
 /// The producer lifecycle state of a snapshot (PREMIUM-DELIVERY-0 §4).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -116,8 +146,8 @@ impl PremiumEvidence {
         hash.finalize().into()
     }
 
-    /// Every semantic field of one ordered authority. `producer_revision` (build provenance)
-    /// and `refresh_after` (scheduling only) are excluded.
+    /// Every field compared under one `authority_revision` (PREMIUM-DELIVERY-0 §3.1 rule 1):
+    /// all but `producer_revision` (build provenance) and the request nonce.
     fn fingerprint(&self) -> [u8; 32] {
         let mut hash = Sha256::new();
         hash.update([FINGERPRINT_VERSION, self.state as u8]);
@@ -128,15 +158,24 @@ impl PremiumEvidence {
         hash.update(self.authority_revision.to_be_bytes());
         hash.update(self.authority_issued_at_us.to_be_bytes());
         hash.update(self.authority_valid_until_us.to_be_bytes());
+        hash.update(self.refresh_after_us.to_be_bytes());
         hash.finalize().into()
     }
 }
 
-/// The durable fence of one account: its latest accepted evidence and whether producer
-/// equivocation was ever detected for it.
+/// The durable fence of one account: its latest accepted evidence and whether a semantic
+/// conflict was ever recorded for it.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PremiumFenceView {
     pub latest: PremiumEvidence,
+    pub conflicting: bool,
+}
+
+/// The durable Premium state of one account at load: its fence, if it has accepted evidence,
+/// and whether a semantic conflict was recorded, which needs no evidence.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct PremiumAccountRecord {
+    pub fence: Option<PremiumFenceView>,
     pub conflicting: bool,
 }
 
@@ -173,27 +212,103 @@ impl DurabilityRoot {
             .await
     }
 
-    /// The durable fence of one account, or `None` before its first accepted snapshot.
-    pub async fn load_premium_fence(
+    /// Record one unsupported response (PREMIUM-DELIVERY-0 §3.1 rule 2): the account's durable
+    /// conflict, if it has none yet, and its audit row, once per (kind, `authority_revision`).
+    /// Committed before the caller reports the outcome.
+    pub async fn record_premium_semantic_failure(
         &self,
-        account_id: [u8; 16],
-    ) -> Result<Option<PremiumFenceView>, DurabilityError> {
+        failure: &PremiumSemanticFailure,
+    ) -> Result<(), DurabilityError> {
+        let failure = failure.clone();
         self.try_issue_semantic_pass()?
             .run(move |holder, deadline| {
                 Box::pin(async move {
                     let mut tx = begin_semantic_transaction(holder, deadline).await?;
-                    let view = match account_fence(&mut tx, account_id, false).await? {
-                        Some((high, conflict)) => {
-                            Some(view(&mut tx, account_id, high, conflict).await?)
-                        }
-                        None => None,
-                    };
+                    lock_account(&mut tx, failure.account_id).await?;
+                    record_failure(&mut tx, &failure).await?;
                     commit_semantic_transaction(tx, deadline).await?;
-                    Ok(view)
+                    Ok(())
                 })
             })
             .await
     }
+
+    /// The durable Premium state of one account.
+    pub async fn load_premium_fence(
+        &self,
+        account_id: [u8; 16],
+    ) -> Result<PremiumAccountRecord, DurabilityError> {
+        self.try_issue_semantic_pass()?
+            .run(move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    let record = match account_fence(&mut tx, account_id, false).await? {
+                        Some((high, conflicting)) => PremiumAccountRecord {
+                            fence: Some(view(&mut tx, account_id, high, conflicting).await?),
+                            conflicting,
+                        },
+                        None => PremiumAccountRecord {
+                            fence: None,
+                            conflicting: semantic_conflict(&mut tx, account_id).await?,
+                        },
+                    };
+                    commit_semantic_transaction(tx, deadline).await?;
+                    Ok(record)
+                })
+            })
+            .await
+    }
+}
+
+/// Serialize every Premium write of one account, whether or not it has a fence row yet.
+async fn lock_account(tx: &mut Tx<'_>, account: [u8; 16]) -> Result<(), DurabilityError> {
+    sqlx::query(
+        "SELECT pg_advisory_xact_lock(hashtextextended(\
+         'oteryn:premium-account:' || encode($1, 'hex'), 0))",
+    )
+    .bind(account.as_slice())
+    .execute(&mut **tx)
+    .await?;
+    Ok(())
+}
+
+async fn semantic_conflict(tx: &mut Tx<'_>, account: [u8; 16]) -> Result<bool, DurabilityError> {
+    Ok(sqlx::query_scalar(
+        "SELECT EXISTS (SELECT 1 FROM game_premium_account_conflict \
+                         WHERE account_id = encode($1,'hex')::uuid)",
+    )
+    .bind(account.as_slice())
+    .fetch_one(&mut **tx)
+    .await?)
+}
+
+/// Write the durable conflict (first detection kept) and the audit row (a repeat adds none).
+async fn record_failure(
+    tx: &mut Tx<'_>,
+    failure: &PremiumSemanticFailure,
+) -> Result<(), DurabilityError> {
+    for sql in [
+        "INSERT INTO game_premium_account_conflict(account_id, kind, authority_revision, \
+           snapshot_schema, producer_profile, product_id, product_version) \
+         VALUES (encode($1,'hex')::uuid, $2, $3::numeric, $4, $5, $6, $7) \
+         ON CONFLICT (account_id) DO NOTHING",
+        "INSERT INTO game_premium_security_audit(account_id, kind, authority_revision, \
+           snapshot_schema, producer_profile, product_id, product_version) \
+         VALUES (encode($1,'hex')::uuid, $2, $3::numeric, $4, $5, $6, $7) \
+         ON CONFLICT (account_id, kind, authority_revision) DO NOTHING",
+    ] {
+        sqlx::query(sql)
+            .bind(failure.account_id.as_slice())
+            .bind(failure.kind as i16)
+            .bind(failure.authority_revision.to_string())
+            .bind(&failure.schema)
+            .bind(&failure.producer_profile)
+            .bind(&failure.product_id)
+            .bind(i64::from(failure.product_version))
+            .execute(&mut **tx)
+            .await?;
+    }
+    Ok(())
 }
 
 async fn accept(
@@ -202,6 +317,7 @@ async fn accept(
 ) -> Result<PremiumFenceOutcome, DurabilityError> {
     let account = evidence.account_id;
     let revision = evidence.authority_revision;
+    lock_account(tx, account).await?;
     let Some((high, conflict)) = account_fence(tx, account, true).await? else {
         let step = entitlement_step(tx, evidence).await?;
         insert_evidence(tx, evidence).await?;
@@ -214,13 +330,14 @@ async fn accept(
         .bind(revision.to_string())
         .execute(&mut **tx)
         .await?;
+        let conflict = semantic_conflict(tx, account).await?;
         return Ok(PremiumFenceOutcome::Accepted(
-            view(tx, account, revision, false).await?,
+            view(tx, account, revision, conflict).await?,
         ));
     };
     if let Some(stored) = stored_fingerprint(tx, account, revision).await? {
         if stored != evidence.fingerprint() {
-            return mark_conflict(tx, account, high, conflict, revision).await;
+            return mark_conflict(tx, evidence, high, conflict).await;
         }
         let current = view(tx, account, high, conflict).await?;
         return Ok(if revision == high {
@@ -236,7 +353,7 @@ async fn accept(
     }
     let step = entitlement_step(tx, evidence).await?;
     if step == EntitlementStep::Regress {
-        return mark_conflict(tx, account, high, conflict, revision).await;
+        return mark_conflict(tx, evidence, high, conflict).await;
     }
     insert_evidence(tx, evidence).await?;
     write_entitlement(tx, evidence, step).await?;
@@ -253,7 +370,8 @@ async fn accept(
     ))
 }
 
-/// The account high water and conflict marker, row-locked when `lock`.
+/// The account high water and whether the account is conflicting (its fence marker or a durable
+/// semantic conflict), row-locked when `lock`.
 async fn account_fence(
     tx: &mut Tx<'_>,
     account: [u8; 16],
@@ -273,7 +391,9 @@ async fn account_fence(
     else {
         return Ok(None);
     };
-    Ok(Some((numeric(&row, "high")?, row.try_get("conflict")?)))
+    let marked: bool = row.try_get("conflict")?;
+    let conflicting = marked || semantic_conflict(tx, account).await?;
+    Ok(Some((numeric(&row, "high")?, conflicting)))
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -371,15 +491,29 @@ async fn write_entitlement(
     Ok(())
 }
 
-/// Record detected equivocation at `revision` (sticky: the first detection stays) and return
-/// the fence, whose high water is unchanged.
+/// Record a contradiction by `evidence` (sticky: the first detection stays), with its durable
+/// conflict and audit rows, and return the fence, whose high water is unchanged.
 async fn mark_conflict(
     tx: &mut Tx<'_>,
-    account: [u8; 16],
+    evidence: &PremiumEvidence,
     high: u64,
     already: bool,
-    revision: u64,
 ) -> Result<PremiumFenceOutcome, DurabilityError> {
+    let account = evidence.account_id;
+    let revision = evidence.authority_revision;
+    record_failure(
+        tx,
+        &PremiumSemanticFailure {
+            account_id: account,
+            kind: PremiumConflictKind::Contradiction,
+            authority_revision: revision,
+            schema: EVIDENCE_SCHEMA.into(),
+            producer_profile: evidence.producer_profile.clone(),
+            product_id: evidence.product_id.clone(),
+            product_version: evidence.product_version,
+        },
+    )
+    .await?;
     if !already {
         sqlx::query(
             "UPDATE game_premium_account_fence SET conflict_authority_revision = $2::numeric \
@@ -495,7 +629,15 @@ fn numeric(row: &sqlx::postgres::PgRow, column: &str) -> Result<u64, DurabilityE
 
 #[cfg(test)]
 mod tests {
-    use super::{EntitlementState, PremiumEvidence};
+    use super::{EntitlementState, PremiumConflictKind, PremiumEvidence};
+
+    #[test]
+    fn semantic_failure_api_is_linked() {
+        let _ = super::DurabilityRoot::record_premium_semantic_failure;
+        // The 0033 CHECK values.
+        assert_eq!(PremiumConflictKind::Contradiction as i16, 1);
+        assert_eq!(PremiumConflictKind::Unsupported as i16, 2);
+    }
 
     fn active() -> PremiumEvidence {
         PremiumEvidence {

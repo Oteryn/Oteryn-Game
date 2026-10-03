@@ -1938,6 +1938,7 @@ dependencies = [
  "oteryn-simulation-determinism",
  "prost",
  "rcgen",
+ "reqwest",
  "rustix 1.1.5",
  "rustls",
  "serde",
