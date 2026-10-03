@@ -172,6 +172,12 @@ exactly the change, under the tile and counter row lock.
   pickup merges into a compatible receiver (the tile's top Ground item, the main backpack's first
   compatible stack) and, under `ITEM_STACK_COUNT_V1`, may move part of a stack. Ground to a slot
   still waits.
+- **Amendment (TIMED-RT-1b slot wiring; `reviews/OTERYN_GAME_ARCH_BATCH_TIMED_FORGE_PROF_PACKETS_2026-10-03.md`
+  §2.3 Scope, ARCH-SLOT-WIRING-1; #1696 P1 4175041166).** A drop from a slot to Ground is a move
+  out of a slot. TIMED-RT-1b and ITEM-MOVE-2b are not ordered either. Whichever of the two merges
+  second wires the `timed_item_host` call sites of that drop, with tests, as a merge condition:
+  the item is stopped (TIMED-ITEM-0B §5.3) and its lane is empty before the drop transaction
+  runs (§9.1), and a rejected drop makes the item live again from the row (§9.1).
 - **Corpses.** D133 and D134 bind every move whose source is a corpse entry, on the database clock
   with reach. A corpse is never a move source.
 - **Limits.** `ITEMMOVE1-RL-01` loose items per tile: 10. `ITEMMOVE1-RL-02` dropped items per

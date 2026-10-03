@@ -34,6 +34,8 @@ under D317 and chose option (a).
   - An equip or swap into a slot makes the item live.
   - An unequip or swap out of a slot stops the item, then waits until its lane is empty; a
     rejected move makes it live again from the row (round 1, #1696 P1s).
+  - A drop from a slot to Ground is a move out of a slot: whichever of RT-1b and ITEM-MOVE-2b
+    merges second wires it under the same rules (round 2, #1696 P1 4175041166; WIRE1 §5).
 - The condition is written into both packets: the bundle's §1.1 and §2.3, and ITEM-MOVE-WIRE-1 §4.
   No ordering is added, so ITEM-MOVE-2a, FORGE-1b and TIMED-RT-1c are not blocked on RT-1b.
 

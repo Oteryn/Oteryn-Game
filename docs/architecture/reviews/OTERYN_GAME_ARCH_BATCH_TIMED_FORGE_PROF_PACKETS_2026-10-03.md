@@ -369,6 +369,10 @@ Acceptance:
     - An item moved into a slot stays non-live until the slot call sites are wired.
     - Leaving a slot stops the item (TIMED-ITEM-0B §5.3) and waits until its lane is empty;
       a rejected move makes it live again from the row (§9.1). Both have tests (#1696 P1s).
+    - A drop from a slot to Ground (ITEM-MOVE-2b §5) is also a move out of a slot. Its call
+      sites go to whichever of RT-1b and ITEM-MOVE-2b merges second, with the same stop, empty
+      lane and rehost rules and tests. ITEM-MOVE-WIRE-1 §5 carries the same condition (#1696 P1
+      4175041166).
   - **The exercise binding** (place 3) moves to EXERCISE-1, with the two composed writers
     (composed checkpoint and composed expiry burn).
   - **Lifecycle paths: the owner is whichever PR adds them.** `main` has no character channel
