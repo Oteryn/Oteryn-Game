@@ -20,7 +20,7 @@ from unittest.mock import patch
 ROOT = Path(__file__).resolve().parents[2]
 GATE = ROOT / ".github/workflows/merge-group-gate.yml"
 LIFECYCLE = ROOT / "tools/agents/tests/test_governance_lifecycle_discovery.py"
-APPROVED = "ed5975ba0fe74a9e0836eb492c55f3fa363b4d85"
+APPROVED = "ecbc78bf20e8db2c13eca31dd54cedc6c971bd2e"
 LIFECYCLE_COMMAND = "python tools/agents/tests/test_governance_lifecycle_discovery.py"
 REGISTERED_POSTGRES_TARGETS = (
     ("durability_postgres", "apps/game-server/tests/durability_postgres.rs"),
@@ -141,7 +141,20 @@ def _queue_lane_routing_canaries(candidate: str) -> None:
             assert namespace["result"] == dict(rust="true", windows="true", surface="full")
 
 
+def _postgres_cache_consumer_regressions() -> None:
+    for filename, job in (("rust.yml", "durability-postgres"), ("merge-group-gate.yml", "durability_postgres")):
+        text = (ROOT / ".github/workflows" / filename).read_text(encoding="utf-8")
+        block = text.split("  " + job + ":\n", 1)[1]
+        block = re.split(r"^  [A-Za-z_][A-Za-z_0-9-]*:\n", block, maxsplit=1, flags=re.M)[0]
+        assert "actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9" in block
+        assert "actions/cache/save@" not in block
+        assert "key: rust-linux-v2-1.94.0-${{ hashFiles('Cargo.lock') }}-${{ github.sha }}" in block
+        assert "            rust-linux-v2-1.94.0-${{ hashFiles('Cargo.lock') }}-\n" in block
+        assert block.index("Restore trimmed Cargo cache") < block.index("Verify locked metadata")
+
+
 def main() -> int:
+    _postgres_cache_consumer_regressions()
     spec = importlib.util.spec_from_file_location(
         "queue_policy_core", Path(__file__).with_name("validate_repository_policy_core.py")
     )
