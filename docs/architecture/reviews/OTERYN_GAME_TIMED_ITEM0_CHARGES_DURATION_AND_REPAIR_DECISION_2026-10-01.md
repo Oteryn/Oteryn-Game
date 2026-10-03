@@ -92,15 +92,15 @@ definition with a `transform {trigger: equip}` into one, such as an unworn ring 
 | Column | Meaning |
 |---|---|
 | `item_instance_id` | primary key, references `game_item_instances` |
-| `charges` | 1..65,535, or NULL for a definition without charges |
+| `charges` | 1..65,535, or NULL for a definition without charges or a spent row (0 is never stored: reaching 0 is an expiry, §5) |
 | `remaining_ms` | the active-time budget left, 0..`TIMEDITEM0-RL-02`, or NULL without `temporal` |
 | `state_revision` | uint64, +1 per write |
 
 - **Creation (one rule): rows are lazy.** No MINT, migration or foreign shape ever writes a row.
   An item of an admitted timed definition **without a row has the full charges and duration of its
   definition** (for an inactive form, of its paired active form). Its first own write creates the
-  row: the first checkpoint or charge spent while equipped (§5), its first equip transform (§6), or
-  an expiry (§5). So the MINT paths (loot, rewards, NPC BUY, any later source) and the existing
+  row at expected revision 0: its first checkpoint while equipped (§5), its first equip transform
+  (§6), its expiry (§5) or its repair (§7). There is no write per charge spent. So the MINT paths (loot, rewards, NPC BUY, any later source) and the existing
   population need no row and no backfill. Content validation refuses an NPC offer whose `count`
   differs from the definition's charges, since a fresh item always has full charges (NPC-0 §5).
 - **Paired forms keep the row.** The row belongs to the item, not to the form. An unequip transform
@@ -117,8 +117,8 @@ definition with a `transform {trigger: equip}` into one, such as an unworn ring 
   yet": the write is an insert with the precondition that no row exists, creating revision 1. If a
   row already exists, the write finds no match and writes nothing, exactly like a revision mismatch;
   a replay of the same occurrence then returns the result its first commit recorded (keyed by the
-  item and the expected revision). A first checkpoint, a first charge spent, a first equip and an
-  expiry before any earlier write all use expected revision 0.
+  item and the expected revision). A first checkpoint, a first equip, an expiry
+  and a repair before any earlier write all use expected revision 0.
 - **Writes.** Every write is a DUR-03 `STATE_MUTATION` (§11.1) or part of a `TRANSFORM`
   (`PRESERVE_INSTANCE`), in a one-item transaction (or as the one timed line of an equip move, §6),
   under the item writer's fence and the holder's `character_root` lock, under a closed
@@ -138,8 +138,9 @@ definition with a `transform {trigger: equip}` into one, such as an unworn ring 
   **checkpoint**: its own one-item item-writer transaction per changed item, under
   `TimedItemCause::Checkpoint {item, state_revision}`, requiring the row to still have that revision,
   so a replay or a superseded checkpoint writes nothing. Checkpoints run at the A13 cadence (at most
-  every 60 s), at logout before OFFLINE-0's `logout` marker, before a channel transfer or house
-  handoff, and at expiry. A crash loses at most one checkpoint of time and charges, in the player's
+  every 60 s), at logout before OFFLINE-0's `logout` marker, and before a channel transfer or house
+  handoff. Charges are runtime-owned like time: spending one changes only the live value, and the
+  next checkpoint commits it; there is no synchronous per-spend write. A crash loses at most one checkpoint of time and charges, in the player's
   favour (R2).
 - **Stop before leaving the slot.** Before any transaction moves a live item out of its slot (an
   unequip, a swap, a death drop), the runtime stops its clock and
@@ -158,12 +159,13 @@ definition with a `transform {trigger: equip}` into one, such as an unworn ring 
   present, else `temporal.decay_target`; content validation rejects a definition with both set to
   different targets. The same target applies whether the item runs out of time or of charges.
 - **Expiry** at `remaining_ms = 0` or 0 charges: the item stops being active at once, and the
-  runtime commits one one-item transaction under `TimedItemCause::Expire {item, reason}`, `reason`
+  runtime commits, **with no checkpoint first**, one atomic one-item transaction that writes the
+  final state directly (so the row never stores 0 charges) under `TimedItemCause::Expire {item, reason}`, `reason`
   `TimeExhausted {state_revision}` or `ChargesExhausted {state_revision}`, keyed by (item, reason)
   and requiring the row's current `state_revision` to equal the reason's, so a replay or a stale
   reason writes nothing. It is either:
-  - a `TRANSFORM` (`PRESERVE_INSTANCE`) to the decay target in place, whose row is created fresh
-    the row's values are reset from the target's definition (frozen unless that form is equipped and
+  - a `TRANSFORM` (`PRESERVE_INSTANCE`) to the decay target in place, in which the row's values are
+    reset from the target's definition (frozen unless that form is equipped and
     live), or set spent when the target is not timed, with the revision + 1; or
   - only when there is no decay target, a **BURN** that retires the item: it moves from its
     equipment slot to `RETIRED` with no location, and its row stays as the inert row of a retired
@@ -273,7 +275,7 @@ Amended: EQUIP-0 §3.1 and §3.2; CONDITIONS-0 §3 (the `ITEM_REGENERATION` fami
 
 ## 10. Causes and the DUR-03 shapes
 
-Closed `TimedItemCause`: `Checkpoint {item, state_revision}`, `ChargeSpent`, `EquipForm
+Closed `TimedItemCause`: `Checkpoint {item, state_revision}`, `EquipForm
 {direction}`, `Expire {reason: TimeExhausted
 {state_revision} | ChargesExhausted {state_revision}}`. Each names its ItemInstanceId and an
 occurrence issued by the runtime. No generic or caller-chosen reason. The repair burn is
@@ -293,7 +295,7 @@ Lines per shape:
 
 | Shape | Cause | Lines |
 |---|---|---|
-| row write | `Checkpoint`, `ChargeSpent` (creating the row on its first write) | one `STATE_MUTATION` of the row; no location or value line |
+| row write | `Checkpoint` (creating the row at expected revision 0 on its first write) | one `STATE_MUTATION` of the row; no location or value line |
 | expiry transform | `Expire` with a decay target | one `TRANSFORM` (`PRESERVE_INSTANCE`, 1 input / 1 output) and the row reset (or set spent), revision + 1 |
 | expiry burn | `Expire` without a decay target | one BURN to `RETIRED` (1 location line) and the row left inert; `Expire` is a BURN sink (DUR-03 §15) |
 | equip form | `EquipForm` | the transform and row line inside the equip move or swap (§6) |
@@ -314,10 +316,10 @@ replayed or stale `Expire` writes nothing; a ring without a decay target is burn
 event; unequipping 59 s after the last checkpoint stores the live value, so re-equipping never adds
 time; a ring-for-ring swap is refused `SWAP_TIMED_BOTH` and a ring onto an empty or a non-timed slot
 works; a death drop writes no timed line and the dropped ring keeps its checkpointed time; lighting a
-torch is refused `NOT_ADMITTED`; repairing worn soft boots into unworn ones leaves no row, and the first equip
-seeds the active form's full duration; worn soft boots inside a bag are not found by the repair,
+torch is refused `NOT_ADMITTED`; repairing worn soft boots into unworn ones writes the row with full values
+and revision + 1 (or creates it at expected revision 0 when none existed); worn soft boots inside a bag are not found by the repair,
 and found once moved to the main backpack; a first checkpoint inserts at expected revision 0 and a second insert attempt writes nothing; soft boots repaired after expiry keep their row with a higher revision, so the old expiry key never matches; a ring retired by `WorldReset` keeps an inert row and
-the reset writes no timed line; an expiry transform at 1 / 1 passes and 2 / 1 is refused; a newly minted unworn ring has no row until equipped; a
+the reset writes no timed line; an expiry transform at 1 / 1 passes and 2 / 1 is refused; a newly minted unworn ring has no row until its first equip, which creates it at expected revision 0; spending a charge writes nothing until the next checkpoint; the last charge's expiry commits without a prior checkpoint and never stores 0 charges; a
 ring-for-ring swap answers `BLOCKED`; a repair paid from 19 coin stacks commits and from 20 is refused; a life
 ring's regeneration ticks alongside food regeneration; the energy ring's shield stays while mana is
 0 and ends at unequip; a charge-only item at 0 charges with a `transform {trigger: decay}`

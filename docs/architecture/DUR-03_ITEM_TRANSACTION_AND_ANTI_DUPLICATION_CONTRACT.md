@@ -1398,12 +1398,14 @@ authority, conservation) is unchanged.
   occurrence }`. **Amendment (pending on acceptance of TIMED-ITEM-0; `reviews/OTERYN_GAME_TIMED_ITEM0_CHARGES_DURATION_AND_REPAIR_DECISION_2026-10-01.md` §7).** Plus `NpcRepair { npc, offer, occurrence }`
   (owner answer 1a), whose transaction also transforms one item (`PRESERVE_INSTANCE`) and resets
   its timed row; its plan admits at most 19 coin inputs, so inputs, change and the repaired item
-  stay within the fee-shape rows below (22 touched items, 64 work units). TIMED-ITEM-0 (§10) also
+  stay within 22 touched items, under the repair-specific work row `DUR03-RL-06-NPC-REPAIR` 22
+  participants / 68 work units (the fee shape's 64 plus the transform, the timed-row reset and the
+  item check). TIMED-ITEM-0 (§10) also
   admits these one-item shapes under the closed `TimedItemCause`, with the shape rows listed there
   (row write 1 / 2 work units; expiry transform `DUR03-RL-04-TIMED-EXPIRY` 1 / 1 and 1 / 4; expiry
   burn 1 location line and 1 / 4), and the repair rows `DUR03-RL-04-NPC-REPAIR` 1 / 1 and
   `DUR03-RL-06-NPC-REPAIR` 22 / 68, the repaired item being a direct main-backpack entry:
-  a row `STATE_MUTATION` (`Checkpoint`, `ChargeSpent`); an expiry `TRANSFORM`
+  a row `STATE_MUTATION` (`Checkpoint`; charges are checkpointed, never written per spend); an expiry `TRANSFORM`
   (`PRESERVE_INSTANCE`) to the decay target; an expiry **BURN** to `RETIRED` (one location line, the
   row left inert, one audit event with the before and after values) when there is no decay target;
   and, inside an equip move or swap, one `EquipForm` transform and row line on an already-touched
