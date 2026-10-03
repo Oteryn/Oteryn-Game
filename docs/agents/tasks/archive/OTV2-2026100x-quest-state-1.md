@@ -10,7 +10,7 @@ issue: 162
 lane_id: quest
 base_branch: main
 branch: quest-state-1
-pr: PR_NUMBER
+pr: 1684
 base_sha: 98a2f95
 head_sha: "exact frozen head in the FREEZE_SHA report to the control plane"
 final_head_sha: "exact frozen head in the FREEZE_SHA report to the control plane"
@@ -34,8 +34,8 @@ owned_paths:
   - apps/game-server/tests/support/quest_state_postgres_cases.rs
   - apps/game-server/tests/character_authority_postgres.rs
   - docs/agents/tasks/archive/OTV2-2026100x-quest-state-1.md
-  # Asked of the control plane (QUESTION, option a): the writer's sequencer entry and the
-  # recovery integrity chain need them.
+  # Granted by the control plane (option a; D358 reply): minimal additions only, the quest
+  # slot, the SEQUENCED_WRITERS entry and the ninth receipt kind in the recovery chain.
   - apps/game-server/src/durability/character_revision_sequencer.rs
   - apps/game-server/src/durability/character_authority.rs
 depends_on:
@@ -114,10 +114,10 @@ QUEST-STATE-0 §3-§6 and §13 as packet §14 states them, with account completi
 ## Validation
 
 - `cargo fmt --all --check`: pass.
-- `cargo clippy --locked -p oteryn-game-server --all-targets -- -D warnings`: CLIPPY_RESULT.
-- `cargo test --locked -p oteryn-game-server` with PostgreSQL 17.6: TEST_RESULT.
-- `python tools/agents/validate_governance.py`: GOVERNANCE_RESULT.
-- `python -m unittest discover -s tools/agents/tests`: UNITTEST_RESULT.
+- `cargo clippy --locked -p oteryn-game-server --all-targets -- -D warnings`: pass.
+- `cargo test --locked -p oteryn-game-server` with PostgreSQL 17.6: pass (all targets; new suites `quest_state_postgres_cases` 7, `quest_obligations` 2).
+- `python tools/agents/validate_governance.py`: pass.
+- `python -m unittest discover -s tools/agents/tests`: pass (54 tests).
 
 ## Review
 
