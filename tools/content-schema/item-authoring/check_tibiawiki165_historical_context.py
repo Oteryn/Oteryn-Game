@@ -186,7 +186,7 @@ def current_weapon103(root=ROOT):
     expected = forge.checked(
         root,
         "docs/agents/evidence/OTV2-20261002-item-weapon-metadata-promotion-v1.json",
-        "56ebdad2a6edb31fad464cfe22d28127c171ffa20258f704ab46f1eed07b6cec",
+        "5814324f49b967e147b8d66b4d465161cf5b05bcec510670b999b563fd3e162c",
     )
     if actual != expected:
         raise ValueError("historical411/current103 packet reproduction drift")

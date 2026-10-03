@@ -111,7 +111,7 @@ def closed_forge_owner():
 def closed_weapon_metadata():
     """Sealed103 source properties; absolute percentages are not relative hit ratios."""
     raw = (ROOT / "docs/agents/evidence/OTV2-20261002-item-weapon-metadata-promotion-v1.json").read_bytes()
-    require(hashlib.sha256(raw).hexdigest() == "56ebdad2a6edb31fad464cfe22d28127c171ffa20258f704ab46f1eed07b6cec", "WEAPON_METADATA_PACKET_DIGEST")
+    require(hashlib.sha256(raw).hexdigest() == "5814324f49b967e147b8d66b4d465161cf5b05bcec510670b999b563fd3e162c", "WEAPON_METADATA_PACKET_DIGEST")
     packet = json.loads(raw)
     proof_raw = (ROOT / "docs/agents/evidence/OTV2-20261002-item-weapon-metadata-source-qualification-v2.json").read_bytes()
     require(hashlib.sha256(proof_raw).hexdigest() == "bc50d64e281534e9b8026029d3ee0b78e23114ddf042e01d01401c69c1dcd02a", "WEAPON_METADATA_PROOF_DIGEST")

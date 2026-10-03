@@ -160,6 +160,25 @@ def check_parent_receipt(root, proof):
         raise ValueError("current parent source owners missing")
 
 
+# D316/D341: main's quest-reward admission overlay reaches content/items after promotion, so
+# the Native guards compare against the pre-overlay stage that the Rust promotion applies to.
+PRE_OVERLAY = "content/world/definitions/reference.json"
+
+
+def pre_overlay_definitions(root, current):
+    """Pre-overlay Item definitions; exactly the current Item identities, no others."""
+    definitions = {}
+    for row in json.loads((root / PRE_OVERLAY).read_text())["records"]:
+        if row["identity"]["family"] != "Item":
+            continue
+        if row["identity"]["key"] in definitions:
+            raise ValueError("duplicate pre-overlay Item identity")
+        definitions[row["identity"]["key"]] = row
+    if set(definitions) != set(current):
+        raise ValueError("pre-overlay/current Item identity set drift")
+    return definitions
+
+
 def qualify(source, record, binding, obj, own, routed):
     iid, target, field = source["source_item_id"], source["target"], source["field"]
     if (
@@ -289,6 +308,12 @@ def build(root=ROOT):
             if key in records:
                 raise ValueError("duplicate native Item")
             records[key] = record
+    # D316/D341: the Native guards read the pre-overlay definition stage.
+    definitions = pre_overlay_definitions(root, records)
+    records = {
+        key: record | {"definition": definitions[key]}
+        for key, record in records.items()
+    }
     routed, maps = set(), {}
     for family in ("objects", "terrain"):
         for path in sorted((root / f"content/world/{family}").glob("*.json")):
