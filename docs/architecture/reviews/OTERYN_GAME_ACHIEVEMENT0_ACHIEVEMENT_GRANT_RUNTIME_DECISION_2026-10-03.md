@@ -31,14 +31,14 @@
 |---|---|---|---|
 | ACH-QUEST-1 | impl, persistence review | the `achievement` field on a quest transition and its grant in the transition transaction (§3.2) | QUEST-STATE-1 |
 | ACH-ENC-1 | impl, persistence review | the `achievement` outcome consumer of an encounter (§3.3) | ENC-OUTCOME-1 |
-| ACH-COUNTER-1 | impl, persistence review | the threshold table and the grant at a counter's durable commit, first for level and skill receipts (§3.4) | the XP receipt; SKILLS-0's build receipts |
-| ACH-NOTIFY-1 | impl, protocol review | the `ACHIEVEMENT_EARNED_V1` push after a `Granted` commit (§5) | FND-02 event registry |
+| ACH-COUNTER-1 | impl, persistence review | the batch grant API (§3.1), the threshold table and the grant at a counter's durable commit, first for level and skill receipts (§3.4) | the XP receipt; SKILLS-0's build receipts |
+| ACH-NOTIFY-1 | impl, protocol review | capability 8 `ACHIEVEMENT_NOTICES_V1` and state domain 13 `ACCOUNT_ACHIEVEMENT_NOTICES` in the FND-02 registry, with the delta after a `Granted` commit (§5) | the FND-02 state-domain path |
 | ACH-COVERAGE-1 | content tooling | the coverage report (§4) in `validate_achievements.py` | none |
 
 The **Character progression lane** is the runtime owner of every child here.
 - **Who calls the shared function.** The Achievement domain module stays the only writer of the
-  account fact (owner contract §1). Each granter calls the one `record_achievement_grant` from its
-  own transaction, and none calls it from anywhere else.
+  account fact (owner contract §1). Each granter calls the one grant entry point (§3.1) from its own
+  transaction, and none calls it from anywhere else.
 - **Unchanged.** The reward-claim grant and the chest `USE` path stay as they are.
 
 ## 1. Question
@@ -91,7 +91,21 @@ single-owner, same-transaction rule.
 ### 3.1 Common rule
 
 - An achievement is granted only inside the fenced character transaction that durably commits the
-  earning event, with exactly one `record_achievement_grant` call per (event, key).
+  earning event, with exactly one grant request per (event, key).
+- **One witness, one call per transaction.** `FencedGrantingCharacter` stays neither `Clone` nor
+  `Copy`, and the grant consumes it. ACH-COUNTER-1 adds `record_achievement_grants(tx, granter,
+  requests)`, the batch form of the same function:
+  - it consumes the one witness and checks it once against the transaction (`pg_current_xact_id`)
+    and the `character_root` lock, exactly as the single grant does today;
+  - it takes 1 to `ACHIEVEMENT0-RL-01` (64) requests of the same character, with no duplicate
+    (source, key) pair, and processes them in ascending (source event id, key) order;
+  - each request has the single grant's semantics (`Granted`, `AlreadyHeld`, `Retired`), and it
+    returns one outcome per request in input order;
+  - any `UnknownAchievement`, invalid input or storage error fails the whole call, and the granter
+    drops its transaction uncommitted, as owner contract §3.3 requires;
+  - `record_achievement_grant` becomes the one-request form of it, so the witness, the fence and
+    the atomicity rule are unchanged, and every granter makes at most one grant call per
+    transaction.
 - **Source event.** It is `(kind, event_id)`, where `kind` is one of:
   - `oteryn:reward-claim` (existing);
   - `oteryn:quest-transition`;
@@ -150,6 +164,11 @@ single-owner, same-transaction rule.
 - **Grant.** The counter owner's own durable commit that moves the counter from `before` to
   `after` grants, in that transaction, every threshold with `before < value <= after`, with source
   `(oteryn:counter-threshold, H(character_id, counter, value))`.
+- **Several thresholds at once.** One receipt can move several counters past several thresholds
+  (SKILLS-0 §3.4). The commit collects every crossed threshold of every counter it moves and grants
+  them in one `record_achievement_grants` call (§3.1). Content validation keeps the thresholds one
+  receipt can cross within `ACHIEVEMENT0-RL-01`; a receipt that would exceed it fails closed and
+  commits nothing.
 - **Live counts.** A counter checkpointed from live state (tries, kills) grants at the checkpoint
   or receipt that crosses the threshold, never at the live tick.
 - **First counters:**
@@ -178,21 +197,46 @@ single-owner, same-transaction rule.
 
 ## 5. Notification (ACH-NOTIFY-1)
 
+- **Carrier.** The notice is a `StateDelta` (FND-02 message type 9, `SERVER_SEQUENCED`) of a new
+  state domain, not a new message type. The FND-02 registry gains, in ACH-NOTIFY-1's registry
+  commit:
+  - capability **8** `ACHIEVEMENT_NOTICES_V1` (owner: the Achievement domain module), with no
+    command type and state domain 13; not offered before ACH-NOTIFY-1 ships;
+  - state domain **13** `ACCOUNT_ACHIEVEMENT_NOTICES`, with delta type 1
+    `ACHIEVEMENT_EARNED_DELTA_V1` and snapshot type 1 `ACHIEVEMENT_NOTICES_SNAPSHOT_V1`, both gated
+    by capability 8.
+
+  The numbers are the control plane's next free leases in STATE (cmd 14, domain 13, cap 8). This
+  decision uses domain 13 and cap 8 and no command type.
+- **The domain's state** is the account's achievement watermark: `fact_count` and `total_points`
+  (the display contract's watermark), with the domain revision equal to the session's count of
+  `Granted` notices since its last snapshot.
 - **When.** After a granting transaction commits with `Granted`, and only then, the earning
-  character's live session, if any, receives one `ACHIEVEMENT_EARNED_V1` push.
+  character's live session, if it selected capability 8, receives one delta for each `Granted`
+  outcome, in the session's server sequence after the commit, under the session's current
+  connection generation.
   - `AlreadyHeld` and `Retired` send nothing.
-  - A grant committed for an offline character sends nothing (§3.3).
-- **Payload.** The push carries `{key, name}` from the catalogue record. `key` is at most 160 bytes
-  and `name` at most 64 UTF-8 bytes (the display contract's bounds), so the push is at most 230
-  bytes. It is a post-commit, best-effort, at-most-once delivery. It is never durable and never
-  replayed, and the fact is unaffected by a lost push.
+  - A grant committed for an offline character, or a session that did not select capability 8,
+    sends nothing (§3.3).
+- **Delta payload.** `{key, name, fact_count, total_points}`: `key` at most 160 bytes, `name` at
+  most 64 UTF-8 bytes (the display contract's bounds), at most 250 bytes encoded. Its
+  `base_revision` and `new_revision` follow FND-02 like every domain.
+- **Snapshot payload.** `{fact_count, total_points}` only, at most 16 bytes. It names no
+  achievement.
+- **Reconnect and resync.** These follow FND-02 unchanged. A resync or reconnect sends the snapshot
+  and never re-sends a delta, so a pop-up is shown once, from a delta applied live; a notice lost to
+  a resync is not replayed. This is the "never replayed" rule, and it is consistent with resync
+  because the domain's state is the watermark, which the snapshot restores in full. The fact is
+  durable and unaffected, and the panel query (command 10) shows it.
+- **Compatibility.** A client without capability 8 never receives domain 13 and still reads its
+  facts through command 10. Unknown fields and over-bound payloads fail closed as in every domain.
 - **Client.** The client shows the Tibia pop-up naming the achievement and the log line
   "Congratulations! You earned the achievement "<name>"." This is client presentation (Canary text
   as the hypothesis).
 - **Secret records.** A secret achievement is announced the same way once earned (display contract
   D223).
-- **Registry.** The event number comes from the FND-02 §8 event registry under protocol review. No
-  number is reserved here.
+- **Registry.** The capability, domain and type numbers above are final once this decision is
+  accepted. ACH-NOTIFY-1 registers them with its `.proto` and passes protocol review.
 
 ## 6. Rejected options
 
@@ -204,6 +248,10 @@ single-owner, same-transaction rule.
   earning event.
 - **Script-style `addAchievement` calls from runtime code.** Rejected: there is no script engine
   (WORLD-INTERACTION-0 §3.1), and it bypasses content validation.
+- **A new message type for the notice.** Rejected: FND-02 reserves message types 1-255 to the
+  foundation, and a non-sequenced type would bypass ordering and connection-generation fencing.
+- **One grant call per threshold.** Rejected: the witness is consumed by the first call, and
+  minting a witness per call would weaken the fence.
 - **Reusing the chat wire for the notification.** Rejected: chat lines are player speech under
   CHAT-0 bounds and moderation, while an earned achievement is a server event.
 
@@ -244,7 +292,6 @@ owner contract.
 - **Deliberately not decided:**
   - support grants and retroactive backfill;
   - the Bestiary, Bosstiary, fishing and item-use counters (their owners);
-  - the event number;
   - client art and layout;
   - character-page showcase and rankings (Platform, Atlas);
   - any gameplay value of points.
@@ -256,3 +303,5 @@ owner contract.
 2. **Owned path only:** this file and its task record. No edit to DECISION_INDEX or to the
    contracts.
 3. **Split work:** ACH-QUEST-1, ACH-ENC-1, ACH-COUNTER-1, ACH-NOTIFY-1, ACH-COVERAGE-1.
+4. **Rows:** `ACHIEVEMENT0-RL-01` grant requests per call = 64.
+5. **Wire:** capability 8 and state domain 13 (§5), registered by ACH-NOTIFY-1.
