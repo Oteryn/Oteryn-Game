@@ -511,7 +511,7 @@ def test_metadata_events():
     # gets its own group; retarget and synchronize still supersede stale product
     # qualification, and unrelated PRs never share a cancellation group.
     line = next(line for line in gate.splitlines() if line.startswith("  group:"))
-    expected = "  group: ${{ github.event.action == 'edited' && github.event.changes.base == null && format('merge-gate-edit-{0}-{1}', github.event.pull_request.number, github.run_id) || format('merge-gate-{0}', github.event.pull_request.number) }}"
+    expected = "  group: ${{ ((github.event.action == 'edited' && github.event.changes.base == null) || ((github.event.action == 'labeled' || github.event.action == 'unlabeled') && github.event.label.name != 'full-ci')) && format('merge-gate-edit-{0}-{1}', github.event.pull_request.number, github.run_id) || format('merge-gate-{0}', github.event.pull_request.number) }}"
     assert line == expected
     def group(action, base_changed, number, run_id):
         expression = line.split("${{", 1)[1].rsplit("}}", 1)[0].strip()
@@ -560,7 +560,7 @@ def test_metadata_events():
     ):
         assert not accepts_live(dict(live, **changed)), changed
     assert not accepts_live({}) and not accepts_live(None)
-    assert "        if: github.event.action == 'edited' && github.event.changes.base == null\n" in final
+    assert "        if: (github.event.action == 'edited' && github.event.changes.base == null) || ((github.event.action == 'labeled' || github.event.action == 'unlabeled') && github.event.label.name != 'full-ci')\n" in final
     assert "          EXPECTED_BASE: ${{ needs.scope.outputs.base_sha }}\n" in final
     assert "      pull-requests: read\n" in final
     print("Metadata concurrency PASS: isolated edits, retarget cancellation and canonical full game-gate")
@@ -570,12 +570,13 @@ def test_aggregate():
     gate = (ROOT / ".github/workflows/merge-gate.yml").read_text(encoding="utf-8")
     block = gate.split("  validate:\n", 1)[1].split("  game_gate:\n", 1)[0]
     script = textwrap.dedent(block.split("python - <<'PY'\n", 1)[1].rsplit("          PY", 1)[0])
-    mandatory = ("SCOPE", "LANES", "GOVERNANCE", "DEPENDENCY_REVIEW", "CODEQL", "ROUTING_CONTRACT")
-    rust = ("RUST_POLICY", "RUST_LINUX", "RUST_SUPPLY_CHAIN")
-    conditional = ("RUST_WINDOWS", "ATLAS_FULLWORLD")
+    mandatory = ("SCOPE", "LANES", "GOVERNANCE", "DEPENDENCY_REVIEW", "ROUTING_CONTRACT")
+    fast_rust = ("RUST_POLICY", "RUST_FAST", "RUST_SUPPLY_CHAIN")
+    heavy = ("CODEQL", "RUST_LINUX", "RUST_WINDOWS", "ATLAS_FULLWORLD")
     qualification = ("NODE_BOOT", "SERVER_SEAM")
-    env = dict.fromkeys(mandatory + rust + conditional + qualification, "success")
+    env = dict.fromkeys(mandatory + fast_rust + heavy + qualification, "success")
     env.update(
+        FULL_CI="true",
         RUST_REQUIRED="true",
         WINDOWS_REQUIRED="true",
         ATLAS_FULLWORLD_REQUIRED="true",
@@ -590,24 +591,41 @@ def test_aggregate():
             except SystemExit:
                 return False
 
+    light = dict.fromkeys(heavy + qualification, "skipped") | {"FULL_CI": "false"}
     assert accepts({})
+    assert accepts(light)
     assert accepts({"WINDOWS_REQUIRED": "false", "RUST_WINDOWS": "skipped"})
-    assert accepts(dict.fromkeys(rust + conditional, "skipped") | {
+    assert accepts(dict.fromkeys(fast_rust + heavy[1:], "skipped") | {
         "RUST_REQUIRED": "false",
         "WINDOWS_REQUIRED": "false",
         "ATLAS_FULLWORLD_REQUIRED": "false",
     })
     assert not accepts({"RUST_REQUIRED": "false", "WINDOWS_REQUIRED": "true"})
-    # Physical server qualifications are required unless explicitly deselected.
+    for value in ("", "maybe"):
+        assert not accepts(light | {"FULL_CI": value}), value
+    # Fast Rust checks stay required on every Rust PR, with or without full-ci.
+    for name in fast_rust:
+        assert not accepts({name: "failure"}), name
+        assert not accepts(light | {name: "skipped"}), name
+    # Heavy jobs are skipped without full-ci but never tolerate failure, and
+    # once requested they are required.
+    for name in heavy:
+        assert not accepts({name: "failure"}), name
+        assert not accepts({name: "skipped"}), name
+        assert not accepts(light | {name: "failure"}), name
+        assert not accepts(light | {name: "cancelled"}), name
+    # Requested physical server qualifications are required unless explicitly deselected.
     for name in qualification:
         assert not accepts({name: "failure"}), name
         assert not accepts({name: "skipped"}), name
         assert not accepts({name: "skipped", "SERVER_QUALIFICATION_REQUIRED": ""}), name
         assert not accepts({name: "failure", "SERVER_QUALIFICATION_REQUIRED": "false"}), name
+        assert not accepts(light | {name: "failure"}), name
     assert accepts(dict.fromkeys(qualification, "skipped") | {"SERVER_QUALIFICATION_REQUIRED": "false"})
     for name in mandatory:
         assert not accepts({name: "failure"}), name
-    print("Aggregate PASS: selected lanes remain required and invalid routing combinations fail closed")
+        assert not accepts(light | {name: "failure"}), name
+    print("Aggregate PASS: fast lanes always required, full-ci heavy lanes required once requested, invalid routing fails closed")
 
 
 def test_server_qualification(module):

@@ -11,13 +11,16 @@ on:
       - reopened
       - synchronize
       - edited
+      - labeled
+      - unlabeled
 
 permissions: {}
 
 concurrency:
-  # Metadata edits cannot cancel a pending or running product qualification.
-  # Base retargets keep the normal per-PR cancellation group.
-  group: ${{ github.event.action == 'edited' && github.event.changes.base == null && format('merge-gate-edit-{0}-{1}', github.event.pull_request.number, github.run_id) || format('merge-gate-{0}', github.event.pull_request.number) }}
+  # Metadata edits and labels other than full-ci cannot cancel a pending or running
+  # product qualification. Base retargets and full-ci label changes keep the normal
+  # per-PR cancellation group.
+  group: ${{ ((github.event.action == 'edited' && github.event.changes.base == null) || ((github.event.action == 'labeled' || github.event.action == 'unlabeled') && github.event.label.name != 'full-ci')) && format('merge-gate-edit-{0}-{1}', github.event.pull_request.number, github.run_id) || format('merge-gate-{0}', github.event.pull_request.number) }}
   cancel-in-progress: true
 
 jobs:
@@ -36,6 +39,7 @@ jobs:
       file_records: ${{ steps.detect.outputs.file_records }}
       file_count: ${{ steps.detect.outputs.file_count }}
       complete: ${{ steps.detect.outputs.complete }}
+      full_ci: ${{ steps.detect.outputs.full_ci }}
     steps:
       - name: Resolve and validate exact pull request head
         id: detect
@@ -155,14 +159,23 @@ jobs:
           if len(serialized.encode('utf-8')) > 32768:
               complete = False
               serialized = '[]'
+          # The on-demand full heavy suite runs on the PR only with the full-ci label.
+          # Malformed label evidence selects it: more checks, never fewer.
+          labels = pull.get('labels', [])
+          if isinstance(labels, list) and all(isinstance(label, dict) for label in labels):
+              full_ci = any(label.get('name') == 'full-ci' for label in labels)
+          else:
+              full_ci = True
           print(f'Validated PR #{number_text} exact head {head_sha} against base {base_sha}.')
           print(f'Changed files: {changed_files}; complete immutable enumeration: {complete}')
+          print(f'On-demand full heavy suite (full-ci label): {full_ci}')
           with open(os.environ['GITHUB_OUTPUT'], 'a', encoding='utf-8') as output:
               output.write(f'pr_number={number_text}\n')
               output.write(f'target_sha={head_sha}\n')
               output.write(f'base_sha={base_sha}\n')
               output.write(f'file_count={changed_files}\n')
               output.write(f'file_records={serialized}\n')
+              output.write(f"full_ci={'true' if full_ci else 'false'}\n")
               output.write(f"complete={'true' if complete else 'false'}\n")
           PY
 
@@ -360,6 +373,8 @@ jobs:
   codeql:
     name: Merge gate / CodeQL (${{ matrix.language }})
     needs: scope
+    # Heavy: runs in the Merge Queue; on the PR only on demand (full-ci label).
+    if: needs.scope.outputs.full_ci == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     permissions:
@@ -439,7 +454,8 @@ jobs:
   atlas_fullworld:
     name: Merge gate / Atlas fullworld source
     needs: [scope, lanes]
-    if: needs.lanes.outputs.atlas_fullworld == 'true'
+    # Heavy: runs in the Merge Queue; on the PR only on demand (full-ci label).
+    if: needs.scope.outputs.full_ci == 'true' && needs.lanes.outputs.atlas_fullworld == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
@@ -559,10 +575,143 @@ jobs:
               print(f'{package} production closure: PASS')
           PY
 
+  rust_fast:
+    name: Merge gate / Rust changed-crate Clippy and unit tests
+    needs: [scope, lanes]
+    if: needs.lanes.outputs.rust == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    permissions:
+      contents: read
+    steps:
+      - name: Check out exact head
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.scope.outputs.target_sha }}
+          persist-credentials: false
+
+      - name: Verify checked-out SHA
+        env:
+          EXPECTED_SHA: ${{ needs.scope.outputs.target_sha }}
+        run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+
+      - name: Install Rust toolchain
+        run: rustup toolchain install 1.94.0 --profile minimal --component clippy,rustfmt
+
+      - name: Restore trimmed Cargo cache from protected main
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: |
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: rust-linux-v2-1.94.0-${{ hashFiles('Cargo.lock') }}-${{ github.sha }}
+          restore-keys: |
+            rust-linux-v2-1.94.0-${{ hashFiles('Cargo.lock') }}-
+
+      - name: Select changed workspace crates
+        env:
+          CHANGED_FILE_RECORDS: ${{ needs.scope.outputs.file_records }}
+          ENUMERATION_COMPLETE: ${{ needs.scope.outputs.complete }}
+        run: |
+          set -euo pipefail
+          cargo +1.94.0 metadata --locked --no-deps --format-version 1 > "$RUNNER_TEMP/rust-fast-metadata.json"
+          # Incomplete enumeration, workspace-wide Rust inputs or no attributable crate
+          # select every workspace crate.
+          python - "$RUNNER_TEMP/rust-fast-metadata.json" "$RUNNER_TEMP/rust-fast-packages.tsv" <<'PY'
+          import json
+          import os
+          import pathlib
+          import sys
+
+          metadata = json.loads(pathlib.Path(sys.argv[1]).read_text(encoding='utf-8'))
+          root = pathlib.Path(metadata['workspace_root']).resolve(strict=True)
+          members = set(metadata['workspace_members'])
+          packages = {}
+          for package in metadata['packages']:
+              if package['id'] not in members:
+                  continue
+              if package['name'] in packages:
+                  raise SystemExit(f"duplicate workspace package name: {package['name']}")
+              directory = pathlib.Path(package['manifest_path']).resolve(strict=True).parent
+              kinds = {kind for target in package['targets'] for kind in target['kind']}
+              packages[package['name']] = (directory.relative_to(root).as_posix(), kinds)
+          if not packages:
+              raise SystemExit('workspace has no member packages')
+
+          workspace_wide = os.environ.get('ENUMERATION_COMPLETE') != 'true'
+          paths = []
+          if not workspace_wide:
+              records = json.loads(os.environ['CHANGED_FILE_RECORDS'])
+              if not isinstance(records, list) or not records:
+                  workspace_wide = True
+              else:
+                  for record in records:
+                      for key in ('filename', 'previous_filename'):
+                          if isinstance(record.get(key), str):
+                              paths.append(record[key])
+
+          rust_wide_files = {
+              'Cargo.toml', 'Cargo.lock', 'rust-toolchain', 'rust-toolchain.toml',
+              'rustfmt.toml', '.rustfmt.toml', 'clippy.toml', '.clippy.toml', 'deny.toml',
+              'workspace-boundaries.toml',
+          }
+          selected = set()
+          for path in paths:
+              owners = [
+                  (len(directory), name) for name, (directory, _kinds) in packages.items()
+                  if directory not in ('', '.') and (path == directory or path.startswith(directory + '/'))
+              ]
+              if owners:
+                  selected.add(max(owners)[1])
+              elif path in rust_wide_files or path.startswith(('.cargo/', 'vendor/')):
+                  workspace_wide = True
+          if workspace_wide or not selected:
+              selected = set(packages)
+
+          with open(sys.argv[2], 'w', encoding='utf-8') as output:
+              for name in sorted(selected):
+                  kinds = packages[name][1]
+                  flags = []
+                  if kinds & {'lib', 'rlib', 'dylib', 'cdylib', 'staticlib', 'proc-macro'}:
+                      flags.append('--lib')
+                  if 'bin' in kinds:
+                      flags.append('--bins')
+                  output.write(f"{name}\t{' '.join(flags)}\n")
+          mode = 'workspace' if selected == set(packages) else 'changed'
+          print(f'Rust fast lane mode={mode} packages={len(selected)}/{len(packages)}')
+          for name in sorted(selected):
+              print(f'- {name}')
+          PY
+
+      - name: Strict Clippy on changed crates
+        run: |
+          set -euo pipefail
+          args=()
+          while IFS=$'\t' read -r package _flags; do
+            args+=(-p "$package")
+          done < "$RUNNER_TEMP/rust-fast-packages.tsv"
+          test "${#args[@]}" -gt 0
+          cargo +1.94.0 clippy --locked "${args[@]}" --all-targets -- -D warnings
+
+      - name: Unit-test changed crates
+        run: |
+          set -euo pipefail
+          while IFS=$'\t' read -r package flags; do
+            if [[ -z "$flags" ]]; then
+              echo "NOT_APPLICABLE: $package has no library or binary unit-test targets"
+              continue
+            fi
+            read -ra target_flags <<< "$flags"
+            cargo +1.94.0 test --locked -p "$package" "${target_flags[@]}" < /dev/null
+          done < "$RUNNER_TEMP/rust-fast-packages.tsv"
+
   rust_linux:
     name: Merge gate / Rust Linux workspace
     needs: [scope, lanes]
-    if: needs.lanes.outputs.rust == 'true'
+    # Heavy: runs in the Merge Queue; on the PR only on demand (full-ci label).
+    if: needs.scope.outputs.full_ci == 'true' && needs.lanes.outputs.rust == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     permissions:
@@ -903,7 +1052,8 @@ jobs:
   rust_windows:
     name: Merge gate / Rust Windows client
     needs: [scope, lanes]
-    if: needs.lanes.outputs.windows == 'true'
+    # Heavy: runs in the Merge Queue; on the PR only on demand (full-ci label).
+    if: needs.scope.outputs.full_ci == 'true' && needs.lanes.outputs.windows == 'true'
     runs-on: windows-2025
     timeout-minutes: 60
     permissions:
@@ -987,8 +1137,9 @@ jobs:
   node_boot:
     name: Merge gate / Node boot against the real Platform
     needs: [scope, lanes]
+    # Heavy: runs in the Merge Queue; on the PR only on demand (full-ci label).
     # Fails closed: only an explicit protected-base `false` skips the physical qualification.
-    if: needs.lanes.outputs.server_qualification != 'false'
+    if: needs.scope.outputs.full_ci == 'true' && needs.lanes.outputs.server_qualification != 'false'
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     permissions:
@@ -1036,8 +1187,9 @@ jobs:
   server_seam:
     name: Merge gate / Server Seam over TCP+TLS
     needs: [scope, lanes]
+    # Heavy: runs in the Merge Queue; on the PR only on demand (full-ci label).
     # Fails closed: only an explicit protected-base `false` skips the physical qualification.
-    if: needs.lanes.outputs.server_qualification != 'false'
+    if: needs.scope.outputs.full_ci == 'true' && needs.lanes.outputs.server_qualification != 'false'
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     permissions:
@@ -1109,6 +1261,7 @@ jobs:
       - routing_contract
       - atlas_fullworld
       - rust_policy
+      - rust_fast
       - rust_linux
       - rust_windows
       - rust_supply_chain
@@ -1127,11 +1280,13 @@ jobs:
           DEPENDENCY_REVIEW: ${{ needs.dependency_review.result }}
           CODEQL: ${{ needs.codeql.result }}
           ROUTING_CONTRACT: ${{ needs.routing_contract.result }}
+          FULL_CI: ${{ needs.scope.outputs.full_ci }}
           RUST_REQUIRED: ${{ needs.lanes.outputs.rust }}
           WINDOWS_REQUIRED: ${{ needs.lanes.outputs.windows }}
           ATLAS_FULLWORLD_REQUIRED: ${{ needs.lanes.outputs.atlas_fullworld }}
           ATLAS_FULLWORLD: ${{ needs.atlas_fullworld.result }}
           RUST_POLICY: ${{ needs.rust_policy.result }}
+          RUST_FAST: ${{ needs.rust_fast.result }}
           RUST_LINUX: ${{ needs.rust_linux.result }}
           RUST_WINDOWS: ${{ needs.rust_windows.result }}
           RUST_SUPPLY_CHAIN: ${{ needs.rust_supply_chain.result }}
@@ -1144,27 +1299,36 @@ jobs:
           import sys
 
           failures: list[str] = []
-          for name in ('SCOPE', 'LANES', 'GOVERNANCE', 'DEPENDENCY_REVIEW', 'CODEQL', 'ROUTING_CONTRACT'):
+          for name in ('SCOPE', 'LANES', 'GOVERNANCE', 'DEPENDENCY_REVIEW', 'ROUTING_CONTRACT'):
               if os.environ[name] != 'success':
                   failures.append(f'{name}={os.environ[name]}')
 
-          for flag in ('RUST_REQUIRED', 'WINDOWS_REQUIRED', 'ATLAS_FULLWORLD_REQUIRED'):
+          for flag in ('FULL_CI', 'RUST_REQUIRED', 'WINDOWS_REQUIRED', 'ATLAS_FULLWORLD_REQUIRED'):
               if os.environ[flag] not in {'true', 'false'}:
                   failures.append(f'invalid {flag}={os.environ[flag]}')
           if os.environ['RUST_REQUIRED'] == 'false' and os.environ['WINDOWS_REQUIRED'] == 'true':
               failures.append('Windows selection without Rust selection is invalid')
-          for flag, names in (
-              ('RUST_REQUIRED', ('RUST_POLICY', 'RUST_LINUX', 'RUST_SUPPLY_CHAIN')),
-              ('WINDOWS_REQUIRED', ('RUST_WINDOWS',)),
-              ('ATLAS_FULLWORLD_REQUIRED', ('ATLAS_FULLWORLD',)),
+          # Fast PR checks are always required for their lane. Heavy qualifications
+          # are the Merge Queue game-gate's authority; on the PR they run only on
+          # demand (full-ci label) and, once requested, must pass.
+          full_ci = os.environ['FULL_CI'] == 'true'
+          rust_allowed = {'success'} if os.environ['RUST_REQUIRED'] == 'true' else {'success', 'skipped'}
+          for name in ('RUST_POLICY', 'RUST_FAST', 'RUST_SUPPLY_CHAIN'):
+              if os.environ[name] not in rust_allowed:
+                  failures.append(f'{name}={os.environ[name]}')
+          for flag, name in (
+              ('FULL_CI', 'CODEQL'),
+              ('RUST_REQUIRED', 'RUST_LINUX'),
+              ('WINDOWS_REQUIRED', 'RUST_WINDOWS'),
+              ('ATLAS_FULLWORLD_REQUIRED', 'ATLAS_FULLWORLD'),
           ):
-              allowed = {'success'} if os.environ[flag] == 'true' else {'success', 'skipped'}
-              for name in names:
-                  if os.environ[name] not in allowed:
-                      failures.append(f'{name}={os.environ[name]}')
-          # Physical server qualifications fail closed: anything but an explicit
-          # protected-base `false` (including an older classifier) requires them.
-          if os.environ.get('SERVER_QUALIFICATION_REQUIRED', '') != 'false':
+              required = full_ci and os.environ[flag] == 'true'
+              allowed = {'success'} if required else {'success', 'skipped'}
+              if os.environ[name] not in allowed:
+                  failures.append(f'{name}={os.environ[name]}')
+          # Requested physical server qualifications fail closed: anything but an
+          # explicit protected-base `false` (including an older classifier) requires them.
+          if full_ci and os.environ.get('SERVER_QUALIFICATION_REQUIRED', '') != 'false':
               for name in ('NODE_BOOT', 'SERVER_SEAM'):
                   if os.environ[name] != 'success':
                       failures.append(f'{name}={os.environ[name]}')
@@ -1178,7 +1342,10 @@ jobs:
               for failure in failures:
                   print(f'- {failure}', file=sys.stderr)
               raise SystemExit(1)
-          print('All applicable merge gates passed on the exact pull request head.')
+          if full_ci:
+              print('All applicable fast and requested full-ci gates passed on the exact pull request head.')
+          else:
+              print('All applicable fast gates passed on the exact pull request head; heavy qualifications run in the Merge Queue.')
           PY
 
   game_gate:
@@ -1196,7 +1363,7 @@ jobs:
           LEGACY_VALIDATE: ${{ needs.validate.result }}
         run: test "$LEGACY_VALIDATE" = "success"
       - name: Revalidate isolated edit target before publishing game-gate
-        if: github.event.action == 'edited' && github.event.changes.base == null
+        if: (github.event.action == 'edited' && github.event.changes.base == null) || ((github.event.action == 'labeled' || github.event.action == 'unlabeled') && github.event.label.name != 'full-ci')
         env:
           GH_TOKEN: ${{ github.token }}
           REPOSITORY: ${{ github.repository }}
