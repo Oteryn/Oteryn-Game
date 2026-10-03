@@ -23,6 +23,9 @@
 - Amends: none. CREATURE-AI-0 §8.4 already defers familiars here.
 - Amended by the D309 P2 bundle (clarifying, review finding 4173381895): the recovery
   qualification sweep of §5.1.
+- Amended (2026-10-03, control plane, review finding 4173381895 on #1644): §5.2, the complete
+  authority and recovery finding-family sweep, with §4 check 4, §5 writes and §7 tightened to
+  match. This is a precondition for allocating FAMILIAR-1.
 - Runtime, migration and production authority: NONE. Each child needs its own #1622 allocation.
 - `MERGE_AUTHORITY: WORK_COORDINATOR_ONLY`
 
@@ -90,7 +93,8 @@ Checks, in order; any failure spends no mana and starts no cooldown:
 2. the standard spell-core checks, unchanged: enough mana for the spell (§C.1's table) and the
    2 s `support` group cooldown not active;
 3. the owner is not inside a boss room admitted by lever (BOSS-RAID-0 §6);
-4. the owner has no summon of any kind (R1);
+4. the owner has no summon of any kind (R1), and no familiar waits to return (§7: stored time
+   with no free tile yet);
 5. the familiar cooldown has run out (§5);
 6. SUMMON-1's placement finds a tile.
 
@@ -114,7 +118,10 @@ one ordinary summon (R1).
 - **Writes** are session-generation fenced Character writes: at the cast; at a return (§7); at a
   clean session end
   (logout, channel transfer, the end of the in-fight deadline); and at removal (§7). A write from
-  a stale generation is refused.
+  a stale generation is refused. A logout or channel transfer completes only after its clean-end
+  write commits, as TIMED-ITEM-0B §6.1 orders its checkpoints: if that write fails, the session
+  stays and the familiar is kept. `WorldReset` writes as a removal with the time kept
+  (`open = false`).
 - **Crash.** At login, the new session's fenced load reads the row (a same-session continuation
   after process replacement: §5.1). If `open = true` and its
   `session_generation` is older than the new one, the earlier session crashed: the load writes
@@ -156,6 +163,57 @@ Each case names one invariant. FAMILIAR-1 has one test per case, on PostgreSQL w
 | Missing row | reconciled | No familiar and no cooldown; a load never inserts a row. |
 | Any recovery path | reconciled | `cooldown_remaining_ms` is never lowered by a recovery write. |
 | Return refused in a lever boss room, immediate or delayed | direct | One fenced write ends the familiar (remaining 0, `open = false`, cooldown kept); no creature is placed. |
+
+### 5.2 Finding-family sweep (review finding 4173381895)
+
+This section completes the authority and recovery qualification of the task template
+(`AuthorityInvariant x ConsumerBoundary x MutationOperator`). FAMILIAR-1 takes it as its
+qualification and proves every row of §5.1 and of this section, one invariant per negative case.
+
+**Authority invariants.**
+
+| Id | Invariant | Current fact source |
+|---|---|---|
+| F-I1 | A row is written only in the fenced Character transaction of its own `character_id`. | The session's CharacterId from the GameSession row. |
+| F-I2 | A write carries the writer's current session generation; an older one is refused. | The session-generation fence row, never the familiar row's own `session_generation`. |
+| F-I3 | A write from a replaced runtime owner is refused, also on a compare-and-set retry. | The RuntimeScopeAuthority ownership generation (FND-04B §22). |
+| F-I4 | At most one write per `revision`. | The compare-and-set on the row. |
+| F-I5 | One cast or return occurrence has one outcome and one write. | The occurrence's binding (spell, caster, placement). |
+| F-I6 | Durable values come only from the row, content and the session. | Content definition, row and fence; nothing from the client. |
+| F-I7 | A row is `open = true` exactly while a live familiar is committed for it. | The cast and return acquisitions, which set it; the clean-end and removal writes, which clear it. |
+| F-I8 | A recovery write never lowers `cooldown_remaining_ms` and never raises `familiar_remaining_ms`. | The row before the write. |
+| F-I9 | The cast commits mana, admission and row together; a return commits placement and row together. | The SUMMON-1 acquisition. |
+| F-I10 | A load never inserts a row, and it never returns a familiar from an unreconciled open row. | The fenced load. |
+
+**Negative cases beyond §5.1.**
+
+| Case | Path | Invariant |
+|---|---|---|
+| A load by a session whose generation is older than the row's (a stale login after a takeover) | reconciled | F-I2: the load is refused before any classification. It neither reconciles nor returns the familiar. |
+| The crash classification is computed from the row's own `session_generation` compared with itself, or with a value the row supplied | reconciled | F-I2: "older" is decided only against the fence row's current generation. A test whose row and fence disagree classifies by the fence. |
+| A reconciliation write that fails (database error, compare-and-set loss to a stale writer) | reconciled | F-I10: no familiar is returned, and the session holds no familiar in memory. Its next fenced write (clean end or cast) carries remaining 0. The row's cooldown stays the in-memory cooldown, so it is never lowered (F-I8). |
+| A cast while a familiar waits to return with no free tile | direct | F-I7: refused by check 4. A stored familiar and a new one never exist together. |
+| A delayed return racing a cast or a removal write for the same character | direct, concurrent | F-I4: one compare-and-set wins. The loser re-reads; a return that finds `familiar_remaining_ms = 0` or a live familiar (`open = true` under the current generation and runtime owner) is a no-op. |
+| A channel-transfer arrival that loads before the departure's clean-end write commits | reconciled, concurrent | The transfer completes only after that write (§5 writes), so the arrival never sees the departing `open = true` row. If it does, the transfer was not admitted, and the arrival is refused as a stale owner (F-I3). |
+| `WorldReset` with the owner online | direct | F-I7: the removal writes `open = false` with the time kept. A later crash is then not a loss of the stored time. |
+| A familiar creature created by any path other than a familiar spell or return (Summon Creature, convince, an administrative creature command) | sibling API | F-I6 and F-I7: it is an ordinary creature or summon. It has no row and writes none, and content marks the familiars as not summonable and not convinceable (§3). |
+| The ordinary summon writer (SUMMON-1 without `familiar_summon`) | sibling API | F-I1: it never writes the familiar row. Only the familiar cast, return, clean-end, removal and recovery writers do. |
+| The returning creature after a vocation change while offline | direct | F-I6: it is the current vocation's familiar from content. The stored time is kept, and no creature key is stored. |
+| A familiar spell's content revision changes the duration or cooldown | direct | F-I6: the row's stored remaining times stand. New values apply from the next cast. |
+
+**Mutation operators.** Applicable: cast insert and update; return update; clean-end update;
+removal update (timer, killed, owner death, lever boss room, `WorldReset`); crash reconciliation
+update. Considered not applicable: delete (a row is never deleted while the character lives;
+character deletion follows the Character's own cascade) and administrative edit (none defined).
+
+**Consumer boundaries.** These are the spell core's cast, the session-end path (logout, channel
+transfer, the in-fight deadline), removal events, the fenced login or arrival load, return
+admission (immediate and delayed), the runtime timer, and the in-memory cooldown read by the spell
+core and `ACTOR_COOLDOWNS`.
+
+**Families with nothing to add.** Protocol versions: none, since no wire is new (§8). Test
+helpers derived from the record may build only the positive happy path. Every negative authority
+or provenance case uses the independent current fact sources in the table above.
 
 ## 6. Lifetime and behaviour (FAMILIAR-1)
 
@@ -255,7 +313,8 @@ None. Every choice above is a reversible architect ruling under owner rule 59058
 3. **Restart:** a clean end (`open = false`) keeps the familiar's time; a return reopens the row
    (`open = true`) in its admission; a return refused in a lever boss room ends it
    (`familiar_remaining_ms = 0`, `open = false`, cooldown kept); a crash (`open = true` from an older generation, or after a proven
-   same-session continuation, §5.1) loses the familiar and keeps the cooldown.
+   same-session continuation, §5.1) loses the familiar and keeps the cooldown. The full
+   authority and recovery sweep is §5.2.
 4. **Typed references:** CharacterId, spell id, creature key.
 5. **Wire:** none new (§8).
 6. **Split work:** one row per character; one familiar per owner.
