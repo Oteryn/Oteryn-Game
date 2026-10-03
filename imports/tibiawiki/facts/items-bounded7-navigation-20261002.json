@@ -38,7 +38,7 @@
     },
     "a12_helper": {
       "path": "tools/content-migration/item_official_navigation.py",
-      "sha256": "d30f432b643f3b31e2c4f51d1e17f0d3cde9c54038cdcfc53c932ef33e2be199"
+      "sha256": "7b95c5cac5bdc71dc07afd14dfcf36364d26473ad915a95bd1d4e0205927b2c7"
     },
     "bindings": {
       "path": "imports/crystalserver/bindings/items.json",
@@ -58,8 +58,8 @@
     },
     "current_membership_entries_sha256": "424e445c0ea9494b1871364f10e93876ad551df0d3d5c6982d97301008b027df",
     "native_admission": {
-      "path": "apps/game-server/examples/materialize_content_world_project_v2.rs",
-      "sha256": "f167224187747bbed7d5bb7eba3ff52bc7349224c1c182971b64e3b6ba437ba2",
+      "path": "apps/game-server/src/content/item_identity.rs",
+      "sha256": "dccd6090906217a2e79f5d656d25457f9439e96d8579e91898b44c4bbea79aa8",
       "explicit_rule_only_count": 60,
       "explicit_ids_sha256": "136743df391cf4ff63fe16658fca0df6b2d90ce00636ddbbc87032f29a5230ff",
       "original_qualification_coordinate": "/workspace/audit-continuation/frozen-taxonomy-df777898/apps/game-server/examples/materialize_content_world_project_v2.rs"

@@ -2,8 +2,8 @@
   "admission_source": {
     "explicit_ids_sha256": "136743df391cf4ff63fe16658fca0df6b2d90ce00636ddbbc87032f29a5230ff",
     "explicit_rule_only_count": 60,
-    "path": "apps/game-server/examples/materialize_content_world_project_v2.rs",
-    "sha256": "f167224187747bbed7d5bb7eba3ff52bc7349224c1c182971b64e3b6ba437ba2"
+    "path": "apps/game-server/src/content/item_identity.rs",
+    "sha256": "dccd6090906217a2e79f5d656d25457f9439e96d8579e91898b44c4bbea79aa8"
   },
   "client_artifact": {
     "client_version": "15.30",

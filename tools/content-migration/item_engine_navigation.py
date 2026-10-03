@@ -24,7 +24,7 @@ from item_wiki_family_capture import resolve_infobox_fields
 
 QUALIFICATION = Path(__file__).parent / "samples/engine-family-navigation-265.json"
 QUALIFICATION_SHA256 = (
-    "1a9fd71b378895252296d9d19d3432f7a4ed66e79ab405eda95b7652d4d75ccf"
+    "8cc4f9d74271a3f7e5272cef34157eb4dd193405914c43559b7e317935d1eb4a"
 )
 
 
