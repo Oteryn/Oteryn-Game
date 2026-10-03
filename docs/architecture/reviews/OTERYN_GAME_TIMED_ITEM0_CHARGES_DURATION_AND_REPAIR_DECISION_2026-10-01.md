@@ -192,7 +192,9 @@ refused `NOT_ADMITTED`.
     timed row before and after (charges, remaining time and revision, or "absent → revision 1"). 10,000 gold fits in one crystal coin, so this only refuses a
     player who pays from 20 or more small stacks.
   - Insufficient funds, more than 19 coin inputs, or no such item rejects the whole transaction and
-    writes nothing.
+    writes nothing. The repair is paid from carried coins only: it is excluded from the BANK-FEE-0
+    bank part (DUR-03 §39.3), so a short payer is rejected rather than debited (`PARITY_PENDING`:
+    Tibia NPCs can take bank gold; admitting that for the repair needs its own amendment).
 - Amended: DUR-03 §39.3 (the `FeeBurnCause` variant), NPC-0 (the repair offer).
 
 ## 8. Rejected options

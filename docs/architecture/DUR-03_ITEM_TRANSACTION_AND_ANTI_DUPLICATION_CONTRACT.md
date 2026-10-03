@@ -1402,7 +1402,9 @@ authority, conservation) is unchanged.
   event (§27, part of the atomic effect set) carries, besides the fee evidence below: the repaired
   item's ItemInstanceId; the `TRANSFORM` line with its definition before and after; and the timed
   row before and after (charges, remaining time and revision, or "absent → revision 1"). These
-  lines count in the measured payload of `DUR03-RL-07` at 19 coin inputs. Every other timed
+  lines count in the measured payload of `DUR03-RL-07` at 19 coin inputs. `NpcRepair` is
+  **excluded from the BANK-FEE-0 bank part** below: it is paid from carried coins only and
+  rejected on insufficient funds. Every other timed
   shape (checkpoints, expiry, equip forms) is TIMED-ITEM-0B's (D285).
   No generic fee cause or reason code. A new fee source needs an amendment of this paragraph and
   the decision.
