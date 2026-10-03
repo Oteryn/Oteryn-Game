@@ -31,10 +31,10 @@ Owned paths overlap in one place: `gameplay_transport/mod.rs` is touched by both
 | Order | Packet | Starts when |
 | --- | --- | --- |
 | 1 | ACH-NOTIFY-2 | #1653 (ACH-NOTIFY-1) has merged |
-| 2 | CHARM-DESC-A2 | #1652 (CHARM-DESC-FENCE-1) has merged **and** ACH-NOTIFY-2 has merged or released `gameplay_transport/mod.rs` |
-| parallel | CHAR-REV-SEQ-1 | now; its owned paths are disjoint from both of the above |
+| 2 | CHARM-DESC-A2 | #1652 (CHARM-DESC-FENCE-1) and #1651 (the CHARM-DESC-FENCE-LEASE lifecycle, D324) have merged, **and** ACH-NOTIFY-2 has merged or released `gameplay_transport/mod.rs` |
+| parallel, then 3 | CHAR-REV-SEQ-1 | authoring starts now on disjoint paths; the integration phase (§1.3) waits until A2 has merged and released `gameplay_transport/mod.rs` |
 
-If CHAR-REV-SEQ-1 finds that it must edit a path that another packet owns, it does not edit that path. It reports the call site and waits. The paths concerned are `gameplay_transport/mod.rs`, `actor_spell.rs`, `ability/commit.rs`, `foundation/runtime_actor_carrier.rs` and `interaction/chest_use.rs`.
+If CHAR-REV-SEQ-1 finds that it must edit a path that another packet owns, it does not edit that path. It reports the call site and waits. The paths concerned are `gameplay_transport/mod.rs` (except the §1.3 integration phase), `actor_spell.rs`, `ability/commit.rs`, `foundation/runtime_actor_carrier.rs` and `interaction/chest_use.rs`.
 
 ## 1. Worker packets
 
@@ -96,7 +96,7 @@ task_id: OTV2-20261003-charm-desc-a2
 worker: oteryn-hard-worker   # session-generation fencing, runtime authority
 review: concurrency, persistence and combat review (Codex, final frozen head)
 branch: claude/charm-desc-a2-20261003
-base: main after #1652 and ACH-NOTIFY-2 merge (see §0)
+base: main after #1652, #1651 and ACH-NOTIFY-2 merge (see §0)
 owned_paths:
   - apps/game-server/src/foundation/runtime_actor_carrier.rs
   - apps/game-server/src/gameplay_transport/mod.rs
@@ -107,7 +107,7 @@ owned_paths:
   - apps/game-server/src/durability/fresh_admission.rs   # call sites only
   - docs/agents/tasks/archive/OTV2-20261003-charm-desc-a2.md
 leases: none (no wire, no migration)
-depends_on: [#1652, ACH-NOTIFY-2]
+depends_on: [#1652, #1651, ACH-NOTIFY-2]
 closes: #1635
 ```
 
@@ -161,11 +161,16 @@ owned_paths:
   - apps/game-server/src/durability/bestiary_progress.rs
   - apps/game-server/src/durability/charm_state.rs
   - apps/game-server/src/durability/item_fee_burn.rs
+  - apps/game-server/src/combat/death_reward.rs                        # D336: XP -> Bestiary composition
   - apps/game-server/src/durability/monk_state.rs
   - apps/game-server/src/gameplay_transport/charm.rs
   - apps/game-server/src/gameplay_transport/charm_native.rs
   - apps/game-server/src/gameplay_transport/charm_native_tests.rs
   - apps/game-server/src/gameplay_transport/monk_save.rs
+  - apps/game-server/tests/support/charm_state_postgres_cases.rs       # bind parameter
+  - apps/game-server/tests/support/character_revision_sequencer_postgres_cases.rs   # new
+  - apps/game-server/tests/durability_postgres.rs                      # one mod line
+  - apps/game-server/src/gameplay_transport/mod.rs                     # integration phase only (D336), after A2 releases it
   - docs/agents/tasks/archive/OTV2-20261003-char-rev-seq1.md
 leases: none (runtime cursor; no table, no migration)
 depends_on: [QUEST-STATE-0 decision (accepted)]
@@ -200,7 +205,15 @@ Tests:
 
 Validation: the same as §1.1, including the durability Postgres cases.
 
-If a writer's call site is in a path that another packet owns (§0), the worker stops and reports it. It does not edit that path.
+**Integration phase (D336).** The worker authors the sequencer, the writers and the tests now.
+
+- The sequencer's runtime home is a `revision_sequencer` field in `ComposedFreshAdmission`.
+- Its initialisation in `gameplay_transport/mod.rs`, about two lines, is added only after A2 has merged and released that path. The worker brings in A2 by merging `main`, adds those lines, and then freezes. The freeze comes only after that edit.
+- `foundation/runtime_actor_carrier.rs` is not touched.
+- In `combat/death_reward.rs`, the death composition holds the sequencer slot for the whole XP → Bestiary chain.
+- Monk save fails closed on a mismatch, as §5.2 requires.
+
+Any other call site in a path that another packet owns (§0) is reported, not edited.
 
 ## 2. #1438 held P1 (comment 4172937101): imbuement research data repair
 
