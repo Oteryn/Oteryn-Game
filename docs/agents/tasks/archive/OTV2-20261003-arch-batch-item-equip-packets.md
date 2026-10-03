@@ -9,7 +9,7 @@ repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/arch-batch-item-equip-packets
 issue: 1622
-pr: null
+pr: 1698
 head_sha: "exact frozen head in the #1622 FREEZE_SHA entry"
 final_head_sha: "exact frozen head in the #1622 FREEZE_SHA entry"
 owner: claude-code-session_01YL1cQaLL3BquJajKivZVhw (Sol Supervising Architect)
