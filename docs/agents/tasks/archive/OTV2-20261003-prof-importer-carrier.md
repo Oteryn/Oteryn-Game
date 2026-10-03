@@ -28,7 +28,7 @@ qualified a 665-binding candidate and is not carried.
 
 - `cargo fmt --all --check`: pass
 - `cargo clippy --locked -p oteryn-game-server --all-targets --quiet -- -D warnings`: pass
-- `cargo test --locked -p oteryn-game-server --lib proficiency::import`: pass (3 tests)
+- `cargo test --locked -p oteryn-game-server --lib proficiency::import`: pass (3 tests; Codex round 1: point tables validated against the domain, every binding resolved against committed Item definitions)
 - `cargo test --locked -p oteryn-game-server`: pass (16352 passed, 0 failed; no PG environment)
 - `cargo run --locked -p oteryn-game-server --bin oteryn-game-import-proficiencies`: OK (443 definitions, 664 bindings)
 - `python tools/agents/validate_governance.py`: pass

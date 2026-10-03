@@ -350,6 +350,7 @@ fn import(
             ));
         }
     }
+    validate_points(&rules["points"])?;
     Ok(ImportedWeaponProficiencyData {
         definitions,
         bindings,
@@ -359,6 +360,46 @@ fn import(
         excluded: input.excluded,
         progression_ruleset: rules,
     })
+}
+
+/// The published point tables must equal the accepted domain rules, so consumers of
+/// `progression_ruleset()` never see values that `creature_points`/`boss_points` disagree with.
+fn validate_points(points: &Value) -> Result<(), ProjectError> {
+    use crate::domain::weapon_proficiency::{
+        BossCategory, CreatureDifficulty, CreatureInfluence, boss_points, creature_points,
+    };
+    let mismatch = || invalid("proficiency points disagree with accepted domain rules");
+    if points["creature_columns"] != serde_json::json!(["0", "1", "2", "3", "4", "5", "fiendish"]) {
+        return Err(mismatch());
+    }
+    let creatures = points["creature_points"].as_object().ok_or_else(mismatch)?;
+    if creatures.len() != CreatureDifficulty::ALL.len() {
+        return Err(mismatch());
+    }
+    for difficulty in CreatureDifficulty::ALL {
+        let mut expected = Vec::with_capacity(7);
+        for stacks in 0..=5 {
+            expected.push(
+                creature_points(difficulty, CreatureInfluence::Stacks(stacks))
+                    .map_err(|_| mismatch())?,
+            );
+        }
+        expected.push(
+            creature_points(difficulty, CreatureInfluence::Fiendish).map_err(|_| mismatch())?,
+        );
+        if creatures.get(difficulty.as_str()) != Some(&serde_json::json!(expected)) {
+            return Err(mismatch());
+        }
+    }
+    let bosses = points["boss_points"].as_object().ok_or_else(mismatch)?;
+    if bosses.len() != BossCategory::ALL.len()
+        || BossCategory::ALL.iter().any(|category| {
+            bosses.get(category.as_str()) != Some(&serde_json::json!(boss_points(*category)))
+        })
+    {
+        return Err(mismatch());
+    }
+    Ok(())
 }
 
 #[cfg(test)]
@@ -384,6 +425,42 @@ mod tests {
                     .identity
                     .revision,
                 binding.profile_binding.revision
+            );
+        }
+        // Every bound weapon resolves to a committed Item definition at the exact revision.
+        let mut items = BTreeMap::new();
+        let dir = concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../content/items/definitions"
+        );
+        for entry in std::fs::read_dir(dir).expect("item definitions") {
+            let path = entry.expect("item shard").path();
+            if !path
+                .file_name()
+                .is_some_and(|name| name.to_string_lossy().starts_with("items-"))
+            {
+                continue;
+            }
+            let shard: Value =
+                parse(&std::fs::read_to_string(&path).expect("item shard")).expect("item shard");
+            for record in shard["records"].as_array().expect("item records") {
+                let identity = &record["definition"]["identity"];
+                items.insert(
+                    identity["key"].as_str().expect("item key").to_owned(),
+                    identity.clone(),
+                );
+            }
+        }
+        for binding in data.bindings.values() {
+            assert_eq!(
+                items.get(&binding.item.key),
+                Some(&serde_json::json!({
+                    "family": "Item",
+                    "key": binding.item.key,
+                    "revision": binding.item.revision,
+                })),
+                "{}",
+                binding.item.key
             );
         }
         assert!(!data.bindings.contains_key("oteryn:item.tibia.i51666"));
@@ -442,6 +519,16 @@ mod tests {
         let mut rules: Value = parse(RULES).expect("rules");
         rules["levels"]["progress_thresholds"]["standard"][0] = 1751.into();
         assert!(import(INDEX, &SHARDS, BINDINGS, &rules.to_string()).is_err());
+        for mutate in [
+            |rules: &mut Value| rules["points"]["creature_points"]["hard"][6] = 413.into(),
+            |rules: &mut Value| rules["points"]["boss_points"]["nemesis"] = 15001.into(),
+            |rules: &mut Value| rules["points"]["creature_columns"][6] = "6".into(),
+            |rules: &mut Value| rules["points"]["boss_points"]["extra"] = 1.into(),
+        ] {
+            let mut rules: Value = parse(RULES).expect("rules");
+            mutate(&mut rules);
+            assert!(import(INDEX, &SHARDS, BINDINGS, &rules.to_string()).is_err());
+        }
         let mut bindings: Value = parse(BINDINGS).expect("bindings");
         bindings["source"]["sha256"] = "0".repeat(64).into();
         assert!(import(INDEX, &SHARDS, &bindings.to_string(), RULES).is_err());
