@@ -18,7 +18,7 @@ ROOT = forge.ROOT
 CONTEXT = (
     "docs/agents/evidence/OTV2-20261002-tibiawiki165-historical-import-context-v1.json"
 )
-CONTEXT_SHA = "522dda1e537d87bbe9f0c63edf5bc7e998a75e451ece49c7f61773acbee8acc7"
+CONTEXT_SHA = "0c1d86236adf953da981527ac45d5b4f90711eae09e1244d2b10f66fbc9e5164"
 BINDINGS = "imports/tibiawiki/bindings/items.json"
 
 

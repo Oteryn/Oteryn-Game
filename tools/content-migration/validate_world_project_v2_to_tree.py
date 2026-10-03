@@ -100,7 +100,7 @@ def authoring_value(entry: dict[str, Any], path: str) -> Any:
 def closed_forge_owner():
     """One explicit source-qualified Forge pair; no global maximum/default inference."""
     raw = (ROOT / "docs/agents/evidence/OTV2-20261001-item-forge3332-promotion-v1.json").read_bytes()
-    require(hashlib.sha256(raw).hexdigest() == "c1d1598235d0d5b5949f1957f7725ba1ea6ea87c60499f3faf80d95d4c9a15dc", "FORGE_PACKET_DIGEST")
+    require(hashlib.sha256(raw).hexdigest() == "aacc1065f6cda4118033b6f4ecfbd4056368347099419c1b392f29cfd0647cc4", "FORGE_PACKET_DIGEST")
     packet = json.loads(raw)
     owner = {"item": {"family": "Item", "key": "oteryn:item.tibia.i3332", "revision": "definition-r1"}, "forge": {"classification": 2, "max_tier": 2}}
     require(packet["schema"] == "OTERYN_ITEM_FORGE3332_PROMOTION/v1"
