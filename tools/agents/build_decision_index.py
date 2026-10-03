@@ -8,7 +8,8 @@ The index is derived from two sources on protected main:
   "- control-plane allocation D300 (#1622)").
 Two different owner-sequence D numbers for one document or one merge fail the
 build instead of picking one. Rows already in the index are kept, so a shallow
-clone only adds rows; it never drops history it cannot see.
+clone only adds rows; it never drops history it cannot see. A shallow-boundary
+commit is skipped: Git treats it as a root, so its diff would list the whole tree.
 
 Usage: python tools/agents/build_decision_index.py [--ref origin/main] [--gaps]
 """
@@ -73,7 +74,7 @@ def merge_ids(subject_ids: list[str], header_ids: dict[str, str], where: str) ->
     headers = set(header_ids.values())
     if owner and headers - owner:
         raise DecisionConflict(f"{where}: subject {', '.join(sorted(owner))} vs header {', '.join(sorted(headers))}")
-    if not subject_ids and len(headers) > 1:
+    if not owner and len(headers) > 1:
         detail = "; ".join(f"{doc} {d}" for doc, d in sorted(header_ids.items()))
         raise DecisionConflict(f"{where}: documents allocate different numbers ({detail})")
     ids = list(subject_ids)
@@ -83,11 +84,12 @@ def merge_ids(subject_ids: list[str], header_ids: dict[str, str], where: str) ->
 
 def scan(ref: str, gaps: list[str] | None = None) -> dict[int, dict]:
     rows: dict[int, dict] = {}
+    boundary = shallow_commits()
     log = git("log", ref, "--format=%H%x1f%ad%x1f%s", "--date=short")
     for line in log.splitlines():
         sha, date, subject = line.split("\x1f", 2)
         pr = PR_RE.search(subject)
-        if not pr or SLICE_RE.match(subject) or SKIP_RE.search(subject):
+        if not pr or SLICE_RE.match(subject) or SKIP_RE.search(subject) or sha in boundary:
             continue
         status = git("show", "--name-status", "--format=", sha).splitlines()
         added = [parts[-1] for parts in (l.split("\t") for l in status) if parts[0] == "A" and DECISION_DOC_RE.match(parts[-1])]
@@ -126,6 +128,13 @@ def existing() -> dict[int, dict]:
                 "docs": [d.strip(" `") for d in m.group("docs").split("<br>") if d.strip(" `")],
             }
     return rows
+
+
+def shallow_commits(root: Path = ROOT) -> set[str]:
+    """Commits at a shallow clone's boundary; their parents are missing."""
+    path = subprocess.run(["git", "rev-parse", "--git-path", "shallow"], cwd=root, check=True, capture_output=True, text=True).stdout.strip()
+    shallow = Path(path) if Path(path).is_absolute() else root / path
+    return set(shallow.read_text().split()) if shallow.exists() else set()
 
 
 def sort_key(item: tuple[int, dict]) -> tuple:
