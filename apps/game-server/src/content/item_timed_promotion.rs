@@ -217,7 +217,12 @@ fn apply_rows<'a>(
             }
             applied.fields += 1;
         }
-        if let ReferenceItemField::Known(temporal) = &semantics.temporal {
+        let packet_temporal = rows
+            .iter()
+            .any(|row| row.field_path.starts_with("temporal."));
+        // An earlier stats promotion may have set `temporal.duration` alone on the inactive form
+        // of a pair; only items this packet gives temporal rows must end complete.
+        if packet_temporal && let ReferenceItemField::Known(temporal) = &semantics.temporal {
             let complete = matches!(temporal.duration, ReferenceItemField::Known(_))
                 && matches!(temporal.consumption_mode, ReferenceItemField::Known(_));
             if !complete {
@@ -508,7 +513,7 @@ mod tests {
             // unknown Item key
             packet(
                 &row(
-                    "oteryn:item.tibia.i1",
+                    "oteryn:item.tibia.i3030",
                     "charges.count",
                     r#"{"kind":"COUNT_U32","value":5}"#,
                 ),
@@ -571,7 +576,7 @@ mod tests {
                 &row(
                     KEY,
                     "transform.decay",
-                    r#"{"kind":"ITEM_TARGET","value":"oteryn:item.tibia.i2"}"#,
+                    r#"{"kind":"ITEM_TARGET","value":"oteryn:item.tibia.i3030"}"#,
                 ),
                 1,
                 1,
@@ -638,7 +643,7 @@ mod tests {
                 duration: ReferenceItemField::Unknown,
                 stop_duration: ReferenceItemField::Unknown,
                 decay_target: ReferenceItemField::Known(
-                    ReferenceItemTarget::new("oteryn:item.tibia.i9", DEFINITION_REVISION)
+                    ReferenceItemTarget::new("oteryn:item.tibia.i3030", DEFINITION_REVISION)
                         .expect("target"),
                 ),
             }),
