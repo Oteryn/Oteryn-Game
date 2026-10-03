@@ -16,6 +16,7 @@ use crate::durability::character_build::{
     DurableBuildState, skill_tries_required,
 };
 use crate::durability::character_progression::CharacterProgressionError;
+use crate::durability::character_revision_sequencer::CharacterRevisionSequencer;
 use crate::foundation::ConnectionGeneration;
 
 fn hex(bytes: &[u8]) -> String {
@@ -1260,6 +1261,75 @@ fn build_writer_is_fenced_replayed_and_reconciled() -> TestResult {
         .fetch_one(pool)
         .await?;
         assert_eq!(experience, (900, 900));
+        Ok(())
+    })
+}
+
+/// CHAR-REV-SEQ-1: a build change runs in the Character's revision slot. A write that bypassed
+/// the sequencer makes the next one fail closed with nothing written (the binding includes the
+/// revision, so it is not retried); the next request reloads the cursor.
+#[test]
+fn a_sequenced_build_change_fails_closed_after_a_bypass_writer() -> TestResult {
+    run("build_sequenced", async |harness| {
+        let pool = &harness.pool;
+        let seal = harness.recovery.seal_current().map_err(debug)?;
+        let authority = harness
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        let (root, node) = (&harness.root, &harness.node);
+        let sequencer = CharacterRevisionSequencer::new();
+        let mut slot = sequencer
+            .acquire(CharacterId::from_bytes(id(CHARACTER)).map_err(debug)?)
+            .await;
+        let knight = state("knight", (0, 0), (10, 0))?;
+        // The caller's stale fence revision is replaced by the slot's cursor.
+        let choice = change(
+            70,
+            BuildCause::VocationChoice,
+            &DurableBuildState::default(),
+            &knight,
+            None,
+        )?;
+        let outcome = slot
+            .commit_build(root, &authority, node, fence(1)?, choice, &TABLE, None)
+            .await
+            .map_err(debug)?;
+        let BuildCommitOutcome::Committed(committed) = outcome else {
+            return Err(format!("unexpected outcome: {outcome:?}").into());
+        };
+        assert_eq!(committed.committed_character_revision.get(), 2);
+
+        // r3 a stance write that bypassed the sequencer.
+        expect_committed(pool, "bypass r3", &toggle(71, 2, Some("guard"))).await?;
+        let before = snapshot(pool).await?;
+        let trained = state("knight", (1, 20), (12, 7))?;
+        let training = change(72, BuildCause::Training, &knight, &trained, None)?;
+        let outcome = slot
+            .commit_build(root, &authority, node, fence(2)?, training, &TABLE, None)
+            .await;
+        assert!(
+            matches!(
+                outcome,
+                Err(CharacterProgressionError::CharacterRevisionMismatch)
+            ),
+            "{outcome:?}"
+        );
+        assert_eq!(snapshot(pool).await?, before, "no retry committed");
+
+        let training = change(73, BuildCause::Training, &knight, &trained, None)?;
+        let outcome = slot
+            .commit_build(root, &authority, node, fence(2)?, training, &TABLE, None)
+            .await
+            .map_err(debug)?;
+        let BuildCommitOutcome::Committed(committed) = outcome else {
+            return Err(format!("unexpected outcome: {outcome:?}").into());
+        };
+        assert_eq!(committed.original_character_revision.get(), 3);
+        drop(slot);
+        drop(authority);
+        drop(seal);
         Ok(())
     })
 }

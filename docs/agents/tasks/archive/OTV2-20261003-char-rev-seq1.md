@@ -19,7 +19,7 @@ created_at: 2026-10-03
 updated_at: 2026-10-03
 execution_policy: continuous_progress
 packet: "docs/architecture/reviews/OTERYN_GAME_ARCH_BATCH_D327_PACKETS_AND_HELD_P1S_2026-10-03.md §1.3 (PR #1655)"
-decisions: [D336, D338, D340]
+decisions: [D336, D338, D340, D356]
 owned_paths:
   - apps/game-server/src/durability/character_revision_sequencer.rs
   - apps/game-server/src/durability/mod.rs
@@ -40,6 +40,11 @@ owned_paths:
   - apps/game-server/tests/support/charm_state_postgres_cases.rs   # only the new bind argument
   - apps/game-server/tests/support/combat_death_reward_postgres_cases.rs   # only the slot argument and one constructor line per case
   - apps/game-server/tests/support/combat_bestiary_postgres_cases.rs   # only the slot argument and one constructor line per case
+  # Extended by the control plane (D356): the build and proficiency writers.
+  - apps/game-server/src/durability/character_build.rs
+  - apps/game-server/src/durability/character_proficiency.rs
+  - apps/game-server/tests/support/character_build_postgres_cases.rs
+  - apps/game-server/tests/support/character_proficiency_postgres_cases.rs
   - apps/game-server/tests/support/character_revision_sequencer_postgres_cases.rs   # new
   - apps/game-server/tests/durability_postgres.rs   # one mod line
 leases: none (runtime cursor; no table, no migration, no capability, command or domain)
@@ -72,9 +77,12 @@ QUEST-STATE-0 §5.2, "One write in flight per Character", with nothing added.
   - death (`commit_death`);
   - Bestiary (`commit_bestiary`);
   - charm (`commit_charm`), whose in-transaction fee burn is sequenced with it;
-  - monk state save (`commit_monk_state_save`).
+  - monk state save (`commit_monk_state_save`);
+  - build (`commit_build`) and proficiency (`commit_proficiency`), added by D356. Neither has a
+    non-test caller on `main` yet.
 
-  XP, death and charm also replay a retained receipt exactly, at its original revision: their
+  A grep for root revision updates over `src/` finds exactly these seven writers. XP, death,
+  charm, build and proficiency also replay a retained receipt exactly, at its original revision: their
   binding includes the revision, so a lost-response retry must not use the advanced cursor.
 - Compositions hold the slot for their whole chain. `settle_creature_death_rewards[_with_bestiary]`
   take the principal's held slot, acquired by the caller before it takes the runtime lock. XP
@@ -83,7 +91,7 @@ QUEST-STATE-0 §5.2, "One write in flight per Character", with nothing added.
   through the commit.
 - Mismatch handling is unchanged from §5.2:
   - Bestiary, whose binding excludes the revision, reloads the cursor and retries once.
-  - XP, death, charm and monk fail closed with no retry. The slot reports the mismatch as a
+  - XP, death, charm, monk, build and proficiency fail closed with no retry. The slot reports the mismatch as a
     defect.
 - **Monk save behaviour change (D336, confirmed by the control plane).** On
   `CharacterRevisionMismatch`, `monk_save` used to re-read the fence and retry. It now fails
@@ -102,7 +110,7 @@ QUEST-STATE-0 §5.2, "One write in flight per Character", with nothing added.
 - The session-generation fence is unchanged. Every write is still refused at the existing gameplay
   fence in its own transaction, and the sequencer adds no second fence.
 - A structural test (`no_production_writer_advances_a_revision_outside_the_sequencer`) fails when:
-  - any non-test source file calls one of the five durable writers outside the sequencer; or
+  - any non-test source file calls one of the seven durable writers outside the sequencer; or
   - any file other than `charm_state.rs` calls `burn_fee_in_transaction`.
 
   A fixture test proves that the gate catches a bypass writer.
@@ -123,6 +131,9 @@ QUEST-STATE-0 §5.2, "One write in flight per Character", with nothing added.
   - a death chain, XP then Bestiary, holds the slot while a waiting monk save runs after it;
   - the Bestiary retry-once path after a bypass writer;
   - XP, death, charm and monk each fail closed after a bypass writer, with no retry.
+- PostgreSQL 17.6 cases for build and proficiency, in their own cases files (run by
+  `character_authority_postgres`): each commits through the slot from a stale caller fence, fails
+  closed with nothing written after a bypass writer, and then commits at the reloaded cursor.
 
 ## Validation
 
