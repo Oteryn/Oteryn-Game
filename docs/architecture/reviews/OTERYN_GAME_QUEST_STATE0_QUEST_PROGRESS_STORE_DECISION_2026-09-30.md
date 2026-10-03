@@ -4,6 +4,9 @@
 - Status: **CANDIDATE**. Acceptance needs exact-head validation, independent review (persistence
   and security) and protected integration.
 - Role: Sol Supervising Architect (`OTV2_SOL_SUPERVISING_ARCHITECT` 1.3)
+- Amended (2026-10-03): §13, reconciled with `main` (the guard now admits eight receipt kinds; the
+  Quest family import; CHAR-REV-SEQ-1's writer list), and §14, the QUEST-STATE-1 packet, for
+  acceptance (control plane D352).
 - Answers: the quest lane's escalation A1, A6 (kv_state) and A7 (random rewards) (#162 5913201286),
   ruled in 5913269950; the owner's direction to finish the playable game
 - Builds on: the quest authoring format V1 (D32-D38, CANDIDATE; D34 tracks, D35 transitions, §6.5
@@ -23,9 +26,11 @@
 | Child | Worker | Builds | Depends on |
 |---|---|---|---|
 | CHAR-REV-SEQ-1 | hard, persistence and concurrency review | the per-Character revision sequencer of §5.2: one revision-advancing write in flight per Character, the revision cursor, and every `CharacterRevision` writer on `main` moved onto it (§5.2 list: XP, death, Bestiary, charm with its in-transaction fee burn, monk state); STANCE-1 and QUEST-STATE-1 are built on it | this decision |
-| QUEST-STATE-1 | hard, persistence review | the track, quest-state, receipt, obligation and account-completion tables; the sixth receipt kind in the consistency guard; a new migration extending the `0012` claim guards for obligation rows; the transition writer (§3-§6) | this decision; CHAR-REV-SEQ-1 |
+| QUEST-STATE-1 | hard, persistence review | the track, quest-state, receipt and obligation tables; the ninth receipt kind in the consistency guard (§13.1); a new migration extending the `0012` claim guards for obligation rows; the transition writer (§3-§6); packet §14 | this decision; CHAR-REV-SEQ-1 |
+| QUEST-ACCOUNT-1 | hard, persistence review | the account completion table and its write (§3, §13.3) | QUEST-STATE-1; a World product profile family source (ADR-0010) on `main` |
 | QUEST-PRED-1 | impl | the read-only predicate API over the session's track copy (§7) | QUEST-STATE-1 |
-| QUEST-CONTENT-1 | content lane | `Quest` and `Interaction` as data-only families (ruling A2): track keys with owner quest, initial value and bounds; transitions with closed effect kinds; the 111 gap-free `reward_only` quests first | this decision |
+| QUEST-CONTENT-1 | content lane | `Quest` and `Interaction` as data-only families (ruling A2). **Delivered in part** (§13.2): the 352 Quest definitions (#1596) and 336 RewardClaims (#1489) | this decision |
+| QUEST-LOWER-1 | content lane | the rest of QUEST-CONTENT-1 (§13.2): per quest, its tracks (Oteryn key, owner quest, initial value, bounds) and transitions (closed effect kinds, `completes`, `requested_by`) lowered from the source progress data, and the loader into QUEST-STATE-1's catalogue type | QUEST-STATE-1 (the catalogue type) |
 | CHEST-RANDOM-1 | CHEST lane, hard | the deterministic `random_one_of` draw and its column on the claim (§8) | this decision |
 
 Callers come with their own decisions: NPC-QUEST-0 (dialogue), QUEST-GATE-0 (doors), the
@@ -71,7 +76,7 @@ Where does a character's quest progress live, and how does it change safely?
 - **Quest state.** `game_character_quest_states`: `(character_id, quest_key) -> pinned revision,
   definition_hash, completed_receipt (nullable)`. The quest's first transition writes it; a
   `completes` effect sets `completed_receipt` for every quest, whatever its account setting.
-- **Account completion.** `game_account_quest_completions`: `(account_id, profile_family,
+- **Account completion** (moved to QUEST-ACCOUNT-1, §13.3). `game_account_quest_completions`: `(account_id, profile_family,
   quest_key)`, insert-only with `ON CONFLICT DO NOTHING` (the first keeps its provenance), written
   only when the pinned revision declares `account_completion: grant` (D46). `profile_family` is the
   World's product profile family (ADR-0010), read from the World registry row.
@@ -120,7 +125,7 @@ Where does a character's quest progress live, and how does it change safely?
 
 - Quest progress is Character state, so a transition advances CharacterRevision by one: the writer
   advances `game_character_roots` and `game_character_progression_state` together, as the charm
-  writer does. QUEST-STATE-1 replaces the `0020` consistency guard to admit a **sixth** receipt kind,
+  writer does. QUEST-STATE-1 replaces the current consistency guard to admit a **ninth** receipt kind (§13.1),
   exactly one receipt per revision.
 - **Expected revision, as its siblings.** Like the XP, death, Bestiary, charm and monk writers
   (`character_progression.rs`, `death_reward.rs`), the quest writer checks the fence's
@@ -135,7 +140,9 @@ Where does a character's quest progress live, and how does it change safely?
   - charm (`charm_state.rs:461`), including the gold fee burn it runs in the same transaction
     (`item_fee_burn.rs:6,212`, which checks the source's expected revision and relies on the
     source's advance);
-  - monk state save (`monk_state.rs:239`, called from `monk_save.rs`).
+  - monk state save (`monk_state.rs:239`, called from `monk_save.rs`);
+  - build change (`character_build.rs`, migration `0030`) and proficiency (`character_proficiency.rs`,
+    migration `0032`), both on `main` since this list was written (§13.1); both bind the revision.
 
   Later writers are built on the sequencer: stance (STANCE-1; `0017` has no writer yet) and quest.
   A writer that advances the revision outside the sequencer is a defect. The sequencer runs them
@@ -268,3 +275,115 @@ mismatch reloads the cursor and retries once.
 4. **Typed references:** CharacterId, AccountId, World profile family, keys, occurrences, revisions.
 5. **Wire:** none.
 6. **Split work:** one transition per transaction, at most 8 effects.
+
+## 13. Reconciliation with `main` (2026-10-03)
+
+### 13.1 The revision chain
+
+- The consistency guard on `main` is the `0032` body. It admits **eight** receipt kinds, exactly one
+  per revision: XP, death, stance, Bestiary kill, charm, monk state (`0026`), build (`0030`) and
+  proficiency (`0032`). The quest receipt is the ninth. QUEST-STATE-1 replaces the then-current
+  guard body with every existing arm kept unchanged; if another receipt kind merges first, it
+  merges `main` and keeps that arm too.
+- The chain columns of §5.1 are the siblings' on `main`: original and committed revision (committed
+  = original + 1), level and experience before and after, and the eight interpretation revisions
+  (`profile`, `ruleset`, `content`, `simulation`, `evidence`, `declaration`, `policy`, `reward`).
+- **CHAR-REV-SEQ-1's writer list** (the D327 batch §1.3) names XP, death, Bestiary, charm and monk.
+  Build and proficiency also advance the revision and bind it (`character_build.rs`,
+  `character_proficiency.rs`), so they move onto the sequencer too, with fail-closed mismatch
+  handling (§5.2). §5.2 is corrected; the control plane extends that packet's owned paths.
+
+### 13.2 Quest content on `main`
+
+- #1596 imported the Quest family: 352 definitions (284 source-derived, 68 Oteryn-authored with
+  `runtime_enabled: false`), and #1489 the 336 RewardClaims. Readiness: 42 `reward_only`
+  `definition_ready`; 63 `reward_only`, 121 `script_only` and 58 `storyline` `waiting_data`;
+  68 `waiting_native_bindings`.
+- **No tracks or transitions are lowered.** 247 definitions carry `native_lowering.state:
+  WAITING_IMPLEMENTATION` ("QuestState tracks, bounds, transitions and requested-by bindings have
+  not been lowered"); their `source_data.progress` names source keys
+  (`canary:quest-progress/...`), with missions, gate readers and transitions. So QUEST-CONTENT-1 is
+  delivered in part, and its remainder is QUEST-LOWER-1 (brief).
+- **Keys.** The store keys tracks, quests and transitions by Oteryn keys only (`oteryn:` namespace,
+  at most `QUESTSTATE0-RL-06`). QUEST-LOWER-1 assigns them and keeps each source key as a source
+  binding (the ADR-0021 §4.5 pattern); a source key never reaches the store or the wire.
+- **`reward_only` quests** need no track: their reward is a RewardClaim on the CHEST-1 path, which
+  is already on `main`. Tracks start with the quests that read or write progress.
+- **QUEST-STATE-1 does not wait for content.** It defines the catalogue type (§14) and is tested
+  with synthetic quests; QUEST-LOWER-1 fills it.
+
+### 13.3 Account completion is deferred
+
+`main` has no World product profile family (ADR-0010) to key `game_account_quest_completions`, and
+no lowered quest declares `account_completion: grant`. The table and its write move to
+QUEST-ACCOUNT-1 (brief); until it merges, no quest grants account completion and
+`account_completed` (§7) is false, failing closed. D45 and D46 are unchanged.
+
+### 13.4 Unchanged
+
+§3-§12 stand. The composition decision's rule 1 amendment for obligation rows (#1373) is on
+`main`. The `0012` claim guard extension stays a new QUEST-STATE-1 migration.
+
+## 14. QUEST-STATE-1 packet (for the control plane)
+
+```yaml
+task_id: OTV2-2026100x-quest-state-1
+title: "QUEST-STATE-1 quest tracks, transitions, receipts and obligations"
+mode: IMPLEMENT
+worker: oteryn-hard-worker   # persistence, session-generation fence, CharacterRevision chain
+repository: Oteryn/Oteryn-Game
+issue: 162
+lane_id: quest
+depends_on: ["QUEST-STATE-0 accepted", "CHAR-REV-SEQ-1 merged"]
+leases: one migration number from the control plane at allocation (next free, e.g. 0054)
+owned_paths:
+  - apps/game-server/migrations/<lease>_character_quest_state.sql
+  - apps/game-server/src/durability/quest_state.rs        # new: transition writer and loads
+  - apps/game-server/src/durability/mod.rs                # module and re-exports only
+  - apps/game-server/src/quest/                           # new: catalogue type, effects, validation
+  - apps/game-server/src/lib.rs                           # module wiring only
+  - apps/game-server/tests/support/quest_state_postgres_cases.rs
+  - apps/game-server/tests/character_authority_postgres.rs  # one `mod` include
+  - docs/agents/tasks/archive/OTV2-2026100x-quest-state-1.md
+```
+
+**Scope.**
+
+1. **Migration.** `game_character_quest_tracks`, `game_character_quest_states`,
+   `game_character_quest_receipts`, `game_character_quest_obligations` (§3, §5.1, §5.4), with the
+   `0019`-`0032` patterns: checks on keys and bounds, immutable receipts, no deletes of tracks,
+   states or receipts, the obligation delete allowed only together with the receipt naming it, the
+   runtime-role grants. It replaces the progression consistency guard with a ninth arm (§13.1) and
+   extends the `0012` claim guards for the obligation companion row by new function bodies, never
+   by editing an applied migration.
+2. **Catalogue type.** `QuestStateCatalogue`: tracks (Oteryn key, owner quest, initial value,
+   `[min, max]`), transitions (key, quest, at most 8 effects on that quest's tracks, `completes`),
+   and each quest's `definition_hash` over its tracks and transitions only (§6). Built in code by
+   tests; QUEST-LOWER-1 adds the content loader.
+3. **Writer.** `request_transition(fence, character, transition_key, cause)` (§4, §5): the closed
+   `from` comparisons and `SET`, `ADD` (checked) and `SET_NOW` effects against database time; the
+   refusal codes `STAGE_MISMATCH`, `REVISION_MISMATCH`, `OUT_OF_RANGE`, `NOT_SUPPORTED` (computed
+   effects) writing nothing; the §5.3 fence and lock order; one revision advance and one receipt
+   per transition; replay by (character, cause, transition) with a request-only binding, conflict
+   on a changed binding; submission through the CHAR-REV-SEQ-1 sequencer with one reload-and-retry
+   on mismatch (§5.2).
+4. **Obligations.** The `PENDING`, `REFUSED` and `WAITING_MIGRATION` states and
+   `QUESTSTATE0-RL-07`, the claim-side companion write and `OBLIGATIONS_FULL` (§5.4), and the
+   re-request at admission and after a failed attempt (once a minute at most).
+5. **Admission load.** Tracks, states and pending obligations loaded at admission for the session
+   copy, bounded by `QUESTSTATE0-RL-01`, `-05` and `-08`; over a bound fails the load closed.
+
+**Required tests:** each refusal code writes nothing; replay and binding conflict; revision chain
+continuity with every other receipt kind; a concurrent writer bypassing the sequencer is caught by
+the guard; a reconnect in the same GameSession commits a pending cause with the current
+generation, and a replaced session's request is refused; obligation delete without its receipt is
+rejected; `WAITING_MIGRATION` is not retried; bounds at and over each row; restart reloads the
+copy and re-requests obligations.
+
+**Validation.** `cargo fmt --all --check`; `cargo clippy --locked -p oteryn-game-server
+--all-targets -- -D warnings`; `cargo test --locked -p oteryn-game-server` with PostgreSQL; the
+governance and repository policy validators. Independent persistence review on the frozen head.
+
+**Out of scope.** Callers (QUEST-GATE-1, QUEST-TRIGGER-1, NPC-QUEST-1, QUEST-XP-1), predicates
+(QUEST-PRED-1), content lowering (QUEST-LOWER-1), account completion (QUEST-ACCOUNT-1), random
+draws (CHEST-RANDOM-1), any wire.
