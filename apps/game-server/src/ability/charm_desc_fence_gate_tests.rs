@@ -391,47 +391,77 @@ enum Loads {
     Any,
 }
 
+/// How an explicit load (`path` attribute or `include!`) names its file.
+#[derive(Debug, PartialEq, Eq)]
+enum Explicit {
+    /// Not explicit: `mod name;` resolves inside the declaring file's own module directory.
+    No,
+    /// A literal path, resolved against the declaring file's directory; a `path` attribute inside
+    /// inline `mod` blocks also descends through their names (outermost first).
+    Literal(String, Vec<String>),
+    /// A path no lexical reading can resolve.
+    Unresolvable,
+}
+
+/// One construct that can load another file into the crate.
+#[derive(Debug)]
+struct Declaration {
+    loads: Loads,
+    /// `#[cfg(test)]` (or the file's inner `#![cfg(test)]`) keeps it out of production.
+    gated: bool,
+    explicit: Explicit,
+}
+
 /// Every construct in one source file that can load another file (`mod name;`, a `path`
-/// attribute, `include!`), each with whether `#[cfg(test)]` keeps it out of production and whether
-/// it names its file explicitly (a `path` or `include!`, which may reach outside `src/`).
-/// Declarations are found by name anywhere, including inside inline `mod` blocks and macros, so
-/// directory resolution never hides one; a macro-carried `#[cfg(test)]` token gates nothing.
-fn file_declarations(src: &str) -> Vec<(Loads, bool, bool)> {
+/// attribute, `include!`). Declarations are found by name anywhere, including inside inline `mod`
+/// blocks and macros, so directory resolution never hides one; a macro-carried `#[cfg(test)]`
+/// token gates nothing.
+fn file_declarations(src: &str) -> Vec<Declaration> {
     let code = sanitize(src);
     let test_only = inner_cfg_test(&code);
     let macros = macro_ranges(&code);
     let ranges = cfg_test_ranges(&code, &macros);
     let gated = |at: usize| test_only || ranges.iter().any(|(from, to)| (*from..*to).contains(&at));
     // `sanitize` blanks literals in place, so a group that compacts to its delimiters holds at most
-    // one string literal, read back from the same offsets in `src`.
+    // one string literal, read back from the same offsets in `src`. An escape could spell any
+    // path, so only a plain literal names a file.
     let literal = |from: usize, to: usize| {
         let raw = &src.as_bytes()[from..to];
         let open = raw.iter().position(|c| *c == b'"')?;
         let len = raw[open + 1..].iter().position(|c| *c == b'"')?;
         let value = std::str::from_utf8(&raw[open + 1..open + 1 + len]).ok()?;
-        // An escape could spell any name, so only a plain literal names a file.
-        (!value.contains('\\')).then(|| value.rsplit('/').next().unwrap_or(value).to_owned())
+        (!value.contains('\\')).then(|| value.to_owned())
     };
+    let basename = |path: &str| path.rsplit('/').next().unwrap_or(path).to_owned();
     let mut decls = Vec::new();
+    // Inline `mod name { .. }` blocks, for `path` attributes nested in them.
+    let mut inline = Vec::new();
     for at in word_hits(&code, "mod") {
         let mut i = skip_ws(&code, at + 3);
         if code[i..].starts_with(b"r#") {
             i += 2;
         }
         if code.get(i) == Some(&b'$') {
-            decls.push((Loads::Any, gated(at), false));
+            decls.push(Declaration {
+                loads: Loads::Any,
+                gated: gated(at),
+                explicit: Explicit::No,
+            });
             continue;
         }
         let start = i;
         while code.get(i).copied().is_some_and(is_ident) {
             i += 1;
         }
-        if start < i && code.get(skip_ws(&code, i)) == Some(&b';') {
-            decls.push((
-                Loads::File(format!("{}.rs", &src[start..i])),
-                gated(at),
-                false,
-            ));
+        let next = skip_ws(&code, i);
+        if start < i && code.get(next) == Some(&b';') {
+            decls.push(Declaration {
+                loads: Loads::File(format!("{}.rs", &src[start..i])),
+                gated: gated(at),
+                explicit: Explicit::No,
+            });
+        } else if start < i && code.get(next) == Some(&b'{') {
+            inline.push((next, group_end(&code, next), src[start..i].to_owned()));
         }
     }
     let mut i = 0;
@@ -440,11 +470,29 @@ fn file_declarations(src: &str) -> Vec<(Loads, bool, bool)> {
         let end = bracket_end(&code, skip_ws(&code, at + 1));
         let attr = compact(&code[at..end]);
         if attr.windows(5).any(|w| w == b"path=") {
-            let loads = match literal(at, end) {
-                Some(name) if attr == b"#[path=]" => Loads::File(name),
-                _ => Loads::Any,
+            let decl = match literal(at, end) {
+                Some(path) if attr == b"#[path=]" => {
+                    let mut blocks: Vec<&(usize, usize, String)> = inline
+                        .iter()
+                        .filter(|(from, to, _)| (*from..*to).contains(&at))
+                        .collect();
+                    blocks.sort_by_key(|(from, _, _)| *from);
+                    let blocks = blocks
+                        .into_iter()
+                        .map(|(_, _, name)| name.clone())
+                        .collect();
+                    (
+                        Loads::File(basename(&path)),
+                        Explicit::Literal(path, blocks),
+                    )
+                }
+                _ => (Loads::Any, Explicit::Unresolvable),
             };
-            decls.push((loads, gated(at), true));
+            decls.push(Declaration {
+                loads: decl.0,
+                gated: gated(at),
+                explicit: decl.1,
+            });
         }
         i = at + 1;
     }
@@ -455,13 +503,18 @@ fn file_declarations(src: &str) -> Vec<(Loads, bool, bool)> {
         }
         let open = skip_ws(&code, bang + 1);
         let end = group_end(&code, open);
-        let loads = match literal(open, end) {
-            Some(name) if end > open && compact(&code[open + 1..end - 1]).is_empty() => {
-                Loads::File(name)
-            }
-            _ => Loads::Any,
+        let decl = match literal(open, end) {
+            Some(path) if end > open && compact(&code[open + 1..end - 1]).is_empty() => (
+                Loads::File(basename(&path)),
+                Explicit::Literal(path, Vec::new()),
+            ),
+            _ => (Loads::Any, Explicit::Unresolvable),
         };
-        decls.push((loads, gated(at), true));
+        decls.push(Declaration {
+            loads: decl.0,
+            gated: gated(at),
+            explicit: decl.1,
+        });
     }
     decls
 }
@@ -471,20 +524,63 @@ fn test_named(rel: &Path) -> bool {
     name.ends_with("_tests.rs") || name == "tests.rs"
 }
 
+/// `base` joined with `path`, `.` and `..` resolved lexically; `None` for an absolute path or one
+/// that climbs above the crate root.
+fn resolve(base: &Path, path: &str) -> Option<std::path::PathBuf> {
+    use std::path::Component;
+    if Path::new(path).is_absolute() {
+        return None;
+    }
+    let mut out = std::path::PathBuf::new();
+    for part in base.join(path).components() {
+        match part {
+            Component::Normal(part) => out.push(part),
+            Component::CurDir => {}
+            Component::ParentDir => {
+                if !out.pop() {
+                    return None;
+                }
+            }
+            Component::RootDir | Component::Prefix(_) => return None,
+        }
+    }
+    Some(out)
+}
+
+/// Every file an explicit load in the file at `rel` may resolve to (Rust Reference, "The `path`
+/// attribute"). A `path` attribute inside inline `mod` blocks descends through their names, and in
+/// a non-`mod.rs` file also through the file's stem; because a file loaded through a `path`
+/// attribute elsewhere resolves like a `mod.rs` file, both readings are returned for those files.
+fn explicit_targets(rel: &Path, path: &str, blocks: &[String]) -> Vec<Option<std::path::PathBuf>> {
+    let dir = rel.parent().unwrap_or(Path::new(""));
+    if blocks.is_empty() {
+        return vec![resolve(dir, path)];
+    }
+    let name = rel.file_name().and_then(|n| n.to_str()).unwrap_or("");
+    let mod_rs = matches!(name, "mod.rs" | "lib.rs" | "main.rs") || dir == Path::new("src/bin");
+    let nested = |base: std::path::PathBuf| {
+        let base = blocks.iter().fold(base, |base, block| base.join(block));
+        resolve(&base, path)
+    };
+    let mut targets = vec![nested(dir.to_path_buf())];
+    if !mod_rs {
+        let stem = rel.file_stem().unwrap_or_default();
+        targets.push(nested(dir.join(stem)));
+    }
+    targets
+}
+
 /// `path:line` of every production reference in `files` (crate-relative path, source). A
 /// test-named file is skipped only when every declaration that may load it is gated by
 /// `#[cfg(test)]` or sits in a file already skipped; one declared nowhere is not in the crate.
-/// Any other file, test-named or not, is scanned (an inner `#![cfg(test)]` still exempts it), and a
-/// production `path` or `include!` to a file outside `src/` is itself a finding.
+/// Any other file, test-named or not, is scanned (an inner `#![cfg(test)]` still exempts it). A
+/// production `path` or `include!` is itself a finding unless every file it may resolve to, by
+/// exact path, is one of the scanned `files`.
 fn gate_findings(files: &[(std::path::PathBuf, String)]) -> Vec<String> {
-    let decls: Vec<(usize, Loads, bool, bool)> = files
+    let decls: Vec<(usize, Declaration)> = files
         .iter()
         .enumerate()
-        .flat_map(|(from, (_, src))| {
-            file_declarations(src)
-                .into_iter()
-                .map(move |(loads, gated, explicit)| (from, loads, gated, explicit))
-        })
+        .flat_map(|(from, (_, src))| file_declarations(src).into_iter().map(move |d| (from, d)))
         .collect();
     let mut skipped = vec![false; files.len()];
     loop {
@@ -496,11 +592,11 @@ fn gate_findings(files: &[(std::path::PathBuf, String)]) -> Vec<String> {
             let name = rel.file_name().and_then(|n| n.to_str()).unwrap_or("");
             let test_only = decls
                 .iter()
-                .filter(|(_, loads, _, _)| match loads {
+                .filter(|(_, d)| match &d.loads {
                     Loads::File(file) => file == name,
                     Loads::Any => true,
                 })
-                .all(|(from, _, gated, _)| *gated || (*from != n && skipped[*from]));
+                .all(|(from, d)| d.gated || (*from != n && skipped[*from]));
             if test_only {
                 skipped[n] = true;
                 changed = true;
@@ -510,26 +606,28 @@ fn gate_findings(files: &[(std::path::PathBuf, String)]) -> Vec<String> {
             break;
         }
     }
-    // A production `path` or `include!` naming no file under `src/` loads code this gate cannot see.
-    let unseen = decls
+    let scanned = |target: &Option<std::path::PathBuf>| {
+        target
+            .as_ref()
+            .is_some_and(|target| files.iter().any(|(rel, _)| rel == target))
+    };
+    let unseen: Vec<String> = decls
         .iter()
-        .filter_map(|(from, loads, gated, explicit)| match loads {
-            Loads::File(name)
-                if *explicit
-                    && !*gated
-                    && !skipped[*from]
-                    && !files
-                        .iter()
-                        .any(|(rel, _)| rel.file_name().is_some_and(|f| f == name.as_str())) =>
-            {
-                Some(format!(
-                    "{}: loads unscanned {name}",
-                    files[*from].0.display()
-                ))
+        .filter(|(from, d)| !d.gated && !skipped[*from])
+        .filter_map(|(from, d)| {
+            let rel = &files[*from].0;
+            match &d.explicit {
+                Explicit::No => None,
+                Explicit::Unresolvable => {
+                    Some(format!("{}: loads an unresolvable file", rel.display()))
+                }
+                Explicit::Literal(path, blocks) => {
+                    (!explicit_targets(rel, path, blocks).iter().all(scanned))
+                        .then(|| format!("{}: loads unscanned {path}", rel.display()))
+                }
             }
-            _ => None,
-        });
-    let unseen: Vec<String> = unseen.collect();
+        })
+        .collect();
     files
         .iter()
         .zip(skipped.iter().copied())
@@ -684,7 +782,7 @@ fn test_named_files_are_skipped_only_when_test_only() {
         // `#[cfg(test)]` on a macro invocation is not trusted to gate what it expands to.
         "#[cfg(test)]\ninclude!(\"live_tests.rs\");",
     ] {
-        assert_eq!(run(decl, &[]), flagged, "{decl}");
+        assert!(run(decl, &[]).contains(&flagged[0]), "{decl}");
     }
     // Test-only declarations, transitively, or none at all keep it out of production.
     for (decl, extra) in [
@@ -720,7 +818,7 @@ fn test_named_files_are_skipped_only_when_test_only() {
     // A production load of a file outside `src/` is reported; a test-only one is not.
     assert_eq!(
         run("#[path = \"../../elsewhere/live.rs\"]\nmod live;", &[]),
-        vec!["src/lib.rs: loads unscanned live.rs".to_owned()]
+        vec!["src/lib.rs: loads unscanned ../../elsewhere/live.rs".to_owned()]
     );
     assert_eq!(
         run(
@@ -735,4 +833,93 @@ fn test_named_files_are_skipped_only_when_test_only() {
         ("src/live_tests.rs".into(), format!("#![cfg(test)]\n{call}")),
     ];
     assert_eq!(gate_findings(&inner), Vec::<String>::new());
+}
+
+#[test]
+fn explicit_loads_resolve_by_exact_path() {
+    let commit = (
+        "src/ability/commit.rs",
+        "pub(crate) fn commit_exact_owner_damage() {}",
+    );
+    let run = |decl_file: &str, decl: &str, extra: &[(&str, &str)]| {
+        let mut files: Vec<(std::path::PathBuf, String)> = vec![
+            (decl_file.into(), decl.to_owned()),
+            (commit.0.into(), commit.1.to_owned()),
+        ];
+        files.extend(extra.iter().map(|(p, s)| ((*p).into(), (*s).to_owned())));
+        gate_findings(&files)
+    };
+    let none = Vec::<String>::new();
+    // A same-named file outside `src/` does not collide with the scanned `src/ability/commit.rs`.
+    for (decl, path) in [
+        (
+            "#[path = \"../generated/commit.rs\"]\nmod generated;",
+            "../generated/commit.rs",
+        ),
+        (
+            "include!(\"../generated/commit.rs\");",
+            "../generated/commit.rs",
+        ),
+        (
+            "#[path = \"ability/../../src/x/commit.rs\"]\nmod x;",
+            "ability/../../src/x/commit.rs",
+        ),
+        ("#[path = \"/abs/commit.rs\"]\nmod abs;", "/abs/commit.rs"),
+        (
+            "#[path = \"../../../../commit.rs\"]\nmod up;",
+            "../../../../commit.rs",
+        ),
+    ] {
+        assert_eq!(
+            run("src/lib.rs", decl, &[]),
+            vec![format!("src/lib.rs: loads unscanned {path}")],
+            "{decl}"
+        );
+    }
+    // The exact scanned file, through any spelling, is fine; so is a test-only load.
+    for decl in [
+        "#[path = \"ability/commit.rs\"]\nmod commit;",
+        "#[path = \"./ability/../ability/commit.rs\"]\nmod commit;",
+        "include!(\"ability/commit.rs\");",
+        "#[cfg(test)]\n#[path = \"../generated/commit.rs\"]\nmod generated;",
+    ] {
+        assert_eq!(run("src/lib.rs", decl, &[]), none, "{decl}");
+    }
+    // Relative to the declaring file's directory, not the crate root.
+    assert_eq!(
+        run("src/ability/mod.rs", "#[path = \"commit.rs\"]\nmod c;", &[]),
+        none
+    );
+    assert_eq!(
+        run("src/combat.rs", "#[path = \"commit.rs\"]\nmod c;", &[]),
+        vec!["src/combat.rs: loads unscanned commit.rs".to_owned()]
+    );
+    // Inside inline blocks: a `mod.rs`-like file descends through block names only; any other
+    // file may also resolve through its stem, and both targets must be scanned.
+    let nested = "mod inner {\n    #[path = \"x.rs\"]\n    mod x;\n}";
+    assert_eq!(run("src/lib.rs", nested, &[("src/inner/x.rs", "")]), none);
+    assert_eq!(
+        run("src/a.rs", nested, &[("src/a/inner/x.rs", "")]),
+        vec!["src/a.rs: loads unscanned x.rs".to_owned()]
+    );
+    assert_eq!(
+        run(
+            "src/a.rs",
+            nested,
+            &[("src/a/inner/x.rs", ""), ("src/inner/x.rs", "")]
+        ),
+        none
+    );
+    // A path no lexical reading can resolve is reported even for a non-test file.
+    for decl in [
+        "#[cfg_attr(not(test), path = \"../generated/commit.rs\")]\nmod generated;",
+        "include!(concat!(env!(\"OUT_DIR\"), \"/commit.rs\"));",
+        "#[path = \"ability\\x2fcommit.rs\"]\nmod commit;",
+    ] {
+        assert_eq!(
+            run("src/lib.rs", decl, &[]),
+            vec!["src/lib.rs: loads an unresolvable file".to_owned()],
+            "{decl}"
+        );
+    }
 }

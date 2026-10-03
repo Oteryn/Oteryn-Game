@@ -40,9 +40,11 @@ a `game-server` test scans `src/` and fails on any non-test production reference
 variants, arms or expressions, and never as macro tokens), files whose
 leading inner attributes include `#![cfg(test)]`, and `*_tests.rs`/`tests.rs` files only when
 every declaration that may load them (`mod`, `path`, `include!`, found by name anywhere) is
-`#[cfg(test)]`-gated or sits in an already-skipped file. A production `path`/`include!` to a file
-outside `src/` is itself a finding; unresolvable loads (macro-built names, non-literal, escaped or
-`cfg_attr` paths) count as loading any file.
+`#[cfg(test)]`-gated or sits in an already-skipped file. A production `path`/`include!` is itself
+a finding unless every file it may resolve to (by exact normalised path from the declaring file,
+including inline-block and `mod.rs`/non-`mod.rs` readings) is a scanned file under `src/`;
+unresolvable loads (macro-built names, non-literal, escaped or `cfg_attr` paths) count as loading
+any file and, when explicit and in production, are findings.
 `#[cfg(not(test))]`, `#[allow(dead_code)]` and same-named wrappers elsewhere are not exemptions.
 The failure message names D295 and A2. Only the A2 PR, with the fence, may relax it.
 
@@ -94,6 +96,12 @@ No production change: one new test module and its `#[cfg(test)]` mod line.
   transitively; undeclared files stay skipped. Adversarial sweep of the family (module resolution,
   `#[path]`, `include!`, nested `mod` blocks, macro-built declarations, `cfg_attr` paths, escaped
   literals, loads outside `src/`), each closed fail-closed with a regression case.
+- Codex on bb3abda9: P1 4173956057 (the outside-`src/` check compared basenames, so
+  `../generated/commit.rs` collided with `src/ability/commit.rs`) accepted; owner decision D345
+  approved one more round. Fixed at the root: every production explicit load resolves against the
+  declaring file (normalised `.`/`..`, absolute and above-root paths refused, inline `mod` blocks
+  with both `mod.rs` and stem readings) and must equal a scanned file exactly; an unresolvable
+  explicit load is itself a finding. Regression cases for each.
 
 ## PR and closeout
 
