@@ -181,6 +181,8 @@ pub struct TimedItemLane {
     pending_expiry: Option<ExpireReason>,
     expiry_retried: bool,
     last_checkpoint_ms: u64,
+    /// The host's checkpoint cadence, at most `TIMEDITEM0B-RL-01`.
+    checkpoint_interval_ms: u64,
     /// When the write in flight took its snapshot; a committed checkpoint dates from it.
     issued_ms: u64,
 }
@@ -199,8 +201,18 @@ impl TimedItemLane {
             pending_expiry: stored.exhausted(),
             expiry_retried: false,
             last_checkpoint_ms: now_ms,
+            checkpoint_interval_ms: TIMEDITEM0B_RL_01_CHECKPOINT_INTERVAL_MS,
             issued_ms: now_ms,
         }
+    }
+
+    /// Checkpoint a changed live item every `interval_ms` (1..=`TIMEDITEM0B-RL-01`).
+    pub fn with_checkpoint_interval(mut self, interval_ms: u64) -> Result<Self, TimedItemError> {
+        if !(1..=TIMEDITEM0B_RL_01_CHECKPOINT_INTERVAL_MS).contains(&interval_ms) {
+            return Err(TimedItemError::InvalidValues);
+        }
+        self.checkpoint_interval_ms = interval_ms;
+        Ok(self)
     }
 
     #[must_use]
@@ -292,8 +304,7 @@ impl TimedItemLane {
             }
             return LaneStep::Idle;
         } else if self.state == LaneState::Stopping
-            || now_ms.saturating_sub(self.last_checkpoint_ms)
-                >= TIMEDITEM0B_RL_01_CHECKPOINT_INTERVAL_MS
+            || now_ms.saturating_sub(self.last_checkpoint_ms) >= self.checkpoint_interval_ms
         {
             LaneWriteKind::Checkpoint { values: self.live }
         } else {

@@ -7258,6 +7258,226 @@
       "owner_contract": "../architecture/reviews/OTERYN_GAME_TIMED_ITEM0B_RUNTIME_CHARGES_AND_DURATION_DECISION_2026-10-03.md",
       "resource": "Timed writes in flight per item lane",
       "unit": "writes"
+    },
+    {
+      "allocation_impact": "The one timed item; a composed shape's receipt rows are charged against the receipt's own rows.",
+      "boundary_tests": [
+        "max=1: every timed shape touches its one item",
+        "max+1=2: refused before any write"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "maximum": 1,
+        "minimum": 1
+      },
+      "consumers": [
+        "apps/game-server/src/durability/item_timed_state_audit.rs TimedShape::check"
+      ],
+      "failure_category": "CAPACITY_EXCEEDED",
+      "hard_maximum": 1,
+      "id": "DUR03-RL-01-TIMED",
+      "notes": "\u00a712. Registered by OTV2-20261003-timed-rt-1b.",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_TIMED_ITEM0B_RUNTIME_CHARGES_AND_DURATION_DECISION_2026-10-03.md",
+      "resource": "Touched item instances in one timed checkpoint or expiry transaction (all five \u00a712 shapes)",
+      "unit": "item instances"
+    },
+    {
+      "allocation_impact": "None: the row write and the in-place transform leave the location as it is.",
+      "boundary_tests": [
+        "max=0: a checkpoint and an expiry transform carry no location line",
+        "max+1=1: refused"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "maximum": 0,
+        "minimum": 0
+      },
+      "consumers": [
+        "apps/game-server/src/durability/item_timed_state_audit.rs TimedShape::check"
+      ],
+      "failure_category": "CAPACITY_EXCEEDED",
+      "hard_maximum": 0,
+      "id": "DUR03-RL-02-TIMED-WRITE",
+      "notes": "\u00a712. Registered by OTV2-20261003-timed-rt-1b.",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_TIMED_ITEM0B_RUNTIME_CHARGES_AND_DURATION_DECISION_2026-10-03.md",
+      "resource": "Location lines of a timed checkpoint, composed checkpoint or expiry transform",
+      "unit": "location lines"
+    },
+    {
+      "allocation_impact": "The one removed container entry of the retired item.",
+      "boundary_tests": [
+        "max=1: the burn removes its one entry",
+        "max+1=2: refused"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "maximum": 1,
+        "minimum": 1
+      },
+      "consumers": [
+        "apps/game-server/src/durability/item_timed_state_audit.rs TimedShape::check"
+      ],
+      "failure_category": "CAPACITY_EXCEEDED",
+      "hard_maximum": 1,
+      "id": "DUR03-RL-02-TIMED-EXPIRY-BURN",
+      "notes": "\u00a712; a burn is always from a container entry. Registered by OTV2-20261003-timed-rt-1b.",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_TIMED_ITEM0B_RUNTIME_CHARGES_AND_DURATION_DECISION_2026-10-03.md",
+      "resource": "Location lines of an expiry burn or composed expiry burn",
+      "unit": "location lines"
+    },
+    {
+      "allocation_impact": "One input and one output, the same instance; every other timed shape admits none (INVALID_INPUT, as DUR03-RL-04).",
+      "boundary_tests": [
+        "max=1: one input and one output are accepted",
+        "max+1=2: a second input or output is refused"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "maximum": 1,
+        "minimum": 1
+      },
+      "consumers": [
+        "apps/game-server/src/durability/item_timed_state_audit.rs TimedShape::check and check_timed_expiry"
+      ],
+      "failure_category": "CAPACITY_EXCEEDED",
+      "hard_maximum": 1,
+      "id": "DUR03-RL-04-TIMED-EXPIRY",
+      "notes": "\u00a78, \u00a712; amends DUR03-RL-04 for this shape only. Registered by OTV2-20261003-timed-rt-1b.",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_TIMED_ITEM0B_RUNTIME_CHARGES_AND_DURATION_DECISION_2026-10-03.md",
+      "resource": "Transform inputs/outputs of one expiry transform (PRESERVE_INSTANCE, in place)",
+      "unit": "transform inputs/outputs per logical transaction"
+    },
+    {
+      "allocation_impact": "The holder.",
+      "boundary_tests": [
+        "max=1: the holder",
+        "max+1=2: refused"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "maximum": 1,
+        "minimum": 1
+      },
+      "consumers": [
+        "apps/game-server/src/durability/item_timed_state_audit.rs TimedShape::check"
+      ],
+      "failure_category": "CAPACITY_EXCEEDED",
+      "hard_maximum": 1,
+      "id": "DUR03-RL-06-TIMED-CHECKPOINT-PARTICIPANTS",
+      "notes": "\u00a712. Registered by OTV2-20261003-timed-rt-1b.",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_TIMED_ITEM0B_RUNTIME_CHARGES_AND_DURATION_DECISION_2026-10-03.md",
+      "resource": "Participants of a timed checkpoint or composed checkpoint",
+      "unit": "participants"
+    },
+    {
+      "allocation_impact": "The row write and its record.",
+      "boundary_tests": [
+        "max=2: accepted",
+        "max+1=3: refused"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "maximum": 2,
+        "minimum": 2
+      },
+      "consumers": [
+        "apps/game-server/src/durability/item_timed_state_audit.rs TimedShape::check"
+      ],
+      "failure_category": "CAPACITY_EXCEEDED",
+      "hard_maximum": 2,
+      "id": "DUR03-RL-06-TIMED-CHECKPOINT-EFFECT-WORK-UNITS",
+      "notes": "\u00a712. Registered by OTV2-20261003-timed-rt-1b.",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_TIMED_ITEM0B_RUNTIME_CHARGES_AND_DURATION_DECISION_2026-10-03.md",
+      "resource": "Effect work units of a timed checkpoint or composed checkpoint",
+      "unit": "work units"
+    },
+    {
+      "allocation_impact": "The holder.",
+      "boundary_tests": [
+        "max=1: the holder",
+        "max+1=2: refused"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "maximum": 1,
+        "minimum": 1
+      },
+      "consumers": [
+        "apps/game-server/src/durability/item_timed_state_audit.rs TimedShape::check"
+      ],
+      "failure_category": "CAPACITY_EXCEEDED",
+      "hard_maximum": 1,
+      "id": "DUR03-RL-06-TIMED-EXPIRY-PARTICIPANTS",
+      "notes": "\u00a712. Registered by OTV2-20261003-timed-rt-1b.",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_TIMED_ITEM0B_RUNTIME_CHARGES_AND_DURATION_DECISION_2026-10-03.md",
+      "resource": "Participants of an expiry transform, burn or composed burn",
+      "unit": "participants"
+    },
+    {
+      "allocation_impact": "The record, the item change, the row or location change and the audit event.",
+      "boundary_tests": [
+        "max=4: accepted",
+        "max+1=5: refused"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "maximum": 4,
+        "minimum": 4
+      },
+      "consumers": [
+        "apps/game-server/src/durability/item_timed_state_audit.rs TimedShape::check"
+      ],
+      "failure_category": "CAPACITY_EXCEEDED",
+      "hard_maximum": 4,
+      "id": "DUR03-RL-06-TIMED-EXPIRY-EFFECT-WORK-UNITS",
+      "notes": "\u00a712. Registered by OTV2-20261003-timed-rt-1b.",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_TIMED_ITEM0B_RUNTIME_CHARGES_AND_DURATION_DECISION_2026-10-03.md",
+      "resource": "Effect work units of an expiry transform, burn or composed burn",
+      "unit": "work units"
+    },
+    {
+      "allocation_impact": "One timed_expiry event per expiry; a checkpoint has none. Payload and envelope bytes stay DUR03-RL-07-PAYLOAD/ENVELOPE.",
+      "boundary_tests": [
+        "max=1: an expiry carries its one event",
+        "max+1=2: refused"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "maximum": 1,
+        "minimum": 1
+      },
+      "consumers": [
+        "apps/game-server/src/durability/item_timed_state_audit.rs TimedShape::check and encode_timed_expiry_event"
+      ],
+      "failure_category": "CAPACITY_EXCEEDED",
+      "hard_maximum": 1,
+      "id": "DUR03-RL-07-TIMED-EVENTS",
+      "notes": "\u00a78, \u00a712. Registered by OTV2-20261003-timed-rt-1b.",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_TIMED_ITEM0B_RUNTIME_CHARGES_AND_DURATION_DECISION_2026-10-03.md",
+      "resource": "Durable audit events of one timed transaction",
+      "unit": "events"
+    },
+    {
+      "allocation_impact": "The bounded replay of an ambiguous outcome by (item, expected revision).",
+      "boundary_tests": [
+        "max=3: accepted",
+        "max+1=4: refused"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "maximum": 3,
+        "minimum": 3
+      },
+      "consumers": [
+        "apps/game-server/src/durability/item_timed_state_audit.rs TimedShape::check"
+      ],
+      "failure_category": "CAPACITY_EXCEEDED",
+      "hard_maximum": 3,
+      "id": "DUR03-RL-08-TIMED",
+      "notes": "\u00a712. Registered by OTV2-20261003-timed-rt-1b.",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_TIMED_ITEM0B_RUNTIME_CHARGES_AND_DURATION_DECISION_2026-10-03.md",
+      "resource": "Retry work units of one timed transaction",
+      "unit": "work units"
     }
   ]
 }
