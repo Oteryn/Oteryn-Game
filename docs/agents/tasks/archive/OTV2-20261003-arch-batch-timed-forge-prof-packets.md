@@ -43,6 +43,10 @@ external_repositories: []
   domain 14 stay free.
 - **Shared files.** Code paths are disjoint. Four append-only registers are shared line-wise and
   merged by union (§0).
+- **Codex round 1 (3 × P1), fixed in one push.** 4174637304: §1.5 adds the decision analysis
+  and test for each ruling. 4174637294: FORGE-1a registers `IMBFORGE0-RL-03`,
+  `DUR03-RL-03-FORGE` and the DustLimit `DUR03-RL-06` rows. 4174637298: PROF-SHAPE-1b lists
+  `DUR03-RL-06-PROF` (1 / 4).
 
 ## Validation
 

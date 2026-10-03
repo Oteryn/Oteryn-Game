@@ -16,7 +16,7 @@ This bundle splits and packets three requested topics:
 - FORGE-1 and PROF-SHAPE-1b, in dependency order (D393, D394).
 
 The bundle changes no code, no contract and no wire. The rulings in §1 are architecture rulings
-under the accepted decisions they cite. Live PR and Issue state governs. The dependency notes
+under the accepted decisions they cite; §1.5 gives their analysis. Live PR and Issue state governs. The dependency notes
 record the state when this was written: #1681 and #1685 open, carrier #1675 open; ITEM-MOVE-2a,
 ITEM-MOVE-2b, EQUIP-RT-1, GOLD-FEE-2, FORGE-CONTENT-1 and TIMED-CONTENT-1 not on `main`.
 
@@ -139,6 +139,70 @@ or the GOLD-FEE-2 bank part.
 - The orb BURN follows the existing one-item stack BURN shape of `item_fee_burn.rs` under
   `ProficiencyCause`. It does not add a new item writer.
 
+### 1.5 Decision analysis
+
+ARCHITECTURE_DECISION_DISCIPLINE.md applies to each ruling above.
+
+**1.1 Split TIMED-RT-1 into RT-1b and RT-1c.**
+- Problem: D391 put all of 0054's refused writes behind four unmerged slices, so no timed item
+  runs down in play.
+- Constraints: TIMED-ITEM-0B §5-§13 unchanged; session-generation fencing; no move or use path
+  without ITEM-MOVE-2a/2b and ITEM-USE.
+- Options: (a) keep one RT-1b behind all four slices; (b) split at the first write that needs a
+  move or a use.
+- Trade-offs: (a) is one review but blocks the playable effect for weeks; (b) adds one packet
+  and gives a playable effect after #1681 and TIMED-CONTENT-1.
+- Risks: (b) could hard-code a hosting path RT-1c must reopen. Mitigation: RT-1b uses only
+  TIMED-ITEM-0B §5.1's placement facts, which RT-1c extends without change.
+- Recommendation: (b).
+- Future impact: none on schema or wire; RT-1c adds causes 4-7 on the same lanes.
+- Decision test: 1 YES; 2 TIMED-RT-1b allocation after #1681; 3 nothing (no schema or wire is
+  fixed beyond TIMED-ITEM-0B); 4 evidence that the hosting runtime needs EQUIP-RT-1 facts;
+  5 TIMED-FX-1 effects and charge use by protection.
+
+**1.2 `show_count` in a new server-authoritative group.**
+- Problem: the runtime cannot read `show_count` (D397), and the existing charges group is in both
+  projections.
+- Constraints: the client projection and its artifact stay unchanged; D397; carrier #1675 pins.
+- Options: (a) widen `ITEM_GROUP_CHARGES`; (b) add `ITEM_GROUP_CHARGES_DISPLAY`, server-only.
+- Trade-offs: (a) reuses a group but changes the client artifact and its digest; (b) costs one
+  group tag and keeps the client artifact byte-identical.
+- Risks: a tag collision with a concurrent group; mitigated by taking the next free tag at
+  allocation.
+- Recommendation: (b).
+- Future impact: one more server-authoritative group; a later client need can project it without
+  touching `ITEM_GROUP_CHARGES`.
+- Decision test: 1 YES; 2 TIMED-WIRE-1; 3 one group tag; 4 evidence that the client must read
+  `show_count` itself; 5 the tag number and any client projection.
+
+**1.3 Split FORGE-1 at the dust asset.**
+- Problem: PROF-SHAPE-1b needs only dust (D394), but FORGE-1 waits on FORGE-CONTENT-1,
+  GOLD-FEE-2 and ITEM-MOVE-2a.
+- Constraints: IMBUE-FORGE-0 §9-§10 and §15; BANK-0 §3; DUR-03 §28.
+- Options: (a) one FORGE-1; (b) FORGE-1a (dust and `DustLimit`) now, FORGE-1b later.
+- Trade-offs: (a) one review, but PROF-SHAPE-1b waits on three unrelated slices; (b) one more
+  packet, and PROF-SHAPE-1b is unblocked.
+- Risks: a dust schema FORGE-1b must change. Mitigation: FORGE-1a implements IMBUE-FORGE-0 §9 as
+  written, with the closed `CONVERT` entry kind reserved.
+- Recommendation: (b), with the dust limit price as a ruleset formula bound by revision.
+- Future impact: FORGE-1b only adds causes and shapes.
+- Decision test: 1 YES; 2 FORGE-1a and PROF-SHAPE-1b; 3 the dust ledger schema, which
+  IMBUE-FORGE-0 §9 already fixes; 4 Reference evidence of a different limit price; 5 tiers,
+  fusion, transfer and conversions.
+
+**1.4 Replace 0055's zero-cost pin with a deferred guard.**
+- Problem: 0055 forbids any value line, so evidenced dust and orb costs cannot commit.
+- Constraints: PROFICIENCY-1B §7.1-§7.2; admission by evidence (§3.3); no new item writer.
+- Options: (a) drop the CHECK; (b) replace it with the deferred guard that ties lines to the
+  recorded costs.
+- Trade-offs: (a) is simpler but lets a writer record a cost it did not take; (b) keeps the
+  ledger, orb line and receipt provably equal.
+- Risks: a guard that fires too early; it is deferred to commit, as 0023's fee lines.
+- Recommendation: (b), with the orb BURN in the `item_fee_burn.rs` shape.
+- Future impact: none on wire; PROF-SHAPE-WIRE-1 reads the same receipt.
+- Decision test: 1 YES; 2 PROF-SHAPE-1b; 3 nothing beyond PROFICIENCY-1B; 4 a cost shape that
+  needs more than one dust line or one orb line; 5 costs still without evidence.
+
 ## 2. Packets
 
 ### 2.1 FORGE-1a
@@ -162,7 +226,7 @@ owned_paths:
   - apps/game-server/tests/character_forge_dust_postgres.rs
   - apps/game-server/tests/support/character_forge_dust_postgres_cases.rs
   - apps/game-server/tests/durability_postgres.rs      # shared register (§0)
-  - docs/contracts/RESOURCE_LIMITS_REGISTRY.json       # IMBFORGE0-RL-08, -RL-11; own rows only
+  - docs/contracts/RESOURCE_LIMITS_REGISTRY.json       # IMBFORGE0-RL-03, -RL-08, -RL-11, DUR03-RL-03-FORGE, the DustLimit DUR03-RL-06 rows; own rows only
   - docs/architecture/DUR-03_ITEM_TRANSACTION_AND_ANTI_DUPLICATION_CONTRACT.md  # §18 forge dust; own paragraphs only
   - the composition decision's rule 1 paragraph (the file BANK-0 §7.2 amended; named at allocation)
   - docs/agents/tasks/archive/OTV2-20261003-forge-1a.md
@@ -190,7 +254,20 @@ Acceptance:
   - A changed ruleset revision gives a terminal `REVISION_CHANGED` that every later replay
     returns.
   - Refusals (insufficient dust, the limit at 225) come before the transaction and write nothing.
-- **Tests.** Max and max+1 tests for RL-08. Lock order: rule 4's locks, then the dust row; a
+- **Rows registered here** (IMBUE-FORGE-0 §15, DUR-03 §28), each with max and max+1 tests:
+  - `IMBFORGE0-RL-08` dust limit, 100-225;
+  - `IMBFORGE0-RL-03` forge operations in flight per actor, 1 (`DustLimit` is the first forge
+    operation);
+  - `DUR03-RL-03-FORGE` value lines, 3 (IMBUE-FORGE-0 §15); `DustLimit` uses 2 (the dust `SPEND`
+    and the limit raise);
+  - `DUR03-RL-06-FORGE-DUSTLIMIT-PARTICIPANTS`, 0: `DustLimit` touches no ItemInstance and the
+    Character is the actor, as `DUR03-RL-06-PARTICIPANTS` counts; a plan with a participant is
+    rejected;
+  - `DUR03-RL-06-FORGE-DUSTLIMIT-EFFECT-WORK-UNITS`, 2: the dust `SPEND` and the limit raise;
+    3 rejected;
+  - `IMBFORGE0-RL-11` operation ambiguity bound, 2,000 ms.
+  FORGE-1b reuses `IMBFORGE0-RL-03` and `DUR03-RL-03-FORGE` and registers its own shapes' rows.
+- **Tests.** Lock order: rule 4's locks, then the dust row; a
   concurrent spend and gain serialize. An ambiguous commit is reconciled from the receipt
   (`IMBFORGE0-RL-11`).
 - **Not in scope.** Tiers, fusion, transfer, conversions (FORGE-1b), the wire (FORGE-WIRE-1),
@@ -212,7 +289,7 @@ owned_paths:
   - apps/game-server/src/durability/character_proficiency_modification.rs
   - apps/game-server/src/domain/weapon_proficiency.rs
   - apps/game-server/tests/support/character_proficiency_modification_postgres_cases.rs
-  - docs/contracts/RESOURCE_LIMITS_REGISTRY.json       # DUR03-RL-01/-02/-03-PROF; own rows only
+  - docs/contracts/RESOURCE_LIMITS_REGISTRY.json       # DUR03-RL-01/-02/-03/-06-PROF; own rows only
   - docs/architecture/DUR-03_ITEM_TRANSACTION_AND_ANTI_DUPLICATION_CONTRACT.md  # §15 ProficiencyCause sink, §39.3 shapes; own paragraphs only
   - docs/architecture/reviews/OTERYN_GAME_IMBUE_FORGE0_IMBUEMENTS_AND_EXALTATION_FORGE_DECISION_2026-09-30.md  # §9: the dust sink admitted
   - docs/agents/tasks/archive/OTV2-20261003-prof-shape-1b.md
@@ -240,7 +317,8 @@ Acceptance:
 - **Admission.** `INSUFFICIENT_DUST` and `NO_ORB` are checked before the transaction. Operations
   without evidenced costs still answer `NOT_ADMITTED`.
 - **Integrity.** `verify_character_integrity` also checks each line's ledger entry and orb line.
-- **Rows.** Max and max+1 tests for the `DUR03-RL-*-PROF` rows (PROFICIENCY-1B §7.2).
+- **Rows.** Max and max+1 tests for `DUR03-RL-01-PROF` (1), `-02-PROF` (1), `-03-PROF` (1) and
+  `DUR03-RL-06-PROF` (participants 1, work units 4), as PROFICIENCY-1B §7.2.
 - **Not in scope.** The wire (PROF-SHAPE-WIRE-1).
 
 ### 2.3 TIMED-RT-1b
@@ -369,7 +447,7 @@ owned_paths:
   - apps/game-server/tests/item_forge_postgres.rs
   - apps/game-server/tests/support/item_forge_postgres_cases.rs
   - apps/game-server/tests/durability_postgres.rs      # shared register (§0)
-  - docs/contracts/RESOURCE_LIMITS_REGISTRY.json       # DUR03-RL-01/-03-FORGE, IMBFORGE0-RL-03/-07/-12, the forge DUR03-RL-06 rows; own rows only
+  - docs/contracts/RESOURCE_LIMITS_REGISTRY.json       # DUR03-RL-01-FORGE, IMBFORGE0-RL-07/-12, the tier, fusion, transfer and conversion DUR03-RL-06 rows; own rows only (RL-03 and DUR03-RL-03-FORGE are FORGE-1a's)
   - docs/architecture/DUR-03_ITEM_TRANSACTION_AND_ANTI_DUPLICATION_CONTRACT.md  # §15 ForgeCause, §39.3 forge shapes; own paragraphs only
   - docs/agents/tasks/active/OTV2-YYYYMMDD-forge-1b.md
 validation: as FORGE-1a, with --test item_forge_postgres
