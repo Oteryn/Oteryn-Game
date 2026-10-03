@@ -26,7 +26,7 @@
     "qualification_cutoff": "2026-09-27T23:59:59Z",
     "engine_rules": {
       "path": "tools/content-schema/item-authoring/engine_items.py",
-      "sha256": "8e07b435532e01b5892e19609a506f5ef721b4de6e16d112d5d3435258e96001"
+      "sha256": "0a494fd64d7774507b4d9e493492a7ffc9d99d751dd2ed4fec73561cb06f5b06"
     },
     "wiki_helper": {
       "path": "tools/content-census/item_wiki_family_capture.py",
@@ -34,11 +34,11 @@
     },
     "dom_helper": {
       "path": "tools/content-migration/item_external_family_refinement.py",
-      "sha256": "99e9a4967c3dd5169273d12886365b44717d3670ace436b61ed03c2ed92c8623"
+      "sha256": "c46ec174f7656f64ca374fd2753b9351184fcecb342ae061ff9150f91cece9fb"
     },
     "a12_helper": {
       "path": "tools/content-migration/item_official_navigation.py",
-      "sha256": "65de6a33bb6bb862f6ba3e2e4048f7b552d663422c917967eede2ef937f310ad"
+      "sha256": "d30f432b643f3b31e2c4f51d1e17f0d3cde9c54038cdcfc53c932ef33e2be199"
     },
     "bindings": {
       "path": "imports/crystalserver/bindings/items.json",
@@ -59,7 +59,7 @@
     "current_membership_entries_sha256": "424e445c0ea9494b1871364f10e93876ad551df0d3d5c6982d97301008b027df",
     "native_admission": {
       "path": "apps/game-server/examples/materialize_content_world_project_v2.rs",
-      "sha256": "65a7cc0a3832b8be55d77e1c9da40d5ab5240dff3a9e252bc2c6e785127b2b03",
+      "sha256": "f167224187747bbed7d5bb7eba3ff52bc7349224c1c182971b64e3b6ba437ba2",
       "explicit_rule_only_count": 60,
       "explicit_ids_sha256": "136743df391cf4ff63fe16658fca0df6b2d90ce00636ddbbc87032f29a5230ff",
       "original_qualification_coordinate": "/workspace/audit-continuation/frozen-taxonomy-df777898/apps/game-server/examples/materialize_content_world_project_v2.rs"

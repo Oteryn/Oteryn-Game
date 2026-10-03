@@ -3,7 +3,7 @@
     "explicit_ids_sha256": "136743df391cf4ff63fe16658fca0df6b2d90ce00636ddbbc87032f29a5230ff",
     "explicit_rule_only_count": 60,
     "path": "apps/game-server/examples/materialize_content_world_project_v2.rs",
-    "sha256": "65a7cc0a3832b8be55d77e1c9da40d5ab5240dff3a9e252bc2c6e785127b2b03"
+    "sha256": "f167224187747bbed7d5bb7eba3ff52bc7349224c1c182971b64e3b6ba437ba2"
   },
   "qualified_at_sha": "bb09ba93d05d80ea84f27b1890ab6e6259457006",
   "records": [

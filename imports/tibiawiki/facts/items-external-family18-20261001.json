@@ -2432,7 +2432,7 @@
       "path": "tools/content-migration/samples/external-family18-dom-witnesses-20261001.json",
       "sha256": "5e4e9f31781f027da126595b0ce961f953d7d229ced353dc2f06bb6ecaf2128c"
     },
-    "engine_sha256": "8e07b435532e01b5892e19609a506f5ef721b4de6e16d112d5d3435258e96001",
+    "engine_sha256": "0a494fd64d7774507b4d9e493492a7ffc9d99d751dd2ed4fec73561cb06f5b06",
     "etcher_field_witness_v2": {
       "sha256": "81ed2e2e80d1d8908577592d431034822cddc0867f3e6f3c8c428c2639a7fabe",
       "source": {

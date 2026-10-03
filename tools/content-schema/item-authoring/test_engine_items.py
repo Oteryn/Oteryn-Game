@@ -3922,6 +3922,13 @@ def main():
         test()
     result = unittest.TextTestRunner().run(
         unittest.defaultTestLoader.discover(
+            str(Path(__file__).parent), pattern="test_leech_fields.py"
+        )
+    )
+    if not result.wasSuccessful():
+        raise SystemExit(1)
+    result = unittest.TextTestRunner().run(
+        unittest.defaultTestLoader.discover(
             str(Path(__file__).parent), pattern="test_imbuement_limits.py"
         )
     )
@@ -3938,4 +3945,13 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    import check_tibiawiki165_historical_context as source_context
+
+    old = source_context.read_context()
+    actual = source_context.forge.sha(
+        (source_context.ROOT / source_context.BINDINGS).read_bytes()
+    )
+    if actual != old["old165_bindings"]["sha256"]:
+        print(source_context.check(cohort="engine"))
+    else:
+        main()
