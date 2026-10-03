@@ -291,7 +291,9 @@ mismatch reloads the cursor and retries once.
 - **CHAR-REV-SEQ-1's writer list** (the D327 batch §1.3) names XP, death, Bestiary, charm and monk.
   Build and proficiency also advance the revision and bind it (`character_build.rs`,
   `character_proficiency.rs`), so they move onto the sequencer too, with fail-closed mismatch
-  handling (§5.2). §5.2 is corrected; the control plane extends that packet's owned paths.
+  handling (§5.2). §5.2 is corrected, and the D327 batch §1.3 packet now owns both writers and
+  their PostgreSQL cases (amended in this PR, control plane D356). The live allocation is PR
+  #1663, which changes both.
 
 ### 13.2 Quest content on `main`
 
@@ -340,7 +342,7 @@ worker: oteryn-hard-worker   # persistence, session-generation fence, CharacterR
 repository: Oteryn/Oteryn-Game
 issue: 162
 lane_id: quest
-depends_on: ["QUEST-STATE-0 accepted", "CHAR-REV-SEQ-1 merged"]
+depends_on: ["QUEST-STATE-0 accepted", "CHAR-REV-SEQ-1 merged (PR #1663: XP, death, Bestiary, charm, monk, build and proficiency writers on the sequencer)"]
 leases: migration 0056 (control plane lease; 0054 and 0055 are TIMED-RT-1's and PROF-SHAPE-1's)
 owned_paths:
   - apps/game-server/migrations/0056_character_quest_state.sql
