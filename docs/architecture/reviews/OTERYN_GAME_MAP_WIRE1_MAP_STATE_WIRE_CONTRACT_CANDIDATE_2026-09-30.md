@@ -26,6 +26,12 @@
 | MAP-WIRE-2 | hard (protocol), protocol and security review | capability `MAP_STATE_V1`, domain `MAP_TILES` (§4-§7), the `map_item_handle` (§6), the bounds and their measurement (§8) | MAP-LOAD-1; MAP-OVERLAY-1; VIS-2 |
 | MAP-CLIENT-1 | client lane | the native client's decoder and renderer for `MAP_TILES`, drawing the combined tile order (§5) | MAP-WIRE-2 |
 
+**Amendment (ARCH-ITEM-PACKETS-AMEND-1; `reviews/OTERYN_GAME_ARCH_BATCH_ITEM_EQUIP_PACKETS_2026-10-03.md`
+§1.11), pending on acceptance of MAP-WIRE-1.** MAP-WIRE-2 carries each described tile's ground
+speed in `MAP_TILES`, omitted when 150, with max and absent codec tests. MAP-CLIENT-1 paces client
+steps from it and switches SPEED-1's server seam to MAP-LOAD-1's map source in the same PR, as a
+merge condition, with a production-path test on a tile whose ground speed is not 150.
+
 ## 1. Question
 
 How does a client learn what lies on the map it sees: the base map, the base items the channel
