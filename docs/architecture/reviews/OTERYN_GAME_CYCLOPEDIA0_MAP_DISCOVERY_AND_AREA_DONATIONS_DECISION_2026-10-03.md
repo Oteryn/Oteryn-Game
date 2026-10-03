@@ -161,28 +161,38 @@ fence. There are two tables:
 
 ### 4.2a Content revision change
 
-Discovery progress is never reinterpreted downwards. A new World Bundle revision is classified
-under DUR-04 §12 by what it changes:
+No content revision reinterprets durable Cyclopedia state downwards. That state is:
+
+- character discovery rows and exploration rows (§4.1);
+- world donation pools (§5.2);
+- world improved-respawn epoch rows, including the current epoch (§5.2);
+- grants already made from them (area achievements, Charos outfits and addons).
+
+A new World Bundle revision is classified under DUR-04 §12 by what it changes:
 
 - **Tiles or pool inside a subarea that stays discoverable in the same area:**
   `READ_COMPATIBLE_NORMALIZE`. The exploration row pins the pool content revision. The next load of
   the character normalizes it in one Character write: found positions stay found and keep counting,
   and unfound positions that are no longer in the new pool are redrawn under the occurrence
-  (CharacterId, normalize revision, `cyclopedia_poi`, draw index). Discovered subarea rows and
-  derived values do not change.
-- **The set of discoverable subareas, their area membership, the set of areas, or the title and
-  reward thresholds**, in a world that holds discovery state: `INCOMPATIBLE_REQUIRES_PRODUCT_DECISION`.
-  Such a revision is not admitted until that decision exists. Its preserving default is fixed now:
+  (CharacterId, normalize revision, `cyclopedia_poi`, draw index). No other state changes.
+- **The set of areas or discoverable subareas, subarea area membership, the `MapAreaId`
+  crosswalk, the donation-eligible set, or the title and reward thresholds**, in a world that holds
+  any of the state above: `INCOMPATIBLE_REQUIRES_PRODUCT_DECISION`. Such a revision is not admitted
+  until that decision exists. Its value-preserving default is fixed now:
   - no character's area percentage, 30%, 70% or 100% unlock, count of fully discovered areas,
     speed bonus eligibility or title may fall;
-  - discovered subarea rows are never rewritten or deleted;
-  - grants already made stay;
-  - an active exploration row on a subarea that stops being discoverable stays pinned to its
-    revision until the decision says how it ends.
-- In a world with no discovery state, any revision is `COMPATIBLE_NO_MIGRATION`.
+  - discovery rows are never rewritten or deleted, and an active exploration row on a subarea
+    that stops being discoverable stays pinned to its revision until the decision says how it ends;
+  - a donation pool is never lost or reduced: its area and total stay, even if the area stops
+    being eligible, until the decision says where the gold goes;
+  - the current epoch runs to its end with its selected areas and their tiles at the epoch's pinned
+    revision;
+  - grants already made stay.
+- In a world that holds none of the state above, any revision is `COMPATIBLE_NO_MIGRATION`.
 
-CYC-CONTENT-1's report lists each such change between two revisions, so the classification is
-checked, not assumed.
+CYC-CONTENT-1's report lists each such change between two revisions, and CYC-DONATE-1 checks the
+classification against the world's pools and epochs before activation, so it is checked, not
+assumed.
 
 ### 4.3 Finding a POI
 
@@ -268,7 +278,8 @@ transaction** before the channels activate:
    (`CYC0-RL-05`, TibiaWiki). A tie is drawn under `improved_respawn_tie`.
 4. **Random area:** with chance 33%, drawn under `improved_respawn_random`, one area uniformly from
    eligible minus the donation area.
-5. It inserts the epoch row (both areas, the RNG records and every pool revision read) and sets the
+5. It inserts the epoch row (both areas, the RNG records, every pool revision read and the content
+   revision of the area tiles) and sets the
    winner's total to 0. The other totals stay. The order of steps 3 and 4 is `PARITY_PENDING`.
 
 Every draw is bound to the occurrence (WorldId, reset epoch, purpose, draw index) under
