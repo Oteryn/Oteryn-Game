@@ -157,6 +157,20 @@ fence. There are two tables:
 - **Shuffle** draws new positions for the open subarea and resets its found mask.
 - Each command is one idempotent Character write with a request id.
 
+### 4.2a Content revision change
+
+The exploration row pins the pool content revision. When a new World Bundle revision changes that
+subarea's tiles or pool, the change is classified `READ_COMPATIBLE_NORMALIZE` (DUR-04 §12) and the
+next load of the character normalizes the row in one Character write:
+
+- found positions stay found and keep counting, so progress never decreases;
+- unfound positions that are no longer in the new pool are redrawn from it under `cyclopedia_poi`;
+- if the subarea is no longer discoverable, the row is deleted with its found count recorded in the
+  write's evidence; no grant is made or taken back.
+
+Discovered subarea rows are never rewritten. A subarea removed from content stays recorded and is
+left out of derived values. Grants already made stay.
+
 ### 4.3 Finding a POI
 
 - POIs exist only for their character. The channel shows effect 193 on them to that character
@@ -164,8 +178,11 @@ fence. There are two tables:
 - A POI is found when the character approaches it within the found radius (§8). The found bit is
   committed as one Character write before effect 195 and the progress message are sent.
 - Entering or leaving the active subarea sends the Tibia message. It needs no write.
-- The 7th find commits atomically: the subarea row is inserted, the exploration row is deleted,
-  and the completion evidence is recorded.
+- The 7th find is one Character transaction: the subarea row is inserted, the exploration row is
+  deleted and the completion evidence is recorded. If the subarea completes its area, the same
+  transaction also records the area achievement grant request, and the Achievement domain consumes
+  it there (Achievement owner contract §3, D48). A missing catalogue key fails the whole
+  transaction closed. There is no later grant step that a crash could lose.
 
 ### 4.4 Derived values
 
@@ -174,9 +191,9 @@ two title thresholds are derived from the subarea rows and content. None of them
 
 ### 4.5 Grants and consumers
 
-- **Area achievement.** On a commit that completes an area, the area achievement is requested
-  through the Achievement owner contract's grant path. It belongs to the account (D48), and the
-  catalogue ids come from the client achievement data.
+- **Area achievement.** Granted inside the completing transaction of §4.3 through the Achievement
+  owner contract §3 grant path, with the completion as `source_event`. It belongs to the account
+  (D48), and the catalogue ids come from the client achievement data.
 - **Titles** (*Dedicated Entrepreneur*, *Globetrotter*) are derived. They are shown when the title
   system exists.
 - **Discoverer outfit.** Charos (NPC-0 dialog) checks the count of fully discovered areas: 10 for
@@ -232,13 +249,17 @@ channels activate:
 
 1. Eligible = the donation-eligible areas minus the areas improved in the ending epoch.
 2. **Donation area:** the eligible area with the highest total of at least 10,000,000
-   (`CYC0-RL-05`, TibiaWiki). A tie is drawn under the RNG purpose `improved_respawn_tie`. The
-   winner's total is set to 0 at its expected revision, and the other totals stay.
+   (`CYC0-RL-05`, TibiaWiki). A tie is drawn under the RNG purpose `improved_respawn_tie`.
 3. **Random area:** with chance 33%, drawn under the RNG purpose `improved_respawn_random`, one
    area uniformly from eligible minus the donation area.
-4. The epoch row is written. The order of steps 2 and 3 is `PARITY_PENDING`.
+4. **One transaction** commits the selection: the epoch row insert (both areas, the RNG records
+   and the pool revisions read), and the donation winner's total set to 0 at the revision read in
+   step 2. The other totals stay. The order of steps 2 and 3 is `PARITY_PENDING`.
 
-A retried job reads the epoch row and never draws again.
+Steps 1-3 compute only and write nothing. A crash before step 4 commits leaves no trace, and the
+retry draws from the same unchanged state. A crash after it leaves the epoch row, so a retried job
+reads it and never draws or resets again. A donation that moved the winner's revision in between
+fails step 4, and the job recomputes. The epoch's channels activate only after step 4 commits.
 
 ### 5.5 Effect (CYC-RESPAWN-1)
 
@@ -260,10 +281,11 @@ allocation.
 | query: areas | donation totals and the current improved areas of the character's world |
 | intent: start discovering, shuffle | §4.2 |
 | intent: donate | area and amount (§5.3) |
-| events | POI positions of the active subarea (own character only); POI found; subarea entered or left; subarea and area completed |
+| events | a POI position only when it comes within the effect 193 range of its own character on the same floor; POI found; subarea entered or left; subarea and area completed |
 
 The 30%, 70% and 100% map unlocks are client display that the server derives from the discovery
-query. The server never sends POIs to another character.
+query. The server never sends POIs to another character, and it never sends a POI that is not yet
+in range. The discovery query carries only the found count.
 
 ## 7. Rejected options
 
