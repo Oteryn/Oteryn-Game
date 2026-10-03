@@ -1,0 +1,2666 @@
+{
+  "schema": "OTERYN_GUARDED_TARGET_PREDICATE_REPLAY/v1",
+  "baseline_head": "1caddc0d9e65ff502c8137264391cd43d06911b6",
+  "source_files_considered": 23,
+  "changed_donor_graphs": 8,
+  "changed_selected_graphs": 4,
+  "old_children_preserved_on_changed_graphs": 46,
+  "variant_delta": {
+    "quest_children": 0,
+    "typed_conditions": 22,
+    "unresolved_conditions": -10,
+    "unresolved_lines": 0
+  },
+  "selected_delta": {
+    "quest_children": 0,
+    "typed_conditions": 11,
+    "unresolved_conditions": -5,
+    "unresolved_lines": 0
+  },
+  "definition_complete": false,
+  "runtime_promotion": false,
+  "rows": [
+    {
+      "source": "canary",
+      "path": "data-otservbr-global/scripts/quests/cults_of_tibia/actions_magnifier.lua",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "source_sha256": "39de512e780167c27ccd58ceab7e54b0da06dd5d7b64e201543864cee4a8157f",
+      "blob_sha1": "929ebf362f1c693c516c87b9be9de8905dbc305a",
+      "url": "https://github.com/opentibiabr/canary/blob/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data-otservbr-global/scripts/quests/cults_of_tibia/actions_magnifier.lua",
+      "witnesses": [
+        {
+          "line": 10,
+          "line_sha256": "dd7ad054695ebb355cae9a3b92a5bb12b79f5c91a97b1157e78311b822b190ab",
+          "text": "\tif not target or type(target) ~= \"userdata\" or not target:isItem() then\n"
+        },
+        {
+          "line": 18,
+          "line_sha256": "b5c8e9d61ee91fdd1f604a9ab6fb2212199badbf279a8501e5e695d0e0a22ebb",
+          "text": "\tif table.contains({ 2622, 2601, 2596, 2612, 2618 }, target:getId()) then\n"
+        },
+        {
+          "line": 21,
+          "line_sha256": "9a5deb84f4dab39b96f73a7e2ba6583cd5eb18e3e2e68fa257b218d821a87fb0",
+          "text": "\telseif target:getPosition() == sqm and target:getId() == 2613 and player:getStorageValue(Storage.Quest.U11_40.CultsOfTibia.MotA.Mission) == 8 then\n"
+        }
+      ],
+      "key": "canary:interaction/cults_of_tibia/actions_magnifier",
+      "counts_before": {
+        "quest_children": 1,
+        "typed_conditions": 1,
+        "unresolved_conditions": 4,
+        "unresolved_lines": 0
+      },
+      "counts_after": {
+        "quest_children": 1,
+        "typed_conditions": 6,
+        "unresolved_conditions": 3,
+        "unresolved_lines": 0
+      },
+      "delta": {
+        "quest_children": 0,
+        "typed_conditions": 5,
+        "unresolved_conditions": -1,
+        "unresolved_lines": 0
+      },
+      "before": {
+        "identity": {
+          "key": "canary:interaction/cults_of_tibia/actions_magnifier",
+          "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+        },
+        "source": {
+          "edge": "USE",
+          "callback": "onUse",
+          "target_registrations": [
+            "id(25306)"
+          ]
+        },
+        "rules": [
+          {
+            "branch": [
+              {
+                "when": {
+                  "actor_is_player": true,
+                  "negate": true
+                },
+                "then": []
+              }
+            ],
+            "otherwise": [
+              {
+                "branch": [
+                  {
+                    "when": {
+                      "unresolved": {
+                        "line": 10
+                      }
+                    },
+                    "then": []
+                  }
+                ],
+                "otherwise": [
+                  {
+                    "branch": [
+                      {
+                        "when": {
+                          "unresolved": {
+                            "line": 14
+                          }
+                        },
+                        "then": []
+                      }
+                    ],
+                    "otherwise": [
+                      {
+                        "branch": [
+                          {
+                            "when": {
+                              "unresolved": {
+                                "line": 18
+                              }
+                            },
+                            "then": [
+                              {
+                                "owner": "Presentation",
+                                "effect": "message",
+                                "authoritative": false,
+                                "source_line": 19
+                              },
+                              {
+                                "owner": "Presentation",
+                                "effect": "magic_effect",
+                                "authoritative": false
+                              }
+                            ]
+                          },
+                          {
+                            "when": {
+                              "unresolved": {
+                                "line": 21
+                              }
+                            },
+                            "then": [
+                              {
+                                "owner": "Presentation",
+                                "effect": "magic_effect",
+                                "authoritative": false
+                              },
+                              {
+                                "owner": "Quest",
+                                "request": "set_progress",
+                                "progress": "canary:quest-progress/quest/u11_40/cults_of_tibia/mot_a/mission",
+                                "to": 9,
+                                "transition": "canary:quest/cults_of_tibia_quest#patron_of_arts:action_4"
+                              },
+                              {
+                                "owner": "Presentation",
+                                "effect": "message",
+                                "authoritative": false,
+                                "source_line": 24
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "anchors": [],
+        "unresolved": [],
+        "script": "scripts/quests/cults_of_tibia/actions_magnifier.lua",
+        "callback_line": 2
+      },
+      "after": {
+        "identity": {
+          "key": "canary:interaction/cults_of_tibia/actions_magnifier",
+          "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+        },
+        "source": {
+          "edge": "USE",
+          "callback": "onUse",
+          "target_registrations": [
+            "id(25306)"
+          ]
+        },
+        "rules": [
+          {
+            "branch": [
+              {
+                "when": {
+                  "actor_is_player": true,
+                  "negate": true
+                },
+                "then": []
+              }
+            ],
+            "otherwise": [
+              {
+                "branch": [
+                  {
+                    "when": {
+                      "unresolved": {
+                        "line": 10
+                      }
+                    },
+                    "then": []
+                  }
+                ],
+                "otherwise": [
+                  {
+                    "branch": [
+                      {
+                        "when": {
+                          "unresolved": {
+                            "line": 14
+                          }
+                        },
+                        "then": []
+                      }
+                    ],
+                    "otherwise": [
+                      {
+                        "branch": [
+                          {
+                            "when": {
+                              "any": [
+                                {
+                                  "object": {
+                                    "role": "use_target",
+                                    "field": "item_type",
+                                    "op": "==",
+                                    "item": {
+                                      "family": "Item",
+                                      "key": "canary:item/2622",
+                                      "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                                    }
+                                  },
+                                  "negate": false
+                                },
+                                {
+                                  "object": {
+                                    "role": "use_target",
+                                    "field": "item_type",
+                                    "op": "==",
+                                    "item": {
+                                      "family": "Item",
+                                      "key": "canary:item/2601",
+                                      "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                                    }
+                                  },
+                                  "negate": false
+                                },
+                                {
+                                  "object": {
+                                    "role": "use_target",
+                                    "field": "item_type",
+                                    "op": "==",
+                                    "item": {
+                                      "family": "Item",
+                                      "key": "canary:item/2596",
+                                      "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                                    }
+                                  },
+                                  "negate": false
+                                },
+                                {
+                                  "object": {
+                                    "role": "use_target",
+                                    "field": "item_type",
+                                    "op": "==",
+                                    "item": {
+                                      "family": "Item",
+                                      "key": "canary:item/2612",
+                                      "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                                    }
+                                  },
+                                  "negate": false
+                                },
+                                {
+                                  "object": {
+                                    "role": "use_target",
+                                    "field": "item_type",
+                                    "op": "==",
+                                    "item": {
+                                      "family": "Item",
+                                      "key": "canary:item/2618",
+                                      "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                                    }
+                                  },
+                                  "negate": false
+                                }
+                              ]
+                            },
+                            "then": [
+                              {
+                                "owner": "Presentation",
+                                "effect": "message",
+                                "authoritative": false,
+                                "source_line": 19
+                              },
+                              {
+                                "owner": "Presentation",
+                                "effect": "magic_effect",
+                                "authoritative": false
+                              }
+                            ]
+                          },
+                          {
+                            "when": {
+                              "unresolved": {
+                                "line": 21
+                              }
+                            },
+                            "then": [
+                              {
+                                "owner": "Presentation",
+                                "effect": "magic_effect",
+                                "authoritative": false
+                              },
+                              {
+                                "owner": "Quest",
+                                "request": "set_progress",
+                                "progress": "canary:quest-progress/quest/u11_40/cults_of_tibia/mot_a/mission",
+                                "to": 9,
+                                "transition": "canary:quest/cults_of_tibia_quest#patron_of_arts:action_4"
+                              },
+                              {
+                                "owner": "Presentation",
+                                "effect": "message",
+                                "authoritative": false,
+                                "source_line": 24
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "anchors": [],
+        "unresolved": [],
+        "script": "scripts/quests/cults_of_tibia/actions_magnifier.lua",
+        "callback_line": 2
+      },
+      "current_selected_source": true,
+      "canonical_key": "canary:interaction/cults_of_tibia/actions_magnifier"
+    },
+    {
+      "source": "canary",
+      "path": "data-otservbr-global/scripts/quests/dangerous_depth/actions_gnomish_pesticide.lua",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "source_sha256": "ecc85c8d2b22aaa4f0ae2f55ea63a24447fc0b8ecc4aaa035dcdace0fd27f3dd",
+      "blob_sha1": "9d5b9da150d043bc42c3044aa7a67fa263005118",
+      "url": "https://github.com/opentibiabr/canary/blob/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data-otservbr-global/scripts/quests/dangerous_depth/actions_gnomish_pesticide.lua",
+      "witnesses": [
+        {
+          "line": 8,
+          "line_sha256": "dd7ad054695ebb355cae9a3b92a5bb12b79f5c91a97b1157e78311b822b190ab",
+          "text": "\tif not target or type(target) ~= \"userdata\" or not target:isItem() then\n"
+        },
+        {
+          "line": 20,
+          "line_sha256": "3ea069d99995f47e2557509facb7148ce486d2f4d48fafa6d832dfc7387ad9e3",
+          "text": "\tif target:getId() == corpseId then\n"
+        },
+        {
+          "line": 33,
+          "line_sha256": "41943c269ddab3510aa0d5b1e4267f21c2f72e918ca1a34dd0a891f55a3bd1b3",
+          "text": "\telseif table.contains({ 27495, 27496, 27497 }, target:getId()) then\n"
+        }
+      ],
+      "key": "canary:interaction/dangerous_depth/actions_gnomish_pesticide",
+      "counts_before": {
+        "quest_children": 2,
+        "typed_conditions": 3,
+        "unresolved_conditions": 5,
+        "unresolved_lines": 0
+      },
+      "counts_after": {
+        "quest_children": 2,
+        "typed_conditions": 7,
+        "unresolved_conditions": 3,
+        "unresolved_lines": 0
+      },
+      "delta": {
+        "quest_children": 0,
+        "typed_conditions": 4,
+        "unresolved_conditions": -2,
+        "unresolved_lines": 0
+      },
+      "before": {
+        "identity": {
+          "key": "canary:interaction/dangerous_depth/actions_gnomish_pesticide",
+          "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+        },
+        "source": {
+          "edge": "USE",
+          "callback": "onUse",
+          "target_registrations": [
+            "id(27498)"
+          ]
+        },
+        "rules": [
+          {
+            "branch": [
+              {
+                "when": {
+                  "actor_is_player": true,
+                  "negate": true
+                },
+                "then": []
+              }
+            ],
+            "otherwise": [
+              {
+                "branch": [
+                  {
+                    "when": {
+                      "unresolved": {
+                        "line": 8
+                      }
+                    },
+                    "then": []
+                  }
+                ],
+                "otherwise": [
+                  {
+                    "branch": [
+                      {
+                        "when": {
+                          "unresolved": {
+                            "line": 12
+                          }
+                        },
+                        "then": []
+                      }
+                    ],
+                    "otherwise": [
+                      {
+                        "branch": [
+                          {
+                            "when": {
+                              "unresolved": {
+                                "line": 20
+                              }
+                            },
+                            "then": [
+                              {
+                                "branch": [
+                                  {
+                                    "when": {
+                                      "all": [
+                                        {
+                                          "quest_stage": {
+                                            "progress": "canary:quest-progress/quest/u11_50/dangerous_depths/scouts/diremaw",
+                                            "op": "==",
+                                            "value": 1
+                                          },
+                                          "negate": false
+                                        },
+                                        {
+                                          "quest_stage": {
+                                            "progress": "canary:quest-progress/quest/u11_50/dangerous_depths/scouts/diremaws_count",
+                                            "op": "<",
+                                            "value": 20
+                                          },
+                                          "negate": false
+                                        }
+                                      ]
+                                    },
+                                    "then": [
+                                      {
+                                        "branch": [
+                                          {
+                                            "when": {
+                                              "unresolved": {
+                                                "line": 22
+                                              }
+                                            },
+                                            "then": [
+                                              {
+                                                "owner": "Presentation",
+                                                "effect": "magic_effect",
+                                                "authoritative": false
+                                              },
+                                              {
+                                                "owner": "Ability",
+                                                "effect": "summon",
+                                                "creature": {
+                                                  "family": "Creature",
+                                                  "key": "canary:creature/diremaw",
+                                                  "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                                                },
+                                                "anchor_source_line": 24
+                                              },
+                                              {
+                                                "owner": "Quest",
+                                                "request": "set_progress",
+                                                "progress": "canary:quest-progress/quest/u11_50/dangerous_depths/scouts/diremaws_count",
+                                                "value_source_line": 25
+                                              },
+                                              {
+                                                "owner": "WorldObject",
+                                                "operation": "TRANSFORM",
+                                                "value_source_line": 26
+                                              }
+                                            ]
+                                          }
+                                        ],
+                                        "otherwise": [
+                                          {
+                                            "owner": "Presentation",
+                                            "effect": "magic_effect",
+                                            "authoritative": false
+                                          },
+                                          {
+                                            "owner": "Quest",
+                                            "request": "set_progress",
+                                            "progress": "canary:quest-progress/quest/u11_50/dangerous_depths/scouts/diremaws_count",
+                                            "value_source_line": 29
+                                          },
+                                          {
+                                            "owner": "WorldObject",
+                                            "operation": "TRANSFORM",
+                                            "value_source_line": 30
+                                          }
+                                        ]
+                                      }
+                                    ]
+                                  }
+                                ]
+                              }
+                            ]
+                          },
+                          {
+                            "when": {
+                              "unresolved": {
+                                "line": 33
+                              }
+                            },
+                            "then": [
+                              {
+                                "owner": "Presentation",
+                                "effect": "message",
+                                "authoritative": false,
+                                "source_line": 34
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "anchors": [],
+        "unresolved": [],
+        "script": "scripts/quests/dangerous_depth/actions_gnomish_pesticide.lua",
+        "callback_line": 3
+      },
+      "after": {
+        "identity": {
+          "key": "canary:interaction/dangerous_depth/actions_gnomish_pesticide",
+          "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+        },
+        "source": {
+          "edge": "USE",
+          "callback": "onUse",
+          "target_registrations": [
+            "id(27498)"
+          ]
+        },
+        "rules": [
+          {
+            "branch": [
+              {
+                "when": {
+                  "actor_is_player": true,
+                  "negate": true
+                },
+                "then": []
+              }
+            ],
+            "otherwise": [
+              {
+                "branch": [
+                  {
+                    "when": {
+                      "unresolved": {
+                        "line": 8
+                      }
+                    },
+                    "then": []
+                  }
+                ],
+                "otherwise": [
+                  {
+                    "branch": [
+                      {
+                        "when": {
+                          "unresolved": {
+                            "line": 12
+                          }
+                        },
+                        "then": []
+                      }
+                    ],
+                    "otherwise": [
+                      {
+                        "branch": [
+                          {
+                            "when": {
+                              "object": {
+                                "role": "use_target",
+                                "field": "item_type",
+                                "op": "==",
+                                "item": {
+                                  "family": "Item",
+                                  "key": "canary:item/27494",
+                                  "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                                }
+                              },
+                              "negate": false
+                            },
+                            "then": [
+                              {
+                                "branch": [
+                                  {
+                                    "when": {
+                                      "all": [
+                                        {
+                                          "quest_stage": {
+                                            "progress": "canary:quest-progress/quest/u11_50/dangerous_depths/scouts/diremaw",
+                                            "op": "==",
+                                            "value": 1
+                                          },
+                                          "negate": false
+                                        },
+                                        {
+                                          "quest_stage": {
+                                            "progress": "canary:quest-progress/quest/u11_50/dangerous_depths/scouts/diremaws_count",
+                                            "op": "<",
+                                            "value": 20
+                                          },
+                                          "negate": false
+                                        }
+                                      ]
+                                    },
+                                    "then": [
+                                      {
+                                        "branch": [
+                                          {
+                                            "when": {
+                                              "unresolved": {
+                                                "line": 22
+                                              }
+                                            },
+                                            "then": [
+                                              {
+                                                "owner": "Presentation",
+                                                "effect": "magic_effect",
+                                                "authoritative": false
+                                              },
+                                              {
+                                                "owner": "Ability",
+                                                "effect": "summon",
+                                                "creature": {
+                                                  "family": "Creature",
+                                                  "key": "canary:creature/diremaw",
+                                                  "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                                                },
+                                                "anchor_source_line": 24
+                                              },
+                                              {
+                                                "owner": "Quest",
+                                                "request": "set_progress",
+                                                "progress": "canary:quest-progress/quest/u11_50/dangerous_depths/scouts/diremaws_count",
+                                                "value_source_line": 25
+                                              },
+                                              {
+                                                "owner": "WorldObject",
+                                                "operation": "TRANSFORM",
+                                                "value_source_line": 26
+                                              }
+                                            ]
+                                          }
+                                        ],
+                                        "otherwise": [
+                                          {
+                                            "owner": "Presentation",
+                                            "effect": "magic_effect",
+                                            "authoritative": false
+                                          },
+                                          {
+                                            "owner": "Quest",
+                                            "request": "set_progress",
+                                            "progress": "canary:quest-progress/quest/u11_50/dangerous_depths/scouts/diremaws_count",
+                                            "value_source_line": 29
+                                          },
+                                          {
+                                            "owner": "WorldObject",
+                                            "operation": "TRANSFORM",
+                                            "value_source_line": 30
+                                          }
+                                        ]
+                                      }
+                                    ]
+                                  }
+                                ]
+                              }
+                            ]
+                          },
+                          {
+                            "when": {
+                              "any": [
+                                {
+                                  "object": {
+                                    "role": "use_target",
+                                    "field": "item_type",
+                                    "op": "==",
+                                    "item": {
+                                      "family": "Item",
+                                      "key": "canary:item/27495",
+                                      "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                                    }
+                                  },
+                                  "negate": false
+                                },
+                                {
+                                  "object": {
+                                    "role": "use_target",
+                                    "field": "item_type",
+                                    "op": "==",
+                                    "item": {
+                                      "family": "Item",
+                                      "key": "canary:item/27496",
+                                      "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                                    }
+                                  },
+                                  "negate": false
+                                },
+                                {
+                                  "object": {
+                                    "role": "use_target",
+                                    "field": "item_type",
+                                    "op": "==",
+                                    "item": {
+                                      "family": "Item",
+                                      "key": "canary:item/27497",
+                                      "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                                    }
+                                  },
+                                  "negate": false
+                                }
+                              ]
+                            },
+                            "then": [
+                              {
+                                "owner": "Presentation",
+                                "effect": "message",
+                                "authoritative": false,
+                                "source_line": 34
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "anchors": [],
+        "unresolved": [],
+        "script": "scripts/quests/dangerous_depth/actions_gnomish_pesticide.lua",
+        "callback_line": 3
+      },
+      "current_selected_source": true,
+      "canonical_key": "canary:interaction/dangerous_depth/actions_gnomish_pesticide"
+    },
+    {
+      "source": "canary",
+      "path": "data-otservbr-global/scripts/quests/roshamuul_quest/actions_trough.lua",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "source_sha256": "737cfeeaaa49cf99b67f9e2a65b8ba8dcc4b3bf8f3f4f70bc1e7a59a63c1ac15",
+      "blob_sha1": "11613fe68d64032e35abb967416d86457ee4c09f",
+      "url": "https://github.com/opentibiabr/canary/blob/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data-otservbr-global/scripts/quests/roshamuul_quest/actions_trough.lua",
+      "witnesses": [
+        {
+          "line": 4,
+          "line_sha256": "dd7ad054695ebb355cae9a3b92a5bb12b79f5c91a97b1157e78311b822b190ab",
+          "text": "\tif not target or type(target) ~= \"userdata\" or not target:isItem() then\n"
+        },
+        {
+          "line": 8,
+          "line_sha256": "71be648cdbf2e9d21e58e752cb52a5f14f7b8375575acd503b1d3a2f61c39b9c",
+          "text": "\tif target:getId() == 20216 then\n"
+        }
+      ],
+      "key": "canary:interaction/roshamuul_quest/actions_trough",
+      "counts_before": {
+        "quest_children": 1,
+        "typed_conditions": 0,
+        "unresolved_conditions": 2,
+        "unresolved_lines": 0
+      },
+      "counts_after": {
+        "quest_children": 1,
+        "typed_conditions": 1,
+        "unresolved_conditions": 1,
+        "unresolved_lines": 0
+      },
+      "delta": {
+        "quest_children": 0,
+        "typed_conditions": 1,
+        "unresolved_conditions": -1,
+        "unresolved_lines": 0
+      },
+      "before": {
+        "identity": {
+          "key": "canary:interaction/roshamuul_quest/actions_trough",
+          "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+        },
+        "source": {
+          "edge": "USE",
+          "callback": "onUse",
+          "target_registrations": [
+            "id(20170)"
+          ]
+        },
+        "rules": [
+          {
+            "branch": [
+              {
+                "when": {
+                  "unresolved": {
+                    "line": 4
+                  }
+                },
+                "then": []
+              }
+            ],
+            "otherwise": [
+              {
+                "branch": [
+                  {
+                    "when": {
+                      "unresolved": {
+                        "line": 8
+                      }
+                    },
+                    "then": [
+                      {
+                        "owner": "WorldObject",
+                        "operation": "TRANSFORM",
+                        "value_source_line": 9
+                      },
+                      {
+                        "owner": "Presentation",
+                        "effect": "magic_effect",
+                        "authoritative": false
+                      },
+                      {
+                        "owner": "Quest",
+                        "request": "set_progress",
+                        "progress": "canary:quest-progress/quest/u10_30/roshamuul_quest/roshamuul_mortar_thrown",
+                        "value_source_line": 11
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "anchors": [],
+        "unresolved": [],
+        "script": "scripts/quests/roshamuul_quest/actions_trough.lua",
+        "callback_line": 3
+      },
+      "after": {
+        "identity": {
+          "key": "canary:interaction/roshamuul_quest/actions_trough",
+          "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+        },
+        "source": {
+          "edge": "USE",
+          "callback": "onUse",
+          "target_registrations": [
+            "id(20170)"
+          ]
+        },
+        "rules": [
+          {
+            "branch": [
+              {
+                "when": {
+                  "unresolved": {
+                    "line": 4
+                  }
+                },
+                "then": []
+              }
+            ],
+            "otherwise": [
+              {
+                "branch": [
+                  {
+                    "when": {
+                      "object": {
+                        "role": "use_target",
+                        "field": "item_type",
+                        "op": "==",
+                        "item": {
+                          "family": "Item",
+                          "key": "canary:item/20216",
+                          "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                        }
+                      },
+                      "negate": false
+                    },
+                    "then": [
+                      {
+                        "owner": "WorldObject",
+                        "operation": "TRANSFORM",
+                        "value_source_line": 9
+                      },
+                      {
+                        "owner": "Presentation",
+                        "effect": "magic_effect",
+                        "authoritative": false
+                      },
+                      {
+                        "owner": "Quest",
+                        "request": "set_progress",
+                        "progress": "canary:quest-progress/quest/u10_30/roshamuul_quest/roshamuul_mortar_thrown",
+                        "value_source_line": 11
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "anchors": [],
+        "unresolved": [],
+        "script": "scripts/quests/roshamuul_quest/actions_trough.lua",
+        "callback_line": 3
+      },
+      "current_selected_source": true,
+      "canonical_key": "canary:interaction/roshamuul_quest/actions_trough"
+    },
+    {
+      "source": "canary",
+      "path": "data-otservbr-global/scripts/quests/spike_tasks/actions_lode_stone.lua",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "source_sha256": "1ace4bdb1ae663e86a1ff1e1dcb31e7599b39c7eb68c376d8572296b31aa84e7",
+      "blob_sha1": "b976684a81842b0253ff176486e7a361818e82bc",
+      "url": "https://github.com/opentibiabr/canary/blob/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data-otservbr-global/scripts/quests/spike_tasks/actions_lode_stone.lua",
+      "witnesses": [
+        {
+          "line": 14,
+          "line_sha256": "845c2bcd030bc1f9c4c5e7c42750dad7ec7b0c9e3cde0d40037c580fdf8bc0a3",
+          "text": "\tif not target or type(target) ~= \"userdata\" or not target:isItem() or (target:getId() ~= 19217) then\n"
+        },
+        {
+          "line": 18,
+          "line_sha256": "47e33d4cfd8df07ea15cc6a0b0284ad59b64707537f763bf8a3592747528c2dd",
+          "text": "\tif target:getId() == 19217 then\n"
+        },
+        {
+          "line": 23,
+          "line_sha256": "96b99abc6803e919640fa81969e326169d68895b2a88497aa495007ecc5bea69",
+          "text": "\tlocal itemId = item:getId()\n"
+        }
+      ],
+      "key": "canary:interaction/spike_tasks/actions_lode_stone",
+      "counts_before": {
+        "quest_children": 3,
+        "typed_conditions": 1,
+        "unresolved_conditions": 7,
+        "unresolved_lines": 0
+      },
+      "counts_after": {
+        "quest_children": 3,
+        "typed_conditions": 2,
+        "unresolved_conditions": 6,
+        "unresolved_lines": 0
+      },
+      "delta": {
+        "quest_children": 0,
+        "typed_conditions": 1,
+        "unresolved_conditions": -1,
+        "unresolved_lines": 0
+      },
+      "before": {
+        "identity": {
+          "key": "canary:interaction/spike_tasks/actions_lode_stone",
+          "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+        },
+        "source": {
+          "edge": "USE",
+          "callback": "onUse",
+          "target_registrations": [
+            "id(id)"
+          ]
+        },
+        "rules": [
+          {
+            "branch": [
+              {
+                "when": {
+                  "quest_stage": {
+                    "progress": "canary:quest-progress/quest/u10_20/spike_task_quest/spike_middle_charge_main",
+                    "op": "==",
+                    "value": 3
+                  },
+                  "negate": false
+                },
+                "then": []
+              }
+            ],
+            "otherwise": [
+              {
+                "branch": [
+                  {
+                    "when": {
+                      "unresolved": {
+                        "line": 14
+                      }
+                    },
+                    "then": []
+                  }
+                ],
+                "otherwise": [
+                  {
+                    "branch": [
+                      {
+                        "when": {
+                          "unresolved": {
+                            "line": 18
+                          }
+                        },
+                        "then": [
+                          {
+                            "owner": "WorldObject",
+                            "operation": "TRANSFORM",
+                            "value_source_line": 19
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "branch": [
+                      {
+                        "when": {
+                          "unresolved": {
+                            "line": 25
+                          }
+                        },
+                        "then": [
+                          {
+                            "owner": "WorldObject",
+                            "operation": "TRANSFORM",
+                            "value_source_line": 26
+                          },
+                          {
+                            "owner": "Quest",
+                            "request": "set_progress",
+                            "progress": "canary:quest-progress/quest/u10_20/spike_task_quest/spike_middle_charge_main",
+                            "to": 1
+                          }
+                        ]
+                      },
+                      {
+                        "when": {
+                          "unresolved": {
+                            "line": 28
+                          }
+                        },
+                        "then": [
+                          {
+                            "branch": [
+                              {
+                                "when": {
+                                  "unresolved": {
+                                    "line": 30
+                                  }
+                                },
+                                "then": []
+                              }
+                            ]
+                          },
+                          {
+                            "owner": "Quest",
+                            "request": "set_progress",
+                            "progress": "canary:quest-progress/quest/u10_20/spike_task_quest/spike_middle_charge_main",
+                            "value_source_line": 35
+                          },
+                          {
+                            "branch": [
+                              {
+                                "when": {
+                                  "unresolved": {
+                                    "line": 37
+                                  }
+                                },
+                                "then": [
+                                  {
+                                    "owner": "WorldObject",
+                                    "operation": "TRANSFORM",
+                                    "value_source_line": 38
+                                  },
+                                  {
+                                    "owner": "Quest",
+                                    "request": "set_progress",
+                                    "progress": "canary:quest-progress/quest/u10_20/spike_task_quest/spike_middle_charge_main",
+                                    "to": 3
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "branch": [
+                      {
+                        "when": {
+                          "unresolved": {
+                            "line": 44
+                          }
+                        },
+                        "then": [
+                          {
+                            "owner": "Movement",
+                            "status": "blocked",
+                            "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 \u00a719.3; D37 owner accepted)",
+                            "to_source_line": 45
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "anchors": [],
+        "unresolved": [],
+        "script": "scripts/quests/spike_tasks/actions_lode_stone.lua",
+        "callback_line": 8
+      },
+      "after": {
+        "identity": {
+          "key": "canary:interaction/spike_tasks/actions_lode_stone",
+          "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+        },
+        "source": {
+          "edge": "USE",
+          "callback": "onUse",
+          "target_registrations": [
+            "id(id)"
+          ]
+        },
+        "rules": [
+          {
+            "branch": [
+              {
+                "when": {
+                  "quest_stage": {
+                    "progress": "canary:quest-progress/quest/u10_20/spike_task_quest/spike_middle_charge_main",
+                    "op": "==",
+                    "value": 3
+                  },
+                  "negate": false
+                },
+                "then": []
+              }
+            ],
+            "otherwise": [
+              {
+                "branch": [
+                  {
+                    "when": {
+                      "unresolved": {
+                        "line": 14
+                      }
+                    },
+                    "then": []
+                  }
+                ],
+                "otherwise": [
+                  {
+                    "branch": [
+                      {
+                        "when": {
+                          "object": {
+                            "role": "use_target",
+                            "field": "item_type",
+                            "op": "==",
+                            "item": {
+                              "family": "Item",
+                              "key": "canary:item/19217",
+                              "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                            }
+                          },
+                          "negate": false
+                        },
+                        "then": [
+                          {
+                            "owner": "WorldObject",
+                            "operation": "TRANSFORM",
+                            "value_source_line": 19
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "branch": [
+                      {
+                        "when": {
+                          "unresolved": {
+                            "line": 25
+                          }
+                        },
+                        "then": [
+                          {
+                            "owner": "WorldObject",
+                            "operation": "TRANSFORM",
+                            "value_source_line": 26
+                          },
+                          {
+                            "owner": "Quest",
+                            "request": "set_progress",
+                            "progress": "canary:quest-progress/quest/u10_20/spike_task_quest/spike_middle_charge_main",
+                            "to": 1
+                          }
+                        ]
+                      },
+                      {
+                        "when": {
+                          "unresolved": {
+                            "line": 28
+                          }
+                        },
+                        "then": [
+                          {
+                            "branch": [
+                              {
+                                "when": {
+                                  "unresolved": {
+                                    "line": 30
+                                  }
+                                },
+                                "then": []
+                              }
+                            ]
+                          },
+                          {
+                            "owner": "Quest",
+                            "request": "set_progress",
+                            "progress": "canary:quest-progress/quest/u10_20/spike_task_quest/spike_middle_charge_main",
+                            "value_source_line": 35
+                          },
+                          {
+                            "branch": [
+                              {
+                                "when": {
+                                  "unresolved": {
+                                    "line": 37
+                                  }
+                                },
+                                "then": [
+                                  {
+                                    "owner": "WorldObject",
+                                    "operation": "TRANSFORM",
+                                    "value_source_line": 38
+                                  },
+                                  {
+                                    "owner": "Quest",
+                                    "request": "set_progress",
+                                    "progress": "canary:quest-progress/quest/u10_20/spike_task_quest/spike_middle_charge_main",
+                                    "to": 3
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "branch": [
+                      {
+                        "when": {
+                          "unresolved": {
+                            "line": 44
+                          }
+                        },
+                        "then": [
+                          {
+                            "owner": "Movement",
+                            "status": "blocked",
+                            "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 \u00a719.3; D37 owner accepted)",
+                            "to_source_line": 45
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "anchors": [],
+        "unresolved": [],
+        "script": "scripts/quests/spike_tasks/actions_lode_stone.lua",
+        "callback_line": 8
+      },
+      "current_selected_source": true,
+      "canonical_key": "canary:interaction/spike_tasks/actions_lode_stone"
+    },
+    {
+      "source": "crystalserver",
+      "path": "data-global/scripts/quests/cults_of_tibia/actions_magnifier.lua",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "source_sha256": "39de512e780167c27ccd58ceab7e54b0da06dd5d7b64e201543864cee4a8157f",
+      "blob_sha1": "929ebf362f1c693c516c87b9be9de8905dbc305a",
+      "url": "https://github.com/zimbadev/crystalserver/blob/9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d/data-global/scripts/quests/cults_of_tibia/actions_magnifier.lua",
+      "witnesses": [
+        {
+          "line": 10,
+          "line_sha256": "dd7ad054695ebb355cae9a3b92a5bb12b79f5c91a97b1157e78311b822b190ab",
+          "text": "\tif not target or type(target) ~= \"userdata\" or not target:isItem() then\n"
+        },
+        {
+          "line": 18,
+          "line_sha256": "b5c8e9d61ee91fdd1f604a9ab6fb2212199badbf279a8501e5e695d0e0a22ebb",
+          "text": "\tif table.contains({ 2622, 2601, 2596, 2612, 2618 }, target:getId()) then\n"
+        },
+        {
+          "line": 21,
+          "line_sha256": "9a5deb84f4dab39b96f73a7e2ba6583cd5eb18e3e2e68fa257b218d821a87fb0",
+          "text": "\telseif target:getPosition() == sqm and target:getId() == 2613 and player:getStorageValue(Storage.Quest.U11_40.CultsOfTibia.MotA.Mission) == 8 then\n"
+        }
+      ],
+      "key": "crystalserver:interaction/cults_of_tibia/actions_magnifier",
+      "counts_before": {
+        "quest_children": 1,
+        "typed_conditions": 1,
+        "unresolved_conditions": 4,
+        "unresolved_lines": 0
+      },
+      "counts_after": {
+        "quest_children": 1,
+        "typed_conditions": 6,
+        "unresolved_conditions": 3,
+        "unresolved_lines": 0
+      },
+      "delta": {
+        "quest_children": 0,
+        "typed_conditions": 5,
+        "unresolved_conditions": -1,
+        "unresolved_lines": 0
+      },
+      "before": {
+        "identity": {
+          "key": "crystalserver:interaction/cults_of_tibia/actions_magnifier",
+          "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+        },
+        "source": {
+          "edge": "USE",
+          "callback": "onUse",
+          "target_registrations": [
+            "id(25306)"
+          ]
+        },
+        "rules": [
+          {
+            "branch": [
+              {
+                "when": {
+                  "actor_is_player": true,
+                  "negate": true
+                },
+                "then": []
+              }
+            ],
+            "otherwise": [
+              {
+                "branch": [
+                  {
+                    "when": {
+                      "unresolved": {
+                        "line": 10
+                      }
+                    },
+                    "then": []
+                  }
+                ],
+                "otherwise": [
+                  {
+                    "branch": [
+                      {
+                        "when": {
+                          "unresolved": {
+                            "line": 14
+                          }
+                        },
+                        "then": []
+                      }
+                    ],
+                    "otherwise": [
+                      {
+                        "branch": [
+                          {
+                            "when": {
+                              "unresolved": {
+                                "line": 18
+                              }
+                            },
+                            "then": [
+                              {
+                                "owner": "Presentation",
+                                "effect": "message",
+                                "authoritative": false,
+                                "source_line": 19
+                              },
+                              {
+                                "owner": "Presentation",
+                                "effect": "magic_effect",
+                                "authoritative": false
+                              }
+                            ]
+                          },
+                          {
+                            "when": {
+                              "unresolved": {
+                                "line": 21
+                              }
+                            },
+                            "then": [
+                              {
+                                "owner": "Presentation",
+                                "effect": "magic_effect",
+                                "authoritative": false
+                              },
+                              {
+                                "owner": "Quest",
+                                "request": "set_progress",
+                                "progress": "canary:quest-progress/quest/u11_40/cults_of_tibia/mot_a/mission",
+                                "to": 9,
+                                "transition": "canary:quest/cults_of_tibia_quest#patron_of_arts:action_4"
+                              },
+                              {
+                                "owner": "Presentation",
+                                "effect": "message",
+                                "authoritative": false,
+                                "source_line": 24
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "anchors": [],
+        "unresolved": [],
+        "script": "scripts/quests/cults_of_tibia/actions_magnifier.lua",
+        "callback_line": 2
+      },
+      "after": {
+        "identity": {
+          "key": "crystalserver:interaction/cults_of_tibia/actions_magnifier",
+          "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+        },
+        "source": {
+          "edge": "USE",
+          "callback": "onUse",
+          "target_registrations": [
+            "id(25306)"
+          ]
+        },
+        "rules": [
+          {
+            "branch": [
+              {
+                "when": {
+                  "actor_is_player": true,
+                  "negate": true
+                },
+                "then": []
+              }
+            ],
+            "otherwise": [
+              {
+                "branch": [
+                  {
+                    "when": {
+                      "unresolved": {
+                        "line": 10
+                      }
+                    },
+                    "then": []
+                  }
+                ],
+                "otherwise": [
+                  {
+                    "branch": [
+                      {
+                        "when": {
+                          "unresolved": {
+                            "line": 14
+                          }
+                        },
+                        "then": []
+                      }
+                    ],
+                    "otherwise": [
+                      {
+                        "branch": [
+                          {
+                            "when": {
+                              "any": [
+                                {
+                                  "object": {
+                                    "role": "use_target",
+                                    "field": "item_type",
+                                    "op": "==",
+                                    "item": {
+                                      "family": "Item",
+                                      "key": "crystalserver:item/2622",
+                                      "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                                    }
+                                  },
+                                  "negate": false
+                                },
+                                {
+                                  "object": {
+                                    "role": "use_target",
+                                    "field": "item_type",
+                                    "op": "==",
+                                    "item": {
+                                      "family": "Item",
+                                      "key": "crystalserver:item/2601",
+                                      "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                                    }
+                                  },
+                                  "negate": false
+                                },
+                                {
+                                  "object": {
+                                    "role": "use_target",
+                                    "field": "item_type",
+                                    "op": "==",
+                                    "item": {
+                                      "family": "Item",
+                                      "key": "crystalserver:item/2596",
+                                      "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                                    }
+                                  },
+                                  "negate": false
+                                },
+                                {
+                                  "object": {
+                                    "role": "use_target",
+                                    "field": "item_type",
+                                    "op": "==",
+                                    "item": {
+                                      "family": "Item",
+                                      "key": "crystalserver:item/2612",
+                                      "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                                    }
+                                  },
+                                  "negate": false
+                                },
+                                {
+                                  "object": {
+                                    "role": "use_target",
+                                    "field": "item_type",
+                                    "op": "==",
+                                    "item": {
+                                      "family": "Item",
+                                      "key": "crystalserver:item/2618",
+                                      "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                                    }
+                                  },
+                                  "negate": false
+                                }
+                              ]
+                            },
+                            "then": [
+                              {
+                                "owner": "Presentation",
+                                "effect": "message",
+                                "authoritative": false,
+                                "source_line": 19
+                              },
+                              {
+                                "owner": "Presentation",
+                                "effect": "magic_effect",
+                                "authoritative": false
+                              }
+                            ]
+                          },
+                          {
+                            "when": {
+                              "unresolved": {
+                                "line": 21
+                              }
+                            },
+                            "then": [
+                              {
+                                "owner": "Presentation",
+                                "effect": "magic_effect",
+                                "authoritative": false
+                              },
+                              {
+                                "owner": "Quest",
+                                "request": "set_progress",
+                                "progress": "canary:quest-progress/quest/u11_40/cults_of_tibia/mot_a/mission",
+                                "to": 9,
+                                "transition": "canary:quest/cults_of_tibia_quest#patron_of_arts:action_4"
+                              },
+                              {
+                                "owner": "Presentation",
+                                "effect": "message",
+                                "authoritative": false,
+                                "source_line": 24
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "anchors": [],
+        "unresolved": [],
+        "script": "scripts/quests/cults_of_tibia/actions_magnifier.lua",
+        "callback_line": 2
+      },
+      "current_selected_source": false,
+      "canonical_key": "canary:interaction/cults_of_tibia/actions_magnifier"
+    },
+    {
+      "source": "crystalserver",
+      "path": "data-global/scripts/quests/dangerous_depth/actions_gnomish_pesticide.lua",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "source_sha256": "ecc85c8d2b22aaa4f0ae2f55ea63a24447fc0b8ecc4aaa035dcdace0fd27f3dd",
+      "blob_sha1": "9d5b9da150d043bc42c3044aa7a67fa263005118",
+      "url": "https://github.com/zimbadev/crystalserver/blob/9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d/data-global/scripts/quests/dangerous_depth/actions_gnomish_pesticide.lua",
+      "witnesses": [
+        {
+          "line": 8,
+          "line_sha256": "dd7ad054695ebb355cae9a3b92a5bb12b79f5c91a97b1157e78311b822b190ab",
+          "text": "\tif not target or type(target) ~= \"userdata\" or not target:isItem() then\n"
+        },
+        {
+          "line": 20,
+          "line_sha256": "3ea069d99995f47e2557509facb7148ce486d2f4d48fafa6d832dfc7387ad9e3",
+          "text": "\tif target:getId() == corpseId then\n"
+        },
+        {
+          "line": 33,
+          "line_sha256": "41943c269ddab3510aa0d5b1e4267f21c2f72e918ca1a34dd0a891f55a3bd1b3",
+          "text": "\telseif table.contains({ 27495, 27496, 27497 }, target:getId()) then\n"
+        }
+      ],
+      "key": "crystalserver:interaction/dangerous_depth/actions_gnomish_pesticide",
+      "counts_before": {
+        "quest_children": 2,
+        "typed_conditions": 3,
+        "unresolved_conditions": 5,
+        "unresolved_lines": 0
+      },
+      "counts_after": {
+        "quest_children": 2,
+        "typed_conditions": 7,
+        "unresolved_conditions": 3,
+        "unresolved_lines": 0
+      },
+      "delta": {
+        "quest_children": 0,
+        "typed_conditions": 4,
+        "unresolved_conditions": -2,
+        "unresolved_lines": 0
+      },
+      "before": {
+        "identity": {
+          "key": "crystalserver:interaction/dangerous_depth/actions_gnomish_pesticide",
+          "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+        },
+        "source": {
+          "edge": "USE",
+          "callback": "onUse",
+          "target_registrations": [
+            "id(27498)"
+          ]
+        },
+        "rules": [
+          {
+            "branch": [
+              {
+                "when": {
+                  "actor_is_player": true,
+                  "negate": true
+                },
+                "then": []
+              }
+            ],
+            "otherwise": [
+              {
+                "branch": [
+                  {
+                    "when": {
+                      "unresolved": {
+                        "line": 8
+                      }
+                    },
+                    "then": []
+                  }
+                ],
+                "otherwise": [
+                  {
+                    "branch": [
+                      {
+                        "when": {
+                          "unresolved": {
+                            "line": 12
+                          }
+                        },
+                        "then": []
+                      }
+                    ],
+                    "otherwise": [
+                      {
+                        "branch": [
+                          {
+                            "when": {
+                              "unresolved": {
+                                "line": 20
+                              }
+                            },
+                            "then": [
+                              {
+                                "branch": [
+                                  {
+                                    "when": {
+                                      "all": [
+                                        {
+                                          "quest_stage": {
+                                            "progress": "canary:quest-progress/quest/u11_50/dangerous_depths/scouts/diremaw",
+                                            "op": "==",
+                                            "value": 1
+                                          },
+                                          "negate": false
+                                        },
+                                        {
+                                          "quest_stage": {
+                                            "progress": "canary:quest-progress/quest/u11_50/dangerous_depths/scouts/diremaws_count",
+                                            "op": "<",
+                                            "value": 20
+                                          },
+                                          "negate": false
+                                        }
+                                      ]
+                                    },
+                                    "then": [
+                                      {
+                                        "branch": [
+                                          {
+                                            "when": {
+                                              "unresolved": {
+                                                "line": 22
+                                              }
+                                            },
+                                            "then": [
+                                              {
+                                                "owner": "Presentation",
+                                                "effect": "magic_effect",
+                                                "authoritative": false
+                                              },
+                                              {
+                                                "owner": "Ability",
+                                                "effect": "summon",
+                                                "creature": {
+                                                  "family": "Creature",
+                                                  "key": "crystalserver:creature/diremaw",
+                                                  "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                                                },
+                                                "anchor_source_line": 24
+                                              },
+                                              {
+                                                "owner": "Quest",
+                                                "request": "set_progress",
+                                                "progress": "canary:quest-progress/quest/u11_50/dangerous_depths/scouts/diremaws_count",
+                                                "value_source_line": 25
+                                              },
+                                              {
+                                                "owner": "WorldObject",
+                                                "operation": "TRANSFORM",
+                                                "value_source_line": 26
+                                              }
+                                            ]
+                                          }
+                                        ],
+                                        "otherwise": [
+                                          {
+                                            "owner": "Presentation",
+                                            "effect": "magic_effect",
+                                            "authoritative": false
+                                          },
+                                          {
+                                            "owner": "Quest",
+                                            "request": "set_progress",
+                                            "progress": "canary:quest-progress/quest/u11_50/dangerous_depths/scouts/diremaws_count",
+                                            "value_source_line": 29
+                                          },
+                                          {
+                                            "owner": "WorldObject",
+                                            "operation": "TRANSFORM",
+                                            "value_source_line": 30
+                                          }
+                                        ]
+                                      }
+                                    ]
+                                  }
+                                ]
+                              }
+                            ]
+                          },
+                          {
+                            "when": {
+                              "unresolved": {
+                                "line": 33
+                              }
+                            },
+                            "then": [
+                              {
+                                "owner": "Presentation",
+                                "effect": "message",
+                                "authoritative": false,
+                                "source_line": 34
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "anchors": [],
+        "unresolved": [],
+        "script": "scripts/quests/dangerous_depth/actions_gnomish_pesticide.lua",
+        "callback_line": 3
+      },
+      "after": {
+        "identity": {
+          "key": "crystalserver:interaction/dangerous_depth/actions_gnomish_pesticide",
+          "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+        },
+        "source": {
+          "edge": "USE",
+          "callback": "onUse",
+          "target_registrations": [
+            "id(27498)"
+          ]
+        },
+        "rules": [
+          {
+            "branch": [
+              {
+                "when": {
+                  "actor_is_player": true,
+                  "negate": true
+                },
+                "then": []
+              }
+            ],
+            "otherwise": [
+              {
+                "branch": [
+                  {
+                    "when": {
+                      "unresolved": {
+                        "line": 8
+                      }
+                    },
+                    "then": []
+                  }
+                ],
+                "otherwise": [
+                  {
+                    "branch": [
+                      {
+                        "when": {
+                          "unresolved": {
+                            "line": 12
+                          }
+                        },
+                        "then": []
+                      }
+                    ],
+                    "otherwise": [
+                      {
+                        "branch": [
+                          {
+                            "when": {
+                              "object": {
+                                "role": "use_target",
+                                "field": "item_type",
+                                "op": "==",
+                                "item": {
+                                  "family": "Item",
+                                  "key": "crystalserver:item/27494",
+                                  "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                                }
+                              },
+                              "negate": false
+                            },
+                            "then": [
+                              {
+                                "branch": [
+                                  {
+                                    "when": {
+                                      "all": [
+                                        {
+                                          "quest_stage": {
+                                            "progress": "canary:quest-progress/quest/u11_50/dangerous_depths/scouts/diremaw",
+                                            "op": "==",
+                                            "value": 1
+                                          },
+                                          "negate": false
+                                        },
+                                        {
+                                          "quest_stage": {
+                                            "progress": "canary:quest-progress/quest/u11_50/dangerous_depths/scouts/diremaws_count",
+                                            "op": "<",
+                                            "value": 20
+                                          },
+                                          "negate": false
+                                        }
+                                      ]
+                                    },
+                                    "then": [
+                                      {
+                                        "branch": [
+                                          {
+                                            "when": {
+                                              "unresolved": {
+                                                "line": 22
+                                              }
+                                            },
+                                            "then": [
+                                              {
+                                                "owner": "Presentation",
+                                                "effect": "magic_effect",
+                                                "authoritative": false
+                                              },
+                                              {
+                                                "owner": "Ability",
+                                                "effect": "summon",
+                                                "creature": {
+                                                  "family": "Creature",
+                                                  "key": "crystalserver:creature/diremaw",
+                                                  "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                                                },
+                                                "anchor_source_line": 24
+                                              },
+                                              {
+                                                "owner": "Quest",
+                                                "request": "set_progress",
+                                                "progress": "canary:quest-progress/quest/u11_50/dangerous_depths/scouts/diremaws_count",
+                                                "value_source_line": 25
+                                              },
+                                              {
+                                                "owner": "WorldObject",
+                                                "operation": "TRANSFORM",
+                                                "value_source_line": 26
+                                              }
+                                            ]
+                                          }
+                                        ],
+                                        "otherwise": [
+                                          {
+                                            "owner": "Presentation",
+                                            "effect": "magic_effect",
+                                            "authoritative": false
+                                          },
+                                          {
+                                            "owner": "Quest",
+                                            "request": "set_progress",
+                                            "progress": "canary:quest-progress/quest/u11_50/dangerous_depths/scouts/diremaws_count",
+                                            "value_source_line": 29
+                                          },
+                                          {
+                                            "owner": "WorldObject",
+                                            "operation": "TRANSFORM",
+                                            "value_source_line": 30
+                                          }
+                                        ]
+                                      }
+                                    ]
+                                  }
+                                ]
+                              }
+                            ]
+                          },
+                          {
+                            "when": {
+                              "any": [
+                                {
+                                  "object": {
+                                    "role": "use_target",
+                                    "field": "item_type",
+                                    "op": "==",
+                                    "item": {
+                                      "family": "Item",
+                                      "key": "crystalserver:item/27495",
+                                      "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                                    }
+                                  },
+                                  "negate": false
+                                },
+                                {
+                                  "object": {
+                                    "role": "use_target",
+                                    "field": "item_type",
+                                    "op": "==",
+                                    "item": {
+                                      "family": "Item",
+                                      "key": "crystalserver:item/27496",
+                                      "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                                    }
+                                  },
+                                  "negate": false
+                                },
+                                {
+                                  "object": {
+                                    "role": "use_target",
+                                    "field": "item_type",
+                                    "op": "==",
+                                    "item": {
+                                      "family": "Item",
+                                      "key": "crystalserver:item/27497",
+                                      "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                                    }
+                                  },
+                                  "negate": false
+                                }
+                              ]
+                            },
+                            "then": [
+                              {
+                                "owner": "Presentation",
+                                "effect": "message",
+                                "authoritative": false,
+                                "source_line": 34
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "anchors": [],
+        "unresolved": [],
+        "script": "scripts/quests/dangerous_depth/actions_gnomish_pesticide.lua",
+        "callback_line": 3
+      },
+      "current_selected_source": false,
+      "canonical_key": "canary:interaction/dangerous_depth/actions_gnomish_pesticide"
+    },
+    {
+      "source": "crystalserver",
+      "path": "data-global/scripts/quests/roshamuul_quest/actions_trough.lua",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "source_sha256": "737cfeeaaa49cf99b67f9e2a65b8ba8dcc4b3bf8f3f4f70bc1e7a59a63c1ac15",
+      "blob_sha1": "11613fe68d64032e35abb967416d86457ee4c09f",
+      "url": "https://github.com/zimbadev/crystalserver/blob/9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d/data-global/scripts/quests/roshamuul_quest/actions_trough.lua",
+      "witnesses": [
+        {
+          "line": 4,
+          "line_sha256": "dd7ad054695ebb355cae9a3b92a5bb12b79f5c91a97b1157e78311b822b190ab",
+          "text": "\tif not target or type(target) ~= \"userdata\" or not target:isItem() then\n"
+        },
+        {
+          "line": 8,
+          "line_sha256": "71be648cdbf2e9d21e58e752cb52a5f14f7b8375575acd503b1d3a2f61c39b9c",
+          "text": "\tif target:getId() == 20216 then\n"
+        }
+      ],
+      "key": "crystalserver:interaction/roshamuul_quest/actions_trough",
+      "counts_before": {
+        "quest_children": 1,
+        "typed_conditions": 0,
+        "unresolved_conditions": 2,
+        "unresolved_lines": 0
+      },
+      "counts_after": {
+        "quest_children": 1,
+        "typed_conditions": 1,
+        "unresolved_conditions": 1,
+        "unresolved_lines": 0
+      },
+      "delta": {
+        "quest_children": 0,
+        "typed_conditions": 1,
+        "unresolved_conditions": -1,
+        "unresolved_lines": 0
+      },
+      "before": {
+        "identity": {
+          "key": "crystalserver:interaction/roshamuul_quest/actions_trough",
+          "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+        },
+        "source": {
+          "edge": "USE",
+          "callback": "onUse",
+          "target_registrations": [
+            "id(20170)"
+          ]
+        },
+        "rules": [
+          {
+            "branch": [
+              {
+                "when": {
+                  "unresolved": {
+                    "line": 4
+                  }
+                },
+                "then": []
+              }
+            ],
+            "otherwise": [
+              {
+                "branch": [
+                  {
+                    "when": {
+                      "unresolved": {
+                        "line": 8
+                      }
+                    },
+                    "then": [
+                      {
+                        "owner": "WorldObject",
+                        "operation": "TRANSFORM",
+                        "value_source_line": 9
+                      },
+                      {
+                        "owner": "Presentation",
+                        "effect": "magic_effect",
+                        "authoritative": false
+                      },
+                      {
+                        "owner": "Quest",
+                        "request": "set_progress",
+                        "progress": "canary:quest-progress/quest/u10_30/roshamuul_quest/roshamuul_mortar_thrown",
+                        "value_source_line": 11
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "anchors": [],
+        "unresolved": [],
+        "script": "scripts/quests/roshamuul_quest/actions_trough.lua",
+        "callback_line": 3
+      },
+      "after": {
+        "identity": {
+          "key": "crystalserver:interaction/roshamuul_quest/actions_trough",
+          "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+        },
+        "source": {
+          "edge": "USE",
+          "callback": "onUse",
+          "target_registrations": [
+            "id(20170)"
+          ]
+        },
+        "rules": [
+          {
+            "branch": [
+              {
+                "when": {
+                  "unresolved": {
+                    "line": 4
+                  }
+                },
+                "then": []
+              }
+            ],
+            "otherwise": [
+              {
+                "branch": [
+                  {
+                    "when": {
+                      "object": {
+                        "role": "use_target",
+                        "field": "item_type",
+                        "op": "==",
+                        "item": {
+                          "family": "Item",
+                          "key": "crystalserver:item/20216",
+                          "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                        }
+                      },
+                      "negate": false
+                    },
+                    "then": [
+                      {
+                        "owner": "WorldObject",
+                        "operation": "TRANSFORM",
+                        "value_source_line": 9
+                      },
+                      {
+                        "owner": "Presentation",
+                        "effect": "magic_effect",
+                        "authoritative": false
+                      },
+                      {
+                        "owner": "Quest",
+                        "request": "set_progress",
+                        "progress": "canary:quest-progress/quest/u10_30/roshamuul_quest/roshamuul_mortar_thrown",
+                        "value_source_line": 11
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "anchors": [],
+        "unresolved": [],
+        "script": "scripts/quests/roshamuul_quest/actions_trough.lua",
+        "callback_line": 3
+      },
+      "current_selected_source": false,
+      "canonical_key": "canary:interaction/roshamuul_quest/actions_trough"
+    },
+    {
+      "source": "crystalserver",
+      "path": "data-global/scripts/quests/spike_tasks/actions_lode_stone.lua",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "source_sha256": "1ace4bdb1ae663e86a1ff1e1dcb31e7599b39c7eb68c376d8572296b31aa84e7",
+      "blob_sha1": "b976684a81842b0253ff176486e7a361818e82bc",
+      "url": "https://github.com/zimbadev/crystalserver/blob/9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d/data-global/scripts/quests/spike_tasks/actions_lode_stone.lua",
+      "witnesses": [
+        {
+          "line": 14,
+          "line_sha256": "845c2bcd030bc1f9c4c5e7c42750dad7ec7b0c9e3cde0d40037c580fdf8bc0a3",
+          "text": "\tif not target or type(target) ~= \"userdata\" or not target:isItem() or (target:getId() ~= 19217) then\n"
+        },
+        {
+          "line": 18,
+          "line_sha256": "47e33d4cfd8df07ea15cc6a0b0284ad59b64707537f763bf8a3592747528c2dd",
+          "text": "\tif target:getId() == 19217 then\n"
+        },
+        {
+          "line": 23,
+          "line_sha256": "96b99abc6803e919640fa81969e326169d68895b2a88497aa495007ecc5bea69",
+          "text": "\tlocal itemId = item:getId()\n"
+        }
+      ],
+      "key": "crystalserver:interaction/spike_tasks/actions_lode_stone",
+      "counts_before": {
+        "quest_children": 3,
+        "typed_conditions": 1,
+        "unresolved_conditions": 7,
+        "unresolved_lines": 0
+      },
+      "counts_after": {
+        "quest_children": 3,
+        "typed_conditions": 2,
+        "unresolved_conditions": 6,
+        "unresolved_lines": 0
+      },
+      "delta": {
+        "quest_children": 0,
+        "typed_conditions": 1,
+        "unresolved_conditions": -1,
+        "unresolved_lines": 0
+      },
+      "before": {
+        "identity": {
+          "key": "crystalserver:interaction/spike_tasks/actions_lode_stone",
+          "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+        },
+        "source": {
+          "edge": "USE",
+          "callback": "onUse",
+          "target_registrations": [
+            "id(id)"
+          ]
+        },
+        "rules": [
+          {
+            "branch": [
+              {
+                "when": {
+                  "quest_stage": {
+                    "progress": "canary:quest-progress/quest/u10_20/spike_task_quest/spike_middle_charge_main",
+                    "op": "==",
+                    "value": 3
+                  },
+                  "negate": false
+                },
+                "then": []
+              }
+            ],
+            "otherwise": [
+              {
+                "branch": [
+                  {
+                    "when": {
+                      "unresolved": {
+                        "line": 14
+                      }
+                    },
+                    "then": []
+                  }
+                ],
+                "otherwise": [
+                  {
+                    "branch": [
+                      {
+                        "when": {
+                          "unresolved": {
+                            "line": 18
+                          }
+                        },
+                        "then": [
+                          {
+                            "owner": "WorldObject",
+                            "operation": "TRANSFORM",
+                            "value_source_line": 19
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "branch": [
+                      {
+                        "when": {
+                          "unresolved": {
+                            "line": 25
+                          }
+                        },
+                        "then": [
+                          {
+                            "owner": "WorldObject",
+                            "operation": "TRANSFORM",
+                            "value_source_line": 26
+                          },
+                          {
+                            "owner": "Quest",
+                            "request": "set_progress",
+                            "progress": "canary:quest-progress/quest/u10_20/spike_task_quest/spike_middle_charge_main",
+                            "to": 1
+                          }
+                        ]
+                      },
+                      {
+                        "when": {
+                          "unresolved": {
+                            "line": 28
+                          }
+                        },
+                        "then": [
+                          {
+                            "branch": [
+                              {
+                                "when": {
+                                  "unresolved": {
+                                    "line": 30
+                                  }
+                                },
+                                "then": []
+                              }
+                            ]
+                          },
+                          {
+                            "owner": "Quest",
+                            "request": "set_progress",
+                            "progress": "canary:quest-progress/quest/u10_20/spike_task_quest/spike_middle_charge_main",
+                            "value_source_line": 35
+                          },
+                          {
+                            "branch": [
+                              {
+                                "when": {
+                                  "unresolved": {
+                                    "line": 37
+                                  }
+                                },
+                                "then": [
+                                  {
+                                    "owner": "WorldObject",
+                                    "operation": "TRANSFORM",
+                                    "value_source_line": 38
+                                  },
+                                  {
+                                    "owner": "Quest",
+                                    "request": "set_progress",
+                                    "progress": "canary:quest-progress/quest/u10_20/spike_task_quest/spike_middle_charge_main",
+                                    "to": 3
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "branch": [
+                      {
+                        "when": {
+                          "unresolved": {
+                            "line": 44
+                          }
+                        },
+                        "then": [
+                          {
+                            "owner": "Movement",
+                            "status": "blocked",
+                            "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 \u00a719.3; D37 owner accepted)",
+                            "to_source_line": 45
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "anchors": [],
+        "unresolved": [],
+        "script": "scripts/quests/spike_tasks/actions_lode_stone.lua",
+        "callback_line": 8
+      },
+      "after": {
+        "identity": {
+          "key": "crystalserver:interaction/spike_tasks/actions_lode_stone",
+          "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+        },
+        "source": {
+          "edge": "USE",
+          "callback": "onUse",
+          "target_registrations": [
+            "id(id)"
+          ]
+        },
+        "rules": [
+          {
+            "branch": [
+              {
+                "when": {
+                  "quest_stage": {
+                    "progress": "canary:quest-progress/quest/u10_20/spike_task_quest/spike_middle_charge_main",
+                    "op": "==",
+                    "value": 3
+                  },
+                  "negate": false
+                },
+                "then": []
+              }
+            ],
+            "otherwise": [
+              {
+                "branch": [
+                  {
+                    "when": {
+                      "unresolved": {
+                        "line": 14
+                      }
+                    },
+                    "then": []
+                  }
+                ],
+                "otherwise": [
+                  {
+                    "branch": [
+                      {
+                        "when": {
+                          "object": {
+                            "role": "use_target",
+                            "field": "item_type",
+                            "op": "==",
+                            "item": {
+                              "family": "Item",
+                              "key": "crystalserver:item/19217",
+                              "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                            }
+                          },
+                          "negate": false
+                        },
+                        "then": [
+                          {
+                            "owner": "WorldObject",
+                            "operation": "TRANSFORM",
+                            "value_source_line": 19
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "branch": [
+                      {
+                        "when": {
+                          "unresolved": {
+                            "line": 25
+                          }
+                        },
+                        "then": [
+                          {
+                            "owner": "WorldObject",
+                            "operation": "TRANSFORM",
+                            "value_source_line": 26
+                          },
+                          {
+                            "owner": "Quest",
+                            "request": "set_progress",
+                            "progress": "canary:quest-progress/quest/u10_20/spike_task_quest/spike_middle_charge_main",
+                            "to": 1
+                          }
+                        ]
+                      },
+                      {
+                        "when": {
+                          "unresolved": {
+                            "line": 28
+                          }
+                        },
+                        "then": [
+                          {
+                            "branch": [
+                              {
+                                "when": {
+                                  "unresolved": {
+                                    "line": 30
+                                  }
+                                },
+                                "then": []
+                              }
+                            ]
+                          },
+                          {
+                            "owner": "Quest",
+                            "request": "set_progress",
+                            "progress": "canary:quest-progress/quest/u10_20/spike_task_quest/spike_middle_charge_main",
+                            "value_source_line": 35
+                          },
+                          {
+                            "branch": [
+                              {
+                                "when": {
+                                  "unresolved": {
+                                    "line": 37
+                                  }
+                                },
+                                "then": [
+                                  {
+                                    "owner": "WorldObject",
+                                    "operation": "TRANSFORM",
+                                    "value_source_line": 38
+                                  },
+                                  {
+                                    "owner": "Quest",
+                                    "request": "set_progress",
+                                    "progress": "canary:quest-progress/quest/u10_20/spike_task_quest/spike_middle_charge_main",
+                                    "to": 3
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "branch": [
+                      {
+                        "when": {
+                          "unresolved": {
+                            "line": 44
+                          }
+                        },
+                        "then": [
+                          {
+                            "owner": "Movement",
+                            "status": "blocked",
+                            "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 \u00a719.3; D37 owner accepted)",
+                            "to_source_line": 45
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "anchors": [],
+        "unresolved": [],
+        "script": "scripts/quests/spike_tasks/actions_lode_stone.lua",
+        "callback_line": 8
+      },
+      "current_selected_source": false,
+      "canonical_key": "canary:interaction/spike_tasks/actions_lode_stone"
+    }
+  ]
+}

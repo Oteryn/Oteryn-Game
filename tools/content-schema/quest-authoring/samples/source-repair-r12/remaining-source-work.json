@@ -1,0 +1,524 @@
+{
+  "schema": "OTERYN_REMAINING_SOURCE_BACKLOG/v1",
+  "observed_at": "2026-10-02T15:30:08Z",
+  "snapshot_status": "CURRENT_CANDIDATE_PINNED_SOURCE_REGENERATION",
+  "baseline_head": "e66390af13cdf9fe7156d36af4dd5d519418b32a",
+  "providers": [
+    {
+      "repository": "opentibiabr/canary",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b"
+    },
+    {
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d"
+    }
+  ],
+  "access_method": "local_pinned_inputs_only",
+  "global_triage_counts": {
+    "unresolved_lines": 1930,
+    "unresolved_conditions": 1728,
+    "blocked_children": 466,
+    "reference_gaps": 0,
+    "total_unresolved_items": 4124,
+    "by_bucket": {
+      "owner_pending": 467,
+      "shared_mechanism": 145,
+      "bespoke": 3512
+    },
+    "quests_triaged": 284,
+    "quests_with_bespoke_work": 110,
+    "quests_fully_covered_by_owners_and_mechanisms": 1,
+    "interactions_unlinked_to_a_quest": 12
+  },
+  "source_bundle_summary": {
+    "claims": 336,
+    "gates": 237,
+    "interactions": 1221,
+    "progress": 1491,
+    "progress_source_transitions": 3516,
+    "quests": 284,
+    "quests_with_reported_gaps": 203,
+    "reference_gaps": 0,
+    "source_write_occurrences": 6636,
+    "unassigned_gaps": 896,
+    "wiki_quests": 373
+  },
+  "readiness_summary": {
+    "quests": 284,
+    "by_kind": {
+      "reward_only": 105,
+      "script_only": 121,
+      "storyline": 58
+    },
+    "quests_needing_feature": {
+      "achievement": 23,
+      "boss_cooldown": 10,
+      "condition": 21,
+      "creature_removal": 17,
+      "door_progress": 55,
+      "experience": 2,
+      "item_consume": 64,
+      "item_hand_out": 50,
+      "kv_state": 8,
+      "mount": 3,
+      "npc_dialogue": 92,
+      "outfit": 4,
+      "quest_state": 114,
+      "reward_claim": 135,
+      "scheduler": 53,
+      "summon": 38,
+      "teleport": 88,
+      "trigger_kill": 50,
+      "trigger_step": 84,
+      "trigger_use": 198,
+      "world_object": 91
+    },
+    "quests_without_data_gaps": 103,
+    "interactions_joined": 1209,
+    "interactions_unlinked": 12
+  },
+  "metrics_warning": "4124 global interaction items; per-Quest reported gaps can duplicate shared evidence and include wider Source coverage. 203 bundle quests_with_reported_gaps != 181 readiness quests_with_data_gaps; these are different scopes. None certify runtime readiness.",
+  "cross_family_prior_exact_audit": {
+    "snapshot": {
+      "historical_evidence_name": "REPORT.json",
+      "availability": "HISTORICAL_LOCAL_AUDIT_NOT_EMBEDDED",
+      "sha256": "c99b208198b02d7acec4ec018a310bedbec6d5478259dcd4f587d0d5a5a93bb7"
+    },
+    "summary": {
+      "canary": {
+        "registered_excluded_paths": 119,
+        "paths_in_admitted61_encounter_provenance": 21,
+        "same_bytes_at_current_pin_with_mapped_source_lines": 21,
+        "older_pin_only_or_nonmapped_match": 0,
+        "distinct_admitted_encounters_referenced": 16,
+        "distinct_admitted_encounters_with_current_byte_match": 16,
+        "factory_paths_with_admitted_encounter_match": 6,
+        "callbacks_health_think_paths_with_admitted_encounter_match": 16,
+        "paths_recognized_by_monster_event_census": 28,
+        "paths_in_unadmitted_encounter_samples": 8,
+        "classification_counts": {
+          "NO_MATCH_IN_BOUNDED_ENCOUNTER_AND_EVENT_CENSUS_SCOPE": 84,
+          "SOURCE_ENCOUNTER_SAMPLE_NOT_CANONICAL61": 7,
+          "MONSTER_EVENT_SOURCE_CENSUS_ONLY": 7,
+          "CURRENT_BYTES_MATCH_ADMITTED_ENCOUNTER_SOURCE_SUBSET": 21
+        }
+      },
+      "crystalserver": {
+        "registered_excluded_paths": 119,
+        "paths_in_admitted61_encounter_provenance": 12,
+        "same_bytes_at_current_pin_with_mapped_source_lines": 12,
+        "older_pin_only_or_nonmapped_match": 0,
+        "distinct_admitted_encounters_referenced": 10,
+        "distinct_admitted_encounters_with_current_byte_match": 10,
+        "factory_paths_with_admitted_encounter_match": 0,
+        "callbacks_health_think_paths_with_admitted_encounter_match": 12,
+        "paths_recognized_by_monster_event_census": 21,
+        "paths_in_unadmitted_encounter_samples": 6,
+        "classification_counts": {
+          "NO_MATCH_IN_BOUNDED_ENCOUNTER_AND_EVENT_CENSUS_SCOPE": 98,
+          "SOURCE_ENCOUNTER_SAMPLE_NOT_CANONICAL61": 5,
+          "MONSTER_EVENT_SOURCE_CENSUS_ONLY": 4,
+          "CURRENT_BYTES_MATCH_ADMITTED_ENCOUNTER_SOURCE_SUBSET": 12
+        }
+      }
+    },
+    "note": "Historical same baseline e663: 119 excluded paths per provider are not missing quests; 21 Canary/12 Crystal already byte-match admitted Encounter subsets; other event-census entries remain partial."
+  },
+  "tasks": [
+    {
+      "id": "DATA-READONLY-CONDITIONS",
+      "lane": "DATA_IMPLEMENTATION",
+      "scope": "Exact source predicates using already closed quest_stage/world_state/actor/item conditions; immutable literal operands, lexical alias scope and receiver proof only.",
+      "counts": {
+        "opaque_condition_occurrences": 1728
+      },
+      "count_limit": "1728 is the whole unresolved condition inventory, not a claim that all can be handled by this task.",
+      "acceptance": "Produce typed leaves only for exact supported predicates; preserve timer, premium/vocation, nil target, spatial/object-presence and dynamic-selector holds that need additional semantics."
+    },
+    {
+      "id": "DATA-FINITE-SCRIPT-BRANCHES",
+      "lane": "DATA_IMPLEMENTATION",
+      "scope": "Finite literal config/UID/action-id selections and helper bodies with proved callback actor, branch/control-flow guards and immutable inputs; preserve alternate source graphs.",
+      "counts": {
+        "loop with its own control flow": 377,
+        "statement outside the transcribed vocabulary": 925,
+        "function literal outside the transcribed vocabulary": 77,
+        "effect receiver not proven to be the acting player in this scope": 106,
+        "kv write without an accepted owner": 56,
+        "delayed callback (addEvent) without a scheduler owner": 287,
+        "condition without an accepted owner": 26,
+        "boss cooldown without an accepted owner": 25,
+        "creature removal without an accepted owner": 43,
+        "Item hand-out additional arguments outside the transcribed vocabulary": 8
+      },
+      "count_limit": "Reasons partition only the 1930 opaque statement occurrences. A repeated loop is not necessarily an inventory grant or a missing quest.",
+      "acceptance": "Replay exact before/after; preserve unknown selectors and third arguments; no callback fanout, scheduler execution or actor guessing."
+    },
+    {
+      "id": "DATA-NPC-EXCHANGES",
+      "lane": "DATA_IMPLEMENTATION_UNDER_ACCEPTED_CONTRACT",
+      "scope": "Transcribe exact NPC topic/keyword branches, item consumption/grants, outfit/addon and achievement requests against source variants; NPC dialogue runtime lowering remains separate.",
+      "counts": {
+        "explicit_npc_sideeffect_coverage_holds": 16,
+        "outfit_exchange_coverage_holds": 19,
+        "distinct_explicit_held_quests": 35,
+        "quests_requiring_npc_runtime_feature": 92
+      },
+      "evidence": [
+        {
+          "quest": "canary:quest/battle_mage_outfits_quest",
+          "reason": "NPC item/achievement/dialogue side effects have not been transcribed as quest interactions",
+          "record": "canary:quest/battle_mage_outfits_quest/npc/dedoras.lua"
+        },
+        {
+          "quest": "canary:quest/brotherhood_outfits_quest",
+          "reason": "NPC item/achievement/dialogue side effects have not been transcribed as quest interactions",
+          "record": "canary:quest/brotherhood_outfits_quest/npc/the_bone_master.lua"
+        },
+        {
+          "quest": "canary:quest/cave_explorer_outfits_quest",
+          "reason": "NPC item/achievement/dialogue side effects have not been transcribed as quest interactions",
+          "record": "canary:quest/cave_explorer_outfits_quest/npc/gnommander.lua"
+        },
+        {
+          "quest": "canary:quest/demon_outfits_quest",
+          "reason": "NPC item/achievement/dialogue side effects have not been transcribed as quest interactions",
+          "record": "canary:quest/demon_outfits_quest/npc/avar_tar.lua"
+        },
+        {
+          "quest": "canary:quest/dream_warden_outfits_quest",
+          "reason": "NPC item/achievement/dialogue side effects have not been transcribed as quest interactions",
+          "record": "canary:quest/dream_warden_outfits_quest/npc/eruaran.lua"
+        },
+        {
+          "quest": "canary:quest/druid_outfits_quest_on_rook",
+          "reason": "NPC item/achievement/dialogue side effects have not been transcribed as quest interactions",
+          "record": "canary:quest/druid_outfits_quest_on_rook/npc/tom.lua"
+        },
+        {
+          "quest": "canary:quest/elementalist_outfits_quest",
+          "reason": "NPC item/achievement/dialogue side effects have not been transcribed as quest interactions",
+          "record": "canary:quest/elementalist_outfits_quest/npc/broken_servant_sentry.lua"
+        },
+        {
+          "quest": "canary:quest/festive_outfits_quest",
+          "reason": "NPC item/achievement/dialogue side effects have not been transcribed as quest interactions",
+          "record": "canary:quest/festive_outfits_quest/npc/muriel.lua"
+        },
+        {
+          "quest": "canary:quest/glooth_engineer_outfits_quest",
+          "reason": "NPC item/achievement/dialogue side effects have not been transcribed as quest interactions",
+          "record": "canary:quest/glooth_engineer_outfits_quest/npc/ezebeth.lua"
+        },
+        {
+          "quest": "canary:quest/marlin_trophy_quest",
+          "reason": "NPC item/achievement/dialogue side effects have not been transcribed as quest interactions",
+          "record": "canary:quest/marlin_trophy_quest/npc/pemaret.lua"
+        },
+        {
+          "quest": "canary:quest/nightmare_outfits_quest",
+          "reason": "NPC item/achievement/dialogue side effects have not been transcribed as quest interactions",
+          "record": "canary:quest/nightmare_outfits_quest/npc/the_dream_master.lua"
+        },
+        {
+          "quest": "canary:quest/nobleman_outfits_quest",
+          "reason": "NPC item/achievement/dialogue side effects have not been transcribed as quest interactions",
+          "record": "canary:quest/nobleman_outfits_quest/npc/irmana.lua"
+        },
+        {
+          "quest": "canary:quest/obsidian_knife_quest",
+          "reason": "NPC item/achievement/dialogue side effects have not been transcribed as quest interactions",
+          "record": "canary:quest/obsidian_knife_quest/npc/uzgod.lua"
+        },
+        {
+          "quest": "canary:quest/pick_quest",
+          "reason": "NPC item/achievement/dialogue side effects have not been transcribed as quest interactions",
+          "record": "canary:quest/pick_quest/npc/al_dee.lua"
+        },
+        {
+          "quest": "canary:quest/royal_costume_outfits_quest",
+          "reason": "NPC item/achievement/dialogue side effects have not been transcribed as quest interactions",
+          "record": "canary:quest/royal_costume_outfits_quest/npc/percybald.lua"
+        },
+        {
+          "quest": "canary:quest/sinatuki_quest",
+          "reason": "NPC item/achievement/dialogue side effects have not been transcribed as quest interactions",
+          "record": "canary:quest/sinatuki_quest/npc/sinatuki.lua"
+        },
+        {
+          "quest": "canary:quest/citizen_outfits_quest_on_rook",
+          "reason": "Outfit entitlement, item consumption, NPC dialogue and achievement effects have not been transcribed into quest Interaction data. Canonical playability is UNKNOWN.",
+          "record": "canary:quest/citizen_outfits_quest_on_rook/npc/amber.lua|npc/norma.lua"
+        },
+        {
+          "quest": "canary:quest/crystal_warlord_outfits_quest",
+          "reason": "Outfit entitlement, item consumption, NPC dialogue and achievement effects have not been transcribed into quest Interaction data. Canonical playability is UNKNOWN.",
+          "record": "canary:quest/crystal_warlord_outfits_quest/data/scripts/actions/items/usable_outfit_items.lua|npc/gnomally.lua"
+        },
+        {
+          "quest": "canary:quest/decaying_defender_outfits_quest",
+          "reason": "Outfit entitlement, item consumption, NPC dialogue and achievement effects have not been transcribed into quest Interaction data. Canonical playability is UNKNOWN.",
+          "record": "canary:quest/decaying_defender_outfits_quest/data/scripts/actions/items/usable_outfit_items.lua|scripts/quests/rotten_blood_quest/creaturescripts_bosses_killed.lua"
+        },
+        {
+          "quest": "crystalserver:quest/dream_warrior_outfits_quest",
+          "reason": "Outfit entitlement, item consumption, NPC dialogue and achievement effects have not been transcribed into quest Interaction data. Canonical playability is UNKNOWN.",
+          "record": "crystalserver:quest/dream_warrior_outfits_quest/npc/undal.lua|npc/vanys.lua|scripts/quests/the_dream_courts/creaturescripts_dream_courts_death.lua"
+        },
+        {
+          "quest": "canary:quest/falconer_outfits_quest",
+          "reason": "Outfit entitlement, item consumption, NPC dialogue and achievement effects have not been transcribed into quest Interaction data. Canonical playability is UNKNOWN.",
+          "record": "canary:quest/falconer_outfits_quest/data/scripts/lib/task_board_shop.lua|npc/walter_jaeger.lua"
+        },
+        {
+          "quest": "canary:quest/fiend_slayer_outfits_quest",
+          "reason": "Outfit entitlement, item consumption, NPC dialogue and achievement effects have not been transcribed into quest Interaction data. Canonical playability is UNKNOWN.",
+          "record": "canary:quest/fiend_slayer_outfits_quest/data/scripts/actions/items/usable_outfit_items.lua|scripts/quests/no_rest_for_the_wicked/arbaziloth_death.lua"
+        },
+        {
+          "quest": "canary:quest/fire_fighter_outfits_quest",
+          "reason": "Outfit entitlement, item consumption, NPC dialogue and achievement effects have not been transcribed into quest Interaction data. Canonical playability is UNKNOWN.",
+          "record": "canary:quest/fire_fighter_outfits_quest/data/scripts/actions/items/usable_outfit_items.lua|scripts/quests/the_primal_ordeal/creaturescripts_magma_bubble_death.lua"
+        },
+        {
+          "quest": "crystalserver:quest/formal_dress_outfits_quest",
+          "reason": "Outfit entitlement, item consumption, NPC dialogue and achievement effects have not been transcribed into quest Interaction data. Canonical playability is UNKNOWN.",
+          "record": "crystalserver:quest/formal_dress_outfits_quest/data/scripts/actions/items/usable_outfit_items.lua|scripts/quests/25_years_of _tibia_quest/lord_retro_death.lua"
+        },
+        {
+          "quest": "canary:quest/golden_outfits_quest",
+          "reason": "Outfit entitlement, item consumption, NPC dialogue and achievement effects have not been transcribed into quest Interaction data. Canonical playability is UNKNOWN.",
+          "record": "canary:quest/golden_outfits_quest/npc/emperor_kruzak.lua|npc/king_tibianus.lua|npc/queen_eloise.lua"
+        },
+        {
+          "quest": "canary:quest/hand_of_the_inquisition_outfits_quest",
+          "reason": "Outfit entitlement, item consumption, NPC dialogue and achievement effects have not been transcribed into quest Interaction data. Canonical playability is UNKNOWN.",
+          "record": "canary:quest/hand_of_the_inquisition_outfits_quest/data/scripts/actions/items/usable_outfit_items.lua|npc/jack_springer.lua|scripts/quests/grave_danger/creaturescripts_zelosDeath.lua"
+        },
+        {
+          "quest": "crystalserver:quest/illuminator_outfit_quest",
+          "reason": "Outfit entitlement, item consumption, NPC dialogue and achievement effects have not been transcribed into quest Interaction data. Canonical playability is UNKNOWN.",
+          "record": "crystalserver:quest/illuminator_outfit_quest/data/scripts/actions/items/usable_outfit_items.lua"
+        },
+        {
+          "quest": "canary:quest/makeshift_warrior_outfits_quest",
+          "reason": "Outfit entitlement, item consumption, NPC dialogue and achievement effects have not been transcribed into quest Interaction data. Canonical playability is UNKNOWN.",
+          "record": "canary:quest/makeshift_warrior_outfits_quest/data/scripts/actions/items/usable_outfit_items.lua"
+        },
+        {
+          "quest": "canary:quest/rascoohan_outfits_quest",
+          "reason": "Outfit entitlement, item consumption, NPC dialogue and achievement effects have not been transcribed into quest Interaction data. Canonical playability is UNKNOWN.",
+          "record": "canary:quest/rascoohan_outfits_quest/data/scripts/actions/items/usable_outfit_items.lua|scripts/quests/a_pirates_tail/creaturescripts_ratmiral_death.lua"
+        },
+        {
+          "quest": "canary:quest/revenant_outfits_quest",
+          "reason": "Outfit entitlement, item consumption, NPC dialogue and achievement effects have not been transcribed into quest Interaction data. Canonical playability is UNKNOWN.",
+          "record": "canary:quest/revenant_outfits_quest/data/scripts/actions/items/usable_outfit_items.lua|npc/flickering_soul.lua"
+        },
+        {
+          "quest": "canary:quest/rift_warrior_outfits_quest",
+          "reason": "Outfit entitlement, item consumption, NPC dialogue and achievement effects have not been transcribed into quest Interaction data. Canonical playability is UNKNOWN.",
+          "record": "canary:quest/rift_warrior_outfits_quest/npc/cledwyn.lua|scripts/quests/ferumbras_ascension/actions_reward.lua"
+        },
+        {
+          "quest": "canary:quest/soil_guardian_outfits_quest",
+          "reason": "Outfit entitlement, item consumption, NPC dialogue and achievement effects have not been transcribed into quest Interaction data. Canonical playability is UNKNOWN.",
+          "record": "canary:quest/soil_guardian_outfits_quest/data/scripts/actions/items/usable_outfit_items.lua|npc/gnomally.lua"
+        },
+        {
+          "quest": "canary:quest/warmaster_outfits_quest",
+          "reason": "Outfit entitlement, item consumption, NPC dialogue and achievement effects have not been transcribed into quest Interaction data. Canonical playability is UNKNOWN.",
+          "record": "canary:quest/warmaster_outfits_quest/npc/cael.lua|scripts/quests/the_new_frontier/action_outfit.lua"
+        },
+        {
+          "quest": "canary:quest/wayfarer_outfits_quest",
+          "reason": "Outfit entitlement, item consumption, NPC dialogue and achievement effects have not been transcribed into quest Interaction data. Canonical playability is UNKNOWN.",
+          "record": "canary:quest/wayfarer_outfits_quest/npc/cranky_lizard_crone.lua|scripts/quests/wrath_of_the_emperor/actions_mission12_just_rewards.lua"
+        },
+        {
+          "quest": "canary:quest/yalaharian_outfits_quest",
+          "reason": "Outfit entitlement, item consumption, NPC dialogue and achievement effects have not been transcribed into quest Interaction data. Canonical playability is UNKNOWN.",
+          "record": "canary:quest/yalaharian_outfits_quest/npc/palimuth.lua|npc/yalahari.lua"
+        }
+      ],
+      "accepted_contract": "QUEST-GATE-0 \u00a7\u00a75\u20136: dialogue nodes, holds_item, claims and atomic exchanges; D277 typed Achievement grant reference.",
+      "acceptance": "Do not count existing NPC storage writes/keywords as complete delivery or conflate shared NPC paths with exclusive ownership."
+    },
+    {
+      "id": "DATA-PARTIAL-COMPONENT-COVERAGE",
+      "lane": "DATA_IMPLEMENTATION",
+      "scope": "Complete explicitly partial acquisition, map attachment, world-event/NPC/reward components; retain source-only facts when behavior remains unknown.",
+      "counts": {
+        "coverage_hold_rows": 82,
+        "distinct_held_quests": 82,
+        "unlinked_registered_interaction_graphs": 12
+      },
+      "unlinked_graphs": [
+        "crystalserver:interaction/candia_bosses/sugar_daddy_teleports",
+        "canary:interaction/edron_rope/movements_rope",
+        "canary:interaction/extension_mota/movements_extension_mota",
+        "canary:interaction/marapur/movements_ramp_to_north_temple",
+        "canary:interaction/others/actions_gooey_mass",
+        "canary:interaction/others/actions_hellgate_lever",
+        "canary:interaction/others/actions_orc_edron_lever",
+        "crystalserver:interaction/rookgaard_quests/quiver",
+        "canary:interaction/soulpit/exalted_core",
+        "canary:interaction/soulpit/soul_prism",
+        "canary:interaction/soulpit/soulpit_fight",
+        "canary:interaction/white_pearl/movements_white_pearl"
+      ],
+      "count_limit": "82 coverage holds overlap NPC/outfit rows above. Twelve graphs need exact component ownership review, not twelve presumed missing quests.",
+      "acceptance": "Exact donor + objective witness before attaching; inspect Encounter/Creature provenance before calling a missing Quest graph missing project content."
+    },
+    {
+      "id": "DATA-REWARD-LOWERING",
+      "lane": "DATA_NATIVE_IMPLEMENTATION_UNDER_ACCEPTED_CONTRACT",
+      "scope": "Use existing populated claims, item bindings, key/text/random/cooldown facts and container contents; verify any residual source quantity/subtype/charge conflict separately.",
+      "counts": {
+        "source_claims": 336,
+        "claims_with_feature": {
+          "items": 336,
+          "container": 65,
+          "written_text": 14,
+          "key_binding": 26,
+          "random_one_of": 6,
+          "cooldown": 6
+        }
+      },
+      "count_limit": "Feature counts overlap and are existing SOURCE data, not remaining missing-data counts; 65 container claims cover 68 placements.",
+      "accepted_contract": "D277: key_binding, written_text, random_one_of, repeat cooldown and Item charges are covered; BAGS contents is an authoring child. Runtime remains a separate child.",
+      "acceptance": "Separate literal reward count vs subtype/charges; do not duplicate already published container authoring or infer canonical delivery from SOURCE counts."
+    },
+    {
+      "id": "OWNER-RUNTIME-AND-CLOSED-SEMANTICS",
+      "lane": "COORDINATOR_ASSIGN_EXISTING_OR_SCOPED_OWNER_CHILD",
+      "counts": [
+        {
+          "owner": "scheduler",
+          "lines": 287,
+          "interactions": 183,
+          "quests": 53
+        },
+        {
+          "owner": "condition",
+          "lines": 26,
+          "interactions": 25,
+          "quests": 21
+        },
+        {
+          "owner": "creature_removal",
+          "lines": 43,
+          "interactions": 32,
+          "quests": 17
+        },
+        {
+          "owner": "boss_cooldown",
+          "lines": 43,
+          "interactions": 28,
+          "quests": 14
+        },
+        {
+          "owner": "kv_state",
+          "lines": 68,
+          "interactions": 29,
+          "quests": 9
+        }
+      ],
+      "scope": "Classifier labels owner_pending/(none yet) are not proof that all architecture is missing. CONDITION already has GAME-ABILITY baseline and CONDITIONS-0 candidate; check exact family acceptance. Scheduler, KV persistence/scope, boss-specific cooldown and creature removal need owner-specific binding/implementation checks.",
+      "acceptance": "Coordinator assigns accepted children; architect handles only genuinely uncovered condition/effect kind or missing scope/lifecycle contract. Arbitrary addEvent callbacks are not automatically WorldObject revert timers."
+    },
+    {
+      "id": "OWNER-SHARED-FANOUT-AND-ROOMS",
+      "lane": "COORDINATOR_OWNER_COMPOSITION_AND_SCOPED_ARCHITECT_DECISION",
+      "counts": [
+        {
+          "mechanism": "kill_reward_fanout",
+          "lines": 67,
+          "interactions": 66,
+          "quests": 36,
+          "definition": "A creature-death callback delegates to the shared `onDeathForDamagingPlayers`/`onDeathForParty` library helper, which the engine already fans out to every damaging player or the whole party; only the per-player callback body is quest-specific (it is transcribed on its own, statement by statement).",
+          "rule": "\\bon(DeathForDamagingPlayers|DeathForParty)\\(",
+          "owner_lane": "no owner yet fans a single kill out to multiple credited players/party members; sits above the existing per-effect owners (Quest/Item/Experience/Achievement), which the per-player body still delegates to once expanded"
+        },
+        {
+          "mechanism": "boss_room_entry_gate",
+          "lines": 21,
+          "interactions": 20,
+          "quests": 9,
+          "definition": "The shared `roomIsOccupied`/`Player:doCheckBossRoom` library checks (both servers define each once in data/libs/functions/functions.lua) gate a lever or portal on room occupancy/an active boss before the encounter opens.",
+          "rule": "\\b(roomIsOccupied|doCheckBossRoom)\\(",
+          "owner_lane": "encounter/boss-room entry -- same open lane as boss_portal_spectator_gate"
+        },
+        {
+          "mechanism": "boss_portal_spectator_gate",
+          "lines": 57,
+          "interactions": 7,
+          "quests": 3,
+          "definition": "A step-in mini-boss portal: the `Spectators()` builder screens the room (setOnlyPlayer/setCheckPosition/check), gates entry on cooldown and level, teleports the player in, spawns the boss, and later removes players and monsters (removeMonsters/removePlayers/clearCreaturesCache) once the fight window (addEvent) elapses.",
+          "rule": "\\bSpectators\\(\\)|:(setOnlyPlayer|setRemoveDestination|setCheckPosition|check|removeMonsters|removePlayers|clearCreaturesCache)\\(",
+          "owner_lane": "encounter/boss-room entry -- not yet in OTERYN_ENCOUNTER_AUTHORING_FORMAT_V1.md SS1-3; GAME-AI-01 covers the spawn half only"
+        }
+      ],
+      "scope": "67 kill fanout lines/36 quests; 21 room-gate lines/9 quests; 57 Spectators-builder lines/3 quests. Reuse existing per-effect and Encounter/AI owners; still prove participant attribution, occupancy, lifecycle and timer semantics.",
+      "acceptance": "Do not infer party credit, room cleanup or world ownership from helper names. Existing admitted Encounter source subsets do not prove a complete lever/Quest graph."
+    },
+    {
+      "id": "SOURCE-PROGRESS-OWNERSHIP",
+      "lane": "DATA_PROVENANCE_AND_COORDINATOR_SCOPE",
+      "scope": "Assign exact named tracks only with writer/reader/quest evidence; preserve World673003 versus character tracks and declaration-only DarkTrails mission18.",
+      "counts": {
+        "deferred_owner_evidence_rows": 2
+      },
+      "evidence": [
+        {
+          "quest": "canary:quest/dark_trails_quest",
+          "reason": "Exact storage declaration exists; no observed source writer in accepted executable inventory. No transition or journal stage invented.",
+          "record": "quest/u10_50/dark_trails/mission18"
+        },
+        {
+          "quest": null,
+          "reason": "PROVEN GLOBAL/WORLD: pinned Game.setStorageValue(yielothaxKillStorage,0), not character progress. Source alias and owning-scope uncertainty retained; no character track, initial value or bounds invented.",
+          "record": "storage/673003"
+        }
+      ],
+      "acceptance": "Initial value, bounds and native Character policy cannot be inferred from a numeric storage identity."
+    }
+  ],
+  "input_receipts": [
+    {
+      "path": "tools/content-schema/quest-authoring/samples/readiness/readiness.json",
+      "sha256": "0c1046128c4ed900e76f2a30633fac6cab65155644aa167cad0f54b4c0a22717"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/samples/gap-triage/triage.json",
+      "sha256": "f9dc7fe8e655e857e18add715a51eac6e7a37dc897e79e4b6ecdca02addd2259"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/samples/source_migration/bundle.json",
+      "sha256": "a5966b07c77150accbeecdc43c44c356dba0328f79f30aac9613c3d64b5226a8"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/samples/interactions/interactions.json",
+      "sha256": "e2c89e1275ed8e2de15fc0b245698bff6742310d1b152ad86219caa0602a07f7"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/samples/interactions/manifest.json",
+      "sha256": "f8358fe0d700f5d11cac372a5fbb3a7107aad36c25915e043d9f340cadcb1717"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/samples/questlog/manifest.json",
+      "sha256": "f4eb3f0e80dcfa10b4564796342549bc93397e42282e98777e0dd37a5d374dfa"
+    },
+    {
+      "historical_evidence_name": "REPORT.json",
+      "availability": "HISTORICAL_LOCAL_AUDIT_NOT_EMBEDDED",
+      "sha256": "c99b208198b02d7acec4ec018a310bedbec6d5478259dcd4f587d0d5a5a93bb7"
+    },
+    {
+      "path": "tools/content-schema/reward-claim-authoring/samples/migration/reward-claim-architect-rulings.json",
+      "sha256": "485dce730b02c9a3f508f7b21a72d7fba5127a86c064cd6f5b56c61bb98321e4"
+    }
+  ],
+  "runtime_enabled": false,
+  "parent_frozen_head": "604b880de39c85b81fd694cb3e68057f054ed742"
+}

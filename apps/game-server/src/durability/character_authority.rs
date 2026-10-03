@@ -282,6 +282,17 @@ impl DurabilityRoot {
         &self,
         seal: &'f SealedCharacterRecoveryFence<'s>,
     ) -> Result<ReconciledCharacterAuthority<'f, 's>> {
+        self.open_character_authority_with_proficiency_definitions(seal, None)
+            .await
+    }
+    /// Same sealed recovery authority; the optional source resolves historical maps only.
+    pub async fn open_character_authority_with_proficiency_definitions<'f, 's>(
+        &self,
+        seal: &'f SealedCharacterRecoveryFence<'s>,
+        definitions: Option<
+            std::sync::Arc<dyn super::character_proficiency::ProficiencyDefinitions>,
+        >,
+    ) -> Result<ReconciledCharacterAuthority<'f, 's>> {
         let record = seal.record().clone();
         let checked = record.clone();
         self.try_issue_semantic_pass()?
@@ -289,7 +300,7 @@ impl DurabilityRoot {
                 Box::pin(async move {
                     let mut tx = begin_semantic_transaction(holder, deadline).await?;
                     assert_recovery_fence(&mut tx, &checked).await?;
-                    verify_character_integrity(&mut tx).await?;
+                    verify_character_integrity(&mut tx, definitions.as_deref()).await?;
                     commit_semantic_transaction(tx, deadline).await?;
                     Ok(Ok::<(), CharacterAuthorityError>(()))
                 })
@@ -379,6 +390,17 @@ impl DurabilityRoot {
         &self,
         recovery: &CharacterRecoveryTransition<'_>,
     ) -> Result<()> {
+        self.reconcile_character_recovery_with_proficiency_definitions(recovery, None)
+            .await
+    }
+    /// Same exclusive successor proof and admission transaction, with retained map verification.
+    pub async fn reconcile_character_recovery_with_proficiency_definitions(
+        &self,
+        recovery: &CharacterRecoveryTransition<'_>,
+        definitions: Option<
+            std::sync::Arc<dyn super::character_proficiency::ProficiencyDefinitions>,
+        >,
+    ) -> Result<()> {
         let record = recovery.record().clone();
         self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
             let mut tx = begin_semantic_transaction(holder, deadline).await?;
@@ -395,7 +417,7 @@ impl DurabilityRoot {
             }
             // This is the explicit reconciliation point. Domain-specific integrity checks grow
             // here; restored receipts/audit/outbox never replace the external predecessor proof.
-            verify_character_integrity(&mut tx).await?;
+            verify_character_integrity(&mut tx, definitions.as_deref()).await?;
             commit_semantic_transaction(tx, deadline).await?;
             Ok(Ok(()))
         })).await?
@@ -738,6 +760,7 @@ async fn current_account_security_allows(
 /// regress it (absence is never initialized to zero).
 async fn verify_character_integrity(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    definitions: Option<&dyn super::character_proficiency::ProficiencyDefinitions>,
 ) -> std::result::Result<(), DurabilityError> {
     sqlx::query(
         "SELECT 1 FROM game_character_roots r \
@@ -795,7 +818,7 @@ async fn verify_character_integrity(
     // gap-free immutable receipt chain must explain the global revision and the
     // current state.  The chain has one receipt per revision of any kind: XP
     // award (0009), death (0016), stance (0017), Bestiary kill (0019), charm
-    // command (0020), monk state save (0026) or build change (0030), each
+    // command (0020), monk state save (0026), build (0030) or proficiency (0032), each
     // `before` equal to its predecessor's `after` across kinds.  The bootstrap
     // receipt remains bound to initial revision 1.
     sqlx::query(
@@ -834,7 +857,12 @@ async fn verify_character_integrity(
                   level_before, level_after, experience_before, experience_after, \
                   profile_revision, ruleset_revision, content_revision, simulation_revision, \
                   evidence_revision, declaration_revision, policy_revision, reward_revision \
-              FROM game_character_build_receipts) \
+              FROM game_character_build_receipts \
+           UNION ALL SELECT character_id, original_character_revision, committed_character_revision, \
+                  level_before, level_after, experience_before, experience_after, \
+                  profile_revision, ruleset_revision, content_revision, simulation_revision, \
+                  evidence_revision, declaration_revision, policy_revision, reward_revision \
+              FROM game_character_proficiency_receipts) \
          SELECT 1 FROM game_character_roots r \
            LEFT JOIN game_character_progression_state s USING (character_id) \
           WHERE (r.character_revision <> 1 AND s.character_id IS NULL) \
@@ -893,6 +921,7 @@ async fn verify_character_integrity(
     .await?
     .map_or(Ok(()), |_| Err(DurabilityError::Unavailable))?;
     verify_character_build_chain(tx).await?;
+    verify_all_character_proficiency_histories(tx, definitions).await?;
     // A self-consistent hash is not semantic evidence: every retained payload
     // must be exactly the registered encoding of its root's identities.
     let mut after = String::from("00000000-0000-0000-0000-000000000000");
@@ -924,6 +953,86 @@ async fn verify_character_integrity(
             }
         }
     }
+}
+
+// Private complete-gate candidate only. Admission must account for every WP relation,
+// including orphan lines/current rows, rather than inferring membership from headers alone.
+async fn verify_all_character_proficiency_histories(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    definitions: Option<&dyn super::character_proficiency::ProficiencyDefinitions>,
+) -> std::result::Result<(), DurabilityError> {
+    let mut after: Option<String> = None;
+    loop {
+        let rows = sqlx::query(
+            "WITH characters AS ( \
+               SELECT character_id FROM game_character_proficiency_receipts \
+               UNION SELECT character_id FROM game_character_proficiency_receipt_lines \
+               UNION SELECT character_id FROM game_character_proficiency) \
+             SELECT character_id::text AS character FROM characters \
+              WHERE ($1::uuid IS NULL OR character_id > $1::uuid) ORDER BY character_id LIMIT 256",
+        )
+        .bind(after.as_deref())
+        .fetch_all(&mut **tx)
+        .await?;
+        let Some(last) = rows.last() else {
+            return Ok(());
+        };
+        after = Some(last.try_get("character")?);
+        for row in &rows {
+            let character = CharacterId::from_bytes(uuid_text(row.try_get("character")?)?)
+                .map_err(|_| DurabilityError::Unavailable)?;
+            verify_character_proficiency_history_with_definitions(tx, character, definitions)
+                .await
+                .map_err(|error| {
+                    if matches!(error, DurabilityError::InvalidStoredState) {
+                        DurabilityError::Unavailable
+                    } else {
+                        error
+                    }
+                })?;
+        }
+    }
+}
+
+/// PROF-1 retained storage/history verifier for the local complete-gate candidate.
+/// Checks retained storage/history only. Neither canonical content nor current authority is
+/// inferred from receipts. Missing retained migration mappings fail Unavailable in the codec.
+pub(super) async fn verify_character_proficiency_history_with_definitions(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    character: CharacterId,
+    definitions: Option<&dyn super::character_proficiency::ProficiencyDefinitions>,
+) -> std::result::Result<Vec<super::character_proficiency::StoredProficiencyTrack>, DurabilityError>
+{
+    let invalid = sqlx::query(
+        "SELECT 1 FROM game_character_proficiency_receipts h \
+         LEFT JOIN game_character_roots r USING (character_id) \
+         WHERE h.character_id=encode($1,'hex')::uuid AND (r.character_id IS NULL \
+          OR h.original_character_revision<1 OR h.committed_character_revision<>h.original_character_revision+1 \
+          OR h.committed_character_revision>r.character_revision \
+          OR (get_byte(uuid_send(h.proficiency_occurrence_id),6)>>4)<>7 \
+          OR (get_byte(uuid_send(h.proficiency_occurrence_id),8)&192)<>128 \
+          OR h.cause NOT IN ('training','perk_selection','migration') \
+          OR octet_length(h.command_binding) NOT BETWEEN 1 AND 1024 OR octet_length(h.policy_digest)<>32 \
+          OR h.level_before NOT BETWEEN 1 AND 4294967295 OR h.level_after<>h.level_before \
+          OR h.experience_before<0 OR h.experience_after<>h.experience_before OR h.committed_at<0 \
+          OR EXISTS (SELECT 1 FROM unnest(ARRAY[h.profile_revision,h.ruleset_revision,h.content_revision, \
+              h.simulation_revision,h.evidence_revision,h.declaration_revision,h.policy_revision,h.reward_revision]) v \
+              WHERE v IS NULL OR v !~ '^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$') \
+          OR (SELECT count(*) FROM game_character_proficiency_receipt_lines l \
+              WHERE l.proficiency_occurrence_id=h.proficiency_occurrence_id)=0 \
+          OR (h.cause='perk_selection' AND (SELECT count(*) FROM game_character_proficiency_receipt_lines l \
+              WHERE l.proficiency_occurrence_id=h.proficiency_occurrence_id)<>1)) \
+         UNION ALL SELECT 1 FROM game_character_proficiency_receipt_lines l \
+          LEFT JOIN game_character_proficiency_receipts h USING (proficiency_occurrence_id) \
+          WHERE (l.character_id=encode($1,'hex')::uuid OR h.character_id=encode($1,'hex')::uuid) \
+           AND (h.proficiency_occurrence_id IS NULL OR l.character_id IS DISTINCT FROM h.character_id \
+             OR l.committed_character_revision IS DISTINCT FROM h.committed_character_revision \
+             OR l.cause IS DISTINCT FROM h.cause) LIMIT 1"
+    ).bind(character.as_bytes().as_slice()).fetch_optional(&mut **tx).await?;
+    if invalid.is_some() {
+        return Err(DurabilityError::InvalidStoredState);
+    }
+    super::character_proficiency::read::verify_track_history(tx, character, definitions).await
 }
 
 /// CHAR-BUILD-1 (A13 §4.2, #1271 F4) build state, checked by name at admission:

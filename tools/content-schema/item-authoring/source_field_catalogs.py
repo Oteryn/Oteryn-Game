@@ -1371,6 +1371,7 @@ def build_engine_catalog(profile):
         "xml_item_attribute": tuple(sorted(parser_fields)),
         "nested_script_attribute": tuple(sorted(NESTED_DEFINITION_FIELDS)),
         "appearance": tuple(sorted(appearance_fields)),
+        "nested_imbuement_attribute": ("imbuementslot.allowed_family_max_tiers",),
     }
     if profile == CRYSTAL_PROFILE:
         # Canary does not load bags.xml at the pinned revision; Crystal does
@@ -1379,7 +1380,9 @@ def build_engine_catalog(profile):
     fields = sorted(set().union(*map(set, origins.values())))
     rows = []
     for field in fields:
-        if field in ROOT_DEFINITION_FIELDS:
+        if field == "imbuementslot.allowed_family_max_tiers":
+            rule = _mapped("/item/imbuement/allowed_family_max_tiers")
+        elif field in ROOT_DEFINITION_FIELDS:
             rule = ROOT_RULES[field]
         elif field in parser_fields:
             rule = engine_rule(field, profile)

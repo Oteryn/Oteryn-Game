@@ -1,0 +1,721 @@
+{
+  "schema": "OTERYN_SELECTED_REWARD_STACK_SERIALIZATION/v1",
+  "scope": "Canonical variant DATA only; explicit Oteryn content choice diverges from donor executed quantity",
+  "selection": "Use authored source tuple quantity 200 as Oteryn total, represented by two admitted stacks100; donor container helper executes100 through stackSize clamp",
+  "native_admission": "WAITING_IMPLEMENTATION",
+  "donor_faithful": false,
+  "runtime_ready": false,
+  "cases": [
+    {
+      "source_identity": {
+        "key": "canary:reward-claim/quest/u8_0/barbarian_arena/reward_scrapper_bp",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "source_claim_sha256": "a074581d1934c9c66d4c4bb4bdcd7b39c8198ac9acf44ea899e274382b2b92db",
+      "item_identity": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i3450",
+        "revision": "definition-r1"
+      },
+      "item_definition_sha256": "fa64c2a22af6a45f2b2307fafa4547e64481b4072d87b4c22b56f4c035844cfe",
+      "placement_index": 0,
+      "reward_index": 1,
+      "source_raw_argument": 200,
+      "selected_oteryn_quantity": 200,
+      "selected_serialized_counts": [
+        100,
+        100
+      ],
+      "recorded_donor_quantity": 100,
+      "source_uid": 6226,
+      "manifest_binding": {
+        "position": [
+          32231,
+          31061,
+          7
+        ],
+        "sources": [
+          {
+            "source": "canary",
+            "uid": 6226,
+            "source_lines": [
+              2069
+            ]
+          },
+          {
+            "source": "crystalserver",
+            "uid": 6226,
+            "source_lines": [
+              2354
+            ]
+          }
+        ],
+        "status": "mapped",
+        "resolution": "present in both servers and identical",
+        "destination": "canary:reward-claim/quest/u8_0/barbarian_arena/reward_scrapper_bp"
+      },
+      "source_quest": {
+        "family": "Quest",
+        "key": "canary:quest/barbarian_arena_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "source_identity": {
+        "key": "canary:reward-claim/quest/u8_0/shardsof_ancient_winters/helheim",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "source_claim_sha256": "e0bec73fb354f83486f8c0c958abc755dd106b61bc33f79a30f3d1b3758371c1",
+      "item_identity": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i3031",
+        "revision": "definition-r1"
+      },
+      "item_definition_sha256": "151c53d7524453d80af8fd88f2fddfa557ad1d6459945fc92649875e894995a9",
+      "placement_index": 0,
+      "reward_index": 1,
+      "source_raw_argument": 200,
+      "selected_oteryn_quantity": 200,
+      "selected_serialized_counts": [
+        100,
+        100
+      ],
+      "recorded_donor_quantity": 100,
+      "source_uid": 6218,
+      "manifest_binding": {
+        "position": [
+          32490,
+          31192,
+          10
+        ],
+        "sources": [
+          {
+            "source": "canary",
+            "uid": 6218,
+            "source_lines": [
+              2006
+            ]
+          },
+          {
+            "source": "crystalserver",
+            "uid": 6218,
+            "source_lines": [
+              2291
+            ]
+          }
+        ],
+        "status": "mapped",
+        "resolution": "present in both servers and identical",
+        "destination": "canary:reward-claim/quest/u8_0/shardsof_ancient_winters/helheim"
+      },
+      "source_quest": {
+        "family": "Quest",
+        "key": "crystalserver:quest/berserk_potion_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    }
+  ],
+  "pinned_donor_witnesses": [
+    {
+      "server": "canary",
+      "git_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "path": "data-otservbr-global/startup/tables/chest.lua",
+      "blob_sha1": "13efcb4d1294ec1ff1ee5e5da18e2eeb3c904c02",
+      "blob_sha256": "2b130d4196afc9700eb0b7c2f5594e331edee4d25811a0d2020fb9d8757d6cda",
+      "observations": [
+        {
+          "line": 2006,
+          "text": "\t[6218] = {",
+          "line_sha256": "051448a9af60bc7492f86f13c804f96b4cfe9176614ae78d8bb7f0377e90731d"
+        },
+        {
+          "line": 2007,
+          "text": "\t\titemId = 4024,",
+          "line_sha256": "80a1f6e17a030f7e7ffeda1ca930b7687c61651d36ffdddde07e595b0c441c39"
+        },
+        {
+          "line": 2008,
+          "text": "\t\titemPos = { x = 32490, y = 31192, z = 10 },",
+          "line_sha256": "ca0d994a72652972767504fd5285114a9a9f809ff453ef51132a4d129f13815f"
+        },
+        {
+          "line": 2009,
+          "text": "\t\tcontainer = 2853,",
+          "line_sha256": "d45f171626ee47e24fac803603e47d6a58d676910fd297f96ab2b8a4010de5d3"
+        },
+        {
+          "line": 2010,
+          "text": "\t\treward = { { 7439, 1 }, { 3031, 200 }, { 6499, 3 }, { 7290, 1 } },",
+          "line_sha256": "10032558d2406ba81a35b89f3b021d930db9f2ce3bd8aea764a5f691dd98abf0"
+        },
+        {
+          "line": 2011,
+          "text": "\t\tweight = 52.00,",
+          "line_sha256": "f35b7f418a39890e64eeba91b831916ae0cab8eb53bf4ab12cdb807ca4988694"
+        },
+        {
+          "line": 2012,
+          "text": "\t\tstorage = Storage.Quest.U8_0.ShardsofAncientWinters.Helheim,",
+          "line_sha256": "f6e78fe328d660c03c0651054d924b6f62d5eba03eb999e5c3388df4bc1011d4"
+        },
+        {
+          "line": 2013,
+          "text": "\t},",
+          "line_sha256": "ed0dbdf6e65ff948ffd58c71847b7bd87f8038327e8c069c34659e71b58c0b9c"
+        },
+        {
+          "line": 2069,
+          "text": "\t[6226] = {",
+          "line_sha256": "d7468e30e672ff2028cbe311dac5202dc586187b1d6fda97fd35d5a2419e33ab"
+        },
+        {
+          "line": 2070,
+          "text": "\t\titemId = 2480,",
+          "line_sha256": "e1d3d037ddc20193250dc88c539f9ee03791eab9666ed78ec3037b989e5dbca4"
+        },
+        {
+          "line": 2071,
+          "text": "\t\titemPos = { x = 32231, y = 31061, z = 7 },",
+          "line_sha256": "899de267dacb51b80845d4508106918438e9bb24190425115e3c576da3a7a49f"
+        },
+        {
+          "line": 2072,
+          "text": "\t\tcontainer = 7342,",
+          "line_sha256": "6287223a3434d2a7e4234b4c917deb8d74b7120747c6f8d2c3d287930f567489"
+        },
+        {
+          "line": 2073,
+          "text": "\t\treward = { { 7365, 100 }, { 3450, 200 }, { 11605, 1 }, { 11615, 1 } },",
+          "line_sha256": "507990056615471e6352b62094eb838b73b54a0ba033fd70570d2c7240677107"
+        },
+        {
+          "line": 2074,
+          "text": "\t\tweight = 270.40,",
+          "line_sha256": "2bb72f8ba4eff156b96c311412b4b59807d44165f207ed4b8d5c4b10943b874d"
+        },
+        {
+          "line": 2075,
+          "text": "\t\tstorage = Storage.Quest.U8_0.BarbarianArena.RewardScrapperBP,",
+          "line_sha256": "bb19bbc0adc3b2b0d78f07723a9cc6c386d0ee45dd2c3f7ed787fb6ce4b55c86"
+        },
+        {
+          "line": 2076,
+          "text": "\t},",
+          "line_sha256": "ed0dbdf6e65ff948ffd58c71847b7bd87f8038327e8c069c34659e71b58c0b9c"
+        }
+      ]
+    },
+    {
+      "server": "canary",
+      "git_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "path": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+      "blob_sha1": "ce647b85624eb97f2b4dfe9cccced96f4f881936",
+      "blob_sha256": "3394214ca803640b0148854f3a2cb8dd8e4ecd3749268800d4a3f8c50330f1cd",
+      "observations": [
+        {
+          "line": 108,
+          "text": "local function playerAddContainerItem(params, item, rewardIndex)",
+          "line_sha256": "1f92755b45a936f716c5e92372ff3773fc27fd3ee4b693f48809b62893e2abff"
+        },
+        {
+          "line": 109,
+          "text": "\tlocal player = params.player",
+          "line_sha256": "6a2419b2827506594347659c41c6896d007083e15a65187869586961a53b6532"
+        },
+        {
+          "line": 110,
+          "text": "",
+          "line_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "line": 111,
+          "text": "\tlocal reward = params.containerReward",
+          "line_sha256": "c95f98076b3f16061fd8475bc58799402edc2133e9bc3bd550a3c34b4670e097"
+        },
+        {
+          "line": 112,
+          "text": "\tlocal itemType = ItemType(params.itemid)",
+          "line_sha256": "fc4e27633208cd802d411d08ca69936d0de643f254add0d9c3868edc2b37ed0f"
+        },
+        {
+          "line": 113,
+          "text": "\tif itemType:isKey() then",
+          "line_sha256": "52ccc626979773c9d1dd641dcc1305cf77a76ad08ecc1b2fd616ea4b622e4f73"
+        },
+        {
+          "line": 114,
+          "text": "\t\tkeyItem = reward:addItem(params.itemid, params.count)",
+          "line_sha256": "514bb00deecf5fd1ffa77b43cdaabbfba9f8fd77d762e765a6ccf10f645adf72"
+        },
+        {
+          "line": 115,
+          "text": "\t\tif params.storage then",
+          "line_sha256": "6ab7eb575eb1424e9a7a3994fe442221a290920aa09ffd6b3d6293d48961f60c"
+        },
+        {
+          "line": 116,
+          "text": "\t\t\tkeyItem:setActionId(params.action)",
+          "line_sha256": "43dd2dec506e77e78c892651a1d5e3f7501203407a7a686857ebe81ace846868"
+        },
+        {
+          "line": 117,
+          "text": "\t\tend",
+          "line_sha256": "54a4797fa706f744c0dfbff49979a6ab9f00ccb65741ee7d6cf791bbca8af70a"
+        },
+        {
+          "line": 118,
+          "text": "\telse",
+          "line_sha256": "154b8bf39ffe255583970edbe4b9a1d5620a73344e2c264f3bf2c4ba79c23cae"
+        },
+        {
+          "line": 119,
+          "text": "\t\tlocal rewardItem = reward:addItem(params.itemid, params.count)",
+          "line_sha256": "65f09bac200ae4eeee8f7662d5f239542260469308aa07b8017d9dc31da98700"
+        },
+        {
+          "line": 120,
+          "text": "\t\tlocal attribute = AttributeTable[item.uid]",
+          "line_sha256": "13c63045969232960e6c8f369a630f605e6c8cb714c6b822de2f68215dd5b05f"
+        },
+        {
+          "line": 121,
+          "text": "\t\tif attribute and rewardItem then",
+          "line_sha256": "090acf25d4852ce35fcde35ec70b97e570d027e5796f6bbdb19c58b1c92b1109"
+        },
+        {
+          "line": 122,
+          "text": "\t\t\trewardItem:setAttribute(ITEM_ATTRIBUTE_TEXT, attribute.text)",
+          "line_sha256": "dde27b5e8532bc88d362791b7ff5d41c4f62de58238c34dfc6260020e19a4485"
+        },
+        {
+          "line": 123,
+          "text": "\t\tend",
+          "line_sha256": "54a4797fa706f744c0dfbff49979a6ab9f00ccb65741ee7d6cf791bbca8af70a"
+        },
+        {
+          "line": 124,
+          "text": "\tend",
+          "line_sha256": "c5080e23f7f230671b202efa38d33f9f9e56894c930575355a48f34ede4a0e13"
+        },
+        {
+          "line": 125,
+          "text": "",
+          "line_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ]
+    },
+    {
+      "server": "canary",
+      "git_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "path": "src/lua/functions/items/container_functions.cpp",
+      "blob_sha1": "5fa6b32f42a20ff08bbbf5d3e9674330f4871812",
+      "blob_sha256": "a029714c3828a90ba891cc4bb613924fd274403531f55c512b94a99c1c5f61b6",
+      "observations": [
+        {
+          "line": 171,
+          "text": "\tauto count = Lua::getNumber<uint32_t>(L, 3, 1);",
+          "line_sha256": "aeb7295da44db992ed722fc7fc795095a6da9dd14b76766189f9d0a59297838b"
+        },
+        {
+          "line": 172,
+          "text": "\tconst ItemType &it = Item::items[itemId];",
+          "line_sha256": "c2f09e24407581f61a511006ee45c033f8d7f54c762cd68e5dc7cbacba71ff77"
+        },
+        {
+          "line": 173,
+          "text": "\tif (it.stackable) {",
+          "line_sha256": "d89d84662a372e4c6dd011f988d739ede9e69432f0feab262f6474b6e2d7e708"
+        },
+        {
+          "line": 174,
+          "text": "\t\tcount = std::min<uint16_t>(count, it.stackSize);",
+          "line_sha256": "adb0e1cc67bd7604f98cd54de6cc806d2b281be8ad00876d4391e40335a44e89"
+        },
+        {
+          "line": 175,
+          "text": "\t}",
+          "line_sha256": "a32a3bb7121485ebcbc1a2b6af585ccc5f6a4c4bc1e997911fcdb895e6692611"
+        },
+        {
+          "line": 176,
+          "text": "",
+          "line_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "line": 177,
+          "text": "\tconst auto &item = Item::CreateItem(itemId, count);",
+          "line_sha256": "82c0c2e730bdbe3413f6f61713e5b465c7e45ed07bee556c792b304e50c94130"
+        }
+      ]
+    },
+    {
+      "server": "crystal",
+      "git_revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "path": "data-global/startup/tables/chest.lua",
+      "blob_sha1": "ea2ef1963395a479ed927481bc3a14065b125a3f",
+      "blob_sha256": "0ca1a7ad6da9589d1b77ff847a70f306b2086464e7dce21afad53e0c852478ca",
+      "observations": [
+        {
+          "line": 2291,
+          "text": "\t[6218] = {",
+          "line_sha256": "051448a9af60bc7492f86f13c804f96b4cfe9176614ae78d8bb7f0377e90731d"
+        },
+        {
+          "line": 2292,
+          "text": "\t\titemId = 4024,",
+          "line_sha256": "80a1f6e17a030f7e7ffeda1ca930b7687c61651d36ffdddde07e595b0c441c39"
+        },
+        {
+          "line": 2293,
+          "text": "\t\titemPos = { x = 32490, y = 31192, z = 10 },",
+          "line_sha256": "ca0d994a72652972767504fd5285114a9a9f809ff453ef51132a4d129f13815f"
+        },
+        {
+          "line": 2294,
+          "text": "\t\tcontainer = 2853,",
+          "line_sha256": "d45f171626ee47e24fac803603e47d6a58d676910fd297f96ab2b8a4010de5d3"
+        },
+        {
+          "line": 2295,
+          "text": "\t\treward = { { 7439, 1 }, { 3031, 200 }, { 6499, 3 }, { 7290, 1 } },",
+          "line_sha256": "10032558d2406ba81a35b89f3b021d930db9f2ce3bd8aea764a5f691dd98abf0"
+        },
+        {
+          "line": 2296,
+          "text": "\t\tweight = 52.00,",
+          "line_sha256": "f35b7f418a39890e64eeba91b831916ae0cab8eb53bf4ab12cdb807ca4988694"
+        },
+        {
+          "line": 2297,
+          "text": "\t\tstorage = Storage.Quest.U8_0.ShardsofAncientWinters.Helheim,",
+          "line_sha256": "f6e78fe328d660c03c0651054d924b6f62d5eba03eb999e5c3388df4bc1011d4"
+        },
+        {
+          "line": 2298,
+          "text": "\t},",
+          "line_sha256": "ed0dbdf6e65ff948ffd58c71847b7bd87f8038327e8c069c34659e71b58c0b9c"
+        },
+        {
+          "line": 2354,
+          "text": "\t[6226] = {",
+          "line_sha256": "d7468e30e672ff2028cbe311dac5202dc586187b1d6fda97fd35d5a2419e33ab"
+        },
+        {
+          "line": 2355,
+          "text": "\t\titemId = 2480,",
+          "line_sha256": "e1d3d037ddc20193250dc88c539f9ee03791eab9666ed78ec3037b989e5dbca4"
+        },
+        {
+          "line": 2356,
+          "text": "\t\titemPos = { x = 32231, y = 31061, z = 7 },",
+          "line_sha256": "899de267dacb51b80845d4508106918438e9bb24190425115e3c576da3a7a49f"
+        },
+        {
+          "line": 2357,
+          "text": "\t\tcontainer = 7342,",
+          "line_sha256": "6287223a3434d2a7e4234b4c917deb8d74b7120747c6f8d2c3d287930f567489"
+        },
+        {
+          "line": 2358,
+          "text": "\t\treward = { { 7365, 100 }, { 3450, 200 }, { 11605, 1 }, { 11615, 1 } },",
+          "line_sha256": "507990056615471e6352b62094eb838b73b54a0ba033fd70570d2c7240677107"
+        },
+        {
+          "line": 2359,
+          "text": "\t\tweight = 270.40,",
+          "line_sha256": "2bb72f8ba4eff156b96c311412b4b59807d44165f207ed4b8d5c4b10943b874d"
+        },
+        {
+          "line": 2360,
+          "text": "\t\tstorage = Storage.Quest.U8_0.BarbarianArena.RewardScrapperBP,",
+          "line_sha256": "bb19bbc0adc3b2b0d78f07723a9cc6c386d0ee45dd2c3f7ed787fb6ce4b55c86"
+        },
+        {
+          "line": 2361,
+          "text": "\t},",
+          "line_sha256": "ed0dbdf6e65ff948ffd58c71847b7bd87f8038327e8c069c34659e71b58c0b9c"
+        }
+      ]
+    },
+    {
+      "server": "crystal",
+      "git_revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "path": "data-global/scripts/actions/system/quest_reward_common.lua",
+      "blob_sha1": "709a1d76512b284933a04d707a634d8c538309ce",
+      "blob_sha256": "9b38b43e800e05bd0262753198ec3b9adcb64a523ff3b085bf2e79fba05b95ad",
+      "observations": [
+        {
+          "line": 232,
+          "text": "local function playerAddContainerItem(params, item)",
+          "line_sha256": "dfdd8a9ef428367ccc2a567ded38267d404afad5a4c132eb27d344567501d58b"
+        },
+        {
+          "line": 233,
+          "text": "\tlocal player = params.player",
+          "line_sha256": "6a2419b2827506594347659c41c6896d007083e15a65187869586961a53b6532"
+        },
+        {
+          "line": 234,
+          "text": "\tlocal reward = params.containerReward",
+          "line_sha256": "c95f98076b3f16061fd8475bc58799402edc2133e9bc3bd550a3c34b4670e097"
+        },
+        {
+          "line": 235,
+          "text": "\tlocal attribute = AttributeTable[item.uid]",
+          "line_sha256": "31ef3b48a786a3fe532f8f46e315548a5c0fde75d820a21f1073065ba98c88e4"
+        },
+        {
+          "line": 236,
+          "text": "\tlocal achievement = achievementTable[item.uid]",
+          "line_sha256": "66dfa47a6d866f232d20ae036735ad85c9e849ad389319f8c31239849ba8b7b3"
+        },
+        {
+          "line": 237,
+          "text": "\tfor i = 1, #params.items do",
+          "line_sha256": "01908b4d95cbab4473adce3f2e9560dac699be44967da873fc683c4cf0c35d57"
+        },
+        {
+          "line": 238,
+          "text": "\t\tlocal rewardEntry = params.items[i]",
+          "line_sha256": "04ae532971cfba326b3c8a642e0a65f6f36765ef2f7c690667447332f3c131d7"
+        },
+        {
+          "line": 239,
+          "text": "\t\tlocal itemid = rewardEntry[1]",
+          "line_sha256": "e75649463833b47f308c1f7a8301fd64165aafa034919e03d5f53531f2534235"
+        },
+        {
+          "line": 240,
+          "text": "\t\tlocal count = rewardEntry[2]",
+          "line_sha256": "9cc267a1273a3598be3ab4c7ce9b447d9994db57416a2ac17f0ba67777982da4"
+        },
+        {
+          "line": 241,
+          "text": "\t\tlocal addedItem = reward:addItem(itemid, count)",
+          "line_sha256": "38c19fd1d29757efbbefd1a508f44a853474295f41ed1d5d060a57626a58916c"
+        },
+        {
+          "line": 242,
+          "text": "\t\tif addedItem and ItemType(itemid):isKey() and params.action then",
+          "line_sha256": "cf0926ae3438159e6eede17e6038ae14074f85b8ab519db0a0b76a6dd54aabe4"
+        },
+        {
+          "line": 243,
+          "text": "\t\t\taddedItem:setActionId(params.action)",
+          "line_sha256": "3cc2ca75b6ca3ff7c4485858a62e4c0a9800cfbd3cee6f6af54bf00a48c6175d"
+        },
+        {
+          "line": 244,
+          "text": "\t\tend",
+          "line_sha256": "54a4797fa706f744c0dfbff49979a6ab9f00ccb65741ee7d6cf791bbca8af70a"
+        },
+        {
+          "line": 245,
+          "text": "\t\tif addedItem and attribute and (not attribute.itemId or attribute.itemId == itemid) then",
+          "line_sha256": "68edb564bf3c947d6545088feb43413caa270beb7ade4e0af1ba4db63b632b2b"
+        },
+        {
+          "line": 246,
+          "text": "\t\t\taddedItem:setAttribute(ITEM_ATTRIBUTE_TEXT, attribute.text)",
+          "line_sha256": "e4f82e70f08d4045bf9dace0694fb4c5529882ecc3c8b5665ddf99c0c46d2298"
+        },
+        {
+          "line": 247,
+          "text": "\t\tend",
+          "line_sha256": "54a4797fa706f744c0dfbff49979a6ab9f00ccb65741ee7d6cf791bbca8af70a"
+        },
+        {
+          "line": 248,
+          "text": "\tend",
+          "line_sha256": "c5080e23f7f230671b202efa38d33f9f9e56894c930575355a48f34ede4a0e13"
+        },
+        {
+          "line": 249,
+          "text": "",
+          "line_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ]
+    },
+    {
+      "server": "crystal",
+      "git_revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "path": "src/lua/functions/items/container_functions.cpp",
+      "blob_sha1": "784284b52505305cbf35efc22cd47b0e8a232ec2",
+      "blob_sha256": "70bc1c33d6b5f612400ec52cd218c8ab6d1190605ddf24f1454fd790c66d35fd",
+      "observations": [
+        {
+          "line": 177,
+          "text": "\tauto count = Lua::getNumber<uint32_t>(L, 3, 1);",
+          "line_sha256": "aeb7295da44db992ed722fc7fc795095a6da9dd14b76766189f9d0a59297838b"
+        },
+        {
+          "line": 178,
+          "text": "\tconst ItemType &it = Item::items[itemId];",
+          "line_sha256": "c2f09e24407581f61a511006ee45c033f8d7f54c762cd68e5dc7cbacba71ff77"
+        },
+        {
+          "line": 179,
+          "text": "\tif (it.stackable) {",
+          "line_sha256": "d89d84662a372e4c6dd011f988d739ede9e69432f0feab262f6474b6e2d7e708"
+        },
+        {
+          "line": 180,
+          "text": "\t\tcount = std::min<uint16_t>(count, it.stackSize);",
+          "line_sha256": "adb0e1cc67bd7604f98cd54de6cc806d2b281be8ad00876d4391e40335a44e89"
+        },
+        {
+          "line": 181,
+          "text": "\t}",
+          "line_sha256": "a32a3bb7121485ebcbc1a2b6af585ccc5f6a4c4bc1e997911fcdb895e6692611"
+        },
+        {
+          "line": 182,
+          "text": "",
+          "line_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "line": 183,
+          "text": "\tconst auto &item = Item::CreateItem(itemId, count);",
+          "line_sha256": "82c0c2e730bdbe3413f6f61713e5b465c7e45ed07bee556c792b304e50c94130"
+        }
+      ]
+    },
+    {
+      "server": "canary",
+      "git_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "path": "src/items/items.hpp",
+      "blob_sha1": "5181a8894449fd552626bd932ce0aaaeff749919",
+      "blob_sha256": "b8c12f45122eeb575ad548719c5fb178a96460d8a41ad882d0d88b2e66d797e6",
+      "observations": [
+        {
+          "line": 331,
+          "text": "\tuint8_t stackSize = 100;",
+          "line_sha256": "113c8aa2983637866210c503de89a63fdc9036f2956ad7d082561b16d98f80d2"
+        }
+      ]
+    },
+    {
+      "server": "canary",
+      "git_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "path": "src/items/items.cpp",
+      "blob_sha1": "eecbf060ef9e85b452bb897277ff3d3d013a0cf9",
+      "blob_sha256": "f695ed647e111923cf8e4d487c4a0706f19e7edbfb7896655c20494d6d927fd7",
+      "observations": [
+        {
+          "line": 254,
+          "text": "\t\tiType.stackable = object.flags().cumulative();",
+          "line_sha256": "060aa5d5b365cc3870144a20000b4c2b9d2d8e5284622424f1b2f30608def9c7"
+        }
+      ]
+    },
+    {
+      "server": "canary",
+      "git_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "path": "src/protobuf/appearances.proto",
+      "blob_sha1": "f39de45976e372b2306f6ff9c4a40412f4debe4e",
+      "blob_sha256": "f03674197041967fc095e48462edaa1ab27c481385aad3d85d27a7d25af325c4",
+      "observations": [
+        {
+          "line": 138,
+          "text": "\toptional bool cumulative = 6;",
+          "line_sha256": "1597c268ac80a4745bd9de31ce845fbfd00797fa234103309813b14e94c2e24c"
+        }
+      ]
+    },
+    {
+      "server": "crystal",
+      "git_revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "path": "src/items/items.hpp",
+      "blob_sha1": "b502ec621701f1cebfe7e509207649081ee3e470",
+      "blob_sha256": "06d52ee83250ba852fe804c6b006b0aac150ceb26893e9079fa8c93502d209ca",
+      "observations": [
+        {
+          "line": 348,
+          "text": "\tuint8_t stackSize = 100;",
+          "line_sha256": "113c8aa2983637866210c503de89a63fdc9036f2956ad7d082561b16d98f80d2"
+        }
+      ]
+    },
+    {
+      "server": "crystal",
+      "git_revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "path": "src/items/items.cpp",
+      "blob_sha1": "bdb7b4b48aadfeb9e031311ca107aadb4ee6e30b",
+      "blob_sha256": "f39d8fc6c1c81b8ec6f749e1f152dd945472ffd5a36b9cf3cd9a3a64b2f19b1d",
+      "observations": [
+        {
+          "line": 251,
+          "text": "\t\tiType.stackable = object.flags().cumulative();",
+          "line_sha256": "060aa5d5b365cc3870144a20000b4c2b9d2d8e5284622424f1b2f30608def9c7"
+        }
+      ]
+    },
+    {
+      "server": "crystal",
+      "git_revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "path": "src/protobuf/appearances.proto",
+      "blob_sha1": "7069b5ead685929c0a79cb6e8b0664bbe8f19a3a",
+      "blob_sha256": "3aaf2965b14d9c3c0252876f8d3e228f20188568a03f8840b122588dbb76b78f",
+      "observations": [
+        {
+          "line": 153,
+          "text": "\toptional bool cumulative = 6;",
+          "line_sha256": "1597c268ac80a4745bd9de31ce845fbfd00797fa234103309813b14e94c2e24c"
+        }
+      ]
+    }
+  ],
+  "wire_parser_sha256": "6b63350e37279d15e1ba09be021ec61be3977758b586217813606123998fca58",
+  "donor_binary_witnesses": [
+    {
+      "server": "canary",
+      "git_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "path": "data/items/appearances.dat",
+      "blob_sha1": "2cc2f4910af4f002f99f39e486d1a91b1b56a728",
+      "blob_sha256": "aa44a154f30c7ed59acc25f246286396e4043851ef0b54ef3cf3951e46d1ce50",
+      "members": [
+        {
+          "item_id": 3031,
+          "object_payload_sha256": "cee3aed5868099552a3c0c2928d3094ff696bb145939a0c4840c6b1fd86a9dba",
+          "flags_payload_sha256": "291a0ef29c4a36584f2801e66ca40ee9b3f309d0ea88d25b00a6e31f32b9ca05",
+          "cumulative_field6_values": [
+            1
+          ]
+        },
+        {
+          "item_id": 3450,
+          "object_payload_sha256": "90ee352f2230310e6c921db04ce96ba5f124c808bd7d7e874f1a20f7068491ea",
+          "flags_payload_sha256": "005927ba3426f81ac4074d2cc01a851a054742f1e5c0a80fdf65c6192878043d",
+          "cumulative_field6_values": [
+            1
+          ]
+        }
+      ]
+    },
+    {
+      "server": "crystal",
+      "git_revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "path": "data/items/appearances.dat",
+      "blob_sha1": "07db48e8ec2a55f520c4fc54b9bf46f397e84dfb",
+      "blob_sha256": "6adb790d1064c2d31ffb2e5ce1a7aef376942ba672edea2adb6cafc620dd18f1",
+      "members": [
+        {
+          "item_id": 3031,
+          "object_payload_sha256": "cee3aed5868099552a3c0c2928d3094ff696bb145939a0c4840c6b1fd86a9dba",
+          "flags_payload_sha256": "291a0ef29c4a36584f2801e66ca40ee9b3f309d0ea88d25b00a6e31f32b9ca05",
+          "cumulative_field6_values": [
+            1
+          ]
+        },
+        {
+          "item_id": 3450,
+          "object_payload_sha256": "90ee352f2230310e6c921db04ce96ba5f124c808bd7d7e874f1a20f7068491ea",
+          "flags_payload_sha256": "005927ba3426f81ac4074d2cc01a851a054742f1e5c0a80fdf65c6192878043d",
+          "cumulative_field6_values": [
+            1
+          ]
+        }
+      ]
+    }
+  ]
+}

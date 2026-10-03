@@ -13,6 +13,7 @@ pub mod character_authority;
 pub mod character_authority_audit;
 pub mod character_build;
 pub mod character_death;
+pub mod character_proficiency;
 pub mod character_progression;
 pub mod charm_state;
 pub mod content_activation;

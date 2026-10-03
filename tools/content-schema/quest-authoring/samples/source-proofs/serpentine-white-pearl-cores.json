@@ -1,0 +1,609 @@
+{
+  "classification": "SOURCE_ONLY_PROJECTION_NOT_NATIVE_READY",
+  "records": [
+    {
+      "canonical_key": "oteryn:quest.serpentine_tower_quest",
+      "before_sha256": "30b1bab190cf1ba3c8bf2a8f44036b1a99b53a5e01f6de55dd1ee3a6f09fa519",
+      "after_sha256": "b6272830045086fe0498e3010008c50df352a9b0d6477622fe64251529b48e47",
+      "before": {
+        "identity": {
+          "key": "oteryn:quest.serpentine_tower_quest",
+          "revision": "quest-r1"
+        },
+        "display_name": "Serpentine Tower Quest",
+        "kind": "script_only",
+        "shown_in_quest_log": false,
+        "requirements": {
+          "premium": true,
+          "min_level": 0
+        },
+        "requirements_from_wiki": {
+          "premium": "yes",
+          "lvl": "0"
+        },
+        "requirements_unparsed": {},
+        "claims": [
+          {
+            "family": "RewardClaim",
+            "key": "oteryn:reward-claim.quest.u7_3.serpentine_tower.white_pearl",
+            "revision": "reward-claim-r1"
+          }
+        ],
+        "unresolved_claims": [],
+        "readiness": "waiting_data",
+        "completeness": "NOT_ASSESSED",
+        "reported_source_readiness": {
+          "quest": "canary:quest/serpentine_tower_quest",
+          "kind": "script_only",
+          "features": [
+            "reward_claim",
+            "trigger_use",
+            "world_object"
+          ],
+          "interactions": 2,
+          "data_gaps": {
+            "interactions_with_gaps": 2,
+            "unresolved_items": 8
+          }
+        },
+        "missing_data": [
+          {
+            "code": "reported_source_gap",
+            "field": "interactions_with_gaps",
+            "count": 2
+          },
+          {
+            "code": "reported_source_gap",
+            "field": "unresolved_items",
+            "count": 8
+          },
+          {
+            "code": "quest_native_lowering_missing"
+          }
+        ],
+        "source_refs": {
+          "quest": {
+            "family": "Quest",
+            "key": "canary:quest/serpentine_tower_quest",
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+          },
+          "claims": [
+            {
+              "family": "RewardClaim",
+              "key": "canary:reward-claim/quest/u7_3/serpentine_tower/white_pearl",
+              "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+            }
+          ],
+          "gates": []
+        },
+        "classification": "OTS_HYPOTHESIS_ONLY",
+        "source_data": {
+          "quest": {
+            "identity": {
+              "key": "canary:quest/serpentine_tower_quest",
+              "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+            },
+            "display_name": "Serpentine Tower Quest",
+            "kind": "script_only",
+            "shown_in_quest_log": false,
+            "wiki": {
+              "title": "Serpentine Tower Quest",
+              "pageid": 11239,
+              "revid": 835790
+            },
+            "claims": [
+              {
+                "family": "RewardClaim",
+                "key": "canary:reward-claim/quest/u7_3/serpentine_tower/white_pearl",
+                "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+              }
+            ],
+            "requirements_from_wiki": {
+              "premium": "yes",
+              "lvl": "0"
+            },
+            "requirements": {
+              "premium": true,
+              "min_level": 0
+            }
+          },
+          "progress": [],
+          "interactions": [
+            {
+              "identity": {
+                "key": "canary:interaction/others/actions_serpentine_tower_lever",
+                "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+              },
+              "source": {
+                "edge": "USE",
+                "callback": "onUse",
+                "target_registrations": [
+                  "aid(5633)"
+                ]
+              },
+              "rules": [
+                {
+                  "branch": [
+                    {
+                      "when": {
+                        "object": {
+                          "role": "source",
+                          "field": "item_type",
+                          "op": "==",
+                          "item": {
+                            "family": "Item",
+                            "key": "canary:item/2772",
+                            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                          }
+                        },
+                        "negate": false
+                      },
+                      "then": [
+                        {
+                          "owner": "WorldObject",
+                          "operation": "REMOVE",
+                          "value_source_line": 15,
+                          "repeated": true
+                        },
+                        {
+                          "owner": "WorldObject",
+                          "operation": "TRANSFORM",
+                          "value_source_line": 19
+                        }
+                      ]
+                    }
+                  ],
+                  "otherwise": [
+                    {
+                      "owner": "WorldObject",
+                      "status": "blocked",
+                      "reason": "world-object operation kind not yet classified from source (D38 owner accepted; re-transcription pending)",
+                      "source_line": 25,
+                      "repeated": true
+                    },
+                    {
+                      "owner": "WorldObject",
+                      "operation": "TRANSFORM",
+                      "value_source_line": 28
+                    }
+                  ]
+                }
+              ],
+              "anchors": [],
+              "unresolved": [
+                {
+                  "line": 11,
+                  "reason": "statement outside the transcribed vocabulary"
+                },
+                {
+                  "line": 13,
+                  "reason": "statement outside the transcribed vocabulary"
+                },
+                {
+                  "line": 12,
+                  "reason": "loop with its own control flow"
+                },
+                {
+                  "line": 21,
+                  "reason": "statement outside the transcribed vocabulary"
+                },
+                {
+                  "line": 24,
+                  "reason": "statement outside the transcribed vocabulary"
+                }
+              ]
+            },
+            {
+              "identity": {
+                "key": "canary:interaction/others/actions_serpentine_tower_torch",
+                "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+              },
+              "source": {
+                "edge": "USE",
+                "callback": "onUse",
+                "target_registrations": [
+                  "aid(5632)"
+                ]
+              },
+              "rules": [
+                {
+                  "branch": [
+                    {
+                      "when": {
+                        "unresolved": {
+                          "line": 4
+                        }
+                      },
+                      "then": [
+                        {
+                          "owner": "WorldObject",
+                          "operation": "REMOVE",
+                          "value_source_line": 5
+                        },
+                        {
+                          "owner": "Presentation",
+                          "effect": "magic_effect",
+                          "authoritative": false
+                        }
+                      ]
+                    }
+                  ],
+                  "otherwise": [
+                    {
+                      "owner": "Presentation",
+                      "effect": "magic_effect",
+                      "authoritative": false
+                    }
+                  ]
+                }
+              ],
+              "anchors": [],
+              "unresolved": []
+            }
+          ],
+          "gates": [],
+          "interaction_source_conflicts": [],
+          "reference_gaps": []
+        },
+        "native_lowering": {
+          "state": "WAITING_IMPLEMENTATION",
+          "canonical_progress_refs": [],
+          "canonical_interaction_refs": [],
+          "reason": "QuestState tracks, bounds, transitions and requested-by bindings have not been lowered"
+        },
+        "wiki": {
+          "title": "Serpentine Tower Quest",
+          "pageid": 11239,
+          "revid": 835790
+        }
+      },
+      "after": {
+        "identity": {
+          "key": "oteryn:quest.serpentine_tower_quest",
+          "revision": "quest-r1"
+        },
+        "display_name": "Serpentine Tower Quest",
+        "kind": "script_only",
+        "shown_in_quest_log": false,
+        "requirements": {
+          "premium": true,
+          "min_level": 0
+        },
+        "requirements_from_wiki": {
+          "premium": "yes",
+          "lvl": "0"
+        },
+        "requirements_unparsed": {},
+        "claims": [
+          {
+            "family": "RewardClaim",
+            "key": "oteryn:reward-claim.quest.u7_3.serpentine_tower.white_pearl",
+            "revision": "reward-claim-r1"
+          }
+        ],
+        "unresolved_claims": [],
+        "readiness": "waiting_data",
+        "completeness": "NOT_ASSESSED",
+        "reported_source_readiness": {
+          "quest": "canary:quest/serpentine_tower_quest",
+          "kind": "script_only",
+          "features": [
+            "reward_claim",
+            "teleport",
+            "trigger_step",
+            "trigger_use",
+            "world_object"
+          ],
+          "interactions": 3,
+          "data_gaps": {
+            "interactions_with_gaps": 3,
+            "unresolved_items": 13
+          }
+        },
+        "missing_data": [
+          {
+            "code": "reported_source_gap",
+            "field": "interactions_with_gaps",
+            "count": 3
+          },
+          {
+            "code": "reported_source_gap",
+            "field": "unresolved_items",
+            "count": 13
+          },
+          {
+            "code": "quest_native_lowering_missing"
+          }
+        ],
+        "source_refs": {
+          "quest": {
+            "family": "Quest",
+            "key": "canary:quest/serpentine_tower_quest",
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+          },
+          "claims": [
+            {
+              "family": "RewardClaim",
+              "key": "canary:reward-claim/quest/u7_3/serpentine_tower/white_pearl",
+              "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+            }
+          ],
+          "gates": []
+        },
+        "classification": "OTS_HYPOTHESIS_ONLY",
+        "source_data": {
+          "quest": {
+            "identity": {
+              "key": "canary:quest/serpentine_tower_quest",
+              "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+            },
+            "display_name": "Serpentine Tower Quest",
+            "kind": "script_only",
+            "shown_in_quest_log": false,
+            "wiki": {
+              "title": "Serpentine Tower Quest",
+              "pageid": 11239,
+              "revid": 835790
+            },
+            "claims": [
+              {
+                "family": "RewardClaim",
+                "key": "canary:reward-claim/quest/u7_3/serpentine_tower/white_pearl",
+                "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+              }
+            ],
+            "requirements_from_wiki": {
+              "premium": "yes",
+              "lvl": "0"
+            },
+            "requirements": {
+              "premium": true,
+              "min_level": 0
+            }
+          },
+          "progress": [],
+          "interactions": [
+            {
+              "identity": {
+                "key": "canary:interaction/others/actions_serpentine_tower_lever",
+                "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+              },
+              "source": {
+                "edge": "USE",
+                "callback": "onUse",
+                "target_registrations": [
+                  "aid(5633)"
+                ]
+              },
+              "rules": [
+                {
+                  "branch": [
+                    {
+                      "when": {
+                        "object": {
+                          "role": "source",
+                          "field": "item_type",
+                          "op": "==",
+                          "item": {
+                            "family": "Item",
+                            "key": "canary:item/2772",
+                            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                          }
+                        },
+                        "negate": false
+                      },
+                      "then": [
+                        {
+                          "owner": "WorldObject",
+                          "operation": "REMOVE",
+                          "value_source_line": 15,
+                          "repeated": true
+                        },
+                        {
+                          "owner": "WorldObject",
+                          "operation": "TRANSFORM",
+                          "value_source_line": 19
+                        }
+                      ]
+                    }
+                  ],
+                  "otherwise": [
+                    {
+                      "owner": "WorldObject",
+                      "status": "blocked",
+                      "reason": "world-object operation kind not yet classified from source (D38 owner accepted; re-transcription pending)",
+                      "source_line": 25,
+                      "repeated": true
+                    },
+                    {
+                      "owner": "WorldObject",
+                      "operation": "TRANSFORM",
+                      "value_source_line": 28
+                    }
+                  ]
+                }
+              ],
+              "anchors": [],
+              "unresolved": [
+                {
+                  "line": 11,
+                  "reason": "statement outside the transcribed vocabulary"
+                },
+                {
+                  "line": 13,
+                  "reason": "statement outside the transcribed vocabulary"
+                },
+                {
+                  "line": 12,
+                  "reason": "loop with its own control flow"
+                },
+                {
+                  "line": 21,
+                  "reason": "statement outside the transcribed vocabulary"
+                },
+                {
+                  "line": 24,
+                  "reason": "statement outside the transcribed vocabulary"
+                }
+              ]
+            },
+            {
+              "identity": {
+                "key": "canary:interaction/others/actions_serpentine_tower_torch",
+                "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+              },
+              "source": {
+                "edge": "USE",
+                "callback": "onUse",
+                "target_registrations": [
+                  "aid(5632)"
+                ]
+              },
+              "rules": [
+                {
+                  "branch": [
+                    {
+                      "when": {
+                        "unresolved": {
+                          "line": 4
+                        }
+                      },
+                      "then": [
+                        {
+                          "owner": "WorldObject",
+                          "operation": "REMOVE",
+                          "value_source_line": 5
+                        },
+                        {
+                          "owner": "Presentation",
+                          "effect": "magic_effect",
+                          "authoritative": false
+                        }
+                      ]
+                    }
+                  ],
+                  "otherwise": [
+                    {
+                      "owner": "Presentation",
+                      "effect": "magic_effect",
+                      "authoritative": false
+                    }
+                  ]
+                }
+              ],
+              "anchors": [],
+              "unresolved": []
+            },
+            {
+              "identity": {
+                "key": "canary:interaction/white_pearl/movements_white_pearl",
+                "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+              },
+              "source": {
+                "edge": "ON_ENTER",
+                "callback": "onStepIn",
+                "target_registrations": [
+                  "aid(index)",
+                  "type(\"stepin\")"
+                ]
+              },
+              "rules": [
+                {
+                  "branch": [
+                    {
+                      "when": {
+                        "actor_is_player": true,
+                        "negate": true
+                      },
+                      "then": []
+                    }
+                  ],
+                  "otherwise": [
+                    {
+                      "branch": [
+                        {
+                          "when": {
+                            "unresolved": {
+                              "line": 22
+                            }
+                          },
+                          "then": []
+                        }
+                      ],
+                      "otherwise": [
+                        {
+                          "branch": [
+                            {
+                              "when": {
+                                "unresolved": {
+                                  "line": 26
+                                }
+                              },
+                              "then": [
+                                {
+                                  "branch": [
+                                    {
+                                      "when": {
+                                        "unresolved": {
+                                          "line": 28
+                                        }
+                                      },
+                                      "then": [
+                                        {
+                                          "owner": "Movement",
+                                          "status": "blocked",
+                                          "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
+                                          "to_source_line": 29
+                                        },
+                                        {
+                                          "owner": "Presentation",
+                                          "effect": "magic_effect",
+                                          "authoritative": false
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "owner": "Movement",
+                          "status": "blocked",
+                          "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
+                          "to_source_line": 35
+                        },
+                        {
+                          "owner": "Presentation",
+                          "effect": "magic_effect",
+                          "authoritative": false
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ],
+              "anchors": [],
+              "unresolved": []
+            }
+          ],
+          "gates": [],
+          "interaction_source_conflicts": [],
+          "reference_gaps": []
+        },
+        "native_lowering": {
+          "state": "WAITING_IMPLEMENTATION",
+          "canonical_progress_refs": [],
+          "canonical_interaction_refs": [],
+          "reason": "QuestState tracks, bounds, transitions and requested-by bindings have not been lowered"
+        },
+        "wiki": {
+          "title": "Serpentine Tower Quest",
+          "pageid": 11239,
+          "revid": 835790
+        }
+      }
+    }
+  ]
+}

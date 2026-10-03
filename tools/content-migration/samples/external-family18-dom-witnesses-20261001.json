@@ -1,0 +1,585 @@
+{
+  "records": {
+    "51702": {
+      "article_revision": "UNKNOWN",
+      "article_revision_timestamp": "UNKNOWN",
+      "capture_utc": "2026-10-01T22:45:02.901403+00:00",
+      "excerpts": {
+        "document_title": {
+          "offset_in_full_html_declared": 220,
+          "raw": "<title>Items: The Tale of Joran and Yvette - Part I - Tibia ~ Tibiopedia.pl</title>",
+          "sha256": "c600d26b5cbb5b54959dc54222cc6b8153a0f72505199f63308732e145b88285"
+        },
+        "own_caption_prefix": {
+          "offset_in_full_html_declared": 41977,
+          "raw": "<caption>\n\t\t\t\tThe Tale of Joran and Yvette - Part I\t\t\t\t\t\t\t\t\t",
+          "sha256": "109b10b6cfd2e8ce53c6a952c507c40ca818058f20934bdc89ea2413cfb3b689"
+        },
+        "own_category_header": {
+          "offset_in_full_html_declared": 42512,
+          "raw": "<tr>\n\t\t\t\t<td width=\"29.9%\" colspan=\"2\" rowspan=\"4\" class=\"monsterPic\"><img src=\"https://tibiopedia.pl/images/static/items/the_tale_of_joran_and_yvette_-_part_i.gif\" alt=\"The Tale of Joran and Yvette - Part I\" /></td>\n\t\t\t\t<td width=\"31.8%\" colspan=\"5\" style=\"border-bottom:0;border-top:0;\"><center><strong>Class</strong></center></td>\n\t\t\t\t<td width=\"38.3%\" colspan=\"4\" style=\"border-bottom:0;border-top:0;\"><center><strong>Subclass</strong></center></td>\n\t\t\t</tr>",
+          "sha256": "f2c31b764e5f90087ff7bd74ec6673d082102ac0331bc3fff31127f74831861b"
+        },
+        "own_category_values": {
+          "offset_in_full_html_declared": 42978,
+          "raw": "<tr>\n\t\t\t\t<td width=\"31.8%\" colspan=\"5\"><center><a class=\"thinlink\" href=\"https://tibiopedia.pl/items/others\">Others</a></center></td>\n\t\t\t\t<td width=\"38.3%\" colspan=\"4\"><center><a class=\"thinlink\" href=\"https://tibiopedia.pl/items/others#quest\">Quest</a></center></td>\n\t\t\t</tr>",
+          "sha256": "266942eea8e06d9bf1ecb0e7228b52839023b17164fdbab9ff4352337c748d45"
+        }
+      },
+      "full_html_retained_in_repository": false,
+      "full_html_sha256_declared_capture_coordinate": "41b1237f4a145fd034675fabff2d0377ebcfbea614415fdcd219ab5a7700c711",
+      "full_html_utf8_bytes_declared_capture_coordinate": 90168,
+      "http_status": 200,
+      "method": "Normal anonymous HTTP, guest language/layout selection only, two bounded concurrent public page requests, no login/private data/no retries",
+      "raw_numeric_itemid": "NOT_ESTABLISHED; ID here is a DERIVED join key, not a source field",
+      "source_url": "https://tibiopedia.pl/items/The_Tale_of_Joran_and_Yvette_-_Part_I"
+    },
+    "51703": {
+      "article_revision": "UNKNOWN",
+      "article_revision_timestamp": "UNKNOWN",
+      "capture_utc": "2026-10-01T22:45:03.172962+00:00",
+      "excerpts": {
+        "document_title": {
+          "offset_in_full_html_declared": 220,
+          "raw": "<title>Items: The Tale of Joran and Yvette - Part II - Tibia ~ Tibiopedia.pl</title>",
+          "sha256": "2310c5c00dafa487e4b75c686c699fcaa3d801ec99d7ad337b35cb8577b55575"
+        },
+        "own_caption_prefix": {
+          "offset_in_full_html_declared": 41979,
+          "raw": "<caption>\n\t\t\t\tThe Tale of Joran and Yvette - Part II\t\t\t\t\t\t\t\t\t",
+          "sha256": "91fd6e81ed59147f91525e49731591ee437a6d776ac2d9f0c053fba7f7a7f949"
+        },
+        "own_category_header": {
+          "offset_in_full_html_declared": 42517,
+          "raw": "<tr>\n\t\t\t\t<td width=\"29.9%\" colspan=\"2\" rowspan=\"4\" class=\"monsterPic\"><img src=\"https://tibiopedia.pl/images/static/items/the_tale_of_joran_and_yvette_-_part_ii.gif\" alt=\"The Tale of Joran and Yvette - Part II\" /></td>\n\t\t\t\t<td width=\"31.8%\" colspan=\"5\" style=\"border-bottom:0;border-top:0;\"><center><strong>Class</strong></center></td>\n\t\t\t\t<td width=\"38.3%\" colspan=\"4\" style=\"border-bottom:0;border-top:0;\"><center><strong>Subclass</strong></center></td>\n\t\t\t</tr>",
+          "sha256": "4324979a3479bb2c99daf8d9c821030f030abccb22a50c78cfe2df1a3bb8dd2d"
+        },
+        "own_category_values": {
+          "offset_in_full_html_declared": 42985,
+          "raw": "<tr>\n\t\t\t\t<td width=\"31.8%\" colspan=\"5\"><center><a class=\"thinlink\" href=\"https://tibiopedia.pl/items/others\">Others</a></center></td>\n\t\t\t\t<td width=\"38.3%\" colspan=\"4\"><center><a class=\"thinlink\" href=\"https://tibiopedia.pl/items/others#quest\">Quest</a></center></td>\n\t\t\t</tr>",
+          "sha256": "266942eea8e06d9bf1ecb0e7228b52839023b17164fdbab9ff4352337c748d45"
+        }
+      },
+      "full_html_retained_in_repository": false,
+      "full_html_sha256_declared_capture_coordinate": "add0bafe7e04dbe4ab9bad7c513184090344c296cef907f4ed44344fe39be1d8",
+      "full_html_utf8_bytes_declared_capture_coordinate": 90176,
+      "http_status": 200,
+      "method": "Normal anonymous HTTP, guest language/layout selection only, two bounded concurrent public page requests, no login/private data/no retries",
+      "raw_numeric_itemid": "NOT_ESTABLISHED; ID here is a DERIVED join key, not a source field",
+      "source_url": "https://tibiopedia.pl/items/The_Tale_of_Joran_and_Yvette_-_Part_II"
+    },
+    "51704": {
+      "article_revision": "UNKNOWN",
+      "article_revision_timestamp": "UNKNOWN",
+      "capture_utc": "2026-10-01T22:45:03.244016+00:00",
+      "excerpts": {
+        "document_title": {
+          "offset_in_full_html_declared": 220,
+          "raw": "<title>Items: The Tale of Joran and Yvette - Part III - Tibia ~ Tibiopedia.pl</title>",
+          "sha256": "aeec2e768f6bfb7c16ba2aabb89442009d03a435c2b0a60aad5312bd527b482b"
+        },
+        "own_caption_prefix": {
+          "offset_in_full_html_declared": 41981,
+          "raw": "<caption>\n\t\t\t\tThe Tale of Joran and Yvette - Part III\t\t\t\t\t\t\t\t\t",
+          "sha256": "5141d6d6a6efe8090fdd216899cdeccdb2e9ebe3e69f9dcfeb7e629a9827140e"
+        },
+        "own_category_header": {
+          "offset_in_full_html_declared": 42522,
+          "raw": "<tr>\n\t\t\t\t<td width=\"29.9%\" colspan=\"2\" rowspan=\"4\" class=\"monsterPic\"><img src=\"https://tibiopedia.pl/images/static/items/the_tale_of_joran_and_yvette_-_part_iii.gif\" alt=\"The Tale of Joran and Yvette - Part III\" /></td>\n\t\t\t\t<td width=\"31.8%\" colspan=\"5\" style=\"border-bottom:0;border-top:0;\"><center><strong>Class</strong></center></td>\n\t\t\t\t<td width=\"38.3%\" colspan=\"4\" style=\"border-bottom:0;border-top:0;\"><center><strong>Subclass</strong></center></td>\n\t\t\t</tr>",
+          "sha256": "9d7b625497f6af55fce6e940f513d8c7a1f55fcc1ad93aa21af3371df4ab137c"
+        },
+        "own_category_values": {
+          "offset_in_full_html_declared": 42992,
+          "raw": "<tr>\n\t\t\t\t<td width=\"31.8%\" colspan=\"5\"><center><a class=\"thinlink\" href=\"https://tibiopedia.pl/items/others\">Others</a></center></td>\n\t\t\t\t<td width=\"38.3%\" colspan=\"4\"><center><a class=\"thinlink\" href=\"https://tibiopedia.pl/items/others#quest\">Quest</a></center></td>\n\t\t\t</tr>",
+          "sha256": "266942eea8e06d9bf1ecb0e7228b52839023b17164fdbab9ff4352337c748d45"
+        }
+      },
+      "full_html_retained_in_repository": false,
+      "full_html_sha256_declared_capture_coordinate": "742f0e07b36d3819d14b667e636c7e65c0b6415654efc0be06266ee58522df6a",
+      "full_html_utf8_bytes_declared_capture_coordinate": 90184,
+      "http_status": 200,
+      "method": "Normal anonymous HTTP, guest language/layout selection only, two bounded concurrent public page requests, no login/private data/no retries",
+      "raw_numeric_itemid": "NOT_ESTABLISHED; ID here is a DERIVED join key, not a source field",
+      "source_url": "https://tibiopedia.pl/items/The_Tale_of_Joran_and_Yvette_-_Part_III"
+    },
+    "52635": {
+      "article_revision": "UNKNOWN",
+      "article_revision_timestamp": "UNKNOWN",
+      "capture_utc": "2026-10-01T22:45:02.561966+00:00",
+      "excerpts": {
+        "document_title": {
+          "offset_in_full_html_declared": 220,
+          "raw": "<title>Items: Salvaged Iron Parts - Tibia ~ Tibiopedia.pl</title>",
+          "sha256": "60cc9ebbcb1bc0c50df57c6ecaa77a1baeac44d1ba549cb814cbd52432e0bfe1"
+        },
+        "own_caption_prefix": {
+          "offset_in_full_html_declared": 41941,
+          "raw": "<caption>\n\t\t\t\tSalvaged Iron Parts\t\t\t\t\t\t\t\t\t",
+          "sha256": "6da355f26417882e59ac67b2e5003a641bc03c44f3013a91d39159bc829493b5"
+        },
+        "own_category_header": {
+          "offset_in_full_html_declared": 42422,
+          "raw": "<tr>\n\t\t\t\t<td width=\"29.9%\" colspan=\"2\" rowspan=\"4\" class=\"monsterPic\"><img src=\"https://tibiopedia.pl/images/static/items/salvaged_iron_parts.gif\" alt=\"Salvaged Iron Parts\" /></td>\n\t\t\t\t<td width=\"31.8%\" colspan=\"5\" style=\"border-bottom:0;border-top:0;\"><center><strong>Class</strong></center></td>\n\t\t\t\t<td width=\"38.3%\" colspan=\"4\" style=\"border-bottom:0;border-top:0;\"><center><strong>Subclass</strong></center></td>\n\t\t\t</tr>",
+          "sha256": "92c5326b0f55127e9e37b523ac9a883331eb86566030f4eaa8dd071504a89ece"
+        },
+        "own_category_values": {
+          "offset_in_full_html_declared": 42852,
+          "raw": "<tr>\n\t\t\t\t<td width=\"31.8%\" colspan=\"5\"><center><a class=\"thinlink\" href=\"https://tibiopedia.pl/items/others\">Others</a></center></td>\n\t\t\t\t<td width=\"38.3%\" colspan=\"4\"><center><a class=\"thinlink\" href=\"https://tibiopedia.pl/items/others#quest\">Quest</a></center></td>\n\t\t\t</tr>",
+          "sha256": "266942eea8e06d9bf1ecb0e7228b52839023b17164fdbab9ff4352337c748d45"
+        }
+      },
+      "full_html_retained_in_repository": false,
+      "full_html_sha256_declared_capture_coordinate": "d5893465bdcf695e0e552e9acc4546820dd2541fa384d2e4e7236894868ac4b5",
+      "full_html_utf8_bytes_declared_capture_coordinate": 90987,
+      "http_status": 200,
+      "method": "Normal anonymous HTTP, guest language/layout selection only, two bounded concurrent public page requests, no login/private data/no retries",
+      "raw_numeric_itemid": "NOT_ESTABLISHED; ID here is a DERIVED join key, not a source field",
+      "source_url": "https://tibiopedia.pl/items/Salvaged_Iron_Parts"
+    },
+    "52637": {
+      "article_revision": "UNKNOWN",
+      "article_revision_timestamp": "UNKNOWN",
+      "capture_utc": "2026-10-01T22:45:02.005364+00:00",
+      "excerpts": {
+        "document_title": {
+          "offset_in_full_html_declared": 220,
+          "raw": "<title>Items: Repair Kit For Boats - Tibia ~ Tibiopedia.pl</title>",
+          "sha256": "e75471404be49be5438620c0e77952cb74c0f92840299d7627be90df9f008ac7"
+        },
+        "own_caption_prefix": {
+          "offset_in_full_html_declared": 41943,
+          "raw": "<caption>\n\t\t\t\tRepair Kit For Boats\t\t\t\t\t\t\t\t\t",
+          "sha256": "9c32ce57564c5e0a2099e1d504bd1a921c59926eabd18849ea05b003ec5bd425"
+        },
+        "own_category_header": {
+          "offset_in_full_html_declared": 42427,
+          "raw": "<tr>\n\t\t\t\t<td width=\"29.9%\" colspan=\"2\" rowspan=\"4\" class=\"monsterPic\"><img src=\"https://tibiopedia.pl/images/static/items/repair_kit_for_boats.gif\" alt=\"Repair Kit For Boats\" /></td>\n\t\t\t\t<td width=\"31.8%\" colspan=\"5\" style=\"border-bottom:0;border-top:0;\"><center><strong>Class</strong></center></td>\n\t\t\t\t<td width=\"38.3%\" colspan=\"4\" style=\"border-bottom:0;border-top:0;\"><center><strong>Subclass</strong></center></td>\n\t\t\t</tr>",
+          "sha256": "594077b4ec14c9808a4dc29d9c4033d641d1f62b3cd5564082da0690df564b70"
+        },
+        "own_category_values": {
+          "offset_in_full_html_declared": 42859,
+          "raw": "<tr>\n\t\t\t\t<td width=\"31.8%\" colspan=\"5\"><center><a class=\"thinlink\" href=\"https://tibiopedia.pl/items/others\">Others</a></center></td>\n\t\t\t\t<td width=\"38.3%\" colspan=\"4\"><center><a class=\"thinlink\" href=\"https://tibiopedia.pl/items/others#quest\">Quest</a></center></td>\n\t\t\t</tr>",
+          "sha256": "266942eea8e06d9bf1ecb0e7228b52839023b17164fdbab9ff4352337c748d45"
+        }
+      },
+      "full_html_retained_in_repository": false,
+      "full_html_sha256_declared_capture_coordinate": "689bfb3a25c028db5e2f6bd27f0189da06ea560c76a9d70fb8a74ac32f0adc08",
+      "full_html_utf8_bytes_declared_capture_coordinate": 93077,
+      "http_status": 200,
+      "method": "Normal anonymous HTTP, guest language/layout selection only, two bounded concurrent public page requests, no login/private data/no retries",
+      "raw_numeric_itemid": "NOT_ESTABLISHED; ID here is a DERIVED join key, not a source field",
+      "source_url": "https://tibiopedia.pl/items/Repair_Kit_For_Boats"
+    },
+    "52638": {
+      "article_revision": "UNKNOWN",
+      "article_revision_timestamp": "UNKNOWN",
+      "capture_utc": "2026-10-01T22:45:00.063530+00:00",
+      "excerpts": {
+        "document_title": {
+          "offset_in_full_html_declared": 220,
+          "raw": "<title>Items: Marinated Sturgeon - Tibia ~ Tibiopedia.pl</title>",
+          "sha256": "efe66bcf01cb531e0d2e8251a6d37d96b8b7cb0cdf5bb82750e03e3ca2c30cf3"
+        },
+        "own_caption_prefix": {
+          "offset_in_full_html_declared": 41939,
+          "raw": "<caption>\n\t\t\t\tMarinated Sturgeon\t\t\t\t\t\t\t\t\t",
+          "sha256": "1fc0bd84afc18ff104fcf71845f49458c0091a8fddaa1ee2b754594cbf8c95cf"
+        },
+        "own_category_header": {
+          "offset_in_full_html_declared": 42417,
+          "raw": "<tr>\n\t\t\t\t<td width=\"29.9%\" colspan=\"2\" rowspan=\"4\" class=\"monsterPic\"><img src=\"https://tibiopedia.pl/images/static/items/marinated_sturgeon.gif\" alt=\"Marinated Sturgeon\" /></td>\n\t\t\t\t<td width=\"31.8%\" colspan=\"5\" style=\"border-bottom:0;border-top:0;\"><center><strong>Class</strong></center></td>\n\t\t\t\t<td width=\"38.3%\" colspan=\"4\" style=\"border-bottom:0;border-top:0;\"><center><strong>Subclass</strong></center></td>\n\t\t\t</tr>",
+          "sha256": "b74ef9cc0aa37f9869f54cdced893669ed40f7cbcaa99a386f5024a17e8544e5"
+        },
+        "own_category_values": {
+          "offset_in_full_html_declared": 42845,
+          "raw": "<tr>\n\t\t\t\t<td width=\"31.8%\" colspan=\"5\"><center><a class=\"thinlink\" href=\"https://tibiopedia.pl/items/others\">Others</a></center></td>\n\t\t\t\t<td width=\"38.3%\" colspan=\"4\"><center><a class=\"thinlink\" href=\"https://tibiopedia.pl/items/others#taming\">Taming</a></center></td>\n\t\t\t</tr>",
+          "sha256": "2a0ff36d071df1f35ed2921412e5436907e63c7cf743ac1b96e6e597f02df922"
+        }
+      },
+      "full_html_retained_in_repository": false,
+      "full_html_sha256_declared_capture_coordinate": "3bbbb7bbb4f10ac8cfacb5e5c6d0df0e011ef746d5dd0f9db0e289631f480436",
+      "full_html_utf8_bytes_declared_capture_coordinate": 94309,
+      "http_status": 200,
+      "method": "Normal anonymous HTTP, guest language/layout selection only, two bounded concurrent public page requests, no login/private data/no retries",
+      "raw_numeric_itemid": "NOT_ESTABLISHED; ID here is a DERIVED join key, not a source field",
+      "source_url": "https://tibiopedia.pl/items/Marinated_Sturgeon"
+    },
+    "52743": {
+      "article_revision": "UNKNOWN",
+      "article_revision_timestamp": "UNKNOWN",
+      "capture_utc": "2026-10-01T22:45:02.512364+00:00",
+      "excerpts": {
+        "document_title": {
+          "offset_in_full_html_declared": 220,
+          "raw": "<title>Items: Salvaged Silver Parts - Tibia ~ Tibiopedia.pl</title>",
+          "sha256": "0bf91326affde99f09961eb26225a0659b9699d25ad7b9ae2acfe39cd8c80cd6"
+        },
+        "own_caption_prefix": {
+          "offset_in_full_html_declared": 41945,
+          "raw": "<caption>\n\t\t\t\tSalvaged Silver Parts\t\t\t\t\t\t\t\t\t",
+          "sha256": "6a02cd875317d8db6881ecb86015fa2e48e25a0b4568f0c022b7a9bebac5a34d"
+        },
+        "own_category_header": {
+          "offset_in_full_html_declared": 42432,
+          "raw": "<tr>\n\t\t\t\t<td width=\"29.9%\" colspan=\"2\" rowspan=\"4\" class=\"monsterPic\"><img src=\"https://tibiopedia.pl/images/static/items/salvaged_silver_parts.gif\" alt=\"Salvaged Silver Parts\" /></td>\n\t\t\t\t<td width=\"31.8%\" colspan=\"5\" style=\"border-bottom:0;border-top:0;\"><center><strong>Class</strong></center></td>\n\t\t\t\t<td width=\"38.3%\" colspan=\"4\" style=\"border-bottom:0;border-top:0;\"><center><strong>Subclass</strong></center></td>\n\t\t\t</tr>",
+          "sha256": "ae155bda4207cbc5d4dbf00f6265760b3087dea8556f80ea0d8f4e42ca484281"
+        },
+        "own_category_values": {
+          "offset_in_full_html_declared": 42866,
+          "raw": "<tr>\n\t\t\t\t<td width=\"31.8%\" colspan=\"5\"><center><a class=\"thinlink\" href=\"https://tibiopedia.pl/items/others\">Others</a></center></td>\n\t\t\t\t<td width=\"38.3%\" colspan=\"4\"><center><a class=\"thinlink\" href=\"https://tibiopedia.pl/items/others#quest\">Quest</a></center></td>\n\t\t\t</tr>",
+          "sha256": "266942eea8e06d9bf1ecb0e7228b52839023b17164fdbab9ff4352337c748d45"
+        }
+      },
+      "full_html_retained_in_repository": false,
+      "full_html_sha256_declared_capture_coordinate": "62181c873f5e306e9aafc38eab3f8e408149779badb23d84653a76b1e74a1b0c",
+      "full_html_utf8_bytes_declared_capture_coordinate": 91022,
+      "http_status": 200,
+      "method": "Normal anonymous HTTP, guest language/layout selection only, two bounded concurrent public page requests, no login/private data/no retries",
+      "raw_numeric_itemid": "NOT_ESTABLISHED; ID here is a DERIVED join key, not a source field",
+      "source_url": "https://tibiopedia.pl/items/Salvaged_Silver_Parts"
+    },
+    "52744": {
+      "article_revision": "UNKNOWN",
+      "article_revision_timestamp": "UNKNOWN",
+      "capture_utc": "2026-10-01T22:45:01.587419+00:00",
+      "excerpts": {
+        "document_title": {
+          "offset_in_full_html_declared": 220,
+          "raw": "<title>Items: Personal Letter of Michael the Stalwart I - Tibia ~ Tibiopedia.pl</title>",
+          "sha256": "34cb3fc06d017c76fe4dee6a4e39806833f4dbcd8f15b9f752e72218d1c52fad"
+        },
+        "own_caption_prefix": {
+          "offset_in_full_html_declared": 41985,
+          "raw": "<caption>\n\t\t\t\tPersonal Letter of Michael the Stalwart I\t\t\t\t\t\t\t\t\t",
+          "sha256": "0d63f8b31be4a3ad1c93797fab0ab58a5883167ba5743e36ffd92d916941d98b"
+        },
+        "own_category_header": {
+          "offset_in_full_html_declared": 42532,
+          "raw": "<tr>\n\t\t\t\t<td width=\"29.9%\" colspan=\"2\" rowspan=\"4\" class=\"monsterPic\"><img src=\"https://tibiopedia.pl/images/static/items/personal_letter_of_michael_the_stalwart_i.gif\" alt=\"Personal Letter of Michael the Stalwart I\" /></td>\n\t\t\t\t<td width=\"31.8%\" colspan=\"5\" style=\"border-bottom:0;border-top:0;\"><center><strong>Class</strong></center></td>\n\t\t\t\t<td width=\"38.3%\" colspan=\"4\" style=\"border-bottom:0;border-top:0;\"><center><strong>Subclass</strong></center></td>\n\t\t\t</tr>",
+          "sha256": "ac24170379f529905bb2e15cb972109c0ab3691917347b3f99eb5253b98923fb"
+        },
+        "own_category_values": {
+          "offset_in_full_html_declared": 43006,
+          "raw": "<tr>\n\t\t\t\t<td width=\"31.8%\" colspan=\"5\"><center><a class=\"thinlink\" href=\"https://tibiopedia.pl/items/others\">Others</a></center></td>\n\t\t\t\t<td width=\"38.3%\" colspan=\"4\"><center><a class=\"thinlink\" href=\"https://tibiopedia.pl/items/others#quest\">Quest</a></center></td>\n\t\t\t</tr>",
+          "sha256": "266942eea8e06d9bf1ecb0e7228b52839023b17164fdbab9ff4352337c748d45"
+        }
+      },
+      "full_html_retained_in_repository": false,
+      "full_html_sha256_declared_capture_coordinate": "8ddb7a37ce294076b901155bace9233dbf482b3c5ddb2888ccf06a490a427358",
+      "full_html_utf8_bytes_declared_capture_coordinate": 92366,
+      "http_status": 200,
+      "method": "Normal anonymous HTTP, guest language/layout selection only, two bounded concurrent public page requests, no login/private data/no retries",
+      "raw_numeric_itemid": "NOT_ESTABLISHED; ID here is a DERIVED join key, not a source field",
+      "source_url": "https://tibiopedia.pl/items/Personal_Letter_of_Michael_the_Stalwart_I"
+    },
+    "52758": {
+      "article_revision": "UNKNOWN",
+      "article_revision_timestamp": "UNKNOWN",
+      "capture_utc": "2026-10-01T22:45:02.218542+00:00",
+      "excerpts": {
+        "document_title": {
+          "offset_in_full_html_declared": 220,
+          "raw": "<title>Items: Salvaged Bronze Parts - Tibia ~ Tibiopedia.pl</title>",
+          "sha256": "b9fa72aa063417984dbc63d63af0d3a4c48f81bde5d4a6fa2b01a04999fdd40c"
+        },
+        "own_caption_prefix": {
+          "offset_in_full_html_declared": 41945,
+          "raw": "<caption>\n\t\t\t\tSalvaged Bronze Parts\t\t\t\t\t\t\t\t\t",
+          "sha256": "651cb419c491f0b3390865551bb14fd019cce5847fcc4e78354ff7df7d5b6e96"
+        },
+        "own_category_header": {
+          "offset_in_full_html_declared": 42432,
+          "raw": "<tr>\n\t\t\t\t<td width=\"29.9%\" colspan=\"2\" rowspan=\"4\" class=\"monsterPic\"><img src=\"https://tibiopedia.pl/images/static/items/salvaged_bronze_parts.gif\" alt=\"Salvaged Bronze Parts\" /></td>\n\t\t\t\t<td width=\"31.8%\" colspan=\"5\" style=\"border-bottom:0;border-top:0;\"><center><strong>Class</strong></center></td>\n\t\t\t\t<td width=\"38.3%\" colspan=\"4\" style=\"border-bottom:0;border-top:0;\"><center><strong>Subclass</strong></center></td>\n\t\t\t</tr>",
+          "sha256": "99d5c7d3894f3de41c8ab41a930857c6e797002b492eb7c39a2dc1c471f89453"
+        },
+        "own_category_values": {
+          "offset_in_full_html_declared": 42866,
+          "raw": "<tr>\n\t\t\t\t<td width=\"31.8%\" colspan=\"5\"><center><a class=\"thinlink\" href=\"https://tibiopedia.pl/items/others\">Others</a></center></td>\n\t\t\t\t<td width=\"38.3%\" colspan=\"4\"><center><a class=\"thinlink\" href=\"https://tibiopedia.pl/items/others#quest\">Quest</a></center></td>\n\t\t\t</tr>",
+          "sha256": "266942eea8e06d9bf1ecb0e7228b52839023b17164fdbab9ff4352337c748d45"
+        }
+      },
+      "full_html_retained_in_repository": false,
+      "full_html_sha256_declared_capture_coordinate": "7f03c49adad31f63208aee3f87fc2f5cd524e1459de6cd0ea4dac2f53f9e5673",
+      "full_html_utf8_bytes_declared_capture_coordinate": 90553,
+      "http_status": 200,
+      "method": "Normal anonymous HTTP, guest language/layout selection only, two bounded concurrent public page requests, no login/private data/no retries",
+      "raw_numeric_itemid": "NOT_ESTABLISHED; ID here is a DERIVED join key, not a source field",
+      "source_url": "https://tibiopedia.pl/items/Salvaged_Bronze_Parts"
+    },
+    "52816": {
+      "article_revision": "UNKNOWN",
+      "article_revision_timestamp": "UNKNOWN",
+      "capture_utc": "2026-10-01T22:45:01.015890+00:00",
+      "excerpts": {
+        "document_title": {
+          "offset_in_full_html_declared": 220,
+          "raw": "<title>Items: Personal Letter of Clavius I - Tibia ~ Tibiopedia.pl</title>",
+          "sha256": "062b0c4e5586ae58bff403ec67923f9c1a66f39f18ec9094b5f92e8afc874340"
+        },
+        "own_caption_prefix": {
+          "offset_in_full_html_declared": 41959,
+          "raw": "<caption>\n\t\t\t\tPersonal Letter of Clavius I\t\t\t\t\t\t\t\t\t",
+          "sha256": "6f420290cba59ed72c0b3573e76a2355f7ce59abb110d2717d3e288ee333b1a1"
+        },
+        "own_category_header": {
+          "offset_in_full_html_declared": 42467,
+          "raw": "<tr>\n\t\t\t\t<td width=\"29.9%\" colspan=\"2\" rowspan=\"4\" class=\"monsterPic\"><img src=\"https://tibiopedia.pl/images/static/items/personal_letter_of_clavius_i.gif\" alt=\"Personal Letter of Clavius I\" /></td>\n\t\t\t\t<td width=\"31.8%\" colspan=\"5\" style=\"border-bottom:0;border-top:0;\"><center><strong>Class</strong></center></td>\n\t\t\t\t<td width=\"38.3%\" colspan=\"4\" style=\"border-bottom:0;border-top:0;\"><center><strong>Subclass</strong></center></td>\n\t\t\t</tr>",
+          "sha256": "dbbe73ae41b282d51fe6df73157ab02a07ceba8d7037288f04ddb943a6bba77f"
+        },
+        "own_category_values": {
+          "offset_in_full_html_declared": 42915,
+          "raw": "<tr>\n\t\t\t\t<td width=\"31.8%\" colspan=\"5\"><center><a class=\"thinlink\" href=\"https://tibiopedia.pl/items/others\">Others</a></center></td>\n\t\t\t\t<td width=\"38.3%\" colspan=\"4\"><center><a class=\"thinlink\" href=\"https://tibiopedia.pl/items/others#quest\">Quest</a></center></td>\n\t\t\t</tr>",
+          "sha256": "266942eea8e06d9bf1ecb0e7228b52839023b17164fdbab9ff4352337c748d45"
+        }
+      },
+      "full_html_retained_in_repository": false,
+      "full_html_sha256_declared_capture_coordinate": "734d0cc3198032f6599fd66e60be33a446f508e6ade2fea7304e1f2570bc4d44",
+      "full_html_utf8_bytes_declared_capture_coordinate": 92721,
+      "http_status": 200,
+      "method": "Normal anonymous HTTP, guest language/layout selection only, two bounded concurrent public page requests, no login/private data/no retries",
+      "raw_numeric_itemid": "NOT_ESTABLISHED; ID here is a DERIVED join key, not a source field",
+      "source_url": "https://tibiopedia.pl/items/Personal_Letter_of_Clavius_I"
+    },
+    "52817": {
+      "article_revision": "UNKNOWN",
+      "article_revision_timestamp": "UNKNOWN",
+      "capture_utc": "2026-10-01T22:45:01.344869+00:00",
+      "excerpts": {
+        "document_title": {
+          "offset_in_full_html_declared": 220,
+          "raw": "<title>Items: Personal Letter of Clavius II - Tibia ~ Tibiopedia.pl</title>",
+          "sha256": "4901b94f6b0bc622f92635208e7391d94400ce8b8d936efcddf8ea5abc6d8fe4"
+        },
+        "own_caption_prefix": {
+          "offset_in_full_html_declared": 41961,
+          "raw": "<caption>\n\t\t\t\tPersonal Letter of Clavius II\t\t\t\t\t\t\t\t\t",
+          "sha256": "e1c61879ebcd889aeeb1519f1c401965852ffe564aac20578828681bd8c5dbe7"
+        },
+        "own_category_header": {
+          "offset_in_full_html_declared": 42472,
+          "raw": "<tr>\n\t\t\t\t<td width=\"29.9%\" colspan=\"2\" rowspan=\"4\" class=\"monsterPic\"><img src=\"https://tibiopedia.pl/images/static/items/personal_letter_of_clavius_ii.gif\" alt=\"Personal Letter of Clavius II\" /></td>\n\t\t\t\t<td width=\"31.8%\" colspan=\"5\" style=\"border-bottom:0;border-top:0;\"><center><strong>Class</strong></center></td>\n\t\t\t\t<td width=\"38.3%\" colspan=\"4\" style=\"border-bottom:0;border-top:0;\"><center><strong>Subclass</strong></center></td>\n\t\t\t</tr>",
+          "sha256": "ea67eb8ec79356f6b8dd1a208f7a6b9ff713f94375aa94508619e7c583ee92a4"
+        },
+        "own_category_values": {
+          "offset_in_full_html_declared": 42922,
+          "raw": "<tr>\n\t\t\t\t<td width=\"31.8%\" colspan=\"5\"><center><a class=\"thinlink\" href=\"https://tibiopedia.pl/items/others\">Others</a></center></td>\n\t\t\t\t<td width=\"38.3%\" colspan=\"4\"><center><a class=\"thinlink\" href=\"https://tibiopedia.pl/items/others#quest\">Quest</a></center></td>\n\t\t\t</tr>",
+          "sha256": "266942eea8e06d9bf1ecb0e7228b52839023b17164fdbab9ff4352337c748d45"
+        }
+      },
+      "full_html_retained_in_repository": false,
+      "full_html_sha256_declared_capture_coordinate": "b57143f81b9d0f4cc5612408bff93a0694edfc2d9e60661980bf4f9d42578fe1",
+      "full_html_utf8_bytes_declared_capture_coordinate": 92260,
+      "http_status": 200,
+      "method": "Normal anonymous HTTP, guest language/layout selection only, two bounded concurrent public page requests, no login/private data/no retries",
+      "raw_numeric_itemid": "NOT_ESTABLISHED; ID here is a DERIVED join key, not a source field",
+      "source_url": "https://tibiopedia.pl/items/Personal_Letter_of_Clavius_II"
+    },
+    "52818": {
+      "article_revision": "UNKNOWN",
+      "article_revision_timestamp": "UNKNOWN",
+      "capture_utc": "2026-10-01T22:45:01.360977+00:00",
+      "excerpts": {
+        "document_title": {
+          "offset_in_full_html_declared": 220,
+          "raw": "<title>Items: Personal Letter of Clavius III - Tibia ~ Tibiopedia.pl</title>",
+          "sha256": "3f8eaafc03825de6f90d4934864423cc7cb66c5e6835e4340e4cd01fd6516c68"
+        },
+        "own_caption_prefix": {
+          "offset_in_full_html_declared": 41963,
+          "raw": "<caption>\n\t\t\t\tPersonal Letter of Clavius III\t\t\t\t\t\t\t\t\t",
+          "sha256": "549bf0f1db4f57bee3624122468ab91fe7a64dcd5dd00e39108e3a045d70e078"
+        },
+        "own_category_header": {
+          "offset_in_full_html_declared": 42477,
+          "raw": "<tr>\n\t\t\t\t<td width=\"29.9%\" colspan=\"2\" rowspan=\"4\" class=\"monsterPic\"><img src=\"https://tibiopedia.pl/images/static/items/personal_letter_of_clavius_iii.gif\" alt=\"Personal Letter of Clavius III\" /></td>\n\t\t\t\t<td width=\"31.8%\" colspan=\"5\" style=\"border-bottom:0;border-top:0;\"><center><strong>Class</strong></center></td>\n\t\t\t\t<td width=\"38.3%\" colspan=\"4\" style=\"border-bottom:0;border-top:0;\"><center><strong>Subclass</strong></center></td>\n\t\t\t</tr>",
+          "sha256": "25fcd96ac63d4ba9448a8adadcf9e2161c761ae1301f844be79eb8bc8e64f784"
+        },
+        "own_category_values": {
+          "offset_in_full_html_declared": 42929,
+          "raw": "<tr>\n\t\t\t\t<td width=\"31.8%\" colspan=\"5\"><center><a class=\"thinlink\" href=\"https://tibiopedia.pl/items/others\">Others</a></center></td>\n\t\t\t\t<td width=\"38.3%\" colspan=\"4\"><center><a class=\"thinlink\" href=\"https://tibiopedia.pl/items/others#quest\">Quest</a></center></td>\n\t\t\t</tr>",
+          "sha256": "266942eea8e06d9bf1ecb0e7228b52839023b17164fdbab9ff4352337c748d45"
+        }
+      },
+      "full_html_retained_in_repository": false,
+      "full_html_sha256_declared_capture_coordinate": "9523b412410a091d85f695a80649153e488290cf93101a9177f8f98ba2f61ba3",
+      "full_html_utf8_bytes_declared_capture_coordinate": 90121,
+      "http_status": 200,
+      "method": "Normal anonymous HTTP, guest language/layout selection only, two bounded concurrent public page requests, no login/private data/no retries",
+      "raw_numeric_itemid": "NOT_ESTABLISHED; ID here is a DERIVED join key, not a source field",
+      "source_url": "https://tibiopedia.pl/items/Personal_Letter_of_Clavius_III"
+    },
+    "52819": {
+      "article_revision": "UNKNOWN",
+      "article_revision_timestamp": "UNKNOWN",
+      "capture_utc": "2026-10-01T22:45:00.300928+00:00",
+      "excerpts": {
+        "document_title": {
+          "offset_in_full_html_declared": 220,
+          "raw": "<title>Items: Personal Letter of Adlerauge I - Tibia ~ Tibiopedia.pl</title>",
+          "sha256": "848ff886e0fafcaca312b649a7858ffa7e81e014127d511c9bb2d7e08dc3b887"
+        },
+        "own_caption_prefix": {
+          "offset_in_full_html_declared": 41963,
+          "raw": "<caption>\n\t\t\t\tPersonal Letter of Adlerauge I\t\t\t\t\t\t\t\t\t",
+          "sha256": "c910c82589defc63f504c7b09e262139027940765bd26950cd95f5cc0c40c100"
+        },
+        "own_category_header": {
+          "offset_in_full_html_declared": 42477,
+          "raw": "<tr>\n\t\t\t\t<td width=\"29.9%\" colspan=\"2\" rowspan=\"4\" class=\"monsterPic\"><img src=\"https://tibiopedia.pl/images/static/items/personal_letter_of_adlerauge_i.gif\" alt=\"Personal Letter of Adlerauge I\" /></td>\n\t\t\t\t<td width=\"31.8%\" colspan=\"5\" style=\"border-bottom:0;border-top:0;\"><center><strong>Class</strong></center></td>\n\t\t\t\t<td width=\"38.3%\" colspan=\"4\" style=\"border-bottom:0;border-top:0;\"><center><strong>Subclass</strong></center></td>\n\t\t\t</tr>",
+          "sha256": "c22d367f2d40dde091c5ab44383aebfaae626285977887071e6807de67a53421"
+        },
+        "own_category_values": {
+          "offset_in_full_html_declared": 42929,
+          "raw": "<tr>\n\t\t\t\t<td width=\"31.8%\" colspan=\"5\"><center><a class=\"thinlink\" href=\"https://tibiopedia.pl/items/others\">Others</a></center></td>\n\t\t\t\t<td width=\"38.3%\" colspan=\"4\"><center><a class=\"thinlink\" href=\"https://tibiopedia.pl/items/others#quest\">Quest</a></center></td>\n\t\t\t</tr>",
+          "sha256": "266942eea8e06d9bf1ecb0e7228b52839023b17164fdbab9ff4352337c748d45"
+        }
+      },
+      "full_html_retained_in_repository": false,
+      "full_html_sha256_declared_capture_coordinate": "658cf7e4f2153db2d10a37e058816912683fe13ce407aca4bddf0f2fad74f014",
+      "full_html_utf8_bytes_declared_capture_coordinate": 92877,
+      "http_status": 200,
+      "method": "Normal anonymous HTTP, guest language/layout selection only, two bounded concurrent public page requests, no login/private data/no retries",
+      "raw_numeric_itemid": "NOT_ESTABLISHED; ID here is a DERIVED join key, not a source field",
+      "source_url": "https://tibiopedia.pl/items/Personal_Letter_of_Adlerauge_I"
+    },
+    "52820": {
+      "article_revision": "UNKNOWN",
+      "article_revision_timestamp": "UNKNOWN",
+      "capture_utc": "2026-10-01T22:45:00.773627+00:00",
+      "excerpts": {
+        "document_title": {
+          "offset_in_full_html_declared": 220,
+          "raw": "<title>Items: Personal Letter of Adlerauge II - Tibia ~ Tibiopedia.pl</title>",
+          "sha256": "19161732093f78241651733669bece2c1cda9c1fbd4956134ea7377d6ff9b73c"
+        },
+        "own_caption_prefix": {
+          "offset_in_full_html_declared": 41965,
+          "raw": "<caption>\n\t\t\t\tPersonal Letter of Adlerauge II\t\t\t\t\t\t\t\t\t",
+          "sha256": "c314f7fef1c0cbb474db39dfeba8fab9e35c16ba05ea3b7f5fba859afdec80d8"
+        },
+        "own_category_header": {
+          "offset_in_full_html_declared": 42482,
+          "raw": "<tr>\n\t\t\t\t<td width=\"29.9%\" colspan=\"2\" rowspan=\"4\" class=\"monsterPic\"><img src=\"https://tibiopedia.pl/images/static/items/personal_letter_of_adlerauge_ii.gif\" alt=\"Personal Letter of Adlerauge II\" /></td>\n\t\t\t\t<td width=\"31.8%\" colspan=\"5\" style=\"border-bottom:0;border-top:0;\"><center><strong>Class</strong></center></td>\n\t\t\t\t<td width=\"38.3%\" colspan=\"4\" style=\"border-bottom:0;border-top:0;\"><center><strong>Subclass</strong></center></td>\n\t\t\t</tr>",
+          "sha256": "384b433bccf87266aeb396e720f0561d8ad82d485a8fd741ee5475c3af208350"
+        },
+        "own_category_values": {
+          "offset_in_full_html_declared": 42936,
+          "raw": "<tr>\n\t\t\t\t<td width=\"31.8%\" colspan=\"5\"><center><a class=\"thinlink\" href=\"https://tibiopedia.pl/items/others\">Others</a></center></td>\n\t\t\t\t<td width=\"38.3%\" colspan=\"4\"><center><a class=\"thinlink\" href=\"https://tibiopedia.pl/items/others#quest\">Quest</a></center></td>\n\t\t\t</tr>",
+          "sha256": "266942eea8e06d9bf1ecb0e7228b52839023b17164fdbab9ff4352337c748d45"
+        }
+      },
+      "full_html_retained_in_repository": false,
+      "full_html_sha256_declared_capture_coordinate": "1de505315052853d35eab4fb52517bfa11a6954ac92d91a823874e560d484e1e",
+      "full_html_utf8_bytes_declared_capture_coordinate": 92052,
+      "http_status": 200,
+      "method": "Normal anonymous HTTP, guest language/layout selection only, two bounded concurrent public page requests, no login/private data/no retries",
+      "raw_numeric_itemid": "NOT_ESTABLISHED; ID here is a DERIVED join key, not a source field",
+      "source_url": "https://tibiopedia.pl/items/Personal_Letter_of_Adlerauge_II"
+    },
+    "52821": {
+      "article_revision": "UNKNOWN",
+      "article_revision_timestamp": "UNKNOWN",
+      "capture_utc": "2026-10-01T22:45:00.852969+00:00",
+      "excerpts": {
+        "document_title": {
+          "offset_in_full_html_declared": 220,
+          "raw": "<title>Items: Personal Letter of Adlerauge III - Tibia ~ Tibiopedia.pl</title>",
+          "sha256": "51673fe20f2bba9fb9a1bbc9ae2d4d59091c3c24529514b94d75799ae202b4e2"
+        },
+        "own_caption_prefix": {
+          "offset_in_full_html_declared": 41967,
+          "raw": "<caption>\n\t\t\t\tPersonal Letter of Adlerauge III\t\t\t\t\t\t\t\t\t",
+          "sha256": "062db134de01764a765e16223ad15c4448ccb0e3851efbe85c3a4a0d1dc1cfd1"
+        },
+        "own_category_header": {
+          "offset_in_full_html_declared": 42487,
+          "raw": "<tr>\n\t\t\t\t<td width=\"29.9%\" colspan=\"2\" rowspan=\"4\" class=\"monsterPic\"><img src=\"https://tibiopedia.pl/images/static/items/personal_letter_of_adlerauge_iii.gif\" alt=\"Personal Letter of Adlerauge III\" /></td>\n\t\t\t\t<td width=\"31.8%\" colspan=\"5\" style=\"border-bottom:0;border-top:0;\"><center><strong>Class</strong></center></td>\n\t\t\t\t<td width=\"38.3%\" colspan=\"4\" style=\"border-bottom:0;border-top:0;\"><center><strong>Subclass</strong></center></td>\n\t\t\t</tr>",
+          "sha256": "227a1e4e1854e6a332bfd8080e4eeecddb89af9495f78d4746c25049e5aa371a"
+        },
+        "own_category_values": {
+          "offset_in_full_html_declared": 42943,
+          "raw": "<tr>\n\t\t\t\t<td width=\"31.8%\" colspan=\"5\"><center><a class=\"thinlink\" href=\"https://tibiopedia.pl/items/others\">Others</a></center></td>\n\t\t\t\t<td width=\"38.3%\" colspan=\"4\"><center><a class=\"thinlink\" href=\"https://tibiopedia.pl/items/others#quest\">Quest</a></center></td>\n\t\t\t</tr>",
+          "sha256": "266942eea8e06d9bf1ecb0e7228b52839023b17164fdbab9ff4352337c748d45"
+        }
+      },
+      "full_html_retained_in_repository": false,
+      "full_html_sha256_declared_capture_coordinate": "ec144885ced0b402f1b3a8145344c9a1c8f17f46e6fafee711c376fa0b87825c",
+      "full_html_utf8_bytes_declared_capture_coordinate": 91685,
+      "http_status": 200,
+      "method": "Normal anonymous HTTP, guest language/layout selection only, two bounded concurrent public page requests, no login/private data/no retries",
+      "raw_numeric_itemid": "NOT_ESTABLISHED; ID here is a DERIVED join key, not a source field",
+      "source_url": "https://tibiopedia.pl/items/Personal_Letter_of_Adlerauge_III"
+    },
+    "52822": {
+      "article_revision": "UNKNOWN",
+      "article_revision_timestamp": "UNKNOWN",
+      "capture_utc": "2026-10-01T22:45:01.777798+00:00",
+      "excerpts": {
+        "document_title": {
+          "offset_in_full_html_declared": 220,
+          "raw": "<title>Items: Personal Letter of Michael the Stalwart II - Tibia ~ Tibiopedia.pl</title>",
+          "sha256": "6584c162a69e84973fe34de95870047c82eb041618fa0ebee0c8bbd9d1a108ae"
+        },
+        "own_caption_prefix": {
+          "offset_in_full_html_declared": 41987,
+          "raw": "<caption>\n\t\t\t\tPersonal Letter of Michael the Stalwart II\t\t\t\t\t\t\t\t\t",
+          "sha256": "26072795f048537d5cbbb51c8b61b673b436b0f6bec493b1b438998f0ad9d912"
+        },
+        "own_category_header": {
+          "offset_in_full_html_declared": 42537,
+          "raw": "<tr>\n\t\t\t\t<td width=\"29.9%\" colspan=\"2\" rowspan=\"4\" class=\"monsterPic\"><img src=\"https://tibiopedia.pl/images/static/items/personal_letter_of_michael_the_stalwart_ii.gif\" alt=\"Personal Letter of Michael the Stalwart II\" /></td>\n\t\t\t\t<td width=\"31.8%\" colspan=\"5\" style=\"border-bottom:0;border-top:0;\"><center><strong>Class</strong></center></td>\n\t\t\t\t<td width=\"38.3%\" colspan=\"4\" style=\"border-bottom:0;border-top:0;\"><center><strong>Subclass</strong></center></td>\n\t\t\t</tr>",
+          "sha256": "1b8805d6ec5a5467889e2d4d057bc063f56b6f24bf592cad562964d2dadaabbb"
+        },
+        "own_category_values": {
+          "offset_in_full_html_declared": 43013,
+          "raw": "<tr>\n\t\t\t\t<td width=\"31.8%\" colspan=\"5\"><center><a class=\"thinlink\" href=\"https://tibiopedia.pl/items/others\">Others</a></center></td>\n\t\t\t\t<td width=\"38.3%\" colspan=\"4\"><center><a class=\"thinlink\" href=\"https://tibiopedia.pl/items/others#quest\">Quest</a></center></td>\n\t\t\t</tr>",
+          "sha256": "266942eea8e06d9bf1ecb0e7228b52839023b17164fdbab9ff4352337c748d45"
+        }
+      },
+      "full_html_retained_in_repository": false,
+      "full_html_sha256_declared_capture_coordinate": "527ad49421c33a952bf6ce30a0b43e4b0975d36fb11ff42801c4c2afd2a95e7c",
+      "full_html_utf8_bytes_declared_capture_coordinate": 92381,
+      "http_status": 200,
+      "method": "Normal anonymous HTTP, guest language/layout selection only, two bounded concurrent public page requests, no login/private data/no retries",
+      "raw_numeric_itemid": "NOT_ESTABLISHED; ID here is a DERIVED join key, not a source field",
+      "source_url": "https://tibiopedia.pl/items/Personal_Letter_of_Michael_the_Stalwart_II"
+    },
+    "52823": {
+      "article_revision": "UNKNOWN",
+      "article_revision_timestamp": "UNKNOWN",
+      "capture_utc": "2026-10-01T22:45:01.946746+00:00",
+      "excerpts": {
+        "document_title": {
+          "offset_in_full_html_declared": 220,
+          "raw": "<title>Items: Personal Letter of Michael the Stalwart III - Tibia ~ Tibiopedia.pl</title>",
+          "sha256": "f4368c3e322f3bcca8846aa0cc4df4ea9b233afe3839933cbd1f5c9d12bf38f5"
+        },
+        "own_caption_prefix": {
+          "offset_in_full_html_declared": 41989,
+          "raw": "<caption>\n\t\t\t\tPersonal Letter of Michael the Stalwart III\t\t\t\t\t\t\t\t\t",
+          "sha256": "1b13c090e7e72555b8e7f08c8ec1d5dc9652e7bfdf103a3af72cdc97cc67088e"
+        },
+        "own_category_header": {
+          "offset_in_full_html_declared": 42542,
+          "raw": "<tr>\n\t\t\t\t<td width=\"29.9%\" colspan=\"2\" rowspan=\"4\" class=\"monsterPic\"><img src=\"https://tibiopedia.pl/images/static/items/personal_letter_of_michael_the_stalwart_iii.gif\" alt=\"Personal Letter of Michael the Stalwart III\" /></td>\n\t\t\t\t<td width=\"31.8%\" colspan=\"5\" style=\"border-bottom:0;border-top:0;\"><center><strong>Class</strong></center></td>\n\t\t\t\t<td width=\"38.3%\" colspan=\"4\" style=\"border-bottom:0;border-top:0;\"><center><strong>Subclass</strong></center></td>\n\t\t\t</tr>",
+          "sha256": "c365837c16c901899706b3ddf6973d9114a6a2fd627180afffcf09e0260a6922"
+        },
+        "own_category_values": {
+          "offset_in_full_html_declared": 43020,
+          "raw": "<tr>\n\t\t\t\t<td width=\"31.8%\" colspan=\"5\"><center><a class=\"thinlink\" href=\"https://tibiopedia.pl/items/others\">Others</a></center></td>\n\t\t\t\t<td width=\"38.3%\" colspan=\"4\"><center><a class=\"thinlink\" href=\"https://tibiopedia.pl/items/others#quest\">Quest</a></center></td>\n\t\t\t</tr>",
+          "sha256": "266942eea8e06d9bf1ecb0e7228b52839023b17164fdbab9ff4352337c748d45"
+        }
+      },
+      "full_html_retained_in_repository": false,
+      "full_html_sha256_declared_capture_coordinate": "daa8ffe78b418d616077121bfbbcee15c48a0fcc1e1f70a04ed18a7513d4d805",
+      "full_html_utf8_bytes_declared_capture_coordinate": 92389,
+      "http_status": 200,
+      "method": "Normal anonymous HTTP, guest language/layout selection only, two bounded concurrent public page requests, no login/private data/no retries",
+      "raw_numeric_itemid": "NOT_ESTABLISHED; ID here is a DERIVED join key, not a source field",
+      "source_url": "https://tibiopedia.pl/items/Personal_Letter_of_Michael_the_Stalwart_III"
+    }
+  },
+  "schema": "OTERYN_EXTERNAL_FAMILY_DOM_FIELD_WITNESSES/v1",
+  "source_capture_method": "Anonymous ordinary HTTP; guest English layout; full captured body checked before extracting exact excerpts",
+  "source_capture_sha256": "7f9335788abe406d75ce55efdb7765737f630f7fb0e1a1ad78e5f577ad85a12f"
+}

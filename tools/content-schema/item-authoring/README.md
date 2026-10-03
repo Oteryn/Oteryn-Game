@@ -1,5 +1,14 @@
 # Item authoring schema candidate v4
 
+The 2026-10-01 continuation validates profile/taxonomy class consistency while retaining
+the admitted ammunition, consumable and fluid-container class variants. Common capability
+absence remains a warning under the authoring contract; a warning-free profile is not proof
+of complete source coverage. The engine converter retains nested imbuement family ceilings
+as `allowed_family_max_tiers` (`family`, `max_tier`), distinct from exact allowed tier pairs.
+Missing children remain unknown; malformed or duplicate family ceilings block conversion.
+These are source-backed authoring observations, not native runtime imbuement admission.
+`test_engine_items.py` also runs the nested-limit regression tests used by CI.
+
 This package turns the Item Master Schema v1 census into an executable authoring
 contract. It validates one portable Item definition, not a placed map object and not a
 mutable item instance.
@@ -24,7 +33,7 @@ Architecture and boundaries:
 | `source_field_catalogs.py` | Generated-ledger source of truth, aliases, defects and owner routing. |
 | `proficiency_profiles.py` | Pinned 15.30 client, Canary and Crystal proficiency sources; the admitted client crosswalks are the committed `content/proficiencies/` definitions. |
 | `real_item_examples.py` / `real-source-examples.json` | Six generated, validated real-item examples with source evidence and explicit blockers. |
-| `templates/*.json` | Thirteen valid starting points for materially different authoring shapes. |
+| `templates/*.json` | Twenty-three valid starting points covering all 22 family profiles; distance weapons and ammunition share a profile. Values are synthetic examples, not source facts or runtime admission. |
 | `validate_item.py` | Structural, semantic, exact-reference and import-readiness validation. |
 | `verify_formal_schema.py` | Focused positive/negative contract checks and deterministic fixtures. |
 | `engine_items.py` | Converts one pinned Crystal/Canary `items.xml` + `appearances.dat` into candidate Item bundles: identity allocator, family_profile/taxonomy rules, field mapping, appearance/Presentation binding, and the `delivery_task_eligible` decision from the `ADOPT_CRYSTAL_DELIVERY_LIST@ff7ede5` authoring rule. Digest-verifies every input artifact first (text artifacts after CRLF->LF normalization, `appearances.dat` as exact raw bytes); a missing pinned artifact is a hard error. |

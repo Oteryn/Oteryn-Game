@@ -293,6 +293,12 @@
         "write.max_text_length",
         "write_once.max_text_length_once"
       ]
+    },
+    {
+      "name": "nested_imbuement_attribute",
+      "fields": [
+        "imbuementslot.allowed_family_max_tiers"
+      ]
     }
   ],
   "fields": [
@@ -2299,6 +2305,19 @@
       ],
       "reason": "typed portable Item definition fact",
       "parser_registration_count": 1
+    },
+    {
+      "source_field": "imbuementslot.allowed_family_max_tiers",
+      "origins": [
+        "nested_imbuement_attribute"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/imbuement/allowed_family_max_tiers"
+      ],
+      "reason": "typed portable Item definition fact"
     },
     {
       "source_field": "invisible",

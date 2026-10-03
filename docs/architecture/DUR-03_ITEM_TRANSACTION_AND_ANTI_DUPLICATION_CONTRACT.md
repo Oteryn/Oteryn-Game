@@ -409,6 +409,10 @@ Rune use is a caller-chosen one-unit BURN, not `DECAY_RETIRE`.
 `reviews/OTERYN_GAME_RANGED0_DISTANCE_WEAPONS_AMMUNITION_WANDS_AND_CHASE_DECISION_2026-10-01.md` §6).**
 The weapon use amendment in §39.3 admits the closed `WeaponUseCause {Ammunition, Throwing}`.
 
+**Amendment (pending on acceptance of TIMED-ITEM-0; `reviews/OTERYN_GAME_TIMED_ITEM0_CHARGES_DURATION_AND_REPAIR_DECISION_2026-10-01.md` §7, §10).** `FeeBurnCause::NpcRepair` is admitted. The name
+`TimedItemCause` is reserved; its variants, including any expiry BURN sink, are admitted by
+TIMED-ITEM-0B (D285).
+
 **Amendment (pending on acceptance of PROFICIENCY-1; `reviews/OTERYN_GAME_PROFICIENCY1_PERK_MODIFICATION_AND_CATALYSTS_DECISION_2026-10-01.md` §3, §4).** The cause name `ProficiencyCause {track, slot, operation,
 occurrence}` is reserved for Weapon Proficiency modification burns (forge dust, the Lunar Ascension
 Orb). No shape is admitted yet: each composed §39.3 shape (a proficiency receipt with its burn) is
@@ -1391,7 +1395,24 @@ authority, conservation) is unchanged.
   `character_root` lock and no expected revision (gold fee decision §4.3 as amended).
 - **Cause (D178).** Closed `FeeBurnCause`. Variants: `CharmUnassign { charm, occurrence }`, and,
   with the NPC service amendment below, `NpcTrade(NpcTradeCause)` and `NpcTravel { npc, route,
-  occurrence }`.
+  occurrence }`. **Amendment (pending on acceptance of TIMED-ITEM-0; `reviews/OTERYN_GAME_TIMED_ITEM0_CHARGES_DURATION_AND_REPAIR_DECISION_2026-10-01.md` §7).** Plus `NpcRepair { npc, offer, occurrence }`
+  (owner answer 1a), whose transaction also transforms one item (`PRESERVE_INSTANCE`) and resets
+  its timed row; its plan admits at most 19 coin inputs, so inputs, change and the repaired item
+  stay within 22 touched items, under the repair-specific work row `DUR03-RL-06-NPC-REPAIR` 22
+  participants / 68 work units (the fee shape's 64 plus the transform, the timed-row reset and the
+  item check), with `DUR03-RL-04-NPC-REPAIR` 1 / 1 transform I/O and `DUR03-RL-05` 0, the repaired
+  item being a direct main-backpack entry. Its one timed-row write sets the row to full values with
+  the revision + 1, or inserts it at expected revision 0 (absent row = revision 0; rows are never
+  deleted while the item lives, so the revision is monotonic; TIMED-ITEM-0 §4). Its one audit
+  event (§27, part of the atomic effect set) carries, besides the fee evidence below: the repaired
+  item's ItemInstanceId; the `TRANSFORM` line with its definition before and after; and the timed
+  row before and after (charges, remaining time and revision, or "absent → revision 1"). These
+  lines count in the measured payload of `DUR03-RL-07` at 19 coin inputs. `NpcRepair` takes the
+  **BANK-FEE-0 bank part** below like `NpcTravel` (TIMED-ITEM-0A, owner answer 2; TIMED-ITEM-0
+  §7; implemented by TIMED-REPAIR-1 only after GOLD-FEE-2): with `T < F`, a non-junior payer burns every eligible coin whole with no change and pays
+  `F - T` as one `FEE_DEBIT` value line (`DUR03-RL-03-FEE` 1, also in the `DUR03-RL-07` payload);
+  the repair rows are unchanged, since at most 19 coin inputs fit beside the repaired item. Every other timed
+  shape (checkpoints, expiry, equip forms) is TIMED-ITEM-0B's (D285).
   No generic fee cause or reason code. A new fee source needs an amendment of this paragraph and
   the decision.
 - **Evidence and rows.** One event: each BURN line (quantity before and after; a whole burn ends

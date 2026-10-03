@@ -21,7 +21,7 @@ oteryn-simulation-determinism = { version = "=0.1.0", path = "../../crates/simul
 prost.workspace = true
 serde.workspace = true
 sha2.workspace = true
-serde_json.workspace = true
+serde_json = { workspace = true, features = ["raw_value"] }
 rustls.workspace = true
 sqlx.workspace = true
 tokio = { workspace = true, features = ["signal"] }

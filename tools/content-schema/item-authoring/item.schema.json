@@ -152,6 +152,562 @@
       "family_profile_basis"
     ]
   },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "family_profile": {
+            "const": "equipment_armor"
+          }
+        },
+        "required": [
+          "family_profile"
+        ]
+      },
+      "then": {
+        "properties": {
+          "taxonomy": {
+            "properties": {
+              "item_class": {
+                "enum": [
+                  "equipment"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "family_profile": {
+            "const": "equipment_offhand"
+          }
+        },
+        "required": [
+          "family_profile"
+        ]
+      },
+      "then": {
+        "properties": {
+          "taxonomy": {
+            "properties": {
+              "item_class": {
+                "enum": [
+                  "equipment"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "family_profile": {
+            "const": "container_equipment"
+          }
+        },
+        "required": [
+          "family_profile"
+        ]
+      },
+      "then": {
+        "properties": {
+          "taxonomy": {
+            "properties": {
+              "item_class": {
+                "enum": [
+                  "container"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "family_profile": {
+            "const": "weapon_melee"
+          }
+        },
+        "required": [
+          "family_profile"
+        ]
+      },
+      "then": {
+        "properties": {
+          "taxonomy": {
+            "properties": {
+              "item_class": {
+                "enum": [
+                  "weapon"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "family_profile": {
+            "const": "weapon_distance"
+          }
+        },
+        "required": [
+          "family_profile"
+        ]
+      },
+      "then": {
+        "properties": {
+          "taxonomy": {
+            "properties": {
+              "item_class": {
+                "enum": [
+                  "weapon",
+                  "ammunition"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "family_profile": {
+            "const": "weapon_magic"
+          }
+        },
+        "required": [
+          "family_profile"
+        ]
+      },
+      "then": {
+        "properties": {
+          "taxonomy": {
+            "properties": {
+              "item_class": {
+                "enum": [
+                  "weapon"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "family_profile": {
+            "const": "rune"
+          }
+        },
+        "required": [
+          "family_profile"
+        ]
+      },
+      "then": {
+        "properties": {
+          "taxonomy": {
+            "properties": {
+              "item_class": {
+                "enum": [
+                  "rune"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "family_profile": {
+            "const": "document"
+          }
+        },
+        "required": [
+          "family_profile"
+        ]
+      },
+      "then": {
+        "properties": {
+          "taxonomy": {
+            "properties": {
+              "item_class": {
+                "enum": [
+                  "document"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "family_profile": {
+            "const": "container"
+          }
+        },
+        "required": [
+          "family_profile"
+        ]
+      },
+      "then": {
+        "properties": {
+          "taxonomy": {
+            "properties": {
+              "item_class": {
+                "enum": [
+                  "container"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "family_profile": {
+            "const": "decoration"
+          }
+        },
+        "required": [
+          "family_profile"
+        ]
+      },
+      "then": {
+        "properties": {
+          "taxonomy": {
+            "properties": {
+              "item_class": {
+                "enum": [
+                  "decoration"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "family_profile": {
+            "const": "event_collectible"
+          }
+        },
+        "required": [
+          "family_profile"
+        ]
+      },
+      "then": {
+        "properties": {
+          "taxonomy": {
+            "properties": {
+              "item_class": {
+                "enum": [
+                  "collectible"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "family_profile": {
+            "const": "progression_material"
+          }
+        },
+        "required": [
+          "family_profile"
+        ]
+      },
+      "then": {
+        "properties": {
+          "taxonomy": {
+            "properties": {
+              "item_class": {
+                "enum": [
+                  "material"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "family_profile": {
+            "const": "transformation_item"
+          }
+        },
+        "required": [
+          "family_profile"
+        ]
+      },
+      "then": {
+        "properties": {
+          "taxonomy": {
+            "properties": {
+              "item_class": {
+                "enum": [
+                  "transformation"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "family_profile": {
+            "const": "quest_item"
+          }
+        },
+        "required": [
+          "family_profile"
+        ]
+      },
+      "then": {
+        "properties": {
+          "taxonomy": {
+            "properties": {
+              "item_class": {
+                "enum": [
+                  "quest_item"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "family_profile": {
+            "const": "material_valuable"
+          }
+        },
+        "required": [
+          "family_profile"
+        ]
+      },
+      "then": {
+        "properties": {
+          "taxonomy": {
+            "properties": {
+              "item_class": {
+                "enum": [
+                  "material"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "family_profile": {
+            "const": "trash"
+          }
+        },
+        "required": [
+          "family_profile"
+        ]
+      },
+      "then": {
+        "properties": {
+          "taxonomy": {
+            "properties": {
+              "item_class": {
+                "enum": [
+                  "trash"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "family_profile": {
+            "const": "key"
+          }
+        },
+        "required": [
+          "family_profile"
+        ]
+      },
+      "then": {
+        "properties": {
+          "taxonomy": {
+            "properties": {
+              "item_class": {
+                "enum": [
+                  "key"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "family_profile": {
+            "const": "light_source"
+          }
+        },
+        "required": [
+          "family_profile"
+        ]
+      },
+      "then": {
+        "properties": {
+          "taxonomy": {
+            "properties": {
+              "item_class": {
+                "enum": [
+                  "light_source"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "family_profile": {
+            "const": "tool"
+          }
+        },
+        "required": [
+          "family_profile"
+        ]
+      },
+      "then": {
+        "properties": {
+          "taxonomy": {
+            "properties": {
+              "item_class": {
+                "enum": [
+                  "tool"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "family_profile": {
+            "const": "food"
+          }
+        },
+        "required": [
+          "family_profile"
+        ]
+      },
+      "then": {
+        "properties": {
+          "taxonomy": {
+            "properties": {
+              "item_class": {
+                "enum": [
+                  "food",
+                  "consumable"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "family_profile": {
+            "const": "fluid"
+          }
+        },
+        "required": [
+          "family_profile"
+        ]
+      },
+      "then": {
+        "properties": {
+          "taxonomy": {
+            "properties": {
+              "item_class": {
+                "enum": [
+                  "fluid",
+                  "container",
+                  "fluid_container"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "family_profile": {
+            "const": "plant"
+          }
+        },
+        "required": [
+          "family_profile"
+        ]
+      },
+      "then": {
+        "properties": {
+          "taxonomy": {
+            "properties": {
+              "item_class": {
+                "enum": [
+                  "plant"
+                ]
+              }
+            }
+          }
+        }
+      }
+    }
+  ],
   "$defs": {
     "key": {
       "type": "string",
@@ -1682,6 +2238,30 @@
             "$ref": "#/$defs/imbuementTier"
           },
           "minItems": 0
+        },
+        "allowed_family_max_tiers": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "family": {
+                "type": "string",
+                "minLength": 1,
+                "pattern": "^[a-z][a-z0-9_]*$"
+              },
+              "max_tier": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 3
+              }
+            },
+            "required": [
+              "family",
+              "max_tier"
+            ]
+          },
+          "minItems": 1
         },
         "excluded_families": {
           "type": "array",

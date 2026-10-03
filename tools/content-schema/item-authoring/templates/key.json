@@ -1,0 +1,26 @@
+{
+  "identity": {
+    "key": "oteryn:item.template.key",
+    "revision": "definition-r1"
+  },
+  "display_name": "Template Key",
+  "family_profile": "key",
+  "delivery_task_eligible": false,
+  "taxonomy": {
+    "item_class": "key",
+    "primary": "key",
+    "tags": []
+  },
+  "physical": {
+    "weight": {
+      "value": "1.00",
+      "unit": "oz"
+    },
+    "movable": true,
+    "pickupable": true
+  },
+  "use": {
+    "usable": true,
+    "use_with": true
+  }
+}
