@@ -40,6 +40,10 @@ QUEST-STATE-1 packet); QUEST-GATE-0 gains §15.
 Status stays `CANDIDATE` until independent review (persistence, protocol, security) passes on the
 exact head.
 
+Review round 1 (Codex, D365): §13.3 now explicitly supersedes the account-completion parts of
+§3, §5.3 and §9 until QUEST-ACCOUNT-1; §14 takes the 0056 lease and adds the reward-claim writer,
+the chest caller and the production `ComposedFreshAdmission` admission path, with their tests.
+
 ## Validation
 
 `python3 tools/agents/validate_governance.py`, `python3 tools/repository/validate_repository_policy.py`,

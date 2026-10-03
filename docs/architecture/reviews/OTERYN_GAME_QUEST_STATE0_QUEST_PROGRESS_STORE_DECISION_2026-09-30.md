@@ -171,7 +171,7 @@ mismatch reloads the cursor and retries once.
   a same-GameSession reconnect commits with the current generation (FND-02 §13.3).
 - **Lock order:** the recovery fence and admission relations; the receipt key; the Character's
   session checks; `character_root` FOR UPDATE; the quest state; the tracks by key; the account
-  completion row.
+  completion row (deferred to QUEST-ACCOUNT-1, §13.3).
 
 ### 5.4 Reward claim plus quest: two transactions and an obligation
 
@@ -238,7 +238,7 @@ mismatch reloads the cursor and retries once.
 | `QUESTSTATE0-RL-06` key length | 128 bytes per track, quest or transition key |
 | `QUESTSTATE0-RL-07` pending obligations per character | 64 |
 | `QUESTSTATE0-RL-08` runtime copy | 4,096 tracks and 1,024 states per online character |
-| Per transition | 8 track rows, 1 quest state, 1 account completion, 1 receipt, 1 revision advance |
+| Per transition | 8 track rows, 1 quest state, 1 account completion (QUEST-ACCOUNT-1, §13.3), 1 receipt, 1 revision advance |
 
 - **Retention (DUR-02 §4.6):** receipts are part of the CharacterRevision chain and are kept, as the
   charm receipts are. **Rollback:** a new migration; once receipts exist, the table and its chain arm
@@ -319,9 +319,15 @@ no lowered quest declares `account_completion: grant`. The table and its write m
 QUEST-ACCOUNT-1 (brief); until it merges, no quest grants account completion and
 `account_completed` (§7) is false, failing closed. D45 and D46 are unchanged.
 
+Until QUEST-ACCOUNT-1 merges, this supersedes the account-completion parts of the earlier
+sections: §3's account completion table, the account completion row in §5.3's lock order, and the
+account completion write in §9's per-transition row. QUEST-STATE-1's transaction has no account
+completion step: it locks and writes 8 track rows, 1 quest state, 1 receipt and 1 revision
+advance. QUEST-ACCOUNT-1 restores those parts, with the lock taken last as §5.3 orders it.
+
 ### 13.4 Unchanged
 
-§3-§12 stand. The composition decision's rule 1 amendment for obligation rows (#1373) is on
+§3-§12 stand, except the account-completion parts §13.3 supersedes. The composition decision's rule 1 amendment for obligation rows (#1373) is on
 `main`. The `0012` claim guard extension stays a new QUEST-STATE-1 migration.
 
 ## 14. QUEST-STATE-1 packet (for the control plane)
@@ -335,13 +341,18 @@ repository: Oteryn/Oteryn-Game
 issue: 162
 lane_id: quest
 depends_on: ["QUEST-STATE-0 accepted", "CHAR-REV-SEQ-1 merged"]
-leases: one migration number from the control plane at allocation (next free, e.g. 0054)
+leases: migration 0056 (control plane lease; 0054 and 0055 are TIMED-RT-1's and PROF-SHAPE-1's)
 owned_paths:
-  - apps/game-server/migrations/<lease>_character_quest_state.sql
+  - apps/game-server/migrations/0056_character_quest_state.sql
   - apps/game-server/src/durability/quest_state.rs        # new: transition writer and loads
   - apps/game-server/src/durability/mod.rs                # module and re-exports only
   - apps/game-server/src/quest/                           # new: catalogue type, effects, validation
   - apps/game-server/src/lib.rs                           # module wiring only
+  - apps/game-server/src/durability/reward_claim_mint.rs  # optional obligation companion of a claim (§5.4)
+  - apps/game-server/src/interaction/chest_use.rs         # passes a chest's quest transition to the claim
+  - apps/game-server/src/gameplay_transport/mod.rs        # ComposedFreshAdmission admit and resume: quest copy and obligations; its tests
+  - apps/game-server/tests/support/reward_claim_mint_postgres_cases.rs
+  - apps/game-server/tests/support/chest_use_postgres_cases.rs
   - apps/game-server/tests/support/quest_state_postgres_cases.rs
   - apps/game-server/tests/character_authority_postgres.rs  # one `mod` include
   - docs/agents/tasks/archive/OTV2-2026100x-quest-state-1.md
@@ -368,17 +379,26 @@ owned_paths:
    on a changed binding; submission through the CHAR-REV-SEQ-1 sequencer with one reload-and-retry
    on mismatch (§5.2).
 4. **Obligations.** The `PENDING`, `REFUSED` and `WAITING_MIGRATION` states and
-   `QUESTSTATE0-RL-07`, the claim-side companion write and `OBLIGATIONS_FULL` (§5.4), and the
-   re-request at admission and after a failed attempt (once a minute at most).
-5. **Admission load.** Tracks, states and pending obligations loaded at admission for the session
-   copy, bounded by `QUESTSTATE0-RL-01`, `-05` and `-08`; over a bound fails the load closed.
+   `QUESTSTATE0-RL-07`; the claim-side companion write and `OBLIGATIONS_FULL` (§5.4):
+   `RewardClaimMintRequest` gains an optional quest transition, and the claim transaction inserts
+   the `PENDING` row with the claim or refuses the whole claim before writing anything;
+   `interaction::chest_use` passes the chest's transition when its content declares one (none
+   until QUEST-LOWER-1 lowers chest bindings, so existing chests are unchanged); the re-request at
+   admission and after a failed attempt (once a minute at most).
+5. **Admission load.** The production `ComposedFreshAdmission` (`gameplay_transport`) loads
+   tracks, states and pending obligations at fresh admission and resume, keeps them as the session
+   copy that QUEST-PRED-1 reads, and re-requests the pending obligations; bounded by
+   `QUESTSTATE0-RL-01`, `-05` and `-08`, and over a bound fails the load closed. A failed quest
+   load fails quest actions closed, not login.
 
 **Required tests:** each refusal code writes nothing; replay and binding conflict; revision chain
 continuity with every other receipt kind; a concurrent writer bypassing the sequencer is caught by
 the guard; a reconnect in the same GameSession commits a pending cause with the current
 generation, and a replaced session's request is refused; obligation delete without its receipt is
 rejected; `WAITING_MIGRATION` is not retried; bounds at and over each row; restart reloads the
-copy and re-requests obligations.
+copy and re-requests obligations, proved through `ComposedFreshAdmission` and not only the loader;
+a claim with a quest transition commits the items and the `PENDING` row together, a claim at 64
+pending obligations is refused writing nothing, and a claim without one is unchanged.
 
 **Validation.** `cargo fmt --all --check`; `cargo clippy --locked -p oteryn-game-server
 --all-targets -- -D warnings`; `cargo test --locked -p oteryn-game-server` with PostgreSQL; the
