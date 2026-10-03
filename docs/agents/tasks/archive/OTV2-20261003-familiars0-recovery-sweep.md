@@ -34,6 +34,11 @@ Rulings that tighten the decision:
   TIMED-ITEM-0B §6.1 orders its checkpoints.
 - `WorldReset` writes as a removal with the time kept.
 
+Review round 1 (Codex): a stale load is decided against the current fence generation, not the
+row's (P1 4174310513). A failed or ambiguous reconciliation re-reads the fence and the row before
+any admission or write (P1 4174310520). F-I7 defines `open` as an acquisition that is not yet
+closed or reconciled (P2 4174310515).
+
 ## High-risk authority/recovery qualification
 
 ```yaml
