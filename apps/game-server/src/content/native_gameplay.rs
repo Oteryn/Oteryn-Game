@@ -1,5 +1,9 @@
 //! Explicit local candidate native gameplay artifact. No embedded/global catalogue is loaded.
 //! The existing activation guard authorizes the outer artifact digest, including every profile.
+#![allow(
+    dead_code,
+    reason = "spell import candidate; awaits its production owner caller"
+)]
 use super::digest::sha256;
 use super::model::ContentError;
 use super::production::CompiledFirstProductionContent;
@@ -1271,6 +1275,7 @@ fn creature_policies(
 
 #[cfg(test)]
 mod tests {
+    #![allow(clippy::expect_used, clippy::unwrap_used, clippy::panic)]
     use super::*;
     use crate::content::production::{StagedGeneration, test_source};
     use crate::content::{
@@ -2144,6 +2149,7 @@ fn projected_equipment_claims(
 
 #[cfg(test)]
 mod equipment_projection_tests {
+    #![allow(clippy::expect_used)]
     use super::*;
     use crate::content::{
         ReferenceBaseVocation, ReferenceEquipmentPattern, ReferenceEquipmentSlot,

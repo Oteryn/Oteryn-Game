@@ -186,6 +186,10 @@ impl SavedNativeOwnerEffect {
     }
 }
 #[derive(Debug, Clone)]
+#[allow(
+    clippy::large_enum_variant,
+    reason = "transient owner result; boxing would add an allocation to the owner turn"
+)]
 pub(crate) enum TimerPayload {
     Strike(SavedStrike),
     ChainHit(SavedChainHit),
@@ -1348,7 +1352,7 @@ fn validate_request(r: &ScheduleRequest) -> Result<(), Error> {
             if v.instances.len() > 9
                 || v.positions.len() > 9
                 || v.expires_at < binding.cast_at
-                || v.instances.iter().any(|i| *i == [0; 16])
+                || v.instances.contains(&[0; 16])
                 || v.instances.iter().collect::<BTreeSet<_>>().len() != v.instances.len()
                 || v.positions.iter().collect::<BTreeSet<_>>().len() != v.positions.len()
             {

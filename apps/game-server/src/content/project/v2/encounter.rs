@@ -2071,6 +2071,7 @@ fn actions(
 
 #[cfg(test)]
 mod soul_war_area_tests {
+    #![allow(clippy::unwrap_used, clippy::panic)]
     use super::*;
 
     #[test]

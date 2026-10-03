@@ -1,5 +1,9 @@
 //! Explicit source-pinned familiar defenses, selected by full active Creature reference.
 //! The two Canary datapacks have conflicting heals; neither a name nor missing data selects one.
+#![allow(
+    dead_code,
+    reason = "spell import candidate; awaits its production owner caller"
+)]
 use crate::foundation::{CompiledCreaturePolicy, FamiliarSelfHealDefense};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
@@ -130,6 +134,7 @@ impl CompiledFamiliarDefenses {
 
 #[cfg(test)]
 mod tests {
+    #![allow(clippy::unwrap_used)]
     use super::*;
     fn document() -> Document {
         serde_json::from_str(include_str!(

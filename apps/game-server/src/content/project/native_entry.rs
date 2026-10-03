@@ -1918,6 +1918,7 @@ pub(crate) fn qualify_native_spell_entry_room_with_gameplay(
 
 #[cfg(test)]
 mod spell_entry_candidate_tests {
+    #![allow(clippy::unwrap_used)]
     use super::*;
     fn world() -> crate::foundation::WorldId {
         crate::foundation::WorldId::decode(&[

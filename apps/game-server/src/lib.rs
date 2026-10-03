@@ -103,6 +103,10 @@ mod world_object_revert;
 pub(crate) mod world_runtime;
 
 #[cfg(test)]
+#[allow(
+    dead_code,
+    reason = "shared PostgreSQL support; each mount uses a subset"
+)]
 #[path = "../tests/support/bestiary_postgres_harness.rs"]
 mod bestiary_postgres_harness;
 

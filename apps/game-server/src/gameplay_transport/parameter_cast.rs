@@ -1,5 +1,9 @@
 //! Explicit candidate parameter caster on the actual Channel/Character owners.
 //! The original normalized v2 intent and private result survive unknown COMMIT.
+#![allow(
+    dead_code,
+    reason = "spell import candidate; awaits its production owner caller"
+)]
 use super::native_combat_cast::NativeCastDispatch;
 use super::{
     ChannelSpellStates, PlayerBatchPreflight, SpellCastOutcome, commit_owner_batch,
@@ -46,6 +50,10 @@ pub(super) fn named_player_spell(spell: &SpellDefinition) -> bool {
         && spell.needs_target
         && !spell.aggressive
 }
+#[allow(
+    clippy::large_enum_variant,
+    reason = "transient owner result; boxing would add an allocation to the owner turn"
+)]
 pub(super) enum NamedPlayerResolution {
     Found(QualifiedNamedPlayer),
     Absent(&'static str),
@@ -938,11 +946,10 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             if let Some(physical)=attempt.physical.as_mut(){runtime.reserve_spell_batch(physical).map_err(|_|DurabilityError::Unavailable)?;}
             let private_result=attempt.result.clone();
             let existing=crate::durability::spell_parameter_result::read_parameter_result_in_transaction(&mut tx,&authority,&attempt.definition,&attempt.intent).await.map_err(|_|DurabilityError::Unavailable)?;
-            if let Some(record)=&existing{
-                if record.bytes()!=attempt.result_bytes.as_slice(){return Err(DurabilityError::InvalidStoredState)}
-            }
-            if existing.is_none(){
-                if let Some(editor)=&attempt.result.editor{
+            if let Some(record)=&existing
+                && record.bytes()!=attempt.result_bytes.as_slice(){return Err(DurabilityError::InvalidStoredState)}
+            if existing.is_none()
+                && let Some(editor)=&attempt.result.editor{
                     let presence=crate::spell::house_execution::current_house_presence(room,runtime,session,actor,attempt.position).map_err(|_|DurabilityError::Unavailable)?;
                     let list=match editor.list{HouseEditorList::Guest=>HouseList::Guest,HouseEditorList::Subowner=>HouseList::Subowner,HouseEditorList::Door(n)=>HouseList::Door(n.get())};
                     let present:bool=sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_house_editors WHERE editor_id=encode($1,'hex')::uuid)").bind(editor.editor_id.as_slice()).fetch_one(&mut *tx).await?;
@@ -951,7 +958,6 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                     if observed.house_key!=editor.house_key || observed.list!=list || observed.ownership_revision!=editor.ownership_revision.get() || observed.acl_revision!=editor.acl_revision || observed.text!=editor.text{return Err(DurabilityError::Unavailable)}
                     }
                 }
-            }
             let Some(request)=attempt.request.as_ref() else{
                 let record=crate::durability::spell_parameter_result::write_parameter_result_in_transaction(&mut tx,&authority,&attempt.definition,&attempt.intent,&attempt.result,None).await.map_err(|_|DurabilityError::Unavailable)?;
                 if !record.historical(){
@@ -1010,6 +1016,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
 
 #[cfg(test)]
 mod tests {
+    #![allow(clippy::unwrap_used)]
     use super::*;
     #[test]
     fn replay_binding_distinguishes_same_spell_different_player_text() {

@@ -1,5 +1,9 @@
 //! Explicit ordinary Game-group bootstrap under existing current admission fences.
 //! Private snapshots are observed source-qualified data, never renewed admission authority.
+#![allow(
+    dead_code,
+    reason = "spell import candidate; awaits its production owner caller"
+)]
 use super::character_authority::{ReconciledCharacterAuthority, assert_recovery_fence};
 use super::character_progression::{
     CharacterProgressionError, CurrentCharacterGameplayFence, assert_gameplay_fence,

@@ -321,9 +321,6 @@ pub(crate) async fn read_response_bounded<S: AsyncRead + Unpin>(
     .await?;
     Ok((code, body))
 }
-async fn read_chunked<S: AsyncRead + Unpin>(stream: &mut S) -> Result<Vec<u8>, SourceError> {
-    read_chunked_bounded(stream, 8192).await
-}
 async fn read_chunked_bounded<S: AsyncRead + Unpin>(
     stream: &mut S,
     body_max: usize,
@@ -427,6 +424,7 @@ mod tests {
 
 #[cfg(test)]
 mod premium_response_tests {
+    #![allow(clippy::unwrap_used)]
     use super::*;
     async fn read(bytes: &[u8]) -> Result<(u16, Vec<u8>), SourceError> {
         let mut stream = bytes;

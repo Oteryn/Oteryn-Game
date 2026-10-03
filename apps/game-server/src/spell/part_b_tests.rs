@@ -2,7 +2,7 @@
 //! `not_self` (`targeting.allowed_targets`, `allow_on_self`) and the rune refusals, the B.3 spoken
 //! matching (P1, P2) and location phrase (P7), and the rejection of the Part B keys that have no
 //! implementation yet.
-
+#![allow(clippy::panic)]
 #![allow(clippy::expect_used)]
 
 use serde_json::{Value, json};

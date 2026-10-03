@@ -177,6 +177,8 @@ pub(crate) async fn open_aleta_editor_in_transaction(
 }
 #[cfg(test)]
 mod tests {
+    #![allow(clippy::items_after_test_module)]
+    #![allow(clippy::unwrap_used)]
     use super::*;
     #[test]
     fn actual_room_cannot_invent_house_from_catalogue_or_character() {

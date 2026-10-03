@@ -2911,6 +2911,7 @@ impl StepPacing {
 
 #[cfg(test)]
 mod tests {
+    #![allow(clippy::items_after_test_module)]
     #![allow(clippy::expect_used, clippy::unwrap_used, clippy::panic)]
     use super::*;
     use sha2::{Digest, Sha256};

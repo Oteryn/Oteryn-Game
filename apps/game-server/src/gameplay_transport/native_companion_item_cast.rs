@@ -21,6 +21,10 @@ pub(super) struct PreparedDirectCompanionState {
 
 /// Summon/Convince source scripts do not consume a skull predicate. Explicit
 /// source N/A is distinct from a current projection that says clear skull.
+#[allow(
+    clippy::too_many_arguments,
+    reason = "the owner turn binds every independently resolved fact explicitly"
+)]
 pub(super) async fn read_current_direct_restrictions(
     tx: &mut Transaction<'_, Postgres>,
     root: &crate::durability::DurabilityRoot,
@@ -228,11 +232,8 @@ pub(super) async fn prepare_direct(
     let mut sight = true;
     if let Some((p, _)) = &target {
         for (cell, exempt) in sight_steps(origin, *p)? {
-            if !tiles.contains_key(&cell) {
-                tiles.insert(
-                    cell,
-                    read_tile(tx, authority, room, runtime, objects, cell).await?,
-                );
+            if let std::collections::btree_map::Entry::Vacant(e) = tiles.entry(cell) {
+                e.insert(read_tile(tx, authority, room, runtime, objects, cell).await?);
             }
             if !exempt && tiles[&cell].projectile {
                 sight = false;
@@ -304,15 +305,12 @@ pub(super) async fn prepare_direct(
         &excluded,
     )
     .map_err(|_| SpellCastDisposition::TargetIllegal)?;
-    if reservation.consume_rune_charge() != !named {
+    if reservation.consume_rune_charge() == named {
         return reject();
     }
     let physical = tile(reservation.position());
-    if !tiles.contains_key(&physical) {
-        tiles.insert(
-            physical,
-            read_tile(tx, authority, room, runtime, objects, physical).await?,
-        );
+    if let std::collections::btree_map::Entry::Vacant(e) = tiles.entry(physical) {
+        e.insert(read_tile(tx, authority, room, runtime, objects, physical).await?);
     }
     if !tiles[&physical].present
         || (named && (tiles[&physical].solid || tiles[&physical].floor_change))
@@ -380,13 +378,12 @@ pub(super) async fn prepare_direct(
         .authored
         .as_ref()
         .and_then(|a| a.header.presentation.as_ref())
+        && let Some(binding) = &p.cast_cue
     {
-        for binding in &p.cast_cue {
-            cues.push(LocatedCueRequest {
-                binding: binding.clone(),
-                target: CueTarget::Actor(b.actor),
-            });
-        }
+        cues.push(LocatedCueRequest {
+            binding: binding.clone(),
+            target: CueTarget::Actor(b.actor),
+        });
     }
     cues.push(LocatedCueRequest {
         binding: "appearance:effect/magic_blue".into(),
@@ -644,17 +641,14 @@ pub(super) async fn prepare_with_current_restrictions(
         .authored
         .as_ref()
         .and_then(|a| a.header.presentation.as_ref())
+        && let Some(binding) = &p.cast_cue
     {
-        for binding in &p.cast_cue {
-            cues.push(
-                crate::gameplay_transport::spell_presentations::LocatedCueRequest {
-                    binding: binding.clone(),
-                    target: crate::gameplay_transport::spell_presentations::CueTarget::Actor(
-                        b.actor,
-                    ),
-                },
-            );
-        }
+        cues.push(
+            crate::gameplay_transport::spell_presentations::LocatedCueRequest {
+                binding: binding.clone(),
+                target: crate::gameplay_transport::spell_presentations::CueTarget::Actor(b.actor),
+            },
+        );
     }
     cues.push(crate::gameplay_transport::spell_presentations::LocatedCueRequest {
         binding: "appearance:effect/magic_blue".into(),
@@ -824,6 +818,7 @@ fn qualify_current_black_skull(
 
 #[cfg(test)]
 mod restriction_authority_tests {
+    #![allow(clippy::expect_used)]
     use super::*;
     use crate::spell::owned_cast_facts::{CastFactsBinding, CurrentProjection};
 

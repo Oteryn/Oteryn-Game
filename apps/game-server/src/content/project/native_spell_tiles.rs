@@ -107,6 +107,10 @@ pub(crate) struct QualifiedSourceStepTile {
 }
 
 impl QualifiedSpellTile {
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "the owner turn binds every independently resolved fact explicitly"
+    )]
     pub(super) fn from_source_world(
         ground: Option<u32>,
         ground_speed: Option<u16>,

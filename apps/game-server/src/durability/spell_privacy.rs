@@ -1,5 +1,9 @@
 //! Actual target-owned Exiva preferences. No caller boolean grants permission and
 //! neither absent preferences nor absent staff roles mean public/ordinary access.
+#![allow(
+    dead_code,
+    reason = "spell import candidate; awaits its production owner caller"
+)]
 use super::spell_item_transaction::{SpellItemAuthority, SpellItemError, check_transaction};
 use serde::{Deserialize, Serialize};
 use sqlx::{Postgres, Row, Transaction};

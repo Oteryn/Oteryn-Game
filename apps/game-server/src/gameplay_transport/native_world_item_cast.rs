@@ -198,18 +198,12 @@ pub(super) async fn prepare(
         read_tile(tx, authority, room, runtime, objects, origin).await?,
     );
     for (p, _) in sight_steps(origin, target)? {
-        if !tiles.contains_key(&p) {
-            tiles.insert(
-                p,
-                read_tile(tx, authority, room, runtime, objects, p).await?,
-            );
+        if let std::collections::btree_map::Entry::Vacant(e) = tiles.entry(p) {
+            e.insert(read_tile(tx, authority, room, runtime, objects, p).await?);
         }
     }
-    if !tiles.contains_key(&target) {
-        tiles.insert(
-            target,
-            read_tile(tx, authority, room, runtime, objects, target).await?,
-        );
+    if let std::collections::btree_map::Entry::Vacant(e) = tiles.entry(target) {
+        e.insert(read_tile(tx, authority, room, runtime, objects, target).await?);
     }
     let target_flags = *tiles.get(&target).ok_or(SpellCastDisposition::Rejected)?;
     let caster_flags = *tiles.get(&origin).ok_or(SpellCastDisposition::Rejected)?;
@@ -244,13 +238,13 @@ pub(super) async fn prepare(
     let current = item_tx::read_spell_tile_in_transaction(tx, authority, &address)
         .await
         .map_err(|_| SpellCastDisposition::NotAvailable)?;
-    if let Some(selected) = rune.and_then(|r| r.target_item) {
-        if !current.items.first().is_some_and(|row| {
+    if let Some(selected) = rune.and_then(|r| r.target_item)
+        && !current.items.first().is_some_and(|row| {
             row.item_instance_id == selected.item_instance
                 && row.state_revision == selected.expected_state_revision
-        }) {
-            return Err(SpellCastDisposition::TargetIllegal);
-        }
+        })
+    {
+        return Err(SpellCastDisposition::TargetIllegal);
     }
     let mut facts = ItemWorldSnapshot {
         caster_in_pz: caster_flags.protection,
@@ -411,13 +405,12 @@ pub(super) async fn prepare(
         .authored
         .as_ref()
         .and_then(|a| a.header.presentation.as_ref())
+        && let Some(binding) = &p.cast_cue
     {
-        for binding in &p.cast_cue {
-            cues.push(LocatedCueRequest {
-                binding: binding.clone(),
-                target: CueTarget::Actor(b.actor),
-            });
-        }
+        cues.push(LocatedCueRequest {
+            binding: binding.clone(),
+            target: CueTarget::Actor(b.actor),
+        });
     }
     let presentation = states
         .presentations
@@ -534,18 +527,12 @@ async fn prepare_barrier(
         read_tile(tx, authority, room, runtime, objects, origin).await?,
     );
     for (p, _) in sight_steps(origin, target)? {
-        if !tiles.contains_key(&p) {
-            tiles.insert(
-                p,
-                read_tile(tx, authority, room, runtime, objects, p).await?,
-            );
+        if let std::collections::btree_map::Entry::Vacant(e) = tiles.entry(p) {
+            e.insert(read_tile(tx, authority, room, runtime, objects, p).await?);
         }
     }
-    if !tiles.contains_key(&target) {
-        tiles.insert(
-            target,
-            read_tile(tx, authority, room, runtime, objects, target).await?,
-        );
+    if let std::collections::btree_map::Entry::Vacant(e) = tiles.entry(target) {
+        e.insert(read_tile(tx, authority, room, runtime, objects, target).await?);
     }
     let flags = *tiles.get(&target).ok_or(SpellCastDisposition::Rejected)?;
     let caster_flags = *tiles.get(&origin).ok_or(SpellCastDisposition::Rejected)?;
@@ -751,13 +738,12 @@ async fn prepare_barrier(
         .authored
         .as_ref()
         .and_then(|a| a.header.presentation.as_ref())
+        && let Some(binding) = &p.cast_cue
     {
-        for binding in &p.cast_cue {
-            cues.push(LocatedCueRequest {
-                binding: binding.clone(),
-                target: CueTarget::Actor(b.actor),
-            });
-        }
+        cues.push(LocatedCueRequest {
+            binding: binding.clone(),
+            target: CueTarget::Actor(b.actor),
+        });
     }
     let presentation = states
         .presentations
@@ -960,8 +946,7 @@ async fn prepare_carried(
     else {
         return reject();
     };
-    if &item.key != &record.authoring.item.key || &item.revision != &record.authoring.item.revision
-    {
+    if item.key != record.authoring.item.key || item.revision != record.authoring.item.revision {
         return reject();
     }
     let production = &record.production_definition;
@@ -1022,13 +1007,12 @@ async fn prepare_carried(
         .authored
         .as_ref()
         .and_then(|a| a.header.presentation.as_ref())
+        && let Some(binding) = &p.cast_cue
     {
-        for binding in &p.cast_cue {
-            cues.push(LocatedCueRequest {
-                binding: binding.clone(),
-                target: CueTarget::Actor(b.actor),
-            });
-        }
+        cues.push(LocatedCueRequest {
+            binding: binding.clone(),
+            target: CueTarget::Actor(b.actor),
+        });
     }
     let presentation = states
         .presentations

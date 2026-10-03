@@ -1136,6 +1136,10 @@ fn validate_profile(header: &AuthoredSpell, deps: &DependencyProfile) -> Result<
     Ok(())
 }
 
+#[allow(
+    clippy::expect_used,
+    reason = "post-validation commit invariant; a fallible exit here would leave a partial owner write"
+)]
 fn equivalent_body(entry: &CompiledEntry) -> (Value, Value) {
     let mut spell = entry.bundle["spell"].clone();
     let object = spell.as_object_mut().expect("typed spell object");
@@ -1439,6 +1443,7 @@ impl CompiledCatalog {
 
 #[cfg(test)]
 mod tests {
+    #![allow(clippy::expect_used, clippy::unwrap_used, clippy::panic)]
     use super::*;
     const SAMPLE: &[u8] = include_bytes!(
         "../../../../tools/content-schema/spell-authoring/samples/executable-spell-catalog.json"

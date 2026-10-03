@@ -1,3 +1,4 @@
+#![allow(clippy::unwrap_used)]
 use super::super::spell_presentations::tests::{commit_fixture, runtime};
 use super::*;
 use crate::movement::interest::InterestEntity;

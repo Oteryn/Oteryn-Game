@@ -209,6 +209,7 @@ pub(crate) async fn plan_find_person_in_transaction(
 }
 #[cfg(test)]
 mod tests {
+    #![allow(clippy::unwrap_used)]
     use super::*;
     #[test]
     fn actual_canonical_find_person_profile_has_online_player_source() {

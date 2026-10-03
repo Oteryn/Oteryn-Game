@@ -1,6 +1,10 @@
 //! Shared durable spell item/cost/source ABI; no dependency on runtime spell adapters.
 //! There is deliberately no second in-memory item store. Reservations are
 //! constructed only by locked database reads, not from planner booleans.
+#![allow(
+    dead_code,
+    reason = "spell import candidate; awaits its production owner caller"
+)]
 
 use crate::durability::item_mint::{GroundPlacement, TypedDefinitionRef};
 

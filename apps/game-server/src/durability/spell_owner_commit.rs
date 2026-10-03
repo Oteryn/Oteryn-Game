@@ -1,6 +1,10 @@
 //! The real common PostgreSQL commit boundary for locally proposed spell item
 //! and companion source receipts. Its token is historical durable evidence,
 //! never a replacement for current physical actor/session/scope authority.
+#![allow(
+    dead_code,
+    reason = "spell import candidate; awaits its production owner caller"
+)]
 use super::spell_item_transaction::{CommittedCompanionAcquisition, PendingCompanionAcquisition};
 use super::spell_item_transaction::{
     CommittedDirectCompanionAcquisition, PendingDirectCompanionAcquisition,

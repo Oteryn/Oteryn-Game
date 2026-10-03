@@ -398,8 +398,8 @@ fn validate_batch(batch: &OwnerCombatBatch) -> Result<(), Error> {
     {
         return Err(Error::InvalidBatch);
     }
-    if let Some(anchor) = &batch.anchor {
-        if anchor.expected_revision.checked_add(1) != Some(anchor.next_revision)
+    if let Some(anchor) = &batch.anchor
+        && (anchor.expected_revision.checked_add(1) != Some(anchor.next_revision)
             || anchor.cooldown_deadlines.len() > 256
             || anchor
                 .cooldown_deadlines
@@ -408,10 +408,9 @@ fn validate_batch(batch: &OwnerCombatBatch) -> Result<(), Error> {
             || anchor
                 .cooldown_deadlines
                 .windows(2)
-                .any(|w| w[0].0 >= w[1].0)
-        {
-            return Err(Error::InvalidAnchor);
-        }
+                .any(|w| w[0].0 >= w[1].0))
+    {
+        return Err(Error::InvalidAnchor);
     }
     Ok(())
 }
@@ -447,6 +446,10 @@ impl ChannelRuntimeV1 {
     }
     /// Reserve the actual touched slots after all owner seals/capacity have been staged,
     /// before SQL may COMMIT. Existing identical reservation is retained across retries.
+    #[allow(
+        clippy::expect_used,
+        reason = "post-validation commit invariant; a fallible exit here would leave a partial owner write"
+    )]
     pub(crate) fn reserve_spell_batch(
         &mut self,
         staged: &mut StagedSpellBatch,
@@ -499,6 +502,10 @@ impl ChannelRuntimeV1 {
     }
     /// Caller must have independently proven the source transaction did not COMMIT.
     /// Unknown outcomes retain reservations; dropping a staged data object never releases.
+    #[allow(
+        clippy::expect_used,
+        reason = "post-validation commit invariant; a fallible exit here would leave a partial owner write"
+    )]
     pub(crate) fn release_definitely_uncommitted_spell_batch(
         &mut self,
         staged: &StagedSpellBatch,
@@ -629,6 +636,10 @@ impl ChannelRuntimeV1 {
     /// source successor preflight, with uninterrupted runtime/player owner locks.
     /// Releases metadata-only touches for immediate source party/despawn installation;
     /// retains the caster/payment reservation and the full original command identity.
+    #[allow(
+        clippy::expect_used,
+        reason = "post-validation commit invariant; a fallible exit here would leave a partial owner write"
+    )]
     pub(crate) fn release_companion_touches_for_source_commit(
         &mut self,
         staged: &mut StagedSpellBatch,
@@ -767,6 +778,10 @@ impl ChannelRuntimeV1 {
         })
     }
 
+    #[allow(
+        clippy::expect_used,
+        reason = "post-validation commit invariant; a fallible exit here would leave a partial owner write"
+    )]
     fn stage_spell_batch_inner(&self, batch: &OwnerCombatBatch) -> Result<StagedSpellBatch, Error> {
         validate_batch(batch)?;
         let caster_facts =

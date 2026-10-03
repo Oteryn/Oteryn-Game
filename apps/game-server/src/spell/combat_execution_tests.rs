@@ -1,3 +1,4 @@
+#![allow(clippy::expect_used)]
 use super::*;
 use crate::ability::{AbilityIntent, AbilityOccurrence, CommitGroup, RevisionSet};
 use crate::foundation::{

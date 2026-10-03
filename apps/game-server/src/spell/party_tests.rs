@@ -1,7 +1,7 @@
 //! Engine tests of part C (`OTERYN_SPELL_NATIVE_BEHAVIOURS_CANDIDATE_V1.md`): the `party_buff`
 //! tests of C.3, the Cancel Magic Shield tests of C.5, and the rejection of the Part C keys that
 //! have no implementation yet.
-
+#![allow(clippy::panic)]
 #![allow(clippy::expect_used)]
 
 use std::collections::BTreeSet;

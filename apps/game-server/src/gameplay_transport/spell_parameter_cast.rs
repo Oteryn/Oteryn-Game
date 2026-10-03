@@ -1,6 +1,10 @@
 //! Candidate parameter transport consumer. The connection owner must call this
 //! only after the separately registered additive capability was selected in Hello.
 //! The nested v1 targeting/header rules and the common cost owner remain unchanged.
+#![allow(
+    dead_code,
+    reason = "spell import candidate; awaits its production owner caller"
+)]
 use crate::durability::fresh_admission::FreshAdmissionStore;
 use crate::durability::spell_item_transaction::SpellItemAuthority;
 use crate::foundation::{ChannelRuntimeV1, ExactActorRef, MovementPositionSnapshot};
@@ -91,6 +95,7 @@ pub(crate) async fn plan_find_person_parameter_in_transaction(
 }
 #[cfg(test)]
 mod tests {
+    #![allow(clippy::unwrap_used)]
     use super::*;
     #[test]
     fn candidate_requires_own_command_and_actual_selected_capability() {

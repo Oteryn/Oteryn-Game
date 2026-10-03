@@ -210,9 +210,9 @@ fn apply_due_under_current_owners(
                 .find(|c| c.source.matches_payload(payload))
                 .ok_or(Error::StaleOwner)?;
             if !current.source.active(book, runtime)
-                || !runtime
+                || runtime
                     .player_control_facts(binding.caster, binding.command.game_session_id())
-                    .is_ok()
+                    .is_err()
                 || states
                     .get(runtime, binding.caster, binding.command.game_session_id())
                     .is_none()
@@ -348,9 +348,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 continue;
             }
             let session = source.command().game_session_id();
-            if !runtime
+            if runtime
                 .player_control_facts(source.caster(), session)
-                .is_ok()
+                .is_err()
                 || states.get(&runtime, source.caster(), session).is_none()
             {
                 continue;
@@ -422,9 +422,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .ok_or(Error::StaleOwner)?;
                 if current.lease != batch.current_lease_generation
                     || !current.source.active(self.spells, &runtime)
-                    || !runtime
+                    || runtime
                         .player_control_facts(binding.caster, binding.command.game_session_id())
-                        .is_ok()
+                        .is_err()
                     || states
                         .get(&runtime, binding.caster, binding.command.game_session_id())
                         .is_none()

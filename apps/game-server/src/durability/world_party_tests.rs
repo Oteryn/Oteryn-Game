@@ -3,8 +3,7 @@
 //! Source writer tests obtain SpellItemAuthority through the real recovery/session/node checks.
 #![allow(clippy::expect_used, dead_code)]
 
-#[path = "../../tests/support/bestiary_postgres_harness.rs"]
-mod harness;
+use crate::bestiary_postgres_harness as harness;
 use crate::durability::item_transfer::CurrentCharacterItemFence;
 use crate::durability::spell_item_transaction::{
     SpellItemAuthority, SpellItemError, assert_spell_item_authority_in_transaction,
@@ -979,7 +978,7 @@ async fn initialize_official_party_build(
         .initialize_character_progression(
             &authority,
             &h.node,
-            fence.clone(),
+            fence,
             ProgressionInitializationRequest {
                 context: context.clone(),
                 policy_revision: "policy-1".into(),
@@ -1647,7 +1646,8 @@ fn genuine_session_absence_hides_presence_without_removing_protected_or_active_m
             1
         );
         tx.commit().await?;
-        let rows: Vec<(Vec<u8>, i16, Option<Vec<u8>>, i64, bool)> = sqlx::query_as("SELECT uuid_send(character_id),presence_state,uuid_send(presence_channel_id),presence_revision::bigint,absence_observed_at IS NOT NULL FROM game_party_members ORDER BY seq")
+        type MemberRow = (Vec<u8>, i16, Option<Vec<u8>>, i64, bool);
+        let rows: Vec<MemberRow> = sqlx::query_as("SELECT uuid_send(character_id),presence_state,uuid_send(presence_channel_id),presence_revision::bigint,absence_observed_at IS NOT NULL FROM game_party_members ORDER BY seq")
             .fetch_all(&h.pool).await?;
         assert_eq!(
             rows,

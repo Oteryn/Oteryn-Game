@@ -446,7 +446,7 @@ async fn apply_build_in_transaction(
         return Ok(Ok(BuildCommitOutcome::AlreadyCommitted(committed)));
     }
 
-    let root = match assert_gameplay_fence(tx, &fence, &node).await? {
+    let root = match assert_gameplay_fence(tx, fence, node).await? {
         Ok(root) => root,
         Err(error) => return Ok(Err(error)),
     };

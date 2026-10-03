@@ -1,5 +1,9 @@
 //! Source-qualified Wheel allocation gates. Caller artifact bytes and the active Content pin
 //! are required; the embedded reference validates provenance and never activates a profile.
+#![allow(
+    dead_code,
+    reason = "spell import candidate; awaits its production owner caller"
+)]
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -241,6 +245,7 @@ impl CompiledWheelProfile {
 }
 #[cfg(test)]
 mod tests {
+    #![allow(clippy::unwrap_used)]
     use super::*;
     fn profile() -> CompiledWheelProfile {
         CompiledWheelProfile::from_active_artifact(

@@ -141,6 +141,10 @@ pub(crate) struct DotSequenceStep {
 
 /// The content values of one definition (§3: values come from content, never from code).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[allow(
+    clippy::large_enum_variant,
+    reason = "transient owner result; boxing would add an allocation to the owner turn"
+)]
 pub(crate) enum ConditionValues {
     Speed {
         paralysis: bool,
@@ -1179,8 +1183,16 @@ impl<S: Clone> ConditionStore<S> {
                         (a, b) => a.or(b),
                     };
                     TickKind::SpellRegeneration {
-                        health_gain: if elapsed % h == 0 { health_gain } else { 0 },
-                        mana_gain: if elapsed % m == 0 { mana_gain } else { 0 },
+                        health_gain: if elapsed.is_multiple_of(h) {
+                            health_gain
+                        } else {
+                            0
+                        },
+                        mana_gain: if elapsed.is_multiple_of(m) {
+                            mana_gain
+                        } else {
+                            0
+                        },
                         suppressed: facts.in_protection_zone,
                     }
                 }

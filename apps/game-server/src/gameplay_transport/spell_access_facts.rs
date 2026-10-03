@@ -1,5 +1,9 @@
 //! Actual current Character/Item reads for a cast, inside its owner's physical SQL transaction.
 //! Premium/learning/Wheel producers are explicit ports. Unavailable authority never becomes a grant.
+#![allow(
+    dead_code,
+    reason = "spell import candidate; awaits its production owner caller"
+)]
 use crate::content::ActiveGeneration;
 use crate::durability::character_authority::ReconciledCharacterAuthority;
 use crate::durability::character_equipment::{
@@ -191,32 +195,31 @@ pub(crate) fn qualify_raw_owned_cast_facts(
     // Wheel data was loaded under the same actual SQL Character lock as build/equipment;
     // the process-local access port cannot invent an allocation owner when that row is absent.
     projections.wheel = None;
-    if let (Some(wheel), Some(profile)) = (&raw.wheel, native.wheel_profile()) {
-        if wheel.character == binding.character
-            && wheel.character_revision == binding.character_revision
-            && wheel.content_digest == binding.content_digest
-            && wheel.revision > 0
-            && !matches!(build.vocation(), "monk" | "exalted_monk")
-        {
-            let stages = profile
-                .stages(
-                    &wheel.allocation,
-                    Some(wheel.revelation_bonus),
-                    Some(wheel.maximum_grade_modifier),
-                )
-                .map_err(|_| AccessFactsError::Unavailable("qualified Wheel stage"))?;
-            // Retained allocation is not bonus authority after delevel/promotion loss.
-            let stages = current_wheel_stages(stages, level, build.vocation());
-            let value = profile
-                .spell_stages(build.vocation(), &stages)
-                .map_err(|_| AccessFactsError::Unavailable("qualified Wheel vocation"))?;
-            projections.wheel = Some(crate::spell::owned_cast_facts::CurrentProjection {
-                binding: binding.clone(),
-                authority_revision: wheel.revision,
-                valid_until_micros: u64::MAX,
-                value,
-            });
-        }
+    if let (Some(wheel), Some(profile)) = (&raw.wheel, native.wheel_profile())
+        && wheel.character == binding.character
+        && wheel.character_revision == binding.character_revision
+        && wheel.content_digest == binding.content_digest
+        && wheel.revision > 0
+        && !matches!(build.vocation(), "monk" | "exalted_monk")
+    {
+        let stages = profile
+            .stages(
+                &wheel.allocation,
+                Some(wheel.revelation_bonus),
+                Some(wheel.maximum_grade_modifier),
+            )
+            .map_err(|_| AccessFactsError::Unavailable("qualified Wheel stage"))?;
+        // Retained allocation is not bonus authority after delevel/promotion loss.
+        let stages = current_wheel_stages(stages, level, build.vocation());
+        let value = profile
+            .spell_stages(build.vocation(), &stages)
+            .map_err(|_| AccessFactsError::Unavailable("qualified Wheel vocation"))?;
+        projections.wheel = Some(crate::spell::owned_cast_facts::CurrentProjection {
+            binding: binding.clone(),
+            authority_revision: wheel.revision,
+            valid_until_micros: u64::MAX,
+            value,
+        });
     }
     projections.magnitude = super::spell_magnitude_facts::project(raw, &binding, native)?;
     let facts = OwnedCastFacts::from_owner_reads(binding, build, level, equipment, projections)?;

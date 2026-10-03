@@ -1,5 +1,9 @@
 //! PREMIUM-DELIVERY0 candidate adapter. Platform owns lifecycle; Game only consumes bounded
 //! authenticated evidence, fences it durably, and exposes current benefit under the actual owner.
+#![allow(
+    dead_code,
+    reason = "spell import candidate; awaits its production owner caller"
+)]
 use super::spell_access_facts::{AccessFactsError, CurrentSpellAccessOwner, owner_registration};
 use crate::native_admission_source::{
     SourceError, TransientCapacity, descriptor::ProducerDescriptor,

@@ -1,5 +1,9 @@
 //! Real Character Wheel allocation owner. Unknown external quest/gem modifiers are refused;
 //! allocations, current revision, source Content pin and writer receipts live in PostgreSQL.
+#![allow(
+    dead_code,
+    reason = "spell import candidate; awaits its production owner caller"
+)]
 use super::character_authority::ReconciledCharacterAuthority;
 use super::character_equipment::{EquipmentError, EquipmentSnapshot};
 use super::item_transfer::CurrentCharacterItemFence;

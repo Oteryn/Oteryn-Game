@@ -1064,7 +1064,7 @@ fn lower(
     let mut hits = Vec::new();
     let mut healing = None;
     let mut damage_element = None;
-    let block_armor;
+
     for (id, delay, effects) in &applications {
         for effect in effects {
             match effect {
@@ -1108,7 +1108,7 @@ fn lower(
             }
         }
     }
-    block_armor = spell
+    let block_armor = spell
         .authored
         .as_ref()
         .ok_or(SpellCastDisposition::Rejected)?
@@ -1356,13 +1356,13 @@ fn lower(
         .as_ref()
         .ok_or(SpellCastDisposition::Rejected)?;
     if let Some(p) = &source.header.presentation {
-        for binding in &p.cast_cue {
+        if let Some(binding) = &p.cast_cue {
             cues.push(LocatedCueRequest {
                 binding: binding.clone(),
                 target: CueTarget::Actor(batch.caster),
             });
         }
-        for binding in &p.impact_cue {
+        if let Some(binding) = &p.impact_cue {
             for target in batch
                 .effects
                 .iter()
@@ -1421,13 +1421,13 @@ fn lower(
             }
         }
         if let Some(p) = &profile.presentation {
-            for binding in &p.caster_effect_asset_binding {
+            if let Some(binding) = &p.caster_effect_asset_binding {
                 cues.push(LocatedCueRequest {
                     binding: binding.clone(),
                     target: CueTarget::Actor(batch.caster),
                 });
             }
-            for binding in &p.impact_asset_binding {
+            if let Some(binding) = &p.impact_asset_binding {
                 if is_area || tile_target {
                     for tile in &geometry {
                         if world
@@ -1461,7 +1461,7 @@ fn lower(
                     }
                 }
             }
-            for binding in &p.projectile_asset_binding {
+            if let Some(binding) = &p.projectile_asset_binding {
                 if is_area || tile_target {
                     if world.tiles.get(&world.origin).is_some_and(|t| t.present) {
                         cues.push(LocatedCueRequest {
@@ -1526,6 +1526,8 @@ fn lower(
 
 #[cfg(test)]
 mod tests {
+    #![allow(clippy::items_after_test_module)]
+    #![allow(clippy::panic)]
     #![allow(clippy::unwrap_used, clippy::expect_used)]
     use super::*;
     fn source(key: &str) -> SpellDefinition {
@@ -2016,13 +2018,13 @@ pub(in crate::gameplay_transport) async fn due_chain_presentations(
         .authored
         .as_ref()
         .ok_or(SpellCastDisposition::Rejected)?;
-    if let Some(p) = &source.header.presentation {
-        if let Some(binding) = &p.impact_cue {
-            cues.push(LocatedCueRequest {
-                binding: binding.clone(),
-                target: CueTarget::Actor(target),
-            });
-        }
+    if let Some(p) = &source.header.presentation
+        && let Some(binding) = &p.impact_cue
+    {
+        cues.push(LocatedCueRequest {
+            binding: binding.clone(),
+            target: CueTarget::Actor(target),
+        });
     }
     let selected = ability(spell, None)?;
     for reference in &selected.effects {

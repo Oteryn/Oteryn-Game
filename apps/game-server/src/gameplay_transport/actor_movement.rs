@@ -1,5 +1,9 @@
 //! Child of the real player-vitals owner: movement pacing stays in the existing
 //! PlayerSpellState, under the actual Channel owner work-item lock.
+#![allow(
+    dead_code,
+    reason = "spell import candidate; awaits its production owner caller"
+)]
 use super::ChannelSpellStates;
 use crate::content::{LogicalCell, NativeEntryMovementCells};
 use crate::foundation::{
@@ -21,6 +25,10 @@ pub(crate) enum StepInChannel {
 /// Equipment delta is supplied only by the actual persisted-equipment owner.
 /// Absent pace metadata preserves the established baseline for an actor without
 /// a speed condition; it never permits a speed spell to bypass its consumer.
+#[allow(
+    clippy::too_many_arguments,
+    reason = "the owner turn binds every independently resolved fact explicitly"
+)]
 pub(crate) fn step_in_channel(
     runtime: &mut ChannelRuntimeV1,
     states: &mut ChannelSpellStates,
@@ -48,6 +56,10 @@ pub(crate) fn step_in_channel(
     )
 }
 
+#[allow(
+    clippy::too_many_arguments,
+    reason = "the owner turn binds every independently resolved fact explicitly"
+)]
 pub(crate) fn step_in_channel_with_source_step(
     runtime: &mut ChannelRuntimeV1,
     states: &mut ChannelSpellStates,
@@ -199,10 +211,10 @@ pub(crate) fn step_in_channel_with_source_step(
     }
     // Validate the pacing successor before the physical movement commit. Only
     // this already-computed infallible assignment follows a successful owner turn.
-    if let Some(deadline) = next_deadline {
-        if pacing.commit_step(now_us, deadline, input).is_err() {
-            return failure(MovementError::NotQualified);
-        }
+    if let Some(deadline) = next_deadline
+        && pacing.commit_step(now_us, deadline, input).is_err()
+    {
+        return failure(MovementError::NotQualified);
     }
     let selection = MovementEngineeringSelection {
         owner_context: runtime.pinned_movement_context(),
@@ -313,6 +325,7 @@ fn baseline_step(
 
 #[cfg(test)]
 mod tests {
+    #![allow(clippy::items_after_test_module)]
     #![allow(clippy::expect_used, clippy::unwrap_used, clippy::panic)]
     use super::*;
     use crate::foundation::{ChannelContentPin, ChannelId, NodeId, WorldId};

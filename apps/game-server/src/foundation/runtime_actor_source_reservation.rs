@@ -110,6 +110,10 @@ impl ChannelRuntimeV1 {
         }
         Ok(())
     }
+    #[allow(
+        clippy::expect_used,
+        reason = "post-validation commit invariant; a fallible exit here would leave a partial owner write"
+    )]
     pub(crate) fn reserve_source_actors(
         &mut self,
         prepared: &mut SourceActorReservation,
@@ -133,6 +137,10 @@ impl ChannelRuntimeV1 {
     /// The registered compositor calls this only after genuine COMMIT or proven
     /// rollback, followed immediately by source installation in the same owner turn.
     /// Unknown COMMIT retains this reservation; dropping its data never releases it.
+    #[allow(
+        clippy::expect_used,
+        reason = "post-validation commit invariant; a fallible exit here would leave a partial owner write"
+    )]
     pub(crate) fn release_source_actors_after_observed_outcome(
         &mut self,
         prepared: SourceActorReservation,
@@ -153,6 +161,7 @@ impl ChannelRuntimeV1 {
 
 #[cfg(test)]
 mod tests {
+    #![allow(clippy::unwrap_used)]
     use super::*;
     use crate::foundation::{
         ChannelContentPin, ChannelId, ControlLossMark, MovementLocalPosition,

@@ -143,7 +143,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 facts,
                 character_revision,
             } = super::super::spell_character_facts::load_character_cast_facts(
-                &self.root,
+                self.root,
                 self.character,
                 fence.character_id,
             )

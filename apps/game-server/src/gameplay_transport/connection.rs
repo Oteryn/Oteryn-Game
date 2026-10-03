@@ -729,7 +729,7 @@ where
     // An empty overlay is still the registered domain's complete snapshot.
     // Source-qualified maps have no legacy entry-room door; publish no invented
     // placement, while allowing the client to distinguish empty from missing.
-    let entries = overlay.as_ref().map(std::slice::from_ref).unwrap_or(&[]);
+    let entries = overlay.as_slice();
     let Ok(overlay_payload) = encode_world_object_overlay_snapshot(entries) else {
         return ConnectionEnd::AdmittedThenDisconnected(admitted);
     };

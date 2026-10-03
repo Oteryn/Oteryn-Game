@@ -1,5 +1,9 @@
 //! Visibility input for a party consent operation, issued from the actual current journal
 //! and held physical owner. It grants no invitation or membership by itself.
+#![allow(
+    dead_code,
+    reason = "spell import candidate; awaits its production owner caller"
+)]
 use super::{ACTIVE, active_committed_binding_is_valid, load_session_for_update};
 use crate::durability::{
     DurabilityError, DurabilityRoot,

@@ -266,7 +266,7 @@ impl ChannelRuntimeV1 {
             return Err(CarrierError::PlanConflict);
         };
         *health = prepared.health_after;
-        *state = Box::new(prepared.next);
+        **state = prepared.next;
         let ordinal = state
             .familiar_defense
             .as_ref()

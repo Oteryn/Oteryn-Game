@@ -2,6 +2,10 @@
 //! canonical same-TX current-session source and the existing VIS-2 index/settings. It does
 //! not install a capability, emit a protocol envelope, query a second spatial index, or
 //! infer a frame conversion for native floors outside the existing VIS-2 0..15 contract.
+#![allow(
+    dead_code,
+    reason = "spell import candidate; awaits its production owner caller"
+)]
 use super::spell_presentations::{
     CommittedPresentation, Cue, PresentationCause, SpellPresentationOwner,
 };
@@ -455,18 +459,18 @@ impl CandidateSessionPublisher {
             .iter()
             .map(|event| event.emission_sequence)
             .collect();
-        if let Some((previous, sync, original)) = &self.last_turn {
-            if previous == &turn.context {
-                if turn.sync < *sync {
-                    return Err(Error::Stale);
-                }
-                if turn.sync == *sync {
-                    return if *original == sequences {
-                        Ok(false)
-                    } else {
-                        Err(Error::Stale)
-                    };
-                }
+        if let Some((previous, sync, original)) = &self.last_turn
+            && previous == &turn.context
+        {
+            if turn.sync < *sync {
+                return Err(Error::Stale);
+            }
+            if turn.sync == *sync {
+                return if *original == sequences {
+                    Ok(false)
+                } else {
+                    Err(Error::Stale)
+                };
             }
         }
         self.last_turn = Some((turn.context.clone(), turn.sync, sequences));

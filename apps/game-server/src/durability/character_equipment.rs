@@ -1,5 +1,9 @@
 //! Candidate Character equipment owner on the actual durable ItemInstance custody graph.
 //! Helpers participate in the compositor's SAME physical transaction; none commits independently.
+#![allow(
+    dead_code,
+    reason = "spell import candidate; awaits its production owner caller"
+)]
 use super::character_authority::{ReconciledCharacterAuthority, assert_recovery_fence};
 use super::equipment_policy_abi::{EquipmentPolicyLookup, claims};
 use super::item_transfer::{CurrentCharacterItemFence, character_item_fence_is_current, scope_of};

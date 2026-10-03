@@ -29,7 +29,7 @@ fn standing_element(
         };
         match classification.item_type {
             ReferenceItemField::Known(ReferenceItemType::MagicField) => {
-                return Some(record.attributes.field_condition.as_ref()?.element().ok()?);
+                return record.attributes.field_condition.as_ref()?.element().ok();
             }
             ReferenceItemField::Known(_) | ReferenceItemField::NotApplicable => {}
             ReferenceItemField::Unknown | ReferenceItemField::Conflict => return None,
@@ -40,6 +40,10 @@ fn standing_element(
 impl ChannelSpellStates {
     /// The sealed read came from the real current DB owner. The caller keeps
     /// runtime/state locked; current physical position/pin are compared again.
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "the owner turn binds every independently resolved fact explicitly"
+    )]
     pub(crate) fn tick_with_standing_read(
         &mut self,
         runtime: &mut ChannelRuntimeV1,

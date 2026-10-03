@@ -158,6 +158,10 @@ pub(crate) struct PreparedManaTraining {
     after: LiveManaTraining,
     pub(crate) request: BuildChangeRequest,
 }
+#[allow(
+    clippy::large_enum_variant,
+    reason = "transient owner result; boxing would add an allocation to the owner turn"
+)]
 pub(crate) enum TrainingStage {
     Live(LiveManaTraining),
     Durable(PreparedManaTraining),
@@ -288,6 +292,7 @@ impl PreparedManaTraining {
 
 #[cfg(test)]
 mod tests {
+    #![allow(clippy::unwrap_used, clippy::panic)]
     use super::*;
     fn formula() -> CompiledTrainingFormula {
         CompiledTrainingFormula::from_profile(
@@ -502,6 +507,10 @@ impl PreparedPlayerTraining {
     }
     /// The caller installs this fully prepared successor with its physical batch.
     /// Call before any owner mutation; mismatch leaves the actual state untouched.
+    #[allow(
+        clippy::expect_used,
+        reason = "post-validation commit invariant; a fallible exit here would leave a partial owner write"
+    )]
     pub(crate) fn prepare_install(
         &mut self,
         current: &super::cast::PlayerSpellState,
@@ -674,7 +683,7 @@ impl super::cast::PlayerSpellState {
             .training_checkpoint
             .as_mut()
             .ok_or(TrainingError::InvalidBuild)?;
-        let mut comparable = current.clone();
+        let mut comparable = current;
         comparable.expected_character_revision = expected.fence.expected_character_revision;
         if retained.as_ref() != expected
             || comparable != expected.fence

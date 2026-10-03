@@ -1756,6 +1756,10 @@ pub(crate) struct FirstProductionRuntimeState {
 }
 
 impl FirstProductionRuntimeState {
+    #[allow(
+        dead_code,
+        reason = "read by the native gameplay qualification tests only"
+    )]
     pub(crate) fn native_source_world(&self) -> Option<&[u8]> {
         self.native_source_world.as_deref()
     }

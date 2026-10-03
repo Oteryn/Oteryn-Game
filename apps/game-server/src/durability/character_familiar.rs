@@ -2,6 +2,10 @@
 //! A changed snapshot is one session-generation fenced Character successor, preserving XP,
 //! standard stance, build and Monk fields. History replay/reconcile never reacquire authority.
 //! See migration 0033; root composition extends the mixed Character receipt chain before use.
+#![allow(
+    dead_code,
+    reason = "spell import candidate; awaits its production owner caller"
+)]
 use super::character_authority::{ReconciledCharacterAuthority, assert_recovery_fence};
 use super::character_progression::{
     CharacterProgressionError, CurrentCharacterGameplayFence, assert_gameplay_fence, numeric_u64,
@@ -506,7 +510,7 @@ async fn apply_familiar_transaction(
     if !allow_new_mutation {
         return Ok(Err(CharacterProgressionError::AuthorityRejected));
     }
-    let root = match assert_gameplay_fence(tx, &fence, &node).await? {
+    let root = match assert_gameplay_fence(tx, &fence, node).await? {
         Ok(root) => root,
         Err(error) => return Ok(Err(error)),
     };
@@ -751,6 +755,8 @@ pub(crate) async fn verify_familiar_chain(
 
 #[cfg(test)]
 mod tests {
+    #![allow(clippy::items_after_test_module)]
+    #![allow(clippy::unwrap_used)]
     use super::*;
     #[test]
     fn legacy_binding_encoding_survives_optional_offline_cooldown() {
@@ -805,6 +811,10 @@ mod tests {
 
 /// Both branches contain genuine observed database evidence. A reconciled branch is history;
 /// the transport must separately prove its exact retained current owner/predecessor to install.
+#[allow(
+    clippy::large_enum_variant,
+    reason = "transient owner result; boxing would add an allocation to the owner turn"
+)]
 pub(crate) enum FamiliarSpellCommit {
     Committed {
         common: super::spell_owner_commit::CommittedSpellOwnerTransaction,

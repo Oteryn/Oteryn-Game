@@ -66,6 +66,10 @@ pub(crate) enum FieldError {
     Bounds,
 }
 impl QualifiedFieldCondition {
+    #[allow(
+        dead_code,
+        reason = "read only by the actual spell field owner, not mounted in every crate"
+    )]
     pub(crate) fn condition_values(
         &self,
     ) -> Result<Option<super::condition::ConditionValues>, FieldError> {

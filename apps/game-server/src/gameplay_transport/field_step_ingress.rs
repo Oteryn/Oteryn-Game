@@ -40,6 +40,10 @@ struct CurrentFieldCreator {
 impl StepIngressRead<'_, '_> {
     /// Called before any physical write, under the same actual owner locks as
     /// the STEP. All fallible field checks finish before movement admission.
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "the owner turn binds every independently resolved fact explicitly"
+    )]
     fn validate_current(
         &self,
         runtime: &ChannelRuntimeV1,

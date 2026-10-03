@@ -210,6 +210,10 @@ impl DirectCompanionReservation {
     }
 }
 
+#[allow(
+    clippy::too_many_arguments,
+    reason = "the owner turn binds every independently resolved fact explicitly"
+)]
 pub(crate) fn prepare_direct_acquisition(
     runtime: &ChannelRuntimeV1,
     cells: &NativeEntryMovementCells,
@@ -232,6 +236,10 @@ pub(crate) fn prepare_direct_acquisition(
         &[],
     )
 }
+#[allow(
+    clippy::too_many_arguments,
+    reason = "the owner turn binds every independently resolved fact explicitly"
+)]
 pub(crate) fn prepare_direct_acquisition_excluding(
     runtime: &ChannelRuntimeV1,
     cells: &NativeEntryMovementCells,
@@ -460,6 +468,10 @@ pub(crate) fn prepare_acquisition(
 ) -> Result<PreparedAcquisition, CompanionExecutionError> {
     prepare_acquisition_excluding(runtime, cells, owner, session, spell, source, current, &[])
 }
+#[allow(
+    clippy::too_many_arguments,
+    reason = "the owner turn binds every independently resolved fact explicitly"
+)]
 fn prepare_acquisition_excluding(
     runtime: &ChannelRuntimeV1,
     cells: &NativeEntryMovementCells,
@@ -947,6 +959,10 @@ struct FamiliarParts {
     facts: FamiliarFacts,
     after: DurableFamiliarState,
 }
+#[allow(
+    clippy::too_many_arguments,
+    reason = "the owner turn binds every independently resolved fact explicitly"
+)]
 fn prepare_familiar_parts(
     runtime: &ChannelRuntimeV1,
     cells: Option<&NativeEntryMovementCells>,

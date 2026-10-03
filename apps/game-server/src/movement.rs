@@ -14,9 +14,9 @@
 //! proposes a step and this module's existing machinery revalidates and commits it, unchanged.
 
 use crate::content::native_cell_lookup::NativeStaticCellLookup;
-use crate::content::static_cell_engine::{
-    EngineeringStaticCellIndex, EngineeringStaticCellScope, StaticCellEngineError,
-};
+#[cfg(test)]
+use crate::content::static_cell_engine::EngineeringStaticCellIndex;
+use crate::content::static_cell_engine::{EngineeringStaticCellScope, StaticCellEngineError};
 use crate::content::{CollisionClass, LogicalCell};
 use crate::foundation::{
     CarrierError, ChannelRuntimeV1, CurrentOwnerMovementPosition, ExactActorRef,

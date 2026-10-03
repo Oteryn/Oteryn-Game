@@ -38,6 +38,10 @@ impl crate::foundation::SpellRelocationProof for SpellRelocationProof<'_, '_> {
     }
 }
 
+#[allow(
+    clippy::large_enum_variant,
+    reason = "transient owner result; boxing would add an allocation to the owner turn"
+)]
 pub(crate) enum WorldRelocationOutcome<'owner, 'database> {
     Move(SpellRelocationProof<'owner, 'database>),
     /// The donor Rope callback ignores a failed teleport and still consumes costs.
@@ -199,10 +203,10 @@ fn qualified_static_owner<'owner>(
     Ok(WorldStaticOwnerBorrow::Entry(objects))
 }
 
-fn tile<'a>(
-    room: &'a crate::content::QualifiedNativeEntryRoom,
+fn tile(
+    room: &crate::content::QualifiedNativeEntryRoom,
     position: MovementLocalPosition,
-) -> Result<Option<&'a crate::content::QualifiedSpellTile>, WorldRelocationError> {
+) -> Result<Option<&crate::content::QualifiedSpellTile>, WorldRelocationError> {
     use crate::content::SpellTileLookupError;
     let cells = room.movement_cells();
     match cells.spell_tiles().lookup(cells.scope(), cell(position)) {
@@ -574,18 +578,16 @@ pub(crate) async fn prepare_relocation<'owner, 'database>(
             };
             if let Some(probe_tile) =
                 tile_in_transaction(tx, authority, room, runtime, probe).await?
-            {
-                if probe_tile.ground_present()
+                && (probe_tile.ground_present()
                     || if up {
                         probe_tile.flags().immovable_block_solid
                     } else {
                         probe_tile.flags().block_solid
-                    }
-                {
-                    return Ok(WorldRelocationOutcome::Refused {
-                        reason: "not_possible",
-                    });
-                }
+                    })
+            {
+                return Ok(WorldRelocationOutcome::Refused {
+                    reason: "not_possible",
+                });
             }
             // Even verified source-air cells must read the actual durable item
             // owner under the same transaction. Static absence never proves an

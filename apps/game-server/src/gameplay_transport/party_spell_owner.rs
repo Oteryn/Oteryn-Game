@@ -184,6 +184,10 @@ enum SourcePartyAuthority<'a> {
     Cast(&'a SpellItemAuthority),
     Scope(&'a SpellItemScopeAuthority),
 }
+#[allow(
+    clippy::expect_used,
+    reason = "post-validation commit invariant; a fallible exit here would leave a partial owner write"
+)]
 async fn read_source_party_world(
     tx: &mut Transaction<'_, Postgres>,
     root: &crate::durability::DurabilityRoot,

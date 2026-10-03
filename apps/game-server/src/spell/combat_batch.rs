@@ -57,7 +57,7 @@ pub(crate) struct LoweredNativeCombat {
     pub(crate) next_sub_ordinal: u16,
 }
 
-fn bound<'a>(bindings: &'a [LiveActorBinding], id: u64) -> Result<&'a LiveActorBinding, Error> {
+fn bound(bindings: &[LiveActorBinding], id: u64) -> Result<&LiveActorBinding, Error> {
     bindings
         .iter()
         .find(|b| b.source_id == id)

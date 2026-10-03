@@ -127,6 +127,10 @@ pub(crate) struct CooldownGroup {
 }
 
 #[derive(Debug, Clone, PartialEq)]
+#[allow(
+    clippy::large_enum_variant,
+    reason = "transient owner result; boxing would add an allocation to the owner turn"
+)]
 pub(crate) enum SpellEffect {
     Damage {
         damage_type: String,
@@ -678,6 +682,10 @@ impl Display for CastRejection {
 impl Error for CastRejection {}
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[allow(
+    clippy::large_enum_variant,
+    reason = "transient owner result; boxing would add an allocation to the owner turn"
+)]
 pub(crate) enum ResolvedEffect {
     Damage {
         damage_type: String,

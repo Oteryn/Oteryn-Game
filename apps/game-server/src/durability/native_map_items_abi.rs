@@ -1,4 +1,8 @@
 //! Neutral source-map initialization ABI. No spell/player/death cause.
+#![allow(
+    dead_code,
+    reason = "spell import candidate; awaits its production owner caller"
+)]
 use super::item_mint::{GroundPlacement, TypedDefinitionRef};
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct NativeMapOwnerBinding {

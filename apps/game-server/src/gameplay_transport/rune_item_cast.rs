@@ -118,6 +118,7 @@ pub(super) fn equipment_successor(
 
 #[cfg(test)]
 mod tests {
+    #![allow(clippy::unwrap_used)]
     use super::*;
     use crate::durability::item_mint::{GroundPlacement, TypedDefinitionRef};
     fn source() -> DurableInventoryConsumption {

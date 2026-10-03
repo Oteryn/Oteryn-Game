@@ -73,6 +73,7 @@ use crate::ai::{
     AiError, AiProvenance, Candidate, CandidateId, PathRequest, RouteStep, build_path_proposal,
     canonicalize_perception,
 };
+#[cfg(test)]
 use crate::content::static_cell_engine::EngineeringStaticCellIndex;
 use crate::foundation::owner_timer::{
     AI01_PENDING_TIMERS_PER_ACTOR, OwnerTimerError, OwnerTimerLane, SemanticTimeMicros, TimerFamily,

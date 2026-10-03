@@ -1,5 +1,9 @@
 //! Explicit source-map candidate. This does not widen FirstProduction/OTSCENG1,
 //! activate an artifact, grant mutable item ownership, or manufacture adjacent floors.
+#![allow(
+    dead_code,
+    reason = "spell import candidate; awaits its production owner caller"
+)]
 use super::native_spell_tiles::{NativeSpellTileFlags, QualifiedSpellTile, SourceFloorChange};
 use super::{
     ProjectError, ProjectV2Family, ProjectV2SourceIdentityBinding,

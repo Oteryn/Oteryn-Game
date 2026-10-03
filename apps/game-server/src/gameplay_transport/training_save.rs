@@ -111,7 +111,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .commit_character_build(
                 self.character,
                 self.holder,
-                retained.fence.clone(),
+                retained.fence,
                 retained.prepared.request.clone(),
                 formula,
             )

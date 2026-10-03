@@ -2,6 +2,10 @@
 //! physical HP and the existing owner timer lane. No input here is wire authority.
 //! The caller holds runtime -> player states -> LocalObject locks and the same
 //! independently fenced SQL transaction throughout preparation and commit.
+#![allow(
+    dead_code,
+    reason = "spell import candidate; awaits its production owner caller"
+)]
 use super::{ChannelSpellStates, commit_owner_batch, stage_player_batch};
 use crate::ability::AbilityOccurrence;
 use crate::content::native_gameplay::NativeGameplayState;
@@ -134,6 +138,10 @@ struct PreparedOwnerInstallation {
     paid: PlayerSpellState,
 }
 impl PreparedNativeCombatCast {
+    #[allow(
+        clippy::expect_used,
+        reason = "post-validation commit invariant; a fallible exit here would leave a partial owner write"
+    )]
     fn current_connection_binding(
         &self,
         runtime: &ChannelRuntimeV1,
@@ -170,6 +178,10 @@ impl PreparedNativeCombatCast {
     }
     /// Invoked by the source writer only on its NEW-write branch, before its first INSERT.
     /// A genuine historical receipt instead completes the already accepted immutable decision.
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "the owner turn binds every independently resolved fact explicitly"
+    )]
     fn validate_new_write(
         &self,
         runtime: &ChannelRuntimeV1,
@@ -274,6 +286,14 @@ impl PreparedNativeCombatCast {
     }
     /// Call in the same uninterrupted owner turn/SQL transaction as preparation.
     /// Unknown durable training outcomes retain this original preparation; do not reroll.
+    #[allow(
+        clippy::expect_used,
+        reason = "post-validation commit invariant; a fallible exit here would leave a partial owner write"
+    )]
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "the owner turn binds every independently resolved fact explicitly"
+    )]
     pub(crate) fn commit(
         &mut self,
         runtime: &mut ChannelRuntimeV1,
@@ -620,6 +640,10 @@ fn prepare_paid_self(
 /// Ordinary self effects use the same durable source cost, original-attempt ledger,
 /// training receipt and whole-player successor as native combat. The pure self helper
 /// resolves the actual ConditionStore/health/Harmony on a clone, never the live actor.
+#[allow(
+    clippy::too_many_arguments,
+    reason = "the owner turn binds every independently resolved fact explicitly"
+)]
 async fn prepare_source_self_from_owners(
     tx: &mut Transaction<'_, Postgres>,
     root: &crate::durability::DurabilityRoot,
@@ -1089,6 +1113,10 @@ pub(crate) fn replay(
         runtime, states, caster, character, lease, command, intent, None, None, &mut None,
     )
 }
+#[allow(
+    clippy::too_many_arguments,
+    reason = "the owner turn binds every independently resolved fact explicitly"
+)]
 fn replay_with_rune(
     runtime: &mut ChannelRuntimeV1,
     states: &mut ChannelSpellStates,
@@ -1288,10 +1316,8 @@ fn area_candidates(
             .enumerate()
         {
             let n = v.as_u64().ok_or(SpellCastDisposition::Rejected)?;
-            if n >= 2 {
-                if center.replace((x as i32, y as i32)).is_some() {
-                    return reject();
-                }
+            if n >= 2 && center.replace((x as i32, y as i32)).is_some() {
+                return reject();
             }
             if n == 1 || n == 3 {
                 active.push((x as i32, y as i32));
@@ -1690,10 +1716,10 @@ pub(crate) async fn prepare_from_owners(
         return reject();
     };
     let preview_plan = preview_plan.clone();
-    if let NativeCombatPlan::Combat(p) = preview_plan.as_ref() {
-        if p.use_weapon_charges || p.weapon_missile || p.hits.iter().any(|h| h.delay_ms > 0) {
-            return reject();
-        }
+    if let NativeCombatPlan::Combat(p) = preview_plan.as_ref()
+        && (p.use_weapon_charges || p.weapon_missile || p.hits.iter().any(|h| h.delay_ms > 0))
+    {
+        return reject();
     }
     let needs_magnitude = matches!(
         preview_plan.as_ref(),
@@ -2402,6 +2428,10 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             result: output,
         }
     }
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "the owner turn binds every independently resolved fact explicitly"
+    )]
     async fn cast_native_combat_inner<
         A: super::super::spell_access_facts::CurrentSpellAccessOwner + Sync,
     >(
@@ -2566,9 +2596,8 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             {
                 return NativeCastDispatch::Pending;
             }
-        } else if reconcile_only {
-            return rejected();
-        } else if states.pending_native.len() >= MAX_PENDING_NATIVE
+        } else if reconcile_only
+            || states.pending_native.len() >= MAX_PENDING_NATIVE
             || states.pending_native.try_reserve(1).is_err()
         {
             return rejected();
@@ -2868,6 +2897,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
 
 #[cfg(test)]
 mod tests {
+    #![allow(clippy::unwrap_used)]
     use super::*;
     fn p(x: i32, y: i32) -> TilePosition {
         TilePosition { x, y, floor: 7 }

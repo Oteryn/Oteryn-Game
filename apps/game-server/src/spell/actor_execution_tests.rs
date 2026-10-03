@@ -1,4 +1,5 @@
 #![allow(clippy::expect_used)]
+#![allow(clippy::panic)]
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::num::NonZeroU32;
@@ -335,7 +336,7 @@ fn channel_focus_serenity_commits_heal_fill_force_and_payment_in_one_revision_th
         );
         assert_eq!(
             observe_vitals(&runtime, &states, actor, session),
-            Some(before.clone())
+            Some(before)
         );
     }
     states
@@ -378,7 +379,7 @@ fn channel_focus_harmony_uses_existing_cast_checks_and_stale_session_is_refused(
     );
     assert_eq!(
         observe_vitals(&runtime, &states, actor, session),
-        Some(original.clone())
+        Some(original)
     );
     let mut canonical_level = definition("focus harmony");
     canonical_level.level = 275;

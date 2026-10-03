@@ -1,5 +1,9 @@
 //! Pure bounded equipment data ABI. Parsing authoring semantics belongs to the actual
 //! qualified Content producer; no Content, Gameplay or compiler dependency enters Durability.
+#![allow(
+    dead_code,
+    reason = "spell import candidate; awaits its production owner caller"
+)]
 use super::character_equipment::EquipmentError;
 const SLOTS: [u8; 9] = [1, 2, 3, 4, 5, 6, 7, 8, 10];
 pub(crate) mod policy_registration {
@@ -44,18 +48,17 @@ impl QualifiedEquipmentPolicy {
             if *slot != SLOTS[index] {
                 return None;
             }
-            if let Ok(value) = value {
-                if value.slots.is_empty()
+            if let Ok(value) = value
+                && (value.slots.is_empty()
                     || value.slots.len() > SLOTS.len()
                     || !value.slots.contains(slot)
                     || value.slots.iter().any(|s| !SLOTS.contains(s))
                     || value.slots.windows(2).any(|w| w[0] >= w[1])
                     || value.groups.len() > 32
                     || value.groups.iter().any(|g| g.is_empty() || g.len() > 128)
-                    || value.vocations.len() > 5
-                {
-                    return None;
-                }
+                    || value.vocations.len() > 5)
+            {
+                return None;
             }
         }
         Some(Self {
@@ -85,6 +88,7 @@ pub(crate) fn claims(
 
 #[cfg(test)]
 mod tests {
+    #![allow(clippy::expect_used)]
     use super::*;
     fn unknown_slots() -> Vec<(u8, Result<EquipmentClaims, &'static str>)> {
         SLOTS

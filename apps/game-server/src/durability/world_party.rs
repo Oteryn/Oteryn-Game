@@ -1,6 +1,10 @@
 //! World party writer/read port. PostgreSQL is the sole membership authority; every operation
 //! uses the already independently current session/lease/node Item fence in the SAME transaction.
 //! These are private candidate source ports, not allocated wire commands or production admission.
+#![allow(
+    dead_code,
+    reason = "spell import candidate; awaits its production owner caller"
+)]
 use super::admission_journal::party_target_binding::QualifiedPartyVisibleTarget;
 use super::spell_item_transaction::{SpellItemAuthority, SpellItemError, check_transaction};
 use crate::foundation::{

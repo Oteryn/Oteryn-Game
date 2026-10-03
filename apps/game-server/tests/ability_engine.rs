@@ -6,6 +6,7 @@ mod appearance;
 mod domain {
     pub(crate) use crate::appearance;
 }
+#[allow(dead_code, unused_imports)]
 #[path = "../src/ability/condition.rs"]
 mod condition;
 #[allow(dead_code)]

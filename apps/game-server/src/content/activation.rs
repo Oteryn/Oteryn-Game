@@ -113,6 +113,10 @@ pub struct ActiveGeneration {
 }
 
 impl ActiveGeneration {
+    #[allow(
+        dead_code,
+        reason = "read by the native gameplay qualification tests only"
+    )]
     pub(crate) fn native_source_world(&self) -> Option<&[u8]> {
         self.runtime_state.native_source_world()
     }

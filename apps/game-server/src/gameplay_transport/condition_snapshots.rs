@@ -1,6 +1,10 @@
 //! Read-only current condition projection on the same independently fenced source transaction.
 //! It carries native coordinates and qualified generation pins, never invented VIS2 coordinates.
 //! Numeric capability/domain admission and the client renderer remain separate registry owners.
+#![allow(
+    dead_code,
+    reason = "spell import candidate; awaits its production owner caller"
+)]
 use super::actor_spell::ChannelSpellStates;
 use crate::ability::condition::{ConditionStore, TemporaryDisplayedAppearance};
 use crate::content::QualifiedNativeEntryRoom;

@@ -1,5 +1,9 @@
 //! Pure bounded Premium evidence ABI. No transport, Gameplay, Content or actor dependency.
 //! The sole production decoder producer is the authenticated mTLS PremiumSource adapter.
+#![allow(
+    dead_code,
+    reason = "spell import candidate; awaits its production owner caller"
+)]
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::collections::BTreeSet;
@@ -362,6 +366,7 @@ fn utc_start(s: &str) -> Result<i64, Error> {
 }
 #[cfg(test)]
 mod tests {
+    #![allow(clippy::unwrap_used)]
     use super::*;
     fn evidence(account: [u8; 16], nonce: &str) -> serde_json::Value {
         serde_json::json!({"schema":"oteryn.premium_snapshot.v1","producer_revision":"1".repeat(40),

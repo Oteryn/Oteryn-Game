@@ -10,6 +10,7 @@ pub mod character_bootstrap_intent;
 #[path = "../src/character_recovery_fence.rs"]
 pub mod character_recovery_fence;
 pub use production_server::domain;
+#[allow(dead_code, unused_imports)]
 #[path = "../src/foundation/mod.rs"]
 pub mod foundation;
 #[allow(dead_code, unused_imports)]
@@ -20,6 +21,7 @@ pub mod native_admission_source;
 mod authority_matrix;
 #[path = "support/authority_recovery.rs"]
 mod authority_recovery;
+#[allow(dead_code, unused_imports)]
 #[path = "../src/durability/mod.rs"]
 mod durability;
 #[path = "support/postgres.rs"]

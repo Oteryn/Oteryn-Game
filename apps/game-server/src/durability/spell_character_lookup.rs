@@ -5,6 +5,10 @@
 //! current actor position, staff access or permission to disclose Exiva data.
 //! Those facts must be independently resolved by their live owners before a
 //! Find Person message is produced.
+#![allow(
+    dead_code,
+    reason = "spell import candidate; awaits its production owner caller"
+)]
 
 use super::character_authority::{
     CharacterAuthorityError, ReconciledCharacterAuthority, assert_recovery_fence,

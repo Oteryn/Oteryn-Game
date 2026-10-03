@@ -1,5 +1,9 @@
 //! Actual familiar source casts in the Channel's existing player/physical/timer owners.
 //! Prepared intent survives an uncertain database outcome; history never grants fresh authority.
+#![allow(
+    dead_code,
+    reason = "spell import candidate; awaits its production owner caller"
+)]
 use super::super::ComposedFreshAdmission;
 use super::{ChannelSpellStates, SpellCastIntent, SpellCastOutcome};
 use crate::durability::character_familiar::FamiliarStateRequest;
@@ -827,6 +831,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {
+    #[allow(
+        clippy::expect_used,
+        reason = "post-validation commit invariant; a fallible exit here would leave a partial owner write"
+    )]
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "the owner turn binds every independently resolved fact explicitly"
+    )]
     async fn finish_familiar_cast(
         &self,
         runtime: &mut crate::foundation::ChannelRuntimeV1,
@@ -1139,11 +1151,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let next = states
             .get(runtime, prepared.actor, prepared.session)
             .expect("same owner contains committed familiar caster");
-        let outcome = SpellCastOutcome {
+
+        SpellCastOutcome {
             disposition: SpellCastDisposition::Cast,
             vitals: Some((next.revision(), next.vitals())),
-        };
-        outcome
+        }
     }
 }
 
@@ -1553,6 +1565,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .await
     }
 
+    #[allow(
+        clippy::expect_used,
+        reason = "post-validation commit invariant; a fallible exit here would leave a partial owner write"
+    )]
     async fn finish_familiar_lifecycle(
         &self,
         runtime: &mut crate::foundation::ChannelRuntimeV1,

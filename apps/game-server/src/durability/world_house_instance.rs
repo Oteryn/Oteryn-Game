@@ -2,6 +2,10 @@
 //! Fresh admission supplies the current Instance and ownership generation. This
 //! read-only observation is deliberately not a physical HousePresenceProof:
 //! assignment/handoff and the actual Instance position carrier are still required.
+#![allow(
+    dead_code,
+    reason = "spell import candidate; awaits its production owner caller"
+)]
 use super::{DurabilityError, fresh_admission::FreshAdmissionStore};
 use crate::foundation::{GameSessionId, GameSessionState, RuntimeScopeRefV1};
 use sqlx::{Postgres, Row, Transaction};

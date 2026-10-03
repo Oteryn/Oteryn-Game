@@ -144,7 +144,7 @@ pub(crate) fn prepare_haste_owner_cast_with_caster(
                 .ok()
                 .and_then(|n| n.checked_add(2))
                 .ok_or(rejected)?,
-            base_speed: i32::try_from(snapshot.state.policy.base_speed).map_err(|_| rejected)?,
+            base_speed: snapshot.state.policy.base_speed,
             is_familiar: snapshot.state.policy.is_familiar,
             haste_suppressed: false,
             paralyze_suppressed: false,
@@ -296,6 +296,7 @@ pub(crate) fn apply_haste<S: Clone>(
 
 #[cfg(test)]
 mod tests {
+    #![allow(clippy::items_after_test_module)]
     #![allow(clippy::expect_used, clippy::unwrap_used, clippy::panic)]
     use super::*;
     use crate::ability::condition::TickFacts;

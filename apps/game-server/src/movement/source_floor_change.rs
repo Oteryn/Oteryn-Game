@@ -14,6 +14,10 @@ const FRAME: &str = "oteryn:frame/canary-thalom-spell-r3";
 const MAP: &str = "oteryn:map/canary-thalom-spell-r3";
 const MAX_FLOOR_DESTINATIONS: usize = 16;
 
+/// Qualified source tiles keyed by `(x, y, z)`.
+type SourceTiles =
+    std::collections::BTreeMap<(i32, i32, i16), (Option<QualifiedSpellTile>, bool, u16)>;
+
 /// Private construction consumes actual qualified cells, not a caller's target.
 pub(crate) struct SourceStepProof<'a> {
     cells: &'a NativeEntryMovementCells,
@@ -22,9 +26,7 @@ pub(crate) struct SourceStepProof<'a> {
     expected: MovementPositionSnapshot,
     direction: CardinalStep,
     destination: MovementLocalPosition,
-    current_tiles: Option<
-        std::collections::BTreeMap<(i32, i32, i16), (Option<QualifiedSpellTile>, bool, u16)>,
-    >,
+    current_tiles: Option<SourceTiles>,
     _transaction: std::marker::PhantomData<&'a mut ()>,
 }
 impl SourceStepProof<'_> {
@@ -196,7 +198,7 @@ impl std::ops::Deref for TileView<'_> {
     }
 }
 fn current_tile<'a>(
-    tiles: &'a std::collections::BTreeMap<(i32, i32, i16), (Option<QualifiedSpellTile>, bool, u16)>,
+    tiles: &'a SourceTiles,
     p: MovementLocalPosition,
 ) -> Result<Option<TileView<'a>>, MovementError> {
     let (tile, solid, height_count) = tiles
@@ -253,24 +255,22 @@ fn destination_with_lookup<'a>(
     let origin_tile = lookup(origin)?.ok_or(MovementError::Blocked)?;
     if origin.floor != -8 && has_height(&origin_tile)? {
         let above = lookup(shifted(origin, 0, 0, 1)?)?;
-        if above.is_none_or(|t| !t.ground_present() && !t.solid) {
-            if let Some(upper) = lookup(shifted(next, 0, 0, 1)?)?
-                && upper.ground_present()
-                && !upper.solid
-                && changes(&upper)?.is_empty()
-            {
-                next = shifted(next, 0, 0, 1)?;
-            }
+        if above.is_none_or(|t| !t.ground_present() && !t.solid)
+            && let Some(upper) = lookup(shifted(next, 0, 0, 1)?)?
+            && upper.ground_present()
+            && !upper.solid
+            && changes(&upper)?.is_empty()
+        {
+            next = shifted(next, 0, 0, 1)?;
         }
     }
     if origin.floor != -7 && origin.floor == next.floor {
         let here = lookup(next)?;
-        if here.is_none_or(|t| !t.ground_present() && !t.solid) {
-            if let Some(lower) = lookup(shifted(next, 0, 0, -1)?)?
-                && has_height(&lower)?
-            {
-                next = shifted(next, 0, 0, -1)?;
-            }
+        if here.is_none_or(|t| !t.ground_present() && !t.solid)
+            && let Some(lower) = lookup(shifted(next, 0, 0, -1)?)?
+            && has_height(&lower)?
+        {
+            next = shifted(next, 0, 0, -1)?;
         }
     }
     let entered = lookup(next)?.ok_or(MovementError::Blocked)?;
@@ -375,6 +375,7 @@ impl crate::foundation::SourceStepCommitProof for SourceStepProof<'_> {
 
 #[cfg(test)]
 mod tests {
+    #![allow(clippy::items_after_test_module)]
     #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
     use super::*;
     use crate::content::native_gameplay::{
@@ -796,7 +797,7 @@ pub(crate) struct PreparedCurrentSourceStep<'room> {
     expected: MovementPositionSnapshot,
     direction: CardinalStep,
     destination: MovementLocalPosition,
-    tiles: std::collections::BTreeMap<(i32, i32, i16), (Option<QualifiedSpellTile>, bool, u16)>,
+    tiles: SourceTiles,
     transaction_id: String,
 }
 impl PreparedCurrentSourceStep<'_> {

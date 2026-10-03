@@ -1,5 +1,9 @@
 //! Candidate bounded account coordinator. Only fresh authenticated Platform pulls committed by
 //! the real durable consumer issue a benefit view; restart never reconstructs cached grants.
+#![allow(
+    dead_code,
+    reason = "spell import candidate; awaits its production owner caller"
+)]
 use super::{
     ComposedFreshAdmission,
     spell_access_facts::{AccessFactsError, CurrentSpellAccessOwner, owner_registration},
@@ -134,11 +138,11 @@ impl SpellPremiumCoordinator {
         let denied = Arc::new(RegisteredSpellAccessOwner::Unavailable {
             account: Some(account),
         });
-        if let Ok(mut views) = self.views.lock() {
-            if let Some(entry) = views.get_mut(&account) {
-                entry.epoch = entry.epoch.saturating_add(1);
-                entry.view = Arc::clone(&denied);
-            }
+        if let Ok(mut views) = self.views.lock()
+            && let Some(entry) = views.get_mut(&account)
+        {
+            entry.epoch = entry.epoch.saturating_add(1);
+            entry.view = Arc::clone(&denied);
         }
         denied
     }
@@ -218,15 +222,15 @@ impl SpellPremiumCoordinator {
         }
         impl Drop for Guard<'_> {
             fn drop(&mut self) {
-                if let Ok(mut views) = self.coordinator.views.lock() {
-                    if let Some(entry) = views.get_mut(&self.account) {
-                        entry.in_flight = false;
-                        if !self.completed {
-                            entry.epoch = entry.epoch.saturating_add(1);
-                            entry.view = Arc::new(RegisteredSpellAccessOwner::Unavailable {
-                                account: Some(self.account),
-                            });
-                        }
+                if let Ok(mut views) = self.coordinator.views.lock()
+                    && let Some(entry) = views.get_mut(&self.account)
+                {
+                    entry.in_flight = false;
+                    if !self.completed {
+                        entry.epoch = entry.epoch.saturating_add(1);
+                        entry.view = Arc::new(RegisteredSpellAccessOwner::Unavailable {
+                            account: Some(self.account),
+                        });
                     }
                 }
             }
@@ -503,6 +507,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
 }
 #[cfg(test)]
 mod tests {
+    #![allow(clippy::unwrap_used)]
     use super::*;
     #[test]
     fn restart_missing_source_and_clock_never_reconstruct_cached_allow() {

@@ -76,6 +76,7 @@ impl CompiledFamiliarConfig {
 }
 #[cfg(test)]
 mod tests {
+    #![allow(clippy::unwrap_used)]
     use super::*;
     const SOURCE: &[u8] =
         include_bytes!("../../../../tools/content-schema/native-gameplay/familiar-config.json");

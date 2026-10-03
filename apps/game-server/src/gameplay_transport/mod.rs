@@ -2133,19 +2133,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return (FirstEntryOutcome::RefusedByChannel, None);
         }
-        if facts.is_some() {
-            if let Some(formula) = self
+        if facts.is_some()
+            && let Some(formula) = self
                 .active_generation
                 .and_then(|active| active.native_gameplay())
                 .and_then(|native| native.training_formula())
+        {
+            let mut states = self.spell_states.lock().await;
+            if states
+                .get_mut(&runtime, actor, game_session_id)
+                .is_none_or(|state| state.enable_owned_training(&build, formula).is_err())
             {
-                let mut states = self.spell_states.lock().await;
-                if states
-                    .get_mut(&runtime, actor, game_session_id)
-                    .is_none_or(|state| state.enable_owned_training(&build, formula).is_err())
-                {
-                    return (FirstEntryOutcome::RefusedByChannel, None);
-                }
+                return (FirstEntryOutcome::RefusedByChannel, None);
             }
         }
         drop(runtime);

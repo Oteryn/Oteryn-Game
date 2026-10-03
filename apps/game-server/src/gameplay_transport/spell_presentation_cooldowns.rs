@@ -1,6 +1,10 @@
 //! Candidate readonly own-actor cooldown producer. Exact active book/group ordinals, absolute
 //! monotonic expiries and current session binding are retained. RTT uses only matched existing
 //! FND-02 probe/ack frames and owner monotonic send/receive time, never a client timestamp.
+#![allow(
+    dead_code,
+    reason = "spell import candidate; awaits its production owner caller"
+)]
 use super::super::actor_spell::ChannelSpellStates;
 use super::*;
 use crate::content::native_gameplay::NativeGameplayState;
@@ -23,6 +27,10 @@ pub(crate) struct CandidateCooldownPublisher {
     probe_high_water: u64,
     rtt: Option<u32>,
 }
+#[allow(
+    clippy::expect_used,
+    reason = "post-validation commit invariant; a fallible exit here would leave a partial owner write"
+)]
 fn map_owned(
     read: &CooldownRead<'_>,
     observer: &Observer,
@@ -262,6 +270,7 @@ fn rejected(_error: Error) -> SpellItemError {
 }
 #[cfg(test)]
 mod tests {
+    #![allow(clippy::unwrap_used)]
     use super::*;
     #[test]
     fn first_ack_retains_only_latest_renewal_and_expired_entries_as_tombstones() {

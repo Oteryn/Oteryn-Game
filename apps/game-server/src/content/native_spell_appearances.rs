@@ -1,6 +1,10 @@
 //! Explicit Outfit definitions for temporary spell conditions. The source importer verifies
 //! pinned git blobs and the exact Outfit_t default closure; this closed document is retained
 //! inside the approved active artifact. Numeric appearance membership alone cannot create it.
+#![allow(
+    dead_code,
+    reason = "spell import candidate; awaits its production owner caller"
+)]
 use super::ContentError;
 use super::project::{ProjectV2DefinitionRef, ProjectV2Family};
 use crate::domain::appearance::AppearanceSelection;

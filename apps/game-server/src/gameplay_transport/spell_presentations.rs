@@ -1,6 +1,10 @@
 //! The Channel's bounded presentation outbox. Source cue identities are data,
 //! never combat authority. Preparation binds exact activated spell, positions
 //! and normalized batch before RNG/SQL commit; replay does not enqueue twice.
+#![allow(
+    dead_code,
+    reason = "spell import candidate; awaits its production owner caller"
+)]
 use crate::content::native_gameplay::NativeGameplayState;
 use crate::foundation::{ChannelRuntimeV1, ExactActorRef, MovementLocalPosition};
 use crate::spell::Execution;
@@ -359,10 +363,10 @@ impl SpellPresentationOwner {
             .ok_or(Error::UnqualifiedSource)?;
         let mut allowed = BTreeSet::new();
         fn add<'a>(value: &'a Option<String>, allowed: &mut BTreeSet<&'a str>) {
-            if let Some(value) = value {
-                if resolve_source_cue(value).is_some() {
-                    allowed.insert(value.as_str());
-                }
+            if let Some(value) = value
+                && resolve_source_cue(value).is_some()
+            {
+                allowed.insert(value.as_str());
             }
         }
         if let Some(cast) = &source.header.presentation {
@@ -542,21 +546,24 @@ impl SpellPresentationOwner {
             return Err(Error::StaleOwner);
         }
         for event in &prepared.events {
-            if let Some(actor) = event.actor {
-                if runtime
+            if let Some(actor) = event.actor
+                && runtime
                     .read_actor_position(actor)
                     .map_err(|_| Error::StaleOwner)?
                     .position()
                     != event.position
-                {
-                    return Err(Error::StaleOwner);
-                }
+            {
+                return Err(Error::StaleOwner);
             }
         }
         Ok(())
     }
     /// Only after validation in the same uninterrupted owner turn. The receipt
     /// supplies history, while current runtime authority was resolved separately.
+    #[allow(
+        clippy::expect_used,
+        reason = "post-validation commit invariant; a fallible exit here would leave a partial owner write"
+    )]
     pub(crate) fn install_preflighted(
         &mut self,
         prepared: PreparedPresentation,
@@ -576,6 +583,10 @@ impl SpellPresentationOwner {
             self.install_committed_events(prepared.cause, prepared.events);
         }
     }
+    #[allow(
+        clippy::expect_used,
+        reason = "post-validation commit invariant; a fallible exit here would leave a partial owner write"
+    )]
     fn install_committed_events(
         &mut self,
         cause: std::sync::Arc<PresentationCause>,
@@ -610,7 +621,7 @@ impl SpellPresentationOwner {
         delivered
             .try_reserve_exact(self.pending.len())
             .map_err(|_| Error::Capacity)?;
-        delivered.extend(self.pending.drain(..));
+        delivered.append(&mut self.pending);
         Ok(delivered)
     }
 }
@@ -674,6 +685,10 @@ struct CueRecord {
     kind: String,
     value: u16,
 }
+#[allow(
+    clippy::expect_used,
+    reason = "post-validation commit invariant; a fallible exit here would leave a partial owner write"
+)]
 fn resolve_source_cue(alias: &str) -> Option<Cue> {
     static REGISTRY: OnceLock<Vec<CueRecord>> = OnceLock::new();
     let records = REGISTRY.get_or_init(|| {

@@ -1,5 +1,9 @@
 //! One actual World-global House ACL owner used by GUI and Aleta. Allocation is
 //! separate: a spell cannot create property ownership or commercial eligibility.
+#![allow(
+    dead_code,
+    reason = "spell import candidate; awaits its production owner caller"
+)]
 use super::spell_house_abi::{HouseAccess, HouseList, HousePresenceProof};
 use super::spell_item_transaction::{SpellItemAuthority, SpellItemError, check_transaction};
 use sqlx::{Postgres, Row, Transaction};
@@ -91,10 +95,10 @@ pub(crate) async fn open_editor_in_transaction(
 ) -> Result<HouseEditor, SpellItemError> {
     check_transaction(tx, authority).await?;
     check_presence(authority, presence)?;
-    if let HouseList::Door(id) = list {
-        if !presence.has_door(id) {
-            return Err(SpellItemError::Rejected("unqualified House door"));
-        }
+    if let HouseList::Door(id) = list
+        && !presence.has_door(id)
+    {
+        return Err(SpellItemError::Rejected("unqualified House door"));
     }
     open_editor_for_property(tx, authority, presence.house_key(), list, None).await
 }
@@ -127,10 +131,10 @@ pub(crate) async fn restage_editor_in_transaction(
     if editor[6] >> 4 != 7 || editor[8] & 0xc0 != 0x80 {
         return Err(SpellItemError::Rejected("editor UUID"));
     }
-    if let HouseList::Door(id) = list {
-        if !presence.has_door(id) {
-            return Err(SpellItemError::Rejected("unqualified House door"));
-        }
+    if let HouseList::Door(id) = list
+        && !presence.has_door(id)
+    {
+        return Err(SpellItemError::Rejected("unqualified House door"));
     }
     open_editor_for_property(tx, authority, presence.house_key(), list, Some(editor)).await
 }

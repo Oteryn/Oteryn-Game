@@ -14,6 +14,7 @@ pub mod fnd04_verifier;
 // `ScopeRuntimeFence`'s own scope-bound constructor (`from_external_grant`/`with_scope`) stays
 // private to this module, so no outside caller can yet obtain a fence to schedule/drain with.
 #[path = "../ability/condition.rs"]
+#[allow(dead_code)]
 pub(crate) mod condition;
 #[allow(dead_code)]
 pub(crate) mod owner_timer;
@@ -1495,11 +1496,9 @@ pub(crate) use runtime_actor_carrier::runtime_actor_periodic::{
     CreaturePeriodicReceipt, PreparedCreaturePeriodicTurn,
 };
 
-pub(crate) use runtime_actor_carrier::runtime_actor_familiar_defense::{
-    FamiliarDefenseReceipt, PreparedFamiliarDefense,
-};
+pub(crate) use runtime_actor_carrier::runtime_actor_familiar_defense::FamiliarDefenseReceipt;
 pub(crate) use runtime_actor_carrier::runtime_actor_party::{
-    PartyAction, PartyCommand, PartyMemberSnapshot, PartyPresence, PartyReceipt, PartySnapshot,
+    PartyAction, PartyMemberSnapshot, PartyPresence, PartySnapshot,
 };
 pub(crate) use runtime_actor_carrier::runtime_actor_source_reservation::{
     SourceActorReservation, SourceActorReservationProof, source_reservation_seal,

@@ -299,6 +299,10 @@ impl ChannelSpellStates {
 
     /// The periodic 1000 ms Serene evaluation of the actor (§8.2): the new `ACTOR_VITALS`
     /// revision and value when Serene changed, which the owner publishes.
+    #[allow(
+        dead_code,
+        reason = "the periodic Serene owner caller is not wired on this branch"
+    )]
     pub(crate) fn tick(
         &mut self,
         runtime: &ChannelRuntimeV1,

@@ -1,6 +1,10 @@
 //! Candidate SPELL-ITEM-1 writer on the existing durable ItemInstance owner.
 //! Every helper runs inside the compositor's existing PostgreSQL transaction.
 //! No helper commits, spawns a creature, or manufactures a creature-death cause.
+#![allow(
+    dead_code,
+    reason = "spell import candidate; awaits its production owner caller"
+)]
 
 use super::character_authority::{ReconciledCharacterAuthority, assert_recovery_fence};
 use super::item_transfer::{CurrentCharacterItemFence, character_item_fence_is_current, scope_of};
@@ -1493,6 +1497,10 @@ fn item_definition_valid(value: &TypedDefinitionRef) -> bool {
         && value.revision_ref.len() <= 512
 }
 
+#[allow(
+    clippy::expect_used,
+    reason = "post-validation commit invariant; a fallible exit here would leave a partial owner write"
+)]
 fn encode_intent(
     authority: &SpellItemAuthority,
     request: &SpellItemTransactionRequest,
@@ -1509,16 +1517,15 @@ fn encode_intent(
     {
         return Err(SpellItemError::Rejected("spell item request shape"));
     }
-    if let Some(origin) = &request.caster_origin {
-        if *origin.actor.world_id().as_bytes() != authority.world
+    if let Some(origin) = &request.caster_origin
+        && (*origin.actor.world_id().as_bytes() != authority.world
             || *origin.actor.channel_id().as_bytes() != authority.channel
             || origin.actor.scope_generation().get() != authority.ownership_generation
-            || origin.character_lease_generation != authority.character_lease_generation
-        {
-            return Err(SpellItemError::Rejected(
-                "caster creation source/current fence mismatch",
-            ));
-        }
+            || origin.character_lease_generation != authority.character_lease_generation)
+    {
+        return Err(SpellItemError::Rejected(
+            "caster creation source/current fence mismatch",
+        ));
     }
     let corpse_ops: Vec<_> = request
         .operations
@@ -2201,16 +2208,15 @@ async fn apply_operation(
                 "reserved item state or exact custody changed",
             ));
         }
-        if let SpellItemOperation::ConsumeCorpse(reservation) = operation {
-            if index != 0
+        if let SpellItemOperation::ConsumeCorpse(reservation) = operation
+            && (index != 0
                 || !row.try_get::<bool, _>("corpse")?
                 || uuid(&row.try_get::<String, _>("minted_transaction_id")?)?
-                    != reservation.mint_transaction_id
-            {
-                return Err(SpellItemError::Rejected(
-                    "reserved corpse is no longer the exact top corpse",
-                ));
-            }
+                    != reservation.mint_transaction_id)
+        {
+            return Err(SpellItemError::Rejected(
+                "reserved corpse is no longer the exact top corpse",
+            ));
         }
         let children:i64=sqlx::query_scalar("SELECT count(*) FROM game_item_corpse_container_entries WHERE parent_item_instance_id=encode($1,'hex')::uuid").bind(item.as_slice()).fetch_one(&mut **tx).await?;
         if children != 0 {
@@ -2475,6 +2481,7 @@ pub(crate) async fn verify_spell_item_chain(
 
 #[cfg(test)]
 mod tests {
+    #![allow(clippy::unwrap_used)]
     use super::*;
     fn cost() -> CastCostBinding {
         CastCostBinding {
@@ -3184,6 +3191,7 @@ fn source_map_protection_tags(attributes: &serde_json::Value) -> Result<(bool, b
 }
 #[cfg(test)]
 mod map_protection_tag_tests {
+    #![allow(clippy::unwrap_used)]
     use super::*;
     #[test]
     fn source_otbm_action_unique_tags_are_not_lost_by_named_codec() {

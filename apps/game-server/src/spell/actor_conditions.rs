@@ -578,6 +578,7 @@ pub(crate) fn stage_creature_hit(
 
 #[cfg(test)]
 mod tests {
+    #![allow(clippy::items_after_test_module)]
     #![allow(clippy::expect_used, clippy::unwrap_used, clippy::panic)]
     use super::super::Vocation;
     use super::super::cast::CharacterCastFacts;
@@ -834,7 +835,7 @@ pub(crate) fn has_speed_condition(state: &PlayerSpellState, now: u64) -> bool {
 }
 pub(crate) fn movement_speed(state: &PlayerSpellState, now: u64, equipment_delta: i32) -> u16 {
     crate::movement::speed::effective_speed(
-        u32::from(state.base_speed),
+        state.base_speed,
         state.conditions.speed_delta_at(now),
         equipment_delta,
     )

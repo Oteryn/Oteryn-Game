@@ -1,6 +1,10 @@
 //! Exact f32 caster-speed application into the existing condition owner store.
 //! Included as a child of `condition` so it extends that store, not a second actor
 //! runtime. The caller must own the actor and qualify the native spell profile.
+#![allow(
+    dead_code,
+    reason = "spell import candidate; awaits its production owner caller"
+)]
 use super::{
     ApplicationFacts, Applied, ConditionDefinition, ConditionRefusal, ConditionSourceKind,
     ConditionStore, ConditionType, ConditionValues,
@@ -488,6 +492,7 @@ impl<S: Clone> ConditionStore<S> {
 
 #[cfg(test)]
 mod item_appearance_tests {
+    #![allow(clippy::unwrap_used, clippy::panic)]
     use super::super::{
         ApplicationFacts, ConditionDefinition, ConditionSourceKind, TemporaryDisplayedAppearance,
     };

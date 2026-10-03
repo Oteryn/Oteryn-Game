@@ -1,3 +1,4 @@
+#![allow(clippy::expect_used, clippy::unwrap_used)]
 use super::super::runtime_actor_spell_types::{
     OwnerCombatBatch, OwnerCombatChange, OwnerCombatEffect, SpellAnchor, SpellOccurrenceBinding,
 };
@@ -874,7 +875,8 @@ fn source_metadata_touches_reserve_real_slots_without_synthesized_combat_effects
         cooldown_deadlines: vec![],
     });
     original.binding = b"{\"source\":\"qualified-familiar-metadata\"}".to_vec();
-    let touches = QualifiedCompanionTouches::bind(&mut original, &[snapshot.clone()]).unwrap();
+    let touches =
+        QualifiedCompanionTouches::bind(&mut original, std::slice::from_ref(&snapshot)).unwrap();
     let mut staged = f
         .runtime
         .stage_spell_batch_with_companion_touches(&original, &touches)
