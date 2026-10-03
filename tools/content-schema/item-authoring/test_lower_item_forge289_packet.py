@@ -5,13 +5,13 @@ import hashlib
 import importlib.util
 import json
 import shutil
+import sys
 import tempfile
 import unittest
 from pathlib import Path
 
 import check_tibiawiki165_historical_context as context
 import lower_item_forge289_packet as forge
-import sys
 
 # Main's migration validator imports its sibling modules, as its own scripts do.
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "content-migration"))

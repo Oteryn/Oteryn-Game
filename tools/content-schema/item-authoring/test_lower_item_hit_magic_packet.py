@@ -3,12 +3,12 @@
 import copy
 import importlib.util
 import json
+import sys
 import unittest
+from pathlib import Path
 from unittest.mock import patch
 
 import lower_item_hit_magic_packet as fields
-import sys
-from pathlib import Path
 
 # Main's migration validator imports its sibling modules, as its own scripts do.
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "content-migration"))
