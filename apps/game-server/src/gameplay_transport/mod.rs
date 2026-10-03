@@ -578,7 +578,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     async fn refresh_quest_session(&self, session: GameSessionId, insert: bool) {
         let fence = self.current_quest_fence(session).await;
         let (copy, retry) = match fence {
-            Some(fence) => {
+            Ok(Some(fence)) => {
                 let admission = crate::durability::quest_state::admit_character_quest_state(
                     &self.revision_sequencer,
                     self.root,
@@ -589,18 +589,32 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 )
                 .await;
                 let retry = admission.retry || admission.copy.is_none();
-                (admission.copy, retry)
+                (Some(admission.copy), retry)
             }
-            None => (None, false),
+            // A proven terminal session: no quest action and nothing to retry.
+            Ok(None) => (Some(None), false),
+            // A failed read proves nothing: keep the current copy and try again.
+            Err(()) => (None, true),
         };
-        let entry = QuestSession {
-            copy,
-            retry_at: retry.then(|| std::time::Instant::now() + QUEST_OBLIGATION_RETRY),
-        };
-        if let Ok(mut sessions) = self.quest_sessions.lock()
-            && (insert || sessions.contains_key(&session))
-        {
-            sessions.insert(session, entry);
+        let retry_at = retry.then(|| std::time::Instant::now() + QUEST_OBLIGATION_RETRY);
+        if let Ok(mut sessions) = self.quest_sessions.lock() {
+            match (copy, sessions.get_mut(&session)) {
+                (Some(copy), Some(entry)) => *entry = QuestSession { copy, retry_at },
+                (Some(copy), None) if insert => {
+                    sessions.insert(session, QuestSession { copy, retry_at });
+                }
+                (None, Some(entry)) => entry.retry_at = retry_at,
+                (None, None) if insert => {
+                    sessions.insert(
+                        session,
+                        QuestSession {
+                            copy: None,
+                            retry_at,
+                        },
+                    );
+                }
+                _ => {}
+            }
         }
     }
 
@@ -640,25 +654,27 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     }
 
     /// The gameplay fence of `session` from current durable reads; its expected revision is
-    /// replaced by the revision slot's cursor at commit. `None` when the session is terminal
-    /// or a read failed.
+    /// replaced by the revision slot's cursor at commit. `Ok(None)` when the session is proven
+    /// terminal; `Err` when a read failed, which proves nothing.
     async fn current_quest_fence(
         &self,
         session: GameSessionId,
-    ) -> Option<crate::durability::character_progression::CurrentCharacterGameplayFence> {
+    ) -> Result<Option<crate::durability::character_progression::CurrentCharacterGameplayFence>, ()>
+    {
         let store = FreshAdmissionStore::from_root(self.root.clone());
-        let (current, _) = store.current_session_at(session).await.ok()?;
+        let (current, _) = store.current_session_at(session).await.map_err(|_| ())?;
         if current.session_state() == crate::foundation::GameSessionState::Terminal {
-            return None;
+            return Ok(None);
         }
         let character_id =
-            domain::CharacterId::from_bytes(*current.commit().character_id().as_bytes()).ok()?;
+            domain::CharacterId::from_bytes(*current.commit().character_id().as_bytes())
+                .map_err(|_| ())?;
         let record = self
             .root
             .read_current_character(self.character, character_id)
             .await
-            .ok()?;
-        Some(
+            .map_err(|_| ())?;
+        Ok(Some(
             crate::durability::character_progression::CurrentCharacterGameplayFence {
                 character_id,
                 game_session_id: session,
@@ -668,7 +684,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 scope_ownership_generation: current.current_scope_generation(),
                 expected_character_revision: record.revision,
             },
-        )
+        ))
     }
 
     /// Drop the lost entry of `session` only if it is still the one that ended at

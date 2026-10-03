@@ -132,6 +132,16 @@ Independent persistence review (Codex) on the final frozen head; the control pla
   - 4174607858: a chest claim's new obligation waited for the next admission. A committed chest
     USE whose chest names a transition now refreshes the session at once; an unproven outcome is
     refreshed on the cadence after the backoff.
+- Round 2 on `e1d5664`: two P1s accepted and fixed, one P2 deferred.
+  - 4174685208: a failed fence read cleared the session's quest state and scheduled nothing. A
+    read failure now keeps the copy and schedules a retry; only a proven terminal session clears
+    it.
+  - 4174685213: the admission load read tracks, states and obligations in separate snapshots.
+    It now holds `character_root` FOR SHARE first; every quest writer and obligation-inserting
+    claim holds it FOR UPDATE, so the copy is coherent.
+  - 4174685217 (P2, deferred to the next quest batch): database proof that a consumed obligation
+    existed. Today the writer checks it under lock; the guard cannot see rows deleted in the
+    transaction.
 
 ## Deviations and open points
 

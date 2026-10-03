@@ -714,6 +714,17 @@ impl DurabilityRoot {
                     let mut tx = begin_semantic_transaction(holder, deadline).await?;
                     assert_recovery_fence(&mut tx, &recovery).await?;
                     let id = character.as_bytes().as_slice();
+                    // One coherent copy: every quest writer and every claim that inserts an
+                    // obligation holds `character_root` FOR UPDATE until it commits, so with the
+                    // root held FOR SHARE no quest relation of this Character can change between
+                    // the reads below.
+                    sqlx::query(
+                        "SELECT 1 FROM game_character_roots \
+                          WHERE character_id = encode($1,'hex')::uuid FOR SHARE",
+                    )
+                    .bind(id)
+                    .fetch_optional(&mut *tx)
+                    .await?;
                     let bound = |limit: usize| i64::try_from(limit + 1).unwrap_or(i64::MAX);
                     let over = |rows: &[sqlx::postgres::PgRow], limit: usize| rows.len() > limit;
                     let tracks = sqlx::query(
