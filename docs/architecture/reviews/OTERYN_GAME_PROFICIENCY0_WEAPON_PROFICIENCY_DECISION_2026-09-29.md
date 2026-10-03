@@ -139,9 +139,27 @@ gives trees, thresholds and perks to content. Its rule 6 requires versioned defi
     nothing is stored.
   - PROF-CONTENT-1 reports this coverage.
 - **Revisions (rule 6).** A new definition revision is compatible when it keeps the level count
-  and each level's perk order. It may change values and thresholds.
-  - A compatible revision applies without a write. The track's stored revision advances with its
-    next line.
+  and each level's perk order, compared by each option's full non-value identity (the §4.2 shape). It may change values and thresholds.
+  - A compatible revision applies without a write. The track's stored revision follows the active
+    revision on its next line.
+    **Amendment (compatible refresh, architect ruling for D283c).** That next line is the track's
+    next `training` or `perk_selection` line, which then carries the definition revision before and
+    after (same definition key; the after revision is the **active** one, in either direction, so a
+    content rollback to a last-known-good revision is followed too); §4.2's CHECKs allow exactly
+    this, with the shape witness equal. No
+    separate refresh cause and no write for the revision alone exist. Progress is cumulative and is
+    never lowered by a refresh (a lower threshold or Mastery cap only changes the derived level).
+    **Release gate (D283c).** Because a dormant track keeps its older revision until its next line,
+    an incompatible activation is refused unless its declared migration covers **every source
+    revision still present** in persisted track rows of that definition. The gate uses an index on
+    the track table's (definition key, revision) and asks, for each gap between the covered
+    revisions (sorted), whether any row exists there: at most (covered revisions + 1) index range
+    probes, each stopping at its first row, so its cost does not depend on the number of tracks. A compatible activation needs no gate,
+    whether it moves forward or rolls back to a last-known-good revision; rollback follows the
+    content contract, which allows it only between compatible generations, so a compatible restamp
+    in either direction covers it. No definition history is stored. PROF-1 tests: r1 → r2 compatible, a training
+    line restamps to r2; rollback to r1, the next training line restamps to r1; a restamp with a
+    different shape witness is rejected by the line CHECK.
   - Anything else is incompatible. The content revision declares the migration of the selections
     (keep, remap or clear, per level). The owning session writes one `migration` receipt for the
     Character's affected tracks before it first uses any of them under the new revision, in its
@@ -178,15 +196,35 @@ gives trees, thresholds and perks to content. Its rule 6 requires versioned defi
   - `proficiency_occurrence_id`, `character_id`, `committed_character_revision` and `item_key`,
     with a composite FK (occurrence, character, revision) to its receipt;
   - the definition key and revision, before and after;
+  - the **shape** before and after (amendment for D283c): per level, the ordered list of each perk
+    option's full **non-value identity tuple**, meaning its kind plus every identity or
+    discriminator field the proficiency schema requires for that kind (for example a
+    `spell_augment`'s `spell_client_id` and `augment`, a skill, an element, a Bestiary class, a
+    range), and every field except numeric values. Defined generically by the schema, so a new kind
+    is covered without amending this rule. At most 7 levels of at most 3 options, so bounded; not a
+    digest, so reconcile has the mapping data without the revision's content. It is computed by the
+    writer from the active content when that revision is first written to the track, and the track
+    row stores the current one, so it never needs the revision's content again;
   - `progress` and `selections`, before and after.
 
   CHECKs per cause:
-  - `training`: progress strictly increases; selections and definition are unchanged;
-  - `perk_selection`: progress and definition are unchanged; exactly one level's entry changes
-    (set, change or clear);
+  - `training`: progress strictly increases; selections and the definition key are unchanged; the
+    definition revision is unchanged or restamped to the active revision in either direction, with an
+    equal shape witness (compatible refresh, §4.1);
+  - `perk_selection`: progress and the definition key are unchanged; the definition revision is
+    unchanged or restamped likewise (compatible refresh); exactly one level's entry changes (set, change or
+    clear);
   - `migration`: progress is unchanged and the definition revision changes. That the selections
     follow the declared migration is a writer invariant, because the guard cannot read content.
     PROF-1 tests it, and reconcile recomputes it from the two definition revisions.
+  - A revision restamp on a `training` or `perk_selection` line, forward or back, must be compatible (same level count
+    and per-level ordered option identities). The **line CHECK** enforces it without content: on those causes the
+    shape after must equal the shape before, and the per-track check links each
+    line's before shape to the previous line's after value. The writer computes the new
+    revision's shape from the active content, which always holds the revision it restamps
+    to. `verify_character_integrity` and reconcile check the same equality and chain from the stored
+    lines alone, so no definition history is needed and an evicted revision never makes a receipt
+    unverifiable. A `migration` line may change the shape; it is the only cause that can.
 
   The receipt trigger checks the line count: 1 to N for `training` and `migration`, and exactly 1
   for `perk_selection`. N is bounded by the weapons with a proficiency in the active content.
@@ -303,6 +341,12 @@ until admitted).
   the registry by PROF-WIRE-1.
 
 ### 4.5 Parity gates and deferred work
+
+**Amendment (pending on acceptance of PROFICIENCY-1; `reviews/OTERYN_GAME_PROFICIENCY1_PERK_MODIFICATION_AND_CATALYSTS_DECISION_2026-10-01.md` §3-§6).** Perk modification, ranks, reshape, clear, the
+Lunar Ascension Orb and catalysts are scoped there: the reserved `perk_modification` and
+`ProficiencyCause`, the six operation names, the state shape (up to 2 rows per track, one per level)
+and the entry conditions of PROFICIENCY-1B, which builds the table, `MODIFIED_LEVEL`, the migration
+lines and every operation. PROF-1 ships without modification rows, and no catalyst has a use.
 
 - **Parity gates (Stage B decision 10).** The point table, the thresholds of levels 2-6 and of
   Mastery, and multi-player weighting are UNKNOWN. PROF-2 may build them behind a versioned

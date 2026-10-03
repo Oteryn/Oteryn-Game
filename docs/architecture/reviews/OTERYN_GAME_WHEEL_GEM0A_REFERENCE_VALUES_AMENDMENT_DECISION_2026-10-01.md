@@ -55,11 +55,26 @@ decision is accepted. So no row is ever written under the old cap, grade cost or
 no WHEEL-GEM-0 §5.3 migration is needed. Amended: WHEEL-GEM-0 implementation brief (GEM-1 depends
 on WHEEL-GEM-0A).
 
-## 6. Owner questions
+## 6. Decision test (P3 follow-up, control plane 2026-10-01)
+
+- **Must decide now:** YES. GEM-1 and the W-R/GEM-R content need the values before their first
+  revision.
+- **Harder later**, per kind of value:
+  - Wheel W-R values: value-only changes later apply as a new W-R revision with no re-stamp of
+    stored state (WHEEL-0 §5.1), so they stay cheap to change.
+  - GEM-R values (grade costs, the slot-2 list): once characters hold revealed gems or grades, a
+    change needs a WHEEL-GEM-0 §5.3 migration of the stored rows.
+  - The revealed-gem cap: raising it is free, but lowering it below what characters already hold
+    needs an explicit migration rule for the excess gems (keep or remove), which no decision
+    defines yet.
+- **Superseding evidence:** an official source that differs from the owner-verified values.
+- **Deliberately not decided:** anything outside the listed values and the Guiding Presence rule.
+
+## 7. Owner questions
 
 None. The FORMULA rule and owner decision 5905825574 settle every value here.
 
-## 7. Before-freeze checklist
+## 8. Before-freeze checklist
 
 1. **Contract amendments:** WHEEL-GEM-0 §2, §4, §5.1, the rows and the declared differences. Applied
    in this PR.

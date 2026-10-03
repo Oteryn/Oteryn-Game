@@ -264,6 +264,10 @@ None. Owner answer 2a sets beds as in Tibia; the manual and Canary give the rule
 - **Minimum sufficient:** one table, one command, three dispositions, one settlement step, and
   OFFLINE-0's existing markers run in the house scope too, reusing its activation and the house
   runtime.
+- **Harder later** (P3 follow-up, control plane 2026-10-01): `game_house_bed_sleepers` and the
+  bed-sleep settlement couple OFFLINE-0's logout and settlement markers to house scope, so moving
+  sleep elsewhere needs a migration of stored sleepers; `BED_SLEEP_INTENT` joins the wire surface;
+  regeneration stays tied to DUR-02 durable vitals.
 - **Superseding evidence:** an official source on skill-less sleep or the regeneration rates.
 - **Deliberately not decided:** bed modification kits, Rested, the Residence bed requirement, a bed
   ACL capability.

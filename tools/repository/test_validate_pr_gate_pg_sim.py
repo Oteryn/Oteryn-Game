@@ -169,6 +169,8 @@ def test_pr_gate_rejects_explicit_cargo_test_path_remap() -> None:
             )
 
         assert verify([package()]).returncode == 0
+        shadow = dict(package(), name="other-workspace-package")
+        assert verify([package(), shadow]).returncode != 0, "workspace target shadow must fail"
         rejected = verify([package(wrong_manifest)])
         assert rejected.returncode != 0 and "package manifest is" in rejected.stderr, rejected
         for packages in (
@@ -899,7 +901,7 @@ def test_postgres_digest_and_invocation_are_mandatory() -> None:
     baseline = MERGE_GATE.read_text(encoding="utf-8")
     stale = baseline.replace("      - name: Build workspace\n", "      - name: Build workspace # stale\n", 1)
     assert any("rust_linux" in error and "exactly match" in error for error in validate_mutated_gate(stale))
-    invocation = '              cargo +1.94.0 test --locked -p oteryn-game-server --test "$name"\n'
+    invocation = '              cargo +1.94.0 test --locked --workspace --test "$name"\n'
     assert baseline.count(invocation) == 1
     errors = validate_mutated_gate(baseline.replace(invocation, "", 1))
     assert any("rust_linux" in error for error in errors), errors
