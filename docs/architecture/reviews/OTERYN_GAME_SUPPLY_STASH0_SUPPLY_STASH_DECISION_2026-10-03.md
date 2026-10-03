@@ -102,25 +102,40 @@ rev 1057910)
   definition. A stowed item stops being an ItemInstance; a withdrawn item is a fresh one. The
   conversion rule is the identity on units, one unit per stack unit, under the definition's
   revision (DUR-03 §46).
+- **The asset key** is the pair (`definition_key`, `definition_revision`): the ItemTypeKey and the
+  GAME-ITEM definition revision of the stowed item. The balance, every ledger entry, every item
+  line, the value line's asset (`stash:<definition_key>@<definition_revision>`) and every wire
+  reference (§8) carry both. Two revisions of one key are two assets, never one row.
+- **Revision compatibility (DUR-03 §46).** A stow credits the row of the item's own revision. A
+  withdraw mints under the row's revision, and only while the active content declares that revision
+  compatible for the key; otherwise the row is `MIGRATION_REQUIRED`: it is shown, but a withdraw
+  refuses it (`NOT_SUPPORTED`) and nothing reinterprets it. Moving units from an old revision to a
+  new one needs a migration decision that writes ledgered entries for both assets; STASH-1 adds no
+  such path.
 - **Balance.** `game_character_stash_balances`: one row per (`character_id`, `world_id`,
-  `definition_key`) with `quantity` (BIGINT, 0 to `SUPPLYSTASH0-RL-01`) and `last_entry_id`.
-  No row means 0. `character_id` references the Character root with RESTRICT, so a future deletion
+  `definition_key`, `definition_revision`) with `quantity` (BIGINT, 0 to `SUPPLYSTASH0-RL-01`) and
+  `last_entry_id`. No row means 0. A row is inserted only by a committed stow. `character_id` references the Character root with RESTRICT, so a future deletion
   workflow must empty the Stash first.
 - **Operation.** `game_character_stash_operations`: one row per operation, keyed by its occurrence,
   with the TransactionId, a SHA-256 binding of the whole request (kind, character, source or
   definition, amount, planned output slots) and the outcome. The same occurrence and binding
   replay the first outcome; a changed binding conflicts (BANK-0 §3).
 - **Ledger.** `game_character_stash_entries`: one immutable row per balance change: `entry_id`
-  (UUIDv7), operation, character, world, definition, kind (`STOW`, `WITHDRAW`), amount (> 0),
+  (UUIDv7), operation, character, world, definition key and revision, kind (`STOW`, `WITHDRAW`), amount (> 0),
   quantity before and after.
 - **Item lines.** `game_character_stash_item_lines`: one row per touched item: operation, ordinal,
-  item, definition, quantity, direction (input or output). The entry-removal, mint-guard and
+  item, definition key and revision, quantity, direction (input or output). The entry-removal, mint-guard and
   placement proofs of `0010`-`0012`, `0023` and DEPOT-1 gain a branch that accepts a line of a
   committed stash operation.
 - **Guards** (deferred constraint triggers): the balance equals the after value of its latest
   entry, and each entry's before equals the previous after; the units of an operation's input lines
   equal its credit, and the units of its output lines equal its debit; an operation has exactly the
   entries and lines its kind needs; the character is a live root of the entry's World.
+- **No cross-asset conversion** (a commit-time guard): an operation has exactly one entry, on
+  exactly one balance row; the entry's (`definition_key`, `definition_revision`) equals that row's;
+  and every item line of the operation has that same pair. For a stow, the pair is also the input
+  item's own definition and revision, read under its lock. A stow of one definition can never credit
+  another, and a withdraw can never mint a definition or revision other than the debited one.
 - **Grants.** `oteryn_game_runtime`: SELECT and INSERT on operations, entries and lines; SELECT,
   INSERT and UPDATE on balances; never DELETE. `oteryn_game_control`: SELECT.
 - **Scope.** Character + World, with no channel and no runtime scope: every locker of the World
@@ -153,9 +168,15 @@ Anything else is `NOT_SUPPORTED`. Stackable and non-stackable wares are both adm
 - **Fence.** Composition rule 2 with the acting Character's `character_root` lock; no runtime
   scope owns the Stash, so rule 2's §32 binding does not apply.
 - **Lock order** (rule 4, extended): `character_root`, then the items in ItemInstanceId order, then
-  the container-slot row, then the stash balance row (upsert, then FOR UPDATE).
+  the container-slot row, then the stash balance row.
+  - A withdraw locks the existing row FOR UPDATE; an absent row is a refusal, and nothing is
+    inserted.
+  - A stow inserts the row if absent (`ON CONFLICT DO NOTHING`), then locks it FOR UPDATE; the
+    insert is part of the stow and commits only with it.
 - No `CharacterRevision` advance (§9).
-- A refusal writes nothing but a value-neutral zero-balance row (BANK-0 §4.1).
+- **A refusal writes nothing.** A refused operation rolls back its whole transaction, any
+  provisional balance row included, and persists no zero-balance row. This departs from BANK-0
+  §4.1's zero row on purpose: a Stash refusal has no balance to fence.
 
 ### 5.2 Stow
 
@@ -169,7 +190,7 @@ Anything else is `NOT_SUPPORTED`. Stackable and non-stackable wares are both adm
 
 ### 5.3 Withdraw
 
-- **Request.** A definition and an amount `n`, with `1 <= n <= balance`. Premium is not needed.
+- **Request.** A row handle (§8) and an amount `n`, with `1 <= n <= balance`. Premium is not needed.
 - **Outputs.** Fresh default-state ItemInstances in new main backpack direct entries: stacks of the
   definition's maximum stack size (100) for a stackable ware, one item per unit otherwise. At most
   `SUPPLYSTASH0-RL-02` (20) outputs, so at most 2,000 stackable units or 20 items per withdraw.
@@ -192,7 +213,7 @@ Anything else is `NOT_SUPPORTED`. Stackable and non-stackable wares are both adm
   balance side is a `CONVERSION` value line. There is no BURN and no MINT, so §15's closed list of
   sinks is unchanged.
 - **Cause.** Closed `StashConversionCause {Stow | Withdraw, occurrence}`.
-- **Value line.** A closed message: entry, asset (`stash:<definition_key>`), character, World,
+- **Value line.** A closed message: entry, asset (`stash:<definition_key>@<definition_revision>`), character, World,
   kind, class, amount, quantity before and after.
 - **Event.** One stash event per operation, carrying its item and value lines, in a stash outbox,
   under the `ECONOMY_LEDGER` purpose that BANK-RET-0 defines.
@@ -204,14 +225,24 @@ Anything else is `NOT_SUPPORTED`. Stackable and non-stackable wares are both adm
 
 - **Capability `STASH_V1`**, number reserved by the control plane before STASH-WIRE-1, requiring
   `DEPOT_V1`. Without it, the locker view shows no Stash.
-- The locker view lists the Stash beside the 17 boxes. Opening it shows one page of at most
-  `DEPOT0-RL-02` (32) definitions with their quantities, ordered by definition key; the server reads
-  one page per open.
+- The locker view lists the Stash beside the 17 boxes, with its row count.
+- **Pages.** A Stash target `StashPageTargetV1 {page}`, a new `UseIntentV1` field whose number
+  STASH-WIRE-1 assigns under protocol review, opens one page in domain 11, as a box target does
+  (DEPOT-0 §4.1).
+  - A page holds at most `DEPOT0-RL-02` (32) rows, ordered by (`definition_key`,
+    `definition_revision`); the server reads at most `DEPOT0-RL-03` (1) page per open.
+  - Each row carries `{definition_key, definition_revision, quantity, migration_required}` and a
+    handle bound to the row's `last_entry_id`.
+  - A page beyond the last returns no rows; `has_more` is true exactly when a later page holds rows.
+- **Stale handles.** A handle becomes `STALE` when the view closes (DEPOT-0 §4.1) and when its row's
+  `last_entry_id` changes. A withdraw on a stale handle is refused `STALE` and writes nothing; the
+  client reopens the page. The view's `expected_revision` is checked as for a box page.
 - **Stow.** Command 9 gains the destination `STASH`; its source is a main backpack entry handle or
   an entry on the open box page.
-- **Withdraw.** A new domain 11 request `StashWithdrawV1 {definition, amount}` while the Stash page
-  is open.
-- Results: `NO_ROOM`, `NOT_SUPPORTED`, `SEALED` and the existing ones. The view closes as DEPOT-0
+- **Withdraw.** A new domain 11 request `StashWithdrawV1 {handle, amount}` while the Stash page is
+  open. The handle resolves to the row's (`definition_key`, `definition_revision`) on the server;
+  the client never names a definition on its own.
+- Results: `NO_ROOM`, `NOT_SUPPORTED`, `SEALED`, `STALE` and the existing ones. The view closes as DEPOT-0
   §4.1 says.
 
 ## 9. Other amendments
@@ -230,7 +261,8 @@ Anything else is `NOT_SUPPORTED`. Stackable and non-stackable wares are both adm
 | `SUPPLYSTASH0-RL-01` units per definition | 1,000,000,000 (an engineering bound; Tibia shows no limit) |
 | `SUPPLYSTASH0-RL-02` outputs per withdraw | 20 |
 | Stash units per depot count | 100 (`PARITY_PENDING`, TibiaWiki) |
-| Stash definitions per page | `DEPOT0-RL-02` (32) |
+| Stash rows per page | `DEPOT0-RL-02` (32) |
+| Stash pages read per open | `DEPOT0-RL-03` (1) |
 
 ## 11. Rejected options
 
