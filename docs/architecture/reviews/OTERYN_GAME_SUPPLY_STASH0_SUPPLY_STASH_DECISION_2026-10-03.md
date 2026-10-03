@@ -175,7 +175,8 @@ Anything else is `NOT_SUPPORTED`. Stackable and non-stackable wares are both adm
     insert is part of the stow and commits only with it.
 - No `CharacterRevision` advance (§9).
 - **A refusal persists its outcome, and nothing else.** A refusal decided under the fence
-  (`NO_ROOM`, `STALE`, `SEALED`, `NOT_SUPPORTED`, an amount beyond the balance) rolls back to a
+  (`NO_ROOM`, `STALE`, `SEALED`, `NOT_SUPPORTED`, an amount beyond the balance, `AMOUNT_LIMIT`)
+  rolls back to a
   savepoint taken before any provisional change: balance values, a provisionally inserted balance
   row, item retirements and output entries all go. The same transaction then inserts the
   operation row (§3) with the refused outcome and commits it, with no entry and no item line. A
@@ -196,10 +197,17 @@ Anything else is `NOT_SUPPORTED`. Stackable and non-stackable wares are both adm
 
 ### 5.3 Withdraw
 
-- **Request.** A row handle (§8) and an amount `n`, with `1 <= n <= balance`. Premium is not needed.
-- **Outputs.** Fresh default-state ItemInstances in new main backpack direct entries: stacks of the
-  definition's maximum stack size (100) for a stackable ware, one item per unit otherwise. At most
-  `SUPPLYSTASH0-RL-02` (20) outputs, so at most 2,000 stackable units or 20 items per withdraw.
+- **Request.** A row handle (§8) and an amount `n`, with `1 <= n <= balance` and
+  `n <= SUPPLYSTASH0-RL-02 × stack_max`, where `stack_max` is the row definition's maximum stack
+  size (1 for a non-stackable ware). Premium is not needed.
+- **Amount limit.** Under the fence, after the handle resolves to its definition, an `n` above that
+  cap (for example 21 non-stackable items, or 601 units of a ware stacking to 30) is refused
+  `AMOUNT_LIMIT` before any output is planned. It is a refusal of §5.1: no value changes, and the
+  refused operation row is persisted, so a replay returns the same refusal. The client splits a
+  larger withdraw itself.
+- **Outputs.** Fresh default-state ItemInstances in new main backpack direct entries: full stacks of
+  `stack_max` and one remainder stack for a stackable ware, one item per unit otherwise. So a
+  withdraw makes `ceil(n / stack_max)` outputs, at most `SUPPLYSTASH0-RL-02` (20).
   Too few free entries refuses the whole withdraw (`NO_ROOM`). There is no top-up of existing
   stacks in this slice.
 - **Effect.** The balance loses `n` (`WITHDRAW`).
@@ -254,7 +262,8 @@ Anything else is `NOT_SUPPORTED`. Stackable and non-stackable wares are both adm
 - **Withdraw.** A new domain 11 request `StashWithdrawV1 {handle, amount}` while the Stash page is
   open. The handle resolves to the row's (`definition_key`, `definition_revision`) on the server;
   the client never names a definition on its own.
-- Results: `NO_ROOM`, `NOT_SUPPORTED`, `SEALED`, `STALE` and the existing ones. The view closes as DEPOT-0
+- Results: `NO_ROOM`, `NOT_SUPPORTED`, `SEALED`, `STALE`, `AMOUNT_LIMIT` (§5.3) and the existing
+  ones. The view closes as DEPOT-0
   §4.1 says.
 
 ## 9. Other amendments
@@ -271,7 +280,7 @@ Anything else is `NOT_SUPPORTED`. Stackable and non-stackable wares are both adm
 | Row | Value |
 |---|---|
 | `SUPPLYSTASH0-RL-01` units per definition | 1,000,000,000 (an engineering bound; Tibia shows no limit) |
-| `SUPPLYSTASH0-RL-02` outputs per withdraw | 20 |
+| `SUPPLYSTASH0-RL-02` outputs per withdraw | 20 (so at most 20 × `stack_max` units, §5.3) |
 | Stash units per depot count | 100 (`PARITY_PENDING`, TibiaWiki) |
 | Stash rows per page | `DEPOT0-RL-02` (32) |
 | Stash pages read per open | `DEPOT0-RL-03` (1) |
@@ -328,4 +337,5 @@ None. R2 follows Tibia; PREM-3 opens stowing with no further decision.
    the first outcome, a refusal included.
 4. **Typed references:** CharacterId, WorldId, definition key, amount, handles.
 5. **Wire:** §8, capability `STASH_V1`.
-6. **Split work:** one source item per stow; at most 20 outputs per withdraw; one page per view.
+6. **Split work:** one source item per stow; at most 20 outputs and 20 × `stack_max` units per
+   withdraw (`AMOUNT_LIMIT` above); one page per view.
