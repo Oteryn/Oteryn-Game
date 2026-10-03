@@ -7082,6 +7082,94 @@
         "crates/protocol-oteryn/src/chat.rs MAX_CHAT_OPEN_ROOMS, ChatRoomSet"
       ],
       "notes": "World, English, Help and Advertising (CHAT-0 \u00a75 and \u00a78). Registered by OTV2-20261001-chat-1b-1."
+    },
+    {
+      "id": "ANALYSERS0-RL-01",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_ANALYSERS0_HUNTING_ANALYSERS_DECISION_2026-10-03.md",
+      "resource": "Facts in one analyser batch (domain 15 delta type 1)",
+      "unit": "facts per batch",
+      "hard_maximum": 64,
+      "configurable_range": {
+        "minimum": 64,
+        "maximum": 64
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "The decoder refuses a 65th fact before decoding it; the pending queue's batch builder stops at 64 and leaves the rest for the next sync unit (never dropped for size).",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=64: a batch of 64 facts round-trips",
+        "max+1=65: a 65-fact batch is refused in both directions"
+      ],
+      "consumers": [
+        "crates/protocol-oteryn/src/analyser.rs MAX_ANALYSER_BATCH_FACTS, AnalyserPendingQueue::take_batch"
+      ],
+      "notes": "ANALYSERS-0 \u00a74 and \u00a76. Registered by OTV2-20261003-analyser-wire1."
+    },
+    {
+      "id": "ANALYSERS0-RL-02",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_ANALYSERS0_HUNTING_ANALYSERS_DECISION_2026-10-03.md",
+      "resource": "Corpse items in one kill_loot fact",
+      "unit": "items per fact",
+      "hard_maximum": 32,
+      "configurable_range": {
+        "minimum": 32,
+        "maximum": 32
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "The decoder refuses a 33rd item before decoding it; the emitter sends more items as a second kill_loot fact for the same race.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=32: a kill_loot with 32 items round-trips",
+        "max+1=33: 33 items are refused in both directions"
+      ],
+      "consumers": [
+        "crates/protocol-oteryn/src/analyser.rs MAX_ANALYSER_LOOT_ITEMS"
+      ],
+      "notes": "ANALYSERS-0 \u00a74 and \u00a76. Registered by OTV2-20261003-analyser-wire1."
+    },
+    {
+      "id": "ANALYSERS0-RL-03",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_ANALYSERS0_HUNTING_ANALYSERS_DECISION_2026-10-03.md",
+      "resource": "Bytes of one analyser batch (domain 15 delta type 1)",
+      "unit": "bytes",
+      "hard_maximum": 4096,
+      "configurable_range": {
+        "minimum": 4096,
+        "maximum": 4096
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Measured: the largest fact (a 32-item kill_loot) is 401 bytes (MAX_ANALYSER_FACT_BYTES), so 64 of them would exceed 4,096. The batch builder therefore also stops before 4,096 bytes and leaves the rest for the next sync unit (never dropped for size); the decoder refuses a larger payload before reading it.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=4096: the batch builder fills worst-case facts to at most 4,096 bytes and a 4,096-byte batch decodes",
+        "max+1=4097: a 4,097-byte payload is refused in both directions"
+      ],
+      "consumers": [
+        "crates/protocol-oteryn/src/analyser.rs MAX_ANALYSER_BATCH_BYTES, MAX_ANALYSER_FACT_BYTES, AnalyserPendingQueue::take_batch"
+      ],
+      "notes": "ANALYSERS-0 \u00a76 (at most 4 KiB, measured by ANALYSER-WIRE-1). Registered by OTV2-20261003-analyser-wire1."
+    },
+    {
+      "id": "ANALYSERS0-RL-04",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_ANALYSERS0_HUNTING_ANALYSERS_DECISION_2026-10-03.md",
+      "resource": "Analyser facts pending for one session",
+      "unit": "facts per GameSession",
+      "hard_maximum": 1024,
+      "configurable_range": {
+        "minimum": 1024,
+        "maximum": 1024
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "A VecDeque of at most 1,024 encoded facts (each at most 401 bytes); above it the oldest is dropped and counted, and the next batch opens with dropped {count}.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=1024: 1,024 queued facts drop nothing",
+        "max+1=1025: the oldest fact is dropped and the next batch opens with dropped {count: 1}"
+      ],
+      "consumers": [
+        "crates/protocol-oteryn/src/analyser.rs MAX_ANALYSER_PENDING_FACTS, AnalyserPendingQueue"
+      ],
+      "notes": "ANALYSERS-0 \u00a76 (the pending-facts row, unnumbered in the decision). Registered by OTV2-20261003-analyser-wire1."
     }
   ]
 }
