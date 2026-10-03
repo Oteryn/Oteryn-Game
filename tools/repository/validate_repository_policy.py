@@ -32,7 +32,7 @@ PR_METADATA_WORKFLOWS = (
 
 PR_METADATA_SOURCE_SHA256 = {
     "Verify pull request target and metadata": (
-        "05d45b8ea60bc48df64b9048154706b9c9ea096e4bea535ed9a4b0a6ff63176d"
+        "933cdce0ad2c04ef8c15769b61eb69768e014983a76562774056318251c76937"
     ),
     "Verify pull request metadata": (
         "4603ace39aaadbb979da4add881d01d5cc9cd962dd1db0005819af55e7e72206"
@@ -341,6 +341,7 @@ def _metadata_environment(
                 "EVENT_NAME": "pull_request",
                 "EVENT_PR_NUMBER": "914",
                 "EVENT_PR_HEAD_SHA": expected_head,
+                "EVENT_PR_BASE_REF": "main",
             }
         if event_name == "workflow_dispatch":
             return common | {
@@ -406,7 +407,10 @@ def validate_pr_metadata_workflow_text(
     if job_name == "validate":
         allowed_step_keys = {"if", "env", "run"}
         expected_job_entries = {
-            "name": "Agent governance / validate",
+            "name": (
+                "${{ github.event_name == 'pull_request' && github.event.pull_request.base.ref != 'main' "
+                "&& 'Agent governance / stack preflight' || 'Agent governance / validate' }}"
+            ),
             "runs-on": "ubuntu-24.04",
             "timeout-minutes": "10",
             "env": "",
@@ -434,6 +438,7 @@ def validate_pr_metadata_workflow_text(
             "GH_TOKEN": "${{ github.token }}",
             "EVENT_PR_NUMBER": "${{ github.event.pull_request.number }}",
             "EVENT_PR_HEAD_SHA": "${{ github.event.pull_request.head.sha }}",
+            "EVENT_PR_BASE_REF": "${{ github.event.pull_request.base.ref }}",
             "DISPATCH_PR_NUMBER": "${{ github.event.inputs.pull_request_number }}",
             "DISPATCH_EXPECTED_HEAD_SHA": "${{ github.event.inputs.expected_head_sha }}",
         }
@@ -711,9 +716,11 @@ def validate_pr_metadata_workflow_text(
     def validate_identity_matrix(
         prefix: str,
         fixture_environment: dict[str, str],
+        base_ref: str = "main",
     ) -> None:
         for name, mutation in identity_cases:
             pull = _valid_pull(expected_head)
+            pull["base"] = {"ref": base_ref}
             pull.update(mutation)
             result = execute(
                 f"{prefix}-{name}",
@@ -732,6 +739,23 @@ def validate_pr_metadata_workflow_text(
     validate_identity_matrix("pull-request", environment)
 
     if step_name == "Verify pull request target and metadata":
+        stack_base = "codex/prepared-parent"
+        stack_environment = environment | {"EVENT_PR_BASE_REF": stack_base}
+        stack_pull = _valid_pull(expected_head)
+        stack_pull["base"] = {"ref": stack_base}
+        stack_result = execute("stack-preflight", stack_pull, stack_environment)
+        if stack_result is not None:
+            code, stdout, stderr, _github_env = stack_result
+            if code != 0 or "not integration qualification" not in stdout:
+                errors.append(f"{label} stack fixture must pass as explicit preflight: {stderr.strip()}")
+        require_target_sha("stack-preflight", stack_result)
+        require_success_output("stack-preflight", stack_result)
+        validate_identity_matrix("stack-preflight", stack_environment, stack_base)
+        for base_ref in ("main", ""):
+            changed_environment = stack_environment | {"EVENT_PR_BASE_REF": base_ref}
+            result = execute("stack-base-mismatch", stack_pull, changed_environment)
+            if result is not None and result[0] != 1:
+                errors.append(f"{label} stale or missing event base must fail before checkout")
         dispatch_environment = _metadata_environment(
             step_name,
             expected_head,

@@ -25,9 +25,9 @@ jobs:
       contents: read
       pull-requests: read
     env:
-      EXPECTED_MERGE_GROUP_GATE_BLOB: "9e7f083a7e2a58a1d03910d90a9423dd7ec5478c"
+      EXPECTED_MERGE_GROUP_GATE_BLOB: "ecbc78bf20e8db2c13eca31dd54cedc6c971bd2e"
       EXPECTED_AGENT_GOVERNANCE_BLOB: "eda4b9f3a006633328ffd48bd64c791274b50b08"
-      EXPECTED_MERGE_GATE_BLOB: "ea38b9ccbbfb171aeca4b38762554497f8557dc3"
+      EXPECTED_MERGE_GATE_BLOB: "61b42919d0432b7b64b763f297ab9d5889c4bea2"
     steps:
       - name: Validate control-plane candidate as inert data
         shell: bash
@@ -222,7 +222,7 @@ jobs:
               '              test -f "$path" && test ! -L "$path"\n',
               '              test "$(git hash-object -- "$path")" = "$(git rev-parse "$HEAD_SHA:$path")"\n',
               '              verify_registered_target_binding "$name" "$path"\n',
-              '              cargo +1.94.0 test --locked -p oteryn-game-server --test "$name"\n',
+              '              cargo +1.94.0 test --locked --workspace --test "$name"\n',
               '          run_registered_target durability_postgres apps/game-server/tests/durability_postgres.rs\n',
               '          run_registered_target character_authority_postgres apps/game-server/tests/character_authority_postgres.rs\n',
               '          run_registered_target runtime_scope_assignment_postgres apps/game-server/tests/runtime_scope_assignment_postgres.rs\n',
