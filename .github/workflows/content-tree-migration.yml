@@ -22,6 +22,9 @@ on:
       - tools/content-migration/**
       - tools/content-schema/starter-kit-authoring/**
       - tools/content-schema/imbuement-authoring/**
+      - imports/tibiawiki/facts/items-stats.json
+      - content/assets/files/appearances-*.dat
+      - tools/content-census/stage_proficiencies.py
       - rulesets/items/imbuements/**
       - tools/content-schema/item-authoring/requirements.txt
       - .github/workflows/content-tree-migration.yml

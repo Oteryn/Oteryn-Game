@@ -1,18 +1,18 @@
 ---
 task_id: OTV2-20261002-imbuement-server-data-import
 title: Import reviewed imbuement data into the static server ruleset tree
-status: implementing
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: codex/imbuement-server-data-import-20261002
-pr: null
+pr: 1597
 base_sha: e225b3f76e152d195f75cb757b3d639a3ff5577a
-head_sha: null
-final_head_sha: null
+head_sha: "exact frozen head in the #1622 FREEZE_SHA entry"
+final_head_sha: "exact frozen head in the #1622 FREEZE_SHA entry"
 final_head_frozen_at: null
 owner: root-imbuement-data-import
 created_at: 2026-10-02T18:06:13Z
-updated_at: 2026-10-02T18:06:13Z
+updated_at: 2026-10-03T17:10:00Z
 execution_policy: continuous_progress
 owned_paths:
   - tools/content-schema/imbuement-authoring/**
@@ -86,3 +86,15 @@ accepted main fields and the workflow union, then regenerate both evidence packe
 their two EVIDENCE_PINS and the catalogue/ruleset/lock cascade. Final publication and
 qualification must follow the content carrier (#1599+#1630+#1433); the integration
 writer retains sole remote-branch ownership until transferred by the control plane.
+
+## Closeout
+
+Merge result: squash merge of #1597, after the D308 content carrier (D319/D339 order).
+Validation on the D312 candidate: 238 imbuement tests, build/validate, binding and
+eligibility --check, import content --check, materialized tree 97/97, charm, proficiency,
+reward-claim and starter-kit --check, and the Rust content repository test pass.
+Review: Codex round 1 on the D312 head found three issues, fixed in this commit:
+the workflow paths now include every importer input; the generated taxonomy refresh is
+left to the content carrier, which owns that path; and this record is completed.
+Main's G4 RETIRED_KEY and TAXONOMY_SOURCE_COVERAGE reds are fixed by the carrier
+(D320/D323). After the carrier merges, this PR takes a main merge and regeneration.
