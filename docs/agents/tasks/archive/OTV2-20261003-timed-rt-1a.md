@@ -8,7 +8,7 @@ status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/timed-rt-1a
-pr: null
+pr: 1681
 base_sha: 98a2f95c
 head_sha: "exact frozen head in the #1622 FREEZE_SHA entry"
 final_head_sha: "exact frozen head in the #1622 FREEZE_SHA entry"
