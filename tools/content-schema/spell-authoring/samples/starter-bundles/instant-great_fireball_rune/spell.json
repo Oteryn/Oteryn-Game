@@ -42,6 +42,9 @@
     },
     "pz_locks_caster": false,
     "needs_weapon": false,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_or_rune"
+    },
     "execution": {
       "conjure": {
         "result": {
