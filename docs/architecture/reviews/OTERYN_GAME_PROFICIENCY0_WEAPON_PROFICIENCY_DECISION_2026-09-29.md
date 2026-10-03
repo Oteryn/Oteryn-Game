@@ -147,6 +147,11 @@ gives trees, thresholds and perks to content. Its rule 6 requires versioned defi
     after (after later than before, same definition key); §4.2's CHECKs allow exactly this. No
     separate refresh cause and no write for the revision alone exist. Progress is cumulative and is
     never lowered by a refresh (a lower threshold or Mastery cap only changes the derived level).
+    **Release gate (D283c).** Because a dormant track keeps its older revision until its next line,
+    an incompatible activation is refused unless its declared migration covers **every source
+    revision still present** in persisted track rows of that definition, found by one bounded
+    `DISTINCT` revision query at the activation gate. A compatible activation needs no gate. No
+    definition history is stored.
   - Anything else is incompatible. The content revision declares the migration of the selections
     (keep, remap or clear, per level). The owning session writes one `migration` receipt for the
     Character's affected tracks before it first uses any of them under the new revision, in its
@@ -183,8 +188,9 @@ gives trees, thresholds and perks to content. Its rule 6 requires versioned defi
   - `proficiency_occurrence_id`, `character_id`, `committed_character_revision` and `item_key`,
     with a composite FK (occurrence, character, revision) to its receipt;
   - the definition key and revision, before and after;
-  - the **shape fingerprint** before and after (amendment for D283c): a fixed-size digest of the
-    definition revision's level count and, per level, the ordered perk kinds. It is computed by the
+  - the **shape** before and after (amendment for D283c): the explicit ordered perk-kind list of the
+    definition revision, one list per level (at most 7 levels of at most 3 kinds, so bounded), not a
+    digest, so reconcile has the mapping data without the revision's content. It is computed by the
     writer from the active content when that revision is first written to the track, and the track
     row stores the current one, so it never needs the revision's content again;
   - `progress` and `selections`, before and after.
@@ -200,12 +206,12 @@ gives trees, thresholds and perks to content. Its rule 6 requires versioned defi
     PROF-1 tests it, and reconcile recomputes it from the two definition revisions.
   - A revision advance on a `training` or `perk_selection` line must be compatible (same level count
     and per-level perk order). The **line CHECK** enforces it without content: on those causes the
-    shape fingerprint after must equal the fingerprint before, and the per-track check links each
-    line's before fingerprint to the previous line's after value. The writer computes the new
-    revision's fingerprint from the active content, which always holds the revision it advances
+    shape after must equal the shape before, and the per-track check links each
+    line's before shape to the previous line's after value. The writer computes the new
+    revision's shape from the active content, which always holds the revision it advances
     to. `verify_character_integrity` and reconcile check the same equality and chain from the stored
     lines alone, so no definition history is needed and an evicted revision never makes a receipt
-    unverifiable. A `migration` line may change the fingerprint; it is the only cause that can.
+    unverifiable. A `migration` line may change the shape; it is the only cause that can.
 
   The receipt trigger checks the line count: 1 to N for `training` and `migration`, and exactly 1
   for `perk_selection`. N is bounded by the weapons with a proficiency in the active content.

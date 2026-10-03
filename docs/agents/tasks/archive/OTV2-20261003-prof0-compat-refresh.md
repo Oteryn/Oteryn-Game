@@ -8,7 +8,7 @@ status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/arch-prof0-compat-refresh
-pr: "the PR opened from this branch"
+pr: 1621
 head_sha: "exact frozen head in the FREEZE_SHA entry"
 final_head_sha: "exact frozen head in the FREEZE_SHA entry"
 owner: claude-code-session_016c5MQoe5CoMk9fxmuuMcFJ (Sol Supervising Architect)
