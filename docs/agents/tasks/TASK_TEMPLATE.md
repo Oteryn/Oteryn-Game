@@ -87,6 +87,8 @@ A commit cannot contain its own SHA. Record the final exact head in immutable PR
 
 ## Validation
 
+Record every local check that `docs/agents/CONTEXT_ROUTING.md` selects for the changed paths, with its result on the candidate. A record archived under `docs/agents/` always selects `python tools/agents/validate_governance.py` and `python -m unittest discover -s tools/agents/tests`.
+
 ### Focused
 
 - command/run: pending
