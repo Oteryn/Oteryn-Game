@@ -190,9 +190,15 @@ A new World Bundle revision is classified under DUR-04 §12 by what it changes:
   - grants already made stay.
 - In a world that holds none of the state above, any revision is `COMPATIBLE_NO_MIGRATION`.
 
-CYC-CONTENT-1's report lists each such change between two revisions, and CYC-DONATE-1 checks the
-classification against the world's pools and epochs before activation, so it is checked, not
-assumed.
+CYC-CONTENT-1's report lists each such change between two revisions. The classification is
+checked when the bundle is staged and verified (ADR-0021 §4.7), against the world's discovery,
+pool and epoch state. A revision that fails it is never activated, so no reset starts with it.
+
+**Ordering against a reset.** All Cyclopedia commands (start, shuffle, POI found, donate, Charos)
+run only in admitted sessions, so none runs while a reset holds admission closed. Each command
+reads the content revision of the active bundle. The §4.2a normalization runs at the character's
+first load after activation. The area achievement is checked against the catalogue of the active
+revision inside the completing transaction (§4.3).
 
 ### 4.3 Finding a POI
 
@@ -267,25 +273,35 @@ This decision adds `AreaDonation` as a new fee source and gold sink to the D178 
 
 ### 5.4 Selection at server save
 
-The `WorldReset` job of the world (ADR-0021 §4.7, CREATURE-AI-0 §6.5) runs the selection as **one
-transaction** before the channels activate:
+Selection belongs to the world reset of ADR-0021 §4.7 (the server save is a `WorldReset`,
+CREATURE-AI-0 §6.5). It runs **after** step 4 has committed the ACTIVATED record for epoch N+1 with
+its target bundle digest, and **before** any channel of the world admits a player. Admission stays
+closed in between. Selection is **one transaction** keyed (WorldId, epoch N+1):
 
 1. It locks every `game_world_area_donations` row of the world, in area id order. A donation
-   (§5.3) takes the same row lock, so the selection reads one stable snapshot and no donation
-   lands between the read and the commit.
-2. Eligible = the donation-eligible areas minus the areas improved in the ending epoch.
+   (§5.3) takes the same row lock, so the selection reads one stable snapshot. No donation can run
+   anyway while admission is closed.
+2. Eligible = the donation-eligible areas of the **target bundle** minus the areas improved in
+   epoch N.
 3. **Donation area:** the eligible area with the highest total of at least 10,000,000
    (`CYC0-RL-05`, TibiaWiki). A tie is drawn under `improved_respawn_tie`.
 4. **Random area:** with chance 33%, drawn under `improved_respawn_random`, one area uniformly from
    eligible minus the donation area.
-5. It inserts the epoch row (both areas, the RNG records, every pool revision read and the content
-   revision of the area tiles) and sets the
-   winner's total to 0. The other totals stay. The order of steps 3 and 4 is `PARITY_PENDING`.
+5. It inserts the epoch row (both areas, the RNG records, every pool revision read, and the target
+   bundle digest and content revision) and sets the winner's total to 0. The other totals stay.
+   The order of steps 3 and 4 is `PARITY_PENDING`.
 
-Every draw is bound to the occurrence (WorldId, reset epoch, purpose, draw index) under
-SIM-DETERMINISM-01 §12, so a retry reproduces the same outcome from the same snapshot. A crash
-before the commit leaves no trace. A crash after it leaves the epoch row, so a retried job reads it
-and never draws or resets again. The epoch's channels activate only after the commit.
+Every draw is bound to the occurrence (WorldId, epoch N+1, purpose, draw index) under
+SIM-DETERMINISM-01 §12, so a retry reproduces the same outcome from the same snapshot.
+
+**Recovery.**
+- If activation fails or crashes while the reset record is RETIRING, there is no epoch N+1, so no
+  selection runs. ADR-0021 recovery resumes the reset, and selection follows its activation.
+- If the world boots with an ACTIVATED epoch and no epoch row for it, boot runs the selection
+  before admission opens.
+- If the epoch row exists, the job reads it and never draws or resets again.
+- A boot whose epoch row names a different bundle digest than the active one refuses admission.
+  This is the same fail-closed rule as ADR-0021 §4.2.
 
 ### 5.5 Effect (CYC-RESPAWN-1)
 
@@ -294,7 +310,8 @@ and never draws or resets again. The epoch's channels activate only after the co
   factors (2 for the area; the event and the Boosted Creature are added when they exist; 5 + 2 = 7
   as TibiaWiki states). Other combinations are `PARITY_PENDING`.
 - Bosses, special creatures and creatures without a spawn point (raids, summons) are not affected.
-- The factor holds from one `WorldReset` to the next.
+- The factor holds from one `WorldReset` to the next. Tile membership is read from the bundle
+  that the epoch row names, which is the active bundle (§5.4).
 
 ## 6. Wire (CYC-WIRE-1)
 
