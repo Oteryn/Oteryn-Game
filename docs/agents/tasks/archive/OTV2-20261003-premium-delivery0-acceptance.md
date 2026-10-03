@@ -9,7 +9,7 @@ repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: arch/premium-delivery0-acceptance-20261003
 issue: 162
-pr: "exact PR in the control plane FREEZE_SHA entry"
+pr: 1659
 head_sha: "exact frozen head in the control plane FREEZE_SHA entry"
 owner: Sol Supervising Architect
 created_at: 2026-10-03
@@ -28,7 +28,8 @@ Control plane D350 (owner answer 1a). PREMIUM-DELIVERY-0 gains §10, reconciled 
 PREM-1a (#1391): what migration 0029 and `premium::` deliver, the stricter lifecycle state machine
 kept as part of the decision, `PREMDEL0-RL-04` met by the never-deleted evidence log, the
 failed-pull class assigned to PREM-1b, `PROD-ENTITLEMENTS-01`'s accepted status, and when the
-PREMIUM-ACTIVATION amendments take effect. §11 is the PREM-1b packet (hard worker, no lease).
+PREMIUM-ACTIVATION amendments take effect. §11 is the PREM-1b packet (hard worker; one migration
+number leased by the control plane at allocation, scope item 7).
 The status stays `CANDIDATE` until the independent review (security, cross-repository) passes on
 the exact head. Nothing is written to Oteryn-Platform; PREM-P stays with its coordinator.
 
