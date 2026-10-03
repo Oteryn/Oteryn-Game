@@ -2,6 +2,8 @@
 // root as `charm_state_postgres.rs` can include this file.
 
 use crate::character_recovery_fence::CharacterRecoveryStore;
+use crate::charm_transport::native::{CharmConnectionContent, NativeCharmProgressionPort};
+use crate::charm_transport::{CharmCommandIdentity, CharmPortUnavailable};
 use crate::domain::charm::{
     BestiaryRaceKey, BestiaryStage, CharmCatalogue, CharmCategory, CharmCurrency, CharmDefinition,
     CharmKey, CharmRuleError, CharmSlotEntitlement, CharmStage, derive_balance,
@@ -20,7 +22,8 @@ use crate::durability::character_progression::{
 };
 use crate::durability::charm_state::{
     BestiaryCharmEntry, BestiaryCharmFacts, CharmCommand, CharmCommandEffect,
-    CharmCommandOccurrence, CharmCommandOutcome, CharmCommandRequest, CharmFacts, CharmStateError,
+    CharmCommandOccurrence, CharmCommandOutcome, CharmCommandRequest, CharmFacts,
+    CharmProgressionReadRequest, CharmStateError,
 };
 use crate::durability::runtime_scope_assignment::{
     AssignmentCommand, AssignmentOutcome, AssignmentRequest, BootstrapSecret, ControlActor,
@@ -35,6 +38,11 @@ use crate::foundation::admission_authority_publication::{
     AdmissionPublicationSourceV1,
 };
 use crate::foundation::{ConnectionGeneration, RuntimeScopeRefV1, ScopeOwnershipGeneration};
+use oteryn_protocol_oteryn::charm::{
+    COMMAND_TYPE_CHARM_ASSIGN_INTENT, COMMAND_TYPE_CHARM_UNLOCK_STAGE_INTENT,
+    CharmAssignDisposition, CharmUnlockDisposition, decode_charm_assign_result,
+    decode_charm_unlock_stage_result,
+};
 use oteryn_simulation_determinism::{ExactI64, RoundingMode};
 use sqlx::postgres::PgConnection;
 use sqlx::{Connection, Executor};
@@ -498,6 +506,92 @@ fn catalogue() -> CharmCatalogue {
     .expect("catalogue")
 }
 
+// Validated provider fixtures exercise native binding; they do not claim production Content.
+fn native_content(
+    races: Vec<crate::domain::bestiary::BestiaryRace>,
+) -> TestResult<CharmConnectionContent> {
+    use crate::combat::charm_effects::{
+        CharmCatalogueRead, CharmCategory as EffectCategory, CharmDefinition as EffectDefinition,
+        CharmEffect, CharmPercent, CharmStageValue,
+    };
+    struct Effects(BTreeMap<String, EffectDefinition>);
+    impl CharmCatalogueRead for Effects {
+        fn charm(&self, key: &str) -> Option<&EffectDefinition> {
+            self.0.get(key)
+        }
+    }
+    let catalogue = catalogue();
+    let mut effects = Effects(BTreeMap::new());
+    for definition in catalogue.definitions() {
+        let category = match definition.category {
+            CharmCategory::Major => EffectCategory::Major,
+            CharmCategory::Minor => EffectCategory::Minor,
+        };
+        let effect = EffectDefinition::new(
+            definition.key.as_str(),
+            category,
+            CharmStageValue::TriggerChancePercent,
+            [100, 200, 300].map(|value| CharmPercent::from_hundredths(value).expect("percent")),
+            CharmEffect::DodgeAttack,
+        )
+        .map_err(debug)?;
+        effects.0.insert(definition.key.as_str().to_owned(), effect);
+    }
+    CharmConnectionContent::new("content-1".into(), catalogue, races, &effects).map_err(debug)
+}
+
+async fn native_unlock<F: CharmFacts + Clone>(
+    port: &mut NativeCharmProgressionPort<'_, '_, '_, F>,
+    command_id: u64,
+    charm: u8,
+    stage: u8,
+) -> TestResult<CharmUnlockDisposition> {
+    let identity = CharmCommandIdentity {
+        game_session_id: fence(1)?.game_session_id,
+        command_id,
+    };
+    let reply = port
+        .dispatch(
+            identity,
+            COMMAND_TYPE_CHARM_UNLOCK_STAGE_INTENT,
+            &[0x08, charm, 0x10, stage],
+        )
+        .await
+        .ok_or("unlock dispatcher did not route")?;
+    let disposition = decode_charm_unlock_stage_result(&reply.result_payload).map_err(debug)?;
+    assert_eq!(
+        reply.rejected,
+        disposition == CharmUnlockDisposition::Rejected
+    );
+    Ok(disposition)
+}
+
+async fn native_assign<F: CharmFacts + Clone>(
+    port: &mut NativeCharmProgressionPort<'_, '_, '_, F>,
+    command_id: u64,
+    charm: u8,
+    race: u8,
+) -> TestResult<CharmAssignDisposition> {
+    let identity = CharmCommandIdentity {
+        game_session_id: fence(1)?.game_session_id,
+        command_id,
+    };
+    let reply = port
+        .dispatch(
+            identity,
+            COMMAND_TYPE_CHARM_ASSIGN_INTENT,
+            &[0x08, charm, 0x10, race],
+        )
+        .await
+        .ok_or("assign dispatcher did not route")?;
+    let disposition = decode_charm_assign_result(&reply.result_payload).map_err(debug)?;
+    assert_eq!(
+        reply.rejected,
+        disposition == CharmAssignDisposition::Rejected
+    );
+    Ok(disposition)
+}
+
 fn occurrence(tag: u8) -> CharmCommandOccurrence {
     CharmCommandOccurrence::from_bytes(id(tag)).expect("occurrence")
 }
@@ -953,18 +1047,56 @@ fn bestiary_kill_counters_earn_points_and_admit_assignments() -> TestResult {
         }
         // Only the completed rat entry earns points: its 300 buy wound stage 1 (240); zap
         // (320) would then need 560.
-        let unlocked = harness
-            .root
-            .commit_charm_command(
-                &authority,
-                &harness.node,
-                fence(6)?,
-                unlock(61, "wound"),
-                facts.clone(),
-            )
+        let content = native_content(vec![bestiary_race("wolf")?, bestiary_race("rat")?])?;
+        let mut port = NativeCharmProgressionPort::bind(
+            &harness.root,
+            &authority,
+            &harness.node,
+            fence(6)?,
+            &content,
+            facts.clone(),
+        )
+        .await
+        .map_err(debug)?;
+        // Each test root admits one ready SQL holder. Use the owner's independent-root
+        // concurrency pattern rather than increasing its capacity or retrying admission.
+        let simultaneous_root = DurabilityRoot::connect_test_runtime(&harness.database.url)?;
+        assert!(simultaneous_root.maintain_ready_once().await?);
+        let simultaneous_seal = harness.recovery.seal_current().map_err(debug)?;
+        let simultaneous_authority = simultaneous_root
+            .open_character_authority(&simultaneous_seal)
             .await
             .map_err(debug)?;
-        assert!(matches!(unlocked, CharmCommandOutcome::Committed(_)));
+        let mut simultaneous_port = NativeCharmProgressionPort::bind(
+            &simultaneous_root,
+            &simultaneous_authority,
+            &harness.node,
+            fence(6)?,
+            &content,
+            facts.clone(),
+        )
+        .await
+        .map_err(debug)?;
+        let (first, simultaneous) = join_two(
+            native_unlock(&mut port, 61, 4, 0),
+            native_unlock(&mut simultaneous_port, 61, 4, 0),
+        )
+        .await;
+        assert_eq!(first?, CharmUnlockDisposition::Unlocked);
+        assert_eq!(simultaneous?, CharmUnlockDisposition::Unlocked);
+        drop(simultaneous_port);
+        drop(simultaneous_authority);
+        drop(simultaneous_seal);
+        drop(simultaneous_root);
+        assert_eq!(revision(&harness.pool).await?, "7");
+        let committed_unlock: (i64, Option<i16>, Option<i64>) = sqlx::query_as(
+            "SELECT count(*), min(stage_after), sum(stage_cost)::bigint \
+             FROM game_character_charm_receipts WHERE character_id = encode($1,'hex')::uuid",
+        )
+        .bind(id(41).as_slice())
+        .fetch_one(&harness.pool)
+        .await?;
+        assert_eq!(committed_unlock, (1, Some(1), Some(240)));
         let short = harness
             .root
             .commit_charm_command(
@@ -1000,19 +1132,280 @@ fn bestiary_kill_counters_earn_points_and_admit_assignments() -> TestResult {
             ),
             "{incomplete:?}"
         );
-        let assigned = harness
+        assert_eq!(
+            native_assign(&mut port, 63, 4, 2).await?,
+            CharmAssignDisposition::RaceStageTooLow
+        );
+        assert_eq!(
+            native_assign(&mut port, 64, 4, 1).await?,
+            CharmAssignDisposition::Assigned
+        );
+        assert_eq!(revision(&harness.pool).await?, "8");
+        // The dispatcher reconstructs the original receipt binding after later revision changes.
+        let committed_state = snapshot(&harness.pool).await?;
+        assert_eq!(
+            native_unlock(&mut port, 61, 4, 0).await?,
+            CharmUnlockDisposition::Unlocked
+        );
+        assert_eq!(
+            native_assign(&mut port, 64, 4, 1).await?,
+            CharmAssignDisposition::Assigned
+        );
+        for (command, charm, stage, expected) in [
+            (61, 4, 1, CharmUnlockDisposition::Rejected),
+            (61, 3, 0, CharmUnlockDisposition::Rejected),
+            (65, 4, 0, CharmUnlockDisposition::StageMismatch),
+            (65, 6, 0, CharmUnlockDisposition::UnknownCharm),
+            (65, 5, 0, CharmUnlockDisposition::NotEnoughCharmPoints),
+            (65, 2, 0, CharmUnlockDisposition::NotEnoughMinorCharmEchoes),
+        ] {
+            assert_eq!(
+                native_unlock(&mut port, command, charm, stage).await?,
+                expected
+            );
+        }
+        for (command, charm, race, expected) in [
+            (61, 4, 1, CharmAssignDisposition::Rejected),
+            (64, 4, 2, CharmAssignDisposition::Rejected),
+            (65, 4, 1, CharmAssignDisposition::AlreadyAssigned),
+            (65, 3, 1, CharmAssignDisposition::CharmLocked),
+            (65, 4, 3, CharmAssignDisposition::UnknownRace),
+        ] {
+            assert_eq!(
+                native_assign(&mut port, command, charm, race).await?,
+                expected
+            );
+        }
+        let mismatched_identity = CharmCommandIdentity {
+            game_session_id: crate::foundation::GameSessionId::decode(&id(51)).map_err(debug)?,
+            command_id: 65,
+        };
+        let rejected_identity = port
+            .dispatch(
+                mismatched_identity,
+                COMMAND_TYPE_CHARM_UNLOCK_STAGE_INTENT,
+                &[0x08, 4],
+            )
+            .await
+            .ok_or("route")?;
+        assert!(rejected_identity.rejected);
+        let rejected_assign_identity = port
+            .dispatch(
+                mismatched_identity,
+                COMMAND_TYPE_CHARM_ASSIGN_INTENT,
+                &[0x08, 3, 0x10, 1],
+            )
+            .await
+            .ok_or("assign route")?;
+        assert!(rejected_assign_identity.rejected);
+        assert_eq!(
+            decode_charm_assign_result(&rejected_assign_identity.result_payload).map_err(debug)?,
+            CharmAssignDisposition::Rejected
+        );
+        assert_eq!(
+            decode_charm_unlock_stage_result(&rejected_identity.result_payload).map_err(debug)?,
+            CharmUnlockDisposition::Rejected
+        );
+        assert_eq!(revision(&harness.pool).await?, "8");
+        assert_eq!(snapshot(&harness.pool).await?, committed_state);
+
+        let read_request = || CharmProgressionReadRequest {
+            catalogue_revision: "content-1".into(),
+            catalogue: catalogue(),
+            races: vec![race("rat"), race("wolf")],
+        };
+        let view = harness
             .root
-            .commit_charm_command(
+            .read_character_charm_progression(
                 &authority,
                 &harness.node,
-                fence(7)?,
-                assign(64, "wound", "rat"),
+                fence(8)?,
+                read_request(),
                 facts.clone(),
             )
             .await
             .map_err(debug)?;
-        assert!(matches!(assigned, CharmCommandOutcome::Committed(_)));
-        assert_eq!(revision(&harness.pool).await?, "8");
+        assert_eq!(view.character_revision.get(), 8);
+        assert_eq!(
+            view.bestiary_counts,
+            BTreeMap::from([(race("rat"), 3), (race("wolf"), 2)])
+        );
+        assert_eq!(view.balance.available(CharmCurrency::CharmPoints), 60);
+        assert_eq!(view.balance.available(CharmCurrency::MinorCharmEchoes), 50);
+        assert_eq!(view.slot_entitlement, CharmSlotEntitlement::Free);
+        let native_view = port.views().await.map_err(debug)?;
+        assert_eq!(native_view.revision.get(), 8);
+        assert_eq!(
+            native_view
+                .bestiary
+                .iter()
+                .map(|race| (race.race.get(), race.kill_count))
+                .collect::<Vec<_>>(),
+            [(1, 3), (2, 2)]
+        );
+        assert_eq!(native_view.charms.charm_points_available, 60);
+        assert_eq!(native_view.charms.minor_charm_echoes_available, 50);
+        let wound = &native_view.charms.charms[3];
+        assert_eq!(
+            (
+                wound.charm.get(),
+                wound.unlocked_stage,
+                wound.assigned_race.map(std::num::NonZeroU32::get)
+            ),
+            (4, 1, Some(1))
+        );
+        assert!(
+            native_view
+                .charms
+                .charms
+                .iter()
+                .all(|charm| !charm.effect_active)
+        );
+        let mut mismatched_session = fence(8)?;
+        mismatched_session.game_session_id =
+            crate::foundation::GameSessionId::decode(&id(51)).map_err(debug)?;
+        for refused_fence in [mismatched_session, fence(7)?] {
+            assert!(matches!(
+                NativeCharmProgressionPort::bind(
+                    &harness.root,
+                    &authority,
+                    &harness.node,
+                    refused_fence,
+                    &content,
+                    facts.clone(),
+                )
+                .await,
+                Err(CharmPortUnavailable)
+            ));
+        }
+        let mut maximal = read_request();
+        maximal
+            .races
+            .extend((0..1022).map(|i| race(&format!("race{i}"))));
+        let maximum = harness
+            .root
+            .read_character_charm_progression(
+                &authority,
+                &harness.node,
+                fence(8)?,
+                maximal,
+                facts.clone(),
+            )
+            .await
+            .map_err(debug)?;
+        assert_eq!(maximum, view);
+
+        // Each negative changes one binding fact; every other live fact remains valid.
+        let mut wrong_character = fence(8)?;
+        wrong_character.character_id = CharacterId::from_bytes(id(99)).map_err(debug)?;
+        let mut wrong_session = fence(8)?;
+        wrong_session.game_session_id =
+            crate::foundation::GameSessionId::decode(&id(99)).map_err(debug)?;
+        let mut replaced_connection = fence(8)?;
+        replaced_connection.connection_generation = ConnectionGeneration::new(2).map_err(debug)?;
+        let mut wrong_lease = fence(8)?;
+        wrong_lease.character_lease_generation = 2;
+        let mut wrong_scope = fence(8)?;
+        wrong_scope.runtime_scope = RuntimeScopeRefV1::channel(
+            crate::foundation::WorldId::decode(&id(42)).map_err(debug)?,
+            crate::foundation::ChannelId::decode(&id(99)).map_err(debug)?,
+        );
+        let mut wrong_scope_generation = fence(8)?;
+        wrong_scope_generation.scope_ownership_generation =
+            ScopeOwnershipGeneration::new(2).map_err(debug)?;
+        for invalid in [
+            wrong_character,
+            wrong_session,
+            replaced_connection,
+            wrong_lease,
+            wrong_scope,
+            wrong_scope_generation,
+        ] {
+            let refused = harness
+                .root
+                .read_character_charm_progression(
+                    &authority,
+                    &harness.node,
+                    invalid,
+                    read_request(),
+                    facts.clone(),
+                )
+                .await;
+            assert!(
+                matches!(refused, Err(CharmStateError::AuthorityRejected)),
+                "{refused:?}"
+            );
+        }
+        let stale = harness
+            .root
+            .read_character_charm_progression(
+                &authority,
+                &harness.node,
+                fence(7)?,
+                read_request(),
+                facts.clone(),
+            )
+            .await;
+        assert!(matches!(
+            stale,
+            Err(CharmStateError::CharacterRevisionMismatch)
+        ));
+        let mut other_content = read_request();
+        other_content.catalogue_revision = "other-content".into();
+        let refused = harness
+            .root
+            .read_character_charm_progression(
+                &authority,
+                &harness.node,
+                fence(8)?,
+                other_content,
+                facts.clone(),
+            )
+            .await;
+        assert!(matches!(
+            refused,
+            Err(CharmStateError::CharmContextMismatch)
+        ));
+        for races in [
+            vec![race("rat"), race("rat")],
+            (0..1025).map(|i| race(&format!("race{i}"))).collect(),
+        ] {
+            let mut oversized = read_request();
+            oversized.races = races;
+            let refused = harness
+                .root
+                .read_character_charm_progression(
+                    &authority,
+                    &harness.node,
+                    fence(8)?,
+                    oversized,
+                    facts.clone(),
+                )
+                .await;
+            assert!(matches!(refused, Err(CharmStateError::InvalidInput)));
+        }
+        // A current-generation read omits historical keys, without deleting their counters.
+        let mut current_only = read_request();
+        current_only.races = vec![race("rat")];
+        let filtered = harness
+            .root
+            .read_character_charm_progression(
+                &authority,
+                &harness.node,
+                fence(8)?,
+                current_only,
+                facts.clone(),
+            )
+            .await
+            .map_err(debug)?;
+        assert_eq!(filtered.bestiary_counts, BTreeMap::from([(race("rat"), 3)]));
+        let historical = harness
+            .root
+            .read_bestiary_progress(&authority, fence(8)?.character_id, race("wolf").as_str())
+            .await
+            .map_err(debug)?
+            .ok_or("historical wolf counter disappeared")?;
+        assert_eq!(historical.kill_count, 2);
 
         let restarted = DurabilityRoot::connect_test_runtime(&harness.database.url)?;
         assert!(restarted.maintain_ready_once().await?);
@@ -1036,9 +1429,113 @@ fn bestiary_kill_counters_earn_points_and_admit_assignments() -> TestResult {
             state.assignments,
             BTreeMap::from([(charm("wound"), race("rat"))])
         );
+        let reloaded = restarted
+            .read_character_charm_progression(
+                &restart_authority,
+                &harness.node,
+                fence(8)?,
+                read_request(),
+                facts.clone(),
+            )
+            .await
+            .map_err(debug)?;
+        assert_eq!(reloaded, view);
+        assert_eq!(revision(&harness.pool).await?, "8");
+        let mut restarted_port = NativeCharmProgressionPort::bind(
+            &restarted,
+            &restart_authority,
+            &harness.node,
+            fence(8)?,
+            &content,
+            facts.clone(),
+        )
+        .await
+        .map_err(debug)?;
+        assert_eq!(restarted_port.views().await.map_err(debug)?, native_view);
+        assert_eq!(
+            native_unlock(&mut restarted_port, 61, 4, 0).await?,
+            CharmUnlockDisposition::Unlocked
+        );
+        assert_eq!(
+            native_assign(&mut restarted_port, 64, 4, 1).await?,
+            CharmAssignDisposition::Assigned
+        );
+        drop(restarted_port);
         drop(restart_authority);
         drop(restart_seal);
         drop(restarted);
+        // Retained kills from an older five-kill definition remain valid when the current
+        // Content projection uses a three-kill completion threshold. Use real durable commits.
+        for (tag, current_revision) in [(85, 8), (86, 9)] {
+            let outcome = harness
+                .root
+                .commit_bestiary_kill(
+                    &authority,
+                    &harness.node,
+                    fence(current_revision)?,
+                    BestiaryKillRequest {
+                        occurrence: BestiaryKillOccurrence::from_bytes(id(tag)).map_err(debug)?,
+                        race: crate::domain::bestiary::BestiaryRace::new(
+                            "oteryn:creature.rat",
+                            "definition-before-threshold-reduction",
+                            vec![1, 2, 5],
+                        )
+                        .map_err(debug)?,
+                        context: context.clone(),
+                        policy_revision: "policy-1".into(),
+                        reward_revision: "reward-1".into(),
+                    },
+                )
+                .await
+                .map_err(debug)?;
+            assert!(
+                matches!(outcome, BestiaryKillOutcome::Committed(_)),
+                "{outcome:?}"
+            );
+        }
+        let bounded = port.views().await.map_err(debug)?;
+        assert_eq!(bounded.revision.get(), 10);
+        assert_eq!(bounded.bestiary[0].kill_count, 3);
+        let retained = harness
+            .root
+            .read_character_charm_progression(
+                &authority,
+                &harness.node,
+                fence(10)?,
+                read_request(),
+                facts.clone(),
+            )
+            .await
+            .map_err(debug)?;
+        assert_eq!(retained.bestiary_counts[&race("rat")], 5);
+        assert_eq!(retained.balance, view.balance);
+        let before_replacement = snapshot(&harness.pool).await?;
+        // Independently replace the live connection generation. The already-bound port must
+        // reject its old evidence rather than reconstructing current authority from storage.
+        let replaced = sqlx::query("UPDATE game_durability_reconnect_sessions SET current_generation = 2 WHERE game_session_id = encode($1,'hex')::uuid")
+            .bind(id(50).as_slice()).execute(&harness.pool).await?;
+        assert_eq!(replaced.rows_affected(), 1);
+        assert_eq!(port.views().await, Err(CharmPortUnavailable));
+        assert_eq!(
+            native_unlock(&mut port, 65, 3, 0).await?,
+            CharmUnlockDisposition::Rejected
+        );
+        assert_eq!(
+            native_assign(&mut port, 65, 3, 1).await?,
+            CharmAssignDisposition::Rejected
+        );
+        // A retained terminal result is historical evidence; it restores no gameplay authority.
+        assert_eq!(
+            native_unlock(&mut port, 61, 4, 0).await?,
+            CharmUnlockDisposition::Unlocked
+        );
+        assert_eq!(
+            native_assign(&mut port, 64, 4, 1).await?,
+            CharmAssignDisposition::Assigned
+        );
+        assert_eq!(revision(&harness.pool).await?, "10");
+        assert_eq!(snapshot(&harness.pool).await?, before_replacement);
+        drop(port);
         drop(authority);
         drop(seal);
         harness.cleanup().await
