@@ -64,9 +64,9 @@ under D319.
 
 - `cargo fmt --all --check`; `cargo clippy -p oteryn-protocol-oteryn -p oteryn-game-server
   --all-targets -D warnings`.
-- `cargo test -p oteryn-protocol-oteryn -p oteryn-game-server`. The PostgreSQL 17 suites
-  `chest_use_postgres`, `reward_claim_mint_postgres` and `account_achievement_postgres` were run
-  locally against PG 17.
+- `cargo test --no-fail-fast -p oteryn-protocol-oteryn -p oteryn-game-server`, with
+  `OTERYN_TEST_POSTGRES_ADMIN_URL` set against a local PostgreSQL 17.6. All 60 test binaries
+  pass, including every `*_postgres` suite.
 - New tests:
   - codec bounds and fail-closed;
   - one delta per `Granted` and none without one;
