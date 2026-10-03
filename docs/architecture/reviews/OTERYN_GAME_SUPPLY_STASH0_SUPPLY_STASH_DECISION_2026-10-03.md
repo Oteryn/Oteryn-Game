@@ -169,8 +169,8 @@ Anything else is `NOT_SUPPORTED`. Stackable and non-stackable wares are both adm
   scope owns the Stash, so rule 2's §32 binding does not apply.
 - **Lock order** (rule 4, extended): `character_root`, then the items in ItemInstanceId order, then
   the container-slot row, then the stash balance row.
-  - A withdraw locks the existing row FOR UPDATE; an absent row is a refusal, and nothing is
-    inserted.
+  - A withdraw locks the existing row FOR UPDATE; an absent row is a refusal; no balance row is
+    inserted, and only the refused operation row is persisted (below).
   - A stow inserts the row if absent (`ON CONFLICT DO NOTHING`), then locks it FOR UPDATE; the
     insert is part of the stow and commits only with it.
 - No `CharacterRevision` advance (§9).
@@ -246,8 +246,9 @@ Anything else is `NOT_SUPPORTED`. Stackable and non-stackable wares are both adm
     handle bound to the row's `last_entry_id`.
   - A page beyond the last returns no rows; `has_more` is true exactly when a later page holds rows.
 - **Stale handles.** A handle becomes `STALE` when the view closes (DEPOT-0 §4.1) and when its row's
-  `last_entry_id` changes. A withdraw on a stale handle is refused `STALE` and writes nothing; the
-  client reopens the page. The view's `expected_revision` is checked as for a box page.
+  `last_entry_id` changes. A withdraw on a stale handle is refused `STALE`: no value changes, and
+  the refused operation row is persisted as §5.1 says, so a replay returns the original refusal;
+  the client reopens the page. The view's `expected_revision` is checked as for a box page.
 - **Stow.** Command 9 gains the destination `STASH`; its source is a main backpack entry handle or
   an entry on the open box page.
 - **Withdraw.** A new domain 11 request `StashWithdrawV1 {handle, amount}` while the Stash page is
