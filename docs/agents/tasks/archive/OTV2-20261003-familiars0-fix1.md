@@ -9,7 +9,7 @@ repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: arch/familiars0-fix1-20261003
 issue: 162
-pr: null
+pr: 1674
 head_sha: "exact frozen head in the control plane FREEZE_SHA entry"
 owner: Sol Supervising Architect
 created_at: 2026-10-03
