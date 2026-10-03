@@ -1,0 +1,60 @@
+{
+  "spell": {
+    "identity": {
+      "key": "candidate:spell/conjure_explosive_arrow",
+      "revision": "spell-p2-r20"
+    },
+    "name": "Conjure Explosive Arrow",
+    "carrier": "instant",
+    "words": "exevo con flam",
+    "reference_spell_id": 49,
+    "library_text": "The result of tedious studies by Tibia's foremost paladins, this spell is used to create fiery ammunition which explodes when hitting a target. To reach its full destructive potential, a paladin should be very well skilled in handling its bow. Casting this spell will create 8 of this highly explosive arrows which can be conjured by every slightly experienced paladin.",
+    "requirements": {
+      "vocations": [
+        "paladin",
+        "royal_paladin"
+      ],
+      "level": 25,
+      "premium": false,
+      "learning_required": false
+    },
+    "costs": {
+      "mana": 290,
+      "soul": 3
+    },
+    "cooldown_ms": 2000,
+    "groups": [
+      {
+        "group": "support",
+        "cooldown_ms": 2000
+      }
+    ],
+    "targeting": {
+      "aggressive": false,
+      "self_target": true,
+      "needs_target": false,
+      "needs_direction": false,
+      "target_or_direction": false,
+      "block_walls": true,
+      "allow_on_self": true,
+      "check_floor": true,
+      "parameter": "none"
+    },
+    "pz_locks_caster": false,
+    "needs_weapon": false,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_conjure_explosive_arrow"
+    },
+    "execution": {
+      "conjure": {
+        "result": {
+          "family": "Item",
+          "key": "candidate:item/3449",
+          "revision": "spell-p2-r21"
+        },
+        "count": 8,
+        "effect_asset_binding": "canary.appearance:effect/magic_blue"
+      }
+    }
+  }
+}

@@ -163,6 +163,9 @@ def validate(monster,deps,catalog=None,manifest=None):
             v=formula['speed'];minimum=v['minimum_multiplier'];maximum=v['maximum_multiplier']
             if Fraction(minimum['numerator'],minimum['denominator'])>Fraction(maximum['numerator'],maximum['denominator']):errors.append('formula/speed: minimum multiplier exceeds maximum')
     for effect in deps['effects']:
+        duration=effect.get('duration_range_ms')
+        if duration and duration['minimum']>duration['maximum']:
+            errors.append('effect/duration_range_ms: minimum exceeds maximum')
         damage=effect.get('condition',{}).get('damage_over_time',{}).get('total_damage_range')
         if damage and damage['minimum']>damage['maximum']:errors.append('effect/condition/damage_over_time/total_damage_range: minimum exceeds maximum')
     for key,value in local.items():

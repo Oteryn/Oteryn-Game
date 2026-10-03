@@ -1,0 +1,32 @@
+{
+  "abilities": [
+    {
+      "identity": {
+        "key": "candidate:ability/spell/rune/antidote_rune",
+        "revision": "spell-p2-r20"
+      },
+      "kind": "spell",
+      "range_tiles": 0,
+      "needs_target": true,
+      "needs_direction": false,
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "candidate:ability/spell/rune/antidote_rune/effect-dispel",
+          "revision": "spell-p2-r20"
+        }
+      ]
+    }
+  ],
+  "effects": [
+    {
+      "identity": {
+        "key": "candidate:ability/spell/rune/antidote_rune/effect-dispel",
+        "revision": "spell-p2-r20"
+      },
+      "operation": "remove_condition",
+      "removed_condition": "poison"
+    }
+  ],
+  "formulas": []
+}

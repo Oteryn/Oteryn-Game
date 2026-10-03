@@ -1,0 +1,586 @@
+{
+  "sources": [
+    {
+      "repository": "opentibiabr/canary",
+      "revision": "99902524e052f37574194466c2949c576e4ab269"
+    },
+    {
+      "repository": "zimbadev/crystalserver",
+      "revision": "ff7ede593c69d4c658b382c97443e8155926924a"
+    },
+    {
+      "kind": "mediawiki",
+      "api": "https://tibia.fandom.com/api.php",
+      "title": "Paralyse",
+      "page_id": 1654,
+      "revision_id": 1182879,
+      "content_sha256": "b8ab2ff3b7c6bc6e5049bc21a6a929f1682aed8be245bbbec12415f5408c57c7"
+    },
+    {
+      "kind": "mediawiki",
+      "api": "https://tibia.fandom.com/api.php",
+      "title": "Paralyse Rune",
+      "page_id": 50810,
+      "revision_id": 1014407,
+      "content_sha256": "2935cea33cc702533d3d81f393ca5527d6ede01c44b0078d66d296a1be9e0390"
+    },
+    {
+      "kind": "mediawiki",
+      "api": "https://www.tibiawiki.com.br/api.php",
+      "title": "Paralyse Rune",
+      "page_id": 10242,
+      "revision_id": 435704,
+      "content_sha256": "f64042c51ad5f491540ad23a93c877bc2b5a3dce7a5aa69272d58a668d0d88b3"
+    }
+  ],
+  "entries": [
+    {
+      "source_index": 0,
+      "source_file": "data/scripts/runes/paralyze_rune.lua",
+      "source_line": 21,
+      "source_field": "id",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/reference_spell_id",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 1,
+      "source_file": "data/scripts/runes/paralyze_rune.lua",
+      "source_line": 21,
+      "source_field": "id",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/reference_spell_id",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 2,
+      "source_file": "Paralyse",
+      "source_line": 1,
+      "source_field": "librarytext",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/library_text",
+      "resolution": "S3: the wiki states this value."
+    },
+    {
+      "source_index": 3,
+      "source_file": "Paralyse Rune",
+      "source_line": 1,
+      "source_field": "vocrequired",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/requirements/vocations",
+      "resolution": "S3: the wiki states the base vocations; S8 adds each promoted vocation."
+    },
+    {
+      "source_index": 4,
+      "source_file": "Paralyse Rune",
+      "source_line": 1,
+      "source_field": "vocrequired",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/requirements/vocations",
+      "resolution": "S3: the wiki states the base vocations; S8 adds each promoted vocation."
+    },
+    {
+      "source_index": 3,
+      "source_file": "Paralyse Rune",
+      "source_line": 1,
+      "source_field": "levelrequired",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/requirements/level",
+      "resolution": "S3: the wiki states this value."
+    },
+    {
+      "source_index": 4,
+      "source_file": "Paralyse Rune",
+      "source_line": 1,
+      "source_field": "levelrequired",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/requirements/level",
+      "resolution": "S3: the wiki states this value."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data/scripts/runes/paralyze_rune.lua",
+      "source_line": 1,
+      "source_field": "isPremium",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/requirements/premium",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 1,
+      "source_file": "data/scripts/runes/paralyze_rune.lua",
+      "source_line": 1,
+      "source_field": "isPremium",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/requirements/premium",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data/scripts/runes/paralyze_rune.lua",
+      "source_line": 34,
+      "source_field": "mana",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/costs/mana",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 1,
+      "source_file": "data/scripts/runes/paralyze_rune.lua",
+      "source_line": 34,
+      "source_field": "mana",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/costs/mana",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data/scripts/runes/paralyze_rune.lua",
+      "source_line": 1,
+      "source_field": "soul",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/costs/soul",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 1,
+      "source_file": "data/scripts/runes/paralyze_rune.lua",
+      "source_line": 1,
+      "source_field": "soul",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/costs/soul",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data/scripts/runes/paralyze_rune.lua",
+      "source_line": 32,
+      "source_field": "cooldown",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/cooldown_ms",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 1,
+      "source_file": "data/scripts/runes/paralyze_rune.lua",
+      "source_line": 32,
+      "source_field": "cooldown",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/cooldown_ms",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data/scripts/runes/paralyze_rune.lua",
+      "source_line": 22,
+      "source_field": "group",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/groups/0/group",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 1,
+      "source_file": "data/scripts/runes/paralyze_rune.lua",
+      "source_line": 22,
+      "source_field": "group",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/groups/0/group",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data/scripts/runes/paralyze_rune.lua",
+      "source_line": 33,
+      "source_field": "groupCooldown",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/groups/0/cooldown_ms",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 1,
+      "source_file": "data/scripts/runes/paralyze_rune.lua",
+      "source_line": 33,
+      "source_field": "groupCooldown",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/groups/0/cooldown_ms",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data/scripts/runes/paralyze_rune.lua",
+      "source_line": 1,
+      "source_field": "isAggressive",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/aggressive",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 1,
+      "source_file": "data/scripts/runes/paralyze_rune.lua",
+      "source_line": 1,
+      "source_field": "isAggressive",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/aggressive",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data/scripts/runes/paralyze_rune.lua",
+      "source_line": 1,
+      "source_field": "isSelfTarget",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/self_target",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 1,
+      "source_file": "data/scripts/runes/paralyze_rune.lua",
+      "source_line": 1,
+      "source_field": "isSelfTarget",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/self_target",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data/scripts/runes/paralyze_rune.lua",
+      "source_line": 35,
+      "source_field": "needTarget",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/needs_target",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 1,
+      "source_file": "data/scripts/runes/paralyze_rune.lua",
+      "source_line": 35,
+      "source_field": "needTarget",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/needs_target",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data/scripts/runes/paralyze_rune.lua",
+      "source_line": 1,
+      "source_field": "needDirection",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/needs_direction",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 1,
+      "source_file": "data/scripts/runes/paralyze_rune.lua",
+      "source_line": 1,
+      "source_field": "needDirection",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/needs_direction",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data/scripts/runes/paralyze_rune.lua",
+      "source_line": 1,
+      "source_field": "needCasterTargetOrDirection",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/target_or_direction",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 1,
+      "source_file": "data/scripts/runes/paralyze_rune.lua",
+      "source_line": 1,
+      "source_field": "needCasterTargetOrDirection",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/target_or_direction",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data/scripts/runes/paralyze_rune.lua",
+      "source_line": 1,
+      "source_field": "blockWalls",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/block_walls",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 1,
+      "source_file": "data/scripts/runes/paralyze_rune.lua",
+      "source_line": 1,
+      "source_field": "blockWalls",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/block_walls",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data/scripts/runes/paralyze_rune.lua",
+      "source_line": 1,
+      "source_field": "allowOnSelf",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/allow_on_self",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 1,
+      "source_file": "data/scripts/runes/paralyze_rune.lua",
+      "source_line": 1,
+      "source_field": "allowOnSelf",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/allow_on_self",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data/scripts/runes/paralyze_rune.lua",
+      "source_line": 1,
+      "source_field": "checkFloor",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/check_floor",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 1,
+      "source_file": "data/scripts/runes/paralyze_rune.lua",
+      "source_line": 1,
+      "source_field": "checkFloor",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/check_floor",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data/scripts/runes/paralyze_rune.lua",
+      "source_line": 29,
+      "source_field": "setPzLocked",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/pz_locks_caster",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 1,
+      "source_file": "data/scripts/runes/paralyze_rune.lua",
+      "source_line": 29,
+      "source_field": "setPzLocked",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/pz_locks_caster",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data/scripts/runes/paralyze_rune.lua",
+      "source_line": 1,
+      "source_field": "needWeapon",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/needs_weapon",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 1,
+      "source_file": "data/scripts/runes/paralyze_rune.lua",
+      "source_line": 1,
+      "source_field": "needWeapon",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/needs_weapon",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data/scripts/runes/paralyze_rune.lua",
+      "source_line": 24,
+      "source_field": "castSound",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/presentation/cast_cue",
+      "resolution": "S18: sound cue named by its SoundEffect_t member."
+    },
+    {
+      "source_index": 1,
+      "source_file": "data/scripts/runes/paralyze_rune.lua",
+      "source_line": 24,
+      "source_field": "castSound",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/presentation/cast_cue",
+      "resolution": "S18: sound cue named by its SoundEffect_t member."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data/scripts/runes/paralyze_rune.lua",
+      "source_line": 25,
+      "source_field": "impactSound",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/presentation/impact_cue",
+      "resolution": "S18: sound cue named by its SoundEffect_t member."
+    },
+    {
+      "source_index": 1,
+      "source_file": "data/scripts/runes/paralyze_rune.lua",
+      "source_line": 25,
+      "source_field": "impactSound",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/presentation/impact_cue",
+      "resolution": "S18: sound cue named by its SoundEffect_t member."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data/scripts/runes/paralyze_rune.lua",
+      "source_line": 26,
+      "source_field": "runeId",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/rune/item",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 1,
+      "source_file": "data/scripts/runes/paralyze_rune.lua",
+      "source_line": 26,
+      "source_field": "runeId",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/rune/item",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data/scripts/runes/paralyze_rune.lua",
+      "source_line": 28,
+      "source_field": "charges",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/rune/charges",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 1,
+      "source_file": "data/scripts/runes/paralyze_rune.lua",
+      "source_line": 28,
+      "source_field": "charges",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/rune/charges",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 3,
+      "source_file": "Paralyse Rune",
+      "source_line": 1,
+      "source_field": "mlrequired",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/rune/magic_level",
+      "resolution": "S3: the wiki states this value."
+    },
+    {
+      "source_index": 4,
+      "source_file": "Paralyse Rune",
+      "source_line": 1,
+      "source_field": "mlrequired",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/rune/magic_level",
+      "resolution": "S3: the wiki states this value."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data/scripts/runes/paralyze_rune.lua",
+      "source_line": 27,
+      "source_field": "allowFarUse",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/rune/allow_far_use",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 1,
+      "source_file": "data/scripts/runes/paralyze_rune.lua",
+      "source_line": 27,
+      "source_field": "allowFarUse",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/rune/allow_far_use",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 1,
+      "source_file": "data/scripts/runes/paralyze_rune.lua",
+      "source_line": 1,
+      "source_field": "onCastSpell/completion",
+      "kind": "script",
+      "status": "resolved_native_behavior",
+      "destination": "/dependencies",
+      "resolution": "Source-exact r17 completion: caster_presentation; OTERYN_SPELL_NATIVE_BEHAVIOURS_CANDIDATE_V1.md D.5; this hash-pinned rune declares COMBAT_UNDEFINEDDAMAGE without a direct-health formula/value callback: keep its paralysis condition and visuals, without inventing a damage Effect. Ability.zero_damage_health_path requires zero-magnitude health validation/block/change-health before condition/dispel (combat.cpp:1496,878,912-914); runtime must reject this field until that path is implemented. UNDEFINEDDAMAGE is not equivalent to COMBAT_NONE globally.; runtime support remains separately required."
+    },
+    {
+      "source_index": 1,
+      "source_file": "data/scripts/runes/paralyze_rune.lua",
+      "source_line": 1,
+      "source_field": "onCastSpell",
+      "kind": "script",
+      "status": "resolved_native_behavior",
+      "destination": "/spell/spell/execution/ability",
+      "resolution": "Plain combat converted with the monster combat_ability rules (crystal)."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data/scripts/runes/paralyze_rune.lua",
+      "source_line": 1,
+      "source_field": "note",
+      "kind": "field",
+      "status": "metadata_only",
+      "resolution": "S27: COMBAT_PARAM_TYPE is not authored (guard-behaviours.json)."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data/scripts/runes/paralyze_rune.lua",
+      "source_line": 1,
+      "source_field": "note",
+      "kind": "field",
+      "status": "metadata_only",
+      "resolution": "setFormula(-1, 0, -1, 0) is read by Canary as the new speed (condition.cpp ConditionSpeed: speedDelta = formula - base); negative factors clamp paralyze to speed 40."
+    }
+  ]
+}

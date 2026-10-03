@@ -11,6 +11,7 @@
 //! `oteryn-game-server`; the game server re-exports what it needs from here.
 
 use std::collections::BTreeSet;
+pub mod actor_condition_snapshot_candidate;
 use std::error::Error;
 use std::fmt::{self, Display, Formatter};
 
@@ -2237,12 +2238,15 @@ pub fn decode_framed_envelope(
 pub mod account_achievements;
 pub mod achievement_notices;
 pub mod actor_spell;
+pub mod actor_spell_item_v2;
+pub mod actor_spell_v2;
 pub mod analyser;
 pub mod bestiary;
 pub mod charm;
 mod charm_wire;
 pub mod chat;
 pub mod damage_element;
+pub mod spell_presentation_candidate;
 pub mod world_object;
 pub mod world_spatial;
 pub mod world_spatial_entities;

@@ -1,11 +1,13 @@
 //! Pure state and geometry mapping for the live harness: join snapshot / command outcome ->
 //! [`RenderModel`], and pixel click -> [`LiveCommand`]. No I/O, no GPU, no window.
 
-use oteryn_dev_client::{JoinSnapshot, StepOutcome, UseOutcome};
+use oteryn_dev_client::{CastOutcome, JoinSnapshot, StepOutcome, UseOutcome};
 use oteryn_foundation::ProcessGeneration;
+use oteryn_protocol_oteryn::actor_spell::{SpellCastDisposition, SpellTarget};
 use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectOverlayEntry};
 use oteryn_protocol_oteryn::world_spatial::{StepDirection, StepDisposition};
 use oteryn_renderer::{RendererError, SurfaceDecision, SurfaceEvent, SurfaceState};
+use std::num::NonZeroU32;
 
 /// The native entry room's one door placement (accepted content `accepted::DOOR_CELL`).
 pub const DOOR_PLACEMENT: &[u8] = b"oteryn:cell/entry-door";
@@ -60,6 +62,7 @@ pub enum Notice {
     DoorStale,
     DoorTooFar,
     DoorRejected,
+    SpellCast(SpellCastDisposition),
 }
 
 impl Notice {
@@ -76,6 +79,18 @@ impl Notice {
             Self::DoorStale => "door state was stale",
             Self::DoorTooFar => "too far from the door",
             Self::DoorRejected => "use rejected",
+            Self::SpellCast(disposition) => match disposition {
+                SpellCastDisposition::Cast => "spell cast",
+                SpellCastDisposition::CoolingDown => "spell cooling down",
+                SpellCastDisposition::LevelTooLow => "spell level too low",
+                SpellCastDisposition::MagicLevelTooLow => "spell magic level too low",
+                SpellCastDisposition::NotEnoughMana => "spell not enough mana",
+                SpellCastDisposition::NotEnoughSoul => "spell not enough soul",
+                SpellCastDisposition::NotAvailable => "spell not available",
+                SpellCastDisposition::TargetRequired => "spell target required",
+                SpellCastDisposition::TargetIllegal => "spell target illegal",
+                SpellCastDisposition::Rejected => "spell rejected",
+            },
         }
     }
 }
@@ -95,7 +110,14 @@ pub struct RenderModel {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum LiveCommand {
     Step(StepDirection),
-    UseDoor { expected_revision: u64 },
+    UseDoor {
+        expected_revision: u64,
+    },
+    Cast {
+        spell: NonZeroU32,
+        target: SpellTarget,
+        aim_at_target: bool,
+    },
 }
 
 #[must_use]
@@ -117,6 +139,15 @@ fn door_view(entry: &WorldObjectOverlayEntry) -> Option<DoorView> {
 }
 
 impl RenderModel {
+    /// Records the actual cast disposition. The cast wire carries own-actor vitals, not visual
+    /// effects or target damage; those must not be inferred by the harness.
+    #[must_use]
+    pub fn apply_cast(&self, outcome: &CastOutcome) -> Self {
+        let mut next = self.clone();
+        next.notice = Notice::SpellCast(outcome.disposition);
+        next
+    }
+
     /// The model right after the join.
     #[must_use]
     pub fn from_snapshot(snapshot: &JoinSnapshot) -> Self {

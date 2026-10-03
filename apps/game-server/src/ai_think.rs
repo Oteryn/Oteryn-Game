@@ -73,6 +73,7 @@ use crate::ai::{
     AiError, AiProvenance, Candidate, CandidateId, PathRequest, RouteStep, build_path_proposal,
     canonicalize_perception,
 };
+#[cfg(test)]
 use crate::content::static_cell_engine::EngineeringStaticCellIndex;
 use crate::foundation::owner_timer::{
     AI01_PENDING_TIMERS_PER_ACTOR, OwnerTimerError, OwnerTimerLane, SemanticTimeMicros, TimerFamily,
@@ -382,7 +383,7 @@ pub fn act_step(
     actor: ExactActorRef,
     expected: MovementPositionSnapshot,
     selection: &MovementEngineeringSelection<'_>,
-    index: &EngineeringStaticCellIndex,
+    index: &(impl crate::content::native_cell_lookup::NativeStaticCellLookup + ?Sized),
 ) -> Result<ThinkAction, MovementError> {
     match outcome {
         ThinkOutcome::AttackIntent(target) => Ok(ThinkAction::AttackIntentSurfaced(target)),

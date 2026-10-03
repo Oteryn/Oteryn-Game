@@ -1,0 +1,115 @@
+{
+  "schema": "OTERYN_R24_COMPLETION_VALIDATION/v1",
+  "base_head": "2082fca1d7bf2faa25e9a7747e6354f0b5a64351",
+  "state": "validated_authoring_preservation_draft",
+  "tests": {
+    "game_library": {
+      "passed": 1593,
+      "failed": 0,
+      "ignored": 4
+    },
+    "gameplay_transport": {
+      "passed": 123,
+      "failed": 0,
+      "ignored": 3
+    },
+    "player_python": {
+      "passed": 224,
+      "failed": 0,
+      "source_root_required": true,
+      "restore": "python tools/content-schema/spell-authoring/retrieve_completion_fixtures.py"
+    },
+    "monster_python": {
+      "passed": 19,
+      "failed": 0
+    },
+    "qualification_tools_python": {
+      "passed": 12,
+      "failed": 0
+    },
+    "full_manifest": {
+      "passed": 1,
+      "failed": 0,
+      "seconds": 52.27
+    },
+    "required_game_clippy": {
+      "passed": false,
+      "lib_test_diagnostics": 859,
+      "previous_lib_test_diagnostics": 864,
+      "suppression_added": false
+    }
+  },
+  "artifacts": {
+    "client_sha256": "c50620c32e7ea95cb7308fb221d1b09eacd5a9ca90a409f3d3ff6e238311fe54",
+    "creature_profile_count": 1508,
+    "executable_spell_count": 246,
+    "item_policy_count": 118,
+    "manifest_sha256": "e70a1a288200fcb22cc3b50766a2269a43a0872e73b7959552cd4266fb64793c",
+    "presentation_profile_count": 1508,
+    "production_stage": "Passed; altered server and client issuance pins rejected",
+    "qualification_boundary": "Actual source-world candidate compiled, strictly decoded and staged under both exact outer pins; runtime activation not performed",
+    "runtime_activation": "Not performed",
+    "schema": "OTERYN_LOCAL_FULL_SPELL_ARTIFACT_QUALIFICATION/v1",
+    "server_sha256": "aa25fc7bbaf1a7e99583a3f507308b885fcab9724370b5d696d9ebfd9f4bbbdb",
+    "source_world_sha256": "44f860d20712a32e6bc22aa269d3e220d39d164b7738d3c150a406579849b5f5"
+  },
+  "log_digests": {
+    "r24-full-manifest-qualification.log": {
+      "sha256": "6e281d40848041129d7f7c3f0391432ebdf6b18d51ab96494cab93d1fe27df64",
+      "bytes": 44032
+    },
+    "r24-required-clippy.log": {
+      "sha256": "8090cc4317f2c1132a3713ba55796d96bcdcc7beef0ee5b2247b75791836d9dc",
+      "bytes": 452589
+    },
+    "r24-game-lib-tests.log": {
+      "sha256": "ef5b0c06895592ec4294a4db57409f46076c78e01b790b45511c1f17c6cd02ff",
+      "bytes": 45012
+    },
+    "r24-player-tests.log": {
+      "sha256": "7a7fe3c33ebdbbcb820c3fdbae41434bbd6e8a51c520b7cdaa8484edf8019165",
+      "bytes": 99
+    },
+    "current-spell-unused-reexports-tests.log": {
+      "sha256": "16ed125e0cef44315aa3da2da9b04ae02f219a36ead9aa65fff1ac402bb32705",
+      "bytes": 59053
+    },
+    "r24-qualification-tools-final.log": {
+      "sha256": "654624fb42ccc8514469a4fdf402e2e29d9eb3517b999b502c6ca3c9d1097e45",
+      "bytes": 111
+    },
+    "r24-monster-tools-final.log": {
+      "sha256": "ee3fea9cad4104c8e872ddbef1ca170f599bab5c14727c4e734b3343aafb0298",
+      "bytes": 118
+    }
+  },
+  "independent_review": {
+    "reviewer": "/root/completion_review",
+    "result": "PASS",
+    "open_P1_P2": 0,
+    "fixed_findings": [
+      "Duplicate fallback observations/population rejected",
+      "Find Fiend and missing native dispatchers classified as integration-required"
+    ],
+    "negative_checks": [
+      "3 duplicate fallback cases",
+      "11 missing materializer provider cases",
+      "catalog identity substitution",
+      "missing v5 provider before output creation"
+    ]
+  },
+  "scope": {
+    "native_profiles": 1508,
+    "approximate_melee_enabled": 1253,
+    "disabled": 255,
+    "crystal_recovered": 22,
+    "player_definitions": 246,
+    "scenario_fixture_required": 101,
+    "scenario_integration_required": 140,
+    "unselected_aliases": 5,
+    "new_ids": false,
+    "physical_r24_test": false,
+    "long_lived_deployment": false,
+    "merge_qualification": false
+  }
+}

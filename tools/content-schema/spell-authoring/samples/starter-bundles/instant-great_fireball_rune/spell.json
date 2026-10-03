@@ -2,7 +2,7 @@
   "spell": {
     "identity": {
       "key": "candidate:spell/great_fireball_rune",
-      "revision": "spell-p2-r14"
+      "revision": "spell-p2-r20"
     },
     "name": "Great Fireball Rune",
     "carrier": "instant",
@@ -42,19 +42,22 @@
     },
     "pz_locks_caster": false,
     "needs_weapon": false,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_or_rune"
+    },
     "execution": {
       "conjure": {
         "result": {
           "family": "Item",
           "key": "candidate:item/3191",
-          "revision": "spell-p2-r14"
+          "revision": "spell-p2-r21"
         },
         "count": 4,
         "effect_asset_binding": "canary.appearance:effect/magic_red",
         "reagent": {
           "family": "Item",
           "key": "candidate:item/3147",
-          "revision": "spell-p2-r14"
+          "revision": "spell-p2-r21"
         }
       }
     }

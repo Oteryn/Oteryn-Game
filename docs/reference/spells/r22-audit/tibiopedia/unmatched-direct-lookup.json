@@ -1,0 +1,248 @@
+{
+  "schema": "OTERYN_TIBIOPEDIA_DIRECT_LOOKUP/v1",
+  "lookups": [
+    {
+      "name": "blank rune",
+      "url": "https://tibiopedia.pl/spells/Blank_Rune",
+      "lookup_basis": "exact active source name title; page existence and identity require observed contents",
+      "access": "normal HTTP urllib",
+      "requested_at": "2026-10-02T04:35:19.674890+00:00",
+      "status": 404,
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "name": "conjure bolt",
+      "url": "https://tibiopedia.pl/spells/Conjure_Bolt",
+      "lookup_basis": "exact active source name title; page existence and identity require observed contents",
+      "access": "normal HTTP urllib",
+      "requested_at": "2026-10-02T04:35:21.052385+00:00",
+      "status": 200,
+      "final_url": "https://tibiopedia.pl/spells/Conjure_Bolt",
+      "sha256": "206bb25f324490078754a5db3cd7f31e003d522e7583b82f8736331ae4496ac5",
+      "detail_fields_present": true,
+      "facts": [
+        {
+          "template": "Infobox Spell",
+          "title": "Conjure Bolt",
+          "url": "https://tibiopedia.pl/spells/Conjure_Bolt",
+          "fields": {
+            "subclass": "Support",
+            "premium": "yes",
+            "levelrequired": "17",
+            "voc": "Paladin",
+            "words": "exevo con mort",
+            "soul": "2",
+            "mana": "140",
+            "cooldown": "2",
+            "cooldowngroup": "2",
+            "name": "Conjure Bolt"
+          }
+        }
+      ]
+    },
+    {
+      "name": "conjure piercing bolt",
+      "url": "https://tibiopedia.pl/spells/Conjure_Piercing_Bolt",
+      "lookup_basis": "exact active source name title; page existence and identity require observed contents",
+      "access": "normal HTTP urllib",
+      "requested_at": "2026-10-02T04:35:22.830656+00:00",
+      "status": 200,
+      "final_url": "https://tibiopedia.pl/spells/Conjure_Piercing_Bolt",
+      "sha256": "da51e0f991d8a42f420096a5d67f45d8a127d19e9ad2dadc3b34e8f91df41c11",
+      "detail_fields_present": true,
+      "facts": [
+        {
+          "template": "Infobox Spell",
+          "title": "Conjure Piercing Bolt",
+          "url": "https://tibiopedia.pl/spells/Conjure_Piercing_Bolt",
+          "fields": {
+            "subclass": "Support",
+            "premium": "yes",
+            "implemented": "8.00",
+            "levelrequired": "33",
+            "voc": "Paladin",
+            "words": "exevo con grav",
+            "soul": "3",
+            "mana": "180",
+            "cooldown": "2",
+            "cooldowngroup": "2",
+            "name": "Conjure Piercing Bolt"
+          }
+        }
+      ]
+    },
+    {
+      "name": "conjure poisoned arrow",
+      "url": "https://tibiopedia.pl/spells/Conjure_Poisoned_Arrow",
+      "lookup_basis": "exact active source name title; page existence and identity require observed contents",
+      "access": "normal HTTP urllib",
+      "requested_at": "2026-10-02T04:35:24.372926+00:00",
+      "status": 200,
+      "final_url": "https://tibiopedia.pl/spells/Conjure_Poisoned_Arrow",
+      "sha256": "7f4f0757360a4e87b4494e683b82cc6c521edbe2ca355d2d1ca3621858109210",
+      "detail_fields_present": true,
+      "facts": [
+        {
+          "template": "Infobox Spell",
+          "title": "Conjure Poisoned Arrow",
+          "url": "https://tibiopedia.pl/spells/Conjure_Poisoned_Arrow",
+          "fields": {
+            "subclass": "Support",
+            "premium": "no",
+            "levelrequired": "16",
+            "voc": "Paladin",
+            "words": "exevo con pox",
+            "soul": "2",
+            "mana": "130",
+            "cooldown": "2",
+            "cooldowngroup": "2",
+            "name": "Conjure Poisoned Arrow"
+          }
+        }
+      ]
+    },
+    {
+      "name": "conjure power bolt",
+      "url": "https://tibiopedia.pl/spells/Conjure_Power_Bolt",
+      "lookup_basis": "exact active source name title; page existence and identity require observed contents",
+      "access": "normal HTTP urllib",
+      "requested_at": "2026-10-02T04:35:25.826444+00:00",
+      "status": 200,
+      "final_url": "https://tibiopedia.pl/spells/Conjure_Power_Bolt",
+      "sha256": "976db8015492868ce675822167c0392da4a7297e01b978c9f17cdf4de3d9459f",
+      "detail_fields_present": true,
+      "facts": [
+        {
+          "template": "Infobox Spell",
+          "title": "Conjure Power Bolt",
+          "url": "https://tibiopedia.pl/spells/Conjure_Power_Bolt",
+          "fields": {
+            "subclass": "Support",
+            "premium": "yes",
+            "implemented": "8.00",
+            "levelrequired": "59",
+            "voc": "Paladin",
+            "words": "exevo con vis",
+            "soul": "4",
+            "mana": "700",
+            "cooldown": "2",
+            "cooldowngroup": "2",
+            "name": "Conjure Power Bolt"
+          }
+        }
+      ]
+    },
+    {
+      "name": "conjure royal star",
+      "url": "https://tibiopedia.pl/spells/Conjure_Royal_Star",
+      "lookup_basis": "exact active source name title; page existence and identity require observed contents",
+      "access": "normal HTTP urllib",
+      "requested_at": "2026-10-02T04:35:27.280850+00:00",
+      "status": 404,
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "name": "conjure sniper arrow",
+      "url": "https://tibiopedia.pl/spells/Conjure_Sniper_Arrow",
+      "lookup_basis": "exact active source name title; page existence and identity require observed contents",
+      "access": "normal HTTP urllib",
+      "requested_at": "2026-10-02T04:35:28.806674+00:00",
+      "status": 200,
+      "final_url": "https://tibiopedia.pl/spells/Conjure_Sniper_Arrow",
+      "sha256": "c5ff1466078c9cc6b35c447d4fde5ae0523e52977d2471e99fdd66713bcfec01",
+      "detail_fields_present": true,
+      "facts": [
+        {
+          "template": "Infobox Spell",
+          "title": "Conjure Sniper Arrow",
+          "url": "https://tibiopedia.pl/spells/Conjure_Sniper_Arrow",
+          "fields": {
+            "subclass": "Support",
+            "premium": "yes",
+            "implemented": "8.00",
+            "levelrequired": "24",
+            "voc": "Paladin",
+            "words": "exevo con hur",
+            "soul": "3",
+            "mana": "160",
+            "cooldown": "2",
+            "cooldowngroup": "2",
+            "name": "Conjure Sniper Arrow"
+          }
+        }
+      ]
+    },
+    {
+      "name": "enchant staff",
+      "url": "https://tibiopedia.pl/spells/Enchant_Staff",
+      "lookup_basis": "exact active source name title; page existence and identity require observed contents",
+      "access": "normal HTTP urllib",
+      "requested_at": "2026-10-02T04:35:30.361713+00:00",
+      "status": 404,
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "name": "house door list",
+      "url": "https://tibiopedia.pl/spells/House_Door_List",
+      "lookup_basis": "exact active source name title; page existence and identity require observed contents",
+      "access": "normal HTTP urllib",
+      "requested_at": "2026-10-02T04:35:31.954557+00:00",
+      "status": 404,
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "name": "house guest list",
+      "url": "https://tibiopedia.pl/spells/House_Guest_List",
+      "lookup_basis": "exact active source name title; page existence and identity require observed contents",
+      "access": "normal HTTP urllib",
+      "requested_at": "2026-10-02T04:35:33.298609+00:00",
+      "status": 404,
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "name": "house kick",
+      "url": "https://tibiopedia.pl/spells/House_Kick",
+      "lookup_basis": "exact active source name title; page existence and identity require observed contents",
+      "access": "normal HTTP urllib",
+      "requested_at": "2026-10-02T04:35:35.014685+00:00",
+      "status": 404,
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "name": "house subowner list",
+      "url": "https://tibiopedia.pl/spells/House_Subowner_List",
+      "lookup_basis": "exact active source name title; page existence and identity require observed contents",
+      "access": "normal HTTP urllib",
+      "requested_at": "2026-10-02T04:35:36.612403+00:00",
+      "status": 404,
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "name": "light stone shower rune",
+      "url": "https://tibiopedia.pl/spells/Light_Stone_Shower_Rune",
+      "lookup_basis": "exact active source name title; page existence and identity require observed contents",
+      "access": "normal HTTP urllib",
+      "requested_at": "2026-10-02T04:35:38.227918+00:00",
+      "status": 404,
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "name": "lightest magic missile rune",
+      "url": "https://tibiopedia.pl/spells/Lightest_Magic_Missile_Rune",
+      "lookup_basis": "exact active source name title; page existence and identity require observed contents",
+      "access": "normal HTTP urllib",
+      "requested_at": "2026-10-02T04:35:39.837460+00:00",
+      "status": 404,
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "name": "lightest missile rune",
+      "url": "https://tibiopedia.pl/spells/Lightest_Missile_Rune",
+      "lookup_basis": "exact active source name title; page existence and identity require observed contents",
+      "access": "normal HTTP urllib",
+      "requested_at": "2026-10-02T04:35:41.417960+00:00",
+      "status": 404,
+      "error": "HTTP Error 404: Not Found"
+    }
+  ]
+}

@@ -337,7 +337,7 @@ fn admitted_encounter_round_trips_and_stays_declarative() {
 #[test]
 fn each_broken_invariant_is_rejected() {
     type Mutation = fn(&mut ProjectV2Draft);
-    let cases: [(&str, &str, Mutation); 26] = [
+    let cases: [(&str, &str, Mutation); 29] = [
         (
             "an encounter-backed ability without its ability_cast rule",
             "v2 encounter-backed Ability has no ability_cast rule in its encounter",
@@ -486,6 +486,17 @@ fn each_broken_invariant_is_rejected() {
             },
         ),
         (
+            "Mirror Image vocation on non-player damage",
+            "v2 damage_taken base_vocation needs source player",
+            |draft| {
+                encounter_mut(draft).rules[0].trigger = ProjectV2EncounterTrigger::DamageTaken {
+                    role: "the_hunger".into(),
+                    source: ProjectV2HitSource::Any,
+                    base_vocation: Some(ProjectV2BaseVocation::Monk),
+                };
+            },
+        ),
+        (
             "unknown role",
             "v2 encounter names an unknown role",
             |draft| {
@@ -509,10 +520,35 @@ fn each_broken_invariant_is_rejected() {
             "a box that starts after it ends",
             "v2 encounter box starts after it ends",
             |draft| {
-                if let ProjectV2AnchorLocation::Area { boxes } =
+                if let ProjectV2AnchorLocation::Area { boxes, .. } =
                     &mut encounter_mut(draft).anchors[1].location
                 {
                     boxes[0].x = [32280, 32200];
+                }
+            },
+        ),
+        (
+            "a safe area on another floor",
+            "v2 encounter minus box overlaps no area box",
+            |draft| {
+                if let ProjectV2AnchorLocation::Area { boxes, minus } =
+                    &mut encounter_mut(draft).anchors[1].location
+                {
+                    minus.push(ProjectV2AnchorBox {
+                        floor: (boxes[0].floor + 1) % 16,
+                        ..boxes[0]
+                    });
+                }
+            },
+        ),
+        (
+            "safe areas remove the whole hunting area",
+            "v2 encounter minus removes the whole area",
+            |draft| {
+                if let ProjectV2AnchorLocation::Area { boxes, minus } =
+                    &mut encounter_mut(draft).anchors[1].location
+                {
+                    *minus = boxes.clone();
                 }
             },
         ),
@@ -782,5 +818,82 @@ fn cw2_triggering_variants_fail_closed() {
             admit_with_rule(extra_rule(trigger, actions, conditions)).is_err(),
             "{label}: admitted"
         );
+    }
+}
+
+fn soul_war_pick_rule() -> Value {
+    extra_rule(
+        json!({"kind":"timer_elapsed","timer":"summon_delay","each":"the_hunger"}),
+        json!([{"kind":"teleport","who":{"kind":"triggering"},"to":{"picked_position":true},
+            "after_ms":2000,"picked_cooldown_ms":10000,"say":"Harvest!"}]),
+        json!([{"kind":"creature_present","players":true,"near":{"triggering":true,"radius":30},
+            "where":[{"kind":"killer_progress","subject":{"kind":"candidate"},
+                "progress":"oteryn:quest/taint_1","op":"==","value":true},
+                {"kind":"in_anchor","subject":{"kind":"candidate"},"anchor":"arena"}],
+            "pick":"farthest","present":true}]),
+    )
+}
+
+#[test]
+fn soul_war_fanout_and_blood_pool_are_admitted_with_closed_predicates() {
+    let mut candidate = draft();
+    encounter_mut(&mut candidate)
+        .rules
+        .push(serde_json::from_value(soul_war_pick_rule()).expect("rule"));
+    encounter_mut(&mut candidate).rules.push(
+        serde_json::from_value(extra_rule(
+            json!({"kind":"damage_taken","role":"the_hunger","source":"player"}),
+            json!([{"kind":"map_item","operation":"create","item":item_ref(VORTEX),
+            "at_subject_position":true,"unless_present":true}]),
+            json!([]),
+        ))
+        .expect("pool rule"),
+    );
+    encounter_mut(&mut candidate)
+        .rules
+        .last_mut()
+        .expect("pool")
+        .key = "blood_pool".into();
+    assert!(admit(candidate).is_ok());
+
+    let cases: Vec<(&str, Value)> = vec![
+        ("v2 picked_position needs an earlier player pick", {
+            let mut rule = soul_war_pick_rule();
+            rule["conditions"] = json!([]);
+            rule
+        }),
+        ("v2 pick needs present true", {
+            let mut rule = soul_war_pick_rule();
+            rule["conditions"][0]["present"] = json!(false);
+            rule
+        }),
+        ("v2 candidate is valid only inside where", {
+            let mut rule = soul_war_pick_rule();
+            rule["conditions"] = json!([{"kind":"killer_progress","subject":{"kind":"candidate"},
+                "progress":"oteryn:quest/taint_1","op":"==","value":true}]);
+            rule
+        }),
+        (
+            "v2 where permits only candidate progress and anchor predicates",
+            {
+                let mut rule = soul_war_pick_rule();
+                rule["conditions"][0]["where"] = json!([
+                {"kind":"chance_percent","value_ppm":100000}]);
+                rule
+            },
+        ),
+        ("v2 delayed teleport fields need picked_position", {
+            let mut rule = soul_war_pick_rule();
+            rule["actions"][0]["to"] = json!("hunger_vortex");
+            rule
+        }),
+    ];
+    for (expected, rule) in cases {
+        let mut candidate = draft();
+        encounter_mut(&mut candidate)
+            .rules
+            .push(serde_json::from_value(rule).expect("negative rule"));
+        let error = admit(candidate).expect_err(expected);
+        assert!(error.contains(expected), "{expected}: {error}");
     }
 }

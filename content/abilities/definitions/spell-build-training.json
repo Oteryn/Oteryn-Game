@@ -1,0 +1,177 @@
+{
+  "magic_base": 1600,
+  "multiplier_storage": "ieee754_binary32",
+  "schema": "OTERYN_BUILD_TRAINING_PROFILE/v1",
+  "skill_bases": [
+    50,
+    50,
+    50,
+    50,
+    30,
+    100,
+    20
+  ],
+  "source": {
+    "files": [
+      {
+        "path": "data/XML/vocations.xml",
+        "sha256": "d3ecc1319710012265e8225649d9cae3dbb6d1f90036310a8b81f6e40a8a3a14"
+      },
+      {
+        "path": "src/creatures/players/vocations/vocation.cpp",
+        "sha256": "a3930265d68ccf188a0aeddebfd4bd19fcc257bfb3865e5ee8e429f043be83b3"
+      },
+      {
+        "path": "src/creatures/players/vocations/vocation.hpp",
+        "sha256": "b04f806d8bb9290a5cd61c659749e3376c885b4e1867b277dba756aebf1f2b29"
+      }
+    ],
+    "repository": "opentibiabr/canary",
+    "revision": "99902524e052f37574194466c2949c576e4ab269"
+  },
+  "vocations": [
+    {
+      "key": "druid",
+      "mana_multiplier": "1.1",
+      "skill_multipliers": [
+        "1.5",
+        "1.8",
+        "1.8",
+        "1.8",
+        "1.8",
+        "1.5",
+        "1.1"
+      ]
+    },
+    {
+      "key": "elder_druid",
+      "mana_multiplier": "1.1",
+      "skill_multipliers": [
+        "1.5",
+        "1.8",
+        "1.8",
+        "1.8",
+        "1.8",
+        "1.5",
+        "1.1"
+      ]
+    },
+    {
+      "key": "elite_knight",
+      "mana_multiplier": "3.0",
+      "skill_multipliers": [
+        "1.4",
+        "1.1",
+        "1.1",
+        "1.1",
+        "1.1",
+        "1.1",
+        "1.1"
+      ]
+    },
+    {
+      "key": "exalted_monk",
+      "mana_multiplier": "1.3",
+      "skill_multipliers": [
+        "1.1",
+        "1.5",
+        "1.5",
+        "1.5",
+        "2.0",
+        "1.2",
+        "1.1"
+      ]
+    },
+    {
+      "key": "knight",
+      "mana_multiplier": "3.0",
+      "skill_multipliers": [
+        "1.1",
+        "1.1",
+        "1.1",
+        "1.1",
+        "1.4",
+        "1.1",
+        "1.1"
+      ]
+    },
+    {
+      "key": "master_sorcerer",
+      "mana_multiplier": "1.1",
+      "skill_multipliers": [
+        "1.5",
+        "2.0",
+        "2.0",
+        "2.0",
+        "2.0",
+        "1.5",
+        "1.1"
+      ]
+    },
+    {
+      "key": "monk",
+      "mana_multiplier": "1.3",
+      "skill_multipliers": [
+        "1.1",
+        "1.5",
+        "1.5",
+        "1.5",
+        "2.0",
+        "1.2",
+        "1.1"
+      ]
+    },
+    {
+      "key": "none",
+      "mana_multiplier": "4.0",
+      "skill_multipliers": [
+        "1.5",
+        "2.0",
+        "2.0",
+        "2.0",
+        "2.0",
+        "1.5",
+        "1.1"
+      ]
+    },
+    {
+      "key": "paladin",
+      "mana_multiplier": "1.4",
+      "skill_multipliers": [
+        "1.2",
+        "1.2",
+        "1.2",
+        "1.2",
+        "1.1",
+        "1.1",
+        "1.1"
+      ]
+    },
+    {
+      "key": "royal_paladin",
+      "mana_multiplier": "1.4",
+      "skill_multipliers": [
+        "1.2",
+        "1.2",
+        "1.2",
+        "1.2",
+        "1.1",
+        "1.1",
+        "1.1"
+      ]
+    },
+    {
+      "key": "sorcerer",
+      "mana_multiplier": "1.1",
+      "skill_multipliers": [
+        "1.5",
+        "2.0",
+        "2.0",
+        "2.0",
+        "2.0",
+        "1.5",
+        "1.1"
+      ]
+    }
+  ]
+}

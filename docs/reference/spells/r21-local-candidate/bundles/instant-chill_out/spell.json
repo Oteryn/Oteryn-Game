@@ -1,0 +1,59 @@
+{
+  "spell": {
+    "identity": {
+      "key": "candidate:spell/chill_out",
+      "revision": "spell-p2-r20"
+    },
+    "name": "Chill Out",
+    "carrier": "instant",
+    "words": "exevo infir frigo hur",
+    "reference_spell_id": 173,
+    "library_text": "A lighter version of the Ice Wave , this spell springs forth from the fingertips of any soon-to-be druid, to instantly cool down any enemies unlucky enough to stand too close and in front of the caster. Good in a heated argument with a fire creature, such as fire devils .",
+    "requirements": {
+      "vocations": [
+        "druid",
+        "elder_druid"
+      ],
+      "level": 1,
+      "premium": false,
+      "learning_required": false
+    },
+    "costs": {
+      "mana": 8,
+      "soul": 0
+    },
+    "cooldown_ms": 4000,
+    "groups": [
+      {
+        "group": "attack",
+        "cooldown_ms": 2000
+      }
+    ],
+    "targeting": {
+      "aggressive": true,
+      "self_target": false,
+      "needs_target": false,
+      "needs_direction": true,
+      "target_or_direction": false,
+      "block_walls": true,
+      "allow_on_self": true,
+      "check_floor": true,
+      "range_tiles": 4,
+      "parameter": "none",
+      "aim_at_target": true
+    },
+    "pz_locks_caster": false,
+    "needs_weapon": false,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_chill_out"
+    },
+    "base_power": 10,
+    "execution": {
+      "ability": {
+        "family": "Ability",
+        "key": "candidate:ability/spell/chill_out",
+        "revision": "spell-p2-r20"
+      }
+    }
+  }
+}

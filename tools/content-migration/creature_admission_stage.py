@@ -546,7 +546,7 @@ def encounter_position(value: Any) -> dict:
 def encounter_subject(value: dict) -> dict:
     if 'role' in value:
         return {'kind': 'role', 'role': value['role']}
-    return {'kind': next(kind for kind in ('killer', 'spawned', 'triggering') if kind in value)}
+    return {'kind': next(kind for kind in ('killer', 'spawned', 'triggering', 'candidate') if kind in value)}
 
 
 def sorted_refs(values, m: Mapper) -> list:
@@ -572,6 +572,10 @@ def encounter_condition(value: dict, m: Mapper) -> dict:
         out['conditions'] = sorted(value['conditions'], key=CONDITION_ORDER.index)
     elif kind == 'in_anchor':
         out['subject'] = encounter_subject(value['subject'])
+    elif kind == 'killer_progress' and 'subject' in value:
+        out['subject'] = encounter_subject(value['subject'])
+    elif kind == 'creature_present' and 'where' in value:
+        out['where'] = [encounter_condition(condition, m) for condition in value['where']]
     elif kind == 'attacker_wears':
         out['item'] = m.ref(value['item'])
     return out
@@ -621,8 +625,11 @@ def encounter_action(value: dict, m: Mapper) -> dict:
     elif kind == 'map_item':
         if 'into' in value:
             out['into'] = m.ref(value['into'])
-        if out.pop('at', None) == 'death_position':
+        at = out.pop('at', None)
+        if at == 'death_position':
             out['at_death_position'] = True
+        elif at == 'subject_position':
+            out['at_subject_position'] = True
     elif kind == 'attribute' and 'value' in value:
         attribute = value['value']
         out['value'] = {'kind': 'fixed', 'value': attribute} if isinstance(attribute, int) else {'kind': 'counter', 'counter': attribute['counter']}
@@ -639,7 +646,7 @@ def encounter_action(value: dict, m: Mapper) -> dict:
 def encounter_location(anchor: dict) -> dict:
     location = anchor['location']
     if 'boxes' in location:
-        return {'kind': 'area', 'boxes': location['boxes']}
+        return {'kind': 'area', 'boxes': location['boxes'], **({'minus': location['minus']} if 'minus' in location else {})}
     return {'kind': 'point', 'x': location['x'], 'y': location['y'], 'floor': location['floor']}
 
 

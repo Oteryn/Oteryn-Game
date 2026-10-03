@@ -1,0 +1,2645 @@
+{
+  "schema": "OTERYN_TIBIOPEDIA_MECHANICS_FACTS/v1",
+  "capture_cut": "2026-10-02",
+  "pages": [
+    {
+      "url": "https://tibiopedia.pl/spells/Bruise_Bane",
+      "content_sha256": "411a1c4a9c4f92d6ed4935eead08229b607efd9d7f1d60dc0671df4bfeb1212f",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "15",
+          "Skalowanie": "Magic Level, Shielding",
+          "Rodzaj obrażeń": "-",
+          "Zasięg": "-"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Tiger_Clash",
+      "content_sha256": "fcb7d631ecb1f3900ac940610a64bd88904bf277a17e019787aba27914477d10",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "15",
+          "Skalowanie": "Fist Fighting Skill",
+          "Rodzaj obrażeń": "fizyczne",
+          "Zasięg": "1"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Swift_Jab",
+      "content_sha256": "4e76451333737092cd0eb1328dd36f28d6da97371d0d811f88a0bce1e3cf4222",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "12",
+          "Skalowanie": "Fist Fighting Skill",
+          "Rodzaj obrażeń": "fizyczne",
+          "Zasięg": "1"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Arrow_Call",
+      "content_sha256": "863235a0b58bcea0c5ac13732a8ee366dc89cbcfe0eeb5ab1503b0f7965ca16a",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "-",
+          "Skalowanie": "-",
+          "Rodzaj obrażeń": "-",
+          "Zasięg": "-"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Buzz",
+      "content_sha256": "2ac4c5d72422755a67635f695016eb75dfc886ee1f53b78580a447d7def0d3c5",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "15",
+          "Skalowanie": "Magic Level",
+          "Rodzaj obrażeń": "energia",
+          "Zasięg": "3"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Magic_Patch",
+      "content_sha256": "58419a030af192b32a99dd2ee6c36160c4f3cc10558c7a8294f5b40605486757",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "20",
+          "Skalowanie": "Magic Level",
+          "Rodzaj obrażeń": "-",
+          "Zasięg": "-"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Mud_Attack",
+      "content_sha256": "8e4b1919239db077cbebe1c0306674e85e1a5ee1121c3340576f610c0bee6f61",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "15",
+          "Skalowanie": "Magic Level",
+          "Rodzaj obrażeń": "ziemia",
+          "Zasięg": "3"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Lesser_Ethereal_Spear",
+      "content_sha256": "0ef86ec158b40b4f88830e3c97710446c47b12e2346c00e555c9945163484bac",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "9",
+          "Skalowanie": "Distance Skill",
+          "Rodzaj obrażeń": "fizyczne",
+          "Zasięg": "7"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Lesser_Front_Sweep",
+      "content_sha256": "049a516c7275f726aaad60e13b11e46625933c7c0f1f1eccc30ab1cd6ab31865",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "14",
+          "Skalowanie": "Axe/Club/Sword Skill",
+          "Rodzaj obrażeń": "fizyczne",
+          "Zasięg": "1"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Chill_Out",
+      "content_sha256": "a7ca92db233aa7adc4b7fa23503a45ad5263c49f5a45a59cb03492d937e296e7",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "10",
+          "Skalowanie": "Magic Level",
+          "Rodzaj obrażeń": "lód",
+          "Zasięg": "4"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Scorch",
+      "content_sha256": "6b857a9940f256cdf189dd01943c57fa428509d11bb4e48e7281c45752896ae9",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "10",
+          "Skalowanie": "Magic Level",
+          "Rodzaj obrażeń": "ogień",
+          "Zasięg": "4"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Lesser_Mystic_Repulse",
+      "content_sha256": "39608f6e231ba10f29499f3b0f6f0d54d708fffc9ad3e131c3e79bf2a6c13e5e",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "25",
+          "Skalowanie": "Fist Fighting Skill",
+          "Rodzaj obrażeń": "-",
+          "Zasięg": "7"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Apprentice's_Strike",
+      "content_sha256": "fb13e4cddffeca03adef65d361e72a5b97b40feb5e585f0b6941a5371a9bd4d4",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "15",
+          "Skalowanie": "Magic Level",
+          "Rodzaj obrażeń": "ogień",
+          "Zasięg": "3"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Find_Person",
+      "content_sha256": "691b13984edf8d5a466bc7c346184d03dc248238b56611957fce1d800ddc8d19",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "-",
+          "Skalowanie": "-",
+          "Rodzaj obrażeń": "-",
+          "Zasięg": "-"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Flame_Strike",
+      "content_sha256": "66a63b2c801a1bda5826cddbe5449ecab286f29975519df1e840b8b73d9e0d09",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "45",
+          "Skalowanie": "Magic Level",
+          "Rodzaj obrażeń": "ogień",
+          "Zasięg": "3"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Ice_Strike",
+      "content_sha256": "b6fc8989783794056bb2c810967f67b612fef662a15b11c82d15a6daae18b67d",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "45",
+          "Skalowanie": "Magic Level",
+          "Rodzaj obrażeń": "lód",
+          "Zasięg": "3"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Light",
+      "content_sha256": "4d26638a115d49f5ea4cb76626031b6792b3c326963c9386c1e04894f45baad2",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "-",
+          "Skalowanie": "-",
+          "Rodzaj obrażeń": "-",
+          "Zasięg": "6"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Light_Healing",
+      "content_sha256": "e7823dfe3ba4879ab546e152b04cb75610eaa1fb4de67700297c8ee9552b3a98",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "40",
+          "Skalowanie": "Magic Level",
+          "Rodzaj obrażeń": "-",
+          "Zasięg": "-"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Practise_Magic_Missile_Rune",
+      "content_sha256": "1431554913f0a1de8531951d887b7c5b01c40cb6700a8b7b7f72ea69633e3ed9",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "-",
+          "Skalowanie": "-",
+          "Rodzaj obrażeń": "energia",
+          "Zasięg": "-"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Practise_Fire_Wave",
+      "content_sha256": "952f76dd97e1ac303d1cbf3b100a16d16098ac946d4434171f3f5822e11fd1c4",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "-",
+          "Skalowanie": "-",
+          "Rodzaj obrażeń": "ogień",
+          "Zasięg": "-"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Practise_Healing",
+      "content_sha256": "8f6d1f8f8c0169184c8d7b0742b6db826d6742782a42553f5c60ff2fb2670e23",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "-",
+          "Skalowanie": "-",
+          "Rodzaj obrażeń": "-",
+          "Zasięg": "-"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Wound_Cleansing",
+      "content_sha256": "cbb52fb98ed2f6107acf0ca28976c67f282bd1a9e85963de1a365583fea00eef",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "70",
+          "Skalowanie": "Magic Level, Shielding",
+          "Rodzaj obrażeń": "-",
+          "Zasięg": "-"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Magic_Rope",
+      "content_sha256": "b0cbf6a8b49c21af039d866126d39a339d3988cf46d0b1a2b48ff8673b90e124",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "-",
+          "Skalowanie": "-",
+          "Rodzaj obrażeń": "-",
+          "Zasięg": "-"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Cure_Poison",
+      "content_sha256": "95dbaabd7706c10934204f6f5249df319890ce7b58e44e10d2503a6caae77c0b",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "-",
+          "Skalowanie": "-",
+          "Rodzaj obrażeń": "-",
+          "Zasięg": "-"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Energy_Strike",
+      "content_sha256": "715cd6437e3ea670fb42a1bdbb189e16c22128ba370a7561f0cd22be02be3408",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "45",
+          "Skalowanie": "Magic Level",
+          "Rodzaj obrażeń": "energia",
+          "Zasięg": "3"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Levitate",
+      "content_sha256": "67d0dd82b3c99437406110a8ded7e462f7ee5d340ca0e0c3d7352ef388b610b9",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "-",
+          "Skalowanie": "-",
+          "Rodzaj obrażeń": "-",
+          "Zasięg": "-"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Conjure_Arrow",
+      "content_sha256": "463a4ef0ab1e9ce1cb6bc9b2a1ed99caca47ba66cb9bbd8e23fa0fb373d5df34",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "-",
+          "Skalowanie": "-",
+          "Rodzaj obrażeń": "-",
+          "Zasięg": "-"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Terra_Strike",
+      "content_sha256": "ab97903de0e68f4078c9a3310ec25cbfde947e6fe11b903791ca264e9ee193f8",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "45",
+          "Skalowanie": "Magic Level",
+          "Rodzaj obrażeń": "ziemia",
+          "Zasięg": "3"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Great_Light",
+      "content_sha256": "da4d9d7e46f4ba81d9be44157ae9e26aca728bc1562ef5572716be30de141fe9",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "-",
+          "Skalowanie": "-",
+          "Rodzaj obrażeń": "-",
+          "Zasięg": "8"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Food",
+      "content_sha256": "f443b68e7928fd692f3a495f92bce9cc7173a005c39620bf7534b58f66777e33",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "-",
+          "Skalowanie": "-",
+          "Rodzaj obrażeń": "-",
+          "Zasięg": "-"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Poison_Field_Rune",
+      "content_sha256": "e34849a6a662094154a53beb53044042fb5c6e09ea11fe2165608c64119d2a44",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "-",
+          "Skalowanie": "-",
+          "Rodzaj obrażeń": "-",
+          "Zasięg": "7"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Double_Jab",
+      "content_sha256": "fd011d6f69a7cb6bdcedef86d22df2d7bfefa5ebdab0e7add38beeb639099a56",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "40",
+          "Skalowanie": "Fist Fighting Skill",
+          "Rodzaj obrażeń": "fizyczne",
+          "Zasięg": "1"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Magic_Shield",
+      "content_sha256": "46d5ead77e1b8b1e887319ce797658a7f17de273d4cab1b2c4423fffc1d49e04",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "-",
+          "Skalowanie": "Magic Level",
+          "Rodzaj obrażeń": "-",
+          "Zasięg": "-"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Cancel_Magic_Shield",
+      "content_sha256": "649a19c8361d9a3b693db6ca997d729578bb56514aa5c8e7e3a68070c601002b",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "-",
+          "Skalowanie": "-",
+          "Rodzaj obrażeń": "-",
+          "Zasięg": "-"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Haste",
+      "content_sha256": "e2d7590f8e8c3c3b66f0c07740da4427aaefcfaadc5aa7bc034c69d9e00c52f7",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "-",
+          "Skalowanie": "-",
+          "Rodzaj obrażeń": "-",
+          "Zasięg": "-"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Intense_Healing_Rune",
+      "content_sha256": "1abc2575c9c9524e34814b99952dc67061936df4d552853cb2fe58e6907da12c",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "120",
+          "Skalowanie": "Magic Level",
+          "Rodzaj obrażeń": "-",
+          "Zasięg": "-"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Light_Magic_Missile_Rune",
+      "content_sha256": "755a89a21308cf732be73584b6e0dc2e4da2c8679c89adeedb7d3a08de2bc7b7",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "15",
+          "Skalowanie": "Magic Level",
+          "Rodzaj obrażeń": "energia",
+          "Zasięg": "7"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Cure_Poison_Rune",
+      "content_sha256": "499756af2a28f104f88f2e96f87baf9897f3ad90937475ba42e77f09599919b9",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "-",
+          "Skalowanie": "-",
+          "Rodzaj obrażeń": "-",
+          "Zasięg": "-"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Fire_Field_Rune",
+      "content_sha256": "9fd5779cc834392e795449751cf2db40cc6f4bab3eb3c659ea19a9a1b7549011",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "-",
+          "Skalowanie": "-",
+          "Rodzaj obrażeń": "-",
+          "Zasięg": "7"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Death_Strike",
+      "content_sha256": "0b33584c5a5e0c77a1ea405dd411458be8c56508c03759bd5e634c64d14a646e",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "45",
+          "Skalowanie": "Magic Level",
+          "Rodzaj obrażeń": "śmierć",
+          "Zasięg": "3"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Physical_Strike",
+      "content_sha256": "2c7ed51860637d65f044beb3077dc02b7fd6abf7587a8411447a5ed05627464a",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "50",
+          "Skalowanie": "Magic Level",
+          "Rodzaj obrażeń": "fizyczne",
+          "Zasięg": "3"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Convince_Creature_Rune",
+      "content_sha256": "f374ae50370cff3e7216e81b0bcc94a1946c1355a3ebc91dbb30f10f3f99cb22",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "-",
+          "Skalowanie": "-",
+          "Rodzaj obrażeń": "-",
+          "Zasięg": "-"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Brutal_Strike",
+      "content_sha256": "47f83ce429ac2b25ab03d1b7390ade7be135dd5cbebc12ca3191b37e8b140758",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "39",
+          "Skalowanie": "Axe/Club/Sword Skill",
+          "Rodzaj obrażeń": "fizyczne",
+          "Zasięg": "1"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Destroy_Field_Rune",
+      "content_sha256": "a6518c4876fcc6caef9b17c3f54b7fb06dd7389bccdf77c5cc423649b492b8fb",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "-",
+          "Skalowanie": "-",
+          "Rodzaj obrażeń": "-",
+          "Zasięg": "-"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Heal_Friend",
+      "content_sha256": "03bba9b586f265713988454bf9db2ac3e5e5512f81f855d72f3c68f74f8b4279",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "260",
+          "Skalowanie": "Magic Level",
+          "Rodzaj obrażeń": "-",
+          "Zasięg": "7"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Restore_Balance",
+      "content_sha256": "9a0ab01b11fa532c823d8dc5223bd452da611b342ba7fee7e85f9491d25a99ce",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "425",
+          "Skalowanie": "Magic Level",
+          "Rodzaj obrażeń": "-",
+          "Zasięg": "7"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Fire_Wave",
+      "content_sha256": "1816572e16a91ef6f437d42b2ba3500f1b772a0228597564983f0c688e3b8e56",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "40",
+          "Skalowanie": "Magic Level",
+          "Rodzaj obrażeń": "ogień",
+          "Zasięg": "4"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Ice_Wave",
+      "content_sha256": "2f7449339dd19d1a138b19812ce0dab76647abd94fedc1f1afe9e3c1667b605f",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "35",
+          "Skalowanie": "Magic Level",
+          "Rodzaj obrażeń": "lód",
+          "Zasięg": "4"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Shield_bash",
+      "content_sha256": "89837077fa223f3eac701fb962ed1d9653bd2fb124cc5a2674ae7616268e2184",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "55",
+          "Skalowanie": "-",
+          "Rodzaj obrażeń": "-",
+          "Zasięg": "1"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Energy_Field_Rune",
+      "content_sha256": "1365c3a3f646849d5378e7e7ad2d51b2732950f439ee17a33892b47bd13a9fc8",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "-",
+          "Skalowanie": "-",
+          "Rodzaj obrażeń": "-",
+          "Zasięg": "7"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Greater_Tiger_Clash",
+      "content_sha256": "7d5b3502f30f73a9074d14ff2c6a257bad32d443f31594c0d91a56547757881c",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "44",
+          "Skalowanie": "Fist Fighting Skill",
+          "Rodzaj obrażeń": "fizyczne",
+          "Zasięg": "1"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Strong_Haste",
+      "content_sha256": "14adc3c5146674108f5900acd123ca4360b53ab1ea5247a30b5fc30bf22cfa36",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "-",
+          "Skalowanie": "-",
+          "Rodzaj obrażeń": "-",
+          "Zasięg": "-"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Blood_Rage",
+      "content_sha256": "1bb9c4759a645d5a35cc82a8b1b93b2fdf711d82832c3b5b4c3567e3e6ef01d0",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "-",
+          "Skalowanie": "-",
+          "Rodzaj obrażeń": "-",
+          "Zasięg": "-"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Protector",
+      "content_sha256": "81eaf37c681d886d3efab7746c21b1f705b1bdd8e14da729e505544d89aae502",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "-",
+          "Skalowanie": "-",
+          "Rodzaj obrażeń": "-",
+          "Zasięg": "-"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Virtue_of_Harmony",
+      "content_sha256": "02d91ea38e89fcd542ac188bbf5bf7715ff2ed993a1246cc0890d46bbf2c5c50",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "-",
+          "Skalowanie": "Magic Level",
+          "Rodzaj obrażeń": "-",
+          "Zasięg": "-"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Virtue_of_Justice",
+      "content_sha256": "fad725b58fcda3390658b6c570bfd0791c2b9cbd9e11130756c1961d5bcefb4c",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "-",
+          "Skalowanie": "Magic Level",
+          "Rodzaj obrażeń": "-",
+          "Zasięg": "-"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Virtue_of_Sustain",
+      "content_sha256": "0882985f4f3de53cadd000a1b59d01b893789d8aa5224fa20adadca216cccc2d",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "10",
+          "Skalowanie": "Magic Level",
+          "Rodzaj obrażeń": "-",
+          "Zasięg": "-"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Sharpshooter",
+      "content_sha256": "bd8355c0ccc04c1b6493c9ec4200f32f221445f68cbf65e0dbcbf2f135c6bcf3",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "-",
+          "Skalowanie": "-",
+          "Rodzaj obrażeń": "-",
+          "Zasięg": "-"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Divine_Defiance",
+      "content_sha256": "5d53f7a2ee333e3690f385ac3a53908527122ade3dac33856690224ad4802a23",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "-",
+          "Skalowanie": "-",
+          "Rodzaj obrażeń": "-",
+          "Zasięg": "-"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Challenge",
+      "content_sha256": "b284b6f4132e1199ee83569a6815c723de8a06971e56d21d3f3c17ea2946dd41",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "-",
+          "Skalowanie": "-",
+          "Rodzaj obrażeń": "-",
+          "Zasięg": "1"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Master_of_Flames",
+      "content_sha256": "be969a9b349740aa8928193dda9c287ce415f338104161d4c77527e6e755c0a2",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "-",
+          "Skalowanie": "Magic Level",
+          "Rodzaj obrażeń": "ogień",
+          "Zasięg": "-"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Master_of_Thunder",
+      "content_sha256": "d2ae725196bdf0cf1983af257c141f758a451c1b4c7d265b8b8419cfaeff89c0",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "-",
+          "Skalowanie": "Magic Level",
+          "Rodzaj obrażeń": "energia",
+          "Zasięg": "-"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Master_of_Decay",
+      "content_sha256": "06d9a0f5bbf5fa8263539bea57d30063f7c8b92cfa5f53d44cd35b112ffc185a",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "-",
+          "Skalowanie": "Magic Level",
+          "Rodzaj obrażeń": "śmierć",
+          "Zasięg": "-"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Shared_Conservation",
+      "content_sha256": "a5e21e00aaa371386264b1e400776de1fe1ca591e7079c627886c9fb67f09210",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "-",
+          "Skalowanie": "-",
+          "Rodzaj obrażeń": "-",
+          "Zasięg": "-"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Elemental_Synthesis",
+      "content_sha256": "386fd11ec64c1c533cbef8096ac22a2229f4ded4182848c84b4c64fe661d5d88",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "-",
+          "Skalowanie": "-",
+          "Rodzaj obrażeń": "-",
+          "Zasięg": "-"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Intense_Healing",
+      "content_sha256": "1fe72517d03c66a90ca230f0fe48551567d46a17f44e02835800d83ea90800e6",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "120",
+          "Skalowanie": "Magic Level",
+          "Rodzaj obrażeń": "-",
+          "Zasięg": "-"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Disintegrate_Rune",
+      "content_sha256": "73ef56353dc2a979ece3c4f65bd8f2d7d5f429cc7293ddce5344bfa79ed6289a",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "-",
+          "Skalowanie": "-",
+          "Rodzaj obrażeń": "-",
+          "Zasięg": "-"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Cure_Electrification",
+      "content_sha256": "304765ebf3ab8cc479bde93cd5401eb3b8a07a5e3e2677a3e98844028c2178f9",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "-",
+          "Skalowanie": "-",
+          "Rodzaj obrażeń": "-",
+          "Zasięg": "-"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Creature_Illusion",
+      "content_sha256": "8a96d037cd11f2cc8a792f29160e9fb29d04c7ad5f59fd57f0a38d40e789163f",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "-",
+          "Skalowanie": "-",
+          "Rodzaj obrażeń": "-",
+          "Zasięg": "-"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Ethereal_Spear",
+      "content_sha256": "a7e03bbde69d043fc3df2042fae5657b9837046b489aa92fff8315d8ac2cb54e",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "25",
+          "Skalowanie": "Distance Skill",
+          "Rodzaj obrażeń": "fizyczne",
+          "Zasięg": "7"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Energy_Beam",
+      "content_sha256": "e88d6cf9e2e8274c7884d0e33675a9a22204720f2d3a46076df71e2f391efb97",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "60",
+          "Skalowanie": "Magic Level",
+          "Rodzaj obrażeń": "energia",
+          "Zasięg": "5"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Stalagmite_Rune",
+      "content_sha256": "543f9480ff3b91457009cffcee2fc758787e9e31ec408dc6502c82e2f2804a49",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "30",
+          "Skalowanie": "Magic Level",
+          "Rodzaj obrażeń": "ziemia",
+          "Zasięg": "7"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Ultimate_Healing_Rune",
+      "content_sha256": "5c71483a0510162c1c4b3c1f4318174ca79ac9647b0e769ffe676c69ba3fd402",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "250",
+          "Skalowanie": "Magic Level",
+          "Rodzaj obrażeń": "-",
+          "Zasięg": "-"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Charge",
+      "content_sha256": "3026f21faa4b94c0c63dcff064e04bf44b08c960bed7d4cbdb75d17356a4d025",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "-",
+          "Skalowanie": "-",
+          "Rodzaj obrażeń": "-",
+          "Zasięg": "-"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Find_Fiend",
+      "content_sha256": "0d9b285a53549116e78d28d8cb1d2b329be2ee204b82756c140be3cd960a6d7c",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "-",
+          "Skalowanie": "-",
+          "Rodzaj obrażeń": "-",
+          "Zasięg": "-"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Summon_Creature",
+      "content_sha256": "70e8c517a7b4deeafeb7c0d7db53a887a046b19136c3026c6a0c56c7e9e4d271",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "-",
+          "Skalowanie": "-",
+          "Rodzaj obrażeń": "-",
+          "Zasięg": "-"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Conjure_Explosive_Arrow",
+      "content_sha256": "ad6dc22b0a1ed588d8655dc515e487a8e6fcea286a64f9af5098e5253912e0f1",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "-",
+          "Skalowanie": "-",
+          "Rodzaj obrażeń": "-",
+          "Zasięg": "-"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Heavy_Magic_Missile_Rune",
+      "content_sha256": "c37cf57444faffefdfa7017a3e06709f4113cb27de619ffa1dc5db20aa04a8d5",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "30",
+          "Skalowanie": "Magic Level",
+          "Rodzaj obrażeń": "energia",
+          "Zasięg": "7"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Poison_Bomb_Rune",
+      "content_sha256": "72b5b101dbd6a9e5b8247cf8abe740d940d9f45761c9dd113e409679a13479db",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "-",
+          "Skalowanie": "-",
+          "Rodzaj obrażeń": "-",
+          "Zasięg": "7"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Ultimate_Light",
+      "content_sha256": "5c4f0f1bd28d4b097831358f2903946a80388ef13a60887ce8e7f271285b3ffb",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "-",
+          "Skalowanie": "-",
+          "Rodzaj obrażeń": "-",
+          "Zasięg": "9"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Cancel_Invisibility",
+      "content_sha256": "d99083a245fa614aa15ed3200f97015cbe1758708504c3b9d7f0d868c953b29a",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "-",
+          "Skalowanie": "-",
+          "Rodzaj obrażeń": "-",
+          "Zasięg": "4"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Ignite",
+      "content_sha256": "bc85ccb75bb031b894542b8d702c4116a459561a4e15c003dedd1a6144fc06d4",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "120",
+          "Skalowanie": "Magic Level",
+          "Rodzaj obrażeń": "ogień",
+          "Zasięg": "3"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Holy_Missile_Rune",
+      "content_sha256": "093cf0b16d468c7d115f5139c2d5f9659eb55cd29167da5ec639c621339cfcb4",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "70",
+          "Skalowanie": "Magic Level",
+          "Rodzaj obrażeń": "świętość",
+          "Zasięg": "7"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Soulfire_Rune",
+      "content_sha256": "0166e893215cff52488e4878b9e43df4e9aba1cf118c8a54733446eac25c0620",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "120",
+          "Skalowanie": "Magic Level",
+          "Rodzaj obrażeń": "ogień",
+          "Zasięg": "7"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Fireball_Rune",
+      "content_sha256": "e03b5274408cf86af39b96653838584bbf3466b1cb7ec20981562a5ed8ce083c",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "60",
+          "Skalowanie": "Magic Level",
+          "Rodzaj obrażeń": "ogień",
+          "Zasięg": "7"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Animate_Dead_Rune",
+      "content_sha256": "7f1a3187a8c04a2f03f1eeb8782d2b71dfe781ca1dc978a909effd24f12e2233",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "-",
+          "Skalowanie": "-",
+          "Rodzaj obrażeń": "-",
+          "Zasięg": "-"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Chameleon_Rune",
+      "content_sha256": "34d139243542255e150b3fc58066ad2be138c5d237bca48c0d01c374d06ce5fa",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "-",
+          "Skalowanie": "-",
+          "Rodzaj obrażeń": "-",
+          "Zasięg": "-"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Fire_Bomb_Rune",
+      "content_sha256": "f118306e90f684eb547655f423a6563b712cca3e196c06dba443e55383b6887e",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "-",
+          "Skalowanie": "-",
+          "Rodzaj obrażeń": "-",
+          "Zasięg": "7"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Wild_Growth_Rune",
+      "content_sha256": "5135db3c185b4cbe004da711d2d6154163c6bd45ab46c21e6e8e51e04dc22967",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "-",
+          "Skalowanie": "-",
+          "Rodzaj obrażeń": "-",
+          "Zasięg": "7"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Whirlwind_Throw",
+      "content_sha256": "8a1e71380d36f7cce87712b5bc041513a1ed667758d1e9677356edc2a63a3998",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "32",
+          "Skalowanie": "Axe/Club/Sword Skill",
+          "Rodzaj obrażeń": "fizyczne",
+          "Zasięg": "5"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Stone_Shower_Rune",
+      "content_sha256": "f3b56791776e99ba182f0245285e983b619bee92f6bb7f3e8390ede2a9efe36c",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "45",
+          "Skalowanie": "Magic Level",
+          "Rodzaj obrażeń": "ziemia",
+          "Zasięg": "7"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Thunderstorm_Rune",
+      "content_sha256": "b7ce44eecbeefbc42e6de510debaac0b4b152cf7519f3d65ac913d1e69c1da7b",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "45",
+          "Skalowanie": "Magic Level",
+          "Rodzaj obrażeń": "energia",
+          "Zasięg": "7"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Icicle_Rune",
+      "content_sha256": "c61927967fa8e8537271d498394a74a0017c28e8501e768798b1da4042672295",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "60",
+          "Skalowanie": "Magic Level",
+          "Rodzaj obrażeń": "lód",
+          "Zasięg": "7"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Great_Energy_Beam",
+      "content_sha256": "4ddecbfcf7fa0ba4abad0aa1d57761842347f9b4cb4ff11bb7e5c5f74aff8956",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "155",
+          "Skalowanie": "Magic Level",
+          "Rodzaj obrażeń": "energia",
+          "Zasięg": "8"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Poison_Wall_Rune",
+      "content_sha256": "37151eb71db5b67e061c78271a4013ca565a186f8911698711c6061371ce7447",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "-",
+          "Skalowanie": "-",
+          "Rodzaj obrażeń": "-",
+          "Zasięg": "7"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Mystic_Repulse",
+      "content_sha256": "8302a98a30cc0eef2a9762818864f2353c3ee53957f0cd37c9bb6162ad40db39",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "85",
+          "Skalowanie": "Fist Fighting Skill",
+          "Rodzaj obrażeń": "fizyczne",
+          "Zasięg": "7"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Ultimate_Healing",
+      "content_sha256": "6faa960a075803585b4f0174e68689da2fca59476cd78761f1fb98205fe1e9d9",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "250",
+          "Skalowanie": "Magic Level",
+          "Rodzaj obrażeń": "-",
+          "Zasięg": "-"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Cure_Burning",
+      "content_sha256": "ff55339a3573d7fb0cda90c50d2e9399368713bf2b097df43749e8eea4478de1",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "-",
+          "Skalowanie": "-",
+          "Rodzaj obrażeń": "-",
+          "Zasięg": "-"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Avalanche_Rune",
+      "content_sha256": "ed4e6f44cf10634d75b470da1cc3a660d0ffe0283db9dbf197de4763d59104e5",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "50",
+          "Skalowanie": "Magic Level",
+          "Rodzaj obrażeń": "lód",
+          "Zasięg": "7"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Great_Fireball_Rune",
+      "content_sha256": "18ea74fd0f12ddb27119fdae749cb38530d4a55a36f8569bcda2d3a8a293cd72",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "50",
+          "Skalowanie": "Magic Level",
+          "Rodzaj obrażeń": "ogień",
+          "Zasięg": "7"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Shield_Slam",
+      "content_sha256": "c7f97a0e5806d505f67d7b80a4859feba8f3f548f2e469fe21957fd3ec120717",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "52",
+          "Skalowanie": "-",
+          "Rodzaj obrażeń": "-",
+          "Zasięg": "1"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Explosion_Rune",
+      "content_sha256": "aa1f4306d303c4dbbd25744b4aa4156065692a6afe9f412d09b8b58f83e9256f",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "60",
+          "Skalowanie": "Magic Level",
+          "Rodzaj obrażeń": "fizyczne",
+          "Zasięg": "7"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Enlighten_Party",
+      "content_sha256": "7e00f62c57f5cd8f599e2d3f2848ffc434259af62be588429e33b2c2c01857da",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "-",
+          "Skalowanie": "-",
+          "Rodzaj obrażeń": "-",
+          "Zasięg": "-"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Magic_Wall_Rune",
+      "content_sha256": "cab16d8a9331ba81c9b416f651f0628d7bf037d71b69aad840e6a67cfbd1b024",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "-",
+          "Skalowanie": "-",
+          "Rodzaj obrażeń": "-",
+          "Zasięg": "7"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Train_Party",
+      "content_sha256": "26defb60be1ce5ae47e5ee570c39ee170ef93b04b4522511240b546c639f3e01",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "-",
+          "Skalowanie": "-",
+          "Rodzaj obrażeń": "-",
+          "Zasięg": "7"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Heal_Party",
+      "content_sha256": "e9f313ae10404b996a6a4829b40bf9286e2fe32be514b6969be3b32c5987c228",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "-",
+          "Skalowanie": "-",
+          "Rodzaj obrażeń": "-",
+          "Zasięg": "7"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Protect_Party",
+      "content_sha256": "407a0ea2390196058c76da31303c7464633a31f81169f982681e1bf5eab411c4",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "-",
+          "Skalowanie": "-",
+          "Rodzaj obrażeń": "-",
+          "Zasięg": "7"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Enchant_Party",
+      "content_sha256": "dd6823ba6d4837ed56924b84274c32bc0baff30e48cedcf78d5a3686e1919b28",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "-",
+          "Skalowanie": "-",
+          "Rodzaj obrażeń": "-",
+          "Zasięg": "7"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Groundshaker",
+      "content_sha256": "0a290384132cdff7204e9d89ee6766222ac4d41ec11c0656d5b1b901c00ca4ec",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "32",
+          "Skalowanie": "Axe/Club/Sword Skill",
+          "Rodzaj obrażeń": "fizyczne",
+          "Zasięg": "4"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Fire_Wall_Rune",
+      "content_sha256": "14e883e30a44cffd1d8aeb64f2f2339bfa5edac87107a4c9315e5f82a2fba3d5",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "-",
+          "Skalowanie": "-",
+          "Rodzaj obrażeń": "-",
+          "Zasięg": "7"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Electrify",
+      "content_sha256": "714925901d0900505b778cc9c7312b178d20987d811e49fb83a0c5b8a2d7ed3b",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "120",
+          "Skalowanie": "Magic Level",
+          "Rodzaj obrażeń": "energia",
+          "Zasięg": "3"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Flurry_of_Blows",
+      "content_sha256": "70bc534e8708305a4071b8758f20573b0d322bf96d8070d82ab970a03b4001dd",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "55",
+          "Skalowanie": "Fist Fighting Skill",
+          "Rodzaj obrażeń": "fizyczne",
+          "Zasięg": "3"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Berserk",
+      "content_sha256": "e5d6b5311afd14a7b67ad715101b52e492d182fb7ddb13df41b5a390bc764d46",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "44",
+          "Skalowanie": "Axe/Club/Sword Skill",
+          "Rodzaj obrażeń": "fizyczne",
+          "Zasięg": "1"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Divine_Healing",
+      "content_sha256": "e517ae39e2c00ae075aa617c2fa3d9e7c03a4111bc0f6d09d4c42c5e2f506172",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "250",
+          "Skalowanie": "Magic Level",
+          "Rodzaj obrażeń": "-",
+          "Zasięg": "-"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Invisible",
+      "content_sha256": "22d335965f14929367b4567e467851d382ad549c7083d1b0aa813a3c3fdbd320",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "-",
+          "Skalowanie": "-",
+          "Rodzaj obrażeń": "-",
+          "Zasięg": "-"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Mass_Healing",
+      "content_sha256": "c2de689e07927e01f9f722e6a0d9e3fcf84c76f45ea1c8d1bfccbe0003c19522",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "200",
+          "Skalowanie": "Magic Level",
+          "Rodzaj obrażeń": "-",
+          "Zasięg": "4"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Energy_Bomb_Rune",
+      "content_sha256": "feca29a20516a04f7d7646a95b1278e76519c4a0452c735fb6392a8bc24a926d",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "-",
+          "Skalowanie": "-",
+          "Rodzaj obrażeń": "-",
+          "Zasięg": "7"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Great_Fire_Wave",
+      "content_sha256": "6a5d461d3168c869d8a3390944a100a2583e4fa71d9699d255c9d51f62c04ae1",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "100",
+          "Skalowanie": "Magic Level",
+          "Rodzaj obrażeń": "ogień",
+          "Zasięg": "5"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Energy_Wave",
+      "content_sha256": "401bb3f3c62fac44e3437824e1edaec4d3ea206e7d3457189b57f89a7cb56f26",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "150",
+          "Skalowanie": "Magic Level",
+          "Rodzaj obrażeń": "energia",
+          "Zasięg": "5"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Terra_Wave",
+      "content_sha256": "4706e2871ea12a60bef221c093aa873682f99de3c56ab91db025bcec57c3275e",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "120",
+          "Skalowanie": "Magic Level",
+          "Rodzaj obrażeń": "ziemia",
+          "Zasięg": "5"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Strong_Ice_Wave",
+      "content_sha256": "8ba40adc5dd4ec55665e5ee75c4f53c483cccaa93c5a162c551628ae0259142f",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "140",
+          "Skalowanie": "Magic Level",
+          "Rodzaj obrażeń": "lód",
+          "Zasięg": "3"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Divine_Missile",
+      "content_sha256": "fa1d089de0d8fd52e2a2785e64703fc7b4ac9fbf611f52d151a6832e1e744027",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "60",
+          "Skalowanie": "Magic Level",
+          "Rodzaj obrażeń": "świętość",
+          "Zasięg": "4"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Inflict_Wound",
+      "content_sha256": "3a084c94f09f0f2e4be6feefb32cc3f588c1f21953f089fef6be833b6180c2b1",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "90",
+          "Skalowanie": "Fist/Axe/Club/Sword Skill",
+          "Rodzaj obrażeń": "fizyczne",
+          "Zasięg": "1"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Energy_Wall_Rune",
+      "content_sha256": "e3fb9696158b8a63d018c87d4f020db9547330173bf9f7be2a6795e3b2544cd3",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "-",
+          "Skalowanie": "-",
+          "Rodzaj obrażeń": "-",
+          "Zasięg": "7"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Conjure_Wand_of_Darkness",
+      "content_sha256": "f3483ec26d611d6ce3f1403b47999cf32098ac2dcaf9939c4c2e21dbd1931ff3",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "-",
+          "Skalowanie": "-",
+          "Rodzaj obrażeń": "śmierć",
+          "Zasięg": "-"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Cure_Bleeding",
+      "content_sha256": "29d1b4766806e915ca875c79e27b71c1297e71f00a89e6c4130160074415cb35",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "-",
+          "Skalowanie": "-",
+          "Rodzaj obrażeń": "-",
+          "Zasięg": "-"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Enchant_Spear",
+      "content_sha256": "0d3f5cb156164ca18a7e09df8fe6899477f28799291a55d3cbce8ed978e5c644",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "-",
+          "Skalowanie": "-",
+          "Rodzaj obrażeń": "-",
+          "Zasięg": "-"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Sudden_Death_Rune",
+      "content_sha256": "edbcf57d2f0fae70e06d86c5117acc8c80bf83c90c1e703aa60df52f23a932c9",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "150",
+          "Skalowanie": "Magic Level",
+          "Rodzaj obrażeń": "śmierć",
+          "Zasięg": "7"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Divine_Caldera",
+      "content_sha256": "9570e8e751e265ce5365e5294ed03065ba599ee729531f49ca0c28a6b1f6fddd",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "150",
+          "Skalowanie": "Magic Level",
+          "Rodzaj obrażeń": "świętość",
+          "Zasięg": "4"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Envenom",
+      "content_sha256": "e31c197e4907aba5cbb7d6bc62557c4d1412a30cd08cafbc6437b1daeb5dd99c",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "350",
+          "Skalowanie": "Magic Level",
+          "Rodzaj obrażeń": "ziemia",
+          "Zasięg": "3"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Recovery",
+      "content_sha256": "b777dab5d1a9dd28f0f4fc43586bb1a1111d48ab8224278e2d5aa161c01ceb12",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "-",
+          "Skalowanie": "-",
+          "Rodzaj obrażeń": "-",
+          "Zasięg": "-"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Paralyse_Rune",
+      "content_sha256": "bf23000e9f33948dbb489eb55a3fc8f7c51a45942257a266e31ecc538b8340d0",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "-",
+          "Skalowanie": "-",
+          "Rodzaj obrażeń": "-",
+          "Zasięg": "-"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Swift_Foot",
+      "content_sha256": "a29e87a8779a03a80071a11b9ed4c5c4bac8cd5d9c821756287e2bf74ac8aa60",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "-",
+          "Skalowanie": "-",
+          "Rodzaj obrażeń": "-",
+          "Zasięg": "-"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Lightning",
+      "content_sha256": "eada9fc744bf14aa0205e245c28816cb7b79a3f2958ec1c6772f779331b89435",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "110",
+          "Skalowanie": "Magic Level",
+          "Rodzaj obrażeń": "energia",
+          "Zasięg": "5"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Rage_of_the_Skies",
+      "content_sha256": "7f48611a6f350f516db0f3b3ae1227570b9a3bc8291a8483de767a131e35fd66",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "200",
+          "Skalowanie": "Magic Level",
+          "Rodzaj obrażeń": "energia",
+          "Zasięg": "7"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Wrath_of_Nature",
+      "content_sha256": "9db99ee678919e55cd110ca46896d2635763d653e197464ea334fcb411277f34",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "175",
+          "Skalowanie": "Magic Level",
+          "Rodzaj obrażeń": "ziemia",
+          "Zasięg": "7"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Eternal_Winter",
+      "content_sha256": "f433a69d89f9b49c76320659ebdf8483b6e6077a93de6db5ddff81f01e8c829a",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "200",
+          "Skalowanie": "Magic Level",
+          "Rodzaj obrażeń": "lód",
+          "Zasięg": "6"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Hell's_Core",
+      "content_sha256": "59a684d299b64a24867f929d86720ff5843bd7e4daeae6bd9e6b24c010d7bb42",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "250",
+          "Skalowanie": "Magic Level",
+          "Rodzaj obrażeń": "ogień",
+          "Zasięg": "6"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Ethereal_Barrage",
+      "content_sha256": "55eb65a0fb94ce16d419a4fffd2a052e7bcd9af4fd820bec34ac76064b6ad186",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "40",
+          "Skalowanie": "Distance Skill",
+          "Rodzaj obrażeń": "fizyczne",
+          "Zasięg": "7"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Sweeping_Takedown",
+      "content_sha256": "b6da2ebdb1b8171bf70dac9d9edf7dfd08bb681b05d7426126f4c177f7526deb",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "48",
+          "Skalowanie": "Fist Fighting Skill",
+          "Rodzaj obrażeń": "fizyczne",
+          "Zasięg": "4"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Salvation",
+      "content_sha256": "c86b881cbf2cee71c904c0c13e9fbf9fe788de1ccf0c33add01ff2d329ff3c73",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "500",
+          "Skalowanie": "Magic Level",
+          "Rodzaj obrażeń": "-",
+          "Zasięg": "-"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Great_Death_Beam",
+      "content_sha256": "aab16b588fe858c727873ab3e7800fd2d300cf756ed13b458907175fa3d96c65",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "155",
+          "Skalowanie": "Magic Level",
+          "Rodzaj obrażeń": "śmierć",
+          "Zasięg": "8"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Divine_Barrage",
+      "content_sha256": "bf7203a9655ec1d984fc84a54c2612933dd8686f92f2c94ace761c9f5a3fd426",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "130",
+          "Skalowanie": "Magic Level",
+          "Rodzaj obrażeń": "świętość",
+          "Zasięg": "7"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Chained_Penance",
+      "content_sha256": "5acbd5b97d7d5883f9d76c09d0bb7dc382104dc5773f1715d2e70ad31db0ca93",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "70",
+          "Skalowanie": "Fist Fighting Skill",
+          "Rodzaj obrażeń": "fizyczne",
+          "Zasięg": "4"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Front_Sweep",
+      "content_sha256": "d7fe7a466577670e3672527d5c52d76be407762f3802e686885e6f10eb2a20c0",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "80",
+          "Skalowanie": "Axe/Club/Sword Skill",
+          "Rodzaj obrażeń": "fizyczne",
+          "Zasięg": "1"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Holy_Flash",
+      "content_sha256": "259acc4db178e0d5a9964b3446cce1c4be4f58c95d9f572a85a7a8c24eec19ab",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "200",
+          "Skalowanie": "Magic Level",
+          "Rodzaj obrażeń": "świętość",
+          "Zasięg": "3"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Strong_Flame_Strike",
+      "content_sha256": "bcfac2ff8bb140d5e8bc64ecd04d2b6786e1c6a856abfd8367e75e01b7aba7f7",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "125",
+          "Skalowanie": "Magic Level",
+          "Rodzaj obrażeń": "ogień",
+          "Zasięg": "7"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Strong_Terra_Strike",
+      "content_sha256": "e6719abed2180cb3b676e379365bc9706e0ed4c80ee9f57a810f27f61824f492",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "115",
+          "Skalowanie": "Magic Level",
+          "Rodzaj obrażeń": "ziemia",
+          "Zasięg": "7"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Curse",
+      "content_sha256": "e7e47a21c6b08cedc1381319a7aa532442628e4910232facded42f06dd7e4728",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "120",
+          "Skalowanie": "Magic Level",
+          "Rodzaj obrażeń": "śmierć",
+          "Zasięg": "3"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Forked_Thorns",
+      "content_sha256": "6d2e893b8b571d10afa1a26e71b8f88dc942a16d3c4500e89da158db299af2b6",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "97",
+          "Skalowanie": "Magic Level",
+          "Rodzaj obrażeń": "ziemia",
+          "Zasięg": "7"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Spirit_Mend",
+      "content_sha256": "ae84e8355682dcedfe83bba3161e9b3f5ee29fcc8f4482f11df0be247f801be6",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "250",
+          "Skalowanie": "Magic Level",
+          "Rodzaj obrażeń": "-",
+          "Zasięg": "-"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Intense_Wound_Cleansing",
+      "content_sha256": "dee08871421e8be713d6d10bb2d7217e5a2a83342ac750ac3a8ec23a16ac3186",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "500",
+          "Skalowanie": "Magic Level, Shielding",
+          "Rodzaj obrażeń": "-",
+          "Zasięg": "-"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Cure_Curse",
+      "content_sha256": "3dd1379a483dbb873ec2411d96c010dc2387b5520172281354203f4f25a17381",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "-",
+          "Skalowanie": "-",
+          "Rodzaj obrażeń": "-",
+          "Zasięg": "-"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Strong_Energy_Strike",
+      "content_sha256": "f4d4bb4cb5fa6b7199138c1bfdcdb4a926d035d234f33df9209c9c34a50a1d14",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "125",
+          "Skalowanie": "Magic Level",
+          "Rodzaj obrażeń": "energia",
+          "Zasięg": "7"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Strong_Ice_Strike",
+      "content_sha256": "e0c94e769f48f029c3d2f9bcee2d705f214855eca988beb302b76733c47a3272",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "115",
+          "Skalowanie": "Magic Level",
+          "Rodzaj obrażeń": "lód",
+          "Zasięg": "7"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Ultimate_Terra_Strike",
+      "content_sha256": "5c5c06473abbba39387ac83c1b243d7e3725363c2ee0dcfeb0ea1050beb3151f",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "195",
+          "Skalowanie": "Magic Level",
+          "Rodzaj obrażeń": "ziemia",
+          "Zasięg": "7"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Ultimate_Flame_Strike",
+      "content_sha256": "079614d2a7931f93fc9f945b00ffa493fbf95d0c29e88fd0db83767ca55204ac",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "210",
+          "Skalowanie": "Magic Level",
+          "Rodzaj obrażeń": "ogień",
+          "Zasięg": "7"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Forked_Glacier",
+      "content_sha256": "860a022858d347dea1ebe624c0856c7bee6e1381d59bfa40523603eadda5c7b5",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "90",
+          "Skalowanie": "Magic Level",
+          "Rodzaj obrażeń": "lód",
+          "Zasięg": "7"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Greater_Flurry_of_Blows",
+      "content_sha256": "fb6a974fc7345578f99a873cf321d0b97a8c33cb60e41d8f257f40e990a7ddcc",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "86",
+          "Skalowanie": "Fist Fighting Skill",
+          "Rodzaj obrażeń": "fizyczne",
+          "Zasięg": "4"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Fierce_Berserk",
+      "content_sha256": "06fcbba4db0ef96caf83e166c1d0ca2ad3b59f473caa16dd007fdeceef176a5f",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "92",
+          "Skalowanie": "Axe/Club/Sword Skill",
+          "Rodzaj obrażeń": "fizyczne",
+          "Zasięg": "1"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Strong_Ethereal_Spear",
+      "content_sha256": "53fee8eaea12fbf8f317c95c5507d33b4e2532a410257540e791171ff1ec0abc",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "38",
+          "Skalowanie": "Distance Skill",
+          "Rodzaj obrażeń": "fizyczne",
+          "Zasięg": "5"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Ultimate_Energy_Strike",
+      "content_sha256": "688dcc27d0350c5297fa34bd14b913c6dd8436a2c0d6feda3bcf04dd111b9144",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "210",
+          "Skalowanie": "Magic Level",
+          "Rodzaj obrażeń": "energia",
+          "Zasięg": "7"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Ultimate_Ice_Strike",
+      "content_sha256": "87e0eb21a2da891e8f8773d5032b51c2b26a23139e77f36b8c630457c6c69725",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "195",
+          "Skalowanie": "Magic Level",
+          "Rodzaj obrażeń": "lód",
+          "Zasięg": "7"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Intense_Recovery",
+      "content_sha256": "f5f8808fd1df2fc346472a50bfca4348b8512d35dd139f73bba84f2e16750341",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "-",
+          "Skalowanie": "-",
+          "Rodzaj obrażeń": "-",
+          "Zasięg": "-"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Annihilation",
+      "content_sha256": "f4403296fb201c0f5cf89adc48c1c7744b88c3624132a96ab22d363528aa2313",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "125",
+          "Skalowanie": "Axe/Club/Sword Skill",
+          "Rodzaj obrażeń": "fizyczne",
+          "Zasięg": "1"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Forceful_Uppercut",
+      "content_sha256": "e6a85f247097d04f9039a11ed20f28d0411bb1f5f0958f5415972ef71d3cf9dd",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "130",
+          "Skalowanie": "Fist Fighting Skill",
+          "Rodzaj obrażeń": "fizyczne",
+          "Zasięg": "1"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Thousand_Fist_Blows",
+      "content_sha256": "8a895d88ba1f1122b9ca99ebbb866e508e352b30e96bf61dfcf2951ccb7005d3",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "62",
+          "Skalowanie": "Fist Fighting Skill",
+          "Rodzaj obrażeń": "-",
+          "Zasięg": "7"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Death_Echo",
+      "content_sha256": "673aeb2249e1431e8b6615e8731935ac955aa4266775bd45efbe927e648c0cc4",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "75",
+          "Skalowanie": "Magic Level",
+          "Rodzaj obrażeń": "śmierć",
+          "Zasięg": "7"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Devastating_Knockout",
+      "content_sha256": "0aa0b1b81784306cf7fe239c031a5279f3991e378ddf4504590cdc50de813281",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "62",
+          "Skalowanie": "Fist Fighting Skill",
+          "Rodzaj obrażeń": "fizyczne",
+          "Zasięg": "7"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Mass_Spirit_Mend",
+      "content_sha256": "ebcd982db19cf7cf8f360ccd07c474d471b9ced9088589bb6bd3944871c871bb",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "800",
+          "Skalowanie": "Magic Level",
+          "Rodzaj obrażeń": "-",
+          "Zasięg": "5"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Focus_Serenity",
+      "content_sha256": "39d726da80388c022e74b74ea9a53fc8b566d82ab73fc87fdb0d9c32907b3e3e",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "-",
+          "Skalowanie": "-",
+          "Rodzaj obrażeń": "-",
+          "Zasięg": "-"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Chivalrous_Challenge",
+      "content_sha256": "2850f0915ba6638ad5908c75b786628bc145320985c4bf10463afe4d4240107a",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "-",
+          "Skalowanie": "-",
+          "Rodzaj obrażeń": "-",
+          "Zasięg": "6"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Aura_of_Sapped_Strength",
+      "content_sha256": "3b583b685d430a57e6a09dcba990145138292b867cd84d9d8528ed7e4f657171",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "-",
+          "Skalowanie": "-",
+          "Rodzaj obrażeń": "-",
+          "Zasięg": "-"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Aura_of_Exposed_Weakness",
+      "content_sha256": "a3fb9972e2850b35ab20a256e1867d05189eda57095d8dfc416cbdb5ee1d25aa",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "-",
+          "Skalowanie": "-",
+          "Rodzaj obrażeń": "-",
+          "Zasięg": "-"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Sap_Strength",
+      "content_sha256": "b02e0c6e320402d97576822ca045dfdbe7450434e3489365d96982da91fd7a50",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "-",
+          "Skalowanie": "-",
+          "Rodzaj obrażeń": "-",
+          "Zasięg": "4"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Balanced_Brawl",
+      "content_sha256": "1edcd8ce6c34c870a9f78e463e8a60a5ab46fe799fb8c6d6f84d7b4e4c3a7623",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "-",
+          "Skalowanie": "-",
+          "Rodzaj obrażeń": "-",
+          "Zasięg": "6"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Summon_Knight_Familiar",
+      "content_sha256": "9080f4de9071456e9585e3d073bbba4aa893c4beba9a6643955c6d9c75e3168b",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "-",
+          "Skalowanie": "-",
+          "Rodzaj obrażeń": "-",
+          "Zasięg": "-"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Summon_Monk_Familiar",
+      "content_sha256": "0bfd5ea2c96cd1591c8c22dd47b3fc8192c917673b96ffbc5a3629e9d8c470a2",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "-",
+          "Skalowanie": "-",
+          "Rodzaj obrażeń": "-",
+          "Zasięg": "-"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Summon_Paladin_Familiar",
+      "content_sha256": "c1b8fe60c3d1b095408f0adcb009d9e39354c5c47a222effdecc889cf4f9b430",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "-",
+          "Skalowanie": "-",
+          "Rodzaj obrażeń": "-",
+          "Zasięg": "-"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Summon_Druid_Familiar",
+      "content_sha256": "9e7aed6e749cb8bca3c64fa98fa2297673c3950cf80ec81a0dab3cfffc6a659e",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "-",
+          "Skalowanie": "-",
+          "Rodzaj obrażeń": "-",
+          "Zasięg": "-"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Summon_Sorcerer_Familiar",
+      "content_sha256": "347cd56151fef7ce208f441851c5abe190036a61a25db0e4e0f96e19fa9a9dc2",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "-",
+          "Skalowanie": "-",
+          "Rodzaj obrażeń": "-",
+          "Zasięg": "-"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Divine_Dazzle",
+      "content_sha256": "b6e6d3d8e601abcfccf994932f586ee2f4994e99b0dda3ebddb5c829a490c3f9",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "-",
+          "Skalowanie": "-",
+          "Rodzaj obrażeń": "-",
+          "Zasięg": "6"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Nature's_Embrace",
+      "content_sha256": "c5213bd1e8e0a5e4ee0a7ec07d7267d2b5757fe591e98b0ee8a46867a3191b0b",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "2000",
+          "Skalowanie": "Magic Level",
+          "Rodzaj obrażeń": "-",
+          "Zasięg": "7"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Expose_Weakness",
+      "content_sha256": "71e1ddddc643923aa6f2419adfcd39ca185c6fb9303afd46ce9b24c43ab45794",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "-",
+          "Skalowanie": "-",
+          "Rodzaj obrażeń": "-",
+          "Zasięg": "4"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Focus_Harmony",
+      "content_sha256": "c8759629ddc5af9123cd678c816f840b642ac94a7ecf29179791c9d2c53e366c",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "-",
+          "Skalowanie": "-",
+          "Rodzaj obrażeń": "-",
+          "Zasięg": "-"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Avatar_of_Balance",
+      "content_sha256": "ef2c4d2d841013cf22db0e4b6c17af4b436dca4f7a2c73d0b9b038e3b2a0d602",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "-",
+          "Skalowanie": "-",
+          "Rodzaj obrażeń": "-",
+          "Zasięg": "-"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Fair_Wound_Cleansing",
+      "content_sha256": "70ae0e42b36a9ac32cb87142dde0ec8ac19822a01facb326ec4da83978b7a143",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "225",
+          "Skalowanie": "Magic Level, Shielding",
+          "Rodzaj obrażeń": "-",
+          "Zasięg": "-"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Avatar_of_Light",
+      "content_sha256": "4e553ad6342c7f8e17d4746fd1a1ae4b7a5ca391673cc0d520d6ed1ed348cbf3",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "-",
+          "Skalowanie": "-",
+          "Rodzaj obrażeń": "-",
+          "Zasięg": "-"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Divine_Grenade",
+      "content_sha256": "64c258ad991867d81fc02e1995cfd1c8923b3f024922167b7df1b7404509d246",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "190",
+          "Skalowanie": "Magic Level",
+          "Rodzaj obrażeń": "świętość",
+          "Zasięg": "4"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Avatar_of_Nature",
+      "content_sha256": "0e449f0e9ec615de1e9c15228556046474c5d762c7c9feb6421ae9c54ccd80b4",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "-",
+          "Skalowanie": "-",
+          "Rodzaj obrażeń": "-",
+          "Zasięg": "-"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Avatar_of_Storm",
+      "content_sha256": "f2df195edd9ecc6a27720d44329b12dcd956a084039c379b00c94aa6974a8137",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "-",
+          "Skalowanie": "-",
+          "Rodzaj obrażeń": "-",
+          "Zasięg": "-"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Executioner's_Throw",
+      "content_sha256": "c48af082d7cce929aaa05332a36b3a445bf8f1b2084a6b3be93bc8663f25504e",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "60",
+          "Skalowanie": "Axe/Club/Sword Skill",
+          "Rodzaj obrażeń": "fizyczne",
+          "Zasięg": "5"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Ice_Burst",
+      "content_sha256": "1a4dd3a3f5eebf883f589dbbbbd661f665f19384ba388f22a9d80a8a13036729",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "115",
+          "Skalowanie": "Magic Level",
+          "Rodzaj obrażeń": "lód",
+          "Zasięg": "-"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Terra_Burst",
+      "content_sha256": "2500de69ebbccb1c59829dda734a8a8f1ee59cfb11897a22217692a859a9ef0e",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "115",
+          "Skalowanie": "Magic Level",
+          "Rodzaj obrażeń": "ziemia",
+          "Zasięg": "-"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Restoration",
+      "content_sha256": "c56a68be9812345d08ec069a6457653f955c24cf7e7cf45f52a6d4ccb6d82761",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "375",
+          "Skalowanie": "Magic Level",
+          "Rodzaj obrażeń": "-",
+          "Zasięg": "-"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Spiritual_Outburst",
+      "content_sha256": "1e358c701af58fc45028e7db90e43a08735783cef8e4bfe3784540b24221989e",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "42",
+          "Skalowanie": "Fist Fighting Skill",
+          "Rodzaj obrażeń": "fizyczne",
+          "Zasięg": "2"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Divine_Empowerment",
+      "content_sha256": "d5e00ee3d18d13d59bedabf7658f426085377df0a0c247076ee7c77fbbbb5e60",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "-",
+          "Skalowanie": "-",
+          "Rodzaj obrażeń": "-",
+          "Zasięg": "1"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Avatar_of_Steel",
+      "content_sha256": "c166856f0f603907ba635bc3f62dd92abeb931746d3de23a425a25cd1de71d05",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "-",
+          "Skalowanie": "-",
+          "Rodzaj obrażeń": "-",
+          "Zasięg": "-"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Conjure_Bolt",
+      "content_sha256": "206bb25f324490078754a5db3cd7f31e003d522e7583b82f8736331ae4496ac5",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "-",
+          "Skalowanie": "-",
+          "Rodzaj obrażeń": "-",
+          "Zasięg": "-"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Conjure_Piercing_Bolt",
+      "content_sha256": "da51e0f991d8a42f420096a5d67f45d8a127d19e9ad2dadc3b34e8f91df41c11",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "-",
+          "Skalowanie": "-",
+          "Rodzaj obrażeń": "-",
+          "Zasięg": "-"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Conjure_Poisoned_Arrow",
+      "content_sha256": "7f4f0757360a4e87b4494e683b82cc6c521edbe2ca355d2d1ca3621858109210",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "-",
+          "Skalowanie": "-",
+          "Rodzaj obrażeń": "-",
+          "Zasięg": "-"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Conjure_Power_Bolt",
+      "content_sha256": "976db8015492868ce675822167c0392da4a7297e01b978c9f17cdf4de3d9459f",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "-",
+          "Skalowanie": "-",
+          "Rodzaj obrażeń": "-",
+          "Zasięg": "-"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Conjure_Sniper_Arrow",
+      "content_sha256": "c5ff1466078c9cc6b35c447d4fde5ae0523e52977d2471e99fdd66713bcfec01",
+      "mechanics_single_facts": [
+        {
+          "Bazowa Moc": "-",
+          "Skalowanie": "-",
+          "Rodzaj obrażeń": "-",
+          "Zasięg": "-"
+        }
+      ],
+      "absent_mechanics": "Full damage/healing formula, shape, duration, target exceptions and custom callbacks are not parsed/verified by this capture."
+    }
+  ]
+}

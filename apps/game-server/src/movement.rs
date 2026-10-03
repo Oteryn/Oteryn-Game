@@ -13,16 +13,19 @@
 //! or `ai/**` decision logic itself: the future perception/chase/wander decision (AI-3, `ai/**`)
 //! proposes a step and this module's existing machinery revalidates and commits it, unchanged.
 
-use crate::content::static_cell_engine::{
-    EngineeringStaticCellIndex, EngineeringStaticCellScope, StaticCellEngineError,
-};
+use crate::content::native_cell_lookup::NativeStaticCellLookup;
+#[cfg(test)]
+use crate::content::static_cell_engine::EngineeringStaticCellIndex;
+use crate::content::static_cell_engine::{EngineeringStaticCellScope, StaticCellEngineError};
 use crate::content::{CollisionClass, LogicalCell};
 use crate::foundation::{
     CarrierError, ChannelRuntimeV1, CurrentOwnerMovementPosition, ExactActorRef,
     MovementLocalPosition, MovementPositionContext, MovementPositionSnapshot,
 };
 use std::num::NonZeroUsize;
-mod interest;
+pub(crate) mod interest;
+pub(crate) mod source_floor_change;
+pub(crate) mod speed;
 
 pub(crate) const LOCAL_STEP_CANDIDATES_PER_DECISION: usize = 1;
 
@@ -138,7 +141,7 @@ impl<'a> MovementDecision<'a> {
     /// before touching that index, so max+1 cannot issue a second key lookup or owner write.
     pub(crate) fn attempt_candidate(
         &mut self,
-        index: &EngineeringStaticCellIndex,
+        index: &(impl NativeStaticCellLookup + ?Sized),
     ) -> Result<(), MovementError> {
         if let Some(error) = self.failure {
             return Err(error);
@@ -196,7 +199,7 @@ pub(crate) fn step_cardinal(
     actor: ExactActorRef,
     expected: MovementPositionSnapshot,
     selection: &MovementEngineeringSelection<'_>,
-    index: &EngineeringStaticCellIndex,
+    index: &(impl NativeStaticCellLookup + ?Sized),
     direction: CardinalStep,
 ) -> Result<MovementPositionSnapshot, MovementError> {
     let mut decision = MovementDecision::begin(owner, actor, expected, selection, direction)?;
@@ -241,7 +244,7 @@ impl<'a> MovementOwnerTurn<'a> {
         actor: ExactActorRef,
         expected: MovementPositionSnapshot,
         selection: &MovementEngineeringSelection<'_>,
-        index: &EngineeringStaticCellIndex,
+        index: &(impl NativeStaticCellLookup + ?Sized),
         direction: CardinalStep,
     ) -> Result<MovementTurnOutcome, MovementError> {
         if self.processed >= self.max_inputs.get() {
@@ -341,7 +344,7 @@ impl MovementOwnerTurn<'_> {
         max_offers: NonZeroUsize,
         cursor: &mut MovementFairCursor,
         selection: &MovementEngineeringSelection<'_>,
-        index: &EngineeringStaticCellIndex,
+        index: &(impl NativeStaticCellLookup + ?Sized),
     ) -> Result<MovementBatchResult, MovementBatchError> {
         if offers.len() > max_offers.get() {
             return Err(MovementBatchError::OfferCapacityExceeded);

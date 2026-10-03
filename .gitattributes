@@ -2,3 +2,5 @@
 content/world/placements/*.b3 binary
 content/assets/files/** -text -diff
 content/assets/files/README.md text eol=lf diff
+# Raw r23 evidence logs are retained byte-exact under hash receipts; whitespace is not normalised.
+docs/reference/spells/r23-candidate/evidence/*.log -whitespace

@@ -64,8 +64,46 @@ pub struct ProjectV2EncounterAnchor {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
 pub enum ProjectV2AnchorLocation {
-    Point { x: u16, y: u16, floor: u8 },
-    Area { boxes: Vec<ProjectV2AnchorBox> },
+    Point {
+        x: u16,
+        y: u16,
+        floor: u8,
+    },
+    Area {
+        boxes: Vec<ProjectV2AnchorBox>,
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
+        minus: Vec<ProjectV2AnchorBox>,
+    },
+}
+
+/// Coordinate compression keeps exact whole-tile subtraction bounded by authored rectangles,
+/// including the u16::MAX tile (upper-exclusive edges therefore use u32).
+fn area_has_tile(area: &ProjectV2AnchorBox, minus: &[ProjectV2AnchorBox]) -> bool {
+    let cuts: Vec<_> = minus.iter().filter(|cut| cut.floor == area.floor).collect();
+    let edges = |axis: [u16; 2], x_axis: bool| {
+        let low = u32::from(axis[0]);
+        let high = u32::from(axis[1]) + 1;
+        let mut edges = BTreeSet::from([low, high]);
+        for cut in &cuts {
+            let values = if x_axis { cut.x } else { cut.y };
+            edges.insert(u32::from(values[0]).clamp(low, high));
+            edges.insert((u32::from(values[1]) + 1).clamp(low, high));
+        }
+        edges
+            .into_iter()
+            .filter(|value| *value < high)
+            .collect::<Vec<_>>()
+    };
+    edges(area.x, true).into_iter().any(|x| {
+        edges(area.y, false).into_iter().any(|y| {
+            !cuts.iter().any(|cut| {
+                u32::from(cut.x[0]) <= x
+                    && x <= u32::from(cut.x[1])
+                    && u32::from(cut.y[0]) <= y
+                    && y <= u32::from(cut.y[1])
+            })
+        })
+    })
 }
 
 /// Whole tiles from `[0]` to `[1]` inclusive on each axis, on one floor.
@@ -183,6 +221,8 @@ pub enum ProjectV2EncounterTrigger {
     DamageTaken {
         role: String,
         source: ProjectV2HitSource,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        base_vocation: Option<ProjectV2BaseVocation>,
     },
     HealReceived {
         role: String,
@@ -198,6 +238,8 @@ pub enum ProjectV2EncounterTrigger {
     },
     TimerElapsed {
         timer: String,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        each: Option<String>,
     },
     CounterReached {
         counter: String,
@@ -284,7 +326,10 @@ pub enum ProjectV2NearShape {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ProjectV2EncounterNear {
-    pub role: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub role: Option<String>,
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub triggering: bool,
     pub radius: u32,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub shape: Option<ProjectV2NearShape>,
@@ -331,7 +376,14 @@ pub enum ProjectV2EncounterCondition {
     },
     /// Exactly one of an area anchor and `near`.
     CreaturePresent {
-        role: String,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        role: Option<String>,
+        #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+        players: bool,
+        #[serde(default, rename = "where", skip_serializing_if = "Vec::is_empty")]
+        where_conditions: Vec<ProjectV2EncounterCondition>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        pick: Option<ProjectV2PlayerPick>,
         #[serde(default, skip_serializing_if = "Option::is_none")]
         anchor: Option<String>,
         #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -347,7 +399,11 @@ pub enum ProjectV2EncounterCondition {
         subject: ProjectV2InAnchorSubject,
         anchor: String,
     },
-    KillerIsPlayer,
+    KillerIsPlayer {
+        /// Omission preserves the original player's-own-damage predicate.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        value: Option<bool>,
+    },
     HasMaster {
         role: String,
         value: bool,
@@ -369,6 +425,8 @@ pub enum ProjectV2EncounterCondition {
         slot: Option<ProjectV2EquipmentSlot>,
     },
     KillerProgress {
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        subject: Option<ProjectV2InAnchorSubject>,
         progress: String,
         op: ProjectV2CompareOp,
         value: ProjectV2StateValue,
@@ -391,6 +449,20 @@ pub enum ProjectV2InAnchorSubject {
     Killer,
     Spawned,
     Triggering,
+    Candidate,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ProjectV2PlayerPick {
+    Farthest,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(untagged, deny_unknown_fields)]
+pub enum ProjectV2TeleportTo {
+    Anchor(String),
+    PickedPosition { picked_position: bool },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -680,7 +752,17 @@ pub enum ProjectV2EncounterAction {
     },
     Teleport {
         who: ProjectV2TeleportWho,
-        to: String,
+        to: ProjectV2TeleportTo,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        after_ms: Option<u64>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        picked_cooldown_ms: Option<u64>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        warning_effect: Option<String>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        arrival_effect: Option<String>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        say: Option<String>,
     },
     /// Exactly one of an anchor and the death position, or `triggering` alone: a remove of the
     /// item that fired a `stepped_on` rule.
@@ -696,6 +778,10 @@ pub enum ProjectV2EncounterAction {
         anchor: Option<String>,
         #[serde(default, skip_serializing_if = "std::ops::Not::not")]
         at_death_position: bool,
+        #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+        at_subject_position: bool,
+        #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+        unless_present: bool,
         #[serde(default, skip_serializing_if = "Option::is_none")]
         revert_after_ms: Option<u64>,
         #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -1107,22 +1193,34 @@ pub(super) fn validate_encounter_details(
                 return invalid("v2 encounter anchor floor is outside 0..=15");
             }
             ProjectV2AnchorLocation::Point { .. } => {}
-            ProjectV2AnchorLocation::Area { boxes } => {
+            ProjectV2AnchorLocation::Area { boxes, minus } => {
                 if boxes.is_empty() {
                     return invalid("v2 encounter area needs a box");
                 }
                 limits.check(
                     "v2 encounter boxes",
-                    boxes.len(),
+                    boxes.len().saturating_add(minus.len()),
                     limits.max_reference_records,
                 )?;
-                for area in boxes {
+                for area in boxes.iter().chain(minus) {
                     if area.x[0] > area.x[1] || area.y[0] > area.y[1] {
                         return invalid("v2 encounter box starts after it ends");
                     }
                     if area.floor > 15 {
                         return invalid("v2 encounter anchor floor is outside 0..=15");
                     }
+                }
+                for cut in minus {
+                    if !boxes.iter().any(|area| {
+                        area.floor == cut.floor
+                            && area.x[0].max(cut.x[0]) <= area.x[1].min(cut.x[1])
+                            && area.y[0].max(cut.y[0]) <= area.y[1].min(cut.y[1])
+                    }) {
+                        return invalid("v2 encounter minus box overlaps no area box");
+                    }
+                }
+                if !minus.is_empty() && !boxes.iter().any(|area| area_has_tile(area, minus)) {
+                    return invalid("v2 encounter minus removes the whole area");
                 }
             }
         }
@@ -1213,9 +1311,27 @@ pub(super) fn validate_encounter_details(
             limits.max_reference_records,
         )?;
         for value in &rule.conditions {
-            condition(value, &rule.trigger, &names, require_ref, limits)?;
+            condition(value, &rule.trigger, &names, require_ref, limits, false)?;
         }
-        actions(&rule.actions, &rule.trigger, &names, require_ref, limits)?;
+        let picked = rule.conditions.iter().any(|value| {
+            matches!(
+                value,
+                ProjectV2EncounterCondition::CreaturePresent {
+                    players: true,
+                    present: true,
+                    pick: Some(_),
+                    ..
+                }
+            )
+        });
+        actions(
+            &rule.actions,
+            &rule.trigger,
+            &names,
+            require_ref,
+            limits,
+            picked,
+        )?;
     }
     Ok(())
 }
@@ -1230,8 +1346,18 @@ fn trigger(
         T::CreatureDied { role }
         | T::LethalDamage { role }
         | T::CreatureSpawned { role }
-        | T::DamageTaken { role, .. }
         | T::HealReceived { role, .. } => names.role(role),
+        T::DamageTaken {
+            role,
+            source,
+            base_vocation,
+        } => {
+            names.role(role)?;
+            if base_vocation.is_some() && *source != ProjectV2HitSource::Player {
+                return invalid("v2 damage_taken base_vocation needs source player");
+            }
+            Ok(())
+        }
         T::HealthCrossed {
             role,
             percent_ppm: percent,
@@ -1276,7 +1402,13 @@ fn trigger(
                 _ => invalid("v2 stepped_on takes exactly one of item and corpse_of"),
             }
         }
-        T::TimerElapsed { timer } => names.timer(timer),
+        T::TimerElapsed { timer, each } => {
+            names.timer(timer)?;
+            if let Some(role) = each {
+                names.role(role)?;
+            }
+            Ok(())
+        }
         T::CounterReached { counter, .. } => names.counter(counter),
         T::AreaEntered { anchor, who, role } | T::AreaLeft { anchor, who, role } => {
             names.area(anchor)?;
@@ -1305,7 +1437,8 @@ fn one_creature(value: &ProjectV2EncounterTrigger) -> bool {
     use ProjectV2EncounterTrigger as T;
     matches!(
         value,
-        T::CreatureDied { .. }
+        T::TimerElapsed { each: Some(_), .. }
+            | T::CreatureDied { .. }
             | T::LethalDamage { .. }
             | T::HealthCrossed { .. }
             | T::CreatureSpawned { .. }
@@ -1334,6 +1467,7 @@ fn condition(
     names: &Names<'_>,
     require_ref: &impl Fn(&ProjectV2DefinitionRef) -> Result<(), ProjectError>,
     limits: ProjectEvidenceLimits,
+    candidate_context: bool,
 ) -> Result<(), ProjectError> {
     use ProjectV2EncounterCondition as C;
     match value {
@@ -1366,22 +1500,79 @@ fn condition(
         }
         C::Flag { flag, .. } => known(&names.flags, flag, "v2 encounter names an unknown flag"),
         C::CreaturePresent {
-            role, anchor, near, ..
+            role,
+            players,
+            anchor,
+            near,
+            where_conditions,
+            pick,
+            present,
         } => {
-            names.role(role)?;
+            if role.is_some() == *players {
+                return invalid("v2 creature_present takes role or players");
+            }
+            if let Some(role) = role {
+                names.role(role)?;
+            }
+            if !*players && (!where_conditions.is_empty() || pick.is_some()) {
+                return invalid("v2 where and pick need players");
+            }
+            if pick.is_some() && !*present {
+                return invalid("v2 pick needs present true");
+            }
+            limits.check(
+                "v2 candidate predicates",
+                where_conditions.len(),
+                limits.max_reference_records,
+            )?;
+            for predicate in where_conditions {
+                if !matches!(
+                    predicate,
+                    C::KillerProgress {
+                        subject: Some(ProjectV2InAnchorSubject::Candidate),
+                        ..
+                    } | C::InAnchor {
+                        subject: ProjectV2InAnchorSubject::Candidate,
+                        ..
+                    }
+                ) {
+                    return invalid(
+                        "v2 where permits only candidate progress and anchor predicates",
+                    );
+                }
+                condition(predicate, fired, names, require_ref, limits, true)?;
+            }
             match (anchor, near) {
                 (Some(anchor), None) => names.area(anchor),
-                (None, Some(near)) => names.role(&near.role),
+                (None, Some(near)) => match (&near.role, near.triggering) {
+                    (Some(role), false) => names.role(role),
+                    (None, true) if triggering_creature(fired) => Ok(()),
+                    _ => invalid("v2 near takes role or current triggering creature"),
+                },
                 _ => invalid("v2 creature_present takes exactly one of anchor and near"),
             }
         }
         C::WorldState { state, .. } => token(state, limits),
-        C::KillerProgress { progress, .. } => token(progress, limits),
+        C::KillerProgress {
+            progress, subject, ..
+        } => {
+            if subject.is_some()
+                && !(candidate_context
+                    && matches!(subject, Some(ProjectV2InAnchorSubject::Candidate)))
+            {
+                return invalid("v2 candidate is valid only inside where");
+            }
+            token(progress, limits)
+        }
         C::InAnchor {
             subject: who,
             anchor,
         } => {
             match who {
+                ProjectV2InAnchorSubject::Candidate if candidate_context => {}
+                ProjectV2InAnchorSubject::Candidate => {
+                    return invalid("v2 candidate is valid only inside where");
+                }
                 ProjectV2InAnchorSubject::Role { role } => names.role(role)?,
                 ProjectV2InAnchorSubject::Killer | ProjectV2InAnchorSubject::Spawned => {}
                 ProjectV2InAnchorSubject::Triggering if triggering_creature(fired) => {}
@@ -1391,7 +1582,7 @@ fn condition(
             }
             names.area(anchor)
         }
-        C::KillerIsPlayer => Ok(()),
+        C::KillerIsPlayer { .. } => Ok(()),
         C::HasMaster { role, .. } | C::SummonCount { role, .. } => names.role(role),
         C::HealthPercent {
             role, value_ppm, ..
@@ -1439,6 +1630,7 @@ fn actions(
     names: &Names<'_>,
     require_ref: &impl Fn(&ProjectV2DefinitionRef) -> Result<(), ProjectError>,
     limits: ProjectEvidenceLimits,
+    picked: bool,
 ) -> Result<(), ProjectError> {
     use ProjectV2EncounterAction as A;
     if values.is_empty() {
@@ -1621,7 +1813,15 @@ fn actions(
                 names.role(role)?;
                 damage_types(types, limits)?;
             }
-            A::Teleport { who, to } => {
+            A::Teleport {
+                who,
+                to,
+                after_ms,
+                picked_cooldown_ms,
+                warning_effect,
+                arrival_effect,
+                say,
+            } => {
                 match who {
                     ProjectV2TeleportWho::Role { role } => names.role(role)?,
                     ProjectV2TeleportWho::PlayersIn { anchor } => names.area(anchor)?,
@@ -1632,7 +1832,31 @@ fn actions(
                         );
                     }
                 }
-                names.anchor(to)?;
+                match to {
+                    ProjectV2TeleportTo::Anchor(anchor) => {
+                        names.anchor(anchor)?;
+                        if after_ms.is_some()
+                            || picked_cooldown_ms.is_some()
+                            || warning_effect.is_some()
+                            || arrival_effect.is_some()
+                            || say.is_some()
+                        {
+                            return invalid("v2 delayed teleport fields need picked_position");
+                        }
+                    }
+                    ProjectV2TeleportTo::PickedPosition {
+                        picked_position: true,
+                    } if picked => {}
+                    _ => return invalid("v2 picked_position needs an earlier player pick"),
+                }
+                for delay in [after_ms, picked_cooldown_ms].into_iter().flatten() {
+                    if *delay == 0 {
+                        return invalid("v2 picked teleport delay must be positive");
+                    }
+                }
+                for said in [warning_effect, arrival_effect, say].into_iter().flatten() {
+                    text(said, limits)?;
+                }
             }
             A::MapItem {
                 operation,
@@ -1641,6 +1865,8 @@ fn actions(
                 into,
                 anchor,
                 at_death_position,
+                at_subject_position,
+                unless_present,
                 revert_after_ms,
                 destination,
                 revert_destination,
@@ -1657,6 +1883,8 @@ fn actions(
                         || into.is_some()
                         || anchor.is_some()
                         || *at_death_position
+                        || *at_subject_position
+                        || *unless_present
                         || destination.is_some()
                         || revert_after_ms.is_some()
                         || revert_destination.is_some()
@@ -1682,14 +1910,23 @@ fn actions(
                     }
                     _ => {}
                 }
-                match (anchor, at_death_position) {
-                    (Some(anchor), false) => names.anchor(anchor)?,
-                    (None, true) => {}
-                    _ => {
-                        return invalid(
-                            "v2 map_item takes exactly one of anchor and the death position",
-                        );
-                    }
+                if usize::from(anchor.is_some())
+                    + usize::from(*at_death_position)
+                    + usize::from(*at_subject_position)
+                    != 1
+                {
+                    return invalid(
+                        "v2 map_item takes exactly one of anchor, death and subject position",
+                    );
+                }
+                if let Some(anchor) = anchor {
+                    names.anchor(anchor)?;
+                }
+                if *at_subject_position && !one_creature(fired) {
+                    return invalid("v2 map_item subject_position needs a creature trigger");
+                }
+                if *unless_present && *operation != ProjectV2MapItemOperation::Create {
+                    return invalid("v2 map_item unless_present needs operation create");
                 }
                 if *revert_after_ms == Some(0) {
                     return invalid("v2 map_item revert must be positive");
@@ -1804,7 +2041,7 @@ fn actions(
                     if branch.weight == 0 {
                         return invalid("v2 one_of weight must be positive");
                     }
-                    actions(&branch.actions, fired, names, require_ref, limits)?;
+                    actions(&branch.actions, fired, names, require_ref, limits, picked)?;
                 }
             }
             A::EmitOutcome {
@@ -1830,4 +2067,76 @@ fn actions(
         }
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod soul_war_area_tests {
+    #![allow(clippy::unwrap_used, clippy::panic)]
+    use super::*;
+
+    #[test]
+    fn subtraction_preserves_one_tile_and_handles_union_and_maximum_coordinate() {
+        let area = ProjectV2AnchorBox {
+            x: [65534, 65535],
+            y: [65534, 65535],
+            floor: 7,
+        };
+        let left = ProjectV2AnchorBox {
+            x: [65534, 65534],
+            ..area
+        };
+        let top = ProjectV2AnchorBox {
+            y: [65534, 65534],
+            ..area
+        };
+        assert!(area_has_tile(&area, &[left, top]));
+        let right = ProjectV2AnchorBox {
+            x: [65535, 65535],
+            ..area
+        };
+        assert!(!area_has_tile(&area, &[left, right]));
+        assert!(area_has_tile(
+            &area,
+            &[ProjectV2AnchorBox { floor: 8, ..area }]
+        ));
+        assert!(!area_has_tile(&area, &[area]));
+    }
+
+    #[test]
+    fn old_area_documents_keep_empty_subtraction() {
+        let location: ProjectV2AnchorLocation =
+            serde_json::from_str(r#"{"kind":"area","boxes":[{"x":[1,2],"y":[3,4],"floor":7}]}"#)
+                .unwrap();
+        let ProjectV2AnchorLocation::Area { minus, .. } = &location else {
+            panic!("area")
+        };
+        assert!(minus.is_empty());
+        assert!(
+            serde_json::to_value(location)
+                .unwrap()
+                .get("minus")
+                .is_none()
+        );
+    }
+    #[test]
+    fn mirror_image_fields_preserve_old_predicate_and_reject_non_boolean_polarity() {
+        let old: ProjectV2EncounterCondition =
+            serde_json::from_str(r#"{"kind":"killer_is_player"}"#).unwrap();
+        assert!(matches!(
+            old,
+            ProjectV2EncounterCondition::KillerIsPlayer { value: None }
+        ));
+        let floor: ProjectV2EncounterCondition =
+            serde_json::from_str(r#"{"kind":"killer_is_player","value":false}"#).unwrap();
+        assert!(matches!(
+            floor,
+            ProjectV2EncounterCondition::KillerIsPlayer { value: Some(false) }
+        ));
+        assert!(
+            serde_json::from_str::<ProjectV2EncounterCondition>(
+                r#"{"kind":"killer_is_player","value":"false"}"#,
+            )
+            .is_err()
+        );
+    }
 }

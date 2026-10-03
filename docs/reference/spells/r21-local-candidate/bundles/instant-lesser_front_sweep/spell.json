@@ -1,0 +1,59 @@
+{
+  "spell": {
+    "identity": {
+      "key": "candidate:spell/lesser_front_sweep",
+      "revision": "spell-p2-r20"
+    },
+    "name": "Lesser Front Sweep",
+    "carrier": "instant",
+    "words": "exori infir min",
+    "reference_spell_id": 271,
+    "library_text": "Knights regularly find themselves swamped by enemies at the frontlines. Similar to its more polished variant Front Sweep, this technique deals a slightly less powerful strike to three targets in front of its user. For knights in training, this spell is a vital resource to create room to breathe before the next wave of enemies takes the place of their slain foes.",
+    "requirements": {
+      "vocations": [
+        "elite_knight",
+        "knight"
+      ],
+      "level": 1,
+      "premium": false,
+      "learning_required": false
+    },
+    "costs": {
+      "mana": 6,
+      "soul": 0
+    },
+    "cooldown_ms": 6000,
+    "groups": [
+      {
+        "group": "attack",
+        "cooldown_ms": 2000
+      }
+    ],
+    "targeting": {
+      "aggressive": true,
+      "self_target": false,
+      "needs_target": false,
+      "needs_direction": true,
+      "target_or_direction": false,
+      "block_walls": true,
+      "allow_on_self": true,
+      "check_floor": true,
+      "range_tiles": 1,
+      "parameter": "none",
+      "aim_at_target": true
+    },
+    "pz_locks_caster": false,
+    "needs_weapon": true,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_front_sweep"
+    },
+    "base_power": 14,
+    "execution": {
+      "ability": {
+        "family": "Ability",
+        "key": "candidate:ability/spell/lesser_front_sweep",
+        "revision": "spell-p2-r20"
+      }
+    }
+  }
+}

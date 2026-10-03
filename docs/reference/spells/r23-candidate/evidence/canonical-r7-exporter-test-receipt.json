@@ -1,0 +1,35 @@
+{
+  "schema": "OTERYN_R23_CANONICAL_R7_EXPORTER_TEST_RECEIPT/v1",
+  "created_utc": "2026-10-02T11:37:11.437556+00:00",
+  "manifest_sha256": "a0e824b3227996499f8b6d146bfd53a6eec8b38402375eaf5a49a5c6071acbd0",
+  "command": "PYTHONDONTWRITEBYTECODE=1 python -m unittest test_monster_melee_profiles test_canonical_monster_profiles",
+  "working_directory": "tools/content-schema/native-gameplay",
+  "observed_exit_code": 0,
+  "passed": 14,
+  "failed": 0,
+  "retained_log": {
+    "path": "evidence/canonical-r7-exporter-python-tests.log",
+    "sha256": "d41f3c846ddc49b0edee5f0cc7d1f92afb009ffd88a2bdac06fe9b8c1e024766",
+    "bytes": 113
+  },
+  "test_and_producer_sources": [
+    {
+      "path": "tools/content-schema/native-gameplay/test_monster_melee_profiles.py",
+      "sha256": "84ffa59f082ad5a9f8b0ae2b918a8b96cf22430e3866951b84d10d8519335de3"
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/test_canonical_monster_profiles.py",
+      "sha256": "45015c948fd35f60f4fb7c6aea9b3037a2ab40729001b922e4bbef0b72055f30"
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/build_monster_melee_profiles.py",
+      "sha256": "833e34fd72bc66c9a2c846c4b02caa4d9ded3a3f89d95f31eb0d11170352f74d"
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/build_canonical_monster_profiles.py",
+      "sha256": "a9c77e21970ad0e588d52040a8dbca725adef73747b9e6e8fdf0823a75d5460f"
+    }
+  ],
+  "scope": "Bounded pure source exporter/schema tests; no current Rust admission, spawn, CreatureDamage or physical5 pass inferred",
+  "runtime_activation": false
+}

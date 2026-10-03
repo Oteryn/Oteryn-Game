@@ -371,6 +371,62 @@ case('a box floor stays on the map', locate('arena', {'boxes': [{**BOX, 'floor':
 case('an area needs a box', locate('arena', {'boxes': []}))
 case('a point needs its floor', locate('exit', {'x': 100, 'y': 200}))
 
+case('SW5 safe area subtraction accepted', locate('arena', {'boxes': [BOX],
+     'minus': [{**BOX, 'x': [102, 105]}]}), True)
+case('SW5 safe area must overlap same floor', locate('arena', {'boxes': [BOX],
+     'minus': [{**BOX, 'floor': 8}]}), error='overlaps no area box')
+case('SW5 cannot subtract whole area', locate('arena', {'boxes': [BOX], 'minus': [BOX]}),
+     error='minus removes the whole area')
+case('SW5 union of cuts cannot remove whole area', locate('arena', {'boxes': [BOX],
+     'minus': [{**BOX, 'x': [100, 105]}, {**BOX, 'x': [106, 110]}]}),
+     error='minus removes the whole area')
+case('SW5 one remaining tile survives', locate('arena', {'boxes': [BOX],
+     'minus': [{**BOX, 'x': [100, 109]}, {**BOX, 'x': [110, 110], 'y': [200, 209]}]}), True)
+case('SW5 point cannot subtract boxes', locate('exit', {'x': 100, 'y': 200, 'floor': 7, 'minus': [BOX]}))
+case('SW5 empty subtraction list forbidden', locate('arena', {'boxes': [BOX], 'minus': []}))
+
+case('SW4 vocation damage trigger accepted', rule(trigger={'kind': 'damage_taken', 'role': 'boss',
+     'source': 'player', 'base_vocation': 'monk'}), True)
+case('SW4 vocation cannot filter non-player damage', rule(trigger={'kind': 'damage_taken', 'role': 'boss',
+     'source': 'any', 'base_vocation': 'monk'}), error='base_vocation needs source player')
+case('SW4 non-player lethal floor accepted', rule(trigger={'kind': 'lethal_damage', 'role': 'boss'},
+     conditions=[{'kind': 'killer_is_player', 'value': False}]), True)
+case('SW4 lethal floor polarity is boolean', rule(trigger={'kind': 'lethal_damage', 'role': 'boss'},
+     conditions=[{'kind': 'killer_is_player', 'value': 'false'}]))
+
+SW6_POOL = {'kind': 'map_item', 'operation': 'create', 'item': ref('Item', 'vortex'),
+            'at': 'subject_position', 'unless_present': True}
+case('SW6 hit leaves one blood pool', rule([SW6_POOL], trigger={'kind': 'damage_taken',
+     'role': 'boss', 'source': 'player'}), True)
+case('SW6 pool needs one-creature trigger', rule([SW6_POOL]),
+     error='subject_position needs a trigger fired by one creature')
+case('SW6 existing-pool check only creates', rule([{**SW6_POOL, 'operation': 'remove'}],
+     trigger={'kind': 'damage_taken', 'role': 'boss', 'source': 'player'}), error='unless_present needs operation create')
+
+SW3_TRIGGER = {'kind': 'timer_elapsed', 'timer': 'enrage', 'each': 'boss'}
+SW3_PICK = {'kind': 'creature_present', 'players': True, 'near': {'triggering': True, 'radius': 30},
+    'where': [{'kind': 'killer_progress', 'subject': {'candidate': True}, 'progress': 'oteryn:quest/taint_1',
+               'op': '==', 'value': True}, {'kind': 'in_anchor', 'subject': {'candidate': True}, 'anchor': 'arena'}],
+    'pick': 'farthest', 'present': True}
+SW3_MOVE = {'kind': 'teleport', 'who': {'triggering': True}, 'to': {'picked_position': True},
+            'after_ms': 2000, 'picked_cooldown_ms': 10000, 'say': 'Harvest!', 'warning_effect': 'death',
+            'arrival_effect': 'teleport'}
+case('SW3 taint-gated delayed teleport accepted', rule([SW3_MOVE], SW3_TRIGGER, [SW3_PICK]), True)
+case('SW3 unknown timer fan-out role rejected', rule([SW3_MOVE], {**SW3_TRIGGER, 'each': 'stranger'}, [SW3_PICK]),
+     error='unknown role')
+case('SW3 picked position without prior pick rejected', rule([SW3_MOVE], SW3_TRIGGER),
+     error='needs an earlier player pick')
+case('SW3 cannot pick missing players', rule([SW3_MOVE], SW3_TRIGGER, [{**SW3_PICK, 'present': False}]),
+     error='pick needs players true and present true')
+case('SW3 candidate cannot escape where', rule(trigger=SW3_TRIGGER, conditions=[SW3_PICK['where'][0]]),
+     error='candidate is valid only inside where')
+case('SW3 nested where forbids unrelated conditions', rule([SW3_MOVE], SW3_TRIGGER,
+     [{**SW3_PICK, 'where': [{'kind': 'chance_percent', 'value': 10}]}]), error='only candidate progress')
+case('SW3 delay cannot widen ordinary anchor teleport', rule([{**SW3_MOVE, 'to': 'exit'}], SW3_TRIGGER, [SW3_PICK]),
+     error='delayed teleport fields need picked_position')
+case('SW3 triggering centre requires a triggering creature', rule(conditions=[SW3_PICK]),
+     error='near triggering needs a creature trigger')
+
 if __name__ == '__main__':
     report = {'scope': 'Encounter schema and semantic validator, synthetic fixtures only; no Lua or Oteryn runtime executed',
               'checks': len(results), 'passed': sum(r['passed'] for r in results),

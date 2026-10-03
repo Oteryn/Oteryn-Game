@@ -1,0 +1,118 @@
+{
+  "spell": {
+    "identity": {
+      "key": "candidate:spell/swift_foot",
+      "revision": "spell-p2-r20"
+    },
+    "name": "Swift Foot",
+    "carrier": "instant",
+    "words": "utamo tempo san",
+    "reference_spell_id": 134,
+    "library_text": "This spell has been developed by and for paladins. In critical situations it might become necessary for a paladin to outrun his opponent. Casting it raises the speed of a paladin significantly, allowing for swift footwork during attacking and casting, parralleled by a decrease in overall damage output.",
+    "requirements": {
+      "vocations": [
+        "paladin",
+        "royal_paladin"
+      ],
+      "level": 55,
+      "premium": true,
+      "learning_required": false
+    },
+    "costs": {
+      "mana": 400,
+      "soul": 0
+    },
+    "cooldown_ms": 4000,
+    "groups": [
+      {
+        "group": "support",
+        "cooldown_ms": 2000
+      },
+      {
+        "group": "focus",
+        "cooldown_ms": 2000
+      }
+    ],
+    "targeting": {
+      "aggressive": false,
+      "self_target": true,
+      "needs_target": false,
+      "needs_direction": false,
+      "target_or_direction": false,
+      "block_walls": true,
+      "allow_on_self": true,
+      "check_floor": true,
+      "parameter": "none"
+    },
+    "pz_locks_caster": false,
+    "needs_weapon": false,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_swift_foot"
+    },
+    "execution": {
+      "native_behavior": {
+        "key": "companion_haste",
+        "parameters": {
+          "caster": {
+            "condition": "haste",
+            "duration_ms": 10000,
+            "formula": {
+              "mina": "1.8",
+              "minb": "72",
+              "maxa": "1.8",
+              "maxb": "72"
+            },
+            "basis": "base_speed_minus_40",
+            "coefficient_arithmetic": "float32",
+            "bound_conversion": "truncate_toward_zero",
+            "delta": "formula_total_minus_base"
+          },
+          "familiar": {
+            "filter": "monster_type_is_familiar",
+            "duration_ms": 10000,
+            "basis": "max_owner_base_familiar_base",
+            "multiplier": "0.8",
+            "offset": "-72",
+            "arithmetic": "lua_double_then_int32",
+            "condition": "haste_if_positive_else_paralyze",
+            "zero_delta_paralyze_total": 40
+          },
+          "execution_order": [
+            "familiar_conditions",
+            "caster_combat",
+            "swift_damage_modifier"
+          ],
+          "replacement": {
+            "slot": "type_id_subid",
+            "replace_duration": true,
+            "replace_delta": true,
+            "stronger_wins": false,
+            "preserve_infinite_from_timed": true
+          },
+          "opposite_condition_removal": true,
+          "expiry_speed_change": "negate_owned_delta",
+          "caster_effect": "magic_green",
+          "ordinary_summons_receive_condition": false,
+          "damage_dealt_percent": {
+            "none": 70,
+            "regular": 70,
+            "greater": 70
+          },
+          "damage_modifier_duration_ms": 10000,
+          "damage_modifier_after_combat_success": true,
+          "damage_modifier_condition": {
+            "type": "attributes",
+            "id": "combat",
+            "sub_id": 0,
+            "buff": false,
+            "preserve_infinite_from_timed": true,
+            "preserve_longer_remaining": true,
+            "refresh": "end_old_effects_then_replace_entire_slot",
+            "other_parameters": "condition_attribute_defaults"
+          },
+          "attacks_and_casts_allowed": true
+        }
+      }
+    }
+  }
+}
