@@ -4,6 +4,7 @@
 - Status: **CANDIDATE**. Acceptance needs exact-head validation and independent review (authority
   and fencing).
 - Role: Sol Supervising Architect (`OTV2_SOL_SUPERVISING_ARCHITECT` 1.3)
+- Review round 1 on `af0a8553` (P1 4173613154 and 4173613160) is fixed in items 3 and 7.
 - Answers: the open item of `CHARM-DESC-FENCE-V1` (D295) item 4, "lease lifecycle mechanics are not
   designed here". This decision picks one of the two ways D295 allows, and sets the lock order and
   the invalidation operation.
@@ -76,10 +77,18 @@ runtime lock, and defines the invalidation operation.
 
    | Durable outcome | Step (c) |
    |---|---|
-   | `Released` or `Terminal` | Retire the actor with `remove_terminal_session`, or rebind in place (D295 item 4). The fence is never lifted: the session is terminal. |
+   | `Released` or `Terminal` | Retire the actor with `remove_terminal_session`, or rebind in place (D295 item 4). The old session's fence is never lifted for that session, which is terminal. |
    | `NotApplicable` or `NotExpired`, or a refusal that is definitely uncommitted | Lift the fence with the exact token. A lift with any other token is a no-op. |
    | Unknown (lost acknowledgement, store error) | Keep the fence and retry. The outcome is reconciled from the durable row and never decided again. |
 
+   - **Rebind retires the old fence atomically.**
+     - The post-grace in-place rebind (D295 item 4) is one carrier operation under the runtime
+       lock. It detaches the terminal session, drops that session's fence, and binds the newly
+       authorized GameSessionId and its lease generation.
+     - A rebound slot carries no fence, so the new session's writes are admitted.
+     - The old session's writes stay refused, because the slot no longer holds that session.
+     - A rebind that would leave the fence on the slot, or that binds without dropping it, is a
+       defect.
    - A resume of the same session lifts the fence together with the control-loss mark of the same
      epoch. That resume is `restore_player_control` after the durable resume commit.
    - A resume of a terminal session fails durably, so it never lifts a fence.
@@ -95,10 +104,22 @@ runtime lock, and defines the invalidation operation.
      clock skew and its lift is short.
    - Damage writes during grace keep today's behaviour. Whether an uncontrolled actor keeps
      attacking is not decided here.
-7. **Recovery.**
-   - The fence is runtime state only, and a restart discards it with the slot.
-   - After a restart every session loads under a newer generation, so no fenced tuple can come
-     back as current.
+7. **Recovery after process replacement.**
+   - The fence is runtime state only, and a restart discards it.
+   - FND-04B §22 allows a same-session continuation after process replacement, under the same
+     GameSession and lease generation. So the old tuple can come back.
+   - Before a continuation binds a reconstructed slot, it reconciles every terminal transition of
+     that session from the durable rows, in three cases:
+     - **Terminal on the durable row** (a release that committed, including one whose
+       acknowledgement was lost): no same-session continuation. Only the accepted post-grace path
+       may attach control, and it rebinds as in item 3.
+     - **Non-terminal, with the §22 evidence proven:** the transition never committed. The
+       continuation binds the slot without a fence. A later transition starts again at step (a)
+       against the original deadline, which is never restarted (§22).
+     - **Not provable:** fail closed. There is no continuation, and the slot is not reconstructed.
+   - No damage write is admitted for the session until that binding exists. So the reconstructed
+     slot is the first point at which a write can run, and it runs after reconciliation.
+   - A new session after a restart uses a newer generation and is fenced by the session check.
 
 ## 4. Rejected options
 
@@ -139,4 +160,7 @@ runtime lock, and defines the invalidation operation.
    - an unknown outcome keeps the fence;
    - a resume lifts the fence with its epoch;
    - a terminal session is never unfenced;
+   - a rebind drops the old fence and leaves the rebound slot unfenced;
+   - a same-session continuation after process replacement reconciles first: terminal refuses,
+     non-terminal binds unfenced, unprovable fails closed;
    - no path takes the admission lock under the runtime lock.

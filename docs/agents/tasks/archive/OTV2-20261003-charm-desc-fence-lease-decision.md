@@ -74,6 +74,12 @@ checklist item 3.
 ## Independent review
 
 - required: YES. The control plane triggers it on the frozen bundle head.
+- Round 1 on `af0a85539af6970952a0939e86f2ec7b9781e925` (D317 P1 round 1 of 2) had three P1s:
+  - 4173613154: the rebind retires the old fence atomically;
+  - 4173613160: same-session continuation after process replacement reconciles first (FND-04B §22);
+  - 4173613165: the FAMILIARS0 §5.1 restart rows distinguish a new session from a same-session
+    continuation.
+  All three are fixed in one push.
 
 ## PR and closeout
 

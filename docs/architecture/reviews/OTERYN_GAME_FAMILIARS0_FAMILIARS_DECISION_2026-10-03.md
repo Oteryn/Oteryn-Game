@@ -115,7 +115,8 @@ one ordinary summon (R1).
   clean session end
   (logout, channel transfer, the end of the in-fight deadline); and at removal (§7). A write from
   a stale generation is refused.
-- **Crash.** At login, the new session's fenced load reads the row. If `open = true` and its
+- **Crash.** At login, the new session's fenced load reads the row (a same-session continuation
+  after process replacement: §5.1). If `open = true` and its
   `session_generation` is older than the new one, the earlier session crashed: the load writes
   `familiar_remaining_ms = 0` and `open = false` under the new generation (the familiar is lost),
   and keeps `cooldown_remaining_ms` as last written, so a crash never shortens it. If
@@ -143,9 +144,10 @@ Each case names one invariant. FAMILIAR-1 has one test per case, on PostgreSQL w
 | Write from an older `session_generation` (late clean-end save, removal after a takeover) | direct | Refused by the generation fence; no column changes. |
 | Two writes of one generation race (timer removal and logout save) | direct, concurrent | The compare-and-set on `revision` admits one; the other re-reads and re-applies to the new row or becomes a no-op when the row is already closed; never two writes for one revision. |
 | Takeover: the new session's fenced load races the old session's clean-end save | reconciled vs direct, concurrent | The load raises the generation first; the old save is then stale and refused. If the old save commits first, the load sees `open = false` and returns the familiar (§7). |
-| Row `open = true` with the same generation as the loading session (a resume inside one GameSession) | reconciled | Not a crash: no reconciliation write; the familiar continues. |
+| Row `open = true` with the same generation, and the familiar is still in the running process (a reconnect inside one GameSession) | reconciled | Not a crash: no reconciliation write; the familiar continues. |
 | Row `open = true` with an older generation | reconciled | Crash: one write under the new generation sets remaining 0 and `open = false`; the cooldown is kept. |
-| Server restart, then login (PostgreSQL reload) | reconciled, PostgreSQL | Nothing in memory survives; every session after the restart has a newer generation, so an open row loads as a crash. Timers restart from the stored remaining values only. |
+| Server restart, then a new session (PostgreSQL reload) | reconciled, PostgreSQL | The new session has a newer generation, so an open row loads as a crash (the row above). A clean row returns from its stored remaining time only. |
+| Process replacement with proven same-session continuation (FND-04B §22; PostgreSQL reload) | reconciled, PostgreSQL | The generation is unchanged, but the familiar is not part of the reconstructed state, and the stored remaining time predates the loss. An `open = true` row is therefore a crash under the same generation: one fenced write sets remaining 0 and `open = false` and keeps the cooldown. The familiar never comes back with stale time. A clean row (`open = false`) returns as usual (§7). |
 | Missing row | reconciled | No familiar and no cooldown; a load never inserts a row. |
 | Any recovery path | reconciled | `cooldown_remaining_ms` is never lowered by a recovery write. |
 | Return refused in a lever boss room, immediate or delayed | direct | One fenced write ends the familiar (remaining 0, `open = false`, cooldown kept); no creature is placed. |
@@ -247,8 +249,8 @@ None. Every choice above is a reversible architect ruling under owner rule 59058
    session generation.
 3. **Restart:** a clean end (`open = false`) keeps the familiar's time; a return reopens the row
    (`open = true`) in its admission; a return refused in a lever boss room ends it
-   (`familiar_remaining_ms = 0`, `open = false`, cooldown kept); a crash (`open = true` from an older generation) loses the
-   familiar and keeps the cooldown.
+   (`familiar_remaining_ms = 0`, `open = false`, cooldown kept); a crash (`open = true` from an older generation, or after a proven
+   same-session continuation, §5.1) loses the familiar and keeps the cooldown.
 4. **Typed references:** CharacterId, spell id, creature key.
 5. **Wire:** none new (§8).
 6. **Split work:** one row per character; one familiar per owner.
