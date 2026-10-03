@@ -22,10 +22,15 @@ mod authority_matrix;
 mod authority_recovery;
 #[path = "support/character_forge_dust_postgres_cases.rs"]
 mod character_forge_dust_postgres_cases;
+#[allow(dead_code)]
+#[path = "support/bestiary_postgres_harness.rs"]
+mod bestiary_postgres_harness;
 #[path = "support/character_revision_sequencer_postgres_cases.rs"]
 mod character_revision_sequencer_postgres_cases;
 #[path = "../src/durability/mod.rs"]
 mod durability;
+#[path = "support/item_timed_state_postgres_cases.rs"]
+mod item_timed_state_postgres_cases;
 #[path = "support/postgres.rs"]
 mod postgres;
 use sqlx::Connection;

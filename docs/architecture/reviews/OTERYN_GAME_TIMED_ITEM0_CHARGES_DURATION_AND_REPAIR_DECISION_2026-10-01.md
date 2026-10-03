@@ -34,6 +34,11 @@ Until TIMED-ITEM-0B, timed items still grant nothing (EQUIP-0 R2). Later, each w
 forms, the active rule for EQUIP-0, conditions, wire; continuous duration; §5), exercise weapons
 (EXERCISE-0, R4), invisibility from equipment, item imbuement durations (IMBUE-FORGE-0's own clock).
 
+**Amendment (pending on acceptance of TIMED-ITEM-0B §4 and §9.2).** TIMED-RT-1a creates the §4
+table in migration 0054, with TIMED-ITEM-0B's `deadline_at` column and write records; TIMED-REPAIR-1
+depends on it and writes its record under `npc_repair`. An equip transform never writes the row: its
+first write is a checkpoint, `SetDeadline`, `ClearDeadline`, `PutOut`, an expiry or the repair.
+
 ## 1. Question
 
 How do items that run on charges or time work: when they count down, how they change form, what
