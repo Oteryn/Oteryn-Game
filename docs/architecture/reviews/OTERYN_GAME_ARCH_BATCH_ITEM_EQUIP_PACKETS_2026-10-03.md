@@ -1,0 +1,704 @@
+# Architect batch: item view and move, equip, drop, speed, bags and exercise packets
+
+```yaml
+decision_id: ARCH-BATCH-ITEM-EQUIP-PACKETS-V1
+status: CANDIDATE
+date: 2026-10-03
+owner: Sol Supervising Architect
+requested_by: control plane (after #1696: ITEM-MOVE-2a, ITEM-MOVE-2b, EQUIP-RT-1, EXERCISE-1, and what else the accepted EQUIP-0, EXERCISE-0, DEPOT-0, BAGS-0 and IMBUE-FORGE-0 allow)
+writes_on_other_prs: none
+```
+
+This bundle packets the item chain that the four requested slices sit on, in order of playable
+value. The first playable result is looting a corpse into the backpack; the second is wearing what
+was looted, with its effects; the third is dropping and picking up.
+
+The bundle changes no code, no contract and no wire. The rulings in §1 are architecture rulings
+under the accepted decisions they cite. Live PR and Issue state governs. The dependency notes record
+the state when this was written:
+
+- on `main`: VIS-2, COND-1, CHAR-BUILD-1 and 1b, SKILLS-0, the combat loot MINT
+  (`combat/death_reward.rs`), `combat/pickup.rs` (`settle_corpse_pickup`), `item_transfer.rs` with
+  `reconcile_item_transfer`, `domain/equipment.rs` (`check_equip`), HOUSE-CUSTODY-1 (0025),
+  TIMED-RT-1a (0054), carrier #1675;
+- in flight: TIMED-CONTENT-1 (lane 2), TIMED-RT-1b (waits on TIMED-CONTENT-1), FORGE-1a #1691;
+- not built and not in flight: ITEM-VIEW-1, ITEM-MOVE-1, ITEM-EQUIP-WIRE-1, ITEM-MOVE-2a/2b,
+  ITEM-SEM-2b-2's content, SPEED-1, MAP-LOAD-1, MAP-OVERLAY-1, MAP-WIRE-1/2, ITEM-USE-WIRE-1,
+  WORLDINT-WIRE-1, WORLDINT-USE-1, WO-3, GOLD-FEE-2.
+
+## 0. Leases, order and shared files
+
+### 0.1 Leases
+
+Proposed (the control plane leases; a worker that needs another number stops and asks). Main's
+highest migration is 0057; D417 granted 0058-0062, so the proposals start at 0063.
+
+| Packet | Migration | Capability / command / state domain |
+|---|---|---|
+| ITEM-VIEW-1a | none | capability 4 `ITEM_VIEW_MOVE_V1`, state domains 9 `CHARACTER_INVENTORY` and 11 `OPEN_CONTAINER`, command type 9 `ITEM_MOVE_INTENT` (all assigned by D212; nothing new) |
+| ITEM-VIEW-1b | none | none |
+| ITEM-MOVE-1 | none (the existing `0014` corpse-entry TRANSFER) | none |
+| ITEM-CLIENT-1 | none | none |
+| ITEM-SEM-2b-2 | none | none (#1672 packet, rebased by §1.4) |
+| ITEM-EQUIP-WIRE-1 | none | capability 12 `ITEM_EQUIP_DROP_V1` (proposed) |
+| ITEM-MOVE-2a | 0063 (proposed) | none |
+| EQUIP-CONTENT-1 | none | none |
+| SPEED-1 | none | capability 13 `PACED_MOVEMENT_V1` (proposed); no command, no domain |
+| EQUIP-RT-1 | none | none |
+| ITEM-MOVE-2b | 0064 (proposed) | none |
+| BAGS-WIRE-1 | none | capability 14 `CONTAINER_TREE_V1`, state domain 14 `CONTAINER_VIEWS`, command type 21 `CONTAINER_VIEW_INTENT` (proposed) |
+| BAGS-1 | 0065 (proposed) | none |
+| EXERCISE-1 | 0066 (proposed) | none |
+
+### 0.2 Order (by playable value)
+
+| # | Packet | Worker | Starts when |
+|---|---|---|---|
+| 1 | ITEM-VIEW-1a | impl, protocol review | now |
+| 2 | ITEM-SEM-2b-2 | impl, content review | now (§1.4) |
+| 3 | SPEED-1 | impl, movement review | now |
+| 4 | ITEM-VIEW-1b | hard, protocol and session review | ITEM-VIEW-1a has merged |
+| 5 | ITEM-EQUIP-WIRE-1 | impl, protocol review | ITEM-VIEW-1a has merged |
+| 6 | ITEM-MOVE-1 | hard, persistence review | ITEM-VIEW-1b has merged |
+| 7 | ITEM-CLIENT-1 | impl | ITEM-MOVE-1 has merged |
+| 8 | ITEM-MOVE-2a | hard, persistence review | ITEM-MOVE-1, ITEM-EQUIP-WIRE-1 and ITEM-SEM-2b-2 have merged |
+| 9 | EQUIP-CONTENT-1 | content lane | ITEM-SEM-2b-2 and TIMED-CONTENT-1 have merged (§1.5) |
+| 10 | EQUIP-RT-1 | hard (combat), combat and determinism review | ITEM-MOVE-2a, SPEED-1 and EQUIP-CONTENT-1 have merged |
+| 11 | BAGS-WIRE-1 | impl, protocol review | ITEM-VIEW-1b and ITEM-EQUIP-WIRE-1 have merged |
+| 12 | BAGS-1 | hard, persistence and performance review | ITEM-MOVE-2a and BAGS-WIRE-1 have merged |
+| 13 | ITEM-MOVE-2b | hard, persistence review | ITEM-MOVE-2a and MAP-OVERLAY-1 have merged |
+| 14 | EXERCISE-1 | hard (persistence), persistence and determinism review | TIMED-RT-1b, EXERCISE-CONTENT-1 and WORLDINT-USE-1 have merged |
+
+Items 1-3 can run in parallel now. Items 4 and 5, and later 9 and 11, can run in parallel.
+
+### 0.3 Shared files
+
+The packets own disjoint code paths except these append-only registers (each packet's own lines
+only; the second of two open packets merges `main` as a union):
+
+- `docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json` (wire packets 1, 5, 3 and 11 only);
+- `docs/contracts/RESOURCE_LIMITS_REGISTRY.json`;
+- `apps/game-server/src/durability/mod.rs` and `apps/game-server/tests/durability_postgres.rs`
+  (one `mod` line each);
+- `docs/architecture/DUR-03_ITEM_TRANSACTION_AND_ANTI_DUPLICATION_CONTRACT.md` (own paragraphs);
+- `crates/protocol-oteryn/src/lib.rs` (one `mod` line and one `REGISTERED_CAPABILITY_IDS_V1` entry
+  each);
+- `apps/game-server/src/gameplay_transport/mod.rs` (one `mod` line and one dispatch arm each).
+
+`gameplay_transport/item_move.rs` is created by ITEM-MOVE-1 and then owned in turn by ITEM-MOVE-2a,
+BAGS-1 and ITEM-MOVE-2b; the order in §0.2 never has two of them open at once except BAGS-1 and
+ITEM-MOVE-2b, which merge `main` as a union and each add only their own arms.
+
+## 1. Rulings
+
+### 1.1 ITEM-VIEW-1 is split into a wire slice and a server slice
+
+ITEM-MOVE-WIRE-0 gives ITEM-VIEW-1 the wire, the session handle table, the corpse open, resume
+continuity and the client views. That is three review kinds (protocol, session, client) in one PR.
+Following the ANALYSER-WIRE-1 precedent:
+
+- **ITEM-VIEW-1a** registers the whole ITEM-MOVE-WIRE-0 wire: capability 4 (`offered: false`),
+  domains 9 and 11, the handle field on the D85 item entry, USE field 2 `ItemTargetV1 {handle}`,
+  and command type 9 with its one `MAIN_BACKPACK` destination and its results table (§5 there). It
+  has no server behaviour. Registering command 9 here keeps one protocol review for the whole
+  WIRE-0 wire; ITEM-MOVE-1 still owns its handling.
+- **ITEM-VIEW-1b** builds the server side of §4: the handle table, the domain 9 and 11 views and
+  revisions, the corpse open and close, and resume continuity.
+- **ITEM-MOVE-1** offers capability 4. A session that can see items but not take them has no
+  playable value, so the capability is offered only when the loot loop is complete.
+- **ITEM-CLIENT-1** builds the client windows that WIRE-0 assigned to ITEM-VIEW-1.
+
+### 1.2 ITEM-MOVE-1 needs no migration
+
+The corpse-entry TRANSFER is the existing `0014` shape through `item_transfer.rs`, reached by
+`combat/pickup.rs` `settle_corpse_pickup`. Replay first (WIRE-0 §5) uses the writer's existing
+committed-outcome lookup by CommandRef (`reconcile_item_transfer`). If the worker finds that the
+lookup cannot return a committed outcome after the handle became `STALE`, it stops with a BLOCKER
+and asks for a migration lease; it does not add a result table on its own.
+
+### 1.3 ITEM-MOVE-2a, 2b, BAGS-1 and EXERCISE-1 each need one migration
+
+- 2a: the nine slot rows, the per-hand uniqueness, deletion of a backpack entry by TRANSFER, the
+  widened TRANSFER guard and the swap receipt (WIRE-1 §6.2). `0011` defines only the container
+  slot.
+- 2b: Ground insertion by TRANSFER, removal evidence keyed by (item, transaction), nullable
+  `corpse_ref`, the per-tile lock and the per-channel counter shards (WIRE-1 §6.2).
+- BAGS-1: entries keyed by parent item and the tree guards (BAGS-0 §3-§4).
+- EXERCISE-1: the composed checkpoint and composed expiry burn shapes, which carry a build receipt
+  in the same transaction (EXERCISE-0 §5.1, §5.3; TIMED-ITEM-0B §12). Earlier guards are amended by
+  replacement in the new migration, never edited.
+
+### 1.4 ITEM-SEM-2b-2 starts now on `main`
+
+The ITEM-SEM-2b-2 packet (#1672) is based on `main after #1599 merges`. #1599 was closed as
+superseded when carrier #1675 merged (D434), and D318 is released. The packet starts now with
+`base: main` and `depends_on: []`; its owned paths and acceptance are unchanged. ITEM-MOVE-2a's
+legality check needs its level, vocation, hands and slot facts in content (WIRE-1 brief).
+
+### 1.5 EQUIP-CONTENT-1 waits for the two content slices before it
+
+EQUIP-CONTENT-1 regenerates the same content tree and lowering paths as ITEM-SEM-2b-2 and
+TIMED-CONTENT-1, and its `timed` flag is derived from TIMED-CONTENT-1's `charges` and
+`temporal.duration_ms` facts (EQUIP-0 §3.2). It starts after both have merged, on a fresh `main`.
+
+### 1.6 Promoted vocations are matched by ITEM-MOVE-2a
+
+ITEM-SEM-2b-2 §6 lowers a base vocation key and leaves promotion matching to the equip rule. 2a's
+requirement check admits a promoted vocation for its base key (an Elite Knight for `knight`), with
+a test per vocation pair.
+
+### 1.7 Slot call sites of the timed host
+
+The ARCH-SLOT-WIRING-1 conditions (#1696; WIRE-1 §4 and §5 amendments; TIMED batch §2.3) bind
+ITEM-MOVE-2a and ITEM-MOVE-2b as written there. If TIMED-RT-1b has merged when either is
+allocated, that packet wires the `timed_item_host` call sites, with the stop, empty-lane and rehost
+tests, as a merge condition. Otherwise TIMED-RT-1b does, and the worker of the later PR names the
+call-site files at allocation.
+
+### 1.8 Not packeted now
+
+| Slice | Why not now | Starts with |
+|---|---|---|
+| DEPOT-WIRE-1, DEPOT-CONTENT-1 | need MAP-LOAD-1 and MAP-WIRE-1 (lockers are map items) | the map packets |
+| DEPOT-1 | its prerequisites (HOUSE-CUSTODY-1, ITEM-MOVE-2a) are or will be here, but without DEPOT-WIRE-1 it stores items no player can reach (playable-first) | DEPOT-WIRE-1 |
+| IMBUE-1, FORGE-1 (1b already packeted) | GOLD-FEE-2 is not built and not packeted | a GOLD-FEE-2 packet |
+| IMBUE-WIRE-1, IMBUE-CONTENT-1, FORGE-CONTENT-1 | ITEM-SEM-USE and USE-WIRE-V1 item use are not built | ITEM-USE-WIRE-1 |
+| EXERCISE-CONTENT-1 | needs TIMED-CONTENT-1 (in flight) and WO-2 | after TIMED-CONTENT-1 |
+| EQUIP-PARITY-1, EXERCISE-PARITY-1 | fixtures on top of their runtime slices | after EQUIP-RT-1, EXERCISE-1 |
+| BAGS-USE-1, BAGS-GROUND-1, BAGS-DEPOT-1, BAGS-TRADE-1 | wait on ITEM-USE-1, ITEM-MOVE-2b, DEPOT-1, INBOX-1, TRADE-1 | their prerequisites |
+
+The missing roots that block the most here are MAP-LOAD-1 (and through it MAP-OVERLAY-1 and
+MAP-WIRE-1), ITEM-USE-WIRE-1 and GOLD-FEE-2. The architect packets them in a separate batch when
+the control plane asks.
+
+## 2. Packets
+
+Every packet's validation includes `python3 tools/agents/validate_governance.py` and
+`git diff --check`; Rust packets also run `cargo fmt --all --check` and `cargo clippy --locked
+--all-targets --quiet -- -D warnings` on the crates they touch. Each task record is archived in the
+PR's final authoring commit.
+
+### 2.1 ITEM-VIEW-1a
+
+```yaml
+task_id: OTV2-20261003-item-view-1a
+decision: ITEM-MOVE-WIRE-0 §4 and §5 (wire only), D212; this bundle §1.1
+worker: oteryn-impl-worker   # wire registration and codecs; no server behaviour
+review: independent protocol review (Codex, final frozen head)
+branch: claude/item-view-1a-20261003
+base: main
+migration_lease: none
+depends_on: []
+owned_paths:
+  - docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json      # shared register (§0.3)
+  - docs/contracts/RESOURCE_LIMITS_REGISTRY.json         # ITEMV0-RL-01/-02/-03; own rows only
+  - docs/contracts/protocol-oteryn/v1/item_view_v1.proto  # new: domains 9 and 11, ItemTargetV1, command 9
+  - docs/contracts/protocol-oteryn/v1/world_object_v1.proto   # USE field 2 only
+  - docs/contracts/protocol-oteryn/v1/world_spatial_v1.proto  # the handle field on the D85 item entry only
+  - crates/protocol-oteryn/src/{lib,item_view,item_view_tests,world_object,world_spatial}.rs
+  - docs/agents/tasks/archive/OTV2-20261003-item-view-1a.md
+validation:
+  - cargo test --locked -p oteryn-protocol-oteryn
+  - cargo check --locked --workspace --all-targets
+```
+
+Acceptance:
+
+- Capability 4 `ITEM_VIEW_MOVE_V1`, `offered: false`, requires capability 6. Domains 9 and 11 with
+  their snapshot and delta types; command type 9 with `{source: handle, destination}` and the
+  `MAIN_BACKPACK` destination only; the WIRE-0 §5 results, at most 4 bytes.
+- USE field 2 becomes `ItemTargetV1 {handle}`; fields 3 and 4 stay reserved. A session without
+  capability 4 that sends field 2 fails closed.
+- The handle is a `uint64`, non-zero; the D85 item entry carries it only under capability 4, and a
+  session without it decodes the entry unchanged (round-trip test both ways).
+- Rows: `ITEMV0-RL-01` 30 entries (WIRE-1 §6.3 supersedes WIRE-0's 21), `ITEMV0-RL-02` the corpse
+  container capacity, `ITEMV0-RL-03` live handles per session, each measured, with max and max+1
+  codec tests; snapshot and delta bytes within FND-02.
+- Not in scope: any server or client code, offering capability 4, equipment destinations.
+
+### 2.2 ITEM-SEM-2b-2 (rebased)
+
+The #1672 packet, unchanged except `base: main` and `depends_on: []` (§1.4). Worker
+oteryn-impl-worker, content review.
+
+### 2.3 SPEED-1
+
+```yaml
+task_id: OTV2-20261003-speed-1
+decision: CONDITIONS-0 §4 (as amended by CREATURE-AI-0 §5.1)
+worker: oteryn-impl-worker
+review: movement review (Codex, final frozen head)
+branch: claude/speed-1-20261003
+base: main
+migration_lease: none
+depends_on: []
+owned_paths:
+  - tools/content-schema/step-speed/{generate_step_speed_table.py,test_generate_step_speed_table.py,README.md}   # new, offline generator
+  - content/movement/step_speed_v1.json                  # new: generated table with its digest
+  - apps/game-server/src/movement.rs
+  - apps/game-server/src/movement/{speed,pacing}.rs      # new
+  - crates/protocol-oteryn/src/{lib,world_spatial}.rs    # TOO_EARLY disposition and capability 13 only
+  - docs/contracts/protocol-oteryn/v1/world_spatial_v1.proto  # TOO_EARLY only
+  - docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json      # capability 13; shared register
+  - apps/client/src/input.rs                             # step pacing on the client
+  - docs/agents/tasks/archive/OTV2-20261003-speed-1.md
+validation:
+  - cargo test --locked -p oteryn-game-server --quiet
+  - cargo test --locked -p oteryn-protocol-oteryn
+  - cargo test --locked -p oteryn-client --quiet
+  - python3 -m unittest tools/content-schema/step-speed/test_generate_step_speed_table.py
+```
+
+Acceptance:
+
+- Effective speed: player base 110 + level − 1, plus the `SPEED` condition delta, plus an
+  equipment term that is 0 until EQUIP-RT-1 supplies it (one function argument), clamped to
+  [10, 65,535].
+- The step-speed table is generated offline once, checked in with its digest, and read by the
+  runtime and the client; nothing evaluates `ln` at runtime. A test checks the digest and sample
+  values against Canary.
+- Step duration per §4.2, rounded up to 50 ms, with ground speed from the tile's ground item
+  (default 150). Diagonal × 3 only where diagonal steps exist.
+- Players: one buffered step; a second early request is `TOO_EARLY` under capability 13
+  `PACED_MOVEMENT_V1` and `Rejected` without it. The existing movement tests are re-measured
+  against pacing.
+- Not in scope: creature step timing (CREATURE-MOVE-1), chase steps (RANGED-0).
+
+### 2.4 ITEM-VIEW-1b
+
+```yaml
+task_id: OTV2-20261003-item-view-1b
+decision: ITEM-MOVE-WIRE-0 §4 (server side); this bundle §1.1
+worker: oteryn-hard-worker   # session resume state and session-generation scoped handle table
+review: independent protocol and session review (Codex, final frozen head)
+branch: claude/item-view-1b-20261003
+base: main after ITEM-VIEW-1a merges
+migration_lease: none
+depends_on: [ITEM-VIEW-1a]
+owned_paths:
+  - apps/game-server/src/gameplay_transport/item_view.rs        # new: handle table, domains 9 and 11
+  - apps/game-server/src/gameplay_transport/item_view_tests.rs  # new
+  - apps/game-server/src/gameplay_transport/resume.rs           # handle counter and the two high-water revisions only
+  - apps/game-server/src/gameplay_transport/world_spatial.rs    # the handle field on item entries only
+  - apps/game-server/src/gameplay_transport/mod.rs              # shared register
+  - apps/game-server/src/interaction/dispatch.rs                # the USE item-target arm only
+  - apps/game-server/src/interaction/corpse_open.rs             # new: open and close (§4.3)
+  - docs/agents/tasks/archive/OTV2-20261003-item-view-1b.md
+validation:
+  - cargo test --locked -p oteryn-game-server --quiet
+```
+
+Acceptance:
+
+- Handles are monotonic per `GameSessionId`, never reused, live only while the item is in one of
+  the session's views, bounded by `ITEMV0-RL-03` (max and max+1). A gone or invisible item is
+  `STALE`. A handle never exposes an ItemInstanceId, placement key or row.
+- Domain 9 shows the main backpack slot and its direct entries from `read_character_backpack`;
+  domain 11 shows the one open corpse. Deltas only after the durable commit that changed the view;
+  revisions monotonic per `GameSessionId` (FND-02 §15).
+- Resume and channel transfer carry the handle counter and the two high-water revisions; every
+  snapshot after them reissues fresh handles, and every older handle is `STALE` (test).
+- USE with an item target opens a corpse within Chebyshev 1 on the same floor; dispositions
+  `COMMITTED`, `TOO_FAR`, `STALE_STATE`, `NOTHING_TO_USE`. Opening writes nothing. Every closing
+  trigger of §4.3 has a test. The D133 disclosure is recorded as `PARITY_PENDING`.
+- Capability 4 stays `offered: false`; the tests negotiate it directly.
+- Not in scope: command 9 handling, the client.
+
+### 2.5 ITEM-EQUIP-WIRE-1
+
+```yaml
+task_id: OTV2-20261003-item-equip-wire-1
+decision: ITEM-MOVE-WIRE-1 §3
+worker: oteryn-impl-worker
+review: independent protocol review (Codex, final frozen head)
+branch: claude/item-equip-wire-1-20261003
+base: main after ITEM-VIEW-1a merges
+migration_lease: none
+depends_on: [ITEM-VIEW-1a]
+owned_paths:
+  - docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json      # capability 12; shared register
+  - docs/contracts/protocol-oteryn/v1/item_view_v1.proto  # EquipmentSlotV1, the two destinations, the slots in domain 9, the new results
+  - crates/protocol-oteryn/src/{lib,item_view,item_view_tests}.rs
+  - docs/agents/tasks/archive/OTV2-20261003-item-equip-wire-1.md
+validation:
+  - cargo test --locked -p oteryn-protocol-oteryn
+  - cargo check --locked --workspace --all-targets
+```
+
+Acceptance:
+
+- Capability 12 `ITEM_EQUIP_DROP_V1`, `offered: false`, requires capability 4. Without it command 9
+  and domain 9 decode exactly as ITEM-VIEW-1a (test).
+- Destinations `EQUIPMENT {slot}` and `GROUND {WorldTilePosition}`; `EquipmentSlotV1` with
+  `UNSPECIFIED = 0` and the nine non-container slots; no count field. `UNSPECIFIED` fails closed.
+- Domain 9 gains the nine slots (empty, or handle, definition, count, sub-type), within
+  `ITEMV0-RL-01` 30.
+- Results `SLOT_MISMATCH`, `REQUIREMENT_NOT_MET`, `BLOCKED`; still at most 4 bytes.
+- The proto enum values are never durable slot keys (a doc comment and a test that the mapping to
+  GAME-ITEM-01 §6.1 keys is a separate table).
+
+### 2.6 ITEM-MOVE-1
+
+```yaml
+task_id: OTV2-20261003-item-move-1
+decision: ITEM-MOVE-WIRE-0 §5; this bundle §1.1-§1.2
+worker: oteryn-hard-worker   # durable value through the TRANSFER writer, replay
+review: independent persistence review (Codex, final frozen head)
+branch: claude/item-move-1-20261003
+base: main after ITEM-VIEW-1b merges
+migration_lease: none
+depends_on: [ITEM-VIEW-1b]
+owned_paths:
+  - apps/game-server/src/gameplay_transport/item_move.rs         # new: command 9 handling
+  - apps/game-server/src/gameplay_transport/item_move_tests.rs   # new
+  - apps/game-server/src/gameplay_transport/mod.rs               # shared register
+  - apps/game-server/src/combat/pickup.rs                        # only if settle_corpse_pickup needs the CommandRef cause plumbed
+  - apps/game-server/tests/corpse_transfer_postgres.rs
+  - apps/game-server/tests/support/corpse_transfer_postgres_cases.rs
+  - docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json              # capability 4 offered: true only
+  - docs/agents/tasks/archive/OTV2-20261003-item-move-1.md
+validation:
+  - cargo test --locked -p oteryn-game-server --quiet
+  - OTERYN_TEST_POSTGRES_ADMIN_URL=... cargo test --locked -p oteryn-game-server --test corpse_transfer_postgres --quiet
+```
+
+Acceptance:
+
+- Source: an entry of the open corpse only; anything else `NOT_SUPPORTED`. Reach checked by the
+  runtime before the TRANSFER. Destination by the B3 rule (container slot or main backpack).
+- Replay first: the CommandRef's committed outcome is looked up before the handle; a committed
+  command returns `MOVED` even when its handle is `STALE` after a reconnect (PG test). The frozen
+  intent binds the ItemInstanceId and destination, never the handle.
+- Every `ItemTransferRefusal` maps to the WIRE-0 §5 table (one test per row); D133 and D134 on the
+  database clock.
+- The open corpse's domain 11 delta and the domain 9 delta follow the commit.
+- Capability 4 becomes `offered: true` (§1.1).
+- Not in scope: equipment, Ground, partial counts.
+
+### 2.7 ITEM-CLIENT-1
+
+```yaml
+task_id: OTV2-20261003-item-client-1
+decision: ITEM-MOVE-WIRE-0 §4 (client views); this bundle §1.1
+worker: oteryn-impl-worker
+review: client review (Codex, final frozen head)
+branch: claude/item-client-1-20261003
+base: main after ITEM-MOVE-1 merges
+migration_lease: none
+depends_on: [ITEM-MOVE-1]
+owned_paths:
+  - apps/client/src/inventory.rs    # new: backpack and open-container windows
+  - apps/client/src/{lib,scene,windows_shell,input}.rs   # registration, corpse USE, drag to backpack only
+  - docs/agents/tasks/archive/OTV2-20261003-item-client-1.md
+validation:
+  - cargo test --locked -p oteryn-client --quiet
+```
+
+Acceptance:
+
+- The client negotiates capability 4, shows domain 9 as the backpack window and domain 11 as the
+  corpse window, opens a corpse by USE on it, and loots an entry by dragging it to the backpack
+  (command 9). Results are shown as status text.
+- A `STALE` result refreshes nothing locally; the next snapshot or delta does.
+- Test: a scripted session that opens a corpse and loots one entry against a test server.
+- Not in scope: equipment slots (they come with ITEM-MOVE-2a's client follow-up, packeted then).
+
+### 2.8 ITEM-MOVE-2a
+
+```yaml
+task_id: OTV2-20261003-item-move-2a
+decision: ITEM-MOVE-WIRE-1 §4 and §6 (as amended by ARCH-SLOT-WIRING-1); this bundle §1.3, §1.6, §1.7
+worker: oteryn-hard-worker   # persistence, DUR-03 shapes, guards
+review: independent persistence review (Codex, final frozen head)
+branch: claude/item-move-2a-20261003
+base: main after ITEM-MOVE-1, ITEM-EQUIP-WIRE-1 and ITEM-SEM-2b-2 merge
+migration_lease: 0063 (proposed)
+depends_on: [ITEM-MOVE-1, ITEM-EQUIP-WIRE-1, ITEM-SEM-2b-2]
+owned_paths:
+  - apps/game-server/migrations/0063_item_equipment_slots.sql
+  - apps/game-server/src/durability/item_transfer.rs
+  - apps/game-server/src/durability/item_transfer_audit.rs
+  - apps/game-server/src/domain/equipment.rs
+  - apps/game-server/src/gameplay_transport/item_move.rs
+  - apps/game-server/src/gameplay_transport/item_move_tests.rs
+  - apps/game-server/src/gameplay_transport/item_view.rs        # the nine slots in domain 9 only
+  - apps/game-server/src/durability/mod.rs                      # shared register
+  - apps/game-server/tests/item_transfer_postgres.rs
+  - apps/game-server/tests/support/item_transfer_postgres_cases.rs
+  - docs/contracts/RESOURCE_LIMITS_REGISTRY.json                # DUR03-RL-01/-02/-06-EQUIP-SWAP, GAMEITEM01-REACHABLE-ITEMS; own rows only
+  - docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json             # capability 12 offered: true only
+  - docs/architecture/DUR-03_ITEM_TRANSACTION_AND_ANTI_DUPLICATION_CONTRACT.md  # §39 supersessions of WIRE-1 §6.1; own paragraphs
+  - docs/agents/tasks/archive/OTV2-20261003-item-move-2a.md
+call_sites: the timed_item_host slot call sites when TIMED-RT-1b has merged first (§1.7); the worker names each file at allocation and adds only the calls
+validation:
+  - cargo test --locked -p oteryn-game-server --quiet
+  - OTERYN_TEST_POSTGRES_ADMIN_URL=... cargo test --locked -p oteryn-game-server --test item_transfer_postgres --quiet
+```
+
+Acceptance:
+
+- Equip a whole backpack entry into one of the nine slots; unequip to the main backpack by the B3
+  rule; swap when the slot is occupied (two items, entry count unchanged).
+- Legality by `check_equip` with the content slot and hands: unknown semantics, a hands conflict
+  and any `container` item are `SLOT_MISMATCH`. Level and vocation inside the transaction under
+  `character_root`; a promoted vocation matches its base key (§1.6). Premium from
+  PROD-ENTITLEMENTS-01 §6 evidence at commit, fail closed when stale. An item stays equipped when
+  the level drops or Premium ends.
+- Migration 0063 makes the WIRE-1 §6.2 2a deltas, amending the 0011 and 0014 guards by replacement:
+  slot rows keyed by semantic slot key in the single-location guard; per-hand uniqueness for a
+  two-handed claim; backpack entry deletion by TRANSFER; the widened source and receiver kinds;
+  the swap receipt with two sources and two receivers.
+- Rows of WIRE-1 §6.3 for 2a with max and max+1 tests; `DUR03-RL-07` worst-case swap proven within
+  the envelope.
+- Equipping never advances `CharacterRevision` (test).
+- The §1.7 slot call sites when TIMED-RT-1b is already on `main`, with the stop, empty-lane, reload
+  and rejection-rehost tests.
+- Capability 12 becomes `offered: true` for the `EQUIPMENT` destination; `GROUND` stays
+  `NOT_SUPPORTED` until 2b.
+- Not in scope: Ground, quivers (QUIVER-1), partial counts (STACK-0), equipment effects.
+
+### 2.9 EQUIP-CONTENT-1
+
+```yaml
+task_id: OTV2-20261003-equip-content-1
+decision: EQUIP-0 §3.1-§3.2; this bundle §1.5
+worker: oteryn-impl-worker   # content lane
+review: content review (Codex, final frozen head)
+branch: claude/equip-content-1-20261003
+base: main after ITEM-SEM-2b-2 and TIMED-CONTENT-1 merge
+migration_lease: none
+depends_on: [ITEM-SEM-2b-2, TIMED-CONTENT-1]
+owned_paths:
+  - tools/content-schema/item-authoring/{lower_wiki_stats_packet.py,test_lower_wiki_stats_packet.py,README.md}
+  - apps/game-server/src/content/{item_abilities.rs,mod.rs}     # new typed ability rows
+  - apps/game-server/examples/materialize_content_world_project_v2.rs
+  - apps/game-server/tests/content_world_project_repository.rs
+  - content/world/** and the content tree (regenerated)
+  - docs/agents/evidence/OTV2-20261003-equip-abilities-v1.json
+  - docs/agents/tasks/archive/OTV2-20261003-equip-content-1.md
+validation:
+  - python3 -m unittest tools/content-schema/item-authoring/test_lower_wiki_stats_packet.py
+  - cargo test --locked -p oteryn-game-server --test content_world_project_repository --quiet
+```
+
+Acceptance:
+
+- The six typed abilities of §3.1 on item definitions, TibiaWiki first, Canary `items.xml` (the
+  D384 pin) as fallback, with Canary's doubled speed unit converted.
+- `timed` is derived from `charges.count` or `temporal.duration_ms`; the validator rejects a
+  definition whose flag and fields disagree.
+- Extra-slot items (`slot = Extra Slot`) are marked as such.
+- Evidence file lists every source per item; a definition with no source has no abilities.
+
+### 2.10 EQUIP-RT-1
+
+```yaml
+task_id: OTV2-20261003-equip-rt-1
+decision: EQUIP-0 §3-§4
+worker: oteryn-hard-worker   # combat, derived reads on the ability pipeline
+review: independent combat and determinism review (Codex, final frozen head)
+branch: claude/equip-rt-1-20261003
+base: main after ITEM-MOVE-2a, SPEED-1 and EQUIP-CONTENT-1 merge
+migration_lease: none
+depends_on: [ITEM-MOVE-2a, SPEED-1, EQUIP-CONTENT-1]
+owned_paths:
+  - apps/game-server/src/domain/equipment_effects.rs        # new: the active set and the evaluation plan
+  - apps/game-server/src/domain/equipment_effects_tests.rs  # new
+  - apps/game-server/src/domain/mod.rs                      # one mod line
+  - apps/game-server/src/ability/{effects,condition}.rs     # the PROTECTION stage and SUPPRESS admission only
+  - apps/game-server/src/movement/speed.rs                  # the equipment term only
+  - apps/game-server/src/gameplay_transport/item_move.rs    # recompute calls on equip and unequip only
+  - docs/agents/tasks/archive/OTV2-20261003-equip-rt-1.md
+validation:
+  - cargo test --locked -p oteryn-game-server --quiet
+```
+
+Acceptance:
+
+- The equipment owner keeps each actor's active set (§3.2) and recomputes it on equip, unequip,
+  Premium change, and on death, transfer and respawn where those paths exist on `main`. It writes
+  nothing durable; after a restart it is derived again (test).
+- A `timed` item grants nothing (fail closed); the Extra slot grants all abilities only to its own
+  items, else only `LIGHT`.
+- The §3.3 plan: slot order, then definition key, then ability order; flats sum; percent stats on
+  the base, then flats; i64 with one truncation; protections summed, clamped to [-100, 100],
+  applied once at the GAME-ABILITY-01 §10 incoming stage.
+- Skills, stats, speed, protections and light are derived reads; nothing is written to A13 or the
+  build state. `SUPPRESS` refuses admission and removes an existing instance. Lowering a maximum
+  clamps the current value.
+- Determinism test: the same equipment in any equip order yields the same derived values.
+- Not in scope: imbuement protections (IMBUE-RT-1), parity fixtures (EQUIP-PARITY-1).
+
+### 2.11 BAGS-WIRE-1
+
+```yaml
+task_id: OTV2-20261003-bags-wire-1
+decision: BAGS-0 §5
+worker: oteryn-impl-worker
+review: independent protocol review (Codex, final frozen head)
+branch: claude/bags-wire-1-20261003
+base: main after ITEM-VIEW-1b and ITEM-EQUIP-WIRE-1 merge
+migration_lease: none
+depends_on: [ITEM-VIEW-1b, ITEM-EQUIP-WIRE-1]
+owned_paths:
+  - docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json        # capability 14, domain 14, command 21; shared register
+  - docs/contracts/RESOURCE_LIMITS_REGISTRY.json           # BAGS-0 §10 wire rows; own rows only
+  - docs/contracts/protocol-oteryn/v1/container_tree_v1.proto   # new
+  - docs/contracts/protocol-oteryn/v1/item_view_v1.proto   # the CONTAINER destination only
+  - crates/protocol-oteryn/src/{lib,container_tree,container_tree_tests,item_view}.rs
+  - apps/game-server/src/gameplay_transport/container_view.rs   # new: the up-to-16 views, inner handles, the view command
+  - apps/game-server/src/gameplay_transport/mod.rs         # shared register
+  - docs/agents/tasks/archive/OTV2-20261003-bags-wire-1.md
+validation:
+  - cargo test --locked -p oteryn-protocol-oteryn
+  - cargo test --locked -p oteryn-game-server --quiet
+```
+
+Acceptance:
+
+- Capability 14 `CONTAINER_TREE_V1`, `offered: false` until BAGS-1, requires capabilities 4 and 12.
+  Domain 14 holds up to 16 container views; command 21 opens, closes and goes up; inner entries get
+  handles from the ITEM-VIEW-1b table; command 9 gains `CONTAINER {handle}`.
+- Domains 9 and 11 keep their meaning; corpses stay at depth 1.
+- The BAGS-0 §10 wire rows with max and max+1 tests.
+- Not in scope: any durable tree move (BAGS-1).
+
+### 2.12 BAGS-1
+
+```yaml
+task_id: OTV2-20261003-bags-1
+decision: BAGS-0 §3, §4, §6, §10; this bundle §1.3
+worker: oteryn-hard-worker   # persistence, tree guards, locks
+review: independent persistence and performance review (Codex, final frozen head)
+branch: claude/bags-1-20261003
+base: main after ITEM-MOVE-2a and BAGS-WIRE-1 merge
+migration_lease: 0065 (proposed)
+depends_on: [ITEM-MOVE-2a, BAGS-WIRE-1]
+owned_paths:
+  - apps/game-server/migrations/0065_item_container_trees.sql
+  - apps/game-server/src/durability/item_tree.rs           # new
+  - apps/game-server/src/durability/item_tree_audit.rs     # new
+  - apps/game-server/src/durability/mod.rs                 # shared register
+  - apps/game-server/src/gameplay_transport/item_move.rs   # the CONTAINER destination arm only
+  - apps/game-server/tests/item_tree_postgres.rs           # new
+  - apps/game-server/tests/support/item_tree_postgres_cases.rs  # new
+  - apps/game-server/tests/durability_postgres.rs          # shared register
+  - docs/contracts/RESOURCE_LIMITS_REGISTRY.json           # BAGS-0 §10 persistence rows; own rows only
+  - docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json        # capability 14 offered: true only
+  - docs/architecture/DUR-03_ITEM_TRANSACTION_AND_ANTI_DUPLICATION_CONTRACT.md  # own paragraphs
+  - docs/agents/tasks/archive/OTV2-20261003-bags-1.md
+validation:
+  - cargo test --locked -p oteryn-game-server --quiet
+  - OTERYN_TEST_POSTGRES_ADMIN_URL=... cargo test --locked -p oteryn-game-server --test item_tree_postgres --quiet
+```
+
+Acceptance:
+
+- Entries keyed by parent item, the tree guards (depth, item count, no cycle), the BAGS-0 §4.2 lock
+  order, the tree move, moves into a nested container, and the container slot with contents.
+- The `GAMEITEM01-REACHABLE-ITEMS` row is re-registered for trees as BAGS-0 §10 says.
+- Every row with max and max+1 tests, and a performance test of the worst-case tree move.
+- Not in scope: Ground trees (BAGS-GROUND-1), depot and trade trees, nested use.
+
+### 2.13 ITEM-MOVE-2b
+
+```yaml
+task_id: OTV2-20261003-item-move-2b
+decision: ITEM-MOVE-WIRE-1 §5 and §6 (as amended by ARCH-SLOT-WIRING-1); D191, D222; this bundle §1.3, §1.7
+worker: oteryn-hard-worker   # persistence, Ground writes, scope fence
+review: independent persistence review (Codex, final frozen head)
+branch: claude/item-move-2b-20261003
+base: main after ITEM-MOVE-2a and MAP-OVERLAY-1 merge
+migration_lease: 0064 (proposed)
+depends_on: [ITEM-MOVE-2a, MAP-OVERLAY-1]
+owned_paths:
+  - apps/game-server/migrations/0064_item_ground_drop.sql
+  - apps/game-server/src/durability/item_transfer.rs
+  - apps/game-server/src/durability/item_transfer_audit.rs
+  - apps/game-server/src/gameplay_transport/item_move.rs      # the GROUND destination and Ground source arms only
+  - apps/game-server/src/gameplay_transport/world_spatial.rs  # the D222 order: actors before items
+  - apps/game-server/tests/item_transfer_postgres.rs
+  - apps/game-server/tests/support/item_transfer_postgres_cases.rs
+  - docs/contracts/RESOURCE_LIMITS_REGISTRY.json              # ITEMMOVE1-RL-01/-02; own rows only
+  - docs/architecture/DUR-03_ITEM_TRANSACTION_AND_ANTI_DUPLICATION_CONTRACT.md  # own paragraphs
+  - docs/agents/tasks/archive/OTV2-20261003-item-move-2b.md
+call_sites: the timed_item_host call sites of a slot-to-Ground drop when TIMED-RT-1b has merged first (§1.7)
+validation:
+  - cargo test --locked -p oteryn-game-server --quiet
+  - OTERYN_TEST_POSTGRES_ADMIN_URL=... cargo test --locked -p oteryn-game-server --test item_transfer_postgres --quiet
+```
+
+Acceptance:
+
+- Drop a whole backpack entry or slot item within 15 tiles, same floor, visible, in line of sight,
+  on a tile that accepts items; house tiles `BLOCKED`. Pick up a live pickupable non-corpse Ground
+  item from Chebyshev 1 by the `0011` shape.
+- Migration 0064 makes the WIRE-1 §6.2 2b deltas by replacement; the §32 scope fence on every
+  Ground write.
+- `ITEMMOVE1-RL-01` 10 per tile under a real tile row lock; `ITEMMOVE1-RL-02` 20,000 per channel,
+  alarm at 16,000, with shard rows; the counter changes in the same transaction as each drop,
+  pickup and `WorldReset` retirement (tests for each, and that the counter equals the live rows).
+- D222: actors rank before items in D87's order; dropped items never push an actor out of a
+  snapshot (test at the 256 ceiling).
+- The §1.7 drop call sites when TIMED-RT-1b is on `main`, with tests.
+- Not in scope: Ground to Ground (GROUND-MOVE-1), Ground to slot, trees (BAGS-GROUND-1).
+
+### 2.14 EXERCISE-1
+
+```yaml
+task_id: OTV2-20261003-exercise-1
+decision: EXERCISE-0 §4-§5; TIMED-ITEM-0B §12; TIMED batch §2.3 (the exercise binding and the two composed writers moved here); this bundle §1.3
+worker: oteryn-hard-worker   # persistence, composed DUR-03 writers, determinism
+review: independent persistence and determinism review (Codex, final frozen head)
+branch: claude/exercise-1-20261003
+base: main after TIMED-RT-1b, EXERCISE-CONTENT-1 and WORLDINT-USE-1 merge
+migration_lease: 0066 (proposed)
+depends_on: [TIMED-RT-1b, EXERCISE-CONTENT-1, WORLDINT-USE-1]
+owned_paths:
+  - apps/game-server/migrations/0066_exercise_training_checkpoint.sql
+  - apps/game-server/src/domain/exercise.rs              # new: start, tick, stop, idle
+  - apps/game-server/src/domain/exercise_tests.rs        # new
+  - apps/game-server/src/domain/mod.rs                   # one mod line
+  - apps/game-server/src/domain/timed_item_host.rs       # the exercise binding (place 3) only
+  - apps/game-server/src/durability/item_timed_state.rs  # the composed checkpoint and composed expiry burn writers only
+  - apps/game-server/src/durability/item_timed_state_audit.rs
+  - apps/game-server/src/durability/character_build.rs   # the `training` receipt cause only
+  - apps/game-server/tests/item_timed_state_postgres.rs
+  - apps/game-server/tests/support/item_timed_state_postgres_cases.rs
+  - docs/contracts/RESOURCE_LIMITS_REGISTRY.json         # EXERCISE0-RL-01/-02/-03; boundary_tests of the two composed rows; own rows only
+  - docs/architecture/DUR-03_ITEM_TRANSACTION_AND_ANTI_DUPLICATION_CONTRACT.md  # own paragraphs
+  - docs/agents/tasks/archive/OTV2-20261003-exercise-1.md
+call_sites: the USE-WITH arm of WORLDINT-USE-1's gate and the stop hooks of §4.3; the worker names each file at allocation and adds only the calls
+validation:
+  - cargo test --locked -p oteryn-game-server --quiet
+  - OTERYN_TEST_POSTGRES_ADMIN_URL=... cargo test --locked -p oteryn-game-server --test item_timed_state_postgres --quiet
+```
+
+Acceptance:
+
+- Start by `USE-WITH` weapon on dummy with the six checks of §4.1 in order, each refusal changing
+  nothing; the `exercise_dummy` cooldown starts only at an admitted start.
+- 2 s ticks on the channel owner's clock; live charges and tries only; no random draw; every stop
+  of §4.3 has a test; the idle timer pauses and resumes.
+- The composed checkpoint: build receipt (cause `training`) and the timed-row `STATE_MUTATION` in
+  one transaction under `character_root`, at the cadence, at every level advance, at the stop,
+  before death, at logout and handoff; never split; a mismatch writes nothing and stops the
+  session. The §5.2 value guard by the receipt's `exercise` provenance fields.
+- The last charge retires the weapon by the composed expiry burn in the same transaction; 0 charges
+  are never stored.
+- Writer-backed max and max+1 tests on the composed checkpoint and composed expiry burn rows, added
+  to their `boundary_tests` (TIMED batch §2.3 first item; merge condition).
+- `TIMEDITEM0B-RL-04` repeated with the binding as the 11th live item.
+- Crash between checkpoints loses at most one interval of charges and tries together (PG test).
+- Not in scope: house dummies' single-user lane beyond check 6, parity fixtures.
+
+## 3. Decision test
+
+- Every requested slice (ITEM-MOVE-2a, ITEM-MOVE-2b, EQUIP-RT-1, EXERCISE-1) has a packet with
+  owned paths, dependencies, a migration need and a worker kind.
+- Every other slice of EQUIP-0, EXERCISE-0, DEPOT-0, BAGS-0 and IMBUE-FORGE-0 is either packeted or
+  listed in §1.8 with what it waits on.
+- No packet starts before its prerequisites; no two open packets own the same path except the
+  §0.3 registers.
+- No ruling widens an accepted decision; §1.1 and §1.5 only order or split work, and §1.6 applies
+  ITEM-SEM-2b-2 §6 as written.
