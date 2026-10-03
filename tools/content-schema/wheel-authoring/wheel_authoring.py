@@ -367,6 +367,9 @@ def validate_evidence(candidate, candidate_bytes, evidence_path=None):
     browser=read(ROOT/browser_binding['file'])
     require(browser['schema']=='OTERYN_WHEEL_BROWSER_SOURCE_AUDIT/v1','EVIDENCE_BROWSER_SCHEMA')
     require(browser['runtime_admitted'] is False and browser['live_global_parity_confirmed'] is False,'EVIDENCE_BROWSER_ADMISSION')
+    selection=read(ROOT/'samples/reference-selection.json')
+    require(browser['canary_guiding_reference']['findings']['mystic_repulse_ii']['selected_value']==selection['mystic_repulse_ii']['selected_percent'] and
+        browser['architect_ruling']['applied_reference_values']==selection['architect_ruling']['applied_reference_values'],'EVIDENCE_BROWSER_SELECTION_DRIFT')
     originals=[sheet['original_cdn'] for sheet in read(ROOT/'samples/source-icon-reference.json')['sheets']]
     require(browser['original_sheets']==originals,'EVIDENCE_ORIGINAL_SHEET_OBSERVATIONS')
     unread=[category for category in ('dedication','conviction','revelation','basic_mod','supreme_mod')
