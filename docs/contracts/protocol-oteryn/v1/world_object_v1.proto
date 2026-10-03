@@ -10,6 +10,8 @@ syntax = "proto3";
 
 package oteryn.protocol.v1.world_object;
 
+import "item_view_v1.proto";
+
 // A world-object target: the placement key of the object and the overlay revision the
 // client last observed. Both are bounded by FIRST_PRODUCTION_MAX_KEY_BYTES / u64.
 message WorldObjectTargetV1 {
@@ -17,14 +19,17 @@ message WorldObjectTargetV1 {
   uint64 expected_revision = 2;
 }
 
-// ClientCommand.payload of command type 2. At most 529 encoded bytes. Only
-// world_object is registered; item-in-container, creature and use-with targets are
-// reserved fields that fail closed until their own decision (A1 Interaction / DUR-03).
+// ClientCommand.payload of command type 2. At most 529 encoded bytes. Field 2, the item
+// target, is ITEM-MOVE-WIRE-0 §4.3 (D212): a handle-bearing item, gated by capability 4
+// ITEM_VIEW_MOVE_V1; a session that did not select it and sends field 2 fails closed. The
+// creature and use-with targets stay reserved fields that fail closed until their own
+// decision (A1 Interaction / DUR-03).
 message UseIntentV1 {
   oneof target {
     WorldObjectTargetV1 world_object = 1;
+    oteryn.protocol.v1.item_view.ItemTargetV1 item = 2;
   }
-  reserved 2, 3, 4;
+  reserved 3, 4;
 }
 
 enum UseDispositionV1 {
