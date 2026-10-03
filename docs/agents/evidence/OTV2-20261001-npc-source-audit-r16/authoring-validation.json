@@ -1,0 +1,253 @@
+{
+  "schema": "NPC_COMBINED_TEN_AUTHORING_VALIDATION/v1",
+  "phase": "AUTHORING",
+  "baseline_head": "8bdc12d54909c4667da63ecf56b2cae163fff34c",
+  "result": "PASS",
+  "candidate": {
+    "schema": "NPC_R16_R17_CANONICAL_GENERATION/v1",
+    "base_remote_head": "8bdc12d54909c4667da63ecf56b2cae163fff34c",
+    "npc_count": 1132,
+    "dialogue_count": 703,
+    "tree_sha256": "693028679c0f902c98557dc651460b7bec63acc66880d02d8c6a8ccdb16f6740",
+    "documents": [
+      {
+        "path": "assets/catalog.json",
+        "bytes": 56,
+        "sha256": "fa61df1076ef66e8c69b6182db1b13fe2ccb92653ab16a148d1fbaf773adb344"
+      },
+      {
+        "path": "content.lock.json",
+        "bytes": 418,
+        "sha256": "722606d3d1ade6e912113c1f51e59b487a11ab3d0d8a15aa103b38092566f565"
+      },
+      {
+        "path": "definitions/declarations.json",
+        "bytes": 17061212,
+        "sha256": "f4e25dc633af56ecd9e38ea5cf8d84f47a12122dae17e988ed7ad344f53f199e"
+      },
+      {
+        "path": "definitions/reference.json",
+        "bytes": 22544973,
+        "sha256": "d3b66ce0b06c6ff61e6bbdac586e57f0ecdede3e24ef4487820db0ed031f6956"
+      },
+      {
+        "path": "editor/author.json",
+        "bytes": 120557,
+        "sha256": "14c6e3163baf17096545daa897a866df0b5ee23721c26312867ffa73447bbfdb"
+      },
+      {
+        "path": "manifest.json",
+        "bytes": 1955,
+        "sha256": "1f7037fd2198bff44398fb1fdf898aba9bd1a0f621a6feddbdb9779a647e40db"
+      },
+      {
+        "path": "presentations/bindings.json",
+        "bytes": 73,
+        "sha256": "b7d27b2d7fde6370b7ae56c2c60412f2b213a4a5e92e7db82dd4b59a64359cd7"
+      },
+      {
+        "path": "project.json",
+        "bytes": 408,
+        "sha256": "8f1c4bb3218e95582d8a2375918c139e2585c0f7151f96e154c871a4134d3e5d"
+      },
+      {
+        "path": "provenance/imports.json",
+        "bytes": 36194,
+        "sha256": "3b431d5d1bc20de741f6be47237a77a67f136a85e53088e8f60dd2e1dc06d89d"
+      },
+      {
+        "path": "provenance/sources.json",
+        "bytes": 1333981,
+        "sha256": "72e1e32586bff1e89c3493869a94a1e1c087f1b276facc7b8b3aff11c48fe2b1"
+      },
+      {
+        "path": "worlds/world.json",
+        "bytes": 72,
+        "sha256": "0dcc223c4a904834a58b3ad2b1c7882636cc66c9123aafdb25bb69a1d4670dfa"
+      }
+    ],
+    "actual_generation_exit_code": 0
+  },
+  "checks": [
+    {
+      "check": "format",
+      "command": [
+        "cargo",
+        "fmt",
+        "--all",
+        "--",
+        "--check"
+      ],
+      "cwd": "/workspace/Oteryn-Game",
+      "exit_code": 0,
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "check": "strict-clippy",
+      "command": [
+        "cargo",
+        "clippy",
+        "--offline",
+        "--locked",
+        "-p",
+        "oteryn-game-server",
+        "--all-targets",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "cwd": "/workspace/Oteryn-Game",
+      "exit_code": 0,
+      "log_sha256": "315cdc717356087ade5abb2ceb9594d09c78f6c9a6dd7810d73f57474f2cdb00"
+    },
+    {
+      "check": "native-stage",
+      "command": [
+        "cargo",
+        "test",
+        "--offline",
+        "--locked",
+        "-p",
+        "oteryn-game-server",
+        "--example",
+        "materialize_content_world_project_v2"
+      ],
+      "cwd": "/workspace/Oteryn-Game",
+      "exit_code": 0,
+      "log_sha256": "5212099960469d75e006ded6cd23165c68b1c6184d1dc6cbda81cb28cff6e931"
+    },
+    {
+      "check": "repository-package",
+      "command": [
+        "cargo",
+        "test",
+        "--offline",
+        "--locked",
+        "-p",
+        "oteryn-game-server",
+        "--test",
+        "content_world_project_repository"
+      ],
+      "cwd": "/workspace/Oteryn-Game",
+      "exit_code": 0,
+      "log_sha256": "1aece3a2d4ebffa1c6fcdf201319d23e6532e1eb0bb3a41d69ce57b749616af6"
+    },
+    {
+      "check": "npc-authoring",
+      "command": [
+        "python",
+        "-m",
+        "unittest",
+        "test_npc_authoring.py"
+      ],
+      "cwd": "/workspace/Oteryn-Game/tools/content-schema/npc-authoring",
+      "exit_code": 0,
+      "log_sha256": "a112af5139318e5b7148f2d2eed1ba8eebcbb0467e4073e6acd829e86645f818"
+    },
+    {
+      "check": "migration",
+      "command": [
+        "python",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tools/content-migration",
+        "-p",
+        "test_*.py"
+      ],
+      "cwd": "/workspace/Oteryn-Game",
+      "exit_code": 0,
+      "log_sha256": "a0ffecc294f6c24dbcd8af73aad493c4889a3ffabf0aed2a1618f51394058fad"
+    },
+    {
+      "check": "successor-validate",
+      "command": [
+        "python",
+        "tools/content-migration/validate_world_project_v2_to_tree.py"
+      ],
+      "cwd": "/workspace/Oteryn-Game",
+      "exit_code": 0,
+      "log_sha256": "aa8fdbc11f57083e0a30d32bf43efef26aeca16891ec7dd688ef15c42f80f8c6"
+    },
+    {
+      "check": "successor-test",
+      "command": [
+        "python",
+        "tools/content-migration/test_world_project_v2_to_tree.py"
+      ],
+      "cwd": "/workspace/Oteryn-Game",
+      "exit_code": 0,
+      "log_sha256": "a51bf448332667ae7a481793ecc857e07293b12931ac7c5175f916eb9ea2de2e"
+    },
+    {
+      "check": "governance",
+      "command": [
+        "python",
+        "tools/agents/validate_governance.py"
+      ],
+      "cwd": "/workspace/Oteryn-Game",
+      "exit_code": 0,
+      "log_sha256": "ed5de0b194f14550187fbb13e78364869d9be5848032f691f807fecb2abe0a1f"
+    },
+    {
+      "check": "governance-tests",
+      "command": [
+        "python",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tools/agents/tests",
+        "-p",
+        "test_*.py"
+      ],
+      "cwd": "/workspace/Oteryn-Game",
+      "exit_code": 0,
+      "log_sha256": "9c049cedd75340b2cd9e5880f9de29b4ea4526113cda5369a26ce40fc38354f8"
+    }
+  ],
+  "native_materializer_tests": 41,
+  "repository_package_tests": 4,
+  "npc_authoring_tests": {
+    "passed": 172,
+    "tests": 172,
+    "skipped": 0,
+    "errors": 0,
+    "failures": 0,
+    "result": "PASS",
+    "retained_source_custody": "source-index30sha256verified; same root catalogue and historical source-only held tuple evidence"
+  },
+  "migration_tests": 59,
+  "governance_tests": 36,
+  "repeat": {
+    "exit_code": 0,
+    "log_sha256": "6853093cc4117b9a4b0887bd458ce3bf8399501ed1f77a7edec0eddbaa9d435a",
+    "result": "PASS",
+    "byte_identical_documents": 11
+  },
+  "independent_source_review_sha256": "8ff8a01c14ad7454d7839cb4bb23306fb9c1ba2af53c3c6585d61742bca7d5a0",
+  "independent_preservation_review_sha256": "19cd98b5224156128e3a6fabcbc714efee3ff586ff3e4eaee82267b44a8cafcd",
+  "physical_attempts": [
+    {
+      "log": "authoring-npc-all.log",
+      "tests": 159,
+      "skipped": 8,
+      "cause": "standalone discovery without retained optional Lua/parser source fixtures"
+    },
+    {
+      "log": "authoring-npc-qualified-all.log",
+      "tests": 159,
+      "skipped": 1,
+      "cause": "service relation CLI fixture not configured in discovery"
+    },
+    {
+      "log": "authoring-npc-final.log",
+      "tests": 172,
+      "skipped": 0,
+      "result": "PASS",
+      "cause": "retained byte-verified sources and existing Lua/parser dependencies configured through supported test globals/environment"
+    }
+  ],
+  "limits": "Affected offline authoring materializer/catalogue plus strict all-target lint; previous R13 broad server suite is historical, not claimed rerun here. Exact remote freeze/readback and post-freeze validation/review are separate receipts. Protected CI, formal review, main reconciliation and Merge Queue remain control-plane actions. No runtime completeness claim."
+}

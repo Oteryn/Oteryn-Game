@@ -1,0 +1,81 @@
+{
+  "schema": "NPC_VISUAL_INVISIBLE_FOLLOWUP_SOURCES/v1",
+  "baseline_head": "a7fe605ca9830bcdd4d0419ed57c1b58b7c60f7e",
+  "selections": [
+    {
+      "key": "oteryn:npc.mud",
+      "name": "MUD",
+      "outfit": null,
+      "visibility": "invisible",
+      "source": {
+        "url": "https://tibiopedia.pl/images/static/npcs/mud.gif",
+        "sha256": "29f1dc585b774dddfb7df243bb878d98721e909d328d43fee9ee4d57d0c1ac83",
+        "page_url": "https://tibiopedia.pl/npcs/MUD",
+        "page_sha256": "4377bdfa150bbec140092c0f5801f1aa59b162470e0271e925b762a9b4de444d",
+        "access": "RETAINED_ORDINARY_PUBLIC_TIBIOPEDIA_HTTP_CACHE"
+      },
+      "source_visibility_classification": "derived_visual_reference",
+      "rationale": "Owner-provided wiki screenshots and checksum-verified full retained actor GIF show only the green actor name with no rendered actor body. Choose existing native Invisible authoring presentation as an explicit Oteryn approximation instead of a neutral human proxy. This is visual inference, not documentary numeric lookType or actor-exact invisible status.",
+      "visual_reference": {
+        "portrait_sha256": "29f1dc585b774dddfb7df243bb878d98721e909d328d43fee9ee4d57d0c1ac83",
+        "full_image_reviewed": true,
+        "owner_screenshot_corroboration": true,
+        "fresh_fandom": {
+          "url": "https://tibia.fandom.com/wiki/MUD",
+          "revision": "",
+          "html_sha256": "f9d483e5cc7ce422d08f52c3b0facc8046070f656fcefbc161fff0c32aa5a393",
+          "capture_file_sha256": "c9c857f8bfe023234312469863dbefdded685ab15b279e26645d64441f2a40ca",
+          "access": "Remote Desktop Commander + real Chrome/CDP public DOM",
+          "captured_at": "2026-10-02T14:32:14.620460+00:00"
+        }
+      },
+      "source_exact_visibility": "unknown",
+      "canonical_tibia_fidelity_claim": false,
+      "native_runtime_loaded": false,
+      "image_assets_rehosted": false
+    },
+    {
+      "key": "oteryn:npc.planestrider_npc",
+      "name": "Planestrider (NPC)",
+      "outfit": null,
+      "visibility": "invisible",
+      "source": {
+        "url": "https://tibiopedia.pl/images/static/npcs/planestrider.gif",
+        "sha256": "f2c7af46ea74845d507840d8e31b360c6c7d5ec4ed61465fa017ed401a26ddea",
+        "page_url": "https://tibiopedia.pl/npcs/Planestrider",
+        "page_sha256": "84306fa431d0b9fbb11dadce2de2fab96ef55d4a6f6d3d51a9f93c7235bbaa64",
+        "access": "RETAINED_ORDINARY_PUBLIC_TIBIOPEDIA_HTTP_CACHE"
+      },
+      "source_visibility_classification": "derived_visual_reference",
+      "rationale": "Owner-provided wiki screenshots and checksum-verified full retained actor GIF show only the green actor name with no rendered actor body. Choose existing native Invisible authoring presentation as an explicit Oteryn approximation instead of a neutral human proxy. This is visual inference, not documentary numeric lookType or actor-exact invisible status.",
+      "visual_reference": {
+        "portrait_sha256": "f2c7af46ea74845d507840d8e31b360c6c7d5ec4ed61465fa017ed401a26ddea",
+        "full_image_reviewed": true,
+        "owner_screenshot_corroboration": true,
+        "fresh_fandom": {
+          "url": "https://tibia.fandom.com/wiki/Planestrider_(NPC)",
+          "revision": "",
+          "html_sha256": "bd504271925e3eae780bcf1302c5daecc86904fe31f30613be206682390a4306",
+          "capture_file_sha256": "5cd1d01ead69ee0795f2c7b6f430e2c3939bf0d47e8999c1f36c0a9025b55400",
+          "access": "Remote Desktop Commander + real Chrome/CDP public DOM",
+          "captured_at": "2026-10-02T14:32:14.621120+00:00"
+        }
+      },
+      "source_exact_visibility": "unknown",
+      "canonical_tibia_fidelity_claim": false,
+      "native_runtime_loaded": false,
+      "image_assets_rehosted": false
+    }
+  ],
+  "reviewed_actors": 2,
+  "selected_visual_invisible_approximations": 2,
+  "exact_visibility_source_unknown": 2,
+  "held": [],
+  "runtime_loaded": 0,
+  "access": "Retained public HTTP Tibiopedia GIF and HTML; fresh Fandom DOM from R26 read via real Chrome/CDP RemoteDesktop after ordinary402; owner screenshots corroborate name-only actor presentation",
+  "source_repositories_checked": {
+    "canary_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+    "crystal_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+    "matching_actor_paths_found": 0
+  }
+}

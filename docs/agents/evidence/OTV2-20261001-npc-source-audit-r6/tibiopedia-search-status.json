@@ -1,0 +1,51 @@
+{
+  "records": [
+    {
+      "failed_results": [],
+      "query": "Giant Sapphire Rainbow Quartz",
+      "request_id": "0aed3561-a05e-4e69-86b4-0b496cbc271d",
+      "results": [
+        {
+          "evidence": "INDEXED_SEARCH_ONLY_NOT_EXACT_PAGE_CAPTURE",
+          "indexed_excerpt": "Giant Sapphire (50000gp), Giant ... Rainbow Quartz (500gp), Red Crystal",
+          "title": "NPC: Giri - Tibia ~ Tibiopedia.pl",
+          "url": "https://tibiopedia.pl/npcs/Giri"
+        }
+      ]
+    },
+    {
+      "failed_results": [],
+      "query": "Dark Bell Pastry Dragon",
+      "request_id": "d400c9c3-87ee-40b6-8b2a-62832df3b616",
+      "results": [
+        {
+          "evidence": "INDEXED_SEARCH_ONLY_NOT_EXACT_PAGE_CAPTURE",
+          "indexed_excerpt": "ir Miejsce: Tibia. Dark Bell Dark Bell (250gp) Dark Bell Dark Bell (310000gp) Lokalizacja: Carlin, Ankrahmun, Liberty Bay. Yasir jest orientalnym kupcem,",
+          "title": "NPC: Yasir - Tibia ~ Tibiopedia.pl",
+          "url": "https://tibiopedia.pl/npcs/Yasir"
+        }
+      ]
+    },
+    {
+      "failed_results": [
+        {
+          "error": "Failed to fetch url",
+          "url": "https://www.tibiopedia.pl/npcs/Aurelia"
+        },
+        {
+          "error": "Failed to fetch url",
+          "url": "https://tibiopedia.pl/npcs/Yasir"
+        },
+        {
+          "error": "Failed to fetch url",
+          "url": "https://tibiopedia.pl/npcs/Giri"
+        }
+      ],
+      "query": null,
+      "request_id": "0427e230-37cc-4295-955f-e648c29ef2da",
+      "results": []
+    }
+  ],
+  "runtime_qualified": false,
+  "schema": "NPC_TIBIOPEDIA_ACCESS/v1"
+}

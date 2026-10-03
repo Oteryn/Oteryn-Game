@@ -1,0 +1,86 @@
+[
+  {
+    "id": "br_plain_shop",
+    "url": "https://www.tibiawiki.com.br/wiki/Ray",
+    "raw_content": "# Ray\nItens negociáveis:**Vende: [Parcel](https://www.tibiawiki.com.br/wiki/Parcel)15 [gp](https://www.tibiawiki.com.br/wiki/Gp) Compra: Nada.",
+    "expected_rows": 1
+  },
+  {
+    "id": "br_bold_transcript",
+    "url": "https://www.tibiawiki.com.br/wiki/Ray",
+    "raw_content": "# Ray\nItens negociáveis:**Vende: [Parcel](https://www.tibiawiki.com.br/wiki/Parcel)15 [gp](https://www.tibiawiki.com.br/wiki/Gp)\n**Falas:** Compra: [Parcel](https://www.tibiawiki.com.br/wiki/Parcel)15 [gp](https://www.tibiawiki.com.br/wiki/Gp)",
+    "expected_rows": 1
+  },
+  {
+    "id": "br_unbold_transcript",
+    "url": "https://www.tibiawiki.com.br/wiki/Ray",
+    "raw_content": "# Ray\nItens negociáveis:**Vende: [Parcel](https://www.tibiawiki.com.br/wiki/Parcel)15 [gp](https://www.tibiawiki.com.br/wiki/Gp)\nFalas: Compra: [Parcel](https://www.tibiawiki.com.br/wiki/Parcel)15 [gp](https://www.tibiawiki.com.br/wiki/Gp)",
+    "expected_rows": 1
+  },
+  {
+    "id": "br_unbold_notes",
+    "url": "https://www.tibiawiki.com.br/wiki/Ray",
+    "raw_content": "# Ray\nItens negociáveis:**Vende: [Parcel](https://www.tibiawiki.com.br/wiki/Parcel)15 [gp](https://www.tibiawiki.com.br/wiki/Gp)\nObservações: Compra: [Parcel](https://www.tibiawiki.com.br/wiki/Parcel)15 [gp](https://www.tibiawiki.com.br/wiki/Gp)",
+    "expected_rows": 1
+  },
+  {
+    "id": "fandom_plain_shop",
+    "url": "https://tibia.fandom.com/wiki/Ray",
+    "raw_content": "# Ray\n### Trade Details\n#### Sells\n| icon | [Parcel](https://tibia.fandom.com/wiki/Parcel) | 15 ![Image 1: Gold](https://example.invalid/Gold.gif) |\n",
+    "expected_rows": 1
+  },
+  {
+    "id": "fandom_notes_section",
+    "url": "https://tibia.fandom.com/wiki/Ray",
+    "raw_content": "# Ray\n### Trade Details\n#### Sells\n| icon | [Parcel](https://tibia.fandom.com/wiki/Parcel) | 15 ![Image 1: Gold](https://example.invalid/Gold.gif) |\n### Notes\n| icon | [Parcel](https://tibia.fandom.com/wiki/Parcel) | 15 ![Image 1: Gold](https://example.invalid/Gold.gif) |\n",
+    "expected_rows": 1
+  },
+  {
+    "id": "fandom_historical_section",
+    "url": "https://tibia.fandom.com/wiki/Ray",
+    "raw_content": "# Ray\n### Trade Details\n#### Sells\n| icon | [Parcel](https://tibia.fandom.com/wiki/Parcel) | 15 ![Image 1: Gold](https://example.invalid/Gold.gif) |\n### History\n| icon | [Parcel](https://tibia.fandom.com/wiki/Parcel) | 15 ![Image 1: Gold](https://example.invalid/Gold.gif) |\n",
+    "expected_rows": 1
+  },
+  {
+    "id": "fandom_trade_in_history",
+    "url": "https://tibia.fandom.com/wiki/Ray",
+    "raw_content": "# Ray\n### History\n#### Sells\n| icon | [Parcel](https://tibia.fandom.com/wiki/Parcel) | 15 ![Image 1: Gold](https://example.invalid/Gold.gif) |\n",
+    "expected_rows": 0
+  },
+  {
+    "id": "fandom_item_pack",
+    "url": "https://tibia.fandom.com/wiki/Ray",
+    "raw_content": "# Ray\n### Trade Details\n#### Sells\n| icon | [Parcel](https://tibia.fandom.com/wiki/Parcel) (pack of 100) | 15 ![Image 1: Gold](https://example.invalid/Gold.gif) |\n",
+    "expected_rows": 0
+  },
+  {
+    "id": "fandom_item_variant",
+    "url": "https://tibia.fandom.com/wiki/Ray",
+    "raw_content": "# Ray\n### Trade Details\n#### Sells\n| icon | [Parcel](https://tibia.fandom.com/wiki/Parcel) (empty) | 15 ![Image 1: Gold](https://example.invalid/Gold.gif) |\n",
+    "expected_rows": 0
+  },
+  {
+    "id": "fandom_non_gold",
+    "url": "https://tibia.fandom.com/wiki/Ray",
+    "raw_content": "# Ray\n### Trade Details\n#### Sells\n| icon | [Parcel](https://tibia.fandom.com/wiki/Parcel) | 15 ![Image 1: Tibia Coin](https://example.invalid/Gold.gif) |\n",
+    "expected_rows": 0
+  },
+  {
+    "id": "fandom_mixed_currency",
+    "url": "https://tibia.fandom.com/wiki/Ray",
+    "raw_content": "# Ray\n### Trade Details\n#### Sells\n| icon | [Parcel](https://tibia.fandom.com/wiki/Parcel) | 15 ![Image 1: Gold](https://example.invalid/Gold.gif) ![Image 2: Tibia Coin](https://example.invalid/token.gif) |\n",
+    "expected_rows": 0
+  },
+  {
+    "id": "wrong_npc_heading",
+    "url": "https://tibia.fandom.com/wiki/Ray",
+    "raw_content": "# Wrong\n### Trade Details\n#### Sells\n| icon | [Parcel](https://tibia.fandom.com/wiki/Parcel) | 15 ![Image 1: Gold](https://example.invalid/Gold.gif) |\n",
+    "expected_rows": 0
+  },
+  {
+    "id": "mixed_npc_headings",
+    "url": "https://tibia.fandom.com/wiki/Ray",
+    "raw_content": "# Wrong\n### Trade Details\n#### Sells\n| icon | [Parcel](https://tibia.fandom.com/wiki/Parcel) | 15 ![Image 1: Gold](https://example.invalid/Gold.gif) |\n# Ray\n",
+    "expected_rows": 0
+  }
+]

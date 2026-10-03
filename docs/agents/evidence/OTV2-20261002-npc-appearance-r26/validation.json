@@ -1,0 +1,218 @@
+{
+  "phase": "AUTHORING",
+  "status": "PASS",
+  "packet_sha256": "65c7c42873224677eaee9c11b4a267b75a5ee0c5a6a983a744df9c1332f813dd",
+  "runtime_loaded": 0,
+  "interaction_passes": 0,
+  "limits": [
+    "Source authoring only; source unknown defaults2 retained",
+    "Runtime placement/talk/render integration pending",
+    "Coordinator/protectedCI/current-main/Jira/MergeQueue pending"
+  ],
+  "canonical_tree_sha256": "a59e099cd3818406d8428ecb727f818d44536dbb8b34d6c810274724e441f788",
+  "checks": [
+    {
+      "check": "prepare",
+      "exit_code": 0,
+      "log_sha256": "489866bf6ff062366b54765d49c99061a1ce90da6856e44398a57d0221c2ca2f",
+      "command": [
+        "/workspace/npc-r7-work/presentation/venv/bin/python",
+        "tools/content-schema/npc-authoring/bulk_workbench.py",
+        "prepare",
+        "--workdir",
+        "/workspace/npc-appearance-r26/workbench-final"
+      ]
+    },
+    {
+      "check": "format",
+      "exit_code": 0,
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "command": [
+        "cargo",
+        "fmt",
+        "--all",
+        "--check"
+      ]
+    },
+    {
+      "check": "clippy",
+      "exit_code": 0,
+      "log_sha256": "984a0050d7b0091cd2c5701c8ec6e6b74b8587417704637c594d8849234b24a1",
+      "command": [
+        "cargo",
+        "clippy",
+        "--offline",
+        "--locked",
+        "--quiet",
+        "-p",
+        "oteryn-game-server",
+        "--all-targets",
+        "--",
+        "-D",
+        "warnings"
+      ]
+    },
+    {
+      "check": "native",
+      "exit_code": 0,
+      "log_sha256": "629962a2ab6529ad9689f1228d7888cc7be292eb3e26e55adbd61c49f0b1e485",
+      "command": [
+        "cargo",
+        "test",
+        "--offline",
+        "--locked",
+        "--quiet",
+        "-p",
+        "oteryn-game-server",
+        "--example",
+        "materialize_content_world_project_v2",
+        "--test",
+        "content_world_project_repository",
+        "--test",
+        "content_native_entry_room"
+      ]
+    },
+    {
+      "check": "followup-stage",
+      "exit_code": 0,
+      "log_sha256": "5b0f992600d2a2ed24104284c6f37476cfe39b3e47df56096708056291cb57c2",
+      "command": [
+        "/workspace/npc-r7-work/presentation/venv/bin/python",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tools/content-migration",
+        "-p",
+        "test_npc_visual_appearance_followup.py"
+      ]
+    },
+    {
+      "check": "stage",
+      "exit_code": 0,
+      "log_sha256": "792491ae30af3b0d5bc0326a8c6fc8368f261cd89bc84ba27cedce6f707b9ff8",
+      "command": [
+        "/workspace/npc-r7-work/presentation/venv/bin/python",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tools/content-migration",
+        "-p",
+        "test_npc_*appearance_stage.py"
+      ]
+    },
+    {
+      "check": "prior-stage",
+      "exit_code": 0,
+      "log_sha256": "01877410c674f93b356de76f1676aa566b7b6cf03f544dcd050b1b2de347367e",
+      "command": [
+        "/workspace/npc-r7-work/presentation/venv/bin/python",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tools/content-migration",
+        "-p",
+        "test_npc_source_refine.py"
+      ]
+    },
+    {
+      "check": "successor-validate",
+      "exit_code": 0,
+      "log_sha256": "888db9e97c139e244f281dd6246ac1d7ac102bde8e4ddf43fbfdcd9bfd982305",
+      "command": [
+        "/workspace/npc-r7-work/presentation/venv/bin/python",
+        "tools/content-migration/validate_world_project_v2_to_tree.py"
+      ]
+    },
+    {
+      "check": "successor-test",
+      "exit_code": 0,
+      "log_sha256": "a51bf448332667ae7a481793ecc857e07293b12931ac7c5175f916eb9ea2de2e",
+      "command": [
+        "/workspace/npc-r7-work/presentation/venv/bin/python",
+        "tools/content-migration/test_world_project_v2_to_tree.py"
+      ]
+    },
+    {
+      "check": "workbench",
+      "exit_code": 0,
+      "log_sha256": "46c8014dac72eec691501d504fda95fafeb4fe51b7db90753ca9acdbb9a28dd4",
+      "command": [
+        "/workspace/npc-r7-work/presentation/venv/bin/python",
+        "tools/content-schema/npc-authoring/bulk_workbench.py",
+        "check",
+        "--workdir",
+        "/workspace/npc-appearance-r26/workbench-final"
+      ]
+    },
+    {
+      "check": "authoring-smoke",
+      "exit_code": 0,
+      "log_sha256": "ec29662324f04b5ad26379c035c418dd2115515012fb8709bf59036bf19d9748",
+      "command": [
+        "/workspace/npc-r7-work/presentation/venv/bin/python",
+        "tools/content-schema/npc-authoring/bulk_workbench.py",
+        "smoke",
+        "--workdir",
+        "/workspace/npc-appearance-r26/workbench-final"
+      ]
+    },
+    {
+      "check": "governance",
+      "exit_code": 0,
+      "log_sha256": "ed5de0b194f14550187fbb13e78364869d9be5848032f691f807fecb2abe0a1f",
+      "command": [
+        "python",
+        "tools/agents/validate_governance.py"
+      ]
+    },
+    {
+      "check": "governance-tests",
+      "exit_code": 0,
+      "log_sha256": "306db8196fda16cca8f75821fc25e8c00e321b348f72d723b9e2c69113d4f41f",
+      "command": [
+        "/workspace/npc-r7-work/presentation/venv/bin/python",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tools/agents/tests"
+      ]
+    },
+    {
+      "check": "diff",
+      "exit_code": 0,
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "command": [
+        "git",
+        "diff",
+        "--check"
+      ]
+    }
+  ],
+  "native_materializer_tests": 79,
+  "portable_followup_tests": 7,
+  "portable_visual_stage_tests": 9,
+  "prior_source_stage_tests": 7,
+  "source_review": {
+    "verdict": "PASS_BOUNDED_SOURCE_REVIEW",
+    "receipt_sha256": "7f3d8145f84ace045d369681186a8acae735149af6de59a6c04a38cd79100172"
+  },
+  "independent_code_generated_scope_review": {
+    "verdict": "PASS_INDEPENDENT_BOUNDED_IMPLEMENTATION_AND_GENERATED_SCOPE_REVIEW",
+    "receipt_sha256": "d1d7c38bba80b791c964a60c8cb426652cc3e8b92aa346984ae44a7779a741ca"
+  },
+  "fast_generation": {
+    "result": "PASS",
+    "canonical_documents": 11,
+    "tree_sha256": "a59e099cd3818406d8428ecb727f818d44536dbb8b34d6c810274724e441f788",
+    "fast_log_sha256": "d1287e24e71d73d4789b7dcd7029aa6a25ddbb3b5730c74f0120b9ed6b1521c0",
+    "all_generated_fast_installed_documents_identical": true,
+    "actual_generator_exit_code": 0,
+    "input_kind": "regular-file exact R25 whole11-document predecessor; source and tree digest checked by native materializer",
+    "historical_full_generation_rerun": false,
+    "qualification": "New native scope/reverse-chain fixtures and exact predecessor fast route; previous historical stages unchanged"
+  }
+}

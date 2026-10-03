@@ -1,0 +1,9 @@
+{
+  "kind": "INTERNAL_NATIVE_STAGE",
+  "status": "QUALIFIED_INTERNAL_STAGE",
+  "base_remote_head": "8bdc12d54909c4667da63ecf56b2cae163fff34c",
+  "project_revision": "g4-npc-qualified-playerbots-r15",
+  "native_sha256": "d1ab1d208c87ba3f47b201d808216445f295ae9e37b0a72e597b16ee701eaaba",
+  "reference_sha256": "52c3b2606a8e88e3e13c7b5b272be6b4a14ea6244de3f91a101583be8cdfb173",
+  "npc_count": 1127
+}

@@ -1,0 +1,16 @@
+{
+  "source_facts_sha256": "b84fef9916f67be669985c66841e3c56b25518b84d144be226b1b0b07ad16f47",
+  "packet_sha256": "c99f2328ece4d00437e38cc1e712baac58d5c065ca466589a87f388348d44641",
+  "scratch_source_packets": {
+    "a/candidates.json": "309f1709b33b1e384ed4066cefd5078ef729603bd4ff1dbf77c8164d9cc2fcdc",
+    "b/choices.json": "293275e381cb1e4a8798a7b5c923646a2d74246b8c57d509049d821ec6ae41ce",
+    "root-object-choices.json": "5cec9cb59d7c660568756d561c94f3ced9f440ecc80f766e0601a7dbe168b258",
+    "browser-source-manifest.json": "b6e60f33158bf3c90edda0166f1be1fa12fe9e7272e55e99768a71f05d7f78e8",
+    "canary-items-custody.json": "1fb2805d0f381a3f25fba147891d23862916225b9cb96bef4e7f705ea67b9420",
+    "client-silhouette-index.json": "71134c315a6166b3ae31f311514787c2989e4fa54fc4f0555766f543f8a3b4ef",
+    "shortlists.json": "518445f2e4378433242b8fd68e08a37e0368eb01710e47f89cef80ffec882986"
+  },
+  "image_and_client_asset_files_redistributed": false,
+  "access": "Retained ordinaryHTTP Tibiopedia HTML/GIF + localclientassets; freshCanaryGitHubraw HTTP; BR403 fallbackthreepagesviarealChrome/CDP RemoteDesktop internetonly",
+  "reference_kind": "Derivedvisualmapping/proxy, not actor numeric source fact"
+}

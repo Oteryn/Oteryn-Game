@@ -1,0 +1,83 @@
+{
+  "schema": "NPC_EIGHT_AUTHORING_VALIDATION/v1",
+  "phase": "AUTHORING",
+  "baseline_head": "61fb530104d42800aecbebbd2feb7f816b450b46",
+  "result": "PASS",
+  "scope": "actual complete authoring validation; exact remote freeze and frozen checks separate",
+  "native_tests": 70,
+  "repository_tests": 4,
+  "npc_authoring_tests": {
+    "passed": 172,
+    "skipped": 0
+  },
+  "migration_tests": 59,
+  "governance_tests": 36,
+  "source_qualification_tests": 16,
+  "typed_source_admission_tests": 16,
+  "external_full_predecessor_canonical_scenario_tests": 1,
+  "canonical_repeat_byte_identical_documents": 11,
+  "full_fast_byte_identical_documents": 11,
+  "actual_full_generation_seconds": 378.729,
+  "old_c2_predecessor_rejected_before_output": true,
+  "tree_sha256": "a91bd820d8ea96044ec456bce9264a103d8ae1e8fe9b40c3cd7bd6e50360b4b6",
+  "minimum_source_capacity": 24,
+  "actual_v2_sources": 24,
+  "actual_empty_import_batches": 25,
+  "import_candidate_records": 0,
+  "otherwise_valid_source25_rejected_limit24": true,
+  "empty_import_batch26_accepted_by_existing_writer": true,
+  "stage_extra_sixth_import_rejected_before_mutation": true,
+  "resolved_failures": [
+    "ProductionKey valeria_test rejection fixed with valeria_ot while retaining literal pinned ValeriaOT/Test upstream.",
+    "Incorrect empty-import-batch quota expectation corrected to actual v2 source and import-candidate counters without parser changes.",
+    "Invalid licensing negative fixture retained and replaced with otherwise-valid editor metadata mutation proving full-tree rejection.",
+    "Repository exact namespace list expanded by four source-key/namespace pairs; old Ben XML namespace preserved, no wildcard."
+  ],
+  "receipts": [
+    {
+      "path": "/workspace/npc-r19-work/authoring-check-results.json",
+      "sha256": "245276564a29589c48c10c31a99e7ac478e222088d4aa3b9058b100e90b1a9d4"
+    },
+    {
+      "path": "/workspace/npc-r19-work/npc-authoring-final-result.json",
+      "sha256": "6a9e6c53f0da474ab2d1d2e4dfd7131fab7cb530d57a829a137efe198c352798"
+    },
+    {
+      "path": "/workspace/npc-r19-work/generation-result.json",
+      "sha256": "474525a0fbd1b7b336c1afe54e08646d3c73c8a2178606449d479798f0182ec6"
+    },
+    {
+      "path": "/workspace/npc-r19-work/repeat-result.json",
+      "sha256": "a516c890726b63c25a2db55d868fe9b9bf3d77e60dcd9f88bb0dff5d2309dd52"
+    },
+    {
+      "path": "/workspace/npc-r19-work/full-parity-result.json",
+      "sha256": "ea7cf201bbd824c400853ad4957d78efbfdda04b86e6a3ec7084b67f19a83c2d"
+    },
+    {
+      "path": "/workspace/npc-r19-work/negative-predecessor-result.json",
+      "sha256": "b6f9d321bef80ab1a8b3c858944e9874f92a01a65c693a2bf995b03d37df61b8"
+    },
+    {
+      "path": "/workspace/npc-r19-work/corpus-preservation-independent-review.json",
+      "sha256": "404c973fe9c0dd30180def550424d0efda580d11782b9f6912c21e660dc2a1ad"
+    },
+    {
+      "path": "/workspace/npc-r19-work/prepublication-review.json",
+      "sha256": "aeef9545a5a268cc5ad9478c58407445d8d32c6ec66c83e456737f9dbe6d3d69"
+    },
+    {
+      "path": "/workspace/npc-r19-research/shared-review/eight-source-compiler-corrected-independent-review.json",
+      "sha256": "4700fe8e204c215eb6f3963ed0b75aef8acddba37cc1d8dfab457c231a2f8ca4"
+    },
+    {
+      "path": "/workspace/npc-r19-research/shared-review/eight-typed-root-integration-independent-review.json",
+      "sha256": "83b8beef4092541549c8dea837989eebfb9998a77d9a6337dd69461fded767e6"
+    },
+    {
+      "path": "/workspace/npc-r19-research/batch2/typed-bounded/final-custody.json",
+      "sha256": "fbceda466afe353837e54c1a81c2b08cb686dfbea63c1423e0c95f8e552bf804"
+    }
+  ],
+  "formal_paid_review_or_full_server_rerun_claimed": false
+}

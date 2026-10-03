@@ -1,0 +1,2618 @@
+{
+  "admissible_new_dialogues": 0,
+  "global_complete": false,
+  "records": [
+    {
+      "decision": "HELD",
+      "exact_D10_text_scores": {
+        "canary": {
+          "matches": 0,
+          "misses": 1,
+          "total": 1
+        },
+        "crystal": {
+          "matches": 0,
+          "misses": 1,
+          "total": 1
+        }
+      },
+      "global_complete": false,
+      "literal_actor_observations": [
+        {
+          "identity_binding_qualified": false,
+          "line": 19,
+          "line_sha256": "4a88b1f578a733e9bab62fde875f40c0f2598a96f20fa7254f4259f6c455ceee",
+          "section_heading_sha256": "6e40cdc96f37850241c6910433f46171c23aa9e009531d3fa3289ab355bf0e04",
+          "source_content_sha256": "dedebbe84fa502765bd71afe3d5689580dfd4849c5722ffdf9cdaf5ebcc11f79",
+          "speech": "Mortal! If you are on a quest to serve the blood god, my master - be greeted!"
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 21,
+          "line_sha256": "82fe387382cc6cff45ca7a5083e6a64d2373da9875c5d431af7eb91d2eefe0c3",
+          "section_heading_sha256": "6e40cdc96f37850241c6910433f46171c23aa9e009531d3fa3289ab355bf0e04",
+          "source_content_sha256": "dedebbe84fa502765bd71afe3d5689580dfd4849c5722ffdf9cdaf5ebcc11f79",
+          "speech": "I was once the greatest priest and prophet of the one true good of blood. I lead his followers through the dawn of our cult until the demise of our god."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 23,
+          "line_sha256": "4175cdcb664dcd50db999ae73a24f801b598feb5e8b21252ef36ea67c56e19d4",
+          "section_heading_sha256": "6e40cdc96f37850241c6910433f46171c23aa9e009531d3fa3289ab355bf0e04",
+          "source_content_sha256": "dedebbe84fa502765bd71afe3d5689580dfd4849c5722ffdf9cdaf5ebcc11f79",
+          "speech": "The quest, that requires my continued existence in this plane, is to eradicate the festering wound that defiles this place."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 25,
+          "line_sha256": "5584a162a2cad70ea1c8c0e3b2df837ba76b3e7a81c85518cdef984c69df00fa",
+          "section_heading_sha256": "6e40cdc96f37850241c6910433f46171c23aa9e009531d3fa3289ab355bf0e04",
+          "source_content_sha256": "dedebbe84fa502765bd71afe3d5689580dfd4849c5722ffdf9cdaf5ebcc11f79",
+          "speech": "The blood god's power has been corrupted and the spawn that festers in his former realms are a mockery of its grandeur. ..."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 26,
+          "line_sha256": "afda18382cd17ba3d8484780f4ee380ae4709f9f03857ad810ef8d6c33b07100",
+          "section_heading_sha256": "6e40cdc96f37850241c6910433f46171c23aa9e009531d3fa3289ab355bf0e04",
+          "source_content_sha256": "dedebbe84fa502765bd71afe3d5689580dfd4849c5722ffdf9cdaf5ebcc11f79",
+          "speech": "It has to be exterminated and the realm must be cleansed from the festering presence that came to dwell here!"
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 28,
+          "line_sha256": "edb9d6bbb5118891272c386b1fbbb01e38ebc375e9d770cb47b87010c4919ccd",
+          "section_heading_sha256": "6e40cdc96f37850241c6910433f46171c23aa9e009531d3fa3289ab355bf0e04",
+          "source_content_sha256": "dedebbe84fa502765bd71afe3d5689580dfd4849c5722ffdf9cdaf5ebcc11f79",
+          "speech": "After the fall of the blood god unclean things arose from his carcass. They festered on his remaining essence and devoured it. Claimed to be his descendants, claimed to carry his legacy. ..."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 29,
+          "line_sha256": "d4a8a279e0f75488c5947d042c2b66b4224f47be291e193193e04a574bfdcc53",
+          "section_heading_sha256": "6e40cdc96f37850241c6910433f46171c23aa9e009531d3fa3289ab355bf0e04",
+          "source_content_sha256": "dedebbe84fa502765bd71afe3d5689580dfd4849c5722ffdf9cdaf5ebcc11f79",
+          "speech": "But to me it soon became obvious these abominable spawns were just parasites, maggots that desecrated the legacy of a true god. They have to be stopped once and for all. ..."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 30,
+          "line_sha256": "7e9151edb9b9daee75c11d5e4920ec469a9ed5d2aa4a2503fdc624b852ceee7d",
+          "section_heading_sha256": "6e40cdc96f37850241c6910433f46171c23aa9e009531d3fa3289ab355bf0e04",
+          "source_content_sha256": "dedebbe84fa502765bd71afe3d5689580dfd4849c5722ffdf9cdaf5ebcc11f79",
+          "speech": "Their rampant growth and spread is an anathema to the blood god. They are not his descendants, they are just rot that feeds upon divine essence."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 32,
+          "line_sha256": "3747181d6f12a9b88f813addfcc81f8d11b24a997883002262702a9a8f494d3d",
+          "section_heading_sha256": "6e40cdc96f37850241c6910433f46171c23aa9e009531d3fa3289ab355bf0e04",
+          "source_content_sha256": "dedebbe84fa502765bd71afe3d5689580dfd4849c5722ffdf9cdaf5ebcc11f79",
+          "speech": "We all could constantly feel the presence of our god in our very own blood. Then, all of a sudden, his presence ceased to be, the connection was lost. ..."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 33,
+          "line_sha256": "b78bfd3ca217a179743265b3f6357d240143fd8ca4ff61ca6f6be655c636aa7c",
+          "section_heading_sha256": "6e40cdc96f37850241c6910433f46171c23aa9e009531d3fa3289ab355bf0e04",
+          "source_content_sha256": "dedebbe84fa502765bd71afe3d5689580dfd4849c5722ffdf9cdaf5ebcc11f79",
+          "speech": "For sure our lord has been slain by envious gods! But blood and slaughter are eternal. There is no end that can't be overcome by universal principle. He who has been slain will rise in slaughter once the time has come! ..."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 34,
+          "line_sha256": "04f2e072fb9e1e38f2ef4b885210457c52f7d8e80f54652784ade89bded00b12",
+          "section_heading_sha256": "6e40cdc96f37850241c6910433f46171c23aa9e009531d3fa3289ab355bf0e04",
+          "source_content_sha256": "dedebbe84fa502765bd71afe3d5689580dfd4849c5722ffdf9cdaf5ebcc11f79",
+          "speech": "However, first the cleansing of this place has to occur!"
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 36,
+          "line_sha256": "9e25af44e1fdb59280b4ca0bc3033e46276df78b922ef74dff6e065c28d3837e",
+          "section_heading_sha256": "6e40cdc96f37850241c6910433f46171c23aa9e009531d3fa3289ab355bf0e04",
+          "source_content_sha256": "dedebbe84fa502765bd71afe3d5689580dfd4849c5722ffdf9cdaf5ebcc11f79",
+          "speech": "You are not worthy to learn of the blood gods teaching, neither to receive his blessings."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 38,
+          "line_sha256": "abaca39f86980618ca204d7e13499b8ea65adb49856d64fb8d3dd45dc7600b1a",
+          "section_heading_sha256": "6e40cdc96f37850241c6910433f46171c23aa9e009531d3fa3289ab355bf0e04",
+          "source_content_sha256": "dedebbe84fa502765bd71afe3d5689580dfd4849c5722ffdf9cdaf5ebcc11f79",
+          "speech": "Your body and your mind are not prepared to receive the blessings of the blood god."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 40,
+          "line_sha256": "9522d3a2297a23f9d0d8713c17c66e08ecf34b42c3c1f8f7cbc27f7992ec3e5f",
+          "section_heading_sha256": "6e40cdc96f37850241c6910433f46171c23aa9e009531d3fa3289ab355bf0e04",
+          "source_content_sha256": "dedebbe84fa502765bd71afe3d5689580dfd4849c5722ffdf9cdaf5ebcc11f79",
+          "speech": "Two sets of twins. Two represent the rot that spreads, tarnishes and dissolves. ..."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 41,
+          "line_sha256": "0b675c284a645c86182d8dc6c8544737f97183b4ea9b062666ee1b1438a7b061",
+          "section_heading_sha256": "6e40cdc96f37850241c6910433f46171c23aa9e009531d3fa3289ab355bf0e04",
+          "source_content_sha256": "dedebbe84fa502765bd71afe3d5689580dfd4849c5722ffdf9cdaf5ebcc11f79",
+          "speech": "The other pair represent the absence of light, the darkness that devours, the anti-light."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 43,
+          "line_sha256": "608901474c74e0c6779c124e9edd0f8bac8615dd051d30ed3f0daa406a953907",
+          "section_heading_sha256": "6e40cdc96f37850241c6910433f46171c23aa9e009531d3fa3289ab355bf0e04",
+          "source_content_sha256": "dedebbe84fa502765bd71afe3d5689580dfd4849c5722ffdf9cdaf5ebcc11f79",
+          "speech": "The foul thing must fall! Its presence and existence de-sanctifies the holy realm of blood. ..."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 44,
+          "line_sha256": "e32bfeab64b7d277e0624cfde03bf1c72c9e0e9355701c788e5cf22752a0baac",
+          "section_heading_sha256": "6e40cdc96f37850241c6910433f46171c23aa9e009531d3fa3289ab355bf0e04",
+          "source_content_sha256": "dedebbe84fa502765bd71afe3d5689580dfd4849c5722ffdf9cdaf5ebcc11f79",
+          "speech": "To be able to challenge that thing, however, you have to handle its spawn. Slay that brood and the way to Bakragore is wide open."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 46,
+          "line_sha256": "383516d6a1c31b108e916a8ca55f0e92f25ac6ec281e90b44578e174e594e787",
+          "section_heading_sha256": "6e40cdc96f37850241c6910433f46171c23aa9e009531d3fa3289ab355bf0e04",
+          "source_content_sha256": "dedebbe84fa502765bd71afe3d5689580dfd4849c5722ffdf9cdaf5ebcc11f79",
+          "speech": "You will have to defeat what calls itself Bakragore at least once to attack the core of its festering presence. You will be able to choose how much of the foul taint of Bakragore and its spawn you can endure. ..."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 47,
+          "line_sha256": "6b79af1d19349fb3066aa802a8a51acfd2711a3c02fa80fd6e90a9ede9412e29",
+          "section_heading_sha256": "6e40cdc96f37850241c6910433f46171c23aa9e009531d3fa3289ab355bf0e04",
+          "source_content_sha256": "dedebbe84fa502765bd71afe3d5689580dfd4849c5722ffdf9cdaf5ebcc11f79",
+          "speech": "Yet the more taint you put onto you, the harder the battle will become, yet the rewards will be greater."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 49,
+          "line_sha256": "380600d438861ce65849ae44dd3a6b8ba3e22e7915d75efa1ff575cdfb9795ef",
+          "section_heading_sha256": "6e40cdc96f37850241c6910433f46171c23aa9e009531d3fa3289ab355bf0e04",
+          "source_content_sha256": "dedebbe84fa502765bd71afe3d5689580dfd4849c5722ffdf9cdaf5ebcc11f79",
+          "speech": "The scar and void, that the blood gods demise created, still radiated with its divine power. It became an entity of its own. ..."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 50,
+          "line_sha256": "239f83ea8c143297337a675f82c120a2a49aaa3da46d6cfb75fd413928310142",
+          "section_heading_sha256": "6e40cdc96f37850241c6910433f46171c23aa9e009531d3fa3289ab355bf0e04",
+          "source_content_sha256": "dedebbe84fa502765bd71afe3d5689580dfd4849c5722ffdf9cdaf5ebcc11f79",
+          "speech": "A filthy thing of decay and rot. And it grew in power, unchecked. A malicious evil dwelt in its core, while it roamed the once holy grounds with all of its soiling presence. ..."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 51,
+          "line_sha256": "a7556e76bf3cf3412214a8cc0b697f5d3e926203d407ce71e61b45a79d11a3de",
+          "section_heading_sha256": "6e40cdc96f37850241c6910433f46171c23aa9e009531d3fa3289ab355bf0e04",
+          "source_content_sha256": "dedebbe84fa502765bd71afe3d5689580dfd4849c5722ffdf9cdaf5ebcc11f79",
+          "speech": "It shambled and devoured. Its sustenance were the worshippers of the blood god, dead or alive. None of them escaped the hunger. Eventually even the most mighty gave in. ..."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 52,
+          "line_sha256": "d89bf1de7b44baef75d87235a66dbfe2228bc79995fcbbc48840c6730d17be72",
+          "section_heading_sha256": "6e40cdc96f37850241c6910433f46171c23aa9e009531d3fa3289ab355bf0e04",
+          "source_content_sha256": "dedebbe84fa502765bd71afe3d5689580dfd4849c5722ffdf9cdaf5ebcc11f79",
+          "speech": "The most mighty of all were the dragons, magnificent species of their king. Dragons of might and the olden days. Not the pathetic shadows you know in these days. ..."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 53,
+          "line_sha256": "74ad4f642ce2e53ae8a330060d20305ada70ad49832c7a6d4d236fbd538a8e62",
+          "section_heading_sha256": "6e40cdc96f37850241c6910433f46171c23aa9e009531d3fa3289ab355bf0e04",
+          "source_content_sha256": "dedebbe84fa502765bd71afe3d5689580dfd4849c5722ffdf9cdaf5ebcc11f79",
+          "speech": "The thing .. infected them, overtook them, made them his and made them him. ..."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 54,
+          "line_sha256": "783cb6cc0dfff2deec773aa7bfcd6528eb5ef0029826655f4afd34adddf5db90",
+          "section_heading_sha256": "6e40cdc96f37850241c6910433f46171c23aa9e009531d3fa3289ab355bf0e04",
+          "source_content_sha256": "dedebbe84fa502765bd71afe3d5689580dfd4849c5722ffdf9cdaf5ebcc11f79",
+          "speech": "At some point, out of a conscious thought or raw instinct, perhaps even a physical necessity the thing gave birth to two sets of twins. ..."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 55,
+          "line_sha256": "8439608826e341463e8f0fb7582e2295b94c28192443f9e54c2c57814ce7d59d",
+          "section_heading_sha256": "6e40cdc96f37850241c6910433f46171c23aa9e009531d3fa3289ab355bf0e04",
+          "source_content_sha256": "dedebbe84fa502765bd71afe3d5689580dfd4849c5722ffdf9cdaf5ebcc11f79",
+          "speech": "Not in any physical sense though. It split aspects of his own, that had befallen some dragons and made them entities of their own. ..."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 56,
+          "line_sha256": "3037efca035d7f9621bf81e5de55374e7be3de2aade25e9b8d133f185b9efc50",
+          "section_heading_sha256": "6e40cdc96f37850241c6910433f46171c23aa9e009531d3fa3289ab355bf0e04",
+          "source_content_sha256": "dedebbe84fa502765bd71afe3d5689580dfd4849c5722ffdf9cdaf5ebcc11f79",
+          "speech": "Thus, the twins of rot and the twins of 'the light that is not' came to be."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 58,
+          "line_sha256": "dab600e1c77924041449475b4780d73c9bf5da171ebd5e46159dc0445d85fee4",
+          "section_heading_sha256": "6e40cdc96f37850241c6910433f46171c23aa9e009531d3fa3289ab355bf0e04",
+          "source_content_sha256": "dedebbe84fa502765bd71afe3d5689580dfd4849c5722ffdf9cdaf5ebcc11f79",
+          "speech": "Though what is left of the powers, granted to me by my god and my extensive knowledge of his essence, I'm able to assist you in managing the taint that you obtained and you bear. ..."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 59,
+          "line_sha256": "255aa2001bb96b0499b8a3afbe23a14763353a34b56141c069958647bd5eea99",
+          "section_heading_sha256": "6e40cdc96f37850241c6910433f46171c23aa9e009531d3fa3289ab355bf0e04",
+          "source_content_sha256": "dedebbe84fa502765bd71afe3d5689580dfd4849c5722ffdf9cdaf5ebcc11f79",
+          "speech": "Mind you, however, I can only remove the burden that you are bearing. Once done you will have to acquire the taints anew."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 61,
+          "line_sha256": "01c6cd9a333ab29f1a2cd97f2638c29c9db1634f41d769147e3e0e04abff2661",
+          "section_heading_sha256": "6e40cdc96f37850241c6910433f46171c23aa9e009531d3fa3289ab355bf0e04",
+          "source_content_sha256": "dedebbe84fa502765bd71afe3d5689580dfd4849c5722ffdf9cdaf5ebcc11f79",
+          "speech": "You are not tainted, mortal."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 63,
+          "line_sha256": "422d30a1ce53a3a0fee7ed3ea5beb8852b87168b57faeb1224a9c81061b5a9d4",
+          "section_heading_sha256": "6e40cdc96f37850241c6910433f46171c23aa9e009531d3fa3289ab355bf0e04",
+          "source_content_sha256": "dedebbe84fa502765bd71afe3d5689580dfd4849c5722ffdf9cdaf5ebcc11f79",
+          "speech": "I can help you with the taint that you wield. You just have to ask."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 65,
+          "line_sha256": "48fedbe3c9f13b1477fc98375ab2aa7b4b65ec05a08018a1e1c4b36e66562d25",
+          "section_heading_sha256": "6e40cdc96f37850241c6910433f46171c23aa9e009531d3fa3289ab355bf0e04",
+          "source_content_sha256": "dedebbe84fa502765bd71afe3d5689580dfd4849c5722ffdf9cdaf5ebcc11f79",
+          "speech": "After your first victory, the healing of the place might slowly begin. Yet the wound that is Bakragore will still fester. More victories can weaken the festering even more, yet not without sacrifice."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 67,
+          "line_sha256": "5f8715b4dc75196b11c1bc47f68a1ad18d593c63ecabcdf36950c2453891b051",
+          "section_heading_sha256": "6e40cdc96f37850241c6910433f46171c23aa9e009531d3fa3289ab355bf0e04",
+          "source_content_sha256": "dedebbe84fa502765bd71afe3d5689580dfd4849c5722ffdf9cdaf5ebcc11f79",
+          "speech": "You will acquire a taint, a certain corruption, a touch of decay when you kill the festering spawn and Bakragore, its source."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 69,
+          "line_sha256": "995569ea151a3be64a288a40fdf78bb7ba7b6789459342863f7a20b7fe699f8e",
+          "section_heading_sha256": "6e40cdc96f37850241c6910433f46171c23aa9e009531d3fa3289ab355bf0e04",
+          "source_content_sha256": "dedebbe84fa502765bd71afe3d5689580dfd4849c5722ffdf9cdaf5ebcc11f79",
+          "speech": "The taint of decay will wither and devour any lesser being. But you .. you might prevail."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 71,
+          "line_sha256": "abc74d7ea98751fadcd625c40c0699cda328ec8cf463f221d03701caadda7c8e",
+          "section_heading_sha256": "6e40cdc96f37850241c6910433f46171c23aa9e009531d3fa3289ab355bf0e04",
+          "source_content_sha256": "dedebbe84fa502765bd71afe3d5689580dfd4849c5722ffdf9cdaf5ebcc11f79",
+          "speech": "You can't escape the taint entirely. Yet you can endure it - at a cost."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 73,
+          "line_sha256": "892a47b6ea231d234815fcbc55cbff82bbfc5dcbc46fe54ceab1a420c7e44fb7",
+          "section_heading_sha256": "6e40cdc96f37850241c6910433f46171c23aa9e009531d3fa3289ab355bf0e04",
+          "source_content_sha256": "dedebbe84fa502765bd71afe3d5689580dfd4849c5722ffdf9cdaf5ebcc11f79",
+          "speech": "There are hindrances and weaknesses that come with the taint. ..."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 74,
+          "line_sha256": "cfa1dc0352563499742c3c634a5d71616932d91d14b6f58c780888a2b90bd93b",
+          "section_heading_sha256": "6e40cdc96f37850241c6910433f46171c23aa9e009531d3fa3289ab355bf0e04",
+          "source_content_sha256": "dedebbe84fa502765bd71afe3d5689580dfd4849c5722ffdf9cdaf5ebcc11f79",
+          "speech": "You will experience that things won't get as easy as they used to be. Only as long as you are in the contaminated areas, but still."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 76,
+          "line_sha256": "128346ff697dac0cc1b2f830d6863944ce852af648de213322a6c5a2fcc82476",
+          "section_heading_sha256": "6e40cdc96f37850241c6910433f46171c23aa9e009531d3fa3289ab355bf0e04",
+          "source_content_sha256": "dedebbe84fa502765bd71afe3d5689580dfd4849c5722ffdf9cdaf5ebcc11f79",
+          "speech": "To enter the realm of the sanguine master and destroy its spawn, a sufficient sacrifice is imperative. ..."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 77,
+          "line_sha256": "bea80c52285f69383af209df3db45c643a802767803f8f63d70f2363c4da8b8b",
+          "section_heading_sha256": "6e40cdc96f37850241c6910433f46171c23aa9e009531d3fa3289ab355bf0e04",
+          "source_content_sha256": "dedebbe84fa502765bd71afe3d5689580dfd4849c5722ffdf9cdaf5ebcc11f79",
+          "speech": "Find and slay the keeper of blooded tears and bring the nectar of his eyes before the blood god. Present your gift on the sacrificial altar. ..."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 78,
+          "line_sha256": "788af6c50936478d7be5fadd566358f840157b725784f2c83ef48b99969090bf",
+          "section_heading_sha256": "6e40cdc96f37850241c6910433f46171c23aa9e009531d3fa3289ab355bf0e04",
+          "source_content_sha256": "dedebbe84fa502765bd71afe3d5689580dfd4849c5722ffdf9cdaf5ebcc11f79",
+          "speech": "After - and under no circumstances before - you have completed this procedure, you can enter the sacred fluid. You can, of course also take a slightly faster... detour."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 80,
+          "line_sha256": "b210ffaa084f28d0454bb14d2a5eacedcc69b36a290e80d11d08a8a1376ec2d3",
+          "section_heading_sha256": "6e40cdc96f37850241c6910433f46171c23aa9e009531d3fa3289ab355bf0e04",
+          "source_content_sha256": "dedebbe84fa502765bd71afe3d5689580dfd4849c5722ffdf9cdaf5ebcc11f79",
+          "speech": "Hm. I see. Well, I will be frank. Every blood sacrifice has its price. Blood money will please the blood god... just as well. ..."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 81,
+          "line_sha256": "8a554a0a08a207703a219561c654623aad2524df38ee824508f23e898cf28c61",
+          "section_heading_sha256": "6e40cdc96f37850241c6910433f46171c23aa9e009531d3fa3289ab355bf0e04",
+          "source_content_sha256": "dedebbe84fa502765bd71afe3d5689580dfd4849c5722ffdf9cdaf5ebcc11f79",
+          "speech": "The sum would be five million gold pieces and I... my master will be pleased. Are you prepared for a sacrifice such as this?"
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 83,
+          "line_sha256": "5a53c938e1a66fd245705b3997cbdfd3806c66ea98ce6e712daa54f8883e5738",
+          "section_heading_sha256": "6e40cdc96f37850241c6910433f46171c23aa9e009531d3fa3289ab355bf0e04",
+          "source_content_sha256": "dedebbe84fa502765bd71afe3d5689580dfd4849c5722ffdf9cdaf5ebcc11f79",
+          "speech": "Waverer. Begone!"
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 85,
+          "line_sha256": "8b701bde94e6e969a26ad75a59f79058e28ba78ac95df0c67a00843d8b86a87e",
+          "section_heading_sha256": "6e40cdc96f37850241c6910433f46171c23aa9e009531d3fa3289ab355bf0e04",
+          "source_content_sha256": "dedebbe84fa502765bd71afe3d5689580dfd4849c5722ffdf9cdaf5ebcc11f79",
+          "speech": "You are willing to pay 5000000 gold pieces, then? There is no turning back after our... transaction is complete. Are you sure?"
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 87,
+          "line_sha256": "57174a4a12e62e0cd4b23cf671b527c68a20088dcb5f02c62ea00cf6a373c541",
+          "section_heading_sha256": "6e40cdc96f37850241c6910433f46171c23aa9e009531d3fa3289ab355bf0e04",
+          "source_content_sha256": "dedebbe84fa502765bd71afe3d5689580dfd4849c5722ffdf9cdaf5ebcc11f79",
+          "speech": "You are not in the possession of this amount of gold. Do not take me or my master for a fool - begone!"
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 89,
+          "line_sha256": "6be1b388bc70a26014be7fe4dcc3487192a5e02d011d6de0a8fff24874ed3e68",
+          "section_heading_sha256": "6e40cdc96f37850241c6910433f46171c23aa9e009531d3fa3289ab355bf0e04",
+          "source_content_sha256": "dedebbe84fa502765bd71afe3d5689580dfd4849c5722ffdf9cdaf5ebcc11f79",
+          "speech": "The bargain has been made, the business is done."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 91,
+          "line_sha256": "6db90936fa815cb184bff3c72dec06a169702f8f6aa76b9bcf87873830b5e357",
+          "section_heading_sha256": "6e40cdc96f37850241c6910433f46171c23aa9e009531d3fa3289ab355bf0e04",
+          "source_content_sha256": "dedebbe84fa502765bd71afe3d5689580dfd4849c5722ffdf9cdaf5ebcc11f79",
+          "speech": "I can still sense the growing power within the putrid realms beyond. Go and end that threat once and for all."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 93,
+          "line_sha256": "dc1c9b9c926345b21abd612f0c7d992e4eda05e2b3e69886ec884ee7c3dcbcee",
+          "section_heading_sha256": "6e40cdc96f37850241c6910433f46171c23aa9e009531d3fa3289ab355bf0e04",
+          "source_content_sha256": "dedebbe84fa502765bd71afe3d5689580dfd4849c5722ffdf9cdaf5ebcc11f79",
+          "speech": "Farewell."
+        }
+      ],
+      "name": "Bloodshade Rotten",
+      "native_variant_speech_binding_qualified": false,
+      "note": "D10 requires attributable recorded literal replies and a strictly larger positive differing-text match score. Wiki spell lists, canonical name aliases and generic transport prose do not prove variant speech or source guard behavior.",
+      "npc_key": "oteryn:npc.bloodshade_rotten",
+      "page_url": "https://www.tibiawiki.com.br/wiki/A_Bloodshade?action=raw",
+      "presentation_braces_stripped_scores_not_admission": {
+        "canary": {
+          "matches": 1,
+          "misses": 0,
+          "total": 1
+        },
+        "crystal": {
+          "matches": 0,
+          "misses": 1,
+          "total": 1
+        }
+      },
+      "reason": "CANONICAL_DISPLAY_NAME_SHARED_BY_TWO_NATIVE_VARIANTS_AND_MIXED_LOCATION_TRANSCRIPT",
+      "runtime_qualified": false,
+      "source_candidates": [
+        {
+          "accepted_native_binding_hash_matches": true,
+          "accepted_native_binding_pin_matches": true,
+          "deterministic_two_conversions": true,
+          "exact_registered_name": true,
+          "opaque_guards_actions_retained": true,
+          "raw_sha256": "cc3da7e3680ef02775675ebd3de24aa5a136b8579b9de6df8ec59d0182e24dba",
+          "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+          "source": "canary",
+          "source_file": "data-otservbr-global/npc/bloodshade_rotten.lua",
+          "source_program_sha256": "c45ceebdbdb7ae36c457a3c1c743938193b0a90f929a2df833c57384ccc13eb5",
+          "source_registered_npc_names": [
+            "Bloodshade Rotten"
+          ],
+          "static_candidate": {
+            "farewell": [
+              "Bye, |PLAYERNAME|."
+            ],
+            "greet": [
+              "Mortal! If you are on a {quest} to serve the blood god, my master - be greeted!"
+            ],
+            "walkaway": [
+              "Bye."
+            ]
+          },
+          "static_drop_counts": {}
+        },
+        {
+          "accepted_native_binding_hash_matches": true,
+          "accepted_native_binding_pin_matches": true,
+          "deterministic_two_conversions": true,
+          "exact_registered_name": true,
+          "opaque_guards_actions_retained": true,
+          "raw_sha256": "153105638eeaa55321f4e30caf4f5796291c89329092b32b3d4e6d6f9103df7c",
+          "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+          "source": "crystal",
+          "source_file": "data-global/npc/bloodshade_rotten.lua",
+          "source_program_sha256": "8d116a354dcadee787e8ae43c3bfdbdd809067257e6f4507d9b88ef5b19a7b44",
+          "source_registered_npc_names": [
+            "Bloodshade Rotten"
+          ],
+          "static_candidate": {
+            "farewell": [
+              "Bye, |PLAYERNAME|."
+            ],
+            "greet": [
+              "Mortal! If you are on a {quest} to serve the blood god, my master - be greeted! I can also cleanse you from rotten {taints} that burden your soul."
+            ],
+            "walkaway": [
+              "Bye."
+            ]
+          },
+          "static_drop_counts": {}
+        }
+      ],
+      "source_page_sha256": "dedebbe84fa502765bd71afe3d5689580dfd4849c5722ffdf9cdaf5ebcc11f79",
+      "source_primary_program_recovered": true,
+      "whole_program_selected": null
+    },
+    {
+      "decision": "HELD",
+      "exact_D10_text_scores": {
+        "canary": {
+          "matches": 0,
+          "misses": 0,
+          "total": 0
+        },
+        "crystal": {
+          "matches": 0,
+          "misses": 13,
+          "total": 13
+        }
+      },
+      "global_complete": false,
+      "literal_actor_observations": [],
+      "name": "Eremo",
+      "native_variant_speech_binding_qualified": false,
+      "note": "D10 requires attributable recorded literal replies and a strictly larger positive differing-text match score. Wiki spell lists, canonical name aliases and generic transport prose do not prove variant speech or source guard behavior.",
+      "npc_key": "oteryn:npc.eremo",
+      "page_url": "https://www.tibiawiki.com.br/wiki/Eremo?action=raw",
+      "presentation_braces_stripped_scores_not_admission": {
+        "canary": {
+          "matches": 0,
+          "misses": 0,
+          "total": 0
+        },
+        "crystal": {
+          "matches": 0,
+          "misses": 13,
+          "total": 13
+        }
+      },
+      "reason": "NO_ACTOR_TRANSCRIPT_ACQUIRED_SPELL_LIST_IS_NOT_A_DIALOGUE_TEXT_TIEBREAK",
+      "runtime_qualified": false,
+      "source_candidates": [
+        {
+          "accepted_native_binding_hash_matches": true,
+          "accepted_native_binding_pin_matches": true,
+          "deterministic_two_conversions": true,
+          "exact_registered_name": true,
+          "opaque_guards_actions_retained": true,
+          "raw_sha256": "74f65d53cc63d12fc5ef174625a384a52d9db3b6a66214d972380e18d622db44",
+          "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+          "source": "canary",
+          "source_file": "data-otservbr-global/npc/eremo.lua",
+          "source_program_sha256": "04d9b5784bef561865164b08b35d4bf3f74d83f77005ef8edfd3793277879965",
+          "source_registered_npc_names": [
+            "Eremo"
+          ],
+          "static_candidate": {
+            "farewell": [
+              "It was a pleasure to help you, |PLAYERNAME|."
+            ],
+            "greet": [
+              "Welcome to my little garden, adventurer |PLAYERNAME|!"
+            ],
+            "keywords": [
+              {
+                "key": "solitude",
+                "reply": [
+                  "Would you like to receive that protection for a sacrifice of |BLESSCOST| gold, child?"
+                ],
+                "triggers": [
+                  "solitude"
+                ]
+              },
+              {
+                "key": "wisdom",
+                "reply": [
+                  "Would you like to receive that protection for a sacrifice of |BLESSCOST| gold, child?"
+                ],
+                "triggers": [
+                  "wisdom"
+                ]
+              },
+              {
+                "key": "cormaya",
+                "reply": [
+                  "Should I teleport you back to Pemaret?"
+                ],
+                "triggers": [
+                  "cormaya"
+                ]
+              },
+              {
+                "key": "back",
+                "reply": [
+                  "Should I teleport you back to Pemaret?"
+                ],
+                "triggers": [
+                  "back"
+                ]
+              },
+              {
+                "key": "passage",
+                "reply": [
+                  "Should I teleport you back to Pemaret?"
+                ],
+                "triggers": [
+                  "passage"
+                ]
+              },
+              {
+                "key": "pemaret",
+                "reply": [
+                  "Should I teleport you back to Pemaret?"
+                ],
+                "triggers": [
+                  "pemaret"
+                ]
+              },
+              {
+                "key": "pilgrimage",
+                "reply": [
+                  "Whenever you receive a lethal wound, your vital force is damaged and there is a \nchance that you lose some of your equipment. With every single of the five {blessings} you have, \nthis damage and chance of loss will be reduced."
+                ],
+                "triggers": [
+                  "pilgrimage"
+                ]
+              },
+              {
+                "key": "blessings",
+                "reply": [
+                  "There are five blessings available in five sacred places: the {spiritual} shielding, \nthe spark of the {phoenix}, the {embrace} of Tibia, the fire of the {suns} and the wisdom of {solitude}. \nAdditionally, you can receive the {twist of fate} here."
+                ],
+                "triggers": [
+                  "blessings"
+                ]
+              },
+              {
+                "key": "job",
+                "reply": [
+                  "I teach some spells, provide one of the five blessings, and sell some amulets. \nAsk me for a trade if you like."
+                ],
+                "triggers": [
+                  "job"
+                ]
+              },
+              {
+                "key": "name",
+                "reply": [
+                  "I am Eremo, an old man who has seen many things."
+                ],
+                "triggers": [
+                  "name"
+                ]
+              }
+            ],
+            "walkaway": [
+              "It was a pleasure to help you, |PLAYERNAME|."
+            ]
+          },
+          "static_drop_counts": {
+            "dropped_non_say_gated": 17,
+            "dropped_shadowed_by_omitted_sibling": 14,
+            "keyword_nodes": 10
+          }
+        },
+        {
+          "accepted_native_binding_hash_matches": true,
+          "accepted_native_binding_pin_matches": true,
+          "deterministic_two_conversions": true,
+          "exact_registered_name": true,
+          "opaque_guards_actions_retained": true,
+          "raw_sha256": "132039a8d790af142e964d624e1516648a6d6a318c159534db9c84805648401d",
+          "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+          "source": "crystal",
+          "source_file": "data-global/npc/eremo.lua",
+          "source_program_sha256": "db03eac9ad68da08b26c4375a26da34d3819195a6b030c9ab69d9ff828c637c3",
+          "source_registered_npc_names": [
+            "Eremo"
+          ],
+          "static_candidate": {
+            "farewell": [
+              "It was a pleasure to help you, |PLAYERNAME|."
+            ],
+            "greet": [
+              "Welcome to my little garden, adventurer |PLAYERNAME|!"
+            ],
+            "keywords": [
+              {
+                "key": "solitude",
+                "reply": [
+                  "Would you like to receive that protection for a sacrifice of |BLESSCOST| gold, child?"
+                ],
+                "triggers": [
+                  "solitude"
+                ]
+              },
+              {
+                "key": "wisdom",
+                "reply": [
+                  "Would you like to receive that protection for a sacrifice of |BLESSCOST| gold, child?"
+                ],
+                "triggers": [
+                  "wisdom"
+                ]
+              },
+              {
+                "key": "cormaya",
+                "reply": [
+                  "Should I teleport you back to Pemaret?"
+                ],
+                "triggers": [
+                  "cormaya"
+                ]
+              },
+              {
+                "key": "back",
+                "reply": [
+                  "Should I teleport you back to Pemaret?"
+                ],
+                "triggers": [
+                  "back"
+                ]
+              },
+              {
+                "key": "passage",
+                "reply": [
+                  "Should I teleport you back to Pemaret?"
+                ],
+                "triggers": [
+                  "passage"
+                ]
+              },
+              {
+                "key": "pemaret",
+                "reply": [
+                  "Should I teleport you back to Pemaret?"
+                ],
+                "triggers": [
+                  "pemaret"
+                ]
+              },
+              {
+                "key": "pilgrimage",
+                "reply": [
+                  "Whenever you receive a lethal wound, your vital force is damaged and there is a \nchance that you lose some of your equipment. With every single of the five {blessings} you have, \nthis damage and chance of loss will be reduced."
+                ],
+                "triggers": [
+                  "pilgrimage"
+                ]
+              },
+              {
+                "key": "blessings",
+                "reply": [
+                  "There are five blessings available in five sacred places: the {spiritual} shielding, \nthe spark of the {phoenix}, the {embrace} of Tibia, the fire of the {suns} and the wisdom of {solitude}. \nAdditionally, you can receive the {twist of fate} here."
+                ],
+                "triggers": [
+                  "blessings"
+                ]
+              },
+              {
+                "key": "job",
+                "reply": [
+                  "I teach some spells, provide one of the five blessings, and sell some amulets. \nAsk me for a trade if you like."
+                ],
+                "triggers": [
+                  "job"
+                ]
+              },
+              {
+                "key": "name",
+                "reply": [
+                  "I am Eremo, an old man who has seen many things."
+                ],
+                "triggers": [
+                  "name"
+                ]
+              },
+              {
+                "key": "conjure_wand_of_darkness",
+                "only_focus": true,
+                "reply": [
+                  "Would you like to learn {conjure wand of darkness} magic spell for 5000 gold?"
+                ],
+                "triggers": [
+                  "conjure wand of darkness"
+                ]
+              },
+              {
+                "key": "divine_dazzle",
+                "only_focus": true,
+                "reply": [
+                  "Would you like to learn {divine dazzle} magic spell for 250000 gold?"
+                ],
+                "triggers": [
+                  "divine dazzle"
+                ]
+              },
+              {
+                "key": "wild_growth_rune",
+                "only_focus": true,
+                "reply": [
+                  "Would you like to learn {Wild Growth} Rune spell for 2000 gold?"
+                ],
+                "triggers": [
+                  "wild growth rune"
+                ]
+              },
+              {
+                "key": "challenge",
+                "only_focus": true,
+                "reply": [
+                  "Would you like to learn {challenge} magic spell for 2000 gold?"
+                ],
+                "triggers": [
+                  "challenge"
+                ]
+              },
+              {
+                "key": "spells",
+                "reply": [
+                  "I can teach you {attack} spells, {support} spells and spells for {runes}. What kind of spell do you wish to learn? I can also tell you which spells are available at your {level}."
+                ],
+                "triggers": [
+                  "spells"
+                ]
+              },
+              {
+                "key": "attack",
+                "only_focus": true,
+                "reply": [
+                  "My attack spells are: {Divine Dazzle}."
+                ],
+                "triggers": [
+                  "attack"
+                ]
+              },
+              {
+                "key": "support",
+                "only_focus": true,
+                "reply": [
+                  "My support spells are: {Challenge} and {Conjure Wand of Darkness}."
+                ],
+                "triggers": [
+                  "support"
+                ]
+              },
+              {
+                "key": "runes",
+                "only_focus": true,
+                "reply": [
+                  "My rune spells are: {Wild Growth} Rune."
+                ],
+                "triggers": [
+                  "runes"
+                ]
+              },
+              {
+                "children": [
+                  {
+                    "key": "250",
+                    "only_focus": true,
+                    "reply": [
+                      "For level 250 I have {Divine Dazzle} for 250000 gold."
+                    ],
+                    "triggers": [
+                      "250"
+                    ]
+                  },
+                  {
+                    "key": "41",
+                    "only_focus": true,
+                    "reply": [
+                      "For level 41 I have {Conjure Wand of Darkness} for 5000 gold."
+                    ],
+                    "triggers": [
+                      "41"
+                    ]
+                  },
+                  {
+                    "key": "27",
+                    "only_focus": true,
+                    "reply": [
+                      "For level 27 I have {Wild Growth} Rune for 2000 gold."
+                    ],
+                    "triggers": [
+                      "27"
+                    ]
+                  },
+                  {
+                    "key": "20",
+                    "only_focus": true,
+                    "reply": [
+                      "For level 20 I have {Challenge} for 2000 gold."
+                    ],
+                    "triggers": [
+                      "20"
+                    ]
+                  }
+                ],
+                "key": "level",
+                "only_focus": true,
+                "reply": [
+                  "I have spells for level {20}, {27}, {41} and {250}."
+                ],
+                "triggers": [
+                  "level"
+                ]
+              }
+            ],
+            "walkaway": [
+              "It was a pleasure to help you, |PLAYERNAME|."
+            ]
+          },
+          "static_drop_counts": {
+            "dropped_non_say_gated": 21,
+            "dropped_shadowed_by_omitted_sibling": 14,
+            "keyword_nodes": 23
+          }
+        }
+      ],
+      "source_page_sha256": "43a86ca1e58d87e1f3a3e08ed2d81cdc7a08b52fc786d3178fa087a977482b70",
+      "source_primary_program_recovered": true,
+      "whole_program_selected": null
+    },
+    {
+      "decision": "HELD",
+      "exact_D10_text_scores": {
+        "canary": {
+          "matches": 0,
+          "misses": 1,
+          "total": 1
+        },
+        "crystal": {
+          "matches": 0,
+          "misses": 1,
+          "total": 1
+        }
+      },
+      "global_complete": false,
+      "literal_actor_observations": [
+        {
+          "identity_binding_qualified": false,
+          "line": 19,
+          "line_sha256": "1eebbec73c7bc6a00599918ec9e0225d596644df04144db7b76fd863456c0c16",
+          "section_heading_sha256": "6e40cdc96f37850241c6910433f46171c23aa9e009531d3fa3289ab355bf0e04",
+          "source_content_sha256": "d19c4e694509bbee1bd416561a74dd498ba13711d41567cb8f44dedbfdcc4f6d",
+          "speech": "What do you want, Jogador? I'm a busy man."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 22,
+          "line_sha256": "6ded3bcdb9992fc96faf7abec6767371e58182b39085513a624363376d9a9e28",
+          "section_heading_sha256": "3b25e7f63678fd7b02c06c81823090c5e6f2b0767a1a836c09910b8216882fe5",
+          "source_content_sha256": "d19c4e694509bbee1bd416561a74dd498ba13711d41567cb8f44dedbfdcc4f6d",
+          "speech": "Well, I'm kind of a delivery man I guess. I take on small transportation jobs with my boat."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 24,
+          "line_sha256": "022e0dcd95aeadca9b996fcf6103c6dc8fc20fc151ff31bb29cf05558a4ad932",
+          "section_heading_sha256": "3b25e7f63678fd7b02c06c81823090c5e6f2b0767a1a836c09910b8216882fe5",
+          "source_content_sha256": "d19c4e694509bbee1bd416561a74dd498ba13711d41567cb8f44dedbfdcc4f6d",
+          "speech": "I'm Harlow."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 26,
+          "line_sha256": "c2ff914e5e94d113d5021a4228036c6a658fab22bae8ea343bacd278943d2353",
+          "section_heading_sha256": "3b25e7f63678fd7b02c06c81823090c5e6f2b0767a1a836c09910b8216882fe5",
+          "source_content_sha256": "d19c4e694509bbee1bd416561a74dd498ba13711d41567cb8f44dedbfdcc4f6d",
+          "speech": "I have a job, you know?"
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 28,
+          "line_sha256": "bd5a2f324e5a924f3643cc051b94f743c138d8bac0d4f4b7fdedbbc7a70cb4ba",
+          "section_heading_sha256": "3b25e7f63678fd7b02c06c81823090c5e6f2b0767a1a836c09910b8216882fe5",
+          "source_content_sha256": "d19c4e694509bbee1bd416561a74dd498ba13711d41567cb8f44dedbfdcc4f6d",
+          "speech": "I can take care of them myself. Don't need anyone to babysit me at night."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 30,
+          "line_sha256": "868db24a3ebc0bd65382a2d056ead629edfd21fc715ce1804a35bf312c13e76d",
+          "section_heading_sha256": "3b25e7f63678fd7b02c06c81823090c5e6f2b0767a1a836c09910b8216882fe5",
+          "source_content_sha256": "d19c4e694509bbee1bd416561a74dd498ba13711d41567cb8f44dedbfdcc4f6d",
+          "speech": "I think I saw that guy lurking around in Yalahar. He's fighting vampires and all that crazy stuff."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 32,
+          "line_sha256": "d06dc740041ceaca1f83953ef4dd44795620a3b91a2e49d10e32efe179c837f5",
+          "section_heading_sha256": "3b25e7f63678fd7b02c06c81823090c5e6f2b0767a1a836c09910b8216882fe5",
+          "source_content_sha256": "d19c4e694509bbee1bd416561a74dd498ba13711d41567cb8f44dedbfdcc4f6d",
+          "speech": "Bye, Jogador."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 35,
+          "line_sha256": "ad1e476b331c476b76c24199f89fc399cab9741b71e5a2eabbf57b47e517d501",
+          "section_heading_sha256": "c1c0dacfc920a400bf2c12aa1f5de21771b65700df85989bae814b1242e77573",
+          "source_content_sha256": "d19c4e694509bbee1bd416561a74dd498ba13711d41567cb8f44dedbfdcc4f6d",
+          "speech": "Yes, this is where we are, genius."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 37,
+          "line_sha256": "4e9655dfa83b417ec56cc0a5d8a3c26eee41244b5862e90c049a8b3341258e7b",
+          "section_heading_sha256": "c1c0dacfc920a400bf2c12aa1f5de21771b65700df85989bae814b1242e77573",
+          "source_content_sha256": "d19c4e694509bbee1bd416561a74dd498ba13711d41567cb8f44dedbfdcc4f6d",
+          "speech": "Want me to bring you to Vengoth again for 100 gold?"
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 39,
+          "line_sha256": "bd831f3828479072cfb7b1573b46f63a0d82ec2750ecb7138af8f32a756d2dfe",
+          "section_heading_sha256": "c1c0dacfc920a400bf2c12aa1f5de21771b65700df85989bae814b1242e77573",
+          "source_content_sha256": "d19c4e694509bbee1bd416561a74dd498ba13711d41567cb8f44dedbfdcc4f6d",
+          "speech": "Okay. Enjoy."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 41,
+          "line_sha256": "56bd6b3526e9ef345a866f4d6a5f41b9ab12d24950f8977488be2dd3dfd73c1c",
+          "section_heading_sha256": "c1c0dacfc920a400bf2c12aa1f5de21771b65700df85989bae814b1242e77573",
+          "source_content_sha256": "d19c4e694509bbee1bd416561a74dd498ba13711d41567cb8f44dedbfdcc4f6d",
+          "speech": "Fair enough."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 43,
+          "line_sha256": "f3b3f680a6f8b518e53c1629aa6188de58bbf23901a79d19c5c0e4344f33efe5",
+          "section_heading_sha256": "c1c0dacfc920a400bf2c12aa1f5de21771b65700df85989bae814b1242e77573",
+          "source_content_sha256": "d19c4e694509bbee1bd416561a74dd498ba13711d41567cb8f44dedbfdcc4f6d",
+          "speech": "What the heck, stop bothering me with your questions."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 46,
+          "line_sha256": "ad1e476b331c476b76c24199f89fc399cab9741b71e5a2eabbf57b47e517d501",
+          "section_heading_sha256": "7b510962e1782ba61f6cf9271e7787668df6f37d0c0aed64e4c744e407796e16",
+          "source_content_sha256": "d19c4e694509bbee1bd416561a74dd498ba13711d41567cb8f44dedbfdcc4f6d",
+          "speech": "Yes, this is where we are, genius."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 48,
+          "line_sha256": "db45c05f694ab6389d849b1e1829f2c787e007a1870312e7106f63a5126aefdb",
+          "section_heading_sha256": "7b510962e1782ba61f6cf9271e7787668df6f37d0c0aed64e4c744e407796e16",
+          "source_content_sha256": "d19c4e694509bbee1bd416561a74dd498ba13711d41567cb8f44dedbfdcc4f6d",
+          "speech": "Do you want me to bring you back to Yalahar for 50 gold?"
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 50,
+          "line_sha256": "bd831f3828479072cfb7b1573b46f63a0d82ec2750ecb7138af8f32a756d2dfe",
+          "section_heading_sha256": "7b510962e1782ba61f6cf9271e7787668df6f37d0c0aed64e4c744e407796e16",
+          "source_content_sha256": "d19c4e694509bbee1bd416561a74dd498ba13711d41567cb8f44dedbfdcc4f6d",
+          "speech": "Okay. Enjoy."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 52,
+          "line_sha256": "56bd6b3526e9ef345a866f4d6a5f41b9ab12d24950f8977488be2dd3dfd73c1c",
+          "section_heading_sha256": "7b510962e1782ba61f6cf9271e7787668df6f37d0c0aed64e4c744e407796e16",
+          "source_content_sha256": "d19c4e694509bbee1bd416561a74dd498ba13711d41567cb8f44dedbfdcc4f6d",
+          "speech": "Fair enough."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 54,
+          "line_sha256": "30fdf5e934eb5d68735032eb2b3f43f8cd931a718045f43a34808ec6aebf2696",
+          "section_heading_sha256": "7b510962e1782ba61f6cf9271e7787668df6f37d0c0aed64e4c744e407796e16",
+          "source_content_sha256": "d19c4e694509bbee1bd416561a74dd498ba13711d41567cb8f44dedbfdcc4f6d",
+          "speech": "Listen, just because we're business partners doesn't mean we're friends. Leave me alone unless you need a passage."
+        }
+      ],
+      "name": "Harlow (Vengoth)",
+      "native_variant_speech_binding_qualified": false,
+      "note": "D10 requires attributable recorded literal replies and a strictly larger positive differing-text match score. Wiki spell lists, canonical name aliases and generic transport prose do not prove variant speech or source guard behavior.",
+      "npc_key": "oteryn:npc.harlow_vengoth",
+      "page_url": "https://www.tibiawiki.com.br/wiki/Harlow?action=raw",
+      "presentation_braces_stripped_scores_not_admission": {
+        "canary": {
+          "matches": 0,
+          "misses": 1,
+          "total": 1
+        },
+        "crystal": {
+          "matches": 0,
+          "misses": 1,
+          "total": 1
+        }
+      },
+      "reason": "NO_LITERAL_DIFFERING_TEXT_MATCH",
+      "runtime_qualified": false,
+      "source_candidates": [
+        {
+          "accepted_native_binding_hash_matches": true,
+          "accepted_native_binding_pin_matches": true,
+          "deterministic_two_conversions": true,
+          "exact_registered_name": true,
+          "opaque_guards_actions_retained": true,
+          "raw_sha256": "470ca87ea5c3c82f6f4ff77ad756208b07fac9ab660769d0a871bac935090f5f",
+          "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+          "source": "canary",
+          "source_file": "data-otservbr-global/npc/harlow_vengoth.lua",
+          "source_program_sha256": "48db50143ef4a35f1add726b31d96363d2e710f741f4749adfcc68da310f9d8f",
+          "source_registered_npc_names": [
+            "Harlow (Vengoth)"
+          ],
+          "static_candidate": {
+            "farewell": [
+              "Good bye."
+            ],
+            "greet": [
+              "Want to go back to {Yalahar} for 50 gold? Just ask me."
+            ],
+            "keywords": [
+              {
+                "children": [
+                  {
+                    "key": "no",
+                    "reply": [
+                      "Oh well."
+                    ],
+                    "reset": true,
+                    "triggers": [
+                      "no"
+                    ]
+                  }
+                ],
+                "key": "yalahar",
+                "reply": [
+                  "Do you seek a passage to Yalahar for |TRAVELCOST|?"
+                ],
+                "triggers": [
+                  "yalahar"
+                ]
+              }
+            ],
+            "walkaway": [
+              "Good bye then."
+            ]
+          },
+          "static_drop_counts": {
+            "dropped_non_say_gated": 1,
+            "keyword_nodes": 2
+          }
+        },
+        {
+          "accepted_native_binding_hash_matches": true,
+          "accepted_native_binding_pin_matches": true,
+          "deterministic_two_conversions": true,
+          "exact_registered_name": true,
+          "opaque_guards_actions_retained": true,
+          "raw_sha256": "25ee2a79a96c2df5f803445e7e916aa3a437e32adf9a387d43a4d18442e74ff5",
+          "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+          "source": "crystal",
+          "source_file": "data-global/npc/harlow_vengoth.lua",
+          "source_program_sha256": "7053904776d35e216486d2bb3209bf9d356b5f3667cd90c239cfda4a1e90741c",
+          "source_registered_npc_names": [
+            "Harlow (Vengoth)"
+          ],
+          "static_candidate": {
+            "farewell": [
+              "Good bye."
+            ],
+            "greet": [
+              "Want to go back to {Yalahar}? Just ask me."
+            ],
+            "keywords": [
+              {
+                "children": [
+                  {
+                    "key": "no",
+                    "reply": [
+                      "Oh well."
+                    ],
+                    "reset": true,
+                    "triggers": [
+                      "no"
+                    ]
+                  }
+                ],
+                "key": "yalahar",
+                "reply": [
+                  "Do you seek a passage to Yalahar for |TRAVELCOST|?"
+                ],
+                "triggers": [
+                  "yalahar"
+                ]
+              }
+            ],
+            "walkaway": [
+              "Good bye then."
+            ]
+          },
+          "static_drop_counts": {
+            "dropped_non_say_gated": 1,
+            "keyword_nodes": 2
+          }
+        }
+      ],
+      "source_page_sha256": "d19c4e694509bbee1bd416561a74dd498ba13711d41567cb8f44dedbfdcc4f6d",
+      "source_primary_program_recovered": true,
+      "whole_program_selected": null
+    },
+    {
+      "decision": "HELD",
+      "exact_D10_text_scores": {
+        "canary": {
+          "matches": 0,
+          "misses": 3,
+          "total": 3
+        },
+        "crystal": {
+          "matches": 0,
+          "misses": 1,
+          "total": 1
+        }
+      },
+      "global_complete": false,
+      "literal_actor_observations": [
+        {
+          "identity_binding_qualified": false,
+          "line": 17,
+          "line_sha256": "1433e2575607f8694ff7c170a825afb6133390e0b1e0a99b58a397b835cd4608",
+          "section_heading_sha256": "6e40cdc96f37850241c6910433f46171c23aa9e009531d3fa3289ab355bf0e04",
+          "source_content_sha256": "b7124c414c05a642f382bce8414a7bd0d4367e7241c674b45f3b7ce1df216c01",
+          "speech": "Psht! Not that loud! Evil lurks everywhere. It's after me!"
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 20,
+          "line_sha256": "5fbb300e86da649824da7347c24452beea03548f8becc9033caab42fac0a18f8",
+          "section_heading_sha256": "6ffc2df6e48ec040e809875ffc2d3ec88607fcb8de0de0e5c02d10ba274ce1c4",
+          "source_content_sha256": "b7124c414c05a642f382bce8414a7bd0d4367e7241c674b45f3b7ce1df216c01",
+          "speech": "I am an inventor and sage. I have pledged my life to fighting evil wherever it raises it's ugly head. It's hard work and you have to get your hands dirty, but someone has to do it."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 22,
+          "line_sha256": "dcd524817f115a3e4d1bfb69afa3e146152aa47d4b957b63039734c9c26040b8",
+          "section_heading_sha256": "6ffc2df6e48ec040e809875ffc2d3ec88607fcb8de0de0e5c02d10ba274ce1c4",
+          "source_content_sha256": "b7124c414c05a642f382bce8414a7bd0d4367e7241c674b45f3b7ce1df216c01",
+          "speech": "My name is top secret!"
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 24,
+          "line_sha256": "40709b56115d942b54c7b726c36f5e91f636c65fd97fc81fc07bc3c1eb6af8f3",
+          "section_heading_sha256": "6ffc2df6e48ec040e809875ffc2d3ec88607fcb8de0de0e5c02d10ba274ce1c4",
+          "source_content_sha256": "b7124c414c05a642f382bce8414a7bd0d4367e7241c674b45f3b7ce1df216c01",
+          "speech": "Nooooo! Who blew my cover? I hope you are not in league with the forces of evil!"
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 26,
+          "line_sha256": "0f329671ebcb1c448e7b89f4cd14e0f6cd1dcbb617bef2b35e01d68f9a6d4a34",
+          "section_heading_sha256": "6ffc2df6e48ec040e809875ffc2d3ec88607fcb8de0de0e5c02d10ba274ce1c4",
+          "source_content_sha256": "b7124c414c05a642f382bce8414a7bd0d4367e7241c674b45f3b7ce1df216c01",
+          "speech": "Evil lurks everywhere. It only takes some ignorant or cowardly people to turn their heads away once too often for it to spread its ugly seeds. I, however, am constantly vigilant and always prepared. ..."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 27,
+          "line_sha256": "571714bafac1801b87d5af46a16167ddb59a36b618fbeac215acaf3d88fa8110",
+          "section_heading_sha256": "6ffc2df6e48ec040e809875ffc2d3ec88607fcb8de0de0e5c02d10ba274ce1c4",
+          "source_content_sha256": "b7124c414c05a642f382bce8414a7bd0d4367e7241c674b45f3b7ce1df216c01",
+          "speech": "I hunt out the signs of evil everywhere. Even in the face of scorn and ridicule, I will not hide my head in the sand and I will be ready to fight!"
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 29,
+          "line_sha256": "0e49c7fedc50ef84bfa601ac2bf4f1d5fb8171f996258f6fc5ef08acce9b2549",
+          "section_heading_sha256": "6ffc2df6e48ec040e809875ffc2d3ec88607fcb8de0de0e5c02d10ba274ce1c4",
+          "source_content_sha256": "b7124c414c05a642f382bce8414a7bd0d4367e7241c674b45f3b7ce1df216c01",
+          "speech": "Ignorance is evil's most potent ally. The servants of evil are plotting to keep us ignorant and poke ridicule at those who come too close to the truth."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 31,
+          "line_sha256": "222e7e3a63af58ba418b13b9e0b97dfcaa643a6c4fb8f049c48813ffe74942ff",
+          "section_heading_sha256": "6ffc2df6e48ec040e809875ffc2d3ec88607fcb8de0de0e5c02d10ba274ce1c4",
+          "source_content_sha256": "b7124c414c05a642f382bce8414a7bd0d4367e7241c674b45f3b7ce1df216c01",
+          "speech": "It is my calling to root out evil in all its forms and uphold the vigilant fight. It is a lonely fight, an unending fight, but someone has to do it! ..."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 32,
+          "line_sha256": "7b8b2ac702a2e55bc40f20f96a5f79876671c2926ae95b94b9184945618077fd",
+          "section_heading_sha256": "6ffc2df6e48ec040e809875ffc2d3ec88607fcb8de0de0e5c02d10ba274ce1c4",
+          "source_content_sha256": "b7124c414c05a642f382bce8414a7bd0d4367e7241c674b45f3b7ce1df216c01",
+          "speech": "I scour ancient texts and collect rumours in taverns in order to track the machinations of evil. ..."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 33,
+          "line_sha256": "8d6f853dbf0599d70fcf4dad118dc27dff85c72e7bdbff35529a5f404adeeea2",
+          "section_heading_sha256": "6ffc2df6e48ec040e809875ffc2d3ec88607fcb8de0de0e5c02d10ba274ce1c4",
+          "source_content_sha256": "b7124c414c05a642f382bce8414a7bd0d4367e7241c674b45f3b7ce1df216c01",
+          "speech": "Often odd occurrences are overlooked by the public as strange coincidences or fate, but those who know what to look for see the footprints of evil in history."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 35,
+          "line_sha256": "90bfe7cb3e02373545981582f53c9897d7f384054582b6f91bcfaf09d7a385f5",
+          "section_heading_sha256": "6ffc2df6e48ec040e809875ffc2d3ec88607fcb8de0de0e5c02d10ba274ce1c4",
+          "source_content_sha256": "b7124c414c05a642f382bce8414a7bd0d4367e7241c674b45f3b7ce1df216c01",
+          "speech": "When I found that ancient text, warning of the Isle of Evil, I tried to tell the world about it. But the forces of evil discovered my plans! They made people assume it was just another tale for children. ..."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 36,
+          "line_sha256": "dbc1cb99947f68b2362296abc0bddd9398bbb5b142dbfdb672e7959e47888613",
+          "section_heading_sha256": "6ffc2df6e48ec040e809875ffc2d3ec88607fcb8de0de0e5c02d10ba274ce1c4",
+          "source_content_sha256": "b7124c414c05a642f382bce8414a7bd0d4367e7241c674b45f3b7ce1df216c01",
+          "speech": "THEY distributed a book of children's bedtime stories with a copy of the text in it to undermine my message! Their despicable ruse worked and they made a laughing stock of me! Of course I knew it was a plot to discredit me. ..."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 37,
+          "line_sha256": "87624f05582d50c2a9aaad007c16e7fe1e65cf3c96f16826c355c2f4990b81c9",
+          "section_heading_sha256": "6ffc2df6e48ec040e809875ffc2d3ec88607fcb8de0de0e5c02d10ba274ce1c4",
+          "source_content_sha256": "b7124c414c05a642f382bce8414a7bd0d4367e7241c674b45f3b7ce1df216c01",
+          "speech": "On the other hand, it was obvious that THEY now knew about me and the text I possessed. I went into hiding in fear of my life! THEY have tried to assassinate me! I must be constantly vigilant!"
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 39,
+          "line_sha256": "713fcb5ff4742b3cb7aa22f69aeaf711ca9b650704be9e548aa1ee89cef8019b",
+          "section_heading_sha256": "6ffc2df6e48ec040e809875ffc2d3ec88607fcb8de0de0e5c02d10ba274ce1c4",
+          "source_content_sha256": "b7124c414c05a642f382bce8414a7bd0d4367e7241c674b45f3b7ce1df216c01",
+          "speech": "You'll find it in one of my chests. It's only a copy of course. The original is safely hidden! As much as THEY claim it's only a children's tale I know it's the truth."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 41,
+          "line_sha256": "00662ffaaee8de84f86bd17682066e345817e88d8189dd811b0218df5b1a04ac",
+          "section_heading_sha256": "6ffc2df6e48ec040e809875ffc2d3ec88607fcb8de0de0e5c02d10ba274ce1c4",
+          "source_content_sha256": "b7124c414c05a642f382bce8414a7bd0d4367e7241c674b45f3b7ce1df216c01",
+          "speech": "Bah, THEY forged a children's book that made my source material look like some part of it. Of course it is an evil plot to prevent me from locating the isle and slaying its dark master. ..."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 42,
+          "line_sha256": "e60ba056f12a051fd6b506d61861539d007895b2e341032e19eac55a818272be",
+          "section_heading_sha256": "6ffc2df6e48ec040e809875ffc2d3ec88607fcb8de0de0e5c02d10ba274ce1c4",
+          "source_content_sha256": "b7124c414c05a642f382bce8414a7bd0d4367e7241c674b45f3b7ce1df216c01",
+          "speech": "Or rather, sending some other hero who will fight the ultimate evil in its own lair on my behalf. Someone has to stay and fight the fight on the mainland, of course."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 44,
+          "line_sha256": "ea888ed9e4558b306059eb719b4037b7fa75de47075972fec9bdc74d47004234",
+          "section_heading_sha256": "6ffc2df6e48ec040e809875ffc2d3ec88607fcb8de0de0e5c02d10ba274ce1c4",
+          "source_content_sha256": "b7124c414c05a642f382bce8414a7bd0d4367e7241c674b45f3b7ce1df216c01",
+          "speech": "Evil follows a distinct pattern. It is nasty, plans to rule the world, discredits its enemies, is fond of cunning death traps and rambling monologues, ..."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 45,
+          "line_sha256": "88d1a589e048424833cbc4840e2d30cb9b6629144d7432d01b61ba96c9c842de",
+          "section_heading_sha256": "6ffc2df6e48ec040e809875ffc2d3ec88607fcb8de0de0e5c02d10ba274ce1c4",
+          "source_content_sha256": "b7124c414c05a642f382bce8414a7bd0d4367e7241c674b45f3b7ce1df216c01",
+          "speech": "it can only be vanquished by someone who completes a series of quests for some odd quest giver and it loves to have a lair, usually some sort of dungeon."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 47,
+          "line_sha256": "4810950a34c80f27d3b7006baa3ebe46321a21d96eceb00de4afe008306f41a9",
+          "section_heading_sha256": "6ffc2df6e48ec040e809875ffc2d3ec88607fcb8de0de0e5c02d10ba274ce1c4",
+          "source_content_sha256": "b7124c414c05a642f382bce8414a7bd0d4367e7241c674b45f3b7ce1df216c01",
+          "speech": "Scientists have no idea why the servants of evil are so fond of dungeons. But every evil mastermind worth his salt strives to own one. It is where it accomodates its minions and hoards its treasures."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 49,
+          "line_sha256": "849c080e3b4505d54b85ff41cb096e0fe0253f8ffda5b6365d41b499346e210e",
+          "section_heading_sha256": "6ffc2df6e48ec040e809875ffc2d3ec88607fcb8de0de0e5c02d10ba274ce1c4",
+          "source_content_sha256": "b7124c414c05a642f382bce8414a7bd0d4367e7241c674b45f3b7ce1df216c01",
+          "speech": "Evil masterminds are served by all kinds of lesser evil beings. Such minions are usually no match for a hero, so they come in great numbers to counterbalance their lack of skill. Some minions are more capable. ..."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 50,
+          "line_sha256": "61392cf2283f0975d7d2e8decc46b37ad6cdda92279ec0b6e11c7f05244b053f",
+          "section_heading_sha256": "6ffc2df6e48ec040e809875ffc2d3ec88607fcb8de0de0e5c02d10ba274ce1c4",
+          "source_content_sha256": "b7124c414c05a642f382bce8414a7bd0d4367e7241c674b45f3b7ce1df216c01",
+          "speech": "They often serve as some kind of overseer or enforcer of evil and guard the mastermind's lair. Such minions are a particular challenge for a hero, but the rewards and loot for slaying them in battle are great!"
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 52,
+          "line_sha256": "20e0738a7e67e2495cfe9791d7e4346c8d0efb725bbcb3b68474c1ae0ca94a74",
+          "section_heading_sha256": "6ffc2df6e48ec040e809875ffc2d3ec88607fcb8de0de0e5c02d10ba274ce1c4",
+          "source_content_sha256": "b7124c414c05a642f382bce8414a7bd0d4367e7241c674b45f3b7ce1df216c01",
+          "speech": "I assume it is some kind of cosmic balance. When a hero slays a minion of evil the cosmic balance grants him some kind of reward. This often comes in the form of treasure. ..."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 53,
+          "line_sha256": "08e76e64c282506a13cdf64351dee79d6a7dbcb095f3b1f00b94cc5712225c52",
+          "section_heading_sha256": "6ffc2df6e48ec040e809875ffc2d3ec88607fcb8de0de0e5c02d10ba274ce1c4",
+          "source_content_sha256": "b7124c414c05a642f382bce8414a7bd0d4367e7241c674b45f3b7ce1df216c01",
+          "speech": "Sometimes it's gold, sometimes it's a special weapon or piece of armor. Often an evil mastermind employs overseers for its hordes who guard parts of its dungeon. ..."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 54,
+          "line_sha256": "57daf2cab5258970587c6d1d9e99960c48d0e545391296779bdc44b0fdc21f29",
+          "section_heading_sha256": "6ffc2df6e48ec040e809875ffc2d3ec88607fcb8de0de0e5c02d10ba274ce1c4",
+          "source_content_sha256": "b7124c414c05a642f382bce8414a7bd0d4367e7241c674b45f3b7ce1df216c01",
+          "speech": "These overseers are often in possession of high quality items that are the stuff of legend. The cosmic balance grants such items to the victorious hero so he can slay even more powerful minions of evil."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 56,
+          "line_sha256": "edb87a51868180cc616b1e2d8b7a4545989a425ad75aaa8e2c5ddd488dcbb974",
+          "section_heading_sha256": "6ffc2df6e48ec040e809875ffc2d3ec88607fcb8de0de0e5c02d10ba274ce1c4",
+          "source_content_sha256": "b7124c414c05a642f382bce8414a7bd0d4367e7241c674b45f3b7ce1df216c01",
+          "speech": "Call it what you like. I call it cosmic balance. It's like a natural law. It is the force that inspires evil beings to build lairs and dungeons, inspires it to gather armies of minions and so on. ..."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 57,
+          "line_sha256": "e6be6f2db9fb4c6f6b45d0ecca53e3f36b44c58cc1118d2d7bc244fff2415186",
+          "section_heading_sha256": "6ffc2df6e48ec040e809875ffc2d3ec88607fcb8de0de0e5c02d10ba274ce1c4",
+          "source_content_sha256": "b7124c414c05a642f382bce8414a7bd0d4367e7241c674b45f3b7ce1df216c01",
+          "speech": "It is the only rational way to explain such strange behaviour."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 59,
+          "line_sha256": "12415eebc8684f209ee9e9d502b5b4b7f61f24e345dedd9ca3a3b994bb343929",
+          "section_heading_sha256": "6ffc2df6e48ec040e809875ffc2d3ec88607fcb8de0de0e5c02d10ba274ce1c4",
+          "source_content_sha256": "b7124c414c05a642f382bce8414a7bd0d4367e7241c674b45f3b7ce1df216c01",
+          "speech": "That heroes are rewarded with loot is down to the just nature of the cosmic balance. This is why even the most insignificant killer rat carries gold. ..."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 60,
+          "line_sha256": "793e90d22e46da338aeebf2290a0760f2ba86d4097e99a03e87526f2c4f798bd",
+          "section_heading_sha256": "6ffc2df6e48ec040e809875ffc2d3ec88607fcb8de0de0e5c02d10ba274ce1c4",
+          "source_content_sha256": "b7124c414c05a642f382bce8414a7bd0d4367e7241c674b45f3b7ce1df216c01",
+          "speech": "This, by the way, is proof positive that rats are evil minions, or else they would not carry gold. Loot is usually in the form of gold, but occasionally it also comes in the form of equipment and weapons. ..."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 61,
+          "line_sha256": "6a6db797c4299fb7a03d74c7e3bef4220f535bd9b0074f95efb9cb34fd5d0864",
+          "section_heading_sha256": "6ffc2df6e48ec040e809875ffc2d3ec88607fcb8de0de0e5c02d10ba274ce1c4",
+          "source_content_sha256": "b7124c414c05a642f382bce8414a7bd0d4367e7241c674b45f3b7ce1df216c01",
+          "speech": "Why else do dragons bother to carry armour and weapons when the beast itself is a killing machine with no use for such trinkets? It is of course cosmic balance! There is simply no other explanation!"
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 63,
+          "line_sha256": "0532dd083458af8234647cda15d3621b30d288ef06fb5015de8e8c75bf62e7dd",
+          "section_heading_sha256": "6ffc2df6e48ec040e809875ffc2d3ec88607fcb8de0de0e5c02d10ba274ce1c4",
+          "source_content_sha256": "b7124c414c05a642f382bce8414a7bd0d4367e7241c674b45f3b7ce1df216c01",
+          "speech": "My life is no longer safe. The first attempt on my life was at a party thrown by a fellow inventor. THEY put poison in one of the twenty pints of beer I drank that night. ..."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 64,
+          "line_sha256": "e976a6ebd13392f3c02ceff00fd173835b44430844e204045b6aeb73cd7c32c1",
+          "section_heading_sha256": "6ffc2df6e48ec040e809875ffc2d3ec88607fcb8de0de0e5c02d10ba274ce1c4",
+          "source_content_sha256": "b7124c414c05a642f382bce8414a7bd0d4367e7241c674b45f3b7ce1df216c01",
+          "speech": "The following morning I was close to death. Only my strong dwarven constitution stood between me and the grim reaper that day. ..."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 65,
+          "line_sha256": "c046800ba6f91a052fe9d3455ed8e27c0e1ad3af1fed9c46d4bc5bfcb08048fc",
+          "section_heading_sha256": "6ffc2df6e48ec040e809875ffc2d3ec88607fcb8de0de0e5c02d10ba274ce1c4",
+          "source_content_sha256": "b7124c414c05a642f382bce8414a7bd0d4367e7241c674b45f3b7ce1df216c01",
+          "speech": "In their next attempt, assassins tinkered with the stairs in front of my favourite tavern. When I was leaving the tavern after a night with my friends I tripped and fell, nearly breaking my neck! ..."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 66,
+          "line_sha256": "b9d08275b70941d13ecd4c6104344cda0352765064562288370553b068965cc9",
+          "section_heading_sha256": "6ffc2df6e48ec040e809875ffc2d3ec88607fcb8de0de0e5c02d10ba274ce1c4",
+          "source_content_sha256": "b7124c414c05a642f382bce8414a7bd0d4367e7241c674b45f3b7ce1df216c01",
+          "speech": "Only my catlike reflexes saved my life that time. Well, my reflexes and my beard that absorbed some of the force of the fall. ..."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 67,
+          "line_sha256": "279700dbbf1a7e058e3001b9829c7624371dd4e8fd0c4c3eceecc39665bebfcc",
+          "section_heading_sha256": "6ffc2df6e48ec040e809875ffc2d3ec88607fcb8de0de0e5c02d10ba274ce1c4",
+          "source_content_sha256": "b7124c414c05a642f382bce8414a7bd0d4367e7241c674b45f3b7ce1df216c01",
+          "speech": "Other attempts on my life followed! Like the object that was hurled at me while I was singing and dancing on the bar while at a party. ..."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 68,
+          "line_sha256": "9e73bf2b2927defd84c0bd6674d306c17f50d32ff8f6538c19242ecb1df9f1b0",
+          "section_heading_sha256": "6ffc2df6e48ec040e809875ffc2d3ec88607fcb8de0de0e5c02d10ba274ce1c4",
+          "source_content_sha256": "b7124c414c05a642f382bce8414a7bd0d4367e7241c674b45f3b7ce1df216c01",
+          "speech": "And the list goes on and on. I know that I am in grave danger and I will not lie to you about the danger you will be in when THEY learn about you."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 70,
+          "line_sha256": "c42058bd70ae970d22b3c042a90475c384a0b150bde089b58ada9488a328d59d",
+          "section_heading_sha256": "6ffc2df6e48ec040e809875ffc2d3ec88607fcb8de0de0e5c02d10ba274ce1c4",
+          "source_content_sha256": "b7124c414c05a642f382bce8414a7bd0d4367e7241c674b45f3b7ce1df216c01",
+          "speech": "THEY are the servants of evil. THEY are everywhere and could be anyone. In fact, it has crossed my mind that most of THEM don't know who THEY are. Uhm, well, I mean THEY don't even know each other. The lure of evil is powerful. ..."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 71,
+          "line_sha256": "9a6497008022951712c11d26d01167706b51b05a7025db82c96da1c38051c939",
+          "section_heading_sha256": "6ffc2df6e48ec040e809875ffc2d3ec88607fcb8de0de0e5c02d10ba274ce1c4",
+          "source_content_sha256": "b7124c414c05a642f382bce8414a7bd0d4367e7241c674b45f3b7ce1df216c01",
+          "speech": "Most people are not as strong as you and me and easily give in to the lure of wealth and power that evil promises. ..."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 72,
+          "line_sha256": "43c6fe34a6a7830bcfd8fcfab1a72ac74fbe683ccc8737fa805aa5d5555507e2",
+          "section_heading_sha256": "6ffc2df6e48ec040e809875ffc2d3ec88607fcb8de0de0e5c02d10ba274ce1c4",
+          "source_content_sha256": "b7124c414c05a642f382bce8414a7bd0d4367e7241c674b45f3b7ce1df216c01",
+          "speech": "Uhm, what was that flicker in your eyes? Well, anyway, Evil recruits its minions from all weak willed creatures so you can't be sure who is your enemy. ..."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 73,
+          "line_sha256": "4675738be16bb0e3386c9d254cd6f5005ba61879030d64e3c1449d57f8aecaa1",
+          "section_heading_sha256": "6ffc2df6e48ec040e809875ffc2d3ec88607fcb8de0de0e5c02d10ba274ce1c4",
+          "source_content_sha256": "b7124c414c05a642f382bce8414a7bd0d4367e7241c674b45f3b7ce1df216c01",
+          "speech": "I advise you to be cautious. Better safe than sorry. Or dead."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 75,
+          "line_sha256": "222e7e3a63af58ba418b13b9e0b97dfcaa643a6c4fb8f049c48813ffe74942ff",
+          "section_heading_sha256": "6ffc2df6e48ec040e809875ffc2d3ec88607fcb8de0de0e5c02d10ba274ce1c4",
+          "source_content_sha256": "b7124c414c05a642f382bce8414a7bd0d4367e7241c674b45f3b7ce1df216c01",
+          "speech": "It is my calling to root out evil in all its forms and uphold the vigilant fight. It is a lonely fight, an unending fight, but someone has to do it! ..."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 76,
+          "line_sha256": "7b8b2ac702a2e55bc40f20f96a5f79876671c2926ae95b94b9184945618077fd",
+          "section_heading_sha256": "6ffc2df6e48ec040e809875ffc2d3ec88607fcb8de0de0e5c02d10ba274ce1c4",
+          "source_content_sha256": "b7124c414c05a642f382bce8414a7bd0d4367e7241c674b45f3b7ce1df216c01",
+          "speech": "I scour ancient texts and collect rumours in taverns in order to track the machinations of evil. ..."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 77,
+          "line_sha256": "8d6f853dbf0599d70fcf4dad118dc27dff85c72e7bdbff35529a5f404adeeea2",
+          "section_heading_sha256": "6ffc2df6e48ec040e809875ffc2d3ec88607fcb8de0de0e5c02d10ba274ce1c4",
+          "source_content_sha256": "b7124c414c05a642f382bce8414a7bd0d4367e7241c674b45f3b7ce1df216c01",
+          "speech": "Often odd occurrences are overlooked by the public as strange coincidences or fate, but those who know what to look for see the footprints of evil in history."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 79,
+          "line_sha256": "e159b86c010a6858a81f6963fbedf97bf2bdcc0e963ae0cc2d5d9e9cff724892",
+          "section_heading_sha256": "6ffc2df6e48ec040e809875ffc2d3ec88607fcb8de0de0e5c02d10ba274ce1c4",
+          "source_content_sha256": "b7124c414c05a642f382bce8414a7bd0d4367e7241c674b45f3b7ce1df216c01",
+          "speech": "<lowers his voice> Sorry, that information is strictly classified. THEY might capture and torture you to find out what you know."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 81,
+          "line_sha256": "222e7e3a63af58ba418b13b9e0b97dfcaa643a6c4fb8f049c48813ffe74942ff",
+          "section_heading_sha256": "6ffc2df6e48ec040e809875ffc2d3ec88607fcb8de0de0e5c02d10ba274ce1c4",
+          "source_content_sha256": "b7124c414c05a642f382bce8414a7bd0d4367e7241c674b45f3b7ce1df216c01",
+          "speech": "It is my calling to root out evil in all its forms and uphold the vigilant fight. It is a lonely fight, an unending fight, but someone has to do it! ..."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 82,
+          "line_sha256": "7b8b2ac702a2e55bc40f20f96a5f79876671c2926ae95b94b9184945618077fd",
+          "section_heading_sha256": "6ffc2df6e48ec040e809875ffc2d3ec88607fcb8de0de0e5c02d10ba274ce1c4",
+          "source_content_sha256": "b7124c414c05a642f382bce8414a7bd0d4367e7241c674b45f3b7ce1df216c01",
+          "speech": "I scour ancient texts and collect rumours in taverns in order to track the machinations of evil. ..."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 83,
+          "line_sha256": "8d6f853dbf0599d70fcf4dad118dc27dff85c72e7bdbff35529a5f404adeeea2",
+          "section_heading_sha256": "6ffc2df6e48ec040e809875ffc2d3ec88607fcb8de0de0e5c02d10ba274ce1c4",
+          "source_content_sha256": "b7124c414c05a642f382bce8414a7bd0d4367e7241c674b45f3b7ce1df216c01",
+          "speech": "Often odd occurrences are overlooked by the public as strange coincidences or fate, but those who know what to look for see the footprints of evil in history."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 85,
+          "line_sha256": "c308e411a7be88ab4f88e5855ce1aaa3c57a50d4dbc64c4587a9562acc2ebbc9",
+          "section_heading_sha256": "6ffc2df6e48ec040e809875ffc2d3ec88607fcb8de0de0e5c02d10ba274ce1c4",
+          "source_content_sha256": "b7124c414c05a642f382bce8414a7bd0d4367e7241c674b45f3b7ce1df216c01",
+          "speech": "You have no idea how many people laughed at me when I warned them of the Isle of Evil."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 87,
+          "line_sha256": "a675b2583e24b8a190496c62afebf206cdf62a64503098d921bfdcd95116a7fc",
+          "section_heading_sha256": "6ffc2df6e48ec040e809875ffc2d3ec88607fcb8de0de0e5c02d10ba274ce1c4",
+          "source_content_sha256": "b7124c414c05a642f382bce8414a7bd0d4367e7241c674b45f3b7ce1df216c01",
+          "speech": "Psht, not that loud! But as your memory is so short, I will tell you of my researches once again! ..."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 88,
+          "line_sha256": "0ec541df0c9373b8b94f9213ed11f8fe42a10c3a5e8fd7dae434c3053d07aa69",
+          "section_heading_sha256": "6ffc2df6e48ec040e809875ffc2d3ec88607fcb8de0de0e5c02d10ba274ce1c4",
+          "source_content_sha256": "b7124c414c05a642f382bce8414a7bd0d4367e7241c674b45f3b7ce1df216c01",
+          "speech": "After constructing an evil-o-meter I set about finding places where evil was concentrated. It reacted as expected to places of great evil like the Ghostlands, the Plains of Havoc and the Edron ruins. ..."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 89,
+          "line_sha256": "565f39c99b50f9f3f2954cb21a0ec31fbae87e03a2cbf3f95619205c1b46b95a",
+          "section_heading_sha256": "6ffc2df6e48ec040e809875ffc2d3ec88607fcb8de0de0e5c02d10ba274ce1c4",
+          "source_content_sha256": "b7124c414c05a642f382bce8414a7bd0d4367e7241c674b45f3b7ce1df216c01",
+          "speech": "But then it found somewhere new. My surprise knew no bounds when it showed a remote isle previously thought to be uninhabited. I am sure that something evil lurks there. Some unspeakable horror waiting to kill and devour unsuspecting travellers. ..."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 90,
+          "line_sha256": "434f64fe9825c0a7271c333deb95b23e88a8256b55c11598f181d9c86c2f7e73",
+          "section_heading_sha256": "6ffc2df6e48ec040e809875ffc2d3ec88607fcb8de0de0e5c02d10ba274ce1c4",
+          "source_content_sha256": "b7124c414c05a642f382bce8414a7bd0d4367e7241c674b45f3b7ce1df216c01",
+          "speech": "I could not let that happen! So I did some research and as I was about to give up I stumbled upon an ancient text that told of the Isle of Evil! ..."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 91,
+          "line_sha256": "3ceacc4e5eb7e67144414af82b54a2443ef2119ea9d679d9e3ee27f0d4144b01",
+          "section_heading_sha256": "6ffc2df6e48ec040e809875ffc2d3ec88607fcb8de0de0e5c02d10ba274ce1c4",
+          "source_content_sha256": "b7124c414c05a642f382bce8414a7bd0d4367e7241c674b45f3b7ce1df216c01",
+          "speech": "Immediately, the nature of the threat I had discovered became alarmingly clear! All I needed was a hero and some transport. But would they listen?! NO! They laughed at me. ..."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 92,
+          "line_sha256": "93be69d0f615f02292b5a02705f68e365eabe10e11b74cb572522d1bcf01b2cc",
+          "section_heading_sha256": "6ffc2df6e48ec040e809875ffc2d3ec88607fcb8de0de0e5c02d10ba274ce1c4",
+          "source_content_sha256": "b7124c414c05a642f382bce8414a7bd0d4367e7241c674b45f3b7ce1df216c01",
+          "speech": "Well, that was where you stepped in. Now we have joined forces to save the world!"
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 94,
+          "line_sha256": "83da8327ad30fc90210ae037de79e7687d09354fad10fd189e207c22b522494c",
+          "section_heading_sha256": "6ffc2df6e48ec040e809875ffc2d3ec88607fcb8de0de0e5c02d10ba274ce1c4",
+          "source_content_sha256": "b7124c414c05a642f382bce8414a7bd0d4367e7241c674b45f3b7ce1df216c01",
+          "speech": "Take care and watch your back, Jogador."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 97,
+          "line_sha256": "ab5ac6a903210ea50a82927bd966d6886360c0535419f4069a07500353b4c0ba",
+          "section_heading_sha256": "0fd4b897b3d2f9fedb66beef0b6a58ccac2d23a868fbac9d7c868cf2fc7bb3c0",
+          "source_content_sha256": "b7124c414c05a642f382bce8414a7bd0d4367e7241c674b45f3b7ce1df216c01",
+          "speech": "I am not important! Only the mission is what counts."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 99,
+          "line_sha256": "f9a68d3ff21bf43ba8b102e4a4ba510d5859e41fbadc788fd324031602af2704",
+          "section_heading_sha256": "0fd4b897b3d2f9fedb66beef0b6a58ccac2d23a868fbac9d7c868cf2fc7bb3c0",
+          "source_content_sha256": "b7124c414c05a642f382bce8414a7bd0d4367e7241c674b45f3b7ce1df216c01",
+          "speech": "Hm, so you want another trip to that accursed isle?"
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 101,
+          "line_sha256": "c0e4309e4b4eae9f0e5078f993fdd14995ba69fc886dab7bc5326b3a273e317d",
+          "section_heading_sha256": "0fd4b897b3d2f9fedb66beef0b6a58ccac2d23a868fbac9d7c868cf2fc7bb3c0",
+          "source_content_sha256": "b7124c414c05a642f382bce8414a7bd0d4367e7241c674b45f3b7ce1df216c01",
+          "speech": "So be it!"
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 103,
+          "line_sha256": "239a6e5b816f374ea855d6f0976aab954e067673877755b98d5d3f2f7073b52a",
+          "section_heading_sha256": "0fd4b897b3d2f9fedb66beef0b6a58ccac2d23a868fbac9d7c868cf2fc7bb3c0",
+          "source_content_sha256": "b7124c414c05a642f382bce8414a7bd0d4367e7241c674b45f3b7ce1df216c01",
+          "speech": "Well if you insist that we .. uhm delay our journey, I have no choice but to comply."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 105,
+          "line_sha256": "1d3bdb24217f2ee4909fa5e6da809170536cfb42715158cedb61e240484aad49",
+          "section_heading_sha256": "0fd4b897b3d2f9fedb66beef0b6a58ccac2d23a868fbac9d7c868cf2fc7bb3c0",
+          "source_content_sha256": "b7124c414c05a642f382bce8414a7bd0d4367e7241c674b45f3b7ce1df216c01",
+          "speech": "Then not."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 107,
+          "line_sha256": "426a6ab9d8063ef445d72a0d7c71aa97050d64486a2c0da1fef5c170fdbb78b3",
+          "section_heading_sha256": "0fd4b897b3d2f9fedb66beef0b6a58ccac2d23a868fbac9d7c868cf2fc7bb3c0",
+          "source_content_sha256": "b7124c414c05a642f382bce8414a7bd0d4367e7241c674b45f3b7ce1df216c01",
+          "speech": "Don't forget that THEY are after us, Jogador."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 110,
+          "line_sha256": "0f049b47c262b2a0d042a1b377fbeb03407e5bda1bcccd5c1e3df1107c394794",
+          "section_heading_sha256": "1b92798ee8bff432a3456a19bfe2d5355908c8c6c3364f3b45e010b146ada132",
+          "source_content_sha256": "b7124c414c05a642f382bce8414a7bd0d4367e7241c674b45f3b7ce1df216c01",
+          "speech": "Time to leave this unfriendly place, eh? So are you ready to depart?"
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 112,
+          "line_sha256": "d0ed1c276e9fb4600563c51257486048f80446d55a82941996e7c6963ecd92d7",
+          "section_heading_sha256": "1b92798ee8bff432a3456a19bfe2d5355908c8c6c3364f3b45e010b146ada132",
+          "source_content_sha256": "b7124c414c05a642f382bce8414a7bd0d4367e7241c674b45f3b7ce1df216c01",
+          "speech": "I thought you were going to stay here forever. Let's go."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 114,
+          "line_sha256": "df485ebbd3e9ca9f4815f979a7fb99775f89f021b448ab0880d56b7350fc02e9",
+          "section_heading_sha256": "1b92798ee8bff432a3456a19bfe2d5355908c8c6c3364f3b45e010b146ada132",
+          "source_content_sha256": "b7124c414c05a642f382bce8414a7bd0d4367e7241c674b45f3b7ce1df216c01",
+          "speech": "Wow, you must be the bravest person in the whole world! Or the maddest."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 116,
+          "line_sha256": "6fc3a212912e845bdbd214e34e970775e8758913e9a154597f9f35a4ef4ad112",
+          "section_heading_sha256": "1b92798ee8bff432a3456a19bfe2d5355908c8c6c3364f3b45e010b146ada132",
+          "source_content_sha256": "b7124c414c05a642f382bce8414a7bd0d4367e7241c674b45f3b7ce1df216c01",
+          "speech": "Take care, Jogador."
+        }
+      ],
+      "name": "Rapanaio (Boat)",
+      "native_variant_speech_binding_qualified": false,
+      "note": "D10 requires attributable recorded literal replies and a strictly larger positive differing-text match score. Wiki spell lists, canonical name aliases and generic transport prose do not prove variant speech or source guard behavior.",
+      "npc_key": "oteryn:npc.rapanaio_boat",
+      "page_url": "https://www.tibiawiki.com.br/wiki/Rapanaio?action=raw",
+      "presentation_braces_stripped_scores_not_admission": {
+        "canary": {
+          "matches": 0,
+          "misses": 3,
+          "total": 3
+        },
+        "crystal": {
+          "matches": 0,
+          "misses": 1,
+          "total": 1
+        }
+      },
+      "reason": "NO_LITERAL_DIFFERING_TEXT_MATCH",
+      "runtime_qualified": false,
+      "source_candidates": [
+        {
+          "accepted_native_binding_hash_matches": true,
+          "accepted_native_binding_pin_matches": true,
+          "deterministic_two_conversions": true,
+          "exact_registered_name": true,
+          "opaque_guards_actions_retained": true,
+          "raw_sha256": "216284b89037442ebe4ef7650caf0ad6abf9cd840cc6174c93936c0918915ef7",
+          "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+          "source": "canary",
+          "source_file": "data-otservbr-global/npc/rapanaio_boat.lua",
+          "source_program_sha256": "df70ca50dc60c2ed6ecb002ca524c28b2732bf466fe264ced84bb01e3e6c224a",
+          "source_registered_npc_names": [
+            "Rapanaio (Boat)"
+          ],
+          "static_candidate": {
+            "farewell": [
+              "Good bye. Recommend us if you were satisfied with our service."
+            ],
+            "greet": [
+              "Welcome on board, |PLAYERNAME|. I can travel you to {evil isle}."
+            ],
+            "keywords": [
+              {
+                "children": [
+                  {
+                    "key": "no",
+                    "reply": [
+                      "We would like to serve you some time."
+                    ],
+                    "reset": true,
+                    "triggers": [
+                      "no"
+                    ]
+                  }
+                ],
+                "key": "evil_isle",
+                "reply": [
+                  "Do you seek a passage to Evil Isle for |TRAVELCOST|?"
+                ],
+                "triggers": [
+                  "evil isle"
+                ]
+              },
+              {
+                "key": "name",
+                "reply": [
+                  "My name is Rapanaio from the Royal Tibia Line."
+                ],
+                "triggers": [
+                  "name"
+                ]
+              },
+              {
+                "key": "job",
+                "reply": [
+                  "I am the captain of this sailing-ship."
+                ],
+                "triggers": [
+                  "job"
+                ]
+              }
+            ],
+            "voices": {
+              "chance_ppm": 500000,
+              "entries": [
+                {
+                  "mode": "Say",
+                  "text": "Passage to {Evil Isle}."
+                }
+              ],
+              "interval_ms": 15000
+            },
+            "walkaway": [
+              "Good bye then."
+            ]
+          },
+          "static_drop_counts": {
+            "dropped_non_say_gated": 1,
+            "keyword_nodes": 4
+          }
+        },
+        {
+          "accepted_native_binding_hash_matches": true,
+          "accepted_native_binding_pin_matches": true,
+          "deterministic_two_conversions": true,
+          "exact_registered_name": true,
+          "opaque_guards_actions_retained": true,
+          "raw_sha256": "00fb234a23a56d91cae7417bd81db23291c544421880f5266670c95539146632",
+          "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+          "source": "crystal",
+          "source_file": "data-global/npc/rapanaio_boat.lua",
+          "source_program_sha256": "8b3e2496806af5a23d5d59c6cb96e0848ebecff7895b4ef891d051616c6aa67f",
+          "source_registered_npc_names": [
+            "Rapanaio (Boat)"
+          ],
+          "static_candidate": {
+            "farewell": [
+              "Good bye. Recommend us if you were satisfied with our service."
+            ],
+            "greet": [
+              "Psht! Not that loud! Evil lurks everywhere."
+            ],
+            "keywords": [
+              {
+                "key": "name",
+                "reply": [
+                  "My name is Rapanaio from the Royal Tibia Line."
+                ],
+                "triggers": [
+                  "name"
+                ]
+              },
+              {
+                "key": "job",
+                "reply": [
+                  "I am the captain of this sailing-ship."
+                ],
+                "triggers": [
+                  "job"
+                ]
+              }
+            ],
+            "voices": {
+              "chance_ppm": 500000,
+              "entries": [
+                {
+                  "mode": "Say",
+                  "text": "Passage to {Evil Isle}."
+                }
+              ],
+              "interval_ms": 15000
+            },
+            "walkaway": [
+              "Good bye then."
+            ]
+          },
+          "static_drop_counts": {
+            "keyword_nodes": 2
+          }
+        }
+      ],
+      "source_page_sha256": "b7124c414c05a642f382bce8414a7bd0d4367e7241c674b45f3b7ce1df216c01",
+      "source_primary_program_recovered": true,
+      "whole_program_selected": null
+    },
+    {
+      "decision": "HELD",
+      "exact_D10_text_scores": {
+        "canary": {
+          "matches": 0,
+          "misses": 1,
+          "total": 1
+        },
+        "crystal": {
+          "matches": 0,
+          "misses": 1,
+          "total": 1
+        }
+      },
+      "global_complete": false,
+      "literal_actor_observations": [
+        {
+          "identity_binding_qualified": false,
+          "line": 17,
+          "line_sha256": "1433e2575607f8694ff7c170a825afb6133390e0b1e0a99b58a397b835cd4608",
+          "section_heading_sha256": "6e40cdc96f37850241c6910433f46171c23aa9e009531d3fa3289ab355bf0e04",
+          "source_content_sha256": "b7124c414c05a642f382bce8414a7bd0d4367e7241c674b45f3b7ce1df216c01",
+          "speech": "Psht! Not that loud! Evil lurks everywhere. It's after me!"
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 20,
+          "line_sha256": "5fbb300e86da649824da7347c24452beea03548f8becc9033caab42fac0a18f8",
+          "section_heading_sha256": "6ffc2df6e48ec040e809875ffc2d3ec88607fcb8de0de0e5c02d10ba274ce1c4",
+          "source_content_sha256": "b7124c414c05a642f382bce8414a7bd0d4367e7241c674b45f3b7ce1df216c01",
+          "speech": "I am an inventor and sage. I have pledged my life to fighting evil wherever it raises it's ugly head. It's hard work and you have to get your hands dirty, but someone has to do it."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 22,
+          "line_sha256": "dcd524817f115a3e4d1bfb69afa3e146152aa47d4b957b63039734c9c26040b8",
+          "section_heading_sha256": "6ffc2df6e48ec040e809875ffc2d3ec88607fcb8de0de0e5c02d10ba274ce1c4",
+          "source_content_sha256": "b7124c414c05a642f382bce8414a7bd0d4367e7241c674b45f3b7ce1df216c01",
+          "speech": "My name is top secret!"
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 24,
+          "line_sha256": "40709b56115d942b54c7b726c36f5e91f636c65fd97fc81fc07bc3c1eb6af8f3",
+          "section_heading_sha256": "6ffc2df6e48ec040e809875ffc2d3ec88607fcb8de0de0e5c02d10ba274ce1c4",
+          "source_content_sha256": "b7124c414c05a642f382bce8414a7bd0d4367e7241c674b45f3b7ce1df216c01",
+          "speech": "Nooooo! Who blew my cover? I hope you are not in league with the forces of evil!"
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 26,
+          "line_sha256": "0f329671ebcb1c448e7b89f4cd14e0f6cd1dcbb617bef2b35e01d68f9a6d4a34",
+          "section_heading_sha256": "6ffc2df6e48ec040e809875ffc2d3ec88607fcb8de0de0e5c02d10ba274ce1c4",
+          "source_content_sha256": "b7124c414c05a642f382bce8414a7bd0d4367e7241c674b45f3b7ce1df216c01",
+          "speech": "Evil lurks everywhere. It only takes some ignorant or cowardly people to turn their heads away once too often for it to spread its ugly seeds. I, however, am constantly vigilant and always prepared. ..."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 27,
+          "line_sha256": "571714bafac1801b87d5af46a16167ddb59a36b618fbeac215acaf3d88fa8110",
+          "section_heading_sha256": "6ffc2df6e48ec040e809875ffc2d3ec88607fcb8de0de0e5c02d10ba274ce1c4",
+          "source_content_sha256": "b7124c414c05a642f382bce8414a7bd0d4367e7241c674b45f3b7ce1df216c01",
+          "speech": "I hunt out the signs of evil everywhere. Even in the face of scorn and ridicule, I will not hide my head in the sand and I will be ready to fight!"
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 29,
+          "line_sha256": "0e49c7fedc50ef84bfa601ac2bf4f1d5fb8171f996258f6fc5ef08acce9b2549",
+          "section_heading_sha256": "6ffc2df6e48ec040e809875ffc2d3ec88607fcb8de0de0e5c02d10ba274ce1c4",
+          "source_content_sha256": "b7124c414c05a642f382bce8414a7bd0d4367e7241c674b45f3b7ce1df216c01",
+          "speech": "Ignorance is evil's most potent ally. The servants of evil are plotting to keep us ignorant and poke ridicule at those who come too close to the truth."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 31,
+          "line_sha256": "222e7e3a63af58ba418b13b9e0b97dfcaa643a6c4fb8f049c48813ffe74942ff",
+          "section_heading_sha256": "6ffc2df6e48ec040e809875ffc2d3ec88607fcb8de0de0e5c02d10ba274ce1c4",
+          "source_content_sha256": "b7124c414c05a642f382bce8414a7bd0d4367e7241c674b45f3b7ce1df216c01",
+          "speech": "It is my calling to root out evil in all its forms and uphold the vigilant fight. It is a lonely fight, an unending fight, but someone has to do it! ..."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 32,
+          "line_sha256": "7b8b2ac702a2e55bc40f20f96a5f79876671c2926ae95b94b9184945618077fd",
+          "section_heading_sha256": "6ffc2df6e48ec040e809875ffc2d3ec88607fcb8de0de0e5c02d10ba274ce1c4",
+          "source_content_sha256": "b7124c414c05a642f382bce8414a7bd0d4367e7241c674b45f3b7ce1df216c01",
+          "speech": "I scour ancient texts and collect rumours in taverns in order to track the machinations of evil. ..."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 33,
+          "line_sha256": "8d6f853dbf0599d70fcf4dad118dc27dff85c72e7bdbff35529a5f404adeeea2",
+          "section_heading_sha256": "6ffc2df6e48ec040e809875ffc2d3ec88607fcb8de0de0e5c02d10ba274ce1c4",
+          "source_content_sha256": "b7124c414c05a642f382bce8414a7bd0d4367e7241c674b45f3b7ce1df216c01",
+          "speech": "Often odd occurrences are overlooked by the public as strange coincidences or fate, but those who know what to look for see the footprints of evil in history."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 35,
+          "line_sha256": "90bfe7cb3e02373545981582f53c9897d7f384054582b6f91bcfaf09d7a385f5",
+          "section_heading_sha256": "6ffc2df6e48ec040e809875ffc2d3ec88607fcb8de0de0e5c02d10ba274ce1c4",
+          "source_content_sha256": "b7124c414c05a642f382bce8414a7bd0d4367e7241c674b45f3b7ce1df216c01",
+          "speech": "When I found that ancient text, warning of the Isle of Evil, I tried to tell the world about it. But the forces of evil discovered my plans! They made people assume it was just another tale for children. ..."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 36,
+          "line_sha256": "dbc1cb99947f68b2362296abc0bddd9398bbb5b142dbfdb672e7959e47888613",
+          "section_heading_sha256": "6ffc2df6e48ec040e809875ffc2d3ec88607fcb8de0de0e5c02d10ba274ce1c4",
+          "source_content_sha256": "b7124c414c05a642f382bce8414a7bd0d4367e7241c674b45f3b7ce1df216c01",
+          "speech": "THEY distributed a book of children's bedtime stories with a copy of the text in it to undermine my message! Their despicable ruse worked and they made a laughing stock of me! Of course I knew it was a plot to discredit me. ..."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 37,
+          "line_sha256": "87624f05582d50c2a9aaad007c16e7fe1e65cf3c96f16826c355c2f4990b81c9",
+          "section_heading_sha256": "6ffc2df6e48ec040e809875ffc2d3ec88607fcb8de0de0e5c02d10ba274ce1c4",
+          "source_content_sha256": "b7124c414c05a642f382bce8414a7bd0d4367e7241c674b45f3b7ce1df216c01",
+          "speech": "On the other hand, it was obvious that THEY now knew about me and the text I possessed. I went into hiding in fear of my life! THEY have tried to assassinate me! I must be constantly vigilant!"
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 39,
+          "line_sha256": "713fcb5ff4742b3cb7aa22f69aeaf711ca9b650704be9e548aa1ee89cef8019b",
+          "section_heading_sha256": "6ffc2df6e48ec040e809875ffc2d3ec88607fcb8de0de0e5c02d10ba274ce1c4",
+          "source_content_sha256": "b7124c414c05a642f382bce8414a7bd0d4367e7241c674b45f3b7ce1df216c01",
+          "speech": "You'll find it in one of my chests. It's only a copy of course. The original is safely hidden! As much as THEY claim it's only a children's tale I know it's the truth."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 41,
+          "line_sha256": "00662ffaaee8de84f86bd17682066e345817e88d8189dd811b0218df5b1a04ac",
+          "section_heading_sha256": "6ffc2df6e48ec040e809875ffc2d3ec88607fcb8de0de0e5c02d10ba274ce1c4",
+          "source_content_sha256": "b7124c414c05a642f382bce8414a7bd0d4367e7241c674b45f3b7ce1df216c01",
+          "speech": "Bah, THEY forged a children's book that made my source material look like some part of it. Of course it is an evil plot to prevent me from locating the isle and slaying its dark master. ..."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 42,
+          "line_sha256": "e60ba056f12a051fd6b506d61861539d007895b2e341032e19eac55a818272be",
+          "section_heading_sha256": "6ffc2df6e48ec040e809875ffc2d3ec88607fcb8de0de0e5c02d10ba274ce1c4",
+          "source_content_sha256": "b7124c414c05a642f382bce8414a7bd0d4367e7241c674b45f3b7ce1df216c01",
+          "speech": "Or rather, sending some other hero who will fight the ultimate evil in its own lair on my behalf. Someone has to stay and fight the fight on the mainland, of course."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 44,
+          "line_sha256": "ea888ed9e4558b306059eb719b4037b7fa75de47075972fec9bdc74d47004234",
+          "section_heading_sha256": "6ffc2df6e48ec040e809875ffc2d3ec88607fcb8de0de0e5c02d10ba274ce1c4",
+          "source_content_sha256": "b7124c414c05a642f382bce8414a7bd0d4367e7241c674b45f3b7ce1df216c01",
+          "speech": "Evil follows a distinct pattern. It is nasty, plans to rule the world, discredits its enemies, is fond of cunning death traps and rambling monologues, ..."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 45,
+          "line_sha256": "88d1a589e048424833cbc4840e2d30cb9b6629144d7432d01b61ba96c9c842de",
+          "section_heading_sha256": "6ffc2df6e48ec040e809875ffc2d3ec88607fcb8de0de0e5c02d10ba274ce1c4",
+          "source_content_sha256": "b7124c414c05a642f382bce8414a7bd0d4367e7241c674b45f3b7ce1df216c01",
+          "speech": "it can only be vanquished by someone who completes a series of quests for some odd quest giver and it loves to have a lair, usually some sort of dungeon."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 47,
+          "line_sha256": "4810950a34c80f27d3b7006baa3ebe46321a21d96eceb00de4afe008306f41a9",
+          "section_heading_sha256": "6ffc2df6e48ec040e809875ffc2d3ec88607fcb8de0de0e5c02d10ba274ce1c4",
+          "source_content_sha256": "b7124c414c05a642f382bce8414a7bd0d4367e7241c674b45f3b7ce1df216c01",
+          "speech": "Scientists have no idea why the servants of evil are so fond of dungeons. But every evil mastermind worth his salt strives to own one. It is where it accomodates its minions and hoards its treasures."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 49,
+          "line_sha256": "849c080e3b4505d54b85ff41cb096e0fe0253f8ffda5b6365d41b499346e210e",
+          "section_heading_sha256": "6ffc2df6e48ec040e809875ffc2d3ec88607fcb8de0de0e5c02d10ba274ce1c4",
+          "source_content_sha256": "b7124c414c05a642f382bce8414a7bd0d4367e7241c674b45f3b7ce1df216c01",
+          "speech": "Evil masterminds are served by all kinds of lesser evil beings. Such minions are usually no match for a hero, so they come in great numbers to counterbalance their lack of skill. Some minions are more capable. ..."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 50,
+          "line_sha256": "61392cf2283f0975d7d2e8decc46b37ad6cdda92279ec0b6e11c7f05244b053f",
+          "section_heading_sha256": "6ffc2df6e48ec040e809875ffc2d3ec88607fcb8de0de0e5c02d10ba274ce1c4",
+          "source_content_sha256": "b7124c414c05a642f382bce8414a7bd0d4367e7241c674b45f3b7ce1df216c01",
+          "speech": "They often serve as some kind of overseer or enforcer of evil and guard the mastermind's lair. Such minions are a particular challenge for a hero, but the rewards and loot for slaying them in battle are great!"
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 52,
+          "line_sha256": "20e0738a7e67e2495cfe9791d7e4346c8d0efb725bbcb3b68474c1ae0ca94a74",
+          "section_heading_sha256": "6ffc2df6e48ec040e809875ffc2d3ec88607fcb8de0de0e5c02d10ba274ce1c4",
+          "source_content_sha256": "b7124c414c05a642f382bce8414a7bd0d4367e7241c674b45f3b7ce1df216c01",
+          "speech": "I assume it is some kind of cosmic balance. When a hero slays a minion of evil the cosmic balance grants him some kind of reward. This often comes in the form of treasure. ..."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 53,
+          "line_sha256": "08e76e64c282506a13cdf64351dee79d6a7dbcb095f3b1f00b94cc5712225c52",
+          "section_heading_sha256": "6ffc2df6e48ec040e809875ffc2d3ec88607fcb8de0de0e5c02d10ba274ce1c4",
+          "source_content_sha256": "b7124c414c05a642f382bce8414a7bd0d4367e7241c674b45f3b7ce1df216c01",
+          "speech": "Sometimes it's gold, sometimes it's a special weapon or piece of armor. Often an evil mastermind employs overseers for its hordes who guard parts of its dungeon. ..."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 54,
+          "line_sha256": "57daf2cab5258970587c6d1d9e99960c48d0e545391296779bdc44b0fdc21f29",
+          "section_heading_sha256": "6ffc2df6e48ec040e809875ffc2d3ec88607fcb8de0de0e5c02d10ba274ce1c4",
+          "source_content_sha256": "b7124c414c05a642f382bce8414a7bd0d4367e7241c674b45f3b7ce1df216c01",
+          "speech": "These overseers are often in possession of high quality items that are the stuff of legend. The cosmic balance grants such items to the victorious hero so he can slay even more powerful minions of evil."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 56,
+          "line_sha256": "edb87a51868180cc616b1e2d8b7a4545989a425ad75aaa8e2c5ddd488dcbb974",
+          "section_heading_sha256": "6ffc2df6e48ec040e809875ffc2d3ec88607fcb8de0de0e5c02d10ba274ce1c4",
+          "source_content_sha256": "b7124c414c05a642f382bce8414a7bd0d4367e7241c674b45f3b7ce1df216c01",
+          "speech": "Call it what you like. I call it cosmic balance. It's like a natural law. It is the force that inspires evil beings to build lairs and dungeons, inspires it to gather armies of minions and so on. ..."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 57,
+          "line_sha256": "e6be6f2db9fb4c6f6b45d0ecca53e3f36b44c58cc1118d2d7bc244fff2415186",
+          "section_heading_sha256": "6ffc2df6e48ec040e809875ffc2d3ec88607fcb8de0de0e5c02d10ba274ce1c4",
+          "source_content_sha256": "b7124c414c05a642f382bce8414a7bd0d4367e7241c674b45f3b7ce1df216c01",
+          "speech": "It is the only rational way to explain such strange behaviour."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 59,
+          "line_sha256": "12415eebc8684f209ee9e9d502b5b4b7f61f24e345dedd9ca3a3b994bb343929",
+          "section_heading_sha256": "6ffc2df6e48ec040e809875ffc2d3ec88607fcb8de0de0e5c02d10ba274ce1c4",
+          "source_content_sha256": "b7124c414c05a642f382bce8414a7bd0d4367e7241c674b45f3b7ce1df216c01",
+          "speech": "That heroes are rewarded with loot is down to the just nature of the cosmic balance. This is why even the most insignificant killer rat carries gold. ..."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 60,
+          "line_sha256": "793e90d22e46da338aeebf2290a0760f2ba86d4097e99a03e87526f2c4f798bd",
+          "section_heading_sha256": "6ffc2df6e48ec040e809875ffc2d3ec88607fcb8de0de0e5c02d10ba274ce1c4",
+          "source_content_sha256": "b7124c414c05a642f382bce8414a7bd0d4367e7241c674b45f3b7ce1df216c01",
+          "speech": "This, by the way, is proof positive that rats are evil minions, or else they would not carry gold. Loot is usually in the form of gold, but occasionally it also comes in the form of equipment and weapons. ..."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 61,
+          "line_sha256": "6a6db797c4299fb7a03d74c7e3bef4220f535bd9b0074f95efb9cb34fd5d0864",
+          "section_heading_sha256": "6ffc2df6e48ec040e809875ffc2d3ec88607fcb8de0de0e5c02d10ba274ce1c4",
+          "source_content_sha256": "b7124c414c05a642f382bce8414a7bd0d4367e7241c674b45f3b7ce1df216c01",
+          "speech": "Why else do dragons bother to carry armour and weapons when the beast itself is a killing machine with no use for such trinkets? It is of course cosmic balance! There is simply no other explanation!"
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 63,
+          "line_sha256": "0532dd083458af8234647cda15d3621b30d288ef06fb5015de8e8c75bf62e7dd",
+          "section_heading_sha256": "6ffc2df6e48ec040e809875ffc2d3ec88607fcb8de0de0e5c02d10ba274ce1c4",
+          "source_content_sha256": "b7124c414c05a642f382bce8414a7bd0d4367e7241c674b45f3b7ce1df216c01",
+          "speech": "My life is no longer safe. The first attempt on my life was at a party thrown by a fellow inventor. THEY put poison in one of the twenty pints of beer I drank that night. ..."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 64,
+          "line_sha256": "e976a6ebd13392f3c02ceff00fd173835b44430844e204045b6aeb73cd7c32c1",
+          "section_heading_sha256": "6ffc2df6e48ec040e809875ffc2d3ec88607fcb8de0de0e5c02d10ba274ce1c4",
+          "source_content_sha256": "b7124c414c05a642f382bce8414a7bd0d4367e7241c674b45f3b7ce1df216c01",
+          "speech": "The following morning I was close to death. Only my strong dwarven constitution stood between me and the grim reaper that day. ..."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 65,
+          "line_sha256": "c046800ba6f91a052fe9d3455ed8e27c0e1ad3af1fed9c46d4bc5bfcb08048fc",
+          "section_heading_sha256": "6ffc2df6e48ec040e809875ffc2d3ec88607fcb8de0de0e5c02d10ba274ce1c4",
+          "source_content_sha256": "b7124c414c05a642f382bce8414a7bd0d4367e7241c674b45f3b7ce1df216c01",
+          "speech": "In their next attempt, assassins tinkered with the stairs in front of my favourite tavern. When I was leaving the tavern after a night with my friends I tripped and fell, nearly breaking my neck! ..."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 66,
+          "line_sha256": "b9d08275b70941d13ecd4c6104344cda0352765064562288370553b068965cc9",
+          "section_heading_sha256": "6ffc2df6e48ec040e809875ffc2d3ec88607fcb8de0de0e5c02d10ba274ce1c4",
+          "source_content_sha256": "b7124c414c05a642f382bce8414a7bd0d4367e7241c674b45f3b7ce1df216c01",
+          "speech": "Only my catlike reflexes saved my life that time. Well, my reflexes and my beard that absorbed some of the force of the fall. ..."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 67,
+          "line_sha256": "279700dbbf1a7e058e3001b9829c7624371dd4e8fd0c4c3eceecc39665bebfcc",
+          "section_heading_sha256": "6ffc2df6e48ec040e809875ffc2d3ec88607fcb8de0de0e5c02d10ba274ce1c4",
+          "source_content_sha256": "b7124c414c05a642f382bce8414a7bd0d4367e7241c674b45f3b7ce1df216c01",
+          "speech": "Other attempts on my life followed! Like the object that was hurled at me while I was singing and dancing on the bar while at a party. ..."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 68,
+          "line_sha256": "9e73bf2b2927defd84c0bd6674d306c17f50d32ff8f6538c19242ecb1df9f1b0",
+          "section_heading_sha256": "6ffc2df6e48ec040e809875ffc2d3ec88607fcb8de0de0e5c02d10ba274ce1c4",
+          "source_content_sha256": "b7124c414c05a642f382bce8414a7bd0d4367e7241c674b45f3b7ce1df216c01",
+          "speech": "And the list goes on and on. I know that I am in grave danger and I will not lie to you about the danger you will be in when THEY learn about you."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 70,
+          "line_sha256": "c42058bd70ae970d22b3c042a90475c384a0b150bde089b58ada9488a328d59d",
+          "section_heading_sha256": "6ffc2df6e48ec040e809875ffc2d3ec88607fcb8de0de0e5c02d10ba274ce1c4",
+          "source_content_sha256": "b7124c414c05a642f382bce8414a7bd0d4367e7241c674b45f3b7ce1df216c01",
+          "speech": "THEY are the servants of evil. THEY are everywhere and could be anyone. In fact, it has crossed my mind that most of THEM don't know who THEY are. Uhm, well, I mean THEY don't even know each other. The lure of evil is powerful. ..."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 71,
+          "line_sha256": "9a6497008022951712c11d26d01167706b51b05a7025db82c96da1c38051c939",
+          "section_heading_sha256": "6ffc2df6e48ec040e809875ffc2d3ec88607fcb8de0de0e5c02d10ba274ce1c4",
+          "source_content_sha256": "b7124c414c05a642f382bce8414a7bd0d4367e7241c674b45f3b7ce1df216c01",
+          "speech": "Most people are not as strong as you and me and easily give in to the lure of wealth and power that evil promises. ..."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 72,
+          "line_sha256": "43c6fe34a6a7830bcfd8fcfab1a72ac74fbe683ccc8737fa805aa5d5555507e2",
+          "section_heading_sha256": "6ffc2df6e48ec040e809875ffc2d3ec88607fcb8de0de0e5c02d10ba274ce1c4",
+          "source_content_sha256": "b7124c414c05a642f382bce8414a7bd0d4367e7241c674b45f3b7ce1df216c01",
+          "speech": "Uhm, what was that flicker in your eyes? Well, anyway, Evil recruits its minions from all weak willed creatures so you can't be sure who is your enemy. ..."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 73,
+          "line_sha256": "4675738be16bb0e3386c9d254cd6f5005ba61879030d64e3c1449d57f8aecaa1",
+          "section_heading_sha256": "6ffc2df6e48ec040e809875ffc2d3ec88607fcb8de0de0e5c02d10ba274ce1c4",
+          "source_content_sha256": "b7124c414c05a642f382bce8414a7bd0d4367e7241c674b45f3b7ce1df216c01",
+          "speech": "I advise you to be cautious. Better safe than sorry. Or dead."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 75,
+          "line_sha256": "222e7e3a63af58ba418b13b9e0b97dfcaa643a6c4fb8f049c48813ffe74942ff",
+          "section_heading_sha256": "6ffc2df6e48ec040e809875ffc2d3ec88607fcb8de0de0e5c02d10ba274ce1c4",
+          "source_content_sha256": "b7124c414c05a642f382bce8414a7bd0d4367e7241c674b45f3b7ce1df216c01",
+          "speech": "It is my calling to root out evil in all its forms and uphold the vigilant fight. It is a lonely fight, an unending fight, but someone has to do it! ..."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 76,
+          "line_sha256": "7b8b2ac702a2e55bc40f20f96a5f79876671c2926ae95b94b9184945618077fd",
+          "section_heading_sha256": "6ffc2df6e48ec040e809875ffc2d3ec88607fcb8de0de0e5c02d10ba274ce1c4",
+          "source_content_sha256": "b7124c414c05a642f382bce8414a7bd0d4367e7241c674b45f3b7ce1df216c01",
+          "speech": "I scour ancient texts and collect rumours in taverns in order to track the machinations of evil. ..."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 77,
+          "line_sha256": "8d6f853dbf0599d70fcf4dad118dc27dff85c72e7bdbff35529a5f404adeeea2",
+          "section_heading_sha256": "6ffc2df6e48ec040e809875ffc2d3ec88607fcb8de0de0e5c02d10ba274ce1c4",
+          "source_content_sha256": "b7124c414c05a642f382bce8414a7bd0d4367e7241c674b45f3b7ce1df216c01",
+          "speech": "Often odd occurrences are overlooked by the public as strange coincidences or fate, but those who know what to look for see the footprints of evil in history."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 79,
+          "line_sha256": "e159b86c010a6858a81f6963fbedf97bf2bdcc0e963ae0cc2d5d9e9cff724892",
+          "section_heading_sha256": "6ffc2df6e48ec040e809875ffc2d3ec88607fcb8de0de0e5c02d10ba274ce1c4",
+          "source_content_sha256": "b7124c414c05a642f382bce8414a7bd0d4367e7241c674b45f3b7ce1df216c01",
+          "speech": "<lowers his voice> Sorry, that information is strictly classified. THEY might capture and torture you to find out what you know."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 81,
+          "line_sha256": "222e7e3a63af58ba418b13b9e0b97dfcaa643a6c4fb8f049c48813ffe74942ff",
+          "section_heading_sha256": "6ffc2df6e48ec040e809875ffc2d3ec88607fcb8de0de0e5c02d10ba274ce1c4",
+          "source_content_sha256": "b7124c414c05a642f382bce8414a7bd0d4367e7241c674b45f3b7ce1df216c01",
+          "speech": "It is my calling to root out evil in all its forms and uphold the vigilant fight. It is a lonely fight, an unending fight, but someone has to do it! ..."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 82,
+          "line_sha256": "7b8b2ac702a2e55bc40f20f96a5f79876671c2926ae95b94b9184945618077fd",
+          "section_heading_sha256": "6ffc2df6e48ec040e809875ffc2d3ec88607fcb8de0de0e5c02d10ba274ce1c4",
+          "source_content_sha256": "b7124c414c05a642f382bce8414a7bd0d4367e7241c674b45f3b7ce1df216c01",
+          "speech": "I scour ancient texts and collect rumours in taverns in order to track the machinations of evil. ..."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 83,
+          "line_sha256": "8d6f853dbf0599d70fcf4dad118dc27dff85c72e7bdbff35529a5f404adeeea2",
+          "section_heading_sha256": "6ffc2df6e48ec040e809875ffc2d3ec88607fcb8de0de0e5c02d10ba274ce1c4",
+          "source_content_sha256": "b7124c414c05a642f382bce8414a7bd0d4367e7241c674b45f3b7ce1df216c01",
+          "speech": "Often odd occurrences are overlooked by the public as strange coincidences or fate, but those who know what to look for see the footprints of evil in history."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 85,
+          "line_sha256": "c308e411a7be88ab4f88e5855ce1aaa3c57a50d4dbc64c4587a9562acc2ebbc9",
+          "section_heading_sha256": "6ffc2df6e48ec040e809875ffc2d3ec88607fcb8de0de0e5c02d10ba274ce1c4",
+          "source_content_sha256": "b7124c414c05a642f382bce8414a7bd0d4367e7241c674b45f3b7ce1df216c01",
+          "speech": "You have no idea how many people laughed at me when I warned them of the Isle of Evil."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 87,
+          "line_sha256": "a675b2583e24b8a190496c62afebf206cdf62a64503098d921bfdcd95116a7fc",
+          "section_heading_sha256": "6ffc2df6e48ec040e809875ffc2d3ec88607fcb8de0de0e5c02d10ba274ce1c4",
+          "source_content_sha256": "b7124c414c05a642f382bce8414a7bd0d4367e7241c674b45f3b7ce1df216c01",
+          "speech": "Psht, not that loud! But as your memory is so short, I will tell you of my researches once again! ..."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 88,
+          "line_sha256": "0ec541df0c9373b8b94f9213ed11f8fe42a10c3a5e8fd7dae434c3053d07aa69",
+          "section_heading_sha256": "6ffc2df6e48ec040e809875ffc2d3ec88607fcb8de0de0e5c02d10ba274ce1c4",
+          "source_content_sha256": "b7124c414c05a642f382bce8414a7bd0d4367e7241c674b45f3b7ce1df216c01",
+          "speech": "After constructing an evil-o-meter I set about finding places where evil was concentrated. It reacted as expected to places of great evil like the Ghostlands, the Plains of Havoc and the Edron ruins. ..."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 89,
+          "line_sha256": "565f39c99b50f9f3f2954cb21a0ec31fbae87e03a2cbf3f95619205c1b46b95a",
+          "section_heading_sha256": "6ffc2df6e48ec040e809875ffc2d3ec88607fcb8de0de0e5c02d10ba274ce1c4",
+          "source_content_sha256": "b7124c414c05a642f382bce8414a7bd0d4367e7241c674b45f3b7ce1df216c01",
+          "speech": "But then it found somewhere new. My surprise knew no bounds when it showed a remote isle previously thought to be uninhabited. I am sure that something evil lurks there. Some unspeakable horror waiting to kill and devour unsuspecting travellers. ..."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 90,
+          "line_sha256": "434f64fe9825c0a7271c333deb95b23e88a8256b55c11598f181d9c86c2f7e73",
+          "section_heading_sha256": "6ffc2df6e48ec040e809875ffc2d3ec88607fcb8de0de0e5c02d10ba274ce1c4",
+          "source_content_sha256": "b7124c414c05a642f382bce8414a7bd0d4367e7241c674b45f3b7ce1df216c01",
+          "speech": "I could not let that happen! So I did some research and as I was about to give up I stumbled upon an ancient text that told of the Isle of Evil! ..."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 91,
+          "line_sha256": "3ceacc4e5eb7e67144414af82b54a2443ef2119ea9d679d9e3ee27f0d4144b01",
+          "section_heading_sha256": "6ffc2df6e48ec040e809875ffc2d3ec88607fcb8de0de0e5c02d10ba274ce1c4",
+          "source_content_sha256": "b7124c414c05a642f382bce8414a7bd0d4367e7241c674b45f3b7ce1df216c01",
+          "speech": "Immediately, the nature of the threat I had discovered became alarmingly clear! All I needed was a hero and some transport. But would they listen?! NO! They laughed at me. ..."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 92,
+          "line_sha256": "93be69d0f615f02292b5a02705f68e365eabe10e11b74cb572522d1bcf01b2cc",
+          "section_heading_sha256": "6ffc2df6e48ec040e809875ffc2d3ec88607fcb8de0de0e5c02d10ba274ce1c4",
+          "source_content_sha256": "b7124c414c05a642f382bce8414a7bd0d4367e7241c674b45f3b7ce1df216c01",
+          "speech": "Well, that was where you stepped in. Now we have joined forces to save the world!"
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 94,
+          "line_sha256": "83da8327ad30fc90210ae037de79e7687d09354fad10fd189e207c22b522494c",
+          "section_heading_sha256": "6ffc2df6e48ec040e809875ffc2d3ec88607fcb8de0de0e5c02d10ba274ce1c4",
+          "source_content_sha256": "b7124c414c05a642f382bce8414a7bd0d4367e7241c674b45f3b7ce1df216c01",
+          "speech": "Take care and watch your back, Jogador."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 97,
+          "line_sha256": "ab5ac6a903210ea50a82927bd966d6886360c0535419f4069a07500353b4c0ba",
+          "section_heading_sha256": "0fd4b897b3d2f9fedb66beef0b6a58ccac2d23a868fbac9d7c868cf2fc7bb3c0",
+          "source_content_sha256": "b7124c414c05a642f382bce8414a7bd0d4367e7241c674b45f3b7ce1df216c01",
+          "speech": "I am not important! Only the mission is what counts."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 99,
+          "line_sha256": "f9a68d3ff21bf43ba8b102e4a4ba510d5859e41fbadc788fd324031602af2704",
+          "section_heading_sha256": "0fd4b897b3d2f9fedb66beef0b6a58ccac2d23a868fbac9d7c868cf2fc7bb3c0",
+          "source_content_sha256": "b7124c414c05a642f382bce8414a7bd0d4367e7241c674b45f3b7ce1df216c01",
+          "speech": "Hm, so you want another trip to that accursed isle?"
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 101,
+          "line_sha256": "c0e4309e4b4eae9f0e5078f993fdd14995ba69fc886dab7bc5326b3a273e317d",
+          "section_heading_sha256": "0fd4b897b3d2f9fedb66beef0b6a58ccac2d23a868fbac9d7c868cf2fc7bb3c0",
+          "source_content_sha256": "b7124c414c05a642f382bce8414a7bd0d4367e7241c674b45f3b7ce1df216c01",
+          "speech": "So be it!"
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 103,
+          "line_sha256": "239a6e5b816f374ea855d6f0976aab954e067673877755b98d5d3f2f7073b52a",
+          "section_heading_sha256": "0fd4b897b3d2f9fedb66beef0b6a58ccac2d23a868fbac9d7c868cf2fc7bb3c0",
+          "source_content_sha256": "b7124c414c05a642f382bce8414a7bd0d4367e7241c674b45f3b7ce1df216c01",
+          "speech": "Well if you insist that we .. uhm delay our journey, I have no choice but to comply."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 105,
+          "line_sha256": "1d3bdb24217f2ee4909fa5e6da809170536cfb42715158cedb61e240484aad49",
+          "section_heading_sha256": "0fd4b897b3d2f9fedb66beef0b6a58ccac2d23a868fbac9d7c868cf2fc7bb3c0",
+          "source_content_sha256": "b7124c414c05a642f382bce8414a7bd0d4367e7241c674b45f3b7ce1df216c01",
+          "speech": "Then not."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 107,
+          "line_sha256": "426a6ab9d8063ef445d72a0d7c71aa97050d64486a2c0da1fef5c170fdbb78b3",
+          "section_heading_sha256": "0fd4b897b3d2f9fedb66beef0b6a58ccac2d23a868fbac9d7c868cf2fc7bb3c0",
+          "source_content_sha256": "b7124c414c05a642f382bce8414a7bd0d4367e7241c674b45f3b7ce1df216c01",
+          "speech": "Don't forget that THEY are after us, Jogador."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 110,
+          "line_sha256": "0f049b47c262b2a0d042a1b377fbeb03407e5bda1bcccd5c1e3df1107c394794",
+          "section_heading_sha256": "1b92798ee8bff432a3456a19bfe2d5355908c8c6c3364f3b45e010b146ada132",
+          "source_content_sha256": "b7124c414c05a642f382bce8414a7bd0d4367e7241c674b45f3b7ce1df216c01",
+          "speech": "Time to leave this unfriendly place, eh? So are you ready to depart?"
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 112,
+          "line_sha256": "d0ed1c276e9fb4600563c51257486048f80446d55a82941996e7c6963ecd92d7",
+          "section_heading_sha256": "1b92798ee8bff432a3456a19bfe2d5355908c8c6c3364f3b45e010b146ada132",
+          "source_content_sha256": "b7124c414c05a642f382bce8414a7bd0d4367e7241c674b45f3b7ce1df216c01",
+          "speech": "I thought you were going to stay here forever. Let's go."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 114,
+          "line_sha256": "df485ebbd3e9ca9f4815f979a7fb99775f89f021b448ab0880d56b7350fc02e9",
+          "section_heading_sha256": "1b92798ee8bff432a3456a19bfe2d5355908c8c6c3364f3b45e010b146ada132",
+          "source_content_sha256": "b7124c414c05a642f382bce8414a7bd0d4367e7241c674b45f3b7ce1df216c01",
+          "speech": "Wow, you must be the bravest person in the whole world! Or the maddest."
+        },
+        {
+          "identity_binding_qualified": false,
+          "line": 116,
+          "line_sha256": "6fc3a212912e845bdbd214e34e970775e8758913e9a154597f9f35a4ef4ad112",
+          "section_heading_sha256": "1b92798ee8bff432a3456a19bfe2d5355908c8c6c3364f3b45e010b146ada132",
+          "source_content_sha256": "b7124c414c05a642f382bce8414a7bd0d4367e7241c674b45f3b7ce1df216c01",
+          "speech": "Take care, Jogador."
+        }
+      ],
+      "name": "Rapanaio (Isle of Evil)",
+      "native_variant_speech_binding_qualified": false,
+      "note": "D10 requires attributable recorded literal replies and a strictly larger positive differing-text match score. Wiki spell lists, canonical name aliases and generic transport prose do not prove variant speech or source guard behavior.",
+      "npc_key": "oteryn:npc.rapanaio_isle_of_evil",
+      "page_url": "https://www.tibiawiki.com.br/wiki/Rapanaio?action=raw",
+      "presentation_braces_stripped_scores_not_admission": {
+        "canary": {
+          "matches": 0,
+          "misses": 1,
+          "total": 1
+        },
+        "crystal": {
+          "matches": 0,
+          "misses": 1,
+          "total": 1
+        }
+      },
+      "reason": "NO_LITERAL_DIFFERING_TEXT_MATCH",
+      "runtime_qualified": false,
+      "source_candidates": [
+        {
+          "accepted_native_binding_hash_matches": true,
+          "accepted_native_binding_pin_matches": true,
+          "deterministic_two_conversions": true,
+          "exact_registered_name": true,
+          "opaque_guards_actions_retained": true,
+          "raw_sha256": "bca792a65b5afab6cca50978fb465b9350bc43749877470bf979ee3b0144e67a",
+          "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+          "source": "canary",
+          "source_file": "data-otservbr-global/npc/rapanaio_isle_of_evil.lua",
+          "source_program_sha256": "fc76775d030493ea9541ce4a92250177c96fd2df791fcb12a636c10abd88c088",
+          "source_registered_npc_names": [
+            "Rapanaio (Isle of Evil)"
+          ],
+          "static_candidate": {
+            "farewell": [
+              "Good bye. Recommend us if you were satisfied with our service."
+            ],
+            "greet": [
+              "Welcome on board, |PLAYERNAME|. I can travel you to {kazordoon}."
+            ],
+            "keywords": [
+              {
+                "children": [
+                  {
+                    "key": "no",
+                    "reply": [
+                      "We would like to serve you some time."
+                    ],
+                    "reset": true,
+                    "triggers": [
+                      "no"
+                    ]
+                  }
+                ],
+                "key": "kazordoon",
+                "reply": [
+                  "Do you seek a passage to Kazordoon for |TRAVELCOST|?"
+                ],
+                "triggers": [
+                  "kazordoon"
+                ]
+              },
+              {
+                "key": "name",
+                "reply": [
+                  "My name is Rapanaio from the Royal Tibia Line."
+                ],
+                "triggers": [
+                  "name"
+                ]
+              },
+              {
+                "key": "job",
+                "reply": [
+                  "I am the captain of this sailing-ship."
+                ],
+                "triggers": [
+                  "job"
+                ]
+              }
+            ],
+            "voices": {
+              "chance_ppm": 500000,
+              "entries": [
+                {
+                  "mode": "Say",
+                  "text": "Passage to {Kazordoon}."
+                }
+              ],
+              "interval_ms": 15000
+            },
+            "walkaway": [
+              "Good bye then."
+            ]
+          },
+          "static_drop_counts": {
+            "dropped_non_say_gated": 1,
+            "keyword_nodes": 4
+          }
+        },
+        {
+          "accepted_native_binding_hash_matches": true,
+          "accepted_native_binding_pin_matches": true,
+          "deterministic_two_conversions": true,
+          "exact_registered_name": true,
+          "opaque_guards_actions_retained": true,
+          "raw_sha256": "b019e365ea9eebea4de89bda67d24b3778f75be58c884b02fc5a0a0ea1a0c257",
+          "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+          "source": "crystal",
+          "source_file": "data-global/npc/rapanaio_isle_of_evil.lua",
+          "source_program_sha256": "25e259ad5d4a517905d712b9d44c6b1c7bfa57b58484e5529187ce6b27b5658f",
+          "source_registered_npc_names": [
+            "Rapanaio (Isle of Evil)"
+          ],
+          "static_candidate": {
+            "farewell": [
+              "Good bye. Recommend us if you were satisfied with our service."
+            ],
+            "greet": [
+              "Psht! Not that loud! Evil lurks everywhere."
+            ],
+            "keywords": [
+              {
+                "children": [
+                  {
+                    "key": "no",
+                    "reply": [
+                      "We would like to serve you some time."
+                    ],
+                    "reset": true,
+                    "triggers": [
+                      "no"
+                    ]
+                  }
+                ],
+                "key": "kazordoon",
+                "reply": [
+                  "Do you seek a passage to Kazordoon for |TRAVELCOST|?"
+                ],
+                "triggers": [
+                  "kazordoon"
+                ]
+              },
+              {
+                "key": "name",
+                "reply": [
+                  "My name is Rapanaio from the Royal Tibia Line."
+                ],
+                "triggers": [
+                  "name"
+                ]
+              },
+              {
+                "key": "job",
+                "reply": [
+                  "I am the captain of this sailing-ship."
+                ],
+                "triggers": [
+                  "job"
+                ]
+              }
+            ],
+            "voices": {
+              "chance_ppm": 500000,
+              "entries": [
+                {
+                  "mode": "Say",
+                  "text": "Passage to {Kazordoon}."
+                }
+              ],
+              "interval_ms": 15000
+            },
+            "walkaway": [
+              "Good bye then."
+            ]
+          },
+          "static_drop_counts": {
+            "dropped_non_say_gated": 1,
+            "keyword_nodes": 4
+          }
+        }
+      ],
+      "source_page_sha256": "b7124c414c05a642f382bce8414a7bd0d4367e7241c674b45f3b7ce1df216c01",
+      "source_primary_program_recovered": true,
+      "whole_program_selected": null
+    }
+  ],
+  "runtime_qualified": false,
+  "schema": "NPC_D10_CONFLICT_EXHAUSTION_R7/v1",
+  "web_attempts": {
+    "capture_sha256": "a2e0ebce9ea3b6be0813084bcd515ff52ab21d09d3f15c60581a047c4360ffba",
+    "failures": [
+      {
+        "error": "Failed to fetch url",
+        "url": "https://tibia.fandom.com/wiki/Eremo"
+      }
+    ],
+    "results": 4,
+    "tavily_search_limit": {
+      "detail": {
+        "error": "This request exceeds your plan's set usage limit. Please upgrade your plan or contact support@tavily.com"
+      },
+      "documentation": "https://docs.tavily.com/documentation/api-reference/endpoint/search",
+      "error": "Search failed",
+      "status": 432
+    }
+  }
+}
