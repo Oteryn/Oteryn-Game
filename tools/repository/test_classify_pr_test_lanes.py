@@ -433,6 +433,12 @@ def test_server_qualification(module):
         "apps/game-server/src/content/project/v2/creature.rs",
         "apps/game-server/migrations/0009_character_progression.sql",
         "apps/game-server/Cargo.toml",
+        "crates/foundation/src/lib.rs",
+        "crates/protocol-oteryn/src/lib.rs",
+        "crates/simulation-determinism/src/lib.rs",
+        "crates/foundation/Cargo.toml",
+        "crates/protocol-oteryn/Cargo.toml",
+        "crates/simulation-determinism/Cargo.toml",
         "Cargo.lock",
         "vendor/tokio-1.53.1/src/lib.rs",
         "tools/qualification/node_boot/run.sh",
@@ -452,10 +458,20 @@ def test_server_qualification(module):
         "apps/client/src/main.rs",
         "docs/architecture/FND-04B_RECONNECT_RECOVERY_CONTINUITY_CONTRACT.md",
         "tools/content/quests.py",
+        "crates/input-platform/src/lib.rs",
     ):
         assert required(path) is False, path
     assert required("docs/a.md", "apps/game-server/src/ai/mod.rs") is False
     assert required("docs/a.md", previous="apps/game-server/src/durability/mod.rs") is True
+    # Both sides of a rename and removals can change the shipped dependency.
+    for crate in ("foundation", "protocol-oteryn", "simulation-determinism"):
+        path = f"crates/{crate}/src/lib.rs"
+        assert required("docs/removed.md", previous=path) is True, path
+        assert required(path, previous="docs/added.md") is True, path
+        assert module.server_qualification_required([
+            {"filename": path, "status": "removed"},
+        ], 1) is True, path
+        assert required("docs/a.md", path) is True, path
     # Fail closed on incomplete or malformed enumeration.
     assert module.server_qualification_required([], 0) is True
     assert module.server_qualification_required([{"filename": "docs/a.md"}], 2) is True
@@ -486,8 +502,33 @@ def test_cli_fallback(module):
     print("CLI fallback PASS: malformed classifier inputs remain conservative FULL")
 
 
+def test_repository_tool_dependencies(module):
+    path = "tools/repository/test_validate_game_atlas_semantic_search_triggers.py"
+    result = classify(module, [path])
+    assert not result["rust"] and not result["windows"], result
+    for consumer in (module.CONTROL_CONSUMER, "oteryn-client"):
+        result = classify(module, [path], consumers={path: {consumer}})
+        assert result["rust"] and result["windows"], result
+    result = classify(module, [path], consumers={path: {module.SERVER}})
+    assert result["rust"] and not result["windows"], result
+    for control in (
+        "classify_pr_test_lanes.py", "apply_github_settings.py",
+        "validate_repository_policy.py", "validate_repository_policy_core.py",
+        "validate_pr_gate_pg_sim.py", "validate_pr_routing_contract.py",
+        "test_validate_pr_gate_pg_sim.py", "test_validate_merge_group_pg_sim.py",
+        "test_classify_pr_test_lanes.py", "test_classify_post_merge_lanes.py",
+        "test_classify_content_routing.py", "future_unknown_controller.py",
+    ):
+        result = classify(module, ["tools/repository/" + control])
+        assert result["rust"] and result["windows"], (control, result)
+    result = module.classify([{"filename": path}], 1, fixture(), candidate_modes_verified=False)
+    assert result["rust"] and result["windows"], result
+    print("Repository tool dependencies PASS: auxiliary case, consumer promotion, security and unknown FULL")
+
+
 def main() -> int:
     module = load_module()
+    test_repository_tool_dependencies(module)
     test_routing_matrix(module)
     test_exact_candidate_reference_scan(module)
     test_candidate_modes(module)

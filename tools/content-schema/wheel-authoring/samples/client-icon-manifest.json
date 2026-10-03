@@ -1,0 +1,3130 @@
+{
+  "schema": "OTERYN_WHEEL_CLIENT_ICON_REFERENCE/v1",
+  "runtime_admitted": false,
+  "redistribution_authorized": false,
+  "mapping_basis": "CURRENT_PINNED_PLANNER_SOURCE_IDS; NOT_OLDER_CLIENT_SLOT_LAYOUT",
+  "candidate_sha256": "51da970d2fd39c2094287114b593a491d76f0668a8262d6076047778a8ba3649",
+  "source_sha256": "f49f4c0cea261e2a43db0164bd5bbadd07bce61bc542c6d50a4e9b86029c63de",
+  "sheets": {
+    "dedication": {
+      "category": "dedication",
+      "repository": "https://github.com/mehah/otclient",
+      "commit": "d809b0cabffa702e9df7d50daacbacd2ac316329",
+      "path": "data/images/game/wheel/icons-skillwheel-smallperks.png",
+      "sha256": "5b1004c3be13fac0fc3c5fc4d111366e71b4d63dcefd9ad7f0b11616b28a3a0e",
+      "width": 208,
+      "height": 16,
+      "bytes": 2450,
+      "reference_url": "https://raw.githubusercontent.com/mehah/otclient/d809b0cabffa702e9df7d50daacbacd2ac316329/data/images/game/wheel/icons-skillwheel-smallperks.png",
+      "visual_inspection": true,
+      "original_cdn": {
+        "url": "https://static.tibia.com/images/community/wheelofdestiny/icons-skillwheel-smallperks.png",
+        "sha256": "bba0ea4a558993af14148b69b89c955d3770806cf3733362c8bce7f8b092a65c",
+        "bytes": 738,
+        "width": 80,
+        "height": 16,
+        "method": "REMOTE_DESKTOP_CHROME_CDP",
+        "visual_inspection": true,
+        "equal_reference_cells": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "different_reference_cells": [],
+        "pixel_comparison_pipeline": "SAME_CHROME_CANVAS_RGBA"
+      }
+    },
+    "conviction": {
+      "category": "conviction",
+      "repository": "https://github.com/mehah/otclient",
+      "commit": "d809b0cabffa702e9df7d50daacbacd2ac316329",
+      "path": "data/images/game/wheel/icons-skillwheel-mediumperks.png",
+      "sha256": "78db38ddab2a1465c233f2e9f5a5b2d7214741875396097d7caa07d0ef9bd516",
+      "width": 1470,
+      "height": 30,
+      "bytes": 71690,
+      "reference_url": "https://raw.githubusercontent.com/mehah/otclient/d809b0cabffa702e9df7d50daacbacd2ac316329/data/images/game/wheel/icons-skillwheel-mediumperks.png",
+      "visual_inspection": true,
+      "original_cdn": {
+        "url": "https://static.tibia.com/images/community/wheelofdestiny/icons-skillwheel-mediumperks.png",
+        "sha256": "64a798e63ec8ee3fe2d23d46ebe57d9bb55eb441afd506e03801f810e925af5b",
+        "bytes": 75104,
+        "width": 1470,
+        "height": 30,
+        "method": "REMOTE_DESKTOP_CHROME_CDP",
+        "visual_inspection": true,
+        "equal_reference_cells": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          15,
+          16,
+          17,
+          18,
+          20,
+          21,
+          23,
+          24,
+          25,
+          27,
+          28,
+          30,
+          31,
+          32,
+          34,
+          35,
+          37,
+          38,
+          39,
+          40,
+          41,
+          42,
+          43,
+          46,
+          47,
+          48
+        ],
+        "different_reference_cells": [
+          14,
+          19,
+          22,
+          26,
+          29,
+          33,
+          36,
+          44,
+          45
+        ],
+        "pixel_comparison_pipeline": "SAME_CHROME_CANVAS_RGBA"
+      }
+    },
+    "revelation": {
+      "category": "revelation",
+      "repository": "https://github.com/mehah/otclient",
+      "commit": "d809b0cabffa702e9df7d50daacbacd2ac316329",
+      "path": "data/images/game/wheel/icons-skillwheel-largeperks.png",
+      "sha256": "9dc356f838518438aa909f4742489c955b9f135d24a89833b1840802224e0509",
+      "width": 544,
+      "height": 34,
+      "bytes": 28010,
+      "reference_url": "https://raw.githubusercontent.com/mehah/otclient/d809b0cabffa702e9df7d50daacbacd2ac316329/data/images/game/wheel/icons-skillwheel-largeperks.png",
+      "visual_inspection": true,
+      "original_cdn": {
+        "url": "https://static.tibia.com/images/community/wheelofdestiny/icons-skillwheel-largeperks.png",
+        "sha256": "5a36d866b59837fcee9395b88043f83c7fd0b4b8352cb27547aab8d2d1740872",
+        "bytes": 28266,
+        "width": 544,
+        "height": 34,
+        "method": "REMOTE_DESKTOP_CHROME_CDP",
+        "visual_inspection": true,
+        "equal_reference_cells": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15
+        ],
+        "different_reference_cells": [
+          8
+        ],
+        "pixel_comparison_pipeline": "SAME_CHROME_CANVAS_RGBA"
+      }
+    },
+    "basic_mod": {
+      "category": "basic_mod",
+      "repository": "https://github.com/mehah/otclient",
+      "commit": "d809b0cabffa702e9df7d50daacbacd2ac316329",
+      "path": "data/images/game/wheel/icons-skillwheel-basicmods.png",
+      "sha256": "53f580f00b908497643806c3ac123e18748f52adde35af1e5f0d5ac3ff89bc77",
+      "width": 1470,
+      "height": 30,
+      "bytes": 39109,
+      "reference_url": "https://raw.githubusercontent.com/mehah/otclient/d809b0cabffa702e9df7d50daacbacd2ac316329/data/images/game/wheel/icons-skillwheel-basicmods.png",
+      "visual_inspection": true,
+      "original_cdn": {
+        "url": "https://static.tibia.com/images/global/common/skillwheel/icons-skillwheel-basicmods.png",
+        "sha256": "53f580f00b908497643806c3ac123e18748f52adde35af1e5f0d5ac3ff89bc77",
+        "bytes": 39109,
+        "width": 1470,
+        "height": 30,
+        "method": "REMOTE_DESKTOP_CHROME_CDP",
+        "visual_inspection": true,
+        "equal_reference_cells": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19,
+          20,
+          21,
+          22,
+          23,
+          24,
+          25,
+          26,
+          27,
+          28,
+          29,
+          30,
+          31,
+          32,
+          33,
+          34,
+          35,
+          36,
+          37,
+          38,
+          39,
+          40,
+          41,
+          42,
+          43,
+          44,
+          45,
+          46,
+          47,
+          48
+        ],
+        "different_reference_cells": [],
+        "pixel_comparison_pipeline": "SAME_CHROME_CANVAS_RGBA"
+      }
+    },
+    "supreme_mod": {
+      "category": "supreme_mod",
+      "repository": "https://github.com/mehah/otclient",
+      "commit": "d809b0cabffa702e9df7d50daacbacd2ac316329",
+      "path": "data/images/game/wheel/icons-skillwheel-suprememods.png",
+      "sha256": "86f334d16d6b25f0a20ff02e3461bf167b74c953c6a8ed9bed2761b870879b84",
+      "width": 3290,
+      "height": 35,
+      "bytes": 88061,
+      "reference_url": "https://raw.githubusercontent.com/mehah/otclient/d809b0cabffa702e9df7d50daacbacd2ac316329/data/images/game/wheel/icons-skillwheel-suprememods.png",
+      "visual_inspection": true,
+      "original_cdn": {
+        "url": "https://static.tibia.com/images/global/common/skillwheel/icons-skillwheel-suprememods.png",
+        "sha256": "0c79c0df7d415d56c6e151a02749d028786211bf31aeb6126cdbf4a7722f64d7",
+        "bytes": 86474,
+        "width": 3290,
+        "height": 35,
+        "method": "REMOTE_DESKTOP_CHROME_CDP",
+        "visual_inspection": true,
+        "equal_reference_cells": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19,
+          20,
+          21,
+          22,
+          23,
+          24,
+          25,
+          26,
+          27,
+          28,
+          29,
+          30,
+          31,
+          32,
+          33,
+          34,
+          35,
+          38,
+          39,
+          40,
+          41,
+          42,
+          43,
+          44,
+          45,
+          46,
+          47,
+          48,
+          49,
+          50,
+          51,
+          52,
+          53,
+          54,
+          55,
+          56,
+          57,
+          58,
+          59,
+          60,
+          61,
+          62,
+          63,
+          64,
+          65,
+          66,
+          67,
+          68,
+          69,
+          70,
+          71,
+          72,
+          73,
+          74,
+          75,
+          76,
+          78,
+          79,
+          80,
+          81,
+          82,
+          83,
+          84,
+          85,
+          86,
+          87,
+          91,
+          92,
+          93
+        ],
+        "different_reference_cells": [
+          36,
+          37,
+          77,
+          88,
+          89,
+          90
+        ],
+        "pixel_comparison_pipeline": "SAME_CHROME_CANVAS_RGBA"
+      }
+    }
+  },
+  "icons": {
+    "basic_mod:0": {
+      "sheet": "basic_mod",
+      "source_index": 0,
+      "rect": [
+        0,
+        0,
+        30,
+        30
+      ],
+      "reference_fallback_verified": true
+    },
+    "basic_mod:1": {
+      "sheet": "basic_mod",
+      "source_index": 1,
+      "rect": [
+        30,
+        0,
+        30,
+        30
+      ],
+      "reference_fallback_verified": true
+    },
+    "basic_mod:10": {
+      "sheet": "basic_mod",
+      "source_index": 10,
+      "rect": [
+        300,
+        0,
+        30,
+        30
+      ],
+      "reference_fallback_verified": true
+    },
+    "basic_mod:11": {
+      "sheet": "basic_mod",
+      "source_index": 11,
+      "rect": [
+        330,
+        0,
+        30,
+        30
+      ],
+      "reference_fallback_verified": true
+    },
+    "basic_mod:12": {
+      "sheet": "basic_mod",
+      "source_index": 12,
+      "rect": [
+        360,
+        0,
+        30,
+        30
+      ],
+      "reference_fallback_verified": true
+    },
+    "basic_mod:13": {
+      "sheet": "basic_mod",
+      "source_index": 13,
+      "rect": [
+        390,
+        0,
+        30,
+        30
+      ],
+      "reference_fallback_verified": true
+    },
+    "basic_mod:14": {
+      "sheet": "basic_mod",
+      "source_index": 14,
+      "rect": [
+        420,
+        0,
+        30,
+        30
+      ],
+      "reference_fallback_verified": true
+    },
+    "basic_mod:15": {
+      "sheet": "basic_mod",
+      "source_index": 15,
+      "rect": [
+        450,
+        0,
+        30,
+        30
+      ],
+      "reference_fallback_verified": true
+    },
+    "basic_mod:16": {
+      "sheet": "basic_mod",
+      "source_index": 16,
+      "rect": [
+        480,
+        0,
+        30,
+        30
+      ],
+      "reference_fallback_verified": true
+    },
+    "basic_mod:17": {
+      "sheet": "basic_mod",
+      "source_index": 17,
+      "rect": [
+        510,
+        0,
+        30,
+        30
+      ],
+      "reference_fallback_verified": true
+    },
+    "basic_mod:18": {
+      "sheet": "basic_mod",
+      "source_index": 18,
+      "rect": [
+        540,
+        0,
+        30,
+        30
+      ],
+      "reference_fallback_verified": true
+    },
+    "basic_mod:19": {
+      "sheet": "basic_mod",
+      "source_index": 19,
+      "rect": [
+        570,
+        0,
+        30,
+        30
+      ],
+      "reference_fallback_verified": true
+    },
+    "basic_mod:2": {
+      "sheet": "basic_mod",
+      "source_index": 2,
+      "rect": [
+        60,
+        0,
+        30,
+        30
+      ],
+      "reference_fallback_verified": true
+    },
+    "basic_mod:20": {
+      "sheet": "basic_mod",
+      "source_index": 20,
+      "rect": [
+        600,
+        0,
+        30,
+        30
+      ],
+      "reference_fallback_verified": true
+    },
+    "basic_mod:21": {
+      "sheet": "basic_mod",
+      "source_index": 21,
+      "rect": [
+        630,
+        0,
+        30,
+        30
+      ],
+      "reference_fallback_verified": true
+    },
+    "basic_mod:22": {
+      "sheet": "basic_mod",
+      "source_index": 22,
+      "rect": [
+        660,
+        0,
+        30,
+        30
+      ],
+      "reference_fallback_verified": true
+    },
+    "basic_mod:23": {
+      "sheet": "basic_mod",
+      "source_index": 23,
+      "rect": [
+        690,
+        0,
+        30,
+        30
+      ],
+      "reference_fallback_verified": true
+    },
+    "basic_mod:24": {
+      "sheet": "basic_mod",
+      "source_index": 24,
+      "rect": [
+        720,
+        0,
+        30,
+        30
+      ],
+      "reference_fallback_verified": true
+    },
+    "basic_mod:25": {
+      "sheet": "basic_mod",
+      "source_index": 25,
+      "rect": [
+        750,
+        0,
+        30,
+        30
+      ],
+      "reference_fallback_verified": true
+    },
+    "basic_mod:26": {
+      "sheet": "basic_mod",
+      "source_index": 26,
+      "rect": [
+        780,
+        0,
+        30,
+        30
+      ],
+      "reference_fallback_verified": true
+    },
+    "basic_mod:27": {
+      "sheet": "basic_mod",
+      "source_index": 27,
+      "rect": [
+        810,
+        0,
+        30,
+        30
+      ],
+      "reference_fallback_verified": true
+    },
+    "basic_mod:28": {
+      "sheet": "basic_mod",
+      "source_index": 28,
+      "rect": [
+        840,
+        0,
+        30,
+        30
+      ],
+      "reference_fallback_verified": true
+    },
+    "basic_mod:29": {
+      "sheet": "basic_mod",
+      "source_index": 29,
+      "rect": [
+        870,
+        0,
+        30,
+        30
+      ],
+      "reference_fallback_verified": true
+    },
+    "basic_mod:3": {
+      "sheet": "basic_mod",
+      "source_index": 3,
+      "rect": [
+        90,
+        0,
+        30,
+        30
+      ],
+      "reference_fallback_verified": true
+    },
+    "basic_mod:30": {
+      "sheet": "basic_mod",
+      "source_index": 30,
+      "rect": [
+        900,
+        0,
+        30,
+        30
+      ],
+      "reference_fallback_verified": true
+    },
+    "basic_mod:31": {
+      "sheet": "basic_mod",
+      "source_index": 31,
+      "rect": [
+        930,
+        0,
+        30,
+        30
+      ],
+      "reference_fallback_verified": true
+    },
+    "basic_mod:33": {
+      "sheet": "basic_mod",
+      "source_index": 33,
+      "rect": [
+        990,
+        0,
+        30,
+        30
+      ],
+      "reference_fallback_verified": true
+    },
+    "basic_mod:34": {
+      "sheet": "basic_mod",
+      "source_index": 34,
+      "rect": [
+        1020,
+        0,
+        30,
+        30
+      ],
+      "reference_fallback_verified": true
+    },
+    "basic_mod:35": {
+      "sheet": "basic_mod",
+      "source_index": 35,
+      "rect": [
+        1050,
+        0,
+        30,
+        30
+      ],
+      "reference_fallback_verified": true
+    },
+    "basic_mod:36": {
+      "sheet": "basic_mod",
+      "source_index": 36,
+      "rect": [
+        1080,
+        0,
+        30,
+        30
+      ],
+      "reference_fallback_verified": true
+    },
+    "basic_mod:37": {
+      "sheet": "basic_mod",
+      "source_index": 37,
+      "rect": [
+        1110,
+        0,
+        30,
+        30
+      ],
+      "reference_fallback_verified": true
+    },
+    "basic_mod:38": {
+      "sheet": "basic_mod",
+      "source_index": 38,
+      "rect": [
+        1140,
+        0,
+        30,
+        30
+      ],
+      "reference_fallback_verified": true
+    },
+    "basic_mod:39": {
+      "sheet": "basic_mod",
+      "source_index": 39,
+      "rect": [
+        1170,
+        0,
+        30,
+        30
+      ],
+      "reference_fallback_verified": true
+    },
+    "basic_mod:4": {
+      "sheet": "basic_mod",
+      "source_index": 4,
+      "rect": [
+        120,
+        0,
+        30,
+        30
+      ],
+      "reference_fallback_verified": true
+    },
+    "basic_mod:40": {
+      "sheet": "basic_mod",
+      "source_index": 40,
+      "rect": [
+        1200,
+        0,
+        30,
+        30
+      ],
+      "reference_fallback_verified": true
+    },
+    "basic_mod:41": {
+      "sheet": "basic_mod",
+      "source_index": 41,
+      "rect": [
+        1230,
+        0,
+        30,
+        30
+      ],
+      "reference_fallback_verified": true
+    },
+    "basic_mod:44": {
+      "sheet": "basic_mod",
+      "source_index": 44,
+      "rect": [
+        1320,
+        0,
+        30,
+        30
+      ],
+      "reference_fallback_verified": true
+    },
+    "basic_mod:45": {
+      "sheet": "basic_mod",
+      "source_index": 45,
+      "rect": [
+        1350,
+        0,
+        30,
+        30
+      ],
+      "reference_fallback_verified": true
+    },
+    "basic_mod:46": {
+      "sheet": "basic_mod",
+      "source_index": 46,
+      "rect": [
+        1380,
+        0,
+        30,
+        30
+      ],
+      "reference_fallback_verified": true
+    },
+    "basic_mod:47": {
+      "sheet": "basic_mod",
+      "source_index": 47,
+      "rect": [
+        1410,
+        0,
+        30,
+        30
+      ],
+      "reference_fallback_verified": true
+    },
+    "basic_mod:48": {
+      "sheet": "basic_mod",
+      "source_index": 48,
+      "rect": [
+        1440,
+        0,
+        30,
+        30
+      ],
+      "reference_fallback_verified": true
+    },
+    "basic_mod:5": {
+      "sheet": "basic_mod",
+      "source_index": 5,
+      "rect": [
+        150,
+        0,
+        30,
+        30
+      ],
+      "reference_fallback_verified": true
+    },
+    "basic_mod:6": {
+      "sheet": "basic_mod",
+      "source_index": 6,
+      "rect": [
+        180,
+        0,
+        30,
+        30
+      ],
+      "reference_fallback_verified": true
+    },
+    "basic_mod:7": {
+      "sheet": "basic_mod",
+      "source_index": 7,
+      "rect": [
+        210,
+        0,
+        30,
+        30
+      ],
+      "reference_fallback_verified": true
+    },
+    "basic_mod:8": {
+      "sheet": "basic_mod",
+      "source_index": 8,
+      "rect": [
+        240,
+        0,
+        30,
+        30
+      ],
+      "reference_fallback_verified": true
+    },
+    "basic_mod:9": {
+      "sheet": "basic_mod",
+      "source_index": 9,
+      "rect": [
+        270,
+        0,
+        30,
+        30
+      ],
+      "reference_fallback_verified": true
+    },
+    "conviction:10": {
+      "sheet": "conviction",
+      "source_index": 10,
+      "rect": [
+        300,
+        0,
+        30,
+        30
+      ],
+      "reference_fallback_verified": true
+    },
+    "conviction:11": {
+      "sheet": "conviction",
+      "source_index": 11,
+      "rect": [
+        330,
+        0,
+        30,
+        30
+      ],
+      "reference_fallback_verified": true
+    },
+    "conviction:12": {
+      "sheet": "conviction",
+      "source_index": 12,
+      "rect": [
+        360,
+        0,
+        30,
+        30
+      ],
+      "reference_fallback_verified": true
+    },
+    "conviction:13": {
+      "sheet": "conviction",
+      "source_index": 13,
+      "rect": [
+        390,
+        0,
+        30,
+        30
+      ],
+      "reference_fallback_verified": true
+    },
+    "conviction:14": {
+      "sheet": "conviction",
+      "source_index": 14,
+      "rect": [
+        420,
+        0,
+        30,
+        30
+      ],
+      "reference_fallback_verified": false
+    },
+    "conviction:15": {
+      "sheet": "conviction",
+      "source_index": 15,
+      "rect": [
+        450,
+        0,
+        30,
+        30
+      ],
+      "reference_fallback_verified": true
+    },
+    "conviction:16": {
+      "sheet": "conviction",
+      "source_index": 16,
+      "rect": [
+        480,
+        0,
+        30,
+        30
+      ],
+      "reference_fallback_verified": true
+    },
+    "conviction:17": {
+      "sheet": "conviction",
+      "source_index": 17,
+      "rect": [
+        510,
+        0,
+        30,
+        30
+      ],
+      "reference_fallback_verified": true
+    },
+    "conviction:18": {
+      "sheet": "conviction",
+      "source_index": 18,
+      "rect": [
+        540,
+        0,
+        30,
+        30
+      ],
+      "reference_fallback_verified": true
+    },
+    "conviction:19": {
+      "sheet": "conviction",
+      "source_index": 19,
+      "rect": [
+        570,
+        0,
+        30,
+        30
+      ],
+      "reference_fallback_verified": false
+    },
+    "conviction:20": {
+      "sheet": "conviction",
+      "source_index": 20,
+      "rect": [
+        600,
+        0,
+        30,
+        30
+      ],
+      "reference_fallback_verified": true
+    },
+    "conviction:21": {
+      "sheet": "conviction",
+      "source_index": 21,
+      "rect": [
+        630,
+        0,
+        30,
+        30
+      ],
+      "reference_fallback_verified": true
+    },
+    "conviction:22": {
+      "sheet": "conviction",
+      "source_index": 22,
+      "rect": [
+        660,
+        0,
+        30,
+        30
+      ],
+      "reference_fallback_verified": false
+    },
+    "conviction:23": {
+      "sheet": "conviction",
+      "source_index": 23,
+      "rect": [
+        690,
+        0,
+        30,
+        30
+      ],
+      "reference_fallback_verified": true
+    },
+    "conviction:24": {
+      "sheet": "conviction",
+      "source_index": 24,
+      "rect": [
+        720,
+        0,
+        30,
+        30
+      ],
+      "reference_fallback_verified": true
+    },
+    "conviction:25": {
+      "sheet": "conviction",
+      "source_index": 25,
+      "rect": [
+        750,
+        0,
+        30,
+        30
+      ],
+      "reference_fallback_verified": true
+    },
+    "conviction:26": {
+      "sheet": "conviction",
+      "source_index": 26,
+      "rect": [
+        780,
+        0,
+        30,
+        30
+      ],
+      "reference_fallback_verified": false
+    },
+    "conviction:27": {
+      "sheet": "conviction",
+      "source_index": 27,
+      "rect": [
+        810,
+        0,
+        30,
+        30
+      ],
+      "reference_fallback_verified": true
+    },
+    "conviction:28": {
+      "sheet": "conviction",
+      "source_index": 28,
+      "rect": [
+        840,
+        0,
+        30,
+        30
+      ],
+      "reference_fallback_verified": true
+    },
+    "conviction:29": {
+      "sheet": "conviction",
+      "source_index": 29,
+      "rect": [
+        870,
+        0,
+        30,
+        30
+      ],
+      "reference_fallback_verified": false
+    },
+    "conviction:30": {
+      "sheet": "conviction",
+      "source_index": 30,
+      "rect": [
+        900,
+        0,
+        30,
+        30
+      ],
+      "reference_fallback_verified": true
+    },
+    "conviction:31": {
+      "sheet": "conviction",
+      "source_index": 31,
+      "rect": [
+        930,
+        0,
+        30,
+        30
+      ],
+      "reference_fallback_verified": true
+    },
+    "conviction:32": {
+      "sheet": "conviction",
+      "source_index": 32,
+      "rect": [
+        960,
+        0,
+        30,
+        30
+      ],
+      "reference_fallback_verified": true
+    },
+    "conviction:33": {
+      "sheet": "conviction",
+      "source_index": 33,
+      "rect": [
+        990,
+        0,
+        30,
+        30
+      ],
+      "reference_fallback_verified": false
+    },
+    "conviction:34": {
+      "sheet": "conviction",
+      "source_index": 34,
+      "rect": [
+        1020,
+        0,
+        30,
+        30
+      ],
+      "reference_fallback_verified": true
+    },
+    "conviction:35": {
+      "sheet": "conviction",
+      "source_index": 35,
+      "rect": [
+        1050,
+        0,
+        30,
+        30
+      ],
+      "reference_fallback_verified": true
+    },
+    "conviction:36": {
+      "sheet": "conviction",
+      "source_index": 36,
+      "rect": [
+        1080,
+        0,
+        30,
+        30
+      ],
+      "reference_fallback_verified": false
+    },
+    "conviction:37": {
+      "sheet": "conviction",
+      "source_index": 37,
+      "rect": [
+        1110,
+        0,
+        30,
+        30
+      ],
+      "reference_fallback_verified": true
+    },
+    "conviction:38": {
+      "sheet": "conviction",
+      "source_index": 38,
+      "rect": [
+        1140,
+        0,
+        30,
+        30
+      ],
+      "reference_fallback_verified": true
+    },
+    "conviction:39": {
+      "sheet": "conviction",
+      "source_index": 39,
+      "rect": [
+        1170,
+        0,
+        30,
+        30
+      ],
+      "reference_fallback_verified": true
+    },
+    "conviction:40": {
+      "sheet": "conviction",
+      "source_index": 40,
+      "rect": [
+        1200,
+        0,
+        30,
+        30
+      ],
+      "reference_fallback_verified": true
+    },
+    "conviction:41": {
+      "sheet": "conviction",
+      "source_index": 41,
+      "rect": [
+        1230,
+        0,
+        30,
+        30
+      ],
+      "reference_fallback_verified": true
+    },
+    "conviction:42": {
+      "sheet": "conviction",
+      "source_index": 42,
+      "rect": [
+        1260,
+        0,
+        30,
+        30
+      ],
+      "reference_fallback_verified": true
+    },
+    "conviction:43": {
+      "sheet": "conviction",
+      "source_index": 43,
+      "rect": [
+        1290,
+        0,
+        30,
+        30
+      ],
+      "reference_fallback_verified": true
+    },
+    "conviction:44": {
+      "sheet": "conviction",
+      "source_index": 44,
+      "rect": [
+        1320,
+        0,
+        30,
+        30
+      ],
+      "reference_fallback_verified": false
+    },
+    "conviction:45": {
+      "sheet": "conviction",
+      "source_index": 45,
+      "rect": [
+        1350,
+        0,
+        30,
+        30
+      ],
+      "reference_fallback_verified": false
+    },
+    "conviction:46": {
+      "sheet": "conviction",
+      "source_index": 46,
+      "rect": [
+        1380,
+        0,
+        30,
+        30
+      ],
+      "reference_fallback_verified": true
+    },
+    "conviction:47": {
+      "sheet": "conviction",
+      "source_index": 47,
+      "rect": [
+        1410,
+        0,
+        30,
+        30
+      ],
+      "reference_fallback_verified": true
+    },
+    "conviction:48": {
+      "sheet": "conviction",
+      "source_index": 48,
+      "rect": [
+        1440,
+        0,
+        30,
+        30
+      ],
+      "reference_fallback_verified": true
+    },
+    "conviction:5": {
+      "sheet": "conviction",
+      "source_index": 5,
+      "rect": [
+        150,
+        0,
+        30,
+        30
+      ],
+      "reference_fallback_verified": true
+    },
+    "conviction:6": {
+      "sheet": "conviction",
+      "source_index": 6,
+      "rect": [
+        180,
+        0,
+        30,
+        30
+      ],
+      "reference_fallback_verified": true
+    },
+    "conviction:7": {
+      "sheet": "conviction",
+      "source_index": 7,
+      "rect": [
+        210,
+        0,
+        30,
+        30
+      ],
+      "reference_fallback_verified": true
+    },
+    "conviction:8": {
+      "sheet": "conviction",
+      "source_index": 8,
+      "rect": [
+        240,
+        0,
+        30,
+        30
+      ],
+      "reference_fallback_verified": true
+    },
+    "conviction:9": {
+      "sheet": "conviction",
+      "source_index": 9,
+      "rect": [
+        270,
+        0,
+        30,
+        30
+      ],
+      "reference_fallback_verified": true
+    },
+    "dedication:0": {
+      "sheet": "dedication",
+      "source_index": 0,
+      "rect": [
+        0,
+        0,
+        16,
+        16
+      ],
+      "reference_fallback_verified": true
+    },
+    "dedication:1": {
+      "sheet": "dedication",
+      "source_index": 1,
+      "rect": [
+        16,
+        0,
+        16,
+        16
+      ],
+      "reference_fallback_verified": true
+    },
+    "dedication:2": {
+      "sheet": "dedication",
+      "source_index": 2,
+      "rect": [
+        32,
+        0,
+        16,
+        16
+      ],
+      "reference_fallback_verified": true
+    },
+    "dedication:3": {
+      "sheet": "dedication",
+      "source_index": 3,
+      "rect": [
+        48,
+        0,
+        16,
+        16
+      ],
+      "reference_fallback_verified": true
+    },
+    "dedication:4": {
+      "sheet": "dedication",
+      "source_index": 4,
+      "rect": [
+        64,
+        0,
+        16,
+        16
+      ],
+      "reference_fallback_verified": true
+    },
+    "revelation:0": {
+      "sheet": "revelation",
+      "source_index": 0,
+      "rect": [
+        0,
+        0,
+        34,
+        34
+      ],
+      "reference_fallback_verified": true
+    },
+    "revelation:1": {
+      "sheet": "revelation",
+      "source_index": 1,
+      "rect": [
+        34,
+        0,
+        34,
+        34
+      ],
+      "reference_fallback_verified": true
+    },
+    "revelation:10": {
+      "sheet": "revelation",
+      "source_index": 10,
+      "rect": [
+        340,
+        0,
+        34,
+        34
+      ],
+      "reference_fallback_verified": true
+    },
+    "revelation:11": {
+      "sheet": "revelation",
+      "source_index": 11,
+      "rect": [
+        374,
+        0,
+        34,
+        34
+      ],
+      "reference_fallback_verified": true
+    },
+    "revelation:12": {
+      "sheet": "revelation",
+      "source_index": 12,
+      "rect": [
+        408,
+        0,
+        34,
+        34
+      ],
+      "reference_fallback_verified": true
+    },
+    "revelation:13": {
+      "sheet": "revelation",
+      "source_index": 13,
+      "rect": [
+        442,
+        0,
+        34,
+        34
+      ],
+      "reference_fallback_verified": true
+    },
+    "revelation:14": {
+      "sheet": "revelation",
+      "source_index": 14,
+      "rect": [
+        476,
+        0,
+        34,
+        34
+      ],
+      "reference_fallback_verified": true
+    },
+    "revelation:15": {
+      "sheet": "revelation",
+      "source_index": 15,
+      "rect": [
+        510,
+        0,
+        34,
+        34
+      ],
+      "reference_fallback_verified": true
+    },
+    "revelation:2": {
+      "sheet": "revelation",
+      "source_index": 2,
+      "rect": [
+        68,
+        0,
+        34,
+        34
+      ],
+      "reference_fallback_verified": true
+    },
+    "revelation:3": {
+      "sheet": "revelation",
+      "source_index": 3,
+      "rect": [
+        102,
+        0,
+        34,
+        34
+      ],
+      "reference_fallback_verified": true
+    },
+    "revelation:4": {
+      "sheet": "revelation",
+      "source_index": 4,
+      "rect": [
+        136,
+        0,
+        34,
+        34
+      ],
+      "reference_fallback_verified": true
+    },
+    "revelation:5": {
+      "sheet": "revelation",
+      "source_index": 5,
+      "rect": [
+        170,
+        0,
+        34,
+        34
+      ],
+      "reference_fallback_verified": true
+    },
+    "revelation:6": {
+      "sheet": "revelation",
+      "source_index": 6,
+      "rect": [
+        204,
+        0,
+        34,
+        34
+      ],
+      "reference_fallback_verified": true
+    },
+    "revelation:7": {
+      "sheet": "revelation",
+      "source_index": 7,
+      "rect": [
+        238,
+        0,
+        34,
+        34
+      ],
+      "reference_fallback_verified": true
+    },
+    "revelation:8": {
+      "sheet": "revelation",
+      "source_index": 8,
+      "rect": [
+        272,
+        0,
+        34,
+        34
+      ],
+      "reference_fallback_verified": false
+    },
+    "revelation:9": {
+      "sheet": "revelation",
+      "source_index": 9,
+      "rect": [
+        306,
+        0,
+        34,
+        34
+      ],
+      "reference_fallback_verified": true
+    },
+    "supreme_mod:0": {
+      "sheet": "supreme_mod",
+      "source_index": 0,
+      "rect": [
+        0,
+        0,
+        35,
+        35
+      ],
+      "reference_fallback_verified": true
+    },
+    "supreme_mod:1": {
+      "sheet": "supreme_mod",
+      "source_index": 1,
+      "rect": [
+        35,
+        0,
+        35,
+        35
+      ],
+      "reference_fallback_verified": true
+    },
+    "supreme_mod:10": {
+      "sheet": "supreme_mod",
+      "source_index": 10,
+      "rect": [
+        350,
+        0,
+        35,
+        35
+      ],
+      "reference_fallback_verified": true
+    },
+    "supreme_mod:11": {
+      "sheet": "supreme_mod",
+      "source_index": 11,
+      "rect": [
+        385,
+        0,
+        35,
+        35
+      ],
+      "reference_fallback_verified": true
+    },
+    "supreme_mod:12": {
+      "sheet": "supreme_mod",
+      "source_index": 12,
+      "rect": [
+        420,
+        0,
+        35,
+        35
+      ],
+      "reference_fallback_verified": true
+    },
+    "supreme_mod:13": {
+      "sheet": "supreme_mod",
+      "source_index": 13,
+      "rect": [
+        455,
+        0,
+        35,
+        35
+      ],
+      "reference_fallback_verified": true
+    },
+    "supreme_mod:14": {
+      "sheet": "supreme_mod",
+      "source_index": 14,
+      "rect": [
+        490,
+        0,
+        35,
+        35
+      ],
+      "reference_fallback_verified": true
+    },
+    "supreme_mod:15": {
+      "sheet": "supreme_mod",
+      "source_index": 15,
+      "rect": [
+        525,
+        0,
+        35,
+        35
+      ],
+      "reference_fallback_verified": true
+    },
+    "supreme_mod:16": {
+      "sheet": "supreme_mod",
+      "source_index": 16,
+      "rect": [
+        560,
+        0,
+        35,
+        35
+      ],
+      "reference_fallback_verified": true
+    },
+    "supreme_mod:17": {
+      "sheet": "supreme_mod",
+      "source_index": 17,
+      "rect": [
+        595,
+        0,
+        35,
+        35
+      ],
+      "reference_fallback_verified": true
+    },
+    "supreme_mod:18": {
+      "sheet": "supreme_mod",
+      "source_index": 18,
+      "rect": [
+        630,
+        0,
+        35,
+        35
+      ],
+      "reference_fallback_verified": true
+    },
+    "supreme_mod:19": {
+      "sheet": "supreme_mod",
+      "source_index": 19,
+      "rect": [
+        665,
+        0,
+        35,
+        35
+      ],
+      "reference_fallback_verified": true
+    },
+    "supreme_mod:2": {
+      "sheet": "supreme_mod",
+      "source_index": 2,
+      "rect": [
+        70,
+        0,
+        35,
+        35
+      ],
+      "reference_fallback_verified": true
+    },
+    "supreme_mod:20": {
+      "sheet": "supreme_mod",
+      "source_index": 20,
+      "rect": [
+        700,
+        0,
+        35,
+        35
+      ],
+      "reference_fallback_verified": true
+    },
+    "supreme_mod:21": {
+      "sheet": "supreme_mod",
+      "source_index": 21,
+      "rect": [
+        735,
+        0,
+        35,
+        35
+      ],
+      "reference_fallback_verified": true
+    },
+    "supreme_mod:22": {
+      "sheet": "supreme_mod",
+      "source_index": 22,
+      "rect": [
+        770,
+        0,
+        35,
+        35
+      ],
+      "reference_fallback_verified": true
+    },
+    "supreme_mod:23": {
+      "sheet": "supreme_mod",
+      "source_index": 23,
+      "rect": [
+        805,
+        0,
+        35,
+        35
+      ],
+      "reference_fallback_verified": true
+    },
+    "supreme_mod:24": {
+      "sheet": "supreme_mod",
+      "source_index": 24,
+      "rect": [
+        840,
+        0,
+        35,
+        35
+      ],
+      "reference_fallback_verified": true
+    },
+    "supreme_mod:25": {
+      "sheet": "supreme_mod",
+      "source_index": 25,
+      "rect": [
+        875,
+        0,
+        35,
+        35
+      ],
+      "reference_fallback_verified": true
+    },
+    "supreme_mod:26": {
+      "sheet": "supreme_mod",
+      "source_index": 26,
+      "rect": [
+        910,
+        0,
+        35,
+        35
+      ],
+      "reference_fallback_verified": true
+    },
+    "supreme_mod:27": {
+      "sheet": "supreme_mod",
+      "source_index": 27,
+      "rect": [
+        945,
+        0,
+        35,
+        35
+      ],
+      "reference_fallback_verified": true
+    },
+    "supreme_mod:28": {
+      "sheet": "supreme_mod",
+      "source_index": 28,
+      "rect": [
+        980,
+        0,
+        35,
+        35
+      ],
+      "reference_fallback_verified": true
+    },
+    "supreme_mod:29": {
+      "sheet": "supreme_mod",
+      "source_index": 29,
+      "rect": [
+        1015,
+        0,
+        35,
+        35
+      ],
+      "reference_fallback_verified": true
+    },
+    "supreme_mod:3": {
+      "sheet": "supreme_mod",
+      "source_index": 3,
+      "rect": [
+        105,
+        0,
+        35,
+        35
+      ],
+      "reference_fallback_verified": true
+    },
+    "supreme_mod:30": {
+      "sheet": "supreme_mod",
+      "source_index": 30,
+      "rect": [
+        1050,
+        0,
+        35,
+        35
+      ],
+      "reference_fallback_verified": true
+    },
+    "supreme_mod:31": {
+      "sheet": "supreme_mod",
+      "source_index": 31,
+      "rect": [
+        1085,
+        0,
+        35,
+        35
+      ],
+      "reference_fallback_verified": true
+    },
+    "supreme_mod:32": {
+      "sheet": "supreme_mod",
+      "source_index": 32,
+      "rect": [
+        1120,
+        0,
+        35,
+        35
+      ],
+      "reference_fallback_verified": true
+    },
+    "supreme_mod:33": {
+      "sheet": "supreme_mod",
+      "source_index": 33,
+      "rect": [
+        1155,
+        0,
+        35,
+        35
+      ],
+      "reference_fallback_verified": true
+    },
+    "supreme_mod:34": {
+      "sheet": "supreme_mod",
+      "source_index": 34,
+      "rect": [
+        1190,
+        0,
+        35,
+        35
+      ],
+      "reference_fallback_verified": true
+    },
+    "supreme_mod:35": {
+      "sheet": "supreme_mod",
+      "source_index": 35,
+      "rect": [
+        1225,
+        0,
+        35,
+        35
+      ],
+      "reference_fallback_verified": true
+    },
+    "supreme_mod:36": {
+      "sheet": "supreme_mod",
+      "source_index": 36,
+      "rect": [
+        1260,
+        0,
+        35,
+        35
+      ],
+      "reference_fallback_verified": false
+    },
+    "supreme_mod:37": {
+      "sheet": "supreme_mod",
+      "source_index": 37,
+      "rect": [
+        1295,
+        0,
+        35,
+        35
+      ],
+      "reference_fallback_verified": false
+    },
+    "supreme_mod:38": {
+      "sheet": "supreme_mod",
+      "source_index": 38,
+      "rect": [
+        1330,
+        0,
+        35,
+        35
+      ],
+      "reference_fallback_verified": true
+    },
+    "supreme_mod:39": {
+      "sheet": "supreme_mod",
+      "source_index": 39,
+      "rect": [
+        1365,
+        0,
+        35,
+        35
+      ],
+      "reference_fallback_verified": true
+    },
+    "supreme_mod:4": {
+      "sheet": "supreme_mod",
+      "source_index": 4,
+      "rect": [
+        140,
+        0,
+        35,
+        35
+      ],
+      "reference_fallback_verified": true
+    },
+    "supreme_mod:40": {
+      "sheet": "supreme_mod",
+      "source_index": 40,
+      "rect": [
+        1400,
+        0,
+        35,
+        35
+      ],
+      "reference_fallback_verified": true
+    },
+    "supreme_mod:41": {
+      "sheet": "supreme_mod",
+      "source_index": 41,
+      "rect": [
+        1435,
+        0,
+        35,
+        35
+      ],
+      "reference_fallback_verified": true
+    },
+    "supreme_mod:42": {
+      "sheet": "supreme_mod",
+      "source_index": 42,
+      "rect": [
+        1470,
+        0,
+        35,
+        35
+      ],
+      "reference_fallback_verified": true
+    },
+    "supreme_mod:43": {
+      "sheet": "supreme_mod",
+      "source_index": 43,
+      "rect": [
+        1505,
+        0,
+        35,
+        35
+      ],
+      "reference_fallback_verified": true
+    },
+    "supreme_mod:44": {
+      "sheet": "supreme_mod",
+      "source_index": 44,
+      "rect": [
+        1540,
+        0,
+        35,
+        35
+      ],
+      "reference_fallback_verified": true
+    },
+    "supreme_mod:45": {
+      "sheet": "supreme_mod",
+      "source_index": 45,
+      "rect": [
+        1575,
+        0,
+        35,
+        35
+      ],
+      "reference_fallback_verified": true
+    },
+    "supreme_mod:46": {
+      "sheet": "supreme_mod",
+      "source_index": 46,
+      "rect": [
+        1610,
+        0,
+        35,
+        35
+      ],
+      "reference_fallback_verified": true
+    },
+    "supreme_mod:47": {
+      "sheet": "supreme_mod",
+      "source_index": 47,
+      "rect": [
+        1645,
+        0,
+        35,
+        35
+      ],
+      "reference_fallback_verified": true
+    },
+    "supreme_mod:48": {
+      "sheet": "supreme_mod",
+      "source_index": 48,
+      "rect": [
+        1680,
+        0,
+        35,
+        35
+      ],
+      "reference_fallback_verified": true
+    },
+    "supreme_mod:49": {
+      "sheet": "supreme_mod",
+      "source_index": 49,
+      "rect": [
+        1715,
+        0,
+        35,
+        35
+      ],
+      "reference_fallback_verified": true
+    },
+    "supreme_mod:5": {
+      "sheet": "supreme_mod",
+      "source_index": 5,
+      "rect": [
+        175,
+        0,
+        35,
+        35
+      ],
+      "reference_fallback_verified": true
+    },
+    "supreme_mod:50": {
+      "sheet": "supreme_mod",
+      "source_index": 50,
+      "rect": [
+        1750,
+        0,
+        35,
+        35
+      ],
+      "reference_fallback_verified": true
+    },
+    "supreme_mod:51": {
+      "sheet": "supreme_mod",
+      "source_index": 51,
+      "rect": [
+        1785,
+        0,
+        35,
+        35
+      ],
+      "reference_fallback_verified": true
+    },
+    "supreme_mod:52": {
+      "sheet": "supreme_mod",
+      "source_index": 52,
+      "rect": [
+        1820,
+        0,
+        35,
+        35
+      ],
+      "reference_fallback_verified": true
+    },
+    "supreme_mod:53": {
+      "sheet": "supreme_mod",
+      "source_index": 53,
+      "rect": [
+        1855,
+        0,
+        35,
+        35
+      ],
+      "reference_fallback_verified": true
+    },
+    "supreme_mod:54": {
+      "sheet": "supreme_mod",
+      "source_index": 54,
+      "rect": [
+        1890,
+        0,
+        35,
+        35
+      ],
+      "reference_fallback_verified": true
+    },
+    "supreme_mod:55": {
+      "sheet": "supreme_mod",
+      "source_index": 55,
+      "rect": [
+        1925,
+        0,
+        35,
+        35
+      ],
+      "reference_fallback_verified": true
+    },
+    "supreme_mod:56": {
+      "sheet": "supreme_mod",
+      "source_index": 56,
+      "rect": [
+        1960,
+        0,
+        35,
+        35
+      ],
+      "reference_fallback_verified": true
+    },
+    "supreme_mod:57": {
+      "sheet": "supreme_mod",
+      "source_index": 57,
+      "rect": [
+        1995,
+        0,
+        35,
+        35
+      ],
+      "reference_fallback_verified": true
+    },
+    "supreme_mod:58": {
+      "sheet": "supreme_mod",
+      "source_index": 58,
+      "rect": [
+        2030,
+        0,
+        35,
+        35
+      ],
+      "reference_fallback_verified": true
+    },
+    "supreme_mod:59": {
+      "sheet": "supreme_mod",
+      "source_index": 59,
+      "rect": [
+        2065,
+        0,
+        35,
+        35
+      ],
+      "reference_fallback_verified": true
+    },
+    "supreme_mod:6": {
+      "sheet": "supreme_mod",
+      "source_index": 6,
+      "rect": [
+        210,
+        0,
+        35,
+        35
+      ],
+      "reference_fallback_verified": true
+    },
+    "supreme_mod:60": {
+      "sheet": "supreme_mod",
+      "source_index": 60,
+      "rect": [
+        2100,
+        0,
+        35,
+        35
+      ],
+      "reference_fallback_verified": true
+    },
+    "supreme_mod:61": {
+      "sheet": "supreme_mod",
+      "source_index": 61,
+      "rect": [
+        2135,
+        0,
+        35,
+        35
+      ],
+      "reference_fallback_verified": true
+    },
+    "supreme_mod:62": {
+      "sheet": "supreme_mod",
+      "source_index": 62,
+      "rect": [
+        2170,
+        0,
+        35,
+        35
+      ],
+      "reference_fallback_verified": true
+    },
+    "supreme_mod:63": {
+      "sheet": "supreme_mod",
+      "source_index": 63,
+      "rect": [
+        2205,
+        0,
+        35,
+        35
+      ],
+      "reference_fallback_verified": true
+    },
+    "supreme_mod:64": {
+      "sheet": "supreme_mod",
+      "source_index": 64,
+      "rect": [
+        2240,
+        0,
+        35,
+        35
+      ],
+      "reference_fallback_verified": true
+    },
+    "supreme_mod:65": {
+      "sheet": "supreme_mod",
+      "source_index": 65,
+      "rect": [
+        2275,
+        0,
+        35,
+        35
+      ],
+      "reference_fallback_verified": true
+    },
+    "supreme_mod:66": {
+      "sheet": "supreme_mod",
+      "source_index": 66,
+      "rect": [
+        2310,
+        0,
+        35,
+        35
+      ],
+      "reference_fallback_verified": true
+    },
+    "supreme_mod:67": {
+      "sheet": "supreme_mod",
+      "source_index": 67,
+      "rect": [
+        2345,
+        0,
+        35,
+        35
+      ],
+      "reference_fallback_verified": true
+    },
+    "supreme_mod:68": {
+      "sheet": "supreme_mod",
+      "source_index": 68,
+      "rect": [
+        2380,
+        0,
+        35,
+        35
+      ],
+      "reference_fallback_verified": true
+    },
+    "supreme_mod:69": {
+      "sheet": "supreme_mod",
+      "source_index": 69,
+      "rect": [
+        2415,
+        0,
+        35,
+        35
+      ],
+      "reference_fallback_verified": true
+    },
+    "supreme_mod:7": {
+      "sheet": "supreme_mod",
+      "source_index": 7,
+      "rect": [
+        245,
+        0,
+        35,
+        35
+      ],
+      "reference_fallback_verified": true
+    },
+    "supreme_mod:70": {
+      "sheet": "supreme_mod",
+      "source_index": 70,
+      "rect": [
+        2450,
+        0,
+        35,
+        35
+      ],
+      "reference_fallback_verified": true
+    },
+    "supreme_mod:71": {
+      "sheet": "supreme_mod",
+      "source_index": 71,
+      "rect": [
+        2485,
+        0,
+        35,
+        35
+      ],
+      "reference_fallback_verified": true
+    },
+    "supreme_mod:72": {
+      "sheet": "supreme_mod",
+      "source_index": 72,
+      "rect": [
+        2520,
+        0,
+        35,
+        35
+      ],
+      "reference_fallback_verified": true
+    },
+    "supreme_mod:73": {
+      "sheet": "supreme_mod",
+      "source_index": 73,
+      "rect": [
+        2555,
+        0,
+        35,
+        35
+      ],
+      "reference_fallback_verified": true
+    },
+    "supreme_mod:74": {
+      "sheet": "supreme_mod",
+      "source_index": 74,
+      "rect": [
+        2590,
+        0,
+        35,
+        35
+      ],
+      "reference_fallback_verified": true
+    },
+    "supreme_mod:75": {
+      "sheet": "supreme_mod",
+      "source_index": 75,
+      "rect": [
+        2625,
+        0,
+        35,
+        35
+      ],
+      "reference_fallback_verified": true
+    },
+    "supreme_mod:76": {
+      "sheet": "supreme_mod",
+      "source_index": 76,
+      "rect": [
+        2660,
+        0,
+        35,
+        35
+      ],
+      "reference_fallback_verified": true
+    },
+    "supreme_mod:77": {
+      "sheet": "supreme_mod",
+      "source_index": 77,
+      "rect": [
+        2695,
+        0,
+        35,
+        35
+      ],
+      "reference_fallback_verified": false
+    },
+    "supreme_mod:78": {
+      "sheet": "supreme_mod",
+      "source_index": 78,
+      "rect": [
+        2730,
+        0,
+        35,
+        35
+      ],
+      "reference_fallback_verified": true
+    },
+    "supreme_mod:79": {
+      "sheet": "supreme_mod",
+      "source_index": 79,
+      "rect": [
+        2765,
+        0,
+        35,
+        35
+      ],
+      "reference_fallback_verified": true
+    },
+    "supreme_mod:8": {
+      "sheet": "supreme_mod",
+      "source_index": 8,
+      "rect": [
+        280,
+        0,
+        35,
+        35
+      ],
+      "reference_fallback_verified": true
+    },
+    "supreme_mod:80": {
+      "sheet": "supreme_mod",
+      "source_index": 80,
+      "rect": [
+        2800,
+        0,
+        35,
+        35
+      ],
+      "reference_fallback_verified": true
+    },
+    "supreme_mod:81": {
+      "sheet": "supreme_mod",
+      "source_index": 81,
+      "rect": [
+        2835,
+        0,
+        35,
+        35
+      ],
+      "reference_fallback_verified": true
+    },
+    "supreme_mod:82": {
+      "sheet": "supreme_mod",
+      "source_index": 82,
+      "rect": [
+        2870,
+        0,
+        35,
+        35
+      ],
+      "reference_fallback_verified": true
+    },
+    "supreme_mod:83": {
+      "sheet": "supreme_mod",
+      "source_index": 83,
+      "rect": [
+        2905,
+        0,
+        35,
+        35
+      ],
+      "reference_fallback_verified": true
+    },
+    "supreme_mod:84": {
+      "sheet": "supreme_mod",
+      "source_index": 84,
+      "rect": [
+        2940,
+        0,
+        35,
+        35
+      ],
+      "reference_fallback_verified": true
+    },
+    "supreme_mod:85": {
+      "sheet": "supreme_mod",
+      "source_index": 85,
+      "rect": [
+        2975,
+        0,
+        35,
+        35
+      ],
+      "reference_fallback_verified": true
+    },
+    "supreme_mod:86": {
+      "sheet": "supreme_mod",
+      "source_index": 86,
+      "rect": [
+        3010,
+        0,
+        35,
+        35
+      ],
+      "reference_fallback_verified": true
+    },
+    "supreme_mod:87": {
+      "sheet": "supreme_mod",
+      "source_index": 87,
+      "rect": [
+        3045,
+        0,
+        35,
+        35
+      ],
+      "reference_fallback_verified": true
+    },
+    "supreme_mod:88": {
+      "sheet": "supreme_mod",
+      "source_index": 88,
+      "rect": [
+        3080,
+        0,
+        35,
+        35
+      ],
+      "reference_fallback_verified": false
+    },
+    "supreme_mod:89": {
+      "sheet": "supreme_mod",
+      "source_index": 89,
+      "rect": [
+        3115,
+        0,
+        35,
+        35
+      ],
+      "reference_fallback_verified": false
+    },
+    "supreme_mod:9": {
+      "sheet": "supreme_mod",
+      "source_index": 9,
+      "rect": [
+        315,
+        0,
+        35,
+        35
+      ],
+      "reference_fallback_verified": true
+    },
+    "supreme_mod:90": {
+      "sheet": "supreme_mod",
+      "source_index": 90,
+      "rect": [
+        3150,
+        0,
+        35,
+        35
+      ],
+      "reference_fallback_verified": false
+    },
+    "supreme_mod:91": {
+      "sheet": "supreme_mod",
+      "source_index": 91,
+      "rect": [
+        3185,
+        0,
+        35,
+        35
+      ],
+      "reference_fallback_verified": true
+    },
+    "supreme_mod:92": {
+      "sheet": "supreme_mod",
+      "source_index": 92,
+      "rect": [
+        3220,
+        0,
+        35,
+        35
+      ],
+      "reference_fallback_verified": true
+    },
+    "supreme_mod:93": {
+      "sheet": "supreme_mod",
+      "source_index": 93,
+      "rect": [
+        3255,
+        0,
+        35,
+        35
+      ],
+      "reference_fallback_verified": true
+    }
+  },
+  "bindings": {
+    "/vocations/knight/slots/0/dedication_icon": "dedication:2",
+    "/vocations/knight/slots/0/conviction/icon": "conviction:8",
+    "/vocations/knight/slots/1/dedication_icon": "dedication:4",
+    "/vocations/knight/slots/1/conviction/icon": "conviction:5",
+    "/vocations/knight/slots/2/dedication_icon": "dedication:0",
+    "/vocations/knight/slots/2/conviction/icon": "conviction:37",
+    "/vocations/knight/slots/3/dedication_icon": "dedication:1",
+    "/vocations/knight/slots/3/conviction/icon": "conviction:7",
+    "/vocations/knight/slots/4/dedication_icon": "dedication:0",
+    "/vocations/knight/slots/4/conviction/icon": "conviction:38",
+    "/vocations/knight/slots/5/dedication_icon": "dedication:2",
+    "/vocations/knight/slots/5/conviction/icon": "conviction:12",
+    "/vocations/knight/slots/6/dedication_icon": "dedication:4",
+    "/vocations/knight/slots/6/conviction/icon": "conviction:37",
+    "/vocations/knight/slots/7/dedication_icon": "dedication:0",
+    "/vocations/knight/slots/7/conviction/icon": "conviction:14",
+    "/vocations/knight/slots/8/dedication_icon": "dedication:1",
+    "/vocations/knight/slots/8/conviction/icon": "conviction:6",
+    "/vocations/knight/slots/9/dedication_icon": "dedication:3",
+    "/vocations/knight/slots/9/conviction/icon": "conviction:38",
+    "/vocations/knight/slots/10/dedication_icon": "dedication:1",
+    "/vocations/knight/slots/10/conviction/icon": "conviction:13",
+    "/vocations/knight/slots/11/dedication_icon": "dedication:0",
+    "/vocations/knight/slots/11/conviction/icon": "conviction:5",
+    "/vocations/knight/slots/12/dedication_icon": "dedication:0",
+    "/vocations/knight/slots/12/conviction/icon": "conviction:11",
+    "/vocations/knight/slots/13/dedication_icon": "dedication:1",
+    "/vocations/knight/slots/13/conviction/icon": "conviction:7",
+    "/vocations/knight/slots/14/dedication_icon": "dedication:3",
+    "/vocations/knight/slots/14/conviction/icon": "conviction:37",
+    "/vocations/knight/slots/15/dedication_icon": "dedication:4",
+    "/vocations/knight/slots/15/conviction/icon": "conviction:10",
+    "/vocations/knight/slots/16/dedication_icon": "dedication:3",
+    "/vocations/knight/slots/16/conviction/icon": "conviction:6",
+    "/vocations/knight/slots/17/dedication_icon": "dedication:1",
+    "/vocations/knight/slots/17/conviction/icon": "conviction:38",
+    "/vocations/knight/slots/18/dedication_icon": "dedication:4",
+    "/vocations/knight/slots/18/conviction/icon": "conviction:39",
+    "/vocations/knight/slots/19/dedication_icon": "dedication:0",
+    "/vocations/knight/slots/19/conviction/icon": "conviction:5",
+    "/vocations/knight/slots/20/dedication_icon": "dedication:1",
+    "/vocations/knight/slots/20/conviction/icon": "conviction:12",
+    "/vocations/knight/slots/21/dedication_icon": "dedication:0",
+    "/vocations/knight/slots/21/conviction/icon": "conviction:40",
+    "/vocations/knight/slots/22/dedication_icon": "dedication:4",
+    "/vocations/knight/slots/22/conviction/icon": "conviction:7",
+    "/vocations/knight/slots/23/dedication_icon": "dedication:3",
+    "/vocations/knight/slots/23/conviction/icon": "conviction:14",
+    "/vocations/knight/slots/24/dedication_icon": "dedication:3",
+    "/vocations/knight/slots/24/conviction/icon": "conviction:6",
+    "/vocations/knight/slots/25/dedication_icon": "dedication:4",
+    "/vocations/knight/slots/25/conviction/icon": "conviction:13",
+    "/vocations/knight/slots/26/dedication_icon": "dedication:0",
+    "/vocations/knight/slots/26/conviction/icon": "conviction:39",
+    "/vocations/knight/slots/27/dedication_icon": "dedication:4",
+    "/vocations/knight/slots/27/conviction/icon": "conviction:5",
+    "/vocations/knight/slots/28/dedication_icon": "dedication:3",
+    "/vocations/knight/slots/28/conviction/icon": "conviction:11",
+    "/vocations/knight/slots/29/dedication_icon": "dedication:1",
+    "/vocations/knight/slots/29/conviction/icon": "conviction:40",
+    "/vocations/knight/slots/30/dedication_icon": "dedication:2",
+    "/vocations/knight/slots/30/conviction/icon": "conviction:10",
+    "/vocations/knight/slots/31/dedication_icon": "dedication:3",
+    "/vocations/knight/slots/31/conviction/icon": "conviction:39",
+    "/vocations/knight/slots/32/dedication_icon": "dedication:4",
+    "/vocations/knight/slots/32/conviction/icon": "conviction:7",
+    "/vocations/knight/slots/33/dedication_icon": "dedication:3",
+    "/vocations/knight/slots/33/conviction/icon": "conviction:40",
+    "/vocations/knight/slots/34/dedication_icon": "dedication:1",
+    "/vocations/knight/slots/34/conviction/icon": "conviction:6",
+    "/vocations/knight/slots/35/dedication_icon": "dedication:2",
+    "/vocations/knight/slots/35/conviction/icon": "conviction:9",
+    "/vocations/knight/revelations/0/icon": "revelation:0",
+    "/vocations/knight/revelations/1/icon": "revelation:1",
+    "/vocations/knight/revelations/2/icon": "revelation:2",
+    "/vocations/knight/revelations/3/icon": "revelation:3",
+    "/vocations/paladin/slots/0/dedication_icon": "dedication:2",
+    "/vocations/paladin/slots/0/conviction/icon": "conviction:17",
+    "/vocations/paladin/slots/1/dedication_icon": "dedication:4",
+    "/vocations/paladin/slots/1/conviction/icon": "conviction:5",
+    "/vocations/paladin/slots/2/dedication_icon": "dedication:0",
+    "/vocations/paladin/slots/2/conviction/icon": "conviction:37",
+    "/vocations/paladin/slots/3/dedication_icon": "dedication:1",
+    "/vocations/paladin/slots/3/conviction/icon": "conviction:15",
+    "/vocations/paladin/slots/4/dedication_icon": "dedication:0",
+    "/vocations/paladin/slots/4/conviction/icon": "conviction:38",
+    "/vocations/paladin/slots/5/dedication_icon": "dedication:2",
+    "/vocations/paladin/slots/5/conviction/icon": "conviction:22",
+    "/vocations/paladin/slots/6/dedication_icon": "dedication:4",
+    "/vocations/paladin/slots/6/conviction/icon": "conviction:37",
+    "/vocations/paladin/slots/7/dedication_icon": "dedication:0",
+    "/vocations/paladin/slots/7/conviction/icon": "conviction:21",
+    "/vocations/paladin/slots/8/dedication_icon": "dedication:1",
+    "/vocations/paladin/slots/8/conviction/icon": "conviction:6",
+    "/vocations/paladin/slots/9/dedication_icon": "dedication:3",
+    "/vocations/paladin/slots/9/conviction/icon": "conviction:38",
+    "/vocations/paladin/slots/10/dedication_icon": "dedication:1",
+    "/vocations/paladin/slots/10/conviction/icon": "conviction:20",
+    "/vocations/paladin/slots/11/dedication_icon": "dedication:0",
+    "/vocations/paladin/slots/11/conviction/icon": "conviction:5",
+    "/vocations/paladin/slots/12/dedication_icon": "dedication:0",
+    "/vocations/paladin/slots/12/conviction/icon": "conviction:19",
+    "/vocations/paladin/slots/13/dedication_icon": "dedication:1",
+    "/vocations/paladin/slots/13/conviction/icon": "conviction:15",
+    "/vocations/paladin/slots/14/dedication_icon": "dedication:3",
+    "/vocations/paladin/slots/14/conviction/icon": "conviction:37",
+    "/vocations/paladin/slots/15/dedication_icon": "dedication:4",
+    "/vocations/paladin/slots/15/conviction/icon": "conviction:18",
+    "/vocations/paladin/slots/16/dedication_icon": "dedication:3",
+    "/vocations/paladin/slots/16/conviction/icon": "conviction:6",
+    "/vocations/paladin/slots/17/dedication_icon": "dedication:1",
+    "/vocations/paladin/slots/17/conviction/icon": "conviction:38",
+    "/vocations/paladin/slots/18/dedication_icon": "dedication:4",
+    "/vocations/paladin/slots/18/conviction/icon": "conviction:39",
+    "/vocations/paladin/slots/19/dedication_icon": "dedication:0",
+    "/vocations/paladin/slots/19/conviction/icon": "conviction:5",
+    "/vocations/paladin/slots/20/dedication_icon": "dedication:1",
+    "/vocations/paladin/slots/20/conviction/icon": "conviction:22",
+    "/vocations/paladin/slots/21/dedication_icon": "dedication:0",
+    "/vocations/paladin/slots/21/conviction/icon": "conviction:40",
+    "/vocations/paladin/slots/22/dedication_icon": "dedication:4",
+    "/vocations/paladin/slots/22/conviction/icon": "conviction:15",
+    "/vocations/paladin/slots/23/dedication_icon": "dedication:3",
+    "/vocations/paladin/slots/23/conviction/icon": "conviction:21",
+    "/vocations/paladin/slots/24/dedication_icon": "dedication:3",
+    "/vocations/paladin/slots/24/conviction/icon": "conviction:6",
+    "/vocations/paladin/slots/25/dedication_icon": "dedication:4",
+    "/vocations/paladin/slots/25/conviction/icon": "conviction:20",
+    "/vocations/paladin/slots/26/dedication_icon": "dedication:0",
+    "/vocations/paladin/slots/26/conviction/icon": "conviction:39",
+    "/vocations/paladin/slots/27/dedication_icon": "dedication:4",
+    "/vocations/paladin/slots/27/conviction/icon": "conviction:5",
+    "/vocations/paladin/slots/28/dedication_icon": "dedication:3",
+    "/vocations/paladin/slots/28/conviction/icon": "conviction:19",
+    "/vocations/paladin/slots/29/dedication_icon": "dedication:1",
+    "/vocations/paladin/slots/29/conviction/icon": "conviction:40",
+    "/vocations/paladin/slots/30/dedication_icon": "dedication:2",
+    "/vocations/paladin/slots/30/conviction/icon": "conviction:18",
+    "/vocations/paladin/slots/31/dedication_icon": "dedication:3",
+    "/vocations/paladin/slots/31/conviction/icon": "conviction:39",
+    "/vocations/paladin/slots/32/dedication_icon": "dedication:4",
+    "/vocations/paladin/slots/32/conviction/icon": "conviction:15",
+    "/vocations/paladin/slots/33/dedication_icon": "dedication:3",
+    "/vocations/paladin/slots/33/conviction/icon": "conviction:40",
+    "/vocations/paladin/slots/34/dedication_icon": "dedication:1",
+    "/vocations/paladin/slots/34/conviction/icon": "conviction:6",
+    "/vocations/paladin/slots/35/dedication_icon": "dedication:2",
+    "/vocations/paladin/slots/35/conviction/icon": "conviction:16",
+    "/vocations/paladin/revelations/0/icon": "revelation:0",
+    "/vocations/paladin/revelations/1/icon": "revelation:4",
+    "/vocations/paladin/revelations/2/icon": "revelation:5",
+    "/vocations/paladin/revelations/3/icon": "revelation:6",
+    "/vocations/sorcerer/slots/0/dedication_icon": "dedication:2",
+    "/vocations/sorcerer/slots/0/conviction/icon": "conviction:35",
+    "/vocations/sorcerer/slots/1/dedication_icon": "dedication:4",
+    "/vocations/sorcerer/slots/1/conviction/icon": "conviction:5",
+    "/vocations/sorcerer/slots/2/dedication_icon": "dedication:0",
+    "/vocations/sorcerer/slots/2/conviction/icon": "conviction:37",
+    "/vocations/sorcerer/slots/3/dedication_icon": "dedication:1",
+    "/vocations/sorcerer/slots/3/conviction/icon": "conviction:34",
+    "/vocations/sorcerer/slots/4/dedication_icon": "dedication:0",
+    "/vocations/sorcerer/slots/4/conviction/icon": "conviction:38",
+    "/vocations/sorcerer/slots/5/dedication_icon": "dedication:2",
+    "/vocations/sorcerer/slots/5/conviction/icon": "conviction:27",
+    "/vocations/sorcerer/slots/6/dedication_icon": "dedication:4",
+    "/vocations/sorcerer/slots/6/conviction/icon": "conviction:37",
+    "/vocations/sorcerer/slots/7/dedication_icon": "dedication:0",
+    "/vocations/sorcerer/slots/7/conviction/icon": "conviction:26",
+    "/vocations/sorcerer/slots/8/dedication_icon": "dedication:1",
+    "/vocations/sorcerer/slots/8/conviction/icon": "conviction:6",
+    "/vocations/sorcerer/slots/9/dedication_icon": "dedication:3",
+    "/vocations/sorcerer/slots/9/conviction/icon": "conviction:38",
+    "/vocations/sorcerer/slots/10/dedication_icon": "dedication:1",
+    "/vocations/sorcerer/slots/10/conviction/icon": "conviction:36",
+    "/vocations/sorcerer/slots/11/dedication_icon": "dedication:0",
+    "/vocations/sorcerer/slots/11/conviction/icon": "conviction:5",
+    "/vocations/sorcerer/slots/12/dedication_icon": "dedication:0",
+    "/vocations/sorcerer/slots/12/conviction/icon": "conviction:25",
+    "/vocations/sorcerer/slots/13/dedication_icon": "dedication:1",
+    "/vocations/sorcerer/slots/13/conviction/icon": "conviction:34",
+    "/vocations/sorcerer/slots/14/dedication_icon": "dedication:3",
+    "/vocations/sorcerer/slots/14/conviction/icon": "conviction:37",
+    "/vocations/sorcerer/slots/15/dedication_icon": "dedication:4",
+    "/vocations/sorcerer/slots/15/conviction/icon": "conviction:24",
+    "/vocations/sorcerer/slots/16/dedication_icon": "dedication:3",
+    "/vocations/sorcerer/slots/16/conviction/icon": "conviction:6",
+    "/vocations/sorcerer/slots/17/dedication_icon": "dedication:1",
+    "/vocations/sorcerer/slots/17/conviction/icon": "conviction:38",
+    "/vocations/sorcerer/slots/18/dedication_icon": "dedication:4",
+    "/vocations/sorcerer/slots/18/conviction/icon": "conviction:39",
+    "/vocations/sorcerer/slots/19/dedication_icon": "dedication:0",
+    "/vocations/sorcerer/slots/19/conviction/icon": "conviction:5",
+    "/vocations/sorcerer/slots/20/dedication_icon": "dedication:1",
+    "/vocations/sorcerer/slots/20/conviction/icon": "conviction:27",
+    "/vocations/sorcerer/slots/21/dedication_icon": "dedication:0",
+    "/vocations/sorcerer/slots/21/conviction/icon": "conviction:40",
+    "/vocations/sorcerer/slots/22/dedication_icon": "dedication:4",
+    "/vocations/sorcerer/slots/22/conviction/icon": "conviction:34",
+    "/vocations/sorcerer/slots/23/dedication_icon": "dedication:3",
+    "/vocations/sorcerer/slots/23/conviction/icon": "conviction:26",
+    "/vocations/sorcerer/slots/24/dedication_icon": "dedication:3",
+    "/vocations/sorcerer/slots/24/conviction/icon": "conviction:6",
+    "/vocations/sorcerer/slots/25/dedication_icon": "dedication:4",
+    "/vocations/sorcerer/slots/25/conviction/icon": "conviction:36",
+    "/vocations/sorcerer/slots/26/dedication_icon": "dedication:0",
+    "/vocations/sorcerer/slots/26/conviction/icon": "conviction:39",
+    "/vocations/sorcerer/slots/27/dedication_icon": "dedication:4",
+    "/vocations/sorcerer/slots/27/conviction/icon": "conviction:5",
+    "/vocations/sorcerer/slots/28/dedication_icon": "dedication:3",
+    "/vocations/sorcerer/slots/28/conviction/icon": "conviction:25",
+    "/vocations/sorcerer/slots/29/dedication_icon": "dedication:1",
+    "/vocations/sorcerer/slots/29/conviction/icon": "conviction:40",
+    "/vocations/sorcerer/slots/30/dedication_icon": "dedication:2",
+    "/vocations/sorcerer/slots/30/conviction/icon": "conviction:24",
+    "/vocations/sorcerer/slots/31/dedication_icon": "dedication:3",
+    "/vocations/sorcerer/slots/31/conviction/icon": "conviction:39",
+    "/vocations/sorcerer/slots/32/dedication_icon": "dedication:4",
+    "/vocations/sorcerer/slots/32/conviction/icon": "conviction:34",
+    "/vocations/sorcerer/slots/33/dedication_icon": "dedication:3",
+    "/vocations/sorcerer/slots/33/conviction/icon": "conviction:40",
+    "/vocations/sorcerer/slots/34/dedication_icon": "dedication:1",
+    "/vocations/sorcerer/slots/34/conviction/icon": "conviction:6",
+    "/vocations/sorcerer/slots/35/dedication_icon": "dedication:2",
+    "/vocations/sorcerer/slots/35/conviction/icon": "conviction:23",
+    "/vocations/sorcerer/revelations/0/icon": "revelation:0",
+    "/vocations/sorcerer/revelations/1/icon": "revelation:7",
+    "/vocations/sorcerer/revelations/2/icon": "revelation:8",
+    "/vocations/sorcerer/revelations/3/icon": "revelation:9",
+    "/vocations/druid/slots/0/dedication_icon": "dedication:2",
+    "/vocations/druid/slots/0/conviction/icon": "conviction:28",
+    "/vocations/druid/slots/1/dedication_icon": "dedication:4",
+    "/vocations/druid/slots/1/conviction/icon": "conviction:5",
+    "/vocations/druid/slots/2/dedication_icon": "dedication:0",
+    "/vocations/druid/slots/2/conviction/icon": "conviction:37",
+    "/vocations/druid/slots/3/dedication_icon": "dedication:1",
+    "/vocations/druid/slots/3/conviction/icon": "conviction:34",
+    "/vocations/druid/slots/4/dedication_icon": "dedication:0",
+    "/vocations/druid/slots/4/conviction/icon": "conviction:38",
+    "/vocations/druid/slots/5/dedication_icon": "dedication:2",
+    "/vocations/druid/slots/5/conviction/icon": "conviction:29",
+    "/vocations/druid/slots/6/dedication_icon": "dedication:4",
+    "/vocations/druid/slots/6/conviction/icon": "conviction:37",
+    "/vocations/druid/slots/7/dedication_icon": "dedication:0",
+    "/vocations/druid/slots/7/conviction/icon": "conviction:32",
+    "/vocations/druid/slots/8/dedication_icon": "dedication:1",
+    "/vocations/druid/slots/8/conviction/icon": "conviction:6",
+    "/vocations/druid/slots/9/dedication_icon": "dedication:3",
+    "/vocations/druid/slots/9/conviction/icon": "conviction:38",
+    "/vocations/druid/slots/10/dedication_icon": "dedication:1",
+    "/vocations/druid/slots/10/conviction/icon": "conviction:33",
+    "/vocations/druid/slots/11/dedication_icon": "dedication:0",
+    "/vocations/druid/slots/11/conviction/icon": "conviction:5",
+    "/vocations/druid/slots/12/dedication_icon": "dedication:0",
+    "/vocations/druid/slots/12/conviction/icon": "conviction:30",
+    "/vocations/druid/slots/13/dedication_icon": "dedication:1",
+    "/vocations/druid/slots/13/conviction/icon": "conviction:34",
+    "/vocations/druid/slots/14/dedication_icon": "dedication:3",
+    "/vocations/druid/slots/14/conviction/icon": "conviction:37",
+    "/vocations/druid/slots/15/dedication_icon": "dedication:4",
+    "/vocations/druid/slots/15/conviction/icon": "conviction:31",
+    "/vocations/druid/slots/16/dedication_icon": "dedication:3",
+    "/vocations/druid/slots/16/conviction/icon": "conviction:6",
+    "/vocations/druid/slots/17/dedication_icon": "dedication:1",
+    "/vocations/druid/slots/17/conviction/icon": "conviction:38",
+    "/vocations/druid/slots/18/dedication_icon": "dedication:4",
+    "/vocations/druid/slots/18/conviction/icon": "conviction:39",
+    "/vocations/druid/slots/19/dedication_icon": "dedication:0",
+    "/vocations/druid/slots/19/conviction/icon": "conviction:5",
+    "/vocations/druid/slots/20/dedication_icon": "dedication:1",
+    "/vocations/druid/slots/20/conviction/icon": "conviction:29",
+    "/vocations/druid/slots/21/dedication_icon": "dedication:0",
+    "/vocations/druid/slots/21/conviction/icon": "conviction:40",
+    "/vocations/druid/slots/22/dedication_icon": "dedication:4",
+    "/vocations/druid/slots/22/conviction/icon": "conviction:34",
+    "/vocations/druid/slots/23/dedication_icon": "dedication:3",
+    "/vocations/druid/slots/23/conviction/icon": "conviction:32",
+    "/vocations/druid/slots/24/dedication_icon": "dedication:3",
+    "/vocations/druid/slots/24/conviction/icon": "conviction:6",
+    "/vocations/druid/slots/25/dedication_icon": "dedication:4",
+    "/vocations/druid/slots/25/conviction/icon": "conviction:33",
+    "/vocations/druid/slots/26/dedication_icon": "dedication:0",
+    "/vocations/druid/slots/26/conviction/icon": "conviction:39",
+    "/vocations/druid/slots/27/dedication_icon": "dedication:4",
+    "/vocations/druid/slots/27/conviction/icon": "conviction:5",
+    "/vocations/druid/slots/28/dedication_icon": "dedication:3",
+    "/vocations/druid/slots/28/conviction/icon": "conviction:30",
+    "/vocations/druid/slots/29/dedication_icon": "dedication:1",
+    "/vocations/druid/slots/29/conviction/icon": "conviction:40",
+    "/vocations/druid/slots/30/dedication_icon": "dedication:2",
+    "/vocations/druid/slots/30/conviction/icon": "conviction:31",
+    "/vocations/druid/slots/31/dedication_icon": "dedication:3",
+    "/vocations/druid/slots/31/conviction/icon": "conviction:39",
+    "/vocations/druid/slots/32/dedication_icon": "dedication:4",
+    "/vocations/druid/slots/32/conviction/icon": "conviction:34",
+    "/vocations/druid/slots/33/dedication_icon": "dedication:3",
+    "/vocations/druid/slots/33/conviction/icon": "conviction:40",
+    "/vocations/druid/slots/34/dedication_icon": "dedication:1",
+    "/vocations/druid/slots/34/conviction/icon": "conviction:6",
+    "/vocations/druid/slots/35/dedication_icon": "dedication:2",
+    "/vocations/druid/slots/35/conviction/icon": "conviction:35",
+    "/vocations/druid/revelations/0/icon": "revelation:0",
+    "/vocations/druid/revelations/1/icon": "revelation:11",
+    "/vocations/druid/revelations/2/icon": "revelation:10",
+    "/vocations/druid/revelations/3/icon": "revelation:12",
+    "/vocations/monk/slots/0/dedication_icon": "dedication:2",
+    "/vocations/monk/slots/0/conviction/icon": "conviction:42",
+    "/vocations/monk/slots/1/dedication_icon": "dedication:4",
+    "/vocations/monk/slots/1/conviction/icon": "conviction:5",
+    "/vocations/monk/slots/2/dedication_icon": "dedication:0",
+    "/vocations/monk/slots/2/conviction/icon": "conviction:37",
+    "/vocations/monk/slots/3/dedication_icon": "dedication:1",
+    "/vocations/monk/slots/3/conviction/icon": "conviction:43",
+    "/vocations/monk/slots/4/dedication_icon": "dedication:0",
+    "/vocations/monk/slots/4/conviction/icon": "conviction:38",
+    "/vocations/monk/slots/5/dedication_icon": "dedication:2",
+    "/vocations/monk/slots/5/conviction/icon": "conviction:47",
+    "/vocations/monk/slots/6/dedication_icon": "dedication:4",
+    "/vocations/monk/slots/6/conviction/icon": "conviction:37",
+    "/vocations/monk/slots/7/dedication_icon": "dedication:0",
+    "/vocations/monk/slots/7/conviction/icon": "conviction:45",
+    "/vocations/monk/slots/8/dedication_icon": "dedication:1",
+    "/vocations/monk/slots/8/conviction/icon": "conviction:6",
+    "/vocations/monk/slots/9/dedication_icon": "dedication:3",
+    "/vocations/monk/slots/9/conviction/icon": "conviction:38",
+    "/vocations/monk/slots/10/dedication_icon": "dedication:1",
+    "/vocations/monk/slots/10/conviction/icon": "conviction:46",
+    "/vocations/monk/slots/11/dedication_icon": "dedication:0",
+    "/vocations/monk/slots/11/conviction/icon": "conviction:5",
+    "/vocations/monk/slots/12/dedication_icon": "dedication:0",
+    "/vocations/monk/slots/12/conviction/icon": "conviction:48",
+    "/vocations/monk/slots/13/dedication_icon": "dedication:1",
+    "/vocations/monk/slots/13/conviction/icon": "conviction:43",
+    "/vocations/monk/slots/14/dedication_icon": "dedication:3",
+    "/vocations/monk/slots/14/conviction/icon": "conviction:37",
+    "/vocations/monk/slots/15/dedication_icon": "dedication:4",
+    "/vocations/monk/slots/15/conviction/icon": "conviction:44",
+    "/vocations/monk/slots/16/dedication_icon": "dedication:3",
+    "/vocations/monk/slots/16/conviction/icon": "conviction:6",
+    "/vocations/monk/slots/17/dedication_icon": "dedication:1",
+    "/vocations/monk/slots/17/conviction/icon": "conviction:38",
+    "/vocations/monk/slots/18/dedication_icon": "dedication:4",
+    "/vocations/monk/slots/18/conviction/icon": "conviction:39",
+    "/vocations/monk/slots/19/dedication_icon": "dedication:0",
+    "/vocations/monk/slots/19/conviction/icon": "conviction:5",
+    "/vocations/monk/slots/20/dedication_icon": "dedication:1",
+    "/vocations/monk/slots/20/conviction/icon": "conviction:47",
+    "/vocations/monk/slots/21/dedication_icon": "dedication:0",
+    "/vocations/monk/slots/21/conviction/icon": "conviction:40",
+    "/vocations/monk/slots/22/dedication_icon": "dedication:4",
+    "/vocations/monk/slots/22/conviction/icon": "conviction:43",
+    "/vocations/monk/slots/23/dedication_icon": "dedication:3",
+    "/vocations/monk/slots/23/conviction/icon": "conviction:45",
+    "/vocations/monk/slots/24/dedication_icon": "dedication:3",
+    "/vocations/monk/slots/24/conviction/icon": "conviction:6",
+    "/vocations/monk/slots/25/dedication_icon": "dedication:4",
+    "/vocations/monk/slots/25/conviction/icon": "conviction:46",
+    "/vocations/monk/slots/26/dedication_icon": "dedication:0",
+    "/vocations/monk/slots/26/conviction/icon": "conviction:39",
+    "/vocations/monk/slots/27/dedication_icon": "dedication:4",
+    "/vocations/monk/slots/27/conviction/icon": "conviction:5",
+    "/vocations/monk/slots/28/dedication_icon": "dedication:3",
+    "/vocations/monk/slots/28/conviction/icon": "conviction:48",
+    "/vocations/monk/slots/29/dedication_icon": "dedication:1",
+    "/vocations/monk/slots/29/conviction/icon": "conviction:40",
+    "/vocations/monk/slots/30/dedication_icon": "dedication:2",
+    "/vocations/monk/slots/30/conviction/icon": "conviction:44",
+    "/vocations/monk/slots/31/dedication_icon": "dedication:3",
+    "/vocations/monk/slots/31/conviction/icon": "conviction:39",
+    "/vocations/monk/slots/32/dedication_icon": "dedication:4",
+    "/vocations/monk/slots/32/conviction/icon": "conviction:43",
+    "/vocations/monk/slots/33/dedication_icon": "dedication:3",
+    "/vocations/monk/slots/33/conviction/icon": "conviction:40",
+    "/vocations/monk/slots/34/dedication_icon": "dedication:1",
+    "/vocations/monk/slots/34/conviction/icon": "conviction:6",
+    "/vocations/monk/slots/35/dedication_icon": "dedication:2",
+    "/vocations/monk/slots/35/conviction/icon": "conviction:41",
+    "/vocations/monk/revelations/0/icon": "revelation:0",
+    "/vocations/monk/revelations/1/icon": "revelation:13",
+    "/vocations/monk/revelations/2/icon": "revelation:14",
+    "/vocations/monk/revelations/3/icon": "revelation:15",
+    "/gems/basic_mods/0/icon": "basic_mod:0",
+    "/gems/basic_mods/1/icon": "basic_mod:1",
+    "/gems/basic_mods/2/icon": "basic_mod:2",
+    "/gems/basic_mods/3/icon": "basic_mod:3",
+    "/gems/basic_mods/4/icon": "basic_mod:4",
+    "/gems/basic_mods/5/icon": "basic_mod:5",
+    "/gems/basic_mods/6/icon": "basic_mod:6",
+    "/gems/basic_mods/7/icon": "basic_mod:7",
+    "/gems/basic_mods/8/icon": "basic_mod:8",
+    "/gems/basic_mods/9/icon": "basic_mod:9",
+    "/gems/basic_mods/10/icon": "basic_mod:10",
+    "/gems/basic_mods/11/icon": "basic_mod:11",
+    "/gems/basic_mods/12/icon": "basic_mod:12",
+    "/gems/basic_mods/13/icon": "basic_mod:13",
+    "/gems/basic_mods/14/icon": "basic_mod:14",
+    "/gems/basic_mods/15/icon": "basic_mod:15",
+    "/gems/basic_mods/16/icon": "basic_mod:16",
+    "/gems/basic_mods/17/icon": "basic_mod:17",
+    "/gems/basic_mods/18/icon": "basic_mod:18",
+    "/gems/basic_mods/19/icon": "basic_mod:19",
+    "/gems/basic_mods/20/icon": "basic_mod:20",
+    "/gems/basic_mods/21/icon": "basic_mod:21",
+    "/gems/basic_mods/22/icon": "basic_mod:22",
+    "/gems/basic_mods/23/icon": "basic_mod:23",
+    "/gems/basic_mods/24/icon": "basic_mod:24",
+    "/gems/basic_mods/25/icon": "basic_mod:25",
+    "/gems/basic_mods/26/icon": "basic_mod:26",
+    "/gems/basic_mods/27/icon": "basic_mod:27",
+    "/gems/basic_mods/28/icon": "basic_mod:28",
+    "/gems/basic_mods/29/icon": "basic_mod:29",
+    "/gems/basic_mods/30/icon": "basic_mod:30",
+    "/gems/basic_mods/31/icon": "basic_mod:31",
+    "/gems/basic_mods/32/icon": "basic_mod:33",
+    "/gems/basic_mods/33/icon": "basic_mod:34",
+    "/gems/basic_mods/34/icon": "basic_mod:35",
+    "/gems/basic_mods/35/icon": "basic_mod:36",
+    "/gems/basic_mods/36/icon": "basic_mod:37",
+    "/gems/basic_mods/37/icon": "basic_mod:38",
+    "/gems/basic_mods/38/icon": "basic_mod:39",
+    "/gems/basic_mods/39/icon": "basic_mod:40",
+    "/gems/basic_mods/40/icon": "basic_mod:41",
+    "/gems/basic_mods/41/icon": "basic_mod:44",
+    "/gems/basic_mods/42/icon": "basic_mod:45",
+    "/gems/basic_mods/43/icon": "basic_mod:46",
+    "/gems/basic_mods/44/icon": "basic_mod:47",
+    "/gems/basic_mods/45/icon": "basic_mod:48",
+    "/gems/supreme_mods/0/icon": "supreme_mod:0",
+    "/gems/supreme_mods/1/icon": "supreme_mod:1",
+    "/gems/supreme_mods/2/icon": "supreme_mod:2",
+    "/gems/supreme_mods/3/icon": "supreme_mod:3",
+    "/gems/supreme_mods/4/icon": "supreme_mod:4",
+    "/gems/supreme_mods/5/icon": "supreme_mod:5",
+    "/gems/supreme_mods/6/icon": "supreme_mod:6",
+    "/gems/supreme_mods/7/icon": "supreme_mod:7",
+    "/gems/supreme_mods/8/icon": "supreme_mod:8",
+    "/gems/supreme_mods/9/icon": "supreme_mod:9",
+    "/gems/supreme_mods/10/icon": "supreme_mod:10",
+    "/gems/supreme_mods/11/icon": "supreme_mod:11",
+    "/gems/supreme_mods/12/icon": "supreme_mod:12",
+    "/gems/supreme_mods/13/icon": "supreme_mod:13",
+    "/gems/supreme_mods/14/icon": "supreme_mod:14",
+    "/gems/supreme_mods/15/icon": "supreme_mod:15",
+    "/gems/supreme_mods/16/icon": "supreme_mod:16",
+    "/gems/supreme_mods/17/icon": "supreme_mod:17",
+    "/gems/supreme_mods/18/icon": "supreme_mod:18",
+    "/gems/supreme_mods/19/icon": "supreme_mod:19",
+    "/gems/supreme_mods/20/icon": "supreme_mod:20",
+    "/gems/supreme_mods/21/icon": "supreme_mod:21",
+    "/gems/supreme_mods/22/icon": "supreme_mod:22",
+    "/gems/supreme_mods/23/icon": "supreme_mod:23",
+    "/gems/supreme_mods/24/icon": "supreme_mod:24",
+    "/gems/supreme_mods/25/icon": "supreme_mod:25",
+    "/gems/supreme_mods/26/icon": "supreme_mod:26",
+    "/gems/supreme_mods/27/icon": "supreme_mod:27",
+    "/gems/supreme_mods/28/icon": "supreme_mod:28",
+    "/gems/supreme_mods/29/icon": "supreme_mod:29",
+    "/gems/supreme_mods/30/icon": "supreme_mod:30",
+    "/gems/supreme_mods/31/icon": "supreme_mod:31",
+    "/gems/supreme_mods/32/icon": "supreme_mod:32",
+    "/gems/supreme_mods/33/icon": "supreme_mod:33",
+    "/gems/supreme_mods/34/icon": "supreme_mod:34",
+    "/gems/supreme_mods/35/icon": "supreme_mod:35",
+    "/gems/supreme_mods/36/icon": "supreme_mod:36",
+    "/gems/supreme_mods/37/icon": "supreme_mod:37",
+    "/gems/supreme_mods/38/icon": "supreme_mod:38",
+    "/gems/supreme_mods/39/icon": "supreme_mod:39",
+    "/gems/supreme_mods/40/icon": "supreme_mod:40",
+    "/gems/supreme_mods/41/icon": "supreme_mod:41",
+    "/gems/supreme_mods/42/icon": "supreme_mod:42",
+    "/gems/supreme_mods/43/icon": "supreme_mod:43",
+    "/gems/supreme_mods/44/icon": "supreme_mod:44",
+    "/gems/supreme_mods/45/icon": "supreme_mod:45",
+    "/gems/supreme_mods/46/icon": "supreme_mod:46",
+    "/gems/supreme_mods/47/icon": "supreme_mod:47",
+    "/gems/supreme_mods/48/icon": "supreme_mod:48",
+    "/gems/supreme_mods/49/icon": "supreme_mod:49",
+    "/gems/supreme_mods/50/icon": "supreme_mod:50",
+    "/gems/supreme_mods/51/icon": "supreme_mod:51",
+    "/gems/supreme_mods/52/icon": "supreme_mod:52",
+    "/gems/supreme_mods/53/icon": "supreme_mod:53",
+    "/gems/supreme_mods/54/icon": "supreme_mod:54",
+    "/gems/supreme_mods/55/icon": "supreme_mod:55",
+    "/gems/supreme_mods/56/icon": "supreme_mod:56",
+    "/gems/supreme_mods/57/icon": "supreme_mod:57",
+    "/gems/supreme_mods/58/icon": "supreme_mod:58",
+    "/gems/supreme_mods/59/icon": "supreme_mod:59",
+    "/gems/supreme_mods/60/icon": "supreme_mod:60",
+    "/gems/supreme_mods/61/icon": "supreme_mod:61",
+    "/gems/supreme_mods/62/icon": "supreme_mod:62",
+    "/gems/supreme_mods/63/icon": "supreme_mod:63",
+    "/gems/supreme_mods/64/icon": "supreme_mod:64",
+    "/gems/supreme_mods/65/icon": "supreme_mod:65",
+    "/gems/supreme_mods/66/icon": "supreme_mod:66",
+    "/gems/supreme_mods/67/icon": "supreme_mod:67",
+    "/gems/supreme_mods/68/icon": "supreme_mod:68",
+    "/gems/supreme_mods/69/icon": "supreme_mod:69",
+    "/gems/supreme_mods/70/icon": "supreme_mod:70",
+    "/gems/supreme_mods/71/icon": "supreme_mod:71",
+    "/gems/supreme_mods/72/icon": "supreme_mod:72",
+    "/gems/supreme_mods/73/icon": "supreme_mod:73",
+    "/gems/supreme_mods/74/icon": "supreme_mod:74",
+    "/gems/supreme_mods/75/icon": "supreme_mod:75",
+    "/gems/supreme_mods/76/icon": "supreme_mod:76",
+    "/gems/supreme_mods/77/icon": "supreme_mod:77",
+    "/gems/supreme_mods/78/icon": "supreme_mod:78",
+    "/gems/supreme_mods/79/icon": "supreme_mod:79",
+    "/gems/supreme_mods/80/icon": "supreme_mod:80",
+    "/gems/supreme_mods/81/icon": "supreme_mod:81",
+    "/gems/supreme_mods/82/icon": "supreme_mod:82",
+    "/gems/supreme_mods/83/icon": "supreme_mod:83",
+    "/gems/supreme_mods/84/icon": "supreme_mod:84",
+    "/gems/supreme_mods/85/icon": "supreme_mod:85",
+    "/gems/supreme_mods/86/icon": "supreme_mod:86",
+    "/gems/supreme_mods/87/icon": "supreme_mod:87",
+    "/gems/supreme_mods/88/icon": "supreme_mod:88",
+    "/gems/supreme_mods/89/icon": "supreme_mod:89",
+    "/gems/supreme_mods/90/icon": "supreme_mod:90",
+    "/gems/supreme_mods/91/icon": "supreme_mod:91",
+    "/gems/supreme_mods/92/icon": "supreme_mod:92",
+    "/gems/supreme_mods/93/icon": "supreme_mod:93"
+  }
+}

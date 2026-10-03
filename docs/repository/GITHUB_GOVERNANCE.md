@@ -19,6 +19,8 @@
 
 The retained `Agent governance / validate` workflow remains available during the transition to the aggregate gate and for explicit manual governance validation, but it is not the canonical required status after the repository policy is applied. It also handles `pull_request: edited` and reads current PR title/body/base/head state from the GitHub API rather than trusting a frozen event-body snapshot; `workflow_dispatch` is retained only as an exact-head break-glass governance recovery path.
 
+For ordinary same-repository PR events targeting a prepared branch, this workflow reports `Agent governance / stack preflight` and runs the same exact-head governance checks. It requires the live base to match the triggering event and rejects a moved head, foreign repository or closed PR before checkout. This preliminary result is not main integration qualification: the canonical `game-gate`, protected audit, Merge Queue and manual governance recovery still require `base=main`. Historical failed runs retain their original workflow version; the updated behavior applies to candidates containing the reviewed workflow change.
+
 ## Protected merge-authority control plane
 
 `Oteryn-v2` is a public repository. GitHub push rulesets are available for private/internal repositories (and eligible fork networks), not for an ordinary public repository. A push ruleset also applies repository-wide and therefore does not use branch `ref_name` targeting. The failed post-merge run after PR #238 proved this platform boundary when GitHub rejected the attempted public push ruleset.

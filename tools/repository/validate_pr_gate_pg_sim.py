@@ -20,7 +20,7 @@ POSTGRES_IMAGE = (
 )
 # Like the canonical scope/aggregate pins, these bind execution semantics, not just text fragments.
 EXPECTED_EVIDENCE_JOB_SHA256 = {
-    "rust_linux": "dd8325e8c111f61bd8fa230c34e104124621d7f39ba779d6b8fa7025ca26c184",
+    "rust_linux": "53c58a0cfeba02d056ba7a9c7a54d1430c47acb83849ad991ae75e0d6c3ec5a2",
     "rust_windows": "f28b0844ae3779d164cb85f5d8ef5bb4532b78baa2cd55e20cdff9e67c47f1d4",
 }
 
@@ -189,7 +189,7 @@ def validate() -> list[str]:
         '                checkout_blob="$(git hash-object -- "$path")"\n',
         '                if [[ ! "$classified_blob" =~ ^[0-9a-f]{40}$ || "$checkout_blob" != "$classified_blob" ]]; then\n',
         '                verify_registered_target_binding "$name" "$path"\n',
-        '                cargo +1.94.0 test --locked -p oteryn-game-server --test "$name"\n',
+        '                cargo +1.94.0 test --locked --workspace --test "$name"\n',
         '                if [[ -e "$path" || -L "$path" || -n "$classified_blob" ]]; then\n',
     ) + tuple(
         fragment
