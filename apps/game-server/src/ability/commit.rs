@@ -248,24 +248,25 @@ fn encode_owner_damage_plan(plan: &EffectPlan) -> Result<Vec<u8>, AbilityError> 
     Ok(encoded)
 }
 
-/// A real typed Ability→Foundation bridge, compiled into the game-server
-/// library but never composed into live gameplay. The fixture BTreeMap engine
-/// above is intentionally not on this path.
+/// A real typed Ability→Foundation bridge. The fixture BTreeMap engine above is intentionally not
+/// on this path.
+///
+/// A2 (D295 item 4): the attacker authority is the bound player slot `attacker`, read by the
+/// owner in the same runtime-lock critical section as the write. The slot must hold
+/// `command`'s session, carry no write fence and have its Character lease bound
+/// (CHARM-DESC-FENCE-LEASE §3 item 2); a caller never supplies the Character or the lease.
 ///
 /// D4 (D141): the owner's replay identity for this commit is derived by the carrier from
-/// `(attacker, lease_generation, command.game_session_id(), command.command_id(), sub_ordinal)`,
-/// where `lease_generation` is the attacker's current `character_lease_generation`
-/// (`CharacterLease::generation()`), which orders sessions, and
-/// `sub_ordinal` is the committed effect's own index in the plan. The plan's opaque
-/// `AbilityOccurrenceId` is never passed as identity. `command` must be the actual
-/// FND-02 [`CommandRef`] of the attacker's command; composing it into live gameplay is later work.
-#[allow(dead_code)]
+/// `(character, lease_generation, command.game_session_id(), command.command_id(), sub_ordinal)`
+/// of the bound lease, and `sub_ordinal` is the committed effect's own index in the plan. The
+/// plan's opaque `AbilityOccurrenceId` is never passed as identity. `command` must be the actual
+/// FND-02 [`CommandRef`] of the attacker's command.
+#[allow(dead_code, reason = "no live gameplay caller is composed yet")]
 pub(crate) fn commit_exact_owner_damage(
     owner: &mut crate::foundation::CurrentOwnerExactActorCommit<'_>,
     resolved: &super::exact_actor_resolution::ResolvedExactActor,
     plan: &EffectPlan,
-    attacker: crate::foundation::CharacterId,
-    lease_generation: u64,
+    attacker: crate::foundation::ExactActorRef,
     command: crate::foundation::CommandRef,
 ) -> Result<crate::foundation::OwnerDamageResult, OwnerCommitError> {
     use super::exact_actor_resolution::ExactActorSource;
@@ -294,14 +295,11 @@ pub(crate) fn commit_exact_owner_damage(
         .ok_or(OwnerCommitError::InvalidPlan)?;
     let binding = encode_owner_damage_plan(plan).map_err(OwnerCommitError::Plan)?;
     owner
-        .commit_damage_for_attacker(
+        .commit_damage_for_bound_attacker(
             resolved.target(),
-            crate::foundation::AttackerCommand::new(
-                attacker,
-                lease_generation,
-                command,
-                sub_ordinal,
-            ),
+            attacker,
+            command,
+            sub_ordinal,
             crate::foundation::OwnerDamageCommand {
                 target: target.as_str().as_bytes(),
                 // Not read for an attributed commit: the carrier derives the identity.
@@ -346,22 +344,24 @@ impl OwnerCommittedPrimaryDamage {
 }
 
 /// Mint the sealed parent from real owner-issued HP facts, never a predicted or supplied result.
-#[allow(dead_code)]
+/// The provenance records the bound lease the write was admitted under.
+#[allow(dead_code, reason = "no live gameplay caller is composed yet")]
 pub(crate) fn commit_exact_owner_primary_damage(
     owner: &mut crate::foundation::CurrentOwnerExactActorCommit<'_>,
     resolved: &super::exact_actor_resolution::ResolvedExactActor,
     plan: &EffectPlan,
-    attacker: crate::foundation::CharacterId,
-    lease_generation: u64,
+    attacker: crate::foundation::ExactActorRef,
     command: crate::foundation::CommandRef,
 ) -> Result<OwnerCommittedPrimaryDamage, OwnerCommitError> {
-    let result =
-        commit_exact_owner_damage(owner, resolved, plan, attacker, lease_generation, command)?;
+    let lease = owner
+        .bound_attacker_lease(attacker, command)
+        .map_err(OwnerCommitError::Owner)?;
+    let result = commit_exact_owner_damage(owner, resolved, plan, attacker, command)?;
     Ok(OwnerCommittedPrimaryDamage {
         plan: plan.clone(),
         target: resolved.target(),
-        attacker,
-        lease_generation,
+        attacker: lease.character_id(),
+        lease_generation: lease.generation(),
         command,
         result,
     })
@@ -463,22 +463,26 @@ impl OwnerCharmDamagePlan {
 }
 
 /// Commit only the actual descendant entry 1 through the same physical owner boundary. Immutable
-/// parent provenance never supplies current authority: owner, attacker lease and command are
-/// independently supplied and checked at this call, then revalidated by the owner at its write.
-/// `current_lease` is the attacker's current `CharacterLease` (`GameSession::character_lease()`
-/// or the current admission authority), resolved at this write, never from `frozen`. A lease
-/// generation other than the frozen primary's means the attacker's session was superseded after
-/// the primary commit; the creature's high-water mark alone cannot see that, so it is refused
-/// here before the owner write.
-#[allow(dead_code)]
+/// parent provenance never supplies current authority: the attacker's current lease is read from
+/// its bound player slot `attacker` at this write (A2, D295 item 4), never from `frozen`. A
+/// fenced, rebound or unbound slot refuses as `SupersededAttackerSession`. A lease generation
+/// other than the frozen primary's means the attacker's session was superseded after the primary
+/// commit; the creature's high-water mark alone cannot see that, so it is refused here before the
+/// owner write.
+#[allow(dead_code, reason = "no live gameplay caller is composed yet")]
 pub(crate) fn commit_exact_owner_charm_damage(
     owner: &mut crate::foundation::CurrentOwnerExactActorCommit<'_>,
     frozen: &OwnerCharmDamagePlan,
-    current_lease: crate::foundation::CharacterLease,
+    attacker: crate::foundation::ExactActorRef,
     command: crate::foundation::CommandRef,
 ) -> Result<OwnerCharmDamageResult, OwnerCommitError> {
-    let attacker = current_lease.character_id();
-    if attacker != frozen.attacker || command != frozen.command {
+    if command != frozen.command {
+        return Err(OwnerCommitError::InvalidPlan);
+    }
+    let current_lease = owner
+        .bound_attacker_lease(attacker, command)
+        .map_err(OwnerCommitError::Owner)?;
+    if current_lease.character_id() != frozen.attacker {
         return Err(OwnerCommitError::InvalidPlan);
     }
     if !current_lease.accepts_generation(frozen.lease_generation) {
@@ -486,7 +490,6 @@ pub(crate) fn commit_exact_owner_charm_damage(
             crate::foundation::CarrierError::SupersededAttackerSession,
         ));
     }
-    let lease_generation = current_lease.generation();
     let Effect::Damage { target, magnitude } = &frozen.plan.effects()[1] else {
         return Err(OwnerCommitError::InvalidPlan);
     };
@@ -496,14 +499,11 @@ pub(crate) fn commit_exact_owner_charm_damage(
         .and_then(|sub| u16::try_from(sub.ordinal()).ok())
         .ok_or(OwnerCommitError::InvalidPlan)?;
     let result = owner
-        .commit_damage_for_attacker(
+        .commit_damage_for_bound_attacker(
             frozen.target,
-            crate::foundation::AttackerCommand::new(
-                attacker,
-                lease_generation,
-                command,
-                sub_ordinal,
-            ),
+            attacker,
+            command,
+            sub_ordinal,
             crate::foundation::OwnerDamageCommand {
                 target: target.as_str().as_bytes(),
                 occurrence: &[],

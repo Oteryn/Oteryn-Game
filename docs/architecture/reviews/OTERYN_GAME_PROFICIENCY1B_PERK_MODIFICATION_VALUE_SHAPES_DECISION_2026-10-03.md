@@ -267,9 +267,15 @@ cost and orb count from the bound shaping revision into the binding and into the
 `dust_cost` and `orb_cost`. The line CHECK requires `dust_spent = dust_cost` and `orbs_spent =
 orb_cost` (0 for `RESHAPE_CHOOSE`, `RESHAPE_DECLINE` and `MIGRATION_CLEAR`). A deferred guard
 requires the transaction's dust ledger `SPEND` amount to equal `dust_spent` (no entry when it is 0)
-and its orb BURN quantity to equal `orbs_spent`. Reconcile and `verify_character_integrity`
-recompute `dust_cost` and `orb_cost` from the stored shaping revision, which §8 retains. Test: a
-writer that records 1 dust for a 1,000-dust operation is refused.
+and its orb BURN quantity to equal `orbs_spent`. The cost is checked against content once, at
+commit: the writer reads it from the bound revision under §8's shared lock, so that revision is
+retained while the write runs. Afterwards the line's own `dust_cost` and `orb_cost` are the
+evidence: reconcile and `verify_character_integrity` check the line against the ledger entry and the
+orb line, and recompute the cost from content only while the line's revision is still retained.
+A revision dropped after a `CLEAR` or `MIGRATION_CLEAR` leaves every check verifiable (TIMED-PROF-0C,
+review finding 4174228267). Test: a writer that records 1 dust for a 1,000-dust operation is
+refused; after a clear and an activation that drops the old revision, `verify_character_integrity`
+still passes from the stored lines.
 
 Exactly one slot changes per `perk_modification` receipt. The per-track check (0032) extends to the
 modification row: each line's before values equal the previous modification line's after values of
@@ -302,7 +308,9 @@ that (track, slot), or the cleared state; the row equals its latest line.
 ## 8. Retention check (entry condition 10)
 
 - **Invariant** (PROFICIENCY-1 §3): a shaping revision is retained while any row references it, and
-  a row is evaluated against its own stored revision.
+  a row is evaluated against its own stored revision. Immutable lines and terminal records do not
+  hold a revision: they carry the costs and draws they need (§7.1), so verifying them never reads
+  dropped content.
 - **Serialized enforcement.** Content activation of a shaping definition takes an exclusive
   transaction-scoped advisory lock on `proficiency_shaping:<shaping_key>`; every modification write
   takes it shared until commit. Under the exclusive lock, activation probes the §4.1 index for every

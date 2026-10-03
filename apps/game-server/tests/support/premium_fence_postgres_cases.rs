@@ -1,14 +1,24 @@
-// PREM-1a Premium consumer fence (migration 0029, `durability::premium_fence`, `premium`).
+// PREM-1a Premium consumer fence (migration 0029, `durability::premium_fence`, `premium`) and
+// PREM-1b durable semantic conflict and audit (migration 0057), failed pulls and the pull
+// schedule against the in-process test producer.
 // Every wrapper provides the same path-loaded crate root, the `premium` module and the
 // `bestiary_postgres_harness` module; the fence needs no Character.
 
 use crate::bestiary_postgres_harness::{Harness, TestResult, configured_admin, runtime};
 use crate::durability::DurabilityRoot;
-use crate::durability::premium_fence::{EntitlementState, PremiumEvidence, PremiumFenceOutcome};
-use crate::premium::snapshot::canonical_uuid;
+use crate::durability::premium_fence::{
+    EntitlementState, PremiumAccountRecord, PremiumEvidence, PremiumFenceOutcome,
+};
+use crate::premium::client::{PremiumClientConfig, PremiumSnapshotClient};
+use crate::premium::refresh::PremiumRefresher;
+use crate::premium::snapshot::{SnapshotRejection, canonical_uuid};
+use crate::premium::test_producer::{ProducerRequest, Reply, TestPki, TestProducer, snapshot};
 use crate::premium::{
     IngestOutcome, PRODUCER_PROFILE, PRODUCT_ID, PremiumClass, PremiumConsumer, TrustedNow,
 };
+use std::sync::Arc;
+use std::sync::atomic::{AtomicUsize, Ordering};
+use std::time::Duration;
 
 const ACCOUNT: [u8; 16] = [0x61; 16];
 const HOUR: i64 = 3_600_000_000;
@@ -75,7 +85,13 @@ fn run(
 fn premium_fence_is_monotonic_and_idempotent() -> TestResult {
     use EntitlementState::{Active, None as NoEntitlement, Revoked};
     run("premium_order", async |harness, root| {
-        assert_eq!(root.load_premium_fence(ACCOUNT).await?, None);
+        assert_eq!(
+            root.load_premium_fence(ACCOUNT).await?,
+            PremiumAccountRecord {
+                fence: None,
+                conflicting: false
+            }
+        );
         assert_eq!(
             accept(root, &evidence(5, 1, Active)).await?,
             ("accepted", 5, Active, false)
@@ -118,7 +134,11 @@ fn premium_fence_is_monotonic_and_idempotent() -> TestResult {
         assert_eq!(accept(root, &other).await?, ("accepted", 10, Active, false));
         assert_eq!(harness.count("game_premium_evidence").await?, 5);
         assert_eq!(harness.count("game_premium_entitlement_fence").await?, 2);
-        let loaded = root.load_premium_fence(ACCOUNT).await?.ok_or("fence")?;
+        let loaded = root
+            .load_premium_fence(ACCOUNT)
+            .await?
+            .fence
+            .ok_or("fence")?;
         assert_eq!(loaded.latest, other);
         Ok(())
     })
@@ -137,10 +157,9 @@ fn premium_equivocation_fails_closed_and_sticks() -> TestResult {
             accept(root, &contradiction).await?,
             ("conflict", 6, Active, true)
         );
-        // Build provenance and scheduling are not authority: still an exact replay.
+        // Build provenance is not authority: still an exact replay.
         let mut rebuilt = evidence(6, 1, Active);
         rebuilt.producer_revision = "d00d".into();
-        rebuilt.refresh_after_us += 1;
         assert_eq!(accept(root, &rebuilt).await?, ("replayed", 6, Active, true));
         // Newer evidence is still fenced, the conflict stays.
         assert_eq!(
@@ -148,9 +167,30 @@ fn premium_equivocation_fails_closed_and_sticks() -> TestResult {
             ("accepted", 7, Active, true)
         );
         assert_eq!(harness.count("game_premium_evidence").await?, 3);
+        // One conflict row (the first detection) and one audit row per revision.
+        assert_eq!(harness.count("game_premium_account_conflict").await?, 1);
+        assert_eq!(harness.count("game_premium_security_audit").await?, 1);
         Ok(())
     })?;
-    run("premium_history", async |_, root| {
+    run("premium_refresh_contradiction", async |harness, root| {
+        accept(root, &evidence(5, 1, Active)).await?;
+        // Another refresh schedule under an accepted revision is a contradiction (§3.1 rule 1),
+        // not a replay; a repeat adds no audit row.
+        let mut rescheduled = evidence(5, 1, Active);
+        rescheduled.refresh_after_us += 1;
+        assert_eq!(
+            accept(root, &rescheduled).await?,
+            ("conflict", 5, Active, true)
+        );
+        assert_eq!(
+            accept(root, &rescheduled).await?,
+            ("conflict", 5, Active, true)
+        );
+        assert_eq!(harness.count("game_premium_security_audit").await?, 1);
+        assert!(root.load_premium_fence(ACCOUNT).await?.conflicting);
+        Ok(())
+    })?;
+    run("premium_history", async |harness, root| {
         accept(root, &evidence(5, 1, Active)).await?;
         accept(root, &evidence(6, 1, Active)).await?;
         // Same historical revision, other content: detected below the high water.
@@ -160,6 +200,17 @@ fn premium_equivocation_fails_closed_and_sticks() -> TestResult {
             accept(root, &historical).await?,
             ("conflict", 6, Active, true)
         );
+        assert_eq!(
+            accept(root, &historical).await?,
+            ("conflict", 6, Active, true)
+        );
+        assert_eq!(harness.count("game_premium_security_audit").await?, 1);
+        let audit: (i16, String) = sqlx::query_as(
+            "SELECT kind, authority_revision::text FROM game_premium_security_audit",
+        )
+        .fetch_one(&harness.pool)
+        .await?;
+        assert_eq!(audit, (1, "5".into()));
         Ok(())
     })?;
     run("premium_lifecycle", async |harness, root| {
@@ -361,17 +412,26 @@ fn premium_fence_rows_cannot_be_rolled_back() -> TestResult {
             "DELETE FROM game_premium_account_fence",
             "DELETE FROM game_premium_entitlement_fence",
             "TRUNCATE game_premium_evidence CASCADE",
+            "UPDATE game_premium_account_conflict SET kind = 2",
+            "UPDATE game_premium_security_audit SET authority_revision = 7",
+            "DELETE FROM game_premium_account_conflict",
+            "DELETE FROM game_premium_security_audit",
+            "TRUNCATE game_premium_account_conflict",
+            "TRUNCATE game_premium_security_audit",
         ] {
             let result = sqlx::query(sqlx::AssertSqlSafe(statement))
                 .execute(&harness.pool)
                 .await;
             assert!(result.is_err(), "{statement}");
         }
-        // The runtime role inserts evidence and inserts or advances fences, never more.
+        // The runtime role inserts evidence, conflicts and audit rows and inserts or advances
+        // fences, never more.
         let privileges: Vec<(String, bool)> = sqlx::query_as(
             "SELECT t || ':' || p, has_table_privilege('oteryn_game_runtime', t, p) \
                FROM unnest(ARRAY['game_premium_evidence', 'game_premium_account_fence', \
-                                 'game_premium_entitlement_fence']) AS t, \
+                                 'game_premium_entitlement_fence', \
+                                 'game_premium_account_conflict', \
+                                 'game_premium_security_audit']) AS t, \
                     unnest(ARRAY['SELECT', 'INSERT', 'UPDATE', 'DELETE', 'TRUNCATE']) AS p",
         )
         .fetch_all(&harness.pool)
@@ -379,11 +439,14 @@ fn premium_fence_rows_cannot_be_rolled_back() -> TestResult {
         for (privilege, held) in privileges {
             let expected = privilege.ends_with(":SELECT")
                 || privilege.ends_with(":INSERT")
-                || (privilege.ends_with(":UPDATE")
-                    && !privilege.starts_with("game_premium_evidence"));
+                || (privilege.ends_with(":UPDATE") && privilege.contains("_fence:"));
             assert_eq!(held, expected, "{privilege}");
         }
-        let fence = root.load_premium_fence(ACCOUNT).await?.ok_or("fence")?;
+        let fence = root
+            .load_premium_fence(ACCOUNT)
+            .await?
+            .fence
+            .ok_or("fence")?;
         assert_eq!(
             (fence.latest.authority_revision, fence.conflicting),
             (6, true)
@@ -423,11 +486,17 @@ fn premium_restart_reproves_before_benefit() -> TestResult {
             IngestOutcome::Accepted
         );
         assert!(first.premium_current(ACCOUNT, now));
-        // A response bound to another request changes nothing.
+        // A response bound to another request changes no evidence, but it is a failed pull:
+        // not current until a later pull succeeds (§3.1).
         assert!(matches!(
             first.ingest(root, ACCOUNT, "n2", &body(6, "n1")).await,
             IngestOutcome::Rejected(_)
         ));
+        assert!(!first.premium_current(ACCOUNT, now));
+        assert_eq!(
+            first.ingest(root, ACCOUNT, "n2", &body(5, "n2")).await,
+            IngestOutcome::Replayed
+        );
         assert!(first.premium_current(ACCOUNT, now));
         // After a restart the durable ACTIVE evidence is not yet current authority.
         let restarted = PremiumConsumer::default();
@@ -448,6 +517,298 @@ fn premium_restart_reproves_before_benefit() -> TestResult {
             IngestOutcome::Replayed
         );
         assert!(restarted.premium_current(ACCOUNT, now));
+        Ok(())
+    })
+}
+
+/// A §4 body for `ACCOUNT` and `nonce`, with `overrides` applied.
+fn wire(authority: u64, nonce: &str, overrides: &[(&str, serde_json::Value)]) -> Vec<u8> {
+    let request = ProducerRequest {
+        account_id: canonical_uuid(ACCOUNT),
+        nonce: nonce.into(),
+    };
+    snapshot(&request, authority, overrides)
+}
+
+fn now() -> Option<TrustedNow> {
+    TrustedNow::new(T0 + 60_000_000, 1_000_000)
+}
+
+#[test]
+fn premium_unsupported_is_durable_and_never_cleared() -> TestResult {
+    let v2 = || ("schema", serde_json::json!("oteryn.premium_snapshot.v2"));
+    run("premium_unsupported_first", async |harness, root| {
+        let first = PremiumConsumer::default();
+        // A first-ever unsupported response needs no evidence row.
+        assert_eq!(
+            first
+                .ingest(root, ACCOUNT, "n1", &wire(5, "n1", &[v2()]))
+                .await,
+            IngestOutcome::Rejected(SnapshotRejection::Unsupported)
+        );
+        assert_eq!(
+            first.class(ACCOUNT, now()),
+            PremiumClass::InvalidOrConflicting
+        );
+        // A repeat adds no audit row.
+        first
+            .ingest(root, ACCOUNT, "n2", &wire(5, "n2", &[v2()]))
+            .await;
+        assert_eq!(harness.count("game_premium_account_conflict").await?, 1);
+        assert_eq!(harness.count("game_premium_security_audit").await?, 1);
+        assert_eq!(harness.count("game_premium_evidence").await?, 0);
+        // After `release`, a restart and a later compatible pull it stays denied.
+        first.release(ACCOUNT);
+        let restarted = PremiumConsumer::default();
+        restarted.load(root, ACCOUNT).await?;
+        assert_eq!(
+            restarted.class(ACCOUNT, now()),
+            PremiumClass::InvalidOrConflicting
+        );
+        assert_eq!(
+            restarted
+                .ingest(root, ACCOUNT, "n3", &wire(6, "n3", &[]))
+                .await,
+            IngestOutcome::Accepted
+        );
+        assert!(!restarted.premium_current(ACCOUNT, now()));
+        // Even a consumer that never loaded learns it from the fence.
+        let fresh = PremiumConsumer::default();
+        assert_eq!(
+            fresh.ingest(root, ACCOUNT, "n4", &wire(6, "n4", &[])).await,
+            IngestOutcome::Replayed
+        );
+        assert!(!fresh.premium_current(ACCOUNT, now()));
+        Ok(())
+    })?;
+    run("premium_unsupported_after_active", async |harness, root| {
+        let first = PremiumConsumer::default();
+        first.ingest(root, ACCOUNT, "n1", &wire(5, "n1", &[])).await;
+        assert!(first.premium_current(ACCOUNT, now()));
+        // A well-formed lease above `max_authority_lease` stays Unsupported.
+        let long = ("authority_valid_until", "2026-09-30T13:00:01Z".into());
+        assert_eq!(
+            first
+                .ingest(root, ACCOUNT, "n2", &wire(6, "n2", &[long]))
+                .await,
+            IngestOutcome::Rejected(SnapshotRejection::Unsupported)
+        );
+        assert!(!first.premium_current(ACCOUNT, now()));
+        let audit: (i16, String) = sqlx::query_as(
+            "SELECT kind, authority_revision::text FROM game_premium_security_audit",
+        )
+        .fetch_one(&harness.pool)
+        .await?;
+        assert_eq!(audit, (2, "6".into()));
+        first.release(ACCOUNT);
+        let restarted = PremiumConsumer::default();
+        restarted.load(root, ACCOUNT).await?;
+        restarted
+            .ingest(root, ACCOUNT, "n3", &wire(7, "n3", &[]))
+            .await;
+        assert_eq!(
+            restarted.class(ACCOUNT, now()),
+            PremiumClass::InvalidOrConflicting
+        );
+        Ok(())
+    })?;
+    run("premium_incompatible_malformed", async |harness, root| {
+        let consumer = PremiumConsumer::default();
+        consumer
+            .ingest(root, ACCOUNT, "n1", &wire(5, "n1", &[]))
+            .await;
+        // An unknown schema with a malformed timestamp is a recoverable failed pull: no conflict
+        // or audit row.
+        let broken = ("authority_issued_at", "2026-09-30T12:00:00".into());
+        assert_eq!(
+            consumer
+                .ingest(root, ACCOUNT, "n2", &wire(6, "n2", &[v2(), broken]))
+                .await,
+            IngestOutcome::Rejected(SnapshotRejection::Malformed)
+        );
+        let missing = ("refresh_after", serde_json::Value::Null);
+        let profile = ("producer_profile", "oteryn.other.v9".into());
+        consumer
+            .ingest(root, ACCOUNT, "n3", &wire(6, "n3", &[profile, missing]))
+            .await;
+        assert_eq!(harness.count("game_premium_account_conflict").await?, 0);
+        assert_eq!(harness.count("game_premium_security_audit").await?, 0);
+        assert_eq!(
+            consumer.class(ACCOUNT, now()),
+            PremiumClass::AuthorityUnavailable
+        );
+        consumer
+            .ingest(root, ACCOUNT, "n4", &wire(6, "n4", &[]))
+            .await;
+        assert!(consumer.premium_current(ACCOUNT, now()));
+        Ok(())
+    })
+}
+
+#[test]
+fn premium_failed_pulls_deny_until_a_later_success() -> TestResult {
+    run("premium_failed_pull", async |_, root| {
+        let consumer = PremiumConsumer::default();
+        consumer
+            .ingest(root, ACCOUNT, "n1", &wire(5, "n1", &[]))
+            .await;
+        assert!(consumer.premium_current(ACCOUNT, now()));
+        // A failed pull while cached ACTIVE is inside its interval: AUTHORITY_UNAVAILABLE.
+        let failed = consumer.ticket();
+        consumer.pull_failed(ACCOUNT, failed);
+        assert_eq!(
+            consumer.class(ACCOUNT, now()),
+            PremiumClass::AuthorityUnavailable
+        );
+        assert!(!consumer.premium_entitlement_ended(ACCOUNT, now()));
+        // A stale response is a failed pull too.
+        consumer
+            .ingest(root, ACCOUNT, "n2", &wire(6, "n2", &[]))
+            .await;
+        assert!(consumer.premium_current(ACCOUNT, now()));
+        assert_eq!(
+            consumer
+                .ingest(root, ACCOUNT, "n3", &wire(4, "n3", &[]))
+                .await,
+            IngestOutcome::Stale
+        );
+        assert!(!consumer.premium_current(ACCOUNT, now()));
+        // A pull started before that failure does not restore it; a later one does.
+        let older = consumer.ticket();
+        consumer.pull_failed(ACCOUNT, consumer.ticket());
+        assert_eq!(
+            consumer
+                .ingest_pull(root, ACCOUNT, older, "n4", &wire(6, "n4", &[]))
+                .await,
+            IngestOutcome::Replayed
+        );
+        assert!(!consumer.premium_current(ACCOUNT, now()));
+        let newer = consumer.ticket();
+        consumer
+            .ingest_pull(root, ACCOUNT, newer, "n5", &wire(7, "n5", &[]))
+            .await;
+        assert!(consumer.premium_current(ACCOUNT, now()));
+        // An older failed pull finishing after that proof does not deny it.
+        consumer.pull_failed(ACCOUNT, older);
+        assert!(consumer.premium_current(ACCOUNT, now()));
+        Ok(())
+    })?;
+    run("premium_none_form", async |_, root| {
+        use serde_json::Value::Null;
+        let consumer = PremiumConsumer::default();
+        let none = [
+            ("entitlement_id", Null),
+            ("entitlement_state", "NONE".into()),
+            ("lifecycle_revision", 0.into()),
+            ("effective_from", Null),
+            ("effective_until", Null),
+        ];
+        assert_eq!(
+            consumer
+                .ingest(root, ACCOUNT, "n1", &wire(5, "n1", &none))
+                .await,
+            IngestOutcome::Accepted
+        );
+        assert_eq!(consumer.class(ACCOUNT, now()), PremiumClass::NoEntitlement);
+        assert!(consumer.premium_entitlement_ended(ACCOUNT, now()));
+        Ok(())
+    })
+}
+
+fn refresher(root: &DurabilityRoot, pki: &TestPki, producer: &TestProducer) -> PremiumRefresher {
+    let client = PremiumSnapshotClient::new(&PremiumClientConfig {
+        origin: producer.origin.clone(),
+        identity_pem: pki.client_identity_pem.clone().into_bytes(),
+        platform_ca_pem: pki.ca_pem.clone().into_bytes(),
+    })
+    .ok();
+    PremiumRefresher::new(Arc::default(), root.clone(), client)
+}
+
+/// Wait up to five seconds for `done`.
+async fn eventually(done: impl Fn() -> bool) -> bool {
+    for _ in 0..100 {
+        if done() {
+            return true;
+        }
+        tokio::time::sleep(Duration::from_millis(50)).await;
+    }
+    done()
+}
+
+#[test]
+fn premium_admission_pulls_without_waiting_one_at_a_time() -> TestResult {
+    run("premium_refresh", async |_, root| {
+        let pki = TestPki::new();
+        let producer = TestProducer::start(&pki, |request| {
+            Reply::json(snapshot(request, 5, &[])).delayed(Duration::from_millis(500))
+        })
+        .await;
+        let premium = refresher(root, &pki, &producer);
+        // Admission returns at once: until the pull succeeds the account is not current.
+        let started = std::time::Instant::now();
+        for _ in 0..5 {
+            premium.admit(ACCOUNT);
+        }
+        assert!(started.elapsed() < Duration::from_millis(100));
+        assert!(!premium.consumer().premium_current(ACCOUNT, now()));
+        assert!(eventually(|| premium.consumer().premium_current(ACCOUNT, now())).await);
+        // The reconnects coalesce: at most one request in flight per account, and after the
+        // queued one the past `refresh_after` schedules nothing within 60 seconds.
+        tokio::time::sleep(Duration::from_millis(1_500)).await;
+        assert_eq!(producer.max_in_flight(), 1);
+        assert_eq!(producer.requests().len(), 2);
+        let nonces: std::collections::HashSet<_> =
+            producer.requests().into_iter().map(|r| r.nonce).collect();
+        assert_eq!(nonces.len(), 2, "a fresh nonce per request");
+        // `release` cancels the schedule and drops the view.
+        premium.release(ACCOUNT);
+        assert_eq!(
+            premium.consumer().class(ACCOUNT, now()),
+            PremiumClass::AuthorityUnavailable
+        );
+        Ok(())
+    })?;
+    run("premium_retry", async |_, root| {
+        let pki = TestPki::new();
+        let calls = Arc::new(AtomicUsize::new(0));
+        let seen = calls.clone();
+        let producer = TestProducer::start(&pki, move |request| {
+            if seen.fetch_add(1, Ordering::SeqCst) == 0 {
+                Reply::status(503).header("Retry-After", "1")
+            } else {
+                Reply::json(snapshot(request, 5, &[]))
+            }
+        })
+        .await;
+        let premium = refresher(root, &pki, &producer);
+        premium.admit(ACCOUNT);
+        assert!(eventually(|| calls.load(Ordering::SeqCst) == 1).await);
+        assert!(!premium.consumer().premium_current(ACCOUNT, now()));
+        // The retry honours `Retry-After` and then restores current authority.
+        assert!(eventually(|| premium.consumer().premium_current(ACCOUNT, now())).await);
+        assert_eq!(calls.load(Ordering::SeqCst), 2);
+        premium.release(ACCOUNT);
+        Ok(())
+    })?;
+    run("premium_dropped", async |_, root| {
+        // Dropping the refresher (a node shutdown) cancels every schedule.
+        let pki = TestPki::new();
+        let producer =
+            TestProducer::start(&pki, |_| Reply::status(503).header("Retry-After", "1")).await;
+        let premium = refresher(root, &pki, &producer);
+        premium.admit(ACCOUNT);
+        assert!(eventually(|| producer.requests().len() == 1).await);
+        drop(premium);
+        tokio::time::sleep(Duration::from_millis(2_500)).await;
+        assert_eq!(producer.requests().len(), 1);
+        Ok(())
+    })?;
+    run("premium_unconfigured", async |_, root| {
+        // No configuration: no client, nothing pulled, Premium reads Free.
+        let premium = PremiumRefresher::new(Arc::default(), root.clone(), None);
+        premium.admit(ACCOUNT);
+        assert!(!premium.consumer().premium_current(ACCOUNT, now()));
         Ok(())
     })
 }

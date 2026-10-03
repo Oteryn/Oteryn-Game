@@ -163,11 +163,17 @@ owned_paths:
   - apps/game-server/src/durability/item_fee_burn.rs
   - apps/game-server/src/combat/death_reward.rs                        # D336: XP -> Bestiary composition
   - apps/game-server/src/durability/monk_state.rs
+  - apps/game-server/src/durability/character_build.rs               # D356: build writer
+  - apps/game-server/src/durability/character_proficiency.rs         # D356: proficiency writer
   - apps/game-server/src/gameplay_transport/charm.rs
   - apps/game-server/src/gameplay_transport/charm_native.rs
   - apps/game-server/src/gameplay_transport/charm_native_tests.rs
   - apps/game-server/src/gameplay_transport/monk_save.rs
   - apps/game-server/tests/support/charm_state_postgres_cases.rs       # bind parameter
+  - apps/game-server/tests/support/character_build_postgres_cases.rs        # D356
+  - apps/game-server/tests/support/character_proficiency_postgres_cases.rs  # D356
+  - apps/game-server/tests/support/combat_bestiary_postgres_cases.rs
+  - apps/game-server/tests/support/combat_death_reward_postgres_cases.rs
   - apps/game-server/tests/support/character_revision_sequencer_postgres_cases.rs   # new
   - apps/game-server/tests/durability_postgres.rs                      # one mod line
   - apps/game-server/src/gameplay_transport/mod.rs                     # integration phase only (D336), after A2 releases it
@@ -184,13 +190,14 @@ Scope: QUEST-STATE-0 §5.2, "One write in flight per Character", with nothing ad
    - death;
    - Bestiary;
    - charm, with its in-transaction fee burn;
-   - monk state save.
+   - monk state save;
+   - build and proficiency (D356, QUEST-STATE-0 §13.1).
 
    A writer that advances the revision outside the sequencer is a defect. Where it can be done structurally, a test enforces this, like the #1652 gate test.
 3. **Compositions hold the slot.** A composition holds the slot for its whole chain. For example, in a creature death, Bestiary takes the revision that XP committed. Other requests wait for the slot.
 4. **Mismatch handling, unchanged from §5.2.**
    - Where the binding excludes the revision (Bestiary), reload the cursor and retry once.
-   - Where the binding includes the revision (XP, death, charm, monk), fail closed and report a defect. Do not retry.
+   - Where the binding includes the revision (XP, death, charm, monk, build, proficiency), fail closed and report a defect. Do not retry.
 5. **Locks.** The sequencer slot is an asynchronous per-Character queue. It is **not** the runtime lock. The runtime lock is never held while waiting for the slot or across durable I/O (D324).
 6. **Session replacement.** A replaced session's queued writes are refused at the existing session-generation fence. The sequencer adds no second fence, so session-generation fencing is unchanged.
 7. **Out of scope.** STANCE-1, QUEST-STATE-1 and the PREY writers are built on the sequencer later. They are not part of this task.
@@ -201,6 +208,8 @@ Tests:
 - a death chain of XP then Bestiary;
 - the Bestiary retry-once path;
 - XP, death, charm and monk each fail closed with no retry;
+- build and proficiency each fail closed with no retry, in their PostgreSQL case files (review
+  4174254492 on #1661, PREM-DELIVERY-0A);
 - a bypass writer is caught by the structural test.
 
 Validation: the same as §1.1, including the durability Postgres cases.

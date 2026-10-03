@@ -3150,6 +3150,29 @@ def main():
         encoding="utf-8",
         newline="\n",
     )
+    for field in ("chance_percent", "amount_percent"):
+        case(
+            f"partial leech {field} validates without inventing its companion",
+            lambda item, dependencies, manifest, field=field: item.__setitem__(
+                "modifiers",
+                {
+                    "leech": [
+                        {
+                            "resource": "health",
+                            field: {"numerator": 0, "denominator": 1},
+                        }
+                    ]
+                },
+            ),
+            expected_valid=True,
+        )
+    case(
+        "reject leech resource without an observed chance or amount",
+        lambda item, dependencies, manifest: item.__setitem__(
+            "modifiers", {"leech": [{"resource": "mana"}]}
+        ),
+        expected_error="modifiers/leech/0",
+    )
     report = {
         "scope": "portable Item authoring schemas and semantic validator; no runtime or corpus migration executed",
         "jsonschema_version": version("jsonschema"),

@@ -189,6 +189,8 @@ impl DurabilityRoot {
     /// retained result without reacquiring session authority; changed semantic
     /// reuse conflicts.  A new occurrence is fenced by current recovery, FND-04
     /// session/lease/scope and node-incarnation facts in the same transaction.
+    /// Runtime callers reach it only through a
+    /// [`RevisionSlot`](super::character_revision_sequencer::RevisionSlot) (CHAR-REV-SEQ-1).
     pub async fn commit_character_experience<const N: usize>(
         &self,
         authority: &ReconciledCharacterAuthority<'_, '_>,

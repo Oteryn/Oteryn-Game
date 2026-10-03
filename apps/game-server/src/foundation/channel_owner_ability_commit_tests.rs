@@ -22,22 +22,31 @@ fn typed_commit(
     resolved: &ResolvedExactActor,
     plan: &EffectPlan,
 ) -> Result<OwnerDamageResult, OwnerCommitError> {
+    let (session, _) = typed_attacker();
+    let attacker = owner
+        .carrier
+        .test_player_actor(session)
+        .expect("bound attacker slot");
+    commit_exact_owner_damage(
+        owner,
+        resolved,
+        plan,
+        attacker,
+        CommandRef::new(session, super::super::CommandId::new(1).expect("command")),
+    )
+}
+
+/// The typed attacker: its session and its Character, at lease generation 1.
+fn typed_attacker() -> (GameSessionId, CharacterLease) {
     let mut session = [0_u8; 16];
     session[6] = 0x70;
     session[8] = 0x80;
     session[15] = 1;
     let mut character = session;
     character[15] = 2;
-    commit_exact_owner_damage(
-        owner,
-        resolved,
-        plan,
-        CharacterId::decode(&character).expect("attacker"),
-        1,
-        CommandRef::new(
-            GameSessionId::decode(&session).expect("session"),
-            super::super::CommandId::new(1).expect("command"),
-        ),
+    (
+        GameSessionId::decode(&session).expect("session"),
+        CharacterLease::new(CharacterId::decode(&character).expect("attacker"), 1).expect("lease"),
     )
 }
 
@@ -59,13 +68,26 @@ fn grant(seed: u64, generation: u64) -> PreProductionContinuityGrant {
 
 fn fixture(seed: u64) -> (NamespaceContinuityGuard, ChannelActorCarrier, ExactActorRef) {
     let mut continuity = NamespaceContinuityGuard::from_pre_production_grant(grant(seed, 1));
-    let mut carrier = ChannelActorCarrier::bootstrap_pre_production(&mut continuity, 1)
-        .expect("one explicit carrier slot");
+    let mut carrier = ChannelActorCarrier::bootstrap_pre_production(&mut continuity, 4)
+        .expect("four explicit carrier slots");
     let actor = ExactActorRef(
         carrier
             .admit_creature(&continuity, ActorState(1), "target:one", 20)
             .expect("fixture HP"),
     );
+    // A2: the bridges read the attacker from a bound player slot: the typed attacker and the
+    // Charm attacker (Character 1 of session 1). One slot stays free for a second binding.
+    let (session, lease) = typed_attacker();
+    carrier
+        .admit_bound_test_attacker(&continuity, session, lease)
+        .expect("typed attacker");
+    carrier
+        .admit_bound_test_attacker(
+            &continuity,
+            charm_command().game_session_id(),
+            charm_lease(1),
+        )
+        .expect("charm attacker");
     (continuity, carrier, actor)
 }
 
@@ -487,13 +509,21 @@ fn tall_fixture(
     health: i64,
 ) -> (NamespaceContinuityGuard, ChannelActorCarrier, ExactActorRef) {
     let mut continuity = NamespaceContinuityGuard::from_pre_production_grant(grant(seed, 1));
-    let mut carrier = ChannelActorCarrier::bootstrap_pre_production(&mut continuity, 1)
-        .expect("one explicit carrier slot");
+    let mut carrier = ChannelActorCarrier::bootstrap_pre_production(&mut continuity, 2)
+        .expect("two explicit carrier slots");
     let actor = ExactActorRef(
         carrier
             .admit_creature(&continuity, ActorState(1), "target:one", health)
             .expect("fixture HP"),
     );
+    // A2: the Charm attacker's bound slot (`attack(1, 1, ..)`'s Character, lease and session).
+    carrier
+        .admit_bound_test_attacker(
+            &continuity,
+            charm_command().game_session_id(),
+            charm_lease(1),
+        )
+        .expect("charm attacker");
     (continuity, carrier, actor)
 }
 
@@ -578,6 +608,16 @@ fn origins(carrier: &ChannelActorCarrier) -> Vec<Option<DamageOrigin>> {
         .collect()
 }
 
+fn charm_lease(generation: u64) -> CharacterLease {
+    CharacterLease::new(who(1), generation).expect("charm attacker lease")
+}
+
+fn charm_attacker(carrier: &ChannelActorCarrier) -> ExactActorRef {
+    carrier
+        .test_player_actor(charm_command().game_session_id())
+        .expect("bound charm attacker")
+}
+
 fn charm_command() -> CommandRef {
     CommandRef::new(
         session(1),
@@ -606,12 +646,12 @@ fn try_sealed_primary(
     resolved: &ResolvedExactActor,
     plan: &EffectPlan,
 ) -> Result<OwnerCommittedPrimaryDamage, OwnerCommitError> {
+    let attacker = charm_attacker(carrier);
     commit_exact_owner_primary_damage(
         &mut carrier.current_owner_exact_commit(continuity),
         resolved,
         plan,
-        who(1),
-        1,
+        attacker,
         charm_command(),
     )
 }
@@ -630,10 +670,11 @@ fn native_charm_commit(
     continuity: &NamespaceContinuityGuard,
     plan: &OwnerCharmDamagePlan,
 ) -> Result<OwnerCharmDamageResult, OwnerCommitError> {
+    let attacker = charm_attacker(carrier);
     commit_exact_owner_charm_damage(
         &mut carrier.current_owner_exact_commit(continuity),
         plan,
-        CharacterLease::new(who(1), 1).expect("current attacker lease"),
+        attacker,
         charm_command(),
     )
 }
@@ -907,18 +948,18 @@ fn charm_native_frozen_proof_never_supplies_current_owner_or_command_authority()
     let frozen = OwnerCharmDamagePlan::prepare(&parent, charm_child(&primary_plan, 9))
         .expect("prepare")
         .expect("live");
+    // A2: the current lease comes from a bound slot of the command's session. A slot bound to
+    // another Character, or to another lease generation, never borrows the frozen authority.
+    let current = charm_attacker(&carrier);
+    let other_character = CharacterLease::new(who(2), 1).expect("lease");
+    let other = carrier
+        .admit_bound_test_attacker(&continuity, session(1), other_character)
+        .expect("slot of another Character");
     let before = carrier.slots.clone();
-    for (character, lease, command, refused) in [
-        (who(2), 1, charm_command(), OwnerCommitError::InvalidPlan),
+    for (attacker, command, refused) in [
+        (other, charm_command(), OwnerCommitError::InvalidPlan),
         (
-            who(1),
-            2,
-            charm_command(),
-            OwnerCommitError::Owner(CarrierError::SupersededAttackerSession),
-        ),
-        (
-            who(1),
-            1,
+            current,
             CommandRef::new(
                 session(1),
                 super::super::CommandId::new(2).expect("different command"),
@@ -930,7 +971,7 @@ fn charm_native_frozen_proof_never_supplies_current_owner_or_command_authority()
             commit_exact_owner_charm_damage(
                 &mut carrier.current_owner_exact_commit(&continuity),
                 &frozen,
-                CharacterLease::new(character, lease).expect("lease"),
+                attacker,
                 command
             ),
             Err(refused)
@@ -957,16 +998,19 @@ fn charm_native_superseded_attacker_lease_after_primary_is_refused_without_hp_ch
     let frozen = OwnerCharmDamagePlan::prepare(&parent, charm_child(&primary_plan, 9))
         .expect("prepare")
         .expect("live");
+    // A slot of the command's session bound at generation 2, after the primary at generation 1.
+    // The creature's high-water mark still holds generation 1, so only the current lease shows
+    // the frozen tuple is stale.
+    let superseding = carrier
+        .admit_bound_test_attacker(&continuity, session(1), charm_lease(2))
+        .expect("slot bound to a superseding lease");
     let before = carrier.slots.clone();
     let hp = health(&carrier);
-    // The attacker's lease advanced to generation 2 after the primary at generation 1. The
-    // creature's high-water mark still holds generation 1, so only the current lease shows the
-    // frozen tuple is stale.
     assert_eq!(
         commit_exact_owner_charm_damage(
             &mut carrier.current_owner_exact_commit(&continuity),
             &frozen,
-            CharacterLease::new(who(1), 2).expect("superseding lease"),
+            superseding,
             charm_command(),
         ),
         Err(OwnerCommitError::Owner(

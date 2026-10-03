@@ -472,6 +472,8 @@ impl DurabilityRoot {
     /// reacquiring session authority; changed semantic reuse conflicts. A new occurrence is
     /// fenced like an XP award and validated against the stored unlocks and assignments and the
     /// earning facts, all read after the Character root is locked in the same transaction.
+    /// Runtime callers reach it only through a
+    /// [`RevisionSlot`](super::character_revision_sequencer::RevisionSlot) (CHAR-REV-SEQ-1).
     pub async fn commit_charm_command<F: CharmFacts>(
         &self,
         authority: &ReconciledCharacterAuthority<'_, '_>,

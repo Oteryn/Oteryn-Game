@@ -13,6 +13,7 @@ use crate::durability::character_proficiency::{
 use crate::durability::character_progression::{
     CharacterProgressionError as Error, CurrentCharacterGameplayFence,
 };
+use crate::durability::character_revision_sequencer::CharacterRevisionSequencer;
 use crate::durability::runtime_scope_assignment::{BootstrapSecret, NodeIncarnationProof};
 use crate::foundation::{ConnectionGeneration, GameSessionId, ScopeOwnershipGeneration};
 use fixture::{
@@ -1951,4 +1952,75 @@ mod retained_binding_integrity {
             Ok(())
         })
     }
+}
+
+/// CHAR-REV-SEQ-1: a proficiency change runs in the Character's revision slot. A write that
+/// bypassed the sequencer makes the next one fail closed with nothing written (the binding
+/// includes the revision, so it is not retried); the next request reloads the cursor.
+#[test]
+fn a_sequenced_proficiency_change_fails_closed_after_a_bypass_writer() -> TestResult {
+    run("prof_sequenced", true, async |a| {
+        let (root, node) = (&a.h.root, &a.h.node);
+        let sequencer = CharacterRevisionSequencer::new();
+        let mut slot = sequencer
+            .acquire(CharacterId::from_bytes(id(CHARACTER)).map_err(debug)?)
+            .await;
+        let definitions =
+            || -> Arc<dyn ProficiencyDefinitions> { Arc::new(Definitions::default()) };
+        // The caller's fence revision is replaced by the slot's cursor.
+        let outcome = slot
+            .commit_proficiency(
+                root,
+                a.authority,
+                node,
+                fence(1)?,
+                training(70, SWORD, 0, UNLOCK)?,
+                definitions(),
+                None,
+            )
+            .await
+            .map_err(debug)?;
+        let Outcome::Committed(receipt) = outcome else {
+            return Err(format!("unexpected outcome: {outcome:?}").into());
+        };
+        assert_eq!(receipt.committed_character_revision.get(), 2);
+
+        // r3 an axe award that bypassed the sequencer.
+        a.commit(2, training(71, AXE, 0, UNLOCK)?).await?;
+        let before = snapshot(a.h).await?;
+        let outcome = slot
+            .commit_proficiency(
+                root,
+                a.authority,
+                node,
+                fence(1)?,
+                training(72, SWORD, UNLOCK, UNLOCK + 10)?,
+                definitions(),
+                None,
+            )
+            .await;
+        assert!(
+            matches!(outcome, Err(Error::CharacterRevisionMismatch)),
+            "{outcome:?}"
+        );
+        assert_eq!(snapshot(a.h).await?, before, "no retry committed");
+
+        let outcome = slot
+            .commit_proficiency(
+                root,
+                a.authority,
+                node,
+                fence(1)?,
+                training(73, SWORD, UNLOCK, UNLOCK + 10)?,
+                definitions(),
+                None,
+            )
+            .await
+            .map_err(debug)?;
+        let Outcome::Committed(receipt) = outcome else {
+            return Err(format!("unexpected outcome: {outcome:?}").into());
+        };
+        assert_eq!(receipt.original_character_revision.get(), 3);
+        Ok(())
+    })
 }

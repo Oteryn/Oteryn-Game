@@ -6,7 +6,9 @@
 //! Character transaction, after its gameplay fence locked the Character root at
 //! `fence.expected_character_revision`. The source advances the root to the next revision with
 //! its one receipt in the same transaction, before or after this call; the database refuses the
-//! burn at commit otherwise. The burn plans over the gold, platinum and crystal coin stacks in
+//! burn at commit otherwise. The source runs in its Character's revision slot (CHAR-REV-SEQ-1), so the
+//! burn is sequenced with it; only `charm_state.rs` may call it (structural test in
+//! `character_revision_sequencer.rs`). The burn plans over the gold, platinum and crystal coin stacks in
 //! direct entries of the equipped main backpack (decision §4.2), writes its record, its BURN
 //! lines, the item changes, the whole-burn entry removals, the change MINT (at most a platinum
 //! and a gold stack, each a fresh item in a new entry after the burn lines) and its one audit

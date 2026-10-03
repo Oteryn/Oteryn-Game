@@ -40,6 +40,7 @@ Run the checks selected by changed paths and preserve `game-gate`, repository pr
 - **Review:** request review on the final frozen head with every known fix in, not on intermediate heads. Answer all findings of a review round in one push; later non-blocking findings go to the next batch. This never removes a review or re-review that the bound review policy requires, including after a materially risk-bearing repair.
 - **CI:** run the local checks for every changed path before pushing, and fix all failures of a run in one push.
 - **Quiet sessions:** stay reactive to events but keep the session small: handle no-op events (subscription or enqueue notices, cancelled or superseded runs) without a reply, keep state in task records and `STATE` rather than chat, and do not narrate progress.
+- **Worker silence:** workers and lane leads report to the control plane only with `FREEZE <sha>`, `BLOCKER`/`QUESTION` with lettered options and a recommendation, or `done`. End every other turn with at most one line, or `.` when nothing changed: no summaries, acknowledgements, progress narration or push notifications. This does not apply to the control plane, the architect or integrators when they answer the owner.
 - **Task records:** a task that ends with one PR moves its record to `docs/agents/tasks/archive/` in that PR's final authoring commit (`docs/agents/tasks/archive/README.md`). The record reaches `main` only if the PR merges, so no separate archive PR is needed.
 
 ## Owner questions in batches

@@ -402,10 +402,13 @@ items are minted unlit.
 - **Fence and locks for tile items.** A deadline item has no holder, so its writes take no
   `character_root` lock. An expiry (or any tile-owner write of a deadline item) runs under the
   tile owner's fence instead: the channel's runtime-scope ownership generation (DUR-03 §32, the
-  InstanceRuntime scope included) or the house scope's fence. Lock order: that fence, the item's
-  location row, then its timed row. A drop and a pickup are moves between a holder and a tile, so
+  InstanceRuntime scope included) or the house scope's fence. Lock order (TIMED-PROF-0C, review
+  finding 4174228270): that fence, the item's lifecycle row (`game_item_instances`), its location
+  row, then its timed row, matching ITEM-MOVE-WIRE-1 §7.2 and DUR-03's Ground-move amendment, which
+  lock item rows before Ground rows. A drop and a pickup are moves between a holder and a tile, so
   they take both: the holder's fences and `character_root`, then the tile owner's fence, then the
-  location rows and the timed row, the existing ITEM-MOVE-WIRE-1 order with the timed row last.
+  item rows, the location rows and the timed row, the existing ITEM-MOVE-WIRE-1 order with the timed
+  row last. Test: an expiry and a Ground move of the same item, run concurrently, never deadlock.
   A stale tile fence writes nothing; the new owner reloads the deadlines from the index.
 
 ### 10.4 Going out (D360)

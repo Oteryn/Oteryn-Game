@@ -20,6 +20,9 @@ None of these is modelled here. `build`, `validate` and the tests write only und
 | `proficiency_authoring.py content` | Writes (`--check` verifies) `content/proficiencies/index.json` (`OTERYN_FAMILY_INDEX/v1`) and three shards of 150 (`OTERYN_PROFICIENCY_SHARD/v1`, one `definition` per record, identity `{key, revision}`), and registers `Proficiency` in `content/project.json` (`migrated_families`), `content/manifest.json` (`families`, `managed_files`) and `content/content.lock.json` (`family_counts`). Threshold tables stay in the catalogue: they are progression rules and go to `rulesets/progression/weapon-proficiency/` with PROF-2. It also writes `content/proficiencies/bindings.json` (PROF-CONTENT-1c, below). |
 | `test_proficiency_authoring.py` | No-network tests: perk encoding and its rejections, the committed build, one negative case per rule. |
 | `samples/proficiencies-candidate.json` | The candidate catalogue: 443 definitions, 3,671 perks, all 33 kinds. One definition per line. |
+| `shaping.schema.json` | The `ProficiencyShaping` catalogue (`OTERYN_PROFICIENCY_SHAPING_CATALOGUE/v1`, PROFICIENCY-1B §3): per Proficiency definition, the modification pool (at most 64 entries, each a perk identity without values, a draw weight and its values at ranks 1-10) and the dust and orb costs. Every value is a cell, `UNKNOWN` or `KNOWN` with an evidence class (`CIPSOFT_OFFICIAL`, `OWNER_VERIFIED_TIBIAPAL`, `OWNER_VERIFIED_TIBIATOOLS`, `TIBIAWIKI_EN`). OTS sources are not a class, and no cost can be gold. |
+| `shaping_authoring.py` | `validate` (default: the sample) runs the shaping schema and its semantic rules: the key shapes its own Proficiency at the catalogue's revision; pool identities are perks of the Proficiency schema without value fields, and distinct; a known rank's values are exactly its kind's value fields and, joined to the identity, form a valid perk with the catalogue's sign rules. `admitted(shaping, operation, ...)` is PROFICIENCY-1B §3.3: an operation is admitted only when every cell it reads is `KNOWN` (`RESHAPE_OFFER` also needs every entry's value at the row's rank; `RESHAPE_CHOOSE` follows the pending offer). Runtime preconditions (`POOL_TOO_SMALL`, `RANK_MAX`) stay in the operation checks and are never reported as `NOT_ADMITTED`. |
+| `samples/shaping-candidate.json` | One shaping definition (p6): `MODIFY` costs 250 and 1,000 dust from English TibiaWiki (PROFICIENCY-1 §2); every other cell `UNKNOWN`, so `MODIFY` is still not admitted (no pool). Not content: PROF-SHAPE-CONTENT-1 writes no `content/` family until evidence fills the pools. |
 
 ## Sources
 
@@ -55,8 +58,9 @@ None of these is modelled here. `build`, `validate` and the tests write only und
   to the weapon's row in `content/proficiencies/bindings.json` (`threshold_class`). CI checks that the
   written class matches the rule. Missing Item facts give `unknown`, and an `unknown` weapon gets no proficiency. An
   exception needs an explicit override with a cited source. PROF-CONTENT-1 implements this.
-- **Not modelled:** shaping (reshape, rank 0-10, refine, Lunar Ascension Orb) and its costs, deferred
-  to PROFICIENCY-1; the point table; shared progress across weapons.
+- **Not modelled here:** the point table; shared progress across weapons. Shaping (modify, rank
+  1-10, reshape, clear, Lunar Ascension Orb) and its costs have their own schema, `shaping.schema.json`
+  (PROFICIENCY-1B, PROF-SHAPE-CONTENT-1).
 
 ## Canary and Crystal comparison (2026-09-30, `OtsHypothesisOnly`)
 
@@ -123,8 +127,8 @@ WorldProject v2 (PROF-CONTENT-1b). `content/world` stays unmodified.
 ## Content population
 
 `tools/content-migration/world_project_v2_to_tree.py` registers the committed Proficiency family (no legacy
-source), as it does Charm, so `content --check` and the generator agree byte for byte. Nothing loads
-`content/proficiencies/` at runtime; `runtime_source` stays `legacy_until_separately_qualified`.
+source), as it does Charm, so `content --check` and the generator agree byte for byte. The native data-only importer now reads the committed Proficiency shards and bindings.
+Gameplay activation remains separate; `runtime_source` stays `legacy_until_separately_qualified`.
 
 ```sh
 pip install -r requirements.txt
@@ -133,3 +137,21 @@ python proficiency_authoring.py validate samples/proficiencies-candidate.json
 python proficiency_authoring.py content --check
 python test_proficiency_authoring.py
 ```
+
+## Native server data import
+
+The server API `import_committed_weapon_proficiency_data()` imports 443 definitions, 3671
+source-ordered perks, 664 admitted weapon bindings and the complete accepted progression ruleset
+(including all three threshold tables, source/revision, kill-credit and points data).
+It retains definition revisions and source provenance and converts decimals to exact ratios.
+Unresolved revisions, duplicate definitions/weapons, malformed perk shapes and ruleset drift
+refuse the complete import. Ink Sword and Snowball (no admitted Item identity yet) stay unbound.
+
+Export the actual server import as JSON:
+
+```sh
+cargo run --locked -p oteryn-game-server --bin oteryn-game-import-proficiencies > weapon-proficiency.server.json
+```
+
+This imports static data only. Character progress, perk selection/execution, wire, activation
+and production deployment are separate. No database migration or live-server mutation runs.

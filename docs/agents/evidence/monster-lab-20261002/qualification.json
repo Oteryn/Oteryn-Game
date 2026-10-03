@@ -1,0 +1,70 @@
+{
+  "scope": "headless_native_component_arena; implementation-source qualification, not remote exact-head CI",
+  "baseline_pr": 1533,
+  "baseline_head": "e1d75be9eb7ced159650b52dd4130ecd77b23e3c",
+  "original_backup_paths_preserved": 105,
+  "tested": 1660,
+  "passed": 1660,
+  "blocked": 0,
+  "training_variants": 48,
+  "training_stats_and_loot_preserved": true,
+  "original_counts": {
+    "prepared": 1660,
+    "native_admitted": 1613,
+    "native_held": 47,
+    "mitigation_unknown": 619,
+    "bestiary_absent": 858,
+    "loot_entries": 16927,
+    "holds": {
+      "encounter": 32,
+      "initial_health": 0,
+      "reference_loot_contract": 0,
+      "unregistered_items": 1,
+      "unresolved_reference": 14
+    },
+    "encounter_definitions_held": 22
+  },
+  "batch_ticks": 30,
+  "cached_native_batch_seconds": 54.46,
+  "all_profile_health_checked": true,
+  "live_server_started": false,
+  "spell_effect_execution_tested": false,
+  "summon_installation_tested": false,
+  "loot_drop_execution_tested": false,
+  "respawn_tested": false,
+  "checks": {
+    "python": "40 PASS",
+    "governance_tests": "36 PASS",
+    "governance_validator": "PASS",
+    "rust_lib": "1300 PASS; 2 ignored",
+    "focused_native_tests": "7 PASS including full 1660 batch",
+    "rust_fmt": "PASS",
+    "all_target_clippy": "PASS; existing vendor tokio documentation warning",
+    "independent_review": "PASS; no open actionable findings",
+    "remote_ci": "PENDING draft publication; not substituted by local source results"
+  },
+  "source_sha256": {
+    "apps/game-server/src/foundation/runtime_actor_carrier.rs": "e5061215016e98bcd33790b720978f4e417e91213bb5f10024ca1675cdb9a44c",
+    "apps/game-server/src/lib.rs": "62f9266f3b8fcb20c907cc7d603385792721f2e9a44e933ff3bf7bf25dc99474",
+    "apps/game-server/src/monster_lab.rs": "cf1dbbc07319021de27a2f0194ce4e076f29e8c7e45b20a953786714370ace0a",
+    "docs/agents/tasks/archive/OTV2-20261002-monster-lab-arena.md": "821cecb11caf8c8f2765a572b918929f5ad841bc2d8f219373216d3df0a8b576",
+    "tools/monster-lab/README.md": "a932d025e52bedff855592204ed66b8e47f602c0a6dc45f1eb7a1281b3eee513",
+    "tools/monster-lab/arena_map.py": "0d623436dcc166bfbaef1a7774d5f8dd320eb49f0d9ae4c0f96ed9139e170858",
+    "tools/monster-lab/config.example.json": "48f4fee79ce9c04705d5222622708e1cf0d028f8be05711e6ea6fc907b151395",
+    "tools/monster-lab/lab.py": "527fca3e2edd82bc243867bee2297763f62477aaba5224625a7357d8d56857e4",
+    "tools/monster-lab/run.py": "353bf88222c7474bba591e128d813d684114e4622d5290da8d34dbe8acb8c5ed",
+    "tools/monster-lab/test_arena_map.py": "b18bb3673870453d89316b416ab555f0040ba3244095714f8633f6a0db4a3f29",
+    "tools/monster-lab/test_lab.py": "ea85accf9e03f0201dcb97b18154070b2f2563fc9244dd85cb18135a8b1fa6df",
+    "tools/monster-lab/test_run.py": "c75dd3966da51592d456a1e4dccdee154a8694e4fc22fd015b00d8faa66a95c1",
+    "tools/monster-lab/test_training_profiles.py": "44367b1ac4f2cb65a51f1da16efffd2de9d3725949f7c3d96221f12b7059749e",
+    "tools/monster-lab/training_profiles.py": "f6d5a0dab03618b8d243a2b33e05f4ef4dfdcef63e6682205e850fb4bd56d772"
+  },
+  "receipt_sha256": {
+    "runs/all-training/native-arena-result.json": "b8f9f451d01dcbd33693a9de7a019754e92a7c0415c62373b42a834dfa3d0241",
+    "runs/all-training/arena-input.json": "2e1e06a5b1908cbe4069a2236f9cad70638e6335566124459f69f8445703d113",
+    "runs/all-training/isolated-lab-stage.json": "f3bf5ef39eac677321ac90c73998fe3acaa6f2c87d2831adc048504fb5e69889",
+    "runs/all-training/catalog-status.json": "53f5c7da6424e2b8b69bc722fb2f91cb94f75bb8fdf75b04a4b54336810075a7",
+    "runs/all-training/training-bundles/training-report.json": "6e92146f32bcd24bdad8c55766845b0685e1a479215ef92c70645314cf054b26",
+    "reports/independent-review.json": "4f06db17bccb260e50e88d19809292768390c0c0b55754a9ce10394fa89ecef2"
+  }
+}

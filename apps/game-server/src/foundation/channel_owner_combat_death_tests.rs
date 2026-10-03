@@ -18,22 +18,20 @@ fn typed_commit(
     resolved: &ResolvedExactActor,
     plan: &EffectPlan,
 ) -> Result<OwnerDamageResult, OwnerCommitError> {
+    typed_commit_at(owner, resolved, plan, 1)
+}
+
+/// The typed attacker: its session and its Character, at lease generation 1.
+fn typed_attacker() -> (GameSessionId, CharacterLease) {
     let mut session = [0_u8; 16];
     session[6] = 0x70;
     session[8] = 0x80;
     session[15] = 1;
     let mut character = session;
     character[15] = 2;
-    commit_exact_owner_damage(
-        owner,
-        resolved,
-        plan,
-        CharacterId::decode(&character).expect("attacker"),
-        1,
-        CommandRef::new(
-            GameSessionId::decode(&session).expect("session"),
-            super::super::CommandId::new(1).expect("command"),
-        ),
+    (
+        GameSessionId::decode(&session).expect("session"),
+        CharacterLease::new(CharacterId::decode(&character).expect("attacker"), 1).expect("lease"),
     )
 }
 
@@ -75,13 +73,18 @@ fn fixture(
     positioned: bool,
 ) -> (NamespaceContinuityGuard, ChannelActorCarrier, ExactActorRef) {
     let mut owner = NamespaceContinuityGuard::from_pre_production_grant(grant(seed, 1));
-    let mut carrier = ChannelActorCarrier::bootstrap_pre_production(&mut owner, 2)
-        .expect("two finite carrier slots");
+    let mut carrier = ChannelActorCarrier::bootstrap_pre_production(&mut owner, 3)
+        .expect("three finite carrier slots");
     let actor = ExactActorRef(
         carrier
             .admit_creature(&owner, ActorState(1), "target:one", 20)
             .expect("fixed creature"),
     );
+    // A2: the typed bridge reads its attacker from a bound player slot.
+    let (session, lease) = typed_attacker();
+    carrier
+        .admit_bound_test_attacker(&owner, session, lease)
+        .expect("bound attacker");
     if positioned {
         carrier
             .initialize_position(&owner, actor.0, position_context(&owner), FIXTURE_POSITION)
@@ -927,20 +930,18 @@ fn typed_commit_at(
     plan: &EffectPlan,
     sequence: u64,
 ) -> Result<OwnerDamageResult, OwnerCommitError> {
-    let mut session = [0_u8; 16];
-    session[6] = 0x70;
-    session[8] = 0x80;
-    session[15] = 1;
-    let mut character = session;
-    character[15] = 2;
+    let (session, _) = typed_attacker();
+    let attacker = owner
+        .carrier
+        .test_player_actor(session)
+        .expect("bound attacker slot");
     commit_exact_owner_damage(
         owner,
         resolved,
         plan,
-        CharacterId::decode(&character).expect("attacker"),
-        1,
+        attacker,
         CommandRef::new(
-            GameSessionId::decode(&session).expect("session"),
+            session,
             super::super::CommandId::new(sequence).expect("command"),
         ),
     )
