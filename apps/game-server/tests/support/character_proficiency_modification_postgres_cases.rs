@@ -767,7 +767,24 @@ fn a_moved_revision_set_is_terminal_and_outside_the_chain() -> TestResult {
                 .await?,
             2
         );
-        a.verify().await
+        a.verify().await?;
+        // verify_character_integrity recomputes a standalone terminal's binding from its own
+        // fields: one whose slot disagrees with its binding fails.
+        let mut connection = a.h.pool.acquire().await?;
+        for sql in [
+            "SET session_replication_role = replica",
+            "UPDATE game_character_proficiency_modification_terminals SET slot = 2 \
+             WHERE operation = 'MODIFY'",
+            "SET session_replication_role = DEFAULT",
+        ] {
+            sqlx::query(sql).execute(&mut *connection).await?;
+        }
+        drop(connection);
+        assert!(
+            a.verify().await.is_err(),
+            "a terminal unlike its binding verifies"
+        );
+        Ok(())
     })
 }
 

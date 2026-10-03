@@ -212,6 +212,15 @@ CREATE TABLE game_character_proficiency_modification_terminals (
         CHECK (bound_shaping_revision ~ '^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$'),
     bound_simulation_revision TEXT NOT NULL
         CHECK (bound_simulation_revision ~ '^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$'),
+    -- The rest of the binding (§6.1), so verify_character_integrity recomputes it.
+    expected_track_revision NUMERIC(20,0) NOT NULL
+        CHECK (expected_track_revision BETWEEN 1 AND 18446744073709551615),
+    level SMALLINT CHECK (level BETWEEN 0 AND 6),
+    -- 0..2 chooses an offered entry; 3 declines.
+    choice SMALLINT CHECK (choice BETWEEN 0 AND 3),
+    CONSTRAINT game_character_proficiency_modification_terminal_payload CHECK (
+        (operation = 'MODIFY') = (level IS NOT NULL)
+        AND (operation = 'RESHAPE_CHOOSE') = (choice IS NOT NULL)),
     refusal TEXT NOT NULL CHECK (refusal = 'REVISION_CHANGED'),
     recorded_at BIGINT NOT NULL CHECK (recorded_at >= 0),
     PRIMARY KEY (proficiency_occurrence_id, character_id),

@@ -967,8 +967,10 @@ async fn insert_terminal(
     let inserted = sqlx::query(
         "INSERT INTO game_character_proficiency_modification_terminals(proficiency_occurrence_id,\
          character_id,command_binding,item_key,slot,operation,bound_definition_revision,\
-         bound_shaping_revision,bound_simulation_revision,refusal,recorded_at) \
-         VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3,$4,$5,$6,$7,$8,$9,'REVISION_CHANGED',\
+         bound_shaping_revision,bound_simulation_revision,expected_track_revision,level,choice,\
+         refusal,recorded_at) \
+         VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3,$4,$5,$6,$7,$8,$9,\
+         $10::text::numeric(20,0),$11,$12,'REVISION_CHANGED',\
          floor(extract(epoch FROM statement_timestamp())*1000)::bigint)",
     )
     .bind(command.occurrence().as_bytes().as_slice())
@@ -980,10 +982,85 @@ async fn insert_terminal(
     .bind(&command.bound().definition_revision)
     .bind(&command.bound().shaping_revision)
     .bind(&command.bound().simulation_revision)
+    .bind(command.expected_track_revision().get().to_string())
+    .bind(match command.kind() {
+        ProficiencyModificationCommandKind::Modify { level } => Some(i16::from(level)),
+        _ => None,
+    })
+    .bind(match command.kind() {
+        ProficiencyModificationCommandKind::ReshapeChoose { choice } => {
+            Some(i16::from(choice.unwrap_or(3)))
+        }
+        _ => None,
+    })
     .execute(&mut **tx)
     .await?;
     if inserted.rows_affected() != 1 {
         return Err(DurabilityError::InvalidStoredState);
+    }
+    Ok(())
+}
+
+/// §9: every terminal record of one Character recomputes its stored binding from its own
+/// persisted command fields, so a terminal whose binding disagrees with them fails.
+async fn verify_terminals(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    character: CharacterId,
+) -> StoredResult<()> {
+    let rows = sqlx::query(
+        "SELECT proficiency_occurrence_id::text AS occurrence, command_binding, item_key, slot, \
+         operation, bound_definition_revision, bound_shaping_revision, bound_simulation_revision, \
+         expected_track_revision::text AS expected, level, choice \
+         FROM game_character_proficiency_modification_terminals \
+         WHERE character_id=encode($1,'hex')::uuid",
+    )
+    .bind(character.as_bytes().as_slice())
+    .fetch_all(&mut **tx)
+    .await?;
+    let invalid = || DurabilityError::InvalidStoredState;
+    for row in rows {
+        let level: Option<i16> = row.try_get("level")?;
+        let choice: Option<i16> = row.try_get("choice")?;
+        let kind = match (row.try_get::<&str, _>("operation")?, level, choice) {
+            ("MODIFY", Some(level), None) => ProficiencyModificationCommandKind::Modify {
+                level: small(level)?,
+            },
+            ("RANK_UP", None, None) => ProficiencyModificationCommandKind::RankUp,
+            ("ORB_RANK", None, None) => ProficiencyModificationCommandKind::OrbRank,
+            ("RESHAPE_OFFER", None, None) => ProficiencyModificationCommandKind::ReshapeOffer,
+            ("RESHAPE_CHOOSE", None, Some(choice)) => {
+                ProficiencyModificationCommandKind::ReshapeChoose {
+                    choice: Some(small(choice)?).filter(|choice| *choice < 3),
+                }
+            }
+            ("CLEAR", None, None) => ProficiencyModificationCommandKind::Clear,
+            _ => return Err(invalid()),
+        };
+        let expected = row
+            .try_get::<&str, _>("expected")?
+            .parse::<u64>()
+            .ok()
+            .and_then(|value| CharacterRevision::new(value).ok())
+            .ok_or_else(invalid)?;
+        let command = ProficiencyModificationCommand::new(
+            ProficiencyOccurrence::from_bytes(uuid_text(row.try_get("occurrence")?)?)
+                .map_err(|_| invalid())?,
+            row.try_get("item_key")?,
+            small(row.try_get("slot")?)?,
+            kind,
+            expected,
+            ProficiencyModificationBoundRevisions {
+                definition_revision: row.try_get("bound_definition_revision")?,
+                shaping_revision: row.try_get("bound_shaping_revision")?,
+                simulation_revision: row.try_get("bound_simulation_revision")?,
+            },
+        )
+        .map_err(|_| invalid())?;
+        if command.command_binding(character).as_slice()
+            != row.try_get::<Vec<u8>, _>("command_binding")?.as_slice()
+        {
+            return Err(invalid());
+        }
     }
     Ok(())
 }
@@ -1050,8 +1127,8 @@ pub(in crate::durability) async fn clear_migrated_modifications(
 /// §9 retained verification of one Character's modification rows, lines and terminal records:
 /// every `perk_modification` receipt has one modification line of its one track line's track;
 /// each (track, slot) chain starts cleared and follows its previous line; each row equals its
-/// latest line; costs are spent exactly; each binding recomputes; and no terminal record shares
-/// an occurrence with a receipt. Lines carry their own costs and draws, so no content is read.
+/// latest line; costs are spent exactly; each binding, terminal records' included, recomputes;
+/// and no terminal record shares an occurrence with a receipt. Lines carry their own costs and draws, so no content is read.
 pub(in crate::durability) async fn verify_modification_history(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     character: CharacterId,
@@ -1082,6 +1159,7 @@ pub(in crate::durability) async fn verify_modification_history(
     if invalid.is_some() {
         return Err(DurabilityError::InvalidStoredState);
     }
+    verify_terminals(tx, character).await?;
     let lines = sqlx::query(concat!(
         "SELECT ",
         line_columns!(),
