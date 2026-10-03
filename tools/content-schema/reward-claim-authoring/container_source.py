@@ -7,7 +7,7 @@ from pathlib import Path
 
 LOCAL = Path(__file__).resolve().parent
 M_SHA = '503bba9e9a6a96f807c40c519bd3c83ed40a9ded'
-INPUT_SHA256 = '75090228200e2c12b2b5599d0ea94849d1e40d4a3ab8a49707958085e1a8ba1c'
+INPUT_SHA256 = 'ba71bc2e619f46e2b45d25643c2f8380d39f925e3574411b4d3a3769ccac1776'
 PACKET_BLOB = '5631547afff0db9ca9f3e400d455f994aebda4df'
 
 

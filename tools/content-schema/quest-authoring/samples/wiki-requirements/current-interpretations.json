@@ -1,7 +1,7 @@
 {
   "schema": "OTERYN_WIKI_REQUIREMENT_INTERPRETATIONS/v1",
   "scope": "SOURCE syntax only; historical holds preserved",
-  "historical_specifications_sha256": "a46d85c8598548954959a68bade5f0a5e229aef3ce170d5a91fdff980e7a32a9",
+  "historical_specifications_sha256": "8f0f9b5a86d0d07542172d59019860c21a385c7b7a15e7abc671b0166f9bd9fd",
   "raw_body_rechecked": false,
   "proof_mode": "AUTHORED_FACTS_AND_RECORDED_OFFLINE_BODY_WITNESSES",
   "runtime_readiness": "UNKNOWN",

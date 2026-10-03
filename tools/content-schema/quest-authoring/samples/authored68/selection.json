@@ -2,7 +2,7 @@
   "schema": "OTERYN_ROUND8_SELECTION/v1",
   "base_head": "40aa7c21428e9a8248e490b0e4b7aa06af27fdf1",
   "rollout_path": "tools/content-schema/quest-authoring/samples/rollout/quest-rollout.json",
-  "rollout_sha256": "5d04ee3f8baebbf90c693b82ef916878171c52c4394aeed401478dbeeb002d62",
+  "rollout_sha256": "d787ff7ab405db1a5ed63ee6261e15064094ad4b1a7687def7b0ccca7b83a346",
   "selection_count": 68,
   "selection_rule": "binding_scope == unbound; wiki_title lexicographical order",
   "titles": [

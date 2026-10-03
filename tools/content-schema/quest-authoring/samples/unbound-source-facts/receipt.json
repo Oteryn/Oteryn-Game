@@ -1,7 +1,7 @@
 {
   "proof_mode": "RECORDED_LOCAL_PINNED_WITNESSES",
   "parent_specifications_sha256": "7f2ae974fb82b8c7e5bff0b75e74c8e7d52b5e25a0be8af0c9763fd708d0fc59",
-  "parent_specifications_file_sha256": "a46d85c8598548954959a68bade5f0a5e229aef3ce170d5a91fdff980e7a32a9",
+  "parent_specifications_file_sha256": "8f0f9b5a86d0d07542172d59019860c21a385c7b7a15e7abc671b0166f9bd9fd",
   "selection_sha256": "6c778dd9ff1a33702bb5152a21b48bf9e511dacce2dd40ea4f4b4bc2b7fcb5c9",
   "authored_sha256": "712c9db41897229e747d690a5b235f9dba6aeddb1be7f80a5f0b454291f39a95",
   "schema_sha256": "c235b99d421645b355f8df43bbe2261b86cc98bc5a12584cf8db2cb569e148e8",

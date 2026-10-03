@@ -2612,7 +2612,7 @@
           "path": "apps/game-server/src/combat/charm_effects.rs",
           "repository": "Oteryn/Oteryn-Game",
           "revision": "ca991aa1fb12fb656ea3d39f5736d9745769027e",
-          "sha256": "b6306e520ea654e2be9117a1475f43d427ff77c81ea21a3a426eb55e9e45151a",
+          "sha256": "242e209ca6d6fb00faa26e21830f2b85678440d564bda5fafdfa16eb26fba930",
           "url": "https://github.com/Oteryn/Oteryn-Game/blob/ca991aa1fb12fb656ea3d39f5736d9745769027e/apps/game-server/src/combat/charm_effects.rs#L60-L66"
         },
         {
@@ -2627,7 +2627,7 @@
           "path": "apps/game-server/src/combat/charm_effects.rs",
           "repository": "Oteryn/Oteryn-Game",
           "revision": "ca991aa1fb12fb656ea3d39f5736d9745769027e",
-          "sha256": "b6306e520ea654e2be9117a1475f43d427ff77c81ea21a3a426eb55e9e45151a",
+          "sha256": "242e209ca6d6fb00faa26e21830f2b85678440d564bda5fafdfa16eb26fba930",
           "url": "https://github.com/Oteryn/Oteryn-Game/blob/ca991aa1fb12fb656ea3d39f5736d9745769027e/apps/game-server/src/combat/charm_effects.rs#L829-L874"
         },
         {
@@ -2642,7 +2642,7 @@
           "path": "apps/game-server/src/combat/charm_effects.rs",
           "repository": "Oteryn/Oteryn-Game",
           "revision": "ca991aa1fb12fb656ea3d39f5736d9745769027e",
-          "sha256": "b6306e520ea654e2be9117a1475f43d427ff77c81ea21a3a426eb55e9e45151a",
+          "sha256": "242e209ca6d6fb00faa26e21830f2b85678440d564bda5fafdfa16eb26fba930",
           "url": "https://github.com/Oteryn/Oteryn-Game/blob/ca991aa1fb12fb656ea3d39f5736d9745769027e/apps/game-server/src/combat/charm_effects.rs#L567-L573"
         },
         {

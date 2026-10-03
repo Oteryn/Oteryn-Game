@@ -1,6 +1,6 @@
 {
   "schema": "OTERYN_WIKI_PUBLIC_ACCESS_RECEIPT/v1",
-  "selection_sha256": "b0b84b60cba62d8a73f23b852c0f87f6b984b7c381c0ffccd20cc016e1404316",
+  "selection_sha256": "51f0dc0edb5936b6cbd67a756e94475e17b418314ef40898232d96b767179495",
   "base_head": "40aa7c21428e9a8248e490b0e4b7aa06af27fdf1",
   "accessed_at": "2026-10-02T11:12:34Z",
   "scope": "68 selected quests; exact historical public main-slot revisions; no current gameplay or execution verification",

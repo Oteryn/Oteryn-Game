@@ -7172,7 +7172,7 @@
               "materializable": false,
               "stack_class": "Unknown",
               "path": "content/items/definitions/items-26000-26499.json",
-              "sha256": "9197d0e8cad669c751276ad05f7b6307b2f2bd3693cb2d2095380612a4acb479"
+              "sha256": "31e92db31d637766d7cfeb5b98190c44bbd44d076d14f226decb028974d50f27"
             }
           ]
         },
@@ -9751,7 +9751,7 @@
               "materializable": false,
               "stack_class": "Unknown",
               "path": "content/items/definitions/items-00500-00999.json",
-              "sha256": "e333ecff048c28a733bea4e82612428628d000b1f0796d7d899fd182c12006b4"
+              "sha256": "e45908daecf7649dde266469012bd888026fedc8170a9939f218f3e25f18e31d"
             },
             {
               "identity": {
@@ -9762,7 +9762,7 @@
               "materializable": false,
               "stack_class": "Unknown",
               "path": "content/items/definitions/items-00500-00999.json",
-              "sha256": "e333ecff048c28a733bea4e82612428628d000b1f0796d7d899fd182c12006b4"
+              "sha256": "e45908daecf7649dde266469012bd888026fedc8170a9939f218f3e25f18e31d"
             },
             {
               "identity": {
@@ -9773,7 +9773,7 @@
               "materializable": false,
               "stack_class": "Unknown",
               "path": "content/items/definitions/items-00500-00999.json",
-              "sha256": "e333ecff048c28a733bea4e82612428628d000b1f0796d7d899fd182c12006b4"
+              "sha256": "e45908daecf7649dde266469012bd888026fedc8170a9939f218f3e25f18e31d"
             },
             {
               "identity": {
@@ -9784,7 +9784,7 @@
               "materializable": false,
               "stack_class": "Unknown",
               "path": "content/items/definitions/items-00500-00999.json",
-              "sha256": "e333ecff048c28a733bea4e82612428628d000b1f0796d7d899fd182c12006b4"
+              "sha256": "e45908daecf7649dde266469012bd888026fedc8170a9939f218f3e25f18e31d"
             },
             {
               "identity": {
@@ -9795,7 +9795,7 @@
               "materializable": false,
               "stack_class": "Unknown",
               "path": "content/items/definitions/items-00500-00999.json",
-              "sha256": "e333ecff048c28a733bea4e82612428628d000b1f0796d7d899fd182c12006b4"
+              "sha256": "e45908daecf7649dde266469012bd888026fedc8170a9939f218f3e25f18e31d"
             },
             {
               "identity": {
@@ -10851,7 +10851,7 @@
               "materializable": false,
               "stack_class": "Unknown",
               "path": "content/items/definitions/items-23500-23999.json",
-              "sha256": "d5b5d900deeb220f19d16a2a500f814fbf38f0870fb832cd430d3fd7d078a9c5"
+              "sha256": "c2b69b31f38cbe3d72123c5713a0caca10df34ac6d218bae16b132887a4f0839"
             }
           ]
         },
@@ -10869,7 +10869,7 @@
               "materializable": false,
               "stack_class": "Unknown",
               "path": "content/items/definitions/items-24000-24499.json",
-              "sha256": "61b396e97977f67862a92777d0548baf6c5577a295ce83d0883b53392c4ee4f0"
+              "sha256": "2df83768481442ee16614bc2bed80f5a380d3dd7f98441e5f9921011b174ba0b"
             }
           ]
         },
@@ -10935,7 +10935,7 @@
               "materializable": false,
               "stack_class": "Unknown",
               "path": "content/items/definitions/items-24000-24499.json",
-              "sha256": "61b396e97977f67862a92777d0548baf6c5577a295ce83d0883b53392c4ee4f0"
+              "sha256": "2df83768481442ee16614bc2bed80f5a380d3dd7f98441e5f9921011b174ba0b"
             },
             {
               "identity": {
@@ -10946,7 +10946,7 @@
               "materializable": false,
               "stack_class": "Unknown",
               "path": "content/items/definitions/items-24000-24499.json",
-              "sha256": "61b396e97977f67862a92777d0548baf6c5577a295ce83d0883b53392c4ee4f0"
+              "sha256": "2df83768481442ee16614bc2bed80f5a380d3dd7f98441e5f9921011b174ba0b"
             }
           ]
         },
@@ -11212,7 +11212,7 @@
     "revision": "503bba9e9a6a96f807c40c519bd3c83ed40a9ded",
     "access_method": "normal_github_capture_local_read",
     "input_sha256": {
-      "tools/content-schema/quest-authoring/samples/wiki-enrichment/wiki-only-migration-specs.json": "7e9df48380034b165959f7861d9c3318a655a412bc920cbc1a1ff770008ef4ac",
+      "tools/content-schema/quest-authoring/samples/wiki-enrichment/wiki-only-migration-specs.json": "566c9f9bb71bcba154fc804a4cf613e545d69f4c089bcbe263343aa7a0449c25",
       "tools/content-schema/quest-authoring/samples/catalogue/catalogue.json": "ee046e04182b2f3f15b60168df40dba8c3070b8f20ab7747983e0987c77ba9a6",
       "docs/agents/evidence/OTV2-20261001-quest-reward-item-admission.json": "3974a9e1ef9062fa2c75e67cd95b80c62d829cba9d19c280861752313f1b5754"
     }
