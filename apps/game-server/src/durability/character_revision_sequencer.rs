@@ -35,6 +35,10 @@ use super::character_death::{CharacterDeathOutcome, CharacterDeathRequest};
 use super::character_proficiency::{
     ProficiencyChangeRequest, ProficiencyCommitOutcome, ProficiencyDefinitions,
 };
+use super::character_proficiency_modification::{
+    ProficiencyModificationCommand, ProficiencyModificationContext, ProficiencyModificationOutcome,
+    ProficiencyShapingSource,
+};
 use super::character_progression::{
     CharacterProgressionError, CurrentCharacterGameplayFence, ExperienceAwardRequest,
     ExperienceCommitOutcome,
@@ -337,6 +341,45 @@ impl RevisionSlot {
         .await
     }
 
+    /// One perk modification at the cursor (PROFICIENCY-1B §6.4). Its binding excludes the
+    /// CharacterRevision, so a lost race reloads the cursor and retries once under the same
+    /// occurrence and draw; a later duplicate finds that receipt and never pays twice.
+    #[allow(
+        clippy::too_many_arguments,
+        dead_code,
+        reason = "the modification writer's own arguments; standalone durability suites path-load \
+                  this module without modification cases"
+    )]
+    pub async fn commit_proficiency_modification(
+        &mut self,
+        root: &DurabilityRoot,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        command: ProficiencyModificationCommand,
+        context: ProficiencyModificationContext,
+        definitions: std::sync::Arc<dyn ProficiencyDefinitions>,
+        shaping: std::sync::Arc<dyn ProficiencyShapingSource>,
+    ) -> Result<ProficiencyModificationOutcome, CharacterProgressionError> {
+        self.sequenced(
+            root_revision(root, authority),
+            fence,
+            Expect::Cursor(OnMismatch::RetryOnce),
+            |fence| {
+                root.commit_character_proficiency_modification(
+                    authority,
+                    node,
+                    fence,
+                    command.clone(),
+                    context,
+                    std::sync::Arc::clone(&definitions),
+                    std::sync::Arc::clone(&shaping),
+                )
+            },
+        )
+        .await
+    }
+
     async fn sequenced<T, E, L, LFut, W, Fut>(
         &mut self,
         mut load: L,
@@ -486,6 +529,17 @@ impl SequencedOutcome for QuestTransitionOutcome {
                 Some(receipt.committed_character_revision)
             }
             Self::Refused(_) | Self::ObligationClosed => None,
+        }
+    }
+}
+
+impl SequencedOutcome for ProficiencyModificationOutcome {
+    fn committed_revision(&self) -> Option<CharacterRevision> {
+        match self {
+            Self::Committed(receipt) | Self::AlreadyCommitted(receipt) => {
+                Some(receipt.committed_character_revision)
+            }
+            Self::RevisionChanged | Self::Refused(_) => None,
         }
     }
 }
@@ -952,6 +1006,10 @@ mod tests {
         ),
         (
             ".commit_character_quest_transition(",
+            "durability/character_revision_sequencer.rs",
+        ),
+        (
+            ".commit_character_proficiency_modification(",
             "durability/character_revision_sequencer.rs",
         ),
         // The fee burn runs only inside its source's sequenced Character transaction.

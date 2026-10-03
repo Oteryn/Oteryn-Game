@@ -32,15 +32,29 @@ If this summary conflicts with those protected machine contracts, fail closed an
 
 `.github/workflows/merge-gate.yml` runs on every PR to `main`.
 
-Always-required evidence includes:
+The pull-request gate is light: heavy qualification runs once, in the Merge Queue
+(D431). Always-required evidence includes:
 
 - exact PR/base/head identity and trusted-base risk classification;
 - exact-head routing-contract validation against candidate Cargo/tree state;
 - PR metadata, agent governance and repository policy;
-- Dependency Review and CodeQL;
+- Dependency Review;
+- when the Rust lane is selected: Rust policy/metadata/fmt/production closure, supply chain and
+  `Merge gate / Rust changed-crate Clippy and unit tests` (strict Clippy `--all-targets` and
+  `--lib`/`--bins` tests of the changed workspace crates; incomplete enumeration, workspace-wide
+  Rust inputs or no attributable crate select every workspace crate);
 - aggregate `Merge gate / validate` and final `game-gate`.
 
-Current runtime selection:
+Heavy jobs — CodeQL, Rust Linux workspace with registered PostgreSQL targets, Rust Windows
+client/input/SIM, Atlas fullworld, node boot and Server Seam — run on a PR only on demand: add the
+`full-ci` label (for example on a large carrier PR). Their selection below then applies on the PR
+and, once requested, `Merge gate / validate` requires them to succeed. Without the label they are
+`skipped` on the PR and are never required to enter the queue; the Merge Queue `game-gate` runs
+them on the exact synthetic candidate and stays the integration authority. Adding or removing any
+other label re-runs the PR gate in an isolated concurrency group without cancelling a running
+qualification.
+
+Runtime selection (Merge Queue; on the PR with `full-ci`):
 
 | Proven PR surface | Runtime evidence |
 |---|---|
@@ -61,7 +75,7 @@ Physical server qualification is a separate selection. It runs the node boot and
 - Cargo/toolchain inputs;
 - `merge-gate.yml`.
 
-They also run when the changed-file evidence is incomplete or malformed, or when the trusted-base classifier emits no selection. Only an explicit `false` skips them. When selected, `Merge gate / validate` requires both to succeed.
+They also run when the changed-file evidence is incomplete or malformed, or when the trusted-base classifier emits no selection. Only an explicit `false` skips them. When selected on a `full-ci` PR, `Merge gate / validate` requires both to succeed; the Merge Queue always applies the same selection.
 
 Reduced lanes are derived from the exact candidate tree. Cargo metadata owns package/reverse dependency closure; literal file/directory references from exact-candidate Cargo package sources attach non-Cargo files to their real consumers. Canonical product-CI workflows conservatively attach literal file and directory consumers too. Only explicitly audited routing-only directory predicates registered in the protected classifier may be omitted from consumer attachment; every unregistered or ambiguous workflow directory predicate/reference remains fail-closed/FULL. There is no historical document-consumer SHA or source-drift snapshot to refresh.
 

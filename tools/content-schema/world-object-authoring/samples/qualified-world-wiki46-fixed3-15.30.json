@@ -1,0 +1,2113 @@
+{
+  "admission_source": {
+    "explicit_ids_sha256": "136743df391cf4ff63fe16658fca0df6b2d90ce00636ddbbc87032f29a5230ff",
+    "explicit_rule_only_count": 60,
+    "path": "apps/game-server/examples/materialize_content_world_project_v2.rs",
+    "sha256": "65a7cc0a3832b8be55d77e1c9da40d5ab5240dff3a9e252bc2c6e785127b2b03"
+  },
+  "official_source": {
+    "artifact": "content/assets/files/appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.dat",
+    "client_version": "15.30",
+    "engine": "official_client",
+    "membership_entries_sha256": "424e445c0ea9494b1871364f10e93876ad551df0d3d5c6982d97301008b027df",
+    "membership_manifest_sha256": "f37b5d3e1136ebc3edbae1fe7090c4914b1d717bfbf9fd7c8faeeee36b491fe8",
+    "product": "Tibia-client",
+    "publisher": "CipSoft",
+    "revision": "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2"
+  },
+  "qualified_at_sha": "df777898d6a03e3cf0fd63aaceedcc5c0f0a68b6",
+  "records": [
+    {
+      "appearance_id": 1019,
+      "binding": {
+        "disposition": "EXACT",
+        "external_id": "1019",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i1019",
+          "revision": "definition-r1"
+        }
+      },
+      "decoded_record_sha256": "f9c653c85457487b3d59923c453168fa7955f0082cc2eb45495ce8e5f8aaaf60",
+      "member": [
+        1019,
+        "31cfaf1c640fdc0b3d274cc09d6bed1c3d48f4f536a5d76d15f751195c1130a1",
+        "b8da91d1b9ad5d5c171491260eec4cfaa7c2a4d03e71a6c0bd74c36c71d21524"
+      ],
+      "native_presentation": {
+        "state": "KNOWN",
+        "value": {
+          "description": {
+            "state": "UNKNOWN"
+          },
+          "name": {
+            "state": "KNOWN",
+            "value": "jungle grass"
+          }
+        }
+      },
+      "official_name": null,
+      "owner": "Terrain",
+      "primarytype": "natural tiles",
+      "reason": "primarytype_world_object",
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i1019",
+        "revision": "definition-r1"
+      },
+      "validated_record_sha256": "8427c7670ca8217e637f0e4348c53fba5d5ed36c286134f62dc2f349fd0374b6",
+      "wiki_page_index": 0
+    },
+    {
+      "appearance_id": 1127,
+      "binding": {
+        "disposition": "EXACT",
+        "external_id": "1127",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i1127",
+          "revision": "definition-r1"
+        }
+      },
+      "decoded_record_sha256": "9b0c44871daa095c78a4393ec30995102465612bab0970d5cd4ddc192c59e9ca",
+      "member": [
+        1127,
+        "31cfaf1c640fdc0b3d274cc09d6bed1c3d48f4f536a5d76d15f751195c1130a1",
+        "3152a3cbe3ebeb9e081445325d20f1bc85c5b81f6fb1d2856c2ede9399bec67a"
+      ],
+      "native_presentation": {
+        "state": "KNOWN",
+        "value": {
+          "description": {
+            "state": "UNKNOWN"
+          },
+          "name": {
+            "state": "KNOWN",
+            "value": "mountain"
+          }
+        }
+      },
+      "official_name": null,
+      "owner": "Terrain",
+      "primarytype": "natural tiles",
+      "reason": "primarytype_world_object",
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i1127",
+        "revision": "definition-r1"
+      },
+      "validated_record_sha256": "444e22b645c0932610057ba8a7a1e06c622bbab9893c8b879df53eceb302e535",
+      "wiki_page_index": 1
+    },
+    {
+      "appearance_id": 1128,
+      "binding": {
+        "disposition": "EXACT",
+        "external_id": "1128",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i1128",
+          "revision": "definition-r1"
+        }
+      },
+      "decoded_record_sha256": "11df93c2da27c9889ad6ee0efe856e18fdc5dd2f45f0d14d4d508f795685da84",
+      "member": [
+        1128,
+        "31cfaf1c640fdc0b3d274cc09d6bed1c3d48f4f536a5d76d15f751195c1130a1",
+        "e9ab41d45ae70fd720604a8b9997834934baceb5bc556b5a33fb443868c8e78f"
+      ],
+      "native_presentation": {
+        "state": "KNOWN",
+        "value": {
+          "description": {
+            "state": "UNKNOWN"
+          },
+          "name": {
+            "state": "KNOWN",
+            "value": "mountain"
+          }
+        }
+      },
+      "official_name": null,
+      "owner": "Terrain",
+      "primarytype": "natural tiles",
+      "reason": "primarytype_world_object",
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i1128",
+        "revision": "definition-r1"
+      },
+      "validated_record_sha256": "af904615d480873ab414c97778371316fe821f316593c8c747bec7ac0264ab6a",
+      "wiki_page_index": 1
+    },
+    {
+      "appearance_id": 5556,
+      "binding": {
+        "disposition": "EXACT",
+        "external_id": "5556",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i5556",
+          "revision": "definition-r1"
+        }
+      },
+      "decoded_record_sha256": "21fa46624ecb5eef32e6457081c55d8acd425a7e2f20b79d1d93898d0ccf7c7c",
+      "member": [
+        5556,
+        "31cfaf1c640fdc0b3d274cc09d6bed1c3d48f4f536a5d76d15f751195c1130a1",
+        "35cb1c3dea573a030707ee787318e1e84fe69365a1ccfbc65ee1fbdbc44adc64"
+      ],
+      "native_presentation": {
+        "state": "KNOWN",
+        "value": {
+          "description": {
+            "state": "UNKNOWN"
+          },
+          "name": {
+            "state": "KNOWN",
+            "value": "mossy wall"
+          }
+        }
+      },
+      "official_name": null,
+      "owner": "Terrain",
+      "primarytype": "walls",
+      "reason": "primarytype_world_object",
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i5556",
+        "revision": "definition-r1"
+      },
+      "validated_record_sha256": "8fc355e5616540a1e01b912e3298208997219048e881425a98f7cb1761752797",
+      "wiki_page_index": 2
+    },
+    {
+      "appearance_id": 5557,
+      "binding": {
+        "disposition": "EXACT",
+        "external_id": "5557",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i5557",
+          "revision": "definition-r1"
+        }
+      },
+      "decoded_record_sha256": "ee4c517b6e3378fa1a3b6c6ea695fbff566b4fc861d2b33a192c4a293cac255e",
+      "member": [
+        5557,
+        "31cfaf1c640fdc0b3d274cc09d6bed1c3d48f4f536a5d76d15f751195c1130a1",
+        "94d2cf192b9b816a2dec00289e85f39806745803eba05c63832a8342eb000a9d"
+      ],
+      "native_presentation": {
+        "state": "KNOWN",
+        "value": {
+          "description": {
+            "state": "UNKNOWN"
+          },
+          "name": {
+            "state": "KNOWN",
+            "value": "mossy wall"
+          }
+        }
+      },
+      "official_name": null,
+      "owner": "Terrain",
+      "primarytype": "walls",
+      "reason": "primarytype_world_object",
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i5557",
+        "revision": "definition-r1"
+      },
+      "validated_record_sha256": "0ac009ff8d66a595fba67dde2e93446418a7513d982d035f28647ff7a4012727",
+      "wiki_page_index": 2
+    },
+    {
+      "appearance_id": 5558,
+      "binding": {
+        "disposition": "EXACT",
+        "external_id": "5558",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i5558",
+          "revision": "definition-r1"
+        }
+      },
+      "decoded_record_sha256": "3204b4d82785ee62bb943818192d23191121f5711f484662add368e9b84f7115",
+      "member": [
+        5558,
+        "31cfaf1c640fdc0b3d274cc09d6bed1c3d48f4f536a5d76d15f751195c1130a1",
+        "c2394cc6a367ec60a12c8d0e704110944bb440d7f1798c9a7fc00caeb1390c51"
+      ],
+      "native_presentation": {
+        "state": "KNOWN",
+        "value": {
+          "description": {
+            "state": "UNKNOWN"
+          },
+          "name": {
+            "state": "KNOWN",
+            "value": "mossy wall"
+          }
+        }
+      },
+      "official_name": null,
+      "owner": "Terrain",
+      "primarytype": "walls",
+      "reason": "primarytype_world_object",
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i5558",
+        "revision": "definition-r1"
+      },
+      "validated_record_sha256": "961a270d6466463441abc0a2877041de2e4e971953d650b877f82415a8b2b9f7",
+      "wiki_page_index": 2
+    },
+    {
+      "appearance_id": 5559,
+      "binding": {
+        "disposition": "EXACT",
+        "external_id": "5559",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i5559",
+          "revision": "definition-r1"
+        }
+      },
+      "decoded_record_sha256": "5803134fe1061e685bfa64f53723b039624af0ec8ccf626700255acd4456e236",
+      "member": [
+        5559,
+        "31cfaf1c640fdc0b3d274cc09d6bed1c3d48f4f536a5d76d15f751195c1130a1",
+        "6ab780bf8ce76b1a4a7e8899e6f91310bacd6963a73ed6133293afc51cdfd935"
+      ],
+      "native_presentation": {
+        "state": "KNOWN",
+        "value": {
+          "description": {
+            "state": "UNKNOWN"
+          },
+          "name": {
+            "state": "KNOWN",
+            "value": "mossy wall"
+          }
+        }
+      },
+      "official_name": null,
+      "owner": "Terrain",
+      "primarytype": "walls",
+      "reason": "primarytype_world_object",
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i5559",
+        "revision": "definition-r1"
+      },
+      "validated_record_sha256": "c2b157e75133e355f7f86ed41479889c5a6e116b64211a68455ad623e7cd5ed6",
+      "wiki_page_index": 2
+    },
+    {
+      "appearance_id": 6270,
+      "binding": {
+        "disposition": "EXACT",
+        "external_id": "6270",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i6270",
+          "revision": "definition-r1"
+        }
+      },
+      "decoded_record_sha256": "98cc7206f55f142ff24c1b0cf97edf38f594186470172e77f54b47b1aababd32",
+      "member": [
+        6270,
+        "31cfaf1c640fdc0b3d274cc09d6bed1c3d48f4f536a5d76d15f751195c1130a1",
+        "74891a5d6fb59387a320e780702d085bd65961de6a0ef07126f192ba03bd98ab"
+      ],
+      "native_presentation": {
+        "state": "KNOWN",
+        "value": {
+          "description": {
+            "state": "UNKNOWN"
+          },
+          "name": {
+            "state": "KNOWN",
+            "value": "some leaves"
+          }
+        }
+      },
+      "official_name": null,
+      "owner": "Terrain",
+      "primarytype": "fields",
+      "reason": "primarytype_world_object",
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i6270",
+        "revision": "definition-r1"
+      },
+      "validated_record_sha256": "7e32b5d6fc314683e0fc80277bd5f074cd3f47cf15b00b50032d483274db8340",
+      "wiki_page_index": 3
+    },
+    {
+      "appearance_id": 6271,
+      "binding": {
+        "disposition": "EXACT",
+        "external_id": "6271",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i6271",
+          "revision": "definition-r1"
+        }
+      },
+      "decoded_record_sha256": "87fba7feeb4bdb08e6fedd54d2df611a66e1cce2585f478d189397bdacc32cf0",
+      "member": [
+        6271,
+        "31cfaf1c640fdc0b3d274cc09d6bed1c3d48f4f536a5d76d15f751195c1130a1",
+        "d866299934c96ce07ae7e49205f80b7a9e451792d0e62ea88afb1597470cb55a"
+      ],
+      "native_presentation": {
+        "state": "KNOWN",
+        "value": {
+          "description": {
+            "state": "UNKNOWN"
+          },
+          "name": {
+            "state": "KNOWN",
+            "value": "some leaves"
+          }
+        }
+      },
+      "official_name": null,
+      "owner": "Terrain",
+      "primarytype": "fields",
+      "reason": "primarytype_world_object",
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i6271",
+        "revision": "definition-r1"
+      },
+      "validated_record_sha256": "055c1e7ffbd537c1566c8303405a2fe52a5f243eccffa18c0bf3d4d17bfec3ba",
+      "wiki_page_index": 3
+    },
+    {
+      "appearance_id": 6272,
+      "binding": {
+        "disposition": "EXACT",
+        "external_id": "6272",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i6272",
+          "revision": "definition-r1"
+        }
+      },
+      "decoded_record_sha256": "eb3edc75b66fe25b32282388c29957c809372038b9f6680a3f1c5b0d625a0cdc",
+      "member": [
+        6272,
+        "31cfaf1c640fdc0b3d274cc09d6bed1c3d48f4f536a5d76d15f751195c1130a1",
+        "98b8071ec3b221a552d9d3448c209c4fa29301260f213326466bbfb7872a78ee"
+      ],
+      "native_presentation": {
+        "state": "KNOWN",
+        "value": {
+          "description": {
+            "state": "UNKNOWN"
+          },
+          "name": {
+            "state": "KNOWN",
+            "value": "some leaves"
+          }
+        }
+      },
+      "official_name": null,
+      "owner": "Terrain",
+      "primarytype": "fields",
+      "reason": "primarytype_world_object",
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i6272",
+        "revision": "definition-r1"
+      },
+      "validated_record_sha256": "33d7887351bdc4769314c74b463880b998e743e151ea4a223cb8c21fd08943be",
+      "wiki_page_index": 3
+    },
+    {
+      "appearance_id": 6273,
+      "binding": {
+        "disposition": "EXACT",
+        "external_id": "6273",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i6273",
+          "revision": "definition-r1"
+        }
+      },
+      "decoded_record_sha256": "ded8b234f837f941a8613f735d882a72db01e35b95554796f3171cb4112a382f",
+      "member": [
+        6273,
+        "31cfaf1c640fdc0b3d274cc09d6bed1c3d48f4f536a5d76d15f751195c1130a1",
+        "37439ba471b25afb1a353dedc7c47cfd71aae98be0f743779fbfea8fe5153d0e"
+      ],
+      "native_presentation": {
+        "state": "KNOWN",
+        "value": {
+          "description": {
+            "state": "UNKNOWN"
+          },
+          "name": {
+            "state": "KNOWN",
+            "value": "some leaves"
+          }
+        }
+      },
+      "official_name": null,
+      "owner": "Terrain",
+      "primarytype": "fields",
+      "reason": "primarytype_world_object",
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i6273",
+        "revision": "definition-r1"
+      },
+      "validated_record_sha256": "c09ef1d6a7c3d664bea58015526cbf4ef33d3d19119585aa7379bcc0de965f6b",
+      "wiki_page_index": 3
+    },
+    {
+      "appearance_id": 10605,
+      "binding": {
+        "disposition": "EXACT",
+        "external_id": "10605",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i10605",
+          "revision": "definition-r1"
+        }
+      },
+      "decoded_record_sha256": "b80c66d73d28fa5e2745a3da9e6a02cb7477eb7170563782734d240b95570da9",
+      "member": [
+        10605,
+        "31cfaf1c640fdc0b3d274cc09d6bed1c3d48f4f536a5d76d15f751195c1130a1",
+        "9313b12cfd0661d0c273ce995193a5e13745ec2e5f38ba7167d9e86cbb8f16eb"
+      ],
+      "native_presentation": {
+        "state": "KNOWN",
+        "value": {
+          "description": {
+            "state": "UNKNOWN"
+          },
+          "name": {
+            "state": "KNOWN",
+            "value": "mud"
+          }
+        }
+      },
+      "official_name": null,
+      "owner": "Terrain",
+      "primarytype": "natural tiles",
+      "reason": "primarytype_world_object",
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i10605",
+        "revision": "definition-r1"
+      },
+      "validated_record_sha256": "0bdfc25d00c6c40a3d72547b5c97961ee3a7bb89d051f7092fd4ce8c946a0484",
+      "wiki_page_index": 4
+    },
+    {
+      "appearance_id": 10986,
+      "binding": {
+        "disposition": "EXACT",
+        "external_id": "10986",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i10986",
+          "revision": "definition-r1"
+        }
+      },
+      "decoded_record_sha256": "93354c2852e09c2466b1a9b23dc499ad1e44d8a467410e48b4016746158400f0",
+      "member": [
+        10986,
+        "31cfaf1c640fdc0b3d274cc09d6bed1c3d48f4f536a5d76d15f751195c1130a1",
+        "14f443063ef69f28144f0bd856008968251f6e1338535de2d622282d3bcc0cfd"
+      ],
+      "native_presentation": {
+        "state": "KNOWN",
+        "value": {
+          "description": {
+            "state": "UNKNOWN"
+          },
+          "name": {
+            "state": "KNOWN",
+            "value": "marble floor"
+          }
+        }
+      },
+      "official_name": null,
+      "owner": "Terrain",
+      "primarytype": "artificial tiles",
+      "reason": "primarytype_world_object",
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i10986",
+        "revision": "definition-r1"
+      },
+      "validated_record_sha256": "b00e6827c81c90e87458904b1fd7bdd5ec7aee4d7d4dbfb024d0ed303d5a57c3",
+      "wiki_page_index": 5
+    },
+    {
+      "appearance_id": 10989,
+      "binding": {
+        "disposition": "EXACT",
+        "external_id": "10989",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i10989",
+          "revision": "definition-r1"
+        }
+      },
+      "decoded_record_sha256": "f982b41f6e31d88b6e011231777006ca93df99a3e714a4fc0cdc86522c53c06f",
+      "member": [
+        10989,
+        "31cfaf1c640fdc0b3d274cc09d6bed1c3d48f4f536a5d76d15f751195c1130a1",
+        "f32e261235b4ba02444fb497d6e453d950b84fa3a7cabec5e241b93aae46c77a"
+      ],
+      "native_presentation": {
+        "state": "KNOWN",
+        "value": {
+          "description": {
+            "state": "UNKNOWN"
+          },
+          "name": {
+            "state": "KNOWN",
+            "value": "marble floor"
+          }
+        }
+      },
+      "official_name": null,
+      "owner": "Terrain",
+      "primarytype": "artificial tiles",
+      "reason": "primarytype_world_object",
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i10989",
+        "revision": "definition-r1"
+      },
+      "validated_record_sha256": "cb64e7e76c23ba22bd33e904dfdf7e49a45eda91cde3dc1c3333552af683904f",
+      "wiki_page_index": 5
+    },
+    {
+      "appearance_id": 10991,
+      "binding": {
+        "disposition": "EXACT",
+        "external_id": "10991",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i10991",
+          "revision": "definition-r1"
+        }
+      },
+      "decoded_record_sha256": "141921b73fe1652f02231d8748793724903a0a914503c6da6ede237ad985624d",
+      "member": [
+        10991,
+        "31cfaf1c640fdc0b3d274cc09d6bed1c3d48f4f536a5d76d15f751195c1130a1",
+        "7a499d5ca8f71f3dda25dcf9be9821e408b2c257be5063904b13f160422ccc9c"
+      ],
+      "native_presentation": {
+        "state": "KNOWN",
+        "value": {
+          "description": {
+            "state": "UNKNOWN"
+          },
+          "name": {
+            "state": "KNOWN",
+            "value": "marble floor"
+          }
+        }
+      },
+      "official_name": null,
+      "owner": "Terrain",
+      "primarytype": "artificial tiles",
+      "reason": "primarytype_world_object",
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i10991",
+        "revision": "definition-r1"
+      },
+      "validated_record_sha256": "d18d0bedf2fd275bb37eaa45f63ba059fe6c7080bba74b1081bc4695e4ac86c5",
+      "wiki_page_index": 5
+    },
+    {
+      "appearance_id": 10997,
+      "binding": {
+        "disposition": "EXACT",
+        "external_id": "10997",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i10997",
+          "revision": "definition-r1"
+        }
+      },
+      "decoded_record_sha256": "1c0a755e2d4da825261bf71ae65f3aa39555c7012100d0f79c1e4ad9d2996357",
+      "member": [
+        10997,
+        "31cfaf1c640fdc0b3d274cc09d6bed1c3d48f4f536a5d76d15f751195c1130a1",
+        "27c0c360b2a9bc56d30869b1c691d031b870d92029e3957baa44efb973c65ada"
+      ],
+      "native_presentation": {
+        "state": "KNOWN",
+        "value": {
+          "description": {
+            "state": "UNKNOWN"
+          },
+          "name": {
+            "state": "KNOWN",
+            "value": "marble floor"
+          }
+        }
+      },
+      "official_name": null,
+      "owner": "Terrain",
+      "primarytype": "artificial tiles",
+      "reason": "primarytype_world_object",
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i10997",
+        "revision": "definition-r1"
+      },
+      "validated_record_sha256": "88b0f6da91645fe4ee61ccbdea7b0262bd7b4c185b09bcf68530888baa7c885f",
+      "wiki_page_index": 5
+    },
+    {
+      "appearance_id": 10998,
+      "binding": {
+        "disposition": "EXACT",
+        "external_id": "10998",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i10998",
+          "revision": "definition-r1"
+        }
+      },
+      "decoded_record_sha256": "32c484929ac83e80d41c1a7ccd473b0ab75ece190eddd29a8b412ad9a047bb5b",
+      "member": [
+        10998,
+        "31cfaf1c640fdc0b3d274cc09d6bed1c3d48f4f536a5d76d15f751195c1130a1",
+        "28cc1815baa2ca92e681063f224ec011a9dbaa8adf0628b85c3feaa5c3dcfeae"
+      ],
+      "native_presentation": {
+        "state": "KNOWN",
+        "value": {
+          "description": {
+            "state": "UNKNOWN"
+          },
+          "name": {
+            "state": "KNOWN",
+            "value": "marble floor"
+          }
+        }
+      },
+      "official_name": null,
+      "owner": "Terrain",
+      "primarytype": "artificial tiles",
+      "reason": "primarytype_world_object",
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i10998",
+        "revision": "definition-r1"
+      },
+      "validated_record_sha256": "5211a74c1e2a3430c8207c09ca49a6ae5305a31ec204b191baeb4a10d8d26dea",
+      "wiki_page_index": 5
+    },
+    {
+      "appearance_id": 10999,
+      "binding": {
+        "disposition": "EXACT",
+        "external_id": "10999",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i10999",
+          "revision": "definition-r1"
+        }
+      },
+      "decoded_record_sha256": "0b0aacd1a7e0fb246a371c463a9ff68b6a178951822ee0425f09e142a7d3b3de",
+      "member": [
+        10999,
+        "31cfaf1c640fdc0b3d274cc09d6bed1c3d48f4f536a5d76d15f751195c1130a1",
+        "703359dc50666a3943ded6166e6ce683874c76971a255564b781764feaaf0705"
+      ],
+      "native_presentation": {
+        "state": "KNOWN",
+        "value": {
+          "description": {
+            "state": "UNKNOWN"
+          },
+          "name": {
+            "state": "KNOWN",
+            "value": "marble floor"
+          }
+        }
+      },
+      "official_name": null,
+      "owner": "Terrain",
+      "primarytype": "artificial tiles",
+      "reason": "primarytype_world_object",
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i10999",
+        "revision": "definition-r1"
+      },
+      "validated_record_sha256": "e157d9014c48ca7130859a83e19df73ed95c457144226df1fef071b89516bb2a",
+      "wiki_page_index": 5
+    },
+    {
+      "appearance_id": 11000,
+      "binding": {
+        "disposition": "EXACT",
+        "external_id": "11000",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i11000",
+          "revision": "definition-r1"
+        }
+      },
+      "decoded_record_sha256": "efe643a8bd826e892aabae82848d444ee40416a928759c2132267587cb9e4514",
+      "member": [
+        11000,
+        "31cfaf1c640fdc0b3d274cc09d6bed1c3d48f4f536a5d76d15f751195c1130a1",
+        "edb53a1c0c77f041578dde4c470d419c7bac6c47c3dfe32b0dfe61cab261e32e"
+      ],
+      "native_presentation": {
+        "state": "KNOWN",
+        "value": {
+          "description": {
+            "state": "UNKNOWN"
+          },
+          "name": {
+            "state": "KNOWN",
+            "value": "marble floor"
+          }
+        }
+      },
+      "official_name": null,
+      "owner": "Terrain",
+      "primarytype": "artificial tiles",
+      "reason": "primarytype_world_object",
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i11000",
+        "revision": "definition-r1"
+      },
+      "validated_record_sha256": "2d1332b99f9a38d236f1316e9f10c8457ac96d25a356d4e556ae12d6f9d4b28d",
+      "wiki_page_index": 5
+    },
+    {
+      "appearance_id": 11001,
+      "binding": {
+        "disposition": "EXACT",
+        "external_id": "11001",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i11001",
+          "revision": "definition-r1"
+        }
+      },
+      "decoded_record_sha256": "da19c6c77fa2fdf2f050b1349e255db07c60dc8c2d0769c0003cfd3499142e4a",
+      "member": [
+        11001,
+        "31cfaf1c640fdc0b3d274cc09d6bed1c3d48f4f536a5d76d15f751195c1130a1",
+        "b65baefdf32e6f923241d1fb8c0b64889f06718e8ea17705f0e2244e87ba7349"
+      ],
+      "native_presentation": {
+        "state": "KNOWN",
+        "value": {
+          "description": {
+            "state": "UNKNOWN"
+          },
+          "name": {
+            "state": "KNOWN",
+            "value": "marble floor"
+          }
+        }
+      },
+      "official_name": null,
+      "owner": "Terrain",
+      "primarytype": "artificial tiles",
+      "reason": "primarytype_world_object",
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i11001",
+        "revision": "definition-r1"
+      },
+      "validated_record_sha256": "8b14ec9e3d7062b778ab322855be6fc569ee057cd4cb40de1d9ae2bb8d55a64d",
+      "wiki_page_index": 5
+    },
+    {
+      "appearance_id": 11002,
+      "binding": {
+        "disposition": "EXACT",
+        "external_id": "11002",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i11002",
+          "revision": "definition-r1"
+        }
+      },
+      "decoded_record_sha256": "25b4c06963694b9a0ba171517dd54a31b05a5bf28e02dbe5bdd2aeac63d1a6da",
+      "member": [
+        11002,
+        "31cfaf1c640fdc0b3d274cc09d6bed1c3d48f4f536a5d76d15f751195c1130a1",
+        "dc6f904bd064cf7584c41331e6d8f91c7d52002ada354916ac90379cd52db4f2"
+      ],
+      "native_presentation": {
+        "state": "KNOWN",
+        "value": {
+          "description": {
+            "state": "UNKNOWN"
+          },
+          "name": {
+            "state": "KNOWN",
+            "value": "marble floor"
+          }
+        }
+      },
+      "official_name": null,
+      "owner": "Terrain",
+      "primarytype": "artificial tiles",
+      "reason": "primarytype_world_object",
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i11002",
+        "revision": "definition-r1"
+      },
+      "validated_record_sha256": "084bd4922dc567a7387a53925e283ad96d83e81dbcaccafddc0d1603a1971625",
+      "wiki_page_index": 5
+    },
+    {
+      "appearance_id": 11553,
+      "binding": {
+        "disposition": "EXACT",
+        "external_id": "11553",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i11553",
+          "revision": "definition-r1"
+        }
+      },
+      "decoded_record_sha256": "0514ba6054c28fd09fdcdbb0390fdc550de7e67662d2cc5a143c8aa79037b545",
+      "member": [
+        11553,
+        "31cfaf1c640fdc0b3d274cc09d6bed1c3d48f4f536a5d76d15f751195c1130a1",
+        "97685810479ef845dd6ce2f1aca52650a0d19380c69a54193589a8435a153231"
+      ],
+      "native_presentation": {
+        "state": "KNOWN",
+        "value": {
+          "description": {
+            "state": "UNKNOWN"
+          },
+          "name": {
+            "state": "KNOWN",
+            "value": "magic portal"
+          }
+        }
+      },
+      "official_name": null,
+      "owner": "Terrain",
+      "primarytype": "walls",
+      "reason": "primarytype_world_object",
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i11553",
+        "revision": "definition-r1"
+      },
+      "validated_record_sha256": "a003f8e72b70eccecb7a1cf8b05a0575cfd1cede4d7fa5a845aff68524ab08fc",
+      "wiki_page_index": 6
+    },
+    {
+      "appearance_id": 11554,
+      "binding": {
+        "disposition": "EXACT",
+        "external_id": "11554",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i11554",
+          "revision": "definition-r1"
+        }
+      },
+      "decoded_record_sha256": "2f71249feee800afdb0f734c7f5bbcca82bf975178d092a4a1cc9343cc3b1b7b",
+      "member": [
+        11554,
+        "31cfaf1c640fdc0b3d274cc09d6bed1c3d48f4f536a5d76d15f751195c1130a1",
+        "08d1f0ae142465f9792fa7eebec55cd418b14e9295d2a0484e6cd19e9eac59d2"
+      ],
+      "native_presentation": {
+        "state": "KNOWN",
+        "value": {
+          "description": {
+            "state": "UNKNOWN"
+          },
+          "name": {
+            "state": "KNOWN",
+            "value": "magic portal"
+          }
+        }
+      },
+      "official_name": null,
+      "owner": "Terrain",
+      "primarytype": "walls",
+      "reason": "primarytype_world_object",
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i11554",
+        "revision": "definition-r1"
+      },
+      "validated_record_sha256": "138d80ec364516ab51467c0a3ad2bc668261e57db9af938033e68117c13dc91e",
+      "wiki_page_index": 6
+    },
+    {
+      "appearance_id": 12355,
+      "binding": {
+        "disposition": "EXACT",
+        "external_id": "12355",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i12355",
+          "revision": "definition-r1"
+        }
+      },
+      "decoded_record_sha256": "c61dab99d8debcc8c139319dfa0686ccf0a5306e4ae285b8451b77bdaa53d1ce",
+      "member": [
+        12355,
+        "31cfaf1c640fdc0b3d274cc09d6bed1c3d48f4f536a5d76d15f751195c1130a1",
+        "9bf2359ec2c57113bb6ecad2f4ebe2cf43ccefc9406764d8eeb793cdccde625d"
+      ],
+      "native_presentation": {
+        "state": "KNOWN",
+        "value": {
+          "description": {
+            "state": "UNKNOWN"
+          },
+          "name": {
+            "state": "KNOWN",
+            "value": "slime fungus"
+          }
+        }
+      },
+      "official_name": null,
+      "owner": "Terrain",
+      "primarytype": "natural tiles",
+      "reason": "primarytype_world_object",
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i12355",
+        "revision": "definition-r1"
+      },
+      "validated_record_sha256": "bc2b2fade49e90ea971784bec270446d5a2dabe3f0a0df51c7ccc9bd02c6fd95",
+      "wiki_page_index": 7
+    },
+    {
+      "appearance_id": 13883,
+      "binding": {
+        "disposition": "EXACT",
+        "external_id": "13883",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i13883",
+          "revision": "definition-r1"
+        }
+      },
+      "decoded_record_sha256": "b6fed06650756fece7d76a64dca2d44e249114f952ef2f3b5125309ca64e4558",
+      "member": [
+        13883,
+        "31cfaf1c640fdc0b3d274cc09d6bed1c3d48f4f536a5d76d15f751195c1130a1",
+        "04e66d136fb1058df876c920789c2b04a07e7b2ad44c4b171fc9159f22ca6e29"
+      ],
+      "native_presentation": {
+        "state": "KNOWN",
+        "value": {
+          "description": {
+            "state": "UNKNOWN"
+          },
+          "name": {
+            "state": "KNOWN",
+            "value": "table"
+          }
+        }
+      },
+      "official_name": null,
+      "owner": "WorldObject",
+      "primarytype": "constructions",
+      "reason": "primarytype_world_object",
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i13883",
+        "revision": "definition-r1"
+      },
+      "validated_record_sha256": "f5bff962a6d6930016271acc7e7b6be2661b50b471cbfc38501734aba4127193",
+      "wiki_page_index": 8
+    },
+    {
+      "appearance_id": 13884,
+      "binding": {
+        "disposition": "EXACT",
+        "external_id": "13884",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i13884",
+          "revision": "definition-r1"
+        }
+      },
+      "decoded_record_sha256": "0d83c9445a59b13461919b87b8d4519dd11d6ae0996be6337a1c7cf3ef12d901",
+      "member": [
+        13884,
+        "31cfaf1c640fdc0b3d274cc09d6bed1c3d48f4f536a5d76d15f751195c1130a1",
+        "81048d3f5dbc55b079e22d21861d168e0530197c32725f6364d8a394a3ff08c2"
+      ],
+      "native_presentation": {
+        "state": "KNOWN",
+        "value": {
+          "description": {
+            "state": "UNKNOWN"
+          },
+          "name": {
+            "state": "KNOWN",
+            "value": "table"
+          }
+        }
+      },
+      "official_name": null,
+      "owner": "WorldObject",
+      "primarytype": "constructions",
+      "reason": "primarytype_world_object",
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i13884",
+        "revision": "definition-r1"
+      },
+      "validated_record_sha256": "2afb645028f1de42402ad1df43bead8793c4f4a2384e814001b05d20be78dbea",
+      "wiki_page_index": 8
+    },
+    {
+      "appearance_id": 13885,
+      "binding": {
+        "disposition": "EXACT",
+        "external_id": "13885",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i13885",
+          "revision": "definition-r1"
+        }
+      },
+      "decoded_record_sha256": "699173788363cfdd140cbcdf3694a94dda6329d243ab5024479ffbabafa10dff",
+      "member": [
+        13885,
+        "31cfaf1c640fdc0b3d274cc09d6bed1c3d48f4f536a5d76d15f751195c1130a1",
+        "02366680a19bdf4db2b1d153c77162da0b030467e5f55222bf96304c3a984714"
+      ],
+      "native_presentation": {
+        "state": "KNOWN",
+        "value": {
+          "description": {
+            "state": "UNKNOWN"
+          },
+          "name": {
+            "state": "KNOWN",
+            "value": "table"
+          }
+        }
+      },
+      "official_name": null,
+      "owner": "WorldObject",
+      "primarytype": "constructions",
+      "reason": "primarytype_world_object",
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i13885",
+        "revision": "definition-r1"
+      },
+      "validated_record_sha256": "0e02f5b33e32915d070ca32416eca80a4099772455a83f4022d18a0a20677a71",
+      "wiki_page_index": 8
+    },
+    {
+      "appearance_id": 18615,
+      "binding": {
+        "disposition": "EXACT",
+        "external_id": "18615",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i18615",
+          "revision": "definition-r1"
+        }
+      },
+      "decoded_record_sha256": "ca3fe83b40a4a23ac291b4cfbaa7770a6dd0b4e04c8da5666661cc715c65d047",
+      "member": [
+        18615,
+        "31cfaf1c640fdc0b3d274cc09d6bed1c3d48f4f536a5d76d15f751195c1130a1",
+        "e780292711f61275d667543c1b10bd89ba170b1d27517f4c66a089ccf9caa6b2"
+      ],
+      "native_presentation": {
+        "state": "KNOWN",
+        "value": {
+          "description": {
+            "state": "UNKNOWN"
+          },
+          "name": {
+            "state": "KNOWN",
+            "value": "blood"
+          }
+        }
+      },
+      "official_name": null,
+      "owner": "Terrain",
+      "primarytype": "artificial tiles",
+      "reason": "primarytype_world_object",
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i18615",
+        "revision": "definition-r1"
+      },
+      "validated_record_sha256": "f9b1423faa3d52ca6474910cc47683185374010ed85ac07d34392943eac491f9",
+      "wiki_page_index": 9
+    },
+    {
+      "appearance_id": 18616,
+      "binding": {
+        "disposition": "EXACT",
+        "external_id": "18616",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i18616",
+          "revision": "definition-r1"
+        }
+      },
+      "decoded_record_sha256": "27ab2bfa0368017ed2851cef0c57fc360944b68c2fda4b9ca34517be50df66d3",
+      "member": [
+        18616,
+        "31cfaf1c640fdc0b3d274cc09d6bed1c3d48f4f536a5d76d15f751195c1130a1",
+        "62abd6049affaba75b9eda85c3d30fe53ff61e1db67ebcaaac3e5eb647d656d3"
+      ],
+      "native_presentation": {
+        "state": "KNOWN",
+        "value": {
+          "description": {
+            "state": "UNKNOWN"
+          },
+          "name": {
+            "state": "KNOWN",
+            "value": "blood"
+          }
+        }
+      },
+      "official_name": null,
+      "owner": "Terrain",
+      "primarytype": "artificial tiles",
+      "reason": "primarytype_world_object",
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i18616",
+        "revision": "definition-r1"
+      },
+      "validated_record_sha256": "d1732a3e6caadf9e7a74bcfc822f3ae318ac56d7fd3014e6ec5422d1b5a74e56",
+      "wiki_page_index": 9
+    },
+    {
+      "appearance_id": 18617,
+      "binding": {
+        "disposition": "EXACT",
+        "external_id": "18617",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i18617",
+          "revision": "definition-r1"
+        }
+      },
+      "decoded_record_sha256": "ae377815dbf20aaeb30dcdca4156ae4a172d50bac912cb98674cd3f1a6dce69f",
+      "member": [
+        18617,
+        "31cfaf1c640fdc0b3d274cc09d6bed1c3d48f4f536a5d76d15f751195c1130a1",
+        "8c052b38b410815035cc93cec66e54d2315725fbac52e9d8111a8c53997a5aad"
+      ],
+      "native_presentation": {
+        "state": "KNOWN",
+        "value": {
+          "description": {
+            "state": "UNKNOWN"
+          },
+          "name": {
+            "state": "KNOWN",
+            "value": "blood"
+          }
+        }
+      },
+      "official_name": null,
+      "owner": "Terrain",
+      "primarytype": "artificial tiles",
+      "reason": "primarytype_world_object",
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i18617",
+        "revision": "definition-r1"
+      },
+      "validated_record_sha256": "8fead8828274d6b5ae3ea6ff947bd8666902aa94a3a78ae8006e7032d116789a",
+      "wiki_page_index": 9
+    },
+    {
+      "appearance_id": 18618,
+      "binding": {
+        "disposition": "EXACT",
+        "external_id": "18618",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i18618",
+          "revision": "definition-r1"
+        }
+      },
+      "decoded_record_sha256": "3bcae538b4d1fa1f68d870be586de2797f356d41a470738b78ba5aef7ee38576",
+      "member": [
+        18618,
+        "31cfaf1c640fdc0b3d274cc09d6bed1c3d48f4f536a5d76d15f751195c1130a1",
+        "cc9870ea765059faa8366f1ec7f4e4599d349cf22bfc50c6188616739709621e"
+      ],
+      "native_presentation": {
+        "state": "KNOWN",
+        "value": {
+          "description": {
+            "state": "UNKNOWN"
+          },
+          "name": {
+            "state": "KNOWN",
+            "value": "blood"
+          }
+        }
+      },
+      "official_name": null,
+      "owner": "Terrain",
+      "primarytype": "artificial tiles",
+      "reason": "primarytype_world_object",
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i18618",
+        "revision": "definition-r1"
+      },
+      "validated_record_sha256": "362278d7c3dc45d8ab248c055b2328110e1631bd4be23d70b01ee82018352fb3",
+      "wiki_page_index": 9
+    },
+    {
+      "appearance_id": 18619,
+      "binding": {
+        "disposition": "EXACT",
+        "external_id": "18619",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i18619",
+          "revision": "definition-r1"
+        }
+      },
+      "decoded_record_sha256": "44de9622274249a005022da3b4612d5f08f71b898b73bf32a0e882a1a896256c",
+      "member": [
+        18619,
+        "31cfaf1c640fdc0b3d274cc09d6bed1c3d48f4f536a5d76d15f751195c1130a1",
+        "a356ac82fadd7b17df984b9117d60b53fc4869c5e7483dc708f438e3ee73526d"
+      ],
+      "native_presentation": {
+        "state": "KNOWN",
+        "value": {
+          "description": {
+            "state": "UNKNOWN"
+          },
+          "name": {
+            "state": "KNOWN",
+            "value": "blood"
+          }
+        }
+      },
+      "official_name": null,
+      "owner": "Terrain",
+      "primarytype": "artificial tiles",
+      "reason": "primarytype_world_object",
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i18619",
+        "revision": "definition-r1"
+      },
+      "validated_record_sha256": "7d4b2fa5781168277af366139ac70aae1128c5a7e95cd1ae8c68973121c8d716",
+      "wiki_page_index": 9
+    },
+    {
+      "appearance_id": 18620,
+      "binding": {
+        "disposition": "EXACT",
+        "external_id": "18620",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i18620",
+          "revision": "definition-r1"
+        }
+      },
+      "decoded_record_sha256": "9a6b3c139bc40f8ce01d5b997371c3eea55fe5c6edd3c28e08cd27b916f50863",
+      "member": [
+        18620,
+        "31cfaf1c640fdc0b3d274cc09d6bed1c3d48f4f536a5d76d15f751195c1130a1",
+        "2e7f20221657731a057b6c3cb78b99443e2b5d890193d5299661cbdc4e3003e3"
+      ],
+      "native_presentation": {
+        "state": "KNOWN",
+        "value": {
+          "description": {
+            "state": "UNKNOWN"
+          },
+          "name": {
+            "state": "KNOWN",
+            "value": "blood"
+          }
+        }
+      },
+      "official_name": null,
+      "owner": "Terrain",
+      "primarytype": "artificial tiles",
+      "reason": "primarytype_world_object",
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i18620",
+        "revision": "definition-r1"
+      },
+      "validated_record_sha256": "fc51e3b3c5120344d04db15f22522949bed92c77963caa17a37036f9779f90fc",
+      "wiki_page_index": 9
+    },
+    {
+      "appearance_id": 20107,
+      "binding": {
+        "disposition": "EXACT",
+        "external_id": "20107",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i20107",
+          "revision": "definition-r1"
+        }
+      },
+      "decoded_record_sha256": "04759c030add4421848aa55c589b70911e40bffbe50423934b5035f502d7aad8",
+      "member": [
+        20107,
+        "31cfaf1c640fdc0b3d274cc09d6bed1c3d48f4f536a5d76d15f751195c1130a1",
+        "07fab6dcdc26674e47b4f7c8a6f1269e85445ff65f6d7ea101f20b7bdc7be5e6"
+      ],
+      "native_presentation": {
+        "state": "KNOWN",
+        "value": {
+          "description": {
+            "state": "UNKNOWN"
+          },
+          "name": {
+            "state": "KNOWN",
+            "value": "cormo dementi"
+          }
+        }
+      },
+      "official_name": null,
+      "owner": "WorldObject",
+      "primarytype": "constructions",
+      "reason": "primarytype_world_object",
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i20107",
+        "revision": "definition-r1"
+      },
+      "validated_record_sha256": "7b847fb92df03ea15ba38395c55bc0ecca13980587e51baeb5dbe9e27290e190",
+      "wiki_page_index": 10
+    },
+    {
+      "appearance_id": 20888,
+      "binding": {
+        "disposition": "EXACT",
+        "external_id": "20888",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i20888",
+          "revision": "definition-r1"
+        }
+      },
+      "decoded_record_sha256": "3db9fbf278f3cbec3123a64e44ff2ce76540ae92e1ca66c7d89dc758da6f6681",
+      "member": [
+        20888,
+        "31cfaf1c640fdc0b3d274cc09d6bed1c3d48f4f536a5d76d15f751195c1130a1",
+        "faa4959abc8c8a5c42419a346ed4cf946377748636abb065588beac1d8b98557"
+      ],
+      "native_presentation": {
+        "state": "KNOWN",
+        "value": {
+          "description": {
+            "state": "UNKNOWN"
+          },
+          "name": {
+            "state": "KNOWN",
+            "value": "marble floor"
+          }
+        }
+      },
+      "official_name": null,
+      "owner": "Terrain",
+      "primarytype": "artificial tiles",
+      "reason": "primarytype_world_object",
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i20888",
+        "revision": "definition-r1"
+      },
+      "validated_record_sha256": "5505439bb2ae6094e371d8e81209a8f25f1c7f667319733af0d55caf3a5a26c3",
+      "wiki_page_index": 11
+    },
+    {
+      "appearance_id": 20890,
+      "binding": {
+        "disposition": "EXACT",
+        "external_id": "20890",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i20890",
+          "revision": "definition-r1"
+        }
+      },
+      "decoded_record_sha256": "aa94f189cf2f5c375e106fd29a55b9c9805dda332d27554d8be4af91b293eda8",
+      "member": [
+        20890,
+        "31cfaf1c640fdc0b3d274cc09d6bed1c3d48f4f536a5d76d15f751195c1130a1",
+        "61e8fe7f91df4d17273bd0ade64f195fb8393c9379d0213d16d40849d160ceef"
+      ],
+      "native_presentation": {
+        "state": "KNOWN",
+        "value": {
+          "description": {
+            "state": "UNKNOWN"
+          },
+          "name": {
+            "state": "KNOWN",
+            "value": "chimney"
+          }
+        }
+      },
+      "official_name": null,
+      "owner": "WorldObject",
+      "primarytype": "machines (objects)",
+      "reason": "primarytype_world_object",
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i20890",
+        "revision": "definition-r1"
+      },
+      "validated_record_sha256": "a871d7d57bd3eb54d19dbd7f87719ef88d7b1572864125d04e84bbd08fcbbad8",
+      "wiki_page_index": 12
+    },
+    {
+      "appearance_id": 20891,
+      "binding": {
+        "disposition": "EXACT",
+        "external_id": "20891",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i20891",
+          "revision": "definition-r1"
+        }
+      },
+      "decoded_record_sha256": "ed77f76559113efd3f65a24c8d10a93fb8abe6b1e6a05fd74256e20f954992e4",
+      "member": [
+        20891,
+        "31cfaf1c640fdc0b3d274cc09d6bed1c3d48f4f536a5d76d15f751195c1130a1",
+        "25a36dd70f3df8c3fb5060693ede1e1c61b3d776e2e4ce28dd147f19f51a7d96"
+      ],
+      "native_presentation": {
+        "state": "KNOWN",
+        "value": {
+          "description": {
+            "state": "UNKNOWN"
+          },
+          "name": {
+            "state": "KNOWN",
+            "value": "chimney"
+          }
+        }
+      },
+      "official_name": null,
+      "owner": "WorldObject",
+      "primarytype": "machines (objects)",
+      "reason": "primarytype_world_object",
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i20891",
+        "revision": "definition-r1"
+      },
+      "validated_record_sha256": "01d5615f1fdbfb20388a92473ca8eaf9f7de26ec0096c7e38058cbc51c503d7a",
+      "wiki_page_index": 12
+    },
+    {
+      "appearance_id": 20892,
+      "binding": {
+        "disposition": "EXACT",
+        "external_id": "20892",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i20892",
+          "revision": "definition-r1"
+        }
+      },
+      "decoded_record_sha256": "91d8ec52b46ad698cf271c92a6493e46044969539a63788d98a59a8849eab61b",
+      "member": [
+        20892,
+        "31cfaf1c640fdc0b3d274cc09d6bed1c3d48f4f536a5d76d15f751195c1130a1",
+        "f0dfabc919abe1e426d3e8e01aab9ae80f0e3ea5c70fa9bd53b23a228ce7feac"
+      ],
+      "native_presentation": {
+        "state": "KNOWN",
+        "value": {
+          "description": {
+            "state": "UNKNOWN"
+          },
+          "name": {
+            "state": "KNOWN",
+            "value": "chimney"
+          }
+        }
+      },
+      "official_name": null,
+      "owner": "WorldObject",
+      "primarytype": "machines (objects)",
+      "reason": "primarytype_world_object",
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i20892",
+        "revision": "definition-r1"
+      },
+      "validated_record_sha256": "13a90697e0a534a9dd66aed1f818de2641bad8e01cfb9b822c0b90f2b81f6cad",
+      "wiki_page_index": 12
+    },
+    {
+      "appearance_id": 20893,
+      "binding": {
+        "disposition": "EXACT",
+        "external_id": "20893",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i20893",
+          "revision": "definition-r1"
+        }
+      },
+      "decoded_record_sha256": "1541eba3f96e07c58108e5425ec9681f8031e3915672372967ea361c07c95407",
+      "member": [
+        20893,
+        "31cfaf1c640fdc0b3d274cc09d6bed1c3d48f4f536a5d76d15f751195c1130a1",
+        "99c3dc7e4d1420b17e0c3984e63fafd75819968aa1f35d5a1cbfe5f9663b8773"
+      ],
+      "native_presentation": {
+        "state": "KNOWN",
+        "value": {
+          "description": {
+            "state": "UNKNOWN"
+          },
+          "name": {
+            "state": "KNOWN",
+            "value": "chimney"
+          }
+        }
+      },
+      "official_name": null,
+      "owner": "WorldObject",
+      "primarytype": "machines (objects)",
+      "reason": "primarytype_world_object",
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i20893",
+        "revision": "definition-r1"
+      },
+      "validated_record_sha256": "52f7eb3b4069d698c3a05e59e1ddf3cb1c0cfda103f96322d407ccda4fbf72e0",
+      "wiki_page_index": 12
+    },
+    {
+      "appearance_id": 20894,
+      "binding": {
+        "disposition": "EXACT",
+        "external_id": "20894",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i20894",
+          "revision": "definition-r1"
+        }
+      },
+      "decoded_record_sha256": "719cc0dcaca9968e9e1947fcedc77f6ed0ed414e70a21af4f0970c0cd5d17833",
+      "member": [
+        20894,
+        "31cfaf1c640fdc0b3d274cc09d6bed1c3d48f4f536a5d76d15f751195c1130a1",
+        "81b9a92261563159f92dc6f0c5f8181f681a31be5516be868b741de461d26615"
+      ],
+      "native_presentation": {
+        "state": "KNOWN",
+        "value": {
+          "description": {
+            "state": "UNKNOWN"
+          },
+          "name": {
+            "state": "KNOWN",
+            "value": "chimney"
+          }
+        }
+      },
+      "official_name": null,
+      "owner": "WorldObject",
+      "primarytype": "machines (objects)",
+      "reason": "primarytype_world_object",
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i20894",
+        "revision": "definition-r1"
+      },
+      "validated_record_sha256": "f266ac9a320a227d62ea0a49f4df5cb027c1e04986cf55d383291d5ddeca01b1",
+      "wiki_page_index": 12
+    },
+    {
+      "appearance_id": 21772,
+      "binding": {
+        "disposition": "EXACT",
+        "external_id": "21772",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i21772",
+          "revision": "definition-r1"
+        }
+      },
+      "decoded_record_sha256": "1b8115ccaac924230eeaa965aa5307e72ea3512684fbc1584ef1af16ee9b3cad",
+      "member": [
+        21772,
+        "31cfaf1c640fdc0b3d274cc09d6bed1c3d48f4f536a5d76d15f751195c1130a1",
+        "3d8e47f197e5e6c3a76a36ec8277ae0965b4400c70687e603a8b0246ac6e3750"
+      ],
+      "native_presentation": {
+        "state": "KNOWN",
+        "value": {
+          "description": {
+            "state": "UNKNOWN"
+          },
+          "name": {
+            "state": "KNOWN",
+            "value": "slime"
+          }
+        }
+      },
+      "official_name": null,
+      "owner": "Terrain",
+      "primarytype": "natural tiles",
+      "reason": "primarytype_world_object",
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i21772",
+        "revision": "definition-r1"
+      },
+      "validated_record_sha256": "517b8bc55f467736c6650faeaac524f7e482b58c663fb865161a6cb2f94e9c5e",
+      "wiki_page_index": 13
+    },
+    {
+      "appearance_id": 21773,
+      "binding": {
+        "disposition": "EXACT",
+        "external_id": "21773",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i21773",
+          "revision": "definition-r1"
+        }
+      },
+      "decoded_record_sha256": "27f5fb54fe2b8cb197cbf53f5fb4d97d6c7b948f2d19942ce900173b0dcbb958",
+      "member": [
+        21773,
+        "31cfaf1c640fdc0b3d274cc09d6bed1c3d48f4f536a5d76d15f751195c1130a1",
+        "305ad82f1b6f57bb0a4550f180a430fe08122b3cb498c3bb76d8ebcceb5d1fca"
+      ],
+      "native_presentation": {
+        "state": "KNOWN",
+        "value": {
+          "description": {
+            "state": "UNKNOWN"
+          },
+          "name": {
+            "state": "KNOWN",
+            "value": "slime"
+          }
+        }
+      },
+      "official_name": null,
+      "owner": "Terrain",
+      "primarytype": "natural tiles",
+      "reason": "primarytype_world_object",
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i21773",
+        "revision": "definition-r1"
+      },
+      "validated_record_sha256": "ae8d391b2b95765a57f98738c387c31427a5f7ed8c2102ce900b4f7a5e9ab1ee",
+      "wiki_page_index": 13
+    },
+    {
+      "appearance_id": 21774,
+      "binding": {
+        "disposition": "EXACT",
+        "external_id": "21774",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i21774",
+          "revision": "definition-r1"
+        }
+      },
+      "decoded_record_sha256": "4ad23b0203537a24a85ca2d9a9a0432101676468a4b1fe527dfe103612ab3b57",
+      "member": [
+        21774,
+        "31cfaf1c640fdc0b3d274cc09d6bed1c3d48f4f536a5d76d15f751195c1130a1",
+        "8e708a44edfa6e88755bdd27dd4f12635b22820377718190e80477ef0bf84173"
+      ],
+      "native_presentation": {
+        "state": "KNOWN",
+        "value": {
+          "description": {
+            "state": "UNKNOWN"
+          },
+          "name": {
+            "state": "KNOWN",
+            "value": "slime"
+          }
+        }
+      },
+      "official_name": null,
+      "owner": "Terrain",
+      "primarytype": "natural tiles",
+      "reason": "primarytype_world_object",
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i21774",
+        "revision": "definition-r1"
+      },
+      "validated_record_sha256": "a3a25dfcb31ba651f54d5fd600729deae1c45fe3c0e2101c80f1a684c45dc9fa",
+      "wiki_page_index": 13
+    },
+    {
+      "appearance_id": 22338,
+      "binding": {
+        "disposition": "EXACT",
+        "external_id": "22338",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i22338",
+          "revision": "definition-r1"
+        }
+      },
+      "decoded_record_sha256": "a8da6f17b1d62c31462727679cab674ecc4852f65a9b807b340dd1ab5745e39a",
+      "member": [
+        22338,
+        "31cfaf1c640fdc0b3d274cc09d6bed1c3d48f4f536a5d76d15f751195c1130a1",
+        "4957485b477c3cd20ef64ace330104b949947f6dbae806425067b5b6a668ec9b"
+      ],
+      "native_presentation": {
+        "state": "KNOWN",
+        "value": {
+          "description": {
+            "state": "UNKNOWN"
+          },
+          "name": {
+            "state": "KNOWN",
+            "value": "chimney"
+          }
+        }
+      },
+      "official_name": null,
+      "owner": "WorldObject",
+      "primarytype": "constructions",
+      "reason": "primarytype_world_object",
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i22338",
+        "revision": "definition-r1"
+      },
+      "validated_record_sha256": "f9c93eaba0dbf9e3639490d1911f6fa1be2311098cbbb20f973b59bc29603919",
+      "wiki_page_index": 14
+    },
+    {
+      "appearance_id": 25101,
+      "binding": {
+        "disposition": "EXACT",
+        "external_id": "25101",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i25101",
+          "revision": "definition-r1"
+        }
+      },
+      "decoded_record_sha256": "86076e3e943874fbde4c1ed73b97977a2944e39fd4f95a27ddf3e78970b85ba0",
+      "member": [
+        25101,
+        "31cfaf1c640fdc0b3d274cc09d6bed1c3d48f4f536a5d76d15f751195c1130a1",
+        "3903ecb9da233b8ccfa56352ba0b5e60d883c392592a40c627d802c96001230f"
+      ],
+      "native_presentation": {
+        "state": "KNOWN",
+        "value": {
+          "description": {
+            "state": "UNKNOWN"
+          },
+          "name": {
+            "state": "KNOWN",
+            "value": "imbuing shrine"
+          }
+        }
+      },
+      "official_name": null,
+      "owner": "WorldObject",
+      "primarytype": "constructions",
+      "reason": "primarytype_world_object",
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i25101",
+        "revision": "definition-r1"
+      },
+      "validated_record_sha256": "b16f8aed10eebd92c86bfa407a0798d4952efff92ac1e36f5730036810fbcaa8",
+      "wiki_page_index": 15
+    },
+    {
+      "appearance_id": 25102,
+      "binding": {
+        "disposition": "EXACT",
+        "external_id": "25102",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i25102",
+          "revision": "definition-r1"
+        }
+      },
+      "decoded_record_sha256": "10b77d8e580cc52f70c9484f9a6b83437160c497647cc01ebec478c7eeb19aa8",
+      "member": [
+        25102,
+        "31cfaf1c640fdc0b3d274cc09d6bed1c3d48f4f536a5d76d15f751195c1130a1",
+        "77f7adbe08c0335c0cb00d139c3cb52cdc6d6fda8b49ad97f962ca461aac4ec2"
+      ],
+      "native_presentation": {
+        "state": "KNOWN",
+        "value": {
+          "description": {
+            "state": "UNKNOWN"
+          },
+          "name": {
+            "state": "KNOWN",
+            "value": "imbuing shrine"
+          }
+        }
+      },
+      "official_name": null,
+      "owner": "WorldObject",
+      "primarytype": "constructions",
+      "reason": "primarytype_world_object",
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i25102",
+        "revision": "definition-r1"
+      },
+      "validated_record_sha256": "f90a001c31353c581d540de47d527e04d7a02edfdd4dad70c5e0ba61411e959e",
+      "wiki_page_index": 15
+    },
+    {
+      "appearance_id": 36929,
+      "binding": null,
+      "decoded_record_sha256": "5cc06ba6aeb81ac6abadd3509cb19e1b07d98838b7ad007a198c02dd3965045e",
+      "member": [
+        36929,
+        "31cfaf1c640fdc0b3d274cc09d6bed1c3d48f4f536a5d76d15f751195c1130a1",
+        "7ebe192fc96a35e3f1f447df3f3ddad0c419dd2e16838c03c36a3b24abde4bfb"
+      ],
+      "native_presentation": {},
+      "official_name": null,
+      "owner": "WorldObject",
+      "reason": "immovable_unclassified",
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i36929",
+        "revision": "definition-r1"
+      },
+      "validated_record_sha256": "0a610647945d030dfe68e555c7d803ee8b888670d1d874c5a03a5c37f1914031",
+      "wiki_page_index": null
+    },
+    {
+      "appearance_id": 39949,
+      "binding": null,
+      "decoded_record_sha256": "e20c5269a9b5290e0da93dd37f3e50658ef2cae780f16739d0382982ec81dbf9",
+      "member": [
+        39949,
+        "31cfaf1c640fdc0b3d274cc09d6bed1c3d48f4f536a5d76d15f751195c1130a1",
+        "3ad91b1180f204f244b86f9305f9235e4d11663bc55641c725472132b5a2ddb8"
+      ],
+      "native_presentation": {},
+      "official_name": null,
+      "owner": "WorldObject",
+      "reason": "immovable_unclassified",
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i39949",
+        "revision": "definition-r1"
+      },
+      "validated_record_sha256": "cd775e249a371a9e8c7a682a481cffcdd5d04f3b22f056a0163eb89ff6988c7b",
+      "wiki_page_index": null
+    },
+    {
+      "appearance_id": 51302,
+      "binding": null,
+      "decoded_record_sha256": "4ed75716bcd2839d680436a8a0d5bba1e0617e94269a68a7feeab90dae29891f",
+      "member": [
+        51302,
+        "31cfaf1c640fdc0b3d274cc09d6bed1c3d48f4f536a5d76d15f751195c1130a1",
+        "cac88926b6194603d47838a243b8967141247fbdffda37f3a1193834c89707e6"
+      ],
+      "native_presentation": {},
+      "official_name": null,
+      "owner": "WorldObject",
+      "reason": "immovable_unclassified",
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i51302",
+        "revision": "definition-r1"
+      },
+      "validated_record_sha256": "57ba36b84f6cc926761deb1cc851415a27f80b55028c71746e2239389dc1f3b1",
+      "wiki_page_index": null
+    }
+  ],
+  "schema": "OTERYN_QUALIFIED_WORLD49/v1",
+  "wiki_source": {
+    "path": "imports/tibiawiki/facts/world-primarytype-own-id-20261001.json",
+    "sha256": "cbda0ef34331f6c78e0bdab5d5a59e26fb5ed1b229db876c16dd2ebdff525bd4"
+  }
+}
