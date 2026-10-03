@@ -35,7 +35,8 @@ D295 is ruled C plus (a):
 - the live attacker fence is deferred to composition;
 - the `CharacterLease` seam stays;
 - a binding gate allows no production caller of the three Ability damage bridges until the A2
-  follow-up (a character-bound single live slot with immediate takeover eviction) is merged.
+  follow-up (a character-bound single live slot, rebind only after a terminal session or an
+  accepted takeover flow, and a mandatory live lease-generation check at the write) is merged.
 
 This also corrects the packet: `remove_terminal_session` has production callers on the
 grace-expiry path.
@@ -75,6 +76,9 @@ grace-expiry path.
 
 - required: YES (authority and fencing decision). The control plane triggers it on the frozen head.
 - Round on 7a26bec3/8bf2ce08: in-place rebind for A2 (fixed in 7bcf8e48).
+- Round on 87396ffb: P1 4173424040 (the lease-generation check is mandatory at the write) and
+  P1 4173424046 (no preemption of a healthy controller; rebind only after a terminal session or an
+  accepted takeover flow).
 - Round on 7bcf8e48: P1 4173284936 (the gate trigger is a non-test production reference, checked
   structurally) and P2 4173284940 (this record's sections); both fixed in 4d191ecd.
 - Control-plane amendment on 4d191ecd: #1625 had merged; the check moves to the follow-up

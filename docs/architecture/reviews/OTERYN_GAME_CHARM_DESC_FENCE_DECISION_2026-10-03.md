@@ -78,14 +78,17 @@ stays.
    - While the gate holds, no live path can reach a stale-tuple damage write.
 4. **Follow-up task, direction A2** (admission and composition lane; high risk; it needs the owning
    admission/session contract and independent review):
-   - admission binds `CharacterId` to the player slot, and at most one live slot exists per
-     character;
-   - a new session's admission ends the old session's control at once, through the authoritative
-     terminal fact, so takeover never leaves the old session able to command the actor until grace
-     expiry;
-   - **session replacement is an in-place rebind, never a removal.** A2 adds one carrier operation
-     that, in the same atomic boundary as the FND-04B recovery or takeover, detaches the terminal
-     session from the slot and binds the new GameSessionId to the **same** actor slot. The slot,
+   - admission binds `CharacterId` and the admitted lease generation to the player slot, and at
+     most one live slot exists per character;
+   - **no preemption here.** A second session while the controller is healthy follows FND-04A §8
+     and FND-04B §10 and §19 unchanged: no preemption of a healthy controller, and the dedicated conflict
+     those sections require. This decision does not decide second-session semantics;
+   - **session replacement is an in-place rebind, never a removal,** and only in two cases: the old
+     session is already terminal and the actor is `PRESENT_UNCONTROLLED` (FND-04B post-grace
+     recovery), or a takeover flow that its own contract has separately accepted. A2 adds one
+     carrier operation that, in the same atomic boundary as that recovery or accepted takeover,
+     detaches the terminal session from the slot and binds the new GameSessionId and its lease
+     generation to the **same** actor slot. The slot,
      its actor reference and generation, its position and its runtime state are preserved, as
      FND-04B requires for a `PRESENT_UNCONTROLLED` actor. A command that still carries the old
      session then fails the slot's session check;
@@ -93,9 +96,14 @@ stays.
      `ABSENT` (FND-04B line 107). A2 must not route a session replacement through it, and it confirms
      that the grace-expiry callers (`gameplay_transport/mod.rs` lines 547 and 1040) remove only an
      actor that is leaving the world, not one that post-grace recovery may still attach to;
-   - the damage write validates the attacker's live slot and its session against the command;
-   - **B** (the lease generation stored on the slot) may be added under A2 as an equality check.
-     On its own it is rejected, because it keeps the lifecycle gap.
+   - **the damage write checks live authority, mandatorily.** At the write boundary it validates the
+     attacker's live slot and its session against the command, **and** compares the supplied lease
+     generation for equality with the live lease authority (the generation bound on the slot at
+     admission or rebind). A missing binding refuses. The per-creature high-water mark
+     (`DamageContributors::admission`) stays a monotonic guard, but it is not authority: with no
+     high-water yet it accepts any generation, so it never substitutes for this check;
+   - **B** (the lease generation stored on the slot) is therefore part of A2, not optional. On its
+     own, without A2's slot and session binding, it is rejected because it keeps the lifecycle gap.
 
 ## 4. Rejected options
 
@@ -117,10 +125,10 @@ stays.
 - **Supersede if:**
   - a live caller is needed before A2 lands (that caller's PR then carries the fence itself);
   - the admission contract chooses a different single-live-slot mechanism.
-- **Deliberately not decided:** the exact refusal semantics for a second session, the rebind
-  operation's name and signature, the slot schema, and the wire behaviour toward a displaced
-  client. All three belong to the A2 task and
-  its contract.
+- **Deliberately not decided:** second-session semantics (FND-04A §8 and FND-04B §10 and §19 govern; any
+  takeover needs its own accepted flow), the rebind operation's name and signature, the slot
+  schema, and the wire behaviour toward a displaced client. They belong to the A2 task and its
+  owning contracts.
 
 ## 6. Before-freeze checklist
 
