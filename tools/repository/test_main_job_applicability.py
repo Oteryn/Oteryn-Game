@@ -30,7 +30,11 @@ def workflow(name):
     pull_request = indented_yaml_mapping_block(events or "", "pull_request", 2)
     types = indented_yaml_mapping_block(pull_request or "", "types", 4)
     event_types = re.findall(r"^      - ([a-z_]+)$", types or "", re.MULTILINE)
-    return {"jobs": jobs, "pull_request_types": event_types}
+    concurrency = indented_yaml_mapping_block(text, "concurrency", 0)
+    concurrency_fields = dict(re.findall(
+        r"^  (group|cancel-in-progress): (.+)$", concurrency or "", re.MULTILINE,
+    ))
+    return {"jobs": jobs, "pull_request_types": event_types, "concurrency": concurrency_fields}
 
 
 def evaluate_guard(expression, base, *, action="opened", base_change=None):
@@ -53,7 +57,69 @@ def evaluate_guard(expression, base, *, action="opened", base_change=None):
     return json.loads(subprocess.check_output(["node", "-e", script, json.dumps(event)]))
 
 
+def evaluate_group(template, *, action, number, run_id, base_change=None):
+    """Expand the actual concurrency template with Actions string/null inputs."""
+    context = {
+        "event": {
+            "action": action,
+            "changes": {"base": base_change},
+            "pull_request": {"number": number},
+        },
+        "run_id": run_id,
+    }
+
+    def expand(match):
+        script = (
+            "const github=JSON.parse(process.argv[1]);"
+            "const format=(pattern,...values)=>pattern.replace(/\\{(\\d+)\\}/g,"
+            "(_,index)=>String(values[Number(index)]));"
+            "process.stdout.write(JSON.stringify(String("
+            + match.group(1).strip()
+            + ")));"
+        )
+        return json.loads(subprocess.check_output([
+            "node", "-e", script, json.dumps(context),
+        ]))
+
+    return re.sub(r"\$\{\{(.*?)\}\}", expand, template)
+
+
 class MainJobApplicabilityTests(unittest.TestCase):
+    def test_architecture_metadata_runs_cannot_cancel_active_audit(self):
+        concurrency = workflow("architecture-semantic-audit.yml")["concurrency"]
+        group = concurrency["group"]
+        ordinary = evaluate_group(group, action="synchronize", number=88, run_id=100)
+        first_edit = evaluate_group(group, action="edited", number=88, run_id=101)
+        second_edit = evaluate_group(group, action="edited", number=88, run_id=102)
+        # Even a skipped job still starts a workflow-level concurrency run.
+        # None of those metadata runs may share the active qualification group.
+        self.assertNotEqual(first_edit, ordinary)
+        self.assertNotEqual(second_edit, ordinary)
+        self.assertNotEqual(first_edit, second_edit)
+
+    def test_architecture_source_and_retarget_runs_supersede_old_qualification(self):
+        concurrency = workflow("architecture-semantic-audit.yml")["concurrency"]
+        self.assertEqual(concurrency["cancel-in-progress"], "true")
+        group = concurrency["group"]
+        ordinary = evaluate_group(group, action="synchronize", number=88, run_id=100)
+        next_head = evaluate_group(group, action="synchronize", number=88, run_id=101)
+        retarget = evaluate_group(
+            group, action="edited", number=88, run_id=102,
+            base_change={"ref": {"from": "codex/prepared-parent"}},
+        )
+        self.assertEqual(ordinary, "architecture-semantic-audit-88")
+        self.assertEqual(next_head, ordinary)
+        self.assertEqual(retarget, ordinary)
+
+    def test_architecture_concurrency_separates_prs(self):
+        group = workflow("architecture-semantic-audit.yml")["concurrency"]["group"]
+        for action in ("synchronize", "edited"):
+            with self.subTest(action=action):
+                self.assertNotEqual(
+                    evaluate_group(group, action=action, number=88, run_id=100),
+                    evaluate_group(group, action=action, number=89, run_id=100),
+                )
+
     def test_architecture_qualifies_after_stack_ready_then_main_base_edit(self):
         audit = workflow("architecture-semantic-audit.yml")
         expression = audit["jobs"]["audit"]["if"]
