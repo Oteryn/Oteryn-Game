@@ -8,7 +8,7 @@ status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/decision-index-p2-followup
-pr: "follow-up PR of #1646"
+pr: "1654"
 base_sha: 10373b64
 head_sha: "exact frozen head in the #1622 FREEZE_SHA entry"
 final_head_sha: "exact frozen head in the #1622 FREEZE_SHA entry"
@@ -59,4 +59,4 @@ The index is regenerated on `10373b64` (109 rows; it adds #1646 D288 and #1650 D
 
 ## PR and closeout
 
-- One PR. This record is archived in its final authoring commit.
+- PR #1654. This record is archived in its final authoring commit.
