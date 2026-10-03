@@ -1515,8 +1515,8 @@
             },
             "value": {
               "type": "number",
-              "minimum": 0,
-              "maximum": 100
+              "maximum": 100,
+              "exclusiveMinimum": 0
             },
             "unit": {
               "const": "percent_points"
@@ -3422,7 +3422,7 @@
               "reduce_focus_spell_group_cooldown",
               "rune_bonus_uses_vocation_can_create_rule",
               "share_mantra_with_group_members",
-              "shield_triples_bonus"
+              "shield_doubles_bonus"
             ]
           },
           "minItems": 1,
@@ -3678,10 +3678,10 @@
           "const": true
         },
         "revealed_gem_limit": {
-          "const": 250
+          "const": 225
         },
         "revealed_gem_limit_evidence": {
-          "const": "PARITY_PENDING: WHEEL-GEM-0 WHEELGEM0-RL-02"
+          "const": "PARITY_CONFIRMED_REFERENCE: merged WHEEL-GEM-0A section 3; English TibiaWiki r1151969; runtime admission remains separate"
         },
         "grade_min": {
           "const": 0
@@ -3722,7 +3722,7 @@
           ]
         },
         "vendor_price_evidence": {
-          "const": "existing content/services/trade/trade-00000-00321.json; candidate reference, no trade mutation"
+          "const": "samples/item-delivery-reference.json; verified content/services/trade/index.json shard inputs; declarations only, no trade mutation"
         },
         "state_operation_evidence": {
           "const": "WHEEL-GEM-0 sections 3, 5-9; official manual capture notes. in-vessel switch refusal is architect ruling R2."
@@ -4066,15 +4066,20 @@
                   "archfoe"
                 ]
               },
-              "independent_trials": {
+              "maximum_trials": {
                 "type": "integer",
-                "minimum": 0
+                "minimum": 1,
+                "maximum": 2
+              },
+              "stop_on_first_failure": {
+                "const": true
               }
             },
             "required": [
               "quality",
               "chance_by_category",
-              "independent_trials"
+              "maximum_trials",
+              "stop_on_first_failure"
             ]
           },
           "minItems": 3,

@@ -1111,7 +1111,7 @@
       "stage": 2,
       "planner_value": 25.5,
       "selected_value": 22.5,
-      "evidence": "OTERYN_SPELL_NATIVE_BEHAVIOURS_CANDIDATE_V1.md appendix A.1: pinned Canary and native source; planner typo is retained in reference text. Live BR wiki r436992 plus Master of Decay base 30 corroborates 22.5 pp via total 52.5 minus base 30; see samples/live-source-audit.json.",
+      "evidence": "Official8833 directly states Master of Decay +15/22.5/30% (combined45/52.5/60%). Selected22.5 overrides the public planner typo25.5. Original TibiaPal description remains in source-wheel-reference.json; candidate descriptions use selected22.5.",
       "planner_parameter": "mastery_decay_critical_extra_damage"
     },
     {
@@ -1138,8 +1138,8 @@
       "planner_parameter": "base_damage_bonus",
       "stage": 2,
       "planner_value": 60,
-      "selected_value": 40,
-      "evidence": "FORMULA_SELECTION_CONFIRMED: English TibiaWiki Conviction r1206174 explicitly gives +40% base damage; official > English wiki > Canary per architect ruling #162/5933264015. BR r443774 +15% and planner +60% are retained conflicting corroboration, not selected authority. Runtime and current Global parity remain unadmitted."
+      "selected_value": 60,
+      "evidence": "CURRENT_OFFICIAL_PLANNER_SELECTED: Tibia.com public planner MediumPerkInfos46 Aug2Info +60% Base Damage, independently re-read2026-10-01 through Chrome/CDP and normalHTTPS JSON. Explicit owner-directed authoring repair selects60; prior EnglishWiki1206174 40 and BR443774 15 remain conflicting observations; runtime and broad Global parity remain unadmitted."
     }
   ],
   "augment_parameters": {
@@ -1291,8 +1291,8 @@
       "vessel_without_resonance_allowed": true,
       "initial_gems_once_per_character": true,
       "initial_gems_revealed": true,
-      "revealed_gem_limit": 250,
-      "revealed_gem_limit_evidence": "PARITY_PENDING: WHEEL-GEM-0 WHEELGEM0-RL-02",
+      "revealed_gem_limit": 225,
+      "revealed_gem_limit_evidence": "PARITY_CONFIRMED_REFERENCE: merged WHEEL-GEM-0A section 3; English TibiaWiki r1151969; runtime admission remains separate",
       "grade_min": 0,
       "grade_max": 3,
       "grade_decrease_allowed": false,
@@ -1303,7 +1303,7 @@
         "greater_fragment": 2250000,
         "crusher": 500
       },
-      "vendor_price_evidence": "existing content/services/trade/trade-00000-00321.json; candidate reference, no trade mutation",
+      "vendor_price_evidence": "samples/item-delivery-reference.json; verified content/services/trade/index.json shard inputs; declarations only, no trade mutation",
       "state_operation_evidence": "WHEEL-GEM-0 sections 3, 5-9; official manual capture notes. in-vessel switch refusal is architect ruling R2.",
       "vendor_buy_unrevealed_gem_prices": {
         "lesser": 2500,
@@ -1361,7 +1361,8 @@
             "fiendish": 3000,
             "archfoe": 0
           },
-          "independent_trials": 2
+          "maximum_trials": 2,
+          "stop_on_first_failure": true
         },
         {
           "quality": "regular",
@@ -1370,7 +1371,8 @@
             "fiendish": 3000,
             "archfoe": 9000
           },
-          "independent_trials": 2
+          "maximum_trials": 2,
+          "stop_on_first_failure": true
         },
         {
           "quality": "greater",
@@ -1379,7 +1381,8 @@
             "fiendish": 9000,
             "archfoe": 3000
           },
-          "independent_trials": 1
+          "maximum_trials": 1,
+          "stop_on_first_failure": true
         }
       ]
     }
@@ -1469,12 +1472,12 @@
         },
         {
           "kind": "shield_healing_multiplier",
-          "value": 3,
+          "value": 2,
           "unit": "multiplier"
         }
       ],
       "behaviors": [
-        "shield_triples_bonus"
+        "shield_doubles_bonus"
       ],
       "targets": [
         "healing_spells"
@@ -1865,7 +1868,7 @@
     "requested_fandom_verified": true
   },
   "unique_source_selections": {
-    "battle_healing": "official:8833 selects +10% healing with shield multiplier 3; planner multiplier 2 retained in raw capture.",
+    "battle_healing": "Official8872 (2026-07-07) reduces the shield multiplier from3to2, superseding8833. Selected healing bonus10%, doubled with shield20%; current official planner agrees.",
     "focus_mastery": "official:8833 and Fandom:1206174 select focus-spell group cooldown -2 s, not the next damaging spell primary cooldown; Sorcerer targets Hell's Core and Rage of the Skies.",
     "guiding_presence": "Official8833 full mantra share100%; official8944/EnglishWiki1206174 literal party+33%. EnglishWiki gives no arithmetic; pinnedCanary99902524 party.cpp308-321 implements mantra sharing but combat.cpp824-835/game.cpp210-223 has no Guiding+33 bonus. Arithmetic/rounding/self-copy PARITY_PENDING; runtime unadmitted; no owner gate.",
     "runic_mastery": {
@@ -1873,5 +1876,34 @@
       "rule": "Percentage applies to the character base magic level for that rune effect only; no effective-skill or equipment bonus is invented."
     }
   },
-  "browser_source_audit": "samples/browser-source-audit.json"
+  "browser_source_audit": "samples/browser-source-audit.json",
+  "description_overrides": {
+    "augmented_mystic_repulse": {
+      "augment_stages": {
+        "1": "-4s Cooldown"
+      }
+    },
+    "augmented_thousand_fist_blows": {
+      "augment_stages": {
+        "2": "-4s Cooldown"
+      }
+    },
+    "augmented_flurry_of_blows": {
+      "augment_stages": {
+        "1": "Affected area enlarged"
+      }
+    },
+    "guiding_presence": {
+      "reference_description": "Gain an aura that shares your mantra with members of your group and increases your passive party bonuses by 33%."
+    },
+    "focus_mastery": {
+      "reference_description": "Increases the damage of your next damage spell by 35% within 12 seconds after casting a focus spell. Reduces the group cooldown of focus spells by 2 seconds."
+    },
+    "lord_of_destruction": {
+      "revelation_replacements": {
+        "Mastery of": "Master of",
+        "25.50%": "22.50%"
+      }
+    }
+  }
 }

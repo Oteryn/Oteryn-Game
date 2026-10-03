@@ -1,0 +1,5060 @@
+{
+  "authority": "DRAFT_SOURCE_QUALIFIED_REFERENCES; no runtime activation",
+  "counts": {
+    "materials": 72,
+    "scrolls": 72,
+    "shrine_variants": 8
+  },
+  "findings": [],
+  "inputs": {
+    "appearances": {
+      "path": "content/assets/files/appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.dat",
+      "sha256": "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2"
+    },
+    "item_facts": {
+      "path": "imports/tibiawiki/facts/items-stats.json",
+      "sha256": "49d43cbe6957e6edc16aeda72e05152c55606e9381452ea74d7a63b5a5e91e4a"
+    },
+    "recipe_facts": {
+      "digest_scope": "sources.wiki_br.records canonical compact JSON",
+      "path": "tools/content-schema/imbuement-authoring/samples/imbuement-sources-2026-10-01.json",
+      "sha256": "ee6159fc28568b689cc1f15d35c6ca535f25d24cb9436a57d3d7640cd9e6a38b"
+    }
+  },
+  "material_bindings": {
+    "Battle Stone": {
+      "evidence": {
+        "canonical": {
+          "definition_sha256": "3cdf5cd6e67f96fd925c0477f8eecebd0464db33f661eee51e3b9a68d7448d0e",
+          "name": "battle stone",
+          "path": "content/items/definitions/items-01000-01499.json"
+        },
+        "identity_basis": "CLIENT_AND_WIKI",
+        "primary_client": {
+          "id": 11447,
+          "name": "battle stone",
+          "record_sha256": "ba6dbec1063dcfb0a348f73dc5afea8a58943ce138ba0d7b0cfb85c64f3db1e9"
+        },
+        "wiki_observations": [
+          {
+            "content_sha256": "df021eb68441f099cf6ff5b98b2a81db6466307fa346ce391e975c53ba2753a1",
+            "page_id": 46199,
+            "revision_id": 1099112,
+            "revision_sha1": "73ccfcd5af5ef980fc891731dec4a41cdd14f1c0",
+            "revision_timestamp": "2025-04-16T11:49:27Z",
+            "url": "https://tibia.fandom.com/wiki/Battle_Stone",
+            "wiki_title": "Battle Stone"
+          }
+        ]
+      },
+      "item_ref": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i11447",
+        "revision": "definition-r1"
+      },
+      "source_name": "Battle Stone"
+    },
+    "Blazing Bone": {
+      "evidence": {
+        "canonical": {
+          "definition_sha256": "899ea9c202a2cf58dfe0ff5070f593282497dde4f79a4585ee75d2ac5795c55a",
+          "name": "blazing bone",
+          "path": "content/items/definitions/items-05500-05999.json"
+        },
+        "identity_basis": "CLIENT_AND_WIKI",
+        "primary_client": {
+          "id": 16131,
+          "name": "blazing bone",
+          "record_sha256": "504d58c06125821b875a683e4afdb7f4a85c8d71227d14113905f8958573ea38"
+        },
+        "wiki_observations": [
+          {
+            "content_sha256": "4df56851998369178319bf13b51c81d757b0f51fc03ef873a71a20f507c2b788",
+            "page_id": 59819,
+            "revision_id": 1100522,
+            "revision_sha1": "d920417581f94c1ef74acb8935b891f1e14ef409",
+            "revision_timestamp": "2025-04-24T02:00:57Z",
+            "url": "https://tibia.fandom.com/wiki/Blazing_Bone",
+            "wiki_title": "Blazing Bone"
+          }
+        ]
+      },
+      "item_ref": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i16131",
+        "revision": "definition-r1"
+      },
+      "source_name": "Blazing Bone"
+    },
+    "Bloody Pincers": {
+      "evidence": {
+        "canonical": {
+          "definition_sha256": "820bf5f9a3a6c6495aa045d2fa4f10c06df5c858f5206e5bf7d4197366f6d1b4",
+          "name": "bloody pincers",
+          "path": "content/items/definitions/items-33500-33999.json"
+        },
+        "identity_basis": "CLIENT_AND_WIKI",
+        "primary_client": {
+          "id": 9633,
+          "name": "bloody pincers",
+          "record_sha256": "4a47c254ebc9716fabf8c8d0d14968bd62bf373a062916cc1ebcea9295bd7ca1"
+        },
+        "wiki_observations": [
+          {
+            "content_sha256": "46357ddf23a6354f54f8b4c5cd4c070b7c71760115c5fe2398af674b29944298",
+            "page_id": 42017,
+            "revision_id": 1089861,
+            "revision_sha1": "9eda20da237cdc755392045e0b9468e1e169d053",
+            "revision_timestamp": "2025-01-30T17:55:09Z",
+            "url": "https://tibia.fandom.com/wiki/Bloody_Pincers",
+            "wiki_title": "Bloody Pincers"
+          }
+        ]
+      },
+      "item_ref": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i9633",
+        "revision": "definition-r1"
+      },
+      "source_name": "Bloody Pincers"
+    },
+    "Brimstone Fangs": {
+      "evidence": {
+        "canonical": {
+          "definition_sha256": "f9a89c2123ef04b901eac70b2b4bb3c2abbe9631c2309b2007b2dcd2b7d412aa",
+          "name": "brimstone fangs",
+          "path": "content/items/definitions/items-01500-01999.json"
+        },
+        "identity_basis": "CLIENT_AND_WIKI",
+        "primary_client": {
+          "id": 11702,
+          "name": "brimstone fangs",
+          "record_sha256": "f8516ed99091127847d9f98d6a092296af46ad1640531b9e840766ad819d9c79"
+        },
+        "wiki_observations": [
+          {
+            "content_sha256": "65ac020bee5d36dcae4e43ea89e114c0a7b8af2f8beecae79a208d726f41d5bc",
+            "page_id": 46565,
+            "revision_id": 1058542,
+            "revision_sha1": "14a3748a9c89dea2e5951573869eb0a8da1d9d66",
+            "revision_timestamp": "2024-04-20T00:13:16Z",
+            "url": "https://tibia.fandom.com/wiki/Brimstone_Fangs",
+            "wiki_title": "Brimstone Fangs"
+          }
+        ]
+      },
+      "item_ref": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i11702",
+        "revision": "definition-r1"
+      },
+      "source_name": "Brimstone Fangs"
+    },
+    "Brimstone Shell": {
+      "evidence": {
+        "canonical": {
+          "definition_sha256": "5ac30afe10fa491c1b6adcb46a58fc4d14a0cf1f8dacca8e39cce8f94e350a6d",
+          "name": "brimstone shell",
+          "path": "content/items/definitions/items-01500-01999.json"
+        },
+        "identity_basis": "CLIENT_AND_WIKI",
+        "primary_client": {
+          "id": 11703,
+          "name": "brimstone shell",
+          "record_sha256": "f0bdd5838e52eacee525fb359c0e747f4262c7300b61ef24732062f8ced1c5ad"
+        },
+        "wiki_observations": [
+          {
+            "content_sha256": "1e3eab83da8db6c861fb5d0caf6e91b9e3ceab4aa5dd53c05c1ce141ecdf76fc",
+            "page_id": 46531,
+            "revision_id": 1098685,
+            "revision_sha1": "aa99adf56c76149efd291affdf17f9f275bfa2a4",
+            "revision_timestamp": "2025-04-11T17:39:34Z",
+            "url": "https://tibia.fandom.com/wiki/Brimstone_Shell",
+            "wiki_title": "Brimstone Shell"
+          }
+        ]
+      },
+      "item_ref": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i11703",
+        "revision": "definition-r1"
+      },
+      "source_name": "Brimstone Shell"
+    },
+    "Broken Shamanic Staff": {
+      "evidence": {
+        "canonical": {
+          "definition_sha256": "2fdaff6c6efeb561ca676aa40553b6e98e792aa2e7f9af706539ed38bc57c85d",
+          "name": "broken shamanic staff",
+          "path": "content/items/definitions/items-01000-01499.json"
+        },
+        "identity_basis": "CLIENT_AND_WIKI",
+        "primary_client": {
+          "id": 11452,
+          "name": "broken shamanic staff",
+          "record_sha256": "22230df75df81e47b0842ba8f1773803d0f96755faf8a682b443477b11a21b94"
+        },
+        "wiki_observations": [
+          {
+            "content_sha256": "005ebe7e4d4b49c474ea0a1eb3e7d591a56d553474b2cd05025be72a1bb35bc1",
+            "page_id": 46207,
+            "revision_id": 1098693,
+            "revision_sha1": "d57095267a433975c0f245573389137aee7d524b",
+            "revision_timestamp": "2025-04-11T18:05:20Z",
+            "url": "https://tibia.fandom.com/wiki/Broken_Shamanic_Staff",
+            "wiki_title": "Broken Shamanic Staff"
+          }
+        ]
+      },
+      "item_ref": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i11452",
+        "revision": "definition-r1"
+      },
+      "source_name": "Broken Shamanic Staff"
+    },
+    "Compass": {
+      "evidence": {
+        "canonical": {
+          "definition_sha256": "2ae65f02cfe6fdcc1694ef9753594d7e062ecae913df275cd02c43bd152ebc06",
+          "name": "compass",
+          "path": "content/items/definitions/items-00000-00499.json"
+        },
+        "identity_basis": "CLIENT_AND_WIKI",
+        "primary_client": {
+          "id": 10302,
+          "name": "compass",
+          "record_sha256": "3df88192613fe54a73f5618cf688a24af0a72b849d7c6424672c58a0bfb39de1"
+        },
+        "wiki_observations": [
+          {
+            "content_sha256": "64d6f906d034501f1533e28b742568272d4735a325b887c1c813abbef5181ad3",
+            "page_id": 41867,
+            "revision_id": 1098679,
+            "revision_sha1": "048de6dbe379e0dfa26257767c461b7521d4c36c",
+            "revision_timestamp": "2025-04-11T17:21:17Z",
+            "url": "https://tibia.fandom.com/wiki/Compass",
+            "wiki_title": "Compass"
+          }
+        ]
+      },
+      "item_ref": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i10302",
+        "revision": "definition-r1"
+      },
+      "source_name": "Compass"
+    },
+    "Crawler Head Plating": {
+      "evidence": {
+        "canonical": {
+          "definition_sha256": "07abc28049ba577fb80f9cb549b3ddc5de9c3753c59636d963a6585b308bfb6f",
+          "name": "crawler head plating",
+          "path": "content/items/definitions/items-04000-04499.json"
+        },
+        "identity_basis": "CLIENT_AND_WIKI",
+        "primary_client": {
+          "id": 14079,
+          "name": "crawler head plating",
+          "record_sha256": "a920d0a7b4a97bd997e61c2bc564667fadd99ec6eb18e8bbe27de446b0721f74"
+        },
+        "wiki_observations": [
+          {
+            "content_sha256": "2d06c24aec9224d410ceec60c3eda414a59cbdd4efe752ba55ddbebff14cc241",
+            "page_id": 56927,
+            "revision_id": 1098646,
+            "revision_sha1": "c08b28784eccc4d402d01261cbd2b24256cca598",
+            "revision_timestamp": "2025-04-11T11:31:41Z",
+            "url": "https://tibia.fandom.com/wiki/Crawler_Head_Plating",
+            "wiki_title": "Crawler Head Plating"
+          }
+        ]
+      },
+      "item_ref": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i14079",
+        "revision": "definition-r1"
+      },
+      "source_name": "Crawler Head Plating"
+    },
+    "Crystallized Anger": {
+      "evidence": {
+        "canonical": {
+          "definition_sha256": "a0603f67e93170ef6924057258b5a03a7d42e311b085d9b3c1c1bba016e6754a",
+          "name": "crystallized anger",
+          "path": "content/items/definitions/items-12000-12499.json"
+        },
+        "identity_basis": "CLIENT_AND_WIKI",
+        "primary_client": {
+          "id": 23507,
+          "name": "crystallized anger",
+          "record_sha256": "49da63f2a164c79ccf9fc665ebb34665d70e666591e7ef01d5e44e3d14bf650c"
+        },
+        "wiki_observations": [
+          {
+            "content_sha256": "97d5c30c37eaf25e969807101ed700bb9679e70be23ae0a656fedbfa1ccc2ae6",
+            "page_id": 78175,
+            "revision_id": 1054491,
+            "revision_sha1": "8f462936df1ab70a87822c4f21734e5ada32255d",
+            "revision_timestamp": "2024-02-19T17:27:05Z",
+            "url": "https://tibia.fandom.com/wiki/Crystallized_Anger",
+            "wiki_title": "Crystallized Anger"
+          }
+        ]
+      },
+      "item_ref": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i23507",
+        "revision": "definition-r1"
+      },
+      "source_name": "Crystallized Anger"
+    },
+    "Cultish Mask": {
+      "evidence": {
+        "canonical": {
+          "definition_sha256": "1ed9ac119b12d2078700abbb1251b07999990b9362532cf791079a54aa20e104",
+          "name": "cultish mask",
+          "path": "content/items/definitions/items-33500-33999.json"
+        },
+        "identity_basis": "CLIENT_AND_WIKI",
+        "primary_client": {
+          "id": 9638,
+          "name": "cultish mask",
+          "record_sha256": "e8d2dab33a1ebdf186577748efdf01852f27056949cf3e1f093ca8045a64d288"
+        },
+        "wiki_observations": [
+          {
+            "content_sha256": "75578d5234a76251dd20d11221a20d5cdf010f5ad530b1c74d56c520332de658",
+            "page_id": 41901,
+            "revision_id": 1188322,
+            "revision_sha1": "6f5b1bb3985f994f0daad9c76c8ad6c581dbd809",
+            "revision_timestamp": "2026-06-03T01:13:48Z",
+            "url": "https://tibia.fandom.com/wiki/Cultish_Mask",
+            "wiki_title": "Cultish Mask"
+          }
+        ]
+      },
+      "item_ref": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i9638",
+        "revision": "definition-r1"
+      },
+      "source_name": "Cultish Mask"
+    },
+    "Cultish Robe": {
+      "evidence": {
+        "canonical": {
+          "definition_sha256": "70dd093e24281a2c73b0f9ed6172cd3444c7b46c1730e79873c36196950d9d25",
+          "name": "cultish robe",
+          "path": "content/items/definitions/items-33500-33999.json"
+        },
+        "identity_basis": "CLIENT_AND_WIKI",
+        "primary_client": {
+          "id": 9639,
+          "name": "cultish robe",
+          "record_sha256": "aecef03fdfe62786e453f8f639d9a34691bc0fa75da67929a69e6d85edf8b92a"
+        },
+        "wiki_observations": [
+          {
+            "content_sha256": "a079f5d83bbfb15f268f83b330504f577c38ac558308c2e3f7ff83b2480783a7",
+            "page_id": 41902,
+            "revision_id": 1098586,
+            "revision_sha1": "5cfb53c747a65aff7fac6ffbc66bd978f8d8af6c",
+            "revision_timestamp": "2025-04-10T14:30:17Z",
+            "url": "https://tibia.fandom.com/wiki/Cultish_Robe",
+            "wiki_title": "Cultish Robe"
+          }
+        ]
+      },
+      "item_ref": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i9639",
+        "revision": "definition-r1"
+      },
+      "source_name": "Cultish Robe"
+    },
+    "Cyclops Toe": {
+      "evidence": {
+        "canonical": {
+          "definition_sha256": "4c5644288078291cc227bfec9c5951559b282589c859b5c4e98a6c74e23d69ae",
+          "name": "cyclops toe",
+          "path": "content/items/definitions/items-33500-33999.json"
+        },
+        "identity_basis": "CLIENT_AND_WIKI",
+        "primary_client": {
+          "id": 9657,
+          "name": "cyclops toe",
+          "record_sha256": "eeda946425a2b3987edccfc99bec6ba49a6b012db7a8bad3d8dda9a8319cb88b"
+        },
+        "wiki_observations": [
+          {
+            "content_sha256": "e0a9e09169b64af4421182f75d643ff3880202fb43642e6fc97d6d7555c85249",
+            "page_id": 42018,
+            "revision_id": 1100518,
+            "revision_sha1": "f0a1c66c9bdebede16dc09c686baa28c47b69190",
+            "revision_timestamp": "2025-04-24T01:47:49Z",
+            "url": "https://tibia.fandom.com/wiki/Cyclops_Toe",
+            "wiki_title": "Cyclops Toe"
+          }
+        ]
+      },
+      "item_ref": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i9657",
+        "revision": "definition-r1"
+      },
+      "source_name": "Cyclops Toe"
+    },
+    "Damselfly Wing": {
+      "evidence": {
+        "canonical": {
+          "definition_sha256": "6282bcd7770487dc9fecbb2954cc2ac267b67711e5f868b23ae55aca08904180",
+          "name": "damselfly wing",
+          "path": "content/items/definitions/items-06500-06999.json"
+        },
+        "identity_basis": "CLIENT_AND_WIKI",
+        "primary_client": {
+          "id": 17458,
+          "name": "damselfly wing",
+          "record_sha256": "d4bea13e35d60e3d2ca889056f3a17d35dd967ae9aa517b00bb2e3f75ac32ce2"
+        },
+        "wiki_observations": [
+          {
+            "content_sha256": "798efe83f8f421d788f81839f4d49ce52b3d940a43c67f4debbf1a58ba91caaa",
+            "page_id": 61745,
+            "revision_id": 1098678,
+            "revision_sha1": "3afeecdb95fd21ebe0bff8c7a3a5324f5b39ad32",
+            "revision_timestamp": "2025-04-11T17:16:39Z",
+            "url": "https://tibia.fandom.com/wiki/Damselfly_Wing",
+            "wiki_title": "Damselfly Wing"
+          }
+        ]
+      },
+      "item_ref": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i17458",
+        "revision": "definition-r1"
+      },
+      "source_name": "Damselfly Wing"
+    },
+    "Deepling Warts": {
+      "evidence": {
+        "canonical": {
+          "definition_sha256": "0d81d7c05bd70df094482a1742f25fbe63e8c5c6f788dbcdcc915d266ce3a409",
+          "name": "deepling warts",
+          "path": "content/items/definitions/items-04000-04499.json"
+        },
+        "identity_basis": "CLIENT_AND_WIKI",
+        "primary_client": {
+          "id": 14012,
+          "name": "deepling warts",
+          "record_sha256": "624532559df41aa9e32f5705eea6bcfa4ed669d14c8fb987f3e30e775d25ce28"
+        },
+        "wiki_observations": [
+          {
+            "content_sha256": "c5a77a92b6af21b593a02607e6911d8dc10fee3878fe0dc27d0eadeb2e3a1404",
+            "page_id": 56932,
+            "revision_id": 1067781,
+            "revision_sha1": "d6ca25561974a4eb38db3f687f2ca1e463066f96",
+            "revision_timestamp": "2024-07-04T00:38:11Z",
+            "url": "https://tibia.fandom.com/wiki/Deepling_Warts",
+            "wiki_title": "Deepling Warts"
+          }
+        ]
+      },
+      "item_ref": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i14012",
+        "revision": "definition-r1"
+      },
+      "source_name": "Deepling Warts"
+    },
+    "Demon Horn": {
+      "evidence": {
+        "canonical": {
+          "definition_sha256": "e5f1d5e720ee4311df01927c06b6e1b6c70b9d051de81ac646e7983b517433b0",
+          "name": "demon horn",
+          "path": "content/items/definitions/items-29500-29999.json"
+        },
+        "identity_basis": "CLIENT_AND_WIKI",
+        "primary_client": {
+          "id": 5954,
+          "name": "demon horn",
+          "record_sha256": "9fc189d863e42deacd7734428e61aeff7e2d9feabbb43d2fbcef348a300bb639"
+        },
+        "wiki_observations": [
+          {
+            "content_sha256": "21446bf1079c79775eb4253644b88a5eb53f721744bfa8db1325fe1610d40752",
+            "page_id": 8640,
+            "revision_id": 1054442,
+            "revision_sha1": "ea7327fd9b08fc02bfeda1ff44ab3b5f48643684",
+            "revision_timestamp": "2024-02-19T17:24:53Z",
+            "url": "https://tibia.fandom.com/wiki/Demon_Horn",
+            "wiki_title": "Demon Horn"
+          }
+        ]
+      },
+      "item_ref": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i5954",
+        "revision": "definition-r1"
+      },
+      "source_name": "Demon Horn"
+    },
+    "Demonic Skeletal Hand": {
+      "evidence": {
+        "canonical": {
+          "definition_sha256": "45b37c3c5a6468f72abbfb651202f110dd33c6fcbf920f7f3e6fd41e7f36b8ff",
+          "name": "demonic skeletal hand",
+          "path": "content/items/definitions/items-33500-33999.json"
+        },
+        "identity_basis": "CLIENT_AND_WIKI",
+        "primary_client": {
+          "id": 9647,
+          "name": "demonic skeletal hand",
+          "record_sha256": "06f8d48ae0a0220fe9777f6e09d1ba89a0a4c2baf5f341844e4b53a76f81133f"
+        },
+        "wiki_observations": [
+          {
+            "content_sha256": "17f3802549dc5067de6c930c011a8dd27cc3d42acd0eee2b3bde8b33c5b038ad",
+            "page_id": 41903,
+            "revision_id": 1098683,
+            "revision_sha1": "06589bf3c2272fb312aabe14389831b217b06b7c",
+            "revision_timestamp": "2025-04-11T17:36:31Z",
+            "url": "https://tibia.fandom.com/wiki/Demonic_Skeletal_Hand",
+            "wiki_title": "Demonic Skeletal Hand"
+          }
+        ]
+      },
+      "item_ref": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i9647",
+        "revision": "definition-r1"
+      },
+      "source_name": "Demonic Skeletal Hand"
+    },
+    "Draken Sulphur": {
+      "evidence": {
+        "canonical": {
+          "definition_sha256": "b4916915e10b7fb5fe387b379b2b1674a4c16a79eb1c177da5073bc9f5dc46c9",
+          "name": "draken sulphur",
+          "path": "content/items/definitions/items-01500-01999.json"
+        },
+        "identity_basis": "CLIENT_AND_WIKI",
+        "primary_client": {
+          "id": 11658,
+          "name": "draken sulphur",
+          "record_sha256": "01da6dc402ef9ae309b3fe03a1578c3ec95776edece2707214270fbe7de80550"
+        },
+        "wiki_observations": [
+          {
+            "content_sha256": "59acbd1c26fc2521262fdec896195d39819ea5ac9c278d2b1a4eb4ef93ca1dd5",
+            "page_id": 46567,
+            "revision_id": 1067775,
+            "revision_sha1": "2f9226f0e0eb9c6380017b9f500f7e3c660443a8",
+            "revision_timestamp": "2024-07-04T00:25:10Z",
+            "url": "https://tibia.fandom.com/wiki/Draken_Sulphur",
+            "wiki_title": "Draken Sulphur"
+          }
+        ]
+      },
+      "item_ref": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i11658",
+        "revision": "definition-r1"
+      },
+      "source_name": "Draken Sulphur"
+    },
+    "Elven Hoof": {
+      "evidence": {
+        "canonical": {
+          "definition_sha256": "b8a5773b044a773d262bc71dd57bd3adf3e3639d489c5adb15ebc92b252af47d",
+          "name": "elven hoof",
+          "path": "content/items/definitions/items-08000-08499.json"
+        },
+        "identity_basis": "CLIENT_AND_WIKI",
+        "primary_client": {
+          "id": 18994,
+          "name": "elven hoof",
+          "record_sha256": "c77a4b3148b2a39240a80f085a36b465c26d621801d43727419f0ba83bd0fe76"
+        },
+        "wiki_observations": [
+          {
+            "content_sha256": "370e35e1d9e2594b73d9e9ef821109c9deaf3e7aedefbefe78ecdcbeb1f8d743",
+            "page_id": 64366,
+            "revision_id": 1099115,
+            "revision_sha1": "6506059e447709dced957f357ae2c56a333bfde6",
+            "revision_timestamp": "2025-04-16T12:02:47Z",
+            "url": "https://tibia.fandom.com/wiki/Elven_Hoof",
+            "wiki_title": "Elven Hoof"
+          }
+        ]
+      },
+      "item_ref": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i18994",
+        "revision": "definition-r1"
+      },
+      "source_name": "Elven Hoof"
+    },
+    "Elven Scouting Glass": {
+      "evidence": {
+        "canonical": {
+          "definition_sha256": "c0998f887f4d73c6d2caee9cc215add04a477104741c6ea9423f67ca91258337",
+          "name": "elven scouting glass",
+          "path": "content/items/definitions/items-01000-01499.json"
+        },
+        "identity_basis": "CLIENT_AND_WIKI",
+        "primary_client": {
+          "id": 11464,
+          "name": "elven scouting glass",
+          "record_sha256": "5cc6996e990d5026623bc6b471fd0c72eeabd192278737fa8ab342cc6456cdf6"
+        },
+        "wiki_observations": [
+          {
+            "content_sha256": "4beb5165543c888d53d481aef1895be03956bb9b4ad69341bc8dd579aca9dc61",
+            "page_id": 46214,
+            "revision_id": 1099116,
+            "revision_sha1": "fe84cfd4cad2ca95a0ed4e518ceadd70e0930d2c",
+            "revision_timestamp": "2025-04-16T12:04:01Z",
+            "url": "https://tibia.fandom.com/wiki/Elven_Scouting_Glass",
+            "wiki_title": "Elven Scouting Glass"
+          }
+        ]
+      },
+      "item_ref": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i11464",
+        "revision": "definition-r1"
+      },
+      "source_name": "Elven Scouting Glass"
+    },
+    "Elvish Talisman": {
+      "evidence": {
+        "canonical": {
+          "definition_sha256": "05c494c9454b57338086acf3eb09250c85143fecf4413ea1b4f8791370d62a5a",
+          "name": "elvish talisman",
+          "path": "content/items/definitions/items-33500-33999.json"
+        },
+        "identity_basis": "CLIENT_AND_WIKI",
+        "primary_client": {
+          "id": 9635,
+          "name": "elvish talisman",
+          "record_sha256": "b86f82e623a867e7c9444f04c4e4bf48d357d7ee613dfc67b990b1fd6ba9dfa4"
+        },
+        "wiki_observations": [
+          {
+            "content_sha256": "2b4d84e9eb66a49d12455b493701334f95ee2338b453d176214b8146832bab87",
+            "page_id": 41906,
+            "revision_id": 1098587,
+            "revision_sha1": "54c28146f41f8cefa4b4a3a0424c1f9dc2ae491f",
+            "revision_timestamp": "2025-04-10T14:33:41Z",
+            "url": "https://tibia.fandom.com/wiki/Elvish_Talisman",
+            "wiki_title": "Elvish Talisman"
+          }
+        ]
+      },
+      "item_ref": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i9635",
+        "revision": "definition-r1"
+      },
+      "source_name": "Elvish Talisman"
+    },
+    "Energy Vein": {
+      "evidence": {
+        "canonical": {
+          "definition_sha256": "946591c4a5136657660e8c98b7b153a3bc07395ef07ba0a8e8b6df5acb313c43",
+          "name": "energy vein",
+          "path": "content/items/definitions/items-12000-12499.json"
+        },
+        "identity_basis": "CLIENT_AND_WIKI",
+        "primary_client": {
+          "id": 23508,
+          "name": "energy vein",
+          "record_sha256": "c6c35523266cfe4d034d9cfc4e36c012b14a5be22602c0394a4c800c1f2cd382"
+        },
+        "wiki_observations": [
+          {
+            "content_sha256": "dcdb3575186906273de06b1f31263021e879bf4a192805adba92e3ab698fbb91",
+            "page_id": 78180,
+            "revision_id": 1054449,
+            "revision_sha1": "cd3552e98b0f7d0fc16decbef8d8621de0fcd782",
+            "revision_timestamp": "2024-02-19T17:25:44Z",
+            "url": "https://tibia.fandom.com/wiki/Energy_Vein",
+            "wiki_title": "Energy Vein"
+          }
+        ]
+      },
+      "item_ref": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i23508",
+        "revision": "definition-r1"
+      },
+      "source_name": "Energy Vein"
+    },
+    "Fairy Wings": {
+      "evidence": {
+        "canonical": {
+          "definition_sha256": "6fcd532d046a57f1e83744ba66f8a3e397ddde805be907910b6e35465b54e9ee",
+          "name": "fairy wings",
+          "path": "content/items/definitions/items-14000-14499.json"
+        },
+        "identity_basis": "CLIENT_AND_WIKI",
+        "primary_client": {
+          "id": 25694,
+          "name": "fairy wings",
+          "record_sha256": "4b46c8dc0035acb20e7194ed12fb97604098a77439b35ec1c72c351017b1b52c"
+        },
+        "wiki_observations": [
+          {
+            "content_sha256": "793dd3ab88c72fea35e9fc2e140e2bd3475f2a56b4dcef589d2f892701ead276",
+            "page_id": 81402,
+            "revision_id": 1188317,
+            "revision_sha1": "748e56cad18cc2a2bf0b682fc57d8b538e8537f9",
+            "revision_timestamp": "2026-06-03T00:36:35Z",
+            "url": "https://tibia.fandom.com/wiki/Fairy_Wings",
+            "wiki_title": "Fairy Wings"
+          }
+        ]
+      },
+      "item_ref": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i25694",
+        "revision": "definition-r1"
+      },
+      "source_name": "Fairy Wings"
+    },
+    "Fiery Heart": {
+      "evidence": {
+        "canonical": {
+          "definition_sha256": "6e972d86ee984d661f35adc819145305ab6bdd98ec1c1cc397b1de5d658d6634",
+          "name": "fiery heart",
+          "path": "content/items/definitions/items-33500-33999.json"
+        },
+        "identity_basis": "CLIENT_AND_WIKI",
+        "primary_client": {
+          "id": 9636,
+          "name": "fiery heart",
+          "record_sha256": "a225666aedbc3162410d6d191d02309e0b87cc46953c687b85cef074ed95a92d"
+        },
+        "wiki_observations": [
+          {
+            "content_sha256": "71d1cf04ad33c04406b8c3bbc0a6d09a63f0189536de0ba359ceaedd2ee5e45b",
+            "page_id": 41907,
+            "revision_id": 1098546,
+            "revision_sha1": "a7c03450fd631c4ffbdcea99bb280b1f078cb556",
+            "revision_timestamp": "2025-04-09T13:20:41Z",
+            "url": "https://tibia.fandom.com/wiki/Fiery_Heart",
+            "wiki_title": "Fiery Heart"
+          }
+        ]
+      },
+      "item_ref": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i9636",
+        "revision": "definition-r1"
+      },
+      "source_name": "Fiery Heart"
+    },
+    "Flask of Embalming Fluid": {
+      "evidence": {
+        "canonical": {
+          "definition_sha256": "c4f953bb72bea38f9e5503cc30c8cbdeed79489a4794aabe41463fe4a501bf2a",
+          "name": "flask of embalming fluid",
+          "path": "content/items/definitions/items-01000-01499.json"
+        },
+        "identity_basis": "CLIENT_AND_WIKI",
+        "primary_client": {
+          "id": 11466,
+          "name": "flask of embalming fluid",
+          "record_sha256": "e8b7291141bd446e1d7e2001fda770d745da602e2edc3a2b81017de100588137"
+        },
+        "wiki_observations": [
+          {
+            "content_sha256": "52faf0cef7b846335d7d4d08acdf336cbfa17cb5fc50547c9d63578fd467bb53",
+            "page_id": 46215,
+            "revision_id": 1100589,
+            "revision_sha1": "09e2091976bda64686cb02a6ad9a382f4e976db2",
+            "revision_timestamp": "2025-04-25T01:35:17Z",
+            "url": "https://tibia.fandom.com/wiki/Flask_of_Embalming_Fluid",
+            "wiki_title": "Flask of Embalming Fluid"
+          }
+        ]
+      },
+      "item_ref": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i11466",
+        "revision": "definition-r1"
+      },
+      "source_name": "Flask of Embalming Fluid"
+    },
+    "Frazzle Skin": {
+      "evidence": {
+        "canonical": {
+          "definition_sha256": "ef444a5b0b885bd2a45dd5bc61e153b10dc1a4d0badd079c6c8714ef0838bf80",
+          "name": "frazzle skin",
+          "path": "content/items/definitions/items-09000-09499.json"
+        },
+        "identity_basis": "CLIENT_AND_WIKI",
+        "primary_client": {
+          "id": 20199,
+          "name": "frazzle skin",
+          "record_sha256": "41fbc9fbe31659b082709d8f84624c599745a3f285c6c3ba774dd57db731ad81"
+        },
+        "wiki_observations": [
+          {
+            "content_sha256": "a9619c41211e978f309e1e6f97d006d1b285786e06c352d33785ce6fff643047",
+            "page_id": 65934,
+            "revision_id": 1098686,
+            "revision_sha1": "b5cb7134207e29a5327d5bd7802f3629d488578e",
+            "revision_timestamp": "2025-04-11T17:40:03Z",
+            "url": "https://tibia.fandom.com/wiki/Frazzle_Skin",
+            "wiki_title": "Frazzle Skin"
+          }
+        ]
+      },
+      "item_ref": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i20199",
+        "revision": "definition-r1"
+      },
+      "source_name": "Frazzle Skin"
+    },
+    "Frosty Heart": {
+      "evidence": {
+        "canonical": {
+          "definition_sha256": "e39e384e82635b74e27848fb7d944da8fba0c6a2633cb3f184062644b4b2cbfb",
+          "name": "frosty heart",
+          "path": "content/items/definitions/items-33500-33999.json"
+        },
+        "identity_basis": "CLIENT_AND_WIKI",
+        "primary_client": {
+          "id": 9661,
+          "name": "frosty heart",
+          "record_sha256": "e7cb906bd3ef624467617a125c2c0507145124a725c7392414c5284d4424786a"
+        },
+        "wiki_observations": [
+          {
+            "content_sha256": "590eb63693f83e4283cb0449c97f83f31f95df1cd44ce595681e27edf3b7feb9",
+            "page_id": 41908,
+            "revision_id": 1097116,
+            "revision_sha1": "5aa7f4439ac5d40c183929204a9d4670632f481e",
+            "revision_timestamp": "2025-04-01T22:30:49Z",
+            "url": "https://tibia.fandom.com/wiki/Frosty_Heart",
+            "wiki_title": "Frosty Heart"
+          }
+        ]
+      },
+      "item_ref": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i9661",
+        "revision": "definition-r1"
+      },
+      "source_name": "Frosty Heart"
+    },
+    "Gloom Wolf Fur": {
+      "evidence": {
+        "canonical": {
+          "definition_sha256": "5fd7e4545a4622a5a279ba4c437e54a948240113470403b456cb09dbbd0384d8",
+          "name": "gloom wolf fur",
+          "path": "content/items/definitions/items-11000-11499.json"
+        },
+        "identity_basis": "CLIENT_AND_WIKI",
+        "primary_client": {
+          "id": 22007,
+          "name": "gloom wolf fur",
+          "record_sha256": "2e76da637440361736c71ac809307d9ac3d10a30d3bb6ff70a68630761124381"
+        },
+        "wiki_observations": [
+          {
+            "content_sha256": "82dd75227d292fded14a93f9f045ee8bc9bba2f05ba410bb6d400116e02fef36",
+            "page_id": 75046,
+            "revision_id": 1100590,
+            "revision_sha1": "cba98dd3878eba1f0d2b23a3391f7ab863939e75",
+            "revision_timestamp": "2025-04-25T01:35:41Z",
+            "url": "https://tibia.fandom.com/wiki/Gloom_Wolf_Fur",
+            "wiki_title": "Gloom Wolf Fur"
+          }
+        ]
+      },
+      "item_ref": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i22007",
+        "revision": "definition-r1"
+      },
+      "source_name": "Gloom Wolf Fur"
+    },
+    "Gold-Brocaded Cloth": {
+      "evidence": {
+        "canonical": {
+          "definition_sha256": "2e5c34e855b567126098ce7ddcaa17e12e9e4e470d800e27dd6eaee53a0bc360",
+          "name": null,
+          "path": "content/items/definitions/items-24500-24999.json"
+        },
+        "identity_basis": "CLIENT_AND_WIKI",
+        "primary_client": {
+          "id": 40529,
+          "name": "gold-brocaded cloth",
+          "record_sha256": "1343a99c697a02a9f2d93a0ccf47880bb60ec86e224fe99db5d8ae90817b287e"
+        },
+        "wiki_observations": [
+          {
+            "content_sha256": "8fb430f6bce93e2a8a61cfe770c1a7061f72ffd5b982b49e6d0e52cddf2e171b",
+            "page_id": 101163,
+            "revision_id": 1188319,
+            "revision_sha1": "3855303f372fd154f5c75ac86c1387964f3aba93",
+            "revision_timestamp": "2026-06-03T00:53:08Z",
+            "url": "https://tibia.fandom.com/wiki/Gold-Brocaded_Cloth",
+            "wiki_title": "Gold-Brocaded Cloth"
+          }
+        ]
+      },
+      "item_ref": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i40529",
+        "revision": "definition-r1"
+      },
+      "source_name": "Gold-Brocaded Cloth"
+    },
+    "Goosebump Leather": {
+      "evidence": {
+        "canonical": {
+          "definition_sha256": "74256726f51cf98e2d8cca1902ca58a0c134db556aca48fb5c0412685982e0d7",
+          "name": "goosebump leather",
+          "path": "content/items/definitions/items-09000-09499.json"
+        },
+        "identity_basis": "CLIENT_AND_WIKI",
+        "primary_client": {
+          "id": 20205,
+          "name": "goosebump leather",
+          "record_sha256": "8e7fb4b7550fde0f337ec0f1c59964431b42a244068ed4676136eaf9e9210717"
+        },
+        "wiki_observations": [
+          {
+            "content_sha256": "7ef44c7ff92dec76a42079811d429e46badcc6a6111e064b8b0f4ad804c40750",
+            "page_id": 65946,
+            "revision_id": 1054489,
+            "revision_sha1": "0e206c6ba65456430a846af58a44e2c7c1659668",
+            "revision_timestamp": "2024-02-19T17:27:02Z",
+            "url": "https://tibia.fandom.com/wiki/Goosebump_Leather",
+            "wiki_title": "Goosebump Leather"
+          }
+        ]
+      },
+      "item_ref": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i20205",
+        "revision": "definition-r1"
+      },
+      "source_name": "Goosebump Leather"
+    },
+    "Green Dragon Leather": {
+      "evidence": {
+        "canonical": {
+          "definition_sha256": "389639ed374f584082a6df9c3c37f6f5471e713ad8264f6d9091a454fa7affbe",
+          "name": "green dragon leather",
+          "path": "content/items/definitions/items-29500-29999.json"
+        },
+        "identity_basis": "CLIENT_AND_WIKI",
+        "primary_client": {
+          "id": 5877,
+          "name": "green dragon leather",
+          "record_sha256": "afd18d7c01942188e39d913ba075668a8682db4bf6f59dfd36da245c0fc2fa9d"
+        },
+        "wiki_observations": [
+          {
+            "content_sha256": "9b3ff8633e6a12321fa746f407a21a74c1f99bae166d165175a23cacea8b4395",
+            "page_id": 8517,
+            "revision_id": 1100521,
+            "revision_sha1": "035773d3d64bc5bc29b79bf45c0df926439a1481",
+            "revision_timestamp": "2025-04-24T01:59:37Z",
+            "url": "https://tibia.fandom.com/wiki/Green_Dragon_Leather",
+            "wiki_title": "Green Dragon Leather"
+          }
+        ]
+      },
+      "item_ref": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i5877",
+        "revision": "definition-r1"
+      },
+      "source_name": "Green Dragon Leather"
+    },
+    "Green Dragon Scale": {
+      "evidence": {
+        "canonical": {
+          "definition_sha256": "697ff89ba0ed8879b4c16ca683f8d4b68af185d8c7c0e383b12095eb72470c7c",
+          "name": "green dragon scale",
+          "path": "content/items/definitions/items-29500-29999.json"
+        },
+        "identity_basis": "CLIENT_AND_WIKI",
+        "primary_client": {
+          "id": 5920,
+          "name": "green dragon scale",
+          "record_sha256": "af6cc58fc131c8c7303e5591ac949ec3bfc39a779ec1ef8110cd979bce897a32"
+        },
+        "wiki_observations": [
+          {
+            "content_sha256": "9f9419516cfd6a837e18e8d9e3c60e5b09aa82749b2ee049e887c15d6a5b5bf9",
+            "page_id": 8524,
+            "revision_id": 1100520,
+            "revision_sha1": "056bdbe36ea1bfa910d4c6f20aba0c213d5c9574",
+            "revision_timestamp": "2025-04-24T01:54:24Z",
+            "url": "https://tibia.fandom.com/wiki/Green_Dragon_Scale",
+            "wiki_title": "Green Dragon Scale"
+          }
+        ]
+      },
+      "item_ref": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i5920",
+        "revision": "definition-r1"
+      },
+      "source_name": "Green Dragon Scale"
+    },
+    "Hellspawn Tail": {
+      "evidence": {
+        "canonical": {
+          "definition_sha256": "fdb202910ecf83e6aac7406411c38ca9628309608c465100aae76cf310e156ab",
+          "name": "hellspawn tail",
+          "path": "content/items/definitions/items-00000-00499.json"
+        },
+        "identity_basis": "CLIENT_AND_WIKI",
+        "primary_client": {
+          "id": 10304,
+          "name": "hellspawn tail",
+          "record_sha256": "327995f36affe0f163b7b6a91c95c331bf0edc909c02e49f67daa96849c910c0"
+        },
+        "wiki_observations": [
+          {
+            "content_sha256": "c0eddd25ba4f4449feb9e1f323c77261122c810857fc60613a911183d0a5756d",
+            "page_id": 41811,
+            "revision_id": 1054470,
+            "revision_sha1": "7d89362aa54070e0d3c9470eac008d4998db918d",
+            "revision_timestamp": "2024-02-19T17:26:31Z",
+            "url": "https://tibia.fandom.com/wiki/Hellspawn_Tail",
+            "wiki_title": "Hellspawn Tail"
+          }
+        ]
+      },
+      "item_ref": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i10304",
+        "revision": "definition-r1"
+      },
+      "source_name": "Hellspawn Tail"
+    },
+    "Lion's Mane": {
+      "evidence": {
+        "canonical": {
+          "definition_sha256": "9c48acf9f3ce7cc83e760d7334ea0f4982dd3cfadfc546927b721c1d573e05f6",
+          "name": "lion's mane",
+          "path": "content/items/definitions/items-33500-33999.json"
+        },
+        "identity_basis": "CLIENT_AND_WIKI",
+        "primary_client": {
+          "id": 9691,
+          "name": "lion's mane",
+          "record_sha256": "149c68e82525b62f0e7b2572287b31a1a0bca33cf8ed2fbbf443b51d365fc24d"
+        },
+        "wiki_observations": [
+          {
+            "content_sha256": "f0e39a35a0cab8a3fff55143b4e357b04ac635679bde4be89fd00aae4cdcb6f5",
+            "page_id": 41920,
+            "revision_id": 1097124,
+            "revision_sha1": "81f8826879f9f55a285570d9381093d46ffa315f",
+            "revision_timestamp": "2025-04-01T23:31:17Z",
+            "url": "https://tibia.fandom.com/wiki/Lion's_Mane",
+            "wiki_title": "Lion's Mane"
+          }
+        ]
+      },
+      "item_ref": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i9691",
+        "revision": "definition-r1"
+      },
+      "source_name": "Lion's Mane"
+    },
+    "Little Bowl of Myrrh": {
+      "evidence": {
+        "canonical": {
+          "definition_sha256": "00ee3173342e0f55a872ae0d8596074eaf7c7d5806e1e2f963136f643e409e39",
+          "name": "little bowl of myrrh",
+          "path": "content/items/definitions/items-14000-14499.json"
+        },
+        "identity_basis": "CLIENT_AND_WIKI",
+        "primary_client": {
+          "id": 25702,
+          "name": "little bowl of myrrh",
+          "record_sha256": "095766beb8379caeab2d94a742568fb5ab47bc2920fa0f0b51a8ccbbb2bd8d42"
+        },
+        "wiki_observations": [
+          {
+            "content_sha256": "d6fc347215818750a51ff3b3057806cbc6850399ba68a8cfd9e8ce7509831daa",
+            "page_id": 81695,
+            "revision_id": 1100659,
+            "revision_sha1": "ec0ad4c3a979c13fa2b163d6851060d52a81a39a",
+            "revision_timestamp": "2025-04-26T11:27:32Z",
+            "url": "https://tibia.fandom.com/wiki/Little_Bowl_of_Myrrh",
+            "wiki_title": "Little Bowl of Myrrh"
+          }
+        ]
+      },
+      "item_ref": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i25702",
+        "revision": "definition-r1"
+      },
+      "source_name": "Little Bowl of Myrrh"
+    },
+    "Mantassin Tail": {
+      "evidence": {
+        "canonical": {
+          "definition_sha256": "cf0568ab587b039ffa7de279a0137fa1cb2f993043160eb6a8025a667af86400",
+          "name": "mantassin tail",
+          "path": "content/items/definitions/items-01000-01499.json"
+        },
+        "identity_basis": "CLIENT_AND_WIKI",
+        "primary_client": {
+          "id": 11489,
+          "name": "mantassin tail",
+          "record_sha256": "4129d6f2f39f9dbcdb30664290906a6cc05e7dadc00af8758c7bdb1ec9434aaa"
+        },
+        "wiki_observations": [
+          {
+            "content_sha256": "1e7b58d4c7ee8182527bc355325ecfa47374f590d592d3d9d9f1ece0327519c2",
+            "page_id": 46234,
+            "revision_id": 1188321,
+            "revision_sha1": "dd49ff3188e191b37f382a7266b944428d5c9b1c",
+            "revision_timestamp": "2026-06-03T00:59:37Z",
+            "url": "https://tibia.fandom.com/wiki/Mantassin_Tail",
+            "wiki_title": "Mantassin Tail"
+          }
+        ]
+      },
+      "item_ref": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i11489",
+        "revision": "definition-r1"
+      },
+      "source_name": "Mantassin Tail"
+    },
+    "Metal Spike": {
+      "evidence": {
+        "canonical": {
+          "definition_sha256": "3735237c299f273afc71d9cf16623df12b226844bb84308ea6c0b2b7c8304374",
+          "name": "metal spike",
+          "path": "content/items/definitions/items-00000-00499.json"
+        },
+        "identity_basis": "CLIENT_AND_WIKI",
+        "primary_client": {
+          "id": 10298,
+          "name": "metal spike",
+          "record_sha256": "525abf2728bfe21c096adcc5075f4bed1d1957efc54f80e255a9221b062c10f4"
+        },
+        "wiki_observations": [
+          {
+            "content_sha256": "fdf8b7413d7dd9d20417af22d6e85ee4f23f3772c852d57ba9f56de11848ad43",
+            "page_id": 41919,
+            "revision_id": 1054482,
+            "revision_sha1": "1778ba7d6695c212036dc39dad47e2bbd86bcde9",
+            "revision_timestamp": "2024-02-19T17:26:49Z",
+            "url": "https://tibia.fandom.com/wiki/Metal_Spike",
+            "wiki_title": "Metal Spike"
+          }
+        ]
+      },
+      "item_ref": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i10298",
+        "revision": "definition-r1"
+      },
+      "source_name": "Metal Spike"
+    },
+    "Mooh'tah Shell": {
+      "evidence": {
+        "canonical": {
+          "definition_sha256": "62ae079dacb4cde0c249e77102116393b1bf6cdff824a2150fef6f865f844d6c",
+          "name": "mooh'tah shell",
+          "path": "content/items/definitions/items-10000-10499.json"
+        },
+        "identity_basis": "CLIENT_AND_WIKI",
+        "primary_client": {
+          "id": 21202,
+          "name": "mooh'tah shell",
+          "record_sha256": "d37a568c1a9da6b134047f7c14170608f4c4a214cb27ae38a62a20de2623dcb1"
+        },
+        "wiki_observations": [
+          {
+            "content_sha256": "8978161cc12a9397fef623f8e850597b588bf6587c33aa392c5f82677bf32e33",
+            "page_id": 67899,
+            "revision_id": 1099206,
+            "revision_sha1": "d450aa866b315c8a48b239ebc8ac44787c6a9d04",
+            "revision_timestamp": "2025-04-17T12:25:12Z",
+            "url": "https://tibia.fandom.com/wiki/Mooh'tah_Shell",
+            "wiki_title": "Mooh'tah Shell"
+          }
+        ]
+      },
+      "item_ref": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i21202",
+        "revision": "definition-r1"
+      },
+      "source_name": "Mooh'tah Shell"
+    },
+    "Moohtant Horn": {
+      "evidence": {
+        "canonical": {
+          "definition_sha256": "c5a9137fd34f7cc0825adcc375c9b11112d3b75509ba4d2dc36abe9b117b9291",
+          "name": "moohtant horn",
+          "path": "content/items/definitions/items-10000-10499.json"
+        },
+        "identity_basis": "CLIENT_AND_WIKI",
+        "primary_client": {
+          "id": 21200,
+          "name": "moohtant horn",
+          "record_sha256": "6dd12a0fef0e55d2b2c8e311f086da18fa7d6423b35a8df7250311088ad31855"
+        },
+        "wiki_observations": [
+          {
+            "content_sha256": "34c7b825654739a82fbbfbdf2170dc2e857acd025bfacaa84a666f3520d2e550",
+            "page_id": 67895,
+            "revision_id": 1054475,
+            "revision_sha1": "551658f7e364dde633027ebb50058e9218266f05",
+            "revision_timestamp": "2024-02-19T17:26:39Z",
+            "url": "https://tibia.fandom.com/wiki/Moohtant_Horn",
+            "wiki_title": "Moohtant Horn"
+          }
+        ]
+      },
+      "item_ref": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i21200",
+        "revision": "definition-r1"
+      },
+      "source_name": "Moohtant Horn"
+    },
+    "Mystical Hourglass": {
+      "evidence": {
+        "canonical": {
+          "definition_sha256": "5fab1d75c57a59ea0ac7d8d96a123559bcd5ff804c622b2496da60f72ce3d9ab",
+          "name": "mystical hourglass",
+          "path": "content/items/definitions/items-33500-33999.json"
+        },
+        "identity_basis": "CLIENT_AND_WIKI",
+        "primary_client": {
+          "id": 9660,
+          "name": "mystical hourglass",
+          "record_sha256": "374c2af68021d59ff0608f25d46245a28bbaaac77ad2bf36a44f4a1410a18906"
+        },
+        "wiki_observations": [
+          {
+            "content_sha256": "ff733f15e2bd2d81331a83da78732d67db5d36630552ae8d79b0f93a097372ac",
+            "page_id": 41917,
+            "revision_id": 1055231,
+            "revision_sha1": "974c1710f7133d854281313df3a29eb0d99e13f8",
+            "revision_timestamp": "2024-03-05T23:32:27Z",
+            "url": "https://tibia.fandom.com/wiki/Mystical_Hourglass",
+            "wiki_title": "Mystical Hourglass"
+          }
+        ]
+      },
+      "item_ref": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i9660",
+        "revision": "definition-r1"
+      },
+      "source_name": "Mystical Hourglass"
+    },
+    "Ogre Nose Ring": {
+      "evidence": {
+        "canonical": {
+          "definition_sha256": "797cec9f37046418fdbfdfd3aad2504ef566d8bc03c18e17541a20759d288d4d",
+          "name": "ogre nose ring",
+          "path": "content/items/definitions/items-11000-11499.json"
+        },
+        "identity_basis": "CLIENT_AND_WIKI",
+        "primary_client": {
+          "id": 22189,
+          "name": "ogre nose ring",
+          "record_sha256": "3d59f76d9f6886f8d54af51d813a764b6790f99217972badc644b823009dc304"
+        },
+        "wiki_observations": [
+          {
+            "content_sha256": "5cadf910afdde7b916c2da7c081965fd96be31313cd00b976d07b39398807914",
+            "page_id": 76957,
+            "revision_id": 1100519,
+            "revision_sha1": "53b59bd53657ed71ef197de4cb61f09248e0aebb",
+            "revision_timestamp": "2025-04-24T01:49:12Z",
+            "url": "https://tibia.fandom.com/wiki/Ogre_Nose_Ring",
+            "wiki_title": "Ogre Nose Ring"
+          }
+        ]
+      },
+      "item_ref": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i22189",
+        "revision": "definition-r1"
+      },
+      "source_name": "Ogre Nose Ring"
+    },
+    "Orc Tooth": {
+      "evidence": {
+        "canonical": {
+          "definition_sha256": "ba046c966b994f6ace6eb53a4a0cae47e7ec6aa596d48206534c60e214950575",
+          "name": "orc tooth",
+          "path": "content/items/definitions/items-00000-00499.json"
+        },
+        "identity_basis": "CLIENT_AND_WIKI",
+        "primary_client": {
+          "id": 10196,
+          "name": "orc tooth",
+          "record_sha256": "c46d8fe85f5f862c2f34093d8e820de0d89c7df4b75c82c13c46018b02fd1cd6"
+        },
+        "wiki_observations": [
+          {
+            "content_sha256": "bbbe5725f7933524d629ef908a5fc8351dc99ebe188c43db0864c688ad579f53",
+            "page_id": 41706,
+            "revision_id": 1099114,
+            "revision_sha1": "f89b6779eb63d8e56743a10b6de711ae51faf420",
+            "revision_timestamp": "2025-04-16T11:51:49Z",
+            "url": "https://tibia.fandom.com/wiki/Orc_Tooth",
+            "wiki_title": "Orc Tooth"
+          }
+        ]
+      },
+      "item_ref": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i10196",
+        "revision": "definition-r1"
+      },
+      "source_name": "Orc Tooth"
+    },
+    "Peacock Feather Fan": {
+      "evidence": {
+        "canonical": {
+          "definition_sha256": "4f341ec596b839844dd925efc9528cfff5ea4da78e80e6a93d71b2103b95aa95",
+          "name": "peacock feather fan",
+          "path": "content/items/definitions/items-11000-11499.json"
+        },
+        "identity_basis": "CLIENT_AND_WIKI",
+        "primary_client": {
+          "id": 21975,
+          "name": "peacock feather fan",
+          "record_sha256": "be6e71ce61a0ffaa85bc26e5bff2f15cea8d71a23ca3d2c5bbe1bcabb837c8c7"
+        },
+        "wiki_observations": [
+          {
+            "content_sha256": "742eecf8fda529874ecab375050f3f5d1455b860757dd7964540a3712650b323",
+            "page_id": 75041,
+            "revision_id": 1188326,
+            "revision_sha1": "0a7ce9913ab8a7722a96060f52a2d2114579ba21",
+            "revision_timestamp": "2026-06-03T01:47:11Z",
+            "url": "https://tibia.fandom.com/wiki/Peacock_Feather_Fan",
+            "wiki_title": "Peacock Feather Fan"
+          }
+        ]
+      },
+      "item_ref": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i21975",
+        "revision": "definition-r1"
+      },
+      "source_name": "Peacock Feather Fan"
+    },
+    "Petrified Scream": {
+      "evidence": {
+        "canonical": {
+          "definition_sha256": "13c4a8c539fcffb8920e81b69014e2b9bfe569f5fc9512145e0cce348835c1f6",
+          "name": "petrified scream",
+          "path": "content/items/definitions/items-00000-00499.json"
+        },
+        "identity_basis": "CLIENT_AND_WIKI",
+        "primary_client": {
+          "id": 10420,
+          "name": "petrified scream",
+          "record_sha256": "f059ddfd5ec3723d82a8ae71558dbfaf4a893f2f39bd38b9fbbc6ac8a1dce8f4"
+        },
+        "wiki_observations": [
+          {
+            "content_sha256": "e13de0fc6de0adb09f73cbf5e8940e4a3e514db29d9d0a253e4ac63c2949d1a4",
+            "page_id": 41915,
+            "revision_id": 1098681,
+            "revision_sha1": "92d8c927cdcb52a7d88d045e466a6ff3d90bbd6d",
+            "revision_timestamp": "2025-04-11T17:34:59Z",
+            "url": "https://tibia.fandom.com/wiki/Petrified_Scream",
+            "wiki_title": "Petrified Scream"
+          }
+        ]
+      },
+      "item_ref": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i10420",
+        "revision": "definition-r1"
+      },
+      "source_name": "Petrified Scream"
+    },
+    "Piece of Dead Brain": {
+      "evidence": {
+        "canonical": {
+          "definition_sha256": "3fae855aeeed9ca50aded9908b12536d891725b23c0a47559ad5d4c603762ca0",
+          "name": "piece of dead brain",
+          "path": "content/items/definitions/items-33500-33999.json"
+        },
+        "identity_basis": "CLIENT_AND_WIKI",
+        "primary_client": {
+          "id": 9663,
+          "name": "piece of dead brain",
+          "record_sha256": "8c8eea3a49c2c7cee6972374543d92bb7b6586211c2febe7e36a9112eb25511e"
+        },
+        "wiki_observations": [
+          {
+            "content_sha256": "4190313ee3b722efe1dff101dba2832b52f5bd2c604f8c01fd4e43bfd04dd02c",
+            "page_id": 41922,
+            "revision_id": 1188324,
+            "revision_sha1": "3a5c51f9803bd6c2b85abe3e7d9fc2aa38807fc9",
+            "revision_timestamp": "2026-06-03T01:38:11Z",
+            "url": "https://tibia.fandom.com/wiki/Piece_of_Dead_Brain",
+            "wiki_title": "Piece of Dead Brain"
+          }
+        ]
+      },
+      "item_ref": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i9663",
+        "revision": "definition-r1"
+      },
+      "source_name": "Piece of Dead Brain"
+    },
+    "Piece of Scarab Shell": {
+      "evidence": {
+        "canonical": {
+          "definition_sha256": "7d07ba2af29a1fcb3aaaf70fb1fc733f6eb7d7874da1cc9d5672ccaa62aaa15e",
+          "name": "piece of scarab shell",
+          "path": "content/items/definitions/items-33500-33999.json"
+        },
+        "identity_basis": "CLIENT_AND_WIKI",
+        "primary_client": {
+          "id": 9641,
+          "name": "piece of scarab shell",
+          "record_sha256": "d7fac98e9e6c918e13922bccc22579c39d7af1538ac3b9f8051a402af9b0f654"
+        },
+        "wiki_observations": [
+          {
+            "content_sha256": "c269ebff2a5c6d13d4788d4f1f8b816ae144c7ec4488ce0cd42e7c5415a55656",
+            "page_id": 41924,
+            "revision_id": 1098684,
+            "revision_sha1": "30d3fcfe23d5f6918bfe24d822a69ea5662f1149",
+            "revision_timestamp": "2025-04-11T17:38:21Z",
+            "url": "https://tibia.fandom.com/wiki/Piece_of_Scarab_Shell",
+            "wiki_title": "Piece of Scarab Shell"
+          }
+        ]
+      },
+      "item_ref": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i9641",
+        "revision": "definition-r1"
+      },
+      "source_name": "Piece of Scarab Shell"
+    },
+    "Piece of Swampling Wood": {
+      "evidence": {
+        "canonical": {
+          "definition_sha256": "28dfebd22e66a243f3331bf55f1558c4d0f77c3e9b2bbb37c8df7e2539935d64",
+          "name": "piece of swampling wood",
+          "path": "content/items/definitions/items-07000-07499.json"
+        },
+        "identity_basis": "CLIENT_AND_WIKI",
+        "primary_client": {
+          "id": 17823,
+          "name": "piece of swampling wood",
+          "record_sha256": "7f5f1e76ff1ca8829f344e4e44e814101d1ed36ba85ecc570d88594344fe27fa"
+        },
+        "wiki_observations": [
+          {
+            "content_sha256": "f5dc4cbf9bdcf1947846c51ef62aee57697ea3e13902371e8dcc544c54e8e89e",
+            "page_id": 61749,
+            "revision_id": 1098687,
+            "revision_sha1": "ba004a01166acbf1cf192d54149052650ce23f4c",
+            "revision_timestamp": "2025-04-11T17:47:57Z",
+            "url": "https://tibia.fandom.com/wiki/Piece_of_Swampling_Wood",
+            "wiki_title": "Piece of Swampling Wood"
+          }
+        ]
+      },
+      "item_ref": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i17823",
+        "revision": "definition-r1"
+      },
+      "source_name": "Piece of Swampling Wood"
+    },
+    "Pile of Grave Earth": {
+      "evidence": {
+        "canonical": {
+          "definition_sha256": "d4f9ad536dc2efe00d0fa8d5ecd6c87a5c6d8bf4f1800e519904f3b36b304138",
+          "name": "pile of grave earth",
+          "path": "content/items/definitions/items-01000-01499.json"
+        },
+        "identity_basis": "CLIENT_AND_WIKI",
+        "primary_client": {
+          "id": 11484,
+          "name": "pile of grave earth",
+          "record_sha256": "305c1980c0f843a0ede364c23cc6f942afd8fe34aef2db27b1db1e38793f75ef"
+        },
+        "wiki_observations": [
+          {
+            "content_sha256": "33e6a06b89498e5b2dc2d147ddd4c2c7c7600845ce58c56c373806c7ead11250",
+            "page_id": 46245,
+            "revision_id": 1098682,
+            "revision_sha1": "9ab00ff34df1b64857eeabff38b04309b409b386",
+            "revision_timestamp": "2025-04-11T17:36:01Z",
+            "url": "https://tibia.fandom.com/wiki/Pile_of_Grave_Earth",
+            "wiki_title": "Pile of Grave Earth"
+          }
+        ]
+      },
+      "item_ref": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i11484",
+        "revision": "definition-r1"
+      },
+      "source_name": "Pile of Grave Earth"
+    },
+    "Poisonous Slime": {
+      "evidence": {
+        "canonical": {
+          "definition_sha256": "5f82f28ecf4b2860181ec39cf17dfebecdfca99e14a1208d8d134931d40bc318",
+          "name": "poisonous slime",
+          "path": "content/items/definitions/items-33500-33999.json"
+        },
+        "identity_basis": "CLIENT_AND_WIKI",
+        "primary_client": {
+          "id": 9640,
+          "name": "poisonous slime",
+          "record_sha256": "0e33e2d150923bd2b6ed6e2c46bb974b720a8635570b59c2f4fd1517ab340f72"
+        },
+        "wiki_observations": [
+          {
+            "content_sha256": "61bc9e803f19cda570426f859a3ea815eae852ee0329f080b4227cf45552dcab",
+            "page_id": 41927,
+            "revision_id": 1188327,
+            "revision_sha1": "6adacfcc3f9ad2e69e68792ee2a7649bf9e65395",
+            "revision_timestamp": "2026-06-03T01:50:10Z",
+            "url": "https://tibia.fandom.com/wiki/Poisonous_Slime",
+            "wiki_title": "Poisonous Slime"
+          }
+        ]
+      },
+      "item_ref": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i9640",
+        "revision": "definition-r1"
+      },
+      "source_name": "Poisonous Slime"
+    },
+    "Polar Bear Paw": {
+      "evidence": {
+        "canonical": {
+          "definition_sha256": "73ba94c822ff1fe37868f551a41da4c89da9ca27bf029060f67c822db05b8c33",
+          "name": "polar bear paw",
+          "path": "content/items/definitions/items-33500-33999.json"
+        },
+        "identity_basis": "CLIENT_AND_WIKI",
+        "primary_client": {
+          "id": 9650,
+          "name": "polar bear paw",
+          "record_sha256": "b7294ea5647f7b4ce251e9be1c7395694a7d50053720971191b6033d42184693"
+        },
+        "wiki_observations": [
+          {
+            "content_sha256": "4fd5df8518f0afa25ef64d0c0261675c9169a4be75171835066383dae65a340c",
+            "page_id": 41928,
+            "revision_id": 1054445,
+            "revision_sha1": "e6c0dc5dc6313e8e2166a89bcb5ce7fd3ff26ec9",
+            "revision_timestamp": "2024-02-19T17:25:09Z",
+            "url": "https://tibia.fandom.com/wiki/Polar_Bear_Paw",
+            "wiki_title": "Polar Bear Paw"
+          }
+        ]
+      },
+      "item_ref": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i9650",
+        "revision": "definition-r1"
+      },
+      "source_name": "Polar Bear Paw"
+    },
+    "Protective Charm": {
+      "evidence": {
+        "canonical": {
+          "definition_sha256": "30a63de573270e6c4b6dbc94370d102d5b8a852a7ad9873f4cec63c62529e07d",
+          "name": "protective charm",
+          "path": "content/items/definitions/items-01000-01499.json"
+        },
+        "identity_basis": "CLIENT_AND_WIKI",
+        "primary_client": {
+          "id": 11444,
+          "name": "protective charm",
+          "record_sha256": "d4da310580191955712f9b6a90c4abb1a0ea9192288c100f31d985cffecc0506"
+        },
+        "wiki_observations": [
+          {
+            "content_sha256": "46eb1dc2e4029cba26daed6e39589196319a7c70ccbdd9b4e9a0a803c1ee95a6",
+            "page_id": 46247,
+            "revision_id": 1054454,
+            "revision_sha1": "8c40cf1e233693123f655527ecf81896134802d6",
+            "revision_timestamp": "2024-02-19T17:26:08Z",
+            "url": "https://tibia.fandom.com/wiki/Protective_Charm",
+            "wiki_title": "Protective Charm"
+          }
+        ]
+      },
+      "item_ref": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i11444",
+        "revision": "definition-r1"
+      },
+      "source_name": "Protective Charm"
+    },
+    "Quill": {
+      "evidence": {
+        "canonical": {
+          "definition_sha256": "0383b91358728f317385f4a6e9605b3d2f1107eb99af4b1a50fba799e8142b96",
+          "name": "quill",
+          "path": "content/items/definitions/items-16500-16999.json"
+        },
+        "identity_basis": "CLIENT_AND_WIKI",
+        "primary_client": {
+          "id": 28567,
+          "name": "quill",
+          "record_sha256": "5929e5d50a5d3106b6952416f6ecf940f7767ef5dfd997c18baa51c3f952f8a2"
+        },
+        "wiki_observations": [
+          {
+            "content_sha256": "ac1d7bfcc4a1c02b5275b7b44319760733b97fd7b9df6be5ff0976c305d81b9b",
+            "page_id": 85258,
+            "revision_id": 1054492,
+            "revision_sha1": "99e793acf3f909459393dfc3961ccf97d598bed5",
+            "revision_timestamp": "2024-02-19T17:27:06Z",
+            "url": "https://tibia.fandom.com/wiki/Quill",
+            "wiki_title": "Quill"
+          }
+        ]
+      },
+      "item_ref": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i28567",
+        "revision": "definition-r1"
+      },
+      "source_name": "Quill"
+    },
+    "Rope Belt": {
+      "evidence": {
+        "canonical": {
+          "definition_sha256": "81b71009b01ccfaa7816ec2b910e67a6c63d0379e02dff95dfe687c32532f048",
+          "name": "rope belt",
+          "path": "content/items/definitions/items-01000-01499.json"
+        },
+        "identity_basis": "CLIENT_AND_WIKI",
+        "primary_client": {
+          "id": 11492,
+          "name": "rope belt",
+          "record_sha256": "05e1e3618a027854a67a1902ec33bcc001ec11649044cbd0069eeb513b173923"
+        },
+        "wiki_observations": [
+          {
+            "content_sha256": "39b8fad143069a92a4a5d6f11ffc945b6aed82aefb8df9e4f0e52b12b525c34c",
+            "page_id": 46259,
+            "revision_id": 1097115,
+            "revision_sha1": "d2d8479c52d5b736e564efe4bc032d0379e55716",
+            "revision_timestamp": "2025-04-01T22:27:51Z",
+            "url": "https://tibia.fandom.com/wiki/Rope_Belt",
+            "wiki_title": "Rope Belt"
+          }
+        ]
+      },
+      "item_ref": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i11492",
+        "revision": "definition-r1"
+      },
+      "source_name": "Rope Belt"
+    },
+    "Rorc Feather": {
+      "evidence": {
+        "canonical": {
+          "definition_sha256": "138fdedca967665493602396f1391bc84b31b21d3de378c64e38373f2097d2ee",
+          "name": "rorc feather",
+          "path": "content/items/definitions/items-08000-08499.json"
+        },
+        "identity_basis": "CLIENT_AND_WIKI",
+        "primary_client": {
+          "id": 18993,
+          "name": "rorc feather",
+          "record_sha256": "d9eb01bec53b3c0565a9ec6d1f8da88579dcf0cf1e206be63e5703c8311fb3c8"
+        },
+        "wiki_observations": [
+          {
+            "content_sha256": "00afa7fa3f02593bd684a86f38764b1cd1f2495d0eef8d02217f0ed51540c867",
+            "page_id": 64365,
+            "revision_id": 1100584,
+            "revision_sha1": "9680620d5ac81618b53dfc1ad7888838f7c656fa",
+            "revision_timestamp": "2025-04-25T01:14:01Z",
+            "url": "https://tibia.fandom.com/wiki/Rorc_Feather",
+            "wiki_title": "Rorc Feather"
+          }
+        ]
+      },
+      "item_ref": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i18993",
+        "revision": "definition-r1"
+      },
+      "source_name": "Rorc Feather"
+    },
+    "Sabretooth (Item)": {
+      "evidence": {
+        "canonical": {
+          "definition_sha256": "f2b4b6453849608af6a59f881d5148e94450be6fa22ce6ccf620e5e1ae105b2f",
+          "name": "sabretooth",
+          "path": "content/items/definitions/items-00000-00499.json"
+        },
+        "identity_basis": "CLIENT_AND_WIKI",
+        "primary_client": {
+          "id": 10311,
+          "name": "sabretooth",
+          "record_sha256": "9a9d69bf3553d34b63524509f5b5e2e4eb5fc1f650b4f707c35b2fcd10fdf77a"
+        },
+        "wiki_observations": [
+          {
+            "content_sha256": "28b09d2c4cbaaa70a316e27c545a5c885e1d1734bdaed388a4e024c937b8743d",
+            "page_id": 42021,
+            "revision_id": 1188323,
+            "revision_sha1": "9a37f0914e63b828f9e96d42683c69598c47f979",
+            "revision_timestamp": "2026-06-03T01:32:47Z",
+            "url": "https://tibia.fandom.com/wiki/Sabretooth",
+            "wiki_title": "Sabretooth"
+          }
+        ]
+      },
+      "item_ref": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i10311",
+        "revision": "definition-r1"
+      },
+      "source_name": "Sabretooth (Item)"
+    },
+    "Seacrest Hair": {
+      "evidence": {
+        "canonical": {
+          "definition_sha256": "f096b2e3f64f7aa5ef36578d0b6eca7221f95aa9040e8c1ba01a486f70edb8c8",
+          "name": "seacrest hair",
+          "path": "content/items/definitions/items-10500-10999.json"
+        },
+        "identity_basis": "CLIENT_AND_WIKI",
+        "primary_client": {
+          "id": 21801,
+          "name": "seacrest hair",
+          "record_sha256": "5c25fcac3da8be9b6e23b08e1e199da9ee2093a91a447f728dee8685d8961b5b"
+        },
+        "wiki_observations": [
+          {
+            "content_sha256": "f37031245652dec3ad7b54a5908001baeaedd01fc57bf3e886102f049552c2c8",
+            "page_id": 69450,
+            "revision_id": 1099209,
+            "revision_sha1": "b69348e83037916091a98cc06ffc539d440f5c7a",
+            "revision_timestamp": "2025-04-17T16:38:00Z",
+            "url": "https://tibia.fandom.com/wiki/Seacrest_Hair",
+            "wiki_title": "Seacrest Hair"
+          }
+        ]
+      },
+      "item_ref": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i21801",
+        "revision": "definition-r1"
+      },
+      "source_name": "Seacrest Hair"
+    },
+    "Silencer Claws": {
+      "evidence": {
+        "canonical": {
+          "definition_sha256": "038b265a595fb792261fed5bee6e3c8a729add8329daf4bdfa6772bc2e1bccc2",
+          "name": "silencer claws",
+          "path": "content/items/definitions/items-09000-09499.json"
+        },
+        "identity_basis": "CLIENT_AND_WIKI",
+        "primary_client": {
+          "id": 20200,
+          "name": "silencer claws",
+          "record_sha256": "48c632dd9a1a23553b47d5fac6721a414b0b8ac79be6f99f60fd8926be75e926"
+        },
+        "wiki_observations": [
+          {
+            "content_sha256": "0dbd913911ffa9159c3f9783d00c26ddaebf81d567262e03afa61902bdef7402",
+            "page_id": 65936,
+            "revision_id": 1100582,
+            "revision_sha1": "345b25bbf718aa9198e1b449f900a7c1039f00b5",
+            "revision_timestamp": "2025-04-25T01:01:24Z",
+            "url": "https://tibia.fandom.com/wiki/Silencer_Claws",
+            "wiki_title": "Silencer Claws"
+          }
+        ]
+      },
+      "item_ref": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i20200",
+        "revision": "definition-r1"
+      },
+      "source_name": "Silencer Claws"
+    },
+    "Slime Heart": {
+      "evidence": {
+        "canonical": {
+          "definition_sha256": "62eb3f246b3e5eb850632d901924ba1b83953ee6a7ee84f500b75af3c9ff4881",
+          "name": "slime heart",
+          "path": "content/items/definitions/items-10000-10499.json"
+        },
+        "identity_basis": "CLIENT_AND_WIKI",
+        "primary_client": {
+          "id": 21194,
+          "name": "slime heart",
+          "record_sha256": "637809aef3b222f956eaba9afecd51c50025abad4f1f24bc2fe13ba314ad1030"
+        },
+        "wiki_observations": [
+          {
+            "content_sha256": "214f77d7396db47c506930e62c42ca58532cccaa992cdad63c88d8fee5c39f3a",
+            "page_id": 67869,
+            "revision_id": 1098690,
+            "revision_sha1": "bc2231c208f75eac2080250e5413324cfa0a40dd",
+            "revision_timestamp": "2025-04-11T17:53:53Z",
+            "url": "https://tibia.fandom.com/wiki/Slime_Heart",
+            "wiki_title": "Slime Heart"
+          }
+        ]
+      },
+      "item_ref": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i21194",
+        "revision": "definition-r1"
+      },
+      "source_name": "Slime Heart"
+    },
+    "Snake Skin": {
+      "evidence": {
+        "canonical": {
+          "definition_sha256": "e4f673cf328c1eddb7b39844e4bbbb539d70c2e4790fc2b49b19071391f32220",
+          "name": "snake skin",
+          "path": "content/items/definitions/items-33500-33999.json"
+        },
+        "identity_basis": "CLIENT_AND_WIKI",
+        "primary_client": {
+          "id": 9694,
+          "name": "snake skin",
+          "record_sha256": "4817aff45ba0af0c0b0a605d41354ebee58d35f521de63a8e118c91a3839395a"
+        },
+        "wiki_observations": [
+          {
+            "content_sha256": "bf8d57816db3d2469270fec5f598e91729a1f8dac516ec0d2c0d9170bf1f6099",
+            "page_id": 41826,
+            "revision_id": 1097125,
+            "revision_sha1": "a376459a642a3e9988ff49f89e1c4eaef45014c9",
+            "revision_timestamp": "2025-04-01T23:37:11Z",
+            "url": "https://tibia.fandom.com/wiki/Snake_Skin",
+            "wiki_title": "Snake Skin"
+          }
+        ]
+      },
+      "item_ref": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i9694",
+        "revision": "definition-r1"
+      },
+      "source_name": "Snake Skin"
+    },
+    "Some Grimeleech Wings": {
+      "evidence": {
+        "canonical": {
+          "definition_sha256": "2d6f4ec78551549f0bc1137bb17f9073336656069dc81d1ebd1658572ba07277",
+          "name": "some grimeleech wings",
+          "path": "content/items/definitions/items-11500-11999.json"
+        },
+        "identity_basis": "CLIENT_AND_WIKI",
+        "primary_client": {
+          "id": 22730,
+          "name": "some grimeleech wings",
+          "record_sha256": "a3cb0d953c35094779d3bfed4d0a029e43a54ef03c994780ee4c685d4a40cb70"
+        },
+        "wiki_observations": [
+          {
+            "content_sha256": "d9e661570740c7669c433a5241b0d09af08a9eb167824a9e9c3826ee1865a5fa",
+            "page_id": 76961,
+            "revision_id": 1054453,
+            "revision_sha1": "7bd7439e494d72a0db30c9332592c0e5fbb0a262",
+            "revision_timestamp": "2024-02-19T17:26:06Z",
+            "url": "https://tibia.fandom.com/wiki/Some_Grimeleech_Wings",
+            "wiki_title": "Some Grimeleech Wings"
+          }
+        ]
+      },
+      "item_ref": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i22730",
+        "revision": "definition-r1"
+      },
+      "source_name": "Some Grimeleech Wings"
+    },
+    "Strand of Medusa Hair": {
+      "evidence": {
+        "canonical": {
+          "definition_sha256": "f6d6e3a97a5368b6ec528d1ba3dbc665021ed1ebf5562d6b4a3397efcbf76cc6",
+          "name": "strand of medusa hair",
+          "path": "content/items/definitions/items-00000-00499.json"
+        },
+        "identity_basis": "CLIENT_AND_WIKI",
+        "primary_client": {
+          "id": 10309,
+          "name": "strand of medusa hair",
+          "record_sha256": "e4b09b01dd24554b3075d8eef49a45d8607a2644968f9e6ca06974d5d5a01b69"
+        },
+        "wiki_observations": [
+          {
+            "content_sha256": "3873026810e819b70d1e7b0773cc9f6a2cf4fdd7e4394f03baaad801de9f084e",
+            "page_id": 41942,
+            "revision_id": 1056415,
+            "revision_sha1": "e456a6df49642244c5f16e977f7c45cdb4bca00b",
+            "revision_timestamp": "2024-03-26T10:11:36Z",
+            "url": "https://tibia.fandom.com/wiki/Strand_of_Medusa_Hair",
+            "wiki_title": "Strand of Medusa Hair"
+          }
+        ]
+      },
+      "item_ref": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i10309",
+        "revision": "definition-r1"
+      },
+      "source_name": "Strand of Medusa Hair"
+    },
+    "Swamp Grass": {
+      "evidence": {
+        "canonical": {
+          "definition_sha256": "b63fb947e31a9ed1c9a8812c4b3995ef620d31d702f2f3ddef90c3c5b705feb3",
+          "name": "swamp grass",
+          "path": "content/items/definitions/items-33500-33999.json"
+        },
+        "identity_basis": "CLIENT_AND_WIKI",
+        "primary_client": {
+          "id": 9686,
+          "name": "swamp grass",
+          "record_sha256": "27c1b2390fc928fd50963c91d7d91c681860433773680b1423b912cd09471b31"
+        },
+        "wiki_observations": [
+          {
+            "content_sha256": "979a159e8c2893cfdbe9e6f1beaade320c98f713a098440b502f3799353be3ce",
+            "page_id": 41940,
+            "revision_id": 1098691,
+            "revision_sha1": "bfc4bd969f1afa91e566bbeee74a049d8c83f8e5",
+            "revision_timestamp": "2025-04-11T17:54:54Z",
+            "url": "https://tibia.fandom.com/wiki/Swamp_Grass",
+            "wiki_title": "Swamp Grass"
+          }
+        ]
+      },
+      "item_ref": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i9686",
+        "revision": "definition-r1"
+      },
+      "source_name": "Swamp Grass"
+    },
+    "Tarantula Egg": {
+      "evidence": {
+        "canonical": {
+          "definition_sha256": "9003a33fcb29ddd4cb810fe4f5182341da231e1d24cf005a8f17dba1489b3ad2",
+          "name": "tarantula egg",
+          "path": "content/items/definitions/items-00000-00499.json"
+        },
+        "identity_basis": "CLIENT_AND_WIKI",
+        "primary_client": {
+          "id": 10281,
+          "name": "tarantula egg",
+          "record_sha256": "d7d2f36e59298e91c2141f5cc35148d621d237be3a2906e3003f1a9b48aee284"
+        },
+        "wiki_observations": [
+          {
+            "content_sha256": "e15f0eaf85fcf847b346c2d55ccc471d280691d72b9ddeeb7ad02aee7f6d80a1",
+            "page_id": 41817,
+            "revision_id": 1098564,
+            "revision_sha1": "beaa8cfbb4541195ce19b9d0312872c757a164bc",
+            "revision_timestamp": "2025-04-10T00:35:24Z",
+            "url": "https://tibia.fandom.com/wiki/Tarantula_Egg",
+            "wiki_title": "Tarantula Egg"
+          }
+        ]
+      },
+      "item_ref": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i10281",
+        "revision": "definition-r1"
+      },
+      "source_name": "Tarantula Egg"
+    },
+    "Thick Fur": {
+      "evidence": {
+        "canonical": {
+          "definition_sha256": "ecc4665bdc382c381dc4c3536b7c1faa21ba991c0f1c006b7ba6e9c5968c4237",
+          "name": "thick fur",
+          "path": "content/items/definitions/items-00000-00499.json"
+        },
+        "identity_basis": "CLIENT_AND_WIKI",
+        "primary_client": {
+          "id": 10307,
+          "name": "thick fur",
+          "record_sha256": "742d7a31271fcfacf77f1c14f969543422533487520b417c6c2f6157dbc46ff6"
+        },
+        "wiki_observations": [
+          {
+            "content_sha256": "79ca914903be381f2f746c5aff4fa349b68846edda72ab49ace53dd623efbceb",
+            "page_id": 41938,
+            "revision_id": 1097126,
+            "revision_sha1": "ca9bca6c727d07d2255da4aa15e25856050f5fd4",
+            "revision_timestamp": "2025-04-01T23:39:05Z",
+            "url": "https://tibia.fandom.com/wiki/Thick_Fur",
+            "wiki_title": "Thick Fur"
+          }
+        ]
+      },
+      "item_ref": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i10307",
+        "revision": "definition-r1"
+      },
+      "source_name": "Thick Fur"
+    },
+    "Vampire Teeth": {
+      "evidence": {
+        "canonical": {
+          "definition_sha256": "6f5d4b3f5fb5eb08328897e8f334c3a638b698362d6a460b34486baea5379fcc",
+          "name": "vampire teeth",
+          "path": "content/items/definitions/items-33500-33999.json"
+        },
+        "identity_basis": "CLIENT_AND_WIKI",
+        "primary_client": {
+          "id": 9685,
+          "name": "vampire teeth",
+          "record_sha256": "a6a0ef1d5f042d47f5ab9ca332c5239f836d93c2bcbd1116ba90c97ff66f92a9"
+        },
+        "wiki_observations": [
+          {
+            "content_sha256": "f3528b2a9afd48618c3107d56a23cb4ba424efea9bbf8ed18107393dfc02b94a",
+            "page_id": 41933,
+            "revision_id": 1188325,
+            "revision_sha1": "5fff4cf95034af64e81c038453ce0203d649c673",
+            "revision_timestamp": "2026-06-03T01:42:05Z",
+            "url": "https://tibia.fandom.com/wiki/Vampire_Teeth",
+            "wiki_title": "Vampire Teeth"
+          }
+        ]
+      },
+      "item_ref": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i9685",
+        "revision": "definition-r1"
+      },
+      "source_name": "Vampire Teeth"
+    },
+    "Vexclaw Talon": {
+      "evidence": {
+        "canonical": {
+          "definition_sha256": "897c812a176e00671e1c36e39181e1ac3655c75361be2826c06ec4d5b554bdeb",
+          "name": "vexclaw talon",
+          "path": "content/items/definitions/items-11500-11999.json"
+        },
+        "identity_basis": "CLIENT_AND_WIKI",
+        "primary_client": {
+          "id": 22728,
+          "name": "vexclaw talon",
+          "record_sha256": "a86e75c21643415000ff44d78bad43b9aeda150c7f919e64e2ebb6b5b01cdca8"
+        },
+        "wiki_observations": [
+          {
+            "content_sha256": "b868f05f8464efd755a331ce6e5fa4fcae0ed421a45f534aea8a218d2434993a",
+            "page_id": 76962,
+            "revision_id": 1054456,
+            "revision_sha1": "e0590c6981ba2dc2808b44594948270453e9e58a",
+            "revision_timestamp": "2024-02-19T17:26:11Z",
+            "url": "https://tibia.fandom.com/wiki/Vexclaw_Talon",
+            "wiki_title": "Vexclaw Talon"
+          }
+        ]
+      },
+      "item_ref": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i22728",
+        "revision": "definition-r1"
+      },
+      "source_name": "Vexclaw Talon"
+    },
+    "War Crystal": {
+      "evidence": {
+        "canonical": {
+          "definition_sha256": "214e78f29ad4d16f33228647196e28b58889805520a8654e0b6857d969fa3bdb",
+          "name": "war crystal",
+          "path": "content/items/definitions/items-33500-33999.json"
+        },
+        "identity_basis": "CLIENT_AND_WIKI",
+        "primary_client": {
+          "id": 9654,
+          "name": "war crystal",
+          "record_sha256": "b5bfdf9c99748c64a89e03a6cfbdf807e7266c762d5fd54357c003a10316b408"
+        },
+        "wiki_observations": [
+          {
+            "content_sha256": "60083a41e8a29d167352ae96b3694db4f6b1a9aec8d862f54575748dbba67117",
+            "page_id": 41947,
+            "revision_id": 1188318,
+            "revision_sha1": "4afa314220d864340d31ddc3914551fec6e74409",
+            "revision_timestamp": "2026-06-03T00:47:23Z",
+            "url": "https://tibia.fandom.com/wiki/War_Crystal",
+            "wiki_title": "War Crystal"
+          }
+        ]
+      },
+      "item_ref": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i9654",
+        "revision": "definition-r1"
+      },
+      "source_name": "War Crystal"
+    },
+    "Warmaster's Wristguards": {
+      "evidence": {
+        "canonical": {
+          "definition_sha256": "e8757e6ca8c8e7c44d864e5e32a50dc49204f3891e8ab2807d58a28151ad91f7",
+          "name": "warmaster's wristguards",
+          "path": "content/items/definitions/items-00000-00499.json"
+        },
+        "identity_basis": "CLIENT_AND_WIKI",
+        "primary_client": {
+          "id": 10405,
+          "name": "warmaster's wristguards",
+          "record_sha256": "82b021caafeac8a4d447f1013bc8d08054d81ade804068e60327a369c448b0bd"
+        },
+        "wiki_observations": [
+          {
+            "content_sha256": "a4b5a8f86c24f1eb0b77af3963fd661b8e2023e50cb99c844d68eab206ba7f28",
+            "page_id": 42615,
+            "revision_id": 1054479,
+            "revision_sha1": "b62244e0f046709fd091a75929d8bbc26871ab12",
+            "revision_timestamp": "2024-02-19T17:26:45Z",
+            "url": "https://tibia.fandom.com/wiki/Warmaster's_Wristguards",
+            "wiki_title": "Warmaster's Wristguards"
+          }
+        ]
+      },
+      "item_ref": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i10405",
+        "revision": "definition-r1"
+      },
+      "source_name": "Warmaster's Wristguards"
+    },
+    "Waspoid Wing": {
+      "evidence": {
+        "canonical": {
+          "definition_sha256": "30981d733bfe1538b62c68a2841abf5dfe89f62e0fb76881e36e2fa07d6f476b",
+          "name": "waspoid wing",
+          "path": "content/items/definitions/items-04000-04499.json"
+        },
+        "identity_basis": "CLIENT_AND_WIKI",
+        "primary_client": {
+          "id": 14081,
+          "name": "waspoid wing",
+          "record_sha256": "145467cc3f11f7dfb4180d6c1bcc07ba801869d400c89811dfbc7e9020684ef2"
+        },
+        "wiki_observations": [
+          {
+            "content_sha256": "d39ff08545742dcd2b5e6f3334faec5296a4a9e56b22743bcfec357875aa3124",
+            "page_id": 56938,
+            "revision_id": 1054473,
+            "revision_sha1": "a2e9b2ffb5670a4caefd5fbfa4405d5c917952f3",
+            "revision_timestamp": "2024-02-19T17:26:36Z",
+            "url": "https://tibia.fandom.com/wiki/Waspoid_Wing",
+            "wiki_title": "Waspoid Wing"
+          }
+        ]
+      },
+      "item_ref": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i14081",
+        "revision": "definition-r1"
+      },
+      "source_name": "Waspoid Wing"
+    },
+    "Wereboar Hooves": {
+      "evidence": {
+        "canonical": {
+          "definition_sha256": "e50d912233e26de42722f45d67437dcf3c7bc8b9ba6b3a19a350f9ba67aeebc6",
+          "name": "wereboar hooves",
+          "path": "content/items/definitions/items-11000-11499.json"
+        },
+        "identity_basis": "CLIENT_AND_WIKI",
+        "primary_client": {
+          "id": 22053,
+          "name": "wereboar hooves",
+          "record_sha256": "51f0c8f6a4ef5dd478b33b04ce95ea198f9650892f309496fa79441baa91f4ce"
+        },
+        "wiki_observations": [
+          {
+            "content_sha256": "aaf5024a274a556968b9ba9abba3bab8db7fa98d37c4e3ec1d8c1c5c2eeb00d4",
+            "page_id": 75080,
+            "revision_id": 1054490,
+            "revision_sha1": "ec61ad6d50dbe32e1fe54bb3405c2f5eeb38487f",
+            "revision_timestamp": "2024-02-19T17:27:03Z",
+            "url": "https://tibia.fandom.com/wiki/Wereboar_Hooves",
+            "wiki_title": "Wereboar Hooves"
+          }
+        ]
+      },
+      "item_ref": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i22053",
+        "revision": "definition-r1"
+      },
+      "source_name": "Wereboar Hooves"
+    },
+    "Winter Wolf Fur": {
+      "evidence": {
+        "canonical": {
+          "definition_sha256": "10362d491bc2dd9940816b1765d8b7be1fb5364cf9a891f9424fbdb1edfe2c0e",
+          "name": "winter wolf fur",
+          "path": "content/items/definitions/items-00000-00499.json"
+        },
+        "identity_basis": "CLIENT_AND_WIKI",
+        "primary_client": {
+          "id": 10295,
+          "name": "winter wolf fur",
+          "record_sha256": "0550c71fd0083cba07a17e84840f88c0e477d98cf86b4092845ad9b84577c8a1"
+        },
+        "wiki_observations": [
+          {
+            "content_sha256": "a2e91f0a53d0d96371af46c317f7bffb23d3a4df4fbe9184a73d17eb0a5cbc27",
+            "page_id": 41951,
+            "revision_id": 1098680,
+            "revision_sha1": "c70d69328f6d610980e9f7a7a73943081e61d347",
+            "revision_timestamp": "2025-04-11T17:24:02Z",
+            "url": "https://tibia.fandom.com/wiki/Winter_Wolf_Fur",
+            "wiki_title": "Winter Wolf Fur"
+          }
+        ]
+      },
+      "item_ref": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i10295",
+        "revision": "definition-r1"
+      },
+      "source_name": "Winter Wolf Fur"
+    },
+    "Wyrm Scale": {
+      "evidence": {
+        "canonical": {
+          "definition_sha256": "fa22bf8ac05d41827d2908352b110f423889ac3647cc970c3700d68f614d7d50",
+          "name": "wyrm scale",
+          "path": "content/items/definitions/items-33500-33999.json"
+        },
+        "identity_basis": "CLIENT_AND_WIKI",
+        "primary_client": {
+          "id": 9665,
+          "name": "wyrm scale",
+          "record_sha256": "9e4c1b77e61da462112dca949ddb480ab5f434aa5e4947ce87f9b3c01cee2e8d"
+        },
+        "wiki_observations": [
+          {
+            "content_sha256": "80e6698c744baca439017fdb7930101940f58b23fbcc6086f8a613265d497c64",
+            "page_id": 41954,
+            "revision_id": 1067778,
+            "revision_sha1": "f0f6c6b10680d387f42db9fbb6c4353e01fb0eae",
+            "revision_timestamp": "2024-07-04T00:30:27Z",
+            "url": "https://tibia.fandom.com/wiki/Wyrm_Scale",
+            "wiki_title": "Wyrm Scale"
+          }
+        ]
+      },
+      "item_ref": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i9665",
+        "revision": "definition-r1"
+      },
+      "source_name": "Wyrm Scale"
+    },
+    "Wyvern Talisman": {
+      "evidence": {
+        "canonical": {
+          "definition_sha256": "b59cde3423ceea94f17579d3c39911854c1f50e26d39bf7add345f27bb5110a4",
+          "name": "wyvern talisman",
+          "path": "content/items/definitions/items-33500-33999.json"
+        },
+        "identity_basis": "CLIENT_AND_WIKI",
+        "primary_client": {
+          "id": 9644,
+          "name": "wyvern talisman",
+          "record_sha256": "006bfd9007f602fb8a5d5700c3d8b7b6f05ed67331459bd3aede14893516ffaa"
+        },
+        "wiki_observations": [
+          {
+            "content_sha256": "48fb3a13a7c4f4d052a8ad1747e800c9f532070a360da63903fa457e229ed841",
+            "page_id": 41955,
+            "revision_id": 1098647,
+            "revision_sha1": "96fe953b703108490c4679861a65f0d925b8094a",
+            "revision_timestamp": "2025-04-11T11:35:58Z",
+            "url": "https://tibia.fandom.com/wiki/Wyvern_Talisman",
+            "wiki_title": "Wyvern Talisman"
+          }
+        ]
+      },
+      "item_ref": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i9644",
+        "revision": "definition-r1"
+      },
+      "source_name": "Wyvern Talisman"
+    }
+  },
+  "notes": [
+    "Sabretooth (Item) is the BR disambiguated label for client/wiki Sabretooth; alias is explicit.",
+    "Basic, Intricate and Powerful scrolls all exist in this pinned client; none are inferred from ID ranges.",
+    "Primary client name absence for world shrines is qualified by canonical and revisioned wiki names.",
+    "Abandoned Imbuing Shrine items 25101/25102 are constructions and excluded from usable shrine variants.",
+    "Item materializable=false is preserved; this evidence binds identity without activating gameplay definitions."
+  ],
+  "schema": "OTERYN_IMBUEMENT_ITEM_BINDINGS/v1",
+  "scroll_bindings": {
+    "Bash": {
+      "basic": {
+        "evidence": {
+          "canonical": {
+            "definition_sha256": "a90c330b258bf8935cf8f05ad70822b8742173cc1314643662ffbbd009e57cca",
+            "name": null,
+            "path": "content/items/definitions/items-28500-28999.json"
+          },
+          "identity_basis": "CLIENT_AND_WIKI",
+          "primary_client": {
+            "id": 53751,
+            "name": "basic bash scroll",
+            "record_sha256": "c97e9b2dd3e5cf542f6b7d900b509e65832b157ca26dbf167b15b0cafea474d9"
+          },
+          "wiki_observations": [
+            {
+              "content_sha256": "f6f9561d1ebfc303dc721f235eec45af6b12d5afe249329314a26cf75636c547",
+              "page_id": 110774,
+              "revision_id": 1195576,
+              "revision_sha1": "dcf8886d1006a0920fbe2a1eb792e23da31e17ca",
+              "revision_timestamp": "2026-07-13T14:38:28Z",
+              "url": "https://tibia.fandom.com/wiki/Basic_Bash_Scroll",
+              "wiki_title": "Basic Bash Scroll"
+            }
+          ]
+        },
+        "item_ref": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i53751",
+          "revision": "definition-r1"
+        },
+        "source_name": "Basic Bash Scroll"
+      },
+      "intricate": {
+        "evidence": {
+          "canonical": {
+            "definition_sha256": "97b257c765051acc75935a7ee92bbfec0f32fc3b7cfd1ab47148082ed9019fcd",
+            "name": "intricate bash scroll",
+            "path": "content/items/definitions/items-28000-28499.json"
+          },
+          "identity_basis": "CLIENT_AND_WIKI",
+          "primary_client": {
+            "id": 51724,
+            "name": "intricate bash scroll",
+            "record_sha256": "a64aa7661772cd3fede75847191e4989b62070071ee2fce9d59c3e4592acc817"
+          },
+          "wiki_observations": [
+            {
+              "content_sha256": "9f6a050e2f1d6259a79fa971534851c48b70beacecb3435cd5d6737fadde22be",
+              "page_id": 108963,
+              "revision_id": 1194324,
+              "revision_sha1": "5dece0aa3d07a5d2634a45cfcaa9d3e28d5b1998",
+              "revision_timestamp": "2026-07-04T21:28:03Z",
+              "url": "https://tibia.fandom.com/wiki/Intricate_Bash_Scroll",
+              "wiki_title": "Intricate Bash Scroll"
+            }
+          ]
+        },
+        "item_ref": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i51724",
+          "revision": "definition-r1"
+        },
+        "source_name": "Intricate Bash Scroll"
+      },
+      "powerful": {
+        "evidence": {
+          "canonical": {
+            "definition_sha256": "ec89b29e40d48131b19a8078ba77395110efdff9a4a340c66bd007f490c6c212",
+            "name": "powerful bash scroll",
+            "path": "content/items/definitions/items-28000-28499.json"
+          },
+          "identity_basis": "CLIENT_AND_WIKI",
+          "primary_client": {
+            "id": 51444,
+            "name": "powerful bash scroll",
+            "record_sha256": "6f7395a4fb8a2a78533a141ae69bed94112b2a3e4d69c5487cd91dfe9d53f4ca"
+          },
+          "wiki_observations": [
+            {
+              "content_sha256": "f025e5d487440185c9a8c700ecf3afe2ae2a6a13c997a2373f16a097b35a06b2",
+              "page_id": 108674,
+              "revision_id": 1194346,
+              "revision_sha1": "1364dfd0e4975eec5a53e1ab37424f584a828ffb",
+              "revision_timestamp": "2026-07-04T21:44:18Z",
+              "url": "https://tibia.fandom.com/wiki/Powerful_Bash_Scroll",
+              "wiki_title": "Powerful Bash Scroll"
+            }
+          ]
+        },
+        "item_ref": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i51444",
+          "revision": "definition-r1"
+        },
+        "source_name": "Powerful Bash Scroll"
+      }
+    },
+    "Blockade": {
+      "basic": {
+        "evidence": {
+          "canonical": {
+            "definition_sha256": "f526a46a8717ae4384d6a85e815c68cbe5a4de4de754ceac94817423e0272378",
+            "name": null,
+            "path": "content/items/definitions/items-28500-28999.json"
+          },
+          "identity_basis": "CLIENT_AND_WIKI",
+          "primary_client": {
+            "id": 53752,
+            "name": "basic blockade scroll",
+            "record_sha256": "55a8aec39ed3fd190b8633af48aa82231aeb6c91d9d8c3eb00b6ee748e2bad1b"
+          },
+          "wiki_observations": [
+            {
+              "content_sha256": "e60587482d32ad801e5055604c35e069bdcfb343d7db6f0b850e0fc7bf8b9ead",
+              "page_id": 110776,
+              "revision_id": 1195577,
+              "revision_sha1": "7c7e30f34cea3b04bdbe577ff73ca4eac4131262",
+              "revision_timestamp": "2026-07-13T14:38:30Z",
+              "url": "https://tibia.fandom.com/wiki/Basic_Blockade_Scroll",
+              "wiki_title": "Basic Blockade Scroll"
+            }
+          ]
+        },
+        "item_ref": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i53752",
+          "revision": "definition-r1"
+        },
+        "source_name": "Basic Blockade Scroll"
+      },
+      "intricate": {
+        "evidence": {
+          "canonical": {
+            "definition_sha256": "6acd2d9f17a751ea85fa697d43384244daf3a46ce4698c24edc4e1f0adbb3a5b",
+            "name": "intricate blockade scroll",
+            "path": "content/items/definitions/items-28000-28499.json"
+          },
+          "identity_basis": "CLIENT_AND_WIKI",
+          "primary_client": {
+            "id": 51725,
+            "name": "intricate blockade scroll",
+            "record_sha256": "dddaafede0b42bffb0a830390087576de622085fbf10bad62d041cb8aec4d239"
+          },
+          "wiki_observations": [
+            {
+              "content_sha256": "7d79979bd1b01c1b5eb069ba2080b762f599331c45676569c34d748716aac520",
+              "page_id": 108964,
+              "revision_id": 1194325,
+              "revision_sha1": "1fbdfbfcf1fb3ad0557ffca0d6da0a6d7bc0d5d3",
+              "revision_timestamp": "2026-07-04T21:28:08Z",
+              "url": "https://tibia.fandom.com/wiki/Intricate_Blockade_Scroll",
+              "wiki_title": "Intricate Blockade Scroll"
+            }
+          ]
+        },
+        "item_ref": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i51725",
+          "revision": "definition-r1"
+        },
+        "source_name": "Intricate Blockade Scroll"
+      },
+      "powerful": {
+        "evidence": {
+          "canonical": {
+            "definition_sha256": "80fc01b2f71751180d9d6b37e4b0319e2a17f43a35d14262c6f59b4351992c12",
+            "name": "powerful blockade scroll",
+            "path": "content/items/definitions/items-28000-28499.json"
+          },
+          "identity_basis": "CLIENT_AND_WIKI",
+          "primary_client": {
+            "id": 51445,
+            "name": "powerful blockade scroll",
+            "record_sha256": "b4967aa8f4b68941814df5684a4b60f9d95b0c6b6acbd8792b6a2b43dd21bec2"
+          },
+          "wiki_observations": [
+            {
+              "content_sha256": "16ae7436acd021fea52c2153a4e2ef73febf498fb56f70e5ae0c498120a18afe",
+              "page_id": 108676,
+              "revision_id": 1194344,
+              "revision_sha1": "57c86b6ecb5ecaf858dfb8af5ce505aac9eb13ac",
+              "revision_timestamp": "2026-07-04T21:43:14Z",
+              "url": "https://tibia.fandom.com/wiki/Powerful_Blockade_Scroll",
+              "wiki_title": "Powerful Blockade Scroll"
+            }
+          ]
+        },
+        "item_ref": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i51445",
+          "revision": "definition-r1"
+        },
+        "source_name": "Powerful Blockade Scroll"
+      }
+    },
+    "Chop": {
+      "basic": {
+        "evidence": {
+          "canonical": {
+            "definition_sha256": "fb93139f372fd10d9a3300766ff4400b166ab01e9252aa8616522eb9710c6556",
+            "name": null,
+            "path": "content/items/definitions/items-28500-28999.json"
+          },
+          "identity_basis": "CLIENT_AND_WIKI",
+          "primary_client": {
+            "id": 53753,
+            "name": "basic chop scroll",
+            "record_sha256": "a8b61ead7c1ffc98f91e05c054a5ba60cc7c925f4546de48eb6c83871b3a2159"
+          },
+          "wiki_observations": [
+            {
+              "content_sha256": "67584da12b8382316b51fd4a85fbf6de75eb3c28071b65aad4376c868d9da815",
+              "page_id": 110778,
+              "revision_id": 1195578,
+              "revision_sha1": "a25190e745f9418eafd514639b26887f85c3b08f",
+              "revision_timestamp": "2026-07-13T14:38:31Z",
+              "url": "https://tibia.fandom.com/wiki/Basic_Chop_Scroll",
+              "wiki_title": "Basic Chop Scroll"
+            }
+          ]
+        },
+        "item_ref": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i53753",
+          "revision": "definition-r1"
+        },
+        "source_name": "Basic Chop Scroll"
+      },
+      "intricate": {
+        "evidence": {
+          "canonical": {
+            "definition_sha256": "8280a83aef62ad5b3deae56109125bbdfca1bc5dc6206b320faa64309ff314dd",
+            "name": "intricate chop scroll",
+            "path": "content/items/definitions/items-28000-28499.json"
+          },
+          "identity_basis": "CLIENT_AND_WIKI",
+          "primary_client": {
+            "id": 51726,
+            "name": "intricate chop scroll",
+            "record_sha256": "fd5bbbf86014b9eb29150c8b5f1eac19ab8708b6ee9d8facb0838b26dada549b"
+          },
+          "wiki_observations": [
+            {
+              "content_sha256": "a4da2dcb05c78dcdfaae28c1351666410647856d085416e66fac2fe39a943416",
+              "page_id": 108966,
+              "revision_id": 1194326,
+              "revision_sha1": "2683f6e3e6ba408b2a20878caefae460970e37d7",
+              "revision_timestamp": "2026-07-04T21:28:15Z",
+              "url": "https://tibia.fandom.com/wiki/Intricate_Chop_Scroll",
+              "wiki_title": "Intricate Chop Scroll"
+            }
+          ]
+        },
+        "item_ref": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i51726",
+          "revision": "definition-r1"
+        },
+        "source_name": "Intricate Chop Scroll"
+      },
+      "powerful": {
+        "evidence": {
+          "canonical": {
+            "definition_sha256": "149564ca66ebc5070a3f4b73e460b68979017cdbc17313a6d0958217d76dc318",
+            "name": "powerful chop scroll",
+            "path": "content/items/definitions/items-28000-28499.json"
+          },
+          "identity_basis": "CLIENT_AND_WIKI",
+          "primary_client": {
+            "id": 51446,
+            "name": "powerful chop scroll",
+            "record_sha256": "886130539c3db8663801e100fc75466273ecf7882d833c3c072cd7726884e303"
+          },
+          "wiki_observations": [
+            {
+              "content_sha256": "072f8bd2f094cd1cdf7d9916297fc80aab66f746482d4ef89a528de1fd97f616",
+              "page_id": 108678,
+              "revision_id": 1194342,
+              "revision_sha1": "cea7ac02a1cc46542e4e708c5ef1dc911364e4b6",
+              "revision_timestamp": "2026-07-04T21:42:03Z",
+              "url": "https://tibia.fandom.com/wiki/Powerful_Chop_Scroll",
+              "wiki_title": "Powerful Chop Scroll"
+            }
+          ]
+        },
+        "item_ref": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i51446",
+          "revision": "definition-r1"
+        },
+        "source_name": "Powerful Chop Scroll"
+      }
+    },
+    "Cloud Fabric": {
+      "basic": {
+        "evidence": {
+          "canonical": {
+            "definition_sha256": "cdaacf6f77e7a701d324eae0be2bb4eb0f7894c89dfc8670cedd9f1ab0d1498c",
+            "name": null,
+            "path": "content/items/definitions/items-28500-28999.json"
+          },
+          "identity_basis": "CLIENT_AND_WIKI",
+          "primary_client": {
+            "id": 53754,
+            "name": "basic cloud fabric scroll",
+            "record_sha256": "2f04f2a7ac19fed416f2e4189e0550495f1052411ad77713c7db360dd90dbbad"
+          },
+          "wiki_observations": [
+            {
+              "content_sha256": "f6765f82e1514476c0180deb4e42258b55bed864e28af1bfc7eb57811365be73",
+              "page_id": 110780,
+              "revision_id": 1195579,
+              "revision_sha1": "26a3da1e8ccb4c9c77f987b921409ce7544d9e6d",
+              "revision_timestamp": "2026-07-13T14:38:32Z",
+              "url": "https://tibia.fandom.com/wiki/Basic_Cloud_Fabric_Scroll",
+              "wiki_title": "Basic Cloud Fabric Scroll"
+            }
+          ]
+        },
+        "item_ref": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i53754",
+          "revision": "definition-r1"
+        },
+        "source_name": "Basic Cloud Fabric Scroll"
+      },
+      "intricate": {
+        "evidence": {
+          "canonical": {
+            "definition_sha256": "e66263ab8f6bae990e591ae329c490b2d058a29fa093b3a99477d80d1881968d",
+            "name": "intricate cloud fabric scroll",
+            "path": "content/items/definitions/items-28000-28499.json"
+          },
+          "identity_basis": "CLIENT_AND_WIKI",
+          "primary_client": {
+            "id": 51727,
+            "name": "intricate cloud fabric scroll",
+            "record_sha256": "3f165318fda8bf07890f5280355c4a989fb7bd2a670f645cb7cee90a215a811e"
+          },
+          "wiki_observations": [
+            {
+              "content_sha256": "caf8f9aa8ff28c65ff7b937c80b94551a457fc8d95158405c939fd31081edd87",
+              "page_id": 108968,
+              "revision_id": 1194329,
+              "revision_sha1": "449e1920497fcc5a3770b5f307e8d863e01f64c2",
+              "revision_timestamp": "2026-07-04T21:29:28Z",
+              "url": "https://tibia.fandom.com/wiki/Intricate_Cloud_Fabric_Scroll",
+              "wiki_title": "Intricate Cloud Fabric Scroll"
+            }
+          ]
+        },
+        "item_ref": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i51727",
+          "revision": "definition-r1"
+        },
+        "source_name": "Intricate Cloud Fabric Scroll"
+      },
+      "powerful": {
+        "evidence": {
+          "canonical": {
+            "definition_sha256": "a6a70863773e9a16b610a241261faf835bae0d120f79074574086a5a5d3f8067",
+            "name": "powerful cloud fabric scroll",
+            "path": "content/items/definitions/items-28000-28499.json"
+          },
+          "identity_basis": "CLIENT_AND_WIKI",
+          "primary_client": {
+            "id": 51447,
+            "name": "powerful cloud fabric scroll",
+            "record_sha256": "b701b3f1490a026006d758c8b749298f153da7a63046f2b902451a98bffc55b8"
+          },
+          "wiki_observations": [
+            {
+              "content_sha256": "05c84afa9b27d66304b37e17219d99ee6482681c5fe564d4c7c6fb4e44eaf885",
+              "page_id": 108680,
+              "revision_id": 1194339,
+              "revision_sha1": "e270156557fd3666cadbc8ac0a70476245e9d652",
+              "revision_timestamp": "2026-07-04T21:40:12Z",
+              "url": "https://tibia.fandom.com/wiki/Powerful_Cloud_Fabric_Scroll",
+              "wiki_title": "Powerful Cloud Fabric Scroll"
+            }
+          ]
+        },
+        "item_ref": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i51447",
+          "revision": "definition-r1"
+        },
+        "source_name": "Powerful Cloud Fabric Scroll"
+      }
+    },
+    "Demon Presence": {
+      "basic": {
+        "evidence": {
+          "canonical": {
+            "definition_sha256": "a0d2cee025db3e5a39a84372b1b8fb3fba41cb26b9f003d8b946d947d22829e9",
+            "name": null,
+            "path": "content/items/definitions/items-28500-28999.json"
+          },
+          "identity_basis": "CLIENT_AND_WIKI",
+          "primary_client": {
+            "id": 53755,
+            "name": "basic demon presence scroll",
+            "record_sha256": "c79dc1bb14a998233b406f03e569c63f0c23f767f3efc3b2946c764ea89e7a57"
+          },
+          "wiki_observations": [
+            {
+              "content_sha256": "2bb120f0ee90fd3e9cdd6d03b9be98e27060d2a779d1168dc4c2eb1c9f6908a0",
+              "page_id": 110782,
+              "revision_id": 1195580,
+              "revision_sha1": "bbe293b36f6b6f086d89f2edad61ddba0ac163b8",
+              "revision_timestamp": "2026-07-13T14:38:33Z",
+              "url": "https://tibia.fandom.com/wiki/Basic_Demon_Presence_Scroll",
+              "wiki_title": "Basic Demon Presence Scroll"
+            }
+          ]
+        },
+        "item_ref": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i53755",
+          "revision": "definition-r1"
+        },
+        "source_name": "Basic Demon Presence Scroll"
+      },
+      "intricate": {
+        "evidence": {
+          "canonical": {
+            "definition_sha256": "1c0a28799b614d86e573dc01abd9e6b7b2dc350b307a11b8fb540fea7365e080",
+            "name": "intricate demon presence scroll",
+            "path": "content/items/definitions/items-28000-28499.json"
+          },
+          "identity_basis": "CLIENT_AND_WIKI",
+          "primary_client": {
+            "id": 51728,
+            "name": "intricate demon presence scroll",
+            "record_sha256": "601c97f6fb49fe0e2dbbd487f0b0507358d4057681716b1ac45756f7a1a23e75"
+          },
+          "wiki_observations": [
+            {
+              "content_sha256": "2bfab4dfaeaf923fc6268cae76490bcff31aec4375f42566953d607e868a17da",
+              "page_id": 108970,
+              "revision_id": 1194336,
+              "revision_sha1": "b7fa65c41b5c6bc398dfd938463950c8bc0859bc",
+              "revision_timestamp": "2026-07-04T21:37:55Z",
+              "url": "https://tibia.fandom.com/wiki/Intricate_Demon_Presence_Scroll",
+              "wiki_title": "Intricate Demon Presence Scroll"
+            }
+          ]
+        },
+        "item_ref": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i51728",
+          "revision": "definition-r1"
+        },
+        "source_name": "Intricate Demon Presence Scroll"
+      },
+      "powerful": {
+        "evidence": {
+          "canonical": {
+            "definition_sha256": "4d5fd346f1de8e78f2b277343df3b7d8ae5f17f24dbfbdf49c890d1799b58e7c",
+            "name": "powerful demon presence scroll",
+            "path": "content/items/definitions/items-28000-28499.json"
+          },
+          "identity_basis": "CLIENT_AND_WIKI",
+          "primary_client": {
+            "id": 51448,
+            "name": "powerful demon presence scroll",
+            "record_sha256": "6e1ea878d794a2c9adc7bd0c3ca347a7433955e9d3facac50676db533c119e48"
+          },
+          "wiki_observations": [
+            {
+              "content_sha256": "977836b771818d23a71a51c74797f7b7346cfe0d91443ec0a8b9ded55dcad7d7",
+              "page_id": 108682,
+              "revision_id": 1194335,
+              "revision_sha1": "d684fe4c8e21680364119ae2b01e1f84a5babd28",
+              "revision_timestamp": "2026-07-04T21:37:35Z",
+              "url": "https://tibia.fandom.com/wiki/Powerful_Demon_Presence_Scroll",
+              "wiki_title": "Powerful Demon Presence Scroll"
+            }
+          ]
+        },
+        "item_ref": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i51448",
+          "revision": "definition-r1"
+        },
+        "source_name": "Powerful Demon Presence Scroll"
+      }
+    },
+    "Dragon Hide": {
+      "basic": {
+        "evidence": {
+          "canonical": {
+            "definition_sha256": "202991620c304489620af812c05744ddbe3d12dd2162c246773f15930061cec9",
+            "name": null,
+            "path": "content/items/definitions/items-28500-28999.json"
+          },
+          "identity_basis": "CLIENT_AND_WIKI",
+          "primary_client": {
+            "id": 53756,
+            "name": "basic dragon hide scroll",
+            "record_sha256": "c99ebebadaa6227b666c720b85712408dc24b4262e6dc3ffafd162ea9b97fc76"
+          },
+          "wiki_observations": [
+            {
+              "content_sha256": "4e53eaa9ab1fab95909b3f9b52731b4ff77e1d8fc1810eccdfd39b7c65f0669f",
+              "page_id": 110784,
+              "revision_id": 1195581,
+              "revision_sha1": "b490787cd4f2337149bf7b9f3fa31b98e0ae390f",
+              "revision_timestamp": "2026-07-13T14:38:34Z",
+              "url": "https://tibia.fandom.com/wiki/Basic_Dragon_Hide_Scroll",
+              "wiki_title": "Basic Dragon Hide Scroll"
+            }
+          ]
+        },
+        "item_ref": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i53756",
+          "revision": "definition-r1"
+        },
+        "source_name": "Basic Dragon Hide Scroll"
+      },
+      "intricate": {
+        "evidence": {
+          "canonical": {
+            "definition_sha256": "f6022d338bc55d245c270604f2c30ef5a470f9b8de91784a47a6df2decde04d1",
+            "name": "intricate dragon hide scroll",
+            "path": "content/items/definitions/items-28000-28499.json"
+          },
+          "identity_basis": "CLIENT_AND_WIKI",
+          "primary_client": {
+            "id": 51729,
+            "name": "intricate dragon hide scroll",
+            "record_sha256": "cd80da3c2c354f0bca652629177fe7b72d74bf3e7714413814f0a761b0b05cda"
+          },
+          "wiki_observations": [
+            {
+              "content_sha256": "85d6ab864acbc339724a3721402b7f5d41c07cf2a75d9a743f375c07cfa76b32",
+              "page_id": 108972,
+              "revision_id": 1194352,
+              "revision_sha1": "a459eb045f8c7428bdd4cf73f43391cb4943aba3",
+              "revision_timestamp": "2026-07-04T21:48:47Z",
+              "url": "https://tibia.fandom.com/wiki/Intricate_Dragon_Hide_Scroll",
+              "wiki_title": "Intricate Dragon Hide Scroll"
+            }
+          ]
+        },
+        "item_ref": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i51729",
+          "revision": "definition-r1"
+        },
+        "source_name": "Intricate Dragon Hide Scroll"
+      },
+      "powerful": {
+        "evidence": {
+          "canonical": {
+            "definition_sha256": "568a12213f1cfe209c10bbc6f4200f63f253ebdd0e92d18dffafd6d2c1de7019",
+            "name": "powerful dragon hide scroll",
+            "path": "content/items/definitions/items-28000-28499.json"
+          },
+          "identity_basis": "CLIENT_AND_WIKI",
+          "primary_client": {
+            "id": 51449,
+            "name": "powerful dragon hide scroll",
+            "record_sha256": "aa0afd4ebf0af302de267434fbaf8cdc884379e889ac59928da4d4236e56e3ae"
+          },
+          "wiki_observations": [
+            {
+              "content_sha256": "a3e692e1572f7ef8147407cc69bbe440036a583a8325cb8851f09b538831d0e6",
+              "page_id": 108684,
+              "revision_id": 1194350,
+              "revision_sha1": "8f1f3e4cb99782a39a4ebd6479721362b2c74b06",
+              "revision_timestamp": "2026-07-04T21:47:53Z",
+              "url": "https://tibia.fandom.com/wiki/Powerful_Dragon_Hide_Scroll",
+              "wiki_title": "Powerful Dragon Hide Scroll"
+            }
+          ]
+        },
+        "item_ref": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i51449",
+          "revision": "definition-r1"
+        },
+        "source_name": "Powerful Dragon Hide Scroll"
+      }
+    },
+    "Electrify": {
+      "basic": {
+        "evidence": {
+          "canonical": {
+            "definition_sha256": "f18adb7ee3dc147393697bca529066da606a1862896ef70e62c12c1d080413f1",
+            "name": null,
+            "path": "content/items/definitions/items-28500-28999.json"
+          },
+          "identity_basis": "CLIENT_AND_WIKI",
+          "primary_client": {
+            "id": 53757,
+            "name": "basic electrify scroll",
+            "record_sha256": "903acce2e4144b0ddfe705dcffd739685d983f1602c4a613d880683ca19cdfd9"
+          },
+          "wiki_observations": [
+            {
+              "content_sha256": "d792125782a2618520cfc58f86b178e6c3e81615d5a836624bcf7d0e0bd4b767",
+              "page_id": 110786,
+              "revision_id": 1195582,
+              "revision_sha1": "59583e296d1fe90cbe2f1fa808d74c4965066f00",
+              "revision_timestamp": "2026-07-13T14:38:36Z",
+              "url": "https://tibia.fandom.com/wiki/Basic_Electrify_Scroll",
+              "wiki_title": "Basic Electrify Scroll"
+            }
+          ]
+        },
+        "item_ref": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i53757",
+          "revision": "definition-r1"
+        },
+        "source_name": "Basic Electrify Scroll"
+      },
+      "intricate": {
+        "evidence": {
+          "canonical": {
+            "definition_sha256": "2b95c8f7bd99bb8bbeba94e5d3590266562484b0cc0aa6e5506afad0be0cfd78",
+            "name": "intricate electrify scroll",
+            "path": "content/items/definitions/items-28000-28499.json"
+          },
+          "identity_basis": "CLIENT_AND_WIKI",
+          "primary_client": {
+            "id": 51730,
+            "name": "intricate electrify scroll",
+            "record_sha256": "404459d25e52a677e387249967feaa18e7d1b283ccca2c245033f233331cb2a3"
+          },
+          "wiki_observations": [
+            {
+              "content_sha256": "2bcba1bba42d867d4a5fcf80f8f369ae58bcb5c829f8f765fd3dad6641abd339",
+              "page_id": 108974,
+              "revision_id": 1194357,
+              "revision_sha1": "2a6e01dd80f62fc9352de2458dbf75cfa2a3b869",
+              "revision_timestamp": "2026-07-04T21:54:55Z",
+              "url": "https://tibia.fandom.com/wiki/Intricate_Electrify_Scroll",
+              "wiki_title": "Intricate Electrify Scroll"
+            }
+          ]
+        },
+        "item_ref": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i51730",
+          "revision": "definition-r1"
+        },
+        "source_name": "Intricate Electrify Scroll"
+      },
+      "powerful": {
+        "evidence": {
+          "canonical": {
+            "definition_sha256": "a09fe72e269d0f60513f9f1562339c69c8ded6f1bb9d09b9be6aa86ebd46f6c2",
+            "name": "powerful electrify scroll",
+            "path": "content/items/definitions/items-28000-28499.json"
+          },
+          "identity_basis": "CLIENT_AND_WIKI",
+          "primary_client": {
+            "id": 51450,
+            "name": "powerful electrify scroll",
+            "record_sha256": "5f8004d906bbb16f7192df471560a7abb951330a2e8fe3e96e657520ff0eff4e"
+          },
+          "wiki_observations": [
+            {
+              "content_sha256": "282c79bdccd81d06fcc05dbba820c659678c4723ae82a97408f99371ef47e817",
+              "page_id": 108686,
+              "revision_id": 1194353,
+              "revision_sha1": "095cd36643edb429544db5fe78be14b5fc3f42d8",
+              "revision_timestamp": "2026-07-04T21:53:40Z",
+              "url": "https://tibia.fandom.com/wiki/Powerful_Electrify_Scroll",
+              "wiki_title": "Powerful Electrify Scroll"
+            }
+          ]
+        },
+        "item_ref": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i51450",
+          "revision": "definition-r1"
+        },
+        "source_name": "Powerful Electrify Scroll"
+      }
+    },
+    "Epiphany": {
+      "basic": {
+        "evidence": {
+          "canonical": {
+            "definition_sha256": "8c4ad5fd0d327f46fce06ac4ecab8228b76631328ee9a74425a8f794e9e47849",
+            "name": null,
+            "path": "content/items/definitions/items-28500-28999.json"
+          },
+          "identity_basis": "CLIENT_AND_WIKI",
+          "primary_client": {
+            "id": 53758,
+            "name": "basic epiphany scroll",
+            "record_sha256": "7bc21edad7a4fb184ba270fdf8e8c383ed7bd5af5322a4cfbb034b955edb7c65"
+          },
+          "wiki_observations": [
+            {
+              "content_sha256": "a91966c4e3f14b88a89c35f7525a660eeb5a7c74e37292dd7eca3f13578838d3",
+              "page_id": 110788,
+              "revision_id": 1195583,
+              "revision_sha1": "364412bd88e4df6b41268f1f07d8038ade381bcb",
+              "revision_timestamp": "2026-07-13T14:38:37Z",
+              "url": "https://tibia.fandom.com/wiki/Basic_Epiphany_Scroll",
+              "wiki_title": "Basic Epiphany Scroll"
+            }
+          ]
+        },
+        "item_ref": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i53758",
+          "revision": "definition-r1"
+        },
+        "source_name": "Basic Epiphany Scroll"
+      },
+      "intricate": {
+        "evidence": {
+          "canonical": {
+            "definition_sha256": "8fda3b008fb4ed11618f5694fc19680e53dbbfd9d59ac3a92d2a4bcb36521ae4",
+            "name": "intricate epiphany scroll",
+            "path": "content/items/definitions/items-28000-28499.json"
+          },
+          "identity_basis": "CLIENT_AND_WIKI",
+          "primary_client": {
+            "id": 51731,
+            "name": "intricate epiphany scroll",
+            "record_sha256": "1179e92ada5da72c572f3ea288f56285f10f2fe6f0f788da5474c342bda2de9a"
+          },
+          "wiki_observations": [
+            {
+              "content_sha256": "85f578dda7964e9a368d4e008b3932394accf38871234a2381c8e93a65b4829b",
+              "page_id": 108976,
+              "revision_id": 1194359,
+              "revision_sha1": "7a28a8bd73b7ea89916471753981c58cc3b4094e",
+              "revision_timestamp": "2026-07-04T21:57:13Z",
+              "url": "https://tibia.fandom.com/wiki/Intricate_Epiphany_Scroll",
+              "wiki_title": "Intricate Epiphany Scroll"
+            }
+          ]
+        },
+        "item_ref": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i51731",
+          "revision": "definition-r1"
+        },
+        "source_name": "Intricate Epiphany Scroll"
+      },
+      "powerful": {
+        "evidence": {
+          "canonical": {
+            "definition_sha256": "fc809eb32ccce843e3b25264c455fe8924b45d9fb0c94f06f5dcdf39e1724084",
+            "name": "powerful epiphany scroll",
+            "path": "content/items/definitions/items-28000-28499.json"
+          },
+          "identity_basis": "CLIENT_AND_WIKI",
+          "primary_client": {
+            "id": 51451,
+            "name": "powerful epiphany scroll",
+            "record_sha256": "b08122071e6c54a8a798ec2108dc13e33f44a70cf646b9d6978bab6267e99282"
+          },
+          "wiki_observations": [
+            {
+              "content_sha256": "9ae048b2b16c574492edeed81b1869b7195ae0b432d0d9aba9a9d397b32818ea",
+              "page_id": 108688,
+              "revision_id": 1194362,
+              "revision_sha1": "63ffbc03ab560f2df10ccb88b7791c6f1caf9016",
+              "revision_timestamp": "2026-07-04T21:59:01Z",
+              "url": "https://tibia.fandom.com/wiki/Powerful_Epiphany_Scroll",
+              "wiki_title": "Powerful Epiphany Scroll"
+            }
+          ]
+        },
+        "item_ref": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i51451",
+          "revision": "definition-r1"
+        },
+        "source_name": "Powerful Epiphany Scroll"
+      }
+    },
+    "Featherweight": {
+      "basic": {
+        "evidence": {
+          "canonical": {
+            "definition_sha256": "7082b096106d1a570585e0586330b8c696e440aa389419149b8c5665b0b7f18e",
+            "name": null,
+            "path": "content/items/definitions/items-28500-28999.json"
+          },
+          "identity_basis": "CLIENT_AND_WIKI",
+          "primary_client": {
+            "id": 53759,
+            "name": "basic featherweight scroll",
+            "record_sha256": "8db2ea347344061ca3200154c2443b9054f5c95d11f68f23e2dfa60a8a18341a"
+          },
+          "wiki_observations": [
+            {
+              "content_sha256": "5129f1e819838d275c22e2a60a360efe703bd009cb616fdab89e158a4d8ffe27",
+              "page_id": 110790,
+              "revision_id": 1195584,
+              "revision_sha1": "1cd5106e70e0632e7c9d99ed96e8d313012ef7dd",
+              "revision_timestamp": "2026-07-13T14:38:38Z",
+              "url": "https://tibia.fandom.com/wiki/Basic_Featherweight_Scroll",
+              "wiki_title": "Basic Featherweight Scroll"
+            }
+          ]
+        },
+        "item_ref": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i53759",
+          "revision": "definition-r1"
+        },
+        "source_name": "Basic Featherweight Scroll"
+      },
+      "intricate": {
+        "evidence": {
+          "canonical": {
+            "definition_sha256": "65e39aff219167ff4b86f31b9af9dd786244398c3dc5a902e3f32e225a08fb49",
+            "name": "intricate featherweight scroll",
+            "path": "content/items/definitions/items-28000-28499.json"
+          },
+          "identity_basis": "CLIENT_AND_WIKI",
+          "primary_client": {
+            "id": 51732,
+            "name": "intricate featherweight scroll",
+            "record_sha256": "8104faa75758d06706fa571c21f3fc5b7a151986c683a086ade19ba3e07bf722"
+          },
+          "wiki_observations": [
+            {
+              "content_sha256": "ffcfa0409e1c848f08e7e7f93fa70a01f4677f85543abf9d3eecf52cc08d7c9a",
+              "page_id": 108978,
+              "revision_id": 1194534,
+              "revision_sha1": "0a8b04b320b7dd9babefe48d7f5ecc5f85bde6f1",
+              "revision_timestamp": "2026-07-06T15:05:29Z",
+              "url": "https://tibia.fandom.com/wiki/Intricate_Featherweight_Scroll",
+              "wiki_title": "Intricate Featherweight Scroll"
+            }
+          ]
+        },
+        "item_ref": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i51732",
+          "revision": "definition-r1"
+        },
+        "source_name": "Intricate Featherweight Scroll"
+      },
+      "powerful": {
+        "evidence": {
+          "canonical": {
+            "definition_sha256": "9096d0d0b0d50bc519cf65f62209e06b5d7877eff7976794f006f3c8e9f50cea",
+            "name": "powerful featherweight scroll",
+            "path": "content/items/definitions/items-28000-28499.json"
+          },
+          "identity_basis": "CLIENT_AND_WIKI",
+          "primary_client": {
+            "id": 51452,
+            "name": "powerful featherweight scroll",
+            "record_sha256": "3881fae5df3f168013e7b4aff80c69f7fce416f695627fce6d89f78c3324d414"
+          },
+          "wiki_observations": [
+            {
+              "content_sha256": "5ffe2c447f54bb9e571b329dce6bc144ae820a4659fdb89f61507ccc3f8cf64d",
+              "page_id": 108690,
+              "revision_id": 1194535,
+              "revision_sha1": "e04c574c70522e656d076086db0f76fa9bb9a64a",
+              "revision_timestamp": "2026-07-06T15:06:01Z",
+              "url": "https://tibia.fandom.com/wiki/Powerful_Featherweight_Scroll",
+              "wiki_title": "Powerful Featherweight Scroll"
+            }
+          ]
+        },
+        "item_ref": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i51452",
+          "revision": "definition-r1"
+        },
+        "source_name": "Powerful Featherweight Scroll"
+      }
+    },
+    "Frost": {
+      "basic": {
+        "evidence": {
+          "canonical": {
+            "definition_sha256": "4d3a2283ff37871badc3ffe108007e8a72b2bc2ee4ea3ece0ddf4adf52ae6639",
+            "name": null,
+            "path": "content/items/definitions/items-28500-28999.json"
+          },
+          "identity_basis": "CLIENT_AND_WIKI",
+          "primary_client": {
+            "id": 53760,
+            "name": "basic frost scroll",
+            "record_sha256": "b4321f44e9be4f16cb084b2d076b8c9a16de4d593478eefbf2e5cab14575da9a"
+          },
+          "wiki_observations": [
+            {
+              "content_sha256": "a9e6fe7d00e8a24988a4634149e6603bc90a4e64ce432c70e9e1630fe3861218",
+              "page_id": 110792,
+              "revision_id": 1195585,
+              "revision_sha1": "8b37f99148988d84da76e6c8ffab36d39b08633b",
+              "revision_timestamp": "2026-07-13T14:38:40Z",
+              "url": "https://tibia.fandom.com/wiki/Basic_Frost_Scroll",
+              "wiki_title": "Basic Frost Scroll"
+            }
+          ]
+        },
+        "item_ref": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i53760",
+          "revision": "definition-r1"
+        },
+        "source_name": "Basic Frost Scroll"
+      },
+      "intricate": {
+        "evidence": {
+          "canonical": {
+            "definition_sha256": "9c5f31aa3641e77d2655748c904b4f0ffeadcb4a6f6f360cb063e1b283401c05",
+            "name": "intricate frost scroll",
+            "path": "content/items/definitions/items-28000-28499.json"
+          },
+          "identity_basis": "CLIENT_AND_WIKI",
+          "primary_client": {
+            "id": 51733,
+            "name": "intricate frost scroll",
+            "record_sha256": "7c22e4bda93d3b2d3888a3763d85176a9bdf830cfb46771771577d30f18e8a37"
+          },
+          "wiki_observations": [
+            {
+              "content_sha256": "40a5c1b9e3795169ed6127f0a63e1f6309da5464b2f2e2739d3927b46e63d544",
+              "page_id": 108980,
+              "revision_id": 1194548,
+              "revision_sha1": "0a85d701cde9b26765fac0b544a76f26c1e5ce2c",
+              "revision_timestamp": "2026-07-06T15:12:57Z",
+              "url": "https://tibia.fandom.com/wiki/Intricate_Frost_Scroll",
+              "wiki_title": "Intricate Frost Scroll"
+            }
+          ]
+        },
+        "item_ref": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i51733",
+          "revision": "definition-r1"
+        },
+        "source_name": "Intricate Frost Scroll"
+      },
+      "powerful": {
+        "evidence": {
+          "canonical": {
+            "definition_sha256": "c5518ffd79abce57f4396209be80eebef5538a530188199673ac7b81bde2abec",
+            "name": "powerful frost scroll",
+            "path": "content/items/definitions/items-28000-28499.json"
+          },
+          "identity_basis": "CLIENT_AND_WIKI",
+          "primary_client": {
+            "id": 51453,
+            "name": "powerful frost scroll",
+            "record_sha256": "91360ba56805e0c6f4dd90567206e09f707b406e3dbefc8d00da8830c5a002cf"
+          },
+          "wiki_observations": [
+            {
+              "content_sha256": "68c0b57c31dbadd1d691fee9f6d22fb60c84751f53ab239a68c5fc70db8fa63b",
+              "page_id": 108692,
+              "revision_id": 1194549,
+              "revision_sha1": "991946744f2a6cbe56678f704ff29db9e5336cb4",
+              "revision_timestamp": "2026-07-06T15:16:50Z",
+              "url": "https://tibia.fandom.com/wiki/Powerful_Frost_Scroll",
+              "wiki_title": "Powerful Frost Scroll"
+            }
+          ]
+        },
+        "item_ref": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i51453",
+          "revision": "definition-r1"
+        },
+        "source_name": "Powerful Frost Scroll"
+      }
+    },
+    "Lich Shroud": {
+      "basic": {
+        "evidence": {
+          "canonical": {
+            "definition_sha256": "73fc843ad6808a222daade4cb75c33d3d252c84733657e9e20b10bb93b7a908f",
+            "name": null,
+            "path": "content/items/definitions/items-28500-28999.json"
+          },
+          "identity_basis": "CLIENT_AND_WIKI",
+          "primary_client": {
+            "id": 53761,
+            "name": "basic lich shroud scroll",
+            "record_sha256": "573abe4c5937c120dbb31eef91e859b25358570ae3848bb189b123dcc6ec8a81"
+          },
+          "wiki_observations": [
+            {
+              "content_sha256": "e88de3da4278a74ea80649126afd6806dcf3ccdb75245e64d4700870937a0c3b",
+              "page_id": 110794,
+              "revision_id": 1195586,
+              "revision_sha1": "18d57833b5fecdd5776281ae81c8d97984808ef6",
+              "revision_timestamp": "2026-07-13T14:38:41Z",
+              "url": "https://tibia.fandom.com/wiki/Basic_Lich_Shroud_Scroll",
+              "wiki_title": "Basic Lich Shroud Scroll"
+            }
+          ]
+        },
+        "item_ref": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i53761",
+          "revision": "definition-r1"
+        },
+        "source_name": "Basic Lich Shroud Scroll"
+      },
+      "intricate": {
+        "evidence": {
+          "canonical": {
+            "definition_sha256": "f9bb1cf700400a5a2f807322336fbd6a642537df1eb26a9d0d2a9ad21bded7ef",
+            "name": "intricate lich shroud scroll",
+            "path": "content/items/definitions/items-28000-28499.json"
+          },
+          "identity_basis": "CLIENT_AND_WIKI",
+          "primary_client": {
+            "id": 51734,
+            "name": "intricate lich shroud scroll",
+            "record_sha256": "34708606f266938e62b5f849c3522d1c34ad6e3aeb5b2457af3288f1d6a57d1e"
+          },
+          "wiki_observations": [
+            {
+              "content_sha256": "3c5a114647afacc6c8da205d8b8a3c7bcc6b6a0b39ea77c9ee4525164dfb8ac0",
+              "page_id": 108982,
+              "revision_id": 1194555,
+              "revision_sha1": "1598feb6d86b171d5a6b337de39c7c43487e28c3",
+              "revision_timestamp": "2026-07-06T15:22:17Z",
+              "url": "https://tibia.fandom.com/wiki/Intricate_Lich_Shroud_Scroll",
+              "wiki_title": "Intricate Lich Shroud Scroll"
+            }
+          ]
+        },
+        "item_ref": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i51734",
+          "revision": "definition-r1"
+        },
+        "source_name": "Intricate Lich Shroud Scroll"
+      },
+      "powerful": {
+        "evidence": {
+          "canonical": {
+            "definition_sha256": "76e0fa6c3f3fb52ab545775fbe205c24927af9e18aea6d1ecb069b84cba3d257",
+            "name": "powerful lich shroud scroll",
+            "path": "content/items/definitions/items-28000-28499.json"
+          },
+          "identity_basis": "CLIENT_AND_WIKI",
+          "primary_client": {
+            "id": 51454,
+            "name": "powerful lich shroud scroll",
+            "record_sha256": "e0b84dbcd08ee9ce6e13b5f37151fed9ca21b539e212dfb94f21d7516d7ce901"
+          },
+          "wiki_observations": [
+            {
+              "content_sha256": "782cb5c5b475077cf49e377adf1be5a01823b8100af90d0ae54c6fa74fbca9d9",
+              "page_id": 108694,
+              "revision_id": 1194552,
+              "revision_sha1": "53eb8b992def94cbe727e55daebdf31705714583",
+              "revision_timestamp": "2026-07-06T15:21:21Z",
+              "url": "https://tibia.fandom.com/wiki/Powerful_Lich_Shroud_Scroll",
+              "wiki_title": "Powerful Lich Shroud Scroll"
+            }
+          ]
+        },
+        "item_ref": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i51454",
+          "revision": "definition-r1"
+        },
+        "source_name": "Powerful Lich Shroud Scroll"
+      }
+    },
+    "Precision": {
+      "basic": {
+        "evidence": {
+          "canonical": {
+            "definition_sha256": "7e9a40785b82e1ffebdee3d50430117ec1a933ae330ec70402151d1952bfae4a",
+            "name": null,
+            "path": "content/items/definitions/items-28500-28999.json"
+          },
+          "identity_basis": "CLIENT_AND_WIKI",
+          "primary_client": {
+            "id": 53762,
+            "name": "basic precision scroll",
+            "record_sha256": "7c603d1b0780b034b7b612f8baad0e7cc63df22530dadfb63208ed0cce62d474"
+          },
+          "wiki_observations": [
+            {
+              "content_sha256": "3f59f28f3732df84b1d57b9225b023164cb7410f85615ad55ac1c05bdcc0fa97",
+              "page_id": 110796,
+              "revision_id": 1195587,
+              "revision_sha1": "baf2ed236a59f0138dc58a016a8730c681e61fdb",
+              "revision_timestamp": "2026-07-13T14:38:42Z",
+              "url": "https://tibia.fandom.com/wiki/Basic_Precision_Scroll",
+              "wiki_title": "Basic Precision Scroll"
+            }
+          ]
+        },
+        "item_ref": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i53762",
+          "revision": "definition-r1"
+        },
+        "source_name": "Basic Precision Scroll"
+      },
+      "intricate": {
+        "evidence": {
+          "canonical": {
+            "definition_sha256": "8367df51060158a28d4bd7d1fc8365bf2f20ee98cf302844cadc7693cc34fce8",
+            "name": "intricate precision scroll",
+            "path": "content/items/definitions/items-28000-28499.json"
+          },
+          "identity_basis": "CLIENT_AND_WIKI",
+          "primary_client": {
+            "id": 51735,
+            "name": "intricate precision scroll",
+            "record_sha256": "54000b0f077f14210789ea4b49480f4582416354895742ec9d2d3b23fb285164"
+          },
+          "wiki_observations": [
+            {
+              "content_sha256": "31283dbff887d00db621f656af207b72dec25e470d160b30bb6dc11e179bddf7",
+              "page_id": 108984,
+              "revision_id": 1194561,
+              "revision_sha1": "2a2f9a41fceda07f4f01606dc79f82c30e408a2a",
+              "revision_timestamp": "2026-07-06T15:32:04Z",
+              "url": "https://tibia.fandom.com/wiki/Intricate_Precision_Scroll",
+              "wiki_title": "Intricate Precision Scroll"
+            }
+          ]
+        },
+        "item_ref": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i51735",
+          "revision": "definition-r1"
+        },
+        "source_name": "Intricate Precision Scroll"
+      },
+      "powerful": {
+        "evidence": {
+          "canonical": {
+            "definition_sha256": "8febf00147ebdb0931dcf3c224adbca5e4520db74b7a9a388eed0c274ba1a44c",
+            "name": "powerful precision scroll",
+            "path": "content/items/definitions/items-28000-28499.json"
+          },
+          "identity_basis": "CLIENT_AND_WIKI",
+          "primary_client": {
+            "id": 51455,
+            "name": "powerful precision scroll",
+            "record_sha256": "ed23b88915a3c0cc1530470205a61eb76ffcae42cd8ff707c0a4a6be66d9e56f"
+          },
+          "wiki_observations": [
+            {
+              "content_sha256": "232ba37a4056bad534cc755acf1cdc4722c93b33febabc8e80b5c14c94414a9b",
+              "page_id": 108696,
+              "revision_id": 1194563,
+              "revision_sha1": "62a728fcd26205b4419f2c3f7ea510f3e04b8d86",
+              "revision_timestamp": "2026-07-06T15:34:49Z",
+              "url": "https://tibia.fandom.com/wiki/Powerful_Precision_Scroll",
+              "wiki_title": "Powerful Precision Scroll"
+            }
+          ]
+        },
+        "item_ref": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i51455",
+          "revision": "definition-r1"
+        },
+        "source_name": "Powerful Precision Scroll"
+      }
+    },
+    "Punch": {
+      "basic": {
+        "evidence": {
+          "canonical": {
+            "definition_sha256": "7e82025a2de7492bfd28ef8726e78b1c03dc939e83069bb4e40ae32e744e558d",
+            "name": null,
+            "path": "content/items/definitions/items-28500-28999.json"
+          },
+          "identity_basis": "CLIENT_AND_WIKI",
+          "primary_client": {
+            "id": 53763,
+            "name": "basic punch scroll",
+            "record_sha256": "723bd75d829ff4ef6cd2c339f97529540407753064b74310189dd1d5e12339ff"
+          },
+          "wiki_observations": [
+            {
+              "content_sha256": "5a56ae490c98d6d01212ea8c0261a3a96467312e219419e512e8308cdb61c630",
+              "page_id": 110798,
+              "revision_id": 1195588,
+              "revision_sha1": "b105721cecd0a53487f7545057ff8280e191f381",
+              "revision_timestamp": "2026-07-13T14:38:44Z",
+              "url": "https://tibia.fandom.com/wiki/Basic_Punch_Scroll",
+              "wiki_title": "Basic Punch Scroll"
+            }
+          ]
+        },
+        "item_ref": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i53763",
+          "revision": "definition-r1"
+        },
+        "source_name": "Basic Punch Scroll"
+      },
+      "intricate": {
+        "evidence": {
+          "canonical": {
+            "definition_sha256": "6d7e3bc5120e133b0cc71b87b28def3f230a555e0daf6011dfa851bf30d3b1fd",
+            "name": "intricate punch scroll",
+            "path": "content/items/definitions/items-28000-28499.json"
+          },
+          "identity_basis": "CLIENT_AND_WIKI",
+          "primary_client": {
+            "id": 51736,
+            "name": "intricate punch scroll",
+            "record_sha256": "47b5f434264e0fd2799127e3e08e9d1b200c54742e1379bb47103839d48e92ac"
+          },
+          "wiki_observations": [
+            {
+              "content_sha256": "4250e9dd182c4f4259cbaa4ffdde02e4406febf269cd8da0d27cdd94236e6a12",
+              "page_id": 108986,
+              "revision_id": 1195503,
+              "revision_sha1": "884cef0d40ce4f29831fc568b4b43fbeba0b3306",
+              "revision_timestamp": "2026-07-12T16:11:42Z",
+              "url": "https://tibia.fandom.com/wiki/Intricate_Punch_Scroll",
+              "wiki_title": "Intricate Punch Scroll"
+            }
+          ]
+        },
+        "item_ref": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i51736",
+          "revision": "definition-r1"
+        },
+        "source_name": "Intricate Punch Scroll"
+      },
+      "powerful": {
+        "evidence": {
+          "canonical": {
+            "definition_sha256": "138eb3e76c477230e0ac6faadb69dddc9b9faea6432413ed8a1a7492c288b1d0",
+            "name": "powerful punch scroll",
+            "path": "content/items/definitions/items-28000-28499.json"
+          },
+          "identity_basis": "CLIENT_AND_WIKI",
+          "primary_client": {
+            "id": 51456,
+            "name": "powerful punch scroll",
+            "record_sha256": "d9ba4d97efd47fb84b1fc9ff4ece1eb509e75996600adb3fc096e0fb846bea3a"
+          },
+          "wiki_observations": [
+            {
+              "content_sha256": "5e43363ebe72707e4eb157480b96da28e3de30018d14d314fb9409afcdaf75d0",
+              "page_id": 108698,
+              "revision_id": 1195505,
+              "revision_sha1": "74a7e5209fdefdc6c1396ba500ea8508db5f861f",
+              "revision_timestamp": "2026-07-12T17:23:20Z",
+              "url": "https://tibia.fandom.com/wiki/Powerful_Punch_Scroll",
+              "wiki_title": "Powerful Punch Scroll"
+            }
+          ]
+        },
+        "item_ref": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i51456",
+          "revision": "definition-r1"
+        },
+        "source_name": "Powerful Punch Scroll"
+      }
+    },
+    "Quara Scale": {
+      "basic": {
+        "evidence": {
+          "canonical": {
+            "definition_sha256": "165472f379efa8be92721c9f32ca9d3360a60729078bcefe8c7b5f029986c33b",
+            "name": null,
+            "path": "content/items/definitions/items-28500-28999.json"
+          },
+          "identity_basis": "CLIENT_AND_WIKI",
+          "primary_client": {
+            "id": 53764,
+            "name": "basic quara scale scroll",
+            "record_sha256": "5d1c5fdb91dc15356957c80a2db741e4b990f640a91996509f67f71cab89798b"
+          },
+          "wiki_observations": [
+            {
+              "content_sha256": "5d3291ae23fd3c03f8b32d73fc00e609b6b75d3990bf76f2d43380ef8691ba8f",
+              "page_id": 110800,
+              "revision_id": 1195589,
+              "revision_sha1": "bbe280319f74227e385b5cda656ca6ee824d6704",
+              "revision_timestamp": "2026-07-13T14:38:45Z",
+              "url": "https://tibia.fandom.com/wiki/Basic_Quara_Scale_Scroll",
+              "wiki_title": "Basic Quara Scale Scroll"
+            }
+          ]
+        },
+        "item_ref": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i53764",
+          "revision": "definition-r1"
+        },
+        "source_name": "Basic Quara Scale Scroll"
+      },
+      "intricate": {
+        "evidence": {
+          "canonical": {
+            "definition_sha256": "604ef046579665cf1e9ed1d3972ba568cd1e64a9e04ec3903786a4f67ea91e48",
+            "name": "intricate quara scale scroll",
+            "path": "content/items/definitions/items-28000-28499.json"
+          },
+          "identity_basis": "CLIENT_AND_WIKI",
+          "primary_client": {
+            "id": 51737,
+            "name": "intricate quara scale scroll",
+            "record_sha256": "49ef4c61cdad837262ffc4c5c060c82a02e729081433275922c0c2eecbd0cd0d"
+          },
+          "wiki_observations": [
+            {
+              "content_sha256": "0d7e47fec486be50779bf9dd014f4eb84797f3cbc9919faec968429c9ea06123",
+              "page_id": 108988,
+              "revision_id": 1194565,
+              "revision_sha1": "5780459dbfdf75d9ac39b6c4e97fca3e0d6d875b",
+              "revision_timestamp": "2026-07-06T15:37:48Z",
+              "url": "https://tibia.fandom.com/wiki/Intricate_Quara_Scale_Scroll",
+              "wiki_title": "Intricate Quara Scale Scroll"
+            }
+          ]
+        },
+        "item_ref": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i51737",
+          "revision": "definition-r1"
+        },
+        "source_name": "Intricate Quara Scale Scroll"
+      },
+      "powerful": {
+        "evidence": {
+          "canonical": {
+            "definition_sha256": "dd847748e87cc45f94cabbfd113820b4db1647e65557b0197aaf70a0ee51d4fb",
+            "name": "powerful quara scale scroll",
+            "path": "content/items/definitions/items-28000-28499.json"
+          },
+          "identity_basis": "CLIENT_AND_WIKI",
+          "primary_client": {
+            "id": 51457,
+            "name": "powerful quara scale scroll",
+            "record_sha256": "95c0f92f81757b4cfd402044ca18016709da3c77ecaabe612bfa84e72429053e"
+          },
+          "wiki_observations": [
+            {
+              "content_sha256": "adc36eb17746c33701a5c21153b75de02ef66705cc003ce1c6fff4195692f4bb",
+              "page_id": 108700,
+              "revision_id": 1194567,
+              "revision_sha1": "071c8e4ab3bd537319102bf6ddbb947446596f6a",
+              "revision_timestamp": "2026-07-06T15:39:33Z",
+              "url": "https://tibia.fandom.com/wiki/Powerful_Quara_Scale_Scroll",
+              "wiki_title": "Powerful Quara Scale Scroll"
+            }
+          ]
+        },
+        "item_ref": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i51457",
+          "revision": "definition-r1"
+        },
+        "source_name": "Powerful Quara Scale Scroll"
+      }
+    },
+    "Reap": {
+      "basic": {
+        "evidence": {
+          "canonical": {
+            "definition_sha256": "6d6a00ea5897f8454714c618bf37fde98550765d220a1f0a936ada2498cf0074",
+            "name": null,
+            "path": "content/items/definitions/items-28500-28999.json"
+          },
+          "identity_basis": "CLIENT_AND_WIKI",
+          "primary_client": {
+            "id": 53765,
+            "name": "basic reap scroll",
+            "record_sha256": "2de1893947c20d692e2860a2f764845df4512ac81284b1805ea16777f4078c91"
+          },
+          "wiki_observations": [
+            {
+              "content_sha256": "5291e11827c4fb4fd2eaadc0ea847b127180fdb9e7d77345faf4bdd8f815e9e6",
+              "page_id": 110802,
+              "revision_id": 1195590,
+              "revision_sha1": "79bd54247607b8dd641598db2e049cbca86532e8",
+              "revision_timestamp": "2026-07-13T14:38:46Z",
+              "url": "https://tibia.fandom.com/wiki/Basic_Reap_Scroll",
+              "wiki_title": "Basic Reap Scroll"
+            }
+          ]
+        },
+        "item_ref": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i53765",
+          "revision": "definition-r1"
+        },
+        "source_name": "Basic Reap Scroll"
+      },
+      "intricate": {
+        "evidence": {
+          "canonical": {
+            "definition_sha256": "a12667a76047155d24c658defcb654e3edfc16bd8dad1d71ee721ab2a1d8783e",
+            "name": "intricate reap scroll",
+            "path": "content/items/definitions/items-28000-28499.json"
+          },
+          "identity_basis": "CLIENT_AND_WIKI",
+          "primary_client": {
+            "id": 51738,
+            "name": "intricate reap scroll",
+            "record_sha256": "af7599dd7c2c6d7ee3c83ef6e3cc33a937389ce87231db98d510b7a639ac742a"
+          },
+          "wiki_observations": [
+            {
+              "content_sha256": "71e981bc56c772982488bd6fdf2da8056fc99cb6641e14f4bc7d655f10b42a30",
+              "page_id": 108990,
+              "revision_id": 1194571,
+              "revision_sha1": "a0d1e72fb035a439d86b5cb5464684cc93b9f275",
+              "revision_timestamp": "2026-07-06T15:42:57Z",
+              "url": "https://tibia.fandom.com/wiki/Intricate_Reap_Scroll",
+              "wiki_title": "Intricate Reap Scroll"
+            }
+          ]
+        },
+        "item_ref": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i51738",
+          "revision": "definition-r1"
+        },
+        "source_name": "Intricate Reap Scroll"
+      },
+      "powerful": {
+        "evidence": {
+          "canonical": {
+            "definition_sha256": "8e689a90bc760b813caedc7f45650b06064ea55de4a5c331f3ea9323323d8759",
+            "name": "powerful reap scroll",
+            "path": "content/items/definitions/items-28000-28499.json"
+          },
+          "identity_basis": "CLIENT_AND_WIKI",
+          "primary_client": {
+            "id": 51458,
+            "name": "powerful reap scroll",
+            "record_sha256": "7062e516cae5b283722e691792246d3d56662aac0bb74c3c67e3fd7ff100dd3c"
+          },
+          "wiki_observations": [
+            {
+              "content_sha256": "a154c72372c5a3ef041640afc324e4a636be8210f5c0c47959707a7e54fcc99f",
+              "page_id": 108702,
+              "revision_id": 1194573,
+              "revision_sha1": "ca4874c715763de8f7624491682ef72952063d4b",
+              "revision_timestamp": "2026-07-06T15:44:11Z",
+              "url": "https://tibia.fandom.com/wiki/Powerful_Reap_Scroll",
+              "wiki_title": "Powerful Reap Scroll"
+            }
+          ]
+        },
+        "item_ref": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i51458",
+          "revision": "definition-r1"
+        },
+        "source_name": "Powerful Reap Scroll"
+      }
+    },
+    "Scorch": {
+      "basic": {
+        "evidence": {
+          "canonical": {
+            "definition_sha256": "91c5a4d0bb0e668be8b9a44dcc3a64a4009bf912fcedc1b3074ecade3b96b642",
+            "name": null,
+            "path": "content/items/definitions/items-28500-28999.json"
+          },
+          "identity_basis": "CLIENT_AND_WIKI",
+          "primary_client": {
+            "id": 53766,
+            "name": "basic scorch scroll",
+            "record_sha256": "274a744c4bbc2747ed02db04a2aee7091dcb2236f27ec91cb901be78be32d790"
+          },
+          "wiki_observations": [
+            {
+              "content_sha256": "1b0c29bda486e5eec92fee5579e79dc396a52c166c3f63be3f11dfb6498b31dc",
+              "page_id": 110804,
+              "revision_id": 1195591,
+              "revision_sha1": "28f824e360fa1c1bdb5c615580e34f04eba0b75a",
+              "revision_timestamp": "2026-07-13T14:38:47Z",
+              "url": "https://tibia.fandom.com/wiki/Basic_Scorch_Scroll",
+              "wiki_title": "Basic Scorch Scroll"
+            }
+          ]
+        },
+        "item_ref": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i53766",
+          "revision": "definition-r1"
+        },
+        "source_name": "Basic Scorch Scroll"
+      },
+      "intricate": {
+        "evidence": {
+          "canonical": {
+            "definition_sha256": "459bfdd8307c1a17ac9410165b191fcffec7e110e3bfbe87053dfcec52a402db",
+            "name": "intricate scorch scroll",
+            "path": "content/items/definitions/items-28000-28499.json"
+          },
+          "identity_basis": "CLIENT_AND_WIKI",
+          "primary_client": {
+            "id": 51739,
+            "name": "intricate scorch scroll",
+            "record_sha256": "abd57ac0650fe9ffcc32d21912e7e3906a0aac9aa5a58c8c334ef0bfab483d4c"
+          },
+          "wiki_observations": [
+            {
+              "content_sha256": "f10d046f880cdcf52d78aa24ba502576c36897f210cb8913b994913996e9d324",
+              "page_id": 108992,
+              "revision_id": 1194578,
+              "revision_sha1": "95e3d2a461b61fc6bbb3849b744ee61dbab372cb",
+              "revision_timestamp": "2026-07-06T15:47:11Z",
+              "url": "https://tibia.fandom.com/wiki/Intricate_Scorch_Scroll",
+              "wiki_title": "Intricate Scorch Scroll"
+            }
+          ]
+        },
+        "item_ref": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i51739",
+          "revision": "definition-r1"
+        },
+        "source_name": "Intricate Scorch Scroll"
+      },
+      "powerful": {
+        "evidence": {
+          "canonical": {
+            "definition_sha256": "c0f7c406cdb7638abc392c0f5bb5597f27be1be854f10487286f4ee9aa47fcee",
+            "name": "powerful scorch scroll",
+            "path": "content/items/definitions/items-28000-28499.json"
+          },
+          "identity_basis": "CLIENT_AND_WIKI",
+          "primary_client": {
+            "id": 51459,
+            "name": "powerful scorch scroll",
+            "record_sha256": "4eb896b154ebc4112f254de40551ee9865d9a01c3b7da6675a3f7f55742b2ae6"
+          },
+          "wiki_observations": [
+            {
+              "content_sha256": "60abc3f00c8eaf7518ebb25eb551a9e3d2bf4eb9d1988efe9b27a80113d1166c",
+              "page_id": 108704,
+              "revision_id": 1194577,
+              "revision_sha1": "33093036cbbb8cc28c63ebda01f6e02e3adc24d2",
+              "revision_timestamp": "2026-07-06T15:46:52Z",
+              "url": "https://tibia.fandom.com/wiki/Powerful_Scorch_Scroll",
+              "wiki_title": "Powerful Scorch Scroll"
+            }
+          ]
+        },
+        "item_ref": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i51459",
+          "revision": "definition-r1"
+        },
+        "source_name": "Powerful Scorch Scroll"
+      }
+    },
+    "Slash": {
+      "basic": {
+        "evidence": {
+          "canonical": {
+            "definition_sha256": "4a387d1fcb90a099cedffff4c7625e9d681c54539216e91b9de5adb75738ead5",
+            "name": null,
+            "path": "content/items/definitions/items-28500-28999.json"
+          },
+          "identity_basis": "CLIENT_AND_WIKI",
+          "primary_client": {
+            "id": 53767,
+            "name": "basic slash scroll",
+            "record_sha256": "224465ba58901ee1078c51397543e6094a8bc97ee1eb4d4f2d386e5759b5c3aa"
+          },
+          "wiki_observations": [
+            {
+              "content_sha256": "f0c884612ea06e7ca4bcf5bacbb096d9ff909955d8ac04fa1d31ef5de522933f",
+              "page_id": 110806,
+              "revision_id": 1195592,
+              "revision_sha1": "0e93e3343c74501a76fc112f2a2ffbaa982fa311",
+              "revision_timestamp": "2026-07-13T14:38:49Z",
+              "url": "https://tibia.fandom.com/wiki/Basic_Slash_Scroll",
+              "wiki_title": "Basic Slash Scroll"
+            }
+          ]
+        },
+        "item_ref": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i53767",
+          "revision": "definition-r1"
+        },
+        "source_name": "Basic Slash Scroll"
+      },
+      "intricate": {
+        "evidence": {
+          "canonical": {
+            "definition_sha256": "fcbd97f4d713316ec4c06d788766a53851bd513695d1f5a79977396ef5eadc6b",
+            "name": "intricate slash scroll",
+            "path": "content/items/definitions/items-28000-28499.json"
+          },
+          "identity_basis": "CLIENT_AND_WIKI",
+          "primary_client": {
+            "id": 51740,
+            "name": "intricate slash scroll",
+            "record_sha256": "39ccd7b918cacbbb0cfb55af841c79915363423e8ddf8e0054df6a6ffbe7ddff"
+          },
+          "wiki_observations": [
+            {
+              "content_sha256": "29b5b1e4473d6e548103b4c8192d25a1d5025e37ae21fe56a32b205a7fbdb13c",
+              "page_id": 108994,
+              "revision_id": 1194584,
+              "revision_sha1": "888c6e2d0cb1f05a5714437a5f32022e7078c3a1",
+              "revision_timestamp": "2026-07-06T15:51:29Z",
+              "url": "https://tibia.fandom.com/wiki/Intricate_Slash_Scroll",
+              "wiki_title": "Intricate Slash Scroll"
+            }
+          ]
+        },
+        "item_ref": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i51740",
+          "revision": "definition-r1"
+        },
+        "source_name": "Intricate Slash Scroll"
+      },
+      "powerful": {
+        "evidence": {
+          "canonical": {
+            "definition_sha256": "81960e194069e8cc930470a579e7285a3e7c66ca66a67f83f6f98abd3bfee773",
+            "name": "powerful slash scroll",
+            "path": "content/items/definitions/items-28000-28499.json"
+          },
+          "identity_basis": "CLIENT_AND_WIKI",
+          "primary_client": {
+            "id": 51460,
+            "name": "powerful slash scroll",
+            "record_sha256": "1827b46fbbb88ac912810fd838ce889f8a22cffc85a63964747837f661e5a573"
+          },
+          "wiki_observations": [
+            {
+              "content_sha256": "388dfcb0ca89a05a920fa2d3399267d0c7ce5b8003796540dd3bd7270100dd14",
+              "page_id": 108706,
+              "revision_id": 1194585,
+              "revision_sha1": "d1f97e167ec172ea04253e1b3e57a9cc2763ffef",
+              "revision_timestamp": "2026-07-06T15:51:45Z",
+              "url": "https://tibia.fandom.com/wiki/Powerful_Slash_Scroll",
+              "wiki_title": "Powerful Slash Scroll"
+            }
+          ]
+        },
+        "item_ref": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i51460",
+          "revision": "definition-r1"
+        },
+        "source_name": "Powerful Slash Scroll"
+      }
+    },
+    "Snake Skin": {
+      "basic": {
+        "evidence": {
+          "canonical": {
+            "definition_sha256": "d6edf6a6b3cac499d24e5a036663e3dff0ecceb9ecaf544ee824a1ba0a9a3c0d",
+            "name": null,
+            "path": "content/items/definitions/items-28500-28999.json"
+          },
+          "identity_basis": "CLIENT_AND_WIKI",
+          "primary_client": {
+            "id": 53768,
+            "name": "basic snake skin scroll",
+            "record_sha256": "e34e6be805a4620414e391bc5680dd7a2a0c48a6a1bf386fff13e825e356697a"
+          },
+          "wiki_observations": [
+            {
+              "content_sha256": "72954f9c723cb11a9f36d46224282be79a828168c701a5637905eb9279f118db",
+              "page_id": 110808,
+              "revision_id": 1195593,
+              "revision_sha1": "9979b1cf60b2856c364551e02a4ecf8639a8e3e8",
+              "revision_timestamp": "2026-07-13T14:38:50Z",
+              "url": "https://tibia.fandom.com/wiki/Basic_Snake_Skin_Scroll",
+              "wiki_title": "Basic Snake Skin Scroll"
+            }
+          ]
+        },
+        "item_ref": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i53768",
+          "revision": "definition-r1"
+        },
+        "source_name": "Basic Snake Skin Scroll"
+      },
+      "intricate": {
+        "evidence": {
+          "canonical": {
+            "definition_sha256": "770f595e2b64d97a2b7176140182e7aaab9b88256f7a2678e2b6a98ea8a49835",
+            "name": "intricate snake skin scroll",
+            "path": "content/items/definitions/items-28000-28499.json"
+          },
+          "identity_basis": "CLIENT_AND_WIKI",
+          "primary_client": {
+            "id": 51741,
+            "name": "intricate snake skin scroll",
+            "record_sha256": "e7f4ea47b6f88e7bca7c88a87eee4964ad460ba5d9916042f08499ac4e0d908e"
+          },
+          "wiki_observations": [
+            {
+              "content_sha256": "dd87eeacf175f005fcb7de4cf20be4c594b45b2a34a758893bfa9ea885b98811",
+              "page_id": 108996,
+              "revision_id": 1194591,
+              "revision_sha1": "792e2d096f714559d0a2f21795e8f61489ecc914",
+              "revision_timestamp": "2026-07-06T15:55:24Z",
+              "url": "https://tibia.fandom.com/wiki/Intricate_Snake_Skin_Scroll",
+              "wiki_title": "Intricate Snake Skin Scroll"
+            }
+          ]
+        },
+        "item_ref": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i51741",
+          "revision": "definition-r1"
+        },
+        "source_name": "Intricate Snake Skin Scroll"
+      },
+      "powerful": {
+        "evidence": {
+          "canonical": {
+            "definition_sha256": "caeaaead6025523661d0b6b1f314824d052b7ba18be2b5b574048fdfd464c212",
+            "name": "powerful snake skin scroll",
+            "path": "content/items/definitions/items-28000-28499.json"
+          },
+          "identity_basis": "CLIENT_AND_WIKI",
+          "primary_client": {
+            "id": 51461,
+            "name": "powerful snake skin scroll",
+            "record_sha256": "2e084ef28f1e2a9a173c12ecee38b5185f674c63246482f9f84500e63fa456f4"
+          },
+          "wiki_observations": [
+            {
+              "content_sha256": "e0f6eed14d7fa9231307e2a5e614910eec62dfc06c953179ce0f4307b788a16c",
+              "page_id": 108708,
+              "revision_id": 1194589,
+              "revision_sha1": "6afb6e38ea0e02334ca0f44faadb2f41d39735cb",
+              "revision_timestamp": "2026-07-06T15:54:07Z",
+              "url": "https://tibia.fandom.com/wiki/Powerful_Snake_Skin_Scroll",
+              "wiki_title": "Powerful Snake Skin Scroll"
+            }
+          ]
+        },
+        "item_ref": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i51461",
+          "revision": "definition-r1"
+        },
+        "source_name": "Powerful Snake Skin Scroll"
+      }
+    },
+    "Strike": {
+      "basic": {
+        "evidence": {
+          "canonical": {
+            "definition_sha256": "47b140adc6c8beae8ec00e54fa38c77be8dfa65ee0dda1942ecd06cac072070a",
+            "name": null,
+            "path": "content/items/definitions/items-28500-28999.json"
+          },
+          "identity_basis": "CLIENT_AND_WIKI",
+          "primary_client": {
+            "id": 53769,
+            "name": "basic strike scroll",
+            "record_sha256": "69cbf3e0f6d6e58f6c901798c0eb70c6ae4c9666d02bf88ca3901bd7194da488"
+          },
+          "wiki_observations": [
+            {
+              "content_sha256": "ca3a2b7dfd9d6a376aacc507f9b239fd247c2cbdfd9291e8d9c7cf23a2881064",
+              "page_id": 110810,
+              "revision_id": 1195594,
+              "revision_sha1": "102d87c8ac010add45c34783a9509f58d03b73aa",
+              "revision_timestamp": "2026-07-13T14:38:51Z",
+              "url": "https://tibia.fandom.com/wiki/Basic_Strike_Scroll",
+              "wiki_title": "Basic Strike Scroll"
+            }
+          ]
+        },
+        "item_ref": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i53769",
+          "revision": "definition-r1"
+        },
+        "source_name": "Basic Strike Scroll"
+      },
+      "intricate": {
+        "evidence": {
+          "canonical": {
+            "definition_sha256": "eb349ed7c5187fae9638065f42d24db1c61bc34ca462c91c58b93b25feb22383",
+            "name": "intricate strike scroll",
+            "path": "content/items/definitions/items-28000-28499.json"
+          },
+          "identity_basis": "CLIENT_AND_WIKI",
+          "primary_client": {
+            "id": 51742,
+            "name": "intricate strike scroll",
+            "record_sha256": "8c24ef96d3ce2a1554590c0359aeaa2ad160a3a21efe9536f6776d7795e3d9ba"
+          },
+          "wiki_observations": [
+            {
+              "content_sha256": "c0923babd59a515f3291ba14e12cc933132177441f8f3f2536fb43daecd6e57c",
+              "page_id": 108998,
+              "revision_id": 1194598,
+              "revision_sha1": "a6d0cc13260060a67781f2ce25c87411cb3e60fb",
+              "revision_timestamp": "2026-07-06T16:01:42Z",
+              "url": "https://tibia.fandom.com/wiki/Intricate_Strike_Scroll",
+              "wiki_title": "Intricate Strike Scroll"
+            }
+          ]
+        },
+        "item_ref": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i51742",
+          "revision": "definition-r1"
+        },
+        "source_name": "Intricate Strike Scroll"
+      },
+      "powerful": {
+        "evidence": {
+          "canonical": {
+            "definition_sha256": "473f5f3700eebf3a83a54a36ba65115c96610afbd17a4284ff0c0581fa4ae150",
+            "name": "powerful strike scroll",
+            "path": "content/items/definitions/items-28000-28499.json"
+          },
+          "identity_basis": "CLIENT_AND_WIKI",
+          "primary_client": {
+            "id": 51462,
+            "name": "powerful strike scroll",
+            "record_sha256": "aa8535674bfced7584fdb52e448f2381df41324b0a249f482c676d20b1538818"
+          },
+          "wiki_observations": [
+            {
+              "content_sha256": "c74e9c45f1c86c994047bc7709d292a50f9698ae29050566582a59e05cbb2c33",
+              "page_id": 108710,
+              "revision_id": 1194596,
+              "revision_sha1": "9ecaeef8af4d2b4d6fa40b93fbd2c510eafb4b61",
+              "revision_timestamp": "2026-07-06T16:00:33Z",
+              "url": "https://tibia.fandom.com/wiki/Powerful_Strike_Scroll",
+              "wiki_title": "Powerful Strike Scroll"
+            }
+          ]
+        },
+        "item_ref": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i51462",
+          "revision": "definition-r1"
+        },
+        "source_name": "Powerful Strike Scroll"
+      }
+    },
+    "Swiftness": {
+      "basic": {
+        "evidence": {
+          "canonical": {
+            "definition_sha256": "ccc5f443c3109a14beff40df0b38d664b294915aeb5a592769e7235acc4bdd14",
+            "name": null,
+            "path": "content/items/definitions/items-28500-28999.json"
+          },
+          "identity_basis": "CLIENT_AND_WIKI",
+          "primary_client": {
+            "id": 53770,
+            "name": "basic swiftness scroll",
+            "record_sha256": "46700674fceb3e7061b7775ab013c397b8b424269fcec63f699b7fe34db7184f"
+          },
+          "wiki_observations": [
+            {
+              "content_sha256": "4790bebd2cc4c29b0d93c27641fcb5a829b156a9f784559d755de56a4e47ac68",
+              "page_id": 110812,
+              "revision_id": 1195595,
+              "revision_sha1": "697ce4d88e35e0e0e445def51ccf55eb1e8fcf59",
+              "revision_timestamp": "2026-07-13T14:38:53Z",
+              "url": "https://tibia.fandom.com/wiki/Basic_Swiftness_Scroll",
+              "wiki_title": "Basic Swiftness Scroll"
+            }
+          ]
+        },
+        "item_ref": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i53770",
+          "revision": "definition-r1"
+        },
+        "source_name": "Basic Swiftness Scroll"
+      },
+      "intricate": {
+        "evidence": {
+          "canonical": {
+            "definition_sha256": "e89343fa3427aeee2a87b9983c536af8f207ee97fd538d08a5bcc193da4409ba",
+            "name": "intricate swiftness scroll",
+            "path": "content/items/definitions/items-28000-28499.json"
+          },
+          "identity_basis": "CLIENT_AND_WIKI",
+          "primary_client": {
+            "id": 51743,
+            "name": "intricate swiftness scroll",
+            "record_sha256": "acf8d307900f876c59fd27ca280726967f668925bfacdd7ce83eb7a8ccb1be1c"
+          },
+          "wiki_observations": [
+            {
+              "content_sha256": "d71b18035e462e49e90e8aeaafc2db006e1bf26a2b5215c131f0cceb5cb2b87e",
+              "page_id": 109000,
+              "revision_id": 1194620,
+              "revision_sha1": "511b0b8e8fcd8504de9ce401a50fbcc7775c8df1",
+              "revision_timestamp": "2026-07-06T19:10:55Z",
+              "url": "https://tibia.fandom.com/wiki/Intricate_Swiftness_Scroll",
+              "wiki_title": "Intricate Swiftness Scroll"
+            }
+          ]
+        },
+        "item_ref": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i51743",
+          "revision": "definition-r1"
+        },
+        "source_name": "Intricate Swiftness Scroll"
+      },
+      "powerful": {
+        "evidence": {
+          "canonical": {
+            "definition_sha256": "6f452f49ec2c159c6cd442ab1fdee24fc589c0e3063de2ee89a0e11f552cbfa8",
+            "name": "powerful swiftness scroll",
+            "path": "content/items/definitions/items-28000-28499.json"
+          },
+          "identity_basis": "CLIENT_AND_WIKI",
+          "primary_client": {
+            "id": 51463,
+            "name": "powerful swiftness scroll",
+            "record_sha256": "292dfc9d3feeba4b6d0cc2792270ca6212fba9a354fee981a1a39716b7c463d3"
+          },
+          "wiki_observations": [
+            {
+              "content_sha256": "069f206917dec97842b0d0131eed74acfe436cb9bf66ed32ea47d89347cce60b",
+              "page_id": 108712,
+              "revision_id": 1194619,
+              "revision_sha1": "ca1a385d618cac8782ae4d38423544c4e6141d9d",
+              "revision_timestamp": "2026-07-06T19:10:22Z",
+              "url": "https://tibia.fandom.com/wiki/Powerful_Swiftness_Scroll",
+              "wiki_title": "Powerful Swiftness Scroll"
+            }
+          ]
+        },
+        "item_ref": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i51463",
+          "revision": "definition-r1"
+        },
+        "source_name": "Powerful Swiftness Scroll"
+      }
+    },
+    "Vampirism": {
+      "basic": {
+        "evidence": {
+          "canonical": {
+            "definition_sha256": "64d06c4d27e69ec4fdbdfcc46c1962b992746acaebc0e75e2ebb02e8ffeae8dd",
+            "name": null,
+            "path": "content/items/definitions/items-28500-28999.json"
+          },
+          "identity_basis": "CLIENT_AND_WIKI",
+          "primary_client": {
+            "id": 53771,
+            "name": "basic vampirism scroll",
+            "record_sha256": "df131d11b47de27874d570a0f746b0e83cf5b6786336581212f4571f0805ea8b"
+          },
+          "wiki_observations": [
+            {
+              "content_sha256": "a595ad9f84b1657d0d718d5c138b470bbc1989f4209471cbdf33193c1bfd9ae9",
+              "page_id": 110814,
+              "revision_id": 1195596,
+              "revision_sha1": "d9adb1c5a527b57138031bc0f03c80e8c7a36832",
+              "revision_timestamp": "2026-07-13T14:38:54Z",
+              "url": "https://tibia.fandom.com/wiki/Basic_Vampirism_Scroll",
+              "wiki_title": "Basic Vampirism Scroll"
+            }
+          ]
+        },
+        "item_ref": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i53771",
+          "revision": "definition-r1"
+        },
+        "source_name": "Basic Vampirism Scroll"
+      },
+      "intricate": {
+        "evidence": {
+          "canonical": {
+            "definition_sha256": "62f29714d2236c34b7327307ecd75b3bc6adf3565da5025de7dc8db3e67e33f6",
+            "name": "intricate vampirism scroll",
+            "path": "content/items/definitions/items-28000-28499.json"
+          },
+          "identity_basis": "CLIENT_AND_WIKI",
+          "primary_client": {
+            "id": 51744,
+            "name": "intricate vampirism scroll",
+            "record_sha256": "834a38caea4b30c2575df151b700d6e75760f8e05dbcfa41bec3672ccbb88ac9"
+          },
+          "wiki_observations": [
+            {
+              "content_sha256": "215624f4dbaa373a11eef6bd2d278f916834fccfd387032a635286eeffb88392",
+              "page_id": 109002,
+              "revision_id": 1194629,
+              "revision_sha1": "18bfa3d18c8116580680d1b295264db8bc524af9",
+              "revision_timestamp": "2026-07-06T19:56:57Z",
+              "url": "https://tibia.fandom.com/wiki/Intricate_Vampirism_Scroll",
+              "wiki_title": "Intricate Vampirism Scroll"
+            }
+          ]
+        },
+        "item_ref": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i51744",
+          "revision": "definition-r1"
+        },
+        "source_name": "Intricate Vampirism Scroll"
+      },
+      "powerful": {
+        "evidence": {
+          "canonical": {
+            "definition_sha256": "876c943953f84f378760bea7024458eb25c4575867dcff4937154dc37cb1bbb0",
+            "name": "powerful vampirism scroll",
+            "path": "content/items/definitions/items-28000-28499.json"
+          },
+          "identity_basis": "CLIENT_AND_WIKI",
+          "primary_client": {
+            "id": 51464,
+            "name": "powerful vampirism scroll",
+            "record_sha256": "0402f9a38de0c4930e42d70ff54b7aec8a2aee7e0cf46231369dae3edb3da8a6"
+          },
+          "wiki_observations": [
+            {
+              "content_sha256": "1b405e8fe12ed7881820062f37185d5504cc3b9c55bec39bc7aa8f39ff6e4e59",
+              "page_id": 108714,
+              "revision_id": 1194628,
+              "revision_sha1": "65631a325fc7b80f69235ec2a44aa11ce99c4c35",
+              "revision_timestamp": "2026-07-06T19:56:13Z",
+              "url": "https://tibia.fandom.com/wiki/Powerful_Vampirism_Scroll",
+              "wiki_title": "Powerful Vampirism Scroll"
+            }
+          ]
+        },
+        "item_ref": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i51464",
+          "revision": "definition-r1"
+        },
+        "source_name": "Powerful Vampirism Scroll"
+      }
+    },
+    "Venom": {
+      "basic": {
+        "evidence": {
+          "canonical": {
+            "definition_sha256": "f89f1c912ab4aa5daf445ff3de0c41eb4932751e0bfa8ba62d4c59b93de4ab8b",
+            "name": null,
+            "path": "content/items/definitions/items-28500-28999.json"
+          },
+          "identity_basis": "CLIENT_AND_WIKI",
+          "primary_client": {
+            "id": 53772,
+            "name": "basic venom scroll",
+            "record_sha256": "b66eed79788ff9f407080d9e7f9d415e8239ddf72de0fbd7d00eff8ec0cf58a3"
+          },
+          "wiki_observations": [
+            {
+              "content_sha256": "0fd492fff672de0499ddcba72710a5c14536dc02c1b26cd79d509b837f09e10b",
+              "page_id": 110816,
+              "revision_id": 1195597,
+              "revision_sha1": "6b5efc5acb6f34fc36259dc439fa13b4a54aac01",
+              "revision_timestamp": "2026-07-13T14:38:55Z",
+              "url": "https://tibia.fandom.com/wiki/Basic_Venom_Scroll",
+              "wiki_title": "Basic Venom Scroll"
+            }
+          ]
+        },
+        "item_ref": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i53772",
+          "revision": "definition-r1"
+        },
+        "source_name": "Basic Venom Scroll"
+      },
+      "intricate": {
+        "evidence": {
+          "canonical": {
+            "definition_sha256": "030ace6374c24d16fefa646de735da43dff1d77ccb5d93812578e402c75eef9b",
+            "name": "intricate venom scroll",
+            "path": "content/items/definitions/items-28000-28499.json"
+          },
+          "identity_basis": "CLIENT_AND_WIKI",
+          "primary_client": {
+            "id": 51745,
+            "name": "intricate venom scroll",
+            "record_sha256": "ee2b4ddc267877749237bc50df42a926d6ea603228feae6569a3ce99644255e8"
+          },
+          "wiki_observations": [
+            {
+              "content_sha256": "b836aba494bcb68b4372c55c6453f7fc81811833a928612c1772662439b504ce",
+              "page_id": 109004,
+              "revision_id": 1194632,
+              "revision_sha1": "cb67fdef8fdd0f9be719043e62d8a16ea607b5bd",
+              "revision_timestamp": "2026-07-06T20:00:27Z",
+              "url": "https://tibia.fandom.com/wiki/Intricate_Venom_Scroll",
+              "wiki_title": "Intricate Venom Scroll"
+            }
+          ]
+        },
+        "item_ref": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i51745",
+          "revision": "definition-r1"
+        },
+        "source_name": "Intricate Venom Scroll"
+      },
+      "powerful": {
+        "evidence": {
+          "canonical": {
+            "definition_sha256": "bbf6085d59b1d94ac6f8ab0d9be64f5a7f9bab45aa488de15b5b751ad810d92b",
+            "name": "powerful venom scroll",
+            "path": "content/items/definitions/items-28000-28499.json"
+          },
+          "identity_basis": "CLIENT_AND_WIKI",
+          "primary_client": {
+            "id": 51465,
+            "name": "powerful venom scroll",
+            "record_sha256": "88e2941dfde4435308d5f5f3fd1afd96ca1f28d49091bcfc62b36ff46989e80b"
+          },
+          "wiki_observations": [
+            {
+              "content_sha256": "30ede994d708dbcd5bcac3302527598f008730bb5360c2a8258bcb000c317270",
+              "page_id": 108716,
+              "revision_id": 1194636,
+              "revision_sha1": "b39e3c8440fdf51001be6f7047fcd5d4c7f9ecdc",
+              "revision_timestamp": "2026-07-06T20:03:54Z",
+              "url": "https://tibia.fandom.com/wiki/Powerful_Venom_Scroll",
+              "wiki_title": "Powerful Venom Scroll"
+            }
+          ]
+        },
+        "item_ref": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i51465",
+          "revision": "definition-r1"
+        },
+        "source_name": "Powerful Venom Scroll"
+      }
+    },
+    "Vibrancy": {
+      "basic": {
+        "evidence": {
+          "canonical": {
+            "definition_sha256": "ab4e2deaff6f2a1f4de10f117a50a8713303ff81b7d85fbfdb8f53e1c1df1d32",
+            "name": null,
+            "path": "content/items/definitions/items-28500-28999.json"
+          },
+          "identity_basis": "CLIENT_AND_WIKI",
+          "primary_client": {
+            "id": 53773,
+            "name": "basic vibrancy scroll",
+            "record_sha256": "8358d59ce93fde26522e922a1c1ce7b8e56194778c43595920299fc049c1b36f"
+          },
+          "wiki_observations": [
+            {
+              "content_sha256": "3eebfcb91d78251d2f225149c9a700fc271c91a613e23cf2d1d052f915cb2a97",
+              "page_id": 110818,
+              "revision_id": 1195598,
+              "revision_sha1": "cca49746a2fc3b6afe83ffb64f124c5918ee4150",
+              "revision_timestamp": "2026-07-13T14:38:57Z",
+              "url": "https://tibia.fandom.com/wiki/Basic_Vibrancy_Scroll",
+              "wiki_title": "Basic Vibrancy Scroll"
+            }
+          ]
+        },
+        "item_ref": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i53773",
+          "revision": "definition-r1"
+        },
+        "source_name": "Basic Vibrancy Scroll"
+      },
+      "intricate": {
+        "evidence": {
+          "canonical": {
+            "definition_sha256": "98948058fad4fda110753cd67dbb4854d12955f317124523b302acf456236e27",
+            "name": "intricate vibrancy scroll",
+            "path": "content/items/definitions/items-28000-28499.json"
+          },
+          "identity_basis": "CLIENT_AND_WIKI",
+          "primary_client": {
+            "id": 51746,
+            "name": "intricate vibrancy scroll",
+            "record_sha256": "7675245bca8622797079d90867a938c9f0938097cf736df3d99bfbf0ece8f42d"
+          },
+          "wiki_observations": [
+            {
+              "content_sha256": "768b8f4b4e8260ecfb9c115a076f09eb2432a38e373d03dc884ee1e60b0d2a4c",
+              "page_id": 109006,
+              "revision_id": 1194640,
+              "revision_sha1": "5d92bd6ccf6c7535b7f67af24b0810a60703260a",
+              "revision_timestamp": "2026-07-06T20:07:50Z",
+              "url": "https://tibia.fandom.com/wiki/Intricate_Vibrancy_Scroll",
+              "wiki_title": "Intricate Vibrancy Scroll"
+            }
+          ]
+        },
+        "item_ref": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i51746",
+          "revision": "definition-r1"
+        },
+        "source_name": "Intricate Vibrancy Scroll"
+      },
+      "powerful": {
+        "evidence": {
+          "canonical": {
+            "definition_sha256": "a123ccc530d7ee01db9aa5644cfa99376d24e8bc5b7daadc8852ddf5f003fcfa",
+            "name": "powerful vibrancy scroll",
+            "path": "content/items/definitions/items-28000-28499.json"
+          },
+          "identity_basis": "CLIENT_AND_WIKI",
+          "primary_client": {
+            "id": 51466,
+            "name": "powerful vibrancy scroll",
+            "record_sha256": "a7965f07aeb9a7360be78b30c62a75b539d38bac119ecd04042d1644927ee274"
+          },
+          "wiki_observations": [
+            {
+              "content_sha256": "d4f9118daeb49c1052d9fcd411faa5bedb7fc1d6df640233d4207f92c246bc43",
+              "page_id": 108718,
+              "revision_id": 1194638,
+              "revision_sha1": "589f22c2d203c1411bc3075a5e8ef13d17df094f",
+              "revision_timestamp": "2026-07-06T20:06:03Z",
+              "url": "https://tibia.fandom.com/wiki/Powerful_Vibrancy_Scroll",
+              "wiki_title": "Powerful Vibrancy Scroll"
+            }
+          ]
+        },
+        "item_ref": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i51466",
+          "revision": "definition-r1"
+        },
+        "source_name": "Powerful Vibrancy Scroll"
+      }
+    },
+    "Void": {
+      "basic": {
+        "evidence": {
+          "canonical": {
+            "definition_sha256": "da3ca9678b725a28e67418056de430c50a25bc173072a249d061e39e80d8b0f5",
+            "name": null,
+            "path": "content/items/definitions/items-28500-28999.json"
+          },
+          "identity_basis": "CLIENT_AND_WIKI",
+          "primary_client": {
+            "id": 53774,
+            "name": "basic void scroll",
+            "record_sha256": "5291935b2feb7f63f4ff4625779d57e342ab5841553bc55b4c436de504d38412"
+          },
+          "wiki_observations": [
+            {
+              "content_sha256": "a60f80ba178ab45b3252a279d272ac0e0cfb45956af89f722d31b929c15fda34",
+              "page_id": 110820,
+              "revision_id": 1195599,
+              "revision_sha1": "7cb864e7433920c605c7ba8e45b1012126e6aed5",
+              "revision_timestamp": "2026-07-13T14:38:58Z",
+              "url": "https://tibia.fandom.com/wiki/Basic_Void_Scroll",
+              "wiki_title": "Basic Void Scroll"
+            }
+          ]
+        },
+        "item_ref": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i53774",
+          "revision": "definition-r1"
+        },
+        "source_name": "Basic Void Scroll"
+      },
+      "intricate": {
+        "evidence": {
+          "canonical": {
+            "definition_sha256": "edaf2d6f0ed1eac39d64e6add235965ec58f7cc5db225f7ee485e42bc359b583",
+            "name": "intricate void scroll",
+            "path": "content/items/definitions/items-28000-28499.json"
+          },
+          "identity_basis": "CLIENT_AND_WIKI",
+          "primary_client": {
+            "id": 51747,
+            "name": "intricate void scroll",
+            "record_sha256": "5fdda39359bd53b31e19ecf90c13eabe7d9e57ab8e9f1c3dd858d9992fbc4f79"
+          },
+          "wiki_observations": [
+            {
+              "content_sha256": "bacf2c3e314bfe7d86526af9eb91adb4405aa1058254f8e00dca5adcb6938aa1",
+              "page_id": 109008,
+              "revision_id": 1194661,
+              "revision_sha1": "1b1790533c5ec50067bb71834d2fe1ad2ce5f852",
+              "revision_timestamp": "2026-07-06T21:54:09Z",
+              "url": "https://tibia.fandom.com/wiki/Intricate_Void_Scroll",
+              "wiki_title": "Intricate Void Scroll"
+            }
+          ]
+        },
+        "item_ref": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i51747",
+          "revision": "definition-r1"
+        },
+        "source_name": "Intricate Void Scroll"
+      },
+      "powerful": {
+        "evidence": {
+          "canonical": {
+            "definition_sha256": "1584861efb852eb671d6edef19bd9343a2b5525b551d00440c8262e6f9afa2cf",
+            "name": "powerful void scroll",
+            "path": "content/items/definitions/items-28000-28499.json"
+          },
+          "identity_basis": "CLIENT_AND_WIKI",
+          "primary_client": {
+            "id": 51467,
+            "name": "powerful void scroll",
+            "record_sha256": "c92a78877ff6cc5adef7d140fbd947a271f5080b7a8ca6a6acdd0081eb8f2d10"
+          },
+          "wiki_observations": [
+            {
+              "content_sha256": "24a46bf6707d9ce576bf045c0c9ab7df25b5d75e2e631f6d091ae7505096bf26",
+              "page_id": 108720,
+              "revision_id": 1194644,
+              "revision_sha1": "22228095bbe3e7ed6b9cf59c7579b5ce2f7cd4d7",
+              "revision_timestamp": "2026-07-06T20:11:11Z",
+              "url": "https://tibia.fandom.com/wiki/Powerful_Void_Scroll",
+              "wiki_title": "Powerful Void Scroll"
+            }
+          ]
+        },
+        "item_ref": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i51467",
+          "revision": "definition-r1"
+        },
+        "source_name": "Powerful Void Scroll"
+      }
+    }
+  },
+  "utility_bindings": {
+    "blank_scroll": {
+      "evidence": {
+        "canonical": {
+          "definition_sha256": "304589845baca9c16cf52250bed953b59469bbc31fb8df58c07b440874f84b8e",
+          "name": "blank imbuement scroll",
+          "path": "content/items/definitions/items-28000-28499.json"
+        },
+        "identity_basis": "CLIENT_AND_WIKI",
+        "primary_client": {
+          "id": 51442,
+          "name": "blank imbuement scroll",
+          "record_sha256": "17296d331d9b6202ac76d225a367a5a5c51eeb879740e28d60d9ee80a344dc2f"
+        },
+        "wiki_observations": [
+          {
+            "content_sha256": "580843e52f13dd1d45d76f2863a7d0645b444b83a868b5e3fbae51da9b34bc63",
+            "page_id": 108547,
+            "revision_id": 1197313,
+            "revision_sha1": "3697ae123615da1a2b18968f8f55f42795de45df",
+            "revision_timestamp": "2026-07-22T12:58:25Z",
+            "url": "https://tibia.fandom.com/wiki/Blank_Imbuement_Scroll",
+            "wiki_title": "Blank Imbuement Scroll"
+          }
+        ]
+      },
+      "item_ref": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i51442",
+        "revision": "definition-r1"
+      },
+      "source_name": "Blank Imbuement Scroll"
+    },
+    "etcher": {
+      "evidence": {
+        "canonical": {
+          "definition_sha256": "188b34b3f92f36cb8d3fb23e1420d5a327ad6d3acda7751451e0e654cd6e7837",
+          "name": "etcher",
+          "path": "content/items/definitions/items-28000-28499.json"
+        },
+        "identity_basis": "CLIENT_AND_WIKI",
+        "primary_client": {
+          "id": 51443,
+          "name": "etcher",
+          "record_sha256": "f850c98da3140d6fe24d76c9c95c676f34711c79339b2760429e0a0c613c772a"
+        },
+        "wiki_observations": [
+          {
+            "content_sha256": "a2f370dd0c633f618f0fabbc5b540198110e3987e83b40d5d807209341e61f94",
+            "page_id": 108672,
+            "revision_id": 1119102,
+            "revision_sha1": "a293b84ce9c38c2d5ed23fda86b4c4c538c50bf4",
+            "revision_timestamp": "2025-08-02T16:21:24Z",
+            "url": "https://tibia.fandom.com/wiki/Etcher",
+            "wiki_title": "Etcher"
+          }
+        ]
+      },
+      "item_ref": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i51443",
+        "revision": "definition-r1"
+      },
+      "source_name": "Etcher"
+    },
+    "gold_token": {
+      "evidence": {
+        "canonical": {
+          "definition_sha256": "c30a123ff3dc972c27f3f77ab1deb91724c4b1cfecea017f1964199320025810",
+          "name": "gold token",
+          "path": "content/items/definitions/items-11500-11999.json"
+        },
+        "identity_basis": "CLIENT_AND_WIKI",
+        "primary_client": {
+          "id": 22721,
+          "name": "gold token",
+          "record_sha256": "8feb64f7262c96b5097553120aaea44a27dc5b0d47eba1b708401ad3ec1af401"
+        },
+        "wiki_observations": [
+          {
+            "content_sha256": "74f3efbe55374756a0854af9f17ad23af7c9dfbd7787ee9477a914a91c950407",
+            "page_id": 76917,
+            "revision_id": 1115549,
+            "revision_sha1": "e366f0a2c6224efcf9022cc8a9f11127bb31231f",
+            "revision_timestamp": "2025-07-26T11:49:53Z",
+            "url": "https://tibia.fandom.com/wiki/Gold_Token",
+            "wiki_title": "Gold Token"
+          }
+        ]
+      },
+      "item_ref": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i22721",
+        "revision": "definition-r1"
+      },
+      "source_name": "Gold Token"
+    },
+    "heavy_old_tome": {
+      "evidence": {
+        "canonical": {
+          "definition_sha256": "33acbc99b863426dc2876a626e18096a3db2279fa7fbcdeb0ad8f6fee3aeaf9c",
+          "name": "heavy old tome",
+          "path": "content/items/definitions/items-12500-12999.json"
+        },
+        "identity_basis": "CLIENT_AND_WIKI",
+        "primary_client": {
+          "id": 23986,
+          "name": "heavy old tome",
+          "record_sha256": "2857eb99cb27a02b5f84829f86487e83ed44d5c614016b622fc64e0e38dc58e5"
+        },
+        "wiki_observations": [
+          {
+            "content_sha256": "c3c8136d41bd2aa322a1d25c8e194058efe0862dece113512be5aab66506e92f",
+            "page_id": 79434,
+            "revision_id": 1115648,
+            "revision_sha1": "51e3a2c186555b12f823825a32de16be2a1e1df9",
+            "revision_timestamp": "2025-07-26T12:09:08Z",
+            "url": "https://tibia.fandom.com/wiki/Heavy_Old_Tome",
+            "wiki_title": "Heavy Old Tome"
+          }
+        ]
+      },
+      "item_ref": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i23986",
+        "revision": "definition-r1"
+      },
+      "source_name": "Heavy Old Tome"
+    },
+    "shrine": [
+      {
+        "evidence": {
+          "canonical": {
+            "definition_sha256": "f685407e537289e049f80717f6c0fc79988e7afc6ed8a42fc0e52f44ba97a517",
+            "name": "imbuing shrine",
+            "path": "content/items/definitions/items-13500-13999.json"
+          },
+          "identity_basis": "CANONICAL_AND_WIKI_CLIENT_OBJECT_EXISTS",
+          "primary_client": {
+            "id": 25060,
+            "name": null,
+            "record_sha256": "c1ebebbd475c693c27ed150835001db6242c866891d30b9e6533976e7e605e42"
+          },
+          "wiki_observations": [
+            {
+              "content_sha256": "4d3d7001e1066ad033088b6a8462285b59504b32465e6be061c655fed9a43475",
+              "page_id": 79609,
+              "revision_id": 1015799,
+              "revision_sha1": "0eb607ee6ecc87f8ef8d21a54f4f7f56672c7495",
+              "revision_timestamp": "2023-07-16T02:07:46Z",
+              "url": "https://tibia.fandom.com/wiki/Imbuing_Shrine",
+              "wiki_title": "Imbuing Shrine"
+            }
+          ]
+        },
+        "item_ref": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i25060",
+          "revision": "definition-r1"
+        },
+        "source_name": "Imbuing Shrine"
+      },
+      {
+        "evidence": {
+          "canonical": {
+            "definition_sha256": "aa3ae214a76af2339a022e1e754768acc5be3b49fda539e1ff3ea362b388ca5e",
+            "name": "imbuing shrine",
+            "path": "content/items/definitions/items-13500-13999.json"
+          },
+          "identity_basis": "CANONICAL_AND_WIKI_CLIENT_OBJECT_EXISTS",
+          "primary_client": {
+            "id": 25061,
+            "name": null,
+            "record_sha256": "bd38921d3094ad5efd10907952dcddb3bc8b463b80d5efdd8e05dd4272545234"
+          },
+          "wiki_observations": [
+            {
+              "content_sha256": "4d3d7001e1066ad033088b6a8462285b59504b32465e6be061c655fed9a43475",
+              "page_id": 79609,
+              "revision_id": 1015799,
+              "revision_sha1": "0eb607ee6ecc87f8ef8d21a54f4f7f56672c7495",
+              "revision_timestamp": "2023-07-16T02:07:46Z",
+              "url": "https://tibia.fandom.com/wiki/Imbuing_Shrine",
+              "wiki_title": "Imbuing Shrine"
+            }
+          ]
+        },
+        "item_ref": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i25061",
+          "revision": "definition-r1"
+        },
+        "source_name": "Imbuing Shrine"
+      },
+      {
+        "evidence": {
+          "canonical": {
+            "definition_sha256": "9eb935fe1d497b60b0ada2a39990b0b6f0b1106f864d4fe14dfd757d650cb1a6",
+            "name": "imbuing shrine",
+            "path": "content/items/definitions/items-13500-13999.json"
+          },
+          "identity_basis": "CANONICAL_AND_WIKI_CLIENT_OBJECT_EXISTS",
+          "primary_client": {
+            "id": 25103,
+            "name": null,
+            "record_sha256": "ce85dab40b94701a67faeb77667eabeec1815451527625320f700a5f206cc558"
+          },
+          "wiki_observations": [
+            {
+              "content_sha256": "4d3d7001e1066ad033088b6a8462285b59504b32465e6be061c655fed9a43475",
+              "page_id": 79609,
+              "revision_id": 1015799,
+              "revision_sha1": "0eb607ee6ecc87f8ef8d21a54f4f7f56672c7495",
+              "revision_timestamp": "2023-07-16T02:07:46Z",
+              "url": "https://tibia.fandom.com/wiki/Imbuing_Shrine",
+              "wiki_title": "Imbuing Shrine"
+            }
+          ]
+        },
+        "item_ref": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i25103",
+          "revision": "definition-r1"
+        },
+        "source_name": "Imbuing Shrine"
+      },
+      {
+        "evidence": {
+          "canonical": {
+            "definition_sha256": "b85ec5cb20b78f144922bea152d4a9d1a9defb8e1c3f52c56e1e6519e69031ee",
+            "name": "imbuing shrine",
+            "path": "content/items/definitions/items-13500-13999.json"
+          },
+          "identity_basis": "CANONICAL_AND_WIKI_CLIENT_OBJECT_EXISTS",
+          "primary_client": {
+            "id": 25104,
+            "name": null,
+            "record_sha256": "8b0fc98a4bd156d79e4a15ef37f2189e1cd100be7a13b3abc892a3a529f429f7"
+          },
+          "wiki_observations": [
+            {
+              "content_sha256": "4d3d7001e1066ad033088b6a8462285b59504b32465e6be061c655fed9a43475",
+              "page_id": 79609,
+              "revision_id": 1015799,
+              "revision_sha1": "0eb607ee6ecc87f8ef8d21a54f4f7f56672c7495",
+              "revision_timestamp": "2023-07-16T02:07:46Z",
+              "url": "https://tibia.fandom.com/wiki/Imbuing_Shrine",
+              "wiki_title": "Imbuing Shrine"
+            }
+          ]
+        },
+        "item_ref": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i25104",
+          "revision": "definition-r1"
+        },
+        "source_name": "Imbuing Shrine"
+      },
+      {
+        "evidence": {
+          "canonical": {
+            "definition_sha256": "05e074cef20663780ca5da4bc02d4c0a69072f584c29d812b707a078158d4040",
+            "name": "imbuing shrine",
+            "path": "content/items/definitions/items-13500-13999.json"
+          },
+          "identity_basis": "CLIENT_AND_CANONICAL_NAME",
+          "primary_client": {
+            "id": 25174,
+            "name": "imbuing shrine",
+            "record_sha256": "7e238c495339c0c64ee52e3d8441f9f8e15c76580e39ab63533f486c2c2cfeaa"
+          },
+          "wiki_observations": []
+        },
+        "item_ref": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i25174",
+          "revision": "definition-r1"
+        },
+        "source_name": "Imbuing Shrine"
+      },
+      {
+        "evidence": {
+          "canonical": {
+            "definition_sha256": "ac3637082e264e8289b152d4be0c8cd485c541cfa575d6ffc9e83a40cf481377",
+            "name": "imbuing shrine",
+            "path": "content/items/definitions/items-13500-13999.json"
+          },
+          "identity_basis": "CLIENT_AND_CANONICAL_NAME",
+          "primary_client": {
+            "id": 25175,
+            "name": "imbuing shrine",
+            "record_sha256": "52deae585a2123da473b956196f8dc115748d1023bb2bb5691ee75fff4bf3ab3"
+          },
+          "wiki_observations": []
+        },
+        "item_ref": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i25175",
+          "revision": "definition-r1"
+        },
+        "source_name": "Imbuing Shrine"
+      },
+      {
+        "evidence": {
+          "canonical": {
+            "definition_sha256": "fb9331767f52f950bd049bd4b6262312de0e4cf861877ddcdc2cc37eb26ea93f",
+            "name": "gilded imbuing shrine",
+            "path": "content/items/definitions/items-13500-13999.json"
+          },
+          "identity_basis": "CLIENT_AND_WIKI",
+          "primary_client": {
+            "id": 25182,
+            "name": "gilded imbuing shrine",
+            "record_sha256": "66de185dde47ca4e628a43a900051d695eb354ab194f4eed063908c4d8922308"
+          },
+          "wiki_observations": [
+            {
+              "content_sha256": "abb9408d0f54ace3d78dbc9cb27d83fdaec889eaac2996b90058274785af5540",
+              "page_id": 81640,
+              "revision_id": 1020114,
+              "revision_sha1": "22f0597b21380c1969261377c993331da6b338da",
+              "revision_timestamp": "2023-07-20T17:47:46Z",
+              "url": "https://tibia.fandom.com/wiki/Gilded_Imbuing_Shrine",
+              "wiki_title": "Gilded Imbuing Shrine"
+            }
+          ]
+        },
+        "item_ref": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i25182",
+          "revision": "definition-r1"
+        },
+        "source_name": "Gilded Imbuing Shrine"
+      },
+      {
+        "evidence": {
+          "canonical": {
+            "definition_sha256": "fcda376e826590cd61e82c87da385ae0078a16dd1e8fd2145f0d3b6c57e91a23",
+            "name": "gilded imbuing shrine",
+            "path": "content/items/definitions/items-13500-13999.json"
+          },
+          "identity_basis": "CLIENT_AND_WIKI",
+          "primary_client": {
+            "id": 25183,
+            "name": "gilded imbuing shrine",
+            "record_sha256": "2db4f6debb60ba918608604dc84ec493d22c17950547d3eecad702599f6324a9"
+          },
+          "wiki_observations": [
+            {
+              "content_sha256": "abb9408d0f54ace3d78dbc9cb27d83fdaec889eaac2996b90058274785af5540",
+              "page_id": 81640,
+              "revision_id": 1020114,
+              "revision_sha1": "22f0597b21380c1969261377c993331da6b338da",
+              "revision_timestamp": "2023-07-20T17:47:46Z",
+              "url": "https://tibia.fandom.com/wiki/Gilded_Imbuing_Shrine",
+              "wiki_title": "Gilded Imbuing Shrine"
+            }
+          ]
+        },
+        "item_ref": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i25183",
+          "revision": "definition-r1"
+        },
+        "source_name": "Gilded Imbuing Shrine"
+      }
+    ]
+  }
+}

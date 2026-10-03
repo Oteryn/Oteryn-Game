@@ -18,7 +18,9 @@ Semantic rules:
 - D16: 'D16' always; rule 'WIKI_MAJORITY_ARBITER' (with tibiopedia_facts_sha256) names a plain `trade.<item>`
   offer, a provenance source, 2-3 sorted wikis, the registered item name and each priced direction's status
   (CONFIRMED with its wikis, or UNCONFIRMED with the stating source; owner 1c), re-derived with the pinned facts,
-  and those directions and prices are exactly the ones of the admitted offer;
+  and those directions and prices are exactly the ones of the admitted source offer (a direction with
+  `origin: 'wiki'` is a D13 offer, not part of it; without the source bundles a relabelled source direction looks
+  the same, so only the rebuild with --canary/--crystal binds an offer's source provenance);
   a WIKI_IMAGE_FIT score is at most 35; rules 'WIKI_IMAGE' / 'OWNER_REVIEW' are exactly the
   DEFINITION_REVIEWED row of that NPC and field (`definition.<field>`), choosing one of two sources, the field holds
   the pinned REVIEWED_VALUES value of the chosen source, and a row with
@@ -111,6 +113,11 @@ REVIEWED_VALUES = {
     ('Storkus', 'outfit'): {'addons': 0, 'body': 59, 'feet': 114, 'head': 57, 'legs': 118, 'look_type': 69,
                             'mount': None},
 }
+
+
+def same_json(left, right):
+    """JSON equality that tells `false` from `0` (Python's `False == 0` would not)."""
+    return json.dumps(left, sort_keys=True) == json.dumps(right, sort_keys=True)
 
 
 def definition_field(candidate, field):
@@ -391,8 +398,8 @@ def candidate_errors(candidate, index):
                 errs.append(f"{alabel}: outfit colours are not the fitted wiki colours {reviewed['colours']!r}")
             elif len(provenance) != 2 or chosen not in provenance:
                 errs.append(f"{alabel}: {rule} chooses {chosen!r} between two sources, provenance has {sorted(provenance)}")
-            elif rule in ('WIKI_IMAGE', 'OWNER_REVIEW') and definition_field(candidate, field) != \
-                    REVIEWED_VALUES.get((candidate.get('name'), field)):
+            elif rule in ('WIKI_IMAGE', 'OWNER_REVIEW') and not same_json(
+                    definition_field(candidate, field), REVIEWED_VALUES.get((candidate.get('name'), field))):
                 errs.append(f"{alabel}: {field} {definition_field(candidate, field)!r} is not the reviewed value of the "
                             f"chosen {chosen!r} source {REVIEWED_VALUES.get((candidate.get('name'), field))!r} (D16)")
         elif rule == 'WIKI_MAJORITY_ARBITER':
