@@ -76,13 +76,14 @@ grace-expiry path.
 
 - required: YES (authority and fencing decision). The control plane triggers it on the frozen head.
 - Round on 7a26bec3/8bf2ce08: in-place rebind for A2 (fixed in 7bcf8e48).
-- Round on 87396ffb: P1 4173424040 (the lease-generation check is mandatory at the write) and
-  P1 4173424046 (no preemption of a healthy controller; rebind only after a terminal session or an
-  accepted takeover flow).
 - Round on 7bcf8e48: P1 4173284936 (the gate trigger is a non-test production reference, checked
   structurally) and P2 4173284940 (this record's sections); both fixed in 4d191ecd.
 - Control-plane amendment on 4d191ecd: #1625 had merged; the check moves to the follow-up
   CHARM-DESC-FENCE-1 and the #1625 HOLD lines are removed.
+- Record moved to its own task id and path (main already held the #1625 record's path).
+- Round on 87396ffb: P1 4173424040 (the lease-generation check is mandatory at the write) and
+  P1 4173424046 (no preemption of a healthy controller; rebind only after a terminal session or an
+  accepted takeover flow). Fixed in the next head.
 
 ## PR and closeout
 
