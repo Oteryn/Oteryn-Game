@@ -1,0 +1,22 @@
+// The shared damage element of protocol-oteryn v1 (architect ruling on ANALYSER-WIRE-1, ANALYSERS-0
+// §4). The content damage types of SPELL-PRESENT-0 §2 in their content order, healing excluded.
+// Every payload that names a damage element imports this enum; PRESENT-WIRE-1 reuses it and
+// defines no enum of its own. Zero and unknown values fail closed.
+syntax = "proto3";
+
+package oteryn.protocol.v1.damage_element;
+
+enum DamageElement {
+  DAMAGE_ELEMENT_UNSPECIFIED = 0;
+  DAMAGE_ELEMENT_PHYSICAL = 1;
+  DAMAGE_ELEMENT_FIRE = 2;
+  DAMAGE_ELEMENT_EARTH = 3;
+  DAMAGE_ELEMENT_ENERGY = 4;
+  DAMAGE_ELEMENT_ICE = 5;
+  DAMAGE_ELEMENT_HOLY = 6;
+  DAMAGE_ELEMENT_DEATH = 7;
+  DAMAGE_ELEMENT_LIFE_DRAIN = 8;
+  DAMAGE_ELEMENT_MANA_DRAIN = 9;
+  DAMAGE_ELEMENT_DROWNING = 10;
+  DAMAGE_ELEMENT_UNTYPED = 11;
+}
