@@ -1166,11 +1166,26 @@ fn server_seam_real_owners_over_tcp_tls() -> TestResult {
         required("WP5_S3A_ACCOUNT_ID")?,
         required("WP5_S3B_SECOND_ACCOUNT_ID")?,
     ];
-    tokio::runtime::Builder::new_multi_thread()
+    // Debug builds poll the composed seam scenario through a call chain deeper than the
+    // default 2 MiB test and worker stacks (it overflowed in the admission stage even with
+    // the scenario future boxed). Poll it on a dedicated thread, and run the runtime's
+    // workers, with an explicit 8 MiB stack; the scenario itself is unchanged.
+    const SEAM_STACK_BYTES: usize = 8 << 20;
+    let runtime = tokio::runtime::Builder::new_multi_thread()
         .enable_all()
-        .build()?
-        // The composed seam scenario is one large future; keep it off the test-thread stack.
-        .block_on(Box::pin(seam_flow(&accounts, &key_id, &signing)))
+        .thread_stack_size(SEAM_STACK_BYTES)
+        .build()?;
+    std::thread::Builder::new()
+        .name("server-seam-scenario".into())
+        .stack_size(SEAM_STACK_BYTES)
+        .spawn(move || {
+            runtime
+                .block_on(Box::pin(seam_flow(&accounts, &key_id, &signing)))
+                .map_err(|error| error.to_string())
+        })?
+        .join()
+        .map_err(|_| "server seam scenario thread panicked")?
+        .map_err(Into::into)
 }
 
 async fn seam_flow(accounts: &[String; 2], key_id: &str, signing: &SigningKey) -> TestResult {
