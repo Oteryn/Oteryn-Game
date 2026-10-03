@@ -9,7 +9,7 @@ repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/arch-rt-checkpoint-rows-1
 issue: 1622
-pr: PR_NUMBER
+pr: 1692
 head_sha: "exact frozen head in the #1622 FREEZE_SHA entry"
 owner: Sol Supervising Architect
 created_at: 2026-10-03
