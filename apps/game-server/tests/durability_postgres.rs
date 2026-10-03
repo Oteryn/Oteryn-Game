@@ -24,6 +24,8 @@ mod authority_recovery;
 mod character_revision_sequencer_postgres_cases;
 #[path = "../src/durability/mod.rs"]
 mod durability;
+#[path = "support/item_timed_state_postgres_cases.rs"]
+mod item_timed_state_postgres_cases;
 #[path = "support/postgres.rs"]
 mod postgres;
 use sqlx::Connection;
