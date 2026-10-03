@@ -156,6 +156,6 @@
   },
   "browser_source_audit": {
     "file": "samples/browser-source-audit.json",
-    "sha256": "3f7ee588767a5b6c09ee4094018497a9201096b5c403c82ef91825964ca14ad4"
+    "sha256": "6633f7a88cbeede355093694005d4984b6c9f1a5febd4b6acd1a63e9e07f976a"
   }
 }
