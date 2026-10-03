@@ -7,7 +7,7 @@ date: 2026-10-03
 owner: Sol Supervising Architect
 requested_by: control plane (D358 topic request after FAMILIARS-0-FIX-3)
 writes_on_other_prs: none
-amended_by: ARCH-PACKET-FIX-1 (§2.3 rows, §2.5 RL-04, §2.6 rows and the Light owner; #1687 round-3 P1s 4174692081 and 4174692089; #1689 P1s 4174761344, 4174761349, 4174781962 and 4174781965)
+amended_by: ARCH-PACKET-FIX-1 (§2.3 rows, §2.5 RL-04, §2.6 rows and the Light owner; #1687 round-3 P1s 4174692081 and 4174692089; #1689 P1s 4174761344, 4174761349, 4174781962 and 4174781965); ARCH-RT-CHECKPOINT-ROWS-1 (§2.3 first item; #1689 P1 4174803489)
 ```
 
 This bundle splits and packets three requested topics:
@@ -346,6 +346,13 @@ validation:
 
 Acceptance:
 
+- **First item: the checkpoint rows (#1689 P1 4174803489, D317 follow-up).**
+  - #1681 (RT-1a) merged its checkpoint writer without the §12 checkpoint and composed checkpoint
+    shape rows. RT-1b's first commit registers both, before any other RT-1b work.
+  - Each row has max and max+1 tests on the DUR-03 ceilings §12 names (`DUR03-RL-01` 1,
+    `DUR03-RL-07-EVENTS` 1, `DUR03-RL-08` 3, the location lines, transform I/O, participants and
+    work units). The tests run against RT-1a's merged writer.
+  - The rest of RT-1b is not reviewed until these rows are on its branch.
 - **Guard (0058).**
   - Admits causes 2 and 3 with §8's three shapes.
   - Causes 4-7 stay refused until RT-1c.
@@ -367,12 +374,9 @@ Acceptance:
   - A crash returns at most one checkpoint interval (§6.2).
 - **Evidence.** One audit event per expiry (§8).
 - **Rows (TIMED-ITEM-0B §12, §14).**
-  - RT-1b registers the §12 shape rows it admits: checkpoint, composed checkpoint, expiry
-    transform (`DUR03-RL-04-TIMED-EXPIRY`), expiry burn and composed expiry burn. Each has max and
-    max+1 tests on the DUR-03 ceilings §12 names (`DUR03-RL-01` 1, `DUR03-RL-07-EVENTS` 1,
-    `DUR03-RL-08` 3, the location lines, transform I/O, participants and work units). #1681 left
-    every shape ceiling to RT-1b, so RT-1b registers the two checkpoint shapes even though their
-    writer is RT-1a's.
+  - RT-1b registers the §12 expiry shape rows it admits: expiry transform
+    (`DUR03-RL-04-TIMED-EXPIRY`), expiry burn and composed expiry burn. Each has max and max+1
+    tests on the same DUR-03 ceilings as the checkpoint rows (first item above).
   - `TIMEDITEM0B-RL-01`, `-02`, `-04` and `-05` are registered by #1681 (RT-1a), with unit tests
     on the lane. RT-1b proves each one again at the host boundary it adds, with max and max+1
     tests:
@@ -384,7 +388,7 @@ Acceptance:
       hosted, and a 12th is refused before any lane opens;
     - **RL-05:** a host expiry or checkpoint issued while the lane has a write in flight waits
       for it and is never sent as a second write.
-  - If #1681 merges without one of those rows, RT-1b registers it, with the same tests.
+  - If one of those rows is missing on `main`, RT-1b registers it, with the same tests.
   - The use form and put out rows of §12 are RT-1c's (§2.6).
 - **Not in scope.** RT-1c's causes and forms (§1.1), charge use by protection and every active
   effect (TIMED-FX-1), and the wire (TIMED-WIRE-1).
