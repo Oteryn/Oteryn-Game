@@ -33,6 +33,13 @@ This task carries the two round-3 P1s that #1669 deferred (D317).
   - the delayed-return race becomes F-I4 (removal) and F-I7 (cast);
   - sibling creation becomes F-I6 and F-I7.
 
+Review round 1 (Codex):
+
+- **4174432631.** Return admission reopens only after the clean-end write is proven not committed.
+  An unknown outcome is first reconciled from durable state (DUR-02).
+- **4174432634.** The same-occurrence retry (F-I5) and the refused cast's spend (F-I9) are now cases
+  of their own, apart from F-I4 and F-I7.
+
 ## High-risk authority/recovery qualification
 
 ```yaml

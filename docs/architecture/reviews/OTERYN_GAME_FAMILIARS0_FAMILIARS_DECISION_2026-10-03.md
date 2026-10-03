@@ -130,8 +130,12 @@ one ordinary summon (R1).
   is refused and stays stored; it returns at the next login or arrival. The close holds until
   authority release, so the clean-end write is the session's last write to the row (F-I11). A
   return that committed before the close reopened the row, and the clean-end compare-and-set reads
-  that row and closes it. If the session end is abandoned (its write failed, the session stays),
-  return admission opens again.
+  that row and closes it. Return admission opens again only when the clean-end write is proven not
+  committed: a compare-and-set loss or an error before commit. An unknown commit outcome (a lost
+  response) is reconciled from durable state first (DUR-02): the session re-reads the fence and the
+  row, and a row it finds closed under its own generation and revision is its committed clean end,
+  so the session end completes and admission stays closed. Only a row it finds unchanged lets the
+  session stay and reopen admission.
 - **Crash.** At login, the new session's fenced load reads the row (a same-session continuation
   after process replacement: §5.1). If `open = true` and its
   `session_generation` is older than the new one, the earlier session crashed: the load writes
@@ -206,8 +210,10 @@ qualification and proves every row of §5.1 and of this section, one invariant p
 | The same failure, and the runtime owner has since been replaced (same session generation) | reconciled, concurrent, PostgreSQL | F-I3: the fence re-read finds a newer RuntimeScopeAuthority ownership generation; the loader is refused, and every later write from it is refused too. |
 | The same failure, and the loader is still current | reconciled, concurrent, PostgreSQL | F-I10: nothing is returned or written from the earlier in-memory snapshot. The loader re-reads the row and classifies it from scratch: a committed reconciliation reads as a clean row with remaining 0, and a row another authorized writer advanced is taken as read. The fresh row then follows the normal path: a clean row with time left returns its familiar (§7), and an open row is reconciled again. |
 | A cast while a familiar waits to return with no free tile | direct | F-I7: refused by check 4. A stored familiar and a new one never exist together. |
-| A delayed return racing a removal write for the same character | direct, concurrent | F-I4: one compare-and-set wins per `revision`. A return that loses re-reads, and it is a no-op only when it finds `familiar_remaining_ms = 0` (a removal won) or a familiar its own acquisition already placed. |
-| A cast racing a delayed return for the same character | direct, concurrent | F-I7: the cast's compare-and-set re-checks check 4 against the row it replaces and commits only over a row with `familiar_remaining_ms = 0`, so it never replaces a familiar that waits to return. A cast that loses, or that finds stored time, is refused with no mana spent and no cooldown started. |
+| A delayed return racing a removal write for the same character | direct, concurrent | F-I4: one compare-and-set wins per `revision`; the loser's write never lands on that revision. A return that loses re-reads and, finding `familiar_remaining_ms = 0` (the removal won), writes nothing. |
+| A delayed return whose own acquisition already committed is retried (a lost commit response, then a re-read) | direct, concurrent | F-I5: the occurrence's first outcome stands. The retry finds the familiar its own acquisition placed and replays that outcome; it places no second familiar and writes nothing. |
+| A cast racing a delayed return for the same character | direct, concurrent | F-I7: the cast's compare-and-set re-checks check 4 against the row it replaces and commits only over a row with `familiar_remaining_ms = 0`, so it never replaces a familiar that waits to return. |
+| A cast refused by that compare-and-set (it lost, or it found stored time) | direct, concurrent | F-I9: mana, admission and row commit together or not at all, so the refused cast spends no mana and starts no cooldown. |
 | A delayed return in flight while logout or channel transfer makes its clean-end write | direct, concurrent | F-I11: session end closes return admission and drains the in-flight return before its clean-end write (§5). The return either committed first, and the clean-end write closes the row it reopened, or it is refused and stays stored. No return reopens the row after the clean-end write, so the next login never reads a clean exit as a crash. |
 | A channel-transfer arrival that loads before the departure's clean-end write commits | reconciled, concurrent | The transfer completes only after that write (§5 writes), so the arrival never sees the departing `open = true` row. If it does, the transfer was not admitted, and the arrival is refused as a stale owner (F-I3). |
 | `WorldReset` with the owner online | direct | F-I7: the removal writes `open = false` with the time kept. A later crash is then not a loss of the stored time. |
