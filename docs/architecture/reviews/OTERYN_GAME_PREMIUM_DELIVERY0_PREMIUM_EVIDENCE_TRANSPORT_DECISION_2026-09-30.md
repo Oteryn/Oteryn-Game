@@ -11,6 +11,8 @@
   `ARCHITECTURE_ESCALATION_REQUIRED` (#162 5916078350).
 - Amended (2026-10-03): §4, the `refresh_after` bound; §10, reconciled with `main` after PREM-1a (#1391), and §11, the PREM-1b
   packet, for Game-side acceptance (control plane D350, owner answer 1a).
+- Amended (2026-10-03, PREM-DELIVERY-0A, control plane D369): §3.1 and §11 scope items 3 and 7,
+  the full envelope before `Unsupported` and failures older than the latest proof.
 - Answers: the owner's direction to start Premium now (2026-09-30, verbatim: "no to wydaj takie
   decyzje i przygotuj zeby to ruszylo", answering the recommendation to start the Platform lane and
   the Game lane in parallel)
@@ -130,7 +132,10 @@ PREM-1b's client and test producer and PREM-P serve the same exchange.
      an exact replay (§6.2 rule 3) and is a successful pull.
   2. **Unsupported or downgraded semantics:** its `schema`, `producer_profile`, `product_id` or
      `product_version` is outside the compatibility pair PREM-1 records (§4), or its profile or
-     version is older than one the account has already accepted (a downgrade).
+     version is older than one the account has already accepted (a downgrade). This applies only
+     to a complete envelope: every §4 field present with its baseline type and form. A response
+     missing any of them, or with a wrong type, is malformed (a failed pull) whatever its
+     `schema` or profile says, so a partial body never records the permanent marker.
 
   Such a response is never accepted as evidence and never moves the high water. PREM-1 records a
   durable conflict marker on the account's fence row (§6) before any later benefit check, raises a
@@ -414,7 +419,10 @@ owned_paths:
    ingest (`Accepted` or `Replayed`) of a pull started after the latest failure (reuse PREM-1a's
    ingest tickets). `Conflict`, `Unsupported`, `REVOKED`, `EXPIRED` and `NOT_YET_EFFECTIVE` still
    win over it. It never changes `premium_entitlement_ended`. In memory only: after a restart the
-   re-proof pull (§9 item 3) is required anyway.
+   re-proof pull (§9 item 3) is required anyway. The account also keeps the ticket of its latest
+   proof: a failed pull or fence quarantine from an ingest whose ticket is older than that proof
+   changes nothing, whatever order the ingests finish in (the inverse of the rule above; review
+   4153900550 on #1391). A semantic failure (§3.1, scope item 7) is durable and is never ignored.
 4. **Scheduling.** A pull at fresh admission and reconnect before any Premium read; then one at
    each snapshot's `refresh_after`, and never sooner than 60 seconds after the last successful
    pull, while the account is online. At most one request in flight
@@ -435,7 +443,10 @@ owned_paths:
    and no delete) and `game_premium_security_audit` (append-only, unique per account, kind and
    `authority_revision`, bounded columns without the payload or any credential; no update and no
    delete). Every §3.1 semantic failure writes both in one transaction before the outcome
-   returns; a fence write failure quarantines as today. Any conflict row denies Premium, and
+   returns; a fence write failure quarantines as today. `Unsupported` is classified only after
+   the whole envelope passes the baseline field and type check (§3.1 item 2): today
+   `snapshot::validate` returns it before the strict parse, and PREM-1b moves that check after
+   it. Any conflict row denies Premium, and
    the restart re-proof (§9 item 3) loads it before any benefit, alongside the existing
    `conflict_authority_revision`. No path clears it (§3.1 declared deferral).
 
@@ -443,7 +454,10 @@ owned_paths:
 wrong content type; redirect; timeout; TLS failure and an untrusted server; a 500 or 429 with
 `Retry-After`; a stale response; failure while cached `ACTIVE` is in its interval reads
 `AUTHORITY_UNAVAILABLE` and a later success restores `CURRENT_AUTHORITY`; an older pull finishing
-after a newer failure does not restore it; a conflict stays denied after successful pulls; one
+after a newer failure does not restore it, and an older failed pull or quarantine finishing after
+a newer proof does not deny it; an incompatible `schema` or profile with a missing or mistyped
+baseline field is a recoverable failed pull that leaves no conflict or audit row; a conflict
+stays denied after successful pulls; one
 request in flight per account; admission does not wait on or fail from a pull; the exact
 producer-form `NONE` is accepted as Free and a `NONE` with any non-null interval, entitlement id or
 non-zero `lifecycle_revision` fails closed; a changed `refresh_after` at an accepted
