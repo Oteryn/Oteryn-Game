@@ -76,8 +76,8 @@ happens when they run out, and how a worn pair of soft boots is repaired?
   checkpoint/expiry sequencing, the stale-write and replay rules for live-value writes, equip forms,
   when a timed item is active (EQUIP-0), its conditions, the wire, and continuous duration.
 - A definition whose `temporal.consumption_mode` is `continuous` is `NOT_ADMITTED`: a use that would
-  transform an item into a `continuous` form (lighting a torch) is refused, writing nothing.
-  Amended: ITEM-USE-0.
+  transform an item into a `continuous` form (lighting a torch) is refused, writing nothing, and
+  answers ITEM-USE-0's existing `REJECTED` disposition (no new wire value). Amended: ITEM-USE-0.
 
 ## 4. The timed-row table (TIMED-REPAIR-1)
 
@@ -158,7 +158,7 @@ repairing worn soft boots writes a full-value row with revision + 1, or inserts 
 revision 0; a second insert at revision 0 writes nothing; soft boots in a bag are not found and are
 found once moved to the main backpack; a repair paid from 19 coin stacks commits and from 20 is
 refused; the repair's audit event carries the item id, the transform before and after and the timed row before and after (including "absent → revision 1"); `DUR03-RL-04-NPC-REPAIR` and `DUR03-RL-06-NPC-REPAIR` at max and max+1; lighting a torch is
-refused `NOT_ADMITTED`.
+refused and answers `REJECTED`.
 
 ## 7. Repair (TIMED-REPAIR-1; owner answer 1a)
 
