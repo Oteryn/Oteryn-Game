@@ -8,7 +8,7 @@ status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/ci-mq-docs-fastpath-20261003
-pr: null
+pr: 1647
 issue: 1622
 base_sha: 852dfca07f2d39eaf28d649d547d37876232cd8c
 head_sha: null
