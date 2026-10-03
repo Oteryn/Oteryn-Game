@@ -10,8 +10,8 @@
 //! `durability::item_timed_state` and reports the outcome back.
 //!
 //! [`resolve_timed_definition`] is the narrow content read: an item is timed by its
-//! `temporal` active-time budget or its `charges` count, and its `temporal.decay_target` is the
-//! expiry target. A durable absolute deadline is RT-1c's and is not hosted.
+//! `temporal` active-time budget or its `charges` count, and its expiry target is
+//! `transform {trigger: decay}`, else `temporal.decay_target` (§8). A durable absolute deadline is RT-1c's and is not hosted.
 
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -22,6 +22,7 @@ use super::timed_item::{
 };
 use crate::content::{
     ReferenceItemField, ReferenceItemSemantics, ReferenceItemTarget, ReferenceTemporalMode,
+    ReferenceTransformKind,
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -58,21 +59,45 @@ pub fn resolve_timed_definition(
     semantics: &ReferenceItemSemantics,
 ) -> Result<Option<TimedItemDefinition>, TimedHostError> {
     use ReferenceItemField::{Conflict, Known};
-    let (remaining_ms, decay_target) = match &semantics.temporal {
+    let (remaining_ms, temporal_target) = match &semantics.temporal {
         Conflict => return Err(TimedHostError::InvalidDefinition),
-        Known(temporal) => match (&temporal.consumption_mode, &temporal.duration) {
-            (Conflict, _) | (_, Conflict) => return Err(TimedHostError::InvalidDefinition),
-            (Known(ReferenceTemporalMode::AuthoritativeActiveTimeBudget), Known(duration)) => {
-                let target = match &temporal.decay_target {
-                    Conflict => return Err(TimedHostError::InvalidDefinition),
-                    Known(target) => Some(target.clone()),
-                    _ => None,
-                };
-                (Some(duration.0), target)
+        Known(temporal) => {
+            let target = match &temporal.decay_target {
+                Conflict => return Err(TimedHostError::InvalidDefinition),
+                Known(target) => Some(target),
+                _ => None,
+            };
+            match (&temporal.consumption_mode, &temporal.duration) {
+                (Conflict, _) | (_, Conflict) => return Err(TimedHostError::InvalidDefinition),
+                (Known(ReferenceTemporalMode::AuthoritativeActiveTimeBudget), Known(duration)) => {
+                    (Some(duration.0), target)
+                }
+                _ => (None, target),
             }
-            _ => (None, None),
-        },
+        }
         _ => (None, None),
+    };
+    // §8: `transform {trigger: decay}` takes precedence; both set to different targets conflict.
+    let transform_target = match &semantics.use_transform {
+        Conflict => return Err(TimedHostError::InvalidDefinition),
+        Known(transform) => match transform
+            .targets
+            .iter()
+            .find(|entry| entry.kind == ReferenceTransformKind::Decay)
+            .map(|entry| &entry.target)
+        {
+            Some(Conflict) => return Err(TimedHostError::InvalidDefinition),
+            Some(Known(target)) => Some(target),
+            _ => None,
+        },
+        _ => None,
+    };
+    let decay_target = match (transform_target, temporal_target) {
+        (Some(transform), Some(temporal)) if transform != temporal => {
+            return Err(TimedHostError::InvalidDefinition);
+        }
+        (Some(target), _) | (None, Some(target)) => Some(target.clone()),
+        (None, None) => None,
     };
     let charges = match &semantics.charges {
         Conflict => return Err(TimedHostError::InvalidDefinition),
@@ -291,6 +316,13 @@ impl TimedItemHost {
         let (lane, hosted) = self.lane(item_instance_id)?;
         lane.on_unexpected_revision(fences_current, row_revision, row_values, same_definition)?;
         hosted.dispatched = false;
+        if !fences_current {
+            // The fences are the actor's, not the item's: no lane of it writes again.
+            self.lanes.lose_authority();
+            self.hosted
+                .values_mut()
+                .for_each(|hosted| hosted.dispatched = false);
+        }
         Ok(())
     }
 
@@ -457,6 +489,92 @@ mod tests {
             ),
             Err(TimedHostError::InvalidDefinition)
         );
+    }
+
+    fn decay_transform(key: &str) -> ReferenceItemField<crate::content::ReferenceItemUseTransform> {
+        ReferenceItemField::Known(crate::content::ReferenceItemUseTransform {
+            targets: (1..=10)
+                .map(|wire| {
+                    let kind = ReferenceTransformKind::from_wire(wire).expect("kind");
+                    crate::content::ReferenceTransformTarget {
+                        kind,
+                        target: if kind == ReferenceTransformKind::Decay {
+                            ReferenceItemField::Known(target(key))
+                        } else {
+                            ReferenceItemField::NotApplicable
+                        },
+                    }
+                })
+                .collect(),
+        })
+    }
+
+    #[test]
+    fn the_decay_transform_is_the_expiry_target_of_time_and_charges() {
+        let plain = target("oteryn:item.tibia.i28552");
+        // A charge-only item with `transform {trigger: decay}` transforms at expiry.
+        let charge_only = ReferenceItemSemantics {
+            charges: ReferenceItemField::Known(ReferenceItemCharges {
+                count: ReferenceItemField::Known(3),
+            }),
+            use_transform: decay_transform("oteryn:item.tibia.i28553"),
+            ..ReferenceItemSemantics::default()
+        };
+        let resolved = resolve_timed_definition(&plain, &charge_only)
+            .expect("resolve")
+            .expect("timed");
+        assert_eq!(
+            resolved.decay_target,
+            Some(target("oteryn:item.tibia.i28553"))
+        );
+        // The same target from both sources resolves; different targets conflict.
+        let same = ReferenceItemSemantics {
+            use_transform: decay_transform("oteryn:item.tibia.i3999"),
+            ..ring_semantics(Some("oteryn:item.tibia.i3999"))
+        };
+        assert_eq!(
+            resolve_timed_definition(&plain, &same)
+                .expect("resolve")
+                .expect("timed")
+                .decay_target,
+            Some(target("oteryn:item.tibia.i3999"))
+        );
+        let different = ReferenceItemSemantics {
+            use_transform: decay_transform("oteryn:item.tibia.i3998"),
+            ..ring_semantics(Some("oteryn:item.tibia.i3999"))
+        };
+        assert_eq!(
+            resolve_timed_definition(&plain, &different),
+            Err(TimedHostError::InvalidDefinition)
+        );
+        let conflict = ReferenceItemSemantics {
+            use_transform: ReferenceItemField::Conflict,
+            ..charge_only
+        };
+        assert_eq!(
+            resolve_timed_definition(&plain, &conflict),
+            Err(TimedHostError::InvalidDefinition)
+        );
+    }
+
+    #[test]
+    fn stale_fences_on_one_lane_stop_every_lane_of_the_actor() {
+        let mut host = host();
+        host.host_live(vec![item(1), item(2)], 0).expect("login");
+        host.bind_exercise(charged(3, 2), 0).expect("exercise");
+        host.advance(TIMEDITEM0B_RL_01_CHECKPOINT_INTERVAL_MS);
+        assert!(host.spend_exercise_charge());
+        let now = TIMEDITEM0B_RL_01_CHECKPOINT_INTERVAL_MS;
+        assert_eq!(host.due_writes(now, tx).len(), 3);
+        let stored = TimedValues::new(None, Some(RING_MS)).expect("v");
+        host.on_unexpected_revision(&[1; 16], false, 3, stored, true)
+            .expect("stale");
+        // No lane writes again: every lane is released and the exercise binding with it.
+        host.advance(RING_MS);
+        assert!(host.due_writes(now + RING_MS, tx).is_empty());
+        assert_eq!(host.live_count(), 0);
+        assert!(host.all_empty());
+        assert!(!host.spend_exercise_charge());
     }
 
     #[test]

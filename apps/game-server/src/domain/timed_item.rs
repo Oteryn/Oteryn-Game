@@ -390,6 +390,18 @@ impl TimedItemLane {
         Ok(())
     }
 
+    /// Another lane of the actor found its fences stale: nothing more is written for this item
+    /// either (§5.2). A write in flight is abandoned; the next owner reads the row.
+    pub fn lose_authority(&mut self) {
+        if matches!(
+            self.state,
+            LaneState::Running | LaneState::Stopping | LaneState::Stopped
+        ) {
+            self.in_flight = None;
+            self.state = LaneState::LostAuthority;
+        }
+    }
+
     fn committed(&mut self, write: LaneWrite) {
         self.in_flight = None;
         self.revision = write.expected_revision.saturating_add(1);
@@ -447,6 +459,13 @@ impl ActorTimedLanes {
     #[must_use]
     pub fn all_empty(&self) -> bool {
         self.lanes.values().all(TimedItemLane::is_empty)
+    }
+
+    /// The actor's fences are stale: every lane stops writing (§5.2).
+    pub fn lose_authority(&mut self) {
+        self.lanes
+            .values_mut()
+            .for_each(TimedItemLane::lose_authority);
     }
 
     #[must_use]

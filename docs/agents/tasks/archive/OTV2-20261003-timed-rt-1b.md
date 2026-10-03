@@ -66,6 +66,10 @@ with test fixtures and no content edits. Q2 unanswered; built on assumption (a).
   respawn or arrival become live, the exercise binding API, cadence, write dispatch once per
   outcome, the ambiguous hold, and stop-all with the all-empty check. RL-01, -02, -04 and -05 are
   proven at the host boundary.
+- Codex round 1 on #1700 (two P1s): the resolver takes `transform {trigger: decay}` before
+  `temporal.decay_target` and refuses both set to different targets, so a charge-only item with a
+  decay transform transforms at expiry (4175188774). Stale fences reported by one lane stop every
+  lane of the actor (4175188765).
 
 Not wired: no login, respawn, arrival, logout, transfer or death path on `main` loads a
 Character's items into an actor yet. The host is the API those paths call. The composed
