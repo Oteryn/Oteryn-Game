@@ -378,9 +378,9 @@ pub(crate) struct UseCommand {
 pub(crate) struct UseOutcome {
     pub(crate) disposition: super::world_object::UseDisposition,
     pub(crate) committed: Option<super::world_object::WorldObjectOverlayEntry>,
-    /// ACH-NOTIFY-1: the achievement a committed `Granted` grant of this `USE` earned, after
-    /// its commit. The loop sends it only to a session that selected capability 8.
-    pub(crate) earned: Option<AchievementEarned>,
+    /// ACH-NOTIFY-1/2: what the grant of this `USE` earned, after its commit. The loop acts on
+    /// it only for a session that selected capability 8.
+    pub(crate) earned: EarnedNotice,
 }
 
 impl UseOutcome {
@@ -388,9 +388,22 @@ impl UseOutcome {
         Self {
             disposition: super::world_object::UseDisposition::Rejected,
             committed: None,
-            earned: None,
+            earned: EarnedNotice::NoneEarned,
         }
     }
+}
+
+/// The notice of one command's achievement grant (ACH-NOTIFY-2). `Unknown` is never
+/// `NoneEarned`: with capability 8 it ends the connection, so the client resynchronises the
+/// watermark from the domain-13 snapshot. The grant itself stays durable.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) enum EarnedNotice {
+    /// No grant applied, or it was `AlreadyHeld` or `Retired`.
+    NoneEarned,
+    /// A committed `Granted` grant and its notice.
+    Earned(AchievementEarned),
+    /// A grant may have committed `Granted`, but its notice could not be derived.
+    Unknown,
 }
 
 /// Fresh identifiers for one connection attempt.
@@ -1098,10 +1111,15 @@ where
                 // ACHIEVEMENT-0 §5: one delta per committed `Granted`, after the commit, only
                 // with capability 8. The revision advances before the write, so a revision
                 // that may have reached the client is never reused, even if the write fails.
-                if let (Some(earned), Some(from)) = (
-                    outcome.earned,
-                    admitted.continuity.achievement_notice_revision,
-                ) {
+                // ACH-NOTIFY-2: an `Unknown` notice with capability 8 fails closed after the
+                // result; the resumed connection's snapshot restores the watermark.
+                let notice_revision = admitted.continuity.achievement_notice_revision;
+                if notice_revision.is_some() && outcome.earned == EarnedNotice::Unknown {
+                    return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                }
+                if let (EarnedNotice::Earned(earned), Some(from)) =
+                    (outcome.earned, notice_revision)
+                {
                     let (Some(delta_sequence), Some(to)) =
                         (sequence.checked_add(1), from.checked_add(1))
                     else {
@@ -2075,7 +2093,7 @@ mod tests {
                 outcome: UseOutcome {
                     disposition: UseDisposition::Committed,
                     committed: Some(committed.clone()),
-                    earned: None,
+                    earned: EarnedNotice::NoneEarned,
                 },
             };
             let use_type = u64::from(COMMAND_TYPE_USE_INTENT);
@@ -2252,7 +2270,7 @@ mod tests {
                 outcome: UseOutcome {
                     disposition: UseDisposition::Committed,
                     committed: Some(committed),
-                    earned: None,
+                    earned: EarnedNotice::NoneEarned,
                 },
             };
             let use_type = u64::from(COMMAND_TYPE_USE_INTENT);
@@ -2309,7 +2327,7 @@ mod tests {
                 outcome: UseOutcome {
                     disposition: UseDisposition::Committed,
                     committed: None,
-                    earned: None,
+                    earned: EarnedNotice::NoneEarned,
                 },
             };
             let world_id = WorldId::decode(&WORLD)?;
@@ -2385,7 +2403,7 @@ mod tests {
                 outcome: UseOutcome {
                     disposition: UseDisposition::NothingToUse,
                     committed: None,
-                    earned: None,
+                    earned: EarnedNotice::NoneEarned,
                 },
             };
             let use_type = u64::from(COMMAND_TYPE_USE_INTENT);
@@ -3036,10 +3054,10 @@ mod tests {
         }
     }
 
-    /// A chest `USE` fixture whose every call commits; `earned` is its `Granted` grant, if any.
+    /// A chest `USE` fixture whose every call commits with the notice `earned`.
     fn notice_authority(
         watermark: Option<AchievementWatermark>,
-        earned: Option<AchievementEarned>,
+        earned: EarnedNotice,
     ) -> UseAuthority {
         UseAuthority {
             uses: RefCell::new(Vec::new()),
@@ -3151,7 +3169,7 @@ mod tests {
                 use_command(1, 1, use_type, b"oteryn:placement/entry-chest", 0),
                 use_command(1, 2, use_type, b"oteryn:placement/entry-chest", 0),
             ];
-            let authority = notice_authority(Some(joined), Some(notice.clone()));
+            let authority = notice_authority(Some(joined), EarnedNotice::Earned(notice.clone()));
             let (end, frames) =
                 drive_session(&authority, controlled(with_notices(0))?, &uses).await?;
             let mut expected = notice_snapshot(1, 0, 0, joined)?;
@@ -3175,7 +3193,7 @@ mod tests {
             assert_eq!(ended_continuity(end)?.achievement_notice_revision, None);
 
             // A commit without a `Granted` grant (none, `AlreadyHeld` or `Retired`): no delta.
-            let authority = notice_authority(Some(joined), None);
+            let authority = notice_authority(Some(joined), EarnedNotice::NoneEarned);
             let (end, frames) =
                 drive_session(&authority, controlled(with_notices(0))?, &uses[..1]).await?;
             let mut expected = notice_snapshot(1, 0, 0, joined)?;
@@ -3196,7 +3214,7 @@ mod tests {
             let use_type = u64::from(COMMAND_TYPE_USE_INTENT);
             let notice = earned(2, 13);
             let watermark = notice.watermark;
-            let authority = notice_authority(Some(watermark), Some(notice.clone()));
+            let authority = notice_authority(Some(watermark), EarnedNotice::Earned(notice.clone()));
             let (end, _) = drive_session(
                 &authority,
                 controlled(with_notices(0))?,
@@ -3240,7 +3258,7 @@ mod tests {
             assert_eq!(ended_continuity(end)?.achievement_notice_revision, Some(2));
 
             // Unreadable watermark, or no controller account: no snapshot, nothing sent.
-            let unreadable = notice_authority(None, None);
+            let unreadable = notice_authority(None, EarnedNotice::NoneEarned);
             let (end, frames) =
                 drive_session(&unreadable, controlled(with_notices(0))?, &[]).await?;
             assert!(frames.is_empty());
@@ -3251,6 +3269,64 @@ mod tests {
             };
             let (_, frames) = drive_session(&authority, uncontrolled, &[]).await?;
             assert!(frames.is_empty());
+            Ok(())
+        })
+    }
+
+    /// ACH-NOTIFY-2: an `Unknown` notice with capability 8 ends the connection right after the
+    /// command result, with no delta and the revision unchanged; the resumed connection's
+    /// snapshot carries the watermark with the grant. Without capability 8 it changes nothing.
+    #[test]
+    fn an_unknown_notice_disconnects_only_with_capability_8_and_resume_restores_the_watermark()
+    -> Result<(), Box<dyn Error>> {
+        run(async {
+            let use_type = u64::from(COMMAND_TYPE_USE_INTENT);
+            let before = AchievementWatermark {
+                fact_count: 1,
+                total_points: 3,
+            };
+            let uses = [
+                use_command(1, 1, use_type, b"oteryn:placement/entry-chest", 0),
+                use_command(1, 2, use_type, b"oteryn:placement/entry-chest", 0),
+            ];
+            let authority = notice_authority(Some(before), EarnedNotice::Unknown);
+            let (end, frames) =
+                drive_session(&authority, controlled(with_notices(0))?, &uses).await?;
+            let mut expected = notice_snapshot(1, 0, 0, before)?;
+            expected.push(committed_use(1, 1, 1)?);
+            assert_eq!(frames, expected);
+            assert_eq!(
+                authority.uses.borrow().len(),
+                1,
+                "nothing after the disconnect"
+            );
+            let lost = ended_continuity(end)?;
+            assert_eq!(lost.achievement_notice_revision, Some(0));
+            assert_eq!(lost.server_sequence, 1);
+
+            // The grant is durable: the resumed connection's snapshot carries it, at the
+            // unchanged revision.
+            let after = AchievementWatermark {
+                fact_count: 2,
+                total_points: 8,
+            };
+            let resumed = SessionContinuity {
+                connection_generation: 2,
+                ..lost
+            };
+            let authority = notice_authority(Some(after), EarnedNotice::NoneEarned);
+            let (_, frames) = drive_session(&authority, controlled(resumed)?, &[]).await?;
+            assert_eq!(frames, notice_snapshot(2, 1, 0, after)?);
+
+            // Without capability 8 the same outcome sends nothing and keeps the connection.
+            let authority = notice_authority(Some(before), EarnedNotice::Unknown);
+            let (end, frames) =
+                drive_session(&authority, controlled(SessionContinuity::FRESH)?, &uses).await?;
+            let mut expected = baseline();
+            expected.extend([committed_use(1, 1, 1)?, committed_use(1, 2, 2)?]);
+            assert_eq!(frames, expected);
+            assert_eq!(authority.uses.borrow().len(), 2);
+            assert_eq!(ended_continuity(end)?.server_sequence, 2);
             Ok(())
         })
     }
