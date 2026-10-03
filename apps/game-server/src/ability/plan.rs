@@ -138,9 +138,48 @@ impl EffectPlan {
     pub fn new(
         occurrence: AbilityOccurrence,
         intent: AbilityIntent,
+        effects: Vec<Effect>,
+        calculation_stages: Vec<CalculationStage>,
+        commit_group: CommitGroup,
+    ) -> Result<Self, AbilityError> {
+        Self::with_effect_order(
+            occurrence,
+            intent,
+            effects,
+            calculation_stages,
+            commit_group,
+            false,
+        )
+    }
+
+    /// A sequential plan whose effect indices retain the caller's declared order. The legacy
+    /// constructors still canonicalize effects; a primary hit and its Charm consequence must
+    /// instead remain at indices zero and one, even when their magnitudes sort differently.
+    pub fn ordered_sequential(
+        occurrence: AbilityOccurrence,
+        intent: AbilityIntent,
+        effects: Vec<Effect>,
+        calculation_stages: Vec<CalculationStage>,
+        owner_scope: &str,
+        group_id: &str,
+    ) -> Result<Self, AbilityError> {
+        Self::with_effect_order(
+            occurrence,
+            intent,
+            effects,
+            calculation_stages,
+            CommitGroup::ordered_sequential(owner_scope, group_id)?,
+            true,
+        )
+    }
+
+    fn with_effect_order(
+        occurrence: AbilityOccurrence,
+        intent: AbilityIntent,
         mut effects: Vec<Effect>,
         mut calculation_stages: Vec<CalculationStage>,
         commit_group: CommitGroup,
+        declared_order: bool,
     ) -> Result<Self, AbilityError> {
         if effects.is_empty() {
             return Err(AbilityError::EmptyEffectPlan);
@@ -172,7 +211,9 @@ impl EffectPlan {
         if retained_bytes > MAX_EFFECT_PLAN_BYTES {
             return Err(AbilityError::EffectPlanTooLarge);
         }
-        effects.sort_by(Effect::canonical_cmp);
+        if !declared_order {
+            effects.sort_by(Effect::canonical_cmp);
+        }
         calculation_stages.sort();
         if calculation_stages.windows(2).any(|pair| pair[0] == pair[1]) {
             return Err(AbilityError::DuplicateCalculationStage);
