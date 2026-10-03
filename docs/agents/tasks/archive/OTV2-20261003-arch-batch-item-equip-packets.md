@@ -54,6 +54,15 @@ external_repositories: []
   - 4175114706: ITEM-CLIENT-2 (equipment), -3 (nested bags) and -4 (drop and Ground pickup) are
     packeted (§2.7a).
 
+- **Codex round 2 (3 × P1), fixed in one push.**
+  - 4175162555: production answers `selected_capabilities: &[]`. New ruling §1.9 and packet
+    CAP-NEG-1 (§2.0) build negotiation first. ITEM-VIEW-1b and SPEED-1 wait on it, and every
+    packet that offers a capability proves it selected on the production path.
+  - 4175162559: SPEED-1 owns the step arm in `connection.rs`, `FreshAdmissionAuthority::step` and
+    the `TOO_EARLY` encoding, with production-path pacing tests.
+  - 4175162566: BAGS-1 owns the post-commit domain 14 updates and closes, with a transport test
+    per case.
+
 ## Validation
 
 - `python3 tools/agents/validate_governance.py`: pass

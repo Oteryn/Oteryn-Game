@@ -35,6 +35,7 @@ highest migration is 0057; D417 granted 0058-0062, so the proposals start at 006
 
 | Packet | Migration | Capability / command / state domain |
 |---|---|---|
+| CAP-NEG-1 | none | none (selects registered capabilities; allocates none) |
 | ITEM-VIEW-1a | none | capability 4 `ITEM_VIEW_MOVE_V1`, state domains 9 `CHARACTER_INVENTORY` and 11 `OPEN_CONTAINER`, command type 9 `ITEM_MOVE_INTENT` (all assigned by D212; nothing new) |
 | ITEM-VIEW-1b | none | none |
 | ITEM-MOVE-1 | none (the existing `0014` corpse-entry TRANSFER) | none |
@@ -63,10 +64,11 @@ already applied. Each migration packet's acceptance repeats this as a merge cond
 
 | # | Packet | Worker | Starts when |
 |---|---|---|---|
+| 0 | CAP-NEG-1 | hard, protocol and session review | now (§1.9) |
 | 1 | ITEM-VIEW-1a | impl, protocol review | now |
 | 2 | ITEM-SEM-2b-2 | impl, content review | now (§1.4) |
-| 3 | SPEED-1 | impl, movement review | now |
-| 4 | ITEM-VIEW-1b | hard, protocol and session review | ITEM-VIEW-1a has merged |
+| 3 | SPEED-1 | impl, movement review | CAP-NEG-1 has merged |
+| 4 | ITEM-VIEW-1b | hard, protocol and session review | ITEM-VIEW-1a and CAP-NEG-1 have merged |
 | 5 | ITEM-EQUIP-WIRE-1 | impl, protocol review | ITEM-VIEW-1a has merged |
 | 6 | ITEM-MOVE-1 | hard, persistence review | ITEM-VIEW-1b has merged |
 | 7 | ITEM-CLIENT-1 | impl | ITEM-MOVE-1 has merged |
@@ -81,7 +83,7 @@ already applied. Each migration packet's acceptance repeats this as a merge cond
 | 16 | ITEM-CLIENT-3 | impl, client review | ITEM-CLIENT-2 and BAGS-1 have merged |
 | 17 | ITEM-CLIENT-4 | impl, client review | ITEM-CLIENT-3 and ITEM-MOVE-2b have merged |
 
-Items 1-3 can run in parallel now. Items 4 and 5, and later 9 and 11, can run in parallel. The
+Items 0-2 can run in parallel now; SPEED-1 and ITEM-VIEW-1b follow CAP-NEG-1. Items 4 and 5, and later 9 and 11, can run in parallel. The
 client packets 7, 15, 16 and 17 own the same client files and therefore run one at a time, in
 that order. If ITEM-MOVE-2b merges before BAGS-1, ITEM-CLIENT-4 may go before ITEM-CLIENT-3;
 the control plane swaps their bases and records the swap.
@@ -98,6 +100,8 @@ only; the second of two open packets merges `main` as a union):
 - `docs/architecture/DUR-03_ITEM_TRANSACTION_AND_ANTI_DUPLICATION_CONTRACT.md` (own paragraphs);
 - `crates/protocol-oteryn/src/lib.rs` (one `mod` line and one `REGISTERED_CAPABILITY_IDS_V1` entry
   each);
+- `apps/game-server/src/gameplay_transport/connection.rs` (after CAP-NEG-1: one command dispatch
+  arm each; the negotiation itself stays CAP-NEG-1's);
 - `apps/game-server/src/gameplay_transport/mod.rs` (one `mod` line and one dispatch arm each;
   EQUIP-RT-1 also adds the recompute calls at fresh admission, reconnect and release).
 
@@ -171,6 +175,16 @@ allocated, that packet wires the `timed_item_host` call sites, with the stop, em
 tests, as a merge condition. Otherwise TIMED-RT-1b does, and the worker of the later PR names the
 call-site files at allocation.
 
+### 1.9 Capability negotiation is built once, first
+
+On `main` the server answers every fresh admission and resume with `selected_capabilities: &[]`
+(`gameplay_transport/connection.rs`). Offering a capability in the registry is therefore not
+enough to make it usable. CHAT-1b-2 and the registry `offer_gate` notes expect that seam from
+CHARM-5-COMP, which is not in flight. CAP-NEG-1 builds it now, alone, as the root of this bundle.
+CHARM-5-COMP and CHAT-1b-2 then reuse it and keep only their routing and offering. A packet that
+offers a capability (ITEM-MOVE-1, SPEED-1, ITEM-MOVE-2a, BAGS-1) proves the capability is
+selected in a production-path admission test.
+
 ### 1.8 Not packeted now
 
 | Slice | Why not now | Starts with |
@@ -193,6 +207,45 @@ Every packet's validation includes `python3 tools/agents/validate_governance.py`
 `git diff --check`; Rust packets also run `cargo fmt --all --check` and `cargo clippy --locked
 --all-targets --quiet -- -D warnings` on the crates they touch. Each task record is archived in the
 PR's final authoring commit.
+
+### 2.0 CAP-NEG-1
+
+```yaml
+task_id: OTV2-20261003-cap-neg-1
+decision: foundation.proto `supported_capability_id` / `selected_capability_id` (fresh and resume), PROTOCOL_OTERYN_V1_REGISTRY offer gates; this bundle §1.9
+worker: oteryn-hard-worker   # session admission and resume state
+review: independent protocol and session review (Codex, final frozen head)
+branch: claude/cap-neg-1-20261003
+base: main
+migration_lease: none
+depends_on: []
+owned_paths:
+  - apps/game-server/src/gameplay_transport/capabilities.rs        # new: the server's offered set and the selection
+  - apps/game-server/src/gameplay_transport/capabilities_tests.rs  # new
+  - apps/game-server/src/gameplay_transport/connection.rs          # selection at fresh admission and resume; the selected set handed to dispatch
+  - apps/game-server/src/gameplay_transport/resume.rs              # the selected set in resume state only
+  - apps/game-server/src/gameplay_transport/mod.rs                 # shared register
+  - docs/agents/tasks/archive/OTV2-20261003-cap-neg-1.md
+validation:
+  - cargo test --locked -p oteryn-game-server --quiet
+```
+
+Acceptance:
+
+- The server's offered set is derived from the registry's `offered: true` entries, checked against
+  `REGISTERED_CAPABILITY_IDS_V1` by a test. On `main` it is empty, so production behaviour is
+  unchanged until a packet offers a capability.
+- Fresh admission selects the client's supported capabilities that the server offers and whose
+  `requires` are all selected; unknown ids are ignored, never selected. The result is echoed in
+  `selected_capabilities` and kept per `GameSessionId`.
+- Resume and channel transfer keep the session's original selected set. A resume never widens it.
+  A resume whose supported set lacks a selected capability fails closed as resume-unavailable,
+  and the client falls back to fresh admission (downgrade test).
+- Dispatch and domain emission read the session's selected set. A command or domain whose
+  capability is not selected stays refused or unsent, as today (test per path).
+- Tests run with an injected offered set: selection, the `requires` closure, resume equality, and
+  the empty production set.
+- Not in scope: offering any capability, chat or charm routing.
 
 ### 2.1 ITEM-VIEW-1a
 
@@ -245,9 +298,9 @@ decision: CONDITIONS-0 §4 (as amended by CREATURE-AI-0 §5.1)
 worker: oteryn-impl-worker
 review: movement review (Codex, final frozen head)
 branch: claude/speed-1-20261003
-base: main
+base: main after CAP-NEG-1 merges
 migration_lease: none
-depends_on: []
+depends_on: [CAP-NEG-1]
 owned_paths:
   - tools/content-schema/step-speed/{generate_step_speed_table.py,test_generate_step_speed_table.py,README.md}   # new, offline generator
   - content/movement/step_speed_v1.json                  # new: generated table with its digest
@@ -257,6 +310,9 @@ owned_paths:
   - docs/contracts/protocol-oteryn/v1/world_spatial_v1.proto  # TOO_EARLY only
   - docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json      # capability 13; shared register
   - apps/client/src/input.rs                             # step pacing on the client
+  - apps/game-server/src/gameplay_transport/connection.rs   # shared register (§0.3): the step arm passes the selected set and the session clock
+  - apps/game-server/src/gameplay_transport/mod.rs          # shared register: FreshAdmissionAuthority::step buffers, paces and returns TOO_EARLY or Rejected
+  - apps/game-server/src/gameplay_transport/world_spatial.rs  # the step outcome encoding of TOO_EARLY only
   - docs/agents/tasks/archive/OTV2-20261003-speed-1.md
 validation:
   - cargo test --locked -p oteryn-game-server --quiet
@@ -278,6 +334,12 @@ Acceptance:
 - Players: one buffered step; a second early request is `TOO_EARLY` under capability 13
   `PACED_MOVEMENT_V1` and `Rejected` without it. The existing movement tests are re-measured
   against pacing.
+- The production path is wired: the step arm of `connection.rs` and
+  `FreshAdmissionAuthority::step` pace every player step. Tests through that path: a buffered
+  step executes when due; an early second step is `TOO_EARLY` with capability 13 selected and
+  `Rejected` without it; the buffer is dropped at disconnect and resume.
+- Capability 13 becomes `offered: true`, and a production-path admission test shows it selected
+  (§1.9).
 - Not in scope: creature step timing (CREATURE-MOVE-1), chase steps (RANGED-0).
 
 ### 2.4 ITEM-VIEW-1b
@@ -288,15 +350,16 @@ decision: ITEM-MOVE-WIRE-0 §4 (server side); this bundle §1.1
 worker: oteryn-hard-worker   # session resume state and session-generation scoped handle table
 review: independent protocol and session review (Codex, final frozen head)
 branch: claude/item-view-1b-20261003
-base: main after ITEM-VIEW-1a merges
+base: main after ITEM-VIEW-1a and CAP-NEG-1 merge
 migration_lease: none
-depends_on: [ITEM-VIEW-1a]
+depends_on: [ITEM-VIEW-1a, CAP-NEG-1]
 owned_paths:
   - apps/game-server/src/gameplay_transport/item_view.rs        # new: handle table, domains 9 and 11
   - apps/game-server/src/gameplay_transport/item_view_tests.rs  # new
   - apps/game-server/src/gameplay_transport/resume.rs           # handle counter and the two high-water revisions only
   - apps/game-server/src/gameplay_transport/world_spatial.rs    # the handle field on item entries only
   - apps/game-server/src/gameplay_transport/mod.rs              # shared register
+  - apps/game-server/src/gameplay_transport/connection.rs       # shared register (§0.3): the USE item-target decode and domain 9 and 11 emission only
   - apps/game-server/src/interaction/dispatch.rs                # the USE item-target arm only
   - apps/game-server/src/interaction/corpse_open.rs             # new: open and close (§4.3)
   - docs/agents/tasks/archive/OTV2-20261003-item-view-1b.md
@@ -368,6 +431,7 @@ owned_paths:
   - apps/game-server/src/gameplay_transport/item_move.rs         # new: command 9 handling
   - apps/game-server/src/gameplay_transport/item_move_tests.rs   # new
   - apps/game-server/src/gameplay_transport/mod.rs               # shared register
+  - apps/game-server/src/gameplay_transport/connection.rs        # shared register (§0.3): the command 9 arm only
   - apps/game-server/src/combat/pickup.rs                        # only if settle_corpse_pickup needs the CommandRef cause plumbed
   - apps/game-server/tests/corpse_transfer_postgres.rs
   - apps/game-server/tests/support/corpse_transfer_postgres_cases.rs
@@ -388,7 +452,9 @@ Acceptance:
 - Every `ItemTransferRefusal` maps to the WIRE-0 §5 table (one test per row); D133 and D134 on the
   database clock.
 - The open corpse's domain 11 delta and the domain 9 delta follow the commit.
-- Capability 4 becomes `offered: true` (§1.1).
+- Capability 4 becomes `offered: true` (§1.1). A production-path test admits a session through
+  `connection.rs`, shows capability 4 selected, opens a corpse and loots an entry by command 9
+  (§1.9).
 - Not in scope: equipment, Ground, partial counts.
 
 ### 2.7 ITEM-CLIENT-1
@@ -509,7 +575,7 @@ Acceptance:
 - The §1.7 slot call sites when TIMED-RT-1b is already on `main`, with the stop, empty-lane, reload
   and rejection-rehost tests.
 - Capability 12 becomes `offered: true` for the `EQUIPMENT` destination; `GROUND` stays
-  `NOT_SUPPORTED` until 2b.
+  `NOT_SUPPORTED` until 2b. A production-path admission test shows it selected (§1.9).
 - Merge condition: 0063 is higher than every migration on `main` (§0.1).
 - Not in scope: Ground, quivers (QUIVER-1), partial counts (STACK-0), equipment effects.
 
@@ -614,7 +680,9 @@ owned_paths:
   - docs/contracts/protocol-oteryn/v1/item_view_v1.proto   # the CONTAINER destination only
   - crates/protocol-oteryn/src/{lib,container_tree,container_tree_tests,item_view}.rs
   - apps/game-server/src/gameplay_transport/container_view.rs   # new: the up-to-16 views, inner handles, the view command
+  - apps/game-server/src/gameplay_transport/container_view_tests.rs  # new
   - apps/game-server/src/gameplay_transport/mod.rs         # shared register
+  - apps/game-server/src/gameplay_transport/connection.rs  # shared register (§0.3): the command 21 arm only
   - docs/agents/tasks/archive/OTV2-20261003-bags-wire-1.md
 validation:
   - cargo test --locked -p oteryn-protocol-oteryn
@@ -647,6 +715,8 @@ owned_paths:
   - apps/game-server/src/durability/item_tree_audit.rs     # new
   - apps/game-server/src/durability/mod.rs                 # shared register
   - apps/game-server/src/gameplay_transport/item_move.rs   # the CONTAINER destination arm only
+  - apps/game-server/src/gameplay_transport/container_view.rs        # post-commit domain 14 updates and closes only
+  - apps/game-server/src/gameplay_transport/container_view_tests.rs  # the post-commit view tests only
   - apps/game-server/tests/item_tree_postgres.rs           # new
   - apps/game-server/tests/support/item_tree_postgres_cases.rs  # new
   - apps/game-server/tests/durability_postgres.rs          # shared register
@@ -665,6 +735,13 @@ Acceptance:
   order, the tree move, moves into a nested container, and the container slot with contents.
 - The `GAMEITEM01-REACHABLE-ITEMS` row is re-registered for trees as BAGS-0 §10 says.
 - Every row with max and max+1 tests, and a performance test of the worst-case tree move.
+- After each committed tree move, and only after the commit, every affected domain 14 view
+  updates (BAGS-0 §5). An entry moved into an open bag appears in that bag's view, and one moved
+  out leaves it. A view whose container leaves the character's own trees closes with its
+  subtree. Every departed handle is `STALE`. One transport test per case, plus one showing that
+  a refused move changes no view.
+- Capability 14 becomes `offered: true`, and a production-path admission test shows it selected
+  (§1.9).
 - Merge condition: 0064 is higher than every migration on `main`; otherwise re-lease (§0.1). It
   amends the guards as left by every lower-numbered migration on `main`.
 - Not in scope: Ground trees (BAGS-GROUND-1), depot and trade trees, nested use.
@@ -772,6 +849,7 @@ Acceptance:
   listed in §1.8 with what it waits on.
 - No packet starts before its prerequisites; no two open packets own the same path except the
   §0.3 registers.
+- Every offered capability is selectable on the production path (§1.9, CAP-NEG-1).
 - Migration history stays monotonic in any merge order (§0.1 merge condition and re-lease).
 - Every server destination these packets add has a client packet (ITEM-CLIENT-1 to -4), and
   every equipment lifecycle trigger (admission, restart, reconnect, Premium change, release) has
