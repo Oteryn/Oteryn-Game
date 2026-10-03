@@ -8,7 +8,7 @@ status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/charm-desc-fence1-20261003
-pr: null
+pr: 1652
 base_sha: ac6fdca8
 head_sha: "exact frozen head in the #1622 FREEZE_SHA entry"
 final_head_sha: "exact frozen head in the #1622 FREEZE_SHA entry"
@@ -34,9 +34,11 @@ external_repositories: []
 Implements D295 §3 item 3 (`docs/architecture/reviews/OTERYN_GAME_CHARM_DESC_FENCE_DECISION_2026-10-03.md`):
 a `game-server` test scans `src/` and fails on any non-test production reference to
 `commit_exact_owner_damage`, `commit_exact_owner_primary_damage` or
-`commit_exact_owner_charm_damage`. Exempt: the three bridges' own definitions and bodies, comments,
-string and char literals, `#[cfg(test)]` items, files with an inner `#![cfg(test)]`, and
-`*_tests.rs`/`tests.rs` modules. `#[cfg(not(test))]` and `#[allow(dead_code)]` are not exemptions.
+`commit_exact_owner_charm_damage`. Exempt: the three canonical bridge definitions and bodies in
+`src/ability/commit.rs` only (exactly one each), comments, string and char literals,
+`#[cfg(test)]` outer attributes in item or statement position (never as macro tokens), files whose
+leading inner attributes include `#![cfg(test)]`, and `*_tests.rs`/`tests.rs` modules.
+`#[cfg(not(test))]`, `#[allow(dead_code)]` and same-named wrappers elsewhere are not exemptions.
 The failure message names D295 and A2. Only the A2 PR, with the fence, may relax it.
 
 No production change: one new test module and its `#[cfg(test)]` mod line.
@@ -61,6 +63,16 @@ No production change: one new test module and its `#[cfg(test)]` mod line.
 
 - Whole-diff reread. The scanner is lexical, not a parser: it fails closed (a reference it cannot
   classify is reported), and the exemptions are exactly D295's list.
+
+## Review rounds
+
+- Codex on ce9a9458: P1 4173638056 (`#[cfg(test)]` as macro tokens hid a call) accepted, fixed:
+  attributes count only in item/statement position outside macro token trees. P1 4173638052
+  (name-only definition exemption hid a same-named wrapper) accepted, fixed: exemption only for the
+  single canonical definition per bridge in `src/ability/commit.rs`. P2 4173638060
+  (`#![cfg(test)]` after other inner attributes) fixed: the whole leading inner-attribute sequence
+  is inspected. Each has a synthetic regression case; a real-tree wrapper probe in
+  `src/world_runtime.rs` fails the gate (reverted).
 
 ## PR and closeout
 

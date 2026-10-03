@@ -141,38 +141,125 @@ fn word_hits(code: &[u8], word: &str) -> Vec<usize> {
         .collect()
 }
 
-/// 1-based lines of non-test production references to the bridges in one source file.
-fn production_references(src: &str) -> Vec<usize> {
-    let mut code = sanitize(src);
-    let compact: Vec<u8> = code
+/// Byte ranges of macro token trees (`name!(..)`, `name![..]`, `name!{..}`, `macro_rules! m {..}`).
+/// Attributes inside them are only tokens, so they never exempt anything.
+fn macro_ranges(code: &[u8]) -> Vec<(usize, usize)> {
+    let mut ranges = Vec::new();
+    for (bang, _) in code.iter().enumerate().filter(|(_, c)| **c == b'!') {
+        if bang == 0 || !is_ident(code[bang - 1]) {
+            continue;
+        }
+        let mut open = bang + 1;
+        while code.get(open).is_some_and(u8::is_ascii_whitespace) {
+            open += 1;
+        }
+        // `macro_rules! name { .. }`
+        while code.get(open).copied().is_some_and(is_ident) {
+            open += 1;
+        }
+        while code.get(open).is_some_and(u8::is_ascii_whitespace) {
+            open += 1;
+        }
+        let close = match code.get(open) {
+            Some(b'(') => b')',
+            Some(b'[') => b']',
+            Some(b'{') => b'}',
+            _ => continue,
+        };
+        let mut depth = 0usize;
+        for (j, c) in code.iter().enumerate().skip(open) {
+            if *c == code[open] {
+                depth += 1;
+            } else if *c == close {
+                depth -= 1;
+                if depth == 0 {
+                    ranges.push((open, j + 1));
+                    break;
+                }
+            }
+        }
+    }
+    ranges
+}
+
+fn compact(bytes: &[u8]) -> Vec<u8> {
+    bytes
         .iter()
         .copied()
         .filter(|c| !c.is_ascii_whitespace())
-        .collect();
-    if compact.starts_with(b"#![cfg(test)]") {
+        .collect()
+}
+
+/// Whether the file's leading inner attributes include `#![cfg(test)]`.
+fn inner_cfg_test(code: &[u8]) -> bool {
+    let mut i = 0;
+    loop {
+        while code.get(i).is_some_and(u8::is_ascii_whitespace) {
+            i += 1;
+        }
+        if !code[i..].starts_with(b"#") {
+            return false;
+        }
+        let mut open = i + 1;
+        while code.get(open).is_some_and(u8::is_ascii_whitespace) {
+            open += 1;
+        }
+        if code.get(open) != Some(&b'!') {
+            return false;
+        }
+        open += 1;
+        while code.get(open).is_some_and(u8::is_ascii_whitespace) {
+            open += 1;
+        }
+        let end = bracket_end(code, open);
+        if end == open {
+            return false;
+        }
+        if compact(&code[i..end]) == b"#![cfg(test)]" {
+            return true;
+        }
+        i = end;
+    }
+}
+
+/// 1-based lines of non-test production references to the bridges in one source file.
+/// `bridge_module` is true only for `src/ability/commit.rs`, the sole home of the canonical bridge
+/// definitions; a same-named function anywhere else is a reference, not an exempt definition.
+fn production_references(src: &str, bridge_module: bool) -> Vec<usize> {
+    let mut code = sanitize(src);
+    if inner_cfg_test(&code) {
         return Vec::new();
     }
+    let macros = macro_ranges(&code);
+    let in_macro = |at: usize| macros.iter().any(|(from, to)| (*from..*to).contains(&at));
     let mut exempt = Vec::new();
-    // `#[cfg(test)]` items, including any further attributes on them.
+    // `#[cfg(test)]` outer attributes in item or statement position, never macro tokens.
     let mut i = 0;
     while let Some(off) = code[i..].iter().position(|c| *c == b'#') {
         let at = i + off;
         let attr_end = bracket_end(&code, at + 1);
-        let attr: Vec<u8> = code[at..attr_end]
-            .iter()
-            .copied()
-            .filter(|c| !c.is_ascii_whitespace())
-            .collect();
-        if attr == b"#[cfg(test)]" {
+        let item_start = code[..at]
+            .trim_ascii_end()
+            .last()
+            .is_none_or(|c| matches!(c, b';' | b',' | b'{' | b'}' | b']'));
+        if compact(&code[at..attr_end]) == b"#[cfg(test)]" && item_start && !in_macro(at) {
             exempt.push((at, item_end(&code, attr_end)));
         }
         i = at + 1;
     }
-    // The bridges' own definitions and bodies.
-    for name in BRIDGES {
-        for at in word_hits(&code, name) {
-            let head = code[..at].trim_ascii_end();
-            if head.ends_with(b"fn") && (head.len() == 2 || !is_ident(head[head.len() - 3])) {
+    // The canonical bridges' own definitions and bodies: exactly one each, outside macros.
+    if bridge_module {
+        for name in BRIDGES {
+            let defs: Vec<usize> = word_hits(&code, name)
+                .into_iter()
+                .filter(|&at| {
+                    let head = code[..at].trim_ascii_end();
+                    head.ends_with(b"fn")
+                        && (head.len() == 2 || !is_ident(head[head.len() - 3]))
+                        && !in_macro(at)
+                })
+                .collect();
+            if let [at] = defs[..] {
                 exempt.push((at, item_end(&code, at)));
             }
         }
@@ -205,8 +292,9 @@ fn scan(dir: &Path, root: &Path, found: &mut Vec<String>) -> std::io::Result<()>
             scan(&path, root, found)?;
         } else if name.ends_with(".rs") && !name.ends_with("_tests.rs") && name != "tests.rs" {
             let src = std::fs::read_to_string(&path)?;
-            for line in production_references(&src) {
-                let rel = path.strip_prefix(root).unwrap_or(&path);
+            let rel = path.strip_prefix(root).unwrap_or(&path);
+            let bridge_module = rel == Path::new("src/ability/commit.rs");
+            for line in production_references(&src, bridge_module) {
                 found.push(format!("{}:{line}", rel.display()));
             }
         }
@@ -232,11 +320,28 @@ fn no_production_caller_of_ability_damage_bridges_before_a2() -> std::io::Result
 fn scan_flags_a_production_reference() {
     let src = "fn live() {\n    let _ = commit_exact_owner_charm_damage(a, b, c, d);\n}\n\
                use crate::ability::commit::commit_exact_owner_damage;\n";
-    assert_eq!(production_references(src), vec![2, 4]);
+    assert_eq!(production_references(src, false), vec![2, 4]);
     assert_eq!(
-        production_references("fn f() { g(commit_exact_owner_primary_damage) }"),
+        production_references("fn f() { g(commit_exact_owner_primary_damage) }", false),
         vec![1]
     );
+    // `#[cfg(test)]` as macro tokens does not gate the expansion.
+    let in_macro = "fn f() {\n    m!(#[cfg(test)] crate::x::commit_exact_owner_damage);\n}\n\
+                    n! { #[cfg(test)] commit_exact_owner_charm_damage() }\n";
+    assert_eq!(production_references(in_macro, false), vec![2, 4]);
+    // A same-named wrapper outside the bridge module is no exemption, nor is a duplicate inside it.
+    let wrapper = "fn commit_exact_owner_damage() {\n    commit_exact_owner_charm_damage();\n}\n";
+    assert_eq!(production_references(wrapper, false), vec![1, 2]);
+    let twice = "fn commit_exact_owner_damage() {}\nmod m { fn commit_exact_owner_damage() {} }\n";
+    assert_eq!(production_references(twice, true), vec![1, 2]);
+    // A non-test cfg and a trailing caller after an exempt body are still references.
+    let mixed = "#[cfg(not(test))]\nfn a() { commit_exact_owner_damage(); }\n\
+                 fn commit_exact_owner_damage() {}\nfn b() { commit_exact_owner_damage(); }\n";
+    assert_eq!(production_references(mixed, true), vec![2, 4]);
+    // An inner cfg(test) after the leading attributes is no longer an inner attribute.
+    let late =
+        "#![allow(dead_code)]\nfn a() {}\n#![cfg(test)]\nfn b() { commit_exact_owner_damage(); }";
+    assert_eq!(production_references(late, false), vec![4]);
 }
 
 #[test]
@@ -259,13 +364,11 @@ mod tests {
 #[cfg(test)]
 use super::commit_exact_owner_damage;
 "##;
-    assert_eq!(production_references(src), Vec::<usize>::new());
-    assert_eq!(
-        production_references("#![cfg(test)]\nfn t() { commit_exact_owner_damage(); }"),
-        Vec::<usize>::new()
-    );
-    // A non-test cfg and a trailing caller after an exempt body are still references.
-    let mixed = "#[cfg(not(test))]\nfn a() { commit_exact_owner_damage(); }\n\
-                 fn commit_exact_owner_damage() {}\nfn b() { commit_exact_owner_damage(); }\n";
-    assert_eq!(production_references(mixed), vec![2, 4]);
+    assert_eq!(production_references(src, true), Vec::<usize>::new());
+    for test_file in [
+        "#![cfg(test)]\nfn t() { commit_exact_owner_damage(); }",
+        "//! docs\n#![allow(dead_code)]\n# ! [ cfg ( test ) ]\nfn t() { commit_exact_owner_damage(); }",
+    ] {
+        assert_eq!(production_references(test_file, false), Vec::<usize>::new());
+    }
 }
