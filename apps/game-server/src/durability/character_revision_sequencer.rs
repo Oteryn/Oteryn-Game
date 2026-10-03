@@ -975,7 +975,7 @@ mod tests {
 
     /// Revision-advancing durable writers and the only non-test source files allowed to call
     /// them. Every other writer reaches them through a [`RevisionSlot`].
-    const SEQUENCED_WRITERS: [(&str, &str); 9] = [
+    const SEQUENCED_WRITERS: [(&str, &str); 10] = [
         (
             ".commit_character_experience(",
             "durability/character_revision_sequencer.rs",
