@@ -38,6 +38,11 @@ generation 1 with a new GameSessionId. §5 defines a session's "generation" as t
 (`game_session_id`, `connection_generation`), and a case covers a fresh login at generation 1 after
 a clean logout.
 
+Review round 2 (Codex), 4174558381: the GameSessionId alone is the crash-classification lifecycle,
+and the full fence pair only authorizes the writer. A same-GameSession reconnect (a newer connection
+generation) therefore continues the familiar and is never a crash. D317: this is the last P1 round
+on this PR; further P1s go to a follow-up.
+
 ## High-risk authority/recovery qualification
 
 ```yaml
@@ -63,6 +68,7 @@ finding_family_sweep:
 finding_dispositions:
   "4174474873": fixed (durable clean_end_game_session_id, PostgreSQL reload case)
   "4174542788": fixed (close bound to GameSessionId; session identity defined; fresh-login case)
+  "4174558381": fixed (crash classification by GameSessionId; reconnect continues the familiar)
 ```
 
 ## Validation

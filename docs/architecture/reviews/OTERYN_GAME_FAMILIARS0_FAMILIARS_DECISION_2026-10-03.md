@@ -115,12 +115,16 @@ one ordinary summon (R1).
   admission starts a new GameSessionId at connection generation 1
   (`durability/fresh_admission.rs`), so a bare connection generation does not order sessions.
   "Older" or "stale" means not the current fence identity: another GameSessionId, or the same one
-  with a lower connection generation. "Same generation" means the same pair.
+  with a lower connection generation. "Same generation" means the same pair. The two parts have
+  separate jobs: the full pair authorizes the current writer (fencing), while the GameSessionId
+  alone is the lifecycle used for crash classification. A same-GameSession reconnect raises the
+  connection generation and keeps actor and gameplay state (FND-04B), so it continues the
+  lifecycle and is never a crash.
 - **`open`.** The cast write and the return write (§7) set `open = true`: a committed acquisition
   that is not yet cleanly closed or reconciled (§5.2 F-I7). It does not claim that the familiar is
   live: after a crash the row stays open until the next fenced load reconciles it. A clean
   session-end write, a removal write and a reconciliation write set `open = false`. So a row that is still
-  `open = true` from an older generation at the next login was never closed: its session did not
+  `open = true` from another GameSession at the next login was never closed: its session did not
   end cleanly.
 - **Remaining, not wall clock.** Both values are stored as time left, because both freeze while
   offline (R2). The runtime counts them down while the owner is online.
@@ -153,8 +157,8 @@ one ordinary summon (R1).
   and returns nothing, so the close survives the replacement without any in-memory state.
 - **Crash.** At login, the new session's fenced load reads the row (a same-session continuation
   after process replacement: §5.1). If `open = true` and its
-  `session_generation` is older than the new one, the earlier session crashed: the load writes
-  `familiar_remaining_ms = 0` and `open = false` under the new generation (the familiar is lost),
+  `game_session_id` is not the loading session's GameSessionId, the earlier session crashed: the
+  load writes `familiar_remaining_ms = 0` and `open = false` under the new generation (the familiar is lost),
   and keeps `cooldown_remaining_ms` as last written, so a crash never shortens it. If
   `open = false`, the row is a clean save and a positive `familiar_remaining_ms` returns (§7);
   until that return is admitted the row stays `open = false`, and a crash before it loses nothing.
@@ -185,8 +189,8 @@ Each case names one invariant. FAMILIAR-1 has one test per case, on PostgreSQL w
 | Two writes of one generation race (timer removal and logout save) | direct, concurrent | The compare-and-set on `revision` admits one; the other re-reads, passes the session-generation and runtime-owner checks again, and re-applies to the new row or becomes a no-op when the row is already closed; never two writes for one revision. |
 | Late write from a replaced runtime owner (a clean-end save from the old process, after process replacement and the same-session recovery write) | direct, concurrent, PostgreSQL | The session generation is the same, so the RuntimeScopeAuthority ownership generation fences it: the write is refused, including on a compare-and-set retry, and the familiar never returns from it. |
 | Takeover: the new session's fenced load races the old session's clean-end save | reconciled vs direct, concurrent | The load raises the generation first; the old save is then stale and refused. If the old save commits first, the load sees `open = false` and returns the familiar (§7). |
-| Row `open = true` with the same generation, and the familiar is still in the running process (a reconnect inside one GameSession) | reconciled | Not a crash: no reconciliation write; the familiar continues. |
-| Row `open = true` with an older generation | reconciled | Crash: one write under the new generation sets remaining 0 and `open = false`; the cooldown is kept. |
+| Row `open = true` written by an earlier connection generation of the same GameSession, and the familiar is still in the running process (a reconnect inside one GameSession, which raises the connection generation) | reconciled | Not a crash: same lifecycle, no reconciliation write; the familiar continues, and the next write carries the new connection generation. |
+| Row `open = true` from another GameSessionId | reconciled | Crash: one write under the new generation sets remaining 0 and `open = false`; the cooldown is kept. |
 | Server restart, then a new session (PostgreSQL reload) | reconciled, PostgreSQL | The new session has another GameSessionId (§5 session identity), so an open row loads as a crash (the row above). A clean row returns from its stored remaining time only. |
 | Process replacement with proven same-session continuation (FND-04B §22; PostgreSQL reload) | reconciled, PostgreSQL | The generation is unchanged, but the familiar is not part of the reconstructed state, and the stored remaining time predates the loss. An `open = true` row is therefore a crash under the same generation: one fenced write sets remaining 0 and `open = false` and keeps the cooldown. The familiar never comes back with stale time. A clean row (`open = false`) returns as usual (§7), unless its `clean_end_game_session_id` is the current GameSessionId (the next row). |
 | Process replacement after the clean-end write commits and before authority release (FND-04B §22 same-session successor; PostgreSQL reload) | reconciled, PostgreSQL | F-I11: the successor keeps the GameSessionId and reloads `clean_end_game_session_id` equal to it, so return admission stays closed. It completes the terminal release and places no familiar, the row stays `open = false`, and the next login returns the familiar from the stored time. |
@@ -353,7 +357,7 @@ None. Every choice above is a reversible architect ruling under owner rule 59058
    session generation.
 3. **Restart:** a clean end (`open = false`) keeps the familiar's time; a return reopens the row
    (`open = true`) in its admission; a return refused in a lever boss room ends it
-   (`familiar_remaining_ms = 0`, `open = false`, cooldown kept); a crash (`open = true` from an older generation, or after a proven
+   (`familiar_remaining_ms = 0`, `open = false`, cooldown kept); a crash (`open = true` from another GameSession, or after a proven
    same-session continuation, §5.1) loses the familiar and keeps the cooldown. The full
    authority and recovery sweep is §5.2.
 4. **Typed references:** CharacterId, spell id, creature key.
