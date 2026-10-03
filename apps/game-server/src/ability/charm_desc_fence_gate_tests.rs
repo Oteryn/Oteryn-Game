@@ -182,6 +182,76 @@ fn macro_ranges(code: &[u8]) -> Vec<(usize, usize)> {
     ranges
 }
 
+/// Whether the node after the attribute at `i` is an item or a `let` statement, whose extent
+/// [`item_end`] bounds exactly.
+fn attributes_item(code: &[u8], mut i: usize) -> bool {
+    const KEYWORDS: [&[u8]; 16] = [
+        b"mod",
+        b"fn",
+        b"use",
+        b"impl",
+        b"struct",
+        b"enum",
+        b"union",
+        b"trait",
+        b"type",
+        b"const",
+        b"static",
+        b"unsafe",
+        b"async",
+        b"extern",
+        b"macro_rules",
+        b"let",
+    ];
+    let word = |i: &mut usize| {
+        while code.get(*i).is_some_and(u8::is_ascii_whitespace) {
+            *i += 1;
+        }
+        let start = *i;
+        while code.get(*i).copied().is_some_and(is_ident) {
+            *i += 1;
+        }
+        &code[start..*i]
+    };
+    loop {
+        while code.get(i).is_some_and(u8::is_ascii_whitespace) {
+            i += 1;
+        }
+        if code.get(i) != Some(&b'#') {
+            break;
+        }
+        let end = bracket_end(code, i + 1);
+        if end == i + 1 {
+            return false;
+        }
+        i = end;
+    }
+    let mut next = word(&mut i);
+    if next == b"pub" {
+        while code.get(i).is_some_and(u8::is_ascii_whitespace) {
+            i += 1;
+        }
+        if code.get(i) == Some(&b'(') {
+            let mut depth = 0usize;
+            for (j, c) in code.iter().enumerate().skip(i) {
+                match c {
+                    b'(' => depth += 1,
+                    b')' => {
+                        depth -= 1;
+                        if depth == 0 {
+                            i = j + 1;
+                            break;
+                        }
+                    }
+                    _ => {}
+                }
+            }
+        }
+        next = word(&mut i);
+    }
+    KEYWORDS.contains(&next)
+}
+
 fn compact(bytes: &[u8]) -> Vec<u8> {
     bytes
         .iter()
@@ -233,7 +303,8 @@ fn production_references(src: &str, bridge_module: bool) -> Vec<usize> {
     let macros = macro_ranges(&code);
     let in_macro = |at: usize| macros.iter().any(|(from, to)| (*from..*to).contains(&at));
     let mut exempt = Vec::new();
-    // `#[cfg(test)]` outer attributes in item or statement position, never macro tokens.
+    // `#[cfg(test)]` outer attributes on an item or `let` statement, never macro tokens; on any
+    // other node (array or tuple element, field, variant, match arm, expression) it exempts nothing.
     let mut i = 0;
     while let Some(off) = code[i..].iter().position(|c| *c == b'#') {
         let at = i + off;
@@ -241,8 +312,12 @@ fn production_references(src: &str, bridge_module: bool) -> Vec<usize> {
         let item_start = code[..at]
             .trim_ascii_end()
             .last()
-            .is_none_or(|c| matches!(c, b';' | b',' | b'{' | b'}' | b']'));
-        if compact(&code[at..attr_end]) == b"#[cfg(test)]" && item_start && !in_macro(at) {
+            .is_none_or(|c| matches!(c, b';' | b'{' | b'}' | b']'));
+        if compact(&code[at..attr_end]) == b"#[cfg(test)]"
+            && item_start
+            && !in_macro(at)
+            && attributes_item(&code, attr_end)
+        {
             exempt.push((at, item_end(&code, attr_end)));
         }
         i = at + 1;
@@ -329,6 +404,12 @@ fn scan_flags_a_production_reference() {
     let in_macro = "fn f() {\n    m!(#[cfg(test)] crate::x::commit_exact_owner_damage);\n}\n\
                     n! { #[cfg(test)] commit_exact_owner_charm_damage() }\n";
     assert_eq!(production_references(in_macro, false), vec![2, 4]);
+    // `#[cfg(test)]` on an element, field or arm exempts nothing beyond it.
+    let nodes = "fn f() {\n    let _ = [1, #[cfg(test)] 0, commit_exact_owner_damage()];\n\
+                 let _ = S { #[cfg(test)] a: 0, b: commit_exact_owner_charm_damage() };\n\
+                 match x { #[cfg(test)] A => 0, _ => commit_exact_owner_primary_damage() }\n\
+                 #[cfg(test)] g(); commit_exact_owner_damage();\n}\n";
+    assert_eq!(production_references(nodes, false), vec![2, 3, 4, 5]);
     // A same-named wrapper outside the bridge module is no exemption, nor is a duplicate inside it.
     let wrapper = "fn commit_exact_owner_damage() {\n    commit_exact_owner_charm_damage();\n}\n";
     assert_eq!(production_references(wrapper, false), vec![1, 2]);
@@ -363,6 +444,13 @@ mod tests {
 }
 #[cfg(test)]
 use super::commit_exact_owner_damage;
+#[cfg(test)]
+#[allow(dead_code)]
+pub(crate) fn helper() { commit_exact_owner_damage(1); }
+fn body() {
+    #[cfg(test)]
+    let _probe = commit_exact_owner_charm_damage();
+}
 "##;
     assert_eq!(production_references(src, true), Vec::<usize>::new());
     for test_file in [

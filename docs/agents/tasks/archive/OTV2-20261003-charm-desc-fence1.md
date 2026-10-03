@@ -36,7 +36,8 @@ a `game-server` test scans `src/` and fails on any non-test production reference
 `commit_exact_owner_damage`, `commit_exact_owner_primary_damage` or
 `commit_exact_owner_charm_damage`. Exempt: the three canonical bridge definitions and bodies in
 `src/ability/commit.rs` only (exactly one each), comments, string and char literals,
-`#[cfg(test)]` outer attributes in item or statement position (never as macro tokens), files whose
+`#[cfg(test)]` outer attributes on an item or `let` statement only (never on elements, fields,
+variants, arms or expressions, and never as macro tokens), files whose
 leading inner attributes include `#![cfg(test)]`, and `*_tests.rs`/`tests.rs` modules.
 `#[cfg(not(test))]`, `#[allow(dead_code)]` and same-named wrappers elsewhere are not exemptions.
 The failure message names D295 and A2. Only the A2 PR, with the fence, may relax it.
@@ -73,6 +74,10 @@ No production change: one new test module and its `#[cfg(test)]` mod line.
   (`#![cfg(test)]` after other inner attributes) fixed: the whole leading inner-attribute sequence
   is inspected. Each has a synthetic regression case; a real-tree wrapper probe in
   `src/world_runtime.rs` fails the gate (reverted).
+- Codex on 2ec180cb: P1 4173705652 (a preceding `,`/`{` let the exemption blank past an attributed
+  array element, field or arm) accepted, fixed: the exemption applies only when the attributed node
+  is an item or `let` statement, whose extent the scan bounds; any other node exempts nothing.
+  Sweep: struct-literal field, match arm and expression-statement cases added.
 
 ## PR and closeout
 
