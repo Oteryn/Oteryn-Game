@@ -42,3 +42,35 @@ last. Child CHARM-DEF-1.
 - CIPSOFT_OFFICIAL: archive 4386 (Parry: monster armor applies, resistance ignored).
 - TIBIAWIKI_STRUCTURED: Parry revision 1084043.
 - OTS_HYPOTHESIS_ONLY: Canary and Crystal minor ordering, OTS Parry call sites (rejected).
+
+## High-risk authority/recovery qualification
+
+`NOT_APPLICABLE`: docs only, no durable write; CHARM-DEF-1 carries the determinism review.
+
+## Acceptance criteria
+
+- [x] Decision on an exact frozen head with passing validators.
+- [ ] Independent exact-head review (combat, determinism).
+- [ ] Protected Merge Queue integration.
+
+## Validation
+
+- `python3 tools/agents/validate_governance.py`: "Validated 22 required policy documents and 9
+  project lanes." `git diff --cached --check`: clean. Both run before each push.
+
+## Self-review
+
+- Method: whole-diff reread against `charm_effects.rs` (hooks, draws, the event-fact checks),
+  CHARM-0, ATTACK-0 §4 and CONDITIONS-0 §3.2-§3.3.
+- Verdict: no open finding at freeze.
+
+## Independent review
+
+- required: YES. The control plane triggers it on the frozen head.
+- Round on 00ae677c: P1 4173326922 (condition ticks keep charm evaluation per CONDITIONS-0 §3.2),
+  P2 4173326927 (the hit gate excludes a pure mana drain), P2 4173326933 (these sections); all
+  fixed in one push.
+
+## PR and closeout
+
+- PR #1645. Record archived in the final authoring commit; it reaches `main` only if the PR merges.

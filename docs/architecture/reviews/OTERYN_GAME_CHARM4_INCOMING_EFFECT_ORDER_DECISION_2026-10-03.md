@@ -16,12 +16,14 @@
   - `apps/game-server/src/combat/charm_effects.rs` (CHARM-4: hooks, categories, the trigger draw
     `hook × 2 + category`, outcomes sorted by hook then category, no chaining);
   - ATTACK-0 §4 (creatures hit back through the same pipeline with the incoming hooks);
-  - CONDITIONS-0 (conditions attached to attacks);
+  - CONDITIONS-0 (conditions attached to attacks; §3.2: each tick is an occurrence and defensive
+    charms apply to it);
   - `tools/content-schema/charm-authoring/INTEGRATION.md` (source discrepancies and Global
     evidence);
   - owner rule 5905825574.
 - Amends: none. The order below is the order `evaluate_charm_hook` already returns; this decision
-  fixes how the incoming consumer sequences and applies it.
+  fixes how the incoming consumer sequences and applies it. CONDITIONS-0 §3.2 (defensive charms on
+  ticks) is applied as written (§4).
 - Runtime, migration and production authority: NONE. Each child needs its own #1622 allocation.
 - `MERGE_AUTHORITY: WORK_COORDINATOR_ONLY`
 
@@ -87,8 +89,10 @@ elements, a mana drain, attached conditions) are handled together.
    condition (R3), and steps 2 to 5 do not run. Nothing is rolled for them.
 2. **Commit.** The combat owner mitigates and commits the occurrence (block, armor, resistances,
    mana shield) and applies its attached conditions. Charms change nothing here.
-3. **Hit gate.** Hook 4 runs only when the committed occurrence took health or mana (mana-shield
-   absorption included) greater than 0. A fully blocked attack is not a hit.
+3. **Hit gate.** Hook 4 runs only when the occurrence has a health-damage component and the commit
+   took health, or mana through the mana shield, greater than 0. A fully blocked attack is not a
+   hit. An explicit mana drain is not a hit: an occurrence that is only a mana drain skips hook 4
+   (its `base_damage` would be 0, which `evaluate_charm_hook` refuses) and goes to step 5.
 4. **Hook 4, in the returned order: Parry, then the minor.**
    - **Parry** reflects `base_damage`: the sum of the occurrence's health-damage components as the
      creature rolled them, before the character's block, armor, resistances and mana shield (R2).
@@ -107,8 +111,11 @@ elements, a mana drain, attached conditions) are handled together.
   character (Adrenaline Burst, Cleanse) still apply.
 - A creature killed by Parry gives the character the kill as a `CharmDamage` kill: no charm
   evaluates for that kill (no Carnage).
-- Condition ticks of an earlier attack are not occurrences: Dodge and the hook 4 charms do not run
-  on them.
+- **Condition ticks (CONDITIONS-0 §3.2, unchanged).** Each damage tick is its own occurrence and
+  runs §3 like any creature attack: Dodge on the tick, then the hit gate, Parry on the tick's
+  damage before the character's mitigation, and the minor. A tick runs charms only when its frozen
+  source is a creature that is still present (§3.2's source lookup), since the race comes from it;
+  a tick with no attacker evaluates no charm. Parry's reflection goes to that source creature.
 
 ## 5. Rejected options
 
