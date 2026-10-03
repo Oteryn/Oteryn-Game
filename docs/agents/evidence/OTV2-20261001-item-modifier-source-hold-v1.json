@@ -1,0 +1,30 @@
+{
+  "schema": "OTERYN_ITEM_MODIFIER_SOURCE_HOLD/v1",
+  "item_key": "oteryn:item.tibia.i34086",
+  "field_path": "skill_modifiers.modifiers",
+  "classification": "CONFLICT",
+  "reason": "EXTERNAL_SOURCE_DISAGREEMENT",
+  "expected_snapshot_sources": [
+    {
+      "page_id": 91424,
+      "revision_id": 1148388,
+      "content_sha256": "4612cb155cefb64da68ed6f841b1f09ee895a30824cb249a61db7aa17f492f16",
+      "values": {
+        "attrib": "club fighting +4",
+        "hpleech_am": "2%",
+        "manaleech_am": "1%"
+      }
+    }
+  ],
+  "research_sources": [
+    {
+      "source": "Tavily Markdown extraction of public BR article",
+      "requested_url": "https://www.tibiawiki.com.br/index.php?title=Soulcrusher&oldid=436761",
+      "requested_revision_id": 436761,
+      "capture_file_sha256": "7ead0539956d7a42004198ecb9dde87aca94e39def181e98d8913cd9b1399112",
+      "extracted_content_sha256": "136643db7af0f0f2da4db7d5e8e2bf4220e21fa83bd0f6df8fdf8364330e9705",
+      "quote": "[Club Fighting](/wiki/Club_Fighting \"Club Fighting\") +5, [Life Leech](/wiki/Life_Leech \"Life Leech\") amount +5%, [Mana Leech](/wiki/Mana_Leech \"Mana Leech\") amount +3%"
+    }
+  ],
+  "scope_limit": "Full Soulcrusher modifier vector held; no majority or alternate values promoted. Baseline-versus-proficiency explanation is DERIVED only, not an accepted qualification. The BR coordinate is the requested oldid URL, not an independently captured raw MediaWiki revision hash."
+}

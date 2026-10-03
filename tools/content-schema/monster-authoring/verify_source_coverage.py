@@ -1,7 +1,12 @@
 """Account for every inventoried standard registrar/spell path in the formal schema."""
+import argparse
+import hashlib
 import json
+import re
+import subprocess
 from pathlib import Path
 from build_formal_schema import main
+from verify_monster_source_values import PINS
 ROOT=Path(__file__).resolve().parent
 
 def dest(owner,*path):return '/$defs/'+owner+'/properties/'+'/properties/'.join(path)
@@ -81,8 +86,7 @@ def resolve(p):
         value=value[key]
     return value
 
-if __name__=='__main__':
-    census=json.loads((ROOT/'field-census.json').read_text(encoding='utf-8'))
+def verify_census(census):
     result={'scope':'Every inventoried standard mask and incomingLua path has a formal destination or explicit non-field disposition. Not arbitrary Lua/runtime parity.',
         'sources':{},'unclassified':[],'invalid_destinations':[]}
     for name,source in census['sources'].items():
@@ -121,6 +125,71 @@ if __name__=='__main__':
             'mask_paths':len(source['mask_paths_with_lines']),'spell_paths':len(source['spell_paths_with_lines']),'rows':rows}
     result['accounted_paths']=sum(len(s['rows']) for s in result['sources'].values())
     result['passed']=not(result['unclassified'] or result['invalid_destinations'])
-    (ROOT/'formal-source-coverage.json').write_text(json.dumps(result,ensure_ascii=False,indent=2)+'\n',encoding='utf-8',newline='\n')
-    print(json.dumps({k:v for k,v in result.items() if k!='sources'},ensure_ascii=False))
+    return result
+
+
+def fresh_inventory(census, roots):
+    """Re-read exact pinned registrar and C++ API; static path proof only."""
+    fresh = {'sources': {}}
+    evidence = {}
+    for name, original in census['sources'].items():
+        root = roots[name]
+        revision = subprocess.check_output(['git', '-C', str(root), 'rev-parse', 'HEAD'], text=True).strip()
+        if revision != PINS[name]:
+            raise ValueError(name + ': checkout does not match bound census revision')
+        subprocess.run(['git', '-C', str(root), 'diff', '--quiet', 'HEAD', '--'], check=True)
+        source = {k: original[k] for k in ('repository', 'revision', 'register_path')}
+        source['revision'] = revision
+        path = root / source['register_path']; text = path.read_text(encoding='utf-8')
+        for variable, group in (('mask', 'mask_paths_with_lines'), ('incomingLua', 'spell_paths_with_lines')):
+            rows = {}
+            for match in re.finditer(r'\b' + variable + r'(?:\.[A-Za-z_]\w*)+', text):
+                rows.setdefault(match.group(), []).append(text[:match.start()].count('\n')+1)
+            source[group] = {key: sorted(set(lines)) for key, lines in sorted(rows.items())}
+        api = {'MonsterType': set(), 'MonsterSpell': set()}
+        api_files = []
+        for pattern in ('monster_type_functions.cpp', 'monster_spell_functions.cpp'):
+            for file in sorted((root / 'src').rglob(pattern)):
+                body = file.read_text(encoding='utf-8')
+                for cls, method in re.findall(r'registerMethod\(\s*(?:L\s*,\s*)?"(MonsterType|MonsterSpell)"\s*,\s*"(\w+)"', body):
+                    api[cls].add(method)
+                api_files.append({'file': str(file.relative_to(root)), 'sha256': hashlib.sha256(file.read_bytes()).hexdigest()})
+        lua_declarations = {m.group(1): text[:m.start()].count('\n')+1 for m in
+            re.finditer(r'(?:function\s+MonsterType[:.]|\bMonsterType\.)(\w+)\s*(?:\(|=\s*function)', text)}
+        calls = []
+        for match in re.finditer(r'\b(mtype|spell)\s*:\s*(\w+)\s*\(', text):
+            cls = 'MonsterType' if match.group(1) == 'mtype' else 'MonsterSpell'
+            calls.append({'class': cls, 'method': match.group(2), 'line': text[:match.start()].count('\n')+1,
+                          'registered': match.group(2) in api[cls] or (cls == 'MonsterType' and match.group(2) in lua_declarations)})
+        old = {p for g in ('mask_paths_with_lines', 'spell_paths_with_lines') for p in original[g]}
+        observed = {p for g in ('mask_paths_with_lines', 'spell_paths_with_lines') for p in source[g]}
+        evidence[name] = {'committed_census_revision': original['revision'], 'source_sha256': hashlib.sha256(path.read_bytes()).hexdigest(),
+                          'new_paths': sorted(observed-old), 'removed_paths': sorted(old-observed),
+                          'registered_api': {k: sorted(v) for k,v in api.items()}, 'api_files': api_files,
+                          'registrar_calls': calls, 'registrar_lua_methods': lua_declarations}
+        fresh['sources'][name] = source
+    return fresh, evidence
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--canary', type=Path)
+    parser.add_argument('--crystal', type=Path)
+    parser.add_argument('--out', type=Path, default=ROOT/'formal-source-coverage.json')
+    args = parser.parse_args()
+    census = json.loads((ROOT/'field-census.json').read_text(encoding='utf-8'))
+    evidence = None
+    if args.canary or args.crystal:
+        if not (args.canary and args.crystal):
+            parser.error('fresh coverage requires both pinned source checkouts')
+        census, evidence = fresh_inventory(census, {'canary': args.canary, 'crystal': args.crystal})
+    result = verify_census(census)
+    result['evidence_kind'] = 'FRESH_PINNED_REGISTRAR' if evidence else 'COMMITTED_CENSUS_ONLY'
+    result['schema_complete'] = False
+    if evidence is not None:
+        result['fresh_source_evidence'] = evidence
+        result['passed'] = result['passed'] and all(not s['new_paths'] and not s['removed_paths'] and
+            s['api_files'] and all(c['registered'] for c in s['registrar_calls']) for s in evidence.values())
+    args.out.write_text(json.dumps(result, ensure_ascii=False, indent=2)+'\n', encoding='utf-8')
+    print(json.dumps({k: v for k,v in result.items() if k not in ('sources', 'fresh_source_evidence')}, ensure_ascii=False))
     raise SystemExit(not result['passed'])

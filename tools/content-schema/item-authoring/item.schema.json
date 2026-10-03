@@ -1856,9 +1856,19 @@
         }
       },
       "required": [
-        "resource",
-        "chance_percent",
-        "amount_percent"
+        "resource"
+      ],
+      "anyOf": [
+        {
+          "required": [
+            "chance_percent"
+          ]
+        },
+        {
+          "required": [
+            "amount_percent"
+          ]
+        }
       ]
     },
     "magicLevelModifier": {

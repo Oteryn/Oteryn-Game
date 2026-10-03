@@ -1,0 +1,116 @@
+# OTV2-20261001-item-movable5692-completion
+
+```yaml
+task_id: OTV2-20261001-item-movable5692-completion
+title: Add 5692 explicit movable Item facts
+mode: DATA_ENRICHMENT
+status: completed
+repository: Oteryn/Oteryn-Game
+base_branch: main
+branch: codex/item-movable-true-bulk-20261001
+pr: 1512
+base_sha: 46af72720b8c0fcf7cec8edba497e84405b1ce6d
+owner: owner-directed Codex session
+created_at: 2026-10-01
+updated_at: 2026-10-01
+execution_policy: continuous_progress
+depends_on: [1511]
+owned_paths:
+  - .github/workflows/item-authoring-schema.yml
+  - apps/game-server/examples/materialize_content_world_project_v2.rs
+  - apps/game-server/src/content/item_movable_promotion.rs
+  - apps/game-server/src/content/item_physical_promotion.rs
+  - apps/game-server/src/content/mod.rs
+  - apps/game-server/tests/content_world_project_repository.rs
+  - content/abilities/definitions/index.json
+  - content/abilities/effects/index.json
+  - content/abilities/formulas/index.json
+  - content/behaviors/index.json
+  - content/content.lock.json
+  - content/creatures/definitions/index.json
+  - content/items/definitions/items-00000-00499.json
+  - content/items/definitions/items-00500-00999.json
+  - content/items/definitions/items-01000-01499.json
+  - content/items/definitions/items-01500-01999.json
+  - content/items/definitions/items-02000-02499.json
+  - content/items/definitions/items-02500-02999.json
+  - content/items/definitions/items-03000-03499.json
+  - content/items/definitions/items-03500-03999.json
+  - content/items/definitions/items-04000-04499.json
+  - content/items/definitions/items-04500-04999.json
+  - content/items/definitions/items-05000-05499.json
+  - content/items/definitions/items-05500-05999.json
+  - content/items/definitions/items-06000-06499.json
+  - content/items/definitions/items-06500-06999.json
+  - content/items/definitions/items-07000-07499.json
+  - content/items/definitions/items-07500-07999.json
+  - content/items/definitions/items-08000-08499.json
+  - content/items/definitions/items-08500-08999.json
+  - content/items/definitions/items-09000-09499.json
+  - content/items/definitions/items-09500-09999.json
+  - content/items/definitions/items-10000-10499.json
+  - content/items/definitions/items-10500-10999.json
+  - content/items/definitions/items-11000-11499.json
+  - content/items/definitions/items-11500-11999.json
+  - content/items/definitions/items-12000-12499.json
+  - content/items/definitions/items-12500-12999.json
+  - content/items/definitions/items-13000-13499.json
+  - content/items/definitions/items-13500-13999.json
+  - content/items/definitions/items-14000-14499.json
+  - content/items/definitions/items-14500-14999.json
+  - content/items/definitions/items-15000-15499.json
+  - content/items/definitions/items-15500-15999.json
+  - content/items/definitions/items-16000-16499.json
+  - content/items/definitions/items-16500-16999.json
+  - content/items/definitions/items-17000-17499.json
+  - content/items/definitions/items-17500-17999.json
+  - content/items/definitions/items-18000-18499.json
+  - content/items/definitions/items-18500-18999.json
+  - content/items/definitions/items-19000-19499.json
+  - content/items/definitions/items-19500-19999.json
+  - content/items/definitions/items-20000-20499.json
+  - content/items/definitions/items-20500-20999.json
+  - content/items/definitions/items-21000-21499.json
+  - content/items/definitions/items-21500-21999.json
+  - content/items/definitions/items-22000-22499.json
+  - content/items/definitions/items-22500-22999.json
+  - content/items/definitions/items-23500-23999.json
+  - content/items/definitions/items-24000-24499.json
+  - content/items/definitions/items-24500-24999.json
+  - content/items/definitions/items-25000-25499.json
+  - content/items/definitions/items-25500-25999.json
+  - content/items/definitions/items-26000-26499.json
+  - content/items/definitions/items-26500-26999.json
+  - content/items/definitions/items-27000-27499.json
+  - content/items/definitions/items-27500-27999.json
+  - content/items/definitions/items-28000-28499.json
+  - content/items/definitions/items-28500-28999.json
+  - content/items/definitions/items-29000-29499.json
+  - content/items/definitions/items-29500-29999.json
+  - content/items/definitions/items-30000-30499.json
+  - content/items/definitions/items-30500-30999.json
+  - content/items/definitions/items-31000-31499.json
+  - content/items/definitions/items-31500-31999.json
+  - content/items/definitions/items-32000-32499.json
+  - content/items/definitions/items-32500-32999.json
+  - content/items/definitions/items-33000-33499.json
+  - content/items/definitions/items-33500-33999.json
+  - content/items/index.json
+  - content/loot/index.json
+  - content/presentations/definitions/index.json
+  - content/world/content.lock.json
+  - content/world/definitions/reference.json
+  - content/world/manifest.json
+  - content/world/project.json
+  - docs/agents/evidence/OTV2-20261001-item-movable-promotion-v1.json
+  - docs/agents/evidence/OTV2-20261001-item-movable-source-qualification-v1.json
+  - docs/agents/evidence/OTV2-20261001-item-movable5692-completion.md
+  - docs/agents/tasks/archive/OTV2-20261001-item-movable5692-completion.md
+  - tools/content-schema/item-authoring/lower_wiki_movable_packet.py
+  - tools/content-schema/item-authoring/test_lower_wiki_movable_packet.py
+public_contracts: []
+```
+
+Boundedauthoring:5692UNKNOWN→movableTrue,12holds; allotherItem/referencefields/classes/admission preserved includingMarketfacts. FournewPython tests, eightpacketchecks,1302library/2ignored,3repo,Clippyalltargets/fmt/Ruff, exactdelta/migration97/97 checked beforepublication. Independent completeown-ID/source reviewPASS; policy/governancechecked beforepublication. Existing partialWave1 stays6496Items/10351atoms; separatemovablecensus5692true/0false.
+
+ExactfrozenSHA/fullownedblobreadback recordedexternally. This closes only boundedauthoring; exact-headCI/protectedreview/integrationremainpendingunderactivecontrolplane. No merge orcomplete-per-Item readiness is claimed.

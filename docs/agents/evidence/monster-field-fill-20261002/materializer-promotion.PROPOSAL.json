@@ -1,0 +1,43 @@
+{
+  "status": "PROPOSAL_ONLY_NOT_APPLIED",
+  "input_stage": "/workspace/monster-field-fill-20261002/population/creature-admission-stage.json",
+  "stage_sha256": "47c3b60747360ff39933434d3ab7318147e052958088c8a915738a015c9019b5",
+  "counts": {
+    "creatures": 1763,
+    "deferred_encounter": 0,
+    "deferred_encounters": 0,
+    "deferred_initial_health": 0,
+    "deferred_reference_loot_contract": 0,
+    "deferred_unregistered_items": 0,
+    "deferred_unresolved_reference": 0,
+    "encounters": 104,
+    "profiles": 23815,
+    "records": 24920
+  },
+  "numeric_fences": {
+    "CREATURE_COUNT": 1763,
+    "CREATURE_RECORDS": 24920,
+    "CREATURE_PROFILES": 23815,
+    "ENCOUNTER_COUNT": 104,
+    "CREATURE_CRYSTAL_COUNT": 96,
+    "CREATURE_WIKI_COUNT": 1
+  },
+  "pin_fences": {
+    "CREATURE_STAGED_SHA256": "47c3b60747360ff39933434d3ab7318147e052958088c8a915738a015c9019b5",
+    "CREATURE_STAGE_TOOL_SHA256": "972e756cee3a25dce9868331dc1b0ebe8a815f6b0180186f85b79f8802c158fc",
+    "CANARY_REVISION": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+    "CANARY_BUNDLE_INDEX_SHA256": "1b87ba6bee339bbd0e485cecaf7d8862607a8bf473f8f5f44221142b79afa1c5",
+    "CREATURE_WIKI_SAMPLE_SHA256": "88d21c748283df4cf059dbf1bd04cbcf7b9d00ca6cd14dc1e913e947f0242c8c",
+    "CREATURE_WIKI_REVISION": "tibiawiki-wiki-authored-creature-88d21c748283df4c",
+    "CREATURE_CRYSTAL_REVISION": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+    "CREATURE_CRYSTAL_SOURCE_REVISION": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+    "ITEM_ALLOCATION_SHA256": "ee9219ccf9d8b2350911abca321507ff924ccd4cb83196efd08b91fbdf098966"
+  },
+  "evidence_destination": "docs/agents/evidence/OTV2-20261002-monster-field-fill-staged.json",
+  "snapshot_copied": false,
+  "quality_metadata_requirement": "Retain exact population index, classification and completion ledger alongside promoted snapshot.",
+  "runtime_tests_and_required_review_pending": true,
+  "protected_integration_pending": true,
+  "source_ownership_note": "PROPOSAL_ONLY: #162 runtime/materializer owner must reconcile current protected-main source/count/source-binding fences, integrate exact snapshot, qualify real spell/loot/audio/lifecycle/placement consumers and separately authorize deployment.",
+  "source_binding_count": 1867
+}

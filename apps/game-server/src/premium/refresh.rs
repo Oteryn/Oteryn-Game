@@ -60,14 +60,28 @@ struct Inner {
     consumer: Arc<PremiumConsumer>,
     root: DurabilityRoot,
     client: Option<PremiumSnapshotClient>,
-    schedules: Mutex<HashMap<[u8; 16], Schedule>>,
+}
+
+/// The scheduled tasks. Owned by the refresher handles only, never by a task, so dropping the
+/// last handle (a node shutdown) aborts every task.
+#[derive(Default)]
+struct Schedules(Mutex<HashMap<[u8; 16], Schedule>>);
+
+impl Drop for Schedules {
+    fn drop(&mut self) {
+        let schedules = self.0.get_mut().unwrap_or_else(PoisonError::into_inner);
+        for (_, schedule) in schedules.drain() {
+            schedule.task.abort();
+        }
+    }
 }
 
 /// The Premium pulls of one node. Without a client (no configuration) nothing is pulled and
-/// every account reads Free.
+/// every account reads Free. Dropping the last handle cancels every schedule.
 #[derive(Clone)]
 pub struct PremiumRefresher {
     inner: Arc<Inner>,
+    schedules: Arc<Schedules>,
 }
 
 impl PremiumRefresher {
@@ -81,8 +95,8 @@ impl PremiumRefresher {
                 consumer,
                 root,
                 client,
-                schedules: Mutex::new(HashMap::new()),
             }),
+            schedules: Arc::default(),
         }
     }
 
@@ -118,8 +132,8 @@ impl PremiumRefresher {
     }
 
     fn schedules(&self) -> std::sync::MutexGuard<'_, HashMap<[u8; 16], Schedule>> {
-        self.inner
-            .schedules
+        self.schedules
+            .0
             .lock()
             .unwrap_or_else(PoisonError::into_inner)
     }

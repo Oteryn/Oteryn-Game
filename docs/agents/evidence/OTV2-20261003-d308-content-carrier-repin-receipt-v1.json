@@ -1,0 +1,117 @@
+{
+  "admission_path_move": {
+    "cascade": [
+      {
+        "new_digest": "b103496c6ff11b279ad7c0709022d4a637ded666761ef139f75f6f93f1ad0c43",
+        "old_digest": "91270056e905a9d5147d52e2ce35dd478a3f17e966a8e623cb39f4ea545b659d",
+        "pin_location": "tools/content-migration/item_official_navigation.py",
+        "pinned_file": "tools/content-migration/samples/official-rule-only-navigation-six.json",
+        "replacements": 1
+      },
+      {
+        "new_digest": "ab6a1d135f9b5d58c4d719377c73a0a1bbd5d2c65400ff14945242e76e5ae68c",
+        "old_digest": "7736178f6af9c262baa26e7d3379faf34b4295df4e1bc240eeaae987e655b63e",
+        "pin_location": "tools/content-schema/world-object-authoring/official_corpses.py",
+        "pinned_file": "tools/content-schema/world-object-authoring/samples/qualified-official-corpses-15.30.json",
+        "replacements": 1
+      },
+      {
+        "new_digest": "ab6a1d135f9b5d58c4d719377c73a0a1bbd5d2c65400ff14945242e76e5ae68c",
+        "old_digest": "7736178f6af9c262baa26e7d3379faf34b4295df4e1bc240eeaae987e655b63e",
+        "pin_location": "tools/content-schema/world-object-authoring/samples/census-official-corpses-15.30.json",
+        "pinned_file": "tools/content-schema/world-object-authoring/samples/qualified-official-corpses-15.30.json",
+        "replacements": 1
+      },
+      {
+        "new_digest": "8fc1b349b227c04241132c43029cec6bcf287c69cd1103cabf605764a01205d8",
+        "old_digest": "8ec4892881243578a270abd195273fa91955ccfa38f3ad0e4c30f09218ed3c94",
+        "pin_location": "tools/content-migration/item_navigation_source_supplement.py",
+        "pinned_file": "tools/content-migration/samples/navigation-seven-20261001.json",
+        "replacements": 1
+      },
+      {
+        "new_digest": "8cc4f9d74271a3f7e5272cef34157eb4dd193405914c43559b7e317935d1eb4a",
+        "old_digest": "1a9fd71b378895252296d9d19d3432f7a4ed66e79ab405eda95b7652d4d75ccf",
+        "pin_location": "tools/content-migration/item_engine_navigation.py",
+        "pinned_file": "tools/content-migration/samples/engine-family-navigation-265.json",
+        "replacements": 1
+      },
+      {
+        "new_digest": "4c41a1c0bdf655b6c016e0bbe832548a3cc333f9b5295691496b77432f4d4af5",
+        "old_digest": "43fa93e3602af484fb9e13f638f7f01e1f073fe36e4529a0e694d2378e89a289",
+        "pin_location": "tools/content-migration/item_navigation_source_supplement.py",
+        "pinned_file": "imports/tibiawiki/facts/items-family-alias26-20261001.json",
+        "replacements": 1
+      },
+      {
+        "new_digest": "b449545a5d7088c665508dba1f2b1a9758ab64f1296d26bf1152fbae8239077a",
+        "old_digest": "ffbddaa8b026cf8c19462c67cd338f02a6b3c5871bd76803d604e31cf39e03eb",
+        "pin_location": "tools/content-migration/item_bounded7_navigation.py",
+        "pinned_file": "imports/tibiawiki/facts/items-bounded7-navigation-20261002.json",
+        "replacements": 1
+      },
+      {
+        "new_digest": "7b95c5cac5bdc71dc07afd14dfcf36364d26473ad915a95bd1d4e0205927b2c7",
+        "old_digest": "d30f432b643f3b31e2c4f51d1e17f0d3cde9c54038cdcfc53c932ef33e2be199",
+        "pin_location": "imports/tibiawiki/facts/items-bounded7-navigation-20261002.json",
+        "pinned_file": "tools/content-migration/item_official_navigation.py",
+        "replacements": 1
+      },
+      {
+        "new_digest": "ada0b4900a32945e9de0edcbce70b33605a958891386e42b68e5e256b17e1160",
+        "old_digest": "b449545a5d7088c665508dba1f2b1a9758ab64f1296d26bf1152fbae8239077a",
+        "pin_location": "tools/content-migration/item_bounded7_navigation.py",
+        "pinned_file": "imports/tibiawiki/facts/items-bounded7-navigation-20261002.json",
+        "replacements": 1
+      }
+    ],
+    "commit_label": "D308: follow APPEARANCE_ONLY_ITEM_IDS to item_identity.rs",
+    "explicit_ids_sha256": "136743df391cf4ff63fe16658fca0df6b2d90ce00636ddbbc87032f29a5230ff",
+    "explicit_rule_only_count": 60,
+    "from": "apps/game-server/examples/materialize_content_world_project_v2.rs",
+    "to": "apps/game-server/src/content/item_identity.rs"
+  },
+  "authority": [
+    "D304",
+    "D305",
+    "D308",
+    "D320",
+    "D323",
+    "D380",
+    "D383"
+  ],
+  "carrier": "D308 content carrier (#1599 frozen 5ea3395f + #1630 31ee0a01) on main 92cb1e55",
+  "method": "Only pins live at the carrier tip were replaced, by exact old-digest match, until a fixed point. Historical pins (including the #1599 receipt) are unchanged. Generated files come only from their tools.",
+  "regeneration": {
+    "outputs": [
+      "apps/game-server/tests/content_world_project_repository.rs",
+      "content/abilities/definitions/index.json",
+      "content/abilities/effects/index.json",
+      "content/abilities/formulas/index.json",
+      "content/behaviors/index.json",
+      "content/content.lock.json",
+      "content/cosmetics/mounts/index.json",
+      "content/creatures/definitions/index.json",
+      "content/dialogues/definitions/index.json",
+      "content/documents/index.json",
+      "content/encounters/definitions/index.json",
+      "content/items/index.json",
+      "content/items/taxonomy/items.json",
+      "content/loot/index.json",
+      "content/npcs/definitions/index.json",
+      "content/presentations/definitions/index.json",
+      "content/services/trade/index.json",
+      "content/services/travel/index.json",
+      "content/world/content.lock.json",
+      "content/world/definitions/declarations.json",
+      "content/world/definitions/reference.json",
+      "content/world/manifest.json",
+      "content/world/project.json",
+      "content/world/provenance/imports.json",
+      "content/world/provenance/sources.json"
+    ],
+    "taxonomy": "D323 cite_owner_review plus 119 stale canonical_definitions_sha256 refreshed",
+    "tool": "tools/content-migration/regenerate_content.py"
+  },
+  "schema": "OTERYN_DIGEST_REPIN_RECEIPT/v1"
+}

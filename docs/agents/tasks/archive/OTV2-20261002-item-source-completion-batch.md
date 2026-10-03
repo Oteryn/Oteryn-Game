@@ -1,0 +1,182 @@
+# OTV2-20261002-item-source-completion-batch
+
+```yaml
+task_id: OTV2-20261002-item-source-completion-batch
+title: Import prepared Item data into server catalogs
+mode: DATA_ENRICHMENT
+status: completed
+repository: Oteryn/Oteryn-Game
+base_branch: main
+branch: codex/item-forge289-20261002
+pr: 1562
+base_sha: 1b026969a8b2236737bff537b3eddb3c909781b2
+owner: owner-directed Codex session
+created_at: 2026-10-02
+updated_at: 2026-10-02
+execution_policy: continuous_progress
+depends_on: [1560]
+owned_paths:
+  - .github/workflows/item-authoring-schema.yml
+  - apps/game-server/examples/materialize_content_world_project_v2.rs
+  - apps/game-server/src/content/item_description_promotion.rs
+  - apps/game-server/src/content/item_description_wiki_promotion.rs
+  - apps/game-server/src/content/item_forge289_promotion.rs
+  - apps/game-server/src/content/item_name15_promotion.rs
+  - apps/game-server/src/content/item_numeric_modifier_promotion.rs
+  - apps/game-server/src/content/mod.rs
+  - apps/game-server/tests/content_world_project_repository.rs
+  - content/abilities/definitions/index.json
+  - content/abilities/effects/index.json
+  - content/abilities/formulas/index.json
+  - content/behaviors/index.json
+  - content/content.lock.json
+  - content/cosmetics/mounts/index.json
+  - content/creatures/definitions/index.json
+  - content/dialogues/definitions/index.json
+  - content/encounters/definitions/index.json
+  - content/items/definitions/items-00000-00499.json
+  - content/items/definitions/items-00500-00999.json
+  - content/items/definitions/items-01000-01499.json
+  - content/items/definitions/items-01500-01999.json
+  - content/items/definitions/items-02000-02499.json
+  - content/items/definitions/items-02500-02999.json
+  - content/items/definitions/items-03000-03499.json
+  - content/items/definitions/items-03500-03999.json
+  - content/items/definitions/items-04000-04499.json
+  - content/items/definitions/items-04500-04999.json
+  - content/items/definitions/items-05000-05499.json
+  - content/items/definitions/items-05500-05999.json
+  - content/items/definitions/items-06000-06499.json
+  - content/items/definitions/items-06500-06999.json
+  - content/items/definitions/items-07000-07499.json
+  - content/items/definitions/items-07500-07999.json
+  - content/items/definitions/items-08000-08499.json
+  - content/items/definitions/items-08500-08999.json
+  - content/items/definitions/items-09000-09499.json
+  - content/items/definitions/items-09500-09999.json
+  - content/items/definitions/items-10000-10499.json
+  - content/items/definitions/items-10500-10999.json
+  - content/items/definitions/items-11000-11499.json
+  - content/items/definitions/items-11500-11999.json
+  - content/items/definitions/items-12000-12499.json
+  - content/items/definitions/items-12500-12999.json
+  - content/items/definitions/items-13000-13499.json
+  - content/items/definitions/items-13500-13999.json
+  - content/items/definitions/items-14000-14499.json
+  - content/items/definitions/items-14500-14999.json
+  - content/items/definitions/items-15000-15499.json
+  - content/items/definitions/items-15500-15999.json
+  - content/items/definitions/items-16000-16499.json
+  - content/items/definitions/items-16500-16999.json
+  - content/items/definitions/items-17000-17499.json
+  - content/items/definitions/items-17500-17999.json
+  - content/items/definitions/items-18000-18499.json
+  - content/items/definitions/items-18500-18999.json
+  - content/items/definitions/items-19000-19499.json
+  - content/items/definitions/items-19500-19999.json
+  - content/items/definitions/items-20000-20499.json
+  - content/items/definitions/items-20500-20999.json
+  - content/items/definitions/items-21000-21499.json
+  - content/items/definitions/items-21500-21999.json
+  - content/items/definitions/items-22000-22499.json
+  - content/items/definitions/items-22500-22999.json
+  - content/items/definitions/items-23500-23999.json
+  - content/items/definitions/items-24000-24499.json
+  - content/items/definitions/items-24500-24999.json
+  - content/items/definitions/items-25000-25499.json
+  - content/items/definitions/items-25500-25999.json
+  - content/items/definitions/items-26500-26999.json
+  - content/items/definitions/items-27000-27499.json
+  - content/items/definitions/items-27500-27999.json
+  - content/items/definitions/items-28000-28499.json
+  - content/items/definitions/items-28500-28999.json
+  - content/items/definitions/items-29000-29499.json
+  - content/items/definitions/items-29500-29999.json
+  - content/items/definitions/items-30000-30499.json
+  - content/items/definitions/items-30500-30999.json
+  - content/items/definitions/items-31000-31499.json
+  - content/items/definitions/items-31500-31999.json
+  - content/items/definitions/items-32000-32499.json
+  - content/items/definitions/items-32500-32999.json
+  - content/items/definitions/items-33000-33499.json
+  - content/items/definitions/items-33500-33999.json
+  - content/items/index.json
+  - content/items/relations/items.json
+  - content/loot/index.json
+  - content/npcs/definitions/index.json
+  - content/presentations/definitions/index.json
+  - content/services/trade/index.json
+  - content/services/travel/index.json
+  - content/world/content.lock.json
+  - content/world/definitions/declarations.json
+  - content/world/definitions/reference.json
+  - content/world/manifest.json
+  - content/world/project.json
+  - content/world/provenance/imports.json
+  - content/world/provenance/sources.json
+  - docs/agents/evidence/OTV2-20261002-item-description-historical-source-proposal-v1.json
+  - docs/agents/evidence/OTV2-20261002-item-description-promotion-v1.json
+  - docs/agents/evidence/OTV2-20261002-item-description-source-qualification-v1.json
+  - docs/agents/evidence/OTV2-20261002-item-description-wiki-historical-policy-proposal-v1.json
+  - docs/agents/evidence/OTV2-20261002-item-description-wiki-promotion-v1.json
+  - docs/agents/evidence/OTV2-20261002-item-description-wiki-source-qualification-v1.json
+  - docs/agents/evidence/OTV2-20261002-item-forge289-original-proposed-packet-v1.json
+  - docs/agents/evidence/OTV2-20261002-item-forge289-promotion-v1.json
+  - docs/agents/evidence/OTV2-20261002-item-forge289-provenance-basis-prospective-receipt-v1.json
+  - docs/agents/evidence/OTV2-20261002-item-forge289-source-qualification-v1.json
+  - docs/agents/evidence/OTV2-20261002-item-magic-capacity4-source-qualification-v1.json
+  - docs/agents/evidence/OTV2-20261002-item-name15-historical-source-v1.json
+  - docs/agents/evidence/OTV2-20261002-item-name15-promotion-v1.json
+  - docs/agents/evidence/OTV2-20261002-item-name15-source-qualification-v1.json
+  - docs/agents/evidence/OTV2-20261002-item-numeric-modifier13-promotion-v1.json
+  - docs/agents/evidence/OTV2-20261002-item-numeric-modifier13-source-proof-v2.json
+  - docs/agents/evidence/OTV2-20261002-item-numeric-modifier17-current-receipt-v1.json
+  - docs/agents/evidence/OTV2-20261002-item-numeric-modifier17-promotion-v1.json
+  - docs/agents/evidence/OTV2-20261002-item-numeric-modifier17-source-qualification-v1.json
+  - docs/agents/evidence/OTV2-20261002-item-source-completion-batch.md
+  - docs/agents/evidence/OTV2-20261002-tibiawiki165-historical-import-context-v1.json
+  - docs/agents/tasks/archive/OTV2-20261002-item-source-completion-batch.md
+  - docs/architecture/OTERYN_ITEM_AUTHORING_MASTER_SCHEMA_V1.md
+  - docs/architecture/OTERYN_WORLD_PROJECT_SOURCE_PROFILE_V2_DECISION.md
+  - imports/tibiawiki/batches.json
+  - imports/tibiawiki/bindings/items.json
+  - imports/tibiawiki/facts/forge289-source-snapshot.json
+  - imports/tibiawiki/sources.json
+  - tools/content-migration/test_world_project_v2_to_tree.py
+  - tools/content-migration/validate_world_project_v2_to_tree.py
+  - tools/content-schema/item-authoring/README.md
+  - tools/content-schema/item-authoring/build_formal_schema.py
+  - tools/content-schema/item-authoring/check_tibiawiki165_historical_context.py
+  - tools/content-schema/item-authoring/formal-schema-validation-report.json
+  - tools/content-schema/item-authoring/item.schema.json
+  - tools/content-schema/item-authoring/lower_item_description_packet.py
+  - tools/content-schema/item-authoring/lower_item_description_wiki_packet.py
+  - tools/content-schema/item-authoring/lower_item_forge289_packet.py
+  - tools/content-schema/item-authoring/lower_item_name15_packet.py
+  - tools/content-schema/item-authoring/lower_numeric_modifier17_packet.py
+  - tools/content-schema/item-authoring/templates/container-equipment.json
+  - tools/content-schema/item-authoring/templates/event-collectible.json
+  - tools/content-schema/item-authoring/templates/key.json
+  - tools/content-schema/item-authoring/templates/light-source.json
+  - tools/content-schema/item-authoring/templates/plant.json
+  - tools/content-schema/item-authoring/templates/progression-material.json
+  - tools/content-schema/item-authoring/templates/quest-item.json
+  - tools/content-schema/item-authoring/templates/tool.json
+  - tools/content-schema/item-authoring/templates/transformation-item.json
+  - tools/content-schema/item-authoring/templates/trash.json
+  - tools/content-schema/item-authoring/test_engine_items.py
+  - tools/content-schema/item-authoring/test_lower_item_description_packet.py
+  - tools/content-schema/item-authoring/test_lower_item_description_wiki_packet.py
+  - tools/content-schema/item-authoring/test_lower_item_forge289_packet.py
+  - tools/content-schema/item-authoring/test_lower_item_forge3332_packet.py
+  - tools/content-schema/item-authoring/test_lower_item_hit_magic_packet.py
+  - tools/content-schema/item-authoring/test_lower_item_name15_packet.py
+  - tools/content-schema/item-authoring/test_lower_item_use_observation_packet.py
+  - tools/content-schema/item-authoring/test_lower_numeric_modifier17_packet.py
+  - tools/content-schema/item-authoring/verify_formal_schema.py
+public_contracts: []
+```
+
+Import prepared Item data through the server materializer into canonical Item definitions and source declarations: 1,629 literal descriptions, 289 source profiles for Forge, 17 numeric modifier vectors (50 atoms), and 15 corrections to imported names. Include ten family templates with all 22 family-class constraints. The data covers 1,859 distinct Item targets, with Native field changes on 1,655. Preserve 57,320 records, 34,031 canonical Items, all other Native fields and World placement. Source profiles increase from 411 to 700; BR bindings from 165 to 454; source relations from 250 sources/325 references to 539/752. Data import does not establish runtime readiness or full per-Item completion.
+
+Independent review and final selected checks PASS. Publication SHA/full frozen readback are retained externally. CI/protected integration and full Item readiness remain pending. Original source checkpoints and published recovery archive are preserved.
