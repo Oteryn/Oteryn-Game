@@ -3927,6 +3927,20 @@ def main():
     )
     if not result.wasSuccessful():
         raise SystemExit(1)
+    result = unittest.TextTestRunner().run(
+        unittest.defaultTestLoader.discover(
+            str(Path(__file__).parent), pattern="test_imbuement_limits.py"
+        )
+    )
+    if not result.wasSuccessful():
+        raise SystemExit(1)
+    result = unittest.TextTestRunner().run(
+        unittest.defaultTestLoader.discover(
+            str(Path(__file__).parent), pattern="test_navigation_supplement.py"
+        )
+    )
+    if not result.wasSuccessful():
+        raise SystemExit(1)
     print(f"PASS {CHECKS} checks")
 
 

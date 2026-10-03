@@ -1,0 +1,1121 @@
+{
+  "schema": "OTERYN_CLOSED_NAVIGATION_SEVEN_SOURCE_PACKET/v1",
+  "scope": "NAVIGATION_ONLY",
+  "classification": "DERIVED",
+  "authoring_parent": "802ba176bb7f308aea9ba217430e6af461de3b20",
+  "expected_parent_taxonomy_rows": 12245,
+  "expected_output_taxonomy_rows": 12252,
+  "closed_ids": [
+    4290,
+    39571,
+    43778,
+    43779,
+    43780,
+    43781,
+    43782
+  ],
+  "sources": {
+    "read_only_qualification_report": {
+      "path": "/workspace/audit-continuation/item-remaining260-bounded7-domain-identity-proposal.json",
+      "sha256": "e6e44cb42142888241c25a572eccf8eae287f20004efbace9cfd57f5d758d766"
+    },
+    "collector_witness": {
+      "path": "/workspace/audit-continuation/item-remaining260-bounded7-public-source-qualified-witness.json",
+      "sha256": "b2795be15b527b396d3cd1b7b7da16818ead301380194cc4877ec8969b8953e6"
+    },
+    "qualification_cutoff": "2026-09-27T23:59:59Z",
+    "engine_rules": {
+      "path": "tools/content-schema/item-authoring/engine_items.py",
+      "sha256": "0a494fd64d7774507b4d9e493492a7ffc9d99d751dd2ed4fec73561cb06f5b06"
+    },
+    "wiki_helper": {
+      "path": "tools/content-census/item_wiki_family_capture.py",
+      "sha256": "0abb6b0180eeef98bfa397ca3b7c9192d47806a7e97aa6423159220e82c36f03"
+    },
+    "dom_helper": {
+      "path": "tools/content-migration/item_external_family_refinement.py",
+      "sha256": "c46ec174f7656f64ca374fd2753b9351184fcecb342ae061ff9150f91cece9fb"
+    },
+    "a12_helper": {
+      "path": "tools/content-migration/item_official_navigation.py",
+      "sha256": "d30f432b643f3b31e2c4f51d1e17f0d3cde9c54038cdcfc53c932ef33e2be199"
+    },
+    "bindings": {
+      "path": "imports/crystalserver/bindings/items.json",
+      "sha256": "1d19709c28a649d8a9f32bf53e5bf43ad847d7901d6c6254833f456154d2de5a"
+    },
+    "retained_stats": {
+      "path": "imports/tibiawiki/facts/items-stats.json",
+      "sha256": "49d43cbe6957e6edc16aeda72e05152c55606e9381452ea74d7a63b5a5e91e4a"
+    },
+    "current_artifact": {
+      "appearances_sha256": "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2",
+      "label": "client-15.30",
+      "manifest": "appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.json",
+      "manifest_sha256": "f37b5d3e1136ebc3edbae1fe7090c4914b1d717bfbf9fd7c8faeeee36b491fe8",
+      "object_count": 43516,
+      "order": 4
+    },
+    "current_membership_entries_sha256": "424e445c0ea9494b1871364f10e93876ad551df0d3d5c6982d97301008b027df",
+    "native_admission": {
+      "path": "apps/game-server/examples/materialize_content_world_project_v2.rs",
+      "sha256": "f167224187747bbed7d5bb7eba3ff52bc7349224c1c182971b64e3b6ba437ba2",
+      "explicit_rule_only_count": 60,
+      "explicit_ids_sha256": "136743df391cf4ff63fe16658fca0df6b2d90ce00636ddbbc87032f29a5230ff",
+      "original_qualification_coordinate": "/workspace/audit-continuation/frozen-taxonomy-df777898/apps/game-server/examples/materialize_content_world_project_v2.rs"
+    },
+    "actual_Crystal_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+    "actual_Crystal_artifact_digests": {
+      "data/items/items.xml": {
+        "sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb",
+        "digest_mode": "text_lf_normalized"
+      },
+      "data/items/appearances.dat": {
+        "sha256": "6adb790d1064c2d31ffb2e5ce1a7aef376942ba672edea2adb6cafc620dd18f1",
+        "digest_mode": "raw_bytes"
+      },
+      "data/scripts/lib/task_board_delivery_items.lua": {
+        "sha256": "7b30362470893f6e3ce6bdc0237ac5d3f13d6e5288ce10591a93fde2013b688d",
+        "digest_mode": "text_lf_normalized"
+      }
+    },
+    "world49_exclusion": {
+      "keys": [
+        "oteryn:item.tibia.i1019",
+        "oteryn:item.tibia.i10605",
+        "oteryn:item.tibia.i10986",
+        "oteryn:item.tibia.i10989",
+        "oteryn:item.tibia.i10991",
+        "oteryn:item.tibia.i10997",
+        "oteryn:item.tibia.i10998",
+        "oteryn:item.tibia.i10999",
+        "oteryn:item.tibia.i11000",
+        "oteryn:item.tibia.i11001",
+        "oteryn:item.tibia.i11002",
+        "oteryn:item.tibia.i1127",
+        "oteryn:item.tibia.i1128",
+        "oteryn:item.tibia.i11553",
+        "oteryn:item.tibia.i11554",
+        "oteryn:item.tibia.i12355",
+        "oteryn:item.tibia.i13883",
+        "oteryn:item.tibia.i13884",
+        "oteryn:item.tibia.i13885",
+        "oteryn:item.tibia.i18615",
+        "oteryn:item.tibia.i18616",
+        "oteryn:item.tibia.i18617",
+        "oteryn:item.tibia.i18618",
+        "oteryn:item.tibia.i18619",
+        "oteryn:item.tibia.i18620",
+        "oteryn:item.tibia.i20107",
+        "oteryn:item.tibia.i20888",
+        "oteryn:item.tibia.i20890",
+        "oteryn:item.tibia.i20891",
+        "oteryn:item.tibia.i20892",
+        "oteryn:item.tibia.i20893",
+        "oteryn:item.tibia.i20894",
+        "oteryn:item.tibia.i21772",
+        "oteryn:item.tibia.i21773",
+        "oteryn:item.tibia.i21774",
+        "oteryn:item.tibia.i22338",
+        "oteryn:item.tibia.i25101",
+        "oteryn:item.tibia.i25102",
+        "oteryn:item.tibia.i36929",
+        "oteryn:item.tibia.i39949",
+        "oteryn:item.tibia.i51302",
+        "oteryn:item.tibia.i5556",
+        "oteryn:item.tibia.i5557",
+        "oteryn:item.tibia.i5558",
+        "oteryn:item.tibia.i5559",
+        "oteryn:item.tibia.i6270",
+        "oteryn:item.tibia.i6271",
+        "oteryn:item.tibia.i6272",
+        "oteryn:item.tibia.i6273"
+      ],
+      "qualification_sha256": "eceeb4fc3947bf3a8353b9a679fa691d11eb64387a55ead625f41762ec51ff87",
+      "qualified_at_sha": "df777898d6a03e3cf0fd63aaceedcc5c0f0a68b6",
+      "verification_sha256": "7ca68e7cae711256d1010a11a49e70478700732de89ea344f579fd94fded5bdb"
+    },
+    "global_own_itemid_index_sha256": "ca5cf161016da4530c249ca49022cbea44342e2fbd78623fbb99fee92dde8190",
+    "dom_witnesses": {
+      "path": "tools/content-migration/samples/bounded7-dom-witnesses-20261002.json",
+      "sha256": "f974b6035ad010e97cfdae9b6ec44304990a054aaf4e6087a8876462af49e73c"
+    }
+  },
+  "authority": "Root authoring scope accepts exact ID4290-only source-primary qualification; no generic Corpses mapping or D93 World owner change. Six Quest reuse existing accepted DOM Others/Quest meaning; five A12 identities already explicit60 admitted.",
+  "limits": [
+    "Foreign own primarytype absent for six stays UNKNOWN/ABSENT_OR_EMPTY with descriptor Source primarytype absent.4290 preserves literal Wiki Corpses and Decoration separately from DERIVED structural container.",
+    "Current public DOM category has UNKNOWN source revision/cutoff continuity; exact pre-cutoff ownID quest-use independently retained.",
+    "No scalar values/actions/charges/duration/lifetime/weight/capacity imported;4290 source disagreements are held.",
+    "Native UNKNOWN or absent names remain unchanged; no fake EXACT binding/G4/native family/admission activation.",
+    "Source excerpts carry declared full-article/full-HTML coordinates; only actual own raw box/excerpt hashes are recomputed at validation.",
+    "Prior12245 taxonomy/current World owners retain priority; only exact seven qualified records may append."
+  ],
+  "records": [
+    {
+      "appearance_id": 39571,
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i39571",
+        "revision": "definition-r1"
+      },
+      "family_profile": "quest_item",
+      "mode": "OWN_QUEST_PURPOSE_CURRENT_EXTERNAL_CATEGORY",
+      "official_name": "canary feather",
+      "decoded_record_sha256": "a3572406de73aa8e641620d6238cbe63679f49556540415b865623114f6d2ccd",
+      "current_member": [
+        39571,
+        "1e2bb2fae0c7ee6422eb156433e5a2cc9b4b365c496c5451c081f1e37ed5c435",
+        "a8e88effadf92f58ebcb1e3a7c9d7f5dec38842d26a7d9932475fbdba0bd9490"
+      ],
+      "old_member": [
+        39571,
+        "1e2bb2fae0c7ee6422eb156433e5a2cc9b4b365c496c5451c081f1e37ed5c435",
+        "0f659be67d4fe4891cb70c4c538c76312fcb28a31ae93cc96e39314eb43778f7"
+      ],
+      "identity_basis": "EXACT_BOUND_CRYSTAL_CURRENT_PROJECTION",
+      "source_binding": {
+        "disposition": "EXACT",
+        "external_id": "39571",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i39571",
+          "revision": "definition-r1"
+        }
+      },
+      "native_presentation_projection": {
+        "state": "KNOWN",
+        "value": {
+          "description": {
+            "state": "UNKNOWN"
+          },
+          "name": {
+            "state": "KNOWN",
+            "value": "canary feather"
+          }
+        }
+      },
+      "own_bound_crystal_record": {
+        "name": "canary feather",
+        "article": "a",
+        "plural": null,
+        "attrs": {
+          "weight": "36"
+        },
+        "imbuement_limits": []
+      },
+      "wiki_source": {
+        "raw_own_infobox": "{{Infobox Object|List={{{1|}}}|GetValue={{{GetValue|}}}\n| name          = Canary Feather\n| article       = a\n| actualname    = canary feather\n| itemid        = 39571\n| objectclass   = \n| primarytype   = \n| slot          = Extra Slot\n| flavortext    = \n| implemented   = 12.90.12182\n| lightradius   = 5\n| lightcolor    = 211\n| immobile      = no\n| walkable      = yes\n| blockspath    = no\n| pickupable    = yes\n| usable        = yes\n| weight        = 0.36\n| stackable     = no\n| droppedby     = {{Dropped By|}}\n| value         = Negotiable\n| npcvalue      = 0\n| npcprice      = 0\n| buyfrom       = --\n| sellto        = --\n| notes         = Temporarily obtained during the [[Within the Tides Quest]].\n}}",
+        "raw_own_infobox_sha256": "2885a907781ea096027e8805b494f73c2b81dbf4607a527c18f92c2731b7ba87",
+        "balanced": true,
+        "inside_comment": false,
+        "positive_exact_infobox_object_match": true,
+        "parameter_values": {
+          "list": [
+            "{{{1|}}}"
+          ],
+          "getvalue": [
+            "{{{GetValue|}}}"
+          ],
+          "name": [
+            "Canary Feather"
+          ],
+          "article": [
+            "a"
+          ],
+          "actualname": [
+            "canary feather"
+          ],
+          "itemid": [
+            "39571"
+          ],
+          "objectclass": [
+            ""
+          ],
+          "primarytype": [
+            ""
+          ],
+          "slot": [
+            "Extra Slot"
+          ],
+          "flavortext": [
+            ""
+          ],
+          "implemented": [
+            "12.90.12182"
+          ],
+          "lightradius": [
+            "5"
+          ],
+          "lightcolor": [
+            "211"
+          ],
+          "immobile": [
+            "no"
+          ],
+          "walkable": [
+            "yes"
+          ],
+          "blockspath": [
+            "no"
+          ],
+          "pickupable": [
+            "yes"
+          ],
+          "usable": [
+            "yes"
+          ],
+          "weight": [
+            "0.36"
+          ],
+          "stackable": [
+            "no"
+          ],
+          "droppedby": [
+            "{{Dropped By|}}"
+          ],
+          "value": [
+            "Negotiable"
+          ],
+          "npcvalue": [
+            "0"
+          ],
+          "npcprice": [
+            "0"
+          ],
+          "buyfrom": [
+            "--"
+          ],
+          "sellto": [
+            "--"
+          ],
+          "notes": [
+            "Temporarily obtained during the [[Within the Tides Quest]]."
+          ]
+        },
+        "coordinates": {
+          "page_id": 98746,
+          "title": "Canary Feather",
+          "revision_id": 1148501,
+          "revision_timestamp": "2025-12-08T17:54:56Z",
+          "content_sha256": "2885a907781ea096027e8805b494f73c2b81dbf4607a527c18f92c2731b7ba87"
+        },
+        "capture_coordinate": {
+          "capture_path": "/workspace/audit-continuation/global-infobox-object-source-part-152.json",
+          "capture_sha256": "8a21a5958951cd6974a752ba88640252cd44b0a64cb52312d24db64b2f93c474",
+          "page_ordinal": 36,
+          "box_index": 0
+        },
+        "url": "https://tibia.fandom.com/wiki/Canary_Feather",
+        "fullarticle_sha256_role": "DECLARED_COLLECTOR_FULL_ARTICLE_COORDINATE; own raw box digest recomputed independently"
+      },
+      "literal_source_primarytype": "",
+      "quest_purpose_quote": "Temporarily obtained during the [[Within the Tides Quest]].",
+      "scalar_holds": [],
+      "external_4290_corroboration": null
+    },
+    {
+      "appearance_id": 43778,
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i43778",
+        "revision": "definition-r1"
+      },
+      "family_profile": "quest_item",
+      "mode": "OWN_QUEST_PURPOSE_CURRENT_EXTERNAL_CATEGORY",
+      "official_name": "organic acid",
+      "decoded_record_sha256": "52131273eb413ec84f4e2a28da972c9e0dce5932de1523095e11fa19e3c2b0f6",
+      "current_member": [
+        43778,
+        "a476e6cdfbffff106f013d8149b09e3ac9fdf89139fb272e3b61831c8cf8ec3d",
+        "5fb08e36973a22ed8ca908cb0f493399c8adfc0eafce95ff9d87fa2fdf66abb7"
+      ],
+      "old_member": null,
+      "identity_basis": "EXPLICIT_NATIVE_A12_CURRENT_MEMBERSHIP",
+      "source_binding": null,
+      "native_presentation_projection": {},
+      "own_bound_crystal_record": null,
+      "wiki_source": {
+        "raw_own_infobox": "{{Infobox Object|List={{{1|}}}|GetValue={{{GetValue|}}}\n| name          = Organic Acid\n| article       = an\n| actualname    = organic acid\n| itemid        = 43778\n| objectclass   =  \n| primarytype   =  \n| flavortext    = Using this volatile acid on certain fungi will release rotten micro spores.\n| implemented   = 13.20.13560\n| weight        = 1.00\n| immobile      = no\n| walkable      = yes\n| pickupable    = yes\n| usable        = yes\n| droppedby     = {{Dropped By|}}\n| value         = Negotiable\n| npcvalue      = 0\n| npcprice      = 0\n| buyfrom       = --\n| sellto        = --\n| notes         = Used on a [[Small Spore Reservoir]] during the [[Rotten Blood Quest]], to speed up access to [[Murcion]] in [[Jaded Roots]] by 20 seconds.\n}}",
+        "raw_own_infobox_sha256": "6a7a7e0738c9454924c3e00482a5d894351f0ca5d76930ddd74df628ef9a607e",
+        "balanced": true,
+        "inside_comment": false,
+        "positive_exact_infobox_object_match": true,
+        "parameter_values": {
+          "list": [
+            "{{{1|}}}"
+          ],
+          "getvalue": [
+            "{{{GetValue|}}}"
+          ],
+          "name": [
+            "Organic Acid"
+          ],
+          "article": [
+            "an"
+          ],
+          "actualname": [
+            "organic acid"
+          ],
+          "itemid": [
+            "43778"
+          ],
+          "objectclass": [
+            ""
+          ],
+          "primarytype": [
+            ""
+          ],
+          "flavortext": [
+            "Using this volatile acid on certain fungi will release rotten micro spores."
+          ],
+          "implemented": [
+            "13.20.13560"
+          ],
+          "weight": [
+            "1.00"
+          ],
+          "immobile": [
+            "no"
+          ],
+          "walkable": [
+            "yes"
+          ],
+          "pickupable": [
+            "yes"
+          ],
+          "usable": [
+            "yes"
+          ],
+          "droppedby": [
+            "{{Dropped By|}}"
+          ],
+          "value": [
+            "Negotiable"
+          ],
+          "npcvalue": [
+            "0"
+          ],
+          "npcprice": [
+            "0"
+          ],
+          "buyfrom": [
+            "--"
+          ],
+          "sellto": [
+            "--"
+          ],
+          "notes": [
+            "Used on a [[Small Spore Reservoir]] during the [[Rotten Blood Quest]], to speed up access to [[Murcion]] in [[Jaded Roots]] by 20 seconds."
+          ]
+        },
+        "coordinates": {
+          "page_id": 102997,
+          "title": "Organic Acid",
+          "revision_id": 1194752,
+          "revision_timestamp": "2026-07-07T01:54:02Z",
+          "content_sha256": "6a7a7e0738c9454924c3e00482a5d894351f0ca5d76930ddd74df628ef9a607e"
+        },
+        "capture_coordinate": {
+          "capture_path": "/workspace/audit-continuation/global-infobox-object-source-part-161.json",
+          "capture_sha256": "fa123c9227321e79e7f3ebd0b81c2adbe9180eb31353dc27a78712992921a724",
+          "page_ordinal": 2,
+          "box_index": 0
+        },
+        "url": "https://tibia.fandom.com/wiki/Organic_Acid",
+        "fullarticle_sha256_role": "DECLARED_COLLECTOR_FULL_ARTICLE_COORDINATE; own raw box digest recomputed independently"
+      },
+      "literal_source_primarytype": "",
+      "quest_purpose_quote": "Used on a [[Small Spore Reservoir]] during the [[Rotten Blood Quest]], to speed up access to [[Murcion]] in [[Jaded Roots]] by 20 seconds.",
+      "scalar_holds": [],
+      "external_4290_corroboration": null
+    },
+    {
+      "appearance_id": 43779,
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i43779",
+        "revision": "definition-r1"
+      },
+      "family_profile": "quest_item",
+      "mode": "OWN_QUEST_PURPOSE_CURRENT_EXTERNAL_CATEGORY",
+      "official_name": "unstable darklight matter",
+      "decoded_record_sha256": "421a86ae445ed606022707381884da3769fa6b25b3c60b95bd773a73c8ae9de7",
+      "current_member": [
+        43779,
+        "e7538745a8b577c49b1b7712522ad7744ede1322df751e8f32237691885b5177",
+        "528b767a3d0c4de50ab4db5806db0444487c3351deefed20dc7b6cac3eedbdf8"
+      ],
+      "old_member": null,
+      "identity_basis": "EXPLICIT_NATIVE_A12_CURRENT_MEMBERSHIP",
+      "source_binding": null,
+      "native_presentation_projection": {},
+      "own_bound_crystal_record": null,
+      "wiki_source": {
+        "raw_own_infobox": "{{Infobox Object|List={{{1|}}}|GetValue={{{GetValue|}}}\n| name          = Unstable Darklight Matter\n| article       = an\n| actualname    = unstable darklight matter\n| itemid        = 43779\n| objectclass   =  \n| primarytype   =  \n| flavortext    =  \n| implemented   = 13.20.13560\n| immobile      = no\n| walkable      = yes\n| pickupable    = yes\n| usable        = yes\n| weight        = 1.00\n| droppedby     = {{Dropped By|}}\n| npcvalue      = 0\n| npcprice      = 0\n| buyfrom       = --\n| sellto        = --\n| location      = [[Darklight Core]]\n| notes         = This item can be used to speed up the access to [[Vemiath]] by 1 charge (20 seconds) during the [[Rotten Blood Quest]]. It disappears after a few minutes if not used.\n}}",
+        "raw_own_infobox_sha256": "20ef5a0a497c63a5c7572ef5ce255c7f5bc9151a693fc892b3da87969237013a",
+        "balanced": true,
+        "inside_comment": false,
+        "positive_exact_infobox_object_match": true,
+        "parameter_values": {
+          "list": [
+            "{{{1|}}}"
+          ],
+          "getvalue": [
+            "{{{GetValue|}}}"
+          ],
+          "name": [
+            "Unstable Darklight Matter"
+          ],
+          "article": [
+            "an"
+          ],
+          "actualname": [
+            "unstable darklight matter"
+          ],
+          "itemid": [
+            "43779"
+          ],
+          "objectclass": [
+            ""
+          ],
+          "primarytype": [
+            ""
+          ],
+          "flavortext": [
+            ""
+          ],
+          "implemented": [
+            "13.20.13560"
+          ],
+          "immobile": [
+            "no"
+          ],
+          "walkable": [
+            "yes"
+          ],
+          "pickupable": [
+            "yes"
+          ],
+          "usable": [
+            "yes"
+          ],
+          "weight": [
+            "1.00"
+          ],
+          "droppedby": [
+            "{{Dropped By|}}"
+          ],
+          "npcvalue": [
+            "0"
+          ],
+          "npcprice": [
+            "0"
+          ],
+          "buyfrom": [
+            "--"
+          ],
+          "sellto": [
+            "--"
+          ],
+          "location": [
+            "[[Darklight Core]]"
+          ],
+          "notes": [
+            "This item can be used to speed up the access to [[Vemiath]] by 1 charge (20 seconds) during the [[Rotten Blood Quest]]. It disappears after a few minutes if not used."
+          ]
+        },
+        "coordinates": {
+          "page_id": 102998,
+          "title": "Unstable Darklight Matter",
+          "revision_id": 1106043,
+          "revision_timestamp": "2025-06-19T07:22:40Z",
+          "content_sha256": "20ef5a0a497c63a5c7572ef5ce255c7f5bc9151a693fc892b3da87969237013a"
+        },
+        "capture_coordinate": {
+          "capture_path": "/workspace/audit-continuation/global-infobox-object-source-part-161.json",
+          "capture_sha256": "fa123c9227321e79e7f3ebd0b81c2adbe9180eb31353dc27a78712992921a724",
+          "page_ordinal": 3,
+          "box_index": 0
+        },
+        "url": "https://tibia.fandom.com/wiki/Unstable_Darklight_Matter",
+        "fullarticle_sha256_role": "DECLARED_COLLECTOR_FULL_ARTICLE_COORDINATE; own raw box digest recomputed independently"
+      },
+      "literal_source_primarytype": "",
+      "quest_purpose_quote": "This item can be used to speed up the access to [[Vemiath]] by 1 charge (20 seconds) during the [[Rotten Blood Quest]]. It disappears after a few minutes if not used.",
+      "scalar_holds": [],
+      "external_4290_corroboration": null
+    },
+    {
+      "appearance_id": 43780,
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i43780",
+        "revision": "definition-r1"
+      },
+      "family_profile": "quest_item",
+      "mode": "OWN_QUEST_PURPOSE_CURRENT_EXTERNAL_CATEGORY",
+      "official_name": "yellow darklight matter",
+      "decoded_record_sha256": "ade80c6706b523e12daf5d702e293c98db233496efbcbb83bcbfc916cce36226",
+      "current_member": [
+        43780,
+        "884ddb7189fea22a385b8672fcdc335903e7e39b69ce89a73e8791a2ded5990b",
+        "9337be1de42adbb5bb3b2fb61f37d875274d538ab884dc4b5c08ea48845c348f"
+      ],
+      "old_member": null,
+      "identity_basis": "EXPLICIT_NATIVE_A12_CURRENT_MEMBERSHIP",
+      "source_binding": null,
+      "native_presentation_projection": {},
+      "own_bound_crystal_record": null,
+      "wiki_source": {
+        "raw_own_infobox": "{{Infobox Object|List={{{1|}}}|GetValue={{{GetValue|}}}\n| name          = Yellow Darklight Matter\n| article       = a\n| actualname    = yellow darklight matter\n| itemid        = 43780\n| objectclass   =  \n| primarytype   =  \n| flavortext    = This rare form of darklight matter is highly volatile.\n| implemented   = 13.20.13560\n| immobile      = no\n| walkable      = yes\n| pickupable    = yes\n| usable        = yes\n| weight        = 1.00\n| droppedby     = {{Dropped By|}}\n| value         = Negotiable\n| npcvalue      = 0\n| npcprice      = 0\n| buyfrom       = --\n| sellto        = --\n| notes         = This item can be used to speed up the access to [[Vemiath]] by 3 charges (60 seconds) during the [[Rotten Blood Quest]]. It disappears after a few minutes if not used.\n}}",
+        "raw_own_infobox_sha256": "76e684c9864d71100244cc3157bdd90066c306901b796fea6b12053c0a07984b",
+        "balanced": true,
+        "inside_comment": false,
+        "positive_exact_infobox_object_match": true,
+        "parameter_values": {
+          "list": [
+            "{{{1|}}}"
+          ],
+          "getvalue": [
+            "{{{GetValue|}}}"
+          ],
+          "name": [
+            "Yellow Darklight Matter"
+          ],
+          "article": [
+            "a"
+          ],
+          "actualname": [
+            "yellow darklight matter"
+          ],
+          "itemid": [
+            "43780"
+          ],
+          "objectclass": [
+            ""
+          ],
+          "primarytype": [
+            ""
+          ],
+          "flavortext": [
+            "This rare form of darklight matter is highly volatile."
+          ],
+          "implemented": [
+            "13.20.13560"
+          ],
+          "immobile": [
+            "no"
+          ],
+          "walkable": [
+            "yes"
+          ],
+          "pickupable": [
+            "yes"
+          ],
+          "usable": [
+            "yes"
+          ],
+          "weight": [
+            "1.00"
+          ],
+          "droppedby": [
+            "{{Dropped By|}}"
+          ],
+          "value": [
+            "Negotiable"
+          ],
+          "npcvalue": [
+            "0"
+          ],
+          "npcprice": [
+            "0"
+          ],
+          "buyfrom": [
+            "--"
+          ],
+          "sellto": [
+            "--"
+          ],
+          "notes": [
+            "This item can be used to speed up the access to [[Vemiath]] by 3 charges (60 seconds) during the [[Rotten Blood Quest]]. It disappears after a few minutes if not used."
+          ]
+        },
+        "coordinates": {
+          "page_id": 102999,
+          "title": "Yellow Darklight Matter",
+          "revision_id": 1106044,
+          "revision_timestamp": "2025-06-19T07:22:55Z",
+          "content_sha256": "76e684c9864d71100244cc3157bdd90066c306901b796fea6b12053c0a07984b"
+        },
+        "capture_coordinate": {
+          "capture_path": "/workspace/audit-continuation/global-infobox-object-source-part-161.json",
+          "capture_sha256": "fa123c9227321e79e7f3ebd0b81c2adbe9180eb31353dc27a78712992921a724",
+          "page_ordinal": 4,
+          "box_index": 0
+        },
+        "url": "https://tibia.fandom.com/wiki/Yellow_Darklight_Matter",
+        "fullarticle_sha256_role": "DECLARED_COLLECTOR_FULL_ARTICLE_COORDINATE; own raw box digest recomputed independently"
+      },
+      "literal_source_primarytype": "",
+      "quest_purpose_quote": "This item can be used to speed up the access to [[Vemiath]] by 3 charges (60 seconds) during the [[Rotten Blood Quest]]. It disappears after a few minutes if not used.",
+      "scalar_holds": [],
+      "external_4290_corroboration": null
+    },
+    {
+      "appearance_id": 43781,
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i43781",
+        "revision": "definition-r1"
+      },
+      "family_profile": "quest_item",
+      "mode": "OWN_QUEST_PURPOSE_CURRENT_EXTERNAL_CATEGORY",
+      "official_name": "darklight obsidian axe",
+      "decoded_record_sha256": "823051317bab45e3efe4bfc80843639a9cbc2211480a56c4b8a6631177911eab",
+      "current_member": [
+        43781,
+        "3478a36451e86aa948ac71e1f96d9eb8900036934bbc3daf9a1584b206540092",
+        "abfaa0ad3d28a91ac35524f9d419fc27452c1e7cfe9ac51115da0358edf12edf"
+      ],
+      "old_member": null,
+      "identity_basis": "EXPLICIT_NATIVE_A12_CURRENT_MEMBERSHIP",
+      "source_binding": null,
+      "native_presentation_projection": {},
+      "own_bound_crystal_record": null,
+      "wiki_source": {
+        "raw_own_infobox": "{{Infobox Object|List={{{1|}}}|GetValue={{{GetValue|}}}\n| name          = Darklight Obsidian Axe\n| article       = a\n| actualname    = darklight obsidian axe\n| itemid        = 43781\n| objectclass   =  \n| primarytype   =  \n| flavortext    = A rare variant of obsidian that originates from highly compressed darklight matter.\n| implemented   = 13.20.13560\n| immobile      = no\n| walkable      = yes\n| pickupable    = yes\n| usable        = yes\n| weight        = 1.00\n| droppedby     = {{Dropped By|}}\n| value         = Negotiable\n| npcvalue      = 0\n| npcprice      = 0\n| buyfrom       = --\n| sellto        = --\n| notes         = This item can be used on stone pillars to speed up access to [[Chagorz]] in [[Gloom Pillars]] by 3 charges (60 seconds) during the [[Rotten Blood Quest]]. It disappears after a few minutes if not used.\n}}",
+        "raw_own_infobox_sha256": "0d392558486b70f25b7e98c40b548c548ebe8b63788e3a0b95a8549ee7d3c249",
+        "balanced": true,
+        "inside_comment": false,
+        "positive_exact_infobox_object_match": true,
+        "parameter_values": {
+          "list": [
+            "{{{1|}}}"
+          ],
+          "getvalue": [
+            "{{{GetValue|}}}"
+          ],
+          "name": [
+            "Darklight Obsidian Axe"
+          ],
+          "article": [
+            "a"
+          ],
+          "actualname": [
+            "darklight obsidian axe"
+          ],
+          "itemid": [
+            "43781"
+          ],
+          "objectclass": [
+            ""
+          ],
+          "primarytype": [
+            ""
+          ],
+          "flavortext": [
+            "A rare variant of obsidian that originates from highly compressed darklight matter."
+          ],
+          "implemented": [
+            "13.20.13560"
+          ],
+          "immobile": [
+            "no"
+          ],
+          "walkable": [
+            "yes"
+          ],
+          "pickupable": [
+            "yes"
+          ],
+          "usable": [
+            "yes"
+          ],
+          "weight": [
+            "1.00"
+          ],
+          "droppedby": [
+            "{{Dropped By|}}"
+          ],
+          "value": [
+            "Negotiable"
+          ],
+          "npcvalue": [
+            "0"
+          ],
+          "npcprice": [
+            "0"
+          ],
+          "buyfrom": [
+            "--"
+          ],
+          "sellto": [
+            "--"
+          ],
+          "notes": [
+            "This item can be used on stone pillars to speed up access to [[Chagorz]] in [[Gloom Pillars]] by 3 charges (60 seconds) during the [[Rotten Blood Quest]]. It disappears after a few minutes if not used."
+          ]
+        },
+        "coordinates": {
+          "page_id": 103000,
+          "title": "Darklight Obsidian Axe",
+          "revision_id": 1106041,
+          "revision_timestamp": "2025-06-19T07:05:33Z",
+          "content_sha256": "0d392558486b70f25b7e98c40b548c548ebe8b63788e3a0b95a8549ee7d3c249"
+        },
+        "capture_coordinate": {
+          "capture_path": "/workspace/audit-continuation/global-infobox-object-source-part-161.json",
+          "capture_sha256": "fa123c9227321e79e7f3ebd0b81c2adbe9180eb31353dc27a78712992921a724",
+          "page_ordinal": 5,
+          "box_index": 0
+        },
+        "url": "https://tibia.fandom.com/wiki/Darklight_Obsidian_Axe",
+        "fullarticle_sha256_role": "DECLARED_COLLECTOR_FULL_ARTICLE_COORDINATE; own raw box digest recomputed independently"
+      },
+      "literal_source_primarytype": "",
+      "quest_purpose_quote": "This item can be used on stone pillars to speed up access to [[Chagorz]] in [[Gloom Pillars]] by 3 charges (60 seconds) during the [[Rotten Blood Quest]]. It disappears after a few minutes if not used.",
+      "scalar_holds": [],
+      "external_4290_corroboration": null
+    },
+    {
+      "appearance_id": 43782,
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i43782",
+        "revision": "definition-r1"
+      },
+      "family_profile": "quest_item",
+      "mode": "OWN_QUEST_PURPOSE_CURRENT_EXTERNAL_CATEGORY",
+      "official_name": "lichen gobbler",
+      "decoded_record_sha256": "20f3279e32c93c9bab67523aecd9f64c5f7d9d63da487dd90cbe736a922a7d31",
+      "current_member": [
+        43782,
+        "ef4e7534f93f8a8f90d7ca278b224888568061d5dcc1e8874f8949783870b14c",
+        "977e48480c243b5aac9498e8984125d77b053f4dc5416243dd7c121df861b91a"
+      ],
+      "old_member": null,
+      "identity_basis": "EXPLICIT_NATIVE_A12_CURRENT_MEMBERSHIP",
+      "source_binding": null,
+      "native_presentation_projection": {},
+      "own_bound_crystal_record": null,
+      "wiki_source": {
+        "raw_own_infobox": "{{Infobox Object|List={{{1|}}}|GetValue={{{GetValue|}}}\n| name          = Lichen Gobbler\n| article       = a\n| actualname    = lichen gobbler\n| itemid        = 43782\n| objectclass   =  \n| primarytype   =  \n| flavortext    = This little critter just loves dead lichen.\n| implemented   = 13.20.13560\n| immobile      = no\n| walkable      = yes\n| pickupable    = yes\n| usable        = yes\n| weight        = 1.00\n| droppedby     = {{Dropped By|}}\n| value         = Negotiable\n| npcvalue      = 0\n| npcprice      = 0\n| buyfrom       = --\n| sellto        = --\n| notes         = Can be used on certain floor tiles of [[Putrefactory]] for a chance to speed up access to [[Ichgahal]] during the [[Rotten Blood Quest]] by 1 charge (20 seconds). It can fail to eat the tile and breaks randomly.\n}}",
+        "raw_own_infobox_sha256": "b61cb4ffd016cc9ac7da3a393386a53af16909b95f621c051dbb1e7fe59f61e9",
+        "balanced": true,
+        "inside_comment": false,
+        "positive_exact_infobox_object_match": true,
+        "parameter_values": {
+          "list": [
+            "{{{1|}}}"
+          ],
+          "getvalue": [
+            "{{{GetValue|}}}"
+          ],
+          "name": [
+            "Lichen Gobbler"
+          ],
+          "article": [
+            "a"
+          ],
+          "actualname": [
+            "lichen gobbler"
+          ],
+          "itemid": [
+            "43782"
+          ],
+          "objectclass": [
+            ""
+          ],
+          "primarytype": [
+            ""
+          ],
+          "flavortext": [
+            "This little critter just loves dead lichen."
+          ],
+          "implemented": [
+            "13.20.13560"
+          ],
+          "immobile": [
+            "no"
+          ],
+          "walkable": [
+            "yes"
+          ],
+          "pickupable": [
+            "yes"
+          ],
+          "usable": [
+            "yes"
+          ],
+          "weight": [
+            "1.00"
+          ],
+          "droppedby": [
+            "{{Dropped By|}}"
+          ],
+          "value": [
+            "Negotiable"
+          ],
+          "npcvalue": [
+            "0"
+          ],
+          "npcprice": [
+            "0"
+          ],
+          "buyfrom": [
+            "--"
+          ],
+          "sellto": [
+            "--"
+          ],
+          "notes": [
+            "Can be used on certain floor tiles of [[Putrefactory]] for a chance to speed up access to [[Ichgahal]] during the [[Rotten Blood Quest]] by 1 charge (20 seconds). It can fail to eat the tile and breaks randomly."
+          ]
+        },
+        "coordinates": {
+          "page_id": 103001,
+          "title": "Lichen Gobbler",
+          "revision_id": 1106039,
+          "revision_timestamp": "2025-06-19T06:48:42Z",
+          "content_sha256": "b61cb4ffd016cc9ac7da3a393386a53af16909b95f621c051dbb1e7fe59f61e9"
+        },
+        "capture_coordinate": {
+          "capture_path": "/workspace/audit-continuation/global-infobox-object-source-part-161.json",
+          "capture_sha256": "fa123c9227321e79e7f3ebd0b81c2adbe9180eb31353dc27a78712992921a724",
+          "page_ordinal": 6,
+          "box_index": 0
+        },
+        "url": "https://tibia.fandom.com/wiki/Lichen_Gobbler",
+        "fullarticle_sha256_role": "DECLARED_COLLECTOR_FULL_ARTICLE_COORDINATE; own raw box digest recomputed independently"
+      },
+      "literal_source_primarytype": "",
+      "quest_purpose_quote": "Can be used on certain floor tiles of [[Putrefactory]] for a chance to speed up access to [[Ichgahal]] during the [[Rotten Blood Quest]] by 1 charge (20 seconds). It can fail to eat the tile and breaks randomly.",
+      "scalar_holds": [],
+      "external_4290_corroboration": null
+    },
+    {
+      "appearance_id": 4290,
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i4290",
+        "revision": "definition-r1"
+      },
+      "family_profile": "container",
+      "mode": "ID4290_STRUCTURAL_CONTAINER_PRIMARY_QUALIFICATION",
+      "official_name": "remains of a ghost",
+      "decoded_record_sha256": "7bc17054f5c218e069ddbea359f36e57dbc2f854063163de01b7fd9914523305",
+      "current_member": [
+        4290,
+        "9e285fedf1e959ed69f3f4f37a1be92fa2f229594b326d40454e31c260b9e902",
+        "ac73cf7c14024c95cb402607e0cd136bfe76757508a7b2bb93ce487575e596b3"
+      ],
+      "old_member": [
+        4290,
+        "9e285fedf1e959ed69f3f4f37a1be92fa2f229594b326d40454e31c260b9e902",
+        "f69a9148768018b98029bc4fd0fde0de2d52ed684df284335baeb47326fc683d"
+      ],
+      "identity_basis": "EXACT_BOUND_CRYSTAL_CURRENT_PROJECTION",
+      "source_binding": {
+        "disposition": "EXACT",
+        "external_id": "4290",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i4290",
+          "revision": "definition-r1"
+        }
+      },
+      "native_presentation_projection": {
+        "state": "KNOWN",
+        "value": {
+          "description": {
+            "state": "UNKNOWN"
+          },
+          "name": {
+            "state": "KNOWN",
+            "value": "remains of a ghost"
+          }
+        }
+      },
+      "own_bound_crystal_record": {
+        "name": "remains of a ghost",
+        "article": null,
+        "plural": null,
+        "attrs": {
+          "duration": "300",
+          "decayto": "4158",
+          "containersize": "10",
+          "weight": "1000"
+        },
+        "imbuement_limits": []
+      },
+      "wiki_source": {
+        "raw_own_infobox": "{{Infobox Object|List={{{1|}}}|GetValue={{{GetValue|}}}\n| name          = Remains of a Ghost\n| article       = \n| actualname    = Remains of a Ghost\n| plural        = \n| itemid        = 4290\n| objectclass   = Decoration\n| primarytype   = Corpses\n| implemented   = 7.3\n| volume        = 8\n| immobile      = no\n| walkable      = yes\n| pickupable    = yes\n| usable        = yes\n| weight        = 22\n| stackable     = no\n| marketable    = \n| droppedby     = {{Dropped By|}}\n| value         = \n| npcvalue      = \n| npcprice      = \n| npcvaluerook  = \n| npcpricerook  = \n| buyfrom       = \n| sellto        = --\n| notes         = Looks like [[Ghost Residue]] {{Ilink|Ghost Residue}}, does not expire. One can be found as a [[Daily Respawns|daily respawn]] in [[Oasis Tomb]].\n| history       = \n}}",
+        "raw_own_infobox_sha256": "8ca8001b77bc548b5df1f31ce1fb36069e4db06fd0a11657119ed6ca5e526a95",
+        "balanced": true,
+        "inside_comment": false,
+        "positive_exact_infobox_object_match": true,
+        "parameter_values": {
+          "list": [
+            "{{{1|}}}"
+          ],
+          "getvalue": [
+            "{{{GetValue|}}}"
+          ],
+          "name": [
+            "Remains of a Ghost"
+          ],
+          "article": [
+            ""
+          ],
+          "actualname": [
+            "Remains of a Ghost"
+          ],
+          "plural": [
+            ""
+          ],
+          "itemid": [
+            "4290"
+          ],
+          "objectclass": [
+            "Decoration"
+          ],
+          "primarytype": [
+            "Corpses"
+          ],
+          "implemented": [
+            "7.3"
+          ],
+          "volume": [
+            "8"
+          ],
+          "immobile": [
+            "no"
+          ],
+          "walkable": [
+            "yes"
+          ],
+          "pickupable": [
+            "yes"
+          ],
+          "usable": [
+            "yes"
+          ],
+          "weight": [
+            "22"
+          ],
+          "stackable": [
+            "no"
+          ],
+          "marketable": [
+            ""
+          ],
+          "droppedby": [
+            "{{Dropped By|}}"
+          ],
+          "value": [
+            ""
+          ],
+          "npcvalue": [
+            ""
+          ],
+          "npcprice": [
+            ""
+          ],
+          "npcvaluerook": [
+            ""
+          ],
+          "npcpricerook": [
+            ""
+          ],
+          "buyfrom": [
+            ""
+          ],
+          "sellto": [
+            "--"
+          ],
+          "notes": [
+            "Looks like [[Ghost Residue]] {{Ilink|Ghost Residue}}, does not expire. One can be found as a [[Daily Respawns|daily respawn]] in [[Oasis Tomb]]."
+          ],
+          "history": [
+            ""
+          ]
+        },
+        "coordinates": {
+          "page_id": 103650,
+          "title": "Remains of a Ghost",
+          "revision_id": 1110140,
+          "revision_timestamp": "2025-07-13T15:39:02Z",
+          "content_sha256": "8ca8001b77bc548b5df1f31ce1fb36069e4db06fd0a11657119ed6ca5e526a95"
+        },
+        "capture_coordinate": {
+          "capture_path": "/workspace/audit-continuation/global-infobox-object-source-part-162.json",
+          "capture_sha256": "a7d2b7666722acac479ed7198c608b10786e66fb0b3d6afa8ed0d4390172f066",
+          "page_ordinal": 48,
+          "box_index": 0
+        },
+        "url": "https://tibia.fandom.com/wiki/Remains_of_a_Ghost",
+        "fullarticle_sha256_role": "DECLARED_COLLECTOR_FULL_ARTICLE_COORDINATE; own raw box digest recomputed independently"
+      },
+      "literal_source_primarytype": "Corpses",
+      "quest_purpose_quote": null,
+      "scalar_holds": [
+        {
+          "field": "container.capacity",
+          "Wiki_own": "8",
+          "Crystal_own": "10",
+          "verdict": "SCALAR_CONFLICT_NO_IMPORT"
+        },
+        {
+          "field": "lifecycle.expiration",
+          "Wiki_own": "does not expire",
+          "Crystal_own_duration": "300",
+          "Crystal_own_decayto": "4158",
+          "verdict": "SCALAR_CONFLICT_NO_IMPORT"
+        },
+        {
+          "field": "physical.weight",
+          "Wiki_own": "22",
+          "Crystal_own": "1000 engine units",
+          "verdict": "SCALAR_CONFLICT_NO_IMPORT"
+        }
+      ],
+      "external_4290_corroboration": [
+        {
+          "capture_path": "/workspace/audit-continuation/item-remaining260-own-function-tibiopedia-public-source-part-000.json",
+          "capture_sha256_verified": "5a15935a9e26f85a114aa934b3cc354ca66df25438836ba63a1525468a707014",
+          "page_ordinal": 0,
+          "source_url": "https://tibiopedia.pl/items/Remains_of_a_Ghost",
+          "captured_at": "2026-10-01T23:35:27.020062+00:00",
+          "fullbody_sha256_verified": "536dd872714aeb1d1c2e461033f05e5d58845167df89eb6167955110ca90467e",
+          "document_title": "Items: Remains of a Ghost - Tibia ~ Tibiopedia.pl",
+          "explicit_class_subclass": [
+            "Houses and flats",
+            "Decoration"
+          ],
+          "classification_raw_quote": "\n\t\t\t\t<td width=\"31.8%\" colspan=\"5\"><center><a class=\"thinlink\" href=\"https://tibiopedia.pl/items/house\">Houses and flats</a></center></td>\n\t\t\t\t<td width=\"38.3%\" colspan=\"4\"><center><a class=\"thinlink\" href=\"https://tibiopedia.pl/items/house#decos\">Decoration</a></center></td>\n\t\t\t",
+          "quote_character_offset": 42849,
+          "quote_utf8_byte_offset": 42852,
+          "source_method": "Normal anonymous HTTP, guest language/layout selection only, two bounded concurrent public page requests, no login/private data/no retries",
+          "source_revision_id": "NOT_PROVIDED_BY_SITE",
+          "source_native_ItemID": "NOT_ESTABLISHED",
+          "at_cutoff_continuity": "UNKNOWN",
+          "raw_function_quotes": [
+            {
+              "quote": "Przedmiot ten nie ulega rozkładowi, może służyć jako dekoracja w domku; można w nim przechowywać do 8 przedmiotów.",
+              "character_offset": 46178,
+              "utf8_byte_offset": 46184
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "qualification_phase": "AUTHORING_ON_PUBLISHED_EXTERNAL18",
+  "family_pipeline_predecessor": "802ba176bb7f308aea9ba217430e6af461de3b20"
+}

@@ -2039,7 +2039,7 @@
       "section": "Desert Quest",
       "quest": {
         "family": "Quest",
-        "key": "canary:quest/the_desert_dungeon_quest",
+        "key": "canary:quest/desert_dungeon_quest",
         "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "curated",
@@ -2086,7 +2086,7 @@
       "section": "Desert Quest",
       "quest": {
         "family": "Quest",
-        "key": "canary:quest/the_desert_dungeon_quest",
+        "key": "canary:quest/desert_dungeon_quest",
         "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "curated",

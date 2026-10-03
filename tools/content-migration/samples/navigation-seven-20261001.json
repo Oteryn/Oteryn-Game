@@ -1,0 +1,499 @@
+{
+  "classification": "DERIVED",
+  "records": [
+    {
+      "appearance_id": 40522,
+      "decoded_record_sha256": "250648f94e01dc6faf42c5ec67f3bfab63632d554ee12ed4d9ee3199b1f48000",
+      "family_profile": "quest_item",
+      "identity_projection_sha256": "87d67a34daa812e204a500cd983178d793e31733781ae78e83ed1519b5ca475a",
+      "mode": "OFFICIAL_A12_OWN_WIKI_PRIMARY",
+      "native_definition_sha256": "df6bb49e8e3381318d5562acb6683aa577b941d05d7a1f26756be56cc30d3c9a",
+      "native_existing_semantics": "ABSENT_PRESERVED",
+      "official_flags": {
+        "cyclopediaitem.cyclopedia_type": 40522,
+        "flags.cyclopediaitem": true,
+        "flags.multiuse": true,
+        "flags.take": true,
+        "flags.usable": true
+      },
+      "official_name": "daedal chisel",
+      "record_sha256": "352e3b1370723600cb787f67747cf7781effc75a4e58fe6ea41aed75336d7c74",
+      "selected_source_primary": {
+        "family_profile": "quest_item",
+        "match_basis": "itemid",
+        "observations": [
+          {
+            "content_sha256": "aa785c77c0951dd33c7652db4b2aef6f09dd0d3d18cdca87cc6562e2862e2032",
+            "field": "primarytype",
+            "own_actualname": [
+              "daedal chisel"
+            ],
+            "own_itemid": [
+              "40522"
+            ],
+            "own_name": [
+              "Daedal Chisel"
+            ],
+            "page_id": 101156,
+            "raw_infobox_sha256": "aa785c77c0951dd33c7652db4b2aef6f09dd0d3d18cdca87cc6562e2862e2032",
+            "revision_id": 1194166,
+            "revision_timestamp": "2026-07-04T18:24:27Z",
+            "source_part": "/workspace/audit-continuation/global-infobox-object-source-part-155.json",
+            "source_part_sha256": "46c0772910568a7ab92405aa2d62c62a565397e54d32ad9fa10d550c390352a4",
+            "title": "Daedal Chisel",
+            "value": "Quest Items"
+          }
+        ]
+      },
+      "source_binding": null,
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i40522",
+        "revision": "definition-r1"
+      },
+      "wiki_source": {
+        "capture_api_sha256": "09d57da21562c8a38ac38864fd1c7a13256444ffb3fbd05da84fc9cd0777e9a7",
+        "capture_source_part_sha256": "46c0772910568a7ab92405aa2d62c62a565397e54d32ad9fa10d550c390352a4",
+        "capture_utc": "2026-10-01T21:27:24.264Z",
+        "content": "{{Infobox Object|List={{{1|}}}|GetValue={{{GetValue|}}}\n| name          = Daedal Chisel\n| article       = a\n| actualname    = daedal chisel\n| plural        =  \n| itemid        = 40522\n| objectclass   = Other Items\n| primarytype   =  Quest Items\n| flavortext    = A richly ornamented chisel with crude but complex symbols and signs. The intense workmanship this ancient tool underwent made it brittle and fragile. Used in an Iks ritual to destroy urns.\n| implemented   = 13.10.12852\n| immobile      = no\n| walkable      = yes\n| pickupable    = yes\n| usable        = yes\n| marketable    = no\n| weight        = 1.00\n| droppedby     = {{Dropped By |Iks Ahpututu|}}\n| value         = Negotiable\n| npcvalue      = 0\n| npcprice      = 0\n| buyfrom       = --\n| sellto        = --\n| notes         = Can be used to break urns during the [[Ahau]] boss fight to make the fight easier.<br/>\nPart of the [[Adventures of Galthen Quest]].\n}}",
+        "content_sha256": "aa785c77c0951dd33c7652db4b2aef6f09dd0d3d18cdca87cc6562e2862e2032",
+        "page_id": 101156,
+        "revision_id": 1194166,
+        "revision_sha1": "d60e56615a85e4fcf7214b5f3e52b558e38a0edd",
+        "revision_timestamp": "2026-07-04T18:24:27Z",
+        "title": "Daedal Chisel",
+        "url": "https://tibia.fandom.com/wiki/Daedal_Chisel"
+      }
+    },
+    {
+      "appearance_id": 43946,
+      "decoded_record_sha256": "af90688d1b915a462e57c5fe0234156c47f8d697a3948060148969e1ff39c4cf",
+      "family_profile": "material_valuable",
+      "identity_projection_sha256": "247f8e283b1c9af8272e8e8a4977dd976bcb3f8250e8e7e55e3f9fa298fd95e5",
+      "mode": "OFFICIAL_A12_OWN_WIKI_PRIMARY",
+      "native_definition_sha256": "341858eb1892f46f42872adb0c1cca1e37841c1042714a331ffe5b052fcaccc6",
+      "native_existing_semantics": "ABSENT_PRESERVED",
+      "official_flags": {
+        "cyclopediaitem.cyclopedia_type": 43946,
+        "flags.cyclopediaitem": true,
+        "flags.market": true,
+        "flags.take": true,
+        "flags.usable": true,
+        "market.category": 15,
+        "market.show_as_object_id": 43946,
+        "market.trade_as_object_id": 43946
+      },
+      "official_name": "abridged promotion scroll",
+      "record_sha256": "027788d38ae967564d858ac5a770e50cb6baf6fb78be1d1bc003d6532da6d881",
+      "selected_source_primary": {
+        "family_profile": "material_valuable",
+        "match_basis": "itemid",
+        "observations": [
+          {
+            "content_sha256": "591e2a2ba3308ef24d1e051cd490dda930b5e2696c103b4d350072fdde213c6c",
+            "field": "primarytype",
+            "own_actualname": [
+              "abridged promotion scroll"
+            ],
+            "own_itemid": [
+              "43946"
+            ],
+            "own_name": [
+              "Abridged Promotion Scroll"
+            ],
+            "page_id": 103028,
+            "raw_infobox_sha256": "591e2a2ba3308ef24d1e051cd490dda930b5e2696c103b4d350072fdde213c6c",
+            "revision_id": 1076151,
+            "revision_timestamp": "2024-08-22T13:05:26Z",
+            "source_part": "/workspace/audit-continuation/global-infobox-object-source-part-161.json",
+            "source_part_sha256": "fa123c9227321e79e7f3ebd0b81c2adbe9180eb31353dc27a78712992921a724",
+            "title": "Abridged Promotion Scroll",
+            "value": "Valuables"
+          }
+        ]
+      },
+      "source_binding": null,
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i43946",
+        "revision": "definition-r1"
+      },
+      "wiki_source": {
+        "capture_api_sha256": "9165213e1c6f92b4617742a6f8f800faa014714b14b78209878c32c4989caaa5",
+        "capture_source_part_sha256": "fa123c9227321e79e7f3ebd0b81c2adbe9180eb31353dc27a78712992921a724",
+        "capture_utc": "2026-10-01T21:27:39.943Z",
+        "content": "{{Infobox Object|List={{{1|}}}|GetValue={{{GetValue|}}}\n| name          = Abridged Promotion Scroll\n| article       = an\n| actualname    = abridged promotion scroll\n| itemid        = 43946\n| objectclass   = Other Items\n| primarytype   = Valuables\n| flavortext    = Only a hero of level 51 or above can decipher this scroll to gain 3 promotion points for the Wheel of Destiny.\n| implemented   = 13.20.13560\n| immobile      = no\n| walkable      = yes\n| pickupable    = yes\n| usable        = yes\n| weight        = 1.20\n| marketable    = yes\n| droppedby     = {{Dropped By|Bakragore}}\n| value         = Negotiable\n| npcvalue      = 0\n| npcprice      = 0\n| buyfrom       = --\n| sellto        = --\n| notes         = Using this [[Promotion Scroll]] produces the server message \"{{Server Message|You have successfully used the item and received bonus promotion points.}}\" and grants the character 3 promotion points to spend in the [[Wheel of Destiny]]. Each character can only use it once. Can only be dropped from [[Bakragore]] when fighting it under the influence of its [[Bakragore's Taints|final taint]].\n}}",
+        "content_sha256": "591e2a2ba3308ef24d1e051cd490dda930b5e2696c103b4d350072fdde213c6c",
+        "page_id": 103028,
+        "revision_id": 1076151,
+        "revision_sha1": "386f32f284cf220ba131fd095ecdfb42ff9aa71f",
+        "revision_timestamp": "2024-08-22T13:05:26Z",
+        "title": "Abridged Promotion Scroll",
+        "url": "https://tibia.fandom.com/wiki/Abridged_Promotion_Scroll"
+      }
+    },
+    {
+      "appearance_id": 43947,
+      "decoded_record_sha256": "9a89781bff46c6f099e66dd84d86da6d3282ba65c883ebfb63dc210ce41b3125",
+      "family_profile": "material_valuable",
+      "identity_projection_sha256": "4d38cd2b41c5118926b55835f219a3702368b437fde3443f1c1f8a1d61ec98ac",
+      "mode": "OFFICIAL_A12_OWN_WIKI_PRIMARY",
+      "native_definition_sha256": "df8bf0773d91c6f235070f6c666fe8a839e185a6fee173684b2242737b71e798",
+      "native_existing_semantics": "ABSENT_PRESERVED",
+      "official_flags": {
+        "cyclopediaitem.cyclopedia_type": 43947,
+        "flags.cyclopediaitem": true,
+        "flags.market": true,
+        "flags.take": true,
+        "flags.usable": true,
+        "market.category": 15,
+        "market.show_as_object_id": 43947,
+        "market.trade_as_object_id": 43947
+      },
+      "official_name": "basic promotion scroll",
+      "record_sha256": "cc5504e0d0962e157a760c90f07d74d23c6a38b0bedcd993a442ed3a583c7c58",
+      "selected_source_primary": {
+        "family_profile": "material_valuable",
+        "match_basis": "itemid",
+        "observations": [
+          {
+            "content_sha256": "8a317f38f4b0fb63e5b8bb58aea51bdc8af265e74e42aa6781b21c6f5d740708",
+            "field": "primarytype",
+            "own_actualname": [
+              "basic promotion scroll"
+            ],
+            "own_itemid": [
+              "43947"
+            ],
+            "own_name": [
+              "Basic Promotion Scroll"
+            ],
+            "page_id": 103029,
+            "raw_infobox_sha256": "8a317f38f4b0fb63e5b8bb58aea51bdc8af265e74e42aa6781b21c6f5d740708",
+            "revision_id": 1057246,
+            "revision_timestamp": "2024-04-06T10:23:10Z",
+            "source_part": "/workspace/audit-continuation/global-infobox-object-source-part-161.json",
+            "source_part_sha256": "fa123c9227321e79e7f3ebd0b81c2adbe9180eb31353dc27a78712992921a724",
+            "title": "Basic Promotion Scroll",
+            "value": "Valuables"
+          }
+        ]
+      },
+      "source_binding": null,
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i43947",
+        "revision": "definition-r1"
+      },
+      "wiki_source": {
+        "capture_api_sha256": "9165213e1c6f92b4617742a6f8f800faa014714b14b78209878c32c4989caaa5",
+        "capture_source_part_sha256": "fa123c9227321e79e7f3ebd0b81c2adbe9180eb31353dc27a78712992921a724",
+        "capture_utc": "2026-10-01T21:27:39.943Z",
+        "content": "{{Infobox Object|List={{{1|}}}|GetValue={{{GetValue|}}}\n| name          = Basic Promotion Scroll\n| article       = a\n| actualname    = basic promotion scroll\n| itemid        = 43947\n| objectclass   = Other Items\n| primarytype   = Valuables\n| flavortext    = Only a hero of level 51 or above can decipher this scroll to gain 5 promotion points for the Wheel of Destiny.\n| implemented   = 13.20.13560\n| immobile      = no\n| walkable      = yes\n| pickupable    = yes\n| usable        = yes\n| weight        = 1.20\n| marketable    = yes\n| droppedby     = {{Dropped By|Bakragore}}\n| value         = Negotiable\n| npcvalue      = 0\n| npcprice      = 0\n| buyfrom       = --\n| sellto        = --\n| notes         = Using this [[Promotion Scroll]] will grant the character 5 promotion points to spend in the [[Wheel of Destiny]]. Each character can only use it once. Can only be dropped from [[Bakragore]] when fighting it under the influence of its [[Bakragore's Taints|final taint]] and at least [[Bakragore's Burden|one burden]].\n}}",
+        "content_sha256": "8a317f38f4b0fb63e5b8bb58aea51bdc8af265e74e42aa6781b21c6f5d740708",
+        "page_id": 103029,
+        "revision_id": 1057246,
+        "revision_sha1": "7d8272ad1a39086e50d0845ad3cb6d704c228cd6",
+        "revision_timestamp": "2024-04-06T10:23:10Z",
+        "title": "Basic Promotion Scroll",
+        "url": "https://tibia.fandom.com/wiki/Basic_Promotion_Scroll"
+      }
+    },
+    {
+      "appearance_id": 44048,
+      "decoded_record_sha256": "314519f2dfc823f6ac3efe8bbf8adaa74a375fb4bd084b656bd5ee89abca689c",
+      "family_profile": "tool",
+      "identity_projection_sha256": "84adfa8353f828dd98be6aa1461c14b1a41e2a83fc73d6963180d3bb7ac5a853",
+      "mode": "OFFICIAL_A12_OWN_WIKI_PRIMARY",
+      "native_definition_sha256": "f2bf4855c701a09beaa993a0c2fe700dc367a7c9109b7c4cfca1deee0f94fc0b",
+      "native_existing_semantics": "ABSENT_PRESERVED",
+      "official_flags": {
+        "cyclopediaitem.cyclopedia_type": 44048,
+        "flags.cyclopediaitem": true,
+        "flags.light": true,
+        "flags.market": true,
+        "flags.take": true,
+        "flags.usable": true,
+        "light.brightness": 3,
+        "light.color": 179,
+        "market.category": 15,
+        "market.show_as_object_id": 44048,
+        "market.trade_as_object_id": 44048
+      },
+      "official_name": "spiritual horseshoe",
+      "record_sha256": "1d0c3f93cd84c9615ee3617e74750051c808e3cc79ed5b9752a81ecee2b5520c",
+      "selected_source_primary": {
+        "family_profile": "tool",
+        "match_basis": "itemid",
+        "observations": [
+          {
+            "content_sha256": "ea3e1f7f1bc55bf905bc92b0543a5fc516490208497e6c1f47a3133c69841445",
+            "field": "primarytype",
+            "own_actualname": [
+              "spiritual horseshoe"
+            ],
+            "own_itemid": [
+              "44048"
+            ],
+            "own_name": [
+              "Spiritual Horseshoe"
+            ],
+            "page_id": 103157,
+            "raw_infobox_sha256": "ea3e1f7f1bc55bf905bc92b0543a5fc516490208497e6c1f47a3133c69841445",
+            "revision_id": 1201512,
+            "revision_timestamp": "2026-08-17T08:53:57Z",
+            "source_part": "/workspace/audit-continuation/global-infobox-object-source-part-162.json",
+            "source_part_sha256": "a7d2b7666722acac479ed7198c608b10786e66fb0b3d6afa8ed0d4390172f066",
+            "title": "Spiritual Horseshoe",
+            "value": "Taming Items"
+          }
+        ]
+      },
+      "source_binding": null,
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i44048",
+        "revision": "definition-r1"
+      },
+      "wiki_source": {
+        "capture_api_sha256": "bbdf2657a53d386b11aa78e14646109fe8133a9b038e3fdc55af354b0ecf63b5",
+        "capture_source_part_sha256": "a7d2b7666722acac479ed7198c608b10786e66fb0b3d6afa8ed0d4390172f066",
+        "capture_utc": "2026-10-01T21:27:48.059Z",
+        "content": "{{Infobox Object|List={{{1|}}}|GetValue={{{GetValue|}}}\n| name          = Spiritual Horseshoe\n| article       = a\n| actualname    = spiritual horseshoe\n| itemid        = 44048\n| objectclass   = Other Items\n| primarytype   = Taming Items\n| secondarytype = Valuables\n| implemented   = 13.20.13560\n| lightradius   = 3\n| lightcolor    = 179\n| immobile      = no\n| walkable      = yes\n| pickupable    = yes\n| usable        = yes\n| weight        = 1.20\n| stackable     = yes\n| marketable    = yes\n| droppedby     = {{Dropped By|Bakragore|Murcion|Vemiath|Chagorz|Ichgahal}}\n| value         = Negotiable\n| npcvalue      = 0\n| npcprice      = 0\n| buyfrom       = --\n| sellto        = --\n| notes         = You will need a total of '''four''' Spiritual Horseshoes to get the [[Spirit of Purity]] [[Mount]].\n\nIt can be dropped by characters that have completed the [[Rotten Blood Quest]] but also by those who have not, however it can only be used by those who have it completed. When you try to use it on a character that hasn't yet defeated [[Bakragore]], you get the message: \"{{Server Message|You have to kill Bakragore first!}}\".\n}}",
+        "content_sha256": "ea3e1f7f1bc55bf905bc92b0543a5fc516490208497e6c1f47a3133c69841445",
+        "page_id": 103157,
+        "revision_id": 1201512,
+        "revision_sha1": "222d21ef787cfc63730d0db79b4850539fa4620c",
+        "revision_timestamp": "2026-08-17T08:53:57Z",
+        "title": "Spiritual Horseshoe",
+        "url": "https://tibia.fandom.com/wiki/Spiritual_Horseshoe"
+      }
+    },
+    {
+      "appearance_id": 44432,
+      "decoded_record_sha256": "4e10e5b79fc8e6b33b6c933b52c9f0410ccee6a6f834e351ebcc2656219c1c6e",
+      "family_profile": "quest_item",
+      "identity_projection_sha256": "a0af4eba12c9934fe33a109c5413150b8e3948fc08376216c91b891261eceedf",
+      "mode": "OFFICIAL_A12_OWN_WIKI_PRIMARY",
+      "native_definition_sha256": "aa17b486ab20b9af7b5275f8da5ab18d898ce5b4c85304035ccd0f4dd2113e58",
+      "native_existing_semantics": "ABSENT_PRESERVED",
+      "official_flags": {
+        "cyclopediaitem.cyclopedia_type": 44432,
+        "flags.cyclopediaitem": true,
+        "flags.forceuse": true,
+        "flags.multiuse": true,
+        "flags.take": true,
+        "flags.usable": true
+      },
+      "official_name": "ancient Iks ritual chalice",
+      "record_sha256": "356597eb8c5df2d970985b9bd23649c8d17901b90c1fc8c5a1c2518228e9b421",
+      "selected_source_primary": {
+        "family_profile": "quest_item",
+        "match_basis": "itemid",
+        "observations": [
+          {
+            "content_sha256": "f1826e4cf0c46fd889505db58e7cdf4f56839c4fee5ee54e10fbee77a99b6487",
+            "field": "primarytype",
+            "own_actualname": [
+              "ancient Iks ritual chalice"
+            ],
+            "own_itemid": [
+              "44432"
+            ],
+            "own_name": [
+              "Ancient Iks Ritual Chalice"
+            ],
+            "page_id": 104235,
+            "raw_infobox_sha256": "f1826e4cf0c46fd889505db58e7cdf4f56839c4fee5ee54e10fbee77a99b6487",
+            "revision_id": 1047535,
+            "revision_timestamp": "2023-12-09T19:03:16Z",
+            "source_part": "/workspace/audit-continuation/global-infobox-object-source-part-165.json",
+            "source_part_sha256": "c45634b74b27a0d50e69a1fcbee3106891d2e000f9433a1e05bf789d3cebf9a6",
+            "title": "Ancient Iks Ritual Chalice",
+            "value": "Quest Items"
+          }
+        ]
+      },
+      "source_binding": null,
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i44432",
+        "revision": "definition-r1"
+      },
+      "wiki_source": {
+        "capture_api_sha256": "b52afcedd7407a8a37d640e27bcb2c90d4f86dc1bb18c5f9f69581b3746b77a9",
+        "capture_source_part_sha256": "c45634b74b27a0d50e69a1fcbee3106891d2e000f9433a1e05bf789d3cebf9a6",
+        "capture_utc": "2026-10-01T21:28:11.733Z",
+        "content": "{{Infobox Object|List={{{1|}}}|GetValue={{{GetValue|}}}\n| name           = Ancient Iks Ritual Chalice\n| itemid         = 44432\n| article        = an\n| actualname     = ancient Iks ritual chalice\n| implemented    = 13.30.14423\n| weight         = 1.50\n| primarytype    = Quest Items\n| objectclass    = Other Items\n| flavortext     = An ancient chalice from the dusk of the Iksupan ritual endtimes. It's already crumbling and will not survive longer periods of transportation.\n| immobile       = no\n| pickupable     = yes\n| droppedby      = {{Dropped By|Iks Yapunac}}\n| usable         = yes\n| value          = Negotiable\n| notes          = '''Note: This item will disintegrate or disappear over time. It's recommended to use it as soon as you can.'''<br/> It is used in part of the [[Adventures_of_Galthen_Quest#Galthen_and_the_City_of_Gold_Part_II|Galthen and the City of Gold Part II]] quest.\n}}",
+        "content_sha256": "f1826e4cf0c46fd889505db58e7cdf4f56839c4fee5ee54e10fbee77a99b6487",
+        "page_id": 104235,
+        "revision_id": 1047535,
+        "revision_sha1": "c7ee7b523d4e5bd5874ef7047453ff73385fa6b4",
+        "revision_timestamp": "2023-12-09T19:03:16Z",
+        "title": "Ancient Iks Ritual Chalice",
+        "url": "https://tibia.fandom.com/wiki/Ancient_Iks_Ritual_Chalice"
+      }
+    },
+    {
+      "appearance_id": 44433,
+      "decoded_record_sha256": "caf5c9776e411e91d015b85988d8a969cf066b2be7ba7e7e0f569b4dad20391b",
+      "family_profile": "quest_item",
+      "identity_projection_sha256": "de7e88c9c852d3d5bdfd39d3b95c432cdc16c2c7d2b0ca0f23bf28c5cf637c86",
+      "mode": "OFFICIAL_A12_OWN_WIKI_PRIMARY",
+      "native_definition_sha256": "c1493739a91da2eb8c74c739201e34f532dc5689940176c48acbaa90be32a958",
+      "native_existing_semantics": "ABSENT_PRESERVED",
+      "official_flags": {
+        "cyclopediaitem.cyclopedia_type": 44433,
+        "flags.cyclopediaitem": true,
+        "flags.multiuse": true,
+        "flags.take": true,
+        "flags.usable": true
+      },
+      "official_name": "ceremonial brush",
+      "record_sha256": "1cf1d127f1f1e53f45a20751be88397362d3266d9fdc74c816e92a4853dca680",
+      "selected_source_primary": {
+        "family_profile": "quest_item",
+        "match_basis": "itemid",
+        "observations": [
+          {
+            "content_sha256": "97601f0acd44d6a84809355a2c8ddde671dd6d1ccb938b9aad8f394cd34308ba",
+            "field": "primarytype",
+            "own_actualname": [
+              "ceremonial brush"
+            ],
+            "own_itemid": [
+              "44433"
+            ],
+            "own_name": [
+              "Ceremonial Brush"
+            ],
+            "page_id": 104236,
+            "raw_infobox_sha256": "97601f0acd44d6a84809355a2c8ddde671dd6d1ccb938b9aad8f394cd34308ba",
+            "revision_id": 1047606,
+            "revision_timestamp": "2023-12-10T20:29:39Z",
+            "source_part": "/workspace/audit-continuation/global-infobox-object-source-part-165.json",
+            "source_part_sha256": "c45634b74b27a0d50e69a1fcbee3106891d2e000f9433a1e05bf789d3cebf9a6",
+            "title": "Ceremonial Brush",
+            "value": "Quest Items"
+          }
+        ]
+      },
+      "source_binding": null,
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i44433",
+        "revision": "definition-r1"
+      },
+      "wiki_source": {
+        "capture_api_sha256": "b52afcedd7407a8a37d640e27bcb2c90d4f86dc1bb18c5f9f69581b3746b77a9",
+        "capture_source_part_sha256": "c45634b74b27a0d50e69a1fcbee3106891d2e000f9433a1e05bf789d3cebf9a6",
+        "capture_utc": "2026-10-01T21:28:11.733Z",
+        "content": "{{Infobox Object|List={{{1|}}}|GetValue={{{GetValue|}}}\n| name           = Ceremonial Brush\n| itemid         = 44433\n| article        = a\n| actualname     = ceremonial brush\n| implemented    = 13.30.14423\n| weight         = 1.00\n| primarytype    = Quest Items\n| objectclass    = Other Items\n| flavortext     = A ceremonial brush used by the Iks to consecrate buildings in the city of Iksupan. It has been dipped in paint, however and will completely dry out soon.\n| immobile       = no\n| pickupable     = yes\n| droppedby      = {{Dropped By|Mitmah Scout|Mitmah Seer}}\n| usable         = yes\n| value          = Negotiable\n| notes          = '''Note: This item will disintegrate or disappear over time. It's recommended to use it as soon as you can.'''<br/> It is used in part of the [[Adventures_of_Galthen_Quest#Galthen_and_the_City_of_Gold_Part_II|Galthen and the City of Gold Part II]] quest.\n}}",
+        "content_sha256": "97601f0acd44d6a84809355a2c8ddde671dd6d1ccb938b9aad8f394cd34308ba",
+        "page_id": 104236,
+        "revision_id": 1047606,
+        "revision_sha1": "c61948b74fad51418c05df9a791ae623560e8cb5",
+        "revision_timestamp": "2023-12-10T20:29:39Z",
+        "title": "Ceremonial Brush",
+        "url": "https://tibia.fandom.com/wiki/Ceremonial_Brush"
+      }
+    },
+    {
+      "appearance_id": 24415,
+      "family_profile": "event_collectible",
+      "mode": "SAME_REVISION_STATUS_PROJECTION",
+      "official_name": "old rag",
+      "selected_source_primary": {
+        "family_profile": "event_collectible",
+        "match_basis": "itemid",
+        "observations": [
+          {
+            "content_sha256": "86e2339a6c57d9d9651c770ab1afd6093e207c08741ba5f52e500839622502b7",
+            "field": "status",
+            "own_actualname": [
+              "old rag"
+            ],
+            "own_itemid": [
+              "24415"
+            ],
+            "own_name": [
+              "Old Rag"
+            ],
+            "page_id": 80150,
+            "raw_infobox_sha256": "86e2339a6c57d9d9651c770ab1afd6093e207c08741ba5f52e500839622502b7",
+            "revision_id": 1055480,
+            "revision_timestamp": "2024-03-17T10:28:36Z",
+            "source_part": "/workspace/audit-continuation/global-infobox-object-source-part-105.json",
+            "source_part_sha256": "9d3827d36b33b7c69bb71985081c73a6066d0102fadb67338b1b555d5e503ac5",
+            "title": "Old Rag",
+            "value": "event"
+          }
+        ]
+      },
+      "source_binding": {
+        "disposition": "EXACT",
+        "external_id": "24415",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i24415",
+          "revision": "definition-r1"
+        }
+      },
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i24415",
+        "revision": "definition-r1"
+      },
+      "wiki_source": {
+        "capture_api_sha256": "c831b86885c9fcf0a46254ab7cb41e4dc9880348de615037bc3b7366b4292c19",
+        "capture_source_part_sha256": "9d3827d36b33b7c69bb71985081c73a6066d0102fadb67338b1b555d5e503ac5",
+        "capture_utc": "2026-10-01T21:18:12.762Z",
+        "content": "{{Infobox Object|List={{{1|}}}|GetValue={{{GetValue|}}}\n| name          = Old Rag\n| article       = an\n| actualname    = old rag\n| plural        = old rags\n| itemid        = 24415\n| objectclass   = Other Items\n| primarytype   = Clothing Accessories\n| implemented   = 11.02.4128\n| immobile      = no\n| walkable      = yes\n| pickupable    = yes\n| usable        = yes\n| weight        = 3.00\n| stackable     = yes\n| marketable    = yes\n| droppedby     = {{Dropped By|Cyclops|Troll|Wolf|Bear}}\n| value         = Negotiable\n| npcvalue      = 0\n| npcprice      = 0\n| buyfrom       = --\n| sellto        = --\n| notes         = It looks the same as a [[Green Piece of Cloth]]. During the annual [[Tibia Anniversary]] [[event]], Thirty of them need to be used on a [[Sewing Table]] in order to trigger ''party time'' :\nduring which [[Piñata Dragon]]s spawn around [[Thais]] and a world wide experience bonus of 15% lasting one hour is activated.\n| history       = During [[Tibia's 20th Anniversary]] starting January 5, 2017, They were dropped by [[Cyclops|Cyclopes]], [[Wolf|Wolves]], [[Troll]]s and [[Bear]]s. Mistakenly, old rags started being dropped by these creatures again exactly one year later, on January 5, 2018. This was fixed on January 9 with [[Updates/11.53|Update 11.53]].\n| status        = event\n}}",
+        "content_sha256": "86e2339a6c57d9d9651c770ab1afd6093e207c08741ba5f52e500839622502b7",
+        "page_id": 80150,
+        "revision_id": 1055480,
+        "revision_sha1": "96b59f8a5929e59b86f3025d3b12221d54bbe63e",
+        "revision_timestamp": "2024-03-17T10:28:36Z",
+        "title": "Old Rag",
+        "url": "https://tibia.fandom.com/wiki/Old_Rag"
+      }
+    }
+  ],
+  "schema": "OTERYN_NAVIGATION_SEVEN_SOURCE_QUALIFICATION/v1",
+  "scope": "NAVIGATION_ONLY",
+  "selection": "Closed existing official A12 identity join for six; same-page/revision/digest raw status projection for Old Rag, without snapshot replacement.",
+  "source_facts": "PROVEN_RAW_OWN_ITEMID_PRIMARY_OR_STATUS_AND_CURRENT_OFFICIAL_RECORD",
+  "sources": {
+    "admission_source": {
+      "explicit_ids_sha256": "136743df391cf4ff63fe16658fca0df6b2d90ce00636ddbbc87032f29a5230ff",
+      "explicit_rule_only_count": 60,
+      "path": "apps/game-server/examples/materialize_content_world_project_v2.rs",
+      "sha256": "f167224187747bbed7d5bb7eba3ff52bc7349224c1c182971b64e3b6ba437ba2"
+    },
+    "bindings": {
+      "path": "imports/crystalserver/bindings/items.json",
+      "sha256": "1d19709c28a649d8a9f32bf53e5bf43ad847d7901d6c6254833f456154d2de5a"
+    },
+    "client_artifact": {
+      "client_version": "15.30",
+      "path": "content/assets/files/appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.dat",
+      "sha256": "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2"
+    },
+    "engine_sha256": "0a494fd64d7774507b4d9e493492a7ffc9d99d751dd2ed4fec73561cb06f5b06",
+    "helper_sha256": "0abb6b0180eeef98bfa397ca3b7c9192d47806a7e97aa6423159220e82c36f03",
+    "membership_manifest": {
+      "entries_sha256": "424e445c0ea9494b1871364f10e93876ad551df0d3d5c6982d97301008b027df",
+      "path": "imports/official/appearance-membership/appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.json",
+      "sha256": "f37b5d3e1136ebc3edbae1fe7090c4914b1d717bfbf9fd7c8faeeee36b491fe8"
+    },
+    "parent_head": "df777898d6a03e3cf0fd63aaceedcc5c0f0a68b6",
+    "qualification_cutoff": "2026-09-27T23:59:59Z",
+    "stats": {
+      "path": "imports/tibiawiki/facts/items-stats.json",
+      "sha256": "49d43cbe6957e6edc16aeda72e05152c55606e9381452ea74d7a63b5a5e91e4a"
+    }
+  }
+}

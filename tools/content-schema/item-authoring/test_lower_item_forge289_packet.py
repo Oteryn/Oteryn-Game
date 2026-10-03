@@ -286,6 +286,24 @@ class Forge289(unittest.TestCase):
                 relations[key], bad, relations[key], sources[key]
             )
 
+    def test_pre_overlay_header_drift_still_fails_closed(self):
+        # D316: the guard reads the pre-overlay stage; a real header drift there must fail.
+        original = forge.pre_overlay_definitions
+        key = json.loads(forge.OUTPUT.read_text())["promotions"][0]["item"]["key"]
+
+        def drifted(root):
+            definitions = original(root)
+            row = definitions[key]
+            definitions[key] = row | {"materializable": not row["materializable"]}
+            return definitions
+
+        forge.pre_overlay_definitions = drifted
+        try:
+            with self.assertRaisesRegex(ValueError, "headers drift"):
+                forge.build()
+        finally:
+            forge.pre_overlay_definitions = original
+
 
 if __name__ == "__main__":
     unittest.main()

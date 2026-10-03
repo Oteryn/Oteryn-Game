@@ -1,0 +1,2525 @@
+{
+  "baseline_head": "e66390af13cdf9fe7156d36af4dd5d519418b32a",
+  "capture_sha256": "baafb595d1e21466dcee1c29cbe87088527fa5d92a43ab4bf25dc527fe10b095",
+  "fact_count": 5418,
+  "historical_acquisition": [
+    {
+      "access_method": "remote_desktop_browser",
+      "accessed_at": "2026-10-02T11:46:27Z",
+      "classification": "HISTORICAL_ACQUISITION_NOT_RECHECKED",
+      "normal_http_observations": [
+        {
+          "provider": "tibia_fandom",
+          "status": 402
+        },
+        {
+          "provider": "tibiawiki_br",
+          "status": 403
+        }
+      ],
+      "receipt_sha256": "594c8e3666bb6b18dfe6c72d73f8d965551428d693a4b0a15bdf2fe2c350cd65",
+      "role": "R9_PRIMARY640",
+      "schema": "OTERYN_WIKI_PUBLIC_ACCESS_RECEIPT/v1",
+      "summary": {
+        "bodies_previously_cached": 85,
+        "body_hash_matches": 640,
+        "br": 170,
+        "current_revision_checked": false,
+        "donor_only_or_composite_without_exact_wiki_title": 6,
+        "exact_wiki_title_matches": 236,
+        "fandom": 470,
+        "hash_conflicts": 0,
+        "http429": 0,
+        "native_or_runtime_verified": false,
+        "previously_missing_full_bodies_acquired": 555,
+        "selected_definitions": 242,
+        "unique_exact_source_revisions": 640
+      }
+    },
+    {
+      "access_method": "remote_desktop_browser",
+      "accessed_at": "2026-10-02T11:53:49Z",
+      "classification": "HISTORICAL_ACQUISITION_NOT_RECHECKED",
+      "normal_http_observations": [],
+      "receipt_sha256": "8486a9b8a3756aa232f1eba3bc5600db163a5cb7f55e1799bc1f3a2cd8add25e",
+      "role": "R9_FAMILY77",
+      "schema": "OTERYN_WIKI_COVERED_FAMILY_PUBLIC_ACCESS_RECEIPT/v1",
+      "summary": {
+        "body_hash_matches": 77,
+        "br": 23,
+        "covered_family_source_revisions": 77,
+        "current_revision_checked": false,
+        "fandom": 54,
+        "hash_conflicts": 0,
+        "http429": 0,
+        "native_or_runtime_verified": false,
+        "previously_cached": 7,
+        "previously_missing_full_bodies_acquired": 70
+      }
+    },
+    {
+      "access_method": "remote_desktop_browser",
+      "accessed_at": "2026-10-02T11:12:34Z",
+      "classification": "HISTORICAL_ACQUISITION_NOT_RECHECKED",
+      "normal_http_observations": [
+        {
+          "provider": "tibia_fandom",
+          "status": 402
+        },
+        {
+          "provider": "tibiawiki_br",
+          "status": 403
+        }
+      ],
+      "receipt_sha256": "6bbcba56d42d5d52c9e0e8d99172d0df712de4595233e4a40d5eddee595bbd98",
+      "role": "R8_AUTHORED68_CONTEXT157",
+      "schema": "OTERYN_WIKI_PUBLIC_ACCESS_RECEIPT/v1",
+      "summary": {
+        "br": 22,
+        "current_revision_checked": false,
+        "fandom": 135,
+        "hash_conflicts": 0,
+        "hash_matches": 157,
+        "http429": 0,
+        "native_or_runtime_verified": false,
+        "quests": 68,
+        "unique_exact_source_revisions": 157
+      }
+    }
+  ],
+  "line_spans_rechecked": false,
+  "original_input_sha256": "9245069963196f5b310f1dd03070343af2f1467211ee6fb837fb507fc66fdb25",
+  "output_sha256": "f48af6e10e8ba9a311442bd1f359aff091956e634743b7db08cdb31594faf58f",
+  "qualification_sha256": "11a3afbc8f17df330ee1be94e68ee80b3b0a582e92234181459fecf3f63ac1a5",
+  "qualification_status": "PASS",
+  "raw_body_rechecked": false,
+  "records": [
+    {
+      "candidate_count": 2,
+      "canonical_key": "oteryn:quest.25_years_of_tibia_quest",
+      "confirmation_count": 2,
+      "facts_count": 4,
+      "original_record_sha256": "7148657ed6339012ef826c0ff283c0e98b34af288cd7f4265664343f7d1e2593",
+      "record_sha256": "33c8c476991549c1b03a8972bc228b4a94884d30e6f6cff0f7477b4a3fb5ff00",
+      "reduced_text_count": 3,
+      "reduced_text_length": 560
+    },
+    {
+      "candidate_count": 84,
+      "canonical_key": "oteryn:quest.a_father_s_burden_quest",
+      "confirmation_count": 18,
+      "facts_count": 102,
+      "original_record_sha256": "9773ed8739f170a8dacd48c2d3c6a8ff190203134467a3b346a5e0d366f35c40",
+      "record_sha256": "f5031a552f956560fa02fa67c29080e9235e06e9e6674579acf22b8e3321386e",
+      "reduced_text_count": 79,
+      "reduced_text_length": 9933
+    },
+    {
+      "candidate_count": 20,
+      "canonical_key": "oteryn:quest.a_piece_of_cake",
+      "confirmation_count": 4,
+      "facts_count": 24,
+      "original_record_sha256": "fece1c5102b9ab647cc6218fe601316280e7a9f3aeb4781c64f4461af35eaeff",
+      "record_sha256": "35c21922ba0240b649c0d37c339a07f06658ff3c01481ebe862921df96862005",
+      "reduced_text_count": 2,
+      "reduced_text_length": 248
+    },
+    {
+      "candidate_count": 11,
+      "canonical_key": "oteryn:quest.a_pirates_tail",
+      "confirmation_count": 6,
+      "facts_count": 17,
+      "original_record_sha256": "fa4b03f9a4d8f1b7fb3eb6c4dfc4c547c95338c61bcd157c766506eccc3e714e",
+      "record_sha256": "c0416a05ce3f892a788f7c2436053f4be8f16f988687e85e67f210f4bfea7394",
+      "reduced_text_count": 6,
+      "reduced_text_length": 13
+    },
+    {
+      "candidate_count": 27,
+      "canonical_key": "oteryn:quest.adventurers_guild",
+      "confirmation_count": 8,
+      "facts_count": 35,
+      "original_record_sha256": "ea92164f982497849eac3e038ba48e9582e3915c5347a3c5e3a22f826776d890",
+      "record_sha256": "e00a5ae7857c1cebca58e3393dc0da8590019c6e25b22774788fbbb9d5d63f2a",
+      "reduced_text_count": 27,
+      "reduced_text_length": 1456
+    },
+    {
+      "candidate_count": 6,
+      "canonical_key": "oteryn:quest.adventures_of_galthen_quest",
+      "confirmation_count": 10,
+      "facts_count": 16,
+      "original_record_sha256": "e8fff2e93e436336a7b58b4dc43d26864b26de41250d13cc775e0c3dc0bc3c5a",
+      "record_sha256": "68d5f8c83fbcf2dcfc46c71798ae971bbafe9a19cb8472ec31a1843f51a9703b",
+      "reduced_text_count": 8,
+      "reduced_text_length": 429
+    },
+    {
+      "candidate_count": 2,
+      "canonical_key": "oteryn:quest.afflicted_outfits_quest",
+      "confirmation_count": 0,
+      "facts_count": 2,
+      "original_record_sha256": "f418909f2f7cb17dd6ea3490fe5e29e9692749a5fab33dac9946d46f0a830393",
+      "record_sha256": "42f6e93ce9cbc525333175d5c56f3c708a33c3ab5175a94e7758df4dc7416bab",
+      "reduced_text_count": 3,
+      "reduced_text_length": 448
+    },
+    {
+      "candidate_count": 18,
+      "canonical_key": "oteryn:quest.alawar_s_vault_quest",
+      "confirmation_count": 10,
+      "facts_count": 28,
+      "original_record_sha256": "4c835e1442f4079968992d829188c9b6eddcb7041baecdf61bea3be0e0e14689",
+      "record_sha256": "c2328f8795366e525f962159301f88bed23c3350710af392b94e7a8b22a08d9f",
+      "reduced_text_count": 29,
+      "reduced_text_length": 2771
+    },
+    {
+      "candidate_count": 13,
+      "canonical_key": "oteryn:quest.an_interest_in_botany_quest",
+      "confirmation_count": 12,
+      "facts_count": 25,
+      "original_record_sha256": "9ec83b03a2070e3584fcb378645ca4e83bb7ff46016b49e38c8cf0c0dd8cf583",
+      "record_sha256": "6b30501f3e48e3a7dc8f95a3795cf9d81b606ffbc0ac09d897b136b0c1e169c4",
+      "reduced_text_count": 2,
+      "reduced_text_length": 248
+    },
+    {
+      "candidate_count": 12,
+      "canonical_key": "oteryn:quest.an_uneasy_alliance_quest",
+      "confirmation_count": 4,
+      "facts_count": 16,
+      "original_record_sha256": "34ea4c04bbe67f69a28b30d885c479968c6cee686c62bad00881a06b5d5de83a",
+      "record_sha256": "b2ae2dc9a7357df95dd055d91d696e702451906982d72b08590a4976d1dc3d1f",
+      "reduced_text_count": 7,
+      "reduced_text_length": 162
+    },
+    {
+      "candidate_count": 11,
+      "canonical_key": "oteryn:quest.ancient_aucar_outfits_quest",
+      "confirmation_count": 3,
+      "facts_count": 14,
+      "original_record_sha256": "50cea28c1d07ca9d989d55dd7baac1637f70d9910190bf203ac4bd4162a86fe8",
+      "record_sha256": "c0f888f9177c44baa5eb656cb6efe019b4492803e4c2913dc25642f546c8e3a8",
+      "reduced_text_count": 14,
+      "reduced_text_length": 861
+    },
+    {
+      "candidate_count": 6,
+      "canonical_key": "oteryn:quest.assassin_outfit",
+      "confirmation_count": 6,
+      "facts_count": 12,
+      "original_record_sha256": "2aa9380b13999becd590327eb652ab8294fc4eb60cd739d4544e7080aa6198d5",
+      "record_sha256": "297df26e2df25a4d49c5941f29e7327f0a40ab7319873c9a6ba6df07f676d4d4",
+      "reduced_text_count": 6,
+      "reduced_text_length": 354
+    },
+    {
+      "candidate_count": 4,
+      "canonical_key": "oteryn:quest.awash_world_change",
+      "confirmation_count": 0,
+      "facts_count": 4,
+      "original_record_sha256": "5856400c198e7622252e1032a93cecd0fd0e647265c36cbe287b2d109ae01cae",
+      "record_sha256": "2c18c2200d4e33a732dd3a740b2fb4695b4f16965ee539e1f687dc8d33615449",
+      "reduced_text_count": 3,
+      "reduced_text_length": 528
+    },
+    {
+      "candidate_count": 66,
+      "canonical_key": "oteryn:quest.barbarian_arena_quest",
+      "confirmation_count": 8,
+      "facts_count": 74,
+      "original_record_sha256": "d63d8cc1f9a808025a91641fa1532c6553ab328c17105a550cb0ea304f24a997",
+      "record_sha256": "6efa35e8be32129db2b2ab9626d6a30854832fb4091842e372cd8246fb47c477",
+      "reduced_text_count": 42,
+      "reduced_text_length": 4593
+    },
+    {
+      "candidate_count": 5,
+      "canonical_key": "oteryn:quest.barbarian_test",
+      "confirmation_count": 9,
+      "facts_count": 14,
+      "original_record_sha256": "4e4522ce1fe2df4378aaf2a0cc143a5929d9f0b12e112af6d53296b49e1a7191",
+      "record_sha256": "04eb0b92ba9ee2e4850b723176efbbcbcce106f992693d70a3eac71ddae28912",
+      "reduced_text_count": 8,
+      "reduced_text_length": 539
+    },
+    {
+      "candidate_count": 9,
+      "canonical_key": "oteryn:quest.battle_mage_outfits_quest",
+      "confirmation_count": 4,
+      "facts_count": 13,
+      "original_record_sha256": "b3cdc15a0d63538c0a41cb4469722071e959f57687f5e8b05b599bbe53ca5f2e",
+      "record_sha256": "721966723689ff714a9bf8e3cd2135e9034dee5af04a1b5e54301f296715959e",
+      "reduced_text_count": 6,
+      "reduced_text_length": 17
+    },
+    {
+      "candidate_count": 12,
+      "canonical_key": "oteryn:quest.bear_room_quest",
+      "confirmation_count": 3,
+      "facts_count": 15,
+      "original_record_sha256": "806903244c3eb93dac18765ad1cd7a61ca38e14c919b0fa37c2264eefe1cd8da",
+      "record_sha256": "705aeadd53b420a500928feefa154f98e744f376879a1b1d664adc230007cff2",
+      "reduced_text_count": 14,
+      "reduced_text_length": 532
+    },
+    {
+      "candidate_count": 2,
+      "canonical_key": "oteryn:quest.behemoth_quest",
+      "confirmation_count": 6,
+      "facts_count": 8,
+      "original_record_sha256": "8cd7bd71ad5aa99633c7fef0dd7b047a27e2d1d0c44b830171d03569fafcde1a",
+      "record_sha256": "ca77c33c8c8f7e9cf410cf66bbb872a7fa9ba2f2830cf83eae44ebc11becb0be",
+      "reduced_text_count": 5,
+      "reduced_text_length": 148
+    },
+    {
+      "candidate_count": 3,
+      "canonical_key": "oteryn:quest.berserk_potion_quest",
+      "confirmation_count": 0,
+      "facts_count": 3,
+      "original_record_sha256": "0768f20b7652c53874d261769f29daa333e33703c303ba62939897e3faa01733",
+      "record_sha256": "1e366a808e4f52dfd80060770141450ac7acf8ee3700d9a93499d1ae2387a2b4",
+      "reduced_text_count": 2,
+      "reduced_text_length": 373
+    },
+    {
+      "candidate_count": 7,
+      "canonical_key": "oteryn:quest.berserker_treasure_quest",
+      "confirmation_count": 2,
+      "facts_count": 9,
+      "original_record_sha256": "85be30f6a458d288573e650d29f4949f40b586c5b930916e9f426b63f3bda9be",
+      "record_sha256": "5158740d7c37915d98e1112485cf5a9e5432dcac8c7c2360f324f81015085220",
+      "reduced_text_count": 9,
+      "reduced_text_length": 1354
+    },
+    {
+      "candidate_count": 72,
+      "canonical_key": "oteryn:quest.between_the_lines_quest",
+      "confirmation_count": 10,
+      "facts_count": 82,
+      "original_record_sha256": "978b82f886c5fd2a9f5193623cd76580a4122a2a5e2eb72b850af0867e941801",
+      "record_sha256": "10088dd60737a46aaeb39991eac9c78b595dd62bb7f78c47d61c2cb11b82744a",
+      "reduced_text_count": 2,
+      "reduced_text_length": 248
+    },
+    {
+      "candidate_count": 12,
+      "canonical_key": "oteryn:quest.bigfoot_s_burden_quest",
+      "confirmation_count": 4,
+      "facts_count": 16,
+      "original_record_sha256": "362f8692c53e180eccda9dd1190540c5087e21a5f5eb4d0c10ac8e4c23630307",
+      "record_sha256": "684e50c46bbc35c9fe2634da698d70920f22b5083726ba0872ab4c045792e13c",
+      "reduced_text_count": 7,
+      "reduced_text_length": 169
+    },
+    {
+      "candidate_count": 11,
+      "canonical_key": "oteryn:quest.black_knight_quest",
+      "confirmation_count": 4,
+      "facts_count": 15,
+      "original_record_sha256": "975167a3177f64518e1c1f24538db2bf7747699bec0da3118a06fba0f094b50d",
+      "record_sha256": "07c44325fcb32c4127a84cd6450f4a1fcbc2b4f8286f80120b02e616ce15bf12",
+      "reduced_text_count": 15,
+      "reduced_text_length": 578
+    },
+    {
+      "candidate_count": 5,
+      "canonical_key": "oteryn:quest.blood_brothers_quest",
+      "confirmation_count": 5,
+      "facts_count": 10,
+      "original_record_sha256": "65f1592f2abf6fda88ea28a5e557412abb9d20179f18d40a514194d1e7b5b339",
+      "record_sha256": "62a5dc311793267d415ebce217fc4510c5ae3e46dbfdc116d47eca0bc7ce6637",
+      "reduced_text_count": 5,
+      "reduced_text_length": 191
+    },
+    {
+      "candidate_count": 5,
+      "canonical_key": "oteryn:quest.bloody_tusks_quest",
+      "confirmation_count": 0,
+      "facts_count": 5,
+      "original_record_sha256": "70c2592c990ace845938415d63525ce4eb81e92155e4757597afd6af936ffe6b",
+      "record_sha256": "04ad94eb98c4eac71e0675ba816a58df46c63665d19dc273a1788627595212d4",
+      "reduced_text_count": 2,
+      "reduced_text_length": 336
+    },
+    {
+      "candidate_count": 6,
+      "canonical_key": "oteryn:quest.bored_mini_world_change",
+      "confirmation_count": 2,
+      "facts_count": 8,
+      "original_record_sha256": "732871bb5561cc98a9b7fc4f2d99096e362b45c904a58cdbdec28d61a8dd4d6e",
+      "record_sha256": "aaf949a82610aeb16b2f239487642e172f81c86ee4ab5f73c4f6b7eb00d130ab",
+      "reduced_text_count": 8,
+      "reduced_text_length": 1363
+    },
+    {
+      "candidate_count": 5,
+      "canonical_key": "oteryn:quest.brotherhood_outfits_quest",
+      "confirmation_count": 4,
+      "facts_count": 9,
+      "original_record_sha256": "2607948bda9fbc54b275eb5b9f87667bd14a3225d2e0c18df506e603b23de3f9",
+      "record_sha256": "69101afc683c5f0cfe36d7edc0c7a69c406057ab99950973069490a0745b1af8",
+      "reduced_text_count": 2,
+      "reduced_text_length": 248
+    },
+    {
+      "candidate_count": 10,
+      "canonical_key": "oteryn:quest.cave_explorer_outfits_quest",
+      "confirmation_count": 5,
+      "facts_count": 15,
+      "original_record_sha256": "b9c83ba3fdcf7fcaf17159a2ec1c74c860c1ea901e6e8d3d839d01b53ed49059",
+      "record_sha256": "c5ca435112584c4db2d423f3644a87097e921cd49794b8822a05006744c546e7",
+      "reduced_text_count": 7,
+      "reduced_text_length": 149
+    },
+    {
+      "candidate_count": 12,
+      "canonical_key": "oteryn:quest.children_of_the_revolution_quest",
+      "confirmation_count": 12,
+      "facts_count": 24,
+      "original_record_sha256": "2bde25ff87b5d10a02f766dd99194d5990ac30f43b96804fc477ccb6a55a525f",
+      "record_sha256": "3477a2a8143e3732d4246f929f62d0a2b093695f96bbf36e27acf97347c85469",
+      "reduced_text_count": 15,
+      "reduced_text_length": 776
+    },
+    {
+      "candidate_count": 1,
+      "canonical_key": "oteryn:quest.chyllfroest_mini_world_change",
+      "confirmation_count": 6,
+      "facts_count": 7,
+      "original_record_sha256": "b22ed48a11ccbc75009bd663dcf0839c092d8fbc38b6bea774f3671148f960e6",
+      "record_sha256": "2d94176dccdd9fba0728e05cd2706eed19a734e350dede1512e59a8baacaa005",
+      "reduced_text_count": 6,
+      "reduced_text_length": 65
+    },
+    {
+      "candidate_count": 1,
+      "canonical_key": "oteryn:quest.citizen_outfits_quest_on_rook",
+      "confirmation_count": 2,
+      "facts_count": 3,
+      "original_record_sha256": "39e32f3f0c71c000fe27df775503ac10d218c01fd06b0c966f42f36b732e05e8",
+      "record_sha256": "db559cbfec51de1da2e4dbf053b3092c327d73baf8dd067b14b8683b2579e74f",
+      "reduced_text_count": 3,
+      "reduced_text_length": 544
+    },
+    {
+      "candidate_count": 12,
+      "canonical_key": "oteryn:quest.crystal_warlord_outfits_quest",
+      "confirmation_count": 10,
+      "facts_count": 22,
+      "original_record_sha256": "16a8ea65da85c09f53ae270255e7e0792019b7cca1d0f7ba9b2b12c9301b231e",
+      "record_sha256": "a577868c261ba73aa4bb389b86b4298102a1b1d2ef3e093ae4919ad9e6afdb3d",
+      "reduced_text_count": 18,
+      "reduced_text_length": 1612
+    },
+    {
+      "candidate_count": 62,
+      "canonical_key": "oteryn:quest.cults_of_tibia_quest",
+      "confirmation_count": 9,
+      "facts_count": 71,
+      "original_record_sha256": "a76f3b783b5b583dfcbbed815ed995893a72464d683cc3ec41e4961e49f18f7b",
+      "record_sha256": "52f3e4327a93c5d8b1d21bba329a55d97193c4a21ef37ff64433926ab559f795",
+      "reduced_text_count": 32,
+      "reduced_text_length": 2502
+    },
+    {
+      "candidate_count": 14,
+      "canonical_key": "oteryn:quest.dangerous_depths_quest",
+      "confirmation_count": 4,
+      "facts_count": 18,
+      "original_record_sha256": "f1c70f03010f181f474333853c74b4d7cd18576ede13fcd7d6ecb844cf1e2d0f",
+      "record_sha256": "778c2e2102e96816c6c38fca7854c0ba675b093ded0415c536a3ece6b63a3445",
+      "reduced_text_count": 6,
+      "reduced_text_length": 19
+    },
+    {
+      "candidate_count": 13,
+      "canonical_key": "oteryn:quest.dark_trails_quest",
+      "confirmation_count": 2,
+      "facts_count": 15,
+      "original_record_sha256": "e6df2a41467bd8396adf03507d2e564dcbdec312937bcb32adcf9932a4c43bfd",
+      "record_sha256": "b7b26e89284776353574f3d95293432f428cee2845ebfc8e0b7a1aec6c8ea7ba",
+      "reduced_text_count": 14,
+      "reduced_text_length": 838
+    },
+    {
+      "candidate_count": 4,
+      "canonical_key": "oteryn:quest.dawnport_quest",
+      "confirmation_count": 12,
+      "facts_count": 16,
+      "original_record_sha256": "1bc20d0db65f9957f54aa4b67fc4fc8e3674892697393ad8fd0674bb81273360",
+      "record_sha256": "8f9df5a9bbf1129ecf769532ffa5ecae641866defa9d63d69613c0ddc1659f9c",
+      "reduced_text_count": 5,
+      "reduced_text_length": 32
+    },
+    {
+      "candidate_count": 2,
+      "canonical_key": "oteryn:quest.dead_archer_quest",
+      "confirmation_count": 2,
+      "facts_count": 4,
+      "original_record_sha256": "c5392cc867f5927696083a2ef433307e03c58449604338ab1ef7c6b5c4d1b7c3",
+      "record_sha256": "177783b1f42348f4d51d0080cc02995aed3f479263bf9491b2211d7bd93a81cc",
+      "reduced_text_count": 2,
+      "reduced_text_length": 327
+    },
+    {
+      "candidate_count": 17,
+      "canonical_key": "oteryn:quest.decaying_defender_outfits_quest",
+      "confirmation_count": 10,
+      "facts_count": 27,
+      "original_record_sha256": "ea140c1d32766eef6e0371feb7dc1ed4d87612344c55067ae1d8bbe9b6bbcb27",
+      "record_sha256": "4f14c75c4601aef9df05d2efda9215152275a7f6f37a9b19371e0c949e136018",
+      "reduced_text_count": 18,
+      "reduced_text_length": 930
+    },
+    {
+      "candidate_count": 11,
+      "canonical_key": "oteryn:quest.deeper_fibula_quest",
+      "confirmation_count": 6,
+      "facts_count": 17,
+      "original_record_sha256": "25a2b0a1de950739422b16b3093f62bd57f10bb47677bedd36a0568037f9d2d1",
+      "record_sha256": "2869a3d8923cf846e72505bdad8e6f6a9f2d003e7394c801ee7670fad575fcd2",
+      "reduced_text_count": 2,
+      "reduced_text_length": 248
+    },
+    {
+      "candidate_count": 4,
+      "canonical_key": "oteryn:quest.deeplings_worldchange",
+      "confirmation_count": 3,
+      "facts_count": 7,
+      "original_record_sha256": "bf9b41d67b95a2d77205b44257142f61b90273a0de19e190f96db546ae9f6f7e",
+      "record_sha256": "63e6779931da1fdc138e19d92828114db52f33414ba737079f76e81977006d0d",
+      "reduced_text_count": 4,
+      "reduced_text_length": 130
+    },
+    {
+      "candidate_count": 5,
+      "canonical_key": "oteryn:quest.demon_helmet_quest",
+      "confirmation_count": 2,
+      "facts_count": 7,
+      "original_record_sha256": "f9cfad8be54774ed0689c9ba60f14d4bba9452ed8d91ca3e5b0782edb29cf5e4",
+      "record_sha256": "53580ce755d6fd3f897fe2f8f9c7ab22f7338007a72ff68ab40027049444f6df",
+      "reduced_text_count": 7,
+      "reduced_text_length": 451
+    },
+    {
+      "candidate_count": 2,
+      "canonical_key": "oteryn:quest.demon_outfits_quest",
+      "confirmation_count": 8,
+      "facts_count": 10,
+      "original_record_sha256": "44395c21fe8759ae4800bec0042479a392e55528fcf0afe79f4f20ee0ac22f2c",
+      "record_sha256": "1215101534bde42b36785cd9dfbd90e4ba30a4fb20492f0fb5d8ff78e29f4081",
+      "reduced_text_count": 5,
+      "reduced_text_length": 162
+    },
+    {
+      "candidate_count": 3,
+      "canonical_key": "oteryn:quest.devil_helmet_quest",
+      "confirmation_count": 0,
+      "facts_count": 3,
+      "original_record_sha256": "4b4c78b1a16a537642469c8d461bfe1458c900c7200aa6a2083ce02b957c230e",
+      "record_sha256": "86dd37395b961e6d7f0634bf609fc974b478040b1964c5e96c6406dd9e2298b8",
+      "reduced_text_count": 3,
+      "reduced_text_length": 506
+    },
+    {
+      "candidate_count": 73,
+      "canonical_key": "oteryn:quest.draconia_quest",
+      "confirmation_count": 14,
+      "facts_count": 87,
+      "original_record_sha256": "2ddbafec0bac5c957b1f0d07f86e90f2772734a364871843ce837d0626aa5f87",
+      "record_sha256": "c604d1f6b325501cb64609a8fa15da262ddbf585911cc3742a25eca7ee9cac9e",
+      "reduced_text_count": 77,
+      "reduced_text_length": 9899
+    },
+    {
+      "candidate_count": 7,
+      "canonical_key": "oteryn:quest.dragon_corpse_quest",
+      "confirmation_count": 5,
+      "facts_count": 12,
+      "original_record_sha256": "fc8f699ce97ef520462bcd2160fdd3a49244d10d243a29678a53c2ea560165fc",
+      "record_sha256": "c5038b4289e222a0a9ba2bef6c6ce04f825311731261ba45555cf5bbcc5392d7",
+      "reduced_text_count": 2,
+      "reduced_text_length": 248
+    },
+    {
+      "candidate_count": 4,
+      "canonical_key": "oteryn:quest.dragon_tower_quest",
+      "confirmation_count": 5,
+      "facts_count": 9,
+      "original_record_sha256": "5318387ff6a5b01ae85fe8c99be1000f3f20158a25cd00c7620b5f3fdcc43659",
+      "record_sha256": "a245ef8db380b866b2de4452dcf93ea1864e772b3088abd8b32a990fb5548e68",
+      "reduced_text_count": 3,
+      "reduced_text_length": 6
+    },
+    {
+      "candidate_count": 8,
+      "canonical_key": "oteryn:quest.dream_warden_outfits_quest",
+      "confirmation_count": 4,
+      "facts_count": 12,
+      "original_record_sha256": "55ad60427a87bc5a71d2396bfebf861794eae29457f6c263c5732c69fd01c292",
+      "record_sha256": "de61bb2e766bd32b22df90955eaed9789a7c038b08bce48290ab91b944e0a8a5",
+      "reduced_text_count": 12,
+      "reduced_text_length": 580
+    },
+    {
+      "candidate_count": 4,
+      "canonical_key": "oteryn:quest.dream_warrior_outfits_quest",
+      "confirmation_count": 4,
+      "facts_count": 8,
+      "original_record_sha256": "cc46ae64acfaf9b6ecf6963081e436f6e83493bf2b50f990436b0bf325e55d0e",
+      "record_sha256": "b2f773c3a375f067018631a8f03190ea64f2c36adfe0c0f5905ee5f56c65086b",
+      "reduced_text_count": 4,
+      "reduced_text_length": 209
+    },
+    {
+      "candidate_count": 5,
+      "canonical_key": "oteryn:quest.dreamer_s_challenge_quest",
+      "confirmation_count": 0,
+      "facts_count": 5,
+      "original_record_sha256": "e145cc2775c740ea302c11dea1a0ec4b0c74b5ee2df0a2ddc4869282ea55e5c4",
+      "record_sha256": "77e515bab53a6ea06a2acfea52b5d40d1a06e3d705c4c9c14fbff8f1044a2768",
+      "reduced_text_count": 5,
+      "reduced_text_length": 818
+    },
+    {
+      "candidate_count": 17,
+      "canonical_key": "oteryn:quest.druid_outfits_quest_on_rook",
+      "confirmation_count": 4,
+      "facts_count": 21,
+      "original_record_sha256": "77f5b81f7933944a3a6503d4b05b37fc0922b97bf3d778b526acdbb8d9000bdb",
+      "record_sha256": "698a094da31268534702a60b256e154d5bfadc672384f9a033cb1bab4c7556b2",
+      "reduced_text_count": 17,
+      "reduced_text_length": 1171
+    },
+    {
+      "candidate_count": 4,
+      "canonical_key": "oteryn:quest.edron_goblin_quest",
+      "confirmation_count": 3,
+      "facts_count": 7,
+      "original_record_sha256": "021bcd769f5551f0ba12777b7b222e5cde36f2bc9cca722b44ce287712cf1a77",
+      "record_sha256": "c46bb65c348b8ee329f4941769e0d670ad30b21e4b61ebdaa21cdae8d6ec5ea7",
+      "reduced_text_count": 2,
+      "reduced_text_length": 248
+    },
+    {
+      "candidate_count": 12,
+      "canonical_key": "oteryn:quest.elemental_spheres_quest",
+      "confirmation_count": 4,
+      "facts_count": 16,
+      "original_record_sha256": "d89e9670d836ed90e66d610ed7407c10e88feae704b0022042ccf6bab966e855",
+      "record_sha256": "5019e972d7533b30a0151c40a9cef274e14ba945e3caae835b512ffa41e4c88b",
+      "reduced_text_count": 7,
+      "reduced_text_length": 160
+    },
+    {
+      "candidate_count": 11,
+      "canonical_key": "oteryn:quest.elementalist_outfits_quest",
+      "confirmation_count": 11,
+      "facts_count": 22,
+      "original_record_sha256": "ea34ba5f8ad8e73cd8bcc78d94d0a1731dcbfec7b2c6894a2a3e438ee532f1bc",
+      "record_sha256": "a96f17d7681bdbfab10bc2c7c4314aac04cc099d47195571529684bdfae31984",
+      "reduced_text_count": 13,
+      "reduced_text_length": 874
+    },
+    {
+      "candidate_count": 1,
+      "canonical_key": "oteryn:quest.emperor_s_cookies_quest",
+      "confirmation_count": 6,
+      "facts_count": 7,
+      "original_record_sha256": "bbb29939607e58cfa07706279591e0ebed901fdbd84c1a8dcf150d264bdcca27",
+      "record_sha256": "88fc253c8499dbcc84981bebe635d288c2dae63889cee45e8c1e75abd9185ebf",
+      "reduced_text_count": 5,
+      "reduced_text_length": 72
+    },
+    {
+      "candidate_count": 0,
+      "canonical_key": "oteryn:quest.factions",
+      "confirmation_count": 3,
+      "facts_count": 3,
+      "original_record_sha256": "7a9520f3f9ca3aab8d31a44c4410d9e36b240bf846e3474d943fc58aa8cc8dfc",
+      "record_sha256": "c2068a6220240cb6307b104ed32f152be73a1386ac73f7de7c29fc2a3a398ecc",
+      "reduced_text_count": 3,
+      "reduced_text_length": 588
+    },
+    {
+      "candidate_count": 18,
+      "canonical_key": "oteryn:quest.falconer_outfits_quest",
+      "confirmation_count": 1,
+      "facts_count": 19,
+      "original_record_sha256": "d4b2d072025810af20750c06db2fd6069bcf15299418f0bc2e8926aef7fcba4e",
+      "record_sha256": "d0953f3566518a89ce06080c75fbc7f269e85f4ba5d231240ad6004535f4af5f",
+      "reduced_text_count": 15,
+      "reduced_text_length": 2129
+    },
+    {
+      "candidate_count": 1,
+      "canonical_key": "oteryn:quest.fanfare_quest",
+      "confirmation_count": 6,
+      "facts_count": 7,
+      "original_record_sha256": "6eca34f036e1c843eb8b0d66f7b692a2281cbaff0df52b4e63c50d5fc5132fd9",
+      "record_sha256": "89fd7af1abee5c4051e9d6c73d8f6057740d77662390f5e441436b7788939aeb",
+      "reduced_text_count": 2,
+      "reduced_text_length": 248
+    },
+    {
+      "candidate_count": 8,
+      "canonical_key": "oteryn:quest.feaster_of_souls_quest",
+      "confirmation_count": 7,
+      "facts_count": 15,
+      "original_record_sha256": "1e85b4f04519b4625f0d589aa77a46932717b773032486e626d49bd86d7823c0",
+      "record_sha256": "2a7a50728e5bddcb11bd1baeb659b3afd762abb60fa6bdcd28f01c1ef042493d",
+      "reduced_text_count": 7,
+      "reduced_text_length": 159
+    },
+    {
+      "candidate_count": 4,
+      "canonical_key": "oteryn:quest.feral_trappers_quest",
+      "confirmation_count": 1,
+      "facts_count": 5,
+      "original_record_sha256": "118e7dfbaf61acdab1adb7f8e77d22184e4b1d079668b5e8252266de66eb1df7",
+      "record_sha256": "b0476cbec9fef7f39a38efd7746eecdb62f5f2ee19703bb42c448376c4e133a9",
+      "reduced_text_count": 5,
+      "reduced_text_length": 484
+    },
+    {
+      "candidate_count": 6,
+      "canonical_key": "oteryn:quest.ferumbras_ascension_quest",
+      "confirmation_count": 5,
+      "facts_count": 11,
+      "original_record_sha256": "882054740e7bfd98d67051269e1bca5f244d857e436e2368e1ea8425e6041276",
+      "record_sha256": "06b42f40110c8824e7a04f9e7f4c1da7c3cb6a196d6c9c7886f7f88ca8783aac",
+      "reduced_text_count": 5,
+      "reduced_text_length": 301
+    },
+    {
+      "candidate_count": 3,
+      "canonical_key": "oteryn:quest.festive_outfits_quest",
+      "confirmation_count": 0,
+      "facts_count": 3,
+      "original_record_sha256": "d6635886a71c41c3b4769aa05956b7e5199c23aeb8d39bef29007cf486da3a30",
+      "record_sha256": "4951e2a11b67312060241b04bb40f6b254743dcd868b4002bf4196dfd10c5b5e",
+      "reduced_text_count": 3,
+      "reduced_text_length": 490
+    },
+    {
+      "candidate_count": 15,
+      "canonical_key": "oteryn:quest.fiend_slayer_outfits_quest",
+      "confirmation_count": 4,
+      "facts_count": 19,
+      "original_record_sha256": "615dcd67bad22cfa5616fa9d7c052ead4fa8f378e00b81218938bf47bf1279bb",
+      "record_sha256": "03605107031e3441af26a6a3cfb39e24ab76e769251fd443b39a3304aa3ca10e",
+      "reduced_text_count": 16,
+      "reduced_text_length": 1353
+    },
+    {
+      "candidate_count": 10,
+      "canonical_key": "oteryn:quest.fire_axe_quest",
+      "confirmation_count": 6,
+      "facts_count": 16,
+      "original_record_sha256": "c9bb4d3ddbf6db747750ce3b02c4b0bb8c05800699151c22fc0aeaa1e39865cb",
+      "record_sha256": "71ef435112606bfcda553d9af5f13acf9398468723cde261f27c3d9aff396678",
+      "reduced_text_count": 2,
+      "reduced_text_length": 248
+    },
+    {
+      "candidate_count": 6,
+      "canonical_key": "oteryn:quest.fire_fighter_outfits_quest",
+      "confirmation_count": 8,
+      "facts_count": 14,
+      "original_record_sha256": "9a2505117ebd7104fc15dc0b9850839af445fa12bb15cd5ace93bd919fa0e175",
+      "record_sha256": "d8b7e8b41f1fd1745c9a23e21128cff67b118b50f18745b8d3ea148585c65a68",
+      "reduced_text_count": 7,
+      "reduced_text_length": 150
+    },
+    {
+      "candidate_count": 8,
+      "canonical_key": "oteryn:quest.fishing_box_quest",
+      "confirmation_count": 4,
+      "facts_count": 12,
+      "original_record_sha256": "f4a7cd161b01a2e8c81d7ab6063f7b25d0484705229385c5cfffb280d447870c",
+      "record_sha256": "3a847a496a7da88fb53f6b53df240e716090cf981f1ec583385ac3aaf8fb9e58",
+      "reduced_text_count": 13,
+      "reduced_text_length": 584
+    },
+    {
+      "candidate_count": 7,
+      "canonical_key": "oteryn:quest.forgotten_knowledge_quest",
+      "confirmation_count": 11,
+      "facts_count": 18,
+      "original_record_sha256": "b2f12ba35e60fcc5b1f1ea1893a53af90b530486183473b9cebe72349be607e7",
+      "record_sha256": "6d9580fe4a1b7b898171b91f4d358a863a124f13c5bfef882bfca0b6c33507ad",
+      "reduced_text_count": 6,
+      "reduced_text_length": 426
+    },
+    {
+      "candidate_count": 1,
+      "canonical_key": "oteryn:quest.formal_dress_outfits_quest",
+      "confirmation_count": 3,
+      "facts_count": 4,
+      "original_record_sha256": "49f85e90ac4c9e3a207ad1b10341391765b2d3164a3e2a5078720ee71a6ccc12",
+      "record_sha256": "d833632d1d157bdc051744b8e59ae926fb2a4fb3dbc1eeb0c34b5521d4350795",
+      "reduced_text_count": 3,
+      "reduced_text_length": 594
+    },
+    {
+      "candidate_count": 17,
+      "canonical_key": "oteryn:quest.formogar_mine_hoist",
+      "confirmation_count": 4,
+      "facts_count": 21,
+      "original_record_sha256": "3479e5151a0ff642d2acc5130fd588301e4bdb6a36489c29ed5e94daa828c851",
+      "record_sha256": "7409137caaa2361b5373dcf3bd24ab8ea5f08f5c9c198ef13dfed2df906ebc7a",
+      "reduced_text_count": 22,
+      "reduced_text_length": 4868
+    },
+    {
+      "candidate_count": 2,
+      "canonical_key": "oteryn:quest.friends_and_traders",
+      "confirmation_count": 14,
+      "facts_count": 16,
+      "original_record_sha256": "84b15acc4ab91824df7e40423cd92a7b0dc6bb29e83994808aa4126244af3c47",
+      "record_sha256": "8bbaa0e12e0edd9d5bd8a7f2572e642cf4950bff372a652af2fd84441dca0991",
+      "reduced_text_count": 2,
+      "reduced_text_length": 248
+    },
+    {
+      "candidate_count": 4,
+      "canonical_key": "oteryn:quest.frost_dragon_quest",
+      "confirmation_count": 4,
+      "facts_count": 8,
+      "original_record_sha256": "a20bcf49399a7483b228efd038f2ec848cf7d275dd9ed67196077def283cb274",
+      "record_sha256": "985e1d03f49e0f194fdbcb5c20f4c28140fc9b0653eff210de6ea75518bd9ff1",
+      "reduced_text_count": 4,
+      "reduced_text_length": 142
+    },
+    {
+      "candidate_count": 4,
+      "canonical_key": "oteryn:quest.fury_gates_mini_world_change",
+      "confirmation_count": 2,
+      "facts_count": 6,
+      "original_record_sha256": "e422524faed36b1ad1502218ec245d72b8fe7bbfb9f136ccec9542883cc16a2f",
+      "record_sha256": "97bae9f26bc93282ca4dd1da1c0b6654af9cfe574be767d9a4203cce5272188d",
+      "reduced_text_count": 6,
+      "reduced_text_length": 378
+    },
+    {
+      "candidate_count": 2,
+      "canonical_key": "oteryn:quest.geomancer_quest",
+      "confirmation_count": 5,
+      "facts_count": 7,
+      "original_record_sha256": "f5bed26626a17f4119c6a567d2d3848bd53b3080ffcaa7907c8f1c374eaa0568",
+      "record_sha256": "f7f58e510548a4f75a9fcadd8b2aade66f2f8952485418ac03d8496b1821769d",
+      "reduced_text_count": 5,
+      "reduced_text_length": 93
+    },
+    {
+      "candidate_count": 2,
+      "canonical_key": "oteryn:quest.ghoul_room_quest",
+      "confirmation_count": 0,
+      "facts_count": 2,
+      "original_record_sha256": "a1b7ce881098ac553d087e780205eec6a3808a5045423751f05d9db6c9d7d485",
+      "record_sha256": "66b5315b830aba6117405bdd3ac42e5a874e289bab2b8aeb464ae2ec7d9c5eb6",
+      "reduced_text_count": 3,
+      "reduced_text_length": 466
+    },
+    {
+      "candidate_count": 7,
+      "canonical_key": "oteryn:quest.giant_smithhammer_quest",
+      "confirmation_count": 2,
+      "facts_count": 9,
+      "original_record_sha256": "992d1719a1cc7a3442ab5708cd1fe749b4562ac2612d655762cd4b2c87d6c562",
+      "record_sha256": "27d3c3e6a21b5e0efb8bd851b26f0af40b7a26903a7fd7fe45f21138838bdf80",
+      "reduced_text_count": 10,
+      "reduced_text_length": 1023
+    },
+    {
+      "candidate_count": 7,
+      "canonical_key": "oteryn:quest.glooth_engineer_outfits_quest",
+      "confirmation_count": 2,
+      "facts_count": 9,
+      "original_record_sha256": "6d5347f1d855267d007e1a071ead227a8d52691812f03b02c7b85f4748647781",
+      "record_sha256": "20e50c354cc6b066d31b08f35addd68bc75f3236fbd60de459e05d5dce7f2aa1",
+      "reduced_text_count": 4,
+      "reduced_text_length": 568
+    },
+    {
+      "candidate_count": 9,
+      "canonical_key": "oteryn:quest.goblin_merchant_quest",
+      "confirmation_count": 6,
+      "facts_count": 15,
+      "original_record_sha256": "92eb8b23697b07944b52a88e76a15e9a2af2e88367a5bfce615dfc629e0d696e",
+      "record_sha256": "cc454bad3929ab2bee272bc2a3db1ab77490ebf6a2987cefce8d5fe3ea128901",
+      "reduced_text_count": 6,
+      "reduced_text_length": 11
+    },
+    {
+      "candidate_count": 11,
+      "canonical_key": "oteryn:quest.goblin_temple_quest",
+      "confirmation_count": 3,
+      "facts_count": 14,
+      "original_record_sha256": "ca730e4e8da11ccef08a2170f79ced851db0e1a13e114775d12bd503650d0c8c",
+      "record_sha256": "e60745ddffe333516ac802086f6756918921a2bca05dd011cd9c7034d02b87c2",
+      "reduced_text_count": 14,
+      "reduced_text_length": 707
+    },
+    {
+      "candidate_count": 3,
+      "canonical_key": "oteryn:quest.golden_outfits_quest",
+      "confirmation_count": 6,
+      "facts_count": 9,
+      "original_record_sha256": "e4ea02bc76f1ecfdb6c0d15c477cc9a61d8a31cb3303f2c52de115ff8fc3a203",
+      "record_sha256": "1601c89b1c06f8e8f61c9e33940a76b4ec63036931a79ed100071631276609ba",
+      "reduced_text_count": 6,
+      "reduced_text_length": 383
+    },
+    {
+      "candidate_count": 5,
+      "canonical_key": "oteryn:quest.grave_danger_quest",
+      "confirmation_count": 0,
+      "facts_count": 5,
+      "original_record_sha256": "9abfcbae5a47fabc732bfa56972de2a42e4f9753cdfd13992ceab17b37f42643",
+      "record_sha256": "96cfa133f53cef1f473a9f0005c20e35a72a73a53bd335bec5402588cf17a773",
+      "reduced_text_count": 3,
+      "reduced_text_length": 584
+    },
+    {
+      "candidate_count": 19,
+      "canonical_key": "oteryn:quest.grimvale_mini_world_change",
+      "confirmation_count": 2,
+      "facts_count": 21,
+      "original_record_sha256": "2b319484af73deb26e42780fa6b9c2addebfcc690ce4bcdcde3abcd59edb6d2f",
+      "record_sha256": "4de2448660efcebf75bba2fe1cf62a05f00c39ab197b5fe7ce3e75d3f3b9a719",
+      "reduced_text_count": 22,
+      "reduced_text_length": 1867
+    },
+    {
+      "candidate_count": 103,
+      "canonical_key": "oteryn:quest.grimvale_quest",
+      "confirmation_count": 13,
+      "facts_count": 116,
+      "original_record_sha256": "62870f3ccf172b2d1fddd060ec22f3cd4b5f16d32c00e340464bced35562a6ae",
+      "record_sha256": "5c318a2bc6eba218fa513db48d05a2d631667f6d377fc8fb257032006b7066b4",
+      "reduced_text_count": 41,
+      "reduced_text_length": 4399
+    },
+    {
+      "candidate_count": 5,
+      "canonical_key": "oteryn:quest.hand_of_the_inquisition_outfits_quest",
+      "confirmation_count": 8,
+      "facts_count": 13,
+      "original_record_sha256": "e709de0e79ff2390dc07eccd60a7c5c2f845c903214eef29bdfba47e2fc8e164",
+      "record_sha256": "e0ef3beb9475bc92739fd46959d64882fa0155ea82e693f54a907742dcbc6d82",
+      "reduced_text_count": 6,
+      "reduced_text_length": 20
+    },
+    {
+      "candidate_count": 12,
+      "canonical_key": "oteryn:quest.heart_of_destruction_quest",
+      "confirmation_count": 12,
+      "facts_count": 24,
+      "original_record_sha256": "4902d41f66329615acad7bee14035a751013851f160f62370a8f307413b41d0f",
+      "record_sha256": "e24abd6515b468abf0a72e0a71ca3139ae198f311fba1b8ecca28f730b33ae80",
+      "reduced_text_count": 15,
+      "reduced_text_length": 1197
+    },
+    {
+      "candidate_count": 3,
+      "canonical_key": "oteryn:quest.hero_of_rathleton_quest",
+      "confirmation_count": 11,
+      "facts_count": 14,
+      "original_record_sha256": "72dccbd66e616659740bc1dabcd0c5928cbc3ea8cfe8391873c6d5ce08309afd",
+      "record_sha256": "f747b739d1e5457f17c7a3b94c0c6772dda0265481407b3dd1def17d4b6f83c4",
+      "reduced_text_count": 5,
+      "reduced_text_length": 270
+    },
+    {
+      "candidate_count": 3,
+      "canonical_key": "oteryn:quest.hidden_threats_quest",
+      "confirmation_count": 1,
+      "facts_count": 4,
+      "original_record_sha256": "ab1969ce9b94cfbf6d4d8a6860a55c9715b17859a5dc511a8b81e7a8bd44b507",
+      "record_sha256": "677dc2ff72f8efbbd752c5f55b38bddb828b4108ca595e6d6527bba0db8a1ba1",
+      "reduced_text_count": 2,
+      "reduced_text_length": 354
+    },
+    {
+      "candidate_count": 4,
+      "canonical_key": "oteryn:quest.horse_station_world_change",
+      "confirmation_count": 6,
+      "facts_count": 10,
+      "original_record_sha256": "3eb218b4a4b32538461e479601af9723229f87a2a66b6d6d27156b98cc026ef8",
+      "record_sha256": "5d2d9140a9fae3c242857dd2f3d605c7081b68d83318e5bb98a8045d7ad725c1",
+      "reduced_text_count": 12,
+      "reduced_text_length": 1467
+    },
+    {
+      "candidate_count": 160,
+      "canonical_key": "oteryn:quest.hot_cuisine_quest",
+      "confirmation_count": 108,
+      "facts_count": 268,
+      "original_record_sha256": "4c41ae7bc919edc7a30026729dfc937755f4d662e21fbf96e4fcf388f5e77ee9",
+      "record_sha256": "203606b42841d20713a582ff86782a595d6e6004f3db17ec2b53719d47423a9e",
+      "reduced_text_count": 239,
+      "reduced_text_length": 12235
+    },
+    {
+      "candidate_count": 5,
+      "canonical_key": "oteryn:quest.hunter_outfits_quest",
+      "confirmation_count": 8,
+      "facts_count": 13,
+      "original_record_sha256": "162ba997a7537864f8ed28e6fa6f2390cd3bdd086d0797667149e6016a563d2f",
+      "record_sha256": "1d729f1fbf07a520d96acb76a944922728a4f6c2d42361a853193d0d7ac6a70a",
+      "reduced_text_count": 6,
+      "reduced_text_length": 11
+    },
+    {
+      "candidate_count": 7,
+      "canonical_key": "oteryn:quest.hunting_for_tokens",
+      "confirmation_count": 4,
+      "facts_count": 11,
+      "original_record_sha256": "0f7163905e6fec5636bba74c4e20e98dcf0b24778cbe95f1da61214bf3db9101",
+      "record_sha256": "9903c067778c730734fbf6f580943a404165ebd774814d4f637125e6c45d8d31",
+      "reduced_text_count": 12,
+      "reduced_text_length": 473
+    },
+    {
+      "candidate_count": 1,
+      "canonical_key": "oteryn:quest.hydra_egg_quest",
+      "confirmation_count": 5,
+      "facts_count": 6,
+      "original_record_sha256": "5879c33aa61c3eca76656d59b07479574fe3a79cc09e004eb24feac26a899d47",
+      "record_sha256": "5443c34f088f46adba0683c86dcb05bcf5fc49bdcb5a903cd1317672ca5730d2",
+      "reduced_text_count": 5,
+      "reduced_text_length": 25
+    },
+    {
+      "candidate_count": 2,
+      "canonical_key": "oteryn:quest.illuminator_outfit_quest",
+      "confirmation_count": 1,
+      "facts_count": 3,
+      "original_record_sha256": "2f36955de68ee3c01aeb4f52cf4db3f460dfd80f28c16f64e72e3df2e9b282fc",
+      "record_sha256": "37a1c447849dc91a293a72d6a1609602cac3342b988ecb33de61ccccb637f576",
+      "reduced_text_count": 3,
+      "reduced_text_length": 534
+    },
+    {
+      "candidate_count": 15,
+      "canonical_key": "oteryn:quest.illuminator_outfits_quest",
+      "confirmation_count": 4,
+      "facts_count": 19,
+      "original_record_sha256": "44b2905b836fd1c28365bef6f90122d69912c3282768b1895d494845355d3252",
+      "record_sha256": "16859529461d5c2899de36c0f53c9e1e2eb1d823a2aa2071a51c979d8fbf77b0",
+      "reduced_text_count": 19,
+      "reduced_text_length": 1405
+    },
+    {
+      "candidate_count": 118,
+      "canonical_key": "oteryn:quest.in_service_of_yalahar_quest",
+      "confirmation_count": 34,
+      "facts_count": 152,
+      "original_record_sha256": "736cad40caf8e94bd038a7344f3c7e229c1a22addde663a9d1344fe8b80e1b86",
+      "record_sha256": "e0bf58820cc52db48894d9ec624f448a5a067dd12e6a856e115a5ad2d03b33b9",
+      "reduced_text_count": 37,
+      "reduced_text_length": 4962
+    },
+    {
+      "candidate_count": 5,
+      "canonical_key": "oteryn:quest.inukaya_quest",
+      "confirmation_count": 3,
+      "facts_count": 8,
+      "original_record_sha256": "d951e73d38986158ad41b3cb9c7b54dc36a2b40e7c87639ba23333fc2610ea98",
+      "record_sha256": "042b3a7738154b76c7877bf5b23f3f750c29b5dcae3d83047c6172a9118294c2",
+      "reduced_text_count": 3,
+      "reduced_text_length": 7
+    },
+    {
+      "candidate_count": 8,
+      "canonical_key": "oteryn:quest.iron_helmet_quest",
+      "confirmation_count": 4,
+      "facts_count": 12,
+      "original_record_sha256": "26574ff6906600fc7d42bc71a8288f0f651a456b471fc6bf5e04573f06e78098",
+      "record_sha256": "c803d304f394008fcc6ecdeef621d4153427255db407e9835ef4a435891be1c1",
+      "reduced_text_count": 11,
+      "reduced_text_length": 579
+    },
+    {
+      "candidate_count": 2,
+      "canonical_key": "oteryn:quest.katana_quest",
+      "confirmation_count": 5,
+      "facts_count": 7,
+      "original_record_sha256": "30b8d7228e344d972204500e9fee2227860e397945b45aa986fc6ee0b9da8912",
+      "record_sha256": "267aeb44fd6882db18c370b9a1c647f53a2ceb4a3b34595d099081442e55674e",
+      "reduced_text_count": 5,
+      "reduced_text_length": 120
+    },
+    {
+      "candidate_count": 4,
+      "canonical_key": "oteryn:quest.killing_in_the_name_of_quest",
+      "confirmation_count": 0,
+      "facts_count": 4,
+      "original_record_sha256": "ff2cedef3ccdaa338600a8449c6fc0b80d899b1c5a32d6850e35b0f5530b14cd",
+      "record_sha256": "4cf9ac3317b3fec0fc1c2250b26f536085c80cbd58d160e7395779191f7521f3",
+      "reduced_text_count": 4,
+      "reduced_text_length": 734
+    },
+    {
+      "candidate_count": 88,
+      "canonical_key": "oteryn:quest.kilmaresh_quest",
+      "confirmation_count": 21,
+      "facts_count": 109,
+      "original_record_sha256": "4b14eca8ec927badbb8df40e149fa115f32177707912f866fab35de21232768a",
+      "record_sha256": "34e42b1170bb9f41d51e2a8ce3dc3cc1e3a11beafc37a3719d9509f381449718",
+      "reduced_text_count": 99,
+      "reduced_text_length": 15692
+    },
+    {
+      "candidate_count": 18,
+      "canonical_key": "oteryn:quest.koshei_the_deathless_quest",
+      "confirmation_count": 5,
+      "facts_count": 23,
+      "original_record_sha256": "78f975752111e7fa2b6eb706ca8d49a629530ebd2d212bfef2631e16f847543b",
+      "record_sha256": "3ec1cc81abaeb3dd807deb4a5d541c51607df31691034aa18ac1ad0ff7605d5b",
+      "reduced_text_count": 2,
+      "reduced_text_length": 248
+    },
+    {
+      "candidate_count": 11,
+      "canonical_key": "oteryn:quest.krailos_quest",
+      "confirmation_count": 6,
+      "facts_count": 17,
+      "original_record_sha256": "df833e9d0b85e4cf2f87e98c3b0ef20b74cb11c77124e890e0c6a472b9c26c19",
+      "record_sha256": "e4584b562b93d62c64c424f4f2a53c052bdbb1042efbf233d3c0bb2e8793ad86",
+      "reduced_text_count": 7,
+      "reduced_text_length": 154
+    },
+    {
+      "candidate_count": 5,
+      "canonical_key": "oteryn:quest.life_ring_quest",
+      "confirmation_count": 2,
+      "facts_count": 7,
+      "original_record_sha256": "d7e4a7b069ed58785aa47b7ffd3d25e47c4cd5b7cfd7826a7e50c35f777f71a1",
+      "record_sha256": "7060cbe5ec64dbfaaca0908a7b3990c03bda7fff6c048e70bffa22a9715012b1",
+      "reduced_text_count": 7,
+      "reduced_text_length": 389
+    },
+    {
+      "candidate_count": 2,
+      "canonical_key": "oteryn:quest.lion_trophy_quest",
+      "confirmation_count": 5,
+      "facts_count": 7,
+      "original_record_sha256": "2c7e9c498cfadc1794401249b07d47c3c71229030c3e5f265245aeed2ca386f7",
+      "record_sha256": "1541dfd73c71545f4e7330e4d7180ec89bf684c245c2deb1a21cea48657bd476",
+      "reduced_text_count": 5,
+      "reduced_text_length": 58
+    },
+    {
+      "candidate_count": 4,
+      "canonical_key": "oteryn:quest.lions_rock",
+      "confirmation_count": 0,
+      "facts_count": 4,
+      "original_record_sha256": "af0fd4a0e24165d880f4236fe10618f76c158d2c3de8cf36d4927d2a49f8af5d",
+      "record_sha256": "3c3324b40e9d73091a0841e5adb230c337eef074712432c0a2c191daad3a036e",
+      "reduced_text_count": 3,
+      "reduced_text_length": 492
+    },
+    {
+      "candidate_count": 78,
+      "canonical_key": "oteryn:quest.liquid_black_quest",
+      "confirmation_count": 9,
+      "facts_count": 87,
+      "original_record_sha256": "6ba2b6fde276c5e2f6f9168e0f86dadc6409b4437add5268bc5164c5933deab9",
+      "record_sha256": "3419a3d84aa0efefba6d6d87e428889c039229f86368bf51071ad55110ef0ae1",
+      "reduced_text_count": 79,
+      "reduced_text_length": 14358
+    },
+    {
+      "candidate_count": 7,
+      "canonical_key": "oteryn:quest.longsword_quest",
+      "confirmation_count": 2,
+      "facts_count": 9,
+      "original_record_sha256": "aa933864a483224d073ed2a51255060d6ee2fed972fd8534dc65499a82460e83",
+      "record_sha256": "14280721d0566180e98d1309aa84e1e2f8ec80c2731d1a81c194a3f533c17564",
+      "reduced_text_count": 2,
+      "reduced_text_length": 248
+    },
+    {
+      "candidate_count": 5,
+      "canonical_key": "oteryn:quest.machinery_of_war_quest",
+      "confirmation_count": 9,
+      "facts_count": 14,
+      "original_record_sha256": "7e20450cf403960cda1808a2598d18eec5c9d1454c20c27f2a461a3e90e45dba",
+      "record_sha256": "9963b4043d99c9df85433a986701638fcb127da126d7943b49c90b6ccd292c7d",
+      "reduced_text_count": 7,
+      "reduced_text_length": 136
+    },
+    {
+      "candidate_count": 5,
+      "canonical_key": "oteryn:quest.mad_mage_room_quest",
+      "confirmation_count": 2,
+      "facts_count": 7,
+      "original_record_sha256": "1d08b0aa9492dd6b2ad9542062d9c69ae95b676c71538e60d77809cfeae334f0",
+      "record_sha256": "752985ce59a42a7fa5952b74e62a27ddcb50352a11f3d883a3e92f5c9ac11914",
+      "reduced_text_count": 7,
+      "reduced_text_length": 551
+    },
+    {
+      "candidate_count": 3,
+      "canonical_key": "oteryn:quest.makeshift_warrior_outfits_quest",
+      "confirmation_count": 3,
+      "facts_count": 6,
+      "original_record_sha256": "9747a533e576c361585033b2f510c7398e764e8d26f494e7ff7f4ca09694e18f",
+      "record_sha256": "b596da7665c44883b59827d91534e1d2b78bc93e8a9b08fc35e733426666e5e9",
+      "reduced_text_count": 3,
+      "reduced_text_length": 193
+    },
+    {
+      "candidate_count": 0,
+      "canonical_key": "oteryn:quest.marlin_trophy_quest",
+      "confirmation_count": 1,
+      "facts_count": 1,
+      "original_record_sha256": "5d60d0e29c52b3c3c3b59e7d8a4be5b57e6b783ea7fe8b8407ac247b303a6efd",
+      "record_sha256": "3da338c0f77ecf04f83ef96731fa74bc6c64e7e99bf4a1a55af57464b7204fa8",
+      "reduced_text_count": 3,
+      "reduced_text_length": 554
+    },
+    {
+      "candidate_count": 30,
+      "canonical_key": "oteryn:quest.medusa_shield_quest",
+      "confirmation_count": 3,
+      "facts_count": 33,
+      "original_record_sha256": "d58b298432f0ed33101108e8d5503286fdb04e217735ae6a7de43ad29eb6bf92",
+      "record_sha256": "071e408e7fd9a3032457eb03f4845f4008b35ec80f270bcdac372a241f1471ff",
+      "reduced_text_count": 29,
+      "reduced_text_length": 3366
+    },
+    {
+      "candidate_count": 2,
+      "canonical_key": "oteryn:quest.minotaur_hell_quest",
+      "confirmation_count": 4,
+      "facts_count": 6,
+      "original_record_sha256": "f522f6ec110c11b0d32e5546734a635ed6cc6b02b0db9e3736cbdc4962078411",
+      "record_sha256": "02389fdcc8413055b9120032f1c21ab454445d70eee60644ff8f46ecad22a671",
+      "reduced_text_count": 2,
+      "reduced_text_length": 248
+    },
+    {
+      "candidate_count": 7,
+      "canonical_key": "oteryn:quest.newhaven_legion_helmet_quest",
+      "confirmation_count": 3,
+      "facts_count": 10,
+      "original_record_sha256": "68bba5b095122b144185ee4d589a6068ea35b43cc5bb1adf2e180060a7b98371",
+      "record_sha256": "eba8a81d1a0be97580c87a8e1c1ec72e8fc109a6070c5cfd3f112ac488a0a33a",
+      "reduced_text_count": 4,
+      "reduced_text_length": 126
+    },
+    {
+      "candidate_count": 10,
+      "canonical_key": "oteryn:quest.newhaven_quest",
+      "confirmation_count": 7,
+      "facts_count": 17,
+      "original_record_sha256": "48458d46b0d7a9583d92e3be6d1b7c3b6f5078c4fab95be121c0e1e1d3f5c312",
+      "record_sha256": "babe3ba30fd2d35ca4dabc4a880d1b30aee933c4cf09a0c2b019457965ad9e88",
+      "reduced_text_count": 14,
+      "reduced_text_length": 744
+    },
+    {
+      "candidate_count": 1,
+      "canonical_key": "oteryn:quest.nightmare_isles_mini_world_change",
+      "confirmation_count": 5,
+      "facts_count": 6,
+      "original_record_sha256": "abf01e5e59c1b14ae95275bf2d3e06f7b8993076fe9e50fcc25c3cc5b20fba18",
+      "record_sha256": "c7cdd3c809c6eb6699b5e1fc0694487ff81b804c11685864ebc6db56624c31ba",
+      "reduced_text_count": 5,
+      "reduced_text_length": 86
+    },
+    {
+      "candidate_count": 4,
+      "canonical_key": "oteryn:quest.nightmare_outfits_quest",
+      "confirmation_count": 0,
+      "facts_count": 4,
+      "original_record_sha256": "514996e62188da77985c9f489717867de7606a8f921efcc3a38c942d786c9440",
+      "record_sha256": "6985223e234aaf8a71692391aa6c26cc70ca63d00cd0a2a2f066efefde91c5c9",
+      "reduced_text_count": 3,
+      "reduced_text_length": 516
+    },
+    {
+      "candidate_count": 103,
+      "canonical_key": "oteryn:quest.no_rest_for_the_wicked_quest",
+      "confirmation_count": 13,
+      "facts_count": 116,
+      "original_record_sha256": "aa9373b8224792fbd409007a96351397592dfc9cb011ad2eae3c4e678243e272",
+      "record_sha256": "bc4ccdb4a761d13f35193adb9d9eea829bd418b2cbf84783c2e0e4504d299d45",
+      "reduced_text_count": 89,
+      "reduced_text_length": 13233
+    },
+    {
+      "candidate_count": 13,
+      "canonical_key": "oteryn:quest.nobleman_outfits_quest",
+      "confirmation_count": 13,
+      "facts_count": 26,
+      "original_record_sha256": "c93124ec8f01757a5c386a6ffd0b4b95128acc6a12dc34e4a38a65ffb94e3487",
+      "record_sha256": "63f638c74caff7175f6d000fd53882eba1d3fc550f98b67dd2f5af6ee50698b1",
+      "reduced_text_count": 2,
+      "reduced_text_length": 248
+    },
+    {
+      "candidate_count": 5,
+      "canonical_key": "oteryn:quest.obsidian_knife_quest",
+      "confirmation_count": 9,
+      "facts_count": 14,
+      "original_record_sha256": "af12f634fcfa3de199c9bb300ac9e33758ab3d3273d5bceeca14e23282ab95c3",
+      "record_sha256": "a927cd319f99c6d29218bf52e9cf81e40155d00415a398c3c4ee7ede98c60d3e",
+      "reduced_text_count": 7,
+      "reduced_text_length": 130
+    },
+    {
+      "candidate_count": 12,
+      "canonical_key": "oteryn:quest.opticording_sphere_quest",
+      "confirmation_count": 3,
+      "facts_count": 15,
+      "original_record_sha256": "d96622c566d46eea841c971ca0f8587599bc2e3e1b68b3595b547aae214e5039",
+      "record_sha256": "aa6df37acf6e471a9e7cf61309404715cc4957b2c828d8bec2c6eb8c111a32d2",
+      "reduced_text_count": 15,
+      "reduced_text_length": 1134
+    },
+    {
+      "candidate_count": 3,
+      "canonical_key": "oteryn:quest.oramond_quest",
+      "confirmation_count": 11,
+      "facts_count": 14,
+      "original_record_sha256": "a5aebc231d29afef4a49a77ecf1787f2503a8ecb6cd354d3d8b7a27c01018981",
+      "record_sha256": "159a57b7b672c5cbe2a3d95507b0c3680d1182769dfbf827194d36e3dac11569",
+      "reduced_text_count": 5,
+      "reduced_text_length": 117
+    },
+    {
+      "candidate_count": 2,
+      "canonical_key": "oteryn:quest.orc_shaman_quest",
+      "confirmation_count": 1,
+      "facts_count": 3,
+      "original_record_sha256": "f1dc26380e7e415555632b6d08263947ea3a5c25b923f44e79e95982b85d2cea",
+      "record_sha256": "de9d8074c7a99f2b5d5199a66c4e6cc65d9d12b6737f95afeb49a3f3a5f0189e",
+      "reduced_text_count": 2,
+      "reduced_text_length": 303
+    },
+    {
+      "candidate_count": 52,
+      "canonical_key": "oteryn:quest.oriental_outfits_quest",
+      "confirmation_count": 15,
+      "facts_count": 67,
+      "original_record_sha256": "3a8bde68872d4bbc9aa529d646660e74a6cbf7f08b46b7007269db51daed3c9e",
+      "record_sha256": "310019bbae7381d5ecef7a9872d5abd299ff3d6d1e53944dacfce7d0bc50df1a",
+      "reduced_text_count": 50,
+      "reduced_text_length": 6040
+    },
+    {
+      "candidate_count": 1,
+      "canonical_key": "oteryn:quest.oriental_trader_mini_world_change",
+      "confirmation_count": 4,
+      "facts_count": 5,
+      "original_record_sha256": "7a6ce807527b5dfeea179adc1b70c6ae4d00abdf0b9c39c30bff53a54f50a647",
+      "record_sha256": "31dc928798acc2d384203d957daf2deddd3c8919aabc64e53ef193039bc4f8d8",
+      "reduced_text_count": 2,
+      "reduced_text_length": 248
+    },
+    {
+      "candidate_count": 9,
+      "canonical_key": "oteryn:quest.ornamented_shield_quest",
+      "confirmation_count": 4,
+      "facts_count": 13,
+      "original_record_sha256": "f1166768afc1304bfa2568c21ebd0ae0e9c249478f42ba97165268c5ad52bfcf",
+      "record_sha256": "462f0f7202d0b09854dda0a4e3c1decb210ae1ca04908f51d8688b20c507c824",
+      "reduced_text_count": 6,
+      "reduced_text_length": 11
+    },
+    {
+      "candidate_count": 98,
+      "canonical_key": "oteryn:quest.outfit_and_addon_quests",
+      "confirmation_count": 8,
+      "facts_count": 106,
+      "original_record_sha256": "de67b8287b630e30f08054ddd58a6478a9e19d496ac034ae4b41d2fa83a99b32",
+      "record_sha256": "3dc368fe266b497af50f86b9dee4f9138a5f0bd75ab164b44f1fc7d1b9df602a",
+      "reduced_text_count": 98,
+      "reduced_text_length": 5493
+    },
+    {
+      "candidate_count": 3,
+      "canonical_key": "oteryn:quest.overhunting_world_change",
+      "confirmation_count": 5,
+      "facts_count": 8,
+      "original_record_sha256": "7b3ea3b786682a08b0640de01cfa8bd2a127c47d683e2fdacf652340f3a0f3f9",
+      "record_sha256": "6b917b7bbbb04618efb7a2ee096e64b4e19c3b5af5c96c7f7374426e390dd0c6",
+      "reduced_text_count": 5,
+      "reduced_text_length": 123
+    },
+    {
+      "candidate_count": 3,
+      "canonical_key": "oteryn:quest.panpipe_quest",
+      "confirmation_count": 0,
+      "facts_count": 3,
+      "original_record_sha256": "69c4ef5419c17610230c5b6c316d0768e68930d7b28ba08fea495cdb5f1daa28",
+      "record_sha256": "b4f5e22d445c65097421845ad4dc852f4bc484185a281641033f14a9782789be",
+      "reduced_text_count": 2,
+      "reduced_text_length": 314
+    },
+    {
+      "candidate_count": 11,
+      "canonical_key": "oteryn:quest.parchment_room_quest",
+      "confirmation_count": 2,
+      "facts_count": 13,
+      "original_record_sha256": "e6887d46bf2b9ef17255466c48f6a8abe070a9ec12f51fa948938444991a4351",
+      "record_sha256": "4ccee7eee42fec62f873aa5d731e282e50dd1afbccc2c2ecbce700f42f4ec091",
+      "reduced_text_count": 12,
+      "reduced_text_length": 882
+    },
+    {
+      "candidate_count": 11,
+      "canonical_key": "oteryn:quest.pick_quest",
+      "confirmation_count": 9,
+      "facts_count": 20,
+      "original_record_sha256": "041656cec7179ede04dfbcbd9b3f9b3c1e689f027e17f1861fa01eb7b4e55896",
+      "record_sha256": "0c69d9d1cd760276c3db8a2c6171736fdf0a80c2d0627fad84bf9a65dbcbb0cb",
+      "reduced_text_count": 8,
+      "reduced_text_length": 374
+    },
+    {
+      "candidate_count": 8,
+      "canonical_key": "oteryn:quest.pilgrimage_of_ashes",
+      "confirmation_count": 6,
+      "facts_count": 14,
+      "original_record_sha256": "5f34e11d4118068e5a360bf544a75cd4ef728a1bbe76d68d2b0f37f3a86047af",
+      "record_sha256": "f0842fa2e8628c8199bd96dde08e07b557f712ae4493a370031dc0f55edb4c74",
+      "reduced_text_count": 6,
+      "reduced_text_length": 11
+    },
+    {
+      "candidate_count": 5,
+      "canonical_key": "oteryn:quest.poison_daggers_quest",
+      "confirmation_count": 2,
+      "facts_count": 7,
+      "original_record_sha256": "1f86973ecdeacf9e1032d2808da68578d771c914f3e8a638cb884657a47f3e3f",
+      "record_sha256": "43615f0caad46c7f3479be367300290f86d8f9b434ac11ae358d21cbf7fcd027",
+      "reduced_text_count": 7,
+      "reduced_text_length": 397
+    },
+    {
+      "candidate_count": 0,
+      "canonical_key": "oteryn:quest.poltergeist_outfits_quest",
+      "confirmation_count": 8,
+      "facts_count": 8,
+      "original_record_sha256": "f683043fc5288c9bd11bc9fa410e7ec3b6c22f06a9f206d045d477f126c1655d",
+      "record_sha256": "6c2a0944e01379e4bfdbeea922ea506f1af68f70f7c96e958502f82bafca49e8",
+      "reduced_text_count": 5,
+      "reduced_text_length": 203
+    },
+    {
+      "candidate_count": 2,
+      "canonical_key": "oteryn:quest.power_bolts_quest",
+      "confirmation_count": 0,
+      "facts_count": 2,
+      "original_record_sha256": "64ef97b0f6fa7d76653d9a0d9ccf62807e128402e83dda9472883d51ae23a991",
+      "record_sha256": "20113151d367ff97a3c7744c5e5a3e68d2ad83ebdaa012790dd6eafc2e8c929c",
+      "reduced_text_count": 2,
+      "reduced_text_length": 309
+    },
+    {
+      "candidate_count": 18,
+      "canonical_key": "oteryn:quest.power_ring_quest",
+      "confirmation_count": 3,
+      "facts_count": 21,
+      "original_record_sha256": "866333e38dba4a8da388af6a0cb489ead1a8c9ef2d0b4944850b588387c85a6a",
+      "record_sha256": "fd9f7393ffba30bbee7f45a8c7c0e337bcb7a2390715d4b9767a1cca77c81bcc",
+      "reduced_text_count": 19,
+      "reduced_text_length": 1554
+    },
+    {
+      "candidate_count": 2,
+      "canonical_key": "oteryn:quest.present_quest",
+      "confirmation_count": 3,
+      "facts_count": 5,
+      "original_record_sha256": "0f411359095eb0b9fcda19cd3951abf349a01bfaf3b6f443c5568c0d14be763d",
+      "record_sha256": "828235f16aa842ac31d5027d178f8a4fb7a5e41932bea2fd4ce283bb2f83fdcb",
+      "reduced_text_count": 2,
+      "reduced_text_length": 248
+    },
+    {
+      "candidate_count": 8,
+      "canonical_key": "oteryn:quest.primal_ordeal_quest",
+      "confirmation_count": 6,
+      "facts_count": 14,
+      "original_record_sha256": "a8970e88819d16624831e9f4991f3d63743e2a6a94fd2e0e533fc20e06433cc4",
+      "record_sha256": "f4465f9e1689ee565d93a90e4e6504a12bcf31b996feda39e567b413adbe0df4",
+      "reduced_text_count": 7,
+      "reduced_text_length": 163
+    },
+    {
+      "candidate_count": 10,
+      "canonical_key": "oteryn:quest.rapier_quest",
+      "confirmation_count": 3,
+      "facts_count": 13,
+      "original_record_sha256": "02879b57738b5efd2a87df4013927f325b6a5546799849daaec72e78bece0828",
+      "record_sha256": "fc97c0c9a315824f007dd04b27d79093bfd81868f37979a9b6c7edfbe32499fd",
+      "reduced_text_count": 13,
+      "reduced_text_length": 350
+    },
+    {
+      "candidate_count": 2,
+      "canonical_key": "oteryn:quest.rascoohan_outfits_quest",
+      "confirmation_count": 6,
+      "facts_count": 8,
+      "original_record_sha256": "1370ed3f8875966b8de75b8f78736b777c39469e8b15e69b9ff20f3a178eb587",
+      "record_sha256": "5fe06ac07620b7a4697a698b1f63ad070aca958b00b4c694c390d821d261b261",
+      "reduced_text_count": 5,
+      "reduced_text_length": 222
+    },
+    {
+      "candidate_count": 4,
+      "canonical_key": "oteryn:quest.chayenne_realm",
+      "confirmation_count": 0,
+      "facts_count": 4,
+      "original_record_sha256": "f0a8796c722eeb728b5d254ad85babba400988ee364c86dba2ba3c73bb030f4c",
+      "record_sha256": "568d7f6c78728a5d81de32d21f30b1ef4ebb8740d6f3bea7654aea075dfe9d24",
+      "reduced_text_count": 3,
+      "reduced_text_length": 546
+    },
+    {
+      "candidate_count": 19,
+      "canonical_key": "oteryn:quest.revenant_outfits_quest",
+      "confirmation_count": 9,
+      "facts_count": 28,
+      "original_record_sha256": "a8838928fad0c59470ada2ceaba8318f499e955228a417ba328142f098a149e7",
+      "record_sha256": "f8ea1333fcb22e1a47f77c313e5d8d99b9f69be6ebd022466bd8fab89f3099a2",
+      "reduced_text_count": 19,
+      "reduced_text_length": 1104
+    },
+    {
+      "candidate_count": 1,
+      "canonical_key": "oteryn:quest.rift_warrior_outfits_quest",
+      "confirmation_count": 7,
+      "facts_count": 8,
+      "original_record_sha256": "25e11ec7aba75c4f89bcbda41d900a8d5a5d322ffd39ec0fc457b05ef2e007b4",
+      "record_sha256": "5c19e995e80334cdb056b9eb7872b2199f47cc37ede5dba9b3037f1e23bb5087",
+      "reduced_text_count": 2,
+      "reduced_text_length": 248
+    },
+    {
+      "candidate_count": 8,
+      "canonical_key": "oteryn:quest.roshamuul_quest",
+      "confirmation_count": 6,
+      "facts_count": 14,
+      "original_record_sha256": "438764785a82cd105ab9ad0a0566878b73a9b8069ea72179ce998ee72337f1e0",
+      "record_sha256": "920d4b6475535a196c23f99ed00ed86829fbf17959022d9a1cd7b3fd485a8c09",
+      "reduced_text_count": 6,
+      "reduced_text_length": 15
+    },
+    {
+      "candidate_count": 10,
+      "canonical_key": "oteryn:quest.rotten_blood_quest",
+      "confirmation_count": 5,
+      "facts_count": 15,
+      "original_record_sha256": "058cbb34b4d78203f6b688957caeafcc970f2fda47949c7b366ec541696660aa",
+      "record_sha256": "a4827b23168cbef8cb6166b963fd962614169702f1bdf89d2a337876226de30c",
+      "reduced_text_count": 14,
+      "reduced_text_length": 1058
+    },
+    {
+      "candidate_count": 4,
+      "canonical_key": "oteryn:quest.rottin_wood_and_the_married_men_quest",
+      "confirmation_count": 5,
+      "facts_count": 9,
+      "original_record_sha256": "defb11adb6b9545059cd34e02f05255744c0887282c9307f296d5ea49601ba23",
+      "record_sha256": "512ead46e3c21b70918d2527f099617404c58869e90134b92972d64295f7780c",
+      "reduced_text_count": 5,
+      "reduced_text_length": 141
+    },
+    {
+      "candidate_count": 1,
+      "canonical_key": "oteryn:quest.royal_costume_outfits_quest",
+      "confirmation_count": 1,
+      "facts_count": 2,
+      "original_record_sha256": "92eee283066f0e5190c4763d7e7729f68b9babf7646ea744f26c58877eda4caf",
+      "record_sha256": "54d499e646144823b969d67fad64f77bc517f8daf3d052e7217249f4f52008e1",
+      "reduced_text_count": 3,
+      "reduced_text_length": 540
+    },
+    {
+      "candidate_count": 26,
+      "canonical_key": "oteryn:quest.sam_s_old_backpack_quest",
+      "confirmation_count": 6,
+      "facts_count": 32,
+      "original_record_sha256": "6f7a6b9d9c89c20d313e25f7d6fead9a3dd410c957898172e449e1a8497acd29",
+      "record_sha256": "67011589fabe4137615fa2b2abf3d9d80414b572335267990a805de13058a973",
+      "reduced_text_count": 27,
+      "reduced_text_length": 3074
+    },
+    {
+      "candidate_count": 3,
+      "canonical_key": "oteryn:quest.sanctuary_of_the_lizard_god",
+      "confirmation_count": 9,
+      "facts_count": 12,
+      "original_record_sha256": "fbc6edd19a8005d57994b4893452f7ba175555e2673a9084f15c11a7fd8b0ed4",
+      "record_sha256": "5e9231da5aa2d20e6e4a2751b7c42e4f05ddbda4a8c87f55404e0c2a8cd144a4",
+      "reduced_text_count": 2,
+      "reduced_text_length": 248
+    },
+    {
+      "candidate_count": 6,
+      "canonical_key": "oteryn:quest.scale_armor_quest",
+      "confirmation_count": 4,
+      "facts_count": 10,
+      "original_record_sha256": "ea979e601a8f1a9a86cad13caff298cc86c4df6ec2329cafa3b8e9c337715949",
+      "record_sha256": "731c5b010c64b9c301cec54c77bbf2abfa7b5893e3ef05cd2a7db48afeb12104",
+      "reduced_text_count": 3,
+      "reduced_text_length": 5
+    },
+    {
+      "candidate_count": 11,
+      "canonical_key": "oteryn:quest.sea_of_light_quest",
+      "confirmation_count": 11,
+      "facts_count": 22,
+      "original_record_sha256": "e6675131add7f7c6a451b0fcd67b8933381af9682c582d1ff0220afefa3736c7",
+      "record_sha256": "61545e8385be8fa872a84f0ae87efc8c1fc66ea3cc5caabf9f8ddffb46781eda",
+      "reduced_text_count": 14,
+      "reduced_text_length": 651
+    },
+    {
+      "candidate_count": 3,
+      "canonical_key": "oteryn:quest.secret_service_quest",
+      "confirmation_count": 11,
+      "facts_count": 14,
+      "original_record_sha256": "b6d78aad944c73e34e4ca04c3d1f2f5e45beb6746f47de82e6f8455a44e95f02",
+      "record_sha256": "2365b1159a4e0783645e112cdac8e2e4a664285501abcd0141432b49ab6e398a",
+      "reduced_text_count": 5,
+      "reduced_text_length": 205
+    },
+    {
+      "candidate_count": 3,
+      "canonical_key": "oteryn:quest.serpentine_tower_quest",
+      "confirmation_count": 0,
+      "facts_count": 3,
+      "original_record_sha256": "87b99a4f3aaeb2b4053df02cd6d087fde6cd75fa1603cdae9953e1a8a172e68d",
+      "record_sha256": "c5152f7b3c471c5fe28a41c453fbdf31180f94d3367e3dbde9b8d26af80075d0",
+      "reduced_text_count": 3,
+      "reduced_text_length": 620
+    },
+    {
+      "candidate_count": 105,
+      "canonical_key": "oteryn:quest.shadows_of_yalahar_quest",
+      "confirmation_count": 26,
+      "facts_count": 131,
+      "original_record_sha256": "1ec87fd232a18150ea5fca4e0a1c114a1f3ac2b20db89646fbd180322afdb4f0",
+      "record_sha256": "6499767eb1dd40d1f7dd9a823a75040f02354a5eff3c3bbf8af8535675629015",
+      "reduced_text_count": 105,
+      "reduced_text_length": 15572
+    },
+    {
+      "candidate_count": 5,
+      "canonical_key": "oteryn:quest.shaman_treasure_quest",
+      "confirmation_count": 2,
+      "facts_count": 7,
+      "original_record_sha256": "d4fa27be3d43317f34c0aeb24b9a1b64433010231e7d1a8f9c224a24a9275a23",
+      "record_sha256": "6684a4130d5617101198b759857ed1b6eb34f5523e832fcd966fd73bd1f6b2cd",
+      "reduced_text_count": 2,
+      "reduced_text_length": 248
+    },
+    {
+      "candidate_count": 8,
+      "canonical_key": "oteryn:quest.short_sword_quest",
+      "confirmation_count": 5,
+      "facts_count": 13,
+      "original_record_sha256": "5e366353e800d04a1f186c220a87f49759e5934f9d44748a2110c8ff36ad9f46",
+      "record_sha256": "7f40ea401284d236e139bc1e74c1738d9cab26ddc5197d4445fddb1b0141fcaa",
+      "reduced_text_count": 7,
+      "reduced_text_length": 131
+    },
+    {
+      "candidate_count": 5,
+      "canonical_key": "oteryn:quest.silver_amulet_quest",
+      "confirmation_count": 2,
+      "facts_count": 7,
+      "original_record_sha256": "ad8bda6abfd38fec708a38662dc7e9a5b76b120f872ad0d3642312516a8a9323",
+      "record_sha256": "d399892cff5e6fe1d39e1cd8fbf50c3ac01e17fa23c9a6a299f3145490dee67f",
+      "reduced_text_count": 7,
+      "reduced_text_length": 379
+    },
+    {
+      "candidate_count": 1,
+      "canonical_key": "oteryn:quest.silver_brooch_quest",
+      "confirmation_count": 5,
+      "facts_count": 6,
+      "original_record_sha256": "3b8fa1ea3cbb1ccc9341e1a322ee39dfe9518ba5b9a7515812d8f54b98b2744a",
+      "record_sha256": "8e58e4d6b936788b579493e9cfb88127c9973bc8537565b5838f13d6943082ec",
+      "reduced_text_count": 5,
+      "reduced_text_length": 68
+    },
+    {
+      "candidate_count": 3,
+      "canonical_key": "oteryn:quest.sinatuki_quest",
+      "confirmation_count": 0,
+      "facts_count": 3,
+      "original_record_sha256": "83eb83163de9b333afda11b68540c0d811f1d2beecbd67d55d14beccf2a36b06",
+      "record_sha256": "5f80ccd13530904aa8c7fa906421bc50051fe366e7dc55c00c22369ce9cd5ef4",
+      "reduced_text_count": 3,
+      "reduced_text_length": 470
+    },
+    {
+      "candidate_count": 5,
+      "canonical_key": "oteryn:quest.skeleton_decoration_quest",
+      "confirmation_count": 2,
+      "facts_count": 7,
+      "original_record_sha256": "0cd511de4ee75fbb876c24df41cb8f5131183e8c752850675de817c48d28a839",
+      "record_sha256": "6d4ec915865ab49c4a0c794e59a033e14ca15632a648131bdd8faa994d94f169",
+      "reduced_text_count": 8,
+      "reduced_text_length": 950
+    },
+    {
+      "candidate_count": 6,
+      "canonical_key": "oteryn:quest.skull_of_ratha",
+      "confirmation_count": 1,
+      "facts_count": 7,
+      "original_record_sha256": "d0757196488238db4c7f444d52cb229c11a75b55dea216587a655f0cbe4e0aba",
+      "record_sha256": "3af3a0ac0db5004d9e703f927571f98c4a7b581604f858b5843ce3337d02781b",
+      "reduced_text_count": 2,
+      "reduced_text_length": 248
+    },
+    {
+      "candidate_count": 6,
+      "canonical_key": "oteryn:quest.small_health_potion",
+      "confirmation_count": 6,
+      "facts_count": 12,
+      "original_record_sha256": "c04bf6fe9d8c6bfafc4b6e050fd2d1fde51fc4a3b9095895aacfa92674609607",
+      "record_sha256": "6fa2b50b5cb6d91671f2cf2d661eaf3bcaf7eb76b1b7f5702e07fa52521db2e6",
+      "reduced_text_count": 6,
+      "reduced_text_length": 9
+    },
+    {
+      "candidate_count": 9,
+      "canonical_key": "oteryn:quest.soil_guardian_outfits_quest",
+      "confirmation_count": 4,
+      "facts_count": 13,
+      "original_record_sha256": "b84b700b617b4eb34c5f1fe805b2258ec5db3629838dd3f16748648160ee8c74",
+      "record_sha256": "35d3a695d9d2fa8706dae8a71c773dec3dbbb2024e2e4d18b3cc3e35e4a95e0e",
+      "reduced_text_count": 13,
+      "reduced_text_length": 582
+    },
+    {
+      "candidate_count": 3,
+      "canonical_key": "oteryn:quest.soul_war_quest",
+      "confirmation_count": 11,
+      "facts_count": 14,
+      "original_record_sha256": "eb59e9b7608afa0bebfba7c104b073af38dfa65771b8fc4bbd5bfd2139d65005",
+      "record_sha256": "f5cc73ae35ebba3dee9a1446d10448266e4d0920332f773db3fca08d971db9a8",
+      "reduced_text_count": 7,
+      "reduced_text_length": 381
+    },
+    {
+      "candidate_count": 5,
+      "canonical_key": "oteryn:quest.spike_task",
+      "confirmation_count": 3,
+      "facts_count": 8,
+      "original_record_sha256": "afb62c666e6e67049be71f1e628a7ad01190bb772a6db435ebf16d2e41bcfc80",
+      "record_sha256": "821268e9b8930b2aed6a53a836b73d168f2431b92c604d97dd0364367c8c8100",
+      "reduced_text_count": 4,
+      "reduced_text_length": 959
+    },
+    {
+      "candidate_count": 41,
+      "canonical_key": "oteryn:quest.spirithunters_quest",
+      "confirmation_count": 26,
+      "facts_count": 67,
+      "original_record_sha256": "35ba40b437f14df7596fc5450e358121db9c500a700a30061820df456e16bcba",
+      "record_sha256": "cfa8436e5df04d554c0535c377593dc96a6a39b61a8b0fee7e6651cec80079fd",
+      "reduced_text_count": 55,
+      "reduced_text_length": 7267
+    },
+    {
+      "candidate_count": 0,
+      "canonical_key": "oteryn:quest.stampede_mini_world_change",
+      "confirmation_count": 4,
+      "facts_count": 4,
+      "original_record_sha256": "0c9cde844543924bd5002cc600f9c67dc647acc3ae11486baac70c3a6fb5a143",
+      "record_sha256": "b1c36814260f278207991fb75948dbe0a64640e96e98f26c7502b9ab230c49a5",
+      "reduced_text_count": 2,
+      "reduced_text_length": 281
+    },
+    {
+      "candidate_count": 6,
+      "canonical_key": "oteryn:quest.steal_from_thieves_quest",
+      "confirmation_count": 3,
+      "facts_count": 9,
+      "original_record_sha256": "d0d23611af091622c00c908f8824c3b7260e2d8ac03516b2a8229e462d8e75d5",
+      "record_sha256": "dd99f0df19747b6870d3b43a1c2c53cd465b398ffba3219142c31bb8264c21c9",
+      "reduced_text_count": 4,
+      "reduced_text_length": 131
+    },
+    {
+      "candidate_count": 5,
+      "canonical_key": "oteryn:quest.stealth_ring_quest",
+      "confirmation_count": 2,
+      "facts_count": 7,
+      "original_record_sha256": "339748d943abf1baaaf4e81d0ac9a9c9fba120be8e8f0e1a1d79f579e8c83623",
+      "record_sha256": "baaef1e3db1efc1bc42e0cbe2b489c65583aff4ceed4f959611f6537dd0ec19d",
+      "reduced_text_count": 7,
+      "reduced_text_length": 428
+    },
+    {
+      "candidate_count": 2,
+      "canonical_key": "oteryn:quest.steamship_world_change",
+      "confirmation_count": 5,
+      "facts_count": 7,
+      "original_record_sha256": "816fe3d95c1c77364be7dea35cafca20a6bceffd29a261880885778c1ea9863e",
+      "record_sha256": "0d36425a81c619614e0e0d80fe1fed415eb91f2ddf69015f41914b678b9027df",
+      "reduced_text_count": 5,
+      "reduced_text_length": 113
+    },
+    {
+      "candidate_count": 3,
+      "canonical_key": "oteryn:quest.steel_helmet_quest",
+      "confirmation_count": 0,
+      "facts_count": 3,
+      "original_record_sha256": "07d0ec2403256feb95e1a9e0329bc8f99e7b07078715bc5d452c57e459cefdcc",
+      "record_sha256": "c967ccffa5f850f28f5d06324ca37c2760fd30f50dc07b6bfb7261279441f662",
+      "reduced_text_count": 4,
+      "reduced_text_length": 713
+    },
+    {
+      "candidate_count": 5,
+      "canonical_key": "oteryn:quest.strong_potions_quest",
+      "confirmation_count": 2,
+      "facts_count": 7,
+      "original_record_sha256": "25f9f7308fb0a380abda9b647a863688537d1b6384622b4dc0a0cd97b4cb3735",
+      "record_sha256": "9eff7ec6b9f97675c98c2d245db8b97290827e79b6c3bd0a86fc86d75ce0e3d2",
+      "reduced_text_count": 8,
+      "reduced_text_length": 605
+    },
+    {
+      "candidate_count": 3,
+      "canonical_key": "oteryn:quest.swamp_fever_world_change",
+      "confirmation_count": 2,
+      "facts_count": 5,
+      "original_record_sha256": "4c4f1334ccc0593ebcabc8c720002968dad6659a433a87c34a1831efcead8b72",
+      "record_sha256": "79ffaba5af5054e0d19407cb2cc94b884ff714bc4a79abf38b5dc62cc91192c6",
+      "reduced_text_count": 2,
+      "reduced_text_length": 248
+    },
+    {
+      "candidate_count": 11,
+      "canonical_key": "oteryn:quest.targuna_quest",
+      "confirmation_count": 4,
+      "facts_count": 15,
+      "original_record_sha256": "7d0c19cd216fedf530ddf965f7055dcb6da9df9b2bc6c00d18f6e8d24ff7ed78",
+      "record_sha256": "6df7b975aafbee2791d4b3d124df510cc2f72dd82f4c7a0aeb837326a43efe16",
+      "reduced_text_count": 8,
+      "reduced_text_length": 412
+    },
+    {
+      "candidate_count": 5,
+      "canonical_key": "oteryn:quest.thais_lighthouse_quest",
+      "confirmation_count": 2,
+      "facts_count": 7,
+      "original_record_sha256": "9185304309981a0a073292e8a66341c05aa974a2a541940374ef4d0850a75a2b",
+      "record_sha256": "ef467925f06d5bce9b2869264eb48b4e1245a2956752219381fab199bb7bd4d1",
+      "reduced_text_count": 7,
+      "reduced_text_length": 373
+    },
+    {
+      "candidate_count": 2,
+      "canonical_key": "oteryn:quest.thawing_mini_world_change",
+      "confirmation_count": 5,
+      "facts_count": 7,
+      "original_record_sha256": "2be2d6a5390e271adba954d896adb2061c91ae5e61188efdb3eb02fbf574b3a1",
+      "record_sha256": "3edde5f1458879bcdec969e6ed1784cb1b169bc5ce66f34cfb405cfdc38d8d6a",
+      "reduced_text_count": 5,
+      "reduced_text_length": 58
+    },
+    {
+      "candidate_count": 4,
+      "canonical_key": "oteryn:quest.the_ancient_tombs_quest",
+      "confirmation_count": 0,
+      "facts_count": 4,
+      "original_record_sha256": "fc1f3b6769b0bc40c240ef9163fd6b05abe632afea6d272bb16a82184e1cbf1f",
+      "record_sha256": "b1deb35ee5c54e77ef36fd5e4d19292dd6d71cb81ec692ec7929593accf0ae11",
+      "reduced_text_count": 3,
+      "reduced_text_length": 502
+    },
+    {
+      "candidate_count": 51,
+      "canonical_key": "oteryn:quest.the_annihilator_quest",
+      "confirmation_count": 4,
+      "facts_count": 55,
+      "original_record_sha256": "27efbfbc4e9e8fa3ef5d003700ca9f1fcdb033baf53ff9592262195254c205da",
+      "record_sha256": "0149fa6834ada9c23c8b99f59573777b2bd571117155fd599d0f6574b9101b67",
+      "reduced_text_count": 45,
+      "reduced_text_length": 9816
+    },
+    {
+      "candidate_count": 55,
+      "canonical_key": "oteryn:quest.the_ape_city_quest",
+      "confirmation_count": 43,
+      "facts_count": 98,
+      "original_record_sha256": "b04f3307320399e3c1907bb1a0b4bfd05783deef7a8144b99c9cbc44499b796a",
+      "record_sha256": "7d8fcdb944cf0afecb5f8333aeb08f55424afca5f530b1608187055cbb21298e",
+      "reduced_text_count": 55,
+      "reduced_text_length": 5622
+    },
+    {
+      "candidate_count": 11,
+      "canonical_key": "oteryn:quest.the_beginning_quest",
+      "confirmation_count": 3,
+      "facts_count": 14,
+      "original_record_sha256": "dcee6dea8a9deaa60e2aadd6b508be0a493bf675d6d376b26ef56e889696e0eb",
+      "record_sha256": "b71f889880ce9baa834cb3f3f19b40db122b8c2a8c354dce16f876a68992ccdf",
+      "reduced_text_count": 6,
+      "reduced_text_length": 8
+    },
+    {
+      "candidate_count": 12,
+      "canonical_key": "oteryn:quest.cradle_of_monsters",
+      "confirmation_count": 4,
+      "facts_count": 16,
+      "original_record_sha256": "88d3ad54291985b30bc04afe008ed3219a0adf7e7e87997fe5e0c037e60ccae5",
+      "record_sha256": "8fb8ff6e5d5afc5c91928e365fa4d7df8907999afe7e13ad1dffcf9985436efb",
+      "reduced_text_count": 15,
+      "reduced_text_length": 620
+    },
+    {
+      "candidate_count": 3,
+      "canonical_key": "oteryn:quest.the_cursed_crystal",
+      "confirmation_count": 11,
+      "facts_count": 14,
+      "original_record_sha256": "875492e49ab6e091afac419d83c074e9ba606998c322571f8524fc9e76274a13",
+      "record_sha256": "04de996981580f4edf34addad237660e8cd9143d95b1919f93af8cfce0e56908",
+      "reduced_text_count": 5,
+      "reduced_text_length": 141
+    },
+    {
+      "candidate_count": 5,
+      "canonical_key": "oteryn:quest.demon_oak",
+      "confirmation_count": 0,
+      "facts_count": 5,
+      "original_record_sha256": "cae329674ad684b3359c44a9c210e795fc1a4c244d04106de9ce6bc3278b51fd",
+      "record_sha256": "8618533e43a5ff2a9be0d21daa5d03f9da1dcae2739425f86182dcc7fd39beb8",
+      "reduced_text_count": 3,
+      "reduced_text_length": 524
+    },
+    {
+      "candidate_count": 68,
+      "canonical_key": "oteryn:quest.desert_dungeon_quest",
+      "confirmation_count": 5,
+      "facts_count": 73,
+      "original_record_sha256": "84b546304f864c1266f261b0465b6931890fb7e44770ae4baa180ddc86a75cc2",
+      "record_sha256": "ffde88079f9661c53b3aeacf594d39a222cbdff9f0a43a72e597514ec1b6ea83",
+      "reduced_text_count": 65,
+      "reduced_text_length": 8683
+    },
+    {
+      "candidate_count": 14,
+      "canonical_key": "oteryn:quest.the_djinn_war_efreet_faction",
+      "confirmation_count": 9,
+      "facts_count": 23,
+      "original_record_sha256": "2e633cc97f533cd6cff8dc7a241c5a1d6ac4b73cb00b753be7caa61238ca3cd6",
+      "record_sha256": "e636c9c0711dd7071c4eb55ab018b6e6cfe8d781b0d109646d4fbb28c87af3a8",
+      "reduced_text_count": 2,
+      "reduced_text_length": 248
+    },
+    {
+      "candidate_count": 8,
+      "canonical_key": "oteryn:quest.the_djinn_war_marid_faction",
+      "confirmation_count": 3,
+      "facts_count": 11,
+      "original_record_sha256": "1032079570892dbb4bbaf7ba4d9d71f5bf91b46b2efc2bdfd0136fd160ada718",
+      "record_sha256": "8ed2c91e040eba71751108d6796cdfa6e5790a1e46d60e809d12d71ec153d442",
+      "reduced_text_count": 4,
+      "reduced_text_length": 144
+    },
+    {
+      "candidate_count": 11,
+      "canonical_key": "oteryn:quest.the_dream_courts_quest",
+      "confirmation_count": 12,
+      "facts_count": 23,
+      "original_record_sha256": "4edbc6439178ff4cbdd89418cc7d0468e97045f9064bf4a1077e0265c6fa5d8f",
+      "record_sha256": "2cc7dde502fde97ca2d7ebeb693789bd846b6c1a0cb707ec7e8968ab4e4135e9",
+      "reduced_text_count": 14,
+      "reduced_text_length": 1297
+    },
+    {
+      "candidate_count": 3,
+      "canonical_key": "oteryn:quest.the_explorer_society_quest",
+      "confirmation_count": 11,
+      "facts_count": 14,
+      "original_record_sha256": "c9914a839a7eeb6f40f4a61a20348c3a81f2d4833d0bb7eba2eb9ab900496d3f",
+      "record_sha256": "04742b3b1d360144f9bc70ec861b7a1effc538e2cc5f7656563368fdc9295714",
+      "reduced_text_count": 11,
+      "reduced_text_length": 1675
+    },
+    {
+      "candidate_count": 5,
+      "canonical_key": "oteryn:quest.the_first_dragon_quest",
+      "confirmation_count": 0,
+      "facts_count": 5,
+      "original_record_sha256": "145cde8202fca2471bb59882020264af1b859c040ac6a159ce6cf159bcc7edb6",
+      "record_sha256": "42e501b7f7da6d55543b220c7360ac4b63ca6e7c7acf5070388d36f131c04e64",
+      "reduced_text_count": 3,
+      "reduced_text_length": 496
+    },
+    {
+      "candidate_count": 81,
+      "canonical_key": "oteryn:quest.the_gravedigger_of_drefia_quest",
+      "confirmation_count": 26,
+      "facts_count": 107,
+      "original_record_sha256": "c758a3bfa16f8772f5b7040d8d768ca766ea01fe8869591024032d526faee515",
+      "record_sha256": "dff572a009d55585f6c4c337069f8a66682033c20a39ea6714bc3ef5ac1a7944",
+      "reduced_text_count": 97,
+      "reduced_text_length": 11393
+    },
+    {
+      "candidate_count": 84,
+      "canonical_key": "oteryn:quest.the_hidden_city_of_beregar_quest",
+      "confirmation_count": 62,
+      "facts_count": 146,
+      "original_record_sha256": "923a9dbe02a8fec408a67377cde9360c001f5178c811c32d965821ee41987b2a",
+      "record_sha256": "947d3008f5eac0065bc2a7b3eb47033eb65c0801b75289ec0636db732e9e08a6",
+      "reduced_text_count": 52,
+      "reduced_text_length": 6336
+    },
+    {
+      "candidate_count": 6,
+      "canonical_key": "oteryn:quest.the_hunt_for_the_sea_serpent",
+      "confirmation_count": 8,
+      "facts_count": 14,
+      "original_record_sha256": "b5599ab880307cb2938021c792b2a3e735dd31f5053e1aaa3bcb33601de41b3e",
+      "record_sha256": "19d688fba3d0a625f957f1d160cc5cb8e6e9a50ae125f2f7ea11f57e73546a0e",
+      "reduced_text_count": 6,
+      "reduced_text_length": 12
+    },
+    {
+      "candidate_count": 12,
+      "canonical_key": "oteryn:quest.the_ice_islands_quest",
+      "confirmation_count": 12,
+      "facts_count": 24,
+      "original_record_sha256": "1fe465b7733ca592247a559fdbc841147ebcbe9d9a6abb5f9dc057eaa1aa2846",
+      "record_sha256": "ca5f357b9e98937384fbb00043a5cd1f6df34d9ec04dffd0e2fd05b975253945",
+      "reduced_text_count": 15,
+      "reduced_text_length": 1441
+    },
+    {
+      "candidate_count": 2,
+      "canonical_key": "oteryn:quest.the_inquisition_quest",
+      "confirmation_count": 6,
+      "facts_count": 8,
+      "original_record_sha256": "812f6d68bb0c98ca633767959f70508c5b56e4cef68fa8f82e6803bc72624e48",
+      "record_sha256": "01d3595e85f52659afb73996b83a43e6a5467845c340012a5d2b007a8feb22f3",
+      "reduced_text_count": 6,
+      "reduced_text_length": 578
+    },
+    {
+      "candidate_count": 4,
+      "canonical_key": "oteryn:quest.the_isle_of_evil_quest",
+      "confirmation_count": 0,
+      "facts_count": 4,
+      "original_record_sha256": "a1c7a7cc19e93cc351a1acff7c6dcfe48d966b4a78450a81b8d3e0826cb7ddb4",
+      "record_sha256": "e32d47cd8d41ef0216023fe1ceef0d951c38fcdbe9da646bf4c4e2c73f0dd019",
+      "reduced_text_count": 3,
+      "reduced_text_length": 558
+    },
+    {
+      "candidate_count": 20,
+      "canonical_key": "oteryn:quest.the_mages_tower_world_change",
+      "confirmation_count": 7,
+      "facts_count": 27,
+      "original_record_sha256": "46c5bed211abaad0211a8387b6b724da3626782d78bfa318823d024c37561047",
+      "record_sha256": "6d044fca0d767e173296ad8c3d525b0d789022a1e2a0730e82cdcd9e3a319493",
+      "reduced_text_count": 28,
+      "reduced_text_length": 4756
+    },
+    {
+      "candidate_count": 3,
+      "canonical_key": "oteryn:quest.the_mummys_curse_world_change",
+      "confirmation_count": 1,
+      "facts_count": 4,
+      "original_record_sha256": "7543dd7f54b34d48fae0712058bf20fa604d8b2effc27fb12c454053af13dea4",
+      "record_sha256": "cfb8005674920b0e2d70dc98f09d0b8a70058faf1d685ba1cc000965ac890a11",
+      "reduced_text_count": 2,
+      "reduced_text_length": 248
+    },
+    {
+      "candidate_count": 9,
+      "canonical_key": "oteryn:quest.the_new_frontier_quest",
+      "confirmation_count": 5,
+      "facts_count": 14,
+      "original_record_sha256": "84ff147f3aec6704f2ab5fd7eed61955d8f5d710ed20ac3bc15dbb81f5050019",
+      "record_sha256": "3f2364dc87bec7b9f0be3d5f5eeb8df764bb6e197bc20cf8424638038b434c05",
+      "reduced_text_count": 6,
+      "reduced_text_length": 43
+    },
+    {
+      "candidate_count": 11,
+      "canonical_key": "oteryn:quest.the_order_of_the_lion_quest",
+      "confirmation_count": 8,
+      "facts_count": 19,
+      "original_record_sha256": "4a727b2c168d4980c5ae309c84ed3d38097bcd4e1b7535c68c921f3f47cb3b6c",
+      "record_sha256": "ffcfaab11c00cea775b8fa3252fe3782309e430bee0b70e2ce5a0c623dee4556",
+      "reduced_text_count": 14,
+      "reduced_text_length": 877
+    },
+    {
+      "candidate_count": 3,
+      "canonical_key": "oteryn:quest.the_order_of_the_stag_quest",
+      "confirmation_count": 6,
+      "facts_count": 9,
+      "original_record_sha256": "e8ec75e458f8dc9f6d392d1c8c19ae5eb9f322b3835e683432d4e77ce4dc8ee3",
+      "record_sha256": "d4f8985a188252486cf6faa426ee869a8e315d41b412d76fd36590911bfd0a5d",
+      "reduced_text_count": 6,
+      "reduced_text_length": 419
+    },
+    {
+      "candidate_count": 5,
+      "canonical_key": "oteryn:quest.the_outlaw_camp_quest",
+      "confirmation_count": 0,
+      "facts_count": 5,
+      "original_record_sha256": "edd9a55feda7af301c5a0c372cad701ab1ae83d327e3787a393cb94d225cb84a",
+      "record_sha256": "8434d6f60986a327755b543e7fb02e73d9a4c65feec4ce49dbde675a6968e6c6",
+      "reduced_text_count": 4,
+      "reduced_text_length": 672
+    },
+    {
+      "candidate_count": 93,
+      "canonical_key": "oteryn:quest.the_paradox_tower_quest",
+      "confirmation_count": 15,
+      "facts_count": 108,
+      "original_record_sha256": "48274624909afe4e770d86fcb1fec35f13c32d702af086f955c4047563e19e8c",
+      "record_sha256": "8c8dc7d5724cffe52b2b4eb1eec2df1adc0b91927d44b80aa84cf59cb2244b7f",
+      "reduced_text_count": 74,
+      "reduced_text_length": 11650
+    },
+    {
+      "candidate_count": 85,
+      "canonical_key": "oteryn:quest.the_pits_of_inferno_quest",
+      "confirmation_count": 10,
+      "facts_count": 95,
+      "original_record_sha256": "8386136ad9537523af3da61d8169789a4ea844bdbfb6b4baec8fa5d299474cae",
+      "record_sha256": "b28d6f8d7ead7c332b692252a5f814a28ffc50f7c0ed8628dde633e4623278ce",
+      "reduced_text_count": 31,
+      "reduced_text_length": 3353
+    },
+    {
+      "candidate_count": 8,
+      "canonical_key": "oteryn:quest.the_postman_missions_quest",
+      "confirmation_count": 6,
+      "facts_count": 14,
+      "original_record_sha256": "f4f5a7fbdf0fc130fa6e9a27311b49acb7fe7eae40c99b1714c8aeb806c1a828",
+      "record_sha256": "d4bee5cd7060448c2b5ad8a974c0e2c9e7dee42fe46fada50a58d6bd6540816c",
+      "reduced_text_count": 6,
+      "reduced_text_length": 12
+    },
+    {
+      "candidate_count": 11,
+      "canonical_key": "oteryn:quest.the_queen_of_the_banshees_quest",
+      "confirmation_count": 12,
+      "facts_count": 23,
+      "original_record_sha256": "8140ba59fe76c00ccb2ecc8a6eee153256813f9f924b6e240daaff83993ec8ee",
+      "record_sha256": "8c7f522241ffd4f13c27a6d85dcd3f143803d57f79871c80aa885d7050884440",
+      "reduced_text_count": 14,
+      "reduced_text_length": 727
+    },
+    {
+      "candidate_count": 3,
+      "canonical_key": "oteryn:quest.the_rookie_guard_quest",
+      "confirmation_count": 11,
+      "facts_count": 14,
+      "original_record_sha256": "e980c7367fecf49d93de79f8754b722183da30e15e621d5fb4a8927ea12f120d",
+      "record_sha256": "0169cc03d5b73c3ad6705a0ac6aa340f76508f863adbc464aafa23724efa2712",
+      "reduced_text_count": 5,
+      "reduced_text_length": 389
+    },
+    {
+      "candidate_count": 5,
+      "canonical_key": "oteryn:quest.the_roost_of_the_graveborn_quest",
+      "confirmation_count": 0,
+      "facts_count": 5,
+      "original_record_sha256": "cf2d12e8ab40883d2fdc79057466fd722aac0859a35499c8e48f8a6b2e76cd2d",
+      "record_sha256": "7a25dd7c33f012884350d550f544cc6aba0538db6dd62573f5f10fc76e51e395",
+      "reduced_text_count": 3,
+      "reduced_text_length": 518
+    },
+    {
+      "candidate_count": 139,
+      "canonical_key": "oteryn:quest.the_scatterbrained_sorcerer_quest",
+      "confirmation_count": 7,
+      "facts_count": 146,
+      "original_record_sha256": "a424a34acb08378f5386308b643ada2f1458eeb507da81996196770064109194",
+      "record_sha256": "46118ee31899c00f6545f1b6aed60bf3d73e270d84ca85604db52a83dba9e796",
+      "reduced_text_count": 82,
+      "reduced_text_length": 14749
+    },
+    {
+      "candidate_count": 99,
+      "canonical_key": "oteryn:quest.the_secret_library_quest",
+      "confirmation_count": 5,
+      "facts_count": 104,
+      "original_record_sha256": "44722c827f47ef687a82de164f83d1a205b12bc94275528bc80362438492ec21",
+      "record_sha256": "160c349981da98a38bb6723e7f43f51699c84a10b6e8846cfc13f57c10b9f671",
+      "reduced_text_count": 12,
+      "reduced_text_length": 1186
+    },
+    {
+      "candidate_count": 9,
+      "canonical_key": "oteryn:quest.the_shattered_isles_quest",
+      "confirmation_count": 6,
+      "facts_count": 15,
+      "original_record_sha256": "5b249be28a41ee8b25e0d32dbd2cf8cab24ddc5ce61b189eab71e56bf8d2b7fc",
+      "record_sha256": "25b12b74ca95035121bdc14465e2d4f64c079d6c5ce308b366abbef1dcc52da4",
+      "reduced_text_count": 7,
+      "reduced_text_length": 142
+    },
+    {
+      "candidate_count": 10,
+      "canonical_key": "oteryn:quest.the_spirit_will_get_you_quest",
+      "confirmation_count": 4,
+      "facts_count": 14,
+      "original_record_sha256": "150d1a9dbdf3e39e10cef0a158b972fe7542b540a9a3245cc863fb711e387869",
+      "record_sha256": "c199a433d9a019ffd4972a545500444bb390ef53b429f70b0267bce1942603d2",
+      "reduced_text_count": 13,
+      "reduced_text_length": 792
+    },
+    {
+      "candidate_count": 3,
+      "canonical_key": "oteryn:quest.the_tainted_soul",
+      "confirmation_count": 7,
+      "facts_count": 10,
+      "original_record_sha256": "bb68d9b133a58b0a821f07a2b60f418a98b0b6f9851ceff4c9bad80837515061",
+      "record_sha256": "a1c2835fc46a8489fa62828de2f69bef18cc99fb982741f8ec5c96be46f82c4c",
+      "reduced_text_count": 7,
+      "reduced_text_length": 74
+    },
+    {
+      "candidate_count": 4,
+      "canonical_key": "oteryn:quest.the_thieves_guild_quest",
+      "confirmation_count": 0,
+      "facts_count": 4,
+      "original_record_sha256": "943fcddaf1c205ffeba10fa457bab29d3068c84a936c3486d2f820b333d8682e",
+      "record_sha256": "1f84bd8be983b3cbb928c9d773f13f27afba06fd2a725d3b55f28f30e0862473",
+      "reduced_text_count": 4,
+      "reduced_text_length": 662
+    },
+    {
+      "candidate_count": 61,
+      "canonical_key": "oteryn:quest.the_travelling_trader_quest",
+      "confirmation_count": 17,
+      "facts_count": 78,
+      "original_record_sha256": "6268048759fce316cd196ea8eadb632511ff98a867d7713693f063addda50f92",
+      "record_sha256": "274bfb2aef2c8b313d37f42ca51962fd349f362c884ea3b6315aeec0f40a69d2",
+      "reduced_text_count": 60,
+      "reduced_text_length": 10839
+    },
+    {
+      "candidate_count": 5,
+      "canonical_key": "oteryn:quest.the_ultimate_challenges",
+      "confirmation_count": 3,
+      "facts_count": 8,
+      "original_record_sha256": "7136dae5c56542ee5248264b83d9e150759f3c7e37ed29f057a005bee082b49e",
+      "record_sha256": "42a943e6f384b57d3bcc433cdf87d4d946d8eee4f08d1078eecb438b4c4a64f9",
+      "reduced_text_count": 2,
+      "reduced_text_length": 248
+    },
+    {
+      "candidate_count": 8,
+      "canonical_key": "oteryn:quest.the_way_of_the_monk_quest",
+      "confirmation_count": 5,
+      "facts_count": 13,
+      "original_record_sha256": "b4a08542ba1410a044498d3d15002b93736dd4c815ff9af1a6aa4881aba20bf4",
+      "record_sha256": "585ea1851eb5211ace292aa0c7ec2f056b2e682adee550ff2d93493aca002b7b",
+      "reduced_text_count": 5,
+      "reduced_text_length": 14
+    },
+    {
+      "candidate_count": 9,
+      "canonical_key": "oteryn:quest.the_white_raven_monastery_quest",
+      "confirmation_count": 12,
+      "facts_count": 21,
+      "original_record_sha256": "473ed09a43bbd65dce9c9321a3a3da8af0a07c1b4208329becd13f683e7145e2",
+      "record_sha256": "5b1daf8bedb7100cc81a20f5fe317951a2897b4e3132f481eeba2f2972112d6f",
+      "reduced_text_count": 13,
+      "reduced_text_length": 630
+    },
+    {
+      "candidate_count": 2,
+      "canonical_key": "oteryn:quest.their_masters_voice",
+      "confirmation_count": 5,
+      "facts_count": 7,
+      "original_record_sha256": "d747620131ae693a01bc5a315215efae12545d6d33fcdbb7fc7ad8102bd308a8",
+      "record_sha256": "d3d134365a89fc5dae3a954ffe960c5af565409aa09de36cbd60651d12f60e58",
+      "reduced_text_count": 5,
+      "reduced_text_length": 154
+    },
+    {
+      "candidate_count": 5,
+      "canonical_key": "oteryn:quest.thornfire_world_change",
+      "confirmation_count": 0,
+      "facts_count": 5,
+      "original_record_sha256": "6dec700278796c60fc803fec48c2bce86bf3835f18ba8090e3ad15abe92e871f",
+      "record_sha256": "d586d467019fd7974e602ac6dc4b871086092a2db7a543f29935a2fe1e0fa137",
+      "reduced_text_count": 3,
+      "reduced_text_length": 540
+    },
+    {
+      "candidate_count": 132,
+      "canonical_key": "oteryn:quest.threatened_dreams_quest",
+      "confirmation_count": 8,
+      "facts_count": 140,
+      "original_record_sha256": "77049b43eef6a8f0da9fd1cb62fdbd73cf0fa2a5f7633d9a450ee544d031b303",
+      "record_sha256": "4f8e5c055aeae491d9d60b5f23ad3b89d07c80dc88bbdee8f6f042993dba7baa",
+      "reduced_text_count": 107,
+      "reduced_text_length": 19558
+    },
+    {
+      "candidate_count": 19,
+      "canonical_key": "oteryn:quest.tibia_tales",
+      "confirmation_count": 5,
+      "facts_count": 24,
+      "original_record_sha256": "34e9333accc6f1ff55036b4b63305ffed44292923abc30d791afc42bf4239eb3",
+      "record_sha256": "8dd1fd27c51c2b58a4e5417de7e2ac16f57df5a5cf9831f89f8a3ff94fded785",
+      "reduced_text_count": 2,
+      "reduced_text_length": 248
+    },
+    {
+      "candidate_count": 2,
+      "canonical_key": "oteryn:quest.time_ring_quest",
+      "confirmation_count": 6,
+      "facts_count": 8,
+      "original_record_sha256": "c315526538189a349776a4f421dca0d21877e083f9fc7d246ff011ddda2d6b09",
+      "record_sha256": "6f7c8203276856931108c05a683d6e1a4605a373559ecc1a3ffd4b612192e5b7",
+      "reduced_text_count": 3,
+      "reduced_text_length": 5
+    },
+    {
+      "candidate_count": 5,
+      "canonical_key": "oteryn:quest.tinder_box_quest_chyllfroest",
+      "confirmation_count": 6,
+      "facts_count": 11,
+      "original_record_sha256": "d72c516c26a6a230f8acb2f53a47b2ab309adbb2c5135bde367d609b68a72b96",
+      "record_sha256": "ad75fd36fd0c3de14fe22d6d4d8dfdbe05c5dad207f51f777f2848359beccfb0",
+      "reduced_text_count": 8,
+      "reduced_text_length": 376
+    },
+    {
+      "candidate_count": 2,
+      "canonical_key": "oteryn:quest.to_blind_the_enemy_quest",
+      "confirmation_count": 6,
+      "facts_count": 8,
+      "original_record_sha256": "fcdca179235219183df5bcfeca4057313318f257ff6f5231be7fe6da7a8c9c1d",
+      "record_sha256": "e694c6fab3dbb7163e7f4d7156e112514a4d8126cec4d3e5340fe66e740414cf",
+      "reduced_text_count": 5,
+      "reduced_text_length": 66
+    },
+    {
+      "candidate_count": 5,
+      "canonical_key": "oteryn:quest.too_hot_to_handle_quest",
+      "confirmation_count": 0,
+      "facts_count": 5,
+      "original_record_sha256": "d10fcea1f07e61a339eba1e4f236b3854071f357f4a5bb2103d311dd547f8400",
+      "record_sha256": "be2b43e63efce2dda68d867b3fd5121cb0cb1719ee99711fa243db2313998c3e",
+      "reduced_text_count": 2,
+      "reduced_text_length": 325
+    },
+    {
+      "candidate_count": 22,
+      "canonical_key": "oteryn:quest.tower_defence_quest",
+      "confirmation_count": 9,
+      "facts_count": 31,
+      "original_record_sha256": "818fc2e58146cbc9bae5a52606e4ea49852c994eaaa320241ce6bc03e3c1a3d3",
+      "record_sha256": "838795c03794f469165e54eb4609d6deca3070f2f5903ee88e4fb8e802b76e96",
+      "reduced_text_count": 27,
+      "reduced_text_length": 3675
+    },
+    {
+      "candidate_count": 42,
+      "canonical_key": "oteryn:quest.treasure_hunt_quest",
+      "confirmation_count": 14,
+      "facts_count": 56,
+      "original_record_sha256": "e83b0d7fb640fb552003a5c6e8d1ed7ee86d29e1c6a33d79421b0f2e145e3386",
+      "record_sha256": "f2c056f8c9f21e0a20803bfb640516394f8f99861bb112e0d62854e29f0aac3d",
+      "reduced_text_count": 2,
+      "reduced_text_length": 248
+    },
+    {
+      "candidate_count": 5,
+      "canonical_key": "oteryn:quest.treasure_island_quest",
+      "confirmation_count": 3,
+      "facts_count": 8,
+      "original_record_sha256": "72be85cf06d2fdbd946035ed3a905fd9733682d6fa6f5877eda884ed94dd62d4",
+      "record_sha256": "fe114b96eb6cfa593a80ffbb7d67f0f44da8ed6a7320e1f9689809da456d4375",
+      "reduced_text_count": 3,
+      "reduced_text_length": 6
+    },
+    {
+      "candidate_count": 8,
+      "canonical_key": "oteryn:quest.triangle_tower_quest",
+      "confirmation_count": 4,
+      "facts_count": 12,
+      "original_record_sha256": "efaa9745565dd2fed3635fc1a0d07f304e01cea7df309fd885d9d8a2924843eb",
+      "record_sha256": "d11f77c5ba3d51a1097899ae7b75e49083f7dfd2c75a80a97656be31dece88a6",
+      "reduced_text_count": 12,
+      "reduced_text_length": 558
+    },
+    {
+      "candidate_count": 1,
+      "canonical_key": "oteryn:quest.troll_cave_quest",
+      "confirmation_count": 5,
+      "facts_count": 6,
+      "original_record_sha256": "cf80647d5d18b2fd5a975df290bf84aac1bff634fd29fdaaabf1d7837ea50716",
+      "record_sha256": "1e62e38724d243712dbc923faca94fb9fbc4a3b8b99653d9fdb53b77f8d472ba",
+      "reduced_text_count": 5,
+      "reduced_text_length": 63
+    },
+    {
+      "candidate_count": 5,
+      "canonical_key": "oteryn:quest.troll_sabotage_quest",
+      "confirmation_count": 0,
+      "facts_count": 5,
+      "original_record_sha256": "e956daa1a11aadf8dc0c41628c79277a2a32d0eefd82f8bc5e8769497f27e6e6",
+      "record_sha256": "2bf4ab038cc23166bc9c79823b17d12c8d08ee17628974aebb8d790f6513b4ef",
+      "reduced_text_count": 3,
+      "reduced_text_length": 594
+    },
+    {
+      "candidate_count": 4,
+      "canonical_key": "oteryn:quest.tutorial",
+      "confirmation_count": 3,
+      "facts_count": 7,
+      "original_record_sha256": "5dad1e02228ee357e46e4eef09ca45853ac20d08005337157e03e83ee7e39a48",
+      "record_sha256": "d52a3e89a11ea899a8849fd49ba8635babb959723169428157beee8e815d155a",
+      "reduced_text_count": 9,
+      "reduced_text_length": 1147
+    },
+    {
+      "candidate_count": 48,
+      "canonical_key": "oteryn:quest.twenty_miles_beneath_the_sea_quest",
+      "confirmation_count": 44,
+      "facts_count": 92,
+      "original_record_sha256": "441b3cdcb03756f621bf12faabc5f7d00dbf3f9cb677f2749f43c8cc48d2618c",
+      "record_sha256": "140ef329b209c7eb4bd1011fdb6e699446c396bc23b93e4e05ab4560dc104ed6",
+      "reduced_text_count": 2,
+      "reduced_text_length": 248
+    },
+    {
+      "candidate_count": 5,
+      "canonical_key": "oteryn:quest.unnatural_selection_quest",
+      "confirmation_count": 7,
+      "facts_count": 12,
+      "original_record_sha256": "6abf3a5ce666b9ef1af43dc1e497d4772cf4855e143acc47abfdd4abdbfb565f",
+      "record_sha256": "1f4b9b44d1a02ad44e4624cf56358ece4a22a6841f6fff204d4fc0894cb97707",
+      "reduced_text_count": 6,
+      "reduced_text_length": 10
+    },
+    {
+      "candidate_count": 5,
+      "canonical_key": "oteryn:quest.vampire_shield_quest",
+      "confirmation_count": 2,
+      "facts_count": 7,
+      "original_record_sha256": "157b4011cdcc454be3411ead80d55bd1591249a0d8aa6baff1e55296dccf5c80",
+      "record_sha256": "947c2ac95801b36f6cd069d3a03dace8e17287ee915edd0888cef94282c7512f",
+      "reduced_text_count": 7,
+      "reduced_text_length": 482
+    },
+    {
+      "candidate_count": 3,
+      "canonical_key": "oteryn:quest.warmaster_outfits_quest",
+      "confirmation_count": 7,
+      "facts_count": 10,
+      "original_record_sha256": "b0f3e1e4fe074cfa968871355bfc11b6959cd56f0c7fc1d5e24704489d247b84",
+      "record_sha256": "ff5f9a69e11713b8f302be837c405aa8be535a1e28e58e091f7cf982f8907e69",
+      "reduced_text_count": 5,
+      "reduced_text_length": 163
+    },
+    {
+      "candidate_count": 2,
+      "canonical_key": "oteryn:quest.waterfall_quest",
+      "confirmation_count": 1,
+      "facts_count": 3,
+      "original_record_sha256": "f3fb760bd2a14f78f2cfb987492037a156d0dc916a251a926cbb99cebfcdc5d0",
+      "record_sha256": "dc0f8aec498a975c2ea240a13a0e3434b54d1db23aba49f82f2134aab4d216e8",
+      "reduced_text_count": 3,
+      "reduced_text_length": 422
+    },
+    {
+      "candidate_count": 18,
+      "canonical_key": "oteryn:quest.wayfarer_outfits_quest",
+      "confirmation_count": 19,
+      "facts_count": 37,
+      "original_record_sha256": "ec93737092e9bb0a7e6ad50e14a9e2772ce948519f700dcf113be10fb21bfb80",
+      "record_sha256": "2d786b58193028e4f6fde919a11b4b83127dda2e371cd9152efadd2f66a22aa0",
+      "reduced_text_count": 30,
+      "reduced_text_length": 2378
+    },
+    {
+      "candidate_count": 1,
+      "canonical_key": "oteryn:quest.wedding_ring_quest",
+      "confirmation_count": 4,
+      "facts_count": 5,
+      "original_record_sha256": "ad799c156144723781c1ecda1d4f03025467d43d35a0e48b88e84b689a5e7e15",
+      "record_sha256": "6c52c279b20c5af5557a1160c7962ce531e5f2d9c4ea6092e664cc102d3113d4",
+      "reduced_text_count": 2,
+      "reduced_text_length": 248
+    },
+    {
+      "candidate_count": 11,
+      "canonical_key": "oteryn:quest.what_a_foolish_quest",
+      "confirmation_count": 2,
+      "facts_count": 13,
+      "original_record_sha256": "300947ecbea92d9541a282c2351c216da2b1a2bf9bb741175c4622b320e34a08",
+      "record_sha256": "bb9c6a6eea9aced9a8259b88d6220501f9bd0b49160419ba08297c3e54d02ce1",
+      "reduced_text_count": 6,
+      "reduced_text_length": 16
+    },
+    {
+      "candidate_count": 7,
+      "canonical_key": "oteryn:quest.winterlight_solstice",
+      "confirmation_count": 1,
+      "facts_count": 8,
+      "original_record_sha256": "1c99582400a67ab9b0765b480f0567360a55182416aab94ac80a1a89707967fa",
+      "record_sha256": "6f4182e5ffdc8fcc4a2bf32fae97d09154939bcf3da896ea9c053c6a6b607c79",
+      "reduced_text_count": 7,
+      "reduced_text_length": 751
+    },
+    {
+      "candidate_count": 4,
+      "canonical_key": "oteryn:quest.within_the_tides_quest",
+      "confirmation_count": 5,
+      "facts_count": 9,
+      "original_record_sha256": "94133a5b743bdbde971e4dbaac10e03500a078b8bf1ba142628e720dd499eb99",
+      "record_sha256": "81c67dbbf12b4db4ee6851b45abf668093e0c66f8570c147dba21df22574db6f",
+      "reduced_text_count": 5,
+      "reduced_text_length": 405
+    },
+    {
+      "candidate_count": 6,
+      "canonical_key": "oteryn:quest.wrath_of_the_emperor_quest",
+      "confirmation_count": 0,
+      "facts_count": 6,
+      "original_record_sha256": "0cbfea27f9c1f8d8f395c3fe2823b3ef5f8946048cdb58bb08461d5ddf277943",
+      "record_sha256": "ba5d9bed46a295b8c6c4900a55935d9e2450621954a2291793f0cfe744cba0a0",
+      "reduced_text_count": 5,
+      "reduced_text_length": 940
+    },
+    {
+      "candidate_count": 22,
+      "canonical_key": "oteryn:quest.yalaharian_outfits_quest",
+      "confirmation_count": 8,
+      "facts_count": 30,
+      "original_record_sha256": "e7b709b4f499f365be8bf82a894393166d187bace56497444bfd030c66b8bff4",
+      "record_sha256": "a8468ac1256fa8e15bdb51474ea8b250f3f0c91d47b050c251c575a54944dc40",
+      "reduced_text_count": 22,
+      "reduced_text_length": 1759
+    }
+  ],
+  "reduced_text_count": 3365,
+  "removed_local_evidence_paths": 5418,
+  "runtime_enabled": false,
+  "schema": "OTERYN_QUEST_ENRICHMENT_RECEIPT/v1",
+  "source_hold_resolved": false,
+  "source_holds_preserved": true,
+  "source_revision_verified": false
+}

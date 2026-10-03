@@ -12,10 +12,10 @@
     "content/world/definitions/declarations.json": "0be09005fe02cb9b48fa56d2b9cad1df7eec284ceeb565d80e8e831c5ef28f2c",
     "content/world/definitions/reference.json": "1aa9c7b7400c6041cd878cfbfb46139950a386ab377749ae56ef0bd17104992e",
     "content/world/provenance/sources.json": "8319dc455ec284809447e1d50b0dba984ff451c45ad305fa117269def60f1bb1",
-    "docs/agents/evidence/OTV2-20261001-item-forge3332-source-qualification-v1.json": "2ae8206fa72883fac6251f8a85d4574ec0dc29a2c88572b9889f08a59a3bb7d7",
-    "docs/agents/evidence/OTV2-20261002-item-forge3332-source-qualification-v2.json": "a22405164b549aff06849db98ede92d48d0b72606a25a3d8685054c8b6b324c3",
-    "tools/content-migration/world_project_v2_to_tree.py": "caebd238a5dca47303d5baacf3f942ddadceee1321b36a2a7b5887c22ecc75f1",
-    "tools/content-schema/item-authoring/source_field_catalogs.py": "8250880aaa89b7c5fa1593d5738a478b0d09e1ef9ef9cef630cb5da172d634bc"
+    "docs/agents/evidence/OTV2-20261001-item-forge3332-source-qualification-v1.json": "b9b022271012af6d7afc6e54f6ee1f8ec528994dc32cc773dfb10a55c89cd0c7",
+    "docs/agents/evidence/OTV2-20261002-item-forge3332-source-qualification-v2.json": "9132dc6266517b8246a6d575fff9ccda430a08d8c61a63673783e432dcd27084",
+    "tools/content-migration/world_project_v2_to_tree.py": "3711abdc8b6e3aabd46b6a3afc06bfdca5ace7c095beba390240bcaa374fd5e8",
+    "tools/content-schema/item-authoring/source_field_catalogs.py": "b3facfe30ae8beb9e80fff46d4df8870eb1a3a144ba5b0a3278eae3bc98fd423"
   },
   "baseline_relations": {
     "relations": 276,
@@ -259,8 +259,8 @@
     "sources": 203
   },
   "historical_source_proofs": {
-    "docs/agents/evidence/OTV2-20261001-item-forge3332-source-qualification-v1.json": "2ae8206fa72883fac6251f8a85d4574ec0dc29a2c88572b9889f08a59a3bb7d7",
-    "docs/agents/evidence/OTV2-20261002-item-forge3332-source-qualification-v2.json": "a22405164b549aff06849db98ede92d48d0b72606a25a3d8685054c8b6b324c3"
+    "docs/agents/evidence/OTV2-20261001-item-forge3332-source-qualification-v1.json": "b9b022271012af6d7afc6e54f6ee1f8ec528994dc32cc773dfb10a55c89cd0c7",
+    "docs/agents/evidence/OTV2-20261002-item-forge3332-source-qualification-v2.json": "9132dc6266517b8246a6d575fff9ccda430a08d8c61a63673783e432dcd27084"
   },
   "limits": "Baseline full-document hashes are observations, not live-file pins; compiler verifies current exact definition/source identity/official object/noWorld and atomic owner None-or-identicalForge. Prior315 owner rows and all57320 NativeRecords must be unchanged. Canonical3332 row may add only authoring.forge; original canonical generator derives two governing ruleset references.",
   "schema": "FORGE3332_CURRENT_INTEGRATION_RECEIPT/v1",

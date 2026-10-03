@@ -4,7 +4,7 @@ import hashlib
 import json
 from pathlib import Path
 
-CAPTURE_SHA = '755e9d4fddf76eb38acd68aeb9e457ddfebffde55c7f98de8f7e5a07b994258c'
+CAPTURE_SHA = '826e714bf91656fddb36eafe493ad3b1d6295fb530bd0a24f972c88410de65f4'
 BATCH_ID = 'g4-item-fx-audio295-raw-evidence-r1'
 PROFILE = 'OTERYN_ITEM_FX_AUDIO_RAW_REIMPORT_EVIDENCE/v1'
 RECORD_PATH = 'source-evidence.item-fx-audio.raw-source-local-record'

@@ -16,6 +16,7 @@ on:
       - imports/crystalserver/facts/**
       - imports/ots-source-evidence/item-fx-audio295/**
       - imports/tibiawiki/facts/items-family-fallback.json
+      - imports/tibiawiki/facts/items-family-fallback-bulk-20261001.json
       - imports/tibiawiki/facts/items-stats.json
       - imports/tibiawiki/source-evidence/stack-default-successor8/**
       - docs/agents/evidence/OTV2-20261002-item-stack-default-successor8-*.json
@@ -61,6 +62,17 @@ on:
       - content/items/definitions/**
       - content/assets/files/appearances-*.dat
       - imports/official/appearance-membership/**
+      - imports/tibiawiki/facts/items-bounded7-navigation-20261002.json
+      - tools/content-migration/item_bounded7_navigation.py
+      - tools/content-migration/test_item_bounded7_navigation.py
+      - tools/content-migration/samples/bounded7-dom-witnesses-20261002.json
+      - tools/content-migration/item_engine_navigation.py
+      - tools/content-migration/test_item_engine_navigation.py
+      - tools/content-migration/samples/engine-family-navigation-265.json
+      - imports/tibiawiki/facts/items-external-family18-20261001.json
+      - tools/content-migration/item_external_family_refinement.py
+      - tools/content-migration/test_item_external_family_refinement.py
+      - tools/content-migration/samples/external-family18-dom-witnesses-20261001.json
       - .github/workflows/item-authoring-schema.yml
   workflow_dispatch:
 
@@ -115,6 +127,10 @@ jobs:
         run: |
           python test_raw_fx_audio_reimport.py
           python ../../../imports/ots-source-evidence/item-fx-audio295/producer/raw_fx_audio_reimport.py --capture ../../../imports/ots-source-evidence/item-fx-audio295/raw-source-staging.json --sources ../../../imports/ots-source-evidence/item-fx-audio295/retained-source-files.json --batch ../../../imports/ots-source-evidence/item-fx-audio295/import-batch.json --check
+
+      - name: Closed external family source guards
+        working-directory: tools/content-migration
+        run: python test_item_external_family_refinement.py
 
       - name: Semantic promotion lowering fixture tests
         run: python test_lower_promotion_packet.py
@@ -302,7 +318,9 @@ jobs:
 
       - name: WorldObject and Terrain authoring tests
         working-directory: tools/content-schema/world-object-authoring
-        run: python test_world_objects.py
+        run: |
+          python test_world_objects.py
+          python test_official_corpses.py
 
       - name: WorldObject and Terrain catalogue drift against pinned Crystal
         working-directory: tools/content-schema/world-object-authoring
@@ -319,7 +337,19 @@ jobs:
             curl -fsSL --retry 5 --retry-delay 2 \
               "https://raw.githubusercontent.com/$REPO/$REV/$path" -o "$SRC/$path"
           done
-          python build_catalogue.py --source "$SRC" --check
+          DONOR_SRC="$RUNNER_TEMP/crystal-donor-catalogue"
+          read -r DONOR_REPO DONOR_REV < <(cd ../item-authoring && python -c '
+          from donor_census import DONOR_REPOSITORY, DONOR_COMMIT
+          print(DONOR_REPOSITORY, DONOR_COMMIT)')
+          for path in data/items/items.xml data/items/appearances.dat; do
+            mkdir -p "$DONOR_SRC/$(dirname "$path")"
+            curl -fsSL --retry 5 --retry-delay 2 \
+              "https://raw.githubusercontent.com/$DONOR_REPO/$DONOR_REV/$path" \
+              -o "$DONOR_SRC/$path"
+          done
+          python build_catalogue.py --source "$SRC" --donor-source "$DONOR_SRC" --official-client --check
+          python ../../content-migration/item_engine_navigation.py --source "$SRC" --donor-source "$DONOR_SRC"
+          python ../../content-migration/item_bounded7_navigation.py --source "$SRC"
 
       - name: Item Master census
         working-directory: .

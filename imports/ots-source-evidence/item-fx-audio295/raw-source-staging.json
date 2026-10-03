@@ -8151,7 +8151,7 @@
     {
       "bytes": 91240,
       "path": "/workspace/pr1437-stack-default-completion/apps/game-server/src/content/project.rs",
-      "sha256": "6ae5abf9d1fdff56cf19ea532deccd4a05aef4a916ecf928bb19f6968ff188bc"
+      "sha256": "f97cdf22426a59b84dc4d4aed9a859b7cf0148a5bb84511b6aabe7d6c05f99ce"
     },
     {
       "bytes": 130982,
@@ -8176,7 +8176,7 @@
     {
       "bytes": 141088,
       "path": "/workspace/pr1437-stack-default-completion/tools/content-schema/item-authoring/engine_items.py",
-      "sha256": "28644c0fcc88f364992670489f7d458f827a9cd1db023b7f5ce0a9ae32d08c1a"
+      "sha256": "0a494fd64d7774507b4d9e493492a7ffc9d99d751dd2ed4fec73561cb06f5b06"
     },
     {
       "bytes": 69790,
@@ -8186,7 +8186,7 @@
     {
       "bytes": 28401,
       "path": "/workspace/pr1437-stack-default-completion/docs/architecture/reviews/OTERYN_GAME_SPELL_PRESENT0_SPELL_AND_COMBAT_PRESENTATION_DECISION_2026-09-30.md",
-      "sha256": "cbb2241d9c6ef905618817f155a9c68c01c762e22a855a34af08dc7686dd71c1"
+      "sha256": "15e77e09970e2f4fd37951c4a0e66aa5538807d5a37f7734da4440b55eafaf45"
     },
     {
       "bytes": 21309,
@@ -64859,7 +64859,7 @@
     {
       "bytes": 530,
       "path": "/workspace/pr1437-stack-default-completion/content/world/terrain/index.json",
-      "sha256": "dbbc7befeb5b420bdd8b1f70c7fd25a6e9d7f22a3395aca323e5a409f7eb562f"
+      "sha256": "89ae879da01b6a81e1e6a1c6a06b2632a2678066e0eb71404a5a7882bd516c44"
     },
     {
       "bytes": 537179,
@@ -64954,7 +64954,7 @@
     {
       "bytes": 609,
       "path": "/workspace/pr1437-stack-default-completion/content/world/objects/index.json",
-      "sha256": "103b3e42f1cac296528d602cfeffbaf6f1516e22f8d314bb8e16bcf149af677d"
+      "sha256": "a0dbd7f2c0c0b09b5457b189128c7cbd7dd2a4553e2a3c00063092372c3b65d7"
     },
     {
       "bytes": 914539,

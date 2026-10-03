@@ -26,23 +26,29 @@ class WikiDescriptions(unittest.TestCase):
         )
         return s, old, d, params
 
-    def test_full_cohorts_disjoint1628_keep_periods_and_existing_materializability(
+    def test_full_cohorts_disjoint1627_keep_periods_and_existing_materializability(
         self,
     ):
         strict, wiki = lane.strict.build(), lane.build()
         strict_ids = {r["target"]["key"] for r in strict["promotions"]}
         wiki_ids = {r["target"]["key"] for r in wiki["promotions"]}
         self.assertFalse(strict_ids & wiki_ids)
-        self.assertEqual(len(strict_ids | wiki_ids), 1628)
+        self.assertEqual(len(strict_ids | wiki_ids), 1627)
         self.assertEqual(
             sum(r["headers"]["materializable"] for r in wiki["promotions"]), 10
         )
-        # D289: i901 keeps its accepted Native core hold; its literal is held, not promoted.
+        # D289: i901 keeps its accepted Native core hold; D310: i36586 keeps main's sealed
+        # Native state. Their literals are held, not promoted.
         self.assertEqual(
             [(h["target"]["key"], h["reason"]) for h in wiki["holds"]],
-            [("oteryn:item.tibia.i901", "D289_ACCEPTED_NATIVE_CORE_HOLD")],
+            [
+                ("oteryn:item.tibia.i901", "D289_ACCEPTED_NATIVE_CORE_HOLD"),
+                ("oteryn:item.tibia.i36586", "D310_MAIN_SEALED_NATIVE_STATE"),
+            ],
         )
-        self.assertNotIn("oteryn:item.tibia.i901", wiki_ids)
+        self.assertFalse(
+            {"oteryn:item.tibia.i901", "oteryn:item.tibia.i36586"} & wiki_ids
+        )
         for row in wiki["promotions"]:
             self.assertTrue(row["description"].endswith("."))
 
@@ -90,6 +96,24 @@ class WikiDescriptions(unittest.TestCase):
         d["materializable"] = not d["materializable"]
         with self.assertRaises(ValueError):
             lane.qualify(s, old, d, self.owners, params)
+
+    def test_pre_overlay_header_drift_still_fails_closed(self):
+        # D316: the guard reads the pre-overlay stage; a real header drift there must fail.
+        original = lane.strict.pre_overlay_definitions
+        key = json.loads(lane.OUTPUT.read_text())["promotions"][0]["target"]["key"]
+
+        def drifted(root, current):
+            definitions = original(root, current)
+            row = definitions[key]
+            definitions[key] = row | {"materializable": not row["materializable"]}
+            return definitions
+
+        lane.strict.pre_overlay_definitions = drifted
+        try:
+            with self.assertRaisesRegex(ValueError, "header drift"):
+                lane.build()
+        finally:
+            lane.strict.pre_overlay_definitions = original
 
 
 if __name__ == "__main__":

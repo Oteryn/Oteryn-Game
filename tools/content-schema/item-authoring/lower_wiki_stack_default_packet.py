@@ -17,7 +17,7 @@ PROOF = (
 )
 PROOF_SHA = "945eb2c1e7fe74f3ae081a2fb6315105c2a082af8d95e833e887e9d7b8d8cf17"
 DECODER = "tools/content-schema/item-authoring/engine_items.py"
-DECODER_SHA = "28644c0fcc88f364992670489f7d458f827a9cd1db023b7f5ce0a9ae32d08c1a"
+DECODER_SHA = "0a494fd64d7774507b4d9e493492a7ffc9d99d751dd2ed4fec73561cb06f5b06"
 PARSER = "tools/content-census/item_wiki_family_capture.py"
 PARSER_SHA = "0abb6b0180eeef98bfa397ca3b7c9192d47806a7e97aa6423159220e82c36f03"
 CLIENT_SHA = "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2"

@@ -60,17 +60,11 @@ All 25 charms agree on name, category, stage costs and stage values. The catalog
 
 - **Overpower and Overflux:** shown as physical, but the damage ignores the creature's resistances (`ignores_resistances`). This
   matches Canary's neutral damage.
-- **Parry:** shown as physical, ignores resistances, and is reduced by the creature's armor. Canary's Lua table says `PHYSICAL`,
-  but its C++ handler (`iobestiary.cpp`) deals `COMBAT_NEUTRALDAMAGE` blocked by armor, which matches the wiki.
-- **Carnage:** capped at 6× the character's level and reduced by armor; Canary and Crystal use the same cap.
+- **Parry:** displayed as physical and ignoring resistances. The catalogue follows the wiki and accepted CHARM-0 choice that armor reduces it. The 2026-10-01 audit supersedes the original handler-based conclusion: both OTS handlers can check armor, but audited callsites omit the flag and its default is false, so those paths bypass armor. This remains an OTS conflict rather than a change to accepted behavior.
+- **Carnage:** capped at 6× the character's level and reduced by armor. Owner answer 13a accepts physical damage with resistances; Canary and Crystal neutral damage is a rejected source variant. Controlled live-game confirmation remains pending without changing the accepted choice.
+- **Bless:** the extra `percent = 10` in the Canary table is unused by the audited death-loss handler. The accepted choice uses only the 6/9/12% stage reduction, with no additional fixed 10%.
 
-2 points stay open for the rules layer:
-
-- **Bless:** Canary also carries `percent = 10`, but its death-loss code uses only the 6/9/12% stage values, like the wiki.
-- **Carnage:** the wiki calls it Physical Damage and says nothing about resistances. Canary deals it as neutral.
-  The catalogue keeps the wiki (`ignores_resistances: false`) until verified in the live game.
-
-Crystal (`00ce02a`) has the same charm table and handlers as Canary.
+Crystal (`00ce02a`) agrees on catalogue costs and values, but the 2026-10-01 supplemental audit records engine differences in Cleanse eligibility, defensive ordering, critical RNG and leech arithmetic. Numeric agreement does not verify those mechanics in the official game.
 
 ```sh
 pip install -r requirements.txt
@@ -83,3 +77,108 @@ python test_charm_authoring.py
 python charm_authoring.py capture --canary <canary checkout>
 python charm_authoring.py build
 ```
+
+## Complete declarative preparation (2026-10-01)
+
+`mechanics.schema.json`, `charm_mechanics.py` and `test_charm_mechanics.py` supplement the original catalogue without changing its definitions or authoring pipeline. The closed JSON Schema 2020-12 covers the source fixture and both preparation documents. `rulesets/progression/charms/index.json` is populated with `mechanics.json` and `progression.json`; this marker describes preparation, and does not connect a runtime loader.
+
+All 25 catalogue keys bind to their exact effect types and conceptual event hooks. The catalogue remains authoritative for stage costs, stage bonuses, base damage parameters and existing durations. Supplemental fields describe condition speed coefficients/input offset/truncation/floor, Cleanse immunity and eligible sets, equipment gates, additive versus relative modifiers, death loss, products, skinning and kill-area variants. Every parameter has its own evidence status, immutable file locator and line bounds. `activation: false` applies to every captured parameter, including owner accepted choices, because this package is declarative preparation.
+
+The source fixture `samples/charm-mechanics-sources-2026-10-01.json` captures facts and file hashes; it contains no original third-party engine code. It binds the existing catalogue SHA-256, the previously captured 25 wiki revision/hash records and independently extracted Canary, Crystal and TibiaPal cost/value triples (75 comparisons, all agree). External engine agreement is a hypothesis from related forks, not controlled official observation. The source digest in the validator prevents changing captured statuses or resolving uncertainty without a reviewed researched capture and explicit repin.
+
+Statuses distinguish `OWNER_ACCEPTED`, `STRUCTURED_REFERENCE`, `OTS_HYPOTHESIS_ONLY`, `UNKNOWN` and `CONFLICT`. Source records also distinguish project implementations from accepted decision records and `CIPSOFT_OFFICIAL_CAPTURE` restatements. Official manual notes are pinned Oteryn restatements of a private capture; the unavailable underlying attachment hashes are explicitly recorded as a limitation. No live-game observation is claimed.
+
+Accepted common rules retain physical Carnage with resistance and armor, separate attack-proc commits after nonlethal health reduction, no proc chaining or proc leech, per-hit spell/rune targets and main-target auto-attack procs. D186 keeps Low Blow, Savage Blow and leech on secondary auto-attack targets. Hook names identify coordinator integration needs; they do not assert that every runtime seam already exists. [INTEGRATION.md](INTEGRATION.md) records the coordinator handoff and known runtime mismatches.
+
+Open variants remain reference only: exact official speed formulas and immunity duration; Cleanse Agony eligibility; defensive proc ordering; OTS Parry armor bypass; critical RNG sharing; leech chance/AoE reduction/rounding; Gut probability versus quantity; Scavenge fractional RNG rounding; Carnage geometry, summons and mitigation order. Shared defects (Canary critical reroll, Crystal leech unit arithmetic, decreasing Scavenge success on upgrades and Carnage mutable cap leakage) are captured rather than copied into accepted behavior.
+
+Progression separates accepted storage/derived balances, promotion-only initial echoes, 2/6/unlimited shared slots and assignment thresholds from excluded reset, potion and Store lifecycle references. Unassign remains blocked on the accepted Character–Item boundary; no free substitute or external reset behavior is introduced.
+
+```sh
+python tools/content-schema/charm-authoring/charm_mechanics.py check
+python tools/content-schema/charm-authoring/charm_mechanics.py validate
+python tools/content-schema/charm-authoring/test_charm_mechanics.py
+python tools/content-schema/charm-authoring/test_charm_authoring.py
+# Optional offline verification against exact pinned source trees:
+python tools/content-schema/charm-authoring/charm_mechanics.py verify-sources \
+  --canary /path/to/canary --crystal /path/to/crystal --tibiapal /path/to/TibiaPal
+```
+
+`check` and `validate` verify the same committed package: schema, catalogue binding, complete key/effect/hook coverage, source classes, immutable captured facts, 75 numeric comparisons, current index and deterministic derivation. `verify-sources` additionally hashes files in supplied checkout roots and independently parses their catalogue numbers. It states the verified repository count; omitted external checkout roots remain unverified. It performs no network access. The existing authoring test entry invokes the new suite so its current CI entry also covers this package.
+
+`samples/charm-global-parity-2026-10-01.json` supplements the pinned fork capture with public
+official documentation, current community references and historical player tests. All 25
+profiles bind the catalogue and distinguish full content from indexed snippets. It corrects
+Cleanse immunity provenance, documents the 2026 Hex changes, and withdraws four earlier
+Global recommendations that new evidence contradicts. It also records the scoped absence of
+Charm payloads in the supplied 15.30 client assets. The existing offline checks validate this
+packet and its evidence boundary; they do not execute Global Tibia. See `INTEGRATION.md` for
+the corrected consumer choices and remaining distinguishing tests.
+
+At browser completion, the supplement contained 97 source records and 149 qualified claims,
+including 24 full-page browser captures and 66 additional assessments. Normal Tavily search
+preceded public Chrome/CDP fallback. Its 89 literal quote checks retain capture/text/excerpt
+hashes, dates and revisions; repeated access to one revision is not independent evidence.
+The packet also retains the TibiaMaps and Exevo calculator-model comparisons. Browser
+research closes documentary gaps; it does not claim connected-runtime qualification.
+
+## Executed TibiaPal evidence
+
+`samples/tibiapal-*-2026-10-01.json` retain the independently observed planner, description and
+calculator results. The offline evidence tests bind those captures to source hashes and the
+current catalogue. They validate recorded observations; they do not rerun a browser in CI.
+The manual harnesses execute the original external source without copying it into this repo.
+
+At the pinned TibiaPal revision, native Chromium passed all 25 cards, 150 stage transitions,
+42 major budget boundaries and 66 calculator cases. Node VM execution passed 412 planner
+checks. [INTEGRATION.md](INTEGRATION.md) explains the observed rounding differences, absent
+elemental level cap and limits of these tests. The live domain was blocked by the session
+proxy; no deployed-site or official-game parity is claimed.
+
+Use a clean TibiaPal checkout at `61ffa3e0502879ccec44e59ead859e92b6d88531`. Browser reruns
+require Python Playwright and a working Chromium executable; these are optional manual-test
+dependencies and are not added to the authoring CI requirements.
+
+```sh
+node tools/content-schema/charm-authoring/samples/test-tibiapal-planner.cjs \
+  /path/to/TibiaPal /path/to/Oteryn-Game /tmp/tibiapal-planner-execution.json
+python tools/content-schema/charm-authoring/verify_tibiapal_browser.py \
+  --checkout /path/to/TibiaPal --chromium /usr/bin/chromium \
+  --screenshots /tmp/tibiapal-browser --output /tmp/tibiapal-browser-verification.json
+python tools/content-schema/charm-authoring/test_tibiapal_evidence.py
+```
+
+All 25 descriptions match the catalogue's three costs and bonus values. They leave detailed
+combat behavior untested; for example, Gut's “more products” does not establish probability
+versus quantity, and Cleanse's prose does not establish exact immunity time or removal semantics.
+
+## Execution of every remaining reference question
+
+The owner-requested continuation executes the 19 remaining question groups across five
+lanes. The final packet contains 141 source records and 168 qualified claims. `samples/charm-global-parity-2026-10-01.json` now retains a `gap_closure` inventory,
+per-question claims, source bindings, lane assessments and actual input/output artifacts.
+Compiled extracted C++ bodies and Lua loot functions run under explicit mocks; mathematical
+candidate probes retain separate scopes. Current Global measurements are never inferred from
+those executions. All 25 profiles link their applicable executed-question claims.
+
+The supplement includes five historical reported Life Leech traces, two new full official
+announcements and explicit Agony-condition documentation. It closes the unnecessary demand
+for hidden RNG identity when candidate outcomes are observably equivalent. The integration
+packet records reproducible commands, resolved reference facts and the precise observations
+still required for connected/current-server qualification.
+
+## Deployed calculator continuation
+
+The packet now contains 146 source records and 172 qualified claims. Its
+`calculator_completion` section retains 19 actual public-page fixtures: 12 ExevoPan
+input/output cases, six TibiaMaps level boundaries and one deployed preselection counterexample.
+Ordinary page HTTPS returned HTML; module HTTPS403 required the existing Chrome/CDP fallback.
+Only successful trusted-input runs are retained as behavior evidence. Unsuccessful synthetic
+events and unchanged slider attempts are excluded explicitly.
+
+The captured TibiaMaps worker floors the 5% HP term, applies the local 2×level cap, and includes
+mitigation in displayed proc damage. Its ranking omits mitigation and preselects races before
+resistance: Enflame-only, level100, one Demon plus one Hydra chooses the immune Demon.
+The current ExevoPan scalar formulas and 12 observed outputs agree with its historical model,
+including the absent level cap. Neither observed page exposes charm-stage controls.
+These are measured community-tool limitations, not new accepted combat rules or Global tests.

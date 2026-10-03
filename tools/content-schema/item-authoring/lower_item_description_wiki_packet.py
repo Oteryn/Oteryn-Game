@@ -9,7 +9,7 @@ import lower_item_description_packet as strict
 ROOT = strict.ROOT
 COMPILER = "tools/content-schema/item-authoring/lower_item_description_wiki_packet.py"
 PROOF = "docs/agents/evidence/OTV2-20261002-item-description-wiki-source-qualification-v1.json"
-PROOF_SHA = "e914832a1b4a9cbb8ccddd7925d54541ff0fc48faadf797d106c04b60bd87757"
+PROOF_SHA = "b295897c25694590672e7c69130ef81412ab2b503180dd78d1436f1ad1b98343"
 OUTPUT = (
     ROOT / "docs/agents/evidence/OTV2-20261002-item-description-wiki-promotion-v1.json"
 )
@@ -93,6 +93,7 @@ def build(root=ROOT):
     ):
         raise ValueError("closed1515 source policy/current parent receipt drift")
     definitions, owners, maps, indexed, pages = strict.names.load_inputs(root, proof)
+    definitions = strict.pre_overlay_definitions(root, definitions)
     admitted, manifests = strict.appearance_membership.load_admitted(
         out_dir=root / "imports/official/appearance-membership"
     )
@@ -163,20 +164,46 @@ def build(root=ROOT):
                 }
             )
             continue
+        if target["key"] in d289_holds.SEALED_STATE_DESCRIPTION_KEYS:
+            # D310: main's sealed Native state wins; no description is promoted.
+            holds.append(
+                {
+                    "decision": d289_holds.SEALED_STATE_DECISION,
+                    "reason": d289_holds.SEALED_STATE_HOLD,
+                    "source_item_id": iid,
+                    "target": target,
+                }
+            )
+            continue
         rows.append(qualify(source, prior, definitions[target["key"]], owners, params))
     d289_holds.require_hits(
         d289_holds.NATIVE_CORE_HOLD_KEYS,
-        [h["target"]["key"] for h in holds],
+        [
+            h["target"]["key"]
+            for h in holds
+            if h["reason"] == d289_holds.NATIVE_CORE_HOLD
+        ],
+        "Wiki description",
+    )
+    d289_holds.require_hits(
+        d289_holds.SEALED_STATE_DESCRIPTION_KEYS,
+        [
+            h["target"]["key"]
+            for h in holds
+            if h["reason"] == d289_holds.SEALED_STATE_HOLD
+        ],
         "Wiki description",
     )
     if (
         len(seen) != 1515
         or seen != {r["source_item_id"] for r in historical["records"]}
         or seen & {r["source_item_id"] for r in original["records"]}
-        or len(rows) != 1514
+        or len(rows) != 1513
         or sum(r["headers"]["materializable"] for r in rows) != 10
     ):
-        raise ValueError("closed disjoint1515/D289hold1/1504False/10True scope drift")
+        raise ValueError(
+            "closed disjoint1515/D289+D310holds2/1503False/10True scope drift"
+        )
     return {
         "schema": "OTERYN_ITEM_DESCRIPTION_PROMOTION/v1",
         "compiler": {
@@ -190,7 +217,7 @@ def build(root=ROOT):
             "policy": proof["accepted_source_policy"],
         },
         "world_owner_inputs": maps,
-        "counts": {"items": 1514, "fields": 1514, "holds": len(holds)},
+        "counts": {"items": 1513, "fields": 1513, "holds": len(holds)},
         "promotions": rows,
         "holds": holds,
     }
@@ -210,7 +237,7 @@ def main():
     else:
         OUTPUT.write_bytes(data)
     print(
-        "closed1515 (1514 promoted, D289 hold 1) full Wiki literals, differing XML retained; Native siblings unchanged"
+        "closed1515 (1513 promoted, D289/D310 holds 2) full Wiki literals, differing XML retained; Native siblings unchanged"
     )
 
 

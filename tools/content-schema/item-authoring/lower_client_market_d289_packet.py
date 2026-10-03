@@ -25,6 +25,17 @@ def build(root=ROOT):
                     "source_item_id": row["source_item_id"],
                 }
             )
+        elif row["item_key"] in d289_holds.SEALED_STATE_MARKET_KEYS:
+            # D310: main's sealed Native state wins; no marketability is promoted.
+            holds.append(
+                {
+                    "decision": d289_holds.SEALED_STATE_DECISION,
+                    "item_key": row["item_key"],
+                    "object_sha256": row["object_sha256"],
+                    "reasons": [d289_holds.SEALED_STATE_HOLD],
+                    "source_item_id": row["source_item_id"],
+                }
+            )
         else:
             rows.append(row)
     d289_holds.require_hits(
@@ -32,7 +43,12 @@ def build(root=ROOT):
         [h["item_key"] for h in holds if d289_holds.NATIVE_CORE_HOLD in h["reasons"]],
         "Market",
     )
-    if len(rows) != 4892 or len(holds) != 228:
+    d289_holds.require_hits(
+        d289_holds.SEALED_STATE_MARKET_KEYS,
+        [h["item_key"] for h in holds if d289_holds.SEALED_STATE_HOLD in h["reasons"]],
+        "Market",
+    )
+    if len(rows) != 4891 or len(holds) != 229:
         raise ValueError(f"closed Market D289 scope drift: {len(rows)}/{len(holds)}")
     return packet | {
         "compiler": {

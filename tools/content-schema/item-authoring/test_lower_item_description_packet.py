@@ -130,6 +130,24 @@ class Descriptions(unittest.TestCase):
             with self.assertRaises(ValueError):
                 lane.flavor(raw)
 
+    def test_pre_overlay_header_drift_still_fails_closed(self):
+        # D316: the guard reads the pre-overlay stage; a real header drift there must fail.
+        original = lane.pre_overlay_definitions
+        key = json.loads(lane.OUTPUT.read_text())["promotions"][0]["target"]["key"]
+
+        def drifted(root, current):
+            definitions = original(root, current)
+            row = definitions[key]
+            definitions[key] = row | {"materializable": not row["materializable"]}
+            return definitions
+
+        lane.pre_overlay_definitions = drifted
+        try:
+            with self.assertRaisesRegex(ValueError, "header drift"):
+                lane.build()
+        finally:
+            lane.pre_overlay_definitions = original
+
 
 if __name__ == "__main__":
     unittest.main()

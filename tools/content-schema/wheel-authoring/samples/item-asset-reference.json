@@ -1,0 +1,484 @@
+{
+  "schema": "OTERYN_WHEEL_ITEM_ASSET_REFERENCE/v1",
+  "client_version": "15.30",
+  "manifest_sha256": "febaff9f4bd7e0f8a029736e446a81f1626805e895e7c2268018e0a9a8493fe4",
+  "input_digests": {
+    "content/assets/files/appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.dat": "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2",
+    "content/assets/files/catalog-content.json": "4921ef60464a0baea0aa25e02c5c7843a42196767951c453400e81a67cc3b424",
+    "content/assets/files/sprites-5d793eb1e7b109c20eb211e4d755ec41df3270b707dc05bf5c9ac6275948533b.bmp.lzma": "d37730c58970657b2466ad3aa0bad351115ae3744b00e820924cf2f498ed80a8",
+    "content/assets/files/sprites-b9a7e3637bd3b1836c986413689ab360445f19ac20c7346f3d3527bcc322c3ea.bmp.lzma": "9c3e7fa2fc4bf3731fd186596376da88fce6130cf7b75a12e29fe20c11176138",
+    "content/assets/files/sprites-d2f65cdfb60118cb8b213dc50a2469e345c0f4eb5a48b967b9ea58a0e464d7be.bmp.lzma": "44e151d109908e3d0f43ea7950086e46ac7bb6eefea1c07c38712ce2e892237e"
+  },
+  "items": {
+    "oteryn:item.tibia.i44602": {
+      "appearance_object_id": 44602,
+      "frame_groups": [
+        {
+          "geometry": {
+            "pattern_width": 1,
+            "pattern_height": 1,
+            "pattern_depth": 1,
+            "layers": 1,
+            "phase_count": 1,
+            "is_opaque": false
+          },
+          "atlases": [
+            {
+              "sprite_id": 235999,
+              "type": "sprite",
+              "file": "sprites-5d793eb1e7b109c20eb211e4d755ec41df3270b707dc05bf5c9ac6275948533b.bmp.lzma",
+              "spritetype": 0,
+              "firstspriteid": 235925,
+              "lastspriteid": 236068,
+              "area": 0
+            }
+          ]
+        }
+      ]
+    },
+    "oteryn:item.tibia.i44603": {
+      "appearance_object_id": 44603,
+      "frame_groups": [
+        {
+          "geometry": {
+            "pattern_width": 1,
+            "pattern_height": 1,
+            "pattern_depth": 1,
+            "layers": 1,
+            "phase_count": 1,
+            "is_opaque": false
+          },
+          "atlases": [
+            {
+              "sprite_id": 236000,
+              "type": "sprite",
+              "file": "sprites-5d793eb1e7b109c20eb211e4d755ec41df3270b707dc05bf5c9ac6275948533b.bmp.lzma",
+              "spritetype": 0,
+              "firstspriteid": 235925,
+              "lastspriteid": 236068,
+              "area": 0
+            }
+          ]
+        }
+      ]
+    },
+    "oteryn:item.tibia.i44604": {
+      "appearance_object_id": 44604,
+      "frame_groups": [
+        {
+          "geometry": {
+            "pattern_width": 1,
+            "pattern_height": 1,
+            "pattern_depth": 1,
+            "layers": 1,
+            "phase_count": 1,
+            "is_opaque": false
+          },
+          "atlases": [
+            {
+              "sprite_id": 236001,
+              "type": "sprite",
+              "file": "sprites-5d793eb1e7b109c20eb211e4d755ec41df3270b707dc05bf5c9ac6275948533b.bmp.lzma",
+              "spritetype": 0,
+              "firstspriteid": 235925,
+              "lastspriteid": 236068,
+              "area": 0
+            }
+          ]
+        }
+      ]
+    },
+    "oteryn:item.tibia.i44605": {
+      "appearance_object_id": 44605,
+      "frame_groups": [
+        {
+          "geometry": {
+            "pattern_width": 1,
+            "pattern_height": 1,
+            "pattern_depth": 1,
+            "layers": 1,
+            "phase_count": 1,
+            "is_opaque": false
+          },
+          "atlases": [
+            {
+              "sprite_id": 236002,
+              "type": "sprite",
+              "file": "sprites-5d793eb1e7b109c20eb211e4d755ec41df3270b707dc05bf5c9ac6275948533b.bmp.lzma",
+              "spritetype": 0,
+              "firstspriteid": 235925,
+              "lastspriteid": 236068,
+              "area": 0
+            }
+          ]
+        }
+      ]
+    },
+    "oteryn:item.tibia.i44606": {
+      "appearance_object_id": 44606,
+      "frame_groups": [
+        {
+          "geometry": {
+            "pattern_width": 1,
+            "pattern_height": 1,
+            "pattern_depth": 1,
+            "layers": 1,
+            "phase_count": 1,
+            "is_opaque": false
+          },
+          "atlases": [
+            {
+              "sprite_id": 236003,
+              "type": "sprite",
+              "file": "sprites-5d793eb1e7b109c20eb211e4d755ec41df3270b707dc05bf5c9ac6275948533b.bmp.lzma",
+              "spritetype": 0,
+              "firstspriteid": 235925,
+              "lastspriteid": 236068,
+              "area": 0
+            }
+          ]
+        }
+      ]
+    },
+    "oteryn:item.tibia.i44607": {
+      "appearance_object_id": 44607,
+      "frame_groups": [
+        {
+          "geometry": {
+            "pattern_width": 1,
+            "pattern_height": 1,
+            "pattern_depth": 1,
+            "layers": 1,
+            "phase_count": 1,
+            "is_opaque": false
+          },
+          "atlases": [
+            {
+              "sprite_id": 236004,
+              "type": "sprite",
+              "file": "sprites-5d793eb1e7b109c20eb211e4d755ec41df3270b707dc05bf5c9ac6275948533b.bmp.lzma",
+              "spritetype": 0,
+              "firstspriteid": 235925,
+              "lastspriteid": 236068,
+              "area": 0
+            }
+          ]
+        }
+      ]
+    },
+    "oteryn:item.tibia.i44608": {
+      "appearance_object_id": 44608,
+      "frame_groups": [
+        {
+          "geometry": {
+            "pattern_width": 1,
+            "pattern_height": 1,
+            "pattern_depth": 1,
+            "layers": 1,
+            "phase_count": 1,
+            "is_opaque": false
+          },
+          "atlases": [
+            {
+              "sprite_id": 236005,
+              "type": "sprite",
+              "file": "sprites-5d793eb1e7b109c20eb211e4d755ec41df3270b707dc05bf5c9ac6275948533b.bmp.lzma",
+              "spritetype": 0,
+              "firstspriteid": 235925,
+              "lastspriteid": 236068,
+              "area": 0
+            }
+          ]
+        }
+      ]
+    },
+    "oteryn:item.tibia.i44609": {
+      "appearance_object_id": 44609,
+      "frame_groups": [
+        {
+          "geometry": {
+            "pattern_width": 1,
+            "pattern_height": 1,
+            "pattern_depth": 1,
+            "layers": 1,
+            "phase_count": 1,
+            "is_opaque": false
+          },
+          "atlases": [
+            {
+              "sprite_id": 236006,
+              "type": "sprite",
+              "file": "sprites-5d793eb1e7b109c20eb211e4d755ec41df3270b707dc05bf5c9ac6275948533b.bmp.lzma",
+              "spritetype": 0,
+              "firstspriteid": 235925,
+              "lastspriteid": 236068,
+              "area": 0
+            }
+          ]
+        }
+      ]
+    },
+    "oteryn:item.tibia.i44610": {
+      "appearance_object_id": 44610,
+      "frame_groups": [
+        {
+          "geometry": {
+            "pattern_width": 1,
+            "pattern_height": 1,
+            "pattern_depth": 1,
+            "layers": 1,
+            "phase_count": 1,
+            "is_opaque": false
+          },
+          "atlases": [
+            {
+              "sprite_id": 236007,
+              "type": "sprite",
+              "file": "sprites-5d793eb1e7b109c20eb211e4d755ec41df3270b707dc05bf5c9ac6275948533b.bmp.lzma",
+              "spritetype": 0,
+              "firstspriteid": 235925,
+              "lastspriteid": 236068,
+              "area": 0
+            }
+          ]
+        }
+      ]
+    },
+    "oteryn:item.tibia.i44611": {
+      "appearance_object_id": 44611,
+      "frame_groups": [
+        {
+          "geometry": {
+            "pattern_width": 1,
+            "pattern_height": 1,
+            "pattern_depth": 1,
+            "layers": 1,
+            "phase_count": 1,
+            "is_opaque": false
+          },
+          "atlases": [
+            {
+              "sprite_id": 236008,
+              "type": "sprite",
+              "file": "sprites-5d793eb1e7b109c20eb211e4d755ec41df3270b707dc05bf5c9ac6275948533b.bmp.lzma",
+              "spritetype": 0,
+              "firstspriteid": 235925,
+              "lastspriteid": 236068,
+              "area": 0
+            }
+          ]
+        }
+      ]
+    },
+    "oteryn:item.tibia.i44612": {
+      "appearance_object_id": 44612,
+      "frame_groups": [
+        {
+          "geometry": {
+            "pattern_width": 1,
+            "pattern_height": 1,
+            "pattern_depth": 1,
+            "layers": 1,
+            "phase_count": 1,
+            "is_opaque": false
+          },
+          "atlases": [
+            {
+              "sprite_id": 236009,
+              "type": "sprite",
+              "file": "sprites-5d793eb1e7b109c20eb211e4d755ec41df3270b707dc05bf5c9ac6275948533b.bmp.lzma",
+              "spritetype": 0,
+              "firstspriteid": 235925,
+              "lastspriteid": 236068,
+              "area": 0
+            }
+          ]
+        }
+      ]
+    },
+    "oteryn:item.tibia.i44613": {
+      "appearance_object_id": 44613,
+      "frame_groups": [
+        {
+          "geometry": {
+            "pattern_width": 1,
+            "pattern_height": 1,
+            "pattern_depth": 1,
+            "layers": 1,
+            "phase_count": 1,
+            "is_opaque": false
+          },
+          "atlases": [
+            {
+              "sprite_id": 236010,
+              "type": "sprite",
+              "file": "sprites-5d793eb1e7b109c20eb211e4d755ec41df3270b707dc05bf5c9ac6275948533b.bmp.lzma",
+              "spritetype": 0,
+              "firstspriteid": 235925,
+              "lastspriteid": 236068,
+              "area": 0
+            }
+          ]
+        }
+      ]
+    },
+    "oteryn:item.tibia.i49371": {
+      "appearance_object_id": 49371,
+      "frame_groups": [
+        {
+          "geometry": {
+            "pattern_width": 1,
+            "pattern_height": 1,
+            "pattern_depth": 1,
+            "layers": 1,
+            "phase_count": 1,
+            "is_opaque": false
+          },
+          "atlases": [
+            {
+              "sprite_id": 238430,
+              "type": "sprite",
+              "file": "sprites-b9a7e3637bd3b1836c986413689ab360445f19ac20c7346f3d3527bcc322c3ea.bmp.lzma",
+              "spritetype": 0,
+              "firstspriteid": 238373,
+              "lastspriteid": 238516,
+              "area": 0
+            }
+          ]
+        }
+      ]
+    },
+    "oteryn:item.tibia.i49372": {
+      "appearance_object_id": 49372,
+      "frame_groups": [
+        {
+          "geometry": {
+            "pattern_width": 1,
+            "pattern_height": 1,
+            "pattern_depth": 1,
+            "layers": 1,
+            "phase_count": 1,
+            "is_opaque": false
+          },
+          "atlases": [
+            {
+              "sprite_id": 238431,
+              "type": "sprite",
+              "file": "sprites-b9a7e3637bd3b1836c986413689ab360445f19ac20c7346f3d3527bcc322c3ea.bmp.lzma",
+              "spritetype": 0,
+              "firstspriteid": 238373,
+              "lastspriteid": 238516,
+              "area": 0
+            }
+          ]
+        }
+      ]
+    },
+    "oteryn:item.tibia.i49373": {
+      "appearance_object_id": 49373,
+      "frame_groups": [
+        {
+          "geometry": {
+            "pattern_width": 1,
+            "pattern_height": 1,
+            "pattern_depth": 1,
+            "layers": 1,
+            "phase_count": 1,
+            "is_opaque": false
+          },
+          "atlases": [
+            {
+              "sprite_id": 238432,
+              "type": "sprite",
+              "file": "sprites-b9a7e3637bd3b1836c986413689ab360445f19ac20c7346f3d3527bcc322c3ea.bmp.lzma",
+              "spritetype": 0,
+              "firstspriteid": 238373,
+              "lastspriteid": 238516,
+              "area": 0
+            }
+          ]
+        }
+      ]
+    },
+    "oteryn:item.tibia.i46625": {
+      "appearance_object_id": 46625,
+      "frame_groups": [
+        {
+          "geometry": {
+            "pattern_width": 1,
+            "pattern_height": 1,
+            "pattern_depth": 1,
+            "layers": 1,
+            "phase_count": 1,
+            "is_opaque": false
+          },
+          "atlases": [
+            {
+              "sprite_id": 237265,
+              "type": "sprite",
+              "file": "sprites-d2f65cdfb60118cb8b213dc50a2469e345c0f4eb5a48b967b9ea58a0e464d7be.bmp.lzma",
+              "spritetype": 0,
+              "firstspriteid": 237221,
+              "lastspriteid": 237364,
+              "area": 0
+            }
+          ]
+        }
+      ]
+    },
+    "oteryn:item.tibia.i46626": {
+      "appearance_object_id": 46626,
+      "frame_groups": [
+        {
+          "geometry": {
+            "pattern_width": 1,
+            "pattern_height": 1,
+            "pattern_depth": 1,
+            "layers": 1,
+            "phase_count": 1,
+            "is_opaque": false
+          },
+          "atlases": [
+            {
+              "sprite_id": 237266,
+              "type": "sprite",
+              "file": "sprites-d2f65cdfb60118cb8b213dc50a2469e345c0f4eb5a48b967b9ea58a0e464d7be.bmp.lzma",
+              "spritetype": 0,
+              "firstspriteid": 237221,
+              "lastspriteid": 237364,
+              "area": 0
+            }
+          ]
+        }
+      ]
+    },
+    "oteryn:item.tibia.i46627": {
+      "appearance_object_id": 46627,
+      "frame_groups": [
+        {
+          "geometry": {
+            "pattern_width": 1,
+            "pattern_height": 1,
+            "pattern_depth": 1,
+            "layers": 1,
+            "phase_count": 1,
+            "is_opaque": false
+          },
+          "atlases": [
+            {
+              "sprite_id": 237267,
+              "type": "sprite",
+              "file": "sprites-d2f65cdfb60118cb8b213dc50a2469e345c0f4eb5a48b967b9ea58a0e464d7be.bmp.lzma",
+              "spritetype": 0,
+              "firstspriteid": 237221,
+              "lastspriteid": 237364,
+              "area": 0
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "runtime_admitted": false,
+  "perk_ui_crosswalk": "NOT_PRESENT_IN_THIS_CATALOGUE"
+}

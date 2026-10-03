@@ -767,6 +767,16 @@ def build_item_schema():
         {
             "slot_count": integer(),
             "allowed_family_tiers": array(use("imbuementTier")),
+            "allowed_family_max_tiers": array(
+                obj(
+                    {
+                        "family": text(pattern=r"^[a-z][a-z0-9_]*$"),
+                        "max_tier": integer(1, 3),
+                    },
+                    ("family", "max_tier"),
+                ),
+                minimum=1,
+            ),
             "excluded_families": array(text(pattern=r"^[a-z][a-z0-9_]*$"), unique=True),
         },
         ("slot_count",),

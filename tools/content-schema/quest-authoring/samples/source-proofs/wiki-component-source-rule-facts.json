@@ -1,0 +1,55 @@
+{
+  "schema":"OTERYN_BOUNDED_SOURCE_COMPONENT_FACTS/v1",
+  "source_bank_artifact":"source-curation-evidence.json",
+  "syntax_classification":"PROVEN",
+  "wiki_association_classification":"DERIVED",
+  "foreign_ids_are_native_admissions":false,
+  "definitions_complete":false,
+  "runtime_promotion":false,
+  "facts": {
+    "Afflicted Outfits Quest": {
+      "source_ids":["afflictedC","afflictedR"],
+      "premium_required":true,
+      "base":{"cloth_item_ids":[12551,12552,12553,12554,12555,12556],"required_count_each":1,"consume_count_each":1,"grant_outfit_ids":[430,431]},
+      "addons":[{"item_id":12786,"addon":2,"consume_count":1,"base_required":true,"duplicate_rejected":true},{"item_id":12787,"addon":1,"consume_count":1,"base_required":true,"duplicate_rejected":true}],
+      "achievement":{"name":"Beak Doctor","method":"addAchievementProgress","argument_2":2,"argument_semantics":"UNKNOWN"}
+    },
+    "Ancient Aucar Outfits Quest": {
+      "source_ids":["aucar"],
+      "use_item_id":40578,"consume_count":1,"grant_outfit_ids":[1598,1597],"selected_sex_base_must_be_absent":true,
+      "acquisition_addons_and_achievement":"UNKNOWN",
+      "exclusive_mission_or_interaction_owner":"UNKNOWN"
+    },
+    "Feral Trappers Quest": {
+      "source_ids":["feralShop","feralCpp"],
+      "configured_offers":[{"looktype":1907,"addon":0,"hunting_task_points":100000},{"looktype":1907,"addon":1,"hunting_task_points":35000},{"looktype":1907,"addon":2,"hunting_task_points":35000}],
+      "actual_sex_conversion":"UNKNOWN","cpp_outside_lua_transcriber":true
+    },
+    "Within the Tides Quest": {
+      "source_ids":["timira"],"encounter":"Timira the Many-Headed","whole_quest":"UNKNOWN"
+    },
+    "Thawing Mini World Change": {
+      "source_ids":["thawing"],"trigger":"onStartup",
+      "random_draw":{"min":1,"max":100,"condition":"<=10"},
+      "created_item_id":13842,"count_per_existing_source_tile":1,"position_count":14,
+      "write":{"symbol":"GlobalStorage.WorldBoard.ThawingMiniWorldChange","value":1},
+      "lifecycle_reset_npc_exchange":"UNKNOWN"
+    },
+    "Horse Station World Change": {
+      "source_ids":["palomino","appaloosa","horseStartup","horseReturn","taming"],
+      "rental":{"fee_gold":500,"mount_ids":[22,25,26],"source_timer_seconds":86400,"storage":43355},
+      "raid":{"random_condition":"3/10","storage":120226,"duration_seconds":86400,"repeat_ms":10800000},
+      "transport_fee_gold":125,
+      "taming":{"item_id":12802,"mount_id":17,"target":"Wild Horse","configured_chance":7,"executed_special_condition":"random<=3"},
+      "expiry_revocation_and_locality":"UNKNOWN"
+    },
+    "Thornfire World Change": {
+      "source_ids":["bucket","thornWolf","taming"],
+      "fill":{"prepared_bucket_item_id":12819,"target_bog_water_id":12721,"filled_bucket_item_id":12722,"create_count":1},
+      "extinguish":{"target_remove_count":1,"bucket_transform_item_id":12819,"player_storage":147251,"storage_increment":1,"wolf_spawn_chance_percent":10,"wolf_count":2},
+      "achievement":{"name":"Firefighter","threshold":500,"condition_scope":"nested_inside_wolf_spawn_branch"},
+      "taming":{"item_id":12547,"mount_id":16,"target":"Crystal Wolf","configured_chance":40},
+      "coal_flintstone_delivery":"UNKNOWN"
+    }
+  }
+}

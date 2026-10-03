@@ -11,23 +11,23 @@
   "existing_owner": "ProjectV2ItemAuthoring.weapon_attack_modifier_points; signed i32 points; /item/weapon/attack_modifier",
   "unchanged_weapon79_proof": {
     "path": "docs/agents/evidence/OTV2-20261002-item-weapon-metadata-source-qualification-v1.json",
-    "sha256": "dbe5e74c63a45cb169fb9557b8b98cb87582f8ba0fec274b372e78297242e78d"
+    "sha256": "96f5cd5379ff34a4bb0242a221685e7b5b2be5b6bf155d9484d70f55054aff39"
   },
   "global_own_id_bridge": {
     "path": "docs/agents/evidence/OTV2-20261001-item-movable-source-qualification-v1.json",
-    "sha256": "86b06302b966219fc9199f954f85a59437c6078d982b4843d57a432b8b69dca5",
+    "sha256": "ae0698adc7df7e25b88569b22de87a020661381a0623ea84d5333a576b12be06",
     "pages": 9980
   },
   "name139_packet": {
     "path": "docs/agents/evidence/OTV2-20261002-item-name-promotion-v1.json",
-    "sha256": "f2f8f266a53fca4de2ed114c011a2c18dd3ac2557b4c25a8c11584d01902846b"
+    "sha256": "df202253ef9b0a4817eba98dcacb5a65960828e022e34b9590efdb96952f4383"
   },
   "historical_proposal": {
     "path": "/workspace/audit-continuation/remaining-native-owner-gap-source-proposals.json",
     "sha256": "13ecfaa8420ece8abdc5d68119bf1da88f619dae7faba4a96199c5d7a1289e55"
   },
   "input_digests": {
-    "tools/content-schema/item-authoring/engine_items.py": "28644c0fcc88f364992670489f7d458f827a9cd1db023b7f5ce0a9ae32d08c1a",
+    "tools/content-schema/item-authoring/engine_items.py": "0a494fd64d7774507b4d9e493492a7ffc9d99d751dd2ed4fec73561cb06f5b06",
     "tools/content-census/item_wiki_family_capture.py": "0abb6b0180eeef98bfa397ca3b7c9192d47806a7e97aa6423159220e82c36f03",
     "imports/crystalserver/bindings/items.json": "1d19709c28a649d8a9f32bf53e5bf43ad847d7901d6c6254833f456154d2de5a",
     "imports/tibiawiki/facts/items-stats.json": "49d43cbe6957e6edc16aeda72e05152c55606e9381452ea74d7a63b5a5e91e4a"
@@ -44,7 +44,7 @@
     "00ce02a57ca5a12e48f32a3476e37471167e4c3f"
   ],
   "world_owner_inputs": {
-    "content/world/objects/index.json": "103b3e42f1cac296528d602cfeffbaf6f1516e22f8d314bb8e16bcf149af677d",
+    "content/world/objects/index.json": "a0dbd7f2c0c0b09b5457b189128c7cbd7dd2a4553e2a3c00063092372c3b65d7",
     "content/world/objects/objects-00000-00499.json": "76b4489d66b2affaa0929dc449e9a5f21c7f454d2fb66453e3a6757861f8fd9f",
     "content/world/objects/objects-00500-00999.json": "2ebd31bd6ba0bb6cd3f1561258b61893954891e9b907ef918444ddbb4206c1fb",
     "content/world/objects/objects-01000-01499.json": "8e62410f9edc1cc3e4a58080b1916403931bf6248ad8e2f16b2aa0aee67238cd",
@@ -71,7 +71,7 @@
     "content/world/objects/objects-11500-11999.json": "049b9891ade9c74e9383db7b87e434643c8a6c994453667def5431da2fb9e923",
     "content/world/objects/objects-12000-12499.json": "9d14651b26891c52bd3405cb011be2dd14fcf0c08a0fd39f248e45adc4066a39",
     "content/world/objects/objects-12500-12781.json": "bd43b46df4504b714ea636663bdb48dbd147842d97bebb8ebdaa40fcb3aac97e",
-    "content/world/terrain/index.json": "dbbc7befeb5b420bdd8b1f70c7fd25a6e9d7f22a3395aca323e5a409f7eb562f",
+    "content/world/terrain/index.json": "89ae879da01b6a81e1e6a1c6a06b2632a2678066e0eb71404a5a7882bd516c44",
     "content/world/terrain/terrain-00000-00499.json": "8219d3d93af9791f0277608921041743f9a95e8ce182ef52bdaf859064d0322e",
     "content/world/terrain/terrain-00500-00999.json": "21dff9929f9e287eb070ac7b2c6666c4e3fb2002614dee22707daad6d0be033d",
     "content/world/terrain/terrain-01000-01499.json": "f2c02951b6e217960127adac3e99f7a2835d8220cdec5e3149be7f4ec5cb111b",
@@ -4194,18 +4194,18 @@
   "accepted_name_priority_contracts": [
     {
       "path": "docs/agents/evidence/OTV2-20261001-item-movable-source-qualification-v1.json",
-      "sha256": "86b06302b966219fc9199f954f85a59437c6078d982b4843d57a432b8b69dca5",
+      "sha256": "ae0698adc7df7e25b88569b22de87a020661381a0623ea84d5333a576b12be06",
       "field": "source_name_priority",
       "value": "UNIQUE_NONEMPTY_ACTUALNAME_THEN_NAME_ONLY_IF_ACTUALNAME_ABSENT"
     },
     {
       "path": "tools/content-schema/item-authoring/lower_wiki_movable_packet.py",
-      "sha256": "9e418a08ba951bc35d078b65689beb2e12f3da53af9470a8c55cfca7e36a5600",
+      "sha256": "dc9a9c622f8d8081c7245f4600405b18bd20e5a8459b77686119a585a8977476",
       "method": "reasons actualname then name only when actualname absent"
     },
     {
       "path": "tools/content-schema/item-authoring/lower_item_name_packet.py",
-      "sha256": "c8a16f552fda31d4858a258f114d5a4d74c47c249c14aa265065cd2f270540ce",
+      "sha256": "d79622c4b307e76e701cc15890b99c61a1c56294b0db5ab49b98cfbd7dc955eb",
       "method": "Published Name139 exact own-ID names: nonempty actualname first"
     }
   ],

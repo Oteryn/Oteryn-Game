@@ -25,3 +25,14 @@ def require_hits(expected, hit, packet):
     """Fail closed when a D289 hold no longer matches exactly one source row."""
     if sorted(hit) != sorted(expected):
         raise ValueError(f"{packet}: D289 hold scope drift: {sorted(hit)}")
+
+
+# D310 (extends D289): where main's hand-sealed qualification evidence froze an Item's Native
+# state, that sealed state wins over this PR's promotion. i36586: main's sealed
+# tools/content-migration/samples/engine-family-navigation-265.json records no description.
+SEALED_STATE_DECISION = "D310"
+SEALED_STATE_HOLD = "D310_MAIN_SEALED_NATIVE_STATE"
+SEALED_STATE_DESCRIPTION_KEYS = frozenset({"oteryn:item.tibia.i36586"})
+# i3450: main's sealed tools/content-schema/reward-claim-authoring/reward_stack_normalization.json
+# pins its definition with trade restrictions unknown.
+SEALED_STATE_MARKET_KEYS = frozenset({"oteryn:item.tibia.i3450"})

@@ -8,6 +8,9 @@ import json
 from pathlib import Path
 from typing import Any
 
+from item_taxonomy import build_taxonomy, legacy_profile, taxonomy_inputs
+from world_project_v2_to_tree import capability_relations
+
 ROOT = Path(__file__).resolve().parents[2]
 LEGACY = ROOT / "content" / "world"
 # Canary creature admission wave A (OTERYN_WORLD_PROJECT_V2_CREATURE_ADMISSION_V1 §7).
@@ -35,7 +38,8 @@ CHARM_COUNT = 25
 PROFICIENCY_COUNT = 443
 PROFICIENCY_BINDING_COUNT = 664  # 642 + 22 bound by the ITEM-ADD-1 donor epoch-2 Items
 # RewardClaim likewise (tools/content-schema/reward-claim-authoring).
-REWARD_CLAIM_COUNT = 231
+REWARD_CLAIM_COUNT = len(json.loads(
+    (ROOT / "tools/content-schema/quest-authoring/samples/chests/claims.json").read_text())["claims"])
 # StarterKit likewise (tools/content-schema/starter-kit-authoring).
 STARTER_KIT_COUNT = 1
 SERVICE_FAMILY_COUNTS = {"Service.Trade": 324, "Service.Travel": 56}
@@ -96,7 +100,7 @@ def authoring_value(entry: dict[str, Any], path: str) -> Any:
 def closed_forge_owner():
     """One explicit source-qualified Forge pair; no global maximum/default inference."""
     raw = (ROOT / "docs/agents/evidence/OTV2-20261001-item-forge3332-promotion-v1.json").read_bytes()
-    require(hashlib.sha256(raw).hexdigest() == "d6e300e571f1d2e8e6794d3875759fdd0b2cb1ee7872c8527d0f4019ec27b8c1", "FORGE_PACKET_DIGEST")
+    require(hashlib.sha256(raw).hexdigest() == "c1d1598235d0d5b5949f1957f7725ba1ea6ea87c60499f3faf80d95d4c9a15dc", "FORGE_PACKET_DIGEST")
     packet = json.loads(raw)
     owner = {"item": {"family": "Item", "key": "oteryn:item.tibia.i3332", "revision": "definition-r1"}, "forge": {"classification": 2, "max_tier": 2}}
     require(packet["schema"] == "OTERYN_ITEM_FORGE3332_PROMOTION/v1"
@@ -107,10 +111,10 @@ def closed_forge_owner():
 def closed_weapon_metadata():
     """Sealed103 source properties; absolute percentages are not relative hit ratios."""
     raw = (ROOT / "docs/agents/evidence/OTV2-20261002-item-weapon-metadata-promotion-v1.json").read_bytes()
-    require(hashlib.sha256(raw).hexdigest() == "33e95859691705e550a45458a64a15ddb04b6981834e66ce76a618f7efc66e1b", "WEAPON_METADATA_PACKET_DIGEST")
+    require(hashlib.sha256(raw).hexdigest() == "62945a90ca8fa10de8040fff249ef667bcacc00e150a99242543d27fb5951183", "WEAPON_METADATA_PACKET_DIGEST")
     packet = json.loads(raw)
     proof_raw = (ROOT / "docs/agents/evidence/OTV2-20261002-item-weapon-metadata-source-qualification-v2.json").read_bytes()
-    require(hashlib.sha256(proof_raw).hexdigest() == "92edd219079460e03ac3f792fc6c3bf849ed37e4191f07de72a69ca16b67806b", "WEAPON_METADATA_PROOF_DIGEST")
+    require(hashlib.sha256(proof_raw).hexdigest() == "efd359c89c464426a10a6f729ac2e0effab6ce2410e1ee3b862c5d1da55bdbdd", "WEAPON_METADATA_PROOF_DIGEST")
     proof = json.loads(proof_raw)
     rows = {target_id(row["target"]): row for row in packet["promotions"]}
     sources = {target_id(row["target"]): row for row in proof["records"]}
@@ -147,10 +151,10 @@ def extend_weapon_owners(expected):
 def closed_forge289():
     """Exactly289 qualified metadata pairs/bindings; no inferred maximum/default."""
     raw = (ROOT / "docs/agents/evidence/OTV2-20261002-item-forge289-promotion-v1.json").read_bytes()
-    require(hashlib.sha256(raw).hexdigest() == "376d668b5148d9c5f7b85eb3ef7e2f747c08fdc10170f62ed22e49ce4c6157ab", "FORGE289_PACKET_DIGEST")
+    require(hashlib.sha256(raw).hexdigest() == "3961eb05c99666d6e09e8fb53c825df964dde3651051704412d478ef2dde5f02", "FORGE289_PACKET_DIGEST")
     packet = json.loads(raw)
     proof_raw = (ROOT / "docs/agents/evidence/OTV2-20261002-item-forge289-source-qualification-v1.json").read_bytes()
-    require(hashlib.sha256(proof_raw).hexdigest() == "e76b35928af82b02cc60eea1904b343e88588bd6765436acde39b70370b499a1", "FORGE289_PROOF_DIGEST")
+    require(hashlib.sha256(proof_raw).hexdigest() == "ccdc649cda120d648e001bd60f27b669d6a3466685669cae0e64cfc47e84267f", "FORGE289_PROOF_DIGEST")
     proof = json.loads(proof_raw)
     rows = {target_id(row["item"]): row for row in packet["promotions"]}
     sources = {target_id(row["qualification"]["target"]): row["qualification"] for row in proof["records"]}
@@ -192,7 +196,7 @@ def validate_forge289_relation(row, definition, closed, source):
 def validate_item_authoring_targets(legacy_authoring, staged_items):
     """Retain every admitted cohort plus sealed103 intrinsic weapon properties."""
     raw = (ROOT / "docs/agents/evidence/OTV2-20261002-item-hit-magic-promotion-v1.json").read_bytes()
-    require(hashlib.sha256(raw).hexdigest() == "8ec1f103c874e4424e7636743e78a3c57821e1cbebef6a69dd1c9a448cd47660", "HIT_MAGIC_PACKET_DIGEST")
+    require(hashlib.sha256(raw).hexdigest() == "830f34dd0a66dabe92902c6144822caae8db2a1375f95d591ab6f20bff33492a", "HIT_MAGIC_PACKET_DIGEST")
     magic = {target_id(row["target"]): row for row in json.loads(raw)["promotions"]
              if "required_magic_level" in row["facts"]}
     require(len(staged_items) == 164 and len(magic) == 39 and not set(magic).intersection(staged_items), "CLOSED_ML_OWNER_SCOPE")
@@ -201,7 +205,7 @@ def validate_item_authoring_targets(legacy_authoring, staged_items):
     for key, row in magic.items():
         expected[key] = {"item": row["target"], "required_magic_level": row["facts"]["required_magic_level"]}
     raw = (ROOT / "docs/agents/evidence/OTV2-20261002-item-use-observation-promotion-v1.json").read_bytes()
-    require(hashlib.sha256(raw).hexdigest() == "990eca66d4d34156aaa7a2fd5c42251e26bdf503402f3d46d6beb6f7b2de99eb", "USE_OBSERVATION_PACKET_DIGEST")
+    require(hashlib.sha256(raw).hexdigest() == "f4087b6eeb6f448db543ac129437e0796c80b222919affed7d02880a18653cf5", "USE_OBSERVATION_PACKET_DIGEST")
     packet = json.loads(raw)
     observations = {target_id(row["target"]): row for row in packet["promotions"]}
     require(packet["schema"] == "OTERYN_ITEM_USE_OBSERVATION_PROMOTION/v1"
@@ -238,12 +242,16 @@ def validate_forge_relation(row, definition):
         {"relation": "CAPABILITY_GOVERNED_BY", "ruleset": "rulesets/items/imbuements/", "basis": "imbuement.slot_count>=1"}]}, "FORGE_RELATION_DERIVATION")
 
 
+def use_relation_targets():
+    """The sealed Use owners; only these rows are the PR's Use relations (D322)."""
+    raw = (ROOT / "docs/agents/evidence/OTV2-20261002-item-use-observation-promotion-v1.json").read_bytes()
+    require(hashlib.sha256(raw).hexdigest() == "f4087b6eeb6f448db543ac129437e0796c80b222919affed7d02880a18653cf5", "USE_OBSERVATION_PACKET_DIGEST")
+    return {target_id(p["target"]) for p in json.loads(raw)["promotions"]}
+
+
 def validate_use_relation(row, definition):
     """Existing known imbuement governance becomes visible with a sealed Use owner."""
-    raw = (ROOT / "docs/agents/evidence/OTV2-20261002-item-use-observation-promotion-v1.json").read_bytes()
-    require(hashlib.sha256(raw).hexdigest() == "990eca66d4d34156aaa7a2fd5c42251e26bdf503402f3d46d6beb6f7b2de99eb", "USE_OBSERVATION_PACKET_DIGEST")
-    targets = {target_id(p["target"]) for p in json.loads(raw)["promotions"]}
-    require(target_id(row["source"]) in targets and row["source"] == definition["identity"], "USE_RELATION_TARGET")
+    require(target_id(row["source"]) in use_relation_targets() and row["source"] == definition["identity"], "USE_RELATION_TARGET")
     imbuement = definition.get("semantics", {}).get("imbuement", {})
     slot = imbuement.get("value", {}).get("slot_count", {})
     require(imbuement.get("state") == slot.get("state") == "KNOWN"
@@ -267,6 +275,8 @@ def validate_weapon_relation(row, definition, weapon_rows, admitted_relations):
 def validate_item_enrichment(reference: Any, declarations: Any, sources: Any, batches: list[Any],
                              migrated_authoring: dict[tuple[str, str, str], dict[str, Any]]) -> tuple[int, int, int, int]:
     """Round-trip Item authoring/taxonomy/relations and prove per-fact provenance."""
+    from quest_reward_item_semantics import load_admissions
+    reward_admissions = load_admissions(ROOT)
     staged = load(ROOT / "docs/agents/evidence/OTV2-20260925-item-enrichment-wave1-staged.json")
     stats = load(ROOT / "docs/agents/evidence/OTV2-20260930-item-stats-promotion-v2.json")
     content_path = {"weapon.range_cells": "weapon.range"}
@@ -284,10 +294,15 @@ def validate_item_enrichment(reference: Any, declarations: Any, sources: Any, ba
     definitions = {target_id(row["identity"]): row for row in reference["records"]}
 
     rebuilt = {key: dict(value) for key, value in migrated_authoring.items()}
+    require(taxonomy["records"] == build_taxonomy(
+        definitions, legacy_authoring, assignments, *taxonomy_inputs(ROOT)
+    ), "TAXONOMY_SOURCE_COVERAGE")
     for row in taxonomy["records"]:
         key = target_id(row["target"])
         require(key in definitions, "TAXONOMY_TARGET_UNRESOLVED")
-        require(row["family_profile"] == assignments.get(row["source_taxonomy"]["primary"]), "TAXONOMY_FAMILY_PROFILE")
+        if "source_evidence" in row:
+            continue  # Source-qualified navigation supplement; never legacy authoring.
+        require(row["family_profile"] == legacy_profile(row["source_taxonomy"]["primary"], assignments), "TAXONOMY_FAMILY_PROFILE")
         require(row["family_profile"] is None or row["family_profile"] in set(assignments.values()), "TAXONOMY_PROFILE_UNKNOWN")
         rebuilt.setdefault(key, {"item": row["target"]})["taxonomy"] = row["source_taxonomy"]
     require(canonical_sorted(list(rebuilt.values())) == canonical_sorted(list(legacy_authoring.values())), "ITEM_AUTHORING_ROUNDTRIP")
@@ -308,12 +323,19 @@ def validate_item_enrichment(reference: Any, declarations: Any, sources: Any, ba
     _, _, forge289_relations, forge289_sources = closed_forge289()
     forge289_relation_count = 0
     weapon_relation_count = 0
+    main_only_relation_count = 0
+    use_targets = use_relation_targets()
     seen_sources = set()
+    expected_relations = {
+        key: capability_relations(definition, legacy_authoring.get(key))
+        for key, definition in definitions.items() if key[0] == "Item"
+    }
     for row in relations["records"]:
         key = target_id(row["source"])
         require(key in definitions and key not in seen_sources, "RELATION_SOURCE_UNRESOLVED")
         seen_sources.add(key)
         rulesets = sorted(relation["ruleset"] for relation in row["relations"])
+        require(row["relations"] == expected_relations[key], "RELATION_DERIVATION_DISAGREES")
         if key in forge289_relations:
             validate_forge289_relation(row, definitions[key], forge289_relations[key], forge289_sources[key])
             forge289_relation_count += 1
@@ -327,16 +349,20 @@ def validate_item_enrichment(reference: Any, declarations: Any, sources: Any, ba
         elif key == forge_target:
             validate_forge_relation(row, definitions[key])
             forge_relation_count += 1
-        else:
+        elif key in use_targets:
             validate_use_relation(row, definitions[key])
             use_relation_count += 1
+        else:
+            # D322: a main-only row keeps main's generic derivation and coverage, checked above.
+            main_only_relation_count += 1
         for ruleset in rulesets:
             require((ROOT / ruleset / "index.json").is_file(), f"RELATION_RULESET_UNRESOLVED:{ruleset}")
         relation_count += len(rulesets)
     require(use_relation_count == 55 and forge_relation_count == 1 and weapon_relation_count == 47 and forge289_relation_count == 289
-            and sum(bool(item["capability_relations"]) for item in staged["items"]) + use_relation_count + forge_relation_count + weapon_relation_count + forge289_relation_count == len(seen_sources), "RELATION_COVERAGE")
+            and sum(bool(item["capability_relations"]) for item in staged["items"]) + use_relation_count + forge_relation_count + weapon_relation_count + forge289_relation_count + main_only_relation_count == len(seen_sources), "RELATION_COVERAGE")
     require(canonical_sorted([row for row in relations["records"] if target_id(row["source"]) in prior_relations])
             == canonical_sorted(list(prior_relations.values())), "WEAPON_PARENT_RELATIONS_CHANGED")
+    require({key for key, values in expected_relations.items() if values} == seen_sources, "RELATION_COVERAGE")
 
     batch = next(row for row in batches if row["batch_id"] == staged["batch_id"])
     require(batch["source_artifact_sha256"] == staged["source"]["snapshot_sha256"] == facts["snapshot_sha256"], "PROVENANCE_BATCH_DIGEST")
@@ -360,11 +386,13 @@ def validate_item_enrichment(reference: Any, declarations: Any, sources: Any, ba
         for entry in record["authoring_facts"]:
             authoring_value(legacy_authoring[key], entry["field_path"])
             fact_count += 1
-        # Blocked contracts stay UNKNOWN even when the source carried a value. Weight is no
-        # longer blocked: the owner fixed its unit (hundredths of an ounce, 2026-09-30) and
-        # ITEM-SEM-2b promotes it from TibiaWiki.
+        # B3 §4.3 supersedes the old maximum hold only for this digest-verified
+        # reward admission's proven stackable items. Other blocked facts stay unknown.
         for blocked in ("stack.stack_max",):
-            require(blocked not in known, f"BLOCKED_FIELD_PROMOTED:{blocked}")
+            if blocked in known:
+                admitted = reward_admissions.get(key[1])
+                require(admitted is not None and admitted[0]["stackable"] and known[blocked] == 100,
+                        f"BLOCKED_FIELD_PROMOTED:{blocked}")
         equipment = superseding.get((key, "equipment.patterns"))
         if equipment is None:
             require(definitions[key].get("semantics", {}).get("equipment", {}).get("state", "UNKNOWN") == "UNKNOWN", "BLOCKED_EQUIPMENT_PROMOTED")
@@ -544,6 +572,9 @@ def validate_dialogue(declarations: Any) -> int:
 
 def main() -> int:
     reference = load(LEGACY / "definitions" / "reference.json")
+    # Equivalence is protected legacy plus the accepted tree-first reward Item packet.
+    from quest_reward_item_semantics import apply_admissions
+    apply_admissions([row for row in reference["records"] if row["identity"]["family"] == "Item"], ROOT)
     declarations = load(LEGACY / "definitions" / "declarations.json")
     legacy_mount_declarations = [row for row in declarations["records"] if row.get("kind") == "Mount"]
     require(len(legacy_mount_declarations) == 252, "LEGACY_MOUNT_COUNT")
@@ -561,10 +592,16 @@ def main() -> int:
         "legacy_mutated": False,
         "runtime_switch_authorized": False,
     }, "COMPATIBILITY_BOUNDARY")
+    from world_project_v2_to_tree import retained_quest_registration
+    quest_families, quest_paths = retained_quest_registration(ROOT)
+    if quest_families:
+        require("Quest" in project["migrated_families"] and "Quest" not in project["next_population_families"], "QUEST_PROJECT_REGISTRATION")
+        require(set(quest_paths).issubset({row["path"] for row in manifest["managed_files"]}), "QUEST_MANAGED_FILES")
     require(lock["family_counts"] == {"Item": 34031, "Mount": 252, **CREATURE_FAMILY_COUNTS, "NPC": NPC_COUNT,
                                        "Encounter": ENCOUNTER_COUNT, "Dialogue": DIALOGUE_COUNT, **SERVICE_FAMILY_COUNTS,
                                        "Charm": CHARM_COUNT, "Proficiency": PROFICIENCY_COUNT,
-                                       "RewardClaim": REWARD_CLAIM_COUNT, "StarterKit": STARTER_KIT_COUNT},
+                                       "RewardClaim": REWARD_CLAIM_COUNT, "StarterKit": STARTER_KIT_COUNT,
+                                       **{family: value["records"] for family, value in quest_families.items()}},
             "LOCK_COUNTS")
     require(lock["source_binding_counts"]["NPC"] == NPC_BINDING_COUNT, "LOCK_NPC_BINDING_COUNT")
     require(item_index["record_count"] == 34031 and len(item_index["shards"]) == 69, "ITEM_INDEX")

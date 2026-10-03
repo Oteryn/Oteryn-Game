@@ -11,7 +11,7 @@ ROOT = base.ROOT
 COMPILER = "tools/content-schema/item-authoring/lower_wiki_stack_historical_packet.py"
 PROOF = "docs/agents/evidence/OTV2-20261001-item-stack-historical-source-frame-v1.json"
 PROOF_SHA = "0ecaedfe954961a3a26859a2cb05ecfed9ca9a513610e44dfba1a0260f1eff29"
-BASE_SHA = "70d6244253ec7fcc557b29f8203abc8492cd261a62563213bd1a3298bc212dba"
+BASE_SHA = "5969b009ed326991e6db310b3e3c48640ae5a5ac361c9c34f5619740bff8ce2e"
 OUTPUT = (
     ROOT / "docs/agents/evidence/OTV2-20261001-item-stack-historical-promotion-v1.json"
 )

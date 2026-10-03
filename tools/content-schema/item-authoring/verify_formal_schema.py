@@ -1355,6 +1355,20 @@ def main():
         expected_error="taxonomy/item_class",
     )
     case(
+        "reject duplicate imbuement family ceilings",
+        lambda item, dependencies, manifest: item.__setitem__(
+            "imbuement",
+            {
+                "slot_count": 2,
+                "allowed_family_max_tiers": [
+                    {"family": "life_leech", "max_tier": 2},
+                    {"family": "life_leech", "max_tier": 3},
+                ],
+            },
+        ),
+        expected_error="allowed_family_max_tiers",
+    )
+    case(
         "reject Wiki reverse relation mislabeled as Item definition",
         lambda item, dependencies, manifest: (
             manifest["sources"][0].update(

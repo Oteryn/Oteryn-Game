@@ -7,7 +7,7 @@ pub const BATCH_ID: &str = "g4-item-fx-audio295-raw-evidence-r1";
 pub const STATE_COUNT: usize = 296;
 pub const PAYLOAD: &[u8] =
     include_bytes!("../../../../imports/ots-source-evidence/item-fx-audio295/import-batch.json");
-pub const PAYLOAD_SHA256: &str = "1d1fa3465d5c3eb3c7c2188acc03334115aef4eb517dced66def17c483d9cd74";
+pub const PAYLOAD_SHA256: &str = "1eae9484506106c16b53c731e2693cf0ab9aac97ccb07025c977d27574ea156f";
 
 pub fn append(imports: &mut Vec<ImportBatch>) -> Result<usize, String> {
     if world_project_sha256(PAYLOAD) != PAYLOAD_SHA256 {

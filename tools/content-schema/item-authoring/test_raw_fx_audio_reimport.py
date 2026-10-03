@@ -11,7 +11,7 @@ ROOT = (
 
 
 PRODUCER = ROOT / "producer/raw_fx_audio_reimport.py"
-PRODUCER_SHA = "114582bc4058fbdeb458084163f1aa4efb3db206c6e96fd9cdad2e73f7332ada"
+PRODUCER_SHA = "7f3c82e62d37c3bd9b3cba3bf8215a1f7ef3c2ec6df01c623aa75671a4ced031"
 if hashlib.sha256(PRODUCER.read_bytes()).hexdigest() != PRODUCER_SHA:
     raise ValueError("sealed producer code digest drift")
 spec = importlib.util.spec_from_file_location("sealed_raw_fx_audio_producer", PRODUCER)

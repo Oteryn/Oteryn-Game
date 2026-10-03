@@ -8,7 +8,7 @@ use super::{
 pub const ITEM_MOVABLE_PACKET: &[u8] =
     include_bytes!("../../../../docs/agents/evidence/OTV2-20261003-item-movable-promotion-v2.json");
 pub const ITEM_MOVABLE_PACKET_SHA256: &str =
-    "c893cb91a2ce832218fbfbd2e0ed530e890345c8cdcb0d5c3ecbbb707eb0bac8";
+    "12fb60981ad76e9cd79a5845c5e4c976ce6c76f9d2fea9983c92ff7e5f5ec7b9";
 
 pub fn apply_item_movable_promotion_v1(
     draft: &mut ProjectV2Draft,

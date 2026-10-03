@@ -12,7 +12,7 @@ from lower_client_market_packet import WORLD_FLAGS
 ROOT = base.ROOT
 COMPILER = "tools/content-schema/item-authoring/lower_item_name_packet.py"
 PROOF = "docs/agents/evidence/OTV2-20261002-item-name-source-qualification-v1.json"
-PROOF_SHA = "5650ab936c222a3771dec95c7bd058c3d398883f14b6ecb7e982e10f2592482c"
+PROOF_SHA = "9a22bb2e4238c42ebcbd5714d6c6f08c39f5a140ae67ee61c78223d7952ca7fc"
 OUTPUT = ROOT / "docs/agents/evidence/OTV2-20261002-item-name-promotion-v1.json"
 
 

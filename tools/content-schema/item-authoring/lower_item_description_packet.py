@@ -14,9 +14,27 @@ COMPILER = "tools/content-schema/item-authoring/lower_item_description_packet.py
 PROOF = (
     "docs/agents/evidence/OTV2-20261002-item-description-source-qualification-v1.json"
 )
-PROOF_SHA = "852f539ff3e496ecd35fa5751c9b6bb820167dd28b29377b0458a297befe2e31"
+PROOF_SHA = "5bfd667737017475b13d475f7d087969c134646ef12bdc72a3cb835b770d9156"
 OUTPUT = ROOT / "docs/agents/evidence/OTV2-20261002-item-description-promotion-v1.json"
 HEADERS = ("kind", "client_projection", "materializable", "stack_class")
+# D316: main's quest-reward admission overlay reaches content/items after promotion, so the
+# Native guards compare against the pre-overlay stage that the Rust promotion applies to.
+PRE_OVERLAY = "content/world/definitions/reference.json"
+
+
+def pre_overlay_definitions(root, current):
+    """Pre-overlay Item definitions; exactly the current Item identities, no others."""
+    definitions = {}
+    for row in json.loads((root / PRE_OVERLAY).read_text())["records"]:
+        if row["identity"]["family"] != "Item":
+            continue
+        key = row["identity"]["key"]
+        if key in definitions:
+            raise ValueError("duplicate pre-overlay Item identity")
+        definitions[key] = row
+    if set(definitions) != set(current):
+        raise ValueError("pre-overlay/current Item identity set drift")
+    return definitions
 
 
 def same(a, b):
@@ -99,6 +117,7 @@ def build(root=ROOT):
     ):
         raise ValueError("historical source/current parent receipt scope drift")
     definitions, owners, maps, indexed, pages = names.load_inputs(root, proof)
+    definitions = pre_overlay_definitions(root, definitions)
     admitted, manifests = appearance_membership.load_admitted(
         out_dir=root / "imports/official/appearance-membership"
     )

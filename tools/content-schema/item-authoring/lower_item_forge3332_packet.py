@@ -11,15 +11,15 @@ from lower_wiki_stack_default_packet import checked, sha
 ROOT = Path(__file__).resolve().parents[3]
 COMPILER = "tools/content-schema/item-authoring/lower_item_forge3332_packet.py"
 PROOF = "docs/agents/evidence/OTV2-20261002-item-forge3332-source-qualification-v2.json"
-PROOF_SHA = "a22405164b549aff06849db98ede92d48d0b72606a25a3d8685054c8b6b324c3"
+PROOF_SHA = "9132dc6266517b8246a6d575fff9ccda430a08d8c61a63673783e432dcd27084"
 RECEIPT = "docs/agents/evidence/OTV2-20261002-item-forge3332-current-integration-receipt-v1.json"
-RECEIPT_SHA = "ee08c0be8c16fb431a6a94585efe53f26a7727eeaa94f4514175dc498cb6e934"
+RECEIPT_SHA = "73a21d75b6c32b6132b94160dcb7816fd34911bddf26a02bb5450930ecef3a4f"
 OUTPUT = ROOT / "docs/agents/evidence/OTV2-20261001-item-forge3332-promotion-v1.json"
 
 DEPENDENCIES = {
-    "tools/content-schema/item-authoring/engine_items.py": "28644c0fcc88f364992670489f7d458f827a9cd1db023b7f5ce0a9ae32d08c1a",
-    "tools/content-schema/item-authoring/lower_client_market_packet.py": "99e440d6dc60d362572830ec640901477c44092fb485036a8bb8eceb84eba725",
-    "tools/content-schema/item-authoring/lower_wiki_stack_default_packet.py": "70d6244253ec7fcc557b29f8203abc8492cd261a62563213bd1a3298bc212dba",
+    "tools/content-schema/item-authoring/engine_items.py": "0a494fd64d7774507b4d9e493492a7ffc9d99d751dd2ed4fec73561cb06f5b06",
+    "tools/content-schema/item-authoring/lower_client_market_packet.py": "850ee01d3b4831c412856b77720c0996122e4f67ed4603b0e6337637dc09457e",
+    "tools/content-schema/item-authoring/lower_wiki_stack_default_packet.py": "5969b009ed326991e6db310b3e3c48640ae5a5ac361c9c34f5619740bff8ce2e",
 }
 
 

@@ -160,6 +160,30 @@ def read_verified_artifact(source_root, relative_path, expected_digest):
 
 # --- items.xml -----------------------------------------------------------------
 
+IMBUEMENT_SOURCE_FAMILIES = {
+    "life leech",
+    "mana leech",
+    "critical hit",
+    "elemental damage",
+    "elemental protection holy",
+    "elemental protection death",
+    "elemental protection ice",
+    "elemental protection energy",
+    "elemental protection earth",
+    "elemental protection fire",
+    "skillboost shielding",
+    "skillboost club",
+    "skillboost sword",
+    "skillboost axe",
+    "skillboost distance",
+    "skillboost magic level",
+    "skillboost fist",
+    "paralysis removal",
+    "paralysis deflection",
+    "increase capacity",
+    "increase speed",
+}
+
 
 def load_items_xml(text):
     """Expand fromid/toid ranges; split root vs. nested `script` sub-attributes."""
@@ -168,6 +192,7 @@ def load_items_xml(text):
     for node in root.iter("item"):
         root_attrs = {}
         script_attrs = {}
+        imbuement_limits = []
         for attribute in node.findall("attribute"):
             key = attribute.get("key", "").lower()
             if key == "script":
@@ -176,12 +201,18 @@ def load_items_xml(text):
                     script_attrs.setdefault(child_key, child.get("value"))
                 continue
             root_attrs.setdefault(key, attribute.get("value"))
+            if key == "imbuementslot":
+                imbuement_limits.extend(
+                    {"family": child.get("key"), "max_tier": child.get("value")}
+                    for child in attribute.findall("attribute")
+                )
         attrs = {**script_attrs, **root_attrs}
         record = {
             "name": node.get("name"),
             "article": node.get("article"),
             "plural": node.get("plural"),
             "attrs": attrs,
+            "imbuement_limits": imbuement_limits,
         }
         if node.get("id") is not None:
             ids = [int(node.get("id"))]
@@ -794,6 +825,8 @@ PRIMARYTYPE_PROFILE = {
     "amulets": "equipment_offhand",
     "amulets and necklaces": "equipment_offhand",
     "rings": "equipment_offhand",
+    # The admitted profile catalog already lists Extra Slot with offhand accessories.
+    "extra slot": "equipment_offhand",
     "quivers": "container_equipment",
     "axe weapons": "weapon_melee",
     "club weapons": "weapon_melee",
@@ -904,6 +937,7 @@ PRIMARYTYPE_PROFILE.update(
     {
         "decorations": PRIMARYTYPE_PROFILE["decoration"],
         "lamps": PRIMARYTYPE_PROFILE["illumination"],
+        "fist fighting weapons": "weapon_melee",
     }
 )
 PROFILE_ITEM_CLASS = {
@@ -1068,6 +1102,160 @@ def resolve_wiki_family_value(field, value):
     if field == "status":
         return WIKI_STATUS_PROFILE.get(folded)
     return None
+
+
+def qualified_navigation_supplement(
+    definitions,
+    snapshot,
+    client,
+    routed_keys=(),
+    *,
+    identity_index=None,
+    owner_decisions_path=OWNER_FAMILY_DECISIONS_PATH,
+    source_inputs=None,
+):
+    """Derive navigation from admitted positive facts; never promote engine hypotheses.
+
+    The explicit Crystal binding bridges a source object id to the canonical key. A
+    key's spelling is not an identity parser. Existing owners and newer explicit wiki
+    categories, including unresolved categories, always retain their precedence.
+    """
+    fixture_index = identity_index is not None
+    identity_index = (
+        build_identity_index() if identity_index is None else identity_index
+    )
+    definition_digest = hashlib.sha256(
+        json.dumps(
+            definitions, sort_keys=True, ensure_ascii=False, separators=(",", ":")
+        ).encode()
+    ).hexdigest()
+    if source_inputs is None:
+        source_inputs = (
+            {"role": "TEST_FIXTURE"}
+            if fixture_index
+            else {
+                "binding": "imports/crystalserver/bindings/items.json",
+                "binding_sha256": hashlib.sha256(
+                    (
+                        ROOT.parents[2] / "imports/crystalserver/bindings/items.json"
+                    ).read_bytes()
+                ).hexdigest(),
+                "client_version": "15.30",
+                "artifact": "content/assets/files/appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.dat",
+                "artifact_sha256": "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2",
+            }
+        )
+    known_keys = {key for key, _basis in identity_index.values()}
+    owner = load_owner_family_decisions(owner_decisions_path, known_keys)
+    owner_digest = hashlib.sha256(owner_decisions_path.read_bytes()).hexdigest()
+    by_key = {}
+    for source_id, (key, basis) in identity_index.items():
+        by_key.setdefault(key, []).append((source_id, basis))
+    wiki = {row["item_id"]: row for row in snapshot["records"].values()}
+    out = {}
+    for key, definition in definitions.items():
+        bindings = by_key.get(key, [])
+        if key in routed_keys or len(bindings) != 1:
+            continue
+        source_id, basis = bindings[0]
+        observed = wiki.get(source_id, {}).get("observations", [])
+        if any("primarytype" in row["fields"] for row in observed):
+            continue
+        appearance = client.get(source_id, {})
+        flags = appearance.get("flags", {})
+        presentation = definition.get("semantics", {}).get("presentation", {})
+        if presentation.get("state") in ("CONFLICT", "BLOCKED"):
+            continue
+        name_field = presentation.get("value", {}).get("name", {})
+        if name_field.get("state") in ("CONFLICT", "BLOCKED"):
+            continue
+        names = []
+        if name_field.get("state") == "KNOWN":
+            names.append(("canonical_presentation", name_field["value"]))
+        if appearance.get("name"):
+            names.append(("official_client", appearance["name"]))
+        normalized = {name.strip().lower() for _source, name in names}
+        if len(normalized) != 1:
+            continue
+        bridge = {
+            "source_item_id": source_id,
+            "item_key": key,
+            "basis": basis,
+            "binding": source_inputs.get("binding", "TEST_FIXTURE"),
+            "binding_sha256": source_inputs.get("binding_sha256"),
+        }
+        common = {
+            "classification": "DERIVED",
+            "scope": "NAVIGATION_ONLY",
+            "identity_bridge": bridge,
+            "name_guards": [{"source": source, "name": name} for source, name in names],
+            "source_inputs": source_inputs
+            | {"canonical_definitions_sha256": definition_digest},
+            "appearance_id": source_id,
+        }
+        decision = owner.get(key)
+        if decision and normalized == {decision["name"]}:
+            out[key] = {
+                "profile": decision["profile"],
+                "primary": "retained owner-reviewed family",
+                "source_evidence": common
+                | {
+                    "owner_table": "tools/content-schema/item-authoring/owner-item-family-decisions.json",
+                    "owner_table_sha256": owner_digest,
+                    "owner_review": decision,
+                },
+            }
+            continue
+        if flags.get("flags.take") is not True:
+            continue
+        market = flags.get("market.category")
+        if market == 27 and flags.get("flags.proficiency") is True:
+            profile = "weapon_melee"
+            proof = {
+                field: flags[field]
+                for field in ("flags.take", "market.category", "flags.proficiency")
+            }
+        elif market == 24 and flags.get("flags.cumulative") is True:
+            profile = "material_valuable"
+            proof = {
+                field: flags[field]
+                for field in ("flags.take", "market.category", "flags.cumulative")
+            }
+        else:
+            slots = [row for row in observed if "slot" in row["fields"]]
+            semantic_slots = {"Head": 1, "Body": 4, "Torso": 4, "Legs": 7, "Feet": 8}
+            if (
+                not slots
+                or len({row["fields"]["slot"] for row in slots}) != 1
+                or slots[0]["fields"]["slot"] not in semantic_slots
+                or semantic_slots.get(slots[0]["fields"]["slot"])
+                != flags.get("clothes.slot")
+                or not all(
+                    to_int(row["fields"].get("armor"), default=None) is not None
+                    for row in slots
+                )
+            ):
+                continue
+            out[key] = {
+                "profile": "equipment_armor",
+                "primary": "wiki clothing slot with official client agreement",
+                "source_evidence": common
+                | {
+                    "snapshot": "imports/tibiawiki/facts/items-stats.json",
+                    "snapshot_sha256": snapshot["snapshot_sha256"],
+                    "observations": slots,
+                    "official_client_flags": {
+                        field: flags[field] for field in ("flags.take", "clothes.slot")
+                    },
+                },
+            }
+            continue
+        out[key] = {
+            "profile": profile,
+            "primary": f"client market category {market}",
+            "source_evidence": common | {"official_client_flags": proof},
+        }
+    return out
 
 
 WIKI_FAMILY_FALLBACK_SCHEMA = "OTERYN_ITEM_FAMILY_FALLBACK_SNAPSHOT/v1"
@@ -1877,6 +2065,7 @@ IMPLEMENTED_FIELDS = {
     "flags.unwrap",
     "flags.wrapkit",
     "imbuementslot",
+    "imbuementslot.allowed_family_max_tiers",
     "flags.light",
     "light.brightness",
     "light.color",
@@ -2440,6 +2629,8 @@ def convert_item(sources, item_id):
     note("appearance.name", bool(appearance and appearance.get("name")))
     note("appearance.description", bool(appearance and appearance.get("description")))
     note("appearance.frame_group", bool(appearance and appearance.get("frame_groups")))
+    limits = xml_record.get("imbuement_limits", []) if xml_record else []
+    note("imbuementslot.allowed_family_max_tiers", bool(limits))
 
     non_item = non_item_route(xml_record, attrs, flags, item_id)
     if non_item is not None:
@@ -3129,6 +3320,29 @@ def convert_item(sources, item_id):
     # imbuement
     if "imbuementslot" in attrs:
         item["imbuement"] = {"slot_count": to_int(attrs["imbuementslot"])}
+        if limits:
+            converted_limits = []
+            for entry in limits:
+                family = entry.get("family")
+                tier = entry.get("max_tier")
+                if (
+                    not isinstance(family, str)
+                    or family.lower() not in IMBUEMENT_SOURCE_FAMILIES
+                    or not isinstance(tier, str)
+                    or not re.fullmatch(r"[1-3]", tier)
+                ):
+                    break
+                converted_limits.append(
+                    {"family": family.lower().replace(" ", "_"), "max_tier": int(tier)}
+                )
+            else:
+                families = [entry["family"] for entry in converted_limits]
+                if len(set(families)) == len(families):
+                    item["imbuement"]["allowed_family_max_tiers"] = sorted(
+                        converted_limits, key=lambda entry: entry["family"]
+                    )
+            if "allowed_family_max_tiers" not in item["imbuement"]:
+                demote_to_converter_missing("imbuementslot.allowed_family_max_tiers")
 
     # fluid: flags.liquidcontainer marks the item itself as the vessel that holds a
     # fluid (schema role "container"), distinct from role "content" (a poured-out fluid

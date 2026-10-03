@@ -2,8 +2,8 @@
   "scope": "portable Item authoring schemas and semantic validator; no runtime or corpus migration executed",
   "jsonschema_version": "4.26.0",
   "templates": 23,
-  "checks": 274,
-  "passed": 274,
+  "checks": 272,
+  "passed": 272,
   "failed": 0,
   "results": [
     {
@@ -807,6 +807,13 @@
       "warning_count": 0
     },
     {
+      "name": "reject duplicate imbuement family ceilings",
+      "passed": true,
+      "expected_valid": false,
+      "error_count": 1,
+      "warning_count": 1
+    },
+    {
       "name": "reject Wiki reverse relation mislabeled as Item definition",
       "passed": true,
       "expected_valid": false,
@@ -1581,27 +1588,6 @@
     {
       "name": "Draft 2020-12 metaschema accepts real-source-evidence.schema.json",
       "passed": true
-    },
-    {
-      "name": "partial leech chance_percent validates without inventing its companion",
-      "passed": true,
-      "expected_valid": true,
-      "error_count": 0,
-      "warning_count": 1
-    },
-    {
-      "name": "partial leech amount_percent validates without inventing its companion",
-      "passed": true,
-      "expected_valid": true,
-      "error_count": 0,
-      "warning_count": 1
-    },
-    {
-      "name": "reject leech resource without an observed chance or amount",
-      "passed": true,
-      "expected_valid": false,
-      "error_count": 1,
-      "warning_count": 0
     }
   ]
 }

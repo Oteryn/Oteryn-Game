@@ -196,6 +196,15 @@ cause lock is the grant key (re-read after the `character_root` lock), and the f
 session's `CurrentCharacterItemFence` without a CommandRef, whose Character and World must equal the
 grant's; no synthetic CommandId is created. Rules 4-6 apply unchanged.
 
+**Amendment (pending on acceptance of RANGED-0; `reviews/OTERYN_GAME_RANGED0_DISTANCE_WEAPONS_AMMUNITION_WANDS_AND_CHASE_DECISION_2026-10-01.md` §6.2).** Rule 1
+also covers a weapon swing's DUR-03 transaction (`WeaponUseCause`): it advances no
+`CharacterRevision`. Rules 2 and 3 apply in the server-originated variant above: the cause lock is the
+swing key `(WorldId, ChannelId, scope ownership generation, runtime actor id, actor generation, swing
+sequence, CharacterId)`, and the fence is the actor's current admitted session's
+`CurrentCharacterItemFence` without a CommandRef, whose Character and World equal the key's; a Ground
+drop adds the DUR-03 §32 scope fence. Rule 4's lock order applies as extended by ITEM-MOVE-WIRE-1 §7.2
+and BAGS-0 §4.2.
+
 **Amendment (pending on acceptance of BOSS-RAID-0; `OTERYN_GAME_BOSS_RAID0_BOSSES_RAIDS_AND_BOSSTIARY_DECISION_2026-09-30.md` §12).** Rule 1 also
 covers boss cooldown and boss eligibility rows and the `CharacterRewardChest` location: they
 advance no `CharacterRevision`. A lever admission fences every participant by rule 2 and locks

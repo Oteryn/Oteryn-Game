@@ -16,7 +16,7 @@ ROOT = base.ROOT
 CONTEXT = (
     "docs/agents/evidence/OTV2-20261002-stack-default-historical-native-context-v1.json"
 )
-CONTEXT_SHA = "44143ceedbb00e843267d58d8463c7ec36dbb9886ea63f6e0d97b909465b574f"
+CONTEXT_SHA = "654619f09c433fdd46c104a83e29985fe53535f28fc91f52979a4ae90e72e4f8"
 PARENT = "6a68dbcb64538f9369aeb633d116061f7096ba30"
 
 

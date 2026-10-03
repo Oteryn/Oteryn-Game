@@ -24806,7 +24806,7 @@
   ],
   "git_inputs": {
     "tools/content-schema/item-authoring/engine_items.py": {
-      "sha256": "28644c0fcc88f364992670489f7d458f827a9cd1db023b7f5ce0a9ae32d08c1a",
+      "sha256": "0a494fd64d7774507b4d9e493492a7ffc9d99d751dd2ed4fec73561cb06f5b06",
       "bytes": 141088,
       "source": "ACTUAL_PUBLISHED_GIT_BLOB"
     },
@@ -24836,7 +24836,7 @@
       "source": "ACTUAL_PUBLISHED_GIT_BLOB"
     },
     "content/world/objects/index.json": {
-      "sha256": "103b3e42f1cac296528d602cfeffbaf6f1516e22f8d314bb8e16bcf149af677d",
+      "sha256": "a0dbd7f2c0c0b09b5457b189128c7cbd7dd2a4553e2a3c00063092372c3b65d7",
       "bytes": 609,
       "source": "ACTUAL_PUBLISHED_GIT_BLOB"
     },
@@ -24971,7 +24971,7 @@
       "source": "ACTUAL_PUBLISHED_GIT_BLOB"
     },
     "content/world/terrain/index.json": {
-      "sha256": "dbbc7befeb5b420bdd8b1f70c7fd25a6e9d7f22a3395aca323e5a409f7eb562f",
+      "sha256": "89ae879da01b6a81e1e6a1c6a06b2632a2678066e0eb71404a5a7882bd516c44",
       "bytes": 530,
       "source": "ACTUAL_PUBLISHED_GIT_BLOB"
     },

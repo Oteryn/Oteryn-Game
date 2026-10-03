@@ -327,7 +327,7 @@ fn slot_state(carrier: &ChannelActorCarrier) -> (&DamageReceipts, &DamageContrib
             committed,
             damage_contributors,
             ..
-        } => Some((&**committed, &**damage_contributors)),
+        } => Some((&***committed, &**damage_contributors)),
         _ => None,
     }
     .expect("expected the creature slot")

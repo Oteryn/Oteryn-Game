@@ -95,7 +95,7 @@
   "input_pins": [
     {
       "path": "tools/content-schema/item-authoring/engine_items.py",
-      "sha256": "28644c0fcc88f364992670489f7d458f827a9cd1db023b7f5ce0a9ae32d08c1a"
+      "sha256": "0a494fd64d7774507b4d9e493492a7ffc9d99d751dd2ed4fec73561cb06f5b06"
     },
     {
       "path": "tools/content-schema/item-authoring/lower_wiki_stats_packet.py",
@@ -103,11 +103,11 @@
     },
     {
       "path": "tools/content-schema/item-authoring/lower_wiki_stack_default_packet.py",
-      "sha256": "70d6244253ec7fcc557b29f8203abc8492cd261a62563213bd1a3298bc212dba"
+      "sha256": "5969b009ed326991e6db310b3e3c48640ae5a5ac361c9c34f5619740bff8ce2e"
     },
     {
       "path": "tools/content-schema/item-authoring/lower_wiki_movable_packet.py",
-      "sha256": "9e418a08ba951bc35d078b65689beb2e12f3da53af9470a8c55cfca7e36a5600"
+      "sha256": "dc9a9c622f8d8081c7245f4600405b18bd20e5a8459b77686119a585a8977476"
     },
     {
       "path": "tools/content-census/item_wiki_family_capture.py",
@@ -131,7 +131,7 @@
     },
     {
       "path": "docs/agents/evidence/OTV2-20260930-item-stats-promotion-v2.json",
-      "sha256": "f833bc32bfc8762dbece8a7c2abe2985946fd153da4915e163c81e94f91c7bcc"
+      "sha256": "aeed35542222289537e3eafe0dbf279b8f17d09ba3a210a3818e194642f7e1fc"
     }
   ],
   "original_external_qualification": {

@@ -29,21 +29,22 @@
     "NPC": 1110,
     "Presentation": 2613,
     "Proficiency": 443,
-    "RewardClaim": 231,
+    "Quest": 352,
+    "RewardClaim": 336,
     "Service.Trade": 324,
     "Service.Travel": 56,
     "StarterKit": 1
   },
   "item_authoring_counts": {
     "authoring": 700,
-    "relation_sources": 539,
-    "taxonomy": 164
+    "relation_sources": 880,
+    "taxonomy": 12252
   },
   "legacy_blobs": {
     "declarations": "f50400dab48275bff3eeecf8be5b7e30a8df2130",
     "editor": "ec0ee6cb9195cb6db3f12b1f226fbbf0cac536e7",
-    "imports": "442b5592294219d0909439f7e17c646898657867",
-    "reference": "349349f81a4e20a5948fe8194707fb8459097e9e",
+    "imports": "f67a6862898d196086701cebcb423867e79b7bf1",
+    "reference": "f0fb294ee762c2932a23e0359c606ee20e9bbcea",
     "sources": "f67394fc2da16069fb17e92fc89be255e2638a5c"
   },
   "project_revision": "tree-npc-reviewed-definitions-r1",

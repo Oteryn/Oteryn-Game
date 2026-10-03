@@ -1061,7 +1061,7 @@
         "origin": "current_native",
         "owner": "objects",
         "path": "/workspace/pr1437-native-publish/content/world/objects/index.json",
-        "sha256": "103b3e42f1cac296528d602cfeffbaf6f1516e22f8d314bb8e16bcf149af677d",
+        "sha256": "a0dbd7f2c0c0b09b5457b189128c7cbd7dd2a4553e2a3c00063092372c3b65d7",
         "record_count": 0,
         "exact_item_pointer_hits": 0
       },
@@ -1277,7 +1277,7 @@
         "origin": "current_native",
         "owner": "terrain",
         "path": "/workspace/pr1437-native-publish/content/world/terrain/index.json",
-        "sha256": "dbbc7befeb5b420bdd8b1f70c7fd25a6e9d7f22a3395aca323e5a409f7eb562f",
+        "sha256": "89ae879da01b6a81e1e6a1c6a06b2632a2678066e0eb71404a5a7882bd516c44",
         "record_count": 0,
         "exact_item_pointer_hits": 0
       },
@@ -1491,7 +1491,7 @@
     "apps/game-server/src/content/project/v2.rs": "b066f883bcf6925be8ea2d8df428312376fc397a73d704229be2fe5a6782752b",
     "apps/game-server/src/content/reference_playable.rs": "e50682b67ca36431f9a6b9eb018a8cb17a08cf7e4fdc66c33a5831dc83f4e3ad",
     "apps/game-server/examples/materialize_content_world_project_v2.rs": "5609df8ac6db72cde3047ef96b1dce8e1e9daf4ba5bdf833d8951fc7d3f9c9e4",
-    "tools/content-migration/world_project_v2_to_tree.py": "caebd238a5dca47303d5baacf3f942ddadceee1321b36a2a7b5887c22ecc75f1",
+    "tools/content-migration/world_project_v2_to_tree.py": "3711abdc8b6e3aabd46b6a3afc06bfdca5ace7c095beba390240bcaa374fd5e8",
     "tools/content-schema/item-authoring/item.schema.json": "a7147e948459563f83a13d11a9a4b0e4f424393f438da1d0e1ae08f274352997",
     "docs/architecture/OTERYN_ITEM_AUTHORING_FORMAL_SCHEMA_V1.md": "bf46ab3d1906184b231849f7c92551f046767bac2bae9f7a165aeeba1bc9cedc"
   },

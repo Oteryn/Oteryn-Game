@@ -257,6 +257,8 @@ different slot is a conflict, never a second write. Client focus never supplies 
 - `hunting_s_left` falls only on the **hunting clock**: one tick per 60 s of the session in which
   the character dealt damage to, or took damage from, a creature (not a player). It is the stamina
   signal of the XP lane (D118); PREY-EFFECT-1 owns it until stamina lands (`PARITY_PENDING`).
+  **Amendment (pending on acceptance of OFFLINE-0; `reviews/OTERYN_GAME_OFFLINE0_STAMINA_AND_OFFLINE_TRAINING_DECISION_2026-10-01.md` §4.2).** Stamina lands there: STAMINA-1 owns the hunting
+  clock, and both stamina and prey time fall on the same tick.
 - A tick lowers every `ACTIVE` unlocked slot at once. Offline time never counts.
 - **Checkpoint:** consumed time is written in one receipt per character at most every
   `PREY0-RL-07` (300 s of hunting), and always before logout, channel transfer, any prey command

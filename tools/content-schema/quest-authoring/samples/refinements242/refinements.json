@@ -1,0 +1,1797 @@
+{
+  "schema": "OTERYN_QUEST_RECIPE_REFINEMENTS/v1",
+  "baseline_head": "e66390af13cdf9fe7156d36af4dd5d519418b32a",
+  "runtime_enabled": false,
+  "source_holds_preserved": true,
+  "original_recipe_packet_sha256": "6f20eab8efe2023a6a1490846913478d36e54a764f3d73e68316890048ac5321",
+  "original_record_digests": {
+    "oteryn:quest.25_years_of_tibia_quest": "ebedea5211cda6cb53eb5033895595da01115831b22ec4790718d6b2dff2e0b0",
+    "oteryn:quest.a_father_s_burden_quest": "6cf0578d050fca340d1483e40e9d662f288bd95405a767a93296c1aff7bcc86d",
+    "oteryn:quest.a_piece_of_cake": "bcbc2f98e7e40c81095e69c084650a414b4bfe396ee9e44edcd6a836cb0d22bf",
+    "oteryn:quest.a_pirates_tail": "f4d0938c296855aac15d37dba3eda77479838c7e744b3aa2a5cf08ace1dfc9a7",
+    "oteryn:quest.adventurers_guild": "aebdc4c53e6fe066f37a70b9308d3b7465d24542a487ee65a19f022568daefd8",
+    "oteryn:quest.adventures_of_galthen_quest": "cf359d2ebfd17bcad7968d55dcbae98f6e14f5eaaeb7d380dcf50ca700800438",
+    "oteryn:quest.afflicted_outfits_quest": "887b2ec418f2b8a0e371e3df96dbe6fffd6dae685914a0c93c9b70925dae04a4",
+    "oteryn:quest.alawar_s_vault_quest": "9f69ad97c6b0c62d1a66e9959012842d223908c7150e77679412051f7f9912c6",
+    "oteryn:quest.an_interest_in_botany_quest": "02d60dfb66cbf4ea950ef046f8d17ae195f40ea5177743e825af19d7431dbc3e",
+    "oteryn:quest.an_uneasy_alliance_quest": "0ecdd38240de253fb77884238910fb8057b7839de6cfa9f0b0d79acd9c542d32",
+    "oteryn:quest.ancient_aucar_outfits_quest": "2e33a48d9e903ef40fcf4ac5aebb67d27bd5727019a51e17d56764e8b766b015",
+    "oteryn:quest.assassin_outfit": "e506dc0e73331b61afbf06e3ad9506af0094eaca278600e961fddc337e163453",
+    "oteryn:quest.awash_world_change": "3fdf4de994891dc986f2083631af7c51b402e878cecae6e50ae0c87e96c0277d",
+    "oteryn:quest.barbarian_arena_quest": "fb9cf324965faf2a966221cfbb0f5d5381974b47d989afe5d43cae3fd1f96f25",
+    "oteryn:quest.barbarian_test": "2cebeee883f7c8d9d7ae723ff11d19117226258166daa75d9073b37f8dfeb1b4",
+    "oteryn:quest.battle_mage_outfits_quest": "aa69fdd59a14a020d0c23110eb943242373a64396f8076646a490c42a234a582",
+    "oteryn:quest.bear_room_quest": "a1d15162b671d628bebd71bdbe344f38c72f770718e3f68007d8e080352ad369",
+    "oteryn:quest.behemoth_quest": "f839d7f09ce1c0e9b433b23b84a49ac862e56bdb44d563e4c2ba6d0fdb35122f",
+    "oteryn:quest.berserk_potion_quest": "f3651d645b363d299c3e82af7ec094840d41b6659d5a7ef7eb52ee8a6776ca68",
+    "oteryn:quest.berserker_treasure_quest": "86ff447604f9126eb33c18d164ae9952484bc195dd4c3cf4f0f4e7d3c9ea8945",
+    "oteryn:quest.between_the_lines_quest": "ee44ef5e30a66689235eabdcbf589d7d7b8bbbde29fea27155690dc2ae9d6f59",
+    "oteryn:quest.bigfoot_s_burden_quest": "e5e575e209501350714f9ed9bb792288235a73507e4790e8984c55170120c440",
+    "oteryn:quest.black_knight_quest": "140f33fda96822f93097d436fc513d8ca2ec9f3275633d8aa3b577e708542ca4",
+    "oteryn:quest.blood_brothers_quest": "42e629707fd2d7269d21d67ec64b1e66bf7dc499b96a93e6cfbbfc2f30300815",
+    "oteryn:quest.bloody_tusks_quest": "383a3431cc1955eb7491aaafc1f06c54175f83123d116152860feed419d82b76",
+    "oteryn:quest.bored_mini_world_change": "95cf8997c76fec76d229f757401ff7cab28db5590d42c4418137b0cb14b4c56f",
+    "oteryn:quest.brotherhood_outfits_quest": "45ad10bda5b590c8e0a7d4efbc34a8155c72574d18dda5b0e7602a29eac86d54",
+    "oteryn:quest.cave_explorer_outfits_quest": "27643057866b17ead684b40fd5f0712393b1b16ef242689f177866903e4fdf2a",
+    "oteryn:quest.chayenne_realm": "5e9204998735547fb821bf756ef667b29b3ae2f8e7c69a703fcb5f34ad44ee20",
+    "oteryn:quest.children_of_the_revolution_quest": "26d2c4d54c590ab6bf8131dec2d2716da5aebf27ed8334b3b5396788a0fa00b2",
+    "oteryn:quest.chyllfroest_mini_world_change": "80dbc38f1d3697e39ef984a473eea7d5f506b8106856b577b2dbee30ddb85362",
+    "oteryn:quest.citizen_outfits_quest_on_rook": "5e448be46cb758dc0bad1f66fb28ceaf29fec9364c3a3d861984efc727d7c5b2",
+    "oteryn:quest.cradle_of_monsters": "67292dc28b855c904f86d82edee679c2626fe19285e6c1dbad30070518489d43",
+    "oteryn:quest.crystal_warlord_outfits_quest": "f05fcffc6519c2694b751d9429b6777cdb7d2c0bb846938e96eecc3a72fc0308",
+    "oteryn:quest.cults_of_tibia_quest": "8d7b75b2888729756be0b91ac5f22b28e4a32dae67f9b0fbb9268e63f6abb2ad",
+    "oteryn:quest.dangerous_depths_quest": "4615b692ca7674d29edeea04958675cf472be5865a28c50ea2476a65e9a15de1",
+    "oteryn:quest.dark_trails_quest": "4adbadb60e3bc1b4cd2e8f93a343901d874be2484fa56f75d7b9647bc4bad928",
+    "oteryn:quest.dawnport_quest": "0868e9124f1f8afb57146a45525c3ad8f4b81995fc3bffaba8c7ffe4630d5540",
+    "oteryn:quest.dead_archer_quest": "c05d3c24091391f9bf669db2add6161cf37eb4f8aa259c6a911e456c43414cca",
+    "oteryn:quest.decaying_defender_outfits_quest": "8cb3c463640b1ec7ac8be00d26753459fb6c52483e0f43d242b44a6ef38988f4",
+    "oteryn:quest.deeper_fibula_quest": "65cadbe07ac52a75fb329d2779c2204d211bd3255f1b48323ad5c7206b532c46",
+    "oteryn:quest.deeplings_worldchange": "41475c8c4357888e79ce761eda3cad40de0cff67ffa948f73fde2680e4d0eeb9",
+    "oteryn:quest.demon_helmet_quest": "6c0b912d0aaf61d44179e6889b02c38e40fdeb90f255018f3598b3ee922fe72f",
+    "oteryn:quest.demon_oak": "b16b5e6adfe64744c565a34df8db6f18f56337b6e6b4fdd2fa18bcc22e417055",
+    "oteryn:quest.demon_outfits_quest": "a261e48d2299ebcf6a89224cab8f42f923589df4234e723b9e7ddc3f2eba691a",
+    "oteryn:quest.desert_dungeon_quest": "3eba96d6fc97711fdb1eb7b0c9b15bd2f88afff83ca4d6bd72bee74773482b80",
+    "oteryn:quest.devil_helmet_quest": "909f3041ad6c00213841a558f79d0f75320ca336a50bc33c23ff24a26f99ea3a",
+    "oteryn:quest.draconia_quest": "c14ed9215c408474ab7db2a257f0a7f0d8ba50f694b377f3ce6b7df689bc91c6",
+    "oteryn:quest.dragon_corpse_quest": "e9592d4bf7429bc2287433f93841cb3d6c46070ab36e50b1bca0e074a64f7c3c",
+    "oteryn:quest.dragon_tower_quest": "69d45fa70e6e843e8f3754061f370cff1aea7e2cb3dcb4aa9bd5e657a9caeb97",
+    "oteryn:quest.dream_warden_outfits_quest": "b06ffdf45779026410867b7de674c1de36903dc46574626ff4f70953d52cb716",
+    "oteryn:quest.dream_warrior_outfits_quest": "e480af2591e0454f68befb697fb3b56c6561f207e4963506e76db2fc4333305f",
+    "oteryn:quest.dreamer_s_challenge_quest": "e3e9421f88bac6cd41d5279c9edc57440999ecc6015bfd2c0610e7971633295b",
+    "oteryn:quest.druid_outfits_quest_on_rook": "4ec12ed671738eeda7e606c20a452fa67c5fb8dd2da130f88823b219120ed075",
+    "oteryn:quest.edron_goblin_quest": "33212022da140d9718e8cd379784841dec1c39f13039b3e04bf4bd48f9367b2e",
+    "oteryn:quest.elemental_spheres_quest": "d426516916203fc80884d3dad1a2c2868de6ea7cd9644ef308a2e74d99d817e9",
+    "oteryn:quest.elementalist_outfits_quest": "bb8ffa0879bfd7900f08d98d3d9c62edc78f14d1877a9af1e44976b5049c1423",
+    "oteryn:quest.emperor_s_cookies_quest": "7871d62d368185bdc43906fc65891c6454b2bc99bac5807955d3b9c743f3e6e3",
+    "oteryn:quest.factions": "b1f4d4ebb39a9cdc68f7f415bb0d9fd19b2116af8c37b6b6e3bc2904a5011f33",
+    "oteryn:quest.falconer_outfits_quest": "7f45cd1841b83b913e01b5d2641f023df3bb230e5cb505019af26d97ba1e557e",
+    "oteryn:quest.fanfare_quest": "58f81e7165374a40e5ff5e9fff7e91238b8f4b512ae7e761521fc143810481f6",
+    "oteryn:quest.feaster_of_souls_quest": "a504921d1c831d58f46a6998d74419498035206818397acda919111226312f4b",
+    "oteryn:quest.feral_trappers_quest": "ddf69e20855d6d65693bf31b045b37ff472338db6ceab473f3f947c60e4dcd17",
+    "oteryn:quest.ferumbras_ascension_quest": "6676021a5ec1e1617325b74a6f49bfdb92ea664cafedf0654b0aab90660f6f48",
+    "oteryn:quest.festive_outfits_quest": "1bac36c39ec8c2b08eb495d54cda4a495f7f23427991761a5f672000f64e1072",
+    "oteryn:quest.fiend_slayer_outfits_quest": "f7c5ca18c8beea5cbb2509f1ebc473e2cfaf4afcbbd609d19e9202266013d407",
+    "oteryn:quest.fire_axe_quest": "9aadf16528e20a8769b90d7163d01761f1ca7ee7fd8333cf75f7e18adedd62a9",
+    "oteryn:quest.fire_fighter_outfits_quest": "ae1eaba3abf03327f80e2202b573522d7fac5287a9c12881d56476b1760abbf6",
+    "oteryn:quest.fishing_box_quest": "924d2af60e55ecca62b568dcd639f1e1570e5161b5c34c554d548ada9b1c7ee8",
+    "oteryn:quest.forgotten_knowledge_quest": "0fd606c1ce20ce68758f6960873a4aa17cfe2777c763934fecc16f6d9b48433f",
+    "oteryn:quest.formal_dress_outfits_quest": "a4fb1e595f68927e1e13ef774aa80d28657f5c55180563fa65d2dcd3eea096fb",
+    "oteryn:quest.formogar_mine_hoist": "68d626263f2d0e5fdc4eade0e556241516e10c879cf9be3c133b889be6b2c30e",
+    "oteryn:quest.friends_and_traders": "d1031bc919c57007f24b6095b6172b0b1383df842348c9f7b83c227c31ce10be",
+    "oteryn:quest.frost_dragon_quest": "a53a486d026980f587aa15986dc5b39d6a09130089a3e231f89a869895659e7f",
+    "oteryn:quest.fury_gates_mini_world_change": "e01e5bb05ecb571c8a115162a85e7c03b844bb239a2f33e369489a0316742ff0",
+    "oteryn:quest.geomancer_quest": "3a17dbc707aeeadd4a8ebdcecfb01d144dd28b21449bf42d15e59243712ec246",
+    "oteryn:quest.ghoul_room_quest": "e234f996bc2d4f642514c725f87f4e23079aa82ba219e417d96ac5a5eec2f996",
+    "oteryn:quest.giant_smithhammer_quest": "47630768e2eb4820efcc15c8a88ccf8b2f05984fdd014ebe985e29ea720c00c6",
+    "oteryn:quest.glooth_engineer_outfits_quest": "a01f0475976525b5d45a6b784002d36b45990a07ddc5d34893537bc114bc2780",
+    "oteryn:quest.goblin_merchant_quest": "34d8064d0a479df29fc871bed16bda4870bf949ff2ba58baac7fd1ea16048e90",
+    "oteryn:quest.goblin_temple_quest": "32baa801894407f1ae18246643202e561106a962a4dabbd9cf253efac06b7156",
+    "oteryn:quest.golden_outfits_quest": "5a45b0c3558be87ed0c4eb1d7638087467eb5a2d0b50e038910ef50723cdbdc7",
+    "oteryn:quest.grave_danger_quest": "6aac8b9e56ee207b35de3c18552f59f4017ecf468b41a2866321ed2faa8311a6",
+    "oteryn:quest.grimvale_mini_world_change": "a34a5b695e8a2e8ae7943dd07a251f32374f86ffde3b1b3df61d9aab9822c7a5",
+    "oteryn:quest.grimvale_quest": "738f39c58a5d1d584b1004631469e24d576e6c8ef1e45e5e6f9c3c392da207e0",
+    "oteryn:quest.hand_of_the_inquisition_outfits_quest": "c6cf129e02cec5d5e6f04d3f0bee9682e2e614f484b250f493d54233d1970d21",
+    "oteryn:quest.heart_of_destruction_quest": "b90094e54ae916b692d11b23638f3495e9b785085e04b14066c1f9dc39111c82",
+    "oteryn:quest.hero_of_rathleton_quest": "02be1b9b1527f2de5e0b6271b08111ad849666f99b8313ccc31b0a6bd5d3c494",
+    "oteryn:quest.hidden_threats_quest": "180beccf5f522cb9f5bf105c2781752bd040cffdc9446dd28875f81a8adf269e",
+    "oteryn:quest.horse_station_world_change": "45732c98bd3a784f0d22ff92b435e231f4e44099a716a4768bd83f9edb904e2a",
+    "oteryn:quest.hot_cuisine_quest": "5bd0a919093bb3c0914bc29f7adc75ec8893e25d7ff38e2a1b74c8336ea8f655",
+    "oteryn:quest.hunter_outfits_quest": "0950260f8e59ae146de5fcec4c45c1aae53eb21da45ccb274d9ac0acf9d29b38",
+    "oteryn:quest.hunting_for_tokens": "8008ceafeeaafb48126d32f39499763acf4e4394d867e3802a3544fa323006e3",
+    "oteryn:quest.hydra_egg_quest": "a92dff7bbef1cf62b9e58e5a9809f22ef8b4d3a6eaaf4e28e1e5885589907ef5",
+    "oteryn:quest.illuminator_outfit_quest": "5047c5423b41440966e149ab3fa6248f0dd5b2c648ce6c6d68a9bb43da507d9f",
+    "oteryn:quest.illuminator_outfits_quest": "b0caceceb938d72b4cb5f9a7a9784693987d13554e4d97b7c1d35f14dfca0e33",
+    "oteryn:quest.in_service_of_yalahar_quest": "3339a906c7950b179423d28a0faf37548058a4a98669f051744bf96d834797de",
+    "oteryn:quest.inukaya_quest": "777cb5982983f04fb8b201562bdc50ba57a705341b547d0b89068ae564d23c25",
+    "oteryn:quest.iron_helmet_quest": "b4ad01bde8d3d990c1cdf6a4bae035044d8b30f645889691ee938679e857fb4d",
+    "oteryn:quest.katana_quest": "e1744e001e6cda6be6e35bf14dd9761568f13e921d6bb6fb42f562331b7f551c",
+    "oteryn:quest.killing_in_the_name_of_quest": "53b038179b8989eb91bcedf867d5f47d7017d9dc098ad5afd8c5495410d71bfe",
+    "oteryn:quest.kilmaresh_quest": "1bd44bfae4e41248d2147bb81bae171470ac157d3785b091c2b652954d9225ff",
+    "oteryn:quest.koshei_the_deathless_quest": "0b1f5ef1c9baffa6d16522845403ed7f56da49169d1a0bc809a48e1d4a6c233b",
+    "oteryn:quest.krailos_quest": "7997f3bfc11f0af61405015cdd2eaaba08248c4e642947c0c3049d84a2788354",
+    "oteryn:quest.life_ring_quest": "531f68cba0d3e7c276595e71988a1cbc175477299a7460c284555aaa5da5a591",
+    "oteryn:quest.lion_trophy_quest": "89aba91a8c7e52b4e61e5285f10f1ba4f275c22e102f6ec440af9e81ac0c4c50",
+    "oteryn:quest.lions_rock": "609b7ff5e7f5752c2937e158baee69973fb90af10c12caa3b9d5400e8307038f",
+    "oteryn:quest.liquid_black_quest": "21e6b1bede8064e4f5a54657bf827cf548b61f735f9031c09738171af0fa289e",
+    "oteryn:quest.longsword_quest": "8149d79038a11fb7a43b504ae5cfca4c18ffe470dabbae352ff33e16a0e5ae04",
+    "oteryn:quest.machinery_of_war_quest": "1c92802866566986de5f11d437505895b092d2bb899eab0de433c1241113a3e9",
+    "oteryn:quest.mad_mage_room_quest": "17a99aef863a5553268e7e43e011fa10331df07716a24b1466e82dff35c29175",
+    "oteryn:quest.makeshift_warrior_outfits_quest": "d9313452d37c517385742b1f13f29165491654f270d6634f5fca1d65db4ea1b6",
+    "oteryn:quest.marlin_trophy_quest": "720dce07de0ffa2aa908d0b082a211c9d92f715691d02542464093887e1fdc1b",
+    "oteryn:quest.medusa_shield_quest": "358fa202e96ff1adcb987a872aa9a733f7fb5179af82db1b5c939f66c91ee3fb",
+    "oteryn:quest.minotaur_hell_quest": "98fc73796d11e878495684745133972152b7cc30d7e503772e9420196c4dc9b5",
+    "oteryn:quest.newhaven_legion_helmet_quest": "1e343d56c62b5948382ee66c4a6b03f9a56403f51f05b448ff2cf276e456d602",
+    "oteryn:quest.newhaven_quest": "e4bc09f1b3d6233085ce0149b679ae3f305f3998ae415dce76aaec79e558f7b6",
+    "oteryn:quest.nightmare_isles_mini_world_change": "9f3f1a9c52be43be40fe38a913ca361967c686b47b4aa87346187e9543ef068d",
+    "oteryn:quest.nightmare_outfits_quest": "7f00046716b4c3f6d65d35a7c720945c8d1db2eb687eb9daebc5cd89d5e38f1d",
+    "oteryn:quest.no_rest_for_the_wicked_quest": "4275782fde97a7eae3bd82fb229baaf9ef80999e7959c18bc1911da4b42a3a44",
+    "oteryn:quest.nobleman_outfits_quest": "0b2d28de59864cf40f1417192bfa35036dfb831b8f570ce87499e7ce9c09dc4e",
+    "oteryn:quest.obsidian_knife_quest": "f864f3f8eb204aa34e7857db4939b606708576b642708e3528b132abc9e01e37",
+    "oteryn:quest.opticording_sphere_quest": "4b8f03f35bbae5ed8937654f19db1703bf0ec9b076703de1539794256afa975c",
+    "oteryn:quest.oramond_quest": "0248b8f4fd29c549e9b02f3f1d2eb7624b40983202adc7a62aad6ab440c7f319",
+    "oteryn:quest.orc_shaman_quest": "c64cb928887bdd9782b6786d4c8ca7464d8b96235361dec80981c11bb1868cf5",
+    "oteryn:quest.oriental_outfits_quest": "b16bc8c984864cc178111054a4e03112e72699fe08bfc933e3c2dc8095df17b2",
+    "oteryn:quest.oriental_trader_mini_world_change": "44594e86434c8a9dac7cc1c2e53b380b5c12c60e6d16ea7a8b904a6d2ce8fcc6",
+    "oteryn:quest.ornamented_shield_quest": "dbf1d9beec381475d2f2e6e5c518623c1cbda1f76be2e5674e540a997c3bb9e1",
+    "oteryn:quest.outfit_and_addon_quests": "320e35e7e08534b8bb2078751fc092376f324b872c74c2c741859120662e70bd",
+    "oteryn:quest.overhunting_world_change": "7168d0d9c4ecc20e5afa5c15c9b069ca7ee283e4d2f2e345c52dbe1d967b2900",
+    "oteryn:quest.panpipe_quest": "1e57da4e295f28b7ba99525c9d7354067a28acc18076757d5baeebd31bf4118f",
+    "oteryn:quest.parchment_room_quest": "c2529e34e3e909f06b9b2450339f5c861742aba3b0e3b2c4e5cfd1f5932ff8d1",
+    "oteryn:quest.pick_quest": "d98fdf9bce7a48ffdc2becff8f5c5242d5a32cfff6db0d33c81ac5d4d5d60f52",
+    "oteryn:quest.pilgrimage_of_ashes": "24d72abaa5dc9cbfbb1ce0948b6df721e4af6170faf60eadfab5af9aa8033e24",
+    "oteryn:quest.poison_daggers_quest": "7511bb48dca5b1c1a48ea7ce84824f3da9b0c8853628be3f98c8499af4aaf0d6",
+    "oteryn:quest.poltergeist_outfits_quest": "9f23bd3eaa405c1b3b5145e0bb4447e32fe5cacdd5f2a28d4493f498ad8cd81f",
+    "oteryn:quest.power_bolts_quest": "e3ce37985830835c79205317b66fc3594e7d0ad3302a32460e3137c66994fb07",
+    "oteryn:quest.power_ring_quest": "13815a96e3499334288c513b325ab86fb2fadfc3e2dcf22780b265b814b2d4a6",
+    "oteryn:quest.present_quest": "2bb7a04419009754c86b932a17ebef64033cba4a8bd9073f200267bd30cf90b3",
+    "oteryn:quest.primal_ordeal_quest": "0b12269b3c62ecf6a722abaf374dc09c653494c6c387d9a3f37e25610b99cddf",
+    "oteryn:quest.rapier_quest": "52d8f7dc32178c1d7ad22490f51b45564f9dcef92abd9338de044ee064b5490d",
+    "oteryn:quest.rascoohan_outfits_quest": "14ccfa7f800fc0b5f0a4d6fdb30d66a072d216982faaf7ba5f5e10d4a49bd731",
+    "oteryn:quest.revenant_outfits_quest": "e50fa3422932de7dc08192512548356d8e3f44d749b8fd55a533cea464d1a2dc",
+    "oteryn:quest.rift_warrior_outfits_quest": "169d2625857be26fe14c7833aeb6b1e0f0730f96d759fb36f59c53ef68894849",
+    "oteryn:quest.roshamuul_quest": "85447c326190c04c3d6bc141610c9a6c5f4395613f5e68e71dd1bdce5590d2c5",
+    "oteryn:quest.rotten_blood_quest": "d9ef08bde4050f384763d4caaa40d54dc05a37aafd37e2dbb1cd4176b5ddfc40",
+    "oteryn:quest.rottin_wood_and_the_married_men_quest": "6451451c59623a557d222c10d5e6f4ef5e4c8bf78b0b5c6aecff708a292ac692",
+    "oteryn:quest.royal_costume_outfits_quest": "9fa9dcf70228e603083108ead90c75e4c439681a1cd224f63a74c2fdb5ae63f9",
+    "oteryn:quest.sam_s_old_backpack_quest": "0328e5746e295fdc7aaad946463d835fabfa5d76b8a0f88cadc47c9440527b4c",
+    "oteryn:quest.sanctuary_of_the_lizard_god": "e652f17180c2fb5b97e6af775df10ba1bee4a99638bbd631f87a2a4a06e67c20",
+    "oteryn:quest.scale_armor_quest": "bbe67fda6f06d9a54d628c5a52e432aa09e0fbb36e0cd0a4ffe0a7eeeeb97f54",
+    "oteryn:quest.sea_of_light_quest": "dd6fca31282805cbe1e050fba9dff95af7c5b43f6fed2903bd68578de0a7832e",
+    "oteryn:quest.secret_service_quest": "4975378e83d6e5989069711e5d2b3e204bf41203aba8f2e1aa2c00aa5a71db45",
+    "oteryn:quest.serpentine_tower_quest": "dcdacb337333c41cf66bf904bf2324490d6791ff1b8153772080e94d64193a88",
+    "oteryn:quest.shadows_of_yalahar_quest": "7703c3c780af5cedc243d5f7af2f0d591780fe41a58922fa5bed74dcb3220c3b",
+    "oteryn:quest.shaman_treasure_quest": "f88f9bdecc4a31d9caaffaf8fd53922c69802fa13eb0661b7a8607d6634c1949",
+    "oteryn:quest.short_sword_quest": "caf9b928f53f1cb7ea72d8b9c670c972205fe6fab17089325914b9c6795f6c7a",
+    "oteryn:quest.silver_amulet_quest": "8796cb50161ac39302b409b66feb52c8263379b206aa78eef02bfe8efe193a89",
+    "oteryn:quest.silver_brooch_quest": "38e8261bca944a68df046bee0c94adb80a9ea9958bf13d6bcd1f9153f1f9a584",
+    "oteryn:quest.sinatuki_quest": "01e70fedc50426b2830b453c71a2e8d4cbb5daccfef34878b2af202c48d19259",
+    "oteryn:quest.skeleton_decoration_quest": "6cdcb7d3d7333790f944b1be8f25ffb6c44555d26e5a9b9d57c15dc25f96e633",
+    "oteryn:quest.skull_of_ratha": "06a45771235b27fb1c21a17734bb608719eb48be28ab15537ee87c32a8ff136b",
+    "oteryn:quest.small_health_potion": "951548bdc1684c17f66d95fe926d94b9bb3ba3705e5872e3fc64b1b50d8accd8",
+    "oteryn:quest.soil_guardian_outfits_quest": "2fe2098a031f0e97446efca3819a83fc312e5a503f7616c058fbaa542b13db7c",
+    "oteryn:quest.soul_war_quest": "e43b1e4c511e665edd8768fb498a454d0716f88038ac5f11834d6015a6c532b8",
+    "oteryn:quest.spike_task": "87679482eaa088139ee9301e1524c3c2b11a8bed7d02104ef41b160e35e52e4e",
+    "oteryn:quest.spirithunters_quest": "dbc2ae8193a3bc01fa733f69cc12b8d61cf6283d55fefaf85119110535e78820",
+    "oteryn:quest.stampede_mini_world_change": "43f707f3640dad50c0b0229be06c3b4b8bfcaf25bcda67817a4218a4aeb9951f",
+    "oteryn:quest.steal_from_thieves_quest": "79050068c4664820907feee76e3fa12c2d6a3ff4e436b04c44a0994a29b75b9c",
+    "oteryn:quest.stealth_ring_quest": "ad90de3a74b552db92b402ff37edea613d0a7e1cfb1f0be313f85fda65310278",
+    "oteryn:quest.steamship_world_change": "b80050b87e129691e101b2dd0dbf17386165ac3b6eb50fc06d4738e22a00a618",
+    "oteryn:quest.steel_helmet_quest": "441e7e4169449dd479aceee8165eb284f6a95252893088a4422bb51fa0d7f572",
+    "oteryn:quest.strong_potions_quest": "d557a2d16530e18cf67c866f8ff0d4ce7082c5717c48093652dcac9800964971",
+    "oteryn:quest.swamp_fever_world_change": "d1c712793daee174e7505d81c4c01130caceb566a0a62480dc2e90473b1d0526",
+    "oteryn:quest.targuna_quest": "ede479cfb360eefa92d7e2b2b2d7f971662810393fa0b9fe51e119de3ccad390",
+    "oteryn:quest.thais_lighthouse_quest": "66b9bd4de022d57895d321b726a963ec8c05ea7f7ecf14430fd604dd97b655cc",
+    "oteryn:quest.thawing_mini_world_change": "2d81c3308ab30702681018afbc2d56f9226dd7e98e3f1d17a6bc73eb3bf38a66",
+    "oteryn:quest.the_ancient_tombs_quest": "529e00a5a734c538ca0976b8727221da4b0facc24cd0447f33b8e102e12b33f4",
+    "oteryn:quest.the_annihilator_quest": "9a8f79a9b731282bd626c56187fc495eedbec5e7cbf4d7ed9ab7ea2c7118b3c9",
+    "oteryn:quest.the_ape_city_quest": "6cf501aac04a2a8c6a24aea02a0352edb1149677838207f6242256d798f79a88",
+    "oteryn:quest.the_beginning_quest": "c70a1b4d88c2204070ca0e00fa2886f6ef66b2bba0f181760dea3bd75fa537f8",
+    "oteryn:quest.the_cursed_crystal": "ba6dc13e82e6d48583fe8d7ae17819a85ce6768ca369c768c2b2e983bbceb1bf",
+    "oteryn:quest.the_djinn_war_efreet_faction": "4b1007526051155f28c6295e29c4939ee49710125edd7cd89ec0b936afc134dc",
+    "oteryn:quest.the_djinn_war_marid_faction": "264b7a47d499380bd9ae9f3e6bcced7a620dae5b3bfc384b348b85c4f0c9dae3",
+    "oteryn:quest.the_dream_courts_quest": "5938d7c63d9ada3fbcc9b5d7f4102edaedb120c6ae8265f53586ea332176c01f",
+    "oteryn:quest.the_explorer_society_quest": "5988bdb5f1c2b58ddc417ea0bc8c148e1f3331d9d783e8381e7b5282875d6bfa",
+    "oteryn:quest.the_first_dragon_quest": "1a7fe29516832245d96b8bb48ba02d6b6e34cb8dc2a77fd89a8a7e806dfe3a2f",
+    "oteryn:quest.the_gravedigger_of_drefia_quest": "eb8653dc5ceaa4c231e0c8e26fc9e579e0976ae2efd13d89f60f6dda2de32166",
+    "oteryn:quest.the_hidden_city_of_beregar_quest": "bbc6acb0b446ac89fc6c0b574e680a98f9bffc7683f86a2ddc1fe9f6670f68b9",
+    "oteryn:quest.the_hunt_for_the_sea_serpent": "527283c2ec1c503f4706867b4e497d79b770adb97a7ce5ab14b97c31836f32a6",
+    "oteryn:quest.the_ice_islands_quest": "0dcd1962f80385cc776ab96a709e2562d8e8c62da3a1a75fbb1f13a78292a97f",
+    "oteryn:quest.the_inquisition_quest": "2e2e39004c53e694ebfc9245934d27ad963dc6b0393ec3f3030cee99fc5dd0e2",
+    "oteryn:quest.the_isle_of_evil_quest": "fb7ce2e2810cdd9268717fadaf1faa636f81832cc4abb2689a695b45f9d7f577",
+    "oteryn:quest.the_mages_tower_world_change": "85e54aae59b192ac5ae81e87caa3b7695fdf2996abe089fceee76bb6bcae144d",
+    "oteryn:quest.the_mummys_curse_world_change": "ea10faa36413e363936ee88edcace765eccd28467b3666ecb705d8a364e78f3d",
+    "oteryn:quest.the_new_frontier_quest": "4dc248bb511a3cc56a80e8cefb224675e22074364318767908105ea8c5bf2113",
+    "oteryn:quest.the_order_of_the_lion_quest": "f576e6fdffb4793e97b089491c97e18e7b9adaeb485a45d1853388a695b62421",
+    "oteryn:quest.the_order_of_the_stag_quest": "2b51a8237bf78904c8eec1990b50b929d9a36a721c9f718c972c6bb122ce63c6",
+    "oteryn:quest.the_outlaw_camp_quest": "af6f05134e0af21a1de85c8f1ba0035f43c0fa792a134605916e8f133b704c48",
+    "oteryn:quest.the_paradox_tower_quest": "a524e24f506cc464c1dc02c0aea0d302b6dc45f7b79e1e7095cfe698f880b1fe",
+    "oteryn:quest.the_pits_of_inferno_quest": "02ca59263bf16f7b257d746afc1119bc5dad492a74633e58ee3d7295e43e834b",
+    "oteryn:quest.the_postman_missions_quest": "4f570b427fb6048760914e78acd84b529004b5b73b626661764839bf6a894147",
+    "oteryn:quest.the_queen_of_the_banshees_quest": "8b081e807afd45aca047a5197d7707863fb83450ab69845f7d9c8fda4f3d7653",
+    "oteryn:quest.the_rookie_guard_quest": "acfae005534a2bafdfad28c602951d689894477c6b292a4303039ea98ac2316a",
+    "oteryn:quest.the_roost_of_the_graveborn_quest": "2bbbf201e4890088b174b06152c46a1e8cea08a396daaf5325934d40c6b4ad64",
+    "oteryn:quest.the_scatterbrained_sorcerer_quest": "d6c43d9f51bb85e828cb67a564bb10769f00b7b8aa82b5c520a165d38a2c2408",
+    "oteryn:quest.the_secret_library_quest": "929e663ec0f4da39558416d982f92843d6e36c87ba3a75b6f0d6d18dd9bb2628",
+    "oteryn:quest.the_shattered_isles_quest": "09401ad5e3ed074874c902180bec4785f22e822a180ee2e4b64b292863e1ed46",
+    "oteryn:quest.the_spirit_will_get_you_quest": "83988908b3dab30c10435d00c49c8f9661d28baef91a714ea7f2305e0484bc53",
+    "oteryn:quest.the_tainted_soul": "26a2409e2f9cb93c0afaa6dfd5ee32188b51ca70efc63ded0a1578768a59f668",
+    "oteryn:quest.the_thieves_guild_quest": "06f796325d3f13371276b7e1585d023abb660f6187800d2cf5cb279972d42dab",
+    "oteryn:quest.the_travelling_trader_quest": "57ca55302d370fef58e89ff3047a026535b82fd002074cb1ceeb77be23b4a7d7",
+    "oteryn:quest.the_ultimate_challenges": "94a4886a2625aa62c956eab6f65e8754cc220fbdb3502ea3b79395839ad044ab",
+    "oteryn:quest.the_way_of_the_monk_quest": "ec6e893940d2c26738d677030c933d221b2cc319192a074cac2be910c7a409f2",
+    "oteryn:quest.the_white_raven_monastery_quest": "75b583cf45ea55392f1fa700911bc65f1f1526f1a6592522dcca1ae409860ede",
+    "oteryn:quest.their_masters_voice": "1ca5fdc6c7dfe583a588361263cbc5378a0e590afa3addd83828aed0efacce25",
+    "oteryn:quest.thornfire_world_change": "5c8b9cf3cda93609206013d188eecb83a313a397ef1cea8747cae1a9476c95ad",
+    "oteryn:quest.threatened_dreams_quest": "54d37e5c5335f28e3bf73615dc98e3872e3682551d0a3c60d7598a6a74828469",
+    "oteryn:quest.tibia_tales": "971e4a244f3c2f05492b2678c90146a5fdba93775e94f93acaeaed1a19a5140c",
+    "oteryn:quest.time_ring_quest": "939808c95efacce559291ba5167066b71e8bad812167a0c72dbb1bb5afc1efdb",
+    "oteryn:quest.tinder_box_quest_chyllfroest": "0efa820a9820263f0bb57e62021cd78cc319ec3558f59bc2144020d4d19e5642",
+    "oteryn:quest.to_blind_the_enemy_quest": "45543ff17842de59d9d4280e15de82b4935f349f524b5186ebcd13885012be2d",
+    "oteryn:quest.too_hot_to_handle_quest": "beb7d72e14cf10e1a01312e604c2df1aa14d1c4cb78fd1be2de70c353125aa07",
+    "oteryn:quest.tower_defence_quest": "af071f6f4564208f4e413600ff484fc1cd3fa72ef7c52c7d53300207c103a021",
+    "oteryn:quest.treasure_hunt_quest": "e0b423fa6535bab62c228eaf3ad728834d0b459ea6349dae2368b640bb1a4e56",
+    "oteryn:quest.treasure_island_quest": "bdfb832c7bfa99c461e2bf52734708634ce7aa9cafbdd70e18a3f792a7a10298",
+    "oteryn:quest.triangle_tower_quest": "1dad2777ce08e798a425b4a2ab6c4fd0989d41278e8dbe3f42d500a776e286cc",
+    "oteryn:quest.troll_cave_quest": "33f541a24a65b869cfe6a155ae5933668b7259f0d013a8c7ce703bf45cbf4ab7",
+    "oteryn:quest.troll_sabotage_quest": "b3b9e639eb48420cd167e07d4a8501dc0e2f91e189187b343a22cbacee7c838f",
+    "oteryn:quest.tutorial": "15394313020f0c594eb375440d8af27d5ab5f240f4e6539967877d172f5c12fc",
+    "oteryn:quest.twenty_miles_beneath_the_sea_quest": "8629fe7907503ea42cb04e1a54e321d2fa20672e28b4158bb30404d60c4bebe1",
+    "oteryn:quest.unnatural_selection_quest": "82a7ebbaab40776e062b7103d27f61aeec9fa67732a20817c2a8af2b9a58d6f3",
+    "oteryn:quest.vampire_shield_quest": "70d82cede8241db587413f6dfb19621c5768a67c1fcd719d2bd026103c0323c3",
+    "oteryn:quest.warmaster_outfits_quest": "df5a41115444b433c8cd493aed991f13aa0e881ab8cec8baf5f7f2d891961b89",
+    "oteryn:quest.waterfall_quest": "c3fec752f932f1df3ce85e41b57ac7727ad70a405f88da28d290ebc105a09988",
+    "oteryn:quest.wayfarer_outfits_quest": "c1fc099ec495b755c3f076d3b3d3ce852cf5816bc16ca5603208f98a23a77874",
+    "oteryn:quest.wedding_ring_quest": "909c13cde5cb514443d5029e6028478951bbaa79717d68a776ead6c58fdf2d40",
+    "oteryn:quest.what_a_foolish_quest": "af76c18efedc739b1be14b5bc4ae161a2c7281214e6c612ee94d8d6bed56cfb7",
+    "oteryn:quest.winterlight_solstice": "d04e31873ad8002cab55a0b78b0b9255f4def7370a8b1514ae89b2f0bdf64768",
+    "oteryn:quest.within_the_tides_quest": "b38dd473d25b78b4e627666a684338d83cea9818769a77f54863f7fd1cb7b953",
+    "oteryn:quest.wrath_of_the_emperor_quest": "231339a692d9e2466d1dae6983756a6716a236ae3b7f3789b5bf97c7da3fa4e0",
+    "oteryn:quest.yalaharian_outfits_quest": "362cbff4bcefa3434fedb46c1292d99d249c8293a0436f14d4da513f5872923e"
+  },
+  "refined_record_digests": {
+    "oteryn:quest.25_years_of_tibia_quest": "ebedea5211cda6cb53eb5033895595da01115831b22ec4790718d6b2dff2e0b0",
+    "oteryn:quest.a_father_s_burden_quest": "6cf0578d050fca340d1483e40e9d662f288bd95405a767a93296c1aff7bcc86d",
+    "oteryn:quest.a_piece_of_cake": "bcbc2f98e7e40c81095e69c084650a414b4bfe396ee9e44edcd6a836cb0d22bf",
+    "oteryn:quest.a_pirates_tail": "f4d0938c296855aac15d37dba3eda77479838c7e744b3aa2a5cf08ace1dfc9a7",
+    "oteryn:quest.adventurers_guild": "aebdc4c53e6fe066f37a70b9308d3b7465d24542a487ee65a19f022568daefd8",
+    "oteryn:quest.adventures_of_galthen_quest": "cf359d2ebfd17bcad7968d55dcbae98f6e14f5eaaeb7d380dcf50ca700800438",
+    "oteryn:quest.afflicted_outfits_quest": "887b2ec418f2b8a0e371e3df96dbe6fffd6dae685914a0c93c9b70925dae04a4",
+    "oteryn:quest.alawar_s_vault_quest": "9f69ad97c6b0c62d1a66e9959012842d223908c7150e77679412051f7f9912c6",
+    "oteryn:quest.an_interest_in_botany_quest": "02d60dfb66cbf4ea950ef046f8d17ae195f40ea5177743e825af19d7431dbc3e",
+    "oteryn:quest.an_uneasy_alliance_quest": "0ecdd38240de253fb77884238910fb8057b7839de6cfa9f0b0d79acd9c542d32",
+    "oteryn:quest.ancient_aucar_outfits_quest": "2e33a48d9e903ef40fcf4ac5aebb67d27bd5727019a51e17d56764e8b766b015",
+    "oteryn:quest.assassin_outfit": "e506dc0e73331b61afbf06e3ad9506af0094eaca278600e961fddc337e163453",
+    "oteryn:quest.awash_world_change": "3fdf4de994891dc986f2083631af7c51b402e878cecae6e50ae0c87e96c0277d",
+    "oteryn:quest.barbarian_arena_quest": "fb9cf324965faf2a966221cfbb0f5d5381974b47d989afe5d43cae3fd1f96f25",
+    "oteryn:quest.barbarian_test": "2cebeee883f7c8d9d7ae723ff11d19117226258166daa75d9073b37f8dfeb1b4",
+    "oteryn:quest.battle_mage_outfits_quest": "aa69fdd59a14a020d0c23110eb943242373a64396f8076646a490c42a234a582",
+    "oteryn:quest.bear_room_quest": "a1d15162b671d628bebd71bdbe344f38c72f770718e3f68007d8e080352ad369",
+    "oteryn:quest.behemoth_quest": "f839d7f09ce1c0e9b433b23b84a49ac862e56bdb44d563e4c2ba6d0fdb35122f",
+    "oteryn:quest.berserk_potion_quest": "f3651d645b363d299c3e82af7ec094840d41b6659d5a7ef7eb52ee8a6776ca68",
+    "oteryn:quest.berserker_treasure_quest": "86ff447604f9126eb33c18d164ae9952484bc195dd4c3cf4f0f4e7d3c9ea8945",
+    "oteryn:quest.between_the_lines_quest": "ee44ef5e30a66689235eabdcbf589d7d7b8bbbde29fea27155690dc2ae9d6f59",
+    "oteryn:quest.bigfoot_s_burden_quest": "e5e575e209501350714f9ed9bb792288235a73507e4790e8984c55170120c440",
+    "oteryn:quest.black_knight_quest": "140f33fda96822f93097d436fc513d8ca2ec9f3275633d8aa3b577e708542ca4",
+    "oteryn:quest.blood_brothers_quest": "42e629707fd2d7269d21d67ec64b1e66bf7dc499b96a93e6cfbbfc2f30300815",
+    "oteryn:quest.bloody_tusks_quest": "383a3431cc1955eb7491aaafc1f06c54175f83123d116152860feed419d82b76",
+    "oteryn:quest.bored_mini_world_change": "95cf8997c76fec76d229f757401ff7cab28db5590d42c4418137b0cb14b4c56f",
+    "oteryn:quest.brotherhood_outfits_quest": "45ad10bda5b590c8e0a7d4efbc34a8155c72574d18dda5b0e7602a29eac86d54",
+    "oteryn:quest.cave_explorer_outfits_quest": "27643057866b17ead684b40fd5f0712393b1b16ef242689f177866903e4fdf2a",
+    "oteryn:quest.chayenne_realm": "5e9204998735547fb821bf756ef667b29b3ae2f8e7c69a703fcb5f34ad44ee20",
+    "oteryn:quest.children_of_the_revolution_quest": "26d2c4d54c590ab6bf8131dec2d2716da5aebf27ed8334b3b5396788a0fa00b2",
+    "oteryn:quest.chyllfroest_mini_world_change": "80dbc38f1d3697e39ef984a473eea7d5f506b8106856b577b2dbee30ddb85362",
+    "oteryn:quest.citizen_outfits_quest_on_rook": "5e448be46cb758dc0bad1f66fb28ceaf29fec9364c3a3d861984efc727d7c5b2",
+    "oteryn:quest.cradle_of_monsters": "67292dc28b855c904f86d82edee679c2626fe19285e6c1dbad30070518489d43",
+    "oteryn:quest.crystal_warlord_outfits_quest": "f05fcffc6519c2694b751d9429b6777cdb7d2c0bb846938e96eecc3a72fc0308",
+    "oteryn:quest.cults_of_tibia_quest": "8d7b75b2888729756be0b91ac5f22b28e4a32dae67f9b0fbb9268e63f6abb2ad",
+    "oteryn:quest.dangerous_depths_quest": "4615b692ca7674d29edeea04958675cf472be5865a28c50ea2476a65e9a15de1",
+    "oteryn:quest.dark_trails_quest": "4adbadb60e3bc1b4cd2e8f93a343901d874be2484fa56f75d7b9647bc4bad928",
+    "oteryn:quest.dawnport_quest": "0868e9124f1f8afb57146a45525c3ad8f4b81995fc3bffaba8c7ffe4630d5540",
+    "oteryn:quest.dead_archer_quest": "c05d3c24091391f9bf669db2add6161cf37eb4f8aa259c6a911e456c43414cca",
+    "oteryn:quest.decaying_defender_outfits_quest": "8cb3c463640b1ec7ac8be00d26753459fb6c52483e0f43d242b44a6ef38988f4",
+    "oteryn:quest.deeper_fibula_quest": "65cadbe07ac52a75fb329d2779c2204d211bd3255f1b48323ad5c7206b532c46",
+    "oteryn:quest.deeplings_worldchange": "41475c8c4357888e79ce761eda3cad40de0cff67ffa948f73fde2680e4d0eeb9",
+    "oteryn:quest.demon_helmet_quest": "6c0b912d0aaf61d44179e6889b02c38e40fdeb90f255018f3598b3ee922fe72f",
+    "oteryn:quest.demon_oak": "b16b5e6adfe64744c565a34df8db6f18f56337b6e6b4fdd2fa18bcc22e417055",
+    "oteryn:quest.demon_outfits_quest": "a261e48d2299ebcf6a89224cab8f42f923589df4234e723b9e7ddc3f2eba691a",
+    "oteryn:quest.desert_dungeon_quest": "3eba96d6fc97711fdb1eb7b0c9b15bd2f88afff83ca4d6bd72bee74773482b80",
+    "oteryn:quest.devil_helmet_quest": "909f3041ad6c00213841a558f79d0f75320ca336a50bc33c23ff24a26f99ea3a",
+    "oteryn:quest.draconia_quest": "c14ed9215c408474ab7db2a257f0a7f0d8ba50f694b377f3ce6b7df689bc91c6",
+    "oteryn:quest.dragon_corpse_quest": "e9592d4bf7429bc2287433f93841cb3d6c46070ab36e50b1bca0e074a64f7c3c",
+    "oteryn:quest.dragon_tower_quest": "69d45fa70e6e843e8f3754061f370cff1aea7e2cb3dcb4aa9bd5e657a9caeb97",
+    "oteryn:quest.dream_warden_outfits_quest": "b06ffdf45779026410867b7de674c1de36903dc46574626ff4f70953d52cb716",
+    "oteryn:quest.dream_warrior_outfits_quest": "e480af2591e0454f68befb697fb3b56c6561f207e4963506e76db2fc4333305f",
+    "oteryn:quest.dreamer_s_challenge_quest": "e3e9421f88bac6cd41d5279c9edc57440999ecc6015bfd2c0610e7971633295b",
+    "oteryn:quest.druid_outfits_quest_on_rook": "4ec12ed671738eeda7e606c20a452fa67c5fb8dd2da130f88823b219120ed075",
+    "oteryn:quest.edron_goblin_quest": "33212022da140d9718e8cd379784841dec1c39f13039b3e04bf4bd48f9367b2e",
+    "oteryn:quest.elemental_spheres_quest": "d426516916203fc80884d3dad1a2c2868de6ea7cd9644ef308a2e74d99d817e9",
+    "oteryn:quest.elementalist_outfits_quest": "bb8ffa0879bfd7900f08d98d3d9c62edc78f14d1877a9af1e44976b5049c1423",
+    "oteryn:quest.emperor_s_cookies_quest": "7871d62d368185bdc43906fc65891c6454b2bc99bac5807955d3b9c743f3e6e3",
+    "oteryn:quest.factions": "b1f4d4ebb39a9cdc68f7f415bb0d9fd19b2116af8c37b6b6e3bc2904a5011f33",
+    "oteryn:quest.falconer_outfits_quest": "7f45cd1841b83b913e01b5d2641f023df3bb230e5cb505019af26d97ba1e557e",
+    "oteryn:quest.fanfare_quest": "58f81e7165374a40e5ff5e9fff7e91238b8f4b512ae7e761521fc143810481f6",
+    "oteryn:quest.feaster_of_souls_quest": "a504921d1c831d58f46a6998d74419498035206818397acda919111226312f4b",
+    "oteryn:quest.feral_trappers_quest": "ddf69e20855d6d65693bf31b045b37ff472338db6ceab473f3f947c60e4dcd17",
+    "oteryn:quest.ferumbras_ascension_quest": "6676021a5ec1e1617325b74a6f49bfdb92ea664cafedf0654b0aab90660f6f48",
+    "oteryn:quest.festive_outfits_quest": "1bac36c39ec8c2b08eb495d54cda4a495f7f23427991761a5f672000f64e1072",
+    "oteryn:quest.fiend_slayer_outfits_quest": "f7c5ca18c8beea5cbb2509f1ebc473e2cfaf4afcbbd609d19e9202266013d407",
+    "oteryn:quest.fire_axe_quest": "9aadf16528e20a8769b90d7163d01761f1ca7ee7fd8333cf75f7e18adedd62a9",
+    "oteryn:quest.fire_fighter_outfits_quest": "ae1eaba3abf03327f80e2202b573522d7fac5287a9c12881d56476b1760abbf6",
+    "oteryn:quest.fishing_box_quest": "924d2af60e55ecca62b568dcd639f1e1570e5161b5c34c554d548ada9b1c7ee8",
+    "oteryn:quest.forgotten_knowledge_quest": "0fd606c1ce20ce68758f6960873a4aa17cfe2777c763934fecc16f6d9b48433f",
+    "oteryn:quest.formal_dress_outfits_quest": "a4fb1e595f68927e1e13ef774aa80d28657f5c55180563fa65d2dcd3eea096fb",
+    "oteryn:quest.formogar_mine_hoist": "68d626263f2d0e5fdc4eade0e556241516e10c879cf9be3c133b889be6b2c30e",
+    "oteryn:quest.friends_and_traders": "d1031bc919c57007f24b6095b6172b0b1383df842348c9f7b83c227c31ce10be",
+    "oteryn:quest.frost_dragon_quest": "a53a486d026980f587aa15986dc5b39d6a09130089a3e231f89a869895659e7f",
+    "oteryn:quest.fury_gates_mini_world_change": "e01e5bb05ecb571c8a115162a85e7c03b844bb239a2f33e369489a0316742ff0",
+    "oteryn:quest.geomancer_quest": "3a17dbc707aeeadd4a8ebdcecfb01d144dd28b21449bf42d15e59243712ec246",
+    "oteryn:quest.ghoul_room_quest": "e234f996bc2d4f642514c725f87f4e23079aa82ba219e417d96ac5a5eec2f996",
+    "oteryn:quest.giant_smithhammer_quest": "47630768e2eb4820efcc15c8a88ccf8b2f05984fdd014ebe985e29ea720c00c6",
+    "oteryn:quest.glooth_engineer_outfits_quest": "3479a6f5d60083a4bd847e948d054bc08c9aee1aa5195b013b1f85c56d66bbf3",
+    "oteryn:quest.goblin_merchant_quest": "34d8064d0a479df29fc871bed16bda4870bf949ff2ba58baac7fd1ea16048e90",
+    "oteryn:quest.goblin_temple_quest": "32baa801894407f1ae18246643202e561106a962a4dabbd9cf253efac06b7156",
+    "oteryn:quest.golden_outfits_quest": "5a45b0c3558be87ed0c4eb1d7638087467eb5a2d0b50e038910ef50723cdbdc7",
+    "oteryn:quest.grave_danger_quest": "6aac8b9e56ee207b35de3c18552f59f4017ecf468b41a2866321ed2faa8311a6",
+    "oteryn:quest.grimvale_mini_world_change": "a34a5b695e8a2e8ae7943dd07a251f32374f86ffde3b1b3df61d9aab9822c7a5",
+    "oteryn:quest.grimvale_quest": "738f39c58a5d1d584b1004631469e24d576e6c8ef1e45e5e6f9c3c392da207e0",
+    "oteryn:quest.hand_of_the_inquisition_outfits_quest": "c6cf129e02cec5d5e6f04d3f0bee9682e2e614f484b250f493d54233d1970d21",
+    "oteryn:quest.heart_of_destruction_quest": "b90094e54ae916b692d11b23638f3495e9b785085e04b14066c1f9dc39111c82",
+    "oteryn:quest.hero_of_rathleton_quest": "02be1b9b1527f2de5e0b6271b08111ad849666f99b8313ccc31b0a6bd5d3c494",
+    "oteryn:quest.hidden_threats_quest": "180beccf5f522cb9f5bf105c2781752bd040cffdc9446dd28875f81a8adf269e",
+    "oteryn:quest.horse_station_world_change": "45732c98bd3a784f0d22ff92b435e231f4e44099a716a4768bd83f9edb904e2a",
+    "oteryn:quest.hot_cuisine_quest": "5bd0a919093bb3c0914bc29f7adc75ec8893e25d7ff38e2a1b74c8336ea8f655",
+    "oteryn:quest.hunter_outfits_quest": "0950260f8e59ae146de5fcec4c45c1aae53eb21da45ccb274d9ac0acf9d29b38",
+    "oteryn:quest.hunting_for_tokens": "8008ceafeeaafb48126d32f39499763acf4e4394d867e3802a3544fa323006e3",
+    "oteryn:quest.hydra_egg_quest": "a92dff7bbef1cf62b9e58e5a9809f22ef8b4d3a6eaaf4e28e1e5885589907ef5",
+    "oteryn:quest.illuminator_outfit_quest": "5047c5423b41440966e149ab3fa6248f0dd5b2c648ce6c6d68a9bb43da507d9f",
+    "oteryn:quest.illuminator_outfits_quest": "11cb6bc715868fe4fe23f16e0faed2270197758a40c0c1812c3f5e597344086e",
+    "oteryn:quest.in_service_of_yalahar_quest": "3339a906c7950b179423d28a0faf37548058a4a98669f051744bf96d834797de",
+    "oteryn:quest.inukaya_quest": "777cb5982983f04fb8b201562bdc50ba57a705341b547d0b89068ae564d23c25",
+    "oteryn:quest.iron_helmet_quest": "b4ad01bde8d3d990c1cdf6a4bae035044d8b30f645889691ee938679e857fb4d",
+    "oteryn:quest.katana_quest": "e1744e001e6cda6be6e35bf14dd9761568f13e921d6bb6fb42f562331b7f551c",
+    "oteryn:quest.killing_in_the_name_of_quest": "53b038179b8989eb91bcedf867d5f47d7017d9dc098ad5afd8c5495410d71bfe",
+    "oteryn:quest.kilmaresh_quest": "1bd44bfae4e41248d2147bb81bae171470ac157d3785b091c2b652954d9225ff",
+    "oteryn:quest.koshei_the_deathless_quest": "0b1f5ef1c9baffa6d16522845403ed7f56da49169d1a0bc809a48e1d4a6c233b",
+    "oteryn:quest.krailos_quest": "7997f3bfc11f0af61405015cdd2eaaba08248c4e642947c0c3049d84a2788354",
+    "oteryn:quest.life_ring_quest": "531f68cba0d3e7c276595e71988a1cbc175477299a7460c284555aaa5da5a591",
+    "oteryn:quest.lion_trophy_quest": "89aba91a8c7e52b4e61e5285f10f1ba4f275c22e102f6ec440af9e81ac0c4c50",
+    "oteryn:quest.lions_rock": "609b7ff5e7f5752c2937e158baee69973fb90af10c12caa3b9d5400e8307038f",
+    "oteryn:quest.liquid_black_quest": "21e6b1bede8064e4f5a54657bf827cf548b61f735f9031c09738171af0fa289e",
+    "oteryn:quest.longsword_quest": "8149d79038a11fb7a43b504ae5cfca4c18ffe470dabbae352ff33e16a0e5ae04",
+    "oteryn:quest.machinery_of_war_quest": "1c92802866566986de5f11d437505895b092d2bb899eab0de433c1241113a3e9",
+    "oteryn:quest.mad_mage_room_quest": "17a99aef863a5553268e7e43e011fa10331df07716a24b1466e82dff35c29175",
+    "oteryn:quest.makeshift_warrior_outfits_quest": "d9313452d37c517385742b1f13f29165491654f270d6634f5fca1d65db4ea1b6",
+    "oteryn:quest.marlin_trophy_quest": "720dce07de0ffa2aa908d0b082a211c9d92f715691d02542464093887e1fdc1b",
+    "oteryn:quest.medusa_shield_quest": "358fa202e96ff1adcb987a872aa9a733f7fb5179af82db1b5c939f66c91ee3fb",
+    "oteryn:quest.minotaur_hell_quest": "98fc73796d11e878495684745133972152b7cc30d7e503772e9420196c4dc9b5",
+    "oteryn:quest.newhaven_legion_helmet_quest": "a68612c2c26633f3ba5647094c135236383269b90a3fed883ce8b4ed163ead6a",
+    "oteryn:quest.newhaven_quest": "eb87bdf434870abdb96dcab8e127e880b9ff37480a94e7d6033937bc3459239c",
+    "oteryn:quest.nightmare_isles_mini_world_change": "9f3f1a9c52be43be40fe38a913ca361967c686b47b4aa87346187e9543ef068d",
+    "oteryn:quest.nightmare_outfits_quest": "7f00046716b4c3f6d65d35a7c720945c8d1db2eb687eb9daebc5cd89d5e38f1d",
+    "oteryn:quest.no_rest_for_the_wicked_quest": "4275782fde97a7eae3bd82fb229baaf9ef80999e7959c18bc1911da4b42a3a44",
+    "oteryn:quest.nobleman_outfits_quest": "0b2d28de59864cf40f1417192bfa35036dfb831b8f570ce87499e7ce9c09dc4e",
+    "oteryn:quest.obsidian_knife_quest": "f864f3f8eb204aa34e7857db4939b606708576b642708e3528b132abc9e01e37",
+    "oteryn:quest.opticording_sphere_quest": "4b8f03f35bbae5ed8937654f19db1703bf0ec9b076703de1539794256afa975c",
+    "oteryn:quest.oramond_quest": "0248b8f4fd29c549e9b02f3f1d2eb7624b40983202adc7a62aad6ab440c7f319",
+    "oteryn:quest.orc_shaman_quest": "c64cb928887bdd9782b6786d4c8ca7464d8b96235361dec80981c11bb1868cf5",
+    "oteryn:quest.oriental_outfits_quest": "b16bc8c984864cc178111054a4e03112e72699fe08bfc933e3c2dc8095df17b2",
+    "oteryn:quest.oriental_trader_mini_world_change": "44594e86434c8a9dac7cc1c2e53b380b5c12c60e6d16ea7a8b904a6d2ce8fcc6",
+    "oteryn:quest.ornamented_shield_quest": "dbf1d9beec381475d2f2e6e5c518623c1cbda1f76be2e5674e540a997c3bb9e1",
+    "oteryn:quest.outfit_and_addon_quests": "320e35e7e08534b8bb2078751fc092376f324b872c74c2c741859120662e70bd",
+    "oteryn:quest.overhunting_world_change": "7168d0d9c4ecc20e5afa5c15c9b069ca7ee283e4d2f2e345c52dbe1d967b2900",
+    "oteryn:quest.panpipe_quest": "1e57da4e295f28b7ba99525c9d7354067a28acc18076757d5baeebd31bf4118f",
+    "oteryn:quest.parchment_room_quest": "c2529e34e3e909f06b9b2450339f5c861742aba3b0e3b2c4e5cfd1f5932ff8d1",
+    "oteryn:quest.pick_quest": "d98fdf9bce7a48ffdc2becff8f5c5242d5a32cfff6db0d33c81ac5d4d5d60f52",
+    "oteryn:quest.pilgrimage_of_ashes": "24d72abaa5dc9cbfbb1ce0948b6df721e4af6170faf60eadfab5af9aa8033e24",
+    "oteryn:quest.poison_daggers_quest": "7511bb48dca5b1c1a48ea7ce84824f3da9b0c8853628be3f98c8499af4aaf0d6",
+    "oteryn:quest.poltergeist_outfits_quest": "9f23bd3eaa405c1b3b5145e0bb4447e32fe5cacdd5f2a28d4493f498ad8cd81f",
+    "oteryn:quest.power_bolts_quest": "e3ce37985830835c79205317b66fc3594e7d0ad3302a32460e3137c66994fb07",
+    "oteryn:quest.power_ring_quest": "13815a96e3499334288c513b325ab86fb2fadfc3e2dcf22780b265b814b2d4a6",
+    "oteryn:quest.present_quest": "2bb7a04419009754c86b932a17ebef64033cba4a8bd9073f200267bd30cf90b3",
+    "oteryn:quest.primal_ordeal_quest": "0b12269b3c62ecf6a722abaf374dc09c653494c6c387d9a3f37e25610b99cddf",
+    "oteryn:quest.rapier_quest": "52d8f7dc32178c1d7ad22490f51b45564f9dcef92abd9338de044ee064b5490d",
+    "oteryn:quest.rascoohan_outfits_quest": "14ccfa7f800fc0b5f0a4d6fdb30d66a072d216982faaf7ba5f5e10d4a49bd731",
+    "oteryn:quest.revenant_outfits_quest": "e50fa3422932de7dc08192512548356d8e3f44d749b8fd55a533cea464d1a2dc",
+    "oteryn:quest.rift_warrior_outfits_quest": "169d2625857be26fe14c7833aeb6b1e0f0730f96d759fb36f59c53ef68894849",
+    "oteryn:quest.roshamuul_quest": "85447c326190c04c3d6bc141610c9a6c5f4395613f5e68e71dd1bdce5590d2c5",
+    "oteryn:quest.rotten_blood_quest": "d9ef08bde4050f384763d4caaa40d54dc05a37aafd37e2dbb1cd4176b5ddfc40",
+    "oteryn:quest.rottin_wood_and_the_married_men_quest": "6451451c59623a557d222c10d5e6f4ef5e4c8bf78b0b5c6aecff708a292ac692",
+    "oteryn:quest.royal_costume_outfits_quest": "9fa9dcf70228e603083108ead90c75e4c439681a1cd224f63a74c2fdb5ae63f9",
+    "oteryn:quest.sam_s_old_backpack_quest": "0328e5746e295fdc7aaad946463d835fabfa5d76b8a0f88cadc47c9440527b4c",
+    "oteryn:quest.sanctuary_of_the_lizard_god": "e652f17180c2fb5b97e6af775df10ba1bee4a99638bbd631f87a2a4a06e67c20",
+    "oteryn:quest.scale_armor_quest": "ebf79ea35be22944fc1487e6fcfd350947a7a7f3a0b9cfc788ac51b2ac3f3bcb",
+    "oteryn:quest.sea_of_light_quest": "dd6fca31282805cbe1e050fba9dff95af7c5b43f6fed2903bd68578de0a7832e",
+    "oteryn:quest.secret_service_quest": "4975378e83d6e5989069711e5d2b3e204bf41203aba8f2e1aa2c00aa5a71db45",
+    "oteryn:quest.serpentine_tower_quest": "dcdacb337333c41cf66bf904bf2324490d6791ff1b8153772080e94d64193a88",
+    "oteryn:quest.shadows_of_yalahar_quest": "7703c3c780af5cedc243d5f7af2f0d591780fe41a58922fa5bed74dcb3220c3b",
+    "oteryn:quest.shaman_treasure_quest": "f88f9bdecc4a31d9caaffaf8fd53922c69802fa13eb0661b7a8607d6634c1949",
+    "oteryn:quest.short_sword_quest": "731ea936a82b6a551e96d34c358f622c25c61fd2d8a11304274fcd9fe69436d1",
+    "oteryn:quest.silver_amulet_quest": "8796cb50161ac39302b409b66feb52c8263379b206aa78eef02bfe8efe193a89",
+    "oteryn:quest.silver_brooch_quest": "38e8261bca944a68df046bee0c94adb80a9ea9958bf13d6bcd1f9153f1f9a584",
+    "oteryn:quest.sinatuki_quest": "01e70fedc50426b2830b453c71a2e8d4cbb5daccfef34878b2af202c48d19259",
+    "oteryn:quest.skeleton_decoration_quest": "6cdcb7d3d7333790f944b1be8f25ffb6c44555d26e5a9b9d57c15dc25f96e633",
+    "oteryn:quest.skull_of_ratha": "06a45771235b27fb1c21a17734bb608719eb48be28ab15537ee87c32a8ff136b",
+    "oteryn:quest.small_health_potion": "951548bdc1684c17f66d95fe926d94b9bb3ba3705e5872e3fc64b1b50d8accd8",
+    "oteryn:quest.soil_guardian_outfits_quest": "2fe2098a031f0e97446efca3819a83fc312e5a503f7616c058fbaa542b13db7c",
+    "oteryn:quest.soul_war_quest": "e43b1e4c511e665edd8768fb498a454d0716f88038ac5f11834d6015a6c532b8",
+    "oteryn:quest.spike_task": "87679482eaa088139ee9301e1524c3c2b11a8bed7d02104ef41b160e35e52e4e",
+    "oteryn:quest.spirithunters_quest": "9c1eb19288aa1ce4cfe91ae11bbc456474f3bc5b6ef443803f084853c323a72c",
+    "oteryn:quest.stampede_mini_world_change": "43f707f3640dad50c0b0229be06c3b4b8bfcaf25bcda67817a4218a4aeb9951f",
+    "oteryn:quest.steal_from_thieves_quest": "de7498cbf1250499d7a21f988f40c05ea6253759cc3aba27adfec181d95de2c7",
+    "oteryn:quest.stealth_ring_quest": "ad90de3a74b552db92b402ff37edea613d0a7e1cfb1f0be313f85fda65310278",
+    "oteryn:quest.steamship_world_change": "b80050b87e129691e101b2dd0dbf17386165ac3b6eb50fc06d4738e22a00a618",
+    "oteryn:quest.steel_helmet_quest": "b139d4f5e6f64808507fd90ccd5938d339579f8a3480343735f44b909669d617",
+    "oteryn:quest.strong_potions_quest": "d557a2d16530e18cf67c866f8ff0d4ce7082c5717c48093652dcac9800964971",
+    "oteryn:quest.swamp_fever_world_change": "d1c712793daee174e7505d81c4c01130caceb566a0a62480dc2e90473b1d0526",
+    "oteryn:quest.targuna_quest": "bb4bfd88fb1ad92a26df87f886e7ebab0a182f949847a86f0a1a92a8fe5a9b0a",
+    "oteryn:quest.thais_lighthouse_quest": "66b9bd4de022d57895d321b726a963ec8c05ea7f7ecf14430fd604dd97b655cc",
+    "oteryn:quest.thawing_mini_world_change": "2d81c3308ab30702681018afbc2d56f9226dd7e98e3f1d17a6bc73eb3bf38a66",
+    "oteryn:quest.the_ancient_tombs_quest": "529e00a5a734c538ca0976b8727221da4b0facc24cd0447f33b8e102e12b33f4",
+    "oteryn:quest.the_annihilator_quest": "9a8f79a9b731282bd626c56187fc495eedbec5e7cbf4d7ed9ab7ea2c7118b3c9",
+    "oteryn:quest.the_ape_city_quest": "6cf501aac04a2a8c6a24aea02a0352edb1149677838207f6242256d798f79a88",
+    "oteryn:quest.the_beginning_quest": "af2d08880b343c6201e5d235b2942988923ba400a724b8f67fa5770e27330aca",
+    "oteryn:quest.the_cursed_crystal": "ba6dc13e82e6d48583fe8d7ae17819a85ce6768ca369c768c2b2e983bbceb1bf",
+    "oteryn:quest.the_djinn_war_efreet_faction": "4b1007526051155f28c6295e29c4939ee49710125edd7cd89ec0b936afc134dc",
+    "oteryn:quest.the_djinn_war_marid_faction": "264b7a47d499380bd9ae9f3e6bcced7a620dae5b3bfc384b348b85c4f0c9dae3",
+    "oteryn:quest.the_dream_courts_quest": "7b52ca05a2b2c2bbbc6883444599b04ee8d6188ea0d930cfd8257a37488cb0a4",
+    "oteryn:quest.the_explorer_society_quest": "5988bdb5f1c2b58ddc417ea0bc8c148e1f3331d9d783e8381e7b5282875d6bfa",
+    "oteryn:quest.the_first_dragon_quest": "1a7fe29516832245d96b8bb48ba02d6b6e34cb8dc2a77fd89a8a7e806dfe3a2f",
+    "oteryn:quest.the_gravedigger_of_drefia_quest": "eb8653dc5ceaa4c231e0c8e26fc9e579e0976ae2efd13d89f60f6dda2de32166",
+    "oteryn:quest.the_hidden_city_of_beregar_quest": "bbc6acb0b446ac89fc6c0b574e680a98f9bffc7683f86a2ddc1fe9f6670f68b9",
+    "oteryn:quest.the_hunt_for_the_sea_serpent": "527283c2ec1c503f4706867b4e497d79b770adb97a7ce5ab14b97c31836f32a6",
+    "oteryn:quest.the_ice_islands_quest": "0dcd1962f80385cc776ab96a709e2562d8e8c62da3a1a75fbb1f13a78292a97f",
+    "oteryn:quest.the_inquisition_quest": "2e2e39004c53e694ebfc9245934d27ad963dc6b0393ec3f3030cee99fc5dd0e2",
+    "oteryn:quest.the_isle_of_evil_quest": "fb7ce2e2810cdd9268717fadaf1faa636f81832cc4abb2689a695b45f9d7f577",
+    "oteryn:quest.the_mages_tower_world_change": "85e54aae59b192ac5ae81e87caa3b7695fdf2996abe089fceee76bb6bcae144d",
+    "oteryn:quest.the_mummys_curse_world_change": "ea10faa36413e363936ee88edcace765eccd28467b3666ecb705d8a364e78f3d",
+    "oteryn:quest.the_new_frontier_quest": "4dc248bb511a3cc56a80e8cefb224675e22074364318767908105ea8c5bf2113",
+    "oteryn:quest.the_order_of_the_lion_quest": "f576e6fdffb4793e97b089491c97e18e7b9adaeb485a45d1853388a695b62421",
+    "oteryn:quest.the_order_of_the_stag_quest": "2b51a8237bf78904c8eec1990b50b929d9a36a721c9f718c972c6bb122ce63c6",
+    "oteryn:quest.the_outlaw_camp_quest": "af6f05134e0af21a1de85c8f1ba0035f43c0fa792a134605916e8f133b704c48",
+    "oteryn:quest.the_paradox_tower_quest": "a524e24f506cc464c1dc02c0aea0d302b6dc45f7b79e1e7095cfe698f880b1fe",
+    "oteryn:quest.the_pits_of_inferno_quest": "02ca59263bf16f7b257d746afc1119bc5dad492a74633e58ee3d7295e43e834b",
+    "oteryn:quest.the_postman_missions_quest": "4f570b427fb6048760914e78acd84b529004b5b73b626661764839bf6a894147",
+    "oteryn:quest.the_queen_of_the_banshees_quest": "8b081e807afd45aca047a5197d7707863fb83450ab69845f7d9c8fda4f3d7653",
+    "oteryn:quest.the_rookie_guard_quest": "acfae005534a2bafdfad28c602951d689894477c6b292a4303039ea98ac2316a",
+    "oteryn:quest.the_roost_of_the_graveborn_quest": "2bbbf201e4890088b174b06152c46a1e8cea08a396daaf5325934d40c6b4ad64",
+    "oteryn:quest.the_scatterbrained_sorcerer_quest": "d6c43d9f51bb85e828cb67a564bb10769f00b7b8aa82b5c520a165d38a2c2408",
+    "oteryn:quest.the_secret_library_quest": "929e663ec0f4da39558416d982f92843d6e36c87ba3a75b6f0d6d18dd9bb2628",
+    "oteryn:quest.the_shattered_isles_quest": "09401ad5e3ed074874c902180bec4785f22e822a180ee2e4b64b292863e1ed46",
+    "oteryn:quest.the_spirit_will_get_you_quest": "83988908b3dab30c10435d00c49c8f9661d28baef91a714ea7f2305e0484bc53",
+    "oteryn:quest.the_tainted_soul": "26a2409e2f9cb93c0afaa6dfd5ee32188b51ca70efc63ded0a1578768a59f668",
+    "oteryn:quest.the_thieves_guild_quest": "06f796325d3f13371276b7e1585d023abb660f6187800d2cf5cb279972d42dab",
+    "oteryn:quest.the_travelling_trader_quest": "57ca55302d370fef58e89ff3047a026535b82fd002074cb1ceeb77be23b4a7d7",
+    "oteryn:quest.the_ultimate_challenges": "94a4886a2625aa62c956eab6f65e8754cc220fbdb3502ea3b79395839ad044ab",
+    "oteryn:quest.the_way_of_the_monk_quest": "ec6e893940d2c26738d677030c933d221b2cc319192a074cac2be910c7a409f2",
+    "oteryn:quest.the_white_raven_monastery_quest": "530ca2b6ddab566380517a8c9c054c95022ad32b7c3238923b7edbb74ba2551e",
+    "oteryn:quest.their_masters_voice": "1ca5fdc6c7dfe583a588361263cbc5378a0e590afa3addd83828aed0efacce25",
+    "oteryn:quest.thornfire_world_change": "5c8b9cf3cda93609206013d188eecb83a313a397ef1cea8747cae1a9476c95ad",
+    "oteryn:quest.threatened_dreams_quest": "54d37e5c5335f28e3bf73615dc98e3872e3682551d0a3c60d7598a6a74828469",
+    "oteryn:quest.tibia_tales": "971e4a244f3c2f05492b2678c90146a5fdba93775e94f93acaeaed1a19a5140c",
+    "oteryn:quest.time_ring_quest": "939808c95efacce559291ba5167066b71e8bad812167a0c72dbb1bb5afc1efdb",
+    "oteryn:quest.tinder_box_quest_chyllfroest": "0efa820a9820263f0bb57e62021cd78cc319ec3558f59bc2144020d4d19e5642",
+    "oteryn:quest.to_blind_the_enemy_quest": "45543ff17842de59d9d4280e15de82b4935f349f524b5186ebcd13885012be2d",
+    "oteryn:quest.too_hot_to_handle_quest": "beb7d72e14cf10e1a01312e604c2df1aa14d1c4cb78fd1be2de70c353125aa07",
+    "oteryn:quest.tower_defence_quest": "af071f6f4564208f4e413600ff484fc1cd3fa72ef7c52c7d53300207c103a021",
+    "oteryn:quest.treasure_hunt_quest": "e0b423fa6535bab62c228eaf3ad728834d0b459ea6349dae2368b640bb1a4e56",
+    "oteryn:quest.treasure_island_quest": "bdfb832c7bfa99c461e2bf52734708634ce7aa9cafbdd70e18a3f792a7a10298",
+    "oteryn:quest.triangle_tower_quest": "1dad2777ce08e798a425b4a2ab6c4fd0989d41278e8dbe3f42d500a776e286cc",
+    "oteryn:quest.troll_cave_quest": "33f541a24a65b869cfe6a155ae5933668b7259f0d013a8c7ce703bf45cbf4ab7",
+    "oteryn:quest.troll_sabotage_quest": "b3b9e639eb48420cd167e07d4a8501dc0e2f91e189187b343a22cbacee7c838f",
+    "oteryn:quest.tutorial": "15394313020f0c594eb375440d8af27d5ab5f240f4e6539967877d172f5c12fc",
+    "oteryn:quest.twenty_miles_beneath_the_sea_quest": "8629fe7907503ea42cb04e1a54e321d2fa20672e28b4158bb30404d60c4bebe1",
+    "oteryn:quest.unnatural_selection_quest": "82a7ebbaab40776e062b7103d27f61aeec9fa67732a20817c2a8af2b9a58d6f3",
+    "oteryn:quest.vampire_shield_quest": "70d82cede8241db587413f6dfb19621c5768a67c1fcd719d2bd026103c0323c3",
+    "oteryn:quest.warmaster_outfits_quest": "df5a41115444b433c8cd493aed991f13aa0e881ab8cec8baf5f7f2d891961b89",
+    "oteryn:quest.waterfall_quest": "c3fec752f932f1df3ce85e41b57ac7727ad70a405f88da28d290ebc105a09988",
+    "oteryn:quest.wayfarer_outfits_quest": "c1fc099ec495b755c3f076d3b3d3ce852cf5816bc16ca5603208f98a23a77874",
+    "oteryn:quest.wedding_ring_quest": "909c13cde5cb514443d5029e6028478951bbaa79717d68a776ead6c58fdf2d40",
+    "oteryn:quest.what_a_foolish_quest": "af76c18efedc739b1be14b5bc4ae161a2c7281214e6c612ee94d8d6bed56cfb7",
+    "oteryn:quest.winterlight_solstice": "d04e31873ad8002cab55a0b78b0b9255f4def7370a8b1514ae89b2f0bdf64768",
+    "oteryn:quest.within_the_tides_quest": "b38dd473d25b78b4e627666a684338d83cea9818769a77f54863f7fd1cb7b953",
+    "oteryn:quest.wrath_of_the_emperor_quest": "231339a692d9e2466d1dae6983756a6716a236ae3b7f3789b5bf97c7da3fa4e0",
+    "oteryn:quest.yalaharian_outfits_quest": "362cbff4bcefa3434fedb46c1292d99d249c8293a0436f14d4da513f5872923e"
+  },
+  "changes": [
+    {
+      "canonical_key": "oteryn:quest.glooth_engineer_outfits_quest",
+      "quest": "Glooth Engineer Outfits Quest",
+      "index": 0,
+      "path": "/stages/0/targets",
+      "old_value": [
+        "Rathleton engineering office"
+      ],
+      "new_value": [
+        "Ezebeth"
+      ],
+      "reason": "Replace the symbolic engineering-office contact with the explicit source NPC Ezebeth. Later chosen trial simplifications and graph structure stay unchanged.",
+      "evidence_fact_indexes": [
+        8
+      ]
+    },
+    {
+      "canonical_key": "oteryn:quest.glooth_engineer_outfits_quest",
+      "quest": "Glooth Engineer Outfits Quest",
+      "index": 1,
+      "path": "/stages/0/objective",
+      "old_value": "Report the completion of Dark Trails to the Rathleton engineering office.",
+      "new_value": "Report the completion of Dark Trails to Ezebeth for the base Glooth Engineer outfit.",
+      "reason": "Replace the symbolic engineering-office contact with the explicit source NPC Ezebeth. Later chosen trial simplifications and graph structure stay unchanged.",
+      "evidence_fact_indexes": [
+        8
+      ]
+    },
+    {
+      "canonical_key": "oteryn:quest.illuminator_outfits_quest",
+      "quest": "Illuminator Outfits Quest",
+      "index": 0,
+      "evidence_fact_indexes": [
+        18
+      ],
+      "new_value": [
+        "Between the Lines Quest"
+      ],
+      "old_value": [
+        "Illuminator Outfit Quest"
+      ],
+      "path": "/requirements/prerequisites",
+      "reason": "Source identifies Between the Lines as the base-outfit prerequisite; the current Illuminator Outfit Quest requirement is self-referential."
+    },
+    {
+      "canonical_key": "oteryn:quest.newhaven_legion_helmet_quest",
+      "quest": "Newhaven Legion Helmet Quest",
+      "index": 0,
+      "path": "/stages",
+      "old_value": [
+        {
+          "basis": "CHOSEN_OTERYN_APPROXIMATION",
+          "count": 1,
+          "key": "s1",
+          "kind": "talk",
+          "next": [
+            "s2"
+          ],
+          "objective": "Ask Gustavo the Guard and Viola how to reach the helmet-training route.",
+          "targets": [
+            "Gustavo, The Guard",
+            "Viola"
+          ]
+        },
+        {
+          "basis": "CHOSEN_OTERYN_APPROXIMATION",
+          "count": 1,
+          "key": "s2",
+          "kind": "explore",
+          "next": [
+            "s3"
+          ],
+          "objective": "Descend through the Newhaven training cave to the equipment room.",
+          "targets": [
+            "Newhaven Legion Helmet training cave"
+          ]
+        },
+        {
+          "basis": "CHOSEN_OTERYN_APPROXIMATION",
+          "count": 1,
+          "key": "s3",
+          "kind": "use",
+          "next": [
+            "s4"
+          ],
+          "objective": "Open the Legion Helmet equipment cache.",
+          "targets": [
+            "Newhaven Legion Helmet cache"
+          ]
+        },
+        {
+          "basis": "CHOSEN_OTERYN_APPROXIMATION",
+          "count": 1,
+          "key": "s4",
+          "kind": "complete",
+          "next": [],
+          "objective": "Record the completion of the chosen Newhaven Legion Helmet Quest programme and its selected reward intents.",
+          "targets": [
+            "Newhaven Legion Helmet Quest"
+          ]
+        }
+      ],
+      "new_value": [
+        {
+          "basis": "CHOSEN_OTERYN_APPROXIMATION",
+          "count": 1,
+          "key": "s1",
+          "kind": "talk",
+          "next": [
+            "s2"
+          ],
+          "objective": "Ask Gustavo the Guard and Viola how to reach the helmet-training route.",
+          "targets": [
+            "Gustavo, The Guard",
+            "Viola"
+          ]
+        },
+        {
+          "basis": "CHOSEN_OTERYN_APPROXIMATION",
+          "count": 1,
+          "key": "s2",
+          "kind": "explore",
+          "next": [
+            "s3"
+          ],
+          "objective": "Descend through the Newhaven training cave to the equipment room.",
+          "targets": [
+            "Newhaven Legion Helmet training cave"
+          ]
+        },
+        {
+          "basis": "CHOSEN_OTERYN_APPROXIMATION",
+          "count": 1,
+          "key": "s3",
+          "kind": "use",
+          "next": [
+            "s4"
+          ],
+          "objective": "Przeszukaj Dead Human na końcu jaskini, aby zdobyć Legion Helmet.",
+          "targets": [
+            "Dead Human / Corrupted Mines reward corpse"
+          ]
+        },
+        {
+          "basis": "CHOSEN_OTERYN_APPROXIMATION",
+          "count": 1,
+          "key": "s4",
+          "kind": "complete",
+          "next": [],
+          "objective": "Wejdź w pobliski Magic Forcefield, aby wrócić na początek jaskini.",
+          "targets": [
+            "Magic Forcefield"
+          ]
+        }
+      ],
+      "reason": "Źródłowym reward target jest Dead Human; nie wymyślony chest.",
+      "evidence_fact_indexes": [
+        8,
+        9
+      ],
+      "original_proposal_value": [
+        {
+          "basis": "CHOSEN_OTERYN_APPROXIMATION",
+          "count": 1,
+          "key": "s1",
+          "kind": "talk",
+          "next": [
+            "s2"
+          ],
+          "objective": "Ask Gustavo the Guard and Viola how to reach the helmet-training route.",
+          "targets": [
+            "Gustavo, The Guard",
+            "Viola"
+          ]
+        },
+        {
+          "basis": "CHOSEN_OTERYN_APPROXIMATION",
+          "count": 1,
+          "key": "s2",
+          "kind": "explore",
+          "next": [
+            "s3"
+          ],
+          "objective": "Descend through the Newhaven training cave to the equipment room.",
+          "targets": [
+            "Newhaven Legion Helmet training cave"
+          ]
+        },
+        {
+          "basis": "CHOSEN_OTERYN_APPROXIMATION",
+          "count": 1,
+          "key": "s3",
+          "kind": "use",
+          "next": [
+            "s4"
+          ],
+          "objective": "Użyj Dead Human na końcu jaskini, aby odebrać Legion Helmet w jednym wybranym grancie.",
+          "targets": [
+            "Dead Human / Corrupted Mines reward corpse"
+          ]
+        },
+        {
+          "basis": "CHOSEN_OTERYN_APPROXIMATION",
+          "count": 1,
+          "key": "s4",
+          "kind": "complete",
+          "next": [],
+          "objective": "Skorzystaj z pobliskiego Magic Forcefield i zapisz ukończenie bez drugiego grantu.",
+          "targets": [
+            "Magic Forcefield"
+          ]
+        }
+      ],
+      "display_wording_refined": true
+    },
+    {
+      "canonical_key": "oteryn:quest.newhaven_quest",
+      "quest": "Newhaven Quest",
+      "index": 0,
+      "path": "/stages/3/objective",
+      "old_value": "Recover the lost-wisdom book from the chosen cave route.",
+      "new_value": "Recover the Book of Wisdom from the chosen cave route.",
+      "reason": "The source names Viola's retrieval item Book of Wisdom; the authored cave route and tutor/Troll simplifications remain chosen.",
+      "evidence_fact_indexes": [
+        12
+      ]
+    },
+    {
+      "canonical_key": "oteryn:quest.newhaven_quest",
+      "quest": "Newhaven Quest",
+      "index": 1,
+      "path": "/stages/3/targets",
+      "old_value": [
+        "Newhaven lost-wisdom book"
+      ],
+      "new_value": [
+        "Book of Wisdom"
+      ],
+      "reason": "Use the named source book, without claiming a Native item identity.",
+      "evidence_fact_indexes": [
+        12
+      ]
+    },
+    {
+      "canonical_key": "oteryn:quest.scale_armor_quest",
+      "quest": "Scale Armor Quest",
+      "index": 0,
+      "path": "/stages",
+      "old_value": [
+        {
+          "basis": "CHOSEN_OTERYN_APPROXIMATION",
+          "count": 1,
+          "key": "s1",
+          "kind": "explore",
+          "next": [
+            "s2"
+          ],
+          "objective": "Przejdź trasą Rookgaard Scale Armor route.",
+          "targets": [
+            "Rookgaard Scale Armor route"
+          ]
+        },
+        {
+          "basis": "CHOSEN_OTERYN_APPROXIMATION",
+          "count": 1,
+          "key": "s2",
+          "kind": "explore",
+          "next": [
+            "s3"
+          ],
+          "objective": "Odszukaj Scale Armor treasure chest po przebyciu wskazanego obszaru.",
+          "targets": [
+            "Scale Armor treasure chest"
+          ]
+        },
+        {
+          "basis": "CHOSEN_OTERYN_APPROXIMATION",
+          "count": 1,
+          "key": "s3",
+          "kind": "complete",
+          "next": [],
+          "objective": "Otwórz Scale Armor treasure chest i zakończ osobisty claim bez ponownego wydania nagrody.",
+          "targets": [
+            "Scale Armor treasure chest"
+          ]
+        }
+      ],
+      "new_value": [
+        {
+          "basis": "CHOSEN_OTERYN_APPROXIMATION",
+          "count": 1,
+          "key": "s1",
+          "kind": "explore",
+          "next": [
+            "s2"
+          ],
+          "objective": "Przejdź do jaskini na zachód od wejścia Ancient Temple w Thais i otwórz wejście łopatą.",
+          "targets": [
+            "Ancient Temple western cave / Thais"
+          ]
+        },
+        {
+          "basis": "CHOSEN_OTERYN_APPROXIMATION",
+          "count": 1,
+          "key": "s2",
+          "kind": "explore",
+          "next": [
+            "s3"
+          ],
+          "objective": "Przejdź na północ i wschód do studni; użyj jej prawego dolnego rogu i odnajdź skrzynie.",
+          "targets": [
+            "Ancient Temple cave well / lower-right corner"
+          ]
+        },
+        {
+          "basis": "CHOSEN_OTERYN_APPROXIMATION",
+          "count": 1,
+          "key": "s3",
+          "kind": "complete",
+          "next": [],
+          "objective": "Otwórz Scale Armor treasure chest i zakończ osobisty claim bez ponownego wydania nagrody.",
+          "targets": [
+            "Scale Armor treasure chest"
+          ]
+        }
+      ],
+      "reason": "Przypięte źródło opisuje cave przy Ancient Temple, nie Rookgaard; infobox i donor identity pozostają osobne.",
+      "evidence_fact_indexes": [
+        6,
+        7,
+        9
+      ]
+    },
+    {
+      "canonical_key": "oteryn:quest.short_sword_quest",
+      "quest": "Short Sword Quest",
+      "index": 0,
+      "path": "/stages",
+      "old_value": [
+        {
+          "basis": "CHOSEN_OTERYN_APPROXIMATION",
+          "count": 1,
+          "key": "s1",
+          "kind": "explore",
+          "next": [
+            "s2"
+          ],
+          "objective": "Przejdź trasą Rookgaard Short Sword passage.",
+          "targets": [
+            "Rookgaard Short Sword passage"
+          ]
+        },
+        {
+          "basis": "CHOSEN_OTERYN_APPROXIMATION",
+          "count": 1,
+          "key": "s2",
+          "kind": "explore",
+          "next": [
+            "s3"
+          ],
+          "objective": "Odszukaj Short Sword treasure chest po przebyciu wskazanego obszaru.",
+          "targets": [
+            "Short Sword treasure chest"
+          ]
+        },
+        {
+          "basis": "CHOSEN_OTERYN_APPROXIMATION",
+          "count": 1,
+          "key": "s3",
+          "kind": "complete",
+          "next": [],
+          "objective": "Otwórz Short Sword treasure chest i zakończ osobisty claim bez ponownego wydania nagrody.",
+          "targets": [
+            "Short Sword treasure chest"
+          ]
+        }
+      ],
+      "new_value": [
+        {
+          "basis": "CHOSEN_OTERYN_APPROXIMATION",
+          "count": 1,
+          "key": "s1",
+          "kind": "explore",
+          "next": [
+            "s2"
+          ],
+          "objective": "Odszukaj skrzynię na pomoście na wschód od Rookgaard.",
+          "targets": [
+            "Rookgaard eastern dock chest"
+          ]
+        },
+        {
+          "basis": "CHOSEN_OTERYN_APPROXIMATION",
+          "count": 1,
+          "key": "s2",
+          "kind": "use",
+          "next": [
+            "s3"
+          ],
+          "objective": "Użyj skrzyni na pomoście i zabierz czarną książkę — notebook Amber.",
+          "targets": [
+            "Rookgaard dock chest / Amber notebook"
+          ]
+        },
+        {
+          "basis": "CHOSEN_OTERYN_APPROXIMATION",
+          "count": 1,
+          "key": "s3",
+          "kind": "complete",
+          "next": [],
+          "objective": "Oddaj notebook Amber w Resting Room pod Rookgaard Academy, aby otrzymać Short Sword.",
+          "targets": [
+            "Amber / Rookgaard Academy Resting Room"
+          ]
+        }
+      ],
+      "reason": "Skrzynia daje książkę, a Short Sword pochodzi z wymiany u Amber.",
+      "evidence_fact_indexes": [
+        10,
+        11
+      ],
+      "original_proposal_value": [
+        {
+          "basis": "CHOSEN_OTERYN_APPROXIMATION",
+          "count": 1,
+          "key": "s1",
+          "kind": "explore",
+          "next": [
+            "s2"
+          ],
+          "objective": "Odszukaj skrzynię na pomoście na wschód od Rookgaard.",
+          "targets": [
+            "Rookgaard eastern dock chest"
+          ]
+        },
+        {
+          "basis": "CHOSEN_OTERYN_APPROXIMATION",
+          "count": 1,
+          "key": "s2",
+          "kind": "use",
+          "next": [
+            "s3"
+          ],
+          "objective": "Użyj skrzyni na pomoście i zabierz czarną książkę — notebook Amber.",
+          "targets": [
+            "Rookgaard dock chest / Amber notebook"
+          ]
+        },
+        {
+          "basis": "CHOSEN_OTERYN_APPROXIMATION",
+          "count": 1,
+          "key": "s3",
+          "kind": "complete",
+          "next": [],
+          "objective": "Oddaj notebook Amber w Resting Room pod Rookgaard Academy, aby otrzymać Short Sword w ramach jednego wybranego grantu.",
+          "targets": [
+            "Amber / Rookgaard Academy Resting Room"
+          ]
+        }
+      ],
+      "display_wording_refined": true
+    },
+    {
+      "canonical_key": "oteryn:quest.short_sword_quest",
+      "quest": "Short Sword Quest",
+      "index": 1,
+      "path": "/summary",
+      "old_value": "Odszukaj Short Sword treasure chest i odbierz wybrany zestaw nagród Short Sword Quest.",
+      "new_value": "Zdobądź notebook ze skrzyni na pomoście Rookgaard i wymień go u Amber na Short Sword.",
+      "reason": "Przypięta metoda obejmuje wymianę książki, nie bezpośredni sword chest.",
+      "evidence_fact_indexes": [
+        11
+      ]
+    },
+    {
+      "canonical_key": "oteryn:quest.spirithunters_quest",
+      "quest": "Spirithunters Quest",
+      "index": 0,
+      "evidence_fact_indexes": [
+        54
+      ],
+      "new_value": [
+        "Research and Development Quest completed"
+      ],
+      "old_value": [
+        "Sea of Light Quest completed"
+      ],
+      "path": "/requirements/prerequisites",
+      "reason": "Pinned source Required Equipment names Research and Development; preserve its stage-specific role rather than substituting Sea of Light."
+    },
+    {
+      "canonical_key": "oteryn:quest.spirithunters_quest",
+      "quest": "Spirithunters Quest",
+      "index": 1,
+      "evidence_fact_indexes": [
+        54
+      ],
+      "new_value": "Po ukończeniu Research and Development dołącz do Spirithunters u Spectulusa.",
+      "old_value": "Przyjmij Research and Development od Spectulusa po Sea of Light.",
+      "path": "/stages/0/objective",
+      "reason": "Joining Spirithunters follows the prerequisite rather than starting the prerequisite itself. Stage key, targets, next, count and chosen basis stay unchanged."
+    },
+    {
+      "canonical_key": "oteryn:quest.steal_from_thieves_quest",
+      "quest": "Steal From Thieves Quest",
+      "index": 0,
+      "path": "/stages",
+      "old_value": [
+        {
+          "basis": "CHOSEN_OTERYN_APPROXIMATION",
+          "count": 1,
+          "key": "s1",
+          "kind": "explore",
+          "next": [
+            "s2"
+          ],
+          "objective": "Przejdź trasą Thieves hideout.",
+          "targets": [
+            "Thieves hideout"
+          ]
+        },
+        {
+          "basis": "CHOSEN_OTERYN_APPROXIMATION",
+          "count": 1,
+          "key": "s2",
+          "kind": "explore",
+          "next": [
+            "s3"
+          ],
+          "objective": "Odszukaj Thieves supplies chest po przebyciu wskazanego obszaru.",
+          "targets": [
+            "Thieves supplies chest"
+          ]
+        },
+        {
+          "basis": "CHOSEN_OTERYN_APPROXIMATION",
+          "count": 1,
+          "key": "s3",
+          "kind": "complete",
+          "next": [],
+          "objective": "Otwórz Thieves supplies chest i zakończ osobisty claim bez ponownego wydania nagrody.",
+          "targets": [
+            "Thieves supplies chest"
+          ]
+        }
+      ],
+      "new_value": [
+        {
+          "basis": "CHOSEN_OTERYN_APPROXIMATION",
+          "count": 1,
+          "key": "s1",
+          "kind": "explore",
+          "next": [
+            "s2"
+          ],
+          "objective": "Przejdź do oazy w Darama na północ od Ankrahmun.",
+          "targets": [
+            "Darama oasis north of Ankrahmun"
+          ]
+        },
+        {
+          "basis": "CHOSEN_OTERYN_APPROXIMATION",
+          "count": 1,
+          "key": "s2",
+          "kind": "use",
+          "next": [
+            "s3"
+          ],
+          "objective": "Otwórz box za palmą na południe od oazy i zabierz rzeczy Ahmeta.",
+          "targets": [
+            "Darama oasis box / Bag (Ahmet)"
+          ]
+        },
+        {
+          "basis": "CHOSEN_OTERYN_APPROXIMATION",
+          "count": 1,
+          "key": "s3",
+          "kind": "complete",
+          "next": [],
+          "objective": "Oddaj Ahmetowi jego rzeczy w Ankrahmun i odbierz nagrodę.",
+          "targets": [
+            "Ahmet / Ankrahmun"
+          ]
+        }
+      ],
+      "reason": "Bag collection jest pośrednią czynnością; nagrodę wydaje Ahmet po zwrocie jego rzeczy.",
+      "evidence_fact_indexes": [
+        5,
+        6,
+        7,
+        8
+      ],
+      "original_proposal_value": [
+        {
+          "basis": "CHOSEN_OTERYN_APPROXIMATION",
+          "count": 1,
+          "key": "s1",
+          "kind": "explore",
+          "next": [
+            "s2"
+          ],
+          "objective": "Przejdź do oazy w Darama na północ od Ankrahmun.",
+          "targets": [
+            "Darama oasis north of Ankrahmun"
+          ]
+        },
+        {
+          "basis": "CHOSEN_OTERYN_APPROXIMATION",
+          "count": 1,
+          "key": "s2",
+          "kind": "use",
+          "next": [
+            "s3"
+          ],
+          "objective": "Otwórz box za palmą na południe od oazy i zabierz Bag (Ahmet); capacity400oz pozostaje Source warunkiem do osobnego bindingu.",
+          "targets": [
+            "Darama oasis box / Bag (Ahmet)"
+          ]
+        },
+        {
+          "basis": "CHOSEN_OTERYN_APPROXIMATION",
+          "count": 1,
+          "key": "s3",
+          "kind": "complete",
+          "next": [],
+          "objective": "Oddaj Bag (Ahmet) Ahmetowi w Ankrahmun i zakończ wybrany pojedynczy grant nagrody.",
+          "targets": [
+            "Ahmet / Ankrahmun"
+          ]
+        }
+      ],
+      "display_wording_refined": true
+    },
+    {
+      "canonical_key": "oteryn:quest.steal_from_thieves_quest",
+      "quest": "Steal From Thieves Quest",
+      "index": 1,
+      "path": "/summary",
+      "old_value": "Odszukaj Thieves supplies chest i odbierz wybrany zestaw nagród Steal From Thieves Quest.",
+      "new_value": "Odzyskaj Bag (Ahmet) z boxu przy oazie Darama i zwróć go Ahmetowi w Ankrahmun.",
+      "reason": "Source hand-in kończy quest; samo otwarcie boxu nie jest końcowym payout.",
+      "evidence_fact_indexes": [
+        8
+      ]
+    },
+    {
+      "canonical_key": "oteryn:quest.steel_helmet_quest",
+      "quest": "Steel Helmet Quest",
+      "index": 0,
+      "path": "/source_notes/0",
+      "old_value": "Wiki dostawcy mają 47/56 gp różnicę; wybrano sam Helmet, nie wymyśloną sumęgotówki.",
+      "new_value": "Przypięte Fandom i BR wymieniają osobno56gp w drawers i47gp w innym pojemniku; oba źródła zgadzają się co do ilości. Wybrano sam Helmet, bez dodawania monet do autorskiej nagrody.",
+      "reason": "The existing note reports a provider quantity conflict that neither pinned witness supports;56 and47 belong to separate source carriers. The chosen Helmet-only reward is preserved.",
+      "evidence_fact_indexes": [
+        1,
+        2
+      ]
+    },
+    {
+      "canonical_key": "oteryn:quest.targuna_quest",
+      "quest": "Targuna Quest",
+      "index": 0,
+      "path": "/stages",
+      "old_value": [
+        {
+          "basis": "CHOSEN_OTERYN_APPROXIMATION",
+          "count": 1,
+          "key": "s1",
+          "kind": "talk",
+          "next": [
+            "s2"
+          ],
+          "objective": "Przyjmij wybraną ścieżkę Targuna od Camilli.",
+          "targets": [
+            "Camilla"
+          ]
+        },
+        {
+          "basis": "CHOSEN_OTERYN_APPROXIMATION",
+          "count": 1,
+          "key": "s2",
+          "kind": "explore",
+          "next": [
+            "s3"
+          ],
+          "objective": "Odszukaj Treasure w miejscu wskazanym przez Camillę.",
+          "targets": [
+            "Targuna lost treasure route"
+          ]
+        },
+        {
+          "basis": "CHOSEN_OTERYN_APPROXIMATION",
+          "count": 1,
+          "key": "s3",
+          "kind": "use",
+          "next": [
+            "s4"
+          ],
+          "objective": "Zgłoś Camilli ukończenie poszukiwania skarbu.",
+          "targets": [
+            "Targuna treasure chest"
+          ]
+        },
+        {
+          "basis": "CHOSEN_OTERYN_APPROXIMATION",
+          "count": 1,
+          "key": "s4",
+          "kind": "talk",
+          "next": [
+            "s5"
+          ],
+          "objective": "Przyjmij An Ancient Enemy od Emiliany.",
+          "targets": [
+            "Emiliana"
+          ]
+        },
+        {
+          "basis": "CHOSEN_OTERYN_APPROXIMATION",
+          "count": 1,
+          "key": "s5",
+          "kind": "kill",
+          "next": [
+            "s6"
+          ],
+          "objective": "Pokonaj Lizard Commander jako wybrany cel wroga.",
+          "targets": [
+            "Lizard Commander"
+          ]
+        },
+        {
+          "basis": "CHOSEN_OTERYN_APPROXIMATION",
+          "count": 1,
+          "key": "s6",
+          "kind": "talk",
+          "next": [
+            "s7"
+          ],
+          "objective": "Zgłoś Sterlingowi przygotowanie Burning Heat.",
+          "targets": [
+            "Sterling"
+          ]
+        },
+        {
+          "basis": "CHOSEN_OTERYN_APPROXIMATION",
+          "count": 1,
+          "key": "s7",
+          "kind": "kill",
+          "next": [
+            "s8"
+          ],
+          "objective": "Pokonaj Herald of Fire w wybranej próbie.",
+          "targets": [
+            "Herald of Fire"
+          ]
+        },
+        {
+          "basis": "CHOSEN_OTERYN_APPROXIMATION",
+          "count": 1,
+          "key": "s8",
+          "kind": "use",
+          "next": [
+            "s9"
+          ],
+          "objective": "Przejdź Three Fold Path Shrine i przygotuj drogę do Reliable Ram.",
+          "targets": [
+            "Three Fold Path Shrine"
+          ]
+        },
+        {
+          "basis": "CHOSEN_OTERYN_APPROXIMATION",
+          "count": 1,
+          "key": "s9",
+          "kind": "complete",
+          "next": [],
+          "objective": "Zatwierdź wybrane uprawnienie do Reliable Ram.",
+          "targets": [
+            "Reliable Ram"
+          ]
+        }
+      ],
+      "new_value": [
+        {
+          "basis": "CHOSEN_OTERYN_APPROXIMATION",
+          "count": 1,
+          "key": "s1",
+          "kind": "talk",
+          "next": [
+            "s2"
+          ],
+          "objective": "Przyjmij A long lost treasure od Sterlinga.",
+          "targets": [
+            "Sterling"
+          ]
+        },
+        {
+          "basis": "CHOSEN_OTERYN_APPROXIMATION",
+          "count": 1,
+          "key": "s2",
+          "kind": "explore",
+          "next": [
+            "s3"
+          ],
+          "objective": "Zdobądź Old Treasure Map od Morli na Aragonii i wróć do Sterlinga.",
+          "targets": [
+            "Morla / Aragonia",
+            "Old Treasure Map"
+          ]
+        },
+        {
+          "basis": "CHOSEN_OTERYN_APPROXIMATION",
+          "count": 1,
+          "key": "s3",
+          "kind": "use",
+          "next": [
+            "s4"
+          ],
+          "objective": "Wróć do Sterlinga, a następnie użyj łopaty w oznaczonym miejscu i otwórz treasure chest.",
+          "targets": [
+            "Sterling",
+            "Targuna marked treasure chest"
+          ]
+        },
+        {
+          "basis": "CHOSEN_OTERYN_APPROXIMATION",
+          "count": 1,
+          "key": "s4",
+          "kind": "talk",
+          "next": [
+            "s5"
+          ],
+          "objective": "Przyjmij An ancient enemy od Lizzie.",
+          "targets": [
+            "Lizzie"
+          ]
+        },
+        {
+          "basis": "CHOSEN_OTERYN_APPROXIMATION",
+          "count": 1,
+          "key": "s5",
+          "kind": "kill",
+          "next": [
+            "s6"
+          ],
+          "objective": "Pokonaj Lizard Commander jako wybrany cel wroga.",
+          "targets": [
+            "Lizard Commander"
+          ]
+        },
+        {
+          "basis": "CHOSEN_OTERYN_APPROXIMATION",
+          "count": 1,
+          "key": "s6",
+          "kind": "talk",
+          "next": [
+            "s7"
+          ],
+          "objective": "Przyjmij Burning heat od Emiliany w Targuna i wejdź do Crimson Court.",
+          "targets": [
+            "Emiliana"
+          ]
+        },
+        {
+          "basis": "CHOSEN_OTERYN_APPROXIMATION",
+          "count": 1,
+          "key": "s7",
+          "kind": "kill",
+          "next": [
+            "s8"
+          ],
+          "objective": "Pokonaj Herald of Fire w wybranej próbie.",
+          "targets": [
+            "Herald of Fire"
+          ]
+        },
+        {
+          "basis": "CHOSEN_OTERYN_APPROXIMATION",
+          "count": 1,
+          "key": "s8",
+          "kind": "use",
+          "next": [
+            "s9"
+          ],
+          "objective": "Po pokonaniu Herald of Fire zgłoś się do Emiliany i odbierz Bunch of Turnips.",
+          "targets": [
+            "Emiliana",
+            "Bunch of Turnips"
+          ]
+        },
+        {
+          "basis": "CHOSEN_OTERYN_APPROXIMATION",
+          "count": 1,
+          "key": "s9",
+          "kind": "complete",
+          "next": [],
+          "objective": "Oddaj Bunch of Turnips ramowi na zachód od Targuna, aby uzyskać Reliable Ram.",
+          "targets": [
+            "Targuna ram",
+            "Bunch of Turnips"
+          ]
+        }
+      ],
+      "reason": "Source przypisuje treasure Sterlingowi, ancient enemy Lizzie i burning heat Emilianie; mount wymaga turnip hand-in, nie Three Fold Path Shrine.",
+      "evidence_fact_indexes": [
+        9,
+        10,
+        11,
+        12,
+        13
+      ],
+      "original_proposal_value": [
+        {
+          "basis": "CHOSEN_OTERYN_APPROXIMATION",
+          "count": 1,
+          "key": "s1",
+          "kind": "talk",
+          "next": [
+            "s2"
+          ],
+          "objective": "Przyjmij A long lost treasure od Sterlinga.",
+          "targets": [
+            "Sterling"
+          ]
+        },
+        {
+          "basis": "CHOSEN_OTERYN_APPROXIMATION",
+          "count": 1,
+          "key": "s2",
+          "kind": "explore",
+          "next": [
+            "s3"
+          ],
+          "objective": "Odszukaj Old Treasure Map u Morli na Aragonii i wróć do Sterlinga; źródłowe20piratów/10jaj pozostają osobnymi warunkami branch.",
+          "targets": [
+            "Morla / Aragonia",
+            "Old Treasure Map"
+          ]
+        },
+        {
+          "basis": "CHOSEN_OTERYN_APPROXIMATION",
+          "count": 1,
+          "key": "s3",
+          "kind": "use",
+          "next": [
+            "s4"
+          ],
+          "objective": "Wróć do Sterlinga, a następnie użyj łopaty w oznaczonym miejscu i otwórz treasure chest.",
+          "targets": [
+            "Sterling",
+            "Targuna marked treasure chest"
+          ]
+        },
+        {
+          "basis": "CHOSEN_OTERYN_APPROXIMATION",
+          "count": 1,
+          "key": "s4",
+          "kind": "talk",
+          "next": [
+            "s5"
+          ],
+          "objective": "Przyjmij An ancient enemy od Lizzie.",
+          "targets": [
+            "Lizzie"
+          ]
+        },
+        {
+          "basis": "CHOSEN_OTERYN_APPROXIMATION",
+          "count": 1,
+          "key": "s5",
+          "kind": "kill",
+          "next": [
+            "s6"
+          ],
+          "objective": "Pokonaj Lizard Commander jako wybrany cel wroga.",
+          "targets": [
+            "Lizard Commander"
+          ]
+        },
+        {
+          "basis": "CHOSEN_OTERYN_APPROXIMATION",
+          "count": 1,
+          "key": "s6",
+          "kind": "talk",
+          "next": [
+            "s7"
+          ],
+          "objective": "Przyjmij Burning heat od Emiliany w Targuna i wejdź do Crimson Court.",
+          "targets": [
+            "Emiliana"
+          ]
+        },
+        {
+          "basis": "CHOSEN_OTERYN_APPROXIMATION",
+          "count": 1,
+          "key": "s7",
+          "kind": "kill",
+          "next": [
+            "s8"
+          ],
+          "objective": "Pokonaj Herald of Fire w wybranej próbie.",
+          "targets": [
+            "Herald of Fire"
+          ]
+        },
+        {
+          "basis": "CHOSEN_OTERYN_APPROXIMATION",
+          "count": 1,
+          "key": "s8",
+          "kind": "use",
+          "next": [
+            "s9"
+          ],
+          "objective": "Po pokonaniu Herald of Fire zgłoś się do Emiliany i odbierz Bunch of Turnips.",
+          "targets": [
+            "Emiliana",
+            "Bunch of Turnips"
+          ]
+        },
+        {
+          "basis": "CHOSEN_OTERYN_APPROXIMATION",
+          "count": 1,
+          "key": "s9",
+          "kind": "complete",
+          "next": [],
+          "objective": "Oddaj Bunch of Turnips ramowi na zachód od Targuna, aby uzyskać Reliable Ram w jednym wybranym grancie.",
+          "targets": [
+            "Targuna ram",
+            "Bunch of Turnips"
+          ]
+        }
+      ],
+      "display_wording_refined": true
+    },
+    {
+      "canonical_key": "oteryn:quest.the_beginning_quest",
+      "quest": "The Beginning Quest",
+      "index": 0,
+      "path": "/stages",
+      "old_value": [
+        {
+          "basis": "CHOSEN_OTERYN_APPROXIMATION",
+          "count": 1,
+          "key": "s1",
+          "kind": "talk",
+          "next": [
+            "s2"
+          ],
+          "objective": "Poproś Santiago o The Cockroach Plague.",
+          "targets": [
+            "Santiago"
+          ]
+        },
+        {
+          "basis": "CHOSEN_OTERYN_APPROXIMATION",
+          "count": 3,
+          "key": "s2",
+          "kind": "kill",
+          "next": [
+            "s3"
+          ],
+          "objective": "Pokonaj trzy Cockroaches w wybranej piwnicy.",
+          "targets": [
+            "Cockroach"
+          ]
+        },
+        {
+          "basis": "CHOSEN_OTERYN_APPROXIMATION",
+          "count": 1,
+          "key": "s3",
+          "kind": "talk",
+          "next": [
+            "s4"
+          ],
+          "objective": "Zgłoś Santiago usunięcie plagi.",
+          "targets": [
+            "Santiago"
+          ]
+        },
+        {
+          "basis": "CHOSEN_OTERYN_APPROXIMATION",
+          "count": 5,
+          "key": "s4",
+          "kind": "collect",
+          "next": [
+            "s5"
+          ],
+          "objective": "Zbierz pięć Wood dla Zirelli.",
+          "targets": [
+            "Wood"
+          ]
+        },
+        {
+          "basis": "CHOSEN_OTERYN_APPROXIMATION",
+          "count": 1,
+          "key": "s5",
+          "kind": "talk",
+          "next": [
+            "s6"
+          ],
+          "objective": "Oddaj Zirelli pięć Wood.",
+          "targets": [
+            "Zirella"
+          ]
+        },
+        {
+          "basis": "CHOSEN_OTERYN_APPROXIMATION",
+          "count": 1,
+          "key": "s6",
+          "kind": "collect",
+          "next": [
+            "s7"
+          ],
+          "objective": "Zdobądź jedną Fish dla Carlosa.",
+          "targets": [
+            "Fish"
+          ]
+        },
+        {
+          "basis": "CHOSEN_OTERYN_APPROXIMATION",
+          "count": 1,
+          "key": "s7",
+          "kind": "complete",
+          "next": [],
+          "objective": "Oddaj Fish Carlosowi i zakończ A Hungry Tailor.",
+          "targets": [
+            "Carlos"
+          ]
+        }
+      ],
+      "new_value": [
+        {
+          "basis": "CHOSEN_OTERYN_APPROXIMATION",
+          "count": 1,
+          "key": "s1",
+          "kind": "talk",
+          "next": [
+            "s2"
+          ],
+          "objective": "Poproś Santiago o The Cockroach Plague.",
+          "targets": [
+            "Santiago"
+          ]
+        },
+        {
+          "basis": "CHOSEN_OTERYN_APPROXIMATION",
+          "count": 3,
+          "key": "s2",
+          "kind": "kill",
+          "next": [
+            "s3"
+          ],
+          "objective": "Pokonaj trzy Cockroaches w wybranej piwnicy.",
+          "targets": [
+            "Cockroach"
+          ]
+        },
+        {
+          "basis": "CHOSEN_OTERYN_APPROXIMATION",
+          "count": 1,
+          "key": "s3",
+          "kind": "talk",
+          "next": [
+            "s4"
+          ],
+          "objective": "Zgłoś Santiago usunięcie plagi.",
+          "targets": [
+            "Santiago"
+          ]
+        },
+        {
+          "basis": "CHOSEN_OTERYN_APPROXIMATION",
+          "count": 5,
+          "key": "s4",
+          "kind": "collect",
+          "next": [
+            "s5"
+          ],
+          "objective": "Zbierz pięć Wood dla Zirelli.",
+          "targets": [
+            "Wood"
+          ]
+        },
+        {
+          "basis": "CHOSEN_OTERYN_APPROXIMATION",
+          "count": 1,
+          "key": "s5",
+          "kind": "talk",
+          "next": [
+            "s6"
+          ],
+          "objective": "Oddaj Zirelli pięć Wood.",
+          "targets": [
+            "Zirella"
+          ]
+        },
+        {
+          "basis": "CHOSEN_OTERYN_APPROXIMATION",
+          "count": 1,
+          "key": "s6",
+          "kind": "collect",
+          "next": [
+            "s7"
+          ],
+          "objective": "Zdobądź jedną Meat z Rabbit lub Deer dla Carlosa.",
+          "targets": [
+            "Meat"
+          ]
+        },
+        {
+          "basis": "CHOSEN_OTERYN_APPROXIMATION",
+          "count": 1,
+          "key": "s7",
+          "kind": "complete",
+          "next": [],
+          "objective": "Sprzedaj Meat Carlosowi i zakończ A Hungry Tailor.",
+          "targets": [
+            "Carlos"
+          ]
+        }
+      ],
+      "reason": "Przypięte instructions identyfikują Meat z Rabbit/Deer; Fish nie odpowiada temu źródłowemu zadaniu.",
+      "evidence_fact_indexes": [
+        12,
+        13
+      ]
+    },
+    {
+      "canonical_key": "oteryn:quest.the_dream_courts_quest",
+      "quest": "The Dream Courts Quest",
+      "index": 0,
+      "path": "/stages/1/objective",
+      "old_value": "Gather eight energized ward stones for the court.",
+      "new_value": "Use the Dream Talisman on four Ice Ward Stones and four Sun Ward Stones.",
+      "reason": "The stones are stationary use targets, not collectible energized inventory items.",
+      "evidence_fact_indexes": [
+        12
+      ]
+    },
+    {
+      "canonical_key": "oteryn:quest.the_dream_courts_quest",
+      "quest": "The Dream Courts Quest",
+      "index": 1,
+      "path": "/stages/1/kind",
+      "old_value": "collect",
+      "new_value": "use",
+      "reason": "Align the source-named objective kind with the captured talisman action.",
+      "evidence_fact_indexes": [
+        12
+      ]
+    },
+    {
+      "canonical_key": "oteryn:quest.the_dream_courts_quest",
+      "quest": "The Dream Courts Quest",
+      "index": 2,
+      "path": "/stages/1/targets",
+      "old_value": [
+        "Energized Ward Stone"
+      ],
+      "new_value": [
+        "Dream Talisman",
+        "Ice Ward Stone",
+        "Sun Ward Stone"
+      ],
+      "reason": "Replace unsupported portable Energized Ward Stone with the captured tool and target names.",
+      "evidence_fact_indexes": [
+        12
+      ]
+    },
+    {
+      "canonical_key": "oteryn:quest.the_white_raven_monastery_quest",
+      "quest": "The White Raven Monastery Quest",
+      "index": 0,
+      "path": "/stages/2/objective",
+      "old_value": "Find Fugio's diary in the monastery catacombs.",
+      "new_value": "Find Monk's Diary in the Ghostlands near Carlin after speaking to Costello.",
+      "reason": "The captured guide explicitly distinguishes the diary location from Costello's monastery catacomb access.",
+      "evidence_fact_indexes": [
+        12
+      ]
+    },
+    {
+      "canonical_key": "oteryn:quest.the_white_raven_monastery_quest",
+      "quest": "The White Raven Monastery Quest",
+      "index": 1,
+      "path": "/stages/2/targets",
+      "old_value": [
+        "Fugio's Diary"
+      ],
+      "new_value": [
+        "Monk's Diary"
+      ],
+      "reason": "Use the recorded retrieval item name instead of an invented Fugio's Diary label.",
+      "evidence_fact_indexes": [
+        12
+      ]
+    }
+  ],
+  "reviewed_input": {
+    "file": "refined-recipes.json",
+    "sha256": "b725ee573b26a38bd9bf2ee1b9f66eb215fa7a6eaad2d1f7c9af76e53f544b62",
+    "qualification_sha256": "11a3afbc8f17df330ee1be94e68ee80b3b0a582e92234181459fecf3f63ac1a5"
+  }
+}

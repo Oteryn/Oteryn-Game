@@ -14,31 +14,31 @@
   },
   "global_own_id_frame": {
     "path": "docs/agents/evidence/OTV2-20261001-item-movable-source-qualification-v1.json",
-    "sha256": "86b06302b966219fc9199f954f85a59437c6078d982b4843d57a432b8b69dca5"
+    "sha256": "ae0698adc7df7e25b88569b22de87a020661381a0623ea84d5333a576b12be06"
   },
   "historical_source": {
     "native_definition_digests_historical_only": true,
     "path": "docs/agents/evidence/OTV2-20261002-item-name15-historical-source-v1.json",
-    "sha256": "7fd1bd8d99967942c9a2c7dbf29df4759eba8dbdfcbb31dbf8e31313a394a662"
+    "sha256": "294760f3f064da10cdb5b1c38398706b1a6db471af2027d317de840a939cfeb0"
   },
   "independent_source_peer": {
     "path": "/workspace/audit-continuation/family-name15-br3-independent-source-proposal-peer.json",
     "sha256": "20cc6407be8d811348c151c5fcd4814d858dfef5f11a5cdf0f18be43fe27b179"
   },
   "input_digests": {
-    "apps/game-server/src/content/item_name_promotion.rs": "3c407b26c614e24230b8cd16dd979da09eb3fae72d9240ae8290583b24285dee",
+    "apps/game-server/src/content/item_name_promotion.rs": "0e35a7d6f83f98aadbd1672775e558d254629b8919727f58a8ef6f12b21927fb",
     "content/items/aliases.json": "128bc354816199702c26f83120e6fb7846fb2608fb5ee1c16085f63268e592f2",
-    "docs/agents/evidence/OTV2-20261002-item-name-promotion-v1.json": "f2f8f266a53fca4de2ed114c011a2c18dd3ac2557b4c25a8c11584d01902846b",
-    "docs/agents/evidence/OTV2-20261002-item-name-source-qualification-v1.json": "5650ab936c222a3771dec95c7bd058c3d398883f14b6ecb7e982e10f2592482c",
+    "docs/agents/evidence/OTV2-20261002-item-name-promotion-v1.json": "df202253ef9b0a4817eba98dcacb5a65960828e022e34b9590efdb96952f4383",
+    "docs/agents/evidence/OTV2-20261002-item-name-source-qualification-v1.json": "9a22bb2e4238c42ebcbd5714d6c6f08c39f5a140ae67ee61c78223d7952ca7fc",
     "imports/crystalserver/bindings/items.json": "1d19709c28a649d8a9f32bf53e5bf43ad847d7901d6c6254833f456154d2de5a",
     "imports/official/appearance-membership/admitted.json": "19f99b709d9a28c1730632e27672adb0a03ef11bf7d1f4b2647a4090f3df0718",
     "imports/official/appearance-membership/appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.json": "f37b5d3e1136ebc3edbae1fe7090c4914b1d717bfbf9fd7c8faeeee36b491fe8",
     "tools/content-schema/item-authoring/appearance_membership.py": "0746bb0e350fb04503919295a718907afc87866b0299fa277b914c74e85cfc09",
-    "tools/content-schema/item-authoring/engine_items.py": "28644c0fcc88f364992670489f7d458f827a9cd1db023b7f5ce0a9ae32d08c1a",
-    "tools/content-schema/item-authoring/lower_client_market_packet.py": "99e440d6dc60d362572830ec640901477c44092fb485036a8bb8eceb84eba725",
-    "tools/content-schema/item-authoring/lower_item_name_packet.py": "c8a16f552fda31d4858a258f114d5a4d74c47c249c14aa265065cd2f270540ce",
-    "tools/content-schema/item-authoring/lower_wiki_movable_packet.py": "9e418a08ba951bc35d078b65689beb2e12f3da53af9470a8c55cfca7e36a5600",
-    "tools/content-schema/item-authoring/lower_wiki_stack_default_packet.py": "70d6244253ec7fcc557b29f8203abc8492cd261a62563213bd1a3298bc212dba",
+    "tools/content-schema/item-authoring/engine_items.py": "0a494fd64d7774507b4d9e493492a7ffc9d99d751dd2ed4fec73561cb06f5b06",
+    "tools/content-schema/item-authoring/lower_client_market_packet.py": "850ee01d3b4831c412856b77720c0996122e4f67ed4603b0e6337637dc09457e",
+    "tools/content-schema/item-authoring/lower_item_name_packet.py": "d79622c4b307e76e701cc15890b99c61a1c56294b0db5ab49b98cfbd7dc955eb",
+    "tools/content-schema/item-authoring/lower_wiki_movable_packet.py": "dc9a9c622f8d8081c7245f4600405b18bd20e5a8459b77686119a585a8977476",
+    "tools/content-schema/item-authoring/lower_wiki_stack_default_packet.py": "5969b009ed326991e6db310b3e3c48640ae5a5ac361c9c34f5619740bff8ce2e",
     "tools/content-schema/item-authoring/samples/promotion-crystal-ff7ede5.json": "69d5c1ff24b979658fc24a310d6715c131cfca6abe759ff1fa29479da0ecffe2"
   },
   "protected_XML_source": {

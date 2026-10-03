@@ -10072,8 +10072,8 @@
     "imports/crystalserver/bindings/items.json": "1d19709c28a649d8a9f32bf53e5bf43ad847d7901d6c6254833f456154d2de5a",
     "imports/official/appearance-membership/admitted.json": "19f99b709d9a28c1730632e27672adb0a03ef11bf7d1f4b2647a4090f3df0718",
     "tools/content-census/g4_item_binding_pilot.py": "3655fa1bb9687bbd057d3d6276cdcaeedd5013d82d1c8cfac4216ab0ba98246b",
-    "tools/content-schema/item-authoring/lower_item_forge3332_packet.py": "0c59dd9df73bf3f8b6411cb9241f1d1163a39bca27efffa50a80c2c1a8e6092e",
-    "tools/content-schema/item-authoring/source_field_catalogs.py": "8250880aaa89b7c5fa1593d5738a478b0d09e1ef9ef9cef630cb5da172d634bc"
+    "tools/content-schema/item-authoring/lower_item_forge3332_packet.py": "12cb7ebdc47b92696949ee4474a82e36d33754411b15937c890d7bdfee2400d9",
+    "tools/content-schema/item-authoring/source_field_catalogs.py": "b3facfe30ae8beb9e80fff46d4df8870eb1a3a144ba5b0a3278eae3bc98fd423"
   },
   "newest_official_descriptor": {
     "appearances_sha256": "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2",

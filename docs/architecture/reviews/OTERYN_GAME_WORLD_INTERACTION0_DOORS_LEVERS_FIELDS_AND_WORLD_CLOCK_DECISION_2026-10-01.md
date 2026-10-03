@@ -337,6 +337,8 @@ quest doors, quest format §3.1) stays sealed.
   (20,000, alarm at 80%); an act whose firing would schedule past it is refused before commit. A
   revert never schedules another (proposal §7).
 - **Boss levers** (room checks, `SCOPE_HANDOFF`) are not in this decision.
+  **Amendment (pending on acceptance of ENCOUNTER-RT-0; `reviews/OTERYN_GAME_ENCOUNTER_RT0_ENCOUNTER_RUNTIME_AND_BOSS_LEVERS_DECISION_2026-10-01.md` §7).** The
+  closed child set gains `BOSS_ENTRY {encounter key}`, at most one per firing.
 
 ## 6. Floor changes, tools and teleports (FLOOR-1)
 
@@ -439,6 +441,8 @@ quest doors, quest format §3.1) stays sealed.
   with the `ITEMMOVE1-RL-01` tile limit at B and a real row lock on both tile rows, taken after the
   item rows in ascending tile key order (composition rule 4). A tree moves by its root (BAGS-0
   §4.3); the Ground counter does not change. Rows in §12. A dropped item keeps its D191 reset.
+  **Amendment (pending on acceptance of STACK-0; `reviews/OTERYN_GAME_STACK0_PARTIAL_COUNTS_AND_STACK_MERGES_DECISION_2026-10-01.md` §4).** A stackable merges into the destination tile's top
+  compatible stack, and an optional `count` moves part of a stack.
 - **Water.** A tile that does not accept items (water included) refuses them (`BLOCKED`); Global
   destroys them, a sink this decision does not add (declared, §14).
 
@@ -497,6 +501,9 @@ quest doors, quest format §3.1) stays sealed.
   negotiate `MAP_STATE_V1`, `WORLD_SPATIAL_FIELDS` and `WORLD_INTERACTION_V1`. Until then FIELD-2's
   player effects and blocking walls stay inactive, and fields affect creatures only (RUNE-USE-0).
   Map-authored fields reach a session through `MAP_TILES`; overlay fields through VIS-2.
+- **Amendment (pending on acceptance of ADMIT-0; `reviews/OTERYN_GAME_ADMIT0_WORLD_REQUIRED_CAPABILITIES_DECISION_2026-10-01.md`).** ADMIT-0 is that FND-04 amendment
+  (owner answer 4a): a required capability set declared per channel scope with its
+  `world_policy_revision`, checked at admission, reconnect and recovery, and the channel guard.
 
 ## 9. Persistence, reset and determinism
 
@@ -548,6 +555,12 @@ quest doors, quest format §3.1) stays sealed.
 - **Dispositions**, under the capability, at most 4 bytes: `TOO_FAR`, `LOCKED`, `KEY_MISMATCH`,
   `SEALED` (with the gate's message id), `PZ_BLOCKED`, `NOT_MOVABLE`, `NO_ROOM`, `NOT_POSSIBLE`;
   the existing `EXHAUSTED`, `STALE`, `BLOCKED` and `NOTHING_TO_USE` are reused.
+  **Amendment (pending on acceptance of OFFLINE-0; `reviews/OTERYN_GAME_OFFLINE0_STAMINA_AND_OFFLINE_TRAINING_DECISION_2026-10-01.md` §6).** Plus `OFFLINE_TRAINING`: a training statue accepted the
+  activation and a graceful logout follows; a non-Premium user gets `SEALED` with the Premium
+  message id; a logout-blocked or PZ-locked user gets `PZ_BLOCKED`.
+  **Amendment (pending on acceptance of BED-0; `reviews/OTERYN_GAME_BED0_HOUSE_BEDS_DECISION_2026-10-01.md` §9).** Plus the command `BED_SLEEP_INTENT
+  {target map_item handle, skill}` (at most 24 bytes, type number reserved at allocation) and the
+  dispositions `BED_CHOOSE_SKILL`, `BED_OCCUPIED` and `BED_WOKEN`.
 - **Without the capability** a USE on a map item keeps its MAP-WIRE-2 meaning with new outcomes
   reported as `REJECTED`; the field 4 map arm, the new command 9 sources and `PUSH_INTENT` are
   refused.

@@ -1,0 +1,2615 @@
+{
+  "browser_version": "151.0.7922.173",
+  "calculator_cases": [
+    {
+      "browser_damage": 341,
+      "browser_elemental_damage": 630,
+      "charm": "Overpower",
+      "creature_max_health": 12600,
+      "floor_elemental_after_scaling": 630,
+      "floor_resource_damage": 340,
+      "resource": 6813,
+      "sensitivity_percent": 100
+    },
+    {
+      "browser_damage": 341,
+      "browser_elemental_damage": 631,
+      "charm": "Overpower",
+      "creature_max_health": 12613,
+      "floor_elemental_after_scaling": 630,
+      "floor_resource_damage": 341,
+      "resource": 6821,
+      "sensitivity_percent": 100
+    },
+    {
+      "browser_damage": 1,
+      "browser_elemental_damage": 0,
+      "charm": "Overpower",
+      "creature_max_health": 19,
+      "floor_elemental_after_scaling": 0,
+      "floor_resource_damage": 0,
+      "resource": 11,
+      "sensitivity_percent": 50
+    },
+    {
+      "browser_damage": 1,
+      "browser_elemental_damage": 1,
+      "charm": "Overpower",
+      "creature_max_health": 20,
+      "floor_elemental_after_scaling": 1,
+      "floor_resource_damage": 1,
+      "resource": 20,
+      "sensitivity_percent": 100
+    },
+    {
+      "browser_damage": 80,
+      "browser_elemental_damage": 55,
+      "charm": "Overpower",
+      "creature_max_health": 1000,
+      "floor_elemental_after_scaling": 55,
+      "floor_resource_damage": 80,
+      "resource": 200000,
+      "sensitivity_percent": 110
+    },
+    {
+      "browser_damage": 340,
+      "browser_elemental_damage": 630,
+      "charm": "Overpower",
+      "creature_max_health": 12600,
+      "floor_elemental_after_scaling": 630,
+      "floor_resource_damage": 340,
+      "resource": 6800,
+      "sensitivity_percent": 100
+    },
+    {
+      "browser_damage": 0,
+      "browser_elemental_damage": 0,
+      "charm": "Overpower",
+      "creature_max_health": 1,
+      "floor_elemental_after_scaling": 0,
+      "floor_resource_damage": 0,
+      "resource": 1,
+      "sensitivity_percent": 0
+    },
+    {
+      "browser_damage": 0,
+      "browser_elemental_damage": 0,
+      "charm": "Overpower",
+      "creature_max_health": 1,
+      "floor_elemental_after_scaling": 0,
+      "floor_resource_damage": 0,
+      "resource": 1,
+      "sensitivity_percent": 100
+    },
+    {
+      "browser_damage": 0,
+      "browser_elemental_damage": 0,
+      "charm": "Overpower",
+      "creature_max_health": 1,
+      "floor_elemental_after_scaling": 0,
+      "floor_resource_damage": 0,
+      "resource": 1,
+      "sensitivity_percent": 150
+    },
+    {
+      "browser_damage": 0,
+      "browser_elemental_damage": 0,
+      "charm": "Overpower",
+      "creature_max_health": 19,
+      "floor_elemental_after_scaling": 0,
+      "floor_resource_damage": 0,
+      "resource": 1,
+      "sensitivity_percent": 0
+    },
+    {
+      "browser_damage": 0,
+      "browser_elemental_damage": 1,
+      "charm": "Overpower",
+      "creature_max_health": 19,
+      "floor_elemental_after_scaling": 0,
+      "floor_resource_damage": 0,
+      "resource": 1,
+      "sensitivity_percent": 100
+    },
+    {
+      "browser_damage": 0,
+      "browser_elemental_damage": 1,
+      "charm": "Overpower",
+      "creature_max_health": 19,
+      "floor_elemental_after_scaling": 1,
+      "floor_resource_damage": 0,
+      "resource": 1,
+      "sensitivity_percent": 150
+    },
+    {
+      "browser_damage": 0,
+      "browser_elemental_damage": 0,
+      "charm": "Overpower",
+      "creature_max_health": 12613,
+      "floor_elemental_after_scaling": 0,
+      "floor_resource_damage": 0,
+      "resource": 1,
+      "sensitivity_percent": 0
+    },
+    {
+      "browser_damage": 0,
+      "browser_elemental_damage": 631,
+      "charm": "Overpower",
+      "creature_max_health": 12613,
+      "floor_elemental_after_scaling": 630,
+      "floor_resource_damage": 0,
+      "resource": 1,
+      "sensitivity_percent": 100
+    },
+    {
+      "browser_damage": 0,
+      "browser_elemental_damage": 946,
+      "charm": "Overpower",
+      "creature_max_health": 12613,
+      "floor_elemental_after_scaling": 945,
+      "floor_resource_damage": 0,
+      "resource": 1,
+      "sensitivity_percent": 150
+    },
+    {
+      "browser_damage": 0,
+      "browser_elemental_damage": 0,
+      "charm": "Overpower",
+      "creature_max_health": 1,
+      "floor_elemental_after_scaling": 0,
+      "floor_resource_damage": 0,
+      "resource": 39,
+      "sensitivity_percent": 0
+    },
+    {
+      "browser_damage": 0,
+      "browser_elemental_damage": 0,
+      "charm": "Overpower",
+      "creature_max_health": 1,
+      "floor_elemental_after_scaling": 0,
+      "floor_resource_damage": 0,
+      "resource": 39,
+      "sensitivity_percent": 100
+    },
+    {
+      "browser_damage": 0,
+      "browser_elemental_damage": 0,
+      "charm": "Overpower",
+      "creature_max_health": 1,
+      "floor_elemental_after_scaling": 0,
+      "floor_resource_damage": 0,
+      "resource": 39,
+      "sensitivity_percent": 150
+    },
+    {
+      "browser_damage": 2,
+      "browser_elemental_damage": 0,
+      "charm": "Overpower",
+      "creature_max_health": 19,
+      "floor_elemental_after_scaling": 0,
+      "floor_resource_damage": 1,
+      "resource": 39,
+      "sensitivity_percent": 0
+    },
+    {
+      "browser_damage": 2,
+      "browser_elemental_damage": 1,
+      "charm": "Overpower",
+      "creature_max_health": 19,
+      "floor_elemental_after_scaling": 0,
+      "floor_resource_damage": 1,
+      "resource": 39,
+      "sensitivity_percent": 100
+    },
+    {
+      "browser_damage": 2,
+      "browser_elemental_damage": 1,
+      "charm": "Overpower",
+      "creature_max_health": 19,
+      "floor_elemental_after_scaling": 1,
+      "floor_resource_damage": 1,
+      "resource": 39,
+      "sensitivity_percent": 150
+    },
+    {
+      "browser_damage": 2,
+      "browser_elemental_damage": 0,
+      "charm": "Overpower",
+      "creature_max_health": 12613,
+      "floor_elemental_after_scaling": 0,
+      "floor_resource_damage": 1,
+      "resource": 39,
+      "sensitivity_percent": 0
+    },
+    {
+      "browser_damage": 2,
+      "browser_elemental_damage": 631,
+      "charm": "Overpower",
+      "creature_max_health": 12613,
+      "floor_elemental_after_scaling": 630,
+      "floor_resource_damage": 1,
+      "resource": 39,
+      "sensitivity_percent": 100
+    },
+    {
+      "browser_damage": 2,
+      "browser_elemental_damage": 946,
+      "charm": "Overpower",
+      "creature_max_health": 12613,
+      "floor_elemental_after_scaling": 945,
+      "floor_resource_damage": 1,
+      "resource": 39,
+      "sensitivity_percent": 150
+    },
+    {
+      "browser_damage": 0,
+      "browser_elemental_damage": 0,
+      "charm": "Overpower",
+      "creature_max_health": 1,
+      "floor_elemental_after_scaling": 0,
+      "floor_resource_damage": 0,
+      "resource": 10000,
+      "sensitivity_percent": 0
+    },
+    {
+      "browser_damage": 0,
+      "browser_elemental_damage": 0,
+      "charm": "Overpower",
+      "creature_max_health": 1,
+      "floor_elemental_after_scaling": 0,
+      "floor_resource_damage": 0,
+      "resource": 10000,
+      "sensitivity_percent": 100
+    },
+    {
+      "browser_damage": 0,
+      "browser_elemental_damage": 0,
+      "charm": "Overpower",
+      "creature_max_health": 1,
+      "floor_elemental_after_scaling": 0,
+      "floor_resource_damage": 0,
+      "resource": 10000,
+      "sensitivity_percent": 150
+    },
+    {
+      "browser_damage": 2,
+      "browser_elemental_damage": 0,
+      "charm": "Overpower",
+      "creature_max_health": 19,
+      "floor_elemental_after_scaling": 0,
+      "floor_resource_damage": 1,
+      "resource": 10000,
+      "sensitivity_percent": 0
+    },
+    {
+      "browser_damage": 2,
+      "browser_elemental_damage": 1,
+      "charm": "Overpower",
+      "creature_max_health": 19,
+      "floor_elemental_after_scaling": 0,
+      "floor_resource_damage": 1,
+      "resource": 10000,
+      "sensitivity_percent": 100
+    },
+    {
+      "browser_damage": 2,
+      "browser_elemental_damage": 1,
+      "charm": "Overpower",
+      "creature_max_health": 19,
+      "floor_elemental_after_scaling": 1,
+      "floor_resource_damage": 1,
+      "resource": 10000,
+      "sensitivity_percent": 150
+    },
+    {
+      "browser_damage": 500,
+      "browser_elemental_damage": 0,
+      "charm": "Overpower",
+      "creature_max_health": 12613,
+      "floor_elemental_after_scaling": 0,
+      "floor_resource_damage": 500,
+      "resource": 10000,
+      "sensitivity_percent": 0
+    },
+    {
+      "browser_damage": 500,
+      "browser_elemental_damage": 631,
+      "charm": "Overpower",
+      "creature_max_health": 12613,
+      "floor_elemental_after_scaling": 630,
+      "floor_resource_damage": 500,
+      "resource": 10000,
+      "sensitivity_percent": 100
+    },
+    {
+      "browser_damage": 500,
+      "browser_elemental_damage": 946,
+      "charm": "Overpower",
+      "creature_max_health": 12613,
+      "floor_elemental_after_scaling": 945,
+      "floor_resource_damage": 500,
+      "resource": 10000,
+      "sensitivity_percent": 150
+    },
+    {
+      "browser_damage": 170,
+      "browser_elemental_damage": 630,
+      "charm": "Overflux",
+      "creature_max_health": 12600,
+      "floor_elemental_after_scaling": 630,
+      "floor_resource_damage": 170,
+      "resource": 6813,
+      "sensitivity_percent": 100
+    },
+    {
+      "browser_damage": 171,
+      "browser_elemental_damage": 631,
+      "charm": "Overflux",
+      "creature_max_health": 12613,
+      "floor_elemental_after_scaling": 630,
+      "floor_resource_damage": 170,
+      "resource": 6821,
+      "sensitivity_percent": 100
+    },
+    {
+      "browser_damage": 0,
+      "browser_elemental_damage": 0,
+      "charm": "Overflux",
+      "creature_max_health": 19,
+      "floor_elemental_after_scaling": 0,
+      "floor_resource_damage": 0,
+      "resource": 11,
+      "sensitivity_percent": 50
+    },
+    {
+      "browser_damage": 1,
+      "browser_elemental_damage": 1,
+      "charm": "Overflux",
+      "creature_max_health": 20,
+      "floor_elemental_after_scaling": 1,
+      "floor_resource_damage": 0,
+      "resource": 20,
+      "sensitivity_percent": 100
+    },
+    {
+      "browser_damage": 80,
+      "browser_elemental_damage": 55,
+      "charm": "Overflux",
+      "creature_max_health": 1000,
+      "floor_elemental_after_scaling": 55,
+      "floor_resource_damage": 80,
+      "resource": 200000,
+      "sensitivity_percent": 110
+    },
+    {
+      "browser_damage": 170,
+      "browser_elemental_damage": 630,
+      "charm": "Overflux",
+      "creature_max_health": 12600,
+      "floor_elemental_after_scaling": 630,
+      "floor_resource_damage": 170,
+      "resource": 6800,
+      "sensitivity_percent": 100
+    },
+    {
+      "browser_damage": 0,
+      "browser_elemental_damage": 0,
+      "charm": "Overflux",
+      "creature_max_health": 1,
+      "floor_elemental_after_scaling": 0,
+      "floor_resource_damage": 0,
+      "resource": 1,
+      "sensitivity_percent": 0
+    },
+    {
+      "browser_damage": 0,
+      "browser_elemental_damage": 0,
+      "charm": "Overflux",
+      "creature_max_health": 1,
+      "floor_elemental_after_scaling": 0,
+      "floor_resource_damage": 0,
+      "resource": 1,
+      "sensitivity_percent": 100
+    },
+    {
+      "browser_damage": 0,
+      "browser_elemental_damage": 0,
+      "charm": "Overflux",
+      "creature_max_health": 1,
+      "floor_elemental_after_scaling": 0,
+      "floor_resource_damage": 0,
+      "resource": 1,
+      "sensitivity_percent": 150
+    },
+    {
+      "browser_damage": 0,
+      "browser_elemental_damage": 0,
+      "charm": "Overflux",
+      "creature_max_health": 19,
+      "floor_elemental_after_scaling": 0,
+      "floor_resource_damage": 0,
+      "resource": 1,
+      "sensitivity_percent": 0
+    },
+    {
+      "browser_damage": 0,
+      "browser_elemental_damage": 1,
+      "charm": "Overflux",
+      "creature_max_health": 19,
+      "floor_elemental_after_scaling": 0,
+      "floor_resource_damage": 0,
+      "resource": 1,
+      "sensitivity_percent": 100
+    },
+    {
+      "browser_damage": 0,
+      "browser_elemental_damage": 1,
+      "charm": "Overflux",
+      "creature_max_health": 19,
+      "floor_elemental_after_scaling": 1,
+      "floor_resource_damage": 0,
+      "resource": 1,
+      "sensitivity_percent": 150
+    },
+    {
+      "browser_damage": 0,
+      "browser_elemental_damage": 0,
+      "charm": "Overflux",
+      "creature_max_health": 12613,
+      "floor_elemental_after_scaling": 0,
+      "floor_resource_damage": 0,
+      "resource": 1,
+      "sensitivity_percent": 0
+    },
+    {
+      "browser_damage": 0,
+      "browser_elemental_damage": 631,
+      "charm": "Overflux",
+      "creature_max_health": 12613,
+      "floor_elemental_after_scaling": 630,
+      "floor_resource_damage": 0,
+      "resource": 1,
+      "sensitivity_percent": 100
+    },
+    {
+      "browser_damage": 0,
+      "browser_elemental_damage": 946,
+      "charm": "Overflux",
+      "creature_max_health": 12613,
+      "floor_elemental_after_scaling": 945,
+      "floor_resource_damage": 0,
+      "resource": 1,
+      "sensitivity_percent": 150
+    },
+    {
+      "browser_damage": 0,
+      "browser_elemental_damage": 0,
+      "charm": "Overflux",
+      "creature_max_health": 1,
+      "floor_elemental_after_scaling": 0,
+      "floor_resource_damage": 0,
+      "resource": 39,
+      "sensitivity_percent": 0
+    },
+    {
+      "browser_damage": 0,
+      "browser_elemental_damage": 0,
+      "charm": "Overflux",
+      "creature_max_health": 1,
+      "floor_elemental_after_scaling": 0,
+      "floor_resource_damage": 0,
+      "resource": 39,
+      "sensitivity_percent": 100
+    },
+    {
+      "browser_damage": 0,
+      "browser_elemental_damage": 0,
+      "charm": "Overflux",
+      "creature_max_health": 1,
+      "floor_elemental_after_scaling": 0,
+      "floor_resource_damage": 0,
+      "resource": 39,
+      "sensitivity_percent": 150
+    },
+    {
+      "browser_damage": 1,
+      "browser_elemental_damage": 0,
+      "charm": "Overflux",
+      "creature_max_health": 19,
+      "floor_elemental_after_scaling": 0,
+      "floor_resource_damage": 0,
+      "resource": 39,
+      "sensitivity_percent": 0
+    },
+    {
+      "browser_damage": 1,
+      "browser_elemental_damage": 1,
+      "charm": "Overflux",
+      "creature_max_health": 19,
+      "floor_elemental_after_scaling": 0,
+      "floor_resource_damage": 0,
+      "resource": 39,
+      "sensitivity_percent": 100
+    },
+    {
+      "browser_damage": 1,
+      "browser_elemental_damage": 1,
+      "charm": "Overflux",
+      "creature_max_health": 19,
+      "floor_elemental_after_scaling": 1,
+      "floor_resource_damage": 0,
+      "resource": 39,
+      "sensitivity_percent": 150
+    },
+    {
+      "browser_damage": 1,
+      "browser_elemental_damage": 0,
+      "charm": "Overflux",
+      "creature_max_health": 12613,
+      "floor_elemental_after_scaling": 0,
+      "floor_resource_damage": 0,
+      "resource": 39,
+      "sensitivity_percent": 0
+    },
+    {
+      "browser_damage": 1,
+      "browser_elemental_damage": 631,
+      "charm": "Overflux",
+      "creature_max_health": 12613,
+      "floor_elemental_after_scaling": 630,
+      "floor_resource_damage": 0,
+      "resource": 39,
+      "sensitivity_percent": 100
+    },
+    {
+      "browser_damage": 1,
+      "browser_elemental_damage": 946,
+      "charm": "Overflux",
+      "creature_max_health": 12613,
+      "floor_elemental_after_scaling": 945,
+      "floor_resource_damage": 0,
+      "resource": 39,
+      "sensitivity_percent": 150
+    },
+    {
+      "browser_damage": 0,
+      "browser_elemental_damage": 0,
+      "charm": "Overflux",
+      "creature_max_health": 1,
+      "floor_elemental_after_scaling": 0,
+      "floor_resource_damage": 0,
+      "resource": 10000,
+      "sensitivity_percent": 0
+    },
+    {
+      "browser_damage": 0,
+      "browser_elemental_damage": 0,
+      "charm": "Overflux",
+      "creature_max_health": 1,
+      "floor_elemental_after_scaling": 0,
+      "floor_resource_damage": 0,
+      "resource": 10000,
+      "sensitivity_percent": 100
+    },
+    {
+      "browser_damage": 0,
+      "browser_elemental_damage": 0,
+      "charm": "Overflux",
+      "creature_max_health": 1,
+      "floor_elemental_after_scaling": 0,
+      "floor_resource_damage": 0,
+      "resource": 10000,
+      "sensitivity_percent": 150
+    },
+    {
+      "browser_damage": 2,
+      "browser_elemental_damage": 0,
+      "charm": "Overflux",
+      "creature_max_health": 19,
+      "floor_elemental_after_scaling": 0,
+      "floor_resource_damage": 1,
+      "resource": 10000,
+      "sensitivity_percent": 0
+    },
+    {
+      "browser_damage": 2,
+      "browser_elemental_damage": 1,
+      "charm": "Overflux",
+      "creature_max_health": 19,
+      "floor_elemental_after_scaling": 0,
+      "floor_resource_damage": 1,
+      "resource": 10000,
+      "sensitivity_percent": 100
+    },
+    {
+      "browser_damage": 2,
+      "browser_elemental_damage": 1,
+      "charm": "Overflux",
+      "creature_max_health": 19,
+      "floor_elemental_after_scaling": 1,
+      "floor_resource_damage": 1,
+      "resource": 10000,
+      "sensitivity_percent": 150
+    },
+    {
+      "browser_damage": 250,
+      "browser_elemental_damage": 0,
+      "charm": "Overflux",
+      "creature_max_health": 12613,
+      "floor_elemental_after_scaling": 0,
+      "floor_resource_damage": 250,
+      "resource": 10000,
+      "sensitivity_percent": 0
+    },
+    {
+      "browser_damage": 250,
+      "browser_elemental_damage": 631,
+      "charm": "Overflux",
+      "creature_max_health": 12613,
+      "floor_elemental_after_scaling": 630,
+      "floor_resource_damage": 250,
+      "resource": 10000,
+      "sensitivity_percent": 100
+    },
+    {
+      "browser_damage": 250,
+      "browser_elemental_damage": 946,
+      "charm": "Overflux",
+      "creature_max_health": 12613,
+      "floor_elemental_after_scaling": 945,
+      "floor_resource_damage": 250,
+      "resource": 10000,
+      "sensitivity_percent": 150
+    }
+  ],
+  "catalogue_sha256": "ce118bb9933ed5fae362c819aa0c0b50c043df4c9829de9ea7d03f89d73e3afe",
+  "engine": "Chromium",
+  "external_assets": "External fonts, ads and stream requests blocked; local charm assets tested",
+  "limitations": [
+    "Planner descriptions are not executable combat mechanics",
+    "Calculator only implements Overpower/Overflux and an elemental comparison",
+    "Calculator has no level cap input and computes pre-mitigation",
+    "Math.round differs from Oteryn floor arithmetic; official rounding unverified",
+    "Exact status/leech/critical/loot/skinning battle behavior is not simulated"
+  ],
+  "live_domain_access": "ERR_TUNNEL_CONNECTION_FAILED through session proxy",
+  "live_domain_verified": false,
+  "major_budget_boundaries": [
+    {
+      "budget": 600,
+      "exact_accepted": true,
+      "key": "carnage",
+      "one_short_rejected": true,
+      "stage": 1
+    },
+    {
+      "budget": 1500,
+      "exact_accepted": true,
+      "key": "carnage",
+      "one_short_rejected": true,
+      "stage": 2
+    },
+    {
+      "budget": 4500,
+      "exact_accepted": true,
+      "key": "carnage",
+      "one_short_rejected": true,
+      "stage": 3
+    },
+    {
+      "budget": 360,
+      "exact_accepted": true,
+      "key": "curse",
+      "one_short_rejected": true,
+      "stage": 1
+    },
+    {
+      "budget": 900,
+      "exact_accepted": true,
+      "key": "curse",
+      "one_short_rejected": true,
+      "stage": 2
+    },
+    {
+      "budget": 2700,
+      "exact_accepted": true,
+      "key": "curse",
+      "one_short_rejected": true,
+      "stage": 3
+    },
+    {
+      "budget": 600,
+      "exact_accepted": true,
+      "key": "divine_wrath",
+      "one_short_rejected": true,
+      "stage": 1
+    },
+    {
+      "budget": 1500,
+      "exact_accepted": true,
+      "key": "divine_wrath",
+      "one_short_rejected": true,
+      "stage": 2
+    },
+    {
+      "budget": 4500,
+      "exact_accepted": true,
+      "key": "divine_wrath",
+      "one_short_rejected": true,
+      "stage": 3
+    },
+    {
+      "budget": 240,
+      "exact_accepted": true,
+      "key": "dodge",
+      "one_short_rejected": true,
+      "stage": 1
+    },
+    {
+      "budget": 600,
+      "exact_accepted": true,
+      "key": "dodge",
+      "one_short_rejected": true,
+      "stage": 2
+    },
+    {
+      "budget": 1800,
+      "exact_accepted": true,
+      "key": "dodge",
+      "one_short_rejected": true,
+      "stage": 3
+    },
+    {
+      "budget": 400,
+      "exact_accepted": true,
+      "key": "enflame",
+      "one_short_rejected": true,
+      "stage": 1
+    },
+    {
+      "budget": 1000,
+      "exact_accepted": true,
+      "key": "enflame",
+      "one_short_rejected": true,
+      "stage": 2
+    },
+    {
+      "budget": 3000,
+      "exact_accepted": true,
+      "key": "enflame",
+      "one_short_rejected": true,
+      "stage": 3
+    },
+    {
+      "budget": 320,
+      "exact_accepted": true,
+      "key": "freeze",
+      "one_short_rejected": true,
+      "stage": 1
+    },
+    {
+      "budget": 800,
+      "exact_accepted": true,
+      "key": "freeze",
+      "one_short_rejected": true,
+      "stage": 2
+    },
+    {
+      "budget": 2400,
+      "exact_accepted": true,
+      "key": "freeze",
+      "one_short_rejected": true,
+      "stage": 3
+    },
+    {
+      "budget": 800,
+      "exact_accepted": true,
+      "key": "low_blow",
+      "one_short_rejected": true,
+      "stage": 1
+    },
+    {
+      "budget": 2000,
+      "exact_accepted": true,
+      "key": "low_blow",
+      "one_short_rejected": true,
+      "stage": 2
+    },
+    {
+      "budget": 6000,
+      "exact_accepted": true,
+      "key": "low_blow",
+      "one_short_rejected": true,
+      "stage": 3
+    },
+    {
+      "budget": 600,
+      "exact_accepted": true,
+      "key": "overflux",
+      "one_short_rejected": true,
+      "stage": 1
+    },
+    {
+      "budget": 1500,
+      "exact_accepted": true,
+      "key": "overflux",
+      "one_short_rejected": true,
+      "stage": 2
+    },
+    {
+      "budget": 4500,
+      "exact_accepted": true,
+      "key": "overflux",
+      "one_short_rejected": true,
+      "stage": 3
+    },
+    {
+      "budget": 600,
+      "exact_accepted": true,
+      "key": "overpower",
+      "one_short_rejected": true,
+      "stage": 1
+    },
+    {
+      "budget": 1500,
+      "exact_accepted": true,
+      "key": "overpower",
+      "one_short_rejected": true,
+      "stage": 2
+    },
+    {
+      "budget": 4500,
+      "exact_accepted": true,
+      "key": "overpower",
+      "one_short_rejected": true,
+      "stage": 3
+    },
+    {
+      "budget": 400,
+      "exact_accepted": true,
+      "key": "parry",
+      "one_short_rejected": true,
+      "stage": 1
+    },
+    {
+      "budget": 1000,
+      "exact_accepted": true,
+      "key": "parry",
+      "one_short_rejected": true,
+      "stage": 2
+    },
+    {
+      "budget": 3000,
+      "exact_accepted": true,
+      "key": "parry",
+      "one_short_rejected": true,
+      "stage": 3
+    },
+    {
+      "budget": 240,
+      "exact_accepted": true,
+      "key": "poison",
+      "one_short_rejected": true,
+      "stage": 1
+    },
+    {
+      "budget": 600,
+      "exact_accepted": true,
+      "key": "poison",
+      "one_short_rejected": true,
+      "stage": 2
+    },
+    {
+      "budget": 1800,
+      "exact_accepted": true,
+      "key": "poison",
+      "one_short_rejected": true,
+      "stage": 3
+    },
+    {
+      "budget": 800,
+      "exact_accepted": true,
+      "key": "savage_blow",
+      "one_short_rejected": true,
+      "stage": 1
+    },
+    {
+      "budget": 2000,
+      "exact_accepted": true,
+      "key": "savage_blow",
+      "one_short_rejected": true,
+      "stage": 2
+    },
+    {
+      "budget": 6000,
+      "exact_accepted": true,
+      "key": "savage_blow",
+      "one_short_rejected": true,
+      "stage": 3
+    },
+    {
+      "budget": 240,
+      "exact_accepted": true,
+      "key": "wound",
+      "one_short_rejected": true,
+      "stage": 1
+    },
+    {
+      "budget": 600,
+      "exact_accepted": true,
+      "key": "wound",
+      "one_short_rejected": true,
+      "stage": 2
+    },
+    {
+      "budget": 1800,
+      "exact_accepted": true,
+      "key": "wound",
+      "one_short_rejected": true,
+      "stage": 3
+    },
+    {
+      "budget": 320,
+      "exact_accepted": true,
+      "key": "zap",
+      "one_short_rejected": true,
+      "stage": 1
+    },
+    {
+      "budget": 800,
+      "exact_accepted": true,
+      "key": "zap",
+      "one_short_rejected": true,
+      "stage": 2
+    },
+    {
+      "budget": 2400,
+      "exact_accepted": true,
+      "key": "zap",
+      "one_short_rejected": true,
+      "stage": 3
+    }
+  ],
+  "minor_budget_and_refund_guard": true,
+  "page_errors": [],
+  "planner_charms": [
+    {
+      "category": "minor",
+      "costs": [
+        100,
+        150,
+        225
+      ],
+      "description_sha256": "66f7afaca56e976571a5b1a1aa9682c00551f05591aec774f8c80340bea480d0",
+      "icon_loaded": true,
+      "key": "oteryn:charm.adrenaline_burst",
+      "stage_bounds_verified": true,
+      "values": [
+        6.0,
+        9.0,
+        12.0
+      ]
+    },
+    {
+      "category": "minor",
+      "costs": [
+        100,
+        150,
+        225
+      ],
+      "description_sha256": "2e090a068fe07eacf460455513d9aee6b4e7de27e63afd5f0c57c138bdd49eb7",
+      "icon_loaded": true,
+      "key": "oteryn:charm.bless",
+      "stage_bounds_verified": true,
+      "values": [
+        6.0,
+        9.0,
+        12.0
+      ]
+    },
+    {
+      "category": "major",
+      "costs": [
+        600,
+        900,
+        3000
+      ],
+      "description_sha256": "81fd9ab7db3a64fca5a22f34992d91bc616d232d28202ea7b22c43c165e9715a",
+      "icon_loaded": true,
+      "key": "oteryn:charm.carnage",
+      "stage_bounds_verified": true,
+      "values": [
+        10.0,
+        20.0,
+        22.0
+      ]
+    },
+    {
+      "category": "minor",
+      "costs": [
+        100,
+        150,
+        225
+      ],
+      "description_sha256": "a6907e343f68551d2c727781cb0b3126e5d62f7f70cf5c0e226f4a9e2ff21ae4",
+      "icon_loaded": true,
+      "key": "oteryn:charm.cleanse",
+      "stage_bounds_verified": true,
+      "values": [
+        6.0,
+        9.0,
+        12.0
+      ]
+    },
+    {
+      "category": "minor",
+      "costs": [
+        100,
+        150,
+        225
+      ],
+      "description_sha256": "9a6b88b2e645832ad11dac5943456b6d30141e5d4cd2152177fbf4e2169b4205",
+      "icon_loaded": true,
+      "key": "oteryn:charm.cripple",
+      "stage_bounds_verified": true,
+      "values": [
+        6.0,
+        9.0,
+        12.0
+      ]
+    },
+    {
+      "category": "major",
+      "costs": [
+        360,
+        540,
+        1800
+      ],
+      "description_sha256": "2d10594902e0dfcd7fde0b833ab8784714e7f707962dcfaa5eda2ea0e2727efe",
+      "icon_loaded": true,
+      "key": "oteryn:charm.curse",
+      "stage_bounds_verified": true,
+      "values": [
+        5.0,
+        10.0,
+        11.0
+      ]
+    },
+    {
+      "category": "major",
+      "costs": [
+        600,
+        900,
+        3000
+      ],
+      "description_sha256": "5523b45911677aaac69c5dd4888858c5864cf261a5cff2c38dcfb379a06db19f",
+      "icon_loaded": true,
+      "key": "oteryn:charm.divine_wrath",
+      "stage_bounds_verified": true,
+      "values": [
+        5.0,
+        10.0,
+        11.0
+      ]
+    },
+    {
+      "category": "major",
+      "costs": [
+        240,
+        360,
+        1200
+      ],
+      "description_sha256": "996d8126892f370106a5318f45aeba63a12ad4f250f9baa18b0e5d7c50249961",
+      "icon_loaded": true,
+      "key": "oteryn:charm.dodge",
+      "stage_bounds_verified": true,
+      "values": [
+        5.0,
+        10.0,
+        11.0
+      ]
+    },
+    {
+      "category": "major",
+      "costs": [
+        400,
+        600,
+        2000
+      ],
+      "description_sha256": "da1354cdaa409cdb2353819d3f16b8d6870edebc2eae2bbd82927454d4b4f891",
+      "icon_loaded": true,
+      "key": "oteryn:charm.enflame",
+      "stage_bounds_verified": true,
+      "values": [
+        5.0,
+        10.0,
+        11.0
+      ]
+    },
+    {
+      "category": "minor",
+      "costs": [
+        100,
+        150,
+        225
+      ],
+      "description_sha256": "d8679d142dd21512de21026b3ca0b5002d8093b0a2dd3e4d601a330a38c9bdcc",
+      "icon_loaded": true,
+      "key": "oteryn:charm.fatal_hold",
+      "stage_bounds_verified": true,
+      "values": [
+        30.0,
+        45.0,
+        60.0
+      ]
+    },
+    {
+      "category": "major",
+      "costs": [
+        320,
+        480,
+        1600
+      ],
+      "description_sha256": "e21937b4d527db26d2daa60f86e33fb464a75f3632fbf9c60a4af8eff128781f",
+      "icon_loaded": true,
+      "key": "oteryn:charm.freeze",
+      "stage_bounds_verified": true,
+      "values": [
+        5.0,
+        10.0,
+        11.0
+      ]
+    },
+    {
+      "category": "minor",
+      "costs": [
+        100,
+        150,
+        225
+      ],
+      "description_sha256": "902e2b2530250650cd5e91de8e4f21d24cdadcc71f676a5806e868a425168e55",
+      "icon_loaded": true,
+      "key": "oteryn:charm.gut",
+      "stage_bounds_verified": true,
+      "values": [
+        6.0,
+        9.0,
+        12.0
+      ]
+    },
+    {
+      "category": "major",
+      "costs": [
+        800,
+        1200,
+        4000
+      ],
+      "description_sha256": "fc56422802a666a6b2c7dbd9b2afab1e760d9369db9236d2b4bba897a64e8d14",
+      "icon_loaded": true,
+      "key": "oteryn:charm.low_blow",
+      "stage_bounds_verified": true,
+      "values": [
+        4.0,
+        8.0,
+        9.0
+      ]
+    },
+    {
+      "category": "minor",
+      "costs": [
+        100,
+        150,
+        225
+      ],
+      "description_sha256": "23ed8f2f710d5f3e7b0f5dc6cc357a99ba0aa506b1505de3be49291385a2f8ec",
+      "icon_loaded": true,
+      "key": "oteryn:charm.numb",
+      "stage_bounds_verified": true,
+      "values": [
+        6.0,
+        9.0,
+        12.0
+      ]
+    },
+    {
+      "category": "major",
+      "costs": [
+        600,
+        900,
+        3000
+      ],
+      "description_sha256": "7ca6d51f572c00938881a23ed26c6640ab6a55bbee962c5be461d4a0484ce84f",
+      "icon_loaded": true,
+      "key": "oteryn:charm.overflux",
+      "stage_bounds_verified": true,
+      "values": [
+        5.0,
+        10.0,
+        11.0
+      ]
+    },
+    {
+      "category": "major",
+      "costs": [
+        600,
+        900,
+        3000
+      ],
+      "description_sha256": "ecf8ed1cc952065e240fa3fd51514555c33b81742960831afa306a18ddfaaa46",
+      "icon_loaded": true,
+      "key": "oteryn:charm.overpower",
+      "stage_bounds_verified": true,
+      "values": [
+        5.0,
+        10.0,
+        11.0
+      ]
+    },
+    {
+      "category": "major",
+      "costs": [
+        400,
+        600,
+        2000
+      ],
+      "description_sha256": "9119459d135af5529bd8eb1645f28cebfe2094e1e8dfcb9d731adabed763a2f0",
+      "icon_loaded": true,
+      "key": "oteryn:charm.parry",
+      "stage_bounds_verified": true,
+      "values": [
+        5.0,
+        10.0,
+        11.0
+      ]
+    },
+    {
+      "category": "major",
+      "costs": [
+        240,
+        360,
+        1200
+      ],
+      "description_sha256": "81f0898e69b4a72865d3e0ed7a04657b1a0b4d44f80da2253ba003db45f06a04",
+      "icon_loaded": true,
+      "key": "oteryn:charm.poison",
+      "stage_bounds_verified": true,
+      "values": [
+        5.0,
+        10.0,
+        11.0
+      ]
+    },
+    {
+      "category": "major",
+      "costs": [
+        800,
+        1200,
+        4000
+      ],
+      "description_sha256": "b7b9019c4e00baa7681ffc09fef40865fb09ef712a808b4cfb2e8de7416357fc",
+      "icon_loaded": true,
+      "key": "oteryn:charm.savage_blow",
+      "stage_bounds_verified": true,
+      "values": [
+        20.0,
+        40.0,
+        44.0
+      ]
+    },
+    {
+      "category": "minor",
+      "costs": [
+        100,
+        150,
+        225
+      ],
+      "description_sha256": "a770018a2ef7543c81dbe22c0d6b3d4bc60ead84f0f58888bcff305f9224ccda",
+      "icon_loaded": true,
+      "key": "oteryn:charm.scavenge",
+      "stage_bounds_verified": true,
+      "values": [
+        60.0,
+        90.0,
+        120.0
+      ]
+    },
+    {
+      "category": "minor",
+      "costs": [
+        100,
+        150,
+        225
+      ],
+      "description_sha256": "f0a53f00d227cf53e8e7f3333d9ea8bae60ac55aac1a42338080f7118072bf76",
+      "icon_loaded": true,
+      "key": "oteryn:charm.vampiric_embrace",
+      "stage_bounds_verified": true,
+      "values": [
+        1.6,
+        2.4,
+        3.2
+      ]
+    },
+    {
+      "category": "minor",
+      "costs": [
+        100,
+        150,
+        225
+      ],
+      "description_sha256": "dea44a3128d9ce1832fb11ada6f9c661346af09debc0d5acf52a4d5dda670cd9",
+      "icon_loaded": true,
+      "key": "oteryn:charm.void_inversion",
+      "stage_bounds_verified": true,
+      "values": [
+        20.0,
+        30.0,
+        40.0
+      ]
+    },
+    {
+      "category": "minor",
+      "costs": [
+        100,
+        150,
+        225
+      ],
+      "description_sha256": "0ef0952fe0726e34c4de027db4083d8f99f5b1d04b49d73701ee444b1bbd1897",
+      "icon_loaded": true,
+      "key": "oteryn:charm.voids_call",
+      "stage_bounds_verified": true,
+      "values": [
+        0.8,
+        1.2,
+        1.6
+      ]
+    },
+    {
+      "category": "major",
+      "costs": [
+        240,
+        360,
+        1200
+      ],
+      "description_sha256": "f8bf9a4a3897fa888164d0fcd411b15688b6d37a296b6661ef4d51a1848a6812",
+      "icon_loaded": true,
+      "key": "oteryn:charm.wound",
+      "stage_bounds_verified": true,
+      "values": [
+        5.0,
+        10.0,
+        11.0
+      ]
+    },
+    {
+      "category": "major",
+      "costs": [
+        320,
+        480,
+        1600
+      ],
+      "description_sha256": "4066a83232b26326b6e86cb5c3f5faf2c7b54059aa8547baf1757d0f2de2a886",
+      "icon_loaded": true,
+      "key": "oteryn:charm.zap",
+      "stage_bounds_verified": true,
+      "values": [
+        5.0,
+        10.0,
+        11.0
+      ]
+    }
+  ],
+  "planner_transitions": [
+    {
+      "direction": "buy",
+      "echoes": 700,
+      "key": "adrenaline_burst",
+      "major": 3600,
+      "minor": 100,
+      "stage": 1
+    },
+    {
+      "direction": "buy",
+      "echoes": 550,
+      "key": "adrenaline_burst",
+      "major": 3600,
+      "minor": 250,
+      "stage": 2
+    },
+    {
+      "direction": "buy",
+      "echoes": 325,
+      "key": "adrenaline_burst",
+      "major": 3600,
+      "minor": 475,
+      "stage": 3
+    },
+    {
+      "direction": "refund",
+      "echoes": 550,
+      "key": "adrenaline_burst",
+      "major": 3600,
+      "minor": 250,
+      "stage": 2
+    },
+    {
+      "direction": "refund",
+      "echoes": 700,
+      "key": "adrenaline_burst",
+      "major": 3600,
+      "minor": 100,
+      "stage": 1
+    },
+    {
+      "direction": "refund",
+      "echoes": 800,
+      "key": "adrenaline_burst",
+      "major": 3600,
+      "minor": 0,
+      "stage": 0
+    },
+    {
+      "direction": "buy",
+      "echoes": 700,
+      "key": "bless",
+      "major": 3600,
+      "minor": 100,
+      "stage": 1
+    },
+    {
+      "direction": "buy",
+      "echoes": 550,
+      "key": "bless",
+      "major": 3600,
+      "minor": 250,
+      "stage": 2
+    },
+    {
+      "direction": "buy",
+      "echoes": 325,
+      "key": "bless",
+      "major": 3600,
+      "minor": 475,
+      "stage": 3
+    },
+    {
+      "direction": "refund",
+      "echoes": 550,
+      "key": "bless",
+      "major": 3600,
+      "minor": 250,
+      "stage": 2
+    },
+    {
+      "direction": "refund",
+      "echoes": 700,
+      "key": "bless",
+      "major": 3600,
+      "minor": 100,
+      "stage": 1
+    },
+    {
+      "direction": "refund",
+      "echoes": 800,
+      "key": "bless",
+      "major": 3600,
+      "minor": 0,
+      "stage": 0
+    },
+    {
+      "direction": "buy",
+      "echoes": 150,
+      "key": "carnage",
+      "major": 600,
+      "minor": 0,
+      "stage": 1
+    },
+    {
+      "direction": "buy",
+      "echoes": 250,
+      "key": "carnage",
+      "major": 1500,
+      "minor": 0,
+      "stage": 2
+    },
+    {
+      "direction": "buy",
+      "echoes": 450,
+      "key": "carnage",
+      "major": 4500,
+      "minor": 0,
+      "stage": 3
+    },
+    {
+      "direction": "refund",
+      "echoes": 250,
+      "key": "carnage",
+      "major": 1500,
+      "minor": 0,
+      "stage": 2
+    },
+    {
+      "direction": "refund",
+      "echoes": 150,
+      "key": "carnage",
+      "major": 600,
+      "minor": 0,
+      "stage": 1
+    },
+    {
+      "direction": "refund",
+      "echoes": 100,
+      "key": "carnage",
+      "major": 0,
+      "minor": 0,
+      "stage": 0
+    },
+    {
+      "direction": "buy",
+      "echoes": 700,
+      "key": "cleanse",
+      "major": 3600,
+      "minor": 100,
+      "stage": 1
+    },
+    {
+      "direction": "buy",
+      "echoes": 550,
+      "key": "cleanse",
+      "major": 3600,
+      "minor": 250,
+      "stage": 2
+    },
+    {
+      "direction": "buy",
+      "echoes": 325,
+      "key": "cleanse",
+      "major": 3600,
+      "minor": 475,
+      "stage": 3
+    },
+    {
+      "direction": "refund",
+      "echoes": 550,
+      "key": "cleanse",
+      "major": 3600,
+      "minor": 250,
+      "stage": 2
+    },
+    {
+      "direction": "refund",
+      "echoes": 700,
+      "key": "cleanse",
+      "major": 3600,
+      "minor": 100,
+      "stage": 1
+    },
+    {
+      "direction": "refund",
+      "echoes": 800,
+      "key": "cleanse",
+      "major": 3600,
+      "minor": 0,
+      "stage": 0
+    },
+    {
+      "direction": "buy",
+      "echoes": 700,
+      "key": "cripple",
+      "major": 3600,
+      "minor": 100,
+      "stage": 1
+    },
+    {
+      "direction": "buy",
+      "echoes": 550,
+      "key": "cripple",
+      "major": 3600,
+      "minor": 250,
+      "stage": 2
+    },
+    {
+      "direction": "buy",
+      "echoes": 325,
+      "key": "cripple",
+      "major": 3600,
+      "minor": 475,
+      "stage": 3
+    },
+    {
+      "direction": "refund",
+      "echoes": 550,
+      "key": "cripple",
+      "major": 3600,
+      "minor": 250,
+      "stage": 2
+    },
+    {
+      "direction": "refund",
+      "echoes": 700,
+      "key": "cripple",
+      "major": 3600,
+      "minor": 100,
+      "stage": 1
+    },
+    {
+      "direction": "refund",
+      "echoes": 800,
+      "key": "cripple",
+      "major": 3600,
+      "minor": 0,
+      "stage": 0
+    },
+    {
+      "direction": "buy",
+      "echoes": 150,
+      "key": "curse",
+      "major": 360,
+      "minor": 0,
+      "stage": 1
+    },
+    {
+      "direction": "buy",
+      "echoes": 250,
+      "key": "curse",
+      "major": 900,
+      "minor": 0,
+      "stage": 2
+    },
+    {
+      "direction": "buy",
+      "echoes": 450,
+      "key": "curse",
+      "major": 2700,
+      "minor": 0,
+      "stage": 3
+    },
+    {
+      "direction": "refund",
+      "echoes": 250,
+      "key": "curse",
+      "major": 900,
+      "minor": 0,
+      "stage": 2
+    },
+    {
+      "direction": "refund",
+      "echoes": 150,
+      "key": "curse",
+      "major": 360,
+      "minor": 0,
+      "stage": 1
+    },
+    {
+      "direction": "refund",
+      "echoes": 100,
+      "key": "curse",
+      "major": 0,
+      "minor": 0,
+      "stage": 0
+    },
+    {
+      "direction": "buy",
+      "echoes": 150,
+      "key": "divine_wrath",
+      "major": 600,
+      "minor": 0,
+      "stage": 1
+    },
+    {
+      "direction": "buy",
+      "echoes": 250,
+      "key": "divine_wrath",
+      "major": 1500,
+      "minor": 0,
+      "stage": 2
+    },
+    {
+      "direction": "buy",
+      "echoes": 450,
+      "key": "divine_wrath",
+      "major": 4500,
+      "minor": 0,
+      "stage": 3
+    },
+    {
+      "direction": "refund",
+      "echoes": 250,
+      "key": "divine_wrath",
+      "major": 1500,
+      "minor": 0,
+      "stage": 2
+    },
+    {
+      "direction": "refund",
+      "echoes": 150,
+      "key": "divine_wrath",
+      "major": 600,
+      "minor": 0,
+      "stage": 1
+    },
+    {
+      "direction": "refund",
+      "echoes": 100,
+      "key": "divine_wrath",
+      "major": 0,
+      "minor": 0,
+      "stage": 0
+    },
+    {
+      "direction": "buy",
+      "echoes": 150,
+      "key": "dodge",
+      "major": 240,
+      "minor": 0,
+      "stage": 1
+    },
+    {
+      "direction": "buy",
+      "echoes": 250,
+      "key": "dodge",
+      "major": 600,
+      "minor": 0,
+      "stage": 2
+    },
+    {
+      "direction": "buy",
+      "echoes": 450,
+      "key": "dodge",
+      "major": 1800,
+      "minor": 0,
+      "stage": 3
+    },
+    {
+      "direction": "refund",
+      "echoes": 250,
+      "key": "dodge",
+      "major": 600,
+      "minor": 0,
+      "stage": 2
+    },
+    {
+      "direction": "refund",
+      "echoes": 150,
+      "key": "dodge",
+      "major": 240,
+      "minor": 0,
+      "stage": 1
+    },
+    {
+      "direction": "refund",
+      "echoes": 100,
+      "key": "dodge",
+      "major": 0,
+      "minor": 0,
+      "stage": 0
+    },
+    {
+      "direction": "buy",
+      "echoes": 150,
+      "key": "enflame",
+      "major": 400,
+      "minor": 0,
+      "stage": 1
+    },
+    {
+      "direction": "buy",
+      "echoes": 250,
+      "key": "enflame",
+      "major": 1000,
+      "minor": 0,
+      "stage": 2
+    },
+    {
+      "direction": "buy",
+      "echoes": 450,
+      "key": "enflame",
+      "major": 3000,
+      "minor": 0,
+      "stage": 3
+    },
+    {
+      "direction": "refund",
+      "echoes": 250,
+      "key": "enflame",
+      "major": 1000,
+      "minor": 0,
+      "stage": 2
+    },
+    {
+      "direction": "refund",
+      "echoes": 150,
+      "key": "enflame",
+      "major": 400,
+      "minor": 0,
+      "stage": 1
+    },
+    {
+      "direction": "refund",
+      "echoes": 100,
+      "key": "enflame",
+      "major": 0,
+      "minor": 0,
+      "stage": 0
+    },
+    {
+      "direction": "buy",
+      "echoes": 700,
+      "key": "fatal_hold",
+      "major": 3600,
+      "minor": 100,
+      "stage": 1
+    },
+    {
+      "direction": "buy",
+      "echoes": 550,
+      "key": "fatal_hold",
+      "major": 3600,
+      "minor": 250,
+      "stage": 2
+    },
+    {
+      "direction": "buy",
+      "echoes": 325,
+      "key": "fatal_hold",
+      "major": 3600,
+      "minor": 475,
+      "stage": 3
+    },
+    {
+      "direction": "refund",
+      "echoes": 550,
+      "key": "fatal_hold",
+      "major": 3600,
+      "minor": 250,
+      "stage": 2
+    },
+    {
+      "direction": "refund",
+      "echoes": 700,
+      "key": "fatal_hold",
+      "major": 3600,
+      "minor": 100,
+      "stage": 1
+    },
+    {
+      "direction": "refund",
+      "echoes": 800,
+      "key": "fatal_hold",
+      "major": 3600,
+      "minor": 0,
+      "stage": 0
+    },
+    {
+      "direction": "buy",
+      "echoes": 150,
+      "key": "freeze",
+      "major": 320,
+      "minor": 0,
+      "stage": 1
+    },
+    {
+      "direction": "buy",
+      "echoes": 250,
+      "key": "freeze",
+      "major": 800,
+      "minor": 0,
+      "stage": 2
+    },
+    {
+      "direction": "buy",
+      "echoes": 450,
+      "key": "freeze",
+      "major": 2400,
+      "minor": 0,
+      "stage": 3
+    },
+    {
+      "direction": "refund",
+      "echoes": 250,
+      "key": "freeze",
+      "major": 800,
+      "minor": 0,
+      "stage": 2
+    },
+    {
+      "direction": "refund",
+      "echoes": 150,
+      "key": "freeze",
+      "major": 320,
+      "minor": 0,
+      "stage": 1
+    },
+    {
+      "direction": "refund",
+      "echoes": 100,
+      "key": "freeze",
+      "major": 0,
+      "minor": 0,
+      "stage": 0
+    },
+    {
+      "direction": "buy",
+      "echoes": 700,
+      "key": "gut",
+      "major": 3600,
+      "minor": 100,
+      "stage": 1
+    },
+    {
+      "direction": "buy",
+      "echoes": 550,
+      "key": "gut",
+      "major": 3600,
+      "minor": 250,
+      "stage": 2
+    },
+    {
+      "direction": "buy",
+      "echoes": 325,
+      "key": "gut",
+      "major": 3600,
+      "minor": 475,
+      "stage": 3
+    },
+    {
+      "direction": "refund",
+      "echoes": 550,
+      "key": "gut",
+      "major": 3600,
+      "minor": 250,
+      "stage": 2
+    },
+    {
+      "direction": "refund",
+      "echoes": 700,
+      "key": "gut",
+      "major": 3600,
+      "minor": 100,
+      "stage": 1
+    },
+    {
+      "direction": "refund",
+      "echoes": 800,
+      "key": "gut",
+      "major": 3600,
+      "minor": 0,
+      "stage": 0
+    },
+    {
+      "direction": "buy",
+      "echoes": 150,
+      "key": "low_blow",
+      "major": 800,
+      "minor": 0,
+      "stage": 1
+    },
+    {
+      "direction": "buy",
+      "echoes": 250,
+      "key": "low_blow",
+      "major": 2000,
+      "minor": 0,
+      "stage": 2
+    },
+    {
+      "direction": "buy",
+      "echoes": 450,
+      "key": "low_blow",
+      "major": 6000,
+      "minor": 0,
+      "stage": 3
+    },
+    {
+      "direction": "refund",
+      "echoes": 250,
+      "key": "low_blow",
+      "major": 2000,
+      "minor": 0,
+      "stage": 2
+    },
+    {
+      "direction": "refund",
+      "echoes": 150,
+      "key": "low_blow",
+      "major": 800,
+      "minor": 0,
+      "stage": 1
+    },
+    {
+      "direction": "refund",
+      "echoes": 100,
+      "key": "low_blow",
+      "major": 0,
+      "minor": 0,
+      "stage": 0
+    },
+    {
+      "direction": "buy",
+      "echoes": 700,
+      "key": "numb",
+      "major": 3600,
+      "minor": 100,
+      "stage": 1
+    },
+    {
+      "direction": "buy",
+      "echoes": 550,
+      "key": "numb",
+      "major": 3600,
+      "minor": 250,
+      "stage": 2
+    },
+    {
+      "direction": "buy",
+      "echoes": 325,
+      "key": "numb",
+      "major": 3600,
+      "minor": 475,
+      "stage": 3
+    },
+    {
+      "direction": "refund",
+      "echoes": 550,
+      "key": "numb",
+      "major": 3600,
+      "minor": 250,
+      "stage": 2
+    },
+    {
+      "direction": "refund",
+      "echoes": 700,
+      "key": "numb",
+      "major": 3600,
+      "minor": 100,
+      "stage": 1
+    },
+    {
+      "direction": "refund",
+      "echoes": 800,
+      "key": "numb",
+      "major": 3600,
+      "minor": 0,
+      "stage": 0
+    },
+    {
+      "direction": "buy",
+      "echoes": 150,
+      "key": "overflux",
+      "major": 600,
+      "minor": 0,
+      "stage": 1
+    },
+    {
+      "direction": "buy",
+      "echoes": 250,
+      "key": "overflux",
+      "major": 1500,
+      "minor": 0,
+      "stage": 2
+    },
+    {
+      "direction": "buy",
+      "echoes": 450,
+      "key": "overflux",
+      "major": 4500,
+      "minor": 0,
+      "stage": 3
+    },
+    {
+      "direction": "refund",
+      "echoes": 250,
+      "key": "overflux",
+      "major": 1500,
+      "minor": 0,
+      "stage": 2
+    },
+    {
+      "direction": "refund",
+      "echoes": 150,
+      "key": "overflux",
+      "major": 600,
+      "minor": 0,
+      "stage": 1
+    },
+    {
+      "direction": "refund",
+      "echoes": 100,
+      "key": "overflux",
+      "major": 0,
+      "minor": 0,
+      "stage": 0
+    },
+    {
+      "direction": "buy",
+      "echoes": 150,
+      "key": "overpower",
+      "major": 600,
+      "minor": 0,
+      "stage": 1
+    },
+    {
+      "direction": "buy",
+      "echoes": 250,
+      "key": "overpower",
+      "major": 1500,
+      "minor": 0,
+      "stage": 2
+    },
+    {
+      "direction": "buy",
+      "echoes": 450,
+      "key": "overpower",
+      "major": 4500,
+      "minor": 0,
+      "stage": 3
+    },
+    {
+      "direction": "refund",
+      "echoes": 250,
+      "key": "overpower",
+      "major": 1500,
+      "minor": 0,
+      "stage": 2
+    },
+    {
+      "direction": "refund",
+      "echoes": 150,
+      "key": "overpower",
+      "major": 600,
+      "minor": 0,
+      "stage": 1
+    },
+    {
+      "direction": "refund",
+      "echoes": 100,
+      "key": "overpower",
+      "major": 0,
+      "minor": 0,
+      "stage": 0
+    },
+    {
+      "direction": "buy",
+      "echoes": 150,
+      "key": "parry",
+      "major": 400,
+      "minor": 0,
+      "stage": 1
+    },
+    {
+      "direction": "buy",
+      "echoes": 250,
+      "key": "parry",
+      "major": 1000,
+      "minor": 0,
+      "stage": 2
+    },
+    {
+      "direction": "buy",
+      "echoes": 450,
+      "key": "parry",
+      "major": 3000,
+      "minor": 0,
+      "stage": 3
+    },
+    {
+      "direction": "refund",
+      "echoes": 250,
+      "key": "parry",
+      "major": 1000,
+      "minor": 0,
+      "stage": 2
+    },
+    {
+      "direction": "refund",
+      "echoes": 150,
+      "key": "parry",
+      "major": 400,
+      "minor": 0,
+      "stage": 1
+    },
+    {
+      "direction": "refund",
+      "echoes": 100,
+      "key": "parry",
+      "major": 0,
+      "minor": 0,
+      "stage": 0
+    },
+    {
+      "direction": "buy",
+      "echoes": 150,
+      "key": "poison",
+      "major": 240,
+      "minor": 0,
+      "stage": 1
+    },
+    {
+      "direction": "buy",
+      "echoes": 250,
+      "key": "poison",
+      "major": 600,
+      "minor": 0,
+      "stage": 2
+    },
+    {
+      "direction": "buy",
+      "echoes": 450,
+      "key": "poison",
+      "major": 1800,
+      "minor": 0,
+      "stage": 3
+    },
+    {
+      "direction": "refund",
+      "echoes": 250,
+      "key": "poison",
+      "major": 600,
+      "minor": 0,
+      "stage": 2
+    },
+    {
+      "direction": "refund",
+      "echoes": 150,
+      "key": "poison",
+      "major": 240,
+      "minor": 0,
+      "stage": 1
+    },
+    {
+      "direction": "refund",
+      "echoes": 100,
+      "key": "poison",
+      "major": 0,
+      "minor": 0,
+      "stage": 0
+    },
+    {
+      "direction": "buy",
+      "echoes": 150,
+      "key": "savage_blow",
+      "major": 800,
+      "minor": 0,
+      "stage": 1
+    },
+    {
+      "direction": "buy",
+      "echoes": 250,
+      "key": "savage_blow",
+      "major": 2000,
+      "minor": 0,
+      "stage": 2
+    },
+    {
+      "direction": "buy",
+      "echoes": 450,
+      "key": "savage_blow",
+      "major": 6000,
+      "minor": 0,
+      "stage": 3
+    },
+    {
+      "direction": "refund",
+      "echoes": 250,
+      "key": "savage_blow",
+      "major": 2000,
+      "minor": 0,
+      "stage": 2
+    },
+    {
+      "direction": "refund",
+      "echoes": 150,
+      "key": "savage_blow",
+      "major": 800,
+      "minor": 0,
+      "stage": 1
+    },
+    {
+      "direction": "refund",
+      "echoes": 100,
+      "key": "savage_blow",
+      "major": 0,
+      "minor": 0,
+      "stage": 0
+    },
+    {
+      "direction": "buy",
+      "echoes": 700,
+      "key": "scavenge",
+      "major": 3600,
+      "minor": 100,
+      "stage": 1
+    },
+    {
+      "direction": "buy",
+      "echoes": 550,
+      "key": "scavenge",
+      "major": 3600,
+      "minor": 250,
+      "stage": 2
+    },
+    {
+      "direction": "buy",
+      "echoes": 325,
+      "key": "scavenge",
+      "major": 3600,
+      "minor": 475,
+      "stage": 3
+    },
+    {
+      "direction": "refund",
+      "echoes": 550,
+      "key": "scavenge",
+      "major": 3600,
+      "minor": 250,
+      "stage": 2
+    },
+    {
+      "direction": "refund",
+      "echoes": 700,
+      "key": "scavenge",
+      "major": 3600,
+      "minor": 100,
+      "stage": 1
+    },
+    {
+      "direction": "refund",
+      "echoes": 800,
+      "key": "scavenge",
+      "major": 3600,
+      "minor": 0,
+      "stage": 0
+    },
+    {
+      "direction": "buy",
+      "echoes": 700,
+      "key": "vampiric_embrace",
+      "major": 3600,
+      "minor": 100,
+      "stage": 1
+    },
+    {
+      "direction": "buy",
+      "echoes": 550,
+      "key": "vampiric_embrace",
+      "major": 3600,
+      "minor": 250,
+      "stage": 2
+    },
+    {
+      "direction": "buy",
+      "echoes": 325,
+      "key": "vampiric_embrace",
+      "major": 3600,
+      "minor": 475,
+      "stage": 3
+    },
+    {
+      "direction": "refund",
+      "echoes": 550,
+      "key": "vampiric_embrace",
+      "major": 3600,
+      "minor": 250,
+      "stage": 2
+    },
+    {
+      "direction": "refund",
+      "echoes": 700,
+      "key": "vampiric_embrace",
+      "major": 3600,
+      "minor": 100,
+      "stage": 1
+    },
+    {
+      "direction": "refund",
+      "echoes": 800,
+      "key": "vampiric_embrace",
+      "major": 3600,
+      "minor": 0,
+      "stage": 0
+    },
+    {
+      "direction": "buy",
+      "echoes": 700,
+      "key": "void_inversion",
+      "major": 3600,
+      "minor": 100,
+      "stage": 1
+    },
+    {
+      "direction": "buy",
+      "echoes": 550,
+      "key": "void_inversion",
+      "major": 3600,
+      "minor": 250,
+      "stage": 2
+    },
+    {
+      "direction": "buy",
+      "echoes": 325,
+      "key": "void_inversion",
+      "major": 3600,
+      "minor": 475,
+      "stage": 3
+    },
+    {
+      "direction": "refund",
+      "echoes": 550,
+      "key": "void_inversion",
+      "major": 3600,
+      "minor": 250,
+      "stage": 2
+    },
+    {
+      "direction": "refund",
+      "echoes": 700,
+      "key": "void_inversion",
+      "major": 3600,
+      "minor": 100,
+      "stage": 1
+    },
+    {
+      "direction": "refund",
+      "echoes": 800,
+      "key": "void_inversion",
+      "major": 3600,
+      "minor": 0,
+      "stage": 0
+    },
+    {
+      "direction": "buy",
+      "echoes": 700,
+      "key": "voids_call",
+      "major": 3600,
+      "minor": 100,
+      "stage": 1
+    },
+    {
+      "direction": "buy",
+      "echoes": 550,
+      "key": "voids_call",
+      "major": 3600,
+      "minor": 250,
+      "stage": 2
+    },
+    {
+      "direction": "buy",
+      "echoes": 325,
+      "key": "voids_call",
+      "major": 3600,
+      "minor": 475,
+      "stage": 3
+    },
+    {
+      "direction": "refund",
+      "echoes": 550,
+      "key": "voids_call",
+      "major": 3600,
+      "minor": 250,
+      "stage": 2
+    },
+    {
+      "direction": "refund",
+      "echoes": 700,
+      "key": "voids_call",
+      "major": 3600,
+      "minor": 100,
+      "stage": 1
+    },
+    {
+      "direction": "refund",
+      "echoes": 800,
+      "key": "voids_call",
+      "major": 3600,
+      "minor": 0,
+      "stage": 0
+    },
+    {
+      "direction": "buy",
+      "echoes": 150,
+      "key": "wound",
+      "major": 240,
+      "minor": 0,
+      "stage": 1
+    },
+    {
+      "direction": "buy",
+      "echoes": 250,
+      "key": "wound",
+      "major": 600,
+      "minor": 0,
+      "stage": 2
+    },
+    {
+      "direction": "buy",
+      "echoes": 450,
+      "key": "wound",
+      "major": 1800,
+      "minor": 0,
+      "stage": 3
+    },
+    {
+      "direction": "refund",
+      "echoes": 250,
+      "key": "wound",
+      "major": 600,
+      "minor": 0,
+      "stage": 2
+    },
+    {
+      "direction": "refund",
+      "echoes": 150,
+      "key": "wound",
+      "major": 240,
+      "minor": 0,
+      "stage": 1
+    },
+    {
+      "direction": "refund",
+      "echoes": 100,
+      "key": "wound",
+      "major": 0,
+      "minor": 0,
+      "stage": 0
+    },
+    {
+      "direction": "buy",
+      "echoes": 150,
+      "key": "zap",
+      "major": 320,
+      "minor": 0,
+      "stage": 1
+    },
+    {
+      "direction": "buy",
+      "echoes": 250,
+      "key": "zap",
+      "major": 800,
+      "minor": 0,
+      "stage": 2
+    },
+    {
+      "direction": "buy",
+      "echoes": 450,
+      "key": "zap",
+      "major": 2400,
+      "minor": 0,
+      "stage": 3
+    },
+    {
+      "direction": "refund",
+      "echoes": 250,
+      "key": "zap",
+      "major": 800,
+      "minor": 0,
+      "stage": 2
+    },
+    {
+      "direction": "refund",
+      "echoes": 150,
+      "key": "zap",
+      "major": 320,
+      "minor": 0,
+      "stage": 1
+    },
+    {
+      "direction": "refund",
+      "echoes": 100,
+      "key": "zap",
+      "major": 0,
+      "minor": 0,
+      "stage": 0
+    }
+  ],
+  "reset_verified": true,
+  "schema": "OTERYN_TIBIAPAL_BROWSER_VERIFICATION/v1",
+  "scope": "PINNED_LOCAL_SITE",
+  "source_hashes": {
+    "_site/charm_calculator.html": "9bebd002d42ddeb24ceb3c0b3ed9251684ac3318cafaa1393d66b1169eead14a",
+    "_site/charm_planner.html": "97487797b01175467fd16b1a93c52874c0bc22f82ed04347dda20f7d6f41ff88",
+    "_site/scripts/onload.js": "44c719e8616a6cd670a031b5316b10061a54a7873cce3bd31c417f93606b252f",
+    "scripts/charm_calculator.js": "04a94974bea35657987085fcc8eaa08060d5478b5a744a0993304a590c4b9811",
+    "scripts/charm_planner.js": "18de343c48b73bbd37e21dc2aae3e7afb17b3c7b3b734f4f9768062307b13b8e"
+  },
+  "source_revision": "61ffa3e0502879ccec44e59ead859e92b6d88531"
+}

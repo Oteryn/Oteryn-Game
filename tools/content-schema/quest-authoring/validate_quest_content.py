@@ -133,13 +133,59 @@ def validate(claims_doc, quests_doc, catalog=None, manifest=None):
     return sorted(set(errors))
 
 
-def validate_gates(gates_doc, claims_doc, manifest=None):
+def source_check(record, field, key, reason):
+    """An evidence diagnostic, never a declaration or runtime permission."""
+    return {'record': record, 'field': field, 'key': key, 'reason': reason}
+
+
+def sorted_checks(checks):
+    return sorted({json.dumps(c, sort_keys=True) for c in checks})
+
+
+def gate_source_checks(gates_doc, quests_doc, progress_doc):
+    quests = {q['identity']['key'] for q in quests_doc['quests']}
+    tracks = {t['key'] for t in progress_doc['progress']}
+    checks = []
+    for gate in gates_doc['gates']:
+        key, condition = gate['identity']['key'], gate['condition']
+        if gate.get('quest') and gate['quest']['key'] not in quests:
+            checks.append(source_check(key, 'quest', gate['quest']['key'], 'quest not declared in catalogue'))
+        if condition['kind'] == 'quest_progress' and condition['progress'] not in tracks:
+            checks.append(source_check(key, 'condition.progress', condition['progress'], 'progress track not declared'))
+    return [json.loads(c) for c in sorted_checks(checks)]
+
+
+def interaction_source_checks(interactions_doc, progress_doc):
+    tracks = {t['key'] for t in progress_doc['progress']}
+    checks = []
+    for interaction in interactions_doc['interactions']:
+        _, conditions = rule_leaves(interaction['rules'])
+        for condition in conditions:
+            stage = condition.get('quest_stage')
+            if stage and stage['progress'] not in tracks:
+                checks.append(source_check(interaction['identity']['key'], 'condition.quest_stage.progress',
+                                           stage['progress'], 'progress track not declared'))
+    return [json.loads(c) for c in sorted_checks(checks)]
+
+
+def validate_source_checks(manifest, expected):
+    actual = manifest.get('source_checks', []) if manifest else []
+    if (not isinstance(actual, list) or actual != [json.loads(c) for c in sorted_checks(expected)]):
+        return ['manifest: source_checks must list exactly the unresolved references (missing or stale inventory)']
+    return []
+
+
+def validate_gates(gates_doc, claims_doc, manifest=None, quests_doc=None, progress_doc=None):
     schema = json.loads((ROOT / 'quest_content.schema.json').read_text())
     errors = [f'{"/".join(map(str, e.absolute_path))}: {e.message}'
               for e in jsonschema.Draft202012Validator(schema).iter_errors(gates_doc)]
     if errors:
         return errors
     claims = {c['identity']['key']: c for c in claims_doc['claims']}
+    checks = gate_source_checks(gates_doc, quests_doc, progress_doc) if quests_doc is not None and progress_doc is not None else None
+    if checks is not None:
+        errors += validate_source_checks(manifest, checks)
+    unresolved_gates = {c['record'] for c in checks or []}
     keys, positions = set(), {}
     for gate in gates_doc['gates']:
         key, condition = gate['identity']['key'], gate['condition']
@@ -170,6 +216,8 @@ def validate_gates(gates_doc, claims_doc, manifest=None):
                     errors.append(f'{key}: {claim_ref["key"]} hands out no key for this door')
     if manifest is not None:
         for entry in manifest['entries']:
+            if entry.get('destination') in unresolved_gates and entry['status'] == 'mapped':
+                errors.append(f'manifest: {entry["destination"]} is mapped but references undeclared content')
             if entry['status'] not in MANIFEST_STATUS:
                 errors.append(f'manifest: unknown status {entry["status"]}')
             if entry.get('destination') and entry['destination'] not in keys:
@@ -270,6 +318,9 @@ def validate_interactions(interactions_doc, manifest, quests_doc, progress_doc):
         return errors
     tracks = {t['key'] for t in progress_doc['progress']}
     missions = {f'{q["identity"]["key"]}#{m["key"]}': m for q in quests_doc['quests'] for m in q.get('missions', [])}
+    checks = interaction_source_checks(interactions_doc, progress_doc)
+    errors += validate_source_checks(manifest, checks)
+    unresolved_reads = {c['record'] for c in checks}
     unresolved, seen, undeclared = {}, set(), set()
     for interaction in interactions_doc['interactions']:
         key = interaction['identity']['key']
@@ -306,7 +357,10 @@ def validate_interactions(interactions_doc, manifest, quests_doc, progress_doc):
         lines = [u['line'] for u in interaction['unresolved']]
         if len(lines) != len(set(lines)):
             errors.append(f'{key}: an unresolved line is listed twice')
-        unresolved[key] = bool(lines) or any('unresolved' in c for c in conditions)
+        unresolved[key] = (bool(lines) or any('unresolved' in c for c in conditions)
+                           or any(c.get('status') == 'blocked' for c in children)
+                           or key in unresolved_reads
+                           or any(c.get('request') == 'set_progress' and c['progress'] not in tracks for c in children))
     if undeclared != set(manifest.get('undeclared_progress_tracks', [])):
         errors.append('manifest: undeclared_progress_tracks does not list exactly the tracks outside the catalogue')
     covered = set()
@@ -321,7 +375,7 @@ def validate_interactions(interactions_doc, manifest, quests_doc, progress_doc):
             errors.append(f'manifest: {destination} is listed twice')
         covered.add(destination)
         if status == 'mapped' and unresolved[destination]:
-            errors.append(f'manifest: {destination} is mapped but keeps unresolved lines or conditions')
+            errors.append(f'manifest: {destination} is mapped but keeps unresolved semantics or references')
         if status == 'conflict' and len({s['source'] for s in entry['sources']}) < 2:
             errors.append(f'manifest: {destination} is a conflict with one source')
     for key in sorted(set(unresolved) - covered):
@@ -348,7 +402,8 @@ def main():
     load = lambda p: json.loads(p.read_text()) if p else None
     errors = validate(load(args.claims), load(args.quests), load(args.catalog), load(args.manifest))
     if args.gates:
-        errors += validate_gates(load(args.gates), load(args.claims), load(args.gates_manifest))
+        errors += validate_gates(load(args.gates), load(args.claims), load(args.gates_manifest),
+                                 load(args.quests) if args.progress else None, load(args.progress))
     if args.progress:
         errors += validate_storylines(load(args.quests), load(args.gates), load(args.progress))
     if args.interactions:

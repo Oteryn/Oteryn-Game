@@ -10,7 +10,7 @@ pub const ITEM_MARKET_TRUE_PACKET: &[u8] = include_bytes!(
     "../../../../docs/agents/evidence/OTV2-20261003-item-market-true-promotion-v2.json"
 );
 pub const ITEM_MARKET_TRUE_PACKET_SHA256: &str =
-    "af3d42fae3d503c40a1caafcef88b30c34433b99576434553801f2a6b3e6be1a";
+    "dcc0eb7f693b2188804b4b5edebdd567ca039d46b3a0a0f7975e9345bbfe3d6a";
 #[derive(Deserialize)]
 struct Packet {
     schema: String,
@@ -46,7 +46,7 @@ pub fn apply_item_market_true_promotion_v1(
         } => Some((identity.key.as_str(), semantics)),
         _ => None,
     });
-    apply_rows(items, ITEM_MARKET_TRUE_PACKET, 4892)
+    apply_rows(items, ITEM_MARKET_TRUE_PACKET, 4891)
 }
 fn current(semantics: &ReferenceItemSemantics) -> Result<Option<bool>, String> {
     use ReferenceItemField::{Known, Unknown};

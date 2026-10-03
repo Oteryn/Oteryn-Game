@@ -14,7 +14,7 @@ from lower_wiki_stack_default_packet import raw_parameters
 ROOT = old.ROOT
 COMPILER = "tools/content-schema/item-authoring/lower_item_forge289_packet.py"
 PROOF = "docs/agents/evidence/OTV2-20261002-item-forge289-source-qualification-v1.json"
-PROOF_SHA = "e76b35928af82b02cc60eea1904b343e88588bd6765436acde39b70370b499a1"
+PROOF_SHA = "ccdc649cda120d648e001bd60f27b669d6a3466685669cae0e64cfc47e84267f"
 SNAPSHOT = "imports/tibiawiki/facts/forge289-source-snapshot.json"
 SNAPSHOT_SHA = "cff4df43b6e38255656d56fd1f53a47cf30f6174f09c01e18450cf5e49db32c2"
 PROPOSED = (
@@ -32,7 +32,7 @@ PATHS = {
 FANDOM_FIELDS = {"defensemod": ("extradefense", "extra_defense")}
 PARSER_PINS = {
     "tools/content-census/item_wiki_family_capture.py": "0abb6b0180eeef98bfa397ca3b7c9192d47806a7e97aa6423159220e82c36f03",
-    "tools/content-schema/item-authoring/lower_wiki_stack_default_packet.py": "70d6244253ec7fcc557b29f8203abc8492cd261a62563213bd1a3298bc212dba",
+    "tools/content-schema/item-authoring/lower_wiki_stack_default_packet.py": "5969b009ed326991e6db310b3e3c48640ae5a5ac361c9c34f5619740bff8ce2e",
 }
 
 
@@ -221,6 +221,31 @@ def qualify(source, page, native, obj, owners, routed, cutoff, policy):
     }
 
 
+# D316: main's quest-reward admission overlay reaches content/items after promotion, so the
+# Native guards compare against the pre-overlay stage that the Rust promotion applies to.
+PRE_OVERLAY = "content/world/definitions/reference.json"
+
+
+def pre_overlay_definitions(root):
+    """Pre-overlay Item definitions; exactly the current Item identities, no others."""
+    current = set()
+    for shard in json.loads((root / "content/items/index.json").read_bytes())["shards"]:
+        for row in json.loads((root / shard).read_bytes())["records"]:
+            if row["definition"]["identity"]["key"] in current:
+                raise ValueError("duplicate current canonical Item")
+            current.add(row["definition"]["identity"]["key"])
+    definitions = {}
+    for row in json.loads((root / PRE_OVERLAY).read_bytes())["records"]:
+        if row["identity"]["family"] != "Item":
+            continue
+        if row["identity"]["key"] in definitions:
+            raise ValueError("duplicate pre-overlay canonical Item")
+        definitions[row["identity"]["key"]] = row
+    if set(definitions) != current:
+        raise ValueError("pre-overlay/current Item identity set drift")
+    return definitions
+
+
 def build(root=ROOT):
     proof = json.loads(old.checked(root, PROOF, PROOF_SHA))
     snapshot = json.loads(old.checked(root, SNAPSHOT, SNAPSHOT_SHA))
@@ -267,13 +292,7 @@ def build(root=ROOT):
             )["entries"]
         }
     pages = {p["page_id"]: p for p in snapshot["pages"]}
-    definitions = {}
-    for shard in json.loads((root / "content/items/index.json").read_bytes())["shards"]:
-        for row in json.loads((root / shard).read_bytes())["records"]:
-            d = row["definition"]
-            if d["identity"]["key"] in definitions:
-                raise ValueError("duplicate current canonical Item")
-            definitions[d["identity"]["key"]] = d
+    definitions = pre_overlay_definitions(root)
     crystal = json.loads(
         (root / "imports/crystalserver/bindings/items.json").read_bytes()
     )["bindings"]

@@ -1,0 +1,17 @@
+{
+  "schema": "OTERYN_PORTABLE_SOURCE_INPUT_MANIFEST/v1",
+  "inputs": {
+    "source-specs-105.json": "40a6d18a243a0de0be07458d4ee85e6583374af2631ad7fc6f606022f9797f69",
+    "previous25.json": "e2eb89c8168eedfd431a69ebe8dbd17f1eb58090bec7e29740d14bac5c7c7f42",
+    "selection-input.json": "b3f2bbdbb22a7b190535ec893612e5ebe78f6985402f947a6063e709aee5d3e2",
+    "historical-status.json": "4b621b3f441c168d7d9bf4085a9d3f6b481e9fe1ef4ec4407fae0a07f5e2324b",
+    "selection-receipt.json": "4e20314294edd65049f2962dac3977d7b16de7aaf448b48e88b6ad16541e8871",
+    "acquisition-receipt.json": "aa6b3e7f6568927609920392c2a884be50bf4826cd73305b0f5b87348206fcc1",
+    "supplement-1.json": "4667c214014bd5e5e6665fabb0ef857a5f388dcae0acbb5e31a1de877b2c49a7",
+    "supplement-2.json": "3a2cb4edbf9e4306853f69d559450a105fcd0858899fa5efaf5c86f6b00fef5b",
+    "supplement-3.json": "832e8979973fa6f1c3b381c2eeab6179da42c57819e5c1ed117fc91af5c568eb",
+    "supplement-4.json": "d7735bf32ad1051e385f62fee4eb1af480f4730660d4973fa81501b48646e5d4",
+    "supplement-5.json": "54791d6b8e04af0d795ca518d76be4c56d4f4bfdfee1ac28d47206c3b109c88d",
+    "inventory-inputs.json": "1faa0e1000bce6dd8fa64128d42a306ae431319c3e86baceec2b0d06382555a0"
+  }
+}
