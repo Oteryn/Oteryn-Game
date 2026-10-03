@@ -8,15 +8,24 @@ bounded excerpt: at most 450 characters per passage (passages are joined by
 from __future__ import annotations
 
 import hashlib
+import re
 
 EXCERPT_SCOPE = "Bounded excerpt: quoted passages only, whitespace normalized"
 CODE_EXCERPT_SCOPE = "Bounded excerpt: leading lines of the anchored source range, whitespace preserved"
 EXCERPT_SEPARATOR = " … "
 MAX_EXCERPT_CHARS = 1000
 MAX_PASSAGE_CHARS = 450
-TEXT_FIELDS = frozenset({"captured_text", "verbatim", "selected_quotes", "selected_quote", "literal_excerpt",
-                         "quote", "literal_quote", "exact_source_lines", "text"})
+# Quote-bearing fields are recognised by name, so plural, prefixed and anchor
+# variants (quotes, selected_quote, verbatim_anchor, question_context, ...) are
+# bounded too. Digest, scope, reference and flag companions do not match.
+TEXT_FIELD = re.compile(r"(?:^|_)(?:quotes?|verbatim|excerpts?|text|snippets?|transcripts?|source_lines|contexts?)"
+                        r"(?:_anchor)?$")
 CODE_FIELDS = ("quote", "exact_source_lines")
+
+
+def is_text_field(key: str, value) -> bool:
+    """A quote-bearing field holds text or a list of texts; id-keyed records are not fields."""
+    return not isinstance(value, dict) and TEXT_FIELD.search(key) is not None
 
 
 def _strings(value):
@@ -36,7 +45,7 @@ def _retained(node) -> int:
         return sum(_retained(item) for item in node)
     if not isinstance(node, dict):
         return 0
-    return sum(sum(map(len, _strings(value))) if key in TEXT_FIELDS else _retained(value)
+    return sum(sum(map(len, _strings(value))) if is_text_field(key, value) else _retained(value)
                for key, value in node.items())
 
 
@@ -57,7 +66,7 @@ def validate(packet: dict, name: str = "packet") -> None:
         if not isinstance(node, dict):
             return
         for key, value in node.items():
-            if key in TEXT_FIELDS:
+            if is_text_field(key, value):
                 for text in _strings(value):
                     require(all(len(passage) <= MAX_PASSAGE_CHARS for passage in text.split(EXCERPT_SEPARATOR)),
                             "captured excerpt passage exceeds its bound")
