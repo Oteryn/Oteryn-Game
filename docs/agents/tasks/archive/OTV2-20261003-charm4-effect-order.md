@@ -8,7 +8,7 @@ status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: arch/charm4-effect-order-decision-20261003
-pr: null
+pr: 1645
 base_sha: 3d8c14d0f6326e278cf09e97acd2453b6af31926
 head_sha: exact frozen head in the #1622 FREEZE_SHA entry
 final_head_sha: exact frozen head in the #1622 FREEZE_SHA entry
