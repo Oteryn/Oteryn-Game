@@ -32,7 +32,8 @@ under D317 and chose option (a).
 - The fix: whichever of the two merges second wires the `timed_item_host` slot call sites, as a
   merge condition with tests.
   - An equip or swap into a slot makes the item live.
-  - An unequip or swap out of a slot drains its lane first.
+  - An unequip or swap out of a slot stops the item, then waits until its lane is empty; a
+    rejected move makes it live again from the row (round 1, #1696 P1s).
 - The condition is written into both packets: the bundle's §1.1 and §2.3, and ITEM-MOVE-WIRE-1 §4.
   No ordering is added, so ITEM-MOVE-2a, FORGE-1b and TIMED-RT-1c are not blocked on RT-1b.
 

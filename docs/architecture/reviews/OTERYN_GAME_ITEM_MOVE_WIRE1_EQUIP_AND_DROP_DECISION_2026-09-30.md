@@ -137,7 +137,12 @@ How does a player equip and unequip items, and drop and pick up items on the gro
 §2.3 Scope, ARCH-SLOT-WIRING-1).** TIMED-RT-1b and ITEM-MOVE-2a are not ordered. Whichever of the
 two merges second wires the `timed_item_host` slot call sites, as a merge condition with tests:
 - an equip or swap into a slot makes the timed item live there (TIMED-ITEM-0B §5.1);
-- an unequip or swap out of a slot drains that item's lane first (§6.1).
+- an unequip or swap out of a slot first stops the item, which puts its checkpoint on the lane
+  (§5.3), then waits until the lane is empty (§6.1, §9.1); a drain alone is not enough, and the
+  test spends time or charges since the last checkpoint and reloads them after re-equip
+  (#1696 P1);
+- a rejected unequip or swap leaves the item in its slot, and the call site makes it live again
+  from the row (§9.1), with a rejection test (#1696 P1).
 
 Until then, an item moved into a slot stays non-live. The adjacent amendments' order is unchanged.
 
