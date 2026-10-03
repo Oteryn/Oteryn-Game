@@ -22,6 +22,7 @@ jobs:
       windows: ${{ steps.lanes.outputs.windows }}
       surface: ${{ steps.lanes.outputs.surface }}
       server_qualification: ${{ steps.lanes.outputs.server_qualification }}
+      atlas_fullworld: ${{ steps.lanes.outputs.atlas_fullworld }}
     steps:
       - name: Validate exact merge-group identity
         shell: bash
@@ -150,6 +151,17 @@ jobs:
           except Exception:
               server_qualification = 'true'
 
+          # Atlas source qualifications also use the protected-base classifier.
+          # Only an explicit false can deselect the bounded producer/consumer tests.
+          atlas_fullworld = 'true'
+          try:
+              if isinstance(records, list) and module.atlas_fullworld_required(
+                  records, len(records), True
+              ) is False:
+                  atlas_fullworld = 'false'
+          except Exception:
+              atlas_fullworld = 'true'
+
           # Use protected-base exact-consumer routing and Cargo metadata for the
           # exact synthetic candidate. Unconsumed auxiliary inputs skip both lanes;
           # a proven server-only closure keeps Linux/PG and deselects Windows.
@@ -185,6 +197,7 @@ jobs:
               output.write(f"windows={result['windows']}\n")
               output.write(f"surface={result['surface']}\n")
               output.write(f"server_qualification={server_qualification}\n")
+              output.write(f"atlas_fullworld={atlas_fullworld}\n")
           print(f"Merge-group lane classification: {result} server_qualification={server_qualification}")
           PY
 
@@ -253,6 +266,40 @@ jobs:
         uses: github/codeql-action/analyze@2892aa5e19bbd11bc0cff5427e3b750a04d9e3c2 # v4
         with:
           category: /language:${{ matrix.language }}-merge-queue
+
+  atlas_fullworld:
+    name: Merge Queue / Atlas fullworld source
+    needs: candidate
+    if: needs.candidate.outputs.atlas_fullworld != 'false'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Check out exact merge-group candidate
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.merge_group.head_sha }}
+          persist-credentials: false
+
+      - name: Verify checked-out SHA
+        env:
+          EXPECTED_SHA: ${{ github.event.merge_group.head_sha }}
+        run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+
+      - name: Compile bounded fullworld producer and direct consumer
+        run: |
+          python -S -m py_compile \
+            tools/game-atlas-fullworld-source/producer.py \
+            tools/game-atlas-fullworld-source/self_test.py \
+            tools/reference-world-corridor-census/content_source_batch.py \
+            tools/reference-world-corridor-census/content_source_batch_self_test.py
+
+      - name: Run fullworld producer self-test
+        run: python -S tools/game-atlas-fullworld-source/self_test.py
+
+      - name: Run content-source batch consumer self-test
+        run: python -S tools/reference-world-corridor-census/content_source_batch_self_test.py
 
   rust_linux:
     name: Merge Queue / Rust Linux workspace
@@ -705,7 +752,7 @@ jobs:
   game_gate:
     name: game-gate
     if: always()
-    needs: [candidate, dependency_review, codeql, rust_linux, durability_postgres, rust_windows, rust_supply_chain, node_boot, server_seam]
+    needs: [candidate, dependency_review, codeql, atlas_fullworld, rust_linux, durability_postgres, rust_windows, rust_supply_chain, node_boot, server_seam]
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions: {}
@@ -716,6 +763,8 @@ jobs:
           CANDIDATE: ${{ needs.candidate.result }}
           DEPENDENCY_REVIEW: ${{ needs.dependency_review.result }}
           CODEQL: ${{ needs.codeql.result }}
+          ATLAS_FULLWORLD_REQUIRED: ${{ needs.candidate.outputs.atlas_fullworld }}
+          ATLAS_FULLWORLD: ${{ needs.atlas_fullworld.result }}
           RUST_REQUIRED: ${{ needs.candidate.outputs.rust }}
           WINDOWS_REQUIRED: ${{ needs.candidate.outputs.windows }}
           RUST_LINUX: ${{ needs.rust_linux.result }}
@@ -735,6 +784,11 @@ jobs:
           for result in "$CANDIDATE" "$DEPENDENCY_REVIEW" "$CODEQL"; do
             test "$result" = success
           done
+          if [[ "${ATLAS_FULLWORLD_REQUIRED:-}" == "false" ]]; then
+            [[ "${ATLAS_FULLWORLD:-}" == success || "${ATLAS_FULLWORLD:-}" == skipped ]]
+          else
+            test "${ATLAS_FULLWORLD:-}" = success
+          fi
           case "$RUST_REQUIRED:$WINDOWS_REQUIRED" in
             true:true|true:false|false:false) ;;
             *)

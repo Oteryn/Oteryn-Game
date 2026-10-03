@@ -228,12 +228,11 @@ pub(crate) enum CharmMissingSystem {
     /// Carnage: no resolver selects the monsters around a killed creature (the ability commit
     /// takes exactly one resolved target).
     AreaTargetResolver,
-    /// Cripple, Numb: the runtime actor carries no conditions (spell conditions S8 have no
-    /// owner), so there is no paralysis.
+    /// Cripple, Numb: the pure condition store has no Charm-to-actor/movement composition.
     ParalysisCondition,
-    /// Adrenaline Burst: no haste condition (same reason).
+    /// Adrenaline Burst: no Charm haste consumer in actor/movement composition.
     HasteCondition,
-    /// Cleanse: no negative conditions to remove (same reason).
+    /// Cleanse: condition removal/immunity awaits COND-1b and actor composition.
     ConditionCleanse,
     /// Fatal Hold: creature AI has no fleeing behaviour to prevent.
     CreatureFlee,
@@ -484,10 +483,9 @@ pub(crate) enum CharmHitSource {
     /// charms evaluate.
     CharacterAttack,
     /// The character's auto-attack on a creature other than its main target (area ammunition such
-    /// as Diamond Arrows): no charm evaluates. Tibia 15.25 (Vocation Adjustments 2026) made
-    /// auto-attacks trigger charms only on their main target; spells and runes are unchanged, and
-    /// Low Blow still applies to the whole area because it runs at `AttackDamageCalculation`
-    /// (owner answer 16a, CHARM-0 §8).
+    /// as Diamond Arrows). D186 refines CHARM-0 §8 answer 16a: Low Blow, Savage Blow and both
+    /// leech charms still evaluate here, while the other attack/kill effects do not. Spells and
+    /// runes use `CharacterAttack` on each affected creature.
     CharacterAutoAttackOffTarget,
     /// Charm damage (a proc, Carnage, Parry). Charms cannot chain: no charm evaluates, so a kill
     /// by Carnage never triggers another Carnage.
@@ -497,8 +495,11 @@ pub(crate) enum CharmHitSource {
 /// The event whose hook is run, with the facts its effects need.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum CharmHookEvent {
-    /// Before the character's attack damage is committed.
-    AttackDamageCalculation,
+    /// Before attack damage is committed. Required provenance admits the D186 critical
+    /// exceptions on secondary auto targets and excludes Charm-generated damage.
+    AttackDamageCalculation {
+        source: CharmHitSource,
+    },
     /// The owner committed the character's hit on the creature: [`CharmHook::AttackHit`], and
     /// also [`CharmHook::CreatureKilled`] when this hit was lethal (the character's own last
     /// hit; a summon's hit is not the character's). A replayed commit reports the same health
@@ -702,7 +703,7 @@ pub(crate) fn evaluate_charm_hook(
     for (definition, stage, value) in resolved {
         let effect = definition.effect();
         let hook = effect.hook();
-        if !event_runs_hook(&input.event, lethal, hook) {
+        if !event_runs_effect(&input.event, lethal, effect) {
             continue;
         }
         let result = evaluate_effect(input, hook, lethal, definition, value)?;
@@ -749,13 +750,25 @@ fn validate_event(event: &CharmHookEvent) -> Result<bool, CharmEvaluationError> 
     }
 }
 
-fn event_runs_hook(event: &CharmHookEvent, lethal: bool, hook: CharmHook) -> bool {
+fn event_runs_effect(event: &CharmHookEvent, lethal: bool, effect: CharmEffect) -> bool {
+    let hook = effect.hook();
     match event {
-        CharmHookEvent::AttackDamageCalculation => hook == CharmHook::AttackDamageCalculation,
-        CharmHookEvent::CommittedHit { source, .. } => {
-            *source == CharmHitSource::CharacterAttack
-                && (hook == CharmHook::AttackHit || (lethal && hook == CharmHook::CreatureKilled))
+        CharmHookEvent::AttackDamageCalculation { source } => {
+            hook == CharmHook::AttackDamageCalculation
+                && matches!(
+                    source,
+                    CharmHitSource::CharacterAttack | CharmHitSource::CharacterAutoAttackOffTarget
+                )
         }
+        CharmHookEvent::CommittedHit { source, .. } => match source {
+            CharmHitSource::CharacterAttack => {
+                hook == CharmHook::AttackHit || (lethal && hook == CharmHook::CreatureKilled)
+            }
+            CharmHitSource::CharacterAutoAttackOffTarget => {
+                matches!(effect, CharmEffect::LifeLeech | CharmEffect::ManaLeech)
+            }
+            CharmHitSource::CharmDamage => false,
+        },
         CharmHookEvent::IncomingCreatureAttack => hook == CharmHook::IncomingCreatureAttack,
         CharmHookEvent::IncomingCreatureHit { .. } => hook == CharmHook::IncomingCreatureHit,
         CharmHookEvent::IncomingManaDrain { .. } => hook == CharmHook::IncomingManaDrain,
