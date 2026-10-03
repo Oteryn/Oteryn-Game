@@ -17,7 +17,7 @@ created_at: 2026-10-03
 updated_at: 2026-10-03
 execution_policy: continuous_progress
 packet: "docs/architecture/reviews/OTERYN_GAME_ARCH_BATCH_D327_PACKETS_AND_HELD_P1S_2026-10-03.md §1.2"
-decisions: [D295, D324, D390]
+decisions: [D295, D324, D390, D395]
 owned_paths:
   - apps/game-server/src/foundation/runtime_actor_carrier.rs
   - apps/game-server/src/gameplay_transport/mod.rs
@@ -27,7 +27,7 @@ owned_paths:
   - apps/game-server/src/ability/charm_desc_fence_gate_tests.rs
   - apps/game-server/src/durability/fresh_admission.rs   # call sites only
   - docs/agents/tasks/archive/OTV2-20261003-charm-desc-a2.md
-  # Extension requested from the control plane (bridge call sites and fixtures only):
+  # Extended by the control plane (D395): bridge call sites and fixtures only.
   - apps/game-server/src/foundation/channel_owner_ability_commit_tests.rs
   - apps/game-server/src/foundation/channel_owner_combat_death_tests.rs
 leases: none (no wire, no migration, no capability, command or domain)
