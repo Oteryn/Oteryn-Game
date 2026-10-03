@@ -1,0 +1,76 @@
+name: Rust cache pilot
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_sha:
+        description: Accepted main commit to benchmark (empty selects this run's main SHA)
+        type: string
+        default: ''
+
+permissions:
+  contents: read
+
+jobs:
+  benchmark:
+    if: github.ref == 'refs/heads/main' && github.ref_protected
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - name: Check out trusted pilot controller
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Test benchmark isolation
+        run: python tools/repository/test_benchmark_rust_cache.py
+
+      - name: Bind benchmark to accepted main source
+        env:
+          REQUESTED_SHA: ${{ inputs.source_sha }}
+          CONTROLLER_SHA: ${{ github.sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$CONTROLLER_SHA"
+          SOURCE_SHA="${REQUESTED_SHA:-$CONTROLLER_SHA}"
+          [[ "$SOURCE_SHA" =~ ^[0-9a-f]{40}$ ]]
+          git merge-base --is-ancestor "$SOURCE_SHA" "$CONTROLLER_SHA"
+          mkdir "$RUNNER_TEMP/pilot-controller"
+          cp tools/repository/benchmark_rust_cache.py "$RUNNER_TEMP/pilot-controller/"
+          git checkout --detach "$SOURCE_SHA"
+          test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+          # Use the accepted controller, with ROOT explicitly fixed to this checkout.
+          cp "$RUNNER_TEMP/pilot-controller/benchmark_rust_cache.py" tools/repository/benchmark_rust_cache.py
+
+      - name: Install fixed Rust compiler
+        run: rustup toolchain install 1.94.0 --profile minimal
+
+      - name: Install verified sccache binary
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --location --retry 3 -o "$RUNNER_TEMP/sccache.tar.gz" https://github.com/mozilla/sccache/releases/download/v0.18.0/sccache-v0.18.0-x86_64-unknown-linux-musl.tar.gz
+          echo "45f1447fbe231e3037bde351ef70677dd212216c8d62ae7ca409fecc4d6acc89  $RUNNER_TEMP/sccache.tar.gz" | sha256sum --check --strict
+          tar -xzf "$RUNNER_TEMP/sccache.tar.gz" -C "$RUNNER_TEMP"
+
+      - name: Measure compilation with repeated isolated cold and warm targets
+        env:
+          RUSTUP_TOOLCHAIN: 1.94.0
+          BENCHMARK_CONTROLLER_SHA: ${{ github.sha }}
+        run: >-
+          python tools/repository/benchmark_rust_cache.py
+          --sccache "$RUNNER_TEMP/sccache-v0.18.0-x86_64-unknown-linux-musl/sccache"
+          --repetitions 3 --temporary-root "$RUNNER_TEMP"
+          --output "$RUNNER_TEMP/rust-cache-results"
+
+      - name: Preserve results and failure logs
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: rust-cache-pilot-${{ github.run_id }}
+          path: ${{ runner.temp }}/rust-cache-results/
+          if-no-files-found: error
+          retention-days: 14
