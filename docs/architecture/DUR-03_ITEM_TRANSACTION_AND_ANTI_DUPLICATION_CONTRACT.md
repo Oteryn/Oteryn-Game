@@ -1405,12 +1405,13 @@ authority, conservation) is unchanged.
   `DUR03-RL-06-NPC-REPAIR` 22 / 68, the repaired item being a direct main-backpack entry:
   a row `STATE_MUTATION` (`Checkpoint`, `ChargeSpent`); an expiry `TRANSFORM`
   (`PRESERVE_INSTANCE`) to the decay target; an expiry **BURN** to `RETIRED` (one location line, the
-  row deleted, one audit event with the before and after values) when there is no decay target;
+  row left inert, one audit event with the before and after values) when there is no decay target;
   and, inside an equip move or swap, one `EquipForm` transform and row line on an already-touched
   item (a swap needing two is refused). For these shapes only they supersede the §39.1 exclusions of
   burn and transform. No timed value is written by a move: the runtime checkpoints a live item before
   it leaves its slot. Other retirement paths (`DECAY_RETIRE`, `WorldReset`, other burns) leave a timed row inert and gain
-  no line. Rows are lazy: no MINT writes one, and an item without a row has its definition's full values
+  no line. Rows are lazy (absent means revision 0 and full values) and never deleted while the item lives,
+  so their revision is monotonic: no MINT writes one, and an item without a row has its definition's full values
   (TIMED-ITEM-0 §4).
   No generic fee cause or reason code. A new fee source needs an amendment of this paragraph and
   the decision.

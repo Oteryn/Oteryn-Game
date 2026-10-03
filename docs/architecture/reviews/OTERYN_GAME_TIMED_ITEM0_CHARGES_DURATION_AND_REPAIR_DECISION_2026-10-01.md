@@ -106,19 +106,28 @@ definition with a `transform {trigger: equip}` into one, such as an unworn ring 
 - **Paired forms keep the row.** The row belongs to the item, not to the form. An unequip transform
   into the inactive form keeps `remaining_ms`; the next equip continues from it.
 - **Only this decision's shapes transform such an item** (equip forms, expiry, repair); content
-  validation refuses any other transform rule from or into an admitted timed definition. Expiry and
-  repair delete the row themselves (the repaired item then has no row: full values again).
+  validation refuses any other transform rule from or into an admitted timed definition. **Once created, a row
+  is never deleted while the item lives**, so `state_revision` only ever grows for an instance:
+  expiry and repair reset its values and add 1 to the revision (§5, §7). A row of an item whose
+  current definition is not timed (worn soft boots after expiry) is **spent**: both values NULL.
   **Every other retirement path** (`DECAY_RETIRE`, `WorldReset`, any other burn) **leaves the row
   untouched**: the guard checks only live items, so a `RETIRED` item's row is inert, never read and
   never written again, and those aggregates gain no timed line.
+- **Absent row = revision 0.** Every write names the revision it expects. Expecting 0 means "no row
+  yet": the write is an insert with the precondition that no row exists, creating revision 1. If a
+  row already exists, the write finds no match and writes nothing, exactly like a revision mismatch;
+  a replay of the same occurrence then returns the result its first commit recorded (keyed by the
+  item and the expected revision). A first checkpoint, a first charge spent, a first equip and an
+  expiry before any earlier write all use expected revision 0.
 - **Writes.** Every write is a DUR-03 `STATE_MUTATION` (§11.1) or part of a `TRANSFORM`
   (`PRESERVE_INSTANCE`), in a one-item transaction (or as the one timed line of an equip move, §6),
   under the item writer's fence and the holder's `character_root` lock, under a closed
   `TimedItemCause` (§10). The row moves with the item; no move writes it except §6.
 - **Guard.** A deferred database guard checks, at commit, that a live item has at most one row, that
-  the item's definition (for an inactive form, its paired active form) is an admitted timed one,
-  that `charges` and `remaining_ms` are non-NULL exactly when that definition has `charges` and
-  `temporal`, and that they never exceed its values. TIMED-1 needs no migration of existing items.
+  the row is spent unless the item's definition (for an inactive form, its paired active form) is
+  an admitted timed one, that `charges` and `remaining_ms` are non-NULL exactly when that definition has `charges` and
+  `temporal` (both NULL, spent, when the current definition is not timed), that they never exceed
+  its values, and that `state_revision` only increases. TIMED-1 needs no migration of existing items.
 
 ## 5. Clocks and charges (TIMED-1)
 
@@ -154,9 +163,11 @@ definition with a `transform {trigger: equip}` into one, such as an unworn ring 
   and requiring the row's current `state_revision` to equal the reason's, so a replay or a stale
   reason writes nothing. It is either:
   - a `TRANSFORM` (`PRESERVE_INSTANCE`) to the decay target in place, whose row is created fresh
-    from its own definition (frozen unless that form is equipped and live) or deleted; or
+    the row's values are reset from the target's definition (frozen unless that form is equipped and
+    live), or set spent when the target is not timed, with the revision + 1; or
   - only when there is no decay target, a **BURN** that retires the item: it moves from its
-    equipment slot to `RETIRED` with no location and its row is deleted. Its evidence is one audit
+    equipment slot to `RETIRED` with no location, and its row stays as the inert row of a retired
+    item. Its evidence is one audit
     event with the item, definition, location, charges, remaining time and `state_revision` before,
     `RETIRED` after, and the cause. This one-item shape is admitted by the DUR-03 §39.3 amendment
     (§10), which supersedes the §39.1 burn exclusion for it only.
@@ -206,14 +217,16 @@ definition with a `transform {trigger: equip}` into one, such as an unworn ring 
     of the equipped main backpack** (the first in B3 order, as NPC-0 SELL finds its item; never an
     equipped item or one inside a nested bag, so no ancestor path is locked and
     `DUR03-RL-05` stays 0), into `to_item`. Worn soft boots in a bag must be moved to the main
-    backpack first; otherwise the offer answers that the item is missing. The old timed row, if any, is deleted and no row is created: the
-    repaired item has its definition's full charges and duration (§4, lazy rows). Nothing carries
-    over from the worn item.
+    backpack first; otherwise the offer answers that the item is missing. The row (spent, since worn soft boots are not timed) is reset to
+    `to_item`'s full charges and duration (for an inactive form, its paired active form's) with
+    the revision + 1; a worn item without a row gets one at expected revision 0. The revision never
+    repeats, so an expiry key `(item, revision)` from the earlier lifetime can never match again.
+    Nothing carries over from the worn item.
   - The gold fee plan is admitted with at most **19** coin inputs here (not 20), so the 19 inputs,
     at most 2 change stacks and the repaired item stay within 22 touched items. Repair-specific rows,
     registered by TIMED-REPAIR-1 with max and max+1 tests: `DUR03-RL-04-NPC-REPAIR` transform I/O
     1 / 1; `DUR03-RL-05` 0; `DUR03-RL-06-NPC-REPAIR` 22 participants / 68 work units (the fee plan's
-    64 plus the item's transform, its timed-row delete and its participant check); payload and
+    64 plus the item's transform, its timed-row reset and its participant check); payload and
     envelope within `DUR03-RL-07`, measured at 19 inputs. 10,000 gold fits in one crystal coin, so this only refuses a
     player who pays from 20 or more small stacks.
   - Insufficient funds, more than 19 coin inputs, or no such item rejects the whole transaction and
@@ -281,8 +294,8 @@ Lines per shape:
 | Shape | Cause | Lines |
 |---|---|---|
 | row write | `Checkpoint`, `ChargeSpent` (creating the row on its first write) | one `STATE_MUTATION` of the row; no location or value line |
-| expiry transform | `Expire` with a decay target | one `TRANSFORM` (`PRESERVE_INSTANCE`, 1 input / 1 output) and the row reset or delete |
-| expiry burn | `Expire` without a decay target | one BURN to `RETIRED` (1 location line) and the row delete; `Expire` is a BURN sink (DUR-03 §15) |
+| expiry transform | `Expire` with a decay target | one `TRANSFORM` (`PRESERVE_INSTANCE`, 1 input / 1 output) and the row reset (or set spent), revision + 1 |
+| expiry burn | `Expire` without a decay target | one BURN to `RETIRED` (1 location line) and the row left inert; `Expire` is a BURN sink (DUR-03 §15) |
 | equip form | `EquipForm` | the transform and row line inside the equip move or swap (§6) |
 
 They supersede the §39.1 exclusions of burn and transform for these shapes only. Amended: DUR-03 §15,
@@ -303,7 +316,7 @@ time; a ring-for-ring swap is refused `SWAP_TIMED_BOTH` and a ring onto an empty
 works; a death drop writes no timed line and the dropped ring keeps its checkpointed time; lighting a
 torch is refused `NOT_ADMITTED`; repairing worn soft boots into unworn ones leaves no row, and the first equip
 seeds the active form's full duration; worn soft boots inside a bag are not found by the repair,
-and found once moved to the main backpack; a ring retired by `WorldReset` keeps an inert row and
+and found once moved to the main backpack; a first checkpoint inserts at expected revision 0 and a second insert attempt writes nothing; soft boots repaired after expiry keep their row with a higher revision, so the old expiry key never matches; a ring retired by `WorldReset` keeps an inert row and
 the reset writes no timed line; an expiry transform at 1 / 1 passes and 2 / 1 is refused; a newly minted unworn ring has no row until equipped; a
 ring-for-ring swap answers `BLOCKED`; a repair paid from 19 coin stacks commits and from 20 is refused; a life
 ring's regeneration ticks alongside food regeneration; the energy ring's shield stays while mana is
@@ -366,7 +379,8 @@ None open. Owner answer 1a settled the only fee source.
 2. **Serialization:** every timed write is a one-item DUR-03 transaction or the one timed line of an
    equip move, under the item writer's fence and the holder's `character_root` lock; the runtime is
    the only live owner of an equipped item's clock and charges, and checkpoints before the item
-   leaves its slot; expiry is keyed by (item, `state_revision`) and replays.
+   leaves its slot; an absent row is revision 0; rows are never deleted while the item lives, so
+   `state_revision` is monotonic and expiry keyed by (item, `state_revision`) never repeats.
 3. **Restart:** equipped items lose at most one checkpoint, in the player's favour; frozen items do
    not change; an item without a row has its definition's full values, so no backfill exists.
 4. **Typed references:** ItemInstanceId, definition keys, NPC offer ids.
