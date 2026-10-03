@@ -78,6 +78,12 @@ No production change: one new test module and its `#[cfg(test)]` mod line.
   array element, field or arm) accepted, fixed: the exemption applies only when the attributed node
   is an item or `let` statement, whose extent the scan bounds; any other node exempts nothing.
   Sweep: struct-literal field, match arm and expression-statement cases added.
+- Codex on 07bf151b: P1 4173759090 (a Unicode macro name such as `μ!{..}` escaped macro detection,
+  so its `#[cfg(test)]` tokens exempted a call) accepted. Beyond the D317 two-round limit; the owner
+  approved one more round via the control plane. Fixed at the root: any `!` followed by an optional
+  identifier and a `(`/`[`/`{` group is a macro token tree, whatever precedes it, except an inner
+  attribute's `#!`. Over-matching (unary `!(..)`, `if !x {..}`) only withholds exemptions.
+  Sweep: identifier boundaries now treat non-ASCII bytes as identifier bytes throughout.
 
 ## PR and closeout
 

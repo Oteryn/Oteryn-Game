@@ -125,8 +125,9 @@ fn bracket_end(code: &[u8], i: usize) -> usize {
     code.len()
 }
 
+/// Identifier byte; any non-ASCII byte counts, as Rust identifiers may be Unicode.
 fn is_ident(c: u8) -> bool {
-    c.is_ascii_alphanumeric() || c == b'_'
+    c.is_ascii_alphanumeric() || c == b'_' || !c.is_ascii()
 }
 
 /// Byte offsets of `word` in `code` as a whole identifier.
@@ -146,7 +147,9 @@ fn word_hits(code: &[u8], word: &str) -> Vec<usize> {
 fn macro_ranges(code: &[u8]) -> Vec<(usize, usize)> {
     let mut ranges = Vec::new();
     for (bang, _) in code.iter().enumerate().filter(|(_, c)| **c == b'!') {
-        if bang == 0 || !is_ident(code[bang - 1]) {
+        // Any name, including a Unicode one: only an inner attribute's `#!` is not a macro. Unary
+        // `!(..)` or `if !x {..}` also match, which only withholds exemptions (fails closed).
+        if code[..bang].trim_ascii_end().ends_with(b"#") {
             continue;
         }
         let mut open = bang + 1;
@@ -404,6 +407,13 @@ fn scan_flags_a_production_reference() {
     let in_macro = "fn f() {\n    m!(#[cfg(test)] crate::x::commit_exact_owner_damage);\n}\n\
                     n! { #[cfg(test)] commit_exact_owner_charm_damage() }\n";
     assert_eq!(production_references(in_macro, false), vec![2, 4]);
+    let unicode = "μ! {\n    #[cfg(test)]\n    fn live() { commit_exact_owner_damage() }\n}\n";
+    assert_eq!(production_references(unicode, false), vec![3]);
+    // A Unicode-prefixed identifier is a different name, not a bridge reference.
+    assert_eq!(
+        production_references("fn f() { μcommit_exact_owner_damage(); }", false),
+        Vec::<usize>::new()
+    );
     // `#[cfg(test)]` on an element, field or arm exempts nothing beyond it.
     let nodes = "fn f() {\n    let _ = [1, #[cfg(test)] 0, commit_exact_owner_damage()];\n\
                  let _ = S { #[cfg(test)] a: 0, b: commit_exact_owner_charm_damage() };\n\
