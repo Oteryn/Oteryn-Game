@@ -1399,15 +1399,19 @@ authority, conservation) is unchanged.
   (owner answer 1a), whose transaction also transforms one item (`PRESERVE_INSTANCE`) and resets
   its timed row; its plan admits at most 19 coin inputs, so inputs, change and the repaired item
   stay within the fee-shape rows below (22 touched items, 64 work units). TIMED-ITEM-0 (§10) also
-  admits these one-item shapes under the closed `TimedItemCause`, with the default one-item rows:
-  a row `STATE_MUTATION` (`Checkpoint`, `ChargeSpent`, `BackfillRow`); an expiry `TRANSFORM`
+  admits these one-item shapes under the closed `TimedItemCause`, with the shape rows listed there
+  (row write 1 / 2 work units; expiry transform `DUR03-RL-04-TIMED-EXPIRY` 1 / 1 and 1 / 4; expiry
+  burn 1 location line and 1 / 4), and the repair rows `DUR03-RL-04-NPC-REPAIR` 1 / 1 and
+  `DUR03-RL-06-NPC-REPAIR` 22 / 68, the repaired item being a direct main-backpack entry:
+  a row `STATE_MUTATION` (`Checkpoint`, `ChargeSpent`); an expiry `TRANSFORM`
   (`PRESERVE_INSTANCE`) to the decay target; an expiry **BURN** to `RETIRED` (one location line, the
   row deleted, one audit event with the before and after values) when there is no decay target;
   and, inside an equip move or swap, one `EquipForm` transform and row line on an already-touched
   item (a swap needing two is refused). For these shapes only they supersede the §39.1 exclusions of
   burn and transform. No timed value is written by a move: the runtime checkpoints a live item before
-  it leaves its slot. Every MINT of an active admitted timed definition creates the row (an inactive form gets one only at its first equip or by an unequip) and every
-  retirement deletes it, in the same transaction (TIMED-ITEM-0 §4).
+  it leaves its slot. Other retirement paths (`DECAY_RETIRE`, `WorldReset`, other burns) leave a timed row inert and gain
+  no line. Rows are lazy: no MINT writes one, and an item without a row has its definition's full values
+  (TIMED-ITEM-0 §4).
   No generic fee cause or reason code. A new fee source needs an amendment of this paragraph and
   the decision.
 - **Evidence and rows.** One event: each BURN line (quantity before and after; a whole burn ends

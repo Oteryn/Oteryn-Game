@@ -45,8 +45,7 @@ TIMED-ITEM-0 decides items that run on charges or time, and the soft boots repai
   `continuous` duration (lit torches, Ground and house deadlines, tree clocks) is `NOT_ADMITTED`
   until TIMED-ITEM-0B.
 - **State:** `game_item_timed_states` (charges, active-time budget), keyed by ItemInstanceId,
-  written only by one-item DUR-03 shapes under the closed `TimedItemCause`; backfill by one-item
-  rows before the guard is enabled.
+  written only by one-item DUR-03 shapes under the closed `TimedItemCause`; rows are lazy (no row means full values), so no MINT path or backfill writes one.
 - **Clocks:** time runs only while equipped in the game world; the runtime commits at A13
   checkpoints and checkpoints a live item before it leaves its slot, so moves carry no timed value.
 - **Charges:** one per hit an active item's protection reduces; at 0 the item expires (transform, or
