@@ -340,6 +340,9 @@ pub struct GameplaySeamOwners<'a, 'f, 's> {
     /// The Achievement catalogue the `ACCOUNT_ACHIEVEMENTS_QUERY` display read resolves every
     /// fact against (display contract §2.1, §4), and a chest's achievement resolves in (C2).
     pub(crate) achievements: &'a crate::achievement_catalogue::AchievementCatalogue,
+    /// Complete immutable Charm data imported at boot. This reference supplies no current
+    /// generation authority or effect availability; gameplay composition is a separate step.
+    pub(crate) imported_charms: &'a crate::content::charm_source::CanonicalCharmCatalogue,
 }
 
 /// Explicit listener configuration; nothing has a production default.
@@ -412,6 +415,7 @@ pub async fn serve_gameplay(
         chest: owners.chest,
         spells: owners.spells,
         achievements: owners.achievements,
+        imported_charms: owners.imported_charms,
         spell_states: Mutex::default(),
         clock_origin: std::time::Instant::now(),
         lost: std::sync::Mutex::default(),
@@ -486,6 +490,12 @@ pub(crate) struct ComposedFreshAdmission<'a, 'f, 's> {
     pub(crate) chest: &'a crate::content::CanonicalReferencePlayableContent,
     pub(crate) spells: &'a crate::spell::SpellBook,
     pub(crate) achievements: &'a crate::achievement_catalogue::AchievementCatalogue,
+    // Keep the same imported catalogue resident for every connection served by this owner.
+    #[allow(
+        dead_code,
+        reason = "data-only import; actual Charm gameplay consumers are separately composed"
+    )]
+    pub(crate) imported_charms: &'a crate::content::charm_source::CanonicalCharmCatalogue,
     /// The Channel owner's player vitals and cooldowns (spell cast §4). Always locked after
     /// `runtime`, never before, like `door`.
     pub(crate) spell_states: Mutex<actor_spell::ChannelSpellStates>,
