@@ -6,7 +6,8 @@
 //! ownership generation is enforced by that composition, not by this module.
 
 use super::{
-    ChannelId, CharacterId, CommandRef, GameSessionId, NodeId, ScopeOwnershipGeneration, WorldId,
+    ChannelId, CharacterId, CharacterLease, CommandRef, GameSessionId, NodeId,
+    ScopeOwnershipGeneration, WorldId,
 };
 #[path = "runtime_actor_companion.rs"]
 pub(crate) mod runtime_actor_companion;
@@ -107,6 +108,13 @@ pub(crate) enum CarrierError {
     /// AI-2: a respawn call named a `SpawnSourceId`/cell index this carrier never realized.
     UnknownSpawnSource,
     UnknownSpawnCell,
+    /// CHARM-DESC-FENCE-LEASE §3 item 2: the slot already carries a write fence of another
+    /// transition of this session. The caller waits for that transition's settle step.
+    WriteFenceBusy,
+    /// A2: the slot is already bound to a different Character lease.
+    AttackerBindingConflict,
+    /// A2 / FND-04B §22: a same-session continuation whose reconcile is terminal or unprovable.
+    ContinuationRefused,
 }
 
 impl std::fmt::Display for CarrierError {
@@ -896,13 +904,9 @@ impl CurrentOwnerExactActorCommit<'_> {
     /// commit is derived by the carrier from `attacker` alone: `command.occurrence` is not read,
     /// so a caller can never present one command's identity under another's bytes. An idempotent
     /// replay never double-attributes: it never reaches the mutation boundary a second time.
-    /// GAME-ABILITY's own effect-commit bridge (`ability::commit::commit_exact_owner_damage`)
-    /// has no live gameplay caller yet; this is the seam a later composition stage wires the
-    /// attacking `CharacterId` and its `CommandRef` through.
-    #[allow(
-        dead_code,
-        reason = "no production caller yet; a later Ability wiring stage uses this"
-    )]
+    /// Test only: the attacker is supplied, not read from a bound slot. Production writes go
+    /// through [`Self::commit_damage_for_bound_attacker`] (A2, D295 item 4).
+    #[cfg(test)]
     pub(crate) fn commit_damage_for_attacker(
         &mut self,
         actor: ExactActorRef,
@@ -914,6 +918,45 @@ impl CurrentOwnerExactActorCommit<'_> {
             actor.0,
             command,
             Some(attacker),
+            false,
+        )
+    }
+}
+
+impl CurrentOwnerExactActorCommit<'_> {
+    /// A2 (D295 item 4): the current lease of the attacker's bound player slot. The slot must hold
+    /// the command's session, carry no write fence and have a bound lease, checked in that order
+    /// (CHARM-DESC-FENCE-LEASE §3 item 2); anything else is `SupersededAttackerSession`.
+    pub(crate) fn bound_attacker_lease(
+        &self,
+        attacker: ExactActorRef,
+        command: CommandRef,
+    ) -> Result<CharacterLease, CarrierError> {
+        self.carrier
+            .bound_attacker_lease(self.continuity, attacker.0, command)
+    }
+
+    /// The attributed damage commit whose attacker authority is the bound slot of `attacker`,
+    /// read in the same runtime-lock critical section as the write.
+    pub(crate) fn commit_damage_for_bound_attacker(
+        &mut self,
+        actor: ExactActorRef,
+        attacker: ExactActorRef,
+        command: CommandRef,
+        sub_ordinal: u16,
+        damage: OwnerDamageCommand<'_>,
+    ) -> Result<OwnerDamageResult, CarrierError> {
+        let lease = self.bound_attacker_lease(attacker, command)?;
+        self.carrier.commit_creature_damage_inner(
+            self.continuity,
+            actor.0,
+            damage,
+            Some(AttackerCommand::new(
+                lease.character_id(),
+                lease.generation(),
+                command,
+                sub_ordinal,
+            )),
             false,
         )
     }
@@ -1123,6 +1166,51 @@ pub(crate) struct ControlLossMark {
     pub(crate) grace_deadline: i64,
 }
 
+/// CHARM-DESC-FENCE-LEASE §3 item 2: the token of one transition's write fence on a player slot.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum WriteFenceToken {
+    /// Grace expiry: the control-loss epoch the slot still carries.
+    ControlLoss(u64),
+    /// Any other transition that ends the session's hold: an id minted by
+    /// [`ChannelRuntimeV1::mint_transition_fence`] for the caller.
+    Transition(u64),
+}
+
+/// How [`ChannelRuntimeV1::fence_player_writes`] set the fence.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum WriteFenceSet {
+    /// The fence is new.
+    Fenced,
+    /// A retry of the same transition: the existing fence carries the same token.
+    Joined,
+}
+
+/// The durable reconcile of a same-session continuation after process replacement
+/// (CHARM-DESC-FENCE-LEASE §3 item 7, FND-04B §22).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[allow(
+    dead_code,
+    reason = "process-replacement continuation is not composed yet; the carrier gate is"
+)]
+pub(crate) enum ContinuationReconcile {
+    /// The durable row is terminal: no same-session continuation.
+    Terminal,
+    /// Non-terminal and the §22 evidence is proven, under this lease.
+    Proven(CharacterLease),
+    /// The binding cannot be proven: fail closed.
+    Unprovable,
+}
+
+/// A2: the attacker authority of one committed player slot, kept beside the slot so the fixed
+/// slot footprint is unchanged.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+struct PlayerAttackerAuthority {
+    /// The admitted session's Character lease. Absent means no damage write is admitted.
+    lease: Option<CharacterLease>,
+    /// Set while a transition that ends the session's hold is unsettled.
+    fence: Option<WriteFenceToken>,
+}
+
 /// Channel-owner facts about one committed, present player actor of an exact GameSession.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) struct PlayerControlFacts {
@@ -1158,6 +1246,19 @@ struct ChannelActorCarrier {
     /// AI-2 (§4.3, D116): realized spawn sources and their per-cell live/
     /// pending/retry state for this carrier's ownership generation.
     spawns: Vec<SpawnRealization>,
+    /// The last write-fence transition id this carrier minted (CHARM-DESC-FENCE-LEASE §3 item 2).
+    fence_transitions: u64,
+    /// A2: the bound lease and write fence of each committed player slot that has one, keyed by
+    /// slot index and that slot's generation. At most one entry per slot: `remove` prunes it, so
+    /// it is bounded by `slots.len()` and never outlives its actor.
+    attackers: Vec<PlayerAttackerEntry>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct PlayerAttackerEntry {
+    index: usize,
+    generation: u64,
+    authority: PlayerAttackerAuthority,
 }
 
 /// D2b: one memoized `(reward principal, ExperienceRewardOccurrence)` pair
@@ -2146,6 +2247,99 @@ impl ChannelRuntimeV1 {
             .remove_terminal_player(&self.continuity, game_session_id, actor)
     }
 
+    /// A2: bind the admitted session's Character lease to its committed player slot. Binding the
+    /// identical lease again is a no-op; a different one conflicts.
+    pub(crate) fn bind_attacker_lease(
+        &mut self,
+        actor: ExactActorRef,
+        game_session_id: GameSessionId,
+        lease: CharacterLease,
+    ) -> Result<(), CarrierError> {
+        self.carrier
+            .bind_attacker_lease(&self.continuity, actor.0, game_session_id, lease)
+    }
+
+    /// The grace-expiry token of a control-loss epoch.
+    pub(crate) const fn grace_expiry_fence(epoch: u64) -> WriteFenceToken {
+        WriteFenceToken::ControlLoss(epoch)
+    }
+
+    /// The token of a transition id from [`Self::mint_transition_fence`].
+    pub(crate) const fn transition_fence(id: u64) -> WriteFenceToken {
+        WriteFenceToken::Transition(id)
+    }
+
+    /// A fresh transition id for a transition other than grace expiry.
+    pub(crate) fn mint_transition_fence(&mut self) -> Result<u64, CarrierError> {
+        let next = self
+            .carrier
+            .fence_transitions
+            .checked_add(1)
+            .ok_or(CarrierError::CapacityArithmeticOverflow)?;
+        self.carrier.fence_transitions = next;
+        Ok(next)
+    }
+
+    /// CHARM-DESC-FENCE-LEASE step (a): fence the slot's damage writes for `game_session_id`,
+    /// before the durable transition. A grace-expiry token needs the slot's control-loss mark of
+    /// that epoch. One transition per session: another token is `WriteFenceBusy`.
+    pub(crate) fn fence_player_writes(
+        &mut self,
+        actor: ExactActorRef,
+        game_session_id: GameSessionId,
+        token: WriteFenceToken,
+    ) -> Result<WriteFenceSet, CarrierError> {
+        self.carrier
+            .fence_player_writes(&self.continuity, actor.0, game_session_id, token)
+    }
+
+    /// Step (c) for a durable outcome that left the session holding the lease: lift the fence
+    /// with its exact token. Any other token is a no-op; returns whether the fence was lifted.
+    pub(crate) fn lift_player_fence(
+        &mut self,
+        actor: ExactActorRef,
+        game_session_id: GameSessionId,
+        token: WriteFenceToken,
+    ) -> Result<bool, CarrierError> {
+        self.carrier
+            .lift_player_fence(&self.continuity, actor.0, game_session_id, token)
+    }
+
+    /// D295 item 4: the post-grace in-place rebind. One operation detaches the terminal session,
+    /// drops its fence and control-loss mark, and binds the newly authorized session and its
+    /// newer lease of the same Character. The actor reference is unchanged.
+    #[allow(
+        dead_code,
+        reason = "the post-grace takeover is not composed into the transport yet"
+    )]
+    pub(crate) fn rebind_player_session(
+        &mut self,
+        actor: ExactActorRef,
+        terminal: GameSessionId,
+        successor: GameSessionId,
+        lease: CharacterLease,
+    ) -> Result<(), CarrierError> {
+        self.carrier
+            .rebind_player_session(&self.continuity, actor.0, terminal, successor, lease)
+    }
+
+    /// FND-04B §22: bind a reconstructed slot of a same-session continuation only after its
+    /// durable reconcile. Terminal or unprovable refuses and leaves the slot unbound, so no
+    /// damage write is admitted for the session.
+    #[allow(
+        dead_code,
+        reason = "process-replacement continuation is not composed yet; the carrier gate is"
+    )]
+    pub(crate) fn bind_continuation(
+        &mut self,
+        actor: ExactActorRef,
+        game_session_id: GameSessionId,
+        reconcile: ContinuationReconcile,
+    ) -> Result<(), CarrierError> {
+        self.carrier
+            .bind_continuation(&self.continuity, actor.0, game_session_id, reconcile)
+    }
+
     /// Test-only census: (committed player actors, pending player reservations).
     #[cfg(test)]
     pub(crate) fn player_slot_counts(&self) -> (usize, usize) {
@@ -2349,6 +2543,8 @@ impl ChannelActorCarrier {
             corpse_projections: Vec::new(),
             death_reward_occurrences: Vec::new(),
             spawns: Vec::new(),
+            fence_transitions: 0,
+            attackers: Vec::new(),
         })
     }
 
@@ -2646,6 +2842,8 @@ impl ChannelActorCarrier {
             next_free: self.free_head,
         };
         self.free_head = Some(free_index);
+        // A2: the slot's bound lease and fence go with it.
+        self.attackers.retain(|entry| entry.index != index);
         if removed_creature {
             // A retained corpse projection / reward occurrence deliberately outlives this slot
             // (existing Combat D1/D2 behavior: a lost-response retry must still reconcile after
@@ -3418,6 +3616,16 @@ impl ChannelActorCarrier {
             Slot::Occupied { lifecycle, .. } => match lifecycle.control_loss {
                 Some(mark) if mark.epoch == epoch => {
                     lifecycle.control_loss = None;
+                    // CHARM-DESC-FENCE-LEASE §3 item 3: a resume lifts the fence of its epoch.
+                    let generation = actor_ref.actor_local_generation.0;
+                    if let Some(entry) = self
+                        .attackers
+                        .iter_mut()
+                        .find(|entry| entry.index == index && entry.generation == generation)
+                        && entry.authority.fence == Some(WriteFenceToken::ControlLoss(epoch))
+                    {
+                        entry.authority.fence = None;
+                    }
                     Ok(())
                 }
                 None => Ok(()),
@@ -3425,6 +3633,190 @@ impl ChannelActorCarrier {
             },
             _ => Err(CarrierError::ControlLossConflict),
         }
+    }
+
+    fn bound_attacker_lease(
+        &self,
+        continuity: &NamespaceContinuityGuard,
+        attacker: ActorRef,
+        command: CommandRef,
+    ) -> Result<CharacterLease, CarrierError> {
+        // The three checks, in order: the slot holds the command's session; it is not fenced;
+        // its lease is bound.
+        let index =
+            self.player_slot_index(continuity, attacker, command.game_session_id())
+                .map_err(|error| match error {
+                    CarrierError::PlayerReservationMismatch
+                    | CarrierError::StaleActorGeneration => CarrierError::SupersededAttackerSession,
+                    other => other,
+                })?;
+        let authority = self
+            .attacker_authority(index, attacker.actor_local_generation.0)
+            .unwrap_or_default();
+        if authority.fence.is_some() {
+            return Err(CarrierError::SupersededAttackerSession);
+        }
+        authority
+            .lease
+            .ok_or(CarrierError::SupersededAttackerSession)
+    }
+
+    fn attacker_authority(&self, index: usize, generation: u64) -> Option<PlayerAttackerAuthority> {
+        self.attackers
+            .iter()
+            .find(|entry| entry.index == index && entry.generation == generation)
+            .map(|entry| entry.authority)
+    }
+
+    /// The authority entry of the committed player slot `actor_ref` bound to `game_session_id`,
+    /// inserted empty when absent.
+    fn attacker_authority_mut(
+        &mut self,
+        continuity: &NamespaceContinuityGuard,
+        actor_ref: ActorRef,
+        game_session_id: GameSessionId,
+    ) -> Result<&mut PlayerAttackerAuthority, CarrierError> {
+        let index = self.player_slot_index(continuity, actor_ref, game_session_id)?;
+        let generation = actor_ref.actor_local_generation.0;
+        let at = match self.attackers.iter().position(|entry| entry.index == index) {
+            Some(at) => {
+                // A recycled slot's stale entry; `remove` normally prunes it first.
+                if self.attackers[at].generation != generation {
+                    self.attackers[at] = PlayerAttackerEntry {
+                        index,
+                        generation,
+                        authority: PlayerAttackerAuthority::default(),
+                    };
+                }
+                at
+            }
+            None => {
+                self.attackers
+                    .try_reserve(1)
+                    .map_err(|_| CarrierError::AllocationFailed)?;
+                self.attackers.push(PlayerAttackerEntry {
+                    index,
+                    generation,
+                    authority: PlayerAttackerAuthority::default(),
+                });
+                self.attackers.len() - 1
+            }
+        };
+        Ok(&mut self.attackers[at].authority)
+    }
+
+    fn bind_attacker_lease(
+        &mut self,
+        continuity: &NamespaceContinuityGuard,
+        actor_ref: ActorRef,
+        game_session_id: GameSessionId,
+        lease: CharacterLease,
+    ) -> Result<(), CarrierError> {
+        let authority = self.attacker_authority_mut(continuity, actor_ref, game_session_id)?;
+        match authority.lease {
+            None => {
+                authority.lease = Some(lease);
+                Ok(())
+            }
+            Some(bound) if bound == lease => Ok(()),
+            Some(_) => Err(CarrierError::AttackerBindingConflict),
+        }
+    }
+
+    fn fence_player_writes(
+        &mut self,
+        continuity: &NamespaceContinuityGuard,
+        actor_ref: ActorRef,
+        game_session_id: GameSessionId,
+        token: WriteFenceToken,
+    ) -> Result<WriteFenceSet, CarrierError> {
+        if let WriteFenceToken::ControlLoss(epoch) = token
+            && self
+                .player_control_loss(continuity, actor_ref, game_session_id)?
+                .is_none_or(|mark| mark.epoch != epoch)
+        {
+            return Err(CarrierError::ControlLossConflict);
+        }
+        let authority = self.attacker_authority_mut(continuity, actor_ref, game_session_id)?;
+        match authority.fence {
+            None => {
+                authority.fence = Some(token);
+                Ok(WriteFenceSet::Fenced)
+            }
+            Some(set) if set == token => Ok(WriteFenceSet::Joined),
+            Some(_) => Err(CarrierError::WriteFenceBusy),
+        }
+    }
+
+    fn lift_player_fence(
+        &mut self,
+        continuity: &NamespaceContinuityGuard,
+        actor_ref: ActorRef,
+        game_session_id: GameSessionId,
+        token: WriteFenceToken,
+    ) -> Result<bool, CarrierError> {
+        let authority = self.attacker_authority_mut(continuity, actor_ref, game_session_id)?;
+        if authority.fence == Some(token) {
+            authority.fence = None;
+            return Ok(true);
+        }
+        Ok(false)
+    }
+
+    fn rebind_player_session(
+        &mut self,
+        continuity: &NamespaceContinuityGuard,
+        actor_ref: ActorRef,
+        terminal: GameSessionId,
+        successor: GameSessionId,
+        lease: CharacterLease,
+    ) -> Result<(), CarrierError> {
+        let authority = self.attacker_authority_mut(continuity, actor_ref, terminal)?;
+        // Only a newer lease of the same Character, under a different session, is a successor.
+        match authority.lease {
+            Some(bound)
+                if bound.character_id() == lease.character_id()
+                    && bound.generation() < lease.generation()
+                    && successor != terminal => {}
+            _ => return Err(CarrierError::AttackerBindingConflict),
+        }
+        // One step under the runtime lock: the terminal session's fence goes with its binding.
+        *authority = PlayerAttackerAuthority {
+            lease: Some(lease),
+            fence: None,
+        };
+        let index = self.player_slot_index(continuity, actor_ref, terminal)?;
+        if let Slot::Occupied {
+            game_session_id,
+            lifecycle,
+            ..
+        } = &mut self.slots[index]
+        {
+            *game_session_id = Some(successor);
+            lifecycle.control_loss = None;
+        }
+        Ok(())
+    }
+
+    fn bind_continuation(
+        &mut self,
+        continuity: &NamespaceContinuityGuard,
+        actor_ref: ActorRef,
+        game_session_id: GameSessionId,
+        reconcile: ContinuationReconcile,
+    ) -> Result<(), CarrierError> {
+        // Terminal: only the post-grace path may attach control. Unprovable: fail closed. Both
+        // leave the slot unbound, so no damage write is admitted for the session.
+        let ContinuationReconcile::Proven(lease) = reconcile else {
+            return Err(CarrierError::ContinuationRefused);
+        };
+        let authority = self.attacker_authority_mut(continuity, actor_ref, game_session_id)?;
+        // A reconstructed slot carries no fence and no other binding.
+        if authority.fence.is_some() || authority.lease.is_some_and(|bound| bound != lease) {
+            return Err(CarrierError::ContinuationRefused);
+        }
+        authority.lease = Some(lease);
+        Ok(())
     }
 
     fn validate_ref(
@@ -4076,6 +4468,45 @@ impl CombatDeathFixture {
             channel_id: self.owner.channel_id,
             scope_generation: next,
         })
+    }
+}
+
+#[cfg(test)]
+impl ChannelActorCarrier {
+    /// Test only: a committed player slot for `session` with `lease` bound, as fresh admission
+    /// leaves it (A2).
+    pub(crate) fn admit_bound_test_attacker(
+        &mut self,
+        continuity: &NamespaceContinuityGuard,
+        session: GameSessionId,
+        lease: CharacterLease,
+    ) -> Result<ExactActorRef, CarrierError> {
+        let reservation = self.reserve_player(continuity, session)?;
+        let actor = self.commit_reserved_player(continuity, reservation)?;
+        self.bind_attacker_lease(continuity, actor.0, session, lease)?;
+        Ok(actor)
+    }
+
+    /// Test only: the committed player slot of `session`.
+    pub(crate) fn test_player_actor(&self, session: GameSessionId) -> Option<ExactActorRef> {
+        self.slots
+            .iter()
+            .enumerate()
+            .find_map(|(index, slot)| match slot {
+                Slot::Occupied {
+                    generation,
+                    game_session_id: Some(bound),
+                    committed: true,
+                    ..
+                } if *bound == session => Some(ExactActorRef(ActorRef {
+                    world_id: self.world_id,
+                    channel_id: self.channel_id,
+                    scope_generation: self.scope_generation,
+                    actor_local_id: ActorLocalId(u32::try_from(index + 1).ok()?),
+                    actor_local_generation: ActorLocalGeneration(*generation),
+                })),
+                _ => None,
+            })
     }
 }
 
@@ -5515,6 +5946,515 @@ mod tests {
         assert_eq!(
             ChannelActorCarrier::bootstrap_pre_production(&mut continuity, 1),
             Err(CarrierError::NamespaceAlreadyClaimed)
+        );
+    }
+}
+
+/// A2 (#1635): the bound attacker slot and its write fence (CHARM-DESC-FENCE-LEASE §6 item 3).
+#[cfg(test)]
+#[allow(clippy::expect_used)]
+mod attacker_fence_tests {
+    use super::super::exact_actor_test_ability::commit::{
+        OwnerCharmDamagePlan, OwnerCommitError, commit_exact_owner_charm_damage,
+        commit_exact_owner_damage, commit_exact_owner_primary_damage,
+    };
+    use super::super::exact_actor_test_ability::exact_actor_resolution::{
+        ExactActorProposal, ResolvedExactActor, resolve_exact_actor,
+    };
+    use super::super::exact_actor_test_ability::{
+        AbilityIntent, AbilityOccurrence, CalculationStage, CommitGroup, Effect, EffectPlan,
+        ProposalSource, RevisionSet,
+    };
+    use super::*;
+
+    const SUPERSEDED: Result<OwnerDamageResult, CarrierError> =
+        Err(CarrierError::SupersededAttackerSession);
+
+    fn id(seed: u8) -> [u8; 16] {
+        let mut bytes = [seed; 16];
+        bytes[6] = 0x70;
+        bytes[8] = (bytes[8] & 0x3f) | 0x80;
+        bytes
+    }
+
+    fn session(seed: u8) -> GameSessionId {
+        GameSessionId::decode(&id(seed)).expect("session")
+    }
+
+    fn lease(character: u8, generation: u64) -> CharacterLease {
+        CharacterLease::new(
+            CharacterId::decode(&id(character)).expect("character"),
+            generation,
+        )
+        .expect("lease")
+    }
+
+    fn command(session_seed: u8, sequence: u64) -> CommandRef {
+        CommandRef::new(
+            session(session_seed),
+            super::super::CommandId::new(sequence).expect("command"),
+        )
+    }
+
+    struct Fixture {
+        continuity: NamespaceContinuityGuard,
+        carrier: ChannelActorCarrier,
+        creature: ExactActorRef,
+        /// Session 1 of Character 1, bound at lease generation 1.
+        attacker: ExactActorRef,
+    }
+
+    fn fixture(seed: u64) -> Fixture {
+        let mut continuity =
+            NamespaceContinuityGuard::from_pre_production_grant(PreProductionContinuityGrant {
+                world_id: WorldId::decode(&id(seed as u8)).expect("world"),
+                channel_id: ChannelId::decode(&id(seed as u8 + 1)).expect("channel"),
+                scope_generation: ScopeOwnershipGeneration::new(1).expect("scope"),
+            });
+        let mut carrier =
+            ChannelActorCarrier::bootstrap_pre_production(&mut continuity, 3).expect("carrier");
+        let creature = ExactActorRef(
+            carrier
+                .admit_creature(&continuity, ActorState(1), "target:one", 100)
+                .expect("creature"),
+        );
+        let attacker = carrier
+            .admit_bound_test_attacker(&continuity, session(1), lease(1, 1))
+            .expect("bound attacker");
+        Fixture {
+            continuity,
+            carrier,
+            creature,
+            attacker,
+        }
+    }
+
+    impl Fixture {
+        fn hit(
+            &mut self,
+            attacker: ExactActorRef,
+            command: CommandRef,
+        ) -> Result<OwnerDamageResult, CarrierError> {
+            let binding = format!("hit:{}", command.command_id().get());
+            self.carrier
+                .current_owner_exact_commit(&self.continuity)
+                .commit_damage_for_bound_attacker(
+                    self.creature,
+                    attacker,
+                    command,
+                    0,
+                    OwnerDamageCommand {
+                        target: b"target:one",
+                        occurrence: &[],
+                        binding: binding.as_bytes(),
+                        damage: 1,
+                    },
+                )
+        }
+
+        fn health(&self) -> i64 {
+            match &self.carrier.slots[0] {
+                Slot::CreatureOccupied { health, .. } => Some(*health),
+                _ => None,
+            }
+            .expect("the creature is slot 0")
+        }
+
+        fn fence(&mut self, token: WriteFenceToken) -> Result<WriteFenceSet, CarrierError> {
+            self.carrier
+                .fence_player_writes(&self.continuity, self.attacker.0, session(1), token)
+        }
+
+        fn lift(&mut self, token: WriteFenceToken) -> Result<bool, CarrierError> {
+            self.carrier
+                .lift_player_fence(&self.continuity, self.attacker.0, session(1), token)
+        }
+
+        fn lose_control(&mut self, epoch: u64) {
+            self.carrier
+                .record_player_control_loss(
+                    &self.continuity,
+                    self.attacker.0,
+                    session(1),
+                    ControlLossMark {
+                        epoch,
+                        grace_deadline: 100,
+                    },
+                )
+                .expect("control loss");
+        }
+    }
+
+    #[test]
+    fn a_write_between_fence_and_commit_is_refused_and_only_the_exact_token_lifts() {
+        let mut f = fixture(10);
+        assert!(f.hit(f.attacker, command(1, 1)).is_ok());
+        let token = WriteFenceToken::Transition(7);
+        assert_eq!(f.fence(token), Ok(WriteFenceSet::Fenced));
+        let before = f.carrier.slots.clone();
+        assert_eq!(f.hit(f.attacker, command(1, 2)), SUPERSEDED);
+        assert_eq!(f.carrier.slots, before);
+        // A lift with any other token is a no-op.
+        assert_eq!(f.lift(WriteFenceToken::Transition(8)), Ok(false));
+        assert_eq!(f.lift(WriteFenceToken::ControlLoss(7)), Ok(false));
+        assert_eq!(f.hit(f.attacker, command(1, 2)), SUPERSEDED);
+        // NotApplicable with the session still holding the lease: the exact token lifts.
+        assert_eq!(f.lift(token), Ok(true));
+        assert_eq!(f.lift(token), Ok(false));
+        assert!(f.hit(f.attacker, command(1, 2)).is_ok());
+        assert_eq!(f.health(), 98);
+    }
+
+    #[test]
+    fn one_transition_per_session_joins_its_retry_and_never_replaces_a_fence() {
+        let mut f = fixture(20);
+        f.lose_control(3);
+        let grace = WriteFenceToken::ControlLoss(3);
+        assert_eq!(f.fence(grace), Ok(WriteFenceSet::Fenced));
+        // An unknown durable outcome keeps the fence; the retry joins it.
+        assert_eq!(f.fence(grace), Ok(WriteFenceSet::Joined));
+        // An overlapping logout or revocation waits for the first transition's step (c).
+        assert_eq!(
+            f.fence(WriteFenceToken::Transition(1)),
+            Err(CarrierError::WriteFenceBusy)
+        );
+        assert_eq!(f.hit(f.attacker, command(1, 1)), SUPERSEDED);
+        // After a lift, the second transition starts again at step (a) with its own token.
+        assert_eq!(f.lift(grace), Ok(true));
+        assert_eq!(
+            f.fence(WriteFenceToken::Transition(1)),
+            Ok(WriteFenceSet::Fenced)
+        );
+        assert_eq!(f.fence(grace), Err(CarrierError::WriteFenceBusy));
+        // After a terminal settle, the second transition finds nothing to do.
+        f.carrier
+            .remove_terminal_player(&f.continuity, session(1), f.attacker)
+            .expect("terminal settle");
+        assert!(f.fence(WriteFenceToken::Transition(2)).is_err());
+        assert!(f.lift(WriteFenceToken::Transition(1)).is_err());
+        assert_eq!(f.hit(f.attacker, command(1, 1)), SUPERSEDED);
+    }
+
+    #[test]
+    fn grace_expiry_fences_only_its_marked_epoch_and_a_resume_lifts_it() {
+        let mut f = fixture(30);
+        // No mark, or another epoch: fencing refuses and the transition does not start.
+        assert_eq!(
+            f.fence(WriteFenceToken::ControlLoss(1)),
+            Err(CarrierError::ControlLossConflict)
+        );
+        f.lose_control(1);
+        assert_eq!(
+            f.fence(WriteFenceToken::ControlLoss(2)),
+            Err(CarrierError::ControlLossConflict)
+        );
+        assert_eq!(
+            f.fence(WriteFenceToken::ControlLoss(1)),
+            Ok(WriteFenceSet::Fenced)
+        );
+        assert_eq!(f.hit(f.attacker, command(1, 1)), SUPERSEDED);
+        // The same-session resume lifts the fence together with the mark of its epoch.
+        f.carrier
+            .restore_player_control(&f.continuity, f.attacker.0, session(1), 1)
+            .expect("resume");
+        assert!(f.hit(f.attacker, command(1, 1)).is_ok());
+        // A resume never lifts another transition's fence.
+        f.lose_control(2);
+        assert_eq!(
+            f.fence(WriteFenceToken::Transition(5)),
+            Ok(WriteFenceSet::Fenced)
+        );
+        f.carrier
+            .restore_player_control(&f.continuity, f.attacker.0, session(1), 2)
+            .expect("resume");
+        assert_eq!(f.hit(f.attacker, command(1, 2)), SUPERSEDED);
+    }
+
+    #[test]
+    fn a_terminal_session_is_never_unfenced_and_its_slot_binding_goes_with_it() {
+        let mut f = fixture(40);
+        let token = WriteFenceToken::Transition(1);
+        assert_eq!(f.fence(token), Ok(WriteFenceSet::Fenced));
+        f.carrier
+            .remove_terminal_player(&f.continuity, session(1), f.attacker)
+            .expect("terminal settle");
+        assert!(f.lift(token).is_err());
+        assert!(
+            f.carrier
+                .bind_attacker_lease(&f.continuity, f.attacker.0, session(1), lease(1, 1))
+                .is_err()
+        );
+        assert_eq!(f.hit(f.attacker, command(1, 1)), SUPERSEDED);
+        assert!(f.carrier.attackers.is_empty());
+        // A new session in the recycled slot inherits neither the fence nor the binding.
+        let reservation = f
+            .carrier
+            .reserve_player(&f.continuity, session(2))
+            .expect("reserve");
+        let next = f
+            .carrier
+            .commit_reserved_player(&f.continuity, reservation)
+            .expect("commit");
+        assert_eq!(f.hit(next, command(2, 1)), SUPERSEDED);
+        f.carrier
+            .bind_attacker_lease(&f.continuity, next.0, session(2), lease(1, 2))
+            .expect("bind");
+        assert_eq!(
+            f.carrier
+                .bind_attacker_lease(&f.continuity, next.0, session(2), lease(1, 3)),
+            Err(CarrierError::AttackerBindingConflict)
+        );
+        assert!(f.hit(next, command(2, 1)).is_ok());
+    }
+
+    #[test]
+    fn a_rebind_drops_the_old_fence_and_leaves_the_rebound_slot_unfenced() {
+        let mut f = fixture(50);
+        f.lose_control(4);
+        assert_eq!(
+            f.fence(WriteFenceToken::ControlLoss(4)),
+            Ok(WriteFenceSet::Fenced)
+        );
+        for (successor, refused) in [
+            (lease(1, 1), "an equal lease generation"),
+            (lease(2, 2), "another Character"),
+        ] {
+            assert_eq!(
+                f.carrier.rebind_player_session(
+                    &f.continuity,
+                    f.attacker.0,
+                    session(1),
+                    session(2),
+                    successor
+                ),
+                Err(CarrierError::AttackerBindingConflict),
+                "{refused}"
+            );
+        }
+        f.carrier
+            .rebind_player_session(
+                &f.continuity,
+                f.attacker.0,
+                session(1),
+                session(2),
+                lease(1, 2),
+            )
+            .expect("post-grace rebind");
+        assert_eq!(f.hit(f.attacker, command(1, 1)), SUPERSEDED);
+        assert!(f.hit(f.attacker, command(2, 1)).is_ok());
+        assert!(f.fence(WriteFenceToken::ControlLoss(4)).is_err());
+        assert_eq!(
+            f.carrier
+                .player_control_loss(&f.continuity, f.attacker.0, session(2)),
+            Ok(None)
+        );
+    }
+
+    #[test]
+    fn a_same_session_continuation_reconciles_before_it_binds() {
+        let mut f = fixture(60);
+        let reservation = f
+            .carrier
+            .reserve_player(&f.continuity, session(3))
+            .expect("reserve");
+        let slot = f
+            .carrier
+            .commit_reserved_player(&f.continuity, reservation)
+            .expect("reconstructed slot");
+        // No write is admitted before the binding exists.
+        assert_eq!(f.hit(slot, command(3, 1)), SUPERSEDED);
+        for refused in [
+            ContinuationReconcile::Terminal,
+            ContinuationReconcile::Unprovable,
+        ] {
+            assert_eq!(
+                f.carrier
+                    .bind_continuation(&f.continuity, slot.0, session(3), refused),
+                Err(CarrierError::ContinuationRefused)
+            );
+            assert_eq!(f.hit(slot, command(3, 1)), SUPERSEDED);
+        }
+        f.carrier
+            .bind_continuation(
+                &f.continuity,
+                slot.0,
+                session(3),
+                ContinuationReconcile::Proven(lease(3, 1)),
+            )
+            .expect("proven continuation binds unfenced");
+        assert!(f.hit(slot, command(3, 1)).is_ok());
+        assert_eq!(
+            f.carrier.bind_continuation(
+                &f.continuity,
+                slot.0,
+                session(3),
+                ContinuationReconcile::Proven(lease(3, 2)),
+            ),
+            Err(CarrierError::ContinuationRefused)
+        );
+    }
+
+    fn primary_plan(f: &Fixture) -> (ResolvedExactActor, EffectPlan) {
+        let occurrence = AbilityOccurrence::new(
+            "attack:rebind",
+            RevisionSet::new(
+                "rules:1",
+                "content:1",
+                "world:1",
+                "formula:1",
+                "simulation:1",
+            )
+            .expect("revisions"),
+        )
+        .expect("occurrence");
+        let resolved = resolve_exact_actor(
+            &f.carrier.current_owner_exact_lookup(&f.continuity),
+            &occurrence,
+            ExactActorProposal::client(f.creature),
+        )
+        .expect("current creature");
+        let plan = EffectPlan::immediate(
+            occurrence,
+            AbilityIntent::normalize(ProposalSource::Client, "actor:fixture", &["target:one"])
+                .expect("intent"),
+            vec![Effect::damage("target:one", 3).expect("damage")],
+            vec![],
+            CommitGroup::atomic("scope:fixture", "group:one").expect("group"),
+        )
+        .expect("plan");
+        (resolved, plan)
+    }
+
+    fn charm_plan(parent: &EffectPlan) -> EffectPlan {
+        EffectPlan::ordered_sequential(
+            parent.occurrence().clone(),
+            parent.intent().clone(),
+            vec![
+                parent.effects()[0].clone(),
+                Effect::damage("target:one", 9).expect("generated"),
+            ],
+            vec![CalculationStage::new("charm:generated").expect("stage")],
+            parent.commit_group().owner_scope(),
+            parent.commit_group().group_id(),
+        )
+        .expect("charm plan")
+    }
+
+    #[test]
+    fn a_rebind_during_an_in_flight_charm_or_descriptor_commit_settles_exactly_once() {
+        for charm_before_rebind in [false, true] {
+            let mut f = fixture(70);
+            let (resolved, plan) = primary_plan(&f);
+            let parent = commit_exact_owner_primary_damage(
+                &mut f.carrier.current_owner_exact_commit(&f.continuity),
+                &resolved,
+                &plan,
+                f.attacker,
+                command(1, 1),
+            )
+            .expect("primary under the bound lease");
+            let frozen = OwnerCharmDamagePlan::prepare(&parent, charm_plan(&plan))
+                .expect("prepare")
+                .expect("live parent");
+            let charm = |f: &mut Fixture| {
+                commit_exact_owner_charm_damage(
+                    &mut f.carrier.current_owner_exact_commit(&f.continuity),
+                    &frozen,
+                    f.attacker,
+                    command(1, 1),
+                )
+                .map(|charm| charm.result)
+            };
+            if charm_before_rebind {
+                assert!(charm(&mut f).expect("descendant").applied);
+            }
+            let settled = f.health();
+            assert_eq!(settled, if charm_before_rebind { 88 } else { 97 });
+            f.carrier
+                .rebind_player_session(
+                    &f.continuity,
+                    f.attacker.0,
+                    session(1),
+                    session(2),
+                    lease(1, 2),
+                )
+                .expect("rebind");
+            // Neither the descendant nor a replay of the primary applies again under the old
+            // session: each occurrence settled exactly once, before the rebind or never.
+            assert_eq!(
+                charm(&mut f),
+                Err(OwnerCommitError::Owner(
+                    CarrierError::SupersededAttackerSession
+                ))
+            );
+            assert_eq!(
+                commit_exact_owner_damage(
+                    &mut f.carrier.current_owner_exact_commit(&f.continuity),
+                    &resolved,
+                    &plan,
+                    f.attacker,
+                    command(1, 1),
+                ),
+                Err(OwnerCommitError::Owner(
+                    CarrierError::SupersededAttackerSession
+                ))
+            );
+            assert_eq!(f.health(), settled);
+        }
+    }
+
+    #[test]
+    fn a_fenced_slot_refuses_every_bridge_before_the_owner_write() {
+        let mut f = fixture(80);
+        let (resolved, plan) = primary_plan(&f);
+        f.lose_control(1);
+        assert_eq!(
+            f.fence(WriteFenceToken::ControlLoss(1)),
+            Ok(WriteFenceSet::Fenced)
+        );
+        let before = f.carrier.slots.clone();
+        assert_eq!(
+            commit_exact_owner_primary_damage(
+                &mut f.carrier.current_owner_exact_commit(&f.continuity),
+                &resolved,
+                &plan,
+                f.attacker,
+                command(1, 1),
+            )
+            .map(|_| ()),
+            Err(OwnerCommitError::Owner(
+                CarrierError::SupersededAttackerSession
+            ))
+        );
+        // A command of a session the slot does not hold is refused the same way.
+        assert_eq!(
+            commit_exact_owner_damage(
+                &mut f.carrier.current_owner_exact_commit(&f.continuity),
+                &resolved,
+                &plan,
+                f.attacker,
+                command(9, 1),
+            ),
+            Err(OwnerCommitError::Owner(
+                CarrierError::SupersededAttackerSession
+            ))
+        );
+        assert_eq!(f.carrier.slots, before);
+    }
+
+    #[test]
+    fn fence_tokens_keep_their_kind() {
+        assert_eq!(
+            ChannelRuntimeV1::transition_fence(2),
+            WriteFenceToken::Transition(2)
+        );
+        assert_eq!(
+            ChannelRuntimeV1::grace_expiry_fence(2),
+            WriteFenceToken::ControlLoss(2)
+        );
+        assert_ne!(
+            ChannelRuntimeV1::transition_fence(2),
+            ChannelRuntimeV1::grace_expiry_fence(2)
         );
     }
 }

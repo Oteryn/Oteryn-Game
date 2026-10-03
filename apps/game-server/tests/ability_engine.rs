@@ -125,10 +125,19 @@ mod foundation {
     }
     pub(crate) struct CurrentOwnerExactActorCommit<'a>(pub(crate) &'a mut Option<Vec<u8>>);
     impl CurrentOwnerExactActorCommit<'_> {
-        pub(crate) fn commit_damage_for_attacker(
+        pub(crate) fn bound_attacker_lease(
+            &self,
+            _attacker: ExactActorRef,
+            _command: CommandRef,
+        ) -> Result<CharacterLease, CarrierError> {
+            Ok(CharacterLease)
+        }
+        pub(crate) fn commit_damage_for_bound_attacker(
             &mut self,
             _actor: ExactActorRef,
-            _attacker: AttackerCommand,
+            _attacker: ExactActorRef,
+            _command: CommandRef,
+            _sub_ordinal: u16,
             command: OwnerDamageCommand<'_>,
         ) -> Result<OwnerDamageResult, CarrierError> {
             if self.0.is_some() {

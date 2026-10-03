@@ -11,7 +11,7 @@ use crate::spell::ResolvedEffect;
 fn commit(
     runtime: &mut ChannelRuntimeV1,
     prepared: &PreparedOwnerDamage,
-    attacker: CharacterId,
+    attacker: ExactActorRef,
     lease_generation: u64,
 ) -> Result<OwnerDamageResult, Error> {
     precheck_commit(runtime, prepared, lease_generation)?;
@@ -20,7 +20,6 @@ fn commit(
         &prepared.resolved,
         &prepared.plan,
         attacker,
-        lease_generation,
         prepared.command,
     )
     .map_err(Error::Commit)
@@ -61,6 +60,15 @@ fn make_owner(tag: u8, generation: u64) -> Owner {
     let caster = runtime
         .commit_fresh_session(reservation)
         .expect("commit actor");
+    let character = CharacterId::decode(&uuid(0x22)).expect("character");
+    // A2: the bridge reads the attacker's Character lease from its bound slot.
+    runtime
+        .bind_attacker_lease(
+            caster,
+            session,
+            crate::foundation::CharacterLease::new(character, 1).expect("lease"),
+        )
+        .expect("bind lease");
     runtime
         .initialize_movement_test_position(caster, position(10))
         .expect("position");
@@ -70,7 +78,7 @@ fn make_owner(tag: u8, generation: u64) -> Owner {
         caster,
         target,
         session,
-        character: CharacterId::decode(&uuid(0x22)).expect("character"),
+        character,
     }
 }
 
@@ -141,7 +149,7 @@ fn production_commit_refuses_at_the_a2_seam_without_touching_health() {
         super::commit(&mut owner.runtime, &prepared, owner.character, 0),
         Err(Error::InvalidLeaseGeneration)
     ));
-    let first = commit(&mut owner.runtime, &prepared, owner.character, 1).expect("damage");
+    let first = commit(&mut owner.runtime, &prepared, owner.caster, 1).expect("damage");
     assert_eq!((first.applied, first.health_before), (true, 20));
 }
 
@@ -151,12 +159,12 @@ fn actual_creature_health_changes_once_and_same_command_replays_original_receipt
     let prepared = prepared(&owner, 7);
     assert_eq!(prepared.target(), owner.target);
     assert_eq!(prepared.plan().effects()[0].magnitude(), 7);
-    let first = commit(&mut owner.runtime, &prepared, owner.character, 1).expect("damage");
+    let first = commit(&mut owner.runtime, &prepared, owner.caster, 1).expect("damage");
     assert_eq!(
         (first.applied, first.health_before, first.health_after),
         (true, 20, 13)
     );
-    let replay = commit(&mut owner.runtime, &prepared, owner.character, 1).expect("replay");
+    let replay = commit(&mut owner.runtime, &prepared, owner.caster, 1).expect("replay");
     assert_eq!(
         (replay.applied, replay.health_before, replay.health_after),
         (false, 20, 13)
@@ -168,10 +176,10 @@ fn actual_creature_health_changes_once_and_same_command_replays_original_receipt
 fn lethal_replay_uses_retained_resolution_and_does_not_require_live_target_again() {
     let mut owner = make_owner(0x40, 1);
     let prepared = prepared(&owner, 25);
-    let first = commit(&mut owner.runtime, &prepared, owner.character, 1).expect("lethal");
+    let first = commit(&mut owner.runtime, &prepared, owner.caster, 1).expect("lethal");
     assert_eq!((first.health_before, first.health_after), (20, 0));
     assert!(!owner.runtime.contains_live_creature(owner.target));
-    let replay = commit(&mut owner.runtime, &prepared, owner.character, 1).expect("lethal replay");
+    let replay = commit(&mut owner.runtime, &prepared, owner.caster, 1).expect("lethal replay");
     assert_eq!(
         (replay.applied, replay.health_before, replay.health_after),
         (false, 20, 0)
@@ -206,22 +214,22 @@ fn wrong_carrier_target_atom_and_changed_plan_cannot_mutate_health() {
     )
     .expect("lookup does not manufacture target atom");
     assert_eq!(
-        commit(&mut owner.runtime, &wrong, owner.character, 1),
+        commit(&mut owner.runtime, &wrong, owner.caster, 1),
         Err(Error::Commit(OwnerCommitError::Owner(
             CarrierError::CreatureTargetMismatch
         )))
     );
     let good = prepared(&owner, 7);
-    let first = commit(&mut owner.runtime, &good, owner.character, 1).expect("good damage");
+    let first = commit(&mut owner.runtime, &good, owner.caster, 1).expect("good damage");
     assert_eq!((first.health_before, first.health_after), (20, 13));
     let changed = prepared(&owner, 8);
     assert_eq!(
-        commit(&mut owner.runtime, &changed, owner.character, 1),
+        commit(&mut owner.runtime, &changed, owner.caster, 1),
         Err(Error::Commit(OwnerCommitError::Owner(
             CarrierError::PlanConflict
         )))
     );
-    let replay = commit(&mut owner.runtime, &good, owner.character, 1).expect("unchanged receipt");
+    let replay = commit(&mut owner.runtime, &good, owner.caster, 1).expect("unchanged receipt");
     assert_eq!(replay.health_after, 13);
 }
 
@@ -267,7 +275,7 @@ fn heal_multitarget_and_side_effects_fail_before_actual_damage_mutation() {
     assert!(Effect::damage("test:creature", 0).is_err());
     assert!(Effect::damage("test:creature", -1).is_err());
     let good = prepared(&owner, 7);
-    let first = commit(&mut owner.runtime, &good, owner.character, 1).expect("first mutation");
+    let first = commit(&mut owner.runtime, &good, owner.caster, 1).expect("first mutation");
     assert_eq!(first.health_before, 20);
 }
 
@@ -285,7 +293,7 @@ fn recycled_actor_and_foreign_owner_refs_cannot_use_prepared_authority() {
         .expect("reuse slot");
     assert_ne!(replacement, owner.target);
     assert_eq!(
-        commit(&mut owner.runtime, &prepared, owner.character, 1),
+        commit(&mut owner.runtime, &prepared, owner.caster, 1),
         Err(Error::Commit(OwnerCommitError::Owner(
             CarrierError::StaleActorGeneration
         )))
@@ -299,7 +307,7 @@ fn recycled_actor_and_foreign_owner_refs_cannot_use_prepared_authority() {
     )
     .expect("current replacement");
     assert_eq!(
-        commit(&mut owner.runtime, &valid, owner.character, 1)
+        commit(&mut owner.runtime, &valid, owner.caster, 1)
             .expect("current write")
             .health_before,
         20
@@ -322,7 +330,7 @@ fn current_session_and_nonzero_lease_are_independent_of_prepared_plan() {
     let mut owner = make_owner(0x40, 1);
     let prepared = prepared(&owner, 7);
     assert_eq!(
-        commit(&mut owner.runtime, &prepared, owner.character, 0),
+        commit(&mut owner.runtime, &prepared, owner.caster, 0),
         Err(Error::InvalidLeaseGeneration)
     );
     let wrong_session = GameSessionId::decode(&uuid(0x24)).expect("other session");
@@ -336,11 +344,11 @@ fn current_session_and_nonzero_lease_are_independent_of_prepared_plan() {
         ),
         Err(Error::Owner(_))
     ));
-    let first = commit(&mut owner.runtime, &prepared, owner.character, 1).expect("valid lease");
+    let first = commit(&mut owner.runtime, &prepared, owner.caster, 1).expect("valid lease");
     assert_eq!((first.health_before, first.health_after), (20, 13));
     let mut newer = make_owner(0x40, 2);
     assert!(matches!(
-        commit(&mut newer.runtime, &prepared, newer.character, 1),
+        commit(&mut newer.runtime, &prepared, newer.caster, 1),
         Err(Error::Owner(CarrierError::WrongScope))
     ));
 }
@@ -361,7 +369,7 @@ fn a_prepared_cast_cannot_mutate_after_current_control_is_lost() {
         )
         .expect("owner mirrors independently committed loss");
     assert_eq!(
-        commit(&mut owner.runtime, &prepared, owner.character, 1),
+        commit(&mut owner.runtime, &prepared, owner.caster, 1),
         Err(Error::CasterUncontrolled)
     );
     assert!(matches!(
@@ -378,7 +386,7 @@ fn a_prepared_cast_cannot_mutate_after_current_control_is_lost() {
         .runtime
         .restore_control(owner.caster, owner.session, 1)
         .expect("exact recovery");
-    let first = commit(&mut owner.runtime, &prepared, owner.character, 1)
+    let first = commit(&mut owner.runtime, &prepared, owner.caster, 1)
         .expect("first mutation after restoration");
     assert_eq!((first.health_before, first.health_after), (20, 13));
 }
