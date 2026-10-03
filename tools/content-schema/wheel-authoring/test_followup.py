@@ -55,7 +55,7 @@ class FollowupTests(unittest.TestCase):
                        for v in self.candidate['vocations'].values() for s in v['slots']}
         def values(key):
             return {e['kind']: e['value'] for e in convictions[key]['unique_parameters']['numeric_effects']}
-        self.assertEqual(values('battle_healing')['shield_healing_multiplier'], 3)
+        self.assertEqual(values('battle_healing')['shield_healing_multiplier'], 2)
         self.assertEqual(values('guiding_presence'), {'shared_mantra_percent': 100,
             'party_bonus_increase_source_percent': 33})
         self.assertEqual(values('focus_mastery')['focus_spell_group_cooldown_reduction'], 2)
@@ -152,6 +152,17 @@ class FollowupTests(unittest.TestCase):
             browser=copy.deepcopy(original);mutate(browser)
             def supplied(path):return browser if path.name=='browser-source-audit.json' else original_read(path)
             with self.subTest(code=code), patch.object(wheel,'read',side_effect=supplied), self.assertRaisesRegex(ValueError,code):
+                wheel.validate_evidence(self.candidate,(wheel.ROOT/'samples/wheel-candidate.json').read_bytes())
+
+    def test_browser_audit_selections_match_reference_selection(self):
+        original_read=wheel.read
+        original=original_read(wheel.ROOT/'samples/browser-source-audit.json')
+        mutations=[lambda b:b['canary_guiding_reference']['findings']['mystic_repulse_ii'].update(selected_value=40),
+            lambda b:b['architect_ruling']['applied_reference_values'].update(supreme_grade_iii_gold=12500000)]
+        for index,mutate in enumerate(mutations):
+            browser=copy.deepcopy(original);mutate(browser)
+            def supplied(path):return browser if path.name=='browser-source-audit.json' else original_read(path)
+            with self.subTest(index=index), patch.object(wheel,'read',side_effect=supplied), self.assertRaisesRegex(ValueError,'EVIDENCE_BROWSER_SELECTION_DRIFT'):
                 wheel.validate_evidence(self.candidate,(wheel.ROOT/'samples/wheel-candidate.json').read_bytes())
 
     def test_compatible_declaration_cannot_reinterpret_paid_mods(self):

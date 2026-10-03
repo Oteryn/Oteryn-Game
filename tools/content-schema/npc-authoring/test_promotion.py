@@ -939,6 +939,15 @@ class PromotionValidatorTests(unittest.TestCase):
                 target = target[key]
             target[path[-1]] += 1
             self.assertTrue(any('reviewed' in e and 'value' in e for e in validate_promotion.errors(broken)), name)
+        # #1660 4174148287: JSON 0 is not false, and false is not 0
+        for name, path, value in (('Flickering Soul', ('movement', 'floor_change'), 0),
+                                  ('Storkus', ('presentation', 'outfit', 'addons'), False)):
+            broken = copy.deepcopy(report)
+            target = find_candidate(broken, name)
+            for key in path[:-1]:
+                target = target[key]
+            target[path[-1]] = value
+            self.assertTrue(any('reviewed' in e and 'value' in e for e in validate_promotion.errors(broken)), name)
 
     def test_image_fit_scores_are_at_most_35(self):
         self.assertTrue(all(fit['score'] <= validate_promotion.WIKI_IMAGE_FIT_MAX_SCORE

@@ -23,6 +23,9 @@
 - Amends: none. CREATURE-AI-0 §8.4 already defers familiars here.
 - Amended by the D309 P2 bundle (clarifying, review finding 4173381895): the recovery
   qualification sweep of §5.1.
+- Amended (2026-10-03, control plane, review finding 4173381895 on #1644): §5.2, the complete
+  authority and recovery finding-family sweep, with §4 check 4, §5 writes and §7 tightened to
+  match. This is a precondition for allocating FAMILIAR-1.
 - Runtime, migration and production authority: NONE. Each child needs its own #1622 allocation.
 - `MERGE_AUTHORITY: WORK_COORDINATOR_ONLY`
 
@@ -90,7 +93,8 @@ Checks, in order; any failure spends no mana and starts no cooldown:
 2. the standard spell-core checks, unchanged: enough mana for the spell (§C.1's table) and the
    2 s `support` group cooldown not active;
 3. the owner is not inside a boss room admitted by lever (BOSS-RAID-0 §6);
-4. the owner has no summon of any kind (R1);
+4. the owner has no summon of any kind (R1), and no familiar waits to return (§7: stored time
+   with no free tile yet);
 5. the familiar cooldown has run out (§5);
 6. SUMMON-1's placement finds a tile.
 
@@ -103,22 +107,64 @@ one ordinary summon (R1).
 ## 5. Durable state (FAMILIAR-1)
 
 - `game_character_familiar_state`: `character_id` (primary key), `familiar_remaining_ms`
-  (0 = none), `cooldown_remaining_ms`, `open` (the clean-end discriminator), `revision`, and the
-  writing `session_generation`.
-- **`open`.** The cast write and the return write (§7) set `open = true`: a live familiar exists
-  for that generation. A clean session-end write and a removal write set `open = false`. So a row that is still
-  `open = true` from an older generation at the next login was never closed: its session did not
+  (0 = none), `cooldown_remaining_ms`, `open` (the clean-end discriminator), `revision`, the
+  writing session's fence identity (`game_session_id`, `session_generation`), the writing
+  runtime owner (`runtime_owner`: the RuntimeScopeAuthority semantic scope and its
+  `scope_ownership_generation`, FND-04B), and `clean_end_game_session_id` (nullable: the GameSession whose clean-end write committed last).
+- **Session identity.** In this decision a session's "generation" is its gameplay fence identity,
+  the pair (`game_session_id`, `connection_generation`) of `CurrentCharacterGameplayFence`. A fresh
+  admission starts a new GameSessionId at connection generation 1
+  (`durability/fresh_admission.rs`), so a bare connection generation does not order sessions.
+  "Older" or "stale" means not the current fence identity: another GameSessionId, or the same one
+  with a lower connection generation. "Same generation" means the same pair. The two parts have
+  separate jobs: the full pair authorizes the current writer (fencing), while the GameSessionId
+  and the runtime owner that last wrote the row are the lifecycle used for crash classification.
+  A same-GameSession reconnect raises the connection generation, keeps the runtime owner and keeps
+  actor and gameplay state (FND-04B), so it continues the lifecycle and is never a crash. A
+  same-session continuation after process replacement (FND-04B §22) keeps the GameSessionId but
+  has a new runtime owner, and the familiar is not part of the reconstructed state, so it does not
+  continue the lifecycle.
+- **`open`.** The cast write and the return write (§7) set `open = true`: a committed acquisition
+  that is not yet cleanly closed or reconciled (§5.2 F-I7). It does not claim that the familiar is
+  live: after a crash the row stays open until the next fenced load reconciles it. A clean
+  session-end write, a removal write and a reconciliation write set `open = false`. So a row that is still
+  `open = true` from another GameSession at the next login was never closed: its session did not
   end cleanly.
 - **Remaining, not wall clock.** Both values are stored as time left, because both freeze while
   offline (R2). The runtime counts them down while the owner is online.
 - **Writes** are session-generation fenced Character writes: at the cast; at a return (§7); at a
   clean session end
   (logout, channel transfer, the end of the in-fight deadline); and at removal (§7). A write from
-  a stale generation is refused.
-- **Crash.** At login, the new session's fenced load reads the row (a same-session continuation
-  after process replacement: §5.1). If `open = true` and its
-  `session_generation` is older than the new one, the earlier session crashed: the load writes
-  `familiar_remaining_ms = 0` and `open = false` under the new generation (the familiar is lost),
+  a stale generation is refused. A logout or channel transfer completes only after its clean-end
+  write commits, as TIMED-ITEM-0B §6.1 orders its checkpoints: if that write fails, the session
+  stays and the familiar is kept. `WorldReset` writes as a removal with the time kept
+  (`open = false`).
+- **Session end fences return admission.** Every clean-end path (logout, channel transfer, and the
+  terminal release at the end of the in-fight deadline) first closes return
+  admission for its session, then waits for a return acquisition already in flight to commit or
+  abort, and only then makes its clean-end write. A return that reaches admission after the close
+  is refused and stays stored; it returns at the next login or arrival. The close holds until
+  authority release, so the clean-end write is the session's last write to the row (F-I11). A
+  return that committed before the close reopened the row, and the clean-end compare-and-set reads
+  that row and closes it. Return admission opens again only when the clean-end write is proven not
+  committed: a compare-and-set loss or an error before commit. An unknown commit outcome (a lost
+  response) is reconciled from durable state first (DUR-02): the session re-reads the fence and the
+  row, and a row it finds closed under its own generation and revision is its committed clean end,
+  so the session end completes and admission stays closed. Only a row it finds unchanged lets the
+  session stay and reopen admission.
+- **The close is durable.** The clean-end write sets `clean_end_game_session_id` to the writer's
+  GameSessionId in the same compare-and-set. Every return admission, immediate or delayed, is
+  refused when the row's `clean_end_game_session_id` equals the admitting session's GameSessionId.
+  The return write clears it, and so does the cast write. A later fresh admission has a new
+  GameSessionId, even at connection generation 1, so its returns pass. A successor that continues the same session after process
+  replacement (FND-04B §22) reloads the row and finds the close. It completes the terminal release
+  and returns nothing, so the close survives the replacement without any in-memory state.
+- **Crash.** At login, and when a same-session continuation after process replacement is
+  established (§5.1), the session's fenced load reads the row. If `open = true` and either its
+  `game_session_id` is not the loading session's GameSessionId or its `runtime_owner` is not the
+  loading runtime owner (the same semantic scope and `scope_ownership_generation`), the runtime
+  that held the familiar is gone: the
+  load writes `familiar_remaining_ms = 0` and `open = false` under the new generation (the familiar is lost),
   and keeps `cooldown_remaining_ms` as last written, so a crash never shortens it. If
   `open = false`, the row is a clean save and a positive `familiar_remaining_ms` returns (§7);
   until that return is admitted the row stays `open = false`, and a crash before it loses nothing.
@@ -128,7 +174,8 @@ one ordinary summon (R1).
   session generation, and it passes the current FND-04 authority checks (DUR-02 §5), including the
   current RuntimeScopeAuthority ownership generation of the writing runtime owner. A write from an
   older session generation, or from a runtime owner that has been replaced (the same session
-  generation after process replacement, FND-04B §22), is refused and changes nothing. A
+  generation after process replacement, FND-04B §22), is refused and changes nothing. Every
+  committed write stores the writer's `runtime_owner` with its fence identity. A
   compare-and-set loser re-applies only after it passes both checks again. The cast
   write is part of the cast acquisition, so a retried cast command replays its first outcome and
   never writes the row twice.
@@ -149,13 +196,77 @@ Each case names one invariant. FAMILIAR-1 has one test per case, on PostgreSQL w
 | Two writes of one generation race (timer removal and logout save) | direct, concurrent | The compare-and-set on `revision` admits one; the other re-reads, passes the session-generation and runtime-owner checks again, and re-applies to the new row or becomes a no-op when the row is already closed; never two writes for one revision. |
 | Late write from a replaced runtime owner (a clean-end save from the old process, after process replacement and the same-session recovery write) | direct, concurrent, PostgreSQL | The session generation is the same, so the RuntimeScopeAuthority ownership generation fences it: the write is refused, including on a compare-and-set retry, and the familiar never returns from it. |
 | Takeover: the new session's fenced load races the old session's clean-end save | reconciled vs direct, concurrent | The load raises the generation first; the old save is then stale and refused. If the old save commits first, the load sees `open = false` and returns the familiar (§7). |
-| Row `open = true` with the same generation, and the familiar is still in the running process (a reconnect inside one GameSession) | reconciled | Not a crash: no reconciliation write; the familiar continues. |
-| Row `open = true` with an older generation | reconciled | Crash: one write under the new generation sets remaining 0 and `open = false`; the cooldown is kept. |
-| Server restart, then a new session (PostgreSQL reload) | reconciled, PostgreSQL | The new session has a newer generation, so an open row loads as a crash (the row above). A clean row returns from its stored remaining time only. |
-| Process replacement with proven same-session continuation (FND-04B §22; PostgreSQL reload) | reconciled, PostgreSQL | The generation is unchanged, but the familiar is not part of the reconstructed state, and the stored remaining time predates the loss. An `open = true` row is therefore a crash under the same generation: one fenced write sets remaining 0 and `open = false` and keeps the cooldown. The familiar never comes back with stale time. A clean row (`open = false`) returns as usual (§7). |
+| Row `open = true` written by an earlier connection generation of the same GameSession, and the familiar is still in the running process (a reconnect inside one GameSession, which raises the connection generation) | reconciled | Not a crash: same lifecycle, no reconciliation write; the familiar continues, and the next write carries the new connection generation. |
+| Row `open = true` from another GameSessionId, or from the same GameSessionId under another `runtime_owner` | reconciled | Crash: one write under the new generation sets remaining 0 and `open = false`; the cooldown is kept. |
+| Server restart, then a new session (PostgreSQL reload) | reconciled, PostgreSQL | The new session has another GameSessionId (§5 session identity), so an open row loads as a crash (the row above). A clean row returns from its stored remaining time only. |
+| Process replacement with proven same-session continuation (FND-04B §22; PostgreSQL reload) | reconciled, PostgreSQL | The GameSessionId is unchanged, but the familiar is not part of the reconstructed state, and the stored remaining time predates the loss. The successor's runtime owner has a new `scope_ownership_generation`, so the crash predicate (§5) holds for an `open = true` row: one fenced write sets remaining 0 and `open = false` and keeps the cooldown. The familiar never comes back with stale time. A clean row (`open = false`) returns as usual (§7), unless its `clean_end_game_session_id` is the current GameSessionId (the next row). |
+| Process replacement after the clean-end write commits and before authority release (FND-04B §22 same-session successor; PostgreSQL reload) | reconciled, PostgreSQL | F-I11: the successor keeps the GameSessionId and reloads `clean_end_game_session_id` equal to it, so return admission stays closed. It completes the terminal release and places no familiar, the row stays `open = false`, and the next login returns the familiar from the stored time. |
+| A fresh login after a clean logout, both sessions at connection generation 1 | reconciled, PostgreSQL | F-I11: the close is bound to the closing GameSessionId, not to the connection generation. The fresh admission has a new GameSessionId, so its return passes and the stored familiar comes back; a stored familiar never blocks the character. |
 | Missing row | reconciled | No familiar and no cooldown; a load never inserts a row. |
 | Any recovery path | reconciled | `cooldown_remaining_ms` is never lowered by a recovery write. |
 | Return refused in a lever boss room, immediate or delayed | direct | One fenced write ends the familiar (remaining 0, `open = false`, cooldown kept); no creature is placed. |
+
+### 5.2 Finding-family sweep (review finding 4173381895)
+
+This section completes the authority and recovery qualification of the task template
+(`AuthorityInvariant x ConsumerBoundary x MutationOperator`). FAMILIAR-1 takes it as its
+qualification and proves every row of §5.1 and of this section, one invariant per negative case.
+
+**Authority invariants.**
+
+| Id | Invariant | Current fact source |
+|---|---|---|
+| F-I1 | A row is written only in the fenced Character transaction of its own `character_id`. | The session's CharacterId from the GameSession row. |
+| F-I2 | A write carries the writer's current session generation; an older one is refused. | The session-generation fence row, never the familiar row's own `session_generation`. |
+| F-I3 | A write from a replaced runtime owner is refused, also on a compare-and-set retry. | The RuntimeScopeAuthority ownership generation (FND-04B §22). |
+| F-I4 | At most one write per `revision`. | The compare-and-set on the row. |
+| F-I5 | One cast or return occurrence has one outcome and one write. | The occurrence's binding (spell, caster, placement). |
+| F-I6 | Durable values come only from the row, content and the session. | Content definition, row and fence; nothing from the client. |
+| F-I7 | `open = true` marks a committed cast or return acquisition that has not yet been cleanly closed (clean end or removal) or reconciled (crash recovery). It does not claim that a familiar is live: after a crash the row stays open until the next fenced load reconciles it. | The cast and return acquisitions, which set it; the clean-end, removal and reconciliation writes, which clear it. |
+| F-I8 | A recovery write never lowers `cooldown_remaining_ms` and never raises `familiar_remaining_ms`. | The row before the write. |
+| F-I9 | The cast commits mana, admission and row together; a return commits placement and row together. | The SUMMON-1 acquisition. |
+| F-I10 | A load never inserts a row, and it never returns a familiar from an unreconciled open row. | The fenced load. |
+| F-I11 | After a session's clean-end write commits, that session writes nothing more to the row until its authority is released, including through a same-session successor after process replacement. | The session's return-admission fence, closed by session end before the clean-end write, and the row's `clean_end_game_session_id`, which a successor reloads. |
+| F-I12 | An `open = true` row is continued only by the runtime owner that wrote it, inside its GameSession; under any other GameSessionId or runtime owner it is reconciled as a crash, so a familiar lost with its process never returns. | Every write, which stores `runtime_owner`; the crash predicate of the fenced load (§5). |
+
+**Negative cases beyond §5.1.**
+
+| Case | Path | Invariant |
+|---|---|---|
+| A load by a session whose generation is not the current one in the session-generation fence (a stale login after a takeover), whatever generation the row stores (for example row 1, loader 2, fence 3) | reconciled | F-I2: loader authority is decided first, against the fence alone. A stale load is refused before the row is classified. It neither reconciles nor returns the familiar. |
+| The crash classification is computed from the row's own `session_generation` compared with itself, or with a value the row supplied | reconciled | F-I2: "older" is decided only against the fence row's current generation. A test whose row and fence disagree classifies by the fence. |
+| A reconciliation write that loses its compare-and-set or ends in a database error, including an unknown commit outcome, and the session generation has since moved on | reconciled, concurrent, PostgreSQL | F-I2: the session is not admitted and writes nothing until it reconciles the outcome. It re-reads the fence first; a loader whose generation is no longer current is stale and refused, and every later write from it is refused too. |
+| The same failure, and the runtime owner has since been replaced (same session generation) | reconciled, concurrent, PostgreSQL | F-I3: the fence re-read finds a newer RuntimeScopeAuthority ownership generation; the loader is refused, and every later write from it is refused too. |
+| The same failure, and the loader is still current | reconciled, concurrent, PostgreSQL | F-I10: nothing is returned or written from the earlier in-memory snapshot. The loader re-reads the row and classifies it from scratch: a committed reconciliation reads as a clean row with remaining 0, and a row another authorized writer advanced is taken as read. The fresh row then follows the normal path: a clean row with time left returns its familiar (§7), and an open row is reconciled again. |
+| A cast while a familiar waits to return with no free tile | direct | F-I7: refused by check 4. A stored familiar and a new one never exist together. |
+| A delayed return racing a removal write for the same character | direct, concurrent | F-I4: one compare-and-set wins per `revision`; the loser's write never lands on that revision. A return that loses re-reads and, finding `familiar_remaining_ms = 0` (the removal won), writes nothing. |
+| A delayed return whose own acquisition already committed is retried (a lost commit response, then a re-read) | direct, concurrent | F-I5: the occurrence's first outcome stands. The retry finds the familiar its own acquisition placed and replays that outcome; it places no second familiar and writes nothing. |
+| A cast racing a delayed return for the same character | direct, concurrent | F-I7: the cast's compare-and-set re-checks check 4 against the row it replaces and commits only over a row with `familiar_remaining_ms = 0`, so it never replaces a familiar that waits to return. |
+| A cast refused by that compare-and-set (it lost, or it found stored time) | direct, concurrent | F-I9: mana, admission and row commit together or not at all, so the refused cast spends no mana and starts no cooldown. |
+| A delayed return in flight while logout or channel transfer makes its clean-end write | direct, concurrent | F-I11: session end closes return admission and drains the in-flight return before its clean-end write (§5). The return either committed first, and the clean-end write closes the row it reopened, or it is refused and stays stored. No return reopens the row after the clean-end write, so the next login never reads a clean exit as a crash. |
+| A delayed return in flight when a disconnected owner reaches the end of the in-fight deadline | direct, concurrent | F-I11: the terminal release is a clean-end path and closes and drains return admission like logout (§5); no return reopens the row after its clean-end write. |
+| The clean-end write commits but its response is lost (unknown commit outcome), then a delayed return is attempted | direct, concurrent, PostgreSQL | F-I11: the session reconciles from durable state before it reopens admission (§5). The row, closed under its own generation and revision, proves the commit, so admission stays closed, the session end completes and the return is refused and stays stored. |
+| A channel-transfer arrival that loads before the departure's clean-end write commits | reconciled, concurrent | The transfer completes only after that write (§5 writes), so the arrival never sees the departing `open = true` row. If it does, the transfer was not admitted, and the arrival is refused as a stale owner (F-I3). |
+| `WorldReset` with the owner online | direct | F-I7: the removal writes `open = false` with the time kept. A later crash is then not a loss of the stored time. |
+| A familiar creature created by any path other than a familiar spell or return (Summon Creature, convince, an administrative creature command) | sibling API | F-I6: it is an ordinary creature or summon, and nothing about it becomes durable familiar state; content marks the familiars as not summonable and not convinceable (§3). |
+| The same creature, checked against the row | sibling API | F-I7: it never sets `open` and writes no row; only a familiar cast or return acquisition opens one. |
+| The ordinary summon writer (SUMMON-1 without `familiar_summon`) | sibling API | F-I1: it never writes the familiar row. Only the familiar cast, return, clean-end, removal and recovery writers do. |
+| The returning creature after a vocation change while offline | direct | F-I6: it is the current vocation's familiar from content. The stored time is kept, and no creature key is stored. |
+| A familiar spell's content revision changes the duration or cooldown | direct | F-I6: the row's stored remaining times stand. New values apply from the next cast. |
+
+**Mutation operators.** Applicable: cast insert and update; return update; clean-end update;
+removal update (timer, killed, owner death, lever boss room, `WorldReset`); crash reconciliation
+update. Considered not applicable: delete (a row is never deleted while the character lives;
+character deletion follows the Character's own cascade) and administrative edit (none defined).
+
+**Consumer boundaries.** These are the spell core's cast, the session-end path (logout, channel
+transfer, the in-fight deadline), removal events, the fenced login or arrival load, return
+admission (immediate and delayed), the runtime timer, and the in-memory cooldown read by the spell
+core and `ACTOR_COOLDOWNS`.
+
+**Families with nothing to add.** Protocol versions: none, since no wire is new (§8). Test
+helpers derived from the record may build only the positive happy path. Every negative authority
+or provenance case uses the independent current fact sources in the table above.
 
 ## 6. Lifetime and behaviour (FAMILIAR-1)
 
@@ -254,8 +365,9 @@ None. Every choice above is a reversible architect ruling under owner rule 59058
    session generation.
 3. **Restart:** a clean end (`open = false`) keeps the familiar's time; a return reopens the row
    (`open = true`) in its admission; a return refused in a lever boss room ends it
-   (`familiar_remaining_ms = 0`, `open = false`, cooldown kept); a crash (`open = true` from an older generation, or after a proven
-   same-session continuation, §5.1) loses the familiar and keeps the cooldown.
+   (`familiar_remaining_ms = 0`, `open = false`, cooldown kept); a crash (`open = true` from another GameSession or another runtime owner, as after a proven
+   same-session continuation, §5.1) loses the familiar and keeps the cooldown. The full
+   authority and recovery sweep is §5.2.
 4. **Typed references:** CharacterId, spell id, creature key.
 5. **Wire:** none new (§8).
 6. **Split work:** one row per character; one familiar per owner.

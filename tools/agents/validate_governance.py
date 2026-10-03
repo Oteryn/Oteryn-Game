@@ -443,6 +443,12 @@ ARCHIVE_REQUIRED_VALIDATION = (
     "python tools/agents/validate_governance.py",
     "python -m unittest discover -s tools/agents/tests",
 )
+# The text after the command on its line states the result on the candidate.
+ARCHIVE_PASS_RESULT = re.compile(r"(?i)\b(?:pass|passed|ok)\b")
+ARCHIVE_NOT_PASSED = re.compile(
+    r"(?i)\b(?:fail\w*|error\w*|not run|pending|skipped)\b"
+    r"|\b(?:not|never|no|did\s+not|didn't|does\s+not|doesn't)\s+(?:pass\w*|ok)\b"
+)
 
 
 def validate_archived_task_closeout(errors: list[str]) -> None:
@@ -461,9 +467,18 @@ def validate_archived_task_closeout(errors: list[str]) -> None:
             errors.append(f"archived task record {relative} must record its positive canonical pr")
         validation = _markdown_section(text, "Validation")
         for command in ARCHIVE_REQUIRED_VALIDATION:
-            if command not in validation:
+            results = [
+                line.split(command, 1)[1]
+                for line in validation.splitlines()
+                if command in line
+            ]
+            if not any(
+                ARCHIVE_PASS_RESULT.search(result) and not ARCHIVE_NOT_PASSED.search(result)
+                for result in results
+            ):
                 errors.append(
-                    f"archived task record {relative} Validation must record `{command}`"
+                    f"archived task record {relative} Validation must record `{command}` "
+                    "with a pass result"
                 )
 
 
