@@ -37,6 +37,7 @@ pub mod item_transfer_audit;
 pub mod monk_state;
 pub mod native_admission_source;
 pub mod premium_fence;
+pub mod quest_state;
 pub mod recovery_evidence_composition;
 pub mod reward_claim_mint;
 pub mod reward_claim_mint_audit;
