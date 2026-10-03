@@ -7,7 +7,7 @@ date: 2026-10-03
 owner: Sol Supervising Architect
 requested_by: control plane (after #1696: ITEM-MOVE-2a, ITEM-MOVE-2b, EQUIP-RT-1, EXERCISE-1, and what else the accepted EQUIP-0, EXERCISE-0, DEPOT-0, BAGS-0 and IMBUE-FORGE-0 allow)
 writes_on_other_prs: none
-amended_by: ARCH-ITEM-PACKETS-AMEND-1 (§0.1, §0.2, §0.3, §1.7, §1.9, §1.10, §1.11, §2.0a, §2.0b, §2.3, §2.6; #1698 round-3 P1 4175197224 and P2 4175197230; #1696 P1 4175041166)
+amended_by: ARCH-ITEM-PACKETS-AMEND-1 (§0.1, §0.2, §0.3, §1.4, §1.7, §1.9-§1.12, §2.0a, §2.0b, §2.1, §2.2, §2.2a, §2.3, §2.6, §2.8, §2.9; #1698 round-3 P1 4175197224 and P2 4175197230; #1696 P1 4175041166; control plane: ITEM-SEM-2b-2 narrowed to the patterns model)
 ```
 
 This bundle packets the item chain that the four requested slices sit on, in order of playable
@@ -43,7 +43,8 @@ highest migration is 0057; D417 granted 0058-0062, so the proposals start at 006
 | ITEM-VIEW-1b | none | none |
 | ITEM-MOVE-1 | none (the existing `0014` corpse-entry TRANSFER) | none |
 | ITEM-CLIENT-1 | none | none |
-| ITEM-SEM-2b-2 | none | none (#1672 packet, rebased by §1.4) |
+| ITEM-SEM-2b-2 | none | none (#1672 packet, rebased and narrowed by §1.4) |
+| ITEM-SEM-2b-3 | none | none (a `ReferenceBaseVocation` wire value and a requirements group in the typed artifact; §1.12) |
 | ITEM-EQUIP-WIRE-1 | none | capability 12 `ITEM_EQUIP_DROP_V1` (proposed) |
 | ITEM-MOVE-2a | 0063 (proposed) | none |
 | EQUIP-CONTENT-1 | none | none |
@@ -72,6 +73,7 @@ already applied. Each migration packet's acceptance repeats this as a merge cond
 | 0b | VIS-3 | hard, protocol and session review | NPC-VIS-1 and CAP-NEG-1 have merged (§1.10) |
 | 1 | ITEM-VIEW-1a | impl, protocol review | now |
 | 2 | ITEM-SEM-2b-2 | impl, content review | now (§1.4) |
+| 2a | ITEM-SEM-2b-3 | hard, contract review | ITEM-SEM-2b-2 has merged; not open together with EQUIP-CONTENT-1 (§1.12) |
 | 3 | SPEED-1 | impl, movement review | CAP-NEG-1 has merged |
 | 4 | ITEM-VIEW-1b | hard, protocol and session review | ITEM-VIEW-1a and CAP-NEG-1 have merged |
 | 5 | ITEM-EQUIP-WIRE-1 | impl, protocol review | ITEM-VIEW-1a has merged |
@@ -161,8 +163,40 @@ and asks for a migration lease; it does not add a result table on its own.
 
 The ITEM-SEM-2b-2 packet (#1672) is based on `main after #1599 merges`. #1599 was closed as
 superseded when carrier #1675 merged (D434), and D318 is released. The packet starts now with
-`base: main` and `depends_on: []`; its owned paths and acceptance are unchanged. ITEM-MOVE-2a's
-legality check needs its level, vocation, hands and slot facts in content (WIRE-1 brief).
+`base: main` and `depends_on: []`. ITEM-MOVE-2a's legality check needs its level, vocation, hands
+and slot facts in content (WIRE-1 brief).
+
+**Narrowed to `main`'s model (ARCH-ITEM-PACKETS-AMEND-1).** On `main` the typed item semantics
+carry equipment only as `equipment.patterns` (`ReferenceEquipmentPattern`: `primary_slot`,
+`additional_reserved_slots`, `mutually_exclusive_groups`, `vocations`, `level`), and #1675 already
+lowers slot, hands, level and vocations into it. The compact form of 2b-2 §2.2 exists only in the
+authoring schema. 2b-2 therefore writes one pattern per Item, not the compact form, and keeps
+§2.1 and §2.3 as occupancy facts of that pattern (`additional_reserved_slots: [left_hand]` for a
+two-handed weapon, `mutually_exclusive_groups: [non_quiver_left_hand]` for the rest). What the
+patterns model cannot hold moves to ITEM-SEM-2b-3 (§1.12), and 2b-2 reports those rows and writes
+no field for them:
+- the `none` vocation (2b-2 §2.5). An Item whose vocations include `without` gets no
+  `equipment` block until 2b-3, because omitting the vocation would make it unrestricted;
+- `requirements` with `on_use`, and `min_magic_level` (2b-2 §2.4: runes and ammunition).
+2b-2 §2.7 (the D303 guard) no longer applies, since 2b-2 writes the patterns form the guard admits.
+
+### 1.12 ITEM-SEM-2b-3 adds what the patterns model lacks
+
+ITEM-SEM-2b-3 extends the typed item semantics, which is a durable content contract (DUR-04 and
+the typed artifact profile), so it is a hard slice with contract review:
+- `None` becomes a `ReferenceBaseVocation` value (the A13 key `none`), with the next free `u8`
+  wire value in `reference_artifact.rs`; existing values are unchanged.
+- A use-requirements group joins `ReferenceItemSemantics`: `min_level`, `min_magic_level`,
+  `vocations` and `enforcement_mode` (`on_use` only in v1), for runes and ammunition. Enforcement
+  stays with RUNE-USE-0 and RANGED-0.
+- It then lowers the rows that 2b-2 reported: the `without` vocations into patterns, and the
+  `requirements` rows of runes and ammunition.
+
+If the artifact encoding of either addition changes bytes of an existing artifact, it is a new
+typed artifact profile revision and existing artifacts still decode (test). 2b-3 and EQUIP-CONTENT-1
+own the same lowering paths and content tree, so they are never open together: the first allocated
+goes first, and the other starts from `main` after it merges. ITEM-MOVE-2a does not wait for 2b-3;
+it admits `none` from the moment the value exists (§2.8).
 
 ### 1.5 EQUIP-CONTENT-1 waits for the two content slices before it
 
@@ -369,7 +403,7 @@ owned_paths:
   - docs/contracts/protocol-oteryn/v1/item_view_v1.proto  # new: domains 9 and 11, ItemTargetV1, command 9
   - docs/contracts/protocol-oteryn/v1/world_object_v1.proto   # USE field 2 only
   - docs/contracts/protocol-oteryn/v1/world_spatial_v1.proto  # the handle field on the D85 item entry only
-  - crates/protocol-oteryn/src/{lib,item_view,item_view_tests,world_object,world_spatial}.rs
+  - crates/protocol-oteryn/src/{lib,item_view,item_view_tests,world_object,world_spatial_entities}.rs   # the D85 entry codec is in world_spatial_entities.rs
   - docs/agents/tasks/archive/OTV2-20261003-item-view-1a.md
 validation:
   - cargo test --locked -p oteryn-protocol-oteryn
@@ -392,8 +426,48 @@ Acceptance:
 
 ### 2.2 ITEM-SEM-2b-2 (rebased)
 
-The #1672 packet, unchanged except `base: main` and `depends_on: []` (§1.4). Worker
+The #1672 packet with `base: main` and `depends_on: []`, narrowed to the patterns model (§1.4):
+it writes `equipment.patterns`, reports the `without` and `on_use` rows, and drops §2.7. Worker
 oteryn-impl-worker, content review.
+
+### 2.2a ITEM-SEM-2b-3
+
+```yaml
+task_id: OTV2-20261003-item-sem-2b3-vocation-none-and-use-requirements
+decision: ITEM-SEM-2b-2 §2.4 and §2.5; A13 §4.3; DUR-04; this bundle §1.4, §1.12
+worker: oteryn-hard-worker   # durable typed content contract and artifact encoding
+review: independent contract review (Codex, final frozen head)
+branch: claude/item-sem-2b3-20261003
+base: main after ITEM-SEM-2b-2 merges (and after EQUIP-CONTENT-1 if that is open first)
+migration_lease: none
+depends_on: [ITEM-SEM-2b-2]
+owned_paths:
+  - apps/game-server/src/content/reference_playable.rs     # ReferenceBaseVocation::None, the use-requirements group
+  - apps/game-server/src/content/reference_artifact.rs     # their wire encoding; a profile revision only if bytes change
+  - apps/game-server/src/content/project/v2.rs             # authoring to typed lowering of the two additions
+  - apps/game-server/tests/content_reference_artifact.rs
+  - docs/architecture/DUR-04_CONTENT_WORLD_AND_SCRIPTING_CONTRACT.md  # own paragraph
+  - tools/content-schema/item-authoring/{lower_wiki_stats_packet.py,test_lower_wiki_stats_packet.py,README.md}
+  - apps/game-server/src/content/item_stats_promotion.rs
+  - content/world/** and the content tree (regenerated)
+  - docs/agents/tasks/archive/OTV2-20261003-item-sem-2b3-vocation-none-and-use-requirements.md
+validation:
+  - cargo test --locked -p oteryn-game-server --quiet
+  - cargo test --locked -p oteryn-game-server --test content_reference_artifact --quiet
+  - python3 -m unittest tools/content-schema/item-authoring/test_lower_wiki_stats_packet.py
+```
+
+Acceptance:
+
+- `None` decodes and encodes with its new value, and an unknown value still fails closed (test).
+  Existing artifacts decode unchanged, or a new profile revision is added with a cross-revision
+  test.
+- The use-requirements group round-trips with each field present and absent, and
+  `enforcement_mode` other than `on_use` is rejected.
+- The 2b-2 reported rows are lowered: the `without` Items (2b-2 §2.5) get their patterns with
+  `none`, and the 53 `mlrequired` runes and the ammunition get `requirements`; the record lists
+  the counts.
+- Not in scope: enforcing use requirements (RUNE-USE-0, RANGED-0), Premium.
 
 ### 2.3 SPEED-1
 
@@ -666,9 +740,12 @@ Acceptance:
 
 - Equip a whole backpack entry into one of the nine slots; unequip to the main backpack by the B3
   rule; swap when the slot is occupied (two items, entry count unchanged).
-- Legality by `check_equip` with the content slot and hands: unknown semantics, a hands conflict
-  and any `container` item are `SLOT_MISMATCH`. Level and vocation inside the transaction under
-  `character_root`; a promoted vocation matches its base key (§1.6). Premium from
+- Legality by `check_equip` with the Item's `equipment.patterns` (§1.4: `primary_slot`,
+  `additional_reserved_slots`, `mutually_exclusive_groups`): unknown semantics, a hands conflict
+  and any `container` item are `SLOT_MISMATCH`. Level and vocations from the same pattern, inside
+  the transaction under `character_root`; a promoted vocation matches its base key (§1.6), and a
+  character without a vocation matches only a pattern that lists `none` (once ITEM-SEM-2b-3 adds
+  it; before that no pattern lists it). Premium from
   PROD-ENTITLEMENTS-01 §6 evidence at commit, fail closed when stale. An item stays equipped when
   the level drops or Premium ends.
 - Migration 0063 makes the WIRE-1 §6.2 2a deltas, amending the 0011 and 0014 guards by replacement:
@@ -715,7 +792,9 @@ Acceptance:
   D384 pin) as fallback, with Canary's doubled speed unit converted.
 - `timed` is derived from `charges.count` or `temporal.duration_ms`; the validator rejects a
   definition whose flag and fields disagree.
-- Extra-slot items (`slot = Extra Slot`) are marked as such.
+- Extra-slot items are those whose pattern's `primary_slot` is `Extra` (2b-2 writes the patterns
+  form, §1.4); EQUIP-CONTENT-1 reads that and adds no flag of its own.
+- It is never open together with ITEM-SEM-2b-3 (§1.12).
 - Evidence file lists every source per item; a definition with no source has no abilities.
 
 ### 2.10 EQUIP-RT-1

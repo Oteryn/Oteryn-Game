@@ -23,7 +23,7 @@ owned_paths:
   - docs/agents/tasks/archive/OTV2-20261003-arch-item-packets-amend-1.md
 public_contracts: []
 depends_on: []
-blocks: [ITEM-MOVE-1, SPEED-1, BAGS-1, ITEM-MOVE-2b]
+blocks: [ITEM-MOVE-1, SPEED-1, BAGS-1, ITEM-MOVE-2b, ITEM-SEM-2b-2, ITEM-SEM-2b-3, ITEM-VIEW-1a]
 cross_repository_coordination_id: null
 external_repositories: []
 ```
@@ -40,4 +40,10 @@ external_repositories: []
 - **#1696 P1 4175041166:** the slot-to-Ground drop call sites, success and rejection, go to
   whichever of TIMED-RT-1b and ITEM-MOVE-2b merges second; ordering 2b after RT-1c is circular
   (item batch §1.7, §2.13; TIMED batch §1.1, §2.3).
+- **Control plane: ITEM-SEM-2b-2 narrowed** to `main`'s `equipment.patterns` model; the `none`
+  vocation and the use-requirements group (runes, ammunition) go to the new hard packet
+  ITEM-SEM-2b-3 (§1.4, §1.12, §2.2, §2.2a). ITEM-MOVE-2a and EQUIP-CONTENT-1 read the patterns
+  form (§2.8, §2.9).
+- **Control plane: ITEM-VIEW-1a** owns `world_spatial_entities.rs` (the D85 entry codec), not
+  `world_spatial.rs` (§2.1).
 - No code, contract or wire change.
