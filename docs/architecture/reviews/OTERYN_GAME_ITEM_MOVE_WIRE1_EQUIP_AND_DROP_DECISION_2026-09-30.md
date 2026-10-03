@@ -89,6 +89,9 @@ How does a player equip and unequip items, and drop and pick up items on the gro
   `EquipmentSlotV1` with `UNSPECIFIED = 0` and the nine non-container slots (head, necklace,
   armor, right hand, left hand, legs, feet, ring, ammo). The container slot is not a destination.
 - Every move is of a whole item. There is no count field.
+  **Amendment (pending on acceptance of STACK-0; `reviews/OTERYN_GAME_STACK0_PARTIAL_COUNTS_AND_STACK_MERGES_DECISION_2026-10-01.md` §3-§4).** Under `ITEM_STACK_COUNT_V1` command 9 takes an
+  optional `count`; slots and Ground merge into a compatible stack (the slot's item, the tile's top
+  Ground item), and a slot follows Canary's four cases (STACK-0 §4.4).
 - Domain 9 gains the nine slots: each empty, or with a handle, definition, count and sub-type.
 - New results: `SLOT_MISMATCH` (wrong slot, a hands conflict, a container, or unknown
   equipment semantics), `REQUIREMENT_NOT_MET`, `BLOCKED` (the tile does not accept the item, no
@@ -102,6 +105,16 @@ How does a player equip and unequip items, and drop and pick up items on the gro
   unknown `equipment` semantics, a hands conflict (refused, not resolved, as in Canary), and any
   item with `container` semantics (a quiver or a bag), whose entries would need a second
   container location.
+
+  **Amendment (pending on acceptance of RANGED-0; `reviews/OTERYN_GAME_RANGED0_DISTANCE_WEAPONS_AMMUNITION_WANDS_AND_CHASE_DECISION_2026-10-01.md` §3).** Once
+  accepted (QUIVER-1): a quiver (content flag `quiver`) is admitted in the left hand for its
+  vocation, as a depth-1 container whose entries are ammunition keyed to it as their parent item,
+  and only for a session that negotiated `CONTAINER_TREE_V1` (else `SLOT_MISMATCH`); such a
+  session alone may move an equipped quiver or shoot from it. The `ammo` slot is the manual's
+  Extra slot: it admits any whole item without `container` semantics, whatever its equipment
+  semantics (the unknown-semantics refusal does not apply there), with no level, vocation or
+  Premium check; an item there grants no equipment effect except EQUIP-0's light and is never
+  shot.
 - **Requirements.** Level and vocation are checked inside the transaction under the
   `character_root` lock. Premium is read from PROD-ENTITLEMENTS-01 §6 evidence at commit and fails
   closed when stale or unavailable. An item stays equipped when the level drops or Premium ends; a
@@ -110,6 +123,9 @@ How does a player equip and unequip items, and drop and pick up items on the gro
   replaces the source entry that the moving item leaves (entries are immutable). The number of
   entries is unchanged, so a swap always has room. Two items are touched. Same-definition stacks
   (ammunition) swap too; merging them waits for the partial-count decision (`PARITY_PENDING`).
+  **Amendment (pending on acceptance of STACK-0; `reviews/OTERYN_GAME_STACK0_PARTIAL_COUNTS_AND_STACK_MERGES_DECISION_2026-10-01.md` §4.4).** A
+  compatible stack in the slot takes what fits and a full or unequal same-definition stack refuses
+  (`NO_ROOM`); only a different definition or a non-stackable item is exchanged.
 - **Unequip.** Into the main backpack by the B3 rule: a D83 merge or top-up into a compatible stack
   (same definition key and revision, equal state), else a new entry. Only a new entry needs room;
   without one it is `NO_ROOM`. With no main backpack it is `NO_BACKPACK`.
@@ -121,7 +137,8 @@ How does a player equip and unequip items, and drop and pick up items on the gro
 `reviews/OTERYN_GAME_BAGS0_CONTAINERS_WITH_CONTENTS_DECISION_2026-09-30.md` §6, §9).**
 A container with contents may enter the empty container slot and may leave it as a tree to a
 destination whose BAGS-0 child admits it (Ground, a depot box). Unequip may target a nested
-container. The nine other slots still refuse containers. Dropping and picking up a tree is built by
+container. The nine other slots still refuse containers, except the quiver in the left hand once
+RANGED-0 is accepted (§4 amendment above). Dropping and picking up a tree is built by
 BAGS-GROUND-1. The §5 Ground counter (`ITEMMOVE1-RL-02`) then counts every item reachable from a
 Ground root, adjusted atomically by the tree's item count on drop and pickup, by the extracted
 subtree's item count when an entry is moved out of a Ground tree into the character's own trees,
@@ -138,6 +155,10 @@ exactly the change, under the tile and counter row lock.
   left on Ground by the ADR-0021 amendment) to `MAIN_BACKPACK`, standing on it or next to it
   (Chebyshev distance 1, same floor), by the existing `0011` shape with the deltas of §6. Into a
   slot it waits for a later decision. The client walks; the server never walks the player.
+  **Amendment (pending on acceptance of STACK-0; `reviews/OTERYN_GAME_STACK0_PARTIAL_COUNTS_AND_STACK_MERGES_DECISION_2026-10-01.md` §4).** A drop or
+  pickup merges into a compatible receiver (the tile's top Ground item, the main backpack's first
+  compatible stack) and, under `ITEM_STACK_COUNT_V1`, may move part of a stack. Ground to a slot
+  still waits.
 - **Corpses.** D133 and D134 bind every move whose source is a corpse entry, on the database clock
   with reach. A corpse is never a move source.
 - **Limits.** `ITEMMOVE1-RL-01` loose items per tile: 10. `ITEMMOVE1-RL-02` dropped items per
@@ -151,6 +172,9 @@ exactly the change, under the tile and counter row lock.
   actor out of a snapshot (§7.3).
 - **Reset.** Dropped items follow D191: they survive a crash and are retired at the planned world
   reset by `WorldReset`. No new sink.
+- **Amendment (pending on acceptance of RANGED-0; `reviews/OTERYN_GAME_RANGED0_DISTANCE_WEAPONS_AMMUNITION_WANDS_AND_CHASE_DECISION_2026-10-01.md` §6.1.2).** Every
+  Ground location row gets a database-assigned `ground_ordinal` from one sequence at insert; the
+  tile's top Ground item is the live root with the highest ordinal (Tibia's top item).
 
 ## 6. Persistence and DUR-03
 
@@ -162,6 +186,9 @@ For the shapes of §4 and §5 only, this decision supersedes:
 - §39.1 and §39.3: TRANSFER goes only to `CharacterInventory` and the B3 destinations. The nine
   non-container `CharacterEquipment` slots, and `Ground` from a backpack entry or a slot, are
   admitted.
+
+**Amendment (pending on acceptance of STACK-0; `reviews/OTERYN_GAME_STACK0_PARTIAL_COUNTS_AND_STACK_MERGES_DECISION_2026-10-01.md` §5).** Partial
+and merging moves are STACK-0's three-item shape; the whole-item swap keeps the rows below.
 
 Every other §39 obligation is unchanged: fences, cause (the command's CommandRef), evidence,
 idempotency, current authority, one event per transaction with complete TransactionEventRef
@@ -199,6 +226,9 @@ membership.
 | `ITEMV0-RL-01` entries in domain 9 | 30 |
 | `ITEMMOVE1-RL-01` | 10 loose items per tile |
 | `ITEMMOVE1-RL-02` | 20,000 dropped items per channel, alarm at 16,000 |
+
+**Amendment (pending on acceptance of STACK-0; `reviews/OTERYN_GAME_STACK0_PARTIAL_COUNTS_AND_STACK_MERGES_DECISION_2026-10-01.md` §6).** Partial and
+merging moves use `DUR03-RL-0x-STACK` (3 items, 3 location lines, 3 quantity changes, 3 / 8).
 
 ## 7. Other amendments
 
@@ -260,4 +290,5 @@ dispositions are unchanged.
 4. **Typed references:** handles; `EquipmentSlotV1` on the wire, semantic slot keys in storage;
    `WorldTilePosition`.
 5. **Wire:** §3, capability `ITEM_EQUIP_DROP_V1`.
-6. **Split work:** at most two items per move.
+6. **Split work:** at most two items per move (STACK-0 §6 admits three for partial and merging
+   moves, pending on its acceptance).

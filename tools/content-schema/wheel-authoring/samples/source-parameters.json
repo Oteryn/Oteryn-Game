@@ -1,0 +1,1877 @@
+{
+  "revelations": {
+    "gift_of_life": [
+      {
+        "kind": "restored_max_health",
+        "values": [
+          20,
+          25,
+          30
+        ],
+        "unit": "percent_points"
+      },
+      {
+        "kind": "restored_max_mana",
+        "values": [
+          20,
+          25,
+          30
+        ],
+        "unit": "percent_points"
+      },
+      {
+        "kind": "exclusive_overkill_limit",
+        "values": [
+          20,
+          25,
+          30
+        ],
+        "unit": "percent_points"
+      },
+      {
+        "kind": "spell_cooldown_reduction",
+        "values": [
+          60,
+          60,
+          60
+        ],
+        "unit": "seconds"
+      },
+      {
+        "kind": "battle_sign_cooldown",
+        "values": [
+          108000,
+          72000,
+          36000
+        ],
+        "unit": "seconds"
+      },
+      {
+        "kind": "flat_damage_bonus",
+        "values": [
+          4,
+          9,
+          20
+        ],
+        "unit": "flat"
+      },
+      {
+        "kind": "flat_healing_bonus",
+        "values": [
+          4,
+          9,
+          20
+        ],
+        "unit": "flat"
+      }
+    ],
+    "executioner_s_throw": [
+      {
+        "kind": "cooldown",
+        "values": [
+          18,
+          14,
+          10
+        ],
+        "unit": "seconds"
+      },
+      {
+        "kind": "additional_targets",
+        "values": [
+          2,
+          3,
+          4
+        ],
+        "unit": "targets"
+      },
+      {
+        "kind": "low_health_damage_bonus",
+        "values": [
+          100,
+          125,
+          150
+        ],
+        "unit": "percent_points"
+      },
+      {
+        "kind": "exclusive_target_health_limit",
+        "values": [
+          30,
+          30,
+          30
+        ],
+        "unit": "percent_points"
+      },
+      {
+        "kind": "flat_damage_bonus",
+        "values": [
+          4,
+          9,
+          20
+        ],
+        "unit": "flat"
+      },
+      {
+        "kind": "flat_healing_bonus",
+        "values": [
+          4,
+          9,
+          20
+        ],
+        "unit": "flat"
+      },
+      {
+        "kind": "reference_spell_mana_cost",
+        "values": [
+          225,
+          225,
+          225
+        ],
+        "unit": "mana"
+      },
+      {
+        "kind": "reference_base_spell_power",
+        "values": [
+          60,
+          60,
+          60
+        ],
+        "unit": "native_power"
+      },
+      {
+        "kind": "reference_cast_range",
+        "values": [
+          5,
+          5,
+          5
+        ],
+        "unit": "tiles"
+      },
+      {
+        "kind": "reference_chain_jump_range",
+        "values": [
+          3,
+          3,
+          3
+        ],
+        "unit": "tiles"
+      }
+    ],
+    "combat_mastery": [
+      {
+        "kind": "missing_health_step",
+        "values": [
+          14,
+          12,
+          10
+        ],
+        "unit": "percent_points"
+      },
+      {
+        "kind": "damage_reduction_per_step",
+        "values": [
+          1,
+          1,
+          1
+        ],
+        "unit": "percent_points"
+      },
+      {
+        "kind": "damage_bonus_per_step",
+        "values": [
+          1,
+          1,
+          1
+        ],
+        "unit": "percent_points"
+      },
+      {
+        "kind": "shield_defensive_multiplier",
+        "values": [
+          2,
+          2,
+          2
+        ],
+        "unit": "multiplier"
+      },
+      {
+        "kind": "two_handed_offensive_multiplier",
+        "values": [
+          2,
+          2,
+          2
+        ],
+        "unit": "multiplier"
+      },
+      {
+        "kind": "flat_damage_bonus",
+        "values": [
+          4,
+          9,
+          20
+        ],
+        "unit": "flat"
+      },
+      {
+        "kind": "flat_healing_bonus",
+        "values": [
+          4,
+          9,
+          20
+        ],
+        "unit": "flat"
+      }
+    ],
+    "avatar_of_steel": [
+      {
+        "kind": "duration",
+        "values": [
+          15,
+          15,
+          15
+        ],
+        "unit": "seconds"
+      },
+      {
+        "kind": "cooldown",
+        "values": [
+          7200,
+          5400,
+          3600
+        ],
+        "unit": "seconds"
+      },
+      {
+        "kind": "damage_reduction",
+        "values": [
+          5,
+          10,
+          15
+        ],
+        "unit": "percent_points"
+      },
+      {
+        "kind": "critical_hit_chance",
+        "values": [
+          100,
+          100,
+          100
+        ],
+        "unit": "percent_points"
+      },
+      {
+        "kind": "critical_extra_damage",
+        "values": [
+          5,
+          10,
+          15
+        ],
+        "unit": "percent_points"
+      },
+      {
+        "kind": "flat_damage_bonus",
+        "values": [
+          4,
+          9,
+          20
+        ],
+        "unit": "flat"
+      },
+      {
+        "kind": "flat_healing_bonus",
+        "values": [
+          4,
+          9,
+          20
+        ],
+        "unit": "flat"
+      },
+      {
+        "kind": "reference_spell_mana_cost",
+        "values": [
+          800,
+          800,
+          800
+        ],
+        "unit": "mana"
+      }
+    ],
+    "avatar_of_light": [
+      {
+        "kind": "duration",
+        "values": [
+          15,
+          15,
+          15
+        ],
+        "unit": "seconds"
+      },
+      {
+        "kind": "cooldown",
+        "values": [
+          7200,
+          5400,
+          3600
+        ],
+        "unit": "seconds"
+      },
+      {
+        "kind": "damage_reduction",
+        "values": [
+          5,
+          10,
+          15
+        ],
+        "unit": "percent_points"
+      },
+      {
+        "kind": "critical_hit_chance",
+        "values": [
+          100,
+          100,
+          100
+        ],
+        "unit": "percent_points"
+      },
+      {
+        "kind": "critical_extra_damage",
+        "values": [
+          5,
+          10,
+          15
+        ],
+        "unit": "percent_points"
+      },
+      {
+        "kind": "flat_damage_bonus",
+        "values": [
+          4,
+          9,
+          20
+        ],
+        "unit": "flat"
+      },
+      {
+        "kind": "flat_healing_bonus",
+        "values": [
+          4,
+          9,
+          20
+        ],
+        "unit": "flat"
+      },
+      {
+        "kind": "reference_spell_mana_cost",
+        "values": [
+          1500,
+          1500,
+          1500
+        ],
+        "unit": "mana"
+      }
+    ],
+    "avatar_of_storm": [
+      {
+        "kind": "duration",
+        "values": [
+          15,
+          15,
+          15
+        ],
+        "unit": "seconds"
+      },
+      {
+        "kind": "cooldown",
+        "values": [
+          7200,
+          5400,
+          3600
+        ],
+        "unit": "seconds"
+      },
+      {
+        "kind": "damage_reduction",
+        "values": [
+          5,
+          10,
+          15
+        ],
+        "unit": "percent_points"
+      },
+      {
+        "kind": "critical_hit_chance",
+        "values": [
+          100,
+          100,
+          100
+        ],
+        "unit": "percent_points"
+      },
+      {
+        "kind": "critical_extra_damage",
+        "values": [
+          5,
+          10,
+          15
+        ],
+        "unit": "percent_points"
+      },
+      {
+        "kind": "flat_damage_bonus",
+        "values": [
+          4,
+          9,
+          20
+        ],
+        "unit": "flat"
+      },
+      {
+        "kind": "flat_healing_bonus",
+        "values": [
+          4,
+          9,
+          20
+        ],
+        "unit": "flat"
+      },
+      {
+        "kind": "reference_spell_mana_cost",
+        "values": [
+          2200,
+          2200,
+          2200
+        ],
+        "unit": "mana"
+      }
+    ],
+    "avatar_of_nature": [
+      {
+        "kind": "duration",
+        "values": [
+          15,
+          15,
+          15
+        ],
+        "unit": "seconds"
+      },
+      {
+        "kind": "cooldown",
+        "values": [
+          7200,
+          5400,
+          3600
+        ],
+        "unit": "seconds"
+      },
+      {
+        "kind": "damage_reduction",
+        "values": [
+          5,
+          10,
+          15
+        ],
+        "unit": "percent_points"
+      },
+      {
+        "kind": "critical_hit_chance",
+        "values": [
+          100,
+          100,
+          100
+        ],
+        "unit": "percent_points"
+      },
+      {
+        "kind": "critical_extra_damage",
+        "values": [
+          5,
+          10,
+          15
+        ],
+        "unit": "percent_points"
+      },
+      {
+        "kind": "flat_damage_bonus",
+        "values": [
+          4,
+          9,
+          20
+        ],
+        "unit": "flat"
+      },
+      {
+        "kind": "flat_healing_bonus",
+        "values": [
+          4,
+          9,
+          20
+        ],
+        "unit": "flat"
+      },
+      {
+        "kind": "reference_spell_mana_cost",
+        "values": [
+          2200,
+          2200,
+          2200
+        ],
+        "unit": "mana"
+      }
+    ],
+    "avatar_of_balance": [
+      {
+        "kind": "duration",
+        "values": [
+          15,
+          15,
+          15
+        ],
+        "unit": "seconds"
+      },
+      {
+        "kind": "cooldown",
+        "values": [
+          7200,
+          5400,
+          3600
+        ],
+        "unit": "seconds"
+      },
+      {
+        "kind": "damage_reduction",
+        "values": [
+          5,
+          10,
+          15
+        ],
+        "unit": "percent_points"
+      },
+      {
+        "kind": "critical_hit_chance",
+        "values": [
+          100,
+          100,
+          100
+        ],
+        "unit": "percent_points"
+      },
+      {
+        "kind": "critical_extra_damage",
+        "values": [
+          5,
+          10,
+          15
+        ],
+        "unit": "percent_points"
+      },
+      {
+        "kind": "flat_damage_bonus",
+        "values": [
+          4,
+          9,
+          20
+        ],
+        "unit": "flat"
+      },
+      {
+        "kind": "flat_healing_bonus",
+        "values": [
+          4,
+          9,
+          20
+        ],
+        "unit": "flat"
+      },
+      {
+        "kind": "reference_spell_mana_cost",
+        "values": [
+          1200,
+          1200,
+          1200
+        ],
+        "unit": "mana"
+      }
+    ],
+    "divine_grenade": [
+      {
+        "kind": "cooldown",
+        "values": [
+          26,
+          20,
+          14
+        ],
+        "unit": "seconds"
+      },
+      {
+        "kind": "explosion_delay",
+        "values": [
+          3,
+          3,
+          3
+        ],
+        "unit": "seconds"
+      },
+      {
+        "kind": "base_damage_bonus",
+        "values": [
+          0,
+          16,
+          32
+        ],
+        "unit": "percent_points"
+      },
+      {
+        "kind": "flat_damage_bonus",
+        "values": [
+          4,
+          9,
+          20
+        ],
+        "unit": "flat"
+      },
+      {
+        "kind": "flat_healing_bonus",
+        "values": [
+          4,
+          9,
+          20
+        ],
+        "unit": "flat"
+      },
+      {
+        "kind": "reference_spell_mana_cost",
+        "values": [
+          160,
+          160,
+          160
+        ],
+        "unit": "mana"
+      },
+      {
+        "kind": "reference_base_spell_power",
+        "values": [
+          190,
+          190,
+          190
+        ],
+        "unit": "native_power"
+      },
+      {
+        "kind": "reference_cast_range",
+        "values": [
+          4,
+          4,
+          4
+        ],
+        "unit": "tiles"
+      },
+      {
+        "kind": "reference_explosion_radius",
+        "values": [
+          2,
+          2,
+          2
+        ],
+        "unit": "tiles"
+      }
+    ],
+    "divine_empowerment": [
+      {
+        "kind": "cooldown",
+        "values": [
+          32,
+          28,
+          24
+        ],
+        "unit": "seconds"
+      },
+      {
+        "kind": "duration",
+        "values": [
+          5,
+          5,
+          5
+        ],
+        "unit": "seconds"
+      },
+      {
+        "kind": "damage_bonus",
+        "values": [
+          8,
+          10,
+          12
+        ],
+        "unit": "percent_points"
+      },
+      {
+        "kind": "flat_damage_bonus",
+        "values": [
+          4,
+          9,
+          20
+        ],
+        "unit": "flat"
+      },
+      {
+        "kind": "flat_healing_bonus",
+        "values": [
+          4,
+          9,
+          20
+        ],
+        "unit": "flat"
+      },
+      {
+        "kind": "reference_spell_mana_cost",
+        "values": [
+          500,
+          500,
+          500
+        ],
+        "unit": "mana"
+      },
+      {
+        "kind": "field_side_length",
+        "values": [
+          3,
+          3,
+          3
+        ],
+        "unit": "tiles"
+      }
+    ],
+    "beam_mastery": [
+      {
+        "kind": "flanking_damage",
+        "values": [
+          25,
+          40,
+          70
+        ],
+        "unit": "percent_points"
+      },
+      {
+        "kind": "damage_bonus_per_central_target",
+        "values": [
+          10,
+          12,
+          14
+        ],
+        "unit": "percent_points"
+      },
+      {
+        "kind": "central_target_cap",
+        "values": [
+          3,
+          3,
+          3
+        ],
+        "unit": "targets"
+      },
+      {
+        "kind": "other_spell_cooldown_reduction_per_target",
+        "values": [
+          1,
+          1,
+          1
+        ],
+        "unit": "seconds"
+      },
+      {
+        "kind": "other_spell_cooldown_reduction_cap",
+        "values": [
+          3,
+          3,
+          3
+        ],
+        "unit": "seconds"
+      },
+      {
+        "kind": "flat_damage_bonus",
+        "values": [
+          4,
+          9,
+          20
+        ],
+        "unit": "flat"
+      },
+      {
+        "kind": "flat_healing_bonus",
+        "values": [
+          4,
+          9,
+          20
+        ],
+        "unit": "flat"
+      },
+      {
+        "kind": "active_energy_beam_length",
+        "values": [
+          7,
+          7,
+          7
+        ],
+        "unit": "tiles"
+      },
+      {
+        "kind": "active_great_energy_beam_length",
+        "values": [
+          10,
+          10,
+          10
+        ],
+        "unit": "tiles"
+      }
+    ],
+    "lord_of_destruction": [
+      {
+        "kind": "mastery_flames_fire_damage_bonus",
+        "values": [
+          2,
+          3,
+          4
+        ],
+        "unit": "percent_points"
+      },
+      {
+        "kind": "mastery_thunder_critical_chance",
+        "values": [
+          2,
+          3,
+          4
+        ],
+        "unit": "percent_points"
+      },
+      {
+        "kind": "mastery_decay_critical_extra_damage",
+        "values": [
+          15,
+          22.5,
+          30
+        ],
+        "unit": "percent_points"
+      },
+      {
+        "kind": "flat_damage_bonus",
+        "values": [
+          4,
+          9,
+          20
+        ],
+        "unit": "flat"
+      },
+      {
+        "kind": "flat_healing_bonus",
+        "values": [
+          4,
+          9,
+          20
+        ],
+        "unit": "flat"
+      }
+    ],
+    "blessing_of_the_grove": [
+      {
+        "kind": "exclusive_target_health_limit",
+        "values": [
+          60,
+          60,
+          60
+        ],
+        "unit": "percent_points"
+      },
+      {
+        "kind": "healing_bonus",
+        "values": [
+          5,
+          7.5,
+          10
+        ],
+        "unit": "percent_points"
+      },
+      {
+        "kind": "exclusive_low_target_health_limit",
+        "values": [
+          30,
+          30,
+          30
+        ],
+        "unit": "percent_points"
+      },
+      {
+        "kind": "low_health_healing_multiplier",
+        "values": [
+          2,
+          2,
+          2
+        ],
+        "unit": "multiplier"
+      },
+      {
+        "kind": "flat_damage_bonus",
+        "values": [
+          4,
+          9,
+          20
+        ],
+        "unit": "flat"
+      },
+      {
+        "kind": "flat_healing_bonus",
+        "values": [
+          4,
+          9,
+          20
+        ],
+        "unit": "flat"
+      }
+    ],
+    "twin_bursts": [
+      {
+        "kind": "shared_cooldown",
+        "values": [
+          22,
+          18,
+          14
+        ],
+        "unit": "seconds"
+      },
+      {
+        "kind": "high_health_damage_bonus",
+        "values": [
+          20,
+          40,
+          60
+        ],
+        "unit": "percent_points"
+      },
+      {
+        "kind": "exclusive_minimum_target_health",
+        "values": [
+          60,
+          60,
+          60
+        ],
+        "unit": "percent_points"
+      },
+      {
+        "kind": "flat_damage_bonus",
+        "values": [
+          4,
+          9,
+          20
+        ],
+        "unit": "flat"
+      },
+      {
+        "kind": "flat_healing_bonus",
+        "values": [
+          4,
+          9,
+          20
+        ],
+        "unit": "flat"
+      },
+      {
+        "kind": "reference_spell_mana_cost",
+        "values": [
+          230,
+          230,
+          230
+        ],
+        "unit": "mana"
+      },
+      {
+        "kind": "reference_base_spell_power",
+        "values": [
+          115,
+          115,
+          115
+        ],
+        "unit": "native_power"
+      }
+    ],
+    "spiritual_outburst": [
+      {
+        "kind": "cooldown",
+        "values": [
+          24,
+          20,
+          16
+        ],
+        "unit": "seconds"
+      },
+      {
+        "kind": "additional_targets",
+        "values": [
+          7,
+          7,
+          7
+        ],
+        "unit": "targets"
+      },
+      {
+        "kind": "full_harmony_repeat_delay",
+        "values": [
+          1,
+          1,
+          1
+        ],
+        "unit": "seconds"
+      },
+      {
+        "kind": "full_harmony_repeat_damage",
+        "values": [
+          37.5,
+          50,
+          62.5
+        ],
+        "unit": "percent_points"
+      },
+      {
+        "kind": "flat_damage_bonus",
+        "values": [
+          4,
+          9,
+          20
+        ],
+        "unit": "flat"
+      },
+      {
+        "kind": "flat_healing_bonus",
+        "values": [
+          4,
+          9,
+          20
+        ],
+        "unit": "flat"
+      },
+      {
+        "kind": "reference_spell_mana_cost",
+        "values": [
+          425,
+          425,
+          425
+        ],
+        "unit": "mana"
+      },
+      {
+        "kind": "reference_chain_jump_range",
+        "values": [
+          4,
+          4,
+          4
+        ],
+        "unit": "tiles"
+      }
+    ],
+    "ascetic": [
+      {
+        "kind": "harmony_base_bonus",
+        "values": [
+          1,
+          2,
+          3
+        ],
+        "unit": "percent_points"
+      },
+      {
+        "kind": "autoattack_mantra_damage",
+        "values": [
+          100,
+          200,
+          300
+        ],
+        "unit": "percent_points"
+      },
+      {
+        "kind": "flat_damage_bonus",
+        "values": [
+          4,
+          9,
+          20
+        ],
+        "unit": "flat"
+      },
+      {
+        "kind": "flat_healing_bonus",
+        "values": [
+          4,
+          9,
+          20
+        ],
+        "unit": "flat"
+      }
+    ]
+  },
+  "corrections": [
+    {
+      "key": "lord_of_destruction",
+      "parameter": "mastery_decay_critical_extra_damage",
+      "stage": 2,
+      "planner_value": 25.5,
+      "selected_value": 22.5,
+      "evidence": "OTERYN_SPELL_NATIVE_BEHAVIOURS_CANDIDATE_V1.md appendix A.1: pinned Canary and native source; planner typo is retained in reference text. Live BR wiki r436992 plus Master of Decay base 30 corroborates 22.5 pp via total 52.5 minus base 30; see samples/live-source-audit.json.",
+      "planner_parameter": "mastery_decay_critical_extra_damage"
+    },
+    {
+      "key": "augmented_mystic_repulse",
+      "parameter": "cooldown_reduction",
+      "planner_parameter": "cooldown_reduction",
+      "stage": 1,
+      "planner_value": 6,
+      "selected_value": 4,
+      "evidence": "official:8944 Sept 2026, recorded in spell-authoring/wheel-augments.json Live BR wiki r443774 independently corroborates -4 s; original 8944 now read via Chrome/CDP."
+    },
+    {
+      "key": "augmented_thousand_fist_blows",
+      "parameter": "cooldown_reduction",
+      "planner_parameter": "cooldown_reduction",
+      "stage": 2,
+      "planner_value": 6,
+      "selected_value": 4,
+      "evidence": "official:8944 Sept 2026, recorded in spell-authoring/wheel-augments.json Live BR wiki r443776 independently corroborates -4 s; original 8944 now read via Chrome/CDP."
+    },
+    {
+      "key": "augmented_mystic_repulse",
+      "parameter": "base_damage_bonus",
+      "planner_parameter": "base_damage_bonus",
+      "stage": 2,
+      "planner_value": 60,
+      "selected_value": 40,
+      "evidence": "FORMULA_SELECTION_CONFIRMED: English TibiaWiki Conviction r1206174 explicitly gives +40% base damage; official > English wiki > Canary per architect ruling #162/5933264015. BR r443774 +15% and planner +60% are retained conflicting corroboration, not selected authority. Runtime and current Global parity remain unadmitted."
+    }
+  ],
+  "augment_parameters": {
+    "augmented_divine_dazzle": {
+      "stage": 2,
+      "kind": "duration_increase",
+      "value": 4,
+      "unit": "seconds"
+    },
+    "augmented_great_fire_wave": {
+      "stage": 1,
+      "kind": "critical_hit_chance",
+      "value": 10,
+      "unit": "percent_points"
+    }
+  },
+  "area_references": {
+    "augmented_front_sweep": {
+      "stage": 2,
+      "reference": "five_squares_front_row",
+      "evidence": "spell-authoring/wheel-augments.json official:8833"
+    },
+    "augmented_energy_wave": {
+      "stage": 1,
+      "reference": "AREA_WAVE7",
+      "evidence": "native behaviours appendix A.1"
+    },
+    "augmented_strong_ice_wave": {
+      "stage": 2,
+      "reference": "AREA_WAVE7",
+      "evidence": "native behaviours appendix A.1"
+    },
+    "augmented_mass_healing": {
+      "stage": 2,
+      "reference": "radius_4",
+      "evidence": "native behaviours appendix A.1"
+    },
+    "augmented_flurry_of_blows": {
+      "stage": 1,
+      "reference": "AREA_GREATER_FLURRY_OF_BLOWS",
+      "evidence": "official:8833 area change; existing native behaviour appendix A.1"
+    }
+  },
+  "gems": {
+    "clockwise_domains": [
+      "green",
+      "red",
+      "purple",
+      "blue"
+    ],
+    "basic_pair_compatibility": "different_source_mod_ids",
+    "effective_grade_order": [
+      "basic_1",
+      "basic_2",
+      "supreme"
+    ],
+    "effective_grade_rule": "minimum_of_self_and_present_preceding_mod_grades",
+    "grade_iv_promotion_points_per_mod_type": 1,
+    "fees": {
+      "reveal": {
+        "lesser": 125000,
+        "regular": 1000000,
+        "greater": 6000000
+      },
+      "switch_domain": {
+        "lesser": 125000,
+        "regular": 250000,
+        "greater": 500000
+      }
+    },
+    "fragment_items": {
+      "basic": "oteryn:item.tibia.i46625",
+      "supreme": "oteryn:item.tibia.i46626"
+    },
+    "fragment_yields": {
+      "lesser": {
+        "fragment": "basic",
+        "unrevealed": [
+          1,
+          2
+        ],
+        "revealed": [
+          1,
+          3
+        ]
+      },
+      "regular": {
+        "fragment": "basic",
+        "unrevealed": [
+          2,
+          4
+        ],
+        "revealed": [
+          2,
+          5
+        ]
+      },
+      "greater": {
+        "fragment": "supreme",
+        "unrevealed": [
+          1,
+          2
+        ],
+        "revealed": [
+          1,
+          3
+        ]
+      }
+    },
+    "yield_evidence": "CIPSOFT_OFFICIAL: docs/reference/tibia-manual/characters.md; overrides conflicting OTS yields",
+    "fee_evidence": "OTS_HYPOTHESIS_ONLY: pinned Canary config.lua.dist; accepted as candidate values in WHEEL-GEM0 section 2",
+    "grade_scope": "character_mod_type",
+    "resonance_activation_order": [
+      "basic_1",
+      "basic_2",
+      "supreme"
+    ],
+    "operation_policy": {
+      "revealed_gem_storage": "character_build_state",
+      "unrevealed_stack_limit": 100,
+      "unrevealed_tradeable": true,
+      "unrevealed_droppable": true,
+      "revealed_tradeable": false,
+      "reveal_requires_matching_vocation": true,
+      "reveal_distribution": "uniform_over_eligible_catalogue_candidates_ots",
+      "reveal_draw_order": [
+        "domain",
+        "basic_1",
+        "basic_2",
+        "supreme"
+      ],
+      "dismantle_refusals": [
+        "locked",
+        "in_vessel",
+        "last_gem_of_domain",
+        "non_current_ruleset",
+        "no_room"
+      ],
+      "switch_domain_refusals": [
+        "locked",
+        "in_vessel",
+        "non_current_ruleset"
+      ],
+      "lock_refusals": [
+        "non_current_ruleset"
+      ],
+      "vessel_requires_matching_domain": true,
+      "gem_can_occupy_only_one_vessel": true,
+      "vessel_without_resonance_allowed": true,
+      "initial_gems_once_per_character": true,
+      "initial_gems_revealed": true,
+      "revealed_gem_limit": 250,
+      "revealed_gem_limit_evidence": "PARITY_PENDING: WHEEL-GEM-0 WHEELGEM0-RL-02",
+      "grade_min": 0,
+      "grade_max": 3,
+      "grade_decrease_allowed": false,
+      "crusher_item": "oteryn:item.tibia.i46627",
+      "crusher_charges": 10,
+      "vendor_reference_prices": {
+        "lesser_fragment": 750000,
+        "greater_fragment": 2250000,
+        "crusher": 500
+      },
+      "vendor_price_evidence": "existing content/services/trade/trade-00000-00321.json; candidate reference, no trade mutation",
+      "state_operation_evidence": "WHEEL-GEM-0 sections 3, 5-9; official manual capture notes. in-vessel switch refusal is architect ruling R2.",
+      "vendor_buy_unrevealed_gem_prices": {
+        "lesser": 2500,
+        "regular": 5000,
+        "greater": 10000
+      },
+      "atelier_actions_require_wheel_eligibility": true,
+      "atelier_commands_require_initial_gem_grant": true,
+      "rejected_operations_write_nothing": true,
+      "replay_policy": "receipt_first_match_request_binding_no_new_ruleset_validation_or_random_draw",
+      "reveal_refusals": [
+        "not_eligible",
+        "no_gem",
+        "atelier_full",
+        "not_enough_gold",
+        "stale_revision"
+      ],
+      "grade_up_refusals": [
+        "max_grade",
+        "stale_grade",
+        "not_enough_fragments",
+        "not_enough_gold",
+        "non_current_ruleset"
+      ],
+      "vessel_requires_character_owned_gem": true,
+      "non_current_gem_and_grade_effects_zero": true,
+      "non_current_grade_rows_effective_grade": 0,
+      "non_current_vessel_gems_remain_placed": true,
+      "crush_gem_units_per_use": 1,
+      "crush_charges_per_use": 1,
+      "crush_transaction_scope": "item_only_no_character_revision",
+      "vessel_changes_require_temple": false,
+      "vessel_requires_current_gem_ruleset": true,
+      "grade_up_catalogue_scope": "vocation_mod_catalogue",
+      "initial_gem_grant_trigger": "first_eligible_admission_or_before_first_atelier_use",
+      "initial_gem_domains_are_fixed": true,
+      "reveal_input_scope": "main_backpack_direct_entries_in_b3_order",
+      "reveal_input_scope_evidence": "PARITY_PENDING: WHEEL-GEM-0 section 6; Global inventory search scope not established",
+      "replay_requires_matching_request_binding": true
+    },
+    "loot_reference": {
+      "evidence": "OTS_HYPOTHESIS_ONLY: Crystal summer-update data/libs/functions/gematelier.lua; fiendish integration is outside admitted GEM-R",
+      "roll_denominator": 100000,
+      "category_precedence": [
+        "influenced",
+        "fiendish",
+        "archfoe"
+      ],
+      "uniform_vocation_selection": true,
+      "per_quality": [
+        {
+          "quality": "lesser",
+          "chance_by_category": {
+            "influenced": 9000,
+            "fiendish": 3000,
+            "archfoe": 0
+          },
+          "independent_trials": 2
+        },
+        {
+          "quality": "regular",
+          "chance_by_category": {
+            "influenced": 0,
+            "fiendish": 3000,
+            "archfoe": 9000
+          },
+          "independent_trials": 2
+        },
+        {
+          "quality": "greater",
+          "chance_by_category": {
+            "influenced": 0,
+            "fiendish": 9000,
+            "archfoe": 3000
+          },
+          "independent_trials": 1
+        }
+      ]
+    }
+  },
+  "gem_families": {
+    "knight": {
+      "family": "guardian",
+      "items": {
+        "lesser": "oteryn:item.tibia.i44602",
+        "regular": "oteryn:item.tibia.i44603",
+        "greater": "oteryn:item.tibia.i44604"
+      }
+    },
+    "paladin": {
+      "family": "marksman",
+      "items": {
+        "lesser": "oteryn:item.tibia.i44605",
+        "regular": "oteryn:item.tibia.i44606",
+        "greater": "oteryn:item.tibia.i44607"
+      }
+    },
+    "sorcerer": {
+      "family": "sage",
+      "items": {
+        "lesser": "oteryn:item.tibia.i44608",
+        "regular": "oteryn:item.tibia.i44609",
+        "greater": "oteryn:item.tibia.i44610"
+      }
+    },
+    "druid": {
+      "family": "mystic",
+      "items": {
+        "lesser": "oteryn:item.tibia.i44611",
+        "regular": "oteryn:item.tibia.i44612",
+        "greater": "oteryn:item.tibia.i44613"
+      }
+    },
+    "monk": {
+      "family": "spiritualist",
+      "items": {
+        "lesser": "oteryn:item.tibia.i49371",
+        "regular": "oteryn:item.tibia.i49372",
+        "greater": "oteryn:item.tibia.i49373"
+      }
+    }
+  },
+  "unique_conviction": {
+    "battle_instinct": {
+      "numeric_effects": [
+        {
+          "kind": "adjacent_creature_threshold",
+          "value": 5,
+          "unit": "creatures"
+        },
+        {
+          "kind": "adjacent_creature_cap",
+          "value": 8,
+          "unit": "creatures"
+        },
+        {
+          "kind": "shielding_bonus_per_counted_creature",
+          "value": 6,
+          "unit": "flat"
+        },
+        {
+          "kind": "melee_skill_bonus_per_counted_creature",
+          "value": 1,
+          "unit": "flat"
+        }
+      ],
+      "behaviors": [
+        "count_threshold_creature_then_each_additional_up_to_cap"
+      ],
+      "targets": [
+        "shielding",
+        "sword",
+        "axe",
+        "club"
+      ]
+    },
+    "battle_healing": {
+      "numeric_effects": [
+        {
+          "kind": "healing_spell_bonus",
+          "value": 10,
+          "unit": "percent_points"
+        },
+        {
+          "kind": "shield_healing_multiplier",
+          "value": 3,
+          "unit": "multiplier"
+        }
+      ],
+      "behaviors": [
+        "shield_triples_bonus"
+      ],
+      "targets": [
+        "healing_spells"
+      ]
+    },
+    "positional_tactics": {
+      "numeric_effects": [
+        {
+          "kind": "monster_proximity_radius",
+          "value": 1,
+          "unit": "tiles"
+        },
+        {
+          "kind": "distant_distance_skill_bonus",
+          "value": 3,
+          "unit": "flat"
+        },
+        {
+          "kind": "nearby_holy_magic_bonus",
+          "value": 3,
+          "unit": "flat"
+        },
+        {
+          "kind": "nearby_healing_magic_bonus",
+          "value": 3,
+          "unit": "flat"
+        }
+      ],
+      "behaviors": [
+        "no_nearby_monster_grants_distance_otherwise_holy_and_healing_magic"
+      ],
+      "targets": []
+    },
+    "ballistic_mastery": {
+      "numeric_effects": [
+        {
+          "kind": "crossbow_critical_extra_damage",
+          "value": 10,
+          "unit": "percent_points"
+        },
+        {
+          "kind": "bow_physical_pierce",
+          "value": 4,
+          "unit": "percent_points"
+        },
+        {
+          "kind": "bow_holy_pierce",
+          "value": 4,
+          "unit": "percent_points"
+        }
+      ],
+      "behaviors": [
+        "crossbow_bonus_applies_to_attacks",
+        "bow_pierce_applies_to_attacks_and_spells"
+      ],
+      "targets": []
+    },
+    "runic_mastery": {
+      "numeric_effects": [
+        {
+          "kind": "rune_trigger_chance",
+          "value": 25,
+          "unit": "percent_points"
+        },
+        {
+          "kind": "rune_magic_level_bonus",
+          "value": 10,
+          "unit": "percent_points"
+        },
+        {
+          "kind": "own_vocation_rune_magic_level_bonus",
+          "value": 20,
+          "unit": "percent_points"
+        }
+      ],
+      "behaviors": [
+        "rune_bonus_uses_vocation_can_create_rule",
+        "magic_level_bonus_uses_base_magic_level"
+      ],
+      "targets": []
+    },
+    "focus_mastery": {
+      "numeric_effects": [
+        {
+          "kind": "next_damage_spell_bonus",
+          "value": 35,
+          "unit": "percent_points"
+        },
+        {
+          "kind": "focus_bonus_window",
+          "value": 12,
+          "unit": "seconds"
+        },
+        {
+          "kind": "focus_spell_group_cooldown_reduction",
+          "value": 2,
+          "unit": "seconds"
+        }
+      ],
+      "behaviors": [
+        "consume_bonus_on_next_damage_spell_after_focus",
+        "reduce_focus_spell_group_cooldown"
+      ],
+      "targets": [
+        "Hell's Core",
+        "Rage of the Skies"
+      ]
+    },
+    "healing_link": {
+      "numeric_effects": [
+        {
+          "kind": "self_healing_from_applied_target_heal",
+          "value": 25,
+          "unit": "percent_points"
+        }
+      ],
+      "behaviors": [
+        "heal_self_when_healing_someone_else"
+      ],
+      "targets": [
+        "Nature's Embrace",
+        "Heal Friend"
+      ]
+    },
+    "guiding_presence": {
+      "numeric_effects": [
+        {
+          "kind": "shared_mantra_percent",
+          "value": 100,
+          "unit": "percent_points"
+        },
+        {
+          "kind": "party_bonus_increase_source_percent",
+          "value": 33,
+          "unit": "source_percent"
+        }
+      ],
+      "behaviors": [
+        "share_mantra_with_group_members",
+        "party_bonus_increase_interpretation_requires_runtime_owner"
+      ],
+      "targets": [
+        "group_members",
+        "passive_party_bonuses"
+      ]
+    },
+    "sanctuary": {
+      "numeric_effects": [
+        {
+          "kind": "adjacent_target_damage_and_healing_bonus",
+          "value": 10,
+          "unit": "percent_points"
+        },
+        {
+          "kind": "harmony_field_duration",
+          "value": 5,
+          "unit": "seconds"
+        },
+        {
+          "kind": "field_damage_and_healing_per_consumed_harmony",
+          "value": 2,
+          "unit": "percent_points"
+        }
+      ],
+      "behaviors": [
+        "adjacent_bonus_applies_to_attacks_spells_and_runes",
+        "consuming_harmony_creates_field"
+      ],
+      "targets": []
+    }
+  },
+  "progression": {
+    "minimum_level": 51,
+    "requires_vocation": true,
+    "requires_promotion": true,
+    "global_requires_current_premium": true,
+    "points_per_level": 1,
+    "level_point_offset": 50,
+    "base_points_formula": "max(0, level - 50)",
+    "point_removal_requires_temple": true,
+    "allocation_preserved_when_ineligible": true,
+    "effects_zero_when_ineligible": true,
+    "conviction_requires_full_slot": true,
+    "conviction_copies_stack": true,
+    "extra_point_sources": {
+      "promotion_scrolls": [
+        {
+          "source_item_id": 43946,
+          "name": "abridged",
+          "points": 3
+        },
+        {
+          "source_item_id": 43947,
+          "name": "basic",
+          "points": 5
+        },
+        {
+          "source_item_id": 43948,
+          "name": "revised",
+          "points": 9
+        },
+        {
+          "source_item_id": 43949,
+          "name": "extended",
+          "points": 13
+        },
+        {
+          "source_item_id": 43950,
+          "name": "advanced",
+          "points": 20
+        }
+      ],
+      "monk_quest_points": 10,
+      "grade_iv_mod_type_points": 1
+    },
+    "extra_points_evidence": "OTS_HYPOTHESIS_ONLY: Canary player_wheel.cpp:357-363 and config.lua.dist:260; Grade IV from official manual notes",
+    "game_premium_activation": "WHEEL-0 owner W1a: apply only after PREM-1 activation",
+    "game_extra_points_activation": "WHEEL-0 section 6.3: zero until each owning feature exists",
+    "additional_unadmitted_reference_sources": [
+      {
+        "key": "hunting_task_shop",
+        "maximum_points": 50,
+        "source": "FANDOM_1151969",
+        "runtime_admitted": false
+      }
+    ]
+  },
+  "icon_evidence": {
+    "renderer_repository": "https://github.com/PawelKusnierek/TibiaPal",
+    "renderer_commit": "61ffa3e0502879ccec44e59ead859e92b6d88531",
+    "renderer_path": "scripts/wod-assets/wheelofdestinyplanner.min.js",
+    "renderer_sha256": "4320b5e04c051678c160936c50487f15a7d8ac867529970a4b1536da3defa536",
+    "layout_rule": "source_x = source_index * image_height; square cell size = image_height",
+    "layout_verified_categories": [
+      "dedication",
+      "conviction",
+      "revelation",
+      "basic_mod",
+      "supreme_mod"
+    ],
+    "revelation_asset": {
+      "repository_path": "images/wod-planner/icons-skillwheel-largeperks.png",
+      "sha256": "5a36d866b59837fcee9395b88043f83c7fd0b4b8352cb27547aab8d2d1740872",
+      "width": 544,
+      "height": 34,
+      "cell_count": 16,
+      "visual_inspection": true
+    },
+    "unavailable_sprite_categories": [],
+    "client_asset_crosswalk": "REFERENCE_MANIFEST_COMPLETE; RUNTIME_ASSET_ADMISSION_PENDING",
+    "live_asset_fetch": "ORIGINAL_CDN_200_VIA_REMOTE_CHROME_CDP_2026_10_01; CLOUD_HTTP_403",
+    "reference_sheet_observations": "samples/source-icon-reference.json",
+    "reference_sheet_sha256": "f49f4c0cea261e2a43db0164bd5bbadd07bce61bc542c6d50a4e9b86029c63de",
+    "appearance_scope": "ALL_FIVE_ORIGINAL_SHEETS_VISUALLY_INSPECTED; ALTERNATIVE_FALLBACK_ONLY_FOR_IDENTICAL_CELLS"
+  },
+  "revelation_behaviors": {
+    "gift_of_life": [
+      "exclude_agony_damage",
+      "exclusive_overkill_limit",
+      "restore_health_before_applying_fatal_damage",
+      "restore_mana_and_reduce_all_spell_cooldowns",
+      "cooldown_counts_only_battle_sign_time"
+    ],
+    "executioner_s_throw": [
+      "chain_to_additional_enemies",
+      "damage_bonus_when_target_health_strictly_below_limit"
+    ],
+    "combat_mastery": [
+      "defense_scales_with_own_missing_health",
+      "offense_scales_with_target_missing_health",
+      "shield_doubles_defense_bonus",
+      "two_handed_weapon_doubles_offense_bonus"
+    ],
+    "divine_grenade": [
+      "marker_on_target_tile_then_delayed_holy_explosion",
+      "charge_cooldown_at_cast",
+      "untargeted_cast_places_marker_at_caster"
+    ],
+    "divine_empowerment": [
+      "caster_owned_field_only",
+      "same_floor_and_standing_on_field",
+      "damage_bonus_applies_while_on_field"
+    ],
+    "beam_mastery": [
+      "flanking_beam_tiles_use_central_damage_fraction",
+      "only_central_hits_count_toward_target_cap",
+      "damage_bonus_and_cooldown_reduction_per_central_target"
+    ],
+    "lord_of_destruction": [
+      "fire_bonus_for_mastery_of_flames",
+      "critical_chance_for_mastery_of_thunder",
+      "critical_damage_for_mastery_of_decay"
+    ],
+    "blessing_of_the_grove": [
+      "healing_spells_can_crit",
+      "healing_bonus_below_target_health_limit",
+      "double_bonus_below_low_target_health_limit"
+    ],
+    "twin_bursts": [
+      "ice_and_terra_burst_share_cooldown",
+      "damage_bonus_when_target_health_strictly_above_limit"
+    ],
+    "spiritual_outburst": [
+      "consume_harmony",
+      "repeat_only_with_full_harmony",
+      "repeat_after_one_second"
+    ],
+    "ascetic": [
+      "increase_harmony_base_bonus",
+      "add_mantra_scaled_damage_to_autoattacks"
+    ],
+    "avatar_of_steel": [
+      "temporary_avatar_form",
+      "all_attacks_critical_while_active"
+    ],
+    "avatar_of_light": [
+      "temporary_avatar_form",
+      "all_attacks_critical_while_active"
+    ],
+    "avatar_of_storm": [
+      "temporary_avatar_form",
+      "all_attacks_critical_while_active"
+    ],
+    "avatar_of_nature": [
+      "temporary_avatar_form",
+      "all_attacks_critical_while_active"
+    ],
+    "avatar_of_balance": [
+      "temporary_avatar_form",
+      "all_attacks_critical_while_active"
+    ]
+  },
+  "revelation_area_references": {
+    "gift_of_life": null,
+    "executioner_s_throw": null,
+    "combat_mastery": null,
+    "avatar_of_steel": null,
+    "avatar_of_light": null,
+    "avatar_of_storm": null,
+    "avatar_of_nature": null,
+    "avatar_of_balance": null,
+    "divine_grenade": "AREA_CIRCLE2X2",
+    "divine_empowerment": "3x3_field",
+    "beam_mastery": "adjacent_beam_flanks",
+    "lord_of_destruction": null,
+    "blessing_of_the_grove": null,
+    "twin_bursts": "AREA_RING1_BURST3",
+    "spiritual_outburst": null,
+    "ascetic": null
+  },
+  "augment_targets": {
+    "augmented_focus_spells": [
+      "Hell's Core",
+      "Rage of the Skies"
+    ],
+    "augmented_forked_spells": [
+      "Forked Thorns",
+      "Forked Glacier"
+    ],
+    "augmented_special_spells": [
+      "Lightning",
+      "Strong Energy Strike",
+      "Strong Flame Strike"
+    ]
+  },
+  "augment_hypotheses": {
+    "augmented_special_spells": [
+      {
+        "stage": 1,
+        "kind": "secondary_cooldown_reduction",
+        "value": 4,
+        "unit": "seconds",
+        "evidence": "OTS_HYPOTHESIS_ONLY: pinned Canary, project wheel-augments.json; absent from official and captured Fandom descriptions, not selected as a confirmed effect"
+      }
+    ],
+    "augmented_flurry_of_blows": [
+      {
+        "stage": 1,
+        "kind": "range_increase",
+        "value": 1,
+        "unit": "tiles",
+        "evidence": "CONFLICT_NOT_SELECTED: planner says Range increased by 1; official:8833 in spell-authoring/wheel-augments.json and native behaviours appendix A.1 define enlarged affected area. No separate cast-range bonus is established; raw phrase retained."
+      }
+    ]
+  },
+  "live_source_verification": {
+    "tibiapal_content_verified": true,
+    "requested_fandom_verified": true
+  },
+  "unique_source_selections": {
+    "battle_healing": "official:8833 selects +10% healing with shield multiplier 3; planner multiplier 2 retained in raw capture.",
+    "focus_mastery": "official:8833 and Fandom:1206174 select focus-spell group cooldown -2 s, not the next damaging spell primary cooldown; Sorcerer targets Hell's Core and Rage of the Skies.",
+    "guiding_presence": "Official8833 full mantra share100%; official8944/EnglishWiki1206174 literal party+33%. EnglishWiki gives no arithmetic; pinnedCanary99902524 party.cpp308-321 implements mantra sharing but combat.cpp824-835/game.cpp210-223 has no Guiding+33 bonus. Arithmetic/rounding/self-copy PARITY_PENDING; runtime unadmitted; no owner gate.",
+    "runic_mastery": {
+      "evidence": "FANDOM_1206174",
+      "rule": "Percentage applies to the character base magic level for that rune effect only; no effective-skill or equipment bonus is invented."
+    }
+  },
+  "browser_source_audit": "samples/browser-source-audit.json"
+}

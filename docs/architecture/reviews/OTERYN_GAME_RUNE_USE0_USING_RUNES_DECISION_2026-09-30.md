@@ -418,6 +418,9 @@ at allocation.
     fields). That decision first needs an accepted gameplay-admission rule, owned by FND-04, that
     refuses a session without `WORLD_SPATIAL_FIELDS` on any channel where such a field can exist.
     This decision does not invent that admission refusal. Architect ruling R5 (§15).
+    **Amendment (pending on acceptance of ADMIT-0; `reviews/OTERYN_GAME_ADMIT0_WORLD_REQUIRED_CAPABILITIES_DECISION_2026-10-01.md`).** That rule is ADMIT-0: a channel whose
+    declared required set holds `WORLD_SPATIAL_FIELDS` and `WORLD_INTERACTION_V1` attaches no session
+    without them, and only such channels apply player field effects (§6 there).
 - **Field identity and deltas.** Each field has a runtime field identity: 16 bytes, non-nil,
   derived deterministically (name-based) from the creating cast's occurrence id and the tile's
   index in the authored area, and never reused in the channel's runtime life. A replay derives the

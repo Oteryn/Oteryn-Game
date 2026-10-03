@@ -109,6 +109,8 @@ drop it whole, with every item still in exactly one location?
   limit (`PARITY_PENDING`).
 - **Reachable items** per character: the main backpack tree and the nine slots, 509
   (`GAMEITEM01-REACHABLE-ITEMS`, was 30).
+  **Amendment (pending on acceptance of RANGED-0; `reviews/OTERYN_GAME_RANGED0_DISTANCE_WEAPONS_AMMUNITION_WANDS_AND_CHASE_DECISION_2026-10-01.md` §3.1).** Plus at most
+  20 quiver entries: 529.
 - **No cycles.** An item never enters itself or a descendant; checked by walking the destination's
   ancestors (at most 8) and enforced by the database.
 
@@ -203,6 +205,8 @@ drop it whole, with every item still in exactly one location?
 - **Command 9 under the capability.** The source may be the handle of any entry of an open view.
   New destination `CONTAINER {handle}`: into the named container, which must be visible (a domain
   9 entry, a view, or an entry of a view). Whole items only.
+  **Amendment (pending on acceptance of STACK-0; `reviews/OTERYN_GAME_STACK0_PARTIAL_COUNTS_AND_STACK_MERGES_DECISION_2026-10-01.md` §3-§4).** Under
+  `ITEM_STACK_COUNT_V1` an optional `count` moves part of a stack.
 - **Results** reuse the existing set: `NO_ROOM` (the container has no free entry, or the tree
   would pass 500), `BLOCKED` (depth over 8, or into itself or a descendant), `STALE`,
   `NOT_SUPPORTED` (a destination this decision does not admit yet).
@@ -221,6 +225,9 @@ drop it whole, with every item still in exactly one location?
 - **Merge.** A stackable item moved into a container merges or tops up into a compatible stack of
   that container, first in display order, by the D83 shapes; else it takes a new entry. Merging
   never searches other containers.
+  **Amendment (pending on acceptance of STACK-0; `reviews/OTERYN_GAME_STACK0_PARTIAL_COUNTS_AND_STACK_MERGES_DECISION_2026-10-01.md` §4).** The
+  source is never its own receiver, a reserved stack is skipped, and Canary's partial fit applies
+  under `ITEM_STACK_COUNT_V1`.
 - **`MAIN_BACKPACK`** keeps B3: only direct entries; a full main backpack is `NO_ROOM`. There is no
   fall-through into nested bags (R2).
 - **Container slot.** A container with contents may move into the empty container slot; it becomes
@@ -228,6 +235,11 @@ drop it whole, with every item still in exactly one location?
   destination whose child admits it (Ground, a depot box); the character then has no main backpack.
 - **Unequip into a nested bag.** ITEM-MOVE-WIRE-1's unequip may target `CONTAINER {handle}`.
 - Containers stay refused in the nine other slots (the quiver waits).
+  **Amendment (pending on acceptance of RANGED-0; `reviews/OTERYN_GAME_RANGED0_DISTANCE_WEAPONS_AMMUNITION_WANDS_AND_CHASE_DECISION_2026-10-01.md` §3.1).** Once
+  accepted, the quiver is the one exception: a container in the left hand whose tree has depth 1,
+  admitting only ammunition entries keyed to it (§4.1), refused otherwise as `SLOT_MISMATCH`. It is
+  one of the character's own trees for reach, views, invalidation and moves (this §6), under
+  `CONTAINER_TREE_V1`.
 
 ## 7. Capacity and weight
 
@@ -349,8 +361,8 @@ Each item names the decision, its refusal today, the result and the child that b
 | `BAGS0-RL-05` items in one traded tree | 100 |
 | `BAGS0-RL-06` tree move commit p99 at 500 items, depth 8 | at most 100 ms, measured by BAGS-1 |
 | `BAGS0-RL-06-TRADE` two-tree swap commit p99 with two 100-item trees and two full 500-item destination backpacks (1004 work units) | at most 100 ms, measured by BAGS-TRADE-1; above it the shape returns for a new decision |
-| `BAGS0-RL-07` items read by one hotkey search | 509 (runtime only) |
-| `GAMEITEM01-REACHABLE-ITEMS` | 509 per character |
+| `BAGS0-RL-07` items read by one hotkey search | 509 (runtime only); 529 with the quiver once RANGED-0 is accepted |
+| `GAMEITEM01-REACHABLE-ITEMS` | 509 per character; 529 once RANGED-0 is accepted (quiver entries) |
 | `DUR03-RL-01-TREE-MOVE` touched items | 500 (1 moved, up to 499 locked and checked) |
 | `DUR03-RL-02-TREE-MOVE` location lines | 2 |
 | `DUR03-RL-05-TREE` container levels expanded | 8 |

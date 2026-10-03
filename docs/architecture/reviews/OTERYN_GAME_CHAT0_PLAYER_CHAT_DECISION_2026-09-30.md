@@ -85,6 +85,9 @@ How do players talk to each other: nearby, privately, and to the whole World?
   word, a greeting of an NPC within that NPC's talk range (`CHAT0-RL-08`, 4 tiles until NPC-0 fixes
   its own) also starts that NPC's conversation, as command 7 would. With several NPCs in range, the
   nearest wins, then the lowest actor id. The line is still shown to every spectator.
+- **Amendment (pending on acceptance of NPC-BEHAVIOUR-0; `reviews/OTERYN_GAME_NPC_BEHAVIOUR0_NPC_PRESENCE_WALKING_VOICES_AND_FOCUS_DECISION_2026-10-01.md` §6).** An NPC actor may speak its admitted voice lines as
+  `say` or `yell` with these ranges and floor rules; NPC lines are exempt from the player yell
+  cooldown, level rule, yell upper-casing and spam control (Canary upper-cases player yells only).
 
 ## 4. Text and bounds (CHAT-1)
 
