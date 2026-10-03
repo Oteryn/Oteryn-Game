@@ -55,11 +55,20 @@ decision is accepted. So no row is ever written under the old cap, grade cost or
 no WHEEL-GEM-0 §5.3 migration is needed. Amended: WHEEL-GEM-0 implementation brief (GEM-1 depends
 on WHEEL-GEM-0A).
 
-## 6. Owner questions
+## 6. Decision test (P3 follow-up, control plane 2026-10-01)
+
+- **Must decide now:** YES. GEM-1 and the W-R/GEM-R content need the values before their first
+  revision.
+- **Harder later:** these values become the first revision of W-R and GEM-R; changing them after
+  characters hold gems or grades needs a WHEEL-GEM-0 §5.3 migration.
+- **Superseding evidence:** an official source that differs from the owner-verified values.
+- **Deliberately not decided:** anything outside the listed values and the Guiding Presence rule.
+
+## 7. Owner questions
 
 None. The FORMULA rule and owner decision 5905825574 settle every value here.
 
-## 7. Before-freeze checklist
+## 8. Before-freeze checklist
 
 1. **Contract amendments:** WHEEL-GEM-0 §2, §4, §5.1, the rows and the declared differences. Applied
    in this PR.

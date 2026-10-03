@@ -142,6 +142,11 @@ gives trees, thresholds and perks to content. Its rule 6 requires versioned defi
   and each level's perk order. It may change values and thresholds.
   - A compatible revision applies without a write. The track's stored revision advances with its
     next line.
+    **Amendment (compatible refresh, architect ruling for D283c).** That next line is the track's
+    next `training` or `perk_selection` line, which then carries the definition revision before and
+    after (after later than before, same definition key); §4.2's CHECKs allow exactly this. No
+    separate refresh cause and no write for the revision alone exist. Progress is cumulative and is
+    never lowered by a refresh (a lower threshold or Mastery cap only changes the derived level).
   - Anything else is incompatible. The content revision declares the migration of the selections
     (keep, remap or clear, per level). The owning session writes one `migration` receipt for the
     Character's affected tracks before it first uses any of them under the new revision, in its
@@ -181,12 +186,18 @@ gives trees, thresholds and perks to content. Its rule 6 requires versioned defi
   - `progress` and `selections`, before and after.
 
   CHECKs per cause:
-  - `training`: progress strictly increases; selections and definition are unchanged;
-  - `perk_selection`: progress and definition are unchanged; exactly one level's entry changes
-    (set, change or clear);
+  - `training`: progress strictly increases; selections and the definition key are unchanged; the
+    definition revision is unchanged or advances (compatible refresh, §4.1);
+  - `perk_selection`: progress and the definition key are unchanged; the definition revision is
+    unchanged or advances (compatible refresh); exactly one level's entry changes (set, change or
+    clear);
   - `migration`: progress is unchanged and the definition revision changes. That the selections
     follow the declared migration is a writer invariant, because the guard cannot read content.
     PROF-1 tests it, and reconcile recomputes it from the two definition revisions.
+  - A revision advance on a `training` or `perk_selection` line must be compatible (same level count
+    and per-level perk order). The guard cannot read content, so this too is a writer invariant:
+    PROF-1 tests it, and reconcile and `verify_character_integrity` recheck it from the two retained
+    definition revisions. An incompatible advance only ever appears on a `migration` line.
 
   The receipt trigger checks the line count: 1 to N for `training` and `migration`, and exactly 1
   for `perk_selection`. N is bounded by the weapons with a proficiency in the active content.
