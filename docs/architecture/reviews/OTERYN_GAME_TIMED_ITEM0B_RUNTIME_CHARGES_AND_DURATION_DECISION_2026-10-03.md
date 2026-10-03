@@ -505,7 +505,8 @@ two the active forms need.
   ground, trade and Look) gains optional `charges` (uint32, at most RL-01 65,535) and `remaining_s`
   (uint32, at most 604,800), sent only when the definition shows charges (`show_count`) or duration.
   The values are the row's, or the live values for a live item; a deadline item's `remaining_s` is
-  `deadline_at` minus the current time.
+  `deadline_at` minus the current time, clamped to 0 for an item whose deadline has passed and whose
+  expiry step is still queued (§10.3, RL-06).
 - **Updates.** A live item's remaining time is sent at every form change and at most once per
   `TIMEDITEM0B-RL-03` (60 s); the client counts down between updates. A charge change is sent with
   the next presentation update of that item, at most once per second per item.

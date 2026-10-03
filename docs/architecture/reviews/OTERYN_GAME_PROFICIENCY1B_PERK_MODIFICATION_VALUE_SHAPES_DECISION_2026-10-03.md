@@ -97,7 +97,7 @@ A modified perk is `(shaping revision, entry index)`. The entry index is stable 
   | `MODIFY` | the slot's dust cost, the pool and its weights, rank 1 values |
   | `RANK_UP` | the step's dust cost, the next rank's values |
   | `ORB_RANK` | the orb count, rank 10 values |
-  | `RESHAPE_OFFER` | the offer's dust cost, the pool and its weights |
+  | `RESHAPE_OFFER` | the offer's dust cost, the pool and its weights, and every pool entry's values at the row's current rank (any entry can be offered and chosen, so none may activate an unevidenced value) |
   | `RESHAPE_CHOOSE` | nothing: it is admitted whenever the row has a pending offer, whatever the active revision's cells (the offer was admitted and paid under the row's own revision) |
   | `CLEAR` | the clear's dust cost |
 
@@ -237,9 +237,14 @@ zone, under the PROFICIENCY-0 §4.3 writer. Checks run in this order and each re
 
 ### 6.4 Losing writer
 
-A stale commit (another receipt advanced the root or the track) is re-validated against the
-committed rows: still valid, it retries once with a new occurrence derived from the old one; else
-the command answers `STALE_REVISION`. A new occurrence never redraws a draw already committed.
+A stale commit (another receipt advanced the root or the track) wrote nothing. It is re-validated
+against the committed rows and, still valid, retried once under the **same** command-derived
+occurrence and the same draw, so a later duplicate of the command finds its receipt by that
+occurrence (§6.1) and never pays twice. If the track's committed revision no longer equals the
+command's `expected_revision`, or the re-validation fails, the command answers `STALE_REVISION`
+and nothing is persisted; a duplicate re-evaluates against the same rows and gets the same answer.
+This deliberately differs from PROFICIENCY-0 §4.3's new-occurrence retry for `perk_selection`,
+because a modification spends value.
 
 ## 7. Receipt CHECKs and composed shapes (PROF-SHAPE-1)
 
@@ -266,8 +271,11 @@ that (track, slot), or the cleared state; the row equals its latest line.
 - **Dust burn:** the receipt (CharacterRevision + 1), its two lines, and one dust ledger `SPEND`
   entry with its balance update, under `ProficiencyCause {track, slot, operation, occurrence}`. The
   dust is burned (DUR-03 §15 sink), no item touched.
-- **Orb burn:** the receipt, its lines and one BURN of one unit of the found orb stack (it keeps its
-  identity, or retires at zero, DUR-03 §11.1 and §11.5), under the same cause.
+- **Orb burn:** the receipt, its lines and, only when the evidenced orb count is 1, one BURN of one
+  unit of the found orb stack (it keeps its identity, or retires at zero, DUR-03 §11.1 and §11.5),
+  under the same cause. With a count of 0 the orb must still be held (`NO_ORB` otherwise, a
+  read-only check under the same lock order) and no item line is written; the shape is then the
+  receipt with its lines only.
 - **Lock order:** the item writer's and session-generation fences, `character_root`, the track row,
   the modification rows, the dust balance row, then the orb stack.
 - **Audit:** one audit event per receipt with the track, slot, operation, rows before and after,
@@ -369,15 +377,15 @@ Each with max and max+1 tests.
 
 | PROFICIENCY-1 §6 condition | Answered by | Tests (PROF-SHAPE-1 unless named) |
 |---|---|---|
-| 1. occurrence from the CommandId; replay before any write | §6.1 | a retry returns the first receipt; a different binding is `CONFLICT` |
+| 1. occurrence from the CommandId; replay before any write | §6.1 | a retry returns the first receipt; a different binding is `CONFLICT`; a stale commit retried under the same occurrence, then a duplicate of the command, spends dust once and returns that receipt; a duplicate arriving under an exhausted rate cap still gets its original result |
 | 2. revision binding, terminal `REVISION_CHANGED`, never refused by a rate cap | §6.2, §6.3 | a shaping activation between reservation and commit gives a terminal record; its replay after a rollback still refuses; a capped character still gets the terminal record |
 | 3. receipt CHECKs | §4.3, §7.1 | each operation changing a forbidden field is refused by the CHECK; two slots in one receipt are refused |
 | 4. offers durable, paid when drawn, ≥ 3 others, exactly 3; rank refused while pending | §5 | an offer survives a restart; a pool of 3 entries (2 others) refuses before any burn; `RANK_UP` with an offer is `OFFER_PENDING` |
 | 5. older shaping revisions | §5 | `RANK_UP` on an old-revision row is `SHAPING_OUTDATED`; `CLEAR` works |
 | 6. draws under `proficiency_shaping` | §5.1 | the same occurrence and seed draw the same entries; a replay never redraws |
-| 7. composed shapes, lock order, audit | §7.2 | each DUR-03 row at max and max+1; the dust balance and the receipt commit together or not at all |
+| 7. composed shapes, lock order, audit | §7.2 | each DUR-03 row at max and max+1; the dust balance and the receipt commit together or not at all; with an orb count of 0 the orb is required but not burned |
 | 8. measured payloads and snapshot | §11 | PROF-SHAPE-WIRE-1: each payload at its bound; the 666-track worst case under RL-01 |
-| 9. values by the evidence order | §3.3 | an operation with an unevidenced cell answers `NOT_ADMITTED`; an OTS-classed cell is refused by content validation |
+| 9. values by the evidence order | §3.3 | an operation with an unevidenced cell answers `NOT_ADMITTED`; an OTS-classed cell is refused by content validation; `RESHAPE_OFFER` is `NOT_ADMITTED` while any pool entry lacks a value at the row's rank; a paid offer stays choosable after a newer revision is activated |
 | 10. retention serialized with activation | §8 | the §8 tests |
 | 11. integrity extended | §9 | `verify_character_integrity` fails a row that differs from its latest line; the guard union passes the ordering test |
 | 12. commands, numbers, results, payloads | §11 | PROF-SHAPE-WIRE-1: each command and result round-trips |
