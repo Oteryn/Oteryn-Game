@@ -20,6 +20,7 @@ owned_paths:
   - docs/architecture/reviews/OTERYN_GAME_ARCH_BATCH_ITEM_EQUIP_PACKETS_2026-10-03.md
   - docs/architecture/reviews/OTERYN_GAME_ARCH_BATCH_TIMED_FORGE_PROF_PACKETS_2026-10-03.md
   - docs/architecture/ADR-0021-world-map-runtime-loading.md
+  - docs/architecture/reviews/OTERYN_GAME_MAP_WIRE1_MAP_STATE_WIRE_CONTRACT_CANDIDATE_2026-09-30.md
   - docs/agents/tasks/archive/OTV2-20261003-arch-item-packets-amend-1.md
 public_contracts: []
 depends_on: []
@@ -46,4 +47,9 @@ external_repositories: []
   form (§2.8, §2.9).
 - **Control plane: ITEM-VIEW-1a** owns `world_spatial_entities.rs` (the D85 entry codec), not
   `world_spatial.rs` (§2.1).
+- **#1702 P1 4175377704:** server and client switch ground speed together: MAP-LOAD-1 builds the
+  map source, MAP-WIRE-2 carries ground speed in `MAP_TILES`, MAP-CLIENT-1 paces from it and
+  activates the server source (§1.11, ADR-0021 and MAP-WIRE-1 amendments).
+- **#1702 P1 4175377707:** VIS-3 owns the `offered` assertion in `world_spatial_entities.rs` and
+  runs the protocol tests; ITEM-VIEW-1a, NPC-VIS-1 and VIS-3 edit that file serially.
 - No code, contract or wire change.

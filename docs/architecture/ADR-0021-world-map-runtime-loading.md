@@ -53,9 +53,9 @@
   loaded eagerly and shared read-only by every channel of the World on a node (§4.1). Tests:
   load and equivalence, negative and fuzz tests of the reader, and the §4.8 budgets measured.
   *Amendment (ARCH-ITEM-PACKETS-AMEND-1; `reviews/OTERYN_GAME_ARCH_BATCH_ITEM_EQUIP_PACKETS_2026-10-03.md`
-  §1.11).* MAP-LOAD-1 also implements SPEED-1's ground-speed lookup seam from each tile's ground
-  item `ground_speed` (WO-0), as a merge condition, with a production-path test that steps onto a
-  tile whose ground speed is not 150.
+  §1.11).* MAP-LOAD-1 also builds the map source of SPEED-1's ground-speed lookup seam from each
+  tile's ground item `ground_speed` (WO-0), with a test of a non-150 tile. Production keeps the 150
+  source until MAP-CLIENT-1 switches server and client together.
 - **MAP-OVERLAY-1** (runtime and durability, hard worker, persistence review). It builds:
   - the per-channel overlay (§4.4);
   - the Ground rebuild after an unplanned restart, with origins re-hidden;
