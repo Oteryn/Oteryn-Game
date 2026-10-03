@@ -9,7 +9,7 @@ repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: arch/item-sem-2b2-packet-20261003
 issue: 162
-pr: null
+pr: 1672
 head_sha: "exact frozen head in the control plane FREEZE_SHA entry"
 owner: Sol Supervising Architect
 created_at: 2026-10-03
@@ -40,5 +40,5 @@ The worker packet (`OTV2-20261003-item-sem-2b2-equipment-requirements`) starts a
 
 - `python3 tools/agents/validate_governance.py`
 - `python3 tools/repository/validate_repository_policy.py`
-- `python -m unittest discover -s tools/agents/tests`
+- `python -m unittest discover -s tools/agents/tests` (54 tests, OK)
 - `git diff --cached --check`
