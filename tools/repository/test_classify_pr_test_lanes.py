@@ -372,104 +372,47 @@ def test_large_pr_fallback(module):
 
 
 def test_metadata_events():
-    """Execute the hosted event classifier; metadata cannot overwrite game-gate."""
+    """PR edits must qualify normally without cancelling the product run."""
     core_path = ROOT / "tools/repository/validate_repository_policy_core.py"
     spec = importlib.util.spec_from_file_location("metadata_policy_core", core_path)
     core = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(core)
     gate = (ROOT / ".github/workflows/merge-gate.yml").read_text(encoding="utf-8")
-    block = core.indented_yaml_mapping_block(gate, "classify_event", 2)
-    assert block is not None, "event classifier is required"
-    script = textwrap.dedent(block.split("python - <<'PY'\n", 1)[1].rsplit("          PY", 1)[0])
-    repository = "Oteryn/Oteryn-Game"
-    head = "a" * 40
-    base = {
-        "action": "edited", "number": 42,
-        "pull_request": {
-            "number": 42, "state": "open", "base": {"ref": "main"},
-            "head": {"sha": head, "repo": {"full_name": repository}},
-        },
-        "changes": {"title": {"from": "Previous title"}},
-    }
-    cases = []
-    for changes in (
-        {"title": {"from": "Old"}},
-        {"body": {"from": "Old description"}},
-        {"body": {"from": None}},
-        {"title": {"from": "Old"}, "body": {"from": None}},
-    ):
-        cases.append((dict(base, changes=changes), "true"))
-    for changes in (
-        {}, None, [], "title", {"base": {"ref": {"from": "other"}}},
-        {"body": {"from": "old"}, "base": {"ref": {"from": "other"}}},
-        {"body": {"from": "old"}, "unknown": {"from": "old"}},
-        {"title": None}, {"title": "old"}, {"title": {}},
-        {"title": {"from": None}}, {"body": {"from": False}},
-        {"body": {"from": "old", "unknown": "value"}},
-    ):
-        cases.append((dict(base, changes=changes), "false"))
-    for action in ("opened", "reopened", "synchronize", "unknown", None):
-        cases.append((dict(base, action=action), "false"))
-    for number in (True, "42", 0, -1, None):
-        cases.append((dict(base, number=number), "false"))
-    for pull in (
-        None, [], dict(base["pull_request"], number=43),
-        dict(base["pull_request"], state="closed"),
-        dict(base["pull_request"], base={"ref": "other"}),
-        dict(base["pull_request"], head={"sha": "A" * 40, "repo": {"full_name": repository}}),
-        dict(base["pull_request"], head={"sha": head, "repo": {"full_name": "fork/Game"}}),
-        dict(base["pull_request"], head=None),
-    ):
-        cases.append((dict(base, pull_request=pull), "false"))
-    cases.extend((event, "false") for event in ({}, None, []))
-    with tempfile.TemporaryDirectory() as directory:
-        root = Path(directory)
-        event_path, output = root / "event.json", root / "output"
-
-        def classify(payload, event_name="pull_request"):
-            event_path.write_text(payload, encoding="utf-8")
-            output.write_text("", encoding="utf-8")
-            env = dict(os.environ, REPOSITORY=repository, GITHUB_EVENT_NAME=event_name,
-                GITHUB_EVENT_PATH=str(event_path), GITHUB_OUTPUT=str(output))
-            result = subprocess.run([sys.executable, "-c", script], env=env,
-                capture_output=True, text=True, check=False)
-            assert result.returncode == 0, result.stderr
-            return output.read_text(encoding="utf-8")
-
-        for event, expected in cases:
-            assert classify(json.dumps(event)) == f"metadata_only={expected}\n", event
-        assert classify("not JSON") == "metadata_only=false\n"
-        assert classify(json.dumps(base), "pull_request_target") == "metadata_only=false\n"
-
-    # Every product/security job remains downstream of scope. Its implicit
-    # success() condition prevents execution when metadata skips scope.
-    jobs = re.findall(r"^  ([a-z_]+):$", core.top_level_yaml_mapping_block(gate, "jobs"), flags=re.MULTILINE)
-    product_jobs = {
-        "lanes", "governance", "dependency_review", "codeql", "routing_contract",
-        "atlas_fullworld", "rust_policy", "rust_linux", "rust_windows",
-        "rust_supply_chain", "node_boot", "server_seam",
-    }
-    assert set(jobs) == product_jobs | {"classify_event", "scope", "validate", "game_gate"}
-    for job in product_jobs:
-        body = core.indented_yaml_mapping_block(gate, job, 2)
-        assert "    needs: scope\n" in body or "    needs: [scope, lanes]\n" in body, job
-        assert not any(fn in body for fn in ("always()", "failure()", "cancelled()")), job
+    assert "      - edited\n" in gate, "base retargets must retain native qualification"
+    assert "classify_event" not in gate and "metadata_only" not in gate
     scope = core.indented_yaml_mapping_block(gate, "scope", 2)
-    assert "    needs: classify_event\n" in scope
-    assert "    if: needs.classify_event.outputs.metadata_only != 'true'\n" in scope
+    assert not re.search(r"^    (if|needs):", scope, flags=re.MULTILINE)
     aggregate = core.indented_yaml_mapping_block(gate, "validate", 2)
     final = core.indented_yaml_mapping_block(gate, "game_gate", 2)
-    guard = "    if: always() && needs.classify_event.outputs.metadata_only != 'true'\n"
-    assert guard in aggregate and guard in final
-    assert "      - classify_event\n" in aggregate
-    assert "    needs: [classify_event, validate]\n" in final
-    assert "    name: ${{ needs.classify_event.outputs.metadata_only == 'true' && 'Merge gate / metadata-only edit' || 'game-gate' }}\n" in final
-    assert "        run: test \"$LEGACY_VALIDATE\" = \"success\"\n" in final
-    assert "    permissions: {}\n" in block and "uses:" not in block
-    assert "      - edited\n" in gate, "base retargets must keep native qualification"
-    assert "format('merge-gate-edit-{0}-{1}', github.event.pull_request.number, github.run_id)" in gate
-    assert "github.event.changes.base == null" in gate
-    print(f"Metadata events PASS: {len(cases) + 2} cases, product dependency fan-in, stable required gate and isolated edits")
+    assert "    if: always()\n" in aggregate and "    if: always()\n" in final
+    assert "    name: game-gate\n" in final and "    needs: validate\n" in final
+    assert '        run: test "$LEGACY_VALIDATE" = "success"\n' in final
+
+    # Evaluate the exact hosted group expression for overlapping runs. An edit
+    # gets its own group; retarget and synchronize still supersede stale product
+    # qualification, and unrelated PRs never share a cancellation group.
+    line = next(line for line in gate.splitlines() if line.startswith("  group:"))
+    expected = "  group: ${{ github.event.action == 'edited' && github.event.changes.base == null && format('merge-gate-edit-{0}-{1}', github.event.pull_request.number, github.run_id) || format('merge-gate-{0}', github.event.pull_request.number) }}"
+    assert line == expected
+    def group(action, base_changed, number, run_id):
+        expression = line.split("${{", 1)[1].rsplit("}}", 1)[0].strip()
+        expression = expression.replace("github.event.action", "action")
+        expression = expression.replace("github.event.changes.base", "base")
+        expression = expression.replace("github.event.pull_request.number", "number")
+        expression = expression.replace("github.run_id", "run_id")
+        expression = expression.replace("&&", "and").replace("||", "or").replace("null", "None")
+        return eval(expression, {"__builtins__": {}}, {
+            "action": action, "base": {"ref": {"from": "other"}} if base_changed else None,
+            "number": number, "run_id": run_id,
+            "format": lambda template, *args: template.format(*args),
+        })
+    product = group("synchronize", False, 42, 1)
+    edits = [group("edited", False, 42, n) for n in (2, 3)]
+    assert len(set([product, *edits])) == 3
+    assert group("edited", True, 42, 4) == product
+    assert group("synchronize", False, 42, 5) == product
+    assert group("synchronize", False, 43, 6) != product
+    print("Metadata concurrency PASS: isolated edits, retarget cancellation and canonical full game-gate")
 
 
 def test_aggregate():

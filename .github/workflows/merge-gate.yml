@@ -21,59 +21,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  classify_event:
-    name: Merge gate / event classification
-    runs-on: ubuntu-24.04
-    timeout-minutes: 2
-    permissions: {}
-    outputs:
-      metadata_only: ${{ steps.event.outputs.metadata_only }}
-    steps:
-      - name: Classify native pull request event
-        id: event
-        env:
-          REPOSITORY: ${{ github.repository }}
-        run: |
-          python - <<'PY'
-          import json
-          import os
-          from pathlib import Path
-          import re
-
-          metadata_only = False
-          try:
-              event = json.loads(Path(os.environ['GITHUB_EVENT_PATH']).read_text(encoding='utf-8'))
-              pull = event.get('pull_request', {})
-              changes = event.get('changes')
-              number = event.get('number')
-              metadata_only = (
-                  os.environ.get('GITHUB_EVENT_NAME') == 'pull_request'
-                  and event.get('action') == 'edited'
-                  and type(number) is int and number > 0
-                  and pull.get('number') == number and pull.get('state') == 'open'
-                  and pull.get('base', {}).get('ref') == 'main'
-                  and pull.get('head', {}).get('repo', {}).get('full_name') == os.environ['REPOSITORY']
-                  and re.fullmatch(r'[0-9a-f]{40}', pull.get('head', {}).get('sha', '')) is not None
-                  and isinstance(changes, dict) and bool(changes)
-                  and set(changes) <= {'title', 'body'}
-                  and all(
-                      isinstance(change, dict) and set(change) == {'from'}
-                      and (isinstance(change['from'], str) or (key == 'body' and change['from'] is None))
-                      for key, change in changes.items()
-                  )
-              )
-          except (OSError, ValueError, TypeError, AttributeError, KeyError):
-              metadata_only = False
-
-          with open(os.environ['GITHUB_OUTPUT'], 'a', encoding='utf-8') as output:
-              output.write(f"metadata_only={'true' if metadata_only else 'false'}\n")
-          print('Metadata-only edit; retain existing product checks.' if metadata_only else 'Product qualification required.')
-          PY
-
   scope:
     name: Merge gate / scope
-    needs: classify_event
-    if: needs.classify_event.outputs.metadata_only != 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:
@@ -1149,9 +1098,8 @@ jobs:
 
   validate:
     name: Merge gate / validate
-    if: always() && needs.classify_event.outputs.metadata_only != 'true'
+    if: always()
     needs:
-      - classify_event
       - scope
       - lanes
       - governance
@@ -1233,10 +1181,9 @@ jobs:
           PY
 
   game_gate:
-    # A skipped metadata edit must never publish a passing required game-gate.
-    name: ${{ needs.classify_event.outputs.metadata_only == 'true' && 'Merge gate / metadata-only edit' || 'game-gate' }}
-    if: always() && needs.classify_event.outputs.metadata_only != 'true'
-    needs: [classify_event, validate]
+    name: game-gate
+    if: always()
+    needs: validate
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:
