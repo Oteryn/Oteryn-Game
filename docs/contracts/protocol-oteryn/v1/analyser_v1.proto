@@ -1,0 +1,95 @@
+// ANALYSERS-0 §4 and §6 (ANALYSERS0-HUNTING-ANALYSERS-V1, docs/architecture/reviews/
+// OTERYN_GAME_ANALYSERS0_HUNTING_ANALYSERS_DECISION_2026-10-03.md): typed payloads of capability 10
+// ANALYSER_V1 and state domain 15 ACTOR_ANALYSER (delta type 1, snapshot type 1); no command type.
+// Numbers leased to ANALYSER-WIRE-1 by the #1622 control plane. FND-02 envelopes own the domain ID
+// and revisions; these payloads never duplicate them. Facts concern only the receiving session's
+// own character. Unknown fields, repeated singular fields, an empty or doubled oneof, zero and
+// unknown enum values, a field that does not belong to its kind, and values outside the declared
+// bounds all fail closed.
+syntax = "proto3";
+
+package oteryn.protocol.v1.analyser;
+
+// The content damage types (SPELL-PRESENT-0 §2), healing excluded.
+enum AnalyserElement {
+  ANALYSER_ELEMENT_UNSPECIFIED = 0;
+  ANALYSER_ELEMENT_PHYSICAL = 1;
+  ANALYSER_ELEMENT_FIRE = 2;
+  ANALYSER_ELEMENT_EARTH = 3;
+  ANALYSER_ELEMENT_ENERGY = 4;
+  ANALYSER_ELEMENT_ICE = 5;
+  ANALYSER_ELEMENT_HOLY = 6;
+  ANALYSER_ELEMENT_DEATH = 7;
+  ANALYSER_ELEMENT_LIFE_DRAIN = 8;
+  ANALYSER_ELEMENT_MANA_DRAIN = 9;
+  ANALYSER_ELEMENT_DROWNING = 10;
+  ANALYSER_ELEMENT_UNTYPED = 11;
+}
+
+enum AnalyserImpactKind {
+  ANALYSER_IMPACT_KIND_UNSPECIFIED = 0;
+  ANALYSER_IMPACT_KIND_DAMAGE = 1;
+  ANALYSER_IMPACT_KIND_HEALING = 2;
+}
+
+enum AnalyserDamageSource {
+  ANALYSER_DAMAGE_SOURCE_UNSPECIFIED = 0;
+  ANALYSER_DAMAGE_SOURCE_CREATURE = 1;
+  ANALYSER_DAMAGE_SOURCE_PLAYER = 2;
+  ANALYSER_DAMAGE_SOURCE_NONE = 3;
+}
+
+// Experience before and after modifiers, as committed.
+message AnalyserExperienceV1 {
+  uint64 raw = 1;
+  uint64 gained = 2;
+}
+
+message AnalyserItemCountV1 {
+  uint32 item_type = 1; // content item type id, non-zero
+  uint32 count = 2;     // 1..=65535
+}
+
+message AnalyserKillLootV1 {
+  uint32 race = 1;                              // Bestiary race index 1..=1024; 0 = none
+  repeated AnalyserItemCountV1 corpse_items = 2; // 0..=32 (ANALYSERS0-RL-02)
+  uint64 gold = 3;                              // coin value in gold
+}
+
+message AnalyserImpactV1 {
+  AnalyserImpactKind kind = 1;
+  uint32 value = 2;           // final applied value, non-zero
+  AnalyserElement element = 3; // required for DAMAGE, absent for HEALING
+}
+
+message AnalyserDamageInputV1 {
+  uint32 value = 1; // final applied value, non-zero
+  AnalyserElement element = 2;
+  AnalyserDamageSource source = 3;
+  uint32 race = 4; // Bestiary race index 1..=1024; only for CREATURE, 0 = none
+}
+
+message AnalyserDroppedV1 {
+  uint32 count = 1; // facts lost to the pending cap of 1024 since the last batch, non-zero
+}
+
+// At most 401 bytes (MAX_ANALYSER_FACT_BYTES).
+message AnalyserFactV1 {
+  oneof fact {
+    AnalyserExperienceV1 experience = 1;
+    AnalyserKillLootV1 kill_loot = 2;
+    AnalyserItemCountV1 supply_used = 3;
+    AnalyserImpactV1 impact = 4;
+    AnalyserDamageInputV1 damage_input = 5;
+    AnalyserDroppedV1 dropped = 6;
+  }
+}
+
+// Delta type 1: one batch for one sync unit, 1..=64 facts (ANALYSERS0-RL-01) in emission order.
+// At most 4096 bytes (ANALYSERS0-RL-03).
+message AnalyserFactsV1 {
+  repeated AnalyserFactV1 facts = 1;
+}
+
+// Snapshot type 1: always empty (0 bytes); the envelope carries the revision.
+message AnalyserSnapshotV1 {}

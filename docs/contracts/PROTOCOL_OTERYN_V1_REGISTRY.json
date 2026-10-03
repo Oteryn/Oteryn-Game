@@ -71,6 +71,18 @@
       "state_domains": [12],
       "offered": false,
       "offer_gate": "CHAT-1b-2: the server does not offer this capability before the connection composes chat (capability negotiation from CHARM-5-COMP, the per-session egress queue of CHAT0-RL-11). Without it selected, domain 12 is never sent and command type 13 is refused as unsupported."
+    },
+    {
+      "id": 10,
+      "name": "ANALYSER_V1",
+      "owner_decision": "ANALYSERS-0 ANALYSERS0-HUNTING-ANALYSERS-V1 \u00a74 and \u00a76 (docs/architecture/reviews/OTERYN_GAME_ANALYSERS0_HUNTING_ANALYSERS_DECISION_2026-10-03.md, D298); numbers leased to ANALYSER-WIRE-1 by the #1622 control plane",
+      "owner": "Analyser module (facts derived from committed combat, loot, item-use and progression outcomes)",
+      "command_types": [],
+      "state_domains": [
+        15
+      ],
+      "offered": false,
+      "offer_gate": "ANALYSER-EMIT-1: the server does not offer this capability before the first emitter ships. Without it selected, domain 15 is never sent."
     }
   ],
   "command_types": [
@@ -297,6 +309,30 @@
           "name": "CHAT_SNAPSHOT_V1",
           "payload_schema": "docs/contracts/protocol-oteryn/v1/chat_v1.proto#ChatRoomsV1",
           "max_payload_bytes": 4
+        }
+      ]
+    },
+    {
+      "id": 15,
+      "name": "ACTOR_ANALYSER",
+      "owner_decision": "ANALYSERS-0 ANALYSERS0-HUNTING-ANALYSERS-V1 \u00a74 and \u00a76 (docs/architecture/reviews/OTERYN_GAME_ANALYSERS0_HUNTING_ANALYSERS_DECISION_2026-10-03.md, D298); numbers leased to ANALYSER-WIRE-1 by the #1622 control plane",
+      "owner": "Analyser module",
+      "capability": 10,
+      "revision": "one cumulative, monotonic uint64 per GameSession (FND-02 \u00a715): 0 at the session's initial snapshot, plus 1 per delta sent, never reset or reused at a resync snapshot or a reconnect; the empty snapshot carries the current revision. Own session only; facts are advisory, never stored or replayed; a resync loses unsent facts only",
+      "delta_types": [
+        {
+          "id": 1,
+          "name": "ANALYSER_FACTS_DELTA_V1",
+          "payload_schema": "docs/contracts/protocol-oteryn/v1/analyser_v1.proto#AnalyserFactsV1",
+          "max_payload_bytes": 4096
+        }
+      ],
+      "snapshot_types": [
+        {
+          "id": 1,
+          "name": "ANALYSER_SNAPSHOT_V1",
+          "payload_schema": "docs/contracts/protocol-oteryn/v1/analyser_v1.proto#AnalyserSnapshotV1",
+          "max_payload_bytes": 0
         }
       ]
     }
