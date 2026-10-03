@@ -497,10 +497,13 @@ def test_metadata_events():
     assert "      - edited\n" in gate, "base retargets must retain native qualification"
     assert "classify_event" not in gate and "metadata_only" not in gate
     scope = core.indented_yaml_mapping_block(gate, "scope", 2)
-    assert not re.search(r"^    (if|needs):", scope, flags=re.MULTILINE)
+    main_guard = "github.event.pull_request.base.ref == 'main' || !github.event.pull_request.base.ref"
+    assert f"    if: {main_guard}\n" in scope
+    assert not re.search(r"^    needs:", scope, flags=re.MULTILINE)
     aggregate = core.indented_yaml_mapping_block(gate, "validate", 2)
     final = core.indented_yaml_mapping_block(gate, "game_gate", 2)
-    assert "    if: always()\n" in aggregate and "    if: always()\n" in final
+    aggregate_guard = f"    if: always() && ({main_guard})\n"
+    assert aggregate_guard in aggregate and aggregate_guard in final
     assert "    name: game-gate\n" in final and "    needs: [scope, validate]\n" in final
     assert '        run: test "$LEGACY_VALIDATE" = "success"\n' in final
 

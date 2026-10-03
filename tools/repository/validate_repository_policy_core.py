@@ -41,12 +41,12 @@ EXPECTED_MERGE_GATE_TRIGGER_BLOCK = """on:
       - edited
 """
 EXPECTED_MERGE_GATE_SCOPE_JOB_SHA256 = (
-    "e07bc086f0000756e46be7cd2259e47c222a4aae7b64f1af9eabf4bd1329e0cd"
+    "ff75ac35780038e15ba648e99b8540ef474d2b34b093fe684c045dc302265bd4"
 )
 EXPECTED_MERGE_GATE_VALIDATE_JOB_SHA256 = (
-    "eeb3e5f3c8244d412096b770071c2e1757505d9f0f180b10f36f5b9597beab13"
+    "39687bada3f3d7e7a7185a47903c598e5fad6c202d98d56f0804ea703b381170"
 )
-EXPECTED_MERGE_GATE_FINAL_JOB_SHA256 = "3f521f187d0a9b8e998e9fa022a3a16e7b988ec5ba873cb2955562230043efaa"
+EXPECTED_MERGE_GATE_FINAL_JOB_SHA256 = "9c5223ecee21f441d85fec7995135e8361f0c711876810b5a076de28e010e032"
 EXPECTED_MERGE_GATE_LANES_JOB_SHA256 = "c8564e6c8ce3df2a9ea57fdf17306cc23d7350fd712a8f55bf2b0215e27caccd"
 EXPECTED_MERGE_GATE_ROUTING_CONTRACT_JOB_SHA256 = "3db16b5afec9a2786506e7558af09b298d878a0cb5b0a8b20748f4a3afaddbd6"
 EXPECTED_ROUTING_CONTRACT_VALIDATOR_BLOB = "ce2fc840f22fd75c0ccb067d9807698a87650f77"
@@ -429,7 +429,7 @@ def main() -> int:
         else:
             for fragment in (
                 "    name: game-gate\n",
-                "    if: always()\n",
+                "    if: always() && (github.event.pull_request.base.ref == 'main' || !github.event.pull_request.base.ref)\n",
                 "    needs: [scope, validate]\n",
                 "          LEGACY_VALIDATE: ${{ needs.validate.result }}\n",
                 "        run: test \"$LEGACY_VALIDATE\" = \"success\"\n",
