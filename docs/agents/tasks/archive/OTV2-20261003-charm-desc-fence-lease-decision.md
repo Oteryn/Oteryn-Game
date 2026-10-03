@@ -80,6 +80,12 @@ checklist item 3.
   - 4173613165: the FAMILIARS0 §5.1 restart rows distinguish a new session from a same-session
     continuation.
   All three are fixed in one push.
+- Round 2 on `ac14ba6da4976ff72b2cc3d03ae3cd634fa2460e` (D317 P1 round 2 of 2) had three findings,
+  all fixed in one push:
+  - P1 4173686199: FAMILIARS0 writes are also fenced by the RuntimeScopeAuthority ownership
+    generation, and a late write from a replaced owner is refused (§5 and a new §5.1 row);
+  - P2 4173686202: ANALYSERS0 advances the revision when a resync discards unsent facts;
+  - P2 4173686209: CHARM4 R5 states the cap as the room left to maximum mana.
 
 ## PR and closeout
 

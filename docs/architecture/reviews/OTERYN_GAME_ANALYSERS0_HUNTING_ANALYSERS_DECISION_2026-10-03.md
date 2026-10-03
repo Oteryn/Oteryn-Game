@@ -105,11 +105,15 @@ nothing.
   carries state.
 - **Loss after recovery.** When a snapshot arrives whose revision is greater than the revision of
   the last delta the client applied in this GameSession (0 before any delta), facts were skipped:
-  the client marks its totals incomplete, as for `dropped`. A snapshot with an equal revision
-  (nothing skipped, for example the initial one) marks nothing. No wire field is added; the
+  the client marks its totals incomplete, as for `dropped`. A resync or reconnect that discards
+  facts not yet sent advances the revision by 1 for that discard before its snapshot, so a
+  snapshot that follows a discard is always greater than the client's last applied revision. A
+  snapshot with an equal revision (nothing skipped or discarded, for example the initial one)
+  marks nothing. No wire field is added; the
   revision already carries the fact.
 - **Revision (FND-02 §15).** One cumulative, monotonic `uint64` per GameSession: 0 at the
-  session's initial snapshot, plus 1 per delta sent; never reset or reused at a resync snapshot or
+  session's initial snapshot, plus 1 per delta sent, plus 1 per resync or reconnect that discards
+  unsent facts; never reset or reused at a resync snapshot or
   a reconnect. The empty snapshot carries the current revision, and the next delta's
   `base_revision` equals it.
 - **Not dropped for size.** Unlike the presentation stream, a batch is never dropped for its

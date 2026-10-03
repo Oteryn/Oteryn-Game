@@ -125,7 +125,11 @@ one ordinary summon (R1).
   A return refused because the owner is in a lever boss room ends the familiar (§7): the row is
   written `familiar_remaining_ms = 0`, `open = false`, cooldown kept.
 - **Fencing and replay.** Every write is a compare-and-set on `revision` under the writer's
-  session generation; a write from an older generation is refused and changes nothing. The cast
+  session generation, and it passes the current FND-04 authority checks (DUR-02 §5), including the
+  current RuntimeScopeAuthority ownership generation of the writing runtime owner. A write from an
+  older session generation, or from a runtime owner that has been replaced (the same session
+  generation after process replacement, FND-04B §22), is refused and changes nothing. A
+  compare-and-set loser re-applies only after it passes both checks again. The cast
   write is part of the cast acquisition, so a retried cast command replays its first outcome and
   never writes the row twice.
 - The row is gameplay state, not a DUR-03 value. A missing row means no familiar and no cooldown.
@@ -142,7 +146,8 @@ Each case names one invariant. FAMILIAR-1 has one test per case, on PostgreSQL w
 | Same cast or return occurrence replayed with a different binding (spell, caster, placement) | direct | One occurrence has one outcome: the replay conflicts and writes nothing. |
 | Client-supplied remaining time, cooldown, generation or familiar creature | direct | Durable values come only from the row, the content definition and the session's own generation; nothing from the client is stored. The returning familiar is the caster's vocation familiar from content, never a named creature. |
 | Write from an older `session_generation` (late clean-end save, removal after a takeover) | direct | Refused by the generation fence; no column changes. |
-| Two writes of one generation race (timer removal and logout save) | direct, concurrent | The compare-and-set on `revision` admits one; the other re-reads and re-applies to the new row or becomes a no-op when the row is already closed; never two writes for one revision. |
+| Two writes of one generation race (timer removal and logout save) | direct, concurrent | The compare-and-set on `revision` admits one; the other re-reads, passes the session-generation and runtime-owner checks again, and re-applies to the new row or becomes a no-op when the row is already closed; never two writes for one revision. |
+| Late write from a replaced runtime owner (a clean-end save from the old process, after process replacement and the same-session recovery write) | direct, concurrent, PostgreSQL | The session generation is the same, so the RuntimeScopeAuthority ownership generation fences it: the write is refused, including on a compare-and-set retry, and the familiar never returns from it. |
 | Takeover: the new session's fenced load races the old session's clean-end save | reconciled vs direct, concurrent | The load raises the generation first; the old save is then stale and refused. If the old save commits first, the load sees `open = false` and returns the familiar (§7). |
 | Row `open = true` with the same generation, and the familiar is still in the running process (a reconnect inside one GameSession) | reconciled | Not a crash: no reconciliation write; the familiar continues. |
 | Row `open = true` with an older generation | reconciled | Crash: one write under the new generation sets remaining 0 and `open = false`; the cooldown is kept. |

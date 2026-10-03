@@ -114,7 +114,8 @@ is committed.
    Hook 5 runs only when the occurrence has an explicit mana drain greater than 0, and is rolled
    before the commit. On success the drain is not applied: at the drain's slot inside step 6,
    after the mana shield has taken its share, the character gains `mana_gained`, the amount the
-   drain would have taken at that slot, capped at maximum mana at that slot, as `InvertManaDrain`
+   drain would have taken at that slot, capped at the room left to maximum mana at that slot
+   (maximum minus current, after the shield), as `InvertManaDrain`
    says ("gained instead of lost"). There is no loss to compensate. Example: 100/100 mana, 80
    shield damage, a 20 drain inverted: the shield leaves 20, the inversion credits 20, ending at
    40.
@@ -179,8 +180,8 @@ Inversion never applies to it.
   only a Parry kill before Numb differs, and then Numb rolls nothing (`NoLivingTarget`).
 - **R5, Void Inversion: a) rolled before the commit, credited at the drain's slot inside it,
   replacing the loss** (`InvertManaDrain`, "instead of lost"); b) after the commit, with a
-  compensation. Recommendation and ruling: a). The credit is capped at the mana the character has
-  at the drain's slot, after the mana shield, so it is a real gain.
+  compensation. Recommendation and ruling: a). The credit is capped at the room left to maximum mana
+  at the drain's slot, after the mana shield (step 5), so it is a real gain and never overfills.
 - **R6, mixed occurrences: a) both hooks, each on its own component; mana-shield loss is never a
   drain**; b) exclude mixed occurrences from hook 5. Recommendation and ruling: a), the draws are
   independent and the shield redirects damage.
