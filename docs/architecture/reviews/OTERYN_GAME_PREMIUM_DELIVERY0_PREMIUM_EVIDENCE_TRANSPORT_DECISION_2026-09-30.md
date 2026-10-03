@@ -133,9 +133,10 @@ PREM-1b's client and test producer and PREM-P serve the same exchange.
   2. **Unsupported or downgraded semantics:** its `schema`, `producer_profile`, `product_id` or
      `product_version` is outside the compatibility pair PREM-1 records (§4), or its profile or
      version is older than one the account has already accepted (a downgrade). This applies only
-     to a complete envelope: every §4 field present with its baseline type and form. A response
-     missing any of them, or with a wrong type, is malformed (a failed pull) whatever its
-     `schema` or profile says, so a partial body never records the permanent marker.
+     to a complete, well-formed envelope: every §4 field present with its baseline type and
+     value form (enumerations, RFC 3339 timestamps, tokens, the closed `NONE` variant, the lease
+     and `refresh_after` bounds). A response that fails any of these is malformed (a failed pull)
+     whatever its `schema` or profile says, so such a body never records the permanent marker.
 
   Such a response is never accepted as evidence and never moves the high water. PREM-1 records a
   durable conflict marker on the account's fence row (§6) before any later benefit check, raises a
@@ -444,9 +445,10 @@ owned_paths:
    `authority_revision`, bounded columns without the payload or any credential; no update and no
    delete). Every §3.1 semantic failure writes both in one transaction before the outcome
    returns; a fence write failure quarantines as today. `Unsupported` is classified only after
-   the whole envelope passes the baseline field and type check (§3.1 item 2): today
-   `snapshot::validate` returns it before the strict parse, and PREM-1b moves that check after
-   it. Any conflict row denies Premium, and
+   the whole envelope passes every baseline type and value-form check (§3.1 item 2): today
+   `snapshot::validate` returns it before the strict parse, and PREM-1b moves the compatibility
+   comparison to the very end of `validate`, after the typed parse and every enumeration,
+   timestamp, token, closed-`NONE` and lease-form check. Any conflict row denies Premium, and
    the restart re-proof (§9 item 3) loads it before any benefit, alongside the existing
    `conflict_authority_revision`. No path clears it (§3.1 declared deferral).
 
@@ -456,7 +458,8 @@ wrong content type; redirect; timeout; TLS failure and an untrusted server; a 50
 `AUTHORITY_UNAVAILABLE` and a later success restores `CURRENT_AUTHORITY`; an older pull finishing
 after a newer failure does not restore it, and an older failed pull or quarantine finishing after
 a newer proof does not deny it; an incompatible `schema` or profile with a missing or mistyped
-baseline field is a recoverable failed pull that leaves no conflict or audit row; a conflict
+baseline field, or with a malformed value form (at least an unknown `schema` with a malformed
+RFC 3339 timestamp), is a recoverable failed pull that leaves no conflict or audit row; a conflict
 stays denied after successful pulls; one
 request in flight per account; admission does not wait on or fail from a pull; the exact
 producer-form `NONE` is accepted as Free and a `NONE` with any non-null interval, entitlement id or

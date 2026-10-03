@@ -32,7 +32,9 @@ precondition for allocating PREM-1b.
 
 - #1659 P1 4174238442: PREMIUM-DELIVERY-0 §3.1 item 2 and §11 scope item 7 classify `Unsupported`
   only for a complete envelope. A partial or mistyped body is a recoverable failed pull with no
-  durable conflict. A test is added.
+  durable conflict. A test is added. Review round 1 (Codex P1 4174298225): compatibility is
+  compared only after every baseline value-form check (enumerations, timestamps, tokens, closed
+  `NONE`, lease form), with a test for an unknown `schema` and a malformed timestamp.
 - #1659 P2 4174238447 and 4174238453: the acceptance record's outcome states the migration lease,
   and its `pr` field is 1659.
 - #1391 P2 4153900550: §11 scope item 3 ignores a failed pull or quarantine older than the latest
