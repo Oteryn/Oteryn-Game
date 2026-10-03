@@ -522,6 +522,17 @@ they contain no BURN or MINT, so §15 is unchanged. Each is one transaction with
 replayed by its operation occurrence, with one bank event carrying its item and value lines.
 `DUR03-RL-03` stays 0 for every existing shape.
 
+**Amendment (FORGE-1a, 2026-10-03; IMBUE-FORGE-0 §9).** Forge dust is the second non-item asset: an
+integer balance per Character (0 to `dust_limit`, the limit 100-225, `IMBFORGE0-RL-08`) in
+`game_character_forge_dust`, with an immutable ledger (`GAIN`, `SPEND`, `CONVERT`, `LIMIT_RAISE`)
+stored as BANK-0 §3, migration 0059. Each balance change has exactly one ledger entry in the same
+transaction, chained by `last_entry_id`; a gain above the limit credits up to the limit and records
+the lost part in its entry. FORGE-1a admits no shape and no forge operation: a dust entry is written
+inside the transaction of an admitted cause (PROF-SHAPE-1b's `ProficiencyCause` for `SPEND`,
+FORGE-CREATURE-1's dust on kill for `GAIN`) under that cause's TransactionId, receipt and admission,
+which each such child admits here. `CONVERT`, `LIMIT_RAISE` and `ForgeCause` are FORGE-1b's.
+`DUR03-RL-03` stays 0 for every existing shape.
+
 ## 19. World-scope conservation
 
 - each live ItemInstance stays within one WorldId value scope by default;

@@ -39,20 +39,22 @@ EXPECTED_MERGE_GATE_TRIGGER_BLOCK = """on:
       - reopened
       - synchronize
       - edited
+      - labeled
+      - unlabeled
 """
 EXPECTED_MERGE_GATE_SCOPE_JOB_SHA256 = (
-    "ff75ac35780038e15ba648e99b8540ef474d2b34b093fe684c045dc302265bd4"
+    "58f82007970f60d20cc4d6ea972d92c4aea1e00bef85838679bacc695c0e4f37"
 )
 EXPECTED_MERGE_GATE_VALIDATE_JOB_SHA256 = (
-    "39687bada3f3d7e7a7185a47903c598e5fad6c202d98d56f0804ea703b381170"
+    "397232e7fdd669c87004a4080e79928df95f019905f4e4e489f0e3033037981e"
 )
-EXPECTED_MERGE_GATE_FINAL_JOB_SHA256 = "9c5223ecee21f441d85fec7995135e8361f0c711876810b5a076de28e010e032"
+EXPECTED_MERGE_GATE_FINAL_JOB_SHA256 = "1669ece37d96a830a756d13868428a38acd72ed7723bcde5ce4325053098a8c7"
 EXPECTED_MERGE_GATE_LANES_JOB_SHA256 = "c8564e6c8ce3df2a9ea57fdf17306cc23d7350fd712a8f55bf2b0215e27caccd"
 EXPECTED_MERGE_GATE_ROUTING_CONTRACT_JOB_SHA256 = "3db16b5afec9a2786506e7558af09b298d878a0cb5b0a8b20748f4a3afaddbd6"
 EXPECTED_ROUTING_CONTRACT_VALIDATOR_BLOB = "ce2fc840f22fd75c0ccb067d9807698a87650f77"
-EXPECTED_MERGE_GATE_ATLAS_FULLWORLD_JOB_SHA256 = "0910d3ef6afed2e689c687d1c6692963336c4b737def32fea41bbb5c4c08eb40"
-EXPECTED_MERGE_GATE_NODE_BOOT_JOB_SHA256 = "3f59ad249da2e820f23495120e88f7456a63a47655810adfcf3345764bf68d68"
-EXPECTED_MERGE_GATE_SERVER_SEAM_JOB_SHA256 = "a62f892daddbbaa96f764ecd22ab0c2edf0084c4d40415d46d1dc12f00ecff4e"
+EXPECTED_MERGE_GATE_ATLAS_FULLWORLD_JOB_SHA256 = "50d310601f3c790c871ecf3f785fe4171c50101fe279e1481d230f334357a777"
+EXPECTED_MERGE_GATE_NODE_BOOT_JOB_SHA256 = "100f9ddd5667fc70e80aa06a10023abde8f5ea8b01f165ec56250d45f0763d5b"
+EXPECTED_MERGE_GATE_SERVER_SEAM_JOB_SHA256 = "74cff6521db83eb964d9e66a12bfa263d59d1a4b7ebf1619a066487abe50f43b"
 EXPECTED_MERGE_GROUP_GATE_BLOB = "860a684e5ec71f50ae899f9db36b7c07f9fca623"
 EXPECTED_POST_MERGE_RUST_SHA256 = "d942814a212cd1697ca02da71c17cd0bdf29589f557b80bd0fead2a88dfba5fb"
 EXPECTED_MERGE_GROUP_GATE_TOP_LEVEL_KEYS = [
@@ -379,7 +381,7 @@ def main() -> int:
             )
         if "workflow_dispatch:" in text:
             errors.append("merge gate must not execute pull-request code through workflow_dispatch")
-        if "  group: ${{ github.event.action == 'edited' && github.event.changes.base == null && format('merge-gate-edit-{0}-{1}', github.event.pull_request.number, github.run_id) || format('merge-gate-{0}', github.event.pull_request.number) }}\n" not in text:
+        if "  group: ${{ ((github.event.action == 'edited' && github.event.changes.base == null) || ((github.event.action == 'labeled' || github.event.action == 'unlabeled') && github.event.label.name != 'full-ci')) && format('merge-gate-edit-{0}-{1}', github.event.pull_request.number, github.run_id) || format('merge-gate-{0}', github.event.pull_request.number) }}\n" not in text:
             errors.append("merge gate metadata edits must not cancel product qualifications")
         scope_block = indented_yaml_mapping_block(text, "scope", 2)
         scope_digest = hashlib.sha256(scope_block.encode("utf-8")).hexdigest() if scope_block else None
@@ -455,6 +457,7 @@ def main() -> int:
             "git diff --check \"$EXPECTED_BASE\" \"$EXPECTED_HEAD\"",
             "Merge gate / Atlas fullworld source",
             "Merge gate / Rust policy and metadata",
+            "Merge gate / Rust changed-crate Clippy and unit tests",
             "Merge gate / Rust Linux workspace",
             "Merge gate / Rust Windows client",
             "Merge gate / Rust supply chain",

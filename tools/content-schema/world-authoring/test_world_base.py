@@ -1245,6 +1245,36 @@ class ConvertAndValidateTest(unittest.TestCase):
         errors = self.edit_palette(catalogue_first)
         self.assertTrue(any("has an Item record" in e for e in errors), errors)
 
+    def test_a_catalogue_record_with_an_item_pointer_uses_the_item_key(self):
+        # Q1b as resolve.rs applies it: a WorldObject that points at an Item is reached
+        # through that Item, so an unbound id takes the Item key, not the catalogue key
+        # (the WorldObject i35600 case after #1628).
+        root = Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, root)
+        directory, stem, _prefix = convert.CATALOGUES["world_object"]
+        (root / directory).mkdir(parents=True)
+        item = "oteryn:item.tibia.i1949"
+        (root / f"{directory}/{stem}00000-00000.json").write_text(
+            json.dumps(
+                {
+                    "records": [
+                        {
+                            "identity": {"key": self.OBJECT_KEY},
+                            "provenance": {"item_pointer": {"key": item}},
+                        }
+                    ]
+                }
+            )
+        )
+        objects = convert.world_object_keys(root)
+        self.assertEqual(objects, {1949: item})
+        out = convert.build(self.blobs, ITEMS_BY_SERVER_ID, world_object=objects)
+        palette = json.loads(out[validate.INDEX])["palette"]
+        entry = next(row for row in palette if row["source_item_id"] == 1949)
+        self.assertEqual(
+            entry, {"key": item, "provisional": False, "source_item_id": 1949}
+        )
+
     def test_provisional_id_with_a_catalogue_record_is_rejected(self):
         root = self.install(self.out)
         self.write_catalogue(root, "terrain", {1949: self.TERRAIN_KEY})
