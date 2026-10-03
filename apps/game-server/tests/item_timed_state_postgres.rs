@@ -22,7 +22,10 @@ pub mod foundation;
 #[path = "../src/native_admission_source/mod.rs"]
 pub mod native_admission_source;
 
-// Standalone target for local focused runs. The cases need only the path-loaded crate root
-// above, so a protected PostgreSQL wrapper can include the same file.
+#[allow(dead_code)]
+#[path = "support/bestiary_postgres_harness.rs"]
+mod bestiary_postgres_harness;
+// Standalone target for local focused runs. The cases need only the path-loaded crate root and
+// the harness above, so a protected PostgreSQL wrapper can include the same two files.
 #[path = "support/item_timed_state_postgres_cases.rs"]
 mod item_timed_state_postgres_cases;

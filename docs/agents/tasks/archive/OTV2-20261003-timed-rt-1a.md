@@ -50,12 +50,16 @@ them (TIMED-ITEM-0B §4, §5.2-§5.3, §6, §12, §14):
   never deleted or truncated, row and record proven by each other in the same physical
   transaction, values within the pinned definition, a deadline only on a lit item on a tile, a lit
   item in no container); grants as §4.
-- `durability::item_timed_state`: the closed `TimedItemCause`, the in-transaction plain checkpoint
-  (replay returns the record, a key committed by another write writes nothing), the row read and
-  the ambiguous-write record lookup.
+- `durability::item_timed_state`: the closed `TimedItemCause`; `commit_timed_checkpoint`, the plain
+  checkpoint under the holder's current gameplay fence (replay returns the record, a key committed
+  by another write writes nothing, a stale fence writes nothing); the row read and the
+  ambiguous-write record lookup.
 - `domain::timed_item`: live values, the lane (one write in flight, expiry keyed to the last
   committed revision, retry, ambiguous lookup and hold, unexpected revision), stop, and the actor's
-  live-item bound with the "all lanes empty" check for logout, handoff and death.
+  live-item bound with the "all lanes empty" check for logout, handoff and death (a stopping lane
+  or a pending expiry is never empty).
+- Codex round 1 (#1681): P1 4174557660 (fence evidence at the checkpoint boundary) and P1
+  4174557664 (a stopping lane counted as empty) fixed.
 - Registry rows `TIMEDITEM0B-RL-01`, `-02`, `-04`, `-05` with max and max+1 tests.
 
 Left to TIMED-RT-1b (after its dependencies): the Expire, SetDeadline, ClearDeadline and PutOut

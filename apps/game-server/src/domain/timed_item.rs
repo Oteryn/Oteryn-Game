@@ -219,10 +219,14 @@ impl TimedItemLane {
             && !matches!(self.in_flight, Some(InFlight::Held(_)))
     }
 
-    /// The lane has nothing in flight (logout, handoff and death settlement wait for it).
+    /// The lane has no write in flight and none still to issue: a stop has reached
+    /// [`LaneStep::Stopped`] and a pending expiry has committed (or the lane closed). Logout,
+    /// handoff and death settlement wait for it.
     #[must_use]
-    pub const fn is_empty(&self) -> bool {
+    pub fn is_empty(&self) -> bool {
         self.in_flight.is_none()
+            && self.state != LaneState::Stopping
+            && !(self.state == LaneState::Running && self.pending_expiry.is_some())
     }
 
     /// Spend one live charge (§7). Never written per spend: the next checkpoint commits it.
@@ -740,6 +744,8 @@ mod tests {
             )
             .expect("within RL-04");
         lanes.stop_all();
+        // Stopped but not yet issued: the final checkpoints are still owed.
+        assert!(!lanes.all_empty());
         let lane = lanes.get_mut(&[1; 16]).expect("present");
         let _ = lane.next_step(10, TX1);
         assert!(!lanes.all_empty());
@@ -748,7 +754,33 @@ mod tests {
             .expect("present")
             .on_outcome(LaneWriteOutcome::Committed, 11)
             .expect("in flight");
+        // The ring's stop committed but has not reported Stopped yet; the unchanged lane has
+        // not run its step either.
+        assert!(!lanes.all_empty());
+        assert_eq!(
+            lanes.get_mut(&[1; 16]).expect("present").next_step(12, TX2),
+            LaneStep::Stopped
+        );
+        assert_eq!(
+            lanes.get_mut(&[2; 16]).expect("present").next_step(12, TX2),
+            LaneStep::Stopped
+        );
         assert!(lanes.all_empty());
+    }
+
+    #[test]
+    fn a_pending_expiry_keeps_the_lane_nonempty_until_it_commits() {
+        let mut lane = TimedItemLane::live_from_row(0, values(Some(1), None), 0);
+        assert!(lane.spend_charge());
+        assert!(!lane.is_empty());
+        lane.stop();
+        assert!(!lane.is_empty());
+        let expiry = write_of(lane.next_step(1, TX1));
+        assert!(matches!(expiry.kind, LaneWriteKind::Expire { .. }));
+        lane.on_outcome(LaneWriteOutcome::Committed, 2)
+            .expect("in flight");
+        assert!(lane.is_empty());
+        assert_eq!(lane.next_step(3, TX2), LaneStep::Expired);
     }
 
     #[test]

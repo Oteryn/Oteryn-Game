@@ -1,22 +1,33 @@
 //! Timed-item rows and their write records (TIMED-RT-1a, migration 0054; decision
 //! `TIMEDITEM0B-RUNTIME-CHARGES-AND-DURATION-V1` §4, §5.2, §6.3 and §12, TIMED-ITEM-0 §4).
 //!
-//! A hosting runtime runs a live item's checkpoint ([`checkpoint_in_transaction`]) inside its
-//! own one-item transaction, after its gameplay fence locked the holder's Character root (the
-//! lane of `domain::timed_item` decides when). The write is keyed by (item, expected revision):
-//! it inserts the write record, then inserts the row at revision 1 or moves it up by one, and
-//! never commits, so any error leaves the caller's transaction to roll back. Lock order (§6.3):
-//! the caller's fences and `character_root`, the item's lifecycle row, the timed row. A replay
-//! of a committed key returns its recorded result; a key committed by another write writes
-//! nothing. [`find_timed_write`] is the lane's lookup of an ambiguous write (§5.2).
+//! A hosting runtime commits a live item's checkpoint with
+//! [`DurabilityRoot::commit_timed_checkpoint`] when the lane of `domain::timed_item` issues one.
+//! It is one one-item transaction under the holder's current gameplay fence (the R7 P03 XP
+//! writer's own: recovery fence, admission relation locks, the live FND-04 session, lease and
+//! scope, the scope assignment held by the current node incarnation, and the locked live root at
+//! the expected CharacterRevision), so a stale runtime writes nothing. The write is keyed by
+//! (item, expected revision): it inserts the write record, then inserts the row at revision 1 or
+//! moves it up by one. It does not advance the CharacterRevision. Lock order (§6.3): the fences
+//! and `character_root`, the item's lifecycle row, the timed row. A replay of a committed key
+//! returns its recorded result; a key committed by another write writes nothing.
+//! [`find_timed_write`] is the lane's lookup of an ambiguous write (§5.2).
 //!
 //! 0054 admits the checkpoint only. The other [`TimedItemCause`] variants are typed for their
 //! records and are written by the transactions that admit their TRANSFORM, BURN and move lines.
 
-use super::DurabilityError;
-use super::character_progression::{numeric_u64, uuid_text};
+use super::character_authority::{ReconciledCharacterAuthority, assert_recovery_fence};
+use super::character_progression::{
+    CharacterProgressionError, CurrentCharacterGameplayFence, assert_gameplay_fence, numeric_u64,
+    uuid_text,
+};
+use super::db::{
+    begin_semantic_transaction, commit_semantic_transaction, lock_admission_relations,
+};
 use super::item_mint::TypedDefinitionRef;
 use super::item_mint_audit::check_uuid_v7;
+use super::runtime_scope_assignment::NodeIncarnationProof;
+use super::{DurabilityError, DurabilityRoot};
 use crate::domain::CharacterId;
 use crate::domain::timed_item::{ExpireReason, TimedValues};
 use sqlx::Row;
@@ -129,6 +140,10 @@ pub enum TimedWriteOutcome {
 #[derive(Debug)]
 pub enum TimedWriteError {
     InvalidInput,
+    /// The holder's current gameplay fence does not hold; nothing was written.
+    AuthorityRejected,
+    /// The holder's root is not at the fence's expected CharacterRevision.
+    CharacterRevisionMismatch,
     /// The holder does not hold the item, or the item is not live at the definition.
     NotHeld,
     /// The row is at another revision (§5.2 "Unexpected revision"); nothing was written.
@@ -158,6 +173,10 @@ impl std::fmt::Display for TimedWriteError {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::InvalidInput => formatter.write_str("invalid timed write input"),
+            Self::AuthorityRejected => formatter.write_str("timed write authority rejected"),
+            Self::CharacterRevisionMismatch => {
+                formatter.write_str("timed write CharacterRevision mismatch")
+            }
             Self::NotHeld => formatter.write_str("timed item is not held live by the holder"),
             Self::RevisionMismatch { .. } => formatter.write_str("timed row revision mismatch"),
             Self::NotAStoreableChange => formatter.write_str("timed values are not a change"),
@@ -236,14 +255,60 @@ pub async fn find_timed_write(
     }))
 }
 
-/// Store a live item's checkpoint inside the caller's fenced one-item transaction (see the
-/// module documentation). Every error requires the caller to roll back.
-pub async fn checkpoint_in_transaction(
-    connection: &mut PgConnection,
-    holder: CharacterId,
-    request: &TimedCheckpointRequest,
-) -> Result<TimedWriteOutcome> {
-    let full = request.definition.full;
+impl DurabilityRoot {
+    /// Commit a live item's checkpoint under its holder's current gameplay fence (see the module
+    /// documentation). An exact replay of a committed key returns its result without
+    /// reacquiring gameplay authority; every refusal writes nothing.
+    pub async fn commit_timed_checkpoint(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        request: TimedCheckpointRequest,
+    ) -> Result<TimedWriteOutcome> {
+        validate_checkpoint(&request)?;
+        let recovery = authority
+            .record_for(self)
+            .map_err(|_| TimedWriteError::AuthorityRejected)?;
+        let node = node.clone();
+        self.try_issue_semantic_pass()?
+            .run(move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    assert_recovery_fence(&mut tx, &recovery).await?;
+                    lock_admission_relations(&mut tx).await?;
+                    match replay(&mut tx, &request).await {
+                        Ok(Some(outcome)) => {
+                            commit_semantic_transaction(tx, deadline).await?;
+                            return Ok(Ok(outcome));
+                        }
+                        Ok(None) => {}
+                        Err(TimedWriteError::Unavailable(error)) => return Err(error),
+                        Err(error) => return Ok(Err(error)),
+                    }
+                    match assert_gameplay_fence(&mut tx, &fence, &node).await? {
+                        Ok(_) => {}
+                        Err(CharacterProgressionError::CharacterRevisionMismatch) => {
+                            return Ok(Err(TimedWriteError::CharacterRevisionMismatch));
+                        }
+                        Err(CharacterProgressionError::Unavailable(error)) => return Err(error),
+                        Err(_) => return Ok(Err(TimedWriteError::AuthorityRejected)),
+                    }
+                    match write_checkpoint(&mut tx, fence.character_id, &request).await {
+                        Ok(outcome) => {
+                            commit_semantic_transaction(tx, deadline).await?;
+                            Ok(Ok(outcome))
+                        }
+                        Err(TimedWriteError::Unavailable(error)) => Err(error),
+                        Err(error) => Ok(Err(error)),
+                    }
+                })
+            })
+            .await?
+    }
+}
+
+fn validate_checkpoint(request: &TimedCheckpointRequest) -> Result<()> {
     let definition = &request.definition.definition;
     if check_uuid_v7(&request.item_instance_id).is_err()
         || check_uuid_v7(&request.transaction_id).is_err()
@@ -251,40 +316,51 @@ pub async fn checkpoint_in_transaction(
         || !(1..=512).contains(&definition.production_key.len())
         || !(1..=512).contains(&definition.revision_ref.len())
         || request.expected_revision == u64::MAX
-        || !within(request.values, full)
+        || !within(request.values, request.definition.full)
     {
         return Err(TimedWriteError::InvalidInput);
     }
-    let cause = TimedWriteCause::Timed(TimedItemCause::Checkpoint);
-    if let Some(stored) = find_timed_write(
+    Ok(())
+}
+
+/// The recorded result of an exact replay, a conflict for a key committed by another write, or
+/// `None` for a new key.
+async fn replay(
+    connection: &mut PgConnection,
+    request: &TimedCheckpointRequest,
+) -> Result<Option<TimedWriteOutcome>> {
+    let Some(stored) = find_timed_write(
         connection,
         &request.item_instance_id,
         request.expected_revision,
     )
     .await?
+    else {
+        return Ok(None);
+    };
+    if stored.cause == TimedWriteCause::Timed(TimedItemCause::Checkpoint)
+        && stored.transaction_id == request.transaction_id
+        && stored.after == Some(request.values)
     {
-        return if stored.cause == cause
-            && stored.transaction_id == request.transaction_id
-            && stored.after == Some(request.values)
-        {
-            Ok(TimedWriteOutcome::AlreadyCommitted {
-                revision: request.expected_revision + 1,
-            })
-        } else {
-            Err(TimedWriteError::ConflictingWrite)
-        };
+        Ok(Some(TimedWriteOutcome::AlreadyCommitted {
+            revision: request.expected_revision + 1,
+        }))
+    } else {
+        Err(TimedWriteError::ConflictingWrite)
     }
+}
 
-    // The caller holds this lock already; taking it again proves the holder's root is live.
-    let root = sqlx::query(
-        "SELECT 1 FROM game_character_roots \
-          WHERE character_id = encode($1,'hex')::uuid AND lifecycle = 1 FOR UPDATE",
-    )
-    .bind(holder.as_bytes().as_slice())
-    .fetch_optional(&mut *connection)
-    .await?;
-    if root.is_none() {
-        return Err(TimedWriteError::NotHeld);
+/// The checkpoint body, after the fence locked `holder`'s root in this transaction.
+async fn write_checkpoint(
+    connection: &mut PgConnection,
+    holder: CharacterId,
+    request: &TimedCheckpointRequest,
+) -> Result<TimedWriteOutcome> {
+    let full = request.definition.full;
+    let definition = &request.definition.definition;
+    let cause = TimedWriteCause::Timed(TimedItemCause::Checkpoint);
+    if let Some(outcome) = replay(connection, request).await? {
+        return Ok(outcome);
     }
     let item = sqlx::query(
         "SELECT i.definition_family, i.definition_production_key, i.definition_revision_ref, \
