@@ -18,9 +18,9 @@ SCHEMA = HERE / "imbuement.schema.json"
 EVIDENCE_PINS = {
     "owner-authoring-policy.json": "c71b9351980fe70b8a83aafcfcca3e03a1ff9445427fedd842214ee89ae73079",
     "global-research-closure.json": "48bdda9e20663cbb46c3fdaa631cb9de5807aa1ae1ef8f8f15c8333abe77440f",
-    "imbuement-bindings.json": "e9b3c4355a5db835af150c125fa3204f4bd6e674ef9e3b2d52383bac81f21ebc",
+    "imbuement-bindings.json": "47255acc8ca5f2c75d73aae29c6c984e2a8a03967c179fa95f0fe06465383277",
     "imbuement-access.json": "c05984cb8f0ac0e41b4f8bebd7bc2c93be24ea3cbbb86c0d95859e0a8a917f2d",
-    "imbuement-eligibility.json": "4a9d7b93ea2a704f40e1f3cd35ef6b1686ed917457926ca9d5c359c9cd46586e",
+    "imbuement-eligibility.json": "c737e2cf41db6d5fe5434006ffb3948bcb5ecd3fc478c3c78ab14134cf2a0d11",
     "global-rules-evidence.json": "91555552462b5f78b0cb4253522fcacc30ab5601b7127c13ea7eab26b21930af",
     "imbuement-combat.json": "39e8eaa16f7c1cd8358d70e620d23644a728c91a85a70ff9eb1659aadbe524d2",
     "crystal-imbuements-evidence.json": "2a5723725bd1046e36dc54453ec836810f2b1e972a05d4886eeebeafefbe45fe",

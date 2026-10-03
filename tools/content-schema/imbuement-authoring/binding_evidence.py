@@ -188,7 +188,7 @@ def build() -> dict:
             "Basic, Intricate and Powerful scrolls all exist in this pinned client; none are inferred from ID ranges.",
             "Primary client name absence for world shrines is qualified by canonical and revisioned wiki names.",
             "Abandoned Imbuing Shrine items 25101/25102 are constructions and excluded from usable shrine variants.",
-            "Item materializable=false is preserved; this evidence binds identity without activating gameplay definitions.",
+            "Canonical Item materializable and physical flags are preserved as authored; this evidence binds identity without changing those flags or activating imbuement gameplay.",
         ],
     }
 

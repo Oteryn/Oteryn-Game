@@ -74,3 +74,15 @@ on the frozen exact head.
 Independent exact-head review and CI evidence are recorded in the PR/#162 after
 freeze. This document cannot contain its own commit SHA. No merge or activation
 is claimed by the data import. See `server-data-import.md` for reproducible commands.
+
+## D312 reconciliation
+
+The owner routed canonical-binding drift back to the imbuement lane on 2026-10-03.
+156 recipe/scroll/utility/shrine Items and 72 cumulative recipe/tier rows were
+compared against accepted main. Four Items have real materialization/physical/stack
+enrichment; recipe identities and quantities are unchanged. Eligibility regeneration
+changes canonical fingerprints, not source-selected slots/types/tiers. Preserve
+accepted main fields and the workflow union, then regenerate both evidence packets,
+their two EVIDENCE_PINS and the catalogue/ruleset/lock cascade. Final publication and
+qualification must follow the content carrier (#1599+#1630+#1433); the integration
+writer retains sole remote-branch ownership until transferred by the control plane.

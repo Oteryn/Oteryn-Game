@@ -1369,7 +1369,7 @@
     "Petrified Scream": {
       "evidence": {
         "canonical": {
-          "definition_sha256": "70e83d6216d666999b70c08087ef2cf53d82c554c500adbab3d47a5f688f0b2b",
+          "definition_sha256": "13c4a8c539fcffb8920e81b69014e2b9bfe569f5fc9512145e0cce348835c1f6",
           "name": "petrified scream",
           "path": "content/items/definitions/items-00000-00499.json"
         },
@@ -2041,7 +2041,7 @@
     "Vampire Teeth": {
       "evidence": {
         "canonical": {
-          "definition_sha256": "42b56511544262aeb686a0520a5ea3ec7e0a01ce5a185be2148830d1fb0c95b6",
+          "definition_sha256": "6f5d4b3f5fb5eb08328897e8f334c3a638b698362d6a460b34486baea5379fcc",
           "name": "vampire teeth",
           "path": "content/items/definitions/items-33500-33999.json"
         },
@@ -2332,7 +2332,7 @@
     "Basic, Intricate and Powerful scrolls all exist in this pinned client; none are inferred from ID ranges.",
     "Primary client name absence for world shrines is qualified by canonical and revisioned wiki names.",
     "Abandoned Imbuing Shrine items 25101/25102 are constructions and excluded from usable shrine variants.",
-    "Item materializable=false is preserved; this evidence binds identity without activating gameplay definitions."
+    "Canonical Item materializable and physical flags are preserved as authored; this evidence binds identity without changing those flags or activating imbuement gameplay."
   ],
   "schema": "OTERYN_IMBUEMENT_ITEM_BINDINGS/v1",
   "scroll_bindings": {
@@ -4757,7 +4757,7 @@
     "gold_token": {
       "evidence": {
         "canonical": {
-          "definition_sha256": "bebbca8566af96ba9440daa453bce059f186621aab62cf2b9c7f74008d843140",
+          "definition_sha256": "c30a123ff3dc972c27f3f77ab1deb91724c4b1cfecea017f1964199320025810",
           "name": "gold token",
           "path": "content/items/definitions/items-11500-11999.json"
         },
@@ -4789,7 +4789,7 @@
     "heavy_old_tome": {
       "evidence": {
         "canonical": {
-          "definition_sha256": "ded0be9b6b220293aeec85b069f4813c839e69a6369a887f3128a49c3915188a",
+          "definition_sha256": "33acbc99b863426dc2876a626e18096a3db2279fa7fbcdeb0ad8f6fee3aeaf9c",
           "name": "heavy old tome",
           "path": "content/items/definitions/items-12500-12999.json"
         },

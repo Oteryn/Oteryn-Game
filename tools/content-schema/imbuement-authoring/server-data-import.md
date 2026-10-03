@@ -12,6 +12,16 @@ The source is the reviewed authoring snapshot from PR #1438, head
 The import checks current canonical Item identities and the captured client evidence;
 it does not claim a new internet observation on the import date.
 
+D312 reconciliation (2026-10-03): canonical binding digests are regenerated against
+accepted content after the content carrier. The original research snapshot remains
+the reference for recipes and selected eligibility; current Item enrichment does
+not become a new Global observation. Vampire Teeth, Petrified Scream, Heavy Old Tome
+and Gold Token acquired materialization/physical/stack facts on main. Their named
+identities and imbuement recipe/scroll roles remain unchanged. Eligibility replay
+also refreshes canonical definition fingerprints without changing selected slots
+or allowed types/tiers. Re-run generation on the actual post-carrier base before
+freezing; earlier-base digests are preparation evidence only.
+
 - `catalogue.json`: all 24 families / 72 tiers, effects, cumulative material recipes,
   scroll identities, fees and duration, with source-qualified rules.
 - `equipment.json`: 627 bound type/tier profiles plus 36 held observations.
