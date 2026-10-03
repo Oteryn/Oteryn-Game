@@ -41,10 +41,11 @@ EXPECTED_MERGE_GATE_TRIGGER_BLOCK = """on:
       - edited
 """
 EXPECTED_MERGE_GATE_SCOPE_JOB_SHA256 = (
-    "e07bc086f0000756e46be7cd2259e47c222a4aae7b64f1af9eabf4bd1329e0cd"
+    "4b13891aa454808626085b962c0070324635abffef23be44102cf41d977fd8e3"
 )
+EXPECTED_MERGE_GATE_EVENT_JOB_SHA256 = "1dbb4e35e1f5ea0b36c190f6e9ed95af6c19fee97857c0731e314ec5d689726e"
 EXPECTED_MERGE_GATE_VALIDATE_JOB_SHA256 = (
-    "eeb3e5f3c8244d412096b770071c2e1757505d9f0f180b10f36f5b9597beab13"
+    "604b57c709f41f5b60ee92c6f4be0bd407f7579307e9ec0bf91e631d37106a5c"
 )
 EXPECTED_MERGE_GATE_LANES_JOB_SHA256 = "c8564e6c8ce3df2a9ea57fdf17306cc23d7350fd712a8f55bf2b0215e27caccd"
 EXPECTED_MERGE_GATE_ROUTING_CONTRACT_JOB_SHA256 = "3db16b5afec9a2786506e7558af09b298d878a0cb5b0a8b20748f4a3afaddbd6"
@@ -377,6 +378,12 @@ def main() -> int:
             )
         if "workflow_dispatch:" in text:
             errors.append("merge gate must not execute pull-request code through workflow_dispatch")
+        event_block = indented_yaml_mapping_block(text, "classify_event", 2)
+        event_digest = hashlib.sha256(event_block.encode("utf-8")).hexdigest() if event_block else None
+        if event_digest != EXPECTED_MERGE_GATE_EVENT_JOB_SHA256:
+            errors.append("merge gate event classifier must exactly match the reviewed metadata-only event contract")
+        if "  group: ${{ github.event.action == 'edited' && github.event.changes.base == null && format('merge-gate-edit-{0}-{1}', github.event.pull_request.number, github.run_id) || format('merge-gate-{0}', github.event.pull_request.number) }}\n" not in text:
+            errors.append("merge gate metadata edits must not cancel product qualifications")
         scope_block = indented_yaml_mapping_block(text, "scope", 2)
         scope_digest = hashlib.sha256(scope_block.encode("utf-8")).hexdigest() if scope_block else None
         if scope_digest != EXPECTED_MERGE_GATE_SCOPE_JOB_SHA256:
@@ -424,9 +431,9 @@ def main() -> int:
             errors.append("merge gate must publish the stable game-gate aggregate")
         else:
             for fragment in (
-                "    name: game-gate\n",
-                "    if: always()\n",
-                "    needs: validate\n",
+                "    name: ${{ needs.classify_event.outputs.metadata_only == 'true' && 'Merge gate / metadata-only edit' || 'game-gate' }}\n",
+                "    if: always() && needs.classify_event.outputs.metadata_only != 'true'\n",
+                "    needs: [classify_event, validate]\n",
                 "          LEGACY_VALIDATE: ${{ needs.validate.result }}\n",
                 "        run: test \"$LEGACY_VALIDATE\" = \"success\"\n",
             ):
