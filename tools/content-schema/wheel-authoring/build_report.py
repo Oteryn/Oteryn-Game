@@ -23,6 +23,7 @@ def build_report():
 <h1>Wheel of Destiny — schemat referencyjny</h1>
 <p>5 profesji · 180 pól · Dedication, Conviction, Revelation · Gem Atelier.
 Dane są kandydatem do authoringu. Wdrożenie efektów w silniku i assety klienta wymagają osobnej integracji.</p>
+<p><a href="runtime-delivery-audit.md">Audyt dostarczenia Wheel/Gem</a> · <a href="samples/item-delivery-reference.json">Dowody przedmiotów, ofert i ikon</a>. Natywne moduły gry pozostają niekompletne; konflikt drugiego slotu Basic i pozostałe granice admission są zapisane w wyborze źródeł.</p>
 <label>Profesja <select id="vocation"></select></label><label>Szukaj <input id="search"></label>
 <div id="revelations" class="grid"></div><h2>Pola koła</h2>
 <table><thead><tr><th>Slot / domena / limit</th><th>Dedication za punkt</th><th>Conviction po wypełnieniu</th><th>Ikony</th></tr></thead><tbody id="slots"></tbody></table>

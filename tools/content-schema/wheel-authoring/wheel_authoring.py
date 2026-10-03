@@ -24,6 +24,9 @@ BOUNDED_PERCENT_KINDS = ('critical_hit_chance', 'momentum_chance', 'rune_trigger
 def parameter_value_schema(kind, unit):
     result={'type':'integer' if unit in COUNT_UNITS else 'number','minimum':0}
     if kind in BOUNDED_PERCENT_KINDS:result['maximum']=100
+    if kind=='missing_health_step':
+        result.pop('minimum')
+        result['exclusiveMinimum']=0
     return result
 def finite_json(value):
     if isinstance(value,float) and not math.isfinite(value):raise ValueError('NON_FINITE_NUMBER')
@@ -132,10 +135,19 @@ def build():
                 stage['unresolved_parameters']=[reason for reason in stage['unresolved_parameters']
                     if not (('affected-tile' in reason and stage['area_reference']) or
                             ('duration' in reason and extra and extra['stage']==stage['stage'] and extra['kind']=='duration_increase'))]
+                selected=parameters.get('description_overrides',{}).get(conviction['key'],{})
+                stage['reference_text']=selected.get('augment_stages',{}).get(str(stage['stage']),stage['reference_text'])
+            selected=parameters.get('description_overrides',{}).get(conviction['key'],{})
+            conviction['reference_description']=selected.get('reference_description',conviction['reference_description'])
             slots.append({'state_slot':top['state_slot'],'dedication':dedication,'dedication_icon':icon('dedication',slot['dedication']['id']),'conviction':conviction})
         revelations=[]
         for rev in original['revelations']:
             info=rev['info'];descriptions=info['LongInfoPerLevel']
+            replacements=parameters.get('description_overrides',{}).get(slug(info['Name']),{}).get('revelation_replacements',{})
+            descriptions=dict(descriptions)
+            for level,text in descriptions.items():
+                for before,after in replacements.items():text=text.replace(before,after)
+                descriptions[level]=text
             revelations.append({'domain':DOMAINS[rev['quarter']],'key':slug(info['Name']),'name':name(info['Name']),'source_info_id':rev['id'],'behavior_rules':parameters['revelation_behaviors'][slug(info['Name'])],'area_reference':parameters['revelation_area_references'][slug(info['Name'])],'stage_zero_description':clean(descriptions['0']),'stages':[{'stage':i,'minimum_domain_points':threshold,'reference_description':clean(descriptions[str(i)]),'numeric_effects':[{'kind':e['kind'],'value':e['values'][i-1],'unit':e['unit']} for e in parameters['revelations'][slug(info['Name'])]]} for i,threshold in [(1,250),(2,500),(3,1000)]],'parameter_state':'REFERENCE_PARAMETERS_CAPTURED','icon':icon('revelation',rev['id'])})
         gems=original['gems'];vessels=raw['gem_library']['vessels']
         vocations[voc]={'gem_family':parameters['gem_families'][voc],'resonance_slots':{domain:[top['state_slot'] for top,entry in zip(topology,slots,strict=True) if top['domain']==domain and entry['conviction']['category']=='vessel_resonance'] for domain in DOMAINS.values()},'slots':slots,'revelations':revelations,'gem_names':{q:vessels['GemNames'][str(i)][voc] for i,q in enumerate(('lesser','regular','greater'))},'basic_mods_position_1':[m['id'] for m in gems['basic_mods_position_1']],'basic_mods_position_2':[m['id'] for m in gems['basic_mods_position_2']],'supreme_mods':gems['supreme_mod_ids']}
@@ -305,6 +317,8 @@ def validate(candidate, previous=None, previous_bytes=None):
             require(len(set(reductions))==1,'COOLDOWN_GRADES_REQUIRE_MOMENTUM')
     loot=gems['loot_reference']
     require(loot['roll_denominator']>0,'LOOT_DENOMINATOR')
+    require([(q['quality'],q['maximum_trials'],q['stop_on_first_failure']) for q in loot['per_quality']]==
+        [('lesser',2,True),('regular',2,True),('greater',1,True)],'LOOT_TRIAL_POLICY')
     for quality in loot['per_quality']:
         require(all(0<=chance<=loot['roll_denominator'] for chance in quality['chance_by_category'].values()),'LOOT_CHANCE_BOUNDS')
     # Reference identities, placement, complete effect shapes and policies must agree
@@ -395,6 +409,10 @@ def validate_evidence(candidate, candidate_bytes, evidence_path=None):
         require(reference_binding['sha256']==hashlib.sha256((ROOT/reference_binding['file']).read_bytes()).hexdigest(),'EVIDENCE_REFERENCE_DIGEST')
     validate_manifest(read(ROOT/'samples/client-icon-manifest.json'),candidate,candidate_bytes)
     validate_selection(candidate)
+    from verify_official_perks import validate_official_perks
+    validate_official_perks(candidate)
+    from verify_atelier_reference import validate_atelier_reference
+    validate_atelier_reference(candidate)
     require(not audit['runtime_admitted'] and not audit['live_global_parity_confirmed'] and not evidence['live_verification']['live_global_parity_confirmed'],'EVIDENCE_ADMISSION')
     if candidate['verification']['live_website_verified']:
         observations={o['key']:o for o in audit['http_observations']}

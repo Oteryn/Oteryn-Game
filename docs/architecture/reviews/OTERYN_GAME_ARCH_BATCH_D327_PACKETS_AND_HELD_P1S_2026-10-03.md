@@ -208,6 +208,8 @@ Tests:
 - a death chain of XP then Bestiary;
 - the Bestiary retry-once path;
 - XP, death, charm and monk each fail closed with no retry;
+- build and proficiency each fail closed with no retry, in their PostgreSQL case files (review
+  4174254492 on #1661, PREM-DELIVERY-0A);
 - a bypass writer is caught by the structural test.
 
 Validation: the same as §1.1, including the durability Postgres cases.

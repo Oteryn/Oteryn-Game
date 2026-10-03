@@ -3,7 +3,7 @@
   "target_date": "2026-09-27",
   "runtime_admitted": false,
   "live_global_parity_confirmed": false,
-  "spell_input_sha256": "fc1680a45bf0d28a71b7f16b700146a4e804119f39a771cf9cf8af93addf673c",
+  "spell_input_sha256": "6f0149fb6e072c1abe2a07a3b4ae65c125dd82fbc823d2a70bbf042c6aaba834",
   "primary_sources": {
     "official_news": {
       "8783": {
@@ -78,26 +78,38 @@
           "Wrath of Nature"
         ]
       }
+    },
+    "official_planner": {
+      "url": "https://www.tibia.com/community/?subtopic=wheelofdestinyplanner&code=M0Y2AgDP4jAQA",
+      "observed_on": "2026-10-01",
+      "field": "MediumPerkInfos.46.Aug2Info",
+      "value_text": "+60% Base Damage",
+      "library_url": "https://static.tibia.com/javascripts/wheelofdestiny/SkillwheelStringsJsonLibrary.json?version=8425497eb1aa03a8010468c21a5da32f",
+      "library_sha256": "a5a50b3cc214eae9c28d6248cd9b1a33921544b847a7d48455f4063bdee5d893",
+      "method": "NORMAL_HTTPS_AND_REMOTE_CHROME_PLAYWRIGHT_CDP",
+      "scope": "Only the Mystic Repulse II row receives an Oct1 official-planner correction; other rows retain their recorded target-date sources. No runtime or full Global-parity claim."
     }
   },
-  "selection_policy": "Existing project snapshot: released official news > captured Fandom at target date > Canary hypothesis. BR wiki is separately dated secondary corroboration. This is not an Oct 1 Global parity claim.",
+  "selection_policy": "Released official news, with later changes superseding earlier values; current official Tibia.com planner for directly exposed values not superseded by official news; captured EnglishWiki and Canary only when official evidence is absent. The Oct1 authoring repair preserves raw conflicting observations and does not grant runtime or complete Global parity.",
   "mystic_repulse_ii": {
-    "selected_percent": 40,
-    "primary_revision": 1206174,
-    "primary_timestamp": "2026-09-14T01:41:28Z",
+    "selected_percent": 60,
     "secondary_br_percent": 15,
     "secondary_br_revision": 443774,
     "secondary_br_approved_on": "2026-09-02",
     "planner_percent": 60,
-    "decision": "40 confirmed by explicit English TibiaWiki Conviction r1206174 row under architect FORMULA ruling; BR15/planner60 remain corroboration/conflict evidence only."
+    "decision": "Owner-directed authoring repair: current official Tibia.com planner +60% selected; prior EnglishWiki1206174 +40% and BR443774 +15% are retained as conflicts, not higher-priority authority.",
+    "primary_source": "https://www.tibia.com/community/?subtopic=wheelofdestinyplanner&code=M0Y2AgDP4jAQA",
+    "previous_english_wiki_percent": 40,
+    "previous_english_wiki_revision": 1206174,
+    "previous_english_wiki_timestamp": "2026-09-14T01:41:28Z"
   },
   "great_fire_wave_i": "Both +15 critical extra damage and +10 critical chance selected from the existing project spell capture.",
   "flurry_of_blows_i": "Select AREA_GREATER_FLURRY_OF_BLOWS. Planner range +1 is preserved as an unselected cast-range hypothesis.",
-  "accepted_atelier_parameters": "WHEEL-GEM-0 already selects candidate fees/grades and a PARITY_PENDING 250 cap. No new owner decision is needed to populate authoring.",
+  "accepted_atelier_parameters": "Owner correction2026-10-01: Supreme II->III12M gold +15Greater Fragments; cap225 retained from merged#1472. Reference-only; no runtime admission.",
   "dedication_reconciliation": "Reference capture selects mitigation +0.075 percentage points per point. Older resistance wording belongs to WHEEL-0 owner reconciliation before runtime admission.",
   "browser_research": "samples/browser-source-audit.json",
   "unique_conviction_selections": {
-    "battle_healing": "official:8833 selects +10% healing with shield multiplier 3; planner multiplier 2 retained in raw capture.",
+    "battle_healing": "Official8872 (2026-07-07) reduces the shield multiplier from3to2, superseding8833. Selected healing bonus10%, doubled with shield20%; current official planner agrees.",
     "focus_mastery": "official:8833 and Fandom:1206174 select focus-spell group cooldown -2 s, not the next damaging spell primary cooldown; Sorcerer targets Hell's Core and Rage of the Skies.",
     "guiding_presence": "Official8833 full mantra share100%; official8944/EnglishWiki1206174 literal party+33%. EnglishWiki gives no arithmetic; pinnedCanary99902524 party.cpp308-321 implements mantra sharing but combat.cpp824-835/game.cpp210-223 has no Guiding+33 bonus. Arithmetic/rounding/self-copy PARITY_PENDING; runtime unadmitted; no owner gate.",
     "runic_mastery": "Fandom:1206174 explicitly applies the percentage bonus to base magic level, for that specific rune effect only."
@@ -105,17 +117,80 @@
   "atelier_conflicts": {
     "selected_project": 12000000,
     "fandom_1151969": 12500000,
-    "state": "CANDIDATE_12M_RETAINED_UNTIL_ARCHITECT_WHEEL_GEM0_AMENDMENT; REFERENCE_SELECTION_12_5M"
+    "amendment_1472": 12500000,
+    "state": "OWNER_CORRECTION_12M_15_GREATER_FRAGMENTS_SELECTED; ARCHITECT_DECISION_SYNC_PENDING"
   },
   "architect_ruling": {
     "reference": "https://github.com/Oteryn/Oteryn-Game/issues/162#issuecomment-5933264015",
-    "formula_precedence": "official > English TibiaWiki > pinned Canary; BR/planner corroboration only",
-    "gem_price_cap_application": "DEFERRED_BY_COORDINATOR_STATE_5897165704_PENDING_ARCHITECT_WHEEL_GEM0_AMENDMENT; 225/12.5M are architect reference selections, candidate250/12M unchanged",
+    "formula_precedence": "Historical5933264015: official > EnglishWiki > pinnedCanary. Owner-directed Oct1 authoring repair recognizes Tibia.com planner as an official source; no native architecture admission is inferred.",
+    "gem_price_cap_application": "Cap225 applied; SupremeIII12.5M from#1472 superseded in authoring by direct owner12M+15Greater Fragments correction; architect decision sync pending",
     "task_shop_and_grade_iv_maximum": "OUT_OF_SCOPE_REFERENCE_ONLY; no accepted runtime value",
-    "deferred_reference_values": {
+    "coordinator_state": "https://github.com/Oteryn/Oteryn-Game/issues/162#issuecomment-5897165704",
+    "applied_reference_values": {
       "revealed_gem_limit": 225,
-      "supreme_grade_iii_gold": 12500000
+      "supreme_grade_iii_gold": 12000000
+    }
+  },
+  "basic_mod_position_2": {
+    "classification": "PROVEN_UPSTREAM_DISAGREEMENT_WITH_ENGLISH_WIKI_PROSE_CORROBORATION",
+    "scope": "all_five_vocations",
+    "difference": {
+      "selected_only": [
+        {
+          "id": 2,
+          "name": "Death Resistance"
+        }
+      ],
+      "upstream_only": [
+        {
+          "id": 30,
+          "name": "Mitigation Multiplier"
+        }
+      ]
     },
-    "coordinator_state": "https://github.com/Oteryn/Oteryn-Game/issues/162#issuecomment-5897165704"
+    "selection": "RETAIN_CAPTURED_TIBIAPAL_AUTHORING_REFERENCE; DO_NOT_SILENTLY_REPLACE_SOURCE_OBSERVATIONS",
+    "qualification": "ENGLISH_WIKI_PROSE_CORROBORATES_SELECTED_POSITION; EXACT_LIST_NATIVE_ADMISSION_PARITY_PENDING",
+    "runtime_admitted": false,
+    "live_global_parity_confirmed": false,
+    "architect_recommendation": "Retain TibiaPal authoring selection: English TibiaWiki positional prose corroborates DeathResistance in slot2 and Mitigation only in slot1 under FORMULA precedence. Preserve all four conflicting upstream lists as evidence. Qualify exact ID mapping/revision for GEM-R admission before paid rows reveal or migrate; no currentGlobal or target-date proof is asserted.",
+    "wiki_corroboration": {
+      "url": "https://tibia.fandom.com/wiki/Basic_Mod",
+      "requested_url": "https://tibia.fandom.com/wiki/Basic_Mod",
+      "title": "Basic Mod | TibiaWiki | Fandom",
+      "method": "REMOTE_DESKTOP_CHROME_CDP",
+      "sha256": "14994c2b473b7b341761948dd7ae84bbddb1a4518e5be390e2dfb161e3e972da",
+      "characters": 9646,
+      "revision": "NOT_OBTAINED",
+      "observed_on": "2026-10-01",
+      "runtime_admitted": false,
+      "live_global_parity_confirmed": false,
+      "status": "READ",
+      "observation": "English prose limits second Basic mod to resistances including Death; Mitigation is listed among first-mod choices. This corroborates selected ID2 inclusion and ID30 exclusion; no exact ID0..29 vector is enumerated.",
+      "value_scope": "Old mitigation5/5.5/6/7.5 table cannot override released official8833 mitigation20/22/24/30; no target-date or currentGlobal qualification."
+    },
+    "evidence": {
+      "file": "samples/basic-mod-position-2-conflict.json",
+      "sha256": "e570937db95765593e82ec6e6e60a5f8579cbc2d7dd499db24bb6c4364f9ceaa"
+    }
+  },
+  "official_perk_audit": {
+    "file": "samples/official-perk-reference.json",
+    "sha256": "26424e2fd7825db78353c78b391a5cd180011ca7c36f87e6619a98e7c8967b6b"
+  },
+  "atelier_reference_audit": {
+    "file": "verify_atelier_reference.py",
+    "wiki_revision": 1151969,
+    "decision_pr": "https://github.com/Oteryn/Oteryn-Game/pull/1472",
+    "method": "Normal HTTPS verified upstream blobs; English Wiki read via research-only Chrome/CDP after HTTP402; reference-only selection",
+    "runtime_admitted": false,
+    "owner_cost_correction": {
+      "date": "2026-10-01",
+      "upgrade": "Supreme Grade II to III",
+      "gold": 12000000,
+      "greater_fragments": 15,
+      "source": "Direct owner correction and explicit confirmation from Global2026-10-01",
+      "classification": "OWNER_CONFIRMED_GLOBAL_VALUE",
+      "independently_observed_by_worker": false
+    }
   }
 }

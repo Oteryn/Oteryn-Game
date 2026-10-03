@@ -10,7 +10,7 @@ active_control_plane_profile: OTV2_WORK_DELIVERY_COORDINATOR
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: null
-issue: 162
+issue: 1622
 pr: null
 protected_main_sha: 961c74ab573d87807ed24cbd414a46d8072f72d3
 owner: ChatGPT Work Delivery Coordinator
@@ -29,7 +29,7 @@ external_repositories: []
 
 ## Current authority
 
-Issue #162 remains the unique programme allocation/control-plane lifecycle. The active mutating profile is `OTV2_WORK_DELIVERY_COORDINATOR`. Live GitHub state outranks this packet.
+Issue #1622 (the continuation of #162, which the owner closed) is the unique programme allocation/control-plane lifecycle. The active mutating profile is `OTV2_WORK_DELIVERY_COORDINATOR`. Live GitHub state outranks this packet.
 
 This file is a **single current checkpoint**. Historical coordinator checkpoints remain at `docs/agents/evidence/OTV2-20260921-work-delivery-coordinator-history.md`.
 

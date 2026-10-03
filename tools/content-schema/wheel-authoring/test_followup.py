@@ -55,7 +55,7 @@ class FollowupTests(unittest.TestCase):
                        for v in self.candidate['vocations'].values() for s in v['slots']}
         def values(key):
             return {e['kind']: e['value'] for e in convictions[key]['unique_parameters']['numeric_effects']}
-        self.assertEqual(values('battle_healing')['shield_healing_multiplier'], 3)
+        self.assertEqual(values('battle_healing')['shield_healing_multiplier'], 2)
         self.assertEqual(values('guiding_presence'), {'shared_mantra_percent': 100,
             'party_bonus_increase_source_percent': 33})
         self.assertEqual(values('focus_mastery')['focus_spell_group_cooldown_reduction'], 2)

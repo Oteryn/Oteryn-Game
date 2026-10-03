@@ -398,6 +398,13 @@ The 30%, 70% and 100% map unlocks are client display that the server derives fro
 query. The server never sends POIs to another character, and it never sends a POI that is not yet
 in range. The discovery query carries only the found count.
 
+**Initial and replacement snapshot** (FND-02 §16; PREM-DELIVERY-0A, review 4173086801 on #1631).
+After login, reconnect or resync, the server sends one POI position event for each POI of the
+character's active subarea that is not yet found and is already within effect 193 range on the
+same floor, with the same owner, floor and range filters, and then continues with boundary
+crossings from that state. A POI already in range therefore never disappears because no crossing
+occurred.
+
 ## 7. Rejected options
 
 - **Donation pools per channel.** Tibia has one pool per world, and the scope matrix keeps economy
