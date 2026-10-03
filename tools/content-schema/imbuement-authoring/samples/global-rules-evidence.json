@@ -740,8 +740,10 @@
       "method": "Remote Desktop + Chrome/CDP",
       "temporal_qualification": "CURRENT_PUBLIC_BODY_READ_2026_10_01_REVISION_DATE_NOT_INFERRED",
       "selected_quotes": [
-        "Vibrancy is a imbuement that can be applied to boots. It can give a chance to remove paralysis, and in PvP fights, it always deflects additional paralysis attacks if initially successful. For example, with this imbuement active, when you are already paralyzed and someone paralyzes you in PvP, there is a 50% chance that you’ll no longer be paralyzed.\n\nThree Vibrancy imbuements are available:\n\nBasic Vibrancy\nIntricate Vibrancy\nPowerful Vibrancy\n\nThe ability to apply the basic and intricate forms can be obtained in the Forgotten Knowledge Quest and the Powerful version by finishing The Dream Courts Quest.\n\nRelated Astral Sources:\n\nWereboar Hooves\nCrystallized Anger\nQuill"
-      ]
+        "It can give a chance to remove paralysis, and in PvP fights, it always deflects additional paralysis attacks if initially successful.",
+        "For example, with this imbuement active, when you are already paralyzed and someone paralyzes you in PvP, there is a 50% chance that you’ll no longer be paralyzed."
+      ],
+      "selected_quotes_scope": "Bounded excerpt: quoted passages only, whitespace normalized"
     },
     "fandom_life_current_full": {
       "role": "DERIVED_COMMUNITY",
@@ -755,8 +757,10 @@
       "method": "Remote Desktop + Chrome/CDP",
       "temporal_qualification": "CURRENT_PUBLIC_BODY_READ_2026_10_01_REVISION_DATE_NOT_INFERRED",
       "selected_quotes": [
-        "Life Leech\nVersion\n10.94\nMay 31, 2016\nSummer Update 2016\nStatus\nActive\nLife Leech, introduced with Updates/10.94, is a way to receive health points from your opponent during fighting. It can be done by Imbuing certain equipment with Basic Vampirism, Intricate Vampirism or Powerful Vampirism, by enhancing skills through the Wheel of Destiny, or wearing equipment that has Augments that provide life leech.\n\nIt is worth noting that Damage Preys do not affect the leech.\n\nHistory\nIt was initially available via Charging (which was removed with Updates/11.40) and later also by Imbuing certain equipment.\nIt used to be called Hit Points Leech before the name was changed to Life Leech.\n\nSee also:\n\n\n\n\nCritical Hits, Mana Leech, and Imbuing"
-      ]
+        "Life Leech, introduced with Updates/10.94, is a way to receive health points from your opponent during fighting.",
+        "It is worth noting that Damage Preys do not affect the leech."
+      ],
+      "selected_quotes_scope": "Bounded excerpt: quoted passages only, whitespace normalized"
     }
   },
   "rules": [

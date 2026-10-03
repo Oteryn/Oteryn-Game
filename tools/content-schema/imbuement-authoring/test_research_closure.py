@@ -3,6 +3,7 @@ import hashlib
 import json
 import unittest
 
+import capture_bounds
 import research_closure
 
 
@@ -95,7 +96,7 @@ class ResearchClosureTests(unittest.TestCase):
 
     def test_full_page_capture_is_rejected(self):
         source = self.packet["sources"]["qa24514"]
-        self._set_excerpt("qa24514", research_closure.EXCERPT_SEPARATOR.join(
+        self._set_excerpt("qa24514", capture_bounds.EXCERPT_SEPARATOR.join(
             [source["captured_text"]] + ["x" * 400] * 3))
         with self.assertRaisesRegex(ValueError, "exceeds its source bound"):
             research_closure.validate(self.packet)

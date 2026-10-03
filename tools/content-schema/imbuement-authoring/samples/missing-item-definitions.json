@@ -1,9 +1,9 @@
 {
   "activation": "REVIEWABLE_PROPOSALS_NOT_RUNTIME_DEFINITIONS",
   "inputs": {
-    "owning_item_schema_sha256": "b58bba554efd346b9f33103a889acfb571b97861ee06be460a474f0c115b3c1c",
+    "owning_item_schema_sha256": "a5bb5ca8a73d936146ce13c0a70d0420616a65812704fec30c401cba0d667d7d",
     "primary_appearances_sha256": "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2",
-    "source_facts_sha256": "51409c2844390ee0fa03e8306767674ff410ecdafbacee0eb4dfc1743716115d",
+    "source_facts_sha256": "48441ebbf409780739a318808dc292cec2b8b0225437d1a92aacd614604e6461",
     "test_wiki_facts_sha256": "49d43cbe6957e6edc16aeda72e05152c55606e9381452ea74d7a63b5a5e91e4a"
   },
   "proposals": [
@@ -192,8 +192,8 @@
             "source": "wiki_br"
           },
           "acquisition_facts.npc_location_labels": {
-            "excerpt_scope": "EXACT_CAPTURED_MARKDOWN",
-            "literal_excerpt": "| [Malunga](https://www.tibiawiki.com.br/wiki/Malunga)![Image 8: Malunga.gif](https://www.tibiawiki.com.br/images/9/98/Malunga.gif) | [Liberty Bay](https://www.tibiawiki.com.br/wiki/Liberty_Bay \"Liberty Bay\") | 55 [Tentacle Pieces](https://www.tibiawiki.com.br/wiki/Tentacle_Piece \"Tentacle Piece\") | | [Dread Guardian](https://www.tibiawiki.com.br/wiki/Dread_Guardian)![Image 9: Dread Guardian.gif](https://www.tibiawiki.com.br/images/a/a9/Dread_Guardian.gif) | [Vengoth](https://www.tibiawiki.com.br/wiki/Vengoth \"Vengoth\") | 55 [Tentacle Pieces](https://www.tibiawiki.com.br/wiki/Tentacle_Piece \"Tentacle Piece\") ",
+            "excerpt_scope": "EXACT_CAPTURED_MARKDOWN_PASSAGES",
+            "literal_excerpt": "| [Malunga](https://www.tibiawiki.com.br/wiki/Malunga)![Image 8: Malunga.gif](https://www.tibiawiki.com.br/images/9/98/Malunga.gif) | [Liberty Bay](https://www.tibiawiki.com.br/wiki/Liberty_Bay \"Liberty Bay\") | 55 [Tentacle Pieces](https://www.tibiawiki.com.br/wiki/Tentacle_Piece \"Tentacle Piece\") | … | [Dread Guardian](https://www.tibiawiki.com.br/wiki/Dread_Guardian)![Image 9: Dread Guardian.gif](https://www.tibiawiki.com.br/images/a/a9/Dread_Guardian.gif) | [Vengoth](https://www.tibiawiki.com.br/wiki/Vengoth \"Vengoth\") | 55 [Tentacle Pieces](https://www.tibiawiki.com.br/wiki/Tentacle_Piece \"Tentacle Piece\")",
             "observed_value": {
               "Dread Guardian": "Vengoth",
               "Malunga": "Liberty Bay"
@@ -284,7 +284,7 @@
             "source": "wiki_br"
           }
         },
-        "field_evidence_sha256": "004841f374f2931f1d91e688b9e0f0fe0c334dde9d2c42fbd1cf6c14b8f6e120",
+        "field_evidence_sha256": "c911b4985f577ee8bbb3b5952e69344469dd302869146ede994879a06a841900",
         "lifecycle_facts": {
           "imbuement_slot_added_in_version": "13.41.a953fd",
           "malunga_exchange_added_in_version": "14.00.0e4f6f"
@@ -356,7 +356,7 @@
           }
         }
       },
-      "source_facts_sha256": "fedb6fcfc3c052976f0215a7bd987a80a1efc506020f301a490e447106fe2719",
+      "source_facts_sha256": "9d7f669c5a2d80efa99ec1f4f1b464613c66aaf9c3a357d3ad3e3480288f251c",
       "target_time_status": "PREEXISTING_TARGET_SOURCE_VERSION",
       "validation": {
         "contract": "tools/content-schema/item-authoring/item.schema.json",

@@ -105,8 +105,8 @@ def validate_source_provenance(source: dict) -> None:
             if path not in source["sources"][provider]["observed_fields"]:
                 raise ValueError(f"{path}: provider does not identify this observed field")
             if not claim["literal_excerpt"].strip() or claim["excerpt_scope"] not in {
-                "EXACT_CAPTURED_MARKDOWN", "WHITESPACE_NORMALIZED_PUBLIC_HTML_TEXT",
-                "EXACT_CAPTURED_HTML",
+                "EXACT_CAPTURED_MARKDOWN", "EXACT_CAPTURED_MARKDOWN_PASSAGES",
+                "WHITESPACE_NORMALIZED_PUBLIC_HTML_TEXT", "EXACT_CAPTURED_HTML",
             }:
                 raise ValueError(f"{path}: missing or unsupported public excerpt")
     introduced = source["facts"]["introduced_on"]

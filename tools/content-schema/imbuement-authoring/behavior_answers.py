@@ -9,6 +9,8 @@ from pathlib import Path
 import re
 from urllib.parse import urlsplit
 
+import capture_bounds
+
 HERE = Path(__file__).resolve().parent
 PACKET = HERE / "samples/current-behavior-answers.json"
 TARGET = "global-tibia-current-2026-10-01"
@@ -43,6 +45,10 @@ def validate(packet: dict, *, global_evidence: dict | None = None,
 
     if not isinstance(packet, dict):
         return ["behavior answers must be an object"]
+    try:
+        capture_bounds.validate(packet, "current-behavior-answers.json")
+    except ValueError as exc:
+        errors.append(str(exc))
     for field, expected in {
         "schema": "OTERYN_IMBUEMENT_CURRENT_BEHAVIOR_ANSWERS/v1",
         "target": TARGET, "activation": "DRAFT_NOT_RUNTIME_READY", "as_of": AS_OF,

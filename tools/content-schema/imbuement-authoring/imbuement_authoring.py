@@ -9,6 +9,8 @@ from pathlib import Path
 
 from jsonschema import Draft202012Validator, FormatChecker
 
+import capture_bounds
+
 HERE = Path(__file__).resolve().parent
 FACTS = HERE / "samples/imbuement-sources-2026-10-01.json"
 FACTS_SHA256 = "7ee2221886abdc80d27ce5cd13e58bdecab8b3c5210a7e0e7a36efc52771070e"
@@ -18,15 +20,15 @@ SCHEMA = HERE / "imbuement.schema.json"
 EVIDENCE_PINS = {
     "owner-authoring-policy.json": "c71b9351980fe70b8a83aafcfcca3e03a1ff9445427fedd842214ee89ae73079",
     "global-research-closure.json": "0ccab4e6907570413f74e5c5a05d3a390900af4b92b7516ea7dcdbd15c73050a",
-    "imbuement-bindings.json": "e9b3c4355a5db835af150c125fa3204f4bd6e674ef9e3b2d52383bac81f21ebc",
+    "imbuement-bindings.json": "437ebddaafd40d727b8822a4c3d4745abeae0e0812906aa36cd9554fb203a5ad",
     "imbuement-access.json": "c05984cb8f0ac0e41b4f8bebd7bc2c93be24ea3cbbb86c0d95859e0a8a917f2d",
     "imbuement-eligibility.json": "c737e2cf41db6d5fe5434006ffb3948bcb5ecd3fc478c3c78ab14134cf2a0d11",
-    "global-rules-evidence.json": "91555552462b5f78b0cb4253522fcacc30ab5601b7127c13ea7eab26b21930af",
-    "imbuement-combat.json": "39e8eaa16f7c1cd8358d70e620d23644a728c91a85a70ff9eb1659aadbe524d2",
+    "global-rules-evidence.json": "5f04de7e15226dfa57b36cd9d6f6d03c847f020bbc0efebe118bde02742e3413",
+    "imbuement-combat.json": "5f14f4d9748e956fe36d779dbebcd6daeb90ff27ff0eb6abadbe7237cc7d57e7",
     "crystal-imbuements-evidence.json": "2a5723725bd1046e36dc54453ec836810f2b1e972a05d4886eeebeafefbe45fe",
-    "missing-item-definitions.json": "d1d324a100dbda840c1730561401f803aea4ec6014ec11dec23389e3280fd40d",
-    "missing-item-source-facts.json": "51409c2844390ee0fa03e8306767674ff410ecdafbacee0eb4dfc1743716115d",
-    "current-behavior-answers.json": "9d1bd48ee0c09e2d27ba9ecb27e7a88069a543bc043cb8e6201beca77642e8e2",
+    "missing-item-definitions.json": "f90f5f95a74547687e7d3bdba3c499a0dae5a1f57f869b8777b2ba87e5984941",
+    "missing-item-source-facts.json": "48441ebbf409780739a318808dc292cec2b8b0225437d1a92aacd614604e6461",
+    "current-behavior-answers.json": "1e0d89d2b40d5db0aadb91769d5178c51c6c0475129b8348e7da575ed751f91a",
     "global-observation-plan.json": "a4913ee8dc03ba6fd80e620a44fde56a3610e73b19912247e56a5e3d53d81afb",
 }
 # Independently anchor reviewed capture requirements. Mutable scenario fields
@@ -127,6 +129,7 @@ def supporting():
         if hashlib.sha256(raw).hexdigest() != digest:
             raise ValueError(f"supporting evidence digest changed: {filename}")
         packets[filename] = json.loads(raw)
+        capture_bounds.validate(packets[filename], filename)
     access = packets["imbuement-access.json"]["by_name"]
     if set(access) != set(LAYOUT):
         raise ValueError("access profiles do not cover exactly the 24 types")

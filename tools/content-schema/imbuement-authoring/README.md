@@ -38,6 +38,7 @@ The ruleset destination from the full-game tree remains
 | `samples/missing-item-definitions.json`, `samples/missing-item-source-facts.json` | Two concrete Item authoring proposals with primary flags, capacity, weight, slots, acquisition, source revisions and target dates; owning Item validation passes. |
 | `samples/imbuement-source-comparison.json` | Reproducible engine differences plus the Global fee correction. |
 | `binding_evidence.py`, `eligibility_evidence.py` | Rebuild/check identity and eligibility evidence from pinned repository inputs; never manufacture an identity from a number alone. |
+| `capture_bounds.py` | Shared check that every packet keeps third-party captures, quotes and code anchors as bounded excerpts (at most 450 characters per passage and 1,000 per source or anchor) with digest provenance. |
 | `test_*.py` | Offline semantic, source-selection and adversarial validation tests. |
 
 ## Source order and what was actually checked

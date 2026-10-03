@@ -198,8 +198,8 @@
             "Malunga": "Liberty Bay",
             "Dread Guardian": "Vengoth"
           },
-          "literal_excerpt": "| [Malunga](https://www.tibiawiki.com.br/wiki/Malunga)![Image 8: Malunga.gif](https://www.tibiawiki.com.br/images/9/98/Malunga.gif) | [Liberty Bay](https://www.tibiawiki.com.br/wiki/Liberty_Bay \"Liberty Bay\") | 55 [Tentacle Pieces](https://www.tibiawiki.com.br/wiki/Tentacle_Piece \"Tentacle Piece\") | | [Dread Guardian](https://www.tibiawiki.com.br/wiki/Dread_Guardian)![Image 9: Dread Guardian.gif](https://www.tibiawiki.com.br/images/a/a9/Dread_Guardian.gif) | [Vengoth](https://www.tibiawiki.com.br/wiki/Vengoth \"Vengoth\") | 55 [Tentacle Pieces](https://www.tibiawiki.com.br/wiki/Tentacle_Piece \"Tentacle Piece\") ",
-          "excerpt_scope": "EXACT_CAPTURED_MARKDOWN"
+          "literal_excerpt": "| [Malunga](https://www.tibiawiki.com.br/wiki/Malunga)![Image 8: Malunga.gif](https://www.tibiawiki.com.br/images/9/98/Malunga.gif) | [Liberty Bay](https://www.tibiawiki.com.br/wiki/Liberty_Bay \"Liberty Bay\") | 55 [Tentacle Pieces](https://www.tibiawiki.com.br/wiki/Tentacle_Piece \"Tentacle Piece\") | … | [Dread Guardian](https://www.tibiawiki.com.br/wiki/Dread_Guardian)![Image 9: Dread Guardian.gif](https://www.tibiawiki.com.br/images/a/a9/Dread_Guardian.gif) | [Vengoth](https://www.tibiawiki.com.br/wiki/Vengoth \"Vengoth\") | 55 [Tentacle Pieces](https://www.tibiawiki.com.br/wiki/Tentacle_Piece \"Tentacle Piece\")",
+          "excerpt_scope": "EXACT_CAPTURED_MARKDOWN_PASSAGES"
         },
         "lifecycle_facts.imbuement_slot_added_in_version": {
           "source": "wiki_br",
@@ -214,7 +214,7 @@
           "excerpt_scope": "EXACT_CAPTURED_MARKDOWN"
         }
       },
-      "field_evidence_sha256": "004841f374f2931f1d91e688b9e0f0fe0c334dde9d2c42fbd1cf6c14b8f6e120",
+      "field_evidence_sha256": "c911b4985f577ee8bbb3b5952e69344469dd302869146ede994879a06a841900",
       "evidence_limits": [
         "Published item-page approval dates are not introduction dates; dated update-page publication and the named item version establish the introduction date used here.",
         "Acquisition and lifecycle observations describe these public sources; no NPCRef or runtime transaction is admitted by this proposal.",
