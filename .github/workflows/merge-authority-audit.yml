@@ -199,7 +199,7 @@ jobs:
               '  merge_group:\n    types: [checks_requested]\n',
               '    name: game-gate\n',
               '    if: always()\n',
-              '    needs: [candidate, dependency_review, codeql, rust_linux, durability_postgres, rust_windows, rust_supply_chain, node_boot, server_seam]\n',
+              '    needs: [candidate, dependency_review, codeql, atlas_fullworld, rust_linux, durability_postgres, rust_windows, rust_supply_chain, node_boot, server_seam]\n',
               '    name: Merge Queue / candidate and governance\n',
               '          python tools/agents/tests/test_governance_lifecycle_discovery.py\n',
               '          python tools/repository/test_validate_merge_group_pg_sim.py\n',
