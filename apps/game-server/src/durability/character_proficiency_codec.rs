@@ -322,6 +322,7 @@ impl DurabilityRoot {
 #[allow(clippy::expect_used)]
 mod tests {
     use super::*;
+    use crate::durability::character_authority::verify_character_proficiency_receipt_history;
     use crate::durability::character_proficiency::ProficiencyCause;
     const ITEM: &str = "oteryn:item.tibia.i3295";
     const DEF: &str = "oteryn:proficiency.tibia.p1";
@@ -403,7 +404,7 @@ mod tests {
         sqlx::query("UPDATE game_character_proficiency_receipts SET command_binding=$1")
             .bind(binding.as_slice()).execute(&mut *tx).await.expect("valid v1 fixture binding");
         assert_eq!(
-            verify_character_proficiency_history_with_definitions(&mut tx, character, None)
+            verify_character_proficiency_receipt_history(&mut tx, character, None)
                 .await
                 .expect("valid history")[0]
                 .committed_character_revision
@@ -433,7 +434,7 @@ mod tests {
                 .await
                 .expect("one mutation");
             assert!(
-                verify_character_proficiency_history_with_definitions(&mut tx, character, None)
+                verify_character_proficiency_receipt_history(&mut tx, character, None)
                     .await
                     .is_err(),
                 "{mutation}"

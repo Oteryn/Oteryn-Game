@@ -1004,6 +1004,19 @@ pub(super) async fn verify_character_proficiency_history_with_definitions(
     definitions: Option<&dyn super::character_proficiency::ProficiencyDefinitions>,
 ) -> std::result::Result<Vec<super::character_proficiency::StoredProficiencyTrack>, DurabilityError>
 {
+    let tracks = verify_character_proficiency_receipt_history(tx, character, definitions).await?;
+    // PROFICIENCY-1B §9: modification rows, lines and terminal records.
+    super::character_proficiency_modification::verify_modification_history(tx, character).await?;
+    Ok(tracks)
+}
+
+/// The 0032 receipt, line and track history alone, without 0055's modification tables.
+pub(super) async fn verify_character_proficiency_receipt_history(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    character: CharacterId,
+    definitions: Option<&dyn super::character_proficiency::ProficiencyDefinitions>,
+) -> std::result::Result<Vec<super::character_proficiency::StoredProficiencyTrack>, DurabilityError>
+{
     let invalid = sqlx::query(
         "SELECT 1 FROM game_character_proficiency_receipts h \
          LEFT JOIN game_character_roots r USING (character_id) \
@@ -1033,12 +1046,7 @@ pub(super) async fn verify_character_proficiency_history_with_definitions(
     if invalid.is_some() {
         return Err(DurabilityError::InvalidStoredState);
     }
-    let tracks =
-        super::character_proficiency::read::verify_track_history(tx, character, definitions)
-            .await?;
-    // PROFICIENCY-1B §9: modification rows, lines and terminal records.
-    super::character_proficiency_modification::verify_modification_history(tx, character).await?;
-    Ok(tracks)
+    super::character_proficiency::read::verify_track_history(tx, character, definitions).await
 }
 
 /// CHAR-BUILD-1 (A13 §4.2, #1271 F4) build state, checked by name at admission:
