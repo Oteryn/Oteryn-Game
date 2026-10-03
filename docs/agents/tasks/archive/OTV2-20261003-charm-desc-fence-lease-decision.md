@@ -2,13 +2,13 @@
 
 ```yaml
 task_id: OTV2-20261003-charm-desc-fence-lease-decision
-title: "CHARM-DESC-FENCE-LEASE: lease lifecycle mechanics of the attacker write fence"
+title: "CHARM-DESC-FENCE-LEASE (D324): lease lifecycle mechanics of the attacker write fence"
 mode: CONTRACT
 status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: arch/p2-bundle-d309-20261003
-pr: "D309 P2 bundle PR"
+pr: "1651"
 base_sha: ac6fdca88963d1b525843482e9913c7caa8661af
 head_sha: "exact frozen head in the #1622 FREEZE_SHA entry"
 final_head_sha: "exact frozen head in the #1622 FREEZE_SHA entry"
@@ -77,5 +77,5 @@ checklist item 3.
 
 ## PR and closeout
 
-- Shipped in the D309 P2 bundle PR. Record archived in the final authoring commit; it reaches
+- Shipped in PR #1651 (D309 P2 bundle). Record archived in the final authoring commit; it reaches
   `main` only if the PR merges.

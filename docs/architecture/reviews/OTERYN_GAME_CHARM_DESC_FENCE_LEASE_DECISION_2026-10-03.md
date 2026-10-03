@@ -1,6 +1,6 @@
 # CHARM-DESC-FENCE-LEASE Lease lifecycle mechanics of the attacker write fence
 
-- Decision: `CHARM-DESC-FENCE-LEASE-V1` (control-plane allocation D-pending, #1622)
+- Decision: `CHARM-DESC-FENCE-LEASE-V1` (control-plane allocation D324, #1622)
 - Status: **CANDIDATE**. Acceptance needs exact-head validation and independent review (authority
   and fencing).
 - Role: Sol Supervising Architect (`OTV2_SOL_SUPERVISING_ARCHITECT` 1.3)
