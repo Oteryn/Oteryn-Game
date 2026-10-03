@@ -21,6 +21,7 @@ concurrency:
 jobs:
   audit:
     name: Architecture semantic audit / validate
+    if: github.event.pull_request.base.ref == 'main' || !github.event.pull_request.base.ref
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:

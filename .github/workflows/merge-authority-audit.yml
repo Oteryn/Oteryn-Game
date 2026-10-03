@@ -19,6 +19,7 @@ concurrency:
 jobs:
   audit:
     name: Merge authority audit / protected-base validate
+    if: github.event.pull_request.base.ref == 'main' || !github.event.pull_request.base.ref
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:

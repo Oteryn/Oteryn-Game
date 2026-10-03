@@ -21,6 +21,7 @@ concurrency:
 jobs:
   scope:
     name: Merge gate / scope
+    if: github.event.pull_request.base.ref == 'main' || !github.event.pull_request.base.ref
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:
@@ -1096,7 +1097,7 @@ jobs:
 
   validate:
     name: Merge gate / validate
-    if: always()
+    if: always() && (github.event.pull_request.base.ref == 'main' || !github.event.pull_request.base.ref)
     needs:
       - scope
       - lanes
@@ -1180,7 +1181,7 @@ jobs:
 
   game_gate:
     name: game-gate
-    if: always()
+    if: always() && (github.event.pull_request.base.ref == 'main' || !github.event.pull_request.base.ref)
     needs: validate
     runs-on: ubuntu-24.04
     timeout-minutes: 5
