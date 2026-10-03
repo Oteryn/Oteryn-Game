@@ -1366,6 +1366,7 @@ async fn seam_flow(accounts: &[String; 2], key_id: &str, signing: &SigningKey) -
     };
     let achievements = crate::achievement_catalogue::AchievementCatalogue::embedded()
         .map_err(|e| format!("achievement catalogue: {e:?}"))?;
+    let imported_charms = crate::content::charm_source::CanonicalCharmCatalogue::embedded()?;
     // KAN-26: the Channel runtime is composed from this exact committed
     // assignment before readiness, as `serve` does.
     let runtime = tokio::sync::Mutex::new(
@@ -1508,6 +1509,7 @@ async fn seam_flow(accounts: &[String; 2], key_id: &str, signing: &SigningKey) -
             premium_coordinator: None,
             qualified_room: spell_input.as_ref().map(|_| &room),
             achievements: &achievements,
+            imported_charms: &imported_charms,
         },
         &shutdown,
     );

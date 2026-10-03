@@ -403,17 +403,21 @@ impl<S: Clone> ConditionStore<S> {
 impl<S: Clone> ConditionStore<S> {
     /// Expire only non-ticking effects when tile legality is not yet qualified.
     /// Pending DOT/regeneration ticks remain owned and are never silently used up.
-    pub(crate) fn expire_non_ticking(&mut self, now: u64) -> Result<bool, SpellSpeedError> {
+    /// Unlike the lifecycle owner's `expire_non_ticking`, this covers every spell-owned
+    /// effect without a pending tick and refuses a time before the store's last pass.
+    pub(crate) fn expire_non_ticking_checked(&mut self, now: u64) -> Result<bool, SpellSpeedError> {
         if !self.accepts_time(now) {
             return Err(SpellSpeedError::ArithmeticBounds);
         }
-        let before = self.instances.len();
+        let before = (self.instances.len(), self.cleanse_immunities.len());
         self.instances.retain(|v| {
             v.next_tick_at.is_some()
                 || v.immediate_due.is_some()
                 || v.ends_at.is_none_or(|end| end > now)
         });
-        Ok(before != self.instances.len())
+        self.cleanse_immunities
+            .retain(|immunity| now < immunity.until);
+        Ok(before != (self.instances.len(), self.cleanse_immunities.len()))
     }
 }
 

@@ -1,0 +1,489 @@
+{
+  "schema": "OTERYN_R10_FULL_SOURCE_TILE_INDEPENDENT_REVIEW/v1",
+  "status": "PASS",
+  "baseline": "0bc47074fb10eb03a38aaff75508937e99258ed2",
+  "candidate_state": "AUTHORING_SOURCE_REGEN_BEFORE_EFFECTIVE_DIGEST_GUARD",
+  "source_graphs": 1221,
+  "changed_primary_graphs": 24,
+  "unchanged_primary_graphs": 1197,
+  "old_typed_children_semantics_preserved": 5354,
+  "old_known_condition_semantics_preserved": 1995,
+  "all_changed_graphs_freshly_recompiled_from_exact_source": true,
+  "conflict_alternatives_unchanged": true,
+  "before_counts": {
+    "interactions": 1221,
+    "edges": {
+      "ON_CONTACT": 6,
+      "ON_DEATH": 202,
+      "ON_ENTER": 400,
+      "ON_LEAVE": 14,
+      "USE": 599
+    },
+    "children_by_owner": {
+      "Ability": 211,
+      "Achievement": 28,
+      "Experience": 9,
+      "Item": 368,
+      "Mount": 2,
+      "Movement": 801,
+      "Outfit": 10,
+      "Presentation": 2681,
+      "Quest": 856,
+      "WorldObject": 874
+    },
+    "blocked_children": {
+      "Movement": 294,
+      "WorldObject": 192
+    },
+    "relocation_children": {
+      "anchor": 304,
+      "previous_position": 203
+    },
+    "overlay_operations": {
+      "CREATE": 30,
+      "REMOVE": 134,
+      "RETAG": 39,
+      "TRANSFORM": 479
+    },
+    "overlay_operations_with_revert_after": 0,
+    "quest_children_naming_a_transition": 207,
+    "unresolved_lines": 1937,
+    "unresolved_conditions": 1752,
+    "by_status": {
+      "conflict": 2,
+      "mapped": 245,
+      "unresolved_semantics": 974
+    }
+  },
+  "after_counts": {
+    "interactions": 1221,
+    "edges": {
+      "ON_CONTACT": 6,
+      "ON_DEATH": 202,
+      "ON_ENTER": 400,
+      "ON_LEAVE": 14,
+      "USE": 599
+    },
+    "children_by_owner": {
+      "Ability": 222,
+      "Achievement": 28,
+      "Experience": 9,
+      "Item": 368,
+      "Mount": 2,
+      "Movement": 801,
+      "Outfit": 10,
+      "Presentation": 2681,
+      "Quest": 856,
+      "WorldObject": 874
+    },
+    "blocked_children": {
+      "Movement": 294,
+      "WorldObject": 172
+    },
+    "relocation_children": {
+      "anchor": 304,
+      "previous_position": 203
+    },
+    "overlay_operations": {
+      "CREATE": 50,
+      "REMOVE": 134,
+      "RETAG": 39,
+      "TRANSFORM": 479
+    },
+    "overlay_operations_with_revert_after": 0,
+    "quest_children_naming_a_transition": 207,
+    "unresolved_lines": 1936,
+    "unresolved_conditions": 1732,
+    "by_status": {
+      "conflict": 2,
+      "mapped": 245,
+      "unresolved_semantics": 974
+    }
+  },
+  "readiness_before": {
+    "unresolved_items_sum": 3956,
+    "interactions_with_gaps_sum": 987,
+    "quests_without_data_gaps": 103
+  },
+  "readiness_after": {
+    "unresolved_items_sum": 3927,
+    "interactions_with_gaps_sum": 988,
+    "quests_without_data_gaps": 103
+  },
+  "bundle_summary_before": {
+    "claims": 336,
+    "gates": 237,
+    "interactions": 1221,
+    "progress": 1491,
+    "progress_source_transitions": 3516,
+    "quests": 284,
+    "quests_with_reported_gaps": 203,
+    "reference_gaps": 0,
+    "source_write_occurrences": 6636,
+    "unassigned_gaps": 907,
+    "wiki_quests": 373
+  },
+  "bundle_summary_after": {
+    "claims": 336,
+    "gates": 237,
+    "interactions": 1221,
+    "progress": 1491,
+    "progress_source_transitions": 3516,
+    "quests": 284,
+    "quests_with_reported_gaps": 203,
+    "reference_gaps": 0,
+    "source_write_occurrences": 6636,
+    "unassigned_gaps": 906,
+    "wiki_quests": 373
+  },
+  "removed_unassigned_source_gap": [
+    {
+      "kind": "source_interaction_gap",
+      "reason": "statement outside the transcribed vocabulary",
+      "record": "canary:interaction/forgotten_knowledge/creaturescripts_melting_death"
+    }
+  ],
+  "unchanged_source_core_count": 274,
+  "changed_source_core_count": 10,
+  "native_and_non_reported_holds_preserved": true,
+  "brotherhood_source_join": {
+    "classification": "SOURCE_ONLY_EXACT_SYMBOLIC_READER",
+    "track": "canary:quest-progress/quest/u7_9/brotherhood_outfits/outfits",
+    "literal_source_expression": "Storage.Quest.U7_9.BrotherhoodOutfits.Outfits",
+    "both_donor_scripts_read_lines": [
+      22,
+      40,
+      58
+    ],
+    "existing_auxiliary_owner": "canary:quest/brotherhood_outfits_quest",
+    "other_owner": "canary:quest/dreamer_s_challenge_quest",
+    "graphs_added_to_brotherhood": [
+      "canary:interaction/dreamers_challenge_quest/actions_lever_brotherhood",
+      "canary:interaction/dreamers_challenge_quest/actions_lever_nightmare"
+    ],
+    "gap_counts_before": [
+      1,
+      12
+    ],
+    "gap_counts_after": [
+      3,
+      24
+    ],
+    "native_ownership": "NOT_ADMITTED"
+  },
+  "witnesses": [
+    {
+      "key": "canary:interaction/bigfoot_burden/creaturescripts_versperoth_kill",
+      "source": {
+        "source": "canary",
+        "path": "data-otservbr-global/scripts/quests/bigfoot_burden/creaturescripts_versperoth_kill.lua",
+        "callback_line": 19,
+        "blob_sha1": "89e724542697ee3e4a389f941fa0e8195e49b576"
+      },
+      "sha256": "28ea207d9f3256c64fe2a8f2bcd4fa88864d23db619eb1bc88169539f00285e4",
+      "old_graph_sha256": "5270a37425b5340bf2335fd3649ea4c85325affd7db89724ee0cec8e32e789dc",
+      "new_graph_sha256": "b5f3de48f477c58d85fd3ba0c02ae1cea2e894a2264af389104c744a0b67f4b7"
+    },
+    {
+      "key": "canary:interaction/demon_helmet/action_lever",
+      "source": {
+        "source": "canary",
+        "path": "data-otservbr-global/scripts/quests/demon_helmet/action-lever.lua",
+        "callback_line": 3,
+        "blob_sha1": "99440cdb4f03da2c43948ac46ab52c2ad33ac70b"
+      },
+      "sha256": "42cc80bc3fe68b4ae6f8bc767a3190a24a47a2484f77a01100ecc5cfd62959ae",
+      "old_graph_sha256": "4dd8826e1fd6b1ed61a65980f0a0559cf36a47e0c7333204871fa3ff06a8ad9a",
+      "new_graph_sha256": "522d6695dfb31ba8dbf24d45e92aab6abd9425165db63b04f1249d84ea908a62"
+    },
+    {
+      "key": "canary:interaction/devil_helmet/movements_sewer_sewer",
+      "source": {
+        "source": "canary",
+        "path": "data-otservbr-global/scripts/quests/devil_helmet/movements_sewer.lua",
+        "callback_line": 5,
+        "blob_sha1": "6226a5f27ae0be27c2a4f62910f90594f2a65def"
+      },
+      "sha256": "71542a6acba0cd100b6f2d86339473e86781c777fa10aa339a62ea02d54e1e84",
+      "old_graph_sha256": "7f3fba86f0196cb3d21248535422b85be9eb013ac8c0aa684987563e73afb1d1",
+      "new_graph_sha256": "cfdba15e0aee2ec29f1003b64233357be1b3bac2a9b7a066060b61aa7d4f4166"
+    },
+    {
+      "key": "canary:interaction/dreamers_challenge_quest/actions_lever_brotherhood",
+      "source": {
+        "source": "canary",
+        "path": "data-otservbr-global/scripts/quests/dreamers_challenge_quest/actions_lever_brotherhood.lua",
+        "callback_line": 15,
+        "blob_sha1": "647373fac09840d6943e29ae707d0404de892c1e"
+      },
+      "sha256": "67b14fa0e4ab8694a9bf3cb9bc24e0ad2c677b3bfb4579dcdd7960bdfd677670",
+      "old_graph_sha256": "07d5a1e1faf4ed08b9a42bc06684242a6518de3ec820fae26aa130e0601abb69",
+      "new_graph_sha256": "1390d13fadac313512c62847bd9e358d4cbaa25edc86ff2e667ca43d0b128494"
+    },
+    {
+      "key": "canary:interaction/dreamers_challenge_quest/actions_lever_nightmare",
+      "source": {
+        "source": "canary",
+        "path": "data-otservbr-global/scripts/quests/dreamers_challenge_quest/actions_lever_nightmare.lua",
+        "callback_line": 15,
+        "blob_sha1": "bf820c21dad1b6c16853875fc7d86f6e0b65963d"
+      },
+      "sha256": "f6f7f25473bcc5975448eed3e507c0fe6be08516371ef586c281ade0aec25c36",
+      "old_graph_sha256": "b5566f352a0e03d8d45fb5d5181cbee86c09719e4335f646dede2aa16a19ee2a",
+      "new_graph_sha256": "069b679ca59ff847298683bbda42b403cf57708785b89e16ad2122c3611fe020"
+    },
+    {
+      "key": "canary:interaction/dreamers_challenge_quest/actions_stone_teleport",
+      "source": {
+        "source": "canary",
+        "path": "data-otservbr-global/scripts/quests/dreamers_challenge_quest/actions_stone_teleport.lua",
+        "callback_line": 27,
+        "blob_sha1": "2bb5a5a4597a2e8d46f7d8e890061ff3e4e35234"
+      },
+      "sha256": "78371cc4a1dc6c73c7e2a4d8fbe293590e1478d9db81fedb06aae63b95ea7c4a",
+      "old_graph_sha256": "c686efeba8b47a6a7651a030e1d1a2ca1ecde22253055011921a228a7a85ea18",
+      "new_graph_sha256": "fff09b9f230a63a5da95a47f5a9e9adada53c7b5e17ef0b37069f62b44fb343e"
+    },
+    {
+      "key": "canary:interaction/forgotten_knowledge/creaturescripts_melting_death",
+      "source": {
+        "source": "canary",
+        "path": "data-otservbr-global/scripts/quests/forgotten_knowledge/creaturescripts_melting_death.lua",
+        "callback_line": 7,
+        "blob_sha1": "42cdb6cf6a55cd5b60a0e6d1f324f44f35cefdb3"
+      },
+      "sha256": "6fb1b61bca30987542cb25c46bd72740a67f73711af90048f141b61f39f95e15",
+      "old_graph_sha256": "8ff9fd636f0fbc16b49c0af8a8b7b3f2f5d94a5bd1bc03e7e94171defcc0abda",
+      "new_graph_sha256": "0c7f21eb9249c5bc9bbbc5ce43cce4ec92dcb6ec0f1199a307d417c4b6c5674b"
+    },
+    {
+      "key": "canary:interaction/kilmaresh_quest/movements_firetp",
+      "source": {
+        "source": "canary",
+        "path": "data-otservbr-global/scripts/quests/kilmaresh_quest/movements_firetp.lua",
+        "callback_line": 43,
+        "blob_sha1": "cb98135915a5da4f0674dc97b6a97988a78d2902"
+      },
+      "sha256": "9e4fac3d772ef18adcc1e2006d447a152fc3b699cf1b57036965bab3d12a7e23",
+      "old_graph_sha256": "d8957b06f7f7ca36a936d043bca7c7e685cddf324df78de8bccf9f2d9b43a142",
+      "new_graph_sha256": "bccd2e089e9e27de91f75ad68eb398f73c0637ee1f0198951dae43ce5e5365db"
+    },
+    {
+      "key": "canary:interaction/the_pits_of_inferno_quest/movements_drawbridge_drawbridge_2",
+      "source": {
+        "source": "canary",
+        "path": "data-otservbr-global/scripts/quests/the_pits_of_inferno_quest/movements_drawbridge.lua",
+        "callback_line": 34,
+        "blob_sha1": "3077b2c2190ec15dcee666be9a013c5522b65049"
+      },
+      "sha256": "342e35348b55c48b078f1026dad25bcc794dc9fe69f1b5326d979d56f7622847",
+      "old_graph_sha256": "07133b7e49705f4b4c81a10029d94a2a726bd97221e12f7528ae30b68f042aa0",
+      "new_graph_sha256": "cc0fe019164e1e4fd0518098eb3c8d820e1624ad77a930f073c3769766d682d2"
+    },
+    {
+      "key": "canary:interaction/the_pits_of_inferno_quest/movements_ladder_ladder",
+      "source": {
+        "source": "canary",
+        "path": "data-otservbr-global/scripts/quests/the_pits_of_inferno_quest/movements_ladder.lua",
+        "callback_line": 4,
+        "blob_sha1": "8ff4e9c17c13e773a601e06b45119064d12865f3"
+      },
+      "sha256": "ea3479e63876bc31b0087284cc9c36f724a97db7bc26db68f1b49dc3c34e439c",
+      "old_graph_sha256": "b2aa0c6181ee7848c5c833e01991cbc1979875433df8c6f6349f890ebb67e1d6",
+      "new_graph_sha256": "602a1003917767e6e3d1e075938730ebd718f9a2ac8e0270a946650e3668c41a"
+    },
+    {
+      "key": "canary:interaction/the_pits_of_inferno_quest/movements_second_trap",
+      "source": {
+        "source": "canary",
+        "path": "data-otservbr-global/scripts/quests/the_pits_of_inferno_quest/movements_second_trap.lua",
+        "callback_line": 13,
+        "blob_sha1": "388bcdf0fdd2c1179a80c5cf65ad47c36f8059e1"
+      },
+      "sha256": "a8c4871f9e32368ebe0d17c6e9fddc75e0c001696869cc5ced9dfab5df104e95",
+      "old_graph_sha256": "b22e5a60ad3787954409ad79d03220dcb98a5c2583ab5470bf1495cf81c211be",
+      "new_graph_sha256": "f03a773a8a7d6e933bbbfa3e63f96f716e46e9373e43b9b74d01660a016c3c14"
+    },
+    {
+      "key": "canary:interaction/the_pits_of_inferno_quest/movements_stone",
+      "source": {
+        "source": "canary",
+        "path": "data-otservbr-global/scripts/quests/the_pits_of_inferno_quest/movements_stone.lua",
+        "callback_line": 3,
+        "blob_sha1": "3f5a206263d4abda33890963ecd6528725df38e1"
+      },
+      "sha256": "a1285cf5f6b0f6a48d615f5e7c7d749873d55baf491deb098cb9236a6db7c40b",
+      "old_graph_sha256": "2baeb327c40cab8f91e71fedd3ede2d3b963c45b8fdc1f143fc704c6a1f17b9e",
+      "new_graph_sha256": "27b26ea2ba882612ae4e531b46766b646fbbaa6fe65d0d401d5ac5fcfcf683da"
+    },
+    {
+      "key": "crystalserver:interaction/a_pirates_tail_quest/creaturescripts_tentacle1",
+      "source": {
+        "source": "crystalserver",
+        "path": "data-global/scripts/quests/a_pirates_tail_quest/creaturescripts_tentacle1.lua",
+        "callback_line": 30,
+        "blob_sha1": "91757778b9ccfdcf3893a6d93cf1f1cc1ecf32ad"
+      },
+      "sha256": "9863004d92a6b8702a3b8270081d0c98ca57cf5d997844e10a6833650d87c68e",
+      "old_graph_sha256": "8bdfce51b797d32a08dbddc89ca84c4e7aee20b9c6b14b771749713500ea41c5",
+      "new_graph_sha256": "cb4914a79eacd94dba5e5dbc637c662f72070e857a667e5b8530bf903be13c96"
+    },
+    {
+      "key": "crystalserver:interaction/a_pirates_tail_quest/creaturescripts_tentacle10",
+      "source": {
+        "source": "crystalserver",
+        "path": "data-global/scripts/quests/a_pirates_tail_quest/creaturescripts_tentacle10.lua",
+        "callback_line": 30,
+        "blob_sha1": "7e8b71a0804230c2ab062214c007be4165c3d470"
+      },
+      "sha256": "acf8f90afcd84add74591c8779f416bf9e62d908304db18305d7d572d9683fb6",
+      "old_graph_sha256": "b5f89289d1c584c7354d2ac9a242cd9e4f9a11d0cebb38b95724f8f405fd0cae",
+      "new_graph_sha256": "0fe50660574d23c6bb95ead800cf91f7d9e8ca208a42ff5fd5c211c481e38482"
+    },
+    {
+      "key": "crystalserver:interaction/a_pirates_tail_quest/creaturescripts_tentacle2",
+      "source": {
+        "source": "crystalserver",
+        "path": "data-global/scripts/quests/a_pirates_tail_quest/creaturescripts_tentacle2.lua",
+        "callback_line": 35,
+        "blob_sha1": "27bb0ffb89dfc06765925d7108fa0f8ccd37941c"
+      },
+      "sha256": "183bae95c5dfa9a6feeb0c2bcb56ad1d380f0e88587dd577027cb38bf2e08aff",
+      "old_graph_sha256": "81b60c6509fb37cdbe44acfc4d5752e8e695a01d18cdc505939f308297f77bcf",
+      "new_graph_sha256": "9fcea62d8a13b433370273ebe925611634c922b18b5f955e385f67e7ce3cf01e"
+    },
+    {
+      "key": "crystalserver:interaction/a_pirates_tail_quest/creaturescripts_tentacle3",
+      "source": {
+        "source": "crystalserver",
+        "path": "data-global/scripts/quests/a_pirates_tail_quest/creaturescripts_tentacle3.lua",
+        "callback_line": 30,
+        "blob_sha1": "cb04a46c9ad0188bd82944c3aa79156497cd4f8e"
+      },
+      "sha256": "8759a66f3f4d8deef6824c60b0946506e17c386ddbe302e13a0aa24748e07d6e",
+      "old_graph_sha256": "61d0a34d640c294f876934b90690382dcc03c7f335bee2006e5a59b64fb5ddba",
+      "new_graph_sha256": "0215f6e19e38a262e9b7f6e997ffd135f493c26adec52ea51fdea963358e0dc5"
+    },
+    {
+      "key": "crystalserver:interaction/a_pirates_tail_quest/creaturescripts_tentacle4",
+      "source": {
+        "source": "crystalserver",
+        "path": "data-global/scripts/quests/a_pirates_tail_quest/creaturescripts_tentacle4.lua",
+        "callback_line": 30,
+        "blob_sha1": "6d0619e100b14ed099b31bd56a939ecb525cc976"
+      },
+      "sha256": "e4a79a97ee11f70d091e130271d211c4c76caada73bd7720dd863e7de8eea2e9",
+      "old_graph_sha256": "3feec7d975f235e8b51e9a467b689701b008ade19caa5313d246d99c5280c470",
+      "new_graph_sha256": "1369140e295d02525287a3c5e5af721077ae164d944584434a80d610cca1a347"
+    },
+    {
+      "key": "crystalserver:interaction/a_pirates_tail_quest/creaturescripts_tentacle5",
+      "source": {
+        "source": "crystalserver",
+        "path": "data-global/scripts/quests/a_pirates_tail_quest/creaturescripts_tentacle5.lua",
+        "callback_line": 37,
+        "blob_sha1": "cbc6a0b4a1f25c34ef0234fae921e608ba735f1e"
+      },
+      "sha256": "419f585ea098563960138c8aed44ace125f5ce4e028b7343f35c7b3c43aa2adc",
+      "old_graph_sha256": "b543ce0cc582929037325e7be4bb43c10024ab067495f760185e65381faa50f1",
+      "new_graph_sha256": "a9e409d8c5277137a6d1ae3f8ab53a85a4bab3904d758749c0618996f27a3b1f"
+    },
+    {
+      "key": "crystalserver:interaction/a_pirates_tail_quest/creaturescripts_tentacle6",
+      "source": {
+        "source": "crystalserver",
+        "path": "data-global/scripts/quests/a_pirates_tail_quest/creaturescripts_tentacle6.lua",
+        "callback_line": 37,
+        "blob_sha1": "70ef9963eb0afcc58affabcb9abdd55d8e1e06c6"
+      },
+      "sha256": "994fa9fbbacac1c20a85323d2363adb016f26eca2a7e83b81861390cd2873e1e",
+      "old_graph_sha256": "d45e378c29ece2ae598295df743225afcb1cd689afc1f890804e776e87426901",
+      "new_graph_sha256": "4518f130a9c7f6593e8abea4c0860fd37d9b96a000d3f7694cdf9482a24a9256"
+    },
+    {
+      "key": "crystalserver:interaction/a_pirates_tail_quest/creaturescripts_tentacle7",
+      "source": {
+        "source": "crystalserver",
+        "path": "data-global/scripts/quests/a_pirates_tail_quest/creaturescripts_tentacle7.lua",
+        "callback_line": 37,
+        "blob_sha1": "59b309f152161a4cedb312c181e9c891317a4f71"
+      },
+      "sha256": "0a70f7e60854b5c7e1409aa777ed7b1bd3125f9e60cc41469197ea9c7a4699aa",
+      "old_graph_sha256": "8520c9b5cd517c1f34022ea2ec8dc1091d2294295210c845b18ddfa2887d1bd0",
+      "new_graph_sha256": "bf5256ac38a333d6457e28b786e3f60e8af5829847d3d5bd9e175c6bcf510ba3"
+    },
+    {
+      "key": "crystalserver:interaction/a_pirates_tail_quest/creaturescripts_tentacle8",
+      "source": {
+        "source": "crystalserver",
+        "path": "data-global/scripts/quests/a_pirates_tail_quest/creaturescripts_tentacle8.lua",
+        "callback_line": 30,
+        "blob_sha1": "6fe276d28216727d317877dd0ff0014b7a371da1"
+      },
+      "sha256": "2afa9e0e001082b31307b2505e77379967f6d460d52cadbb0af5e562e32ea8a8",
+      "old_graph_sha256": "ccb5cc1111351a8be9e47ba85fbca905529fc8c775a6cbb64a3220ece1dba032",
+      "new_graph_sha256": "2619d7e3a485f6f6fc4ff69073982d2d8c645e852cdfdd6dfed15582f06fe38c"
+    },
+    {
+      "key": "crystalserver:interaction/a_pirates_tail_quest/creaturescripts_tentacle9",
+      "source": {
+        "source": "crystalserver",
+        "path": "data-global/scripts/quests/a_pirates_tail_quest/creaturescripts_tentacle9.lua",
+        "callback_line": 37,
+        "blob_sha1": "6accf3f7075ddacc6be588294c6f0a724037a6f7"
+      },
+      "sha256": "0a21f1068049c0a89f229bb2bdb0a172fe994feeabe5558657af432117d24f53",
+      "old_graph_sha256": "2e67cc51407640c3be70a901f996e36fdf2109c3b010bb2649a7a79a684cd1bf",
+      "new_graph_sha256": "6ef50e7510434f445ae95b2e0a196935b9395dda31a730f6271f4fed95f3f747"
+    },
+    {
+      "key": "crystalserver:interaction/kilmaresh/movements_firetp",
+      "source": {
+        "source": "crystalserver",
+        "path": "data-global/scripts/quests/kilmaresh/movements_firetp.lua",
+        "callback_line": 43,
+        "blob_sha1": "cb98135915a5da4f0674dc97b6a97988a78d2902"
+      },
+      "sha256": "9e4fac3d772ef18adcc1e2006d447a152fc3b699cf1b57036965bab3d12a7e23",
+      "old_graph_sha256": "0a7bbaec107f128016ae5cc2ae54ff41986649f3a49f54ef6616b79cc28b1a22",
+      "new_graph_sha256": "470da138ea03c503e6581a84508ebb634ffb23f2fc975435e195a5fa9043fc8f"
+    },
+    {
+      "key": "crystalserver:interaction/targuna/creaturescripts_herald_of_fire",
+      "source": {
+        "source": "crystalserver",
+        "path": "data-global/scripts/quests/targuna/creaturescripts_herald_of_fire.lua",
+        "callback_line": 40,
+        "blob_sha1": "72b64fe3338c396cabdfe07f10995cd8a00972d4"
+      },
+      "sha256": "901ad3192582e0a4237d321b774dfbf8bf8fca4892a262a4fb23684a8d43e534",
+      "old_graph_sha256": "e06c10db28ca09eee1160a47f0e35144d4de0550242c219efefe3297d610d278",
+      "new_graph_sha256": "c76ddb3ab43adf85a2023d79cb6ee89275eefa1c9d159070ad697a1a9a5dbdc7"
+    }
+  ],
+  "copy_api_proof": {
+    "path": "/tmp/quest-completion-round9/review/tile-copy/copy-api-evidence.json",
+    "sha256": "7cf0448a167368f9617c7e80753a93ad2196bb58a8c6fb3ef3e1eed1d03f3e57",
+    "all_four_file_and_line_hashes_verified": true
+  },
+  "core_delta_path_sha256": "58c97caf78b7e6ecdac5292d71d956fc123e6c45df5e20c531160474255d3dd3",
+  "findings": [],
+  "limits": [
+    "Effective-digest guard and final canonical projection not yet qualified.",
+    "No Native readiness or runtime smoke asserted.",
+    "Full component suite not repeated."
+  ],
+  "file_hashes": {
+    "/workspace/quest-source-tile-r10-worktree/tools/content-schema/quest-authoring/lua_writers.py": "b1e6a164a3c2941b77eb3a0faabee5f5b7adeadf28e46091f7b7bb483105c4a2",
+    "/workspace/quest-source-tile-r10-worktree/tools/content-schema/quest-authoring/ots_interactions.py": "3508160258fc2a02821999fe5182968177dda36b58f461bed4395a08e5d65551",
+    "/workspace/quest-source-tile-r10-worktree/tools/content-schema/quest-authoring/test_tile_copy_proof.py": "c39e0d5a8b5d2f1ca0963d22f9ac8bef645ca1b2b6ae933d0a4918c084629776",
+    "/workspace/quest-source-tile-r10-worktree/tools/content-schema/quest-authoring/samples/interactions/interactions.json": "b1464bb78a8a61552325c3352688442204ba60b2f2717deaea4947c04654ad12",
+    "/workspace/quest-source-tile-r10-worktree/tools/content-schema/quest-authoring/samples/interactions/manifest.json": "9b41fc84c8ae9877df0f078c991581b62ef6923f4db98a1c9677dc8694156ced",
+    "/workspace/quest-source-tile-r10-worktree/tools/content-schema/quest-authoring/samples/readiness/readiness.json": "b0a290a5d236730e3a6c6cb7f788864493a5f2f8209159f6b42a10c7ece515ab",
+    "/workspace/quest-source-tile-r10-worktree/tools/content-schema/quest-authoring/samples/source_migration/bundle.json": "1991ea186f6b03041a1a570466118485e98fffb1977759c5ae8e75963cb2a0b8",
+    "/workspace/quest-source-tile-r10-worktree/tools/content-schema/quest-authoring/samples/catalogue/catalogue.json": "05c4804837d243fa551733173a2c8b139fe6a79f83cce871847bad5a8a42c537",
+    "/workspace/quest-source-tile-r10-worktree/tools/content-schema/quest-authoring/samples/gap-triage/triage.json": "86c49c393a3bfff338b3d31e842ec458324908056c9b5317bfb1967f9862527c",
+    "/workspace/quest-source-tile-r10-worktree/tools/content-schema/quest-authoring/samples/source_texts/source_texts.json": "0113c4f300d773d24ab01141c7767122511446298f2c660cee092aab2cc3b732"
+  },
+  "rebound_receipt_sha256": "f606d174feaa3f160f56c79f3739e618c57f978143dd4baef68fe6b6bad22594"
+}

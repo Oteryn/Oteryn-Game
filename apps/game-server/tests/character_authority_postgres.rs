@@ -2,19 +2,16 @@
 // Dedicated PostgreSQL target for WP5 #414 Character authority. Ordinary
 // workspace runs skip when the routed PostgreSQL service is absent; only
 // configured PostgreSQL 17.6 runs count as qualification evidence.
+extern crate oteryn_game_server as production_server;
 extern crate self as oteryn_game_server;
-#[allow(dead_code, unused_imports)]
-#[path = "../src/admission_evidence.rs"]
-pub mod admission_evidence;
+pub use production_server::admission_evidence;
 #[allow(dead_code, unused_imports)]
 #[path = "../src/character_bootstrap_intent.rs"]
 pub mod character_bootstrap_intent;
 #[allow(dead_code, unused_imports)]
 #[path = "../src/character_recovery_fence.rs"]
 pub mod character_recovery_fence;
-#[allow(dead_code, unused_imports)]
-#[path = "../src/domain/mod.rs"]
-pub mod domain;
+pub use production_server::domain;
 #[allow(dead_code, unused_imports)]
 #[path = "../src/durability/mod.rs"]
 mod durability;
@@ -24,6 +21,9 @@ pub mod foundation;
 #[allow(dead_code, unused_imports)]
 #[path = "../src/native_admission_source/mod.rs"]
 pub mod native_admission_source;
+#[allow(dead_code, unused_imports)]
+#[path = "../src/premium/mod.rs"]
+mod premium;
 
 use durability::DurabilityRoot;
 use durability::character_authority::CharacterAuthorityError;
@@ -2265,6 +2265,8 @@ mod character_stance_postgres_cases;
 // cases with the focused standalone target through the same protected lane.
 #[path = "support/charm_state_postgres_cases.rs"]
 mod charm_state_postgres_cases;
+#[path = "../src/gameplay_transport/charm.rs"]
+mod charm_transport;
 
 // CHEST-1 reward-claim MINT (a `once` RewardClaim into a new main backpack
 // entry) shares its cases with the focused standalone target through the same
@@ -2290,6 +2292,11 @@ mod account_achievement_postgres_cases;
 // share their cases with the protected PostgreSQL lane.
 #[path = "support/account_characters_projection_postgres_cases.rs"]
 mod account_characters_projection_postgres_cases;
+
+// PREM-1a Premium consumer fence (migration 0029) runs in the same protected lane, on the
+// CHARM-2 harness included above.
+#[path = "support/premium_fence_postgres_cases.rs"]
+mod premium_fence_postgres_cases;
 
 // CHAR-BUILD-1a build state, build receipts and death build fields (migration
 // 0030) and their admission verifier checks, on the CHARM-2 harness included above.
@@ -2999,3 +3006,55 @@ mod item_fee_burn_postgres_cases;
 // no CI-run PostgreSQL target includes. Runs without a database.
 #[path = "support/postgres_target_aggregation.rs"]
 mod postgres_target_aggregation;
+
+// Both new inert public consumers resolve current recovery evidence independently of history.
+#[test]
+fn proficiency_read_public_consumers_reject_current_recovery_provenance_substitution()
+-> bestiary_postgres_harness::TestResult {
+    use bestiary_postgres_harness::{CHARACTER, Harness, configured_admin, debug, runtime};
+    use durability::DurabilityError;
+    use durability::character_progression::CharacterProgressionError::Unavailable;
+    let Some(admin) = configured_admin() else {
+        return Ok(());
+    };
+    runtime()?.block_on(async {
+        let harness = Harness::create(admin, "proficiency_inert_read_fence", true).await?;
+        {
+            let seal = harness.recovery.seal_current().map_err(debug)?;
+            let authority = harness
+                .root
+                .open_character_authority(&seal)
+                .await
+                .map_err(debug)?;
+            let mut restore = harness.pool.begin().await?;
+            sqlx::query("SET LOCAL session_replication_role=replica")
+                .execute(&mut *restore)
+                .await?;
+            // Only current DB issuance changes; the independent sealed record stays untouched.
+            sqlx::query("UPDATE game_character_recovery_admissions SET issued_at=issued_at+1")
+                .execute(&mut *restore)
+                .await?;
+            restore.commit().await?;
+            let character = CharacterId::from_bytes(id(CHARACTER)).map_err(debug)?;
+            let root = &harness.root;
+            for outcome in [
+                root.read_character_proficiency_state(&authority, character)
+                    .await
+                    .map(|_| ()),
+                root.read_character_proficiency_occurrence(&authority, character, id(90))
+                    .await
+                    .map(|_| ()),
+            ] {
+                // Require the actual fence disposition, not absent migration/schema 42P01.
+                assert!(
+                    matches!(outcome, Err(Unavailable(DurabilityError::Unavailable))),
+                    "{outcome:?}"
+                );
+            }
+        }
+        harness.cleanup().await
+    })
+}
+
+#[path = "support/character_proficiency_postgres_cases.rs"]
+mod character_proficiency_postgres_cases;

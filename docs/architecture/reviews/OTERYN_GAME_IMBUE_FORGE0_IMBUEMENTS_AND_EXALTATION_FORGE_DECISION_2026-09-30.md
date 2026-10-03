@@ -193,6 +193,11 @@ Every effect is a GAME-ABILITY-01 input read from the equipped items at the stag
 | Capacity (Featherweight) | derived capacity | the item admission check reads it (§5.1) |
 | Paralysis deflection (Vibrancy) | CONDITIONS-0 admission of paralyze | chance, RNG purpose `imbue_deflect` |
 
+**Amendment (pending on acceptance of PROF-EFFECT-0,
+`OTERYN_GAME_PROF_EFFECT0_KILL_CREDIT_AND_PERK_EFFECTS_DECISION_2026-10-01.md` §4.3).** Strike's
+chance and extra damage are summed with every other critical source into one roll per hit under the
+purpose `crit`; `imbue_crit` is not used.
+
 ### 5.1 Capacity in the database
 
 Composition rule 5 checks capacity inside the PostgreSQL transaction. That check counts the
@@ -266,6 +271,9 @@ counts. Items already carried stay carried when capacity falls (Global).
   `game_character_forge_dust` (CharacterId, `balance` 0 to `dust_limit`, `dust_limit` 100-225,
   `last_entry_id`) with an immutable ledger (`GAIN`, `SPEND`, `CONVERT`, `LIMIT_RAISE`), as
   BANK-0 §3. Character scope, not Account: Global keeps dust per character.
+  **Amendment (pending on acceptance of PROFICIENCY-1; `reviews/OTERYN_GAME_PROFICIENCY1_PERK_MODIFICATION_AND_CATALYSTS_DECISION_2026-10-01.md` §4).** Weapon Proficiency modifications, ranks and
+  reshape offers will become a second dust sink under `ProficiencyCause`, using the same ledger and
+  lock, once a later DUR-03 amendment admits their shape; nothing is admitted yet.
 - **Slivers and exalted cores are items**: stackable, marketable and tradeable per content.
 - **Dust limit:** raised by one for (limit − 75) dust, up to 225 (Canary; `PARITY_PENDING`). A
   gain above the limit is lost, as in Global; the lost part is recorded in the ledger entry.

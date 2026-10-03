@@ -19,15 +19,16 @@ concurrency:
 jobs:
   audit:
     name: Merge authority audit / protected-base validate
+    if: github.event.pull_request.base.ref == 'main' || !github.event.pull_request.base.ref
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
       contents: read
       pull-requests: read
     env:
-      EXPECTED_MERGE_GROUP_GATE_BLOB: "9e7f083a7e2a58a1d03910d90a9423dd7ec5478c"
-      EXPECTED_AGENT_GOVERNANCE_BLOB: "a1a597016af6d17315b46d5720396182a6cf8bae"
-      EXPECTED_MERGE_GATE_BLOB: "ea38b9ccbbfb171aeca4b38762554497f8557dc3"
+      EXPECTED_MERGE_GROUP_GATE_BLOB: "860a684e5ec71f50ae899f9db36b7c07f9fca623"
+      EXPECTED_AGENT_GOVERNANCE_BLOB: "eda4b9f3a006633328ffd48bd64c791274b50b08"
+      EXPECTED_MERGE_GATE_BLOB: "6089ea21beb7b0305c51027797d603b75d9e77dd"
     steps:
       - name: Validate control-plane candidate as inert data
         shell: bash
@@ -199,7 +200,7 @@ jobs:
               '  merge_group:\n    types: [checks_requested]\n',
               '    name: game-gate\n',
               '    if: always()\n',
-              '    needs: [candidate, dependency_review, codeql, rust_linux, durability_postgres, rust_windows, rust_supply_chain, node_boot, server_seam]\n',
+              '    needs: [candidate, dependency_review, codeql, atlas_fullworld, rust_linux, durability_postgres, rust_windows, rust_supply_chain, node_boot, server_seam]\n',
               '    name: Merge Queue / candidate and governance\n',
               '          python tools/agents/tests/test_governance_lifecycle_discovery.py\n',
               '          python tools/repository/test_validate_merge_group_pg_sim.py\n',
@@ -222,7 +223,7 @@ jobs:
               '              test -f "$path" && test ! -L "$path"\n',
               '              test "$(git hash-object -- "$path")" = "$(git rev-parse "$HEAD_SHA:$path")"\n',
               '              verify_registered_target_binding "$name" "$path"\n',
-              '              cargo +1.94.0 test --locked -p oteryn-game-server --test "$name"\n',
+              '              cargo +1.94.0 test --locked --workspace --test "$name"\n',
               '          run_registered_target durability_postgres apps/game-server/tests/durability_postgres.rs\n',
               '          run_registered_target character_authority_postgres apps/game-server/tests/character_authority_postgres.rs\n',
               '          run_registered_target runtime_scope_assignment_postgres apps/game-server/tests/runtime_scope_assignment_postgres.rs\n',

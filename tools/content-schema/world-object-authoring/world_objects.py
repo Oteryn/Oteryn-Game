@@ -508,6 +508,16 @@ def validate_record(record):
             errors.append(f"{section}: only allowed on kind {section_kind!r}")
         if section not in record and kind == section_kind:
             errors.append(f"{section}: required on kind {section_kind!r}")
+    import official_corpses
+
+    source = record["provenance"]["source"]
+    if (
+        source.get("engine") == "official_client"
+        or source.get("profile") == official_corpses.PROFILE
+        or record["provenance"]["source_item_id"] in official_corpses.IDS
+        or record["provenance"]["item_pointer"]["key"] in official_corpses.KEYS
+    ):
+        errors.extend(official_corpses.validate_record(record))
     for field in known_fields(record):
         if field not in record["provenance"]["fields"]:
             errors.append(f"provenance/fields: no source for KNOWN {field}")

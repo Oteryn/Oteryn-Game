@@ -1,0 +1,142 @@
+{
+  "classification": "OTS_HYPOTHESIS_ONLY",
+  "charged_items": [
+    {
+      "tibia_id": 3048,
+      "default_charges": 20
+    },
+    {
+      "tibia_id": 3054,
+      "default_charges": 200
+    },
+    {
+      "tibia_id": 3056,
+      "default_charges": 200
+    },
+    {
+      "tibia_id": 3081,
+      "default_charges": 5
+    },
+    {
+      "tibia_id": 3082,
+      "default_charges": 50
+    },
+    {
+      "tibia_id": 3083,
+      "default_charges": 150
+    },
+    {
+      "tibia_id": 3084,
+      "default_charges": 250
+    },
+    {
+      "tibia_id": 3085,
+      "default_charges": 200
+    },
+    {
+      "tibia_id": 3284,
+      "default_charges": 1
+    }
+  ],
+  "source_refs": [
+    {
+      "repository": "opentibiabr/canary",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "path": "data/items/items.xml",
+      "sha256": "1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2"
+    },
+    {
+      "repository": "opentibiabr/canary",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "path": "src/lua/functions/creatures/player/player_functions.cpp",
+      "sha256": "d9860d99eb8893b80d7b6d77ac2fad433733c360ce143c1d723d78a0d7de2aac"
+    },
+    {
+      "repository": "opentibiabr/canary",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "path": "src/lua/functions/items/container_functions.cpp",
+      "sha256": "a029714c3828a90ba891cc4bb613924fd274403531f55c512b94a99c1c5f61b6"
+    },
+    {
+      "repository": "opentibiabr/canary",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "path": "src/items/item.cpp",
+      "sha256": "9bbf46dbecd43748737a2636eb2200f39f5a35d7fa524a800adabaa10473b3bb"
+    },
+    {
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "path": "data/items/items.xml",
+      "sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb"
+    },
+    {
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "path": "src/lua/functions/creatures/player/player_functions.cpp",
+      "sha256": "37e768c6c77db1e555bcfb02de5b549a8661e4bcc94ec0cb506244035427f11e"
+    },
+    {
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "path": "src/lua/functions/items/container_functions.cpp",
+      "sha256": "70bc1c33d6b5f612400ec52cd218c8ab6d1190605ddf24f1454fd790c66d35fd"
+    },
+    {
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "path": "src/items/item.cpp",
+      "sha256": "3484af408e0b25a7204a03725318b6e0c55811cef4922bbfd54af33f4b6661f5"
+    }
+  ],
+  "rule": "The chest helper passes exactly itemid and count to addItem. For a charged non-stackable Item that second argument is a subtype: one Item carrying that many charges. The original source count is retained; native lowering is not performed.",
+  "citations": [
+    {
+      "repository": "opentibiabr/canary",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "path": "src/lua/functions/creatures/player/player_functions.cpp",
+      "lines": [
+        2370,
+        2374,
+        2379,
+        2402
+      ]
+    },
+    {
+      "repository": "opentibiabr/canary",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "path": "src/lua/functions/items/container_functions.cpp",
+      "lines": [
+        171,
+        177
+      ]
+    },
+    {
+      "repository": "opentibiabr/canary",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "path": "src/items/item.cpp",
+      "lines": [
+        712,
+        714,
+        716
+      ]
+    },
+    {
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "path": "src/lua/functions/creatures/player/player_functions.cpp",
+      "lines": [
+        2639,
+        2643
+      ]
+    },
+    {
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "path": "src/lua/functions/items/container_functions.cpp",
+      "lines": [
+        177,
+        183
+      ]
+    }
+  ]
+}

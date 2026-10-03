@@ -1,0 +1,12 @@
+{
+  "schema": "OTERYN_R13_REWARD_ALIAS_CLOSURE_REPAIR/v1",
+  "parent_handoff_sha256": "e94972e3b41bd5e2b76acf251f0a273151fde0b897a64c51a46cfd62c4b57e9e",
+  "target_source_outputs_exact": [
+    "canary",
+    "crystalserver"
+  ],
+  "combined_compiler_sha256": "c2c4b5c1206fbdfff6c9922d64815a6244850eafcd18e454145b01a9d8326618",
+  "new_helper_sha256": "0e844abbc713ebbfb14ffc9000ddee7ef1f121d35878486c97dd6dcdc71c47bc",
+  "focused_tests": 8,
+  "runtime_enabled": false
+}

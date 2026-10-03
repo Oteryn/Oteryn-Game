@@ -1,4 +1,4 @@
--- Isolated PostgreSQL guard qualification after the Item guard harness and0051.
+-- Isolated PostgreSQL guard qualification after the Item guard harness and0052.
 -- Administrative fixture rows prove constraints, not playable source admission.
 \set ON_ERROR_STOP on
 SET search_path=spell_items_asset_audit,pg_catalog;

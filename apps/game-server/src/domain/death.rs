@@ -94,6 +94,7 @@ pub enum PveDeathError {
     InvalidLevel,
     NegativeExperience,
     TooManyBlessings,
+    InvalidBlessReduction,
     DuplicateSlot,
     AmuletOfLossNotWorn,
     Overflow,
@@ -113,11 +114,27 @@ pub fn death_experience_loss(
     regular_blessings: u8,
     promotion_benefit_current: bool,
 ) -> Result<u128, PveDeathError> {
+    death_experience_loss_with_bless(level, regular_blessings, promotion_benefit_current, 0)
+}
+
+/// Bless reduces the residual death experience loss by 6%, 9% or 12%.
+/// Zero explicitly retains the death calculation without a current Bless assignment.
+/// Apply the multiplier after blessings and promotion, with the existing D68 floor once,
+/// before capping the loss at the character's current experience.
+pub fn death_experience_loss_with_bless(
+    level: u32,
+    regular_blessings: u8,
+    promotion_benefit_current: bool,
+    bless_reduction_percent: u8,
+) -> Result<u128, PveDeathError> {
     if level == 0 {
         return Err(PveDeathError::InvalidLevel);
     }
     if regular_blessings > MAX_REGULAR_BLESSINGS {
         return Err(PveDeathError::TooManyBlessings);
+    }
+    if !matches!(bless_reduction_percent, 0 | 6 | 9 | 12) {
+        return Err(PveDeathError::InvalidBlessReduction);
     }
     let level = u128::from(level);
     // L² − 5L + 8 = L(L − 5) + 8 is positive for every L ≥ 1.
@@ -130,7 +147,8 @@ pub fn death_experience_loss(
         .checked_mul(50)
         .and_then(|value| value.checked_mul(span))
         .and_then(|value| value.checked_mul(percent_kept))
-        .map(|value| value / 10_000)
+        .and_then(|value| value.checked_mul(100 - u128::from(bless_reduction_percent)))
+        .map(|value| value / 1_000_000)
         .ok_or(PveDeathError::Overflow)
 }
 
@@ -139,14 +157,26 @@ pub fn calculate_pve_death<I: Clone>(
     decision_root: &GameplayDecisionRoot,
     death_occurrence: DecisionOccurrenceId,
 ) -> Result<PveDeathOutcome<I>, PveDeathError> {
+    calculate_pve_death_with_bless(input, 0, decision_root, death_occurrence)
+}
+
+/// Uses the same PvE death outcome, with a current Bless reduction applied to experience only.
+/// The owning transaction must resolve the reduction from the assignment to the lethal creature.
+pub fn calculate_pve_death_with_bless<I: Clone>(
+    input: &PveDeathInput<'_, I>,
+    bless_reduction_percent: u8,
+    decision_root: &GameplayDecisionRoot,
+    death_occurrence: DecisionOccurrenceId,
+) -> Result<PveDeathOutcome<I>, PveDeathError> {
     let experience = input.total_experience.get();
     if experience < 0 {
         return Err(PveDeathError::NegativeExperience);
     }
-    let raw_loss = death_experience_loss(
+    let raw_loss = death_experience_loss_with_bless(
         input.level,
         input.regular_blessings,
         input.promotion_benefit_current,
+        bless_reduction_percent,
     )?;
     let experience_lost = i64::try_from(raw_loss).unwrap_or(i64::MAX).min(experience);
 
@@ -305,6 +335,73 @@ mod tests {
                 Ok(all_reductions)
             );
         }
+    }
+
+    #[test]
+    fn bless_reduces_the_residual_loss_at_each_stage() {
+        // Independent fixed oracles: the 7 blessings and promotion retain 14% first.
+        for (reduction, at_level_100, at_level_180) in [
+            (6, 93_843, 476_842),
+            (9, 90_848, 461_623),
+            (12, 87_853, 446_405),
+        ] {
+            assert_eq!(
+                death_experience_loss_with_bless(100, 7, true, reduction),
+                Ok(at_level_100)
+            );
+            assert_eq!(
+                death_experience_loss_with_bless(180, 7, true, reduction),
+                Ok(at_level_180)
+            );
+        }
+        assert_eq!(
+            death_experience_loss_with_bless(100, 0, false, 12),
+            Ok(627_528)
+        );
+        for invalid in [1, 5, 10, 13, 100, 255] {
+            assert_eq!(
+                death_experience_loss_with_bless(100, 0, false, invalid),
+                Err(PveDeathError::InvalidBlessReduction)
+            );
+        }
+        assert!(death_experience_loss_with_bless(u32::MAX, 0, false, 12).is_ok());
+    }
+
+    #[test]
+    fn bless_pve_outcome_changes_only_experience() {
+        let equipment = full_equipment();
+        let death = input(&equipment, 0);
+        let plain = calculate_pve_death(&death, &ROOT, occurrence(17)).expect("a valid PvE death");
+        let blessed = calculate_pve_death_with_bless(&death, 12, &ROOT, occurrence(17))
+            .expect("a valid death with Bless");
+        assert_eq!(blessed.experience_lost, ExactI64::new(627_528));
+        assert_eq!(blessed.experience_after, ExactI64::new(15_067_272));
+        assert_eq!(blessed.blessings_consumed, plain.blessings_consumed);
+        assert_eq!(
+            blessed.amulet_of_loss_consumed,
+            plain.amulet_of_loss_consumed
+        );
+        assert_eq!(blessed.lost_items, plain.lost_items);
+        assert_eq!(blessed.grants_empty_bag, plain.grants_empty_bag);
+    }
+
+    #[test]
+    fn bless_pve_outcome_rounds_once_before_the_experience_cap() {
+        let mut death = input(&[], 7);
+        death.level = 180;
+        death.promotion_benefit_current = true;
+        let blessed = calculate_pve_death_with_bless(&death, 6, &ROOT, occurrence(18))
+            .expect("a valid death with Bless");
+        // Flooring the pre-Bless loss first would incorrectly produce 476,841.
+        assert_eq!(blessed.experience_lost, ExactI64::new(476_842));
+
+        death.level = 100;
+        death.total_experience = ExactI64::new(80_000);
+        let blessed = calculate_pve_death_with_bless(&death, 12, &ROOT, occurrence(19))
+            .expect("a valid death with Bless");
+        // Capping first and reducing that cap would incorrectly leave 9,600 XP.
+        assert_eq!(blessed.experience_lost, ExactI64::new(80_000));
+        assert_eq!(blessed.experience_after, ExactI64::new(0));
     }
 
     #[test]

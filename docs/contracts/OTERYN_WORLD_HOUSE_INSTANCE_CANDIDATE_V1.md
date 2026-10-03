@@ -1,10 +1,10 @@
 # World-global House Instance candidate
 
 The user authorized Aleta alongside native GUI ACL management. Both use the
-same actual World-global House custody and ACL owner (0037). A Channel map cell
+same actual World-global House custody and ACL owner (0038). A Channel map cell
 cannot create a private property copy or infer commercial acquisition.
 
-Migration 0046 binds an already allocated `(WorldId, nativeHouseKey)` to exactly
+Migration 0047 binds an already allocated `(WorldId, nativeHouseKey)` to exactly
 one UUIDv7 Instance, native House revision, compatible Content digest and
 qualified placement digest. Runtime can read the immutable binding; only the
 control owner may insert it. There is no Game allocation API or seed. The

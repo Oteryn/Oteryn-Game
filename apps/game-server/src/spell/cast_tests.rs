@@ -844,3 +844,74 @@ fn actual_enchant_condition_changes_legacy_heal_draw_until_expiry_without_traini
     assert_eq!(state.character_facts(), base);
     assert_eq!(state.training, training);
 }
+
+#[test]
+fn resolved_health_credit_is_capped_and_preserves_unrelated_state() {
+    let state = wounded(druid(8), 100);
+    for (requested, expected) in [(0, 0), (7, 7), (85, 85), (u64::MAX, 85)] {
+        let (next, gained) = state.after_health_gain(requested).expect("credit");
+        let mut expected_state = state.clone();
+        expected_state.health += expected;
+        if expected != 0 {
+            expected_state.revision += 1;
+        }
+        assert_eq!(gained, expected);
+        assert_eq!(next, expected_state);
+        assert_eq!((state.health, state.revision), (100, 1));
+    }
+    let full = PlayerSpellState::new(druid(8), 0, 0).expect("full");
+    assert_eq!(full.after_health_gain(u64::MAX), Some((full.clone(), 0)));
+}
+
+#[test]
+fn resolved_mana_credit_is_capped_and_preserves_unrelated_state() {
+    let state = PlayerSpellState {
+        mana: 70,
+        ..PlayerSpellState::new(druid(8), 0, 0).expect("state")
+    };
+    for (requested, expected) in [(0, 0), (7, 7), (20, 20), (u64::MAX, 20)] {
+        let (next, gained) = state.after_mana_gain(requested).expect("credit");
+        let mut expected_state = state.clone();
+        expected_state.mana += expected;
+        if expected != 0 {
+            expected_state.revision += 1;
+        }
+        assert_eq!(gained, expected);
+        assert_eq!(next, expected_state);
+        assert_eq!((state.mana, state.revision), (70, 1));
+    }
+    let full = PlayerSpellState::new(druid(8), 0, 0).expect("full");
+    assert_eq!(full.after_mana_gain(u64::MAX), Some((full.clone(), 0)));
+}
+
+#[test]
+fn positive_vitals_credit_refuses_revision_exhaustion_without_mutation() {
+    let exhausted = PlayerSpellState {
+        health: 100,
+        mana: 70,
+        revision: u64::MAX,
+        ..PlayerSpellState::new(druid(8), 0, 0).expect("state")
+    };
+    let before = exhausted.clone();
+    assert!(exhausted.after_health_gain(1).is_none());
+    assert!(exhausted.after_mana_gain(1).is_none());
+    assert_eq!(exhausted, before);
+    assert_eq!(exhausted.after_health_gain(0), Some((exhausted.clone(), 0)));
+    assert_eq!(exhausted.after_mana_gain(0), Some((exhausted.clone(), 0)));
+}
+
+#[test]
+fn vitals_credit_refuses_a_pool_above_its_current_maximum() {
+    let invalid_health = PlayerSpellState {
+        health: 186,
+        ..PlayerSpellState::new(druid(8), 0, 0).expect("state")
+    };
+    assert!(invalid_health.after_health_gain(1).is_none());
+    assert_eq!((invalid_health.health, invalid_health.revision), (186, 1));
+    let invalid_mana = PlayerSpellState {
+        mana: 91,
+        ..PlayerSpellState::new(druid(8), 0, 0).expect("state")
+    };
+    assert!(invalid_mana.after_mana_gain(1).is_none());
+    assert_eq!((invalid_mana.mana, invalid_mana.revision), (91, 1));
+}

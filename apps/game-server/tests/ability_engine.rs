@@ -92,6 +92,19 @@ mod foundation {
     #[derive(Debug, Clone, Copy, PartialEq, Eq)]
     pub(crate) struct CommandRef;
     #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    pub(crate) struct CharacterLease;
+    impl CharacterLease {
+        pub(crate) const fn character_id(self) -> CharacterId {
+            CharacterId
+        }
+        pub(crate) const fn generation(self) -> u64 {
+            1
+        }
+        pub(crate) const fn accepts_generation(self, generation: u64) -> bool {
+            generation == 1
+        }
+    }
+    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
     pub(crate) struct AttackerCommand;
     impl AttackerCommand {
         pub(crate) const fn new(_: CharacterId, _: u64, _: CommandRef, _: u16) -> Self {
@@ -107,6 +120,7 @@ mod foundation {
     #[derive(Debug, PartialEq, Eq)]
     pub(crate) enum CarrierError {
         Invalid,
+        SupersededAttackerSession,
     }
     pub(crate) struct CurrentOwnerExactActorCommit<'a>(pub(crate) &'a mut Option<Vec<u8>>);
     impl CurrentOwnerExactActorCommit<'_> {
@@ -418,6 +432,19 @@ fn plan_canonicalizes_calculation_and_effect_order_before_sequential_commit()
         .collect::<Vec<_>>();
     assert_eq!(effect_targets, vec!["target:a", "target:b"]);
     assert_eq!(stage_names, vec!["stage:a", "stage:z"]);
+
+    let declared = EffectPlan::ordered_sequential(
+        plan.occurrence().clone(),
+        plan.intent().clone(),
+        vec![Effect::heal("target:b", 2)?, Effect::damage("target:a", 3)?],
+        plan.calculation_stages().to_vec(),
+        plan.commit_group().owner_scope(),
+        plan.commit_group().group_id(),
+    )?;
+    assert_eq!(declared.effects()[0].target().as_str(), "target:b");
+    assert_eq!(declared.effects()[1].target().as_str(), "target:a");
+    assert_eq!(declared.calculation_stages(), plan.calculation_stages());
+    assert_eq!(declared.sub_occurrence(1).map(|sub| sub.ordinal()), Some(1));
 
     let mut engine = AbilityEngine::new();
     let receipt: CommitReceipt = engine.commit(plan)?;

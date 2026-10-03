@@ -39,14 +39,16 @@ pub(crate) use runtime_actor_carrier::runtime_actor_spell_types;
 pub(crate) use runtime_actor_carrier::runtime_actor_spell_types::DeferredCommitAuthority;
 #[allow(unused_imports)]
 pub(crate) use runtime_actor_carrier::{
-    ABILITY01_EFFECT_PLAN_ENTRIES_MAX, AttackerCommand,
-    COMBAT01_DAMAGE_CONTRIBUTORS_PER_CREATURE_MAX,
+    ABILITY01_EFFECT_PLAN_ENTRIES_MAX, ActorConditionPlan, ActorConditionTransition,
+    ApplicationFacts, AttackerCommand, COMBAT01_DAMAGE_CONTRIBUTORS_PER_CREATURE_MAX,
     COMBAT01_DAMAGE_RECEIPTS_PER_CREATURE_GENERATION_MAX, CarrierError, ChannelContentPin,
-    ChannelRuntimeV1, CommittedLethalReceipt, ControlLossMark, CreatureDeathOccurrenceKey,
-    CreatureDeathOccurrenceRef, CurrentOwnerCombatDeath, CurrentOwnerExactActorCommit,
-    CurrentOwnerExactActorLookup, CurrentOwnerMovementPosition, ExactActorRef, FirstEntryPosition,
-    MovementFacing, MovementLocalPosition, MovementPositionContext, MovementPositionSnapshot,
-    OwnerDamageCommand, OwnerDamageResult, PlayerActorReservation, RuntimeCorpseProjection,
+    ChannelRuntimeV1, CommittedLethalReceipt, ConditionDefinition, ConditionOwnerError,
+    ConditionSource, ConditionSourceKind, ConditionStore, ConditionType, ConditionValues,
+    ControlLossMark, CreatureDeathOccurrenceKey, CreatureDeathOccurrenceRef,
+    CurrentOwnerCombatDeath, CurrentOwnerExactActorCommit, CurrentOwnerExactActorLookup,
+    CurrentOwnerMovementPosition, ExactActorRef, FirstEntryPosition, MovementFacing,
+    MovementLocalPosition, MovementPositionContext, MovementPositionSnapshot, OwnerDamageCommand,
+    OwnerDamageResult, PlayerActorReservation, RuntimeCorpseProjection, SpeedRange,
 };
 #[cfg(test)]
 #[allow(unused_imports)] // Each path-included Foundation test crate uses only some fixtures.

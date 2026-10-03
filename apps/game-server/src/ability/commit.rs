@@ -313,6 +313,211 @@ pub(crate) fn commit_exact_owner_damage(
         .map_err(OwnerCommitError::Owner)
 }
 
+/// Immutable provenance minted only after the existing atomic owner commit. This is not current
+/// authority: the descendant still requires an independently supplied owner and command fence.
+#[derive(Debug)]
+#[cfg_attr(
+    test,
+    allow(
+        dead_code,
+        reason = "the standalone Ability suite has no native owner fixture"
+    )
+)]
+pub(crate) struct OwnerCommittedPrimaryDamage {
+    plan: EffectPlan,
+    target: crate::foundation::ExactActorRef,
+    attacker: crate::foundation::CharacterId,
+    lease_generation: u64,
+    command: crate::foundation::CommandRef,
+    result: crate::foundation::OwnerDamageResult,
+}
+
+impl OwnerCommittedPrimaryDamage {
+    #[cfg_attr(
+        test,
+        allow(
+            dead_code,
+            reason = "actual receipt evaluation runs in the native owner suite"
+        )
+    )]
+    pub(crate) const fn result(&self) -> &crate::foundation::OwnerDamageResult {
+        &self.result
+    }
+}
+
+/// Mint the sealed parent from real owner-issued HP facts, never a predicted or supplied result.
+#[allow(dead_code)]
+pub(crate) fn commit_exact_owner_primary_damage(
+    owner: &mut crate::foundation::CurrentOwnerExactActorCommit<'_>,
+    resolved: &super::exact_actor_resolution::ResolvedExactActor,
+    plan: &EffectPlan,
+    attacker: crate::foundation::CharacterId,
+    lease_generation: u64,
+    command: crate::foundation::CommandRef,
+) -> Result<OwnerCommittedPrimaryDamage, OwnerCommitError> {
+    let result =
+        commit_exact_owner_damage(owner, resolved, plan, attacker, lease_generation, command)?;
+    Ok(OwnerCommittedPrimaryDamage {
+        plan: plan.clone(),
+        target: resolved.target(),
+        attacker,
+        lease_generation,
+        command,
+        result,
+    })
+}
+
+/// A leaf source. This receipt cannot be used as a sealed primary; consumers map it explicitly
+/// to CharmHitSource::CharmDamage and never re-enter Charm hooks from it.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum OwnerCharmDamageSource {
+    CharmDamage,
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub(crate) struct OwnerCharmDamageResult {
+    pub(crate) result: crate::foundation::OwnerDamageResult,
+    pub(crate) source: OwnerCharmDamageSource,
+}
+
+/// Frozen post-commit root entries: the exact committed primary prefix at index 0 and the new
+/// generated damage at index 1. Only index 1 is committed; the original atomic binding is never
+/// replaced by this expanded plan. Retain this value for retries, including parent-receipt eviction.
+#[derive(Debug)]
+pub(crate) struct OwnerCharmDamagePlan {
+    plan: EffectPlan,
+    binding: Box<[u8]>,
+    target: crate::foundation::ExactActorRef,
+    attacker: crate::foundation::CharacterId,
+    lease_generation: u64,
+    command: crate::foundation::CommandRef,
+}
+
+impl OwnerCharmDamagePlan {
+    /// Run reaction evaluation from `parent.result()` first, then freeze its mitigated outcome.
+    /// A lethal/non-reducing parent is terminal for these attack procs; it stays committed.
+    #[cfg_attr(
+        test,
+        allow(
+            dead_code,
+            reason = "native descendant preparation runs in the owner suite"
+        )
+    )]
+    pub(crate) fn prepare(
+        parent: &OwnerCommittedPrimaryDamage,
+        plan: EffectPlan,
+    ) -> Result<Option<Self>, OwnerCommitError> {
+        if parent.result.health_after <= 0
+            || parent.result.health_before <= parent.result.health_after
+        {
+            return Ok(None);
+        }
+        if plan.effects().len() != 2
+            || plan.commit_group().mode() != super::CommitGroupMode::OrderedSequential
+            || plan.occurrence() != parent.plan.occurrence()
+            || plan.intent() != parent.plan.intent()
+            || plan.commit_group().owner_scope() != parent.plan.commit_group().owner_scope()
+            || plan.commit_group().group_id() != parent.plan.commit_group().group_id()
+            || plan.effects()[0] != parent.plan.effects()[0]
+        {
+            return Err(OwnerCommitError::InvalidPlan);
+        }
+        let Effect::Damage { target, magnitude } = &plan.effects()[1] else {
+            return Err(OwnerCommitError::InvalidPlan);
+        };
+        if *magnitude <= 0 || target != parent.plan.effects()[0].target() {
+            return Err(OwnerCommitError::InvalidPlan);
+        }
+        let prefix = encode_owner_damage_plan(&parent.plan).map_err(OwnerCommitError::Plan)?;
+        let child = encode_owner_damage_plan(&plan).map_err(OwnerCommitError::Plan)?;
+        let tag = b"oteryn.charm.damage.descendant.v1\0";
+        let bytes = tag
+            .len()
+            .checked_add(8 + 16)
+            .and_then(|size| size.checked_add(prefix.len()))
+            .and_then(|size| size.checked_add(child.len()))
+            .filter(|size| *size <= super::MAX_EFFECT_PLAN_BYTES)
+            .ok_or(OwnerCommitError::Plan(AbilityError::EffectPlanTooLarge))?;
+        let mut binding = Vec::new();
+        binding
+            .try_reserve_exact(bytes)
+            .map_err(|_| OwnerCommitError::Plan(AbilityError::RetainedByteOverflow))?;
+        binding.extend_from_slice(tag);
+        for encoded in [&prefix, &child] {
+            let length = u32::try_from(encoded.len())
+                .map_err(|_| OwnerCommitError::Plan(AbilityError::RetainedByteOverflow))?;
+            binding.extend_from_slice(&length.to_be_bytes());
+            binding.extend_from_slice(encoded);
+        }
+        binding.extend_from_slice(&parent.result.health_before.to_be_bytes());
+        binding.extend_from_slice(&parent.result.health_after.to_be_bytes());
+        Ok(Some(Self {
+            plan,
+            binding: binding.into_boxed_slice(),
+            target: parent.target,
+            attacker: parent.attacker,
+            lease_generation: parent.lease_generation,
+            command: parent.command,
+        }))
+    }
+}
+
+/// Commit only the actual descendant entry 1 through the same physical owner boundary. Immutable
+/// parent provenance never supplies current authority: owner, attacker lease and command are
+/// independently supplied and checked at this call, then revalidated by the owner at its write.
+/// `current_lease` is the attacker's current `CharacterLease` (`GameSession::character_lease()`
+/// or the current admission authority), resolved at this write, never from `frozen`. A lease
+/// generation other than the frozen primary's means the attacker's session was superseded after
+/// the primary commit; the creature's high-water mark alone cannot see that, so it is refused
+/// here before the owner write.
+#[allow(dead_code)]
+pub(crate) fn commit_exact_owner_charm_damage(
+    owner: &mut crate::foundation::CurrentOwnerExactActorCommit<'_>,
+    frozen: &OwnerCharmDamagePlan,
+    current_lease: crate::foundation::CharacterLease,
+    command: crate::foundation::CommandRef,
+) -> Result<OwnerCharmDamageResult, OwnerCommitError> {
+    let attacker = current_lease.character_id();
+    if attacker != frozen.attacker || command != frozen.command {
+        return Err(OwnerCommitError::InvalidPlan);
+    }
+    if !current_lease.accepts_generation(frozen.lease_generation) {
+        return Err(OwnerCommitError::Owner(
+            crate::foundation::CarrierError::SupersededAttackerSession,
+        ));
+    }
+    let lease_generation = current_lease.generation();
+    let Effect::Damage { target, magnitude } = &frozen.plan.effects()[1] else {
+        return Err(OwnerCommitError::InvalidPlan);
+    };
+    let sub_ordinal = frozen
+        .plan
+        .sub_occurrence(1)
+        .and_then(|sub| u16::try_from(sub.ordinal()).ok())
+        .ok_or(OwnerCommitError::InvalidPlan)?;
+    let result = owner
+        .commit_damage_for_attacker(
+            frozen.target,
+            crate::foundation::AttackerCommand::new(
+                attacker,
+                lease_generation,
+                command,
+                sub_ordinal,
+            ),
+            crate::foundation::OwnerDamageCommand {
+                target: target.as_str().as_bytes(),
+                occurrence: &[],
+                binding: &frozen.binding,
+                damage: *magnitude,
+            },
+        )
+        .map_err(OwnerCommitError::Owner)?;
+    Ok(OwnerCharmDamageResult {
+        result,
+        source: OwnerCharmDamageSource::CharmDamage,
+    })
+}
+
 #[derive(Debug, PartialEq, Eq)]
 #[allow(dead_code)]
 pub(crate) enum OwnerCommitError {

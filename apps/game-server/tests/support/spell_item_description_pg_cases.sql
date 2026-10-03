@@ -1,5 +1,5 @@
 -- PostgreSQL guard qualification only. Run after the isolated Item guard harness
--- and migration0050. The Character fixture is administratively seeded; this is
+-- and migration0051. The Character fixture is administratively seeded; this is
 -- not evidence of SourceAdmission, client dispatch or physical owner composition.
 \set ON_ERROR_STOP on
 SET search_path=spell_items_asset_audit,pg_catalog;

@@ -15,10 +15,10 @@ impl ChannelRuntimeV1 {
             .player_slot_index(&self.continuity, actor.0, session)?;
         match &self.carrier.slots[index] {
             Slot::Occupied {
-                control_loss: None,
+                lifecycle,
                 spell_combat,
                 ..
-            } => Ok(spell_combat
+            } if lifecycle.control_loss.is_none() => Ok(spell_combat
                 .reentry
                 .is_some_and(|(_, until)| now_us < until)),
             _ => Err(CarrierError::ControlLossConflict),
@@ -44,26 +44,29 @@ impl ChannelRuntimeV1 {
             .ok_or(CarrierError::CapacityArithmeticOverflow)?;
         match &mut self.carrier.slots[index] {
             Slot::Occupied {
-                control_loss,
+                lifecycle,
                 spell_combat,
                 ..
             } if epoch != 0
-                && control_loss.is_some_and(|mark| mark.epoch == epoch)
+                && lifecycle
+                    .control_loss
+                    .is_some_and(|mark| mark.epoch == epoch)
                 && spell_combat
                     .reentry
                     .is_none_or(|(previous, _)| epoch > previous) =>
             {
-                *control_loss = None;
+                lifecycle.control_loss = None;
                 spell_combat.reentry = Some((epoch, until));
                 Ok(())
             }
             Slot::Occupied {
-                control_loss: None,
+                lifecycle,
                 spell_combat,
                 ..
-            } if spell_combat
-                .reentry
-                .is_some_and(|(previous, _)| previous == epoch) =>
+            } if lifecycle.control_loss.is_none()
+                && spell_combat
+                    .reentry
+                    .is_some_and(|(previous, _)| previous == epoch) =>
             {
                 Ok(())
             }

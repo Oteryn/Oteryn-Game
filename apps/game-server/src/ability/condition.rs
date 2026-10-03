@@ -1,6 +1,8 @@
 //! COND-1a (`CONDITIONS0-ACTOR-CONDITIONS-V1` §3, §3.1, §3.4, §6.1): the per-actor
 //! `ConditionInstance` store, its transitions, admission and the tick schedule. Dispel and
-//! Cleanse (§5), the mana shield split (§3.3) and the channel handover (§6.2) follow in COND-1b.
+//! the mana shield split (§3.3) and the channel handover (§6.2) follow in COND-1b.
+//! Cleanse (§5) prepares one deterministic removal and retains its conflict-key immunity in this
+//! same store. Actor composition must commit and replay the retained plan under its own fence.
 //!
 //! The store is pure runtime-actor-local state owned by the Channel runtime. It never commits
 //! damage: a due damage tick comes out as a typed [`ConditionTick`] that the owner turns into one
@@ -39,6 +41,9 @@ pub(crate) const PARALYSIS_SPEED_FLOOR: i64 = 40;
 
 pub(crate) const COND_SPEED_DRAW: &str = "oteryn.condition.speed_draw.v1";
 pub(crate) const COND_DOT_TOTAL_DRAW: &str = "oteryn.condition.dot_total_draw.v1";
+pub(crate) const COND_CLEANSE_PICK: &str = "oteryn.condition.cleanse_pick.v1";
+/// CONDITIONS-0 §5: immunity to the removed conflict key.
+pub(crate) const CLEANSE_IMMUNITY_MS: u32 = 11_000;
 
 const MICROS_PER_MS: u64 = 1_000;
 
@@ -564,6 +569,10 @@ pub(crate) enum ConditionRefusal {
     InstanceLimit,
     DrawFailed,
     ArithmeticBounds,
+    /// A prepared Cleanse deadline cannot be represented; no instance is removed.
+    TimeOverflow,
+    /// No instance identity is reused after exhausting the actor's sequence space.
+    SequenceExhausted,
 }
 
 /// A committed application. A damage over time that is not `delayed` has its first tick due at
@@ -609,11 +618,35 @@ pub(crate) struct TickFacts {
     pub(crate) standing_on_field: Option<DotElement>,
 }
 
+/// Frozen removal chosen before commit. The actor owner retains this exact plan for replay;
+/// it must never reselect from changed conditions for the same occurrence.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) struct CleansePlan {
+    sequence: u32,
+    key: ConflictKey,
+    immune_until: u64,
+}
+
+impl CleansePlan {
+    #[cfg(test)]
+    pub(crate) const fn conflict_key(self) -> ConflictKey {
+        self.key
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct CleanseImmunity {
+    key: ConflictKey,
+    until: u64,
+}
+
 /// The per-actor store.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct ConditionStore<S> {
     /// Sorted by sequence.
     instances: Vec<ConditionInstance<S>>,
+    /// At most one immunity per closed conflict key; actor movement retains this same store.
+    cleanse_immunities: Vec<CleanseImmunity>,
     next_sequence: u32,
     /// The simulation tick (its semantic time) of the current pass and the ticks it has dealt.
     pass_at: u64,
@@ -624,6 +657,7 @@ impl<S> Default for ConditionStore<S> {
     fn default() -> Self {
         Self {
             instances: Vec::new(),
+            cleanse_immunities: Vec::new(),
             next_sequence: 0,
             pass_at: 0,
             pass_ticks: 0,
@@ -686,6 +720,30 @@ impl<S: Clone> ConditionStore<S> {
             .map_or(0, |instance| instance.speed_delta)
     }
 
+    /// A timed speed contribution ends at its exact deadline, even before owner cleanup.
+    pub(crate) fn active_speed_delta(&self, now: u64) -> i64 {
+        self.get(ConflictKey::Speed)
+            .filter(|instance| instance.ends_at.is_none_or(|end| now < end))
+            .map_or(0, |instance| instance.speed_delta)
+    }
+
+    /// Owner-local expiry without executing or discarding any scheduled occurrence.
+    /// DOT, food and recovery remain exclusively under `take_due`, including overdue ticks.
+    pub(crate) fn expire_non_ticking(&mut self, now: u64) -> bool {
+        let before = (self.instances.len(), self.cleanse_immunities.len());
+        self.instances.retain(|instance| {
+            !matches!(
+                instance.definition.values,
+                ConditionValues::Speed { .. }
+                    | ConditionValues::Light { .. }
+                    | ConditionValues::ManaShield { .. }
+            ) || instance.ends_at.is_none_or(|end| now < end)
+        });
+        self.cleanse_immunities
+            .retain(|immunity| now < immunity.until);
+        before != (self.instances.len(), self.cleanse_immunities.len())
+    }
+
     /// One application at admission (§3, §3.1, §6.1). The provenance is frozen here (§3.2): the
     /// definition key and revision are always those of `definition`, never a caller's copy.
     pub(crate) fn apply(
@@ -734,6 +792,7 @@ impl<S: Clone> ConditionStore<S> {
                 && immunities.contains(&ConditionType::Attributes)
             || matches!(condition_type, ConditionType::SpellRegeneration(_))
                 && immunities.contains(&ConditionType::Recovery)
+            || self.cleanse_immunity_remaining(key, now) > 0
         {
             return Err(ConditionRefusal::Immune);
         }
@@ -760,6 +819,10 @@ impl<S: Clone> ConditionStore<S> {
                 .and_then(|existing| existing.next_tick_at)
                 .unwrap_or(now + ms(interval_ms))
         };
+        let next_sequence = self
+            .next_sequence
+            .checked_add(1)
+            .ok_or(ConditionRefusal::SequenceExhausted)?;
         let mut instance = ConditionInstance {
             definition: definition.clone(),
             provenance: ConditionProvenance {
@@ -887,13 +950,87 @@ impl<S: Clone> ConditionStore<S> {
             }
         }
         let sequence = instance.sequence;
-        self.next_sequence = self.next_sequence.wrapping_add(1);
+        self.next_sequence = next_sequence;
         let replaced = current.is_some();
         if let Some(index) = current {
             self.instances.remove(index);
         }
         self.instances.push(instance);
         Ok(Applied { sequence, replaced })
+    }
+
+    /// Remaining immunity on the removed conflict key. CONDITIONS-0 §5 deliberately binds
+    /// the key; haste and paralysis therefore share this temporary immunity.
+    pub(crate) fn cleanse_immunity_remaining(&self, key: ConflictKey, now: u64) -> u64 {
+        self.cleanse_immunities
+            .iter()
+            .find(|immunity| immunity.key == key)
+            .map_or(0, |immunity| immunity.until.saturating_sub(now))
+    }
+
+    /// Chooses one eligible negative instance without changing the store. Drowning and
+    /// already expired conditions are excluded; selection is stable in instance sequence order.
+    pub(crate) fn prepare_cleanse(
+        &self,
+        facts: &ApplicationFacts<'_>,
+    ) -> Result<Option<CleansePlan>, ConditionRefusal> {
+        let mut candidates: Vec<_> = self
+            .instances
+            .iter()
+            .filter(|instance| {
+                let kind = instance.definition.condition_type();
+                kind.is_negative()
+                    && kind != ConditionType::DamageOverTime(DotElement::Drown)
+                    && instance.ends_at.is_none_or(|end| end > facts.now)
+                    && (!matches!(kind, ConditionType::DamageOverTime(_))
+                        || instance.remaining_total > 0)
+            })
+            .collect();
+        candidates.sort_by_key(|instance| instance.sequence);
+        let index = match candidates.len() {
+            0 => return Ok(None),
+            1 => 0,
+            count => {
+                let draw = deterministic_decision_u64(
+                    facts.decision_root,
+                    facts.occurrence,
+                    COND_CLEANSE_PICK,
+                    0,
+                )
+                .map_err(|_| ConditionRefusal::DrawFailed)?;
+                let count = u64::try_from(count).map_err(|_| ConditionRefusal::DrawFailed)?;
+                usize::try_from(draw % count).map_err(|_| ConditionRefusal::DrawFailed)?
+            }
+        };
+        let instance = candidates[index];
+        let immune_until = facts
+            .now
+            .checked_add(u64::from(CLEANSE_IMMUNITY_MS) * MICROS_PER_MS)
+            .ok_or(ConditionRefusal::TimeOverflow)?;
+        Ok(Some(CleansePlan {
+            sequence: instance.sequence,
+            key: instance.definition.condition_type().conflict_key(),
+            immune_until,
+        }))
+    }
+
+    /// Applies the retained plan once. A removed or replaced instance is never substituted
+    /// with another candidate; replay neither removes another condition nor extends immunity.
+    pub(crate) fn commit_cleanse(&mut self, plan: CleansePlan) -> bool {
+        let Some(index) = self.instances.iter().position(|instance| {
+            instance.sequence == plan.sequence
+                && instance.definition.condition_type().conflict_key() == plan.key
+        }) else {
+            return false;
+        };
+        self.instances.remove(index);
+        self.cleanse_immunities
+            .retain(|immunity| immunity.key != plan.key);
+        self.cleanse_immunities.push(CleanseImmunity {
+            key: plan.key,
+            until: plan.immune_until,
+        });
+        true
     }
 
     /// §3.4: the ticks due at `now`, in `(due, sequence)` order. One simulation tick (`now`)
@@ -917,6 +1054,8 @@ impl<S: Clone> ConditionStore<S> {
         facts: TickFacts,
         damage: bool,
     ) -> Vec<ConditionTick<S>> {
+        self.cleanse_immunities
+            .retain(|immunity| immunity.until > now);
         if self.pass_at != now {
             self.pass_at = now;
             self.pass_ticks = 0;
@@ -1069,6 +1208,7 @@ impl<S: Clone> ConditionStore<S> {
     /// §6.1 death: every instance ends.
     pub(crate) fn clear_on_death(&mut self) {
         self.instances.clear();
+        self.cleanse_immunities.clear();
     }
 }
 

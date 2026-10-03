@@ -755,7 +755,7 @@ fn familiar_cost_and_real_training_receipt_share_commit_and_legacy_null_proof_re
         assert_eq!(snapshot(h).await?, ("3".into(), "3".into(), 50, 1000, 1));
         let counts:(i64,i64)=sqlx::query_as("SELECT (SELECT count(*) FROM game_character_build_receipts),(SELECT count(*) FROM game_spell_item_receipts)").fetch_one(&h.pool).await?;
         assert_eq!(counts, (1, 1));
-        // Restore a historical pre0038 receipt: NULL source-xact remains valid history,
+        // Restore a historical pre0039 receipt: NULL source-xact remains valid history,
         // but must never qualify a common Familiar/cost/training install proof.
         let mut restore = h.pool.begin().await?;
         sqlx::query("SET LOCAL session_replication_role=replica")

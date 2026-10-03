@@ -54,7 +54,7 @@ can COMMIT. Rejected Find Person name resolution writes a cooldown-only source
 receipt, spends no mana/soul and produces no paid training. Actual source callback
 false writes a result without payment. Aleta Guest/Subowner permission denial
 retains its source successful return and ordinary cost; Door denial fails.
-Migration 0043 binds private output to exact Character/World/session/command and
+Migration 0044 binds private output to exact Character/World/session/command and
 same-transaction successful source cost/editor; historical result bytes cannot
 reopen editors or authorize another relocation. Current session, lease, scope,
 Content, position and player state are independently rechecked on reconciliation.

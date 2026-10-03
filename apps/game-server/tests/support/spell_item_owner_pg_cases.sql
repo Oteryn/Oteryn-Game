@@ -1,4 +1,4 @@
--- Execute in an isolated PostgreSQL17.6 qualification schema after0001..0033.
+-- Execute in an isolated PostgreSQL17.6 qualification schema after0001..0034.
 -- Administrative seeding below creates a Character fixture ONLY; every item,
 -- cast/expiry receipt, custody change and failure uses the actual live guards.
 \set ON_ERROR_STOP on

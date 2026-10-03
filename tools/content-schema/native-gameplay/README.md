@@ -132,7 +132,7 @@ Wheel-dependent spells and missing combat magnitude attributes refuse before RNG
 No Premium, learned spell, Wheel allocation, base critical rate or combat mode is
 seeded by this package.
 
-`0034_character_equipment.sql` and its transaction helper own actual slot custody.
+`0035_character_equipment.sql` and its transaction helper own actual slot custody.
 A move compares the exact current equipment snapshot, resolves source-qualified
 active item requirements/reservations, and atomically writes ItemInstance custody,
 item revision, equipment revision, receipt and audit. Existing baseline branches
@@ -186,7 +186,7 @@ a damaging element or a known non-damaging barrier.
 
 ## Character Wheel owner candidate
 
-Migration0036 declares an actual Character owner with 36 bounded allocations, an
+Migration0037 declares an actual Character owner with 36 bounded allocations, an
 explicit empty selected-gem state and source constructor bonus values. It is seeded
 only through a genuine committed admission operation under current recovery,
 session, node, lease, scope and active Content fences. An absent owner is unavailable.

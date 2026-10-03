@@ -1,0 +1,639 @@
+{
+  "admission_source": {
+    "explicit_ids_sha256": "136743df391cf4ff63fe16658fca0df6b2d90ce00636ddbbc87032f29a5230ff",
+    "explicit_rule_only_count": 60,
+    "path": "apps/game-server/examples/materialize_content_world_project_v2.rs",
+    "sha256": "65a7cc0a3832b8be55d77e1c9da40d5ab5240dff3a9e252bc2c6e785127b2b03"
+  },
+  "qualified_at_sha": "bb09ba93d05d80ea84f27b1890ab6e6259457006",
+  "records": [
+    {
+      "appearance_id": 21887,
+      "current_record_sha256": "7d58e1ff9d98321d2f835b0aac3fc2dfdd15a57926862ffd112bd8e828ba683b",
+      "decoded_record_sha256": "af460bad4bec83c844021e7cd48405c5de1e0381e5d00089b156be056695cede",
+      "identity_projection_sha256": "31cfaf1c640fdc0b3d274cc09d6bed1c3d48f4f536a5d76d15f751195c1130a1",
+      "positive_flags": {
+        "flags.corpse": true,
+        "flags.unmove": true
+      },
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i21887",
+        "revision": "definition-r1"
+      },
+      "validated_record_sha256": "6881970150cab6ddcba79f0871580a59ca747005cadc8a737cd7c20ca402c457"
+    },
+    {
+      "appearance_id": 35384,
+      "current_record_sha256": "ef53368bb277bc90b98f5ca0743401bc34c45315968bb520c746d8d7b968e69b",
+      "decoded_record_sha256": "8c22af61bd62ce691bd775d4b5a6b6bb862f71b28aaa8ccb5c0c135b905dfd89",
+      "identity_projection_sha256": "31cfaf1c640fdc0b3d274cc09d6bed1c3d48f4f536a5d76d15f751195c1130a1",
+      "positive_flags": {
+        "flags.corpse": true,
+        "flags.unmove": true
+      },
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i35384",
+        "revision": "definition-r1"
+      },
+      "validated_record_sha256": "39456b4a7ed69ed69c239a0b8fca5906a0fcd51800955c3e9c2f9f079f29efc9"
+    },
+    {
+      "appearance_id": 35388,
+      "current_record_sha256": "8f88f0828c86e35621873c2b7e219533a021fe76e39360c532ad6435837ab26d",
+      "decoded_record_sha256": "45fd8406c3573e5686538cae7c75cb351a2d279d4388b7ea837e4f4ca4c906d9",
+      "identity_projection_sha256": "31cfaf1c640fdc0b3d274cc09d6bed1c3d48f4f536a5d76d15f751195c1130a1",
+      "positive_flags": {
+        "flags.corpse": true,
+        "flags.unmove": true
+      },
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i35388",
+        "revision": "definition-r1"
+      },
+      "validated_record_sha256": "d05bb956ebf355d7274ab40fa2cb3ba3814dea5160f0b3296f821f259c626f2d"
+    },
+    {
+      "appearance_id": 35600,
+      "current_record_sha256": "34fe92be4b64e7048ec66ba2acace352ac2046c38ff461f4d73a5c9713d7064e",
+      "decoded_record_sha256": "3420a1dde95163b95eb355f9250cc5689e842c7f97f8433fb09137c552d7957a",
+      "identity_projection_sha256": "31cfaf1c640fdc0b3d274cc09d6bed1c3d48f4f536a5d76d15f751195c1130a1",
+      "positive_flags": {
+        "flags.corpse": true,
+        "flags.unmove": true
+      },
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i35600",
+        "revision": "definition-r1"
+      },
+      "validated_record_sha256": "cd7d734963cca27fb1f00037e364170a7359cc7e22531af48fbba0fcdd5f40bf"
+    },
+    {
+      "appearance_id": 35846,
+      "current_record_sha256": "18210f18cfc6f35ed6d9818c4f78bce1446b556ae4bb1051e31915b605139263",
+      "decoded_record_sha256": "c1eaef314c2270ad1c004cbf17c5a9cb7b7a5c044a3d2eb0874b62676691f3a1",
+      "identity_projection_sha256": "31cfaf1c640fdc0b3d274cc09d6bed1c3d48f4f536a5d76d15f751195c1130a1",
+      "positive_flags": {
+        "flags.corpse": true,
+        "flags.unmove": true
+      },
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i35846",
+        "revision": "definition-r1"
+      },
+      "validated_record_sha256": "236f289b897e7da0b7dece2922336c005643284863c03660915e2c9f2ac124d0"
+    },
+    {
+      "appearance_id": 43666,
+      "current_record_sha256": "ced004378ba1b70d492fee633ead16c454ffacb5f215f34a16ca8545af74fa3a",
+      "decoded_record_sha256": "5c7eb75a99a29b2862d15d0a07986f3b75a88451956a4865d02297e246713605",
+      "identity_projection_sha256": "31cfaf1c640fdc0b3d274cc09d6bed1c3d48f4f536a5d76d15f751195c1130a1",
+      "positive_flags": {
+        "flags.corpse": true
+      },
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i43666",
+        "revision": "definition-r1"
+      },
+      "validated_record_sha256": "87ad882abac476e2733ff21a6c3a3ab22b4bc5353e88950a7725f601e8d402ac"
+    },
+    {
+      "appearance_id": 43762,
+      "current_record_sha256": "0c6b96a3ae676c825d08f41e4758c4cfb2aed9bbea63bb27b0230c0aa39404e0",
+      "decoded_record_sha256": "555a130a310bb13b2476a0e265430d60755f9bbd72de8161b237ad68f36ac86b",
+      "identity_projection_sha256": "31cfaf1c640fdc0b3d274cc09d6bed1c3d48f4f536a5d76d15f751195c1130a1",
+      "positive_flags": {
+        "flags.corpse": true,
+        "flags.unmove": true
+      },
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i43762",
+        "revision": "definition-r1"
+      },
+      "validated_record_sha256": "d5fdc5236658fcb2f0921583672b0b5ab7b6ca0487c0926b8807bbcdff9ef025"
+    },
+    {
+      "appearance_id": 43771,
+      "current_record_sha256": "99f6a9e2ca3da569b5e1ae3b5936cadb2a157093cf85d3ac8bb51287109c5bbb",
+      "decoded_record_sha256": "90d101ed6c7d65d06c184b218b4652f075a8462c36df581546f3869c21496933",
+      "identity_projection_sha256": "31cfaf1c640fdc0b3d274cc09d6bed1c3d48f4f536a5d76d15f751195c1130a1",
+      "positive_flags": {
+        "flags.corpse": true,
+        "flags.unmove": true
+      },
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i43771",
+        "revision": "definition-r1"
+      },
+      "validated_record_sha256": "4c52d310bcfd969e9d33cd5e18d66c037c546f36aad227d6cd4f0350dcb4cf1d"
+    },
+    {
+      "appearance_id": 43959,
+      "current_record_sha256": "0321f19adbe7f5413ab473c0e2a02aa627ceeb546ffbcc97c9d2ef6ce1bae52f",
+      "decoded_record_sha256": "d0d6ca7fc28d2fc0f9e40bf4105770675bca3a063172ea92c78f4982c82b5ec2",
+      "identity_projection_sha256": "31cfaf1c640fdc0b3d274cc09d6bed1c3d48f4f536a5d76d15f751195c1130a1",
+      "positive_flags": {
+        "flags.corpse": true,
+        "flags.unmove": true
+      },
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i43959",
+        "revision": "definition-r1"
+      },
+      "validated_record_sha256": "4c6dc804900f00c32357900eb1427c9a5ec499483437fb7007736aba8a9ab45b"
+    },
+    {
+      "appearance_id": 44447,
+      "current_record_sha256": "356401269fc24d0d3997f682dad2c159316caa8b3ea292f94c18eda13c139ea6",
+      "decoded_record_sha256": "bcb0624e1703095c90e5efddb308bc431b1a0cb74aaecf931f7bad5310375eeb",
+      "identity_projection_sha256": "31cfaf1c640fdc0b3d274cc09d6bed1c3d48f4f536a5d76d15f751195c1130a1",
+      "positive_flags": {
+        "flags.corpse": true
+      },
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i44447",
+        "revision": "definition-r1"
+      },
+      "validated_record_sha256": "718eeed885d44530da0bf224727e4d00c7e20c479f13fef309b626618c7c75c1"
+    },
+    {
+      "appearance_id": 44664,
+      "current_record_sha256": "e15d880b6bfe8dad638ad1bfe386216faf12f0c09eaaf11db2b3276352ad7c6b",
+      "decoded_record_sha256": "81f73d5ddb03cd02ed75830025115c0b7c58bccd52e198173201da5d789295b0",
+      "identity_projection_sha256": "31cfaf1c640fdc0b3d274cc09d6bed1c3d48f4f536a5d76d15f751195c1130a1",
+      "positive_flags": {
+        "flags.corpse": true
+      },
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i44664",
+        "revision": "definition-r1"
+      },
+      "validated_record_sha256": "a5d0cff357988ed91c5e3ddc0e4f714648d50c3b8876736d6d8afdd5f165f454"
+    },
+    {
+      "appearance_id": 44665,
+      "current_record_sha256": "28e3493e84e9e4f6924c283d9f147fa50a5d0b7103895fbfc64806c3d8098495",
+      "decoded_record_sha256": "8cb702cf79d482c27939b1a26f1051d58f98f11ad917288c26b1b67f156429c7",
+      "identity_projection_sha256": "31cfaf1c640fdc0b3d274cc09d6bed1c3d48f4f536a5d76d15f751195c1130a1",
+      "positive_flags": {
+        "flags.corpse": true
+      },
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i44665",
+        "revision": "definition-r1"
+      },
+      "validated_record_sha256": "58f50db6a30f2ec2acc3921a2e499bc89b5cac079e0e676b925fdb2300a7c1fa"
+    },
+    {
+      "appearance_id": 44666,
+      "current_record_sha256": "b81fb531571db269438dd4abcfac22b07ab10c098dbe72faae76bdcea66fe6ba",
+      "decoded_record_sha256": "5502e2149a0f670f8793e687116e7a83d2ff94f0b488e896c61ce6b9811cb700",
+      "identity_projection_sha256": "31cfaf1c640fdc0b3d274cc09d6bed1c3d48f4f536a5d76d15f751195c1130a1",
+      "positive_flags": {
+        "flags.corpse": true
+      },
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i44666",
+        "revision": "definition-r1"
+      },
+      "validated_record_sha256": "bfcd16ba537408659ab2fe94571e98860bc484f7a5a5c50fd1c656569b3d9ef4"
+    },
+    {
+      "appearance_id": 44667,
+      "current_record_sha256": "4d2600b8ed5df7e550ee7722c65e6314a2c4bf801179d219e9de42c65306a9ab",
+      "decoded_record_sha256": "f45cc27723178f035cb6a61cf2d2d57e25fbe112fe5ed8a9e79bcfb4e8f26a8e",
+      "identity_projection_sha256": "31cfaf1c640fdc0b3d274cc09d6bed1c3d48f4f536a5d76d15f751195c1130a1",
+      "positive_flags": {
+        "flags.corpse": true,
+        "flags.unmove": true
+      },
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i44667",
+        "revision": "definition-r1"
+      },
+      "validated_record_sha256": "fe273e60ea5a17f192928697b7c89a7e9a73072e7ebb76ae796915768d1d5ff4"
+    },
+    {
+      "appearance_id": 44668,
+      "current_record_sha256": "74dfaa1fe1dcea61824435e04e74910d9ad46a792ebe043ffaf433356869ddf2",
+      "decoded_record_sha256": "5a713568bce7c46069671376b089a07455035c8e70937cb3152221c1cc91a803",
+      "identity_projection_sha256": "31cfaf1c640fdc0b3d274cc09d6bed1c3d48f4f536a5d76d15f751195c1130a1",
+      "positive_flags": {
+        "flags.corpse": true
+      },
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i44668",
+        "revision": "definition-r1"
+      },
+      "validated_record_sha256": "32cfa17c9d91809ae44e72d394ab30137f7e13254bfb286899a096416452d67d"
+    },
+    {
+      "appearance_id": 44669,
+      "current_record_sha256": "a54b0a92e29b6b9a1082f89cf1f8368991136cc8c57e316b19b5aeb2bf2ed0c3",
+      "decoded_record_sha256": "43c4b6ce8f6fa789bbf7f24ca881706b887d8b87e86c794fb5b2f17564ced29f",
+      "identity_projection_sha256": "31cfaf1c640fdc0b3d274cc09d6bed1c3d48f4f536a5d76d15f751195c1130a1",
+      "positive_flags": {
+        "flags.corpse": true
+      },
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i44669",
+        "revision": "definition-r1"
+      },
+      "validated_record_sha256": "224f1a5bf3a75ad49c9aa30c46b1ec7eca16ffcf27a3c039243b0622c2d36a25"
+    },
+    {
+      "appearance_id": 44670,
+      "current_record_sha256": "f42a6efd29451aa772ec1918df379805deedee051b493b0d8aa687d603e72bc8",
+      "decoded_record_sha256": "3e06ddacfac61abd388d2f536bb9578078532e04aa09b3a3a553bf010a40ac27",
+      "identity_projection_sha256": "31cfaf1c640fdc0b3d274cc09d6bed1c3d48f4f536a5d76d15f751195c1130a1",
+      "positive_flags": {
+        "flags.corpse": true
+      },
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i44670",
+        "revision": "definition-r1"
+      },
+      "validated_record_sha256": "c157a21605ee7f2b9c9760d0352c46186a56ed128a5e2ab7a14b3a0eb1107cde"
+    },
+    {
+      "appearance_id": 44671,
+      "current_record_sha256": "dd379d16f603496276001ca356640e6d865c9b1d8ba8ad4569316bda4872b9e5",
+      "decoded_record_sha256": "9462b361ca12ee81e8fb4c66014a0838981587b511c9e38422a12aa53f77a66a",
+      "identity_projection_sha256": "31cfaf1c640fdc0b3d274cc09d6bed1c3d48f4f536a5d76d15f751195c1130a1",
+      "positive_flags": {
+        "flags.corpse": true,
+        "flags.unmove": true
+      },
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i44671",
+        "revision": "definition-r1"
+      },
+      "validated_record_sha256": "bbfef01f6b4cb35902bd65a1e281aec29629af1eca7e771800ff6d75a1690196"
+    },
+    {
+      "appearance_id": 44684,
+      "current_record_sha256": "028f1d4fd69e828ffcd2e136f80112cee0134d0918894461ff8a37281a9c22b2",
+      "decoded_record_sha256": "f45f4df1e357451477533c330a84f9d42db36cc4add5e44dc8544d024fe0140e",
+      "identity_projection_sha256": "31cfaf1c640fdc0b3d274cc09d6bed1c3d48f4f536a5d76d15f751195c1130a1",
+      "positive_flags": {
+        "flags.corpse": true
+      },
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i44684",
+        "revision": "definition-r1"
+      },
+      "validated_record_sha256": "650f3fc402d88813c47ace5a3df3b5a0cd86b2eb871b661bfbca44051e2367db"
+    },
+    {
+      "appearance_id": 44685,
+      "current_record_sha256": "54dc2031202c71751731c7c4f765689fa8b346b43c0112ee9b02d2ba5141472a",
+      "decoded_record_sha256": "c1d31ecf270d998437184cc0ded92aea321206feecefa6f0e36554e8f1e6c5bf",
+      "identity_projection_sha256": "31cfaf1c640fdc0b3d274cc09d6bed1c3d48f4f536a5d76d15f751195c1130a1",
+      "positive_flags": {
+        "flags.corpse": true
+      },
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i44685",
+        "revision": "definition-r1"
+      },
+      "validated_record_sha256": "6e38a0a78ed6560470c34adf1791ffed8040f4fdcceb8683cbffd3fc75d34e05"
+    },
+    {
+      "appearance_id": 44686,
+      "current_record_sha256": "b709289893f0d592b287d6729e8b96df3c10f69273dd3a28f4492f3b66b35f72",
+      "decoded_record_sha256": "93b14220f8c28d5a4ea32cbd76dd58b1ecc4e8e5c868b60e8b03cffd1d2115e0",
+      "identity_projection_sha256": "31cfaf1c640fdc0b3d274cc09d6bed1c3d48f4f536a5d76d15f751195c1130a1",
+      "positive_flags": {
+        "flags.corpse": true
+      },
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i44686",
+        "revision": "definition-r1"
+      },
+      "validated_record_sha256": "ae96b2836e7f81e7ddf8a4becd1b44ba999d507c0a351f1067caf453976f16ba"
+    },
+    {
+      "appearance_id": 44687,
+      "current_record_sha256": "790ba43d0bba39651ac5f817a88986134219e057f1919c6715abfd4e3bd3cd34",
+      "decoded_record_sha256": "2f94b77627dfae286e0958b2d36c20b54c05e2a4b6af184c3f510c4b97ac8313",
+      "identity_projection_sha256": "31cfaf1c640fdc0b3d274cc09d6bed1c3d48f4f536a5d76d15f751195c1130a1",
+      "positive_flags": {
+        "flags.corpse": true,
+        "flags.unmove": true
+      },
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i44687",
+        "revision": "definition-r1"
+      },
+      "validated_record_sha256": "9a0ee9aa3962f814fb65de96fc8ee99768bc04eb1ef265a88b98be14d2467ed4"
+    },
+    {
+      "appearance_id": 44709,
+      "current_record_sha256": "7f0d3e63f2484ba1d04e14eb5a1debb710f1378f5bcbf0f3c2d3153abeba316f",
+      "decoded_record_sha256": "030e2051a234b2e24ffa622115bb2e3deb20ca2d4f6ec5575230e7e39b234224",
+      "identity_projection_sha256": "31cfaf1c640fdc0b3d274cc09d6bed1c3d48f4f536a5d76d15f751195c1130a1",
+      "positive_flags": {
+        "flags.corpse": true,
+        "flags.unmove": true
+      },
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i44709",
+        "revision": "definition-r1"
+      },
+      "validated_record_sha256": "e425993da0bd84143ce5cda48a747062dabbc8a72de26bebbbc771863064de10"
+    },
+    {
+      "appearance_id": 44713,
+      "current_record_sha256": "8025d28ed6e512465a795d6b45fae8b279fe8918d739c9ccea7af2651e0f00d6",
+      "decoded_record_sha256": "3560498f3f30aedb3e9463e689051f030044f9eb86c52d23cf4f89c952668415",
+      "identity_projection_sha256": "31cfaf1c640fdc0b3d274cc09d6bed1c3d48f4f536a5d76d15f751195c1130a1",
+      "positive_flags": {
+        "flags.corpse": true,
+        "flags.unmove": true
+      },
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i44713",
+        "revision": "definition-r1"
+      },
+      "validated_record_sha256": "f387112bf556977579ce3d2f4495e760aaf5983e661833390966dcd79483c2d3"
+    },
+    {
+      "appearance_id": 44717,
+      "current_record_sha256": "1de453a6e9539edd36f145fe33245ae02c34d085c1fda052ec3031c4a506dc1f",
+      "decoded_record_sha256": "bdf67c12ba3f58a9079b34f900e56ad6f0c93a12c709d9c7858a78c262e1850e",
+      "identity_projection_sha256": "31cfaf1c640fdc0b3d274cc09d6bed1c3d48f4f536a5d76d15f751195c1130a1",
+      "positive_flags": {
+        "flags.corpse": true,
+        "flags.unmove": true
+      },
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i44717",
+        "revision": "definition-r1"
+      },
+      "validated_record_sha256": "2d0455530951cd0c95178e7c5b90b8db79d50bef2532588841793b8315267ae5"
+    },
+    {
+      "appearance_id": 48108,
+      "current_record_sha256": "03c4c67b8e00f605ca14e639842909a4727fbe3cce4fa93dddbfa80e5e398ea5",
+      "decoded_record_sha256": "6fb90375e5fb72764b82c1b53a44c50439aea7a9f41563c6ff44ec302c82f653",
+      "identity_projection_sha256": "31cfaf1c640fdc0b3d274cc09d6bed1c3d48f4f536a5d76d15f751195c1130a1",
+      "positive_flags": {
+        "flags.corpse": true
+      },
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i48108",
+        "revision": "definition-r1"
+      },
+      "validated_record_sha256": "dc041384f98aff85ef9bd583da5f167908fea5280c5ea149069ed6828cba4402"
+    },
+    {
+      "appearance_id": 48112,
+      "current_record_sha256": "c7ec81d7a04db1087b8563c4abe41be77973e829b1ab6a58c47759a03c02bc9d",
+      "decoded_record_sha256": "974031b8442613014328de5a123920c2497e131977ee580e8c68fa17b4176385",
+      "identity_projection_sha256": "31cfaf1c640fdc0b3d274cc09d6bed1c3d48f4f536a5d76d15f751195c1130a1",
+      "positive_flags": {
+        "flags.corpse": true
+      },
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i48112",
+        "revision": "definition-r1"
+      },
+      "validated_record_sha256": "e37bc406af915785a1561204cbfc5b03b30e19a7db7fdc3c0236ce0cb910b3d4"
+    },
+    {
+      "appearance_id": 48271,
+      "current_record_sha256": "f8d1cb1e8f02b1d6a2f2dc450b11f44b5b151e661c795f5cd795ddb9240e44a0",
+      "decoded_record_sha256": "feec7b147fb24b17a3d6d635caa56ce6d1fe8a3340bd4e22a1594288c7154c2a",
+      "identity_projection_sha256": "31cfaf1c640fdc0b3d274cc09d6bed1c3d48f4f536a5d76d15f751195c1130a1",
+      "positive_flags": {
+        "flags.corpse": true
+      },
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i48271",
+        "revision": "definition-r1"
+      },
+      "validated_record_sha256": "c9892299d5961227dc2f66aee438bc024aa224693010e8f72cbc2bb8d1fa0e6a"
+    },
+    {
+      "appearance_id": 48349,
+      "current_record_sha256": "367e5e5bcbc8cba88e729312f9e7e83359f4ac6325152d4fadfc56e57ed1bf73",
+      "decoded_record_sha256": "76c9be9bfff3ec5cf2e80f6dbd0ee4b7037ad2fe9981effaee0893d1de7bf112",
+      "identity_projection_sha256": "31cfaf1c640fdc0b3d274cc09d6bed1c3d48f4f536a5d76d15f751195c1130a1",
+      "positive_flags": {
+        "flags.corpse": true
+      },
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i48349",
+        "revision": "definition-r1"
+      },
+      "validated_record_sha256": "80728bdd50ed14b273fb7483d1dc4bd0633b30f8309530a7731c46c1c3b28a6f"
+    },
+    {
+      "appearance_id": 48353,
+      "current_record_sha256": "ec46433535116b7e4be34678bbd247328ba448d3fbcb7ced09e70ce539d44a99",
+      "decoded_record_sha256": "9a51894e01702fd556f1f3337b02d0eeee320a89aca9311bae94bebc043bb77d",
+      "identity_projection_sha256": "31cfaf1c640fdc0b3d274cc09d6bed1c3d48f4f536a5d76d15f751195c1130a1",
+      "positive_flags": {
+        "flags.corpse": true
+      },
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i48353",
+        "revision": "definition-r1"
+      },
+      "validated_record_sha256": "4350807b616414ae047a7c7a1c4574fe183685ad582eb3ffae5891074d778ad1"
+    },
+    {
+      "appearance_id": 48366,
+      "current_record_sha256": "61b555f66b29bef514e9bd44fc9bd08a0ccdf5aea712518d3bf3dffe7303ebea",
+      "decoded_record_sha256": "39b7b95574cc32f24f8e67b2f468eecf7182dbaf1b72405734f59e7d5952f703",
+      "identity_projection_sha256": "31cfaf1c640fdc0b3d274cc09d6bed1c3d48f4f536a5d76d15f751195c1130a1",
+      "positive_flags": {
+        "flags.corpse": true
+      },
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i48366",
+        "revision": "definition-r1"
+      },
+      "validated_record_sha256": "9ec698e4294ea54a11e22207b72706fd1150ede890c38ca7de7ee863223fec18"
+    },
+    {
+      "appearance_id": 48382,
+      "current_record_sha256": "152454b23867b51c713bdfd678513c03649aca8433532b5321f5b4e79d2ee6a5",
+      "decoded_record_sha256": "e30ac5e5408232bc616bc293fd15583280cb8f7564bd63793ed6f91d210e4a76",
+      "identity_projection_sha256": "31cfaf1c640fdc0b3d274cc09d6bed1c3d48f4f536a5d76d15f751195c1130a1",
+      "positive_flags": {
+        "flags.corpse": true
+      },
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i48382",
+        "revision": "definition-r1"
+      },
+      "validated_record_sha256": "7b37f45dde59a218f64f69a98b67dc0779effe74f332ecebf64a7e1f0447812d"
+    },
+    {
+      "appearance_id": 48403,
+      "current_record_sha256": "21d6efa4de1fe21d3d8abdd6eeed24afc4a6bba268f7455fad916daff60b5d83",
+      "decoded_record_sha256": "75bf11ee9f88a7bb1db8d5a5808232c7e465da00c58ffe60753f992244c5988f",
+      "identity_projection_sha256": "31cfaf1c640fdc0b3d274cc09d6bed1c3d48f4f536a5d76d15f751195c1130a1",
+      "positive_flags": {
+        "flags.corpse": true
+      },
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i48403",
+        "revision": "definition-r1"
+      },
+      "validated_record_sha256": "4a78d53bf431b237c9837bc8ca42250cb9bf4f0931228a0da29029a185ba5403"
+    },
+    {
+      "appearance_id": 48404,
+      "current_record_sha256": "e608aeaeb2afa0b9d77e89d7644cee875720450fef68f1b5f143bd9cc127a446",
+      "decoded_record_sha256": "701dec6a4492535de28a3b16ddedc105ff4ec7bc6d2865bbde40804b768c5861",
+      "identity_projection_sha256": "31cfaf1c640fdc0b3d274cc09d6bed1c3d48f4f536a5d76d15f751195c1130a1",
+      "positive_flags": {
+        "flags.corpse": true
+      },
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i48404",
+        "revision": "definition-r1"
+      },
+      "validated_record_sha256": "a818c815b70db21beb7a30652dc96db742af6c169042b367462c4196a417122e"
+    },
+    {
+      "appearance_id": 48405,
+      "current_record_sha256": "750657f65c4ae42b055af510f6e8a1912a0c9c2206f4623554a8676f8d816abb",
+      "decoded_record_sha256": "ba8e46d2a1c9df88fe28bc262027fa1bfe515b55e5f1a2bbb74b86b4d0e9011d",
+      "identity_projection_sha256": "31cfaf1c640fdc0b3d274cc09d6bed1c3d48f4f536a5d76d15f751195c1130a1",
+      "positive_flags": {
+        "flags.corpse": true
+      },
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i48405",
+        "revision": "definition-r1"
+      },
+      "validated_record_sha256": "8044f07bf83279b215af135dd69640d77d1e459127919942602638b76c7120b9"
+    },
+    {
+      "appearance_id": 48406,
+      "current_record_sha256": "4039c41bb95a534cb8d86f9d22b562a00a41d27908b8e33fcc5ba3db3ff7485a",
+      "decoded_record_sha256": "c978b62eb800d1b680c407481f32f2d6f38ea4d86956b7718eda476ff8053e5a",
+      "identity_projection_sha256": "31cfaf1c640fdc0b3d274cc09d6bed1c3d48f4f536a5d76d15f751195c1130a1",
+      "positive_flags": {
+        "flags.corpse": true,
+        "flags.unmove": true
+      },
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i48406",
+        "revision": "definition-r1"
+      },
+      "validated_record_sha256": "ec975ab4d93ef19049475354362c22fb21f0a199b46a37d7960285bb21529d7b"
+    },
+    {
+      "appearance_id": 48414,
+      "current_record_sha256": "732ff024c433e934bc1cb83bdb4937e0ca4c8fed01f67c2280602456023136b1",
+      "decoded_record_sha256": "d546150310beee7848d0714c5a8cc684a2f7df4a62841b4c726b2124ab4e549a",
+      "identity_projection_sha256": "31cfaf1c640fdc0b3d274cc09d6bed1c3d48f4f536a5d76d15f751195c1130a1",
+      "positive_flags": {
+        "flags.corpse": true
+      },
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i48414",
+        "revision": "definition-r1"
+      },
+      "validated_record_sha256": "0ee34a93310675b96ab7cc32c16fdddb4605fa735a60c9a9df261561e9dfbac6"
+    },
+    {
+      "appearance_id": 48416,
+      "current_record_sha256": "af57789b025d4e721bb05b2f1d38587d2f38e983cb3412c9d295ecea0690f61d",
+      "decoded_record_sha256": "1d0c50a77e368bfe4f6181aed17e9e85e9d17a889f69be285fb9adb615981b22",
+      "identity_projection_sha256": "31cfaf1c640fdc0b3d274cc09d6bed1c3d48f4f536a5d76d15f751195c1130a1",
+      "positive_flags": {
+        "flags.corpse": true
+      },
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i48416",
+        "revision": "definition-r1"
+      },
+      "validated_record_sha256": "67d30685266cd07465cdd4566abd3a118e85d58406f6153f12ca0de460864317"
+    },
+    {
+      "appearance_id": 49124,
+      "current_record_sha256": "599c7f7fcb991573e3f4d27a1c78bb0dea286d3f5ab377d44f4057eb51d7f086",
+      "decoded_record_sha256": "17a7ccf37d91353669fe823012a73a1f4bd0ba8cff006c99631a0ea3983edfe3",
+      "identity_projection_sha256": "31cfaf1c640fdc0b3d274cc09d6bed1c3d48f4f536a5d76d15f751195c1130a1",
+      "positive_flags": {
+        "flags.corpse": true
+      },
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i49124",
+        "revision": "definition-r1"
+      },
+      "validated_record_sha256": "264c1f9739b995b101009fb349a1c685d6d50445298bafacc861a5983a39e5a8"
+    },
+    {
+      "appearance_id": 51560,
+      "current_record_sha256": "0f97a65e04ceb82d7f1b725536d083025955235bb444a0d12d29d5481e94c868",
+      "decoded_record_sha256": "40fda95fa24b5549b9a2bffaa13c6a8bbb1e6b3e24403c96d914a172142b1e2e",
+      "identity_projection_sha256": "31cfaf1c640fdc0b3d274cc09d6bed1c3d48f4f536a5d76d15f751195c1130a1",
+      "positive_flags": {
+        "flags.corpse": true,
+        "flags.unmove": true
+      },
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i51560",
+        "revision": "definition-r1"
+      },
+      "validated_record_sha256": "1992169db56f453fae79e14015e130698bd103504de6eaba38fa7bc92d537981"
+    }
+  ],
+  "schema": "OTERYN_OFFICIAL_WORLD_CORPSE_QUALIFICATION/v1",
+  "source": {
+    "artifact": "content/assets/files/appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.dat",
+    "client_version": "15.30",
+    "engine": "official_client",
+    "membership_entries_sha256": "424e445c0ea9494b1871364f10e93876ad551df0d3d5c6982d97301008b027df",
+    "membership_manifest_sha256": "f37b5d3e1136ebc3edbae1fe7090c4914b1d717bfbf9fd7c8faeeee36b491fe8",
+    "product": "Tibia-client",
+    "profile": "OTERYN_OFFICIAL_CLIENT_WORLD_APPEARANCE/v1",
+    "publisher": "CipSoft",
+    "revision": "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2"
+  }
+}

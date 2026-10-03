@@ -319,6 +319,34 @@ impl PlayerSpellState {
         Some((next, damage))
     }
 
+    /// Native successor for an already resolved health credit. The occurrence owner
+    /// supplies the magnitude and suppresses replay before applying the successor.
+    /// Zero/full-pool credit keeps the revision; positive credit requires a successor.
+    pub(crate) fn after_health_gain(&self, amount: u64) -> Option<(Self, u32)> {
+        let available = self.facts.max_health.checked_sub(self.health)?;
+        let gained = u32::try_from(amount.min(u64::from(available))).ok()?;
+        let mut next = self.clone();
+        if gained != 0 {
+            next.health = next.health.checked_add(gained)?;
+            next.revision = next.revision.checked_add(1)?;
+        }
+        Some((next, gained))
+    }
+
+    /// Native successor for an already resolved mana credit. This method does not
+    /// choose a leech formula or decide which incoming damage component is inverted.
+    /// Zero/full-pool credit keeps the revision; positive credit requires a successor.
+    pub(crate) fn after_mana_gain(&self, amount: u64) -> Option<(Self, u32)> {
+        let available = self.facts.max_mana.checked_sub(self.mana)?;
+        let gained = u32::try_from(amount.min(u64::from(available))).ok()?;
+        let mut next = self.clone();
+        if gained != 0 {
+            next.mana = next.mana.checked_add(gained)?;
+            next.revision = next.revision.checked_add(1)?;
+        }
+        Some((next, gained))
+    }
+
     /// Test only: stages a wounded actor (no damage owner exists yet).
     #[cfg(test)]
     pub(crate) const fn set_health_for_test(&mut self, health: u32) {

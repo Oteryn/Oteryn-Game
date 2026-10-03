@@ -347,7 +347,7 @@ fn house_item_has_exactly_one_location_while_live_and_none_when_retired() -> Tes
         tx.rollback().await?;
 
         // The guard covers all six current custody locations and the item row.
-        // Migration 0034 adds equipment custody to the original house contract.
+        // Migration 0035 adds equipment custody to the original house contract.
         let guarded: Vec<String> = sqlx::query_scalar(
             "SELECT tgrelid::regclass::text FROM pg_trigger \
               WHERE tgfoid = 'game_item_location_exclusivity_guard'::regproc \

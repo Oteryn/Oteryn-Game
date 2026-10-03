@@ -6,11 +6,10 @@
 // B3-1's own PG suite (`item_transfer_postgres.rs`) already proves the D80-D83 admission/merge
 // matrix inside `durability::item_transfer`; these cases exist to prove the new content-binding
 // layer (`combat_pickup`) end to end, not to re-prove that matrix.
+extern crate oteryn_game_server as production_server;
 extern crate self as oteryn_game_server;
 
-#[allow(dead_code, unused_imports)]
-#[path = "../src/admission_evidence.rs"]
-pub mod admission_evidence;
+pub use production_server::admission_evidence;
 #[allow(dead_code, unused_imports)]
 #[path = "../src/character_bootstrap_intent.rs"]
 pub mod character_bootstrap_intent;
@@ -30,9 +29,7 @@ pub mod combat_pickup;
 #[allow(dead_code, unused_imports)]
 #[path = "support/content_shim.rs"]
 pub mod content;
-#[allow(dead_code, unused_imports)]
-#[path = "../src/domain/mod.rs"]
-pub mod domain;
+pub use production_server::domain;
 #[allow(dead_code, unused_imports)]
 #[path = "../src/durability/mod.rs"]
 mod durability;

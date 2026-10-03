@@ -52,6 +52,7 @@ Potentially safe fields, only after the relevant authentication/authorization bo
 - WorldId/ChannelId where operational policy permits;
 - profile ID and `safe_kid` where policy permits;
 - revision dimension class and non-secret revision ID where approved;
+- missing registered capability ids, only after the authentication point (ADMIT-0, pending on acceptance);
 - generation relation class (`current`, `stale`, `superseded`) rather than raw private fence values;
 - evidence source class, source-age bucket, source-order/rollback class;
 - lifecycle/controller/placement decision class.
@@ -89,6 +90,7 @@ This is the complete FND-04 integration catalogue. Component-owned progression/r
 | `ADMISSION_GRANT_REVISION_UNSUPPORTED` | `UNSUPPORTED_REVISION` | `TERMINAL` | compatible producer/client/consumer revision only; no downgrade | `NO_AUTHORITY_MUTATION` | `CLIENT_UPDATE_REQUIRED` | `fresh admission authoritative revision unsupported` | authenticated mismatch dimension + approved revision |
 | `ADMISSION_ACCOUNT_CHARACTER_CONFLICT` | `CONFLICT` | `TERMINAL` | new attempt only after authoritative ownership/lifecycle change | `NO_AUTHORITY_MUTATION` | `SESSION_UNAVAILABLE` | `fresh admission account or character relationship conflicts with current authority` | ownership/lifecycle class |
 | `ADMISSION_INCUMBENT_PROTECTED` | `CONFLICT` | `TERMINAL` | new attempt only after incumbent eligibility changes; same grant never becomes takeover | `NO_AUTHORITY_MUTATION` | `CHARACTER_ALREADY_ACTIVE` | `fresh admission blocked by current character authority` | incumbent-state class |
+| `ADMISSION_CAPABILITY_REQUIRED` | `UNSUPPORTED_REVISION` | `TERMINAL` | a client build supporting the channel's required capabilities; a new grant (ADMIT-0, pending on acceptance) | `NO_AUTHORITY_MUTATION` | `CLIENT_UPDATE_REQUIRED` | `fresh admission requires a gameplay capability the client lacks` | missing registered capability ids |
 | `ADMISSION_CAPACITY_EXCEEDED` | `CAPACITY_EXCEEDED` | `RETRYABLE` | bounded backoff; same unconsumed grant only on same current route while valid | `NO_AUTHORITY_MUTATION` | `TEMPORARILY_UNAVAILABLE` | `fresh admission capacity unavailable` | capacity/world/channel/route class |
 
 ### 4.2 Same-GameSession reconnect
@@ -101,6 +103,7 @@ This is the complete FND-04 integration catalogue. Component-owned progression/r
 | `RECONNECT_PREPARED_EXPIRED` | `TIMEOUT` | `TERMINAL` for candidate | new PREPARE only if original grace/current facts independently permit | `CURRENT_AUTHORITY_PRESERVED`; candidate proof invalid | `TEMPORARILY_UNAVAILABLE` | `prepared reconnect candidate expired` | attempt + prepared-state class |
 | `RECONNECT_PREPARED_STALE` | `STALE_GENERATION` | `TERMINAL` | reconcile current authority; new candidate only if current state permits | `CURRENT_AUTHORITY_PRESERVED`; stale candidate cannot advance | `SESSION_UNAVAILABLE` | `prepared reconnect candidate no longer current` | attempt + generation-relation class |
 | `RECONNECT_RECONCILIATION_UNAVAILABLE` | `INTERNAL_UNAVAILABLE` | `RETRYABLE` bounded | same-attempt/current-authority reconciliation only; no new authority until winner/fence proven | `CURRENT_AUTHORITY_PRESERVED` | `TEMPORARILY_UNAVAILABLE` | `reconnect authority outcome requires reconciliation` | attempt/session + reconciliation class |
+| `RECONNECT_CAPABILITY_REQUIRED` | `UNSUPPORTED_REVISION` | `TERMINAL` for candidate | a client build supporting the channel's required capabilities, through recovery (ADMIT-0, pending on acceptance) | `CURRENT_AUTHORITY_PRESERVED` | `CLIENT_UPDATE_REQUIRED` | `reconnect lacks a gameplay capability the channel requires` | missing registered capability ids |
 | `RECONNECT_GRACE_EXPIRED` | `SESSION_REJECTED` | `TERMINAL` for old GameSession | eligible post-grace recovery or separate fresh path as state permits | `NO_AUTHORITY_MUTATION`; old GameSession never revives | `SESSION_UNAVAILABLE` | `same-session reconnect window expired` | session/grace-boundary class |
 
 ### 4.3 Reauthenticated recovery
@@ -118,6 +121,7 @@ This is the complete FND-04 integration catalogue. Component-owned progression/r
 | `RECOVERY_GRANT_SECURITY_EVIDENCE_STALE` | `DEPENDENCY_UNAVAILABLE` | `RETRYABLE` | same unconsumed grant only while token/target/revisions remain valid after fresh non-rollback evidence | `NO_AUTHORITY_MUTATION` | `TEMPORARILY_UNAVAILABLE` | `recovery security evidence unavailable, stale or superseded` | evidence source/age/order class |
 | `RECOVERY_GRANT_WORLD_STALE` | `STALE_GENERATION` | `TERMINAL` | current world + new recovery grant; no retarget | `NO_AUTHORITY_MUTATION` | `RETRY_LOGIN` | `recovery character world binding no longer matches` | signed world + relation class |
 | `RECOVERY_GRANT_REVISION_UNSUPPORTED` | `UNSUPPORTED_REVISION` | `TERMINAL` | compatible revision only; no downgrade | `NO_AUTHORITY_MUTATION` | `CLIENT_UPDATE_REQUIRED` | `recovery authoritative revision unsupported` | authenticated mismatch dimension + approved revision |
+| `RECOVERY_CAPABILITY_REQUIRED` | `UNSUPPORTED_REVISION` | `TERMINAL` | a client build supporting the channel's required capabilities; a new recovery grant (ADMIT-0, pending on acceptance) | `NO_AUTHORITY_MUTATION` | `CLIENT_UPDATE_REQUIRED` | `recovery requires a gameplay capability the client lacks` | missing registered capability ids |
 | `RECOVERY_HEALTHY_CONTROLLER_PRESENT` | `CONFLICT` | `TERMINAL` | incumbent remains authority; recovery after authoritative loss only | `CURRENT_AUTHORITY_PRESERVED` | `CHARACTER_ALREADY_ACTIVE` | `recovery blocked by current playable controller` | controller-state class |
 | `RECOVERY_TARGET_NOT_ELIGIBLE` | `SESSION_REJECTED` | `TERMINAL` | resolve authoritative actor/session lifecycle | `NO_AUTHORITY_MUTATION` | `SESSION_UNAVAILABLE` | `recovery target is not eligible` | actor/session lifecycle class after ownership-safe evaluation |
 | `RECOVERY_PLACEMENT_UNAVAILABLE` | `DEPENDENCY_UNAVAILABLE` | `RETRYABLE` bounded | same unconsumed grant only while time/security/revisions remain valid after current placement resolves | `NO_AUTHORITY_MUTATION` | `TEMPORARILY_UNAVAILABLE` | `current recovery placement is unavailable` | locator/source/current-owner class |
@@ -205,6 +209,10 @@ Recovery independently binds profile, protocol_major, transport_profile, ruleset
 
 FND-02 `schema_revision` remains diagnostic/build evidence rather than exact gameplay admission/recovery equality.
 
+**Amendment (pending on acceptance of ADMIT-0; `reviews/OTERYN_GAME_ADMIT0_WORLD_REQUIRED_CAPABILITIES_DECISION_2026-10-01.md` §3).** A channel scope's required capability set is a
+compatibility dimension carried by its `world_policy_revision` token: a non-empty list is declared only
+after a client build supporting it is deployed to players.
+
 ## 8. Producer/consumer rollout and rollback
 
 Platform is producer of bounded fresh/recovery attempt grants; Oteryn-v2 is final game-domain consumer/authority.
@@ -237,6 +245,7 @@ Architecture acceptance is not implementation authorization. Future implementati
 - trust/key-discovery negatives;
 - time/skew/lifetime boundaries;
 - nonce concurrency/replay + producer lost-response reconciliation;
+- (ADMIT-0, pending on acceptance) capability-required refusals at admission, reconnect and recovery, each after authentication, with no nonce consumption;
 - source-age/anti-rollback/restart-floor/key-rotation/revocation tests.
 
 ### Concurrency/authority

@@ -1,7 +1,7 @@
 //! FAMILIAR-1 local candidate: immutable source-qualified appearance/lifetime snapshots.
 //! A changed snapshot is one session-generation fenced Character successor, preserving XP,
 //! standard stance, build and Monk fields. History replay/reconcile never reacquire authority.
-//! See migration 0032; root composition extends the mixed Character receipt chain before use.
+//! See migration 0033; root composition extends the mixed Character receipt chain before use.
 use super::character_authority::{ReconciledCharacterAuthority, assert_recovery_fence};
 use super::character_progression::{
     CharacterProgressionError, CurrentCharacterGameplayFence, assert_gameplay_fence, numeric_u64,

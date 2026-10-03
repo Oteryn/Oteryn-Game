@@ -124,6 +124,9 @@ exists per conflict key.
   40) + b_max]`; the delta is target − base, fixed when applied; a paralysis target is at least 40,
   and a paralysis on an actor whose base speed is below 40 leaves its speed unchanged (delta 0).
 - Later families (drunk, invisible, outfit, skill boosts, fear, root) come with their own decisions.
+- **Amendment (pending on acceptance of EQUIP-0; `reviews/OTERYN_GAME_EQUIP0_EQUIPMENT_EFFECTS_DECISION_2026-10-01.md` §4).** An active item's `SUPPRESS` refuses admission of an
+  instance with the named conflict key and removes an existing one. Skill boosts from equipment are
+  derived reads (EQUIP-0 §3), not a condition family.
 
 ### 3.1 Damage over time
 
@@ -188,6 +191,9 @@ exists per conflict key.
 - **Players.** One step request may wait in a one-step buffer until the previous step's duration
   has passed; it then runs. A second early request is refused with a new disposition `TOO_EARLY`,
   registered behind capability `PACED_MOVEMENT_V1`; a session without it gets `Rejected`.
+  **Amendment (pending on acceptance of RANGED-0; `reviews/OTERYN_GAME_RANGED0_DISTANCE_WEAPONS_AMMUNITION_WANDS_AND_CHASE_DECISION_2026-10-01.md` §8).** A chase step is
+  a step request from a server source on the same pacing clock and buffer; a client step request
+  cancels a pending chase step instead of being refused as early.
 - **Creatures.** GAME-AI-01 keeps its 1,000 ms think for decisions; SPEED-1 needs its movement
   cadence changed so that a creature takes each step of its chosen path at its step duration
   between thinks (Canary's walk events). This is requested as a GAME-AI-01 amendment, carried by

@@ -36,6 +36,7 @@ use crate::foundation::{
     ReconnectCandidateBindingV1, ReconnectDurabilityErrorV1, ReconnectIdentityV1,
     StateDomainRevisionV1,
 };
+use oteryn_protocol_oteryn::achievement_notices::STATE_DOMAIN_ACCOUNT_ACHIEVEMENT_NOTICES;
 use std::sync::{Arc, Mutex};
 
 /// Candidate lifetime: the widest the 5 s evidence freshness allows (FND-04B §18).
@@ -243,22 +244,31 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .min(loss.observation.original_grace_deadline),
         )
         .map_err(|_| Rejected)?;
+        let mut domains = vec![
+            StateDomainRevisionV1::new(
+                STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
+                lost.continuity.spatial_revision,
+            )
+            .map_err(|_| Unavailable)?,
+            StateDomainRevisionV1::new(
+                STATE_DOMAIN_WORLD_OBJECT_OVERLAY,
+                lost.continuity.overlay_revision,
+            )
+            .map_err(|_| Unavailable)?,
+        ];
+        // ACHIEVEMENT-0 §5: with capability 8, the cumulative notice revision the resumed
+        // connection's snapshot carries (domain 13, after domains 1 and 2).
+        if let Some(revision) = lost.continuity.achievement_notice_revision {
+            domains.push(
+                StateDomainRevisionV1::new(STATE_DOMAIN_ACCOUNT_ACHIEVEMENT_NOTICES, revision)
+                    .map_err(|_| Unavailable)?,
+            );
+        }
         let fnd02 = Fnd02ReconciliationFenceV1::new(
             CommandId::new(lost.continuity.next_command_id).map_err(|_| Unavailable)?,
             Vec::new(),
             lost.continuity.server_sequence,
-            vec![
-                StateDomainRevisionV1::new(
-                    STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
-                    lost.continuity.spatial_revision,
-                )
-                .map_err(|_| Unavailable)?,
-                StateDomainRevisionV1::new(
-                    STATE_DOMAIN_WORLD_OBJECT_OVERLAY,
-                    lost.continuity.overlay_revision,
-                )
-                .map_err(|_| Unavailable)?,
-            ],
+            domains,
         )
         .map_err(|_| Unavailable)?;
         let audit = verified.audit();

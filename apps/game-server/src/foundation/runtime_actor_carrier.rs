@@ -31,6 +31,16 @@ pub(crate) mod runtime_actor_spell;
 use std::mem::size_of;
 use std::sync::Arc;
 
+#[path = "runtime_actor_conditions.rs"]
+mod runtime_actor_conditions;
+#[allow(unused_imports)] // The Foundation facade is composed by the owning consumer child.
+pub(crate) use runtime_actor_conditions::{
+    ActorConditionPlan, ActorConditionTransition, ApplicationFacts, ConditionDefinition,
+    ConditionOwnerError, ConditionSource, ConditionSourceKind, ConditionStore, ConditionType,
+    ConditionValues, SpeedRange,
+};
+use runtime_actor_conditions::{CreatureCommitState, PlayerRuntimeState};
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum CarrierError {
     InvalidCapacity,
@@ -1071,7 +1081,7 @@ enum Slot {
         position: Option<VersionedPosition>,
         /// Present while the committed player's durable GameSession is RECONNECTABLE
         /// after an authoritative control loss (`DISCONNECT-PROTECTION-V1`).
-        control_loss: Option<ControlLossMark>,
+        lifecycle: Box<PlayerRuntimeState>,
         spell_combat: Box<runtime_actor_spell::ActorCombatState>,
     },
     CreatureOccupied {
@@ -1082,7 +1092,7 @@ enum Slot {
         health: i64,
         /// D140: the bounded receipt list and owner damage-application ordinal (D142). Boxed for
         /// the same footprint reason as `damage_contributors`.
-        committed: Box<DamageReceipts>,
+        committed: Box<CreatureCommitState>,
         /// D132/D3-3: this generation's running per-attacker damage accumulation. Fresh and
         /// empty on every admission; dropped with the slot on `remove`. Boxed for the same
         /// reason `target_identity` is `Arc<[u8]>` rather than inline bytes: this variant's own
@@ -1688,10 +1698,10 @@ impl ChannelRuntimeV1 {
                     generation,
                     game_session_id: Some(session),
                     committed: true,
-                    control_loss: None,
+                    lifecycle,
                     position: Some(_),
                     ..
-                } => (*generation, Some(*session)),
+                } if lifecycle.control_loss.is_none() => (*generation, Some(*session)),
                 Slot::CreatureOccupied {
                     generation,
                     health,
@@ -1737,10 +1747,10 @@ impl ChannelRuntimeV1 {
                     generation,
                     game_session_id: Some(session),
                     committed: true,
-                    control_loss: None,
+                    lifecycle,
                     position: Some(_),
                     ..
-                } => (*generation, Some(*session)),
+                } if lifecycle.control_loss.is_none() => (*generation, Some(*session)),
                 Slot::CreatureOccupied {
                     generation,
                     health,
@@ -1787,14 +1797,14 @@ impl ChannelRuntimeV1 {
                 generation,
                 game_session_id: Some(current),
                 committed: true,
-                control_loss: None,
+                lifecycle,
                 position: Some(_),
                 ..
             } = slot
             else {
                 continue;
             };
-            if *current != session {
+            if lifecycle.control_loss.is_some() || *current != session {
                 continue;
             }
             if result.is_some() {
@@ -2194,9 +2204,9 @@ impl ChannelRuntimeV1 {
                 Slot::Occupied {
                     game_session_id: Some(_),
                     committed: true,
-                    control_loss: Some(mark),
+                    lifecycle,
                     ..
-                } => Some(mark.epoch),
+                } => lifecycle.control_loss.map(|mark| mark.epoch),
                 _ => None,
             })
             .collect();
@@ -2557,7 +2567,7 @@ impl ChannelActorCarrier {
                 game_session_id,
                 committed,
                 position: None,
-                control_loss: None,
+                lifecycle: Box::default(),
                 spell_combat: Box::default(),
             }
         };
@@ -2871,6 +2881,9 @@ impl ChannelActorCarrier {
             companion
                 .conditions
                 .remove_type(super::condition::ConditionType::Invisible);
+        }
+        if next == 0 {
+            committed.conditions.die();
         }
         // D132/D3-3: attribute this applied hit to its attacker only now, at the sole mutation
         // boundary, after every replay/staleness check above -- an idempotent replay of a
@@ -3362,7 +3375,7 @@ impl ChannelActorCarrier {
     ) -> Result<Option<ControlLossMark>, CarrierError> {
         let index = self.player_slot_index(continuity, actor_ref, game_session_id)?;
         match &self.slots[index] {
-            Slot::Occupied { control_loss, .. } => Ok(*control_loss),
+            Slot::Occupied { lifecycle, .. } => Ok(lifecycle.control_loss),
             _ => Err(CarrierError::PlayerReservationMismatch),
         }
     }
@@ -3380,17 +3393,14 @@ impl ChannelActorCarrier {
         let index = self.player_slot_index(continuity, actor_ref, game_session_id)?;
         self.assert_slot_spell_unreserved(index)?;
         match &mut self.slots[index] {
-            Slot::Occupied {
-                control_loss: stored @ None,
-                ..
-            } => {
-                *stored = Some(mark);
-                Ok(())
-            }
-            Slot::Occupied {
-                control_loss: Some(existing),
-                ..
-            } if *existing == mark => Ok(()),
+            Slot::Occupied { lifecycle, .. } => match lifecycle.control_loss {
+                None => {
+                    lifecycle.control_loss = Some(mark);
+                    Ok(())
+                }
+                Some(existing) if existing == mark => Ok(()),
+                _ => Err(CarrierError::ControlLossConflict),
+            },
             _ => Err(CarrierError::ControlLossConflict),
         }
     }
@@ -3405,16 +3415,14 @@ impl ChannelActorCarrier {
         let index = self.player_slot_index(continuity, actor_ref, game_session_id)?;
         self.assert_slot_spell_unreserved(index)?;
         match &mut self.slots[index] {
-            Slot::Occupied {
-                control_loss: stored @ Some(_),
-                ..
-            } if stored.is_some_and(|mark| mark.epoch == epoch) => {
-                *stored = None;
-                Ok(())
-            }
-            Slot::Occupied {
-                control_loss: None, ..
-            } => Ok(()),
+            Slot::Occupied { lifecycle, .. } => match lifecycle.control_loss {
+                Some(mark) if mark.epoch == epoch => {
+                    lifecycle.control_loss = None;
+                    Ok(())
+                }
+                None => Ok(()),
+                _ => Err(CarrierError::ControlLossConflict),
+            },
             _ => Err(CarrierError::ControlLossConflict),
         }
     }
@@ -4160,7 +4168,7 @@ mod tests {
         }
     }
 
-    fn session(raw: u64) -> GameSessionId {
+    pub(super) fn session(raw: u64) -> GameSessionId {
         GameSessionId::decode(&uuid_v7(raw)).expect("valid GameSessionId fixture")
     }
 
@@ -4168,7 +4176,7 @@ mod tests {
         NodeId::decode(&uuid_v7(raw)).expect("valid NodeId fixture")
     }
 
-    fn runtime(capacity: usize) -> ChannelRuntimeV1 {
+    pub(super) fn runtime(capacity: usize) -> ChannelRuntimeV1 {
         ChannelRuntimeV1::from_committed_assignment(
             WorldId::decode(&uuid_v7(20)).expect("world"),
             ChannelId::decode(&uuid_v7(21)).expect("channel"),
@@ -4608,11 +4616,19 @@ mod tests {
         assert_eq!(runtime.content_pin(), &ChannelContentPin::test(world));
         assert_eq!(
             size_of::<Slot>(),
-            // Local SPELL-BATCH candidate: two extra pointers for actual combat state and
-            // qualified companion metadata. Accepted D140 baseline remains 168 bytes;
-            // this measured 184-byte representation needs the explicit candidate budget.
-            184,
-            "local spell candidate fixed-slot footprint must remain explicitly measured"
+            // D132/D3-3: +8 bytes (one pointer) for CreatureOccupied's boxed
+            // `damage_contributors`, the same footprint-preserving pattern already used for
+            // `target_identity: Arc<[u8]>` above; every non-creature slot pays this one pointer
+            // too, since it is `Slot`'s largest-variant size, not per-variant.
+            // D4/D140: `committed` widens from the inline `Option<OwnerCommitRecord>` to a boxed
+            // `DamageReceipts` (up to 16 receipts + the owner ordinal live on the heap), which
+            // shrinks the largest variant by 32 bytes: 200 -> 168.
+            // COND-1c: boxing the player lifecycle replaces the inline control-loss mark with
+            // one pointer and reduces the largest variant by another 8 bytes: 168 -> 160.
+            // D314: SPELL-BATCH candidate budget of 184 bytes for the boxed actual spell combat
+            // state and qualified companion metadata on top of COND-1c; measured 160 -> 176.
+            176,
+            "spell candidate fixed-slot footprint must stay inside the D314 budget"
         );
     }
 

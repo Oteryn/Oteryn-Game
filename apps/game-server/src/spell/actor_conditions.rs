@@ -898,7 +898,7 @@ fn stage_cycle(
         tick_inner(&mut next, now.get() / 1000, facts, damage)?
     } else {
         next.conditions
-            .expire_non_ticking(now.get())
+            .expire_non_ticking_checked(now.get())
             .map_err(|_| SpellCastDisposition::Rejected)?;
         Vec::new()
     };

@@ -1,0 +1,11 @@
+{
+  "database": "oteryn_prof1_semantics_20261001_132468_race",
+  "candidate_sha256": "9bde3bfcc946e18600913e295a983998321f4fdfd9dd244bf5b28a28e04142b5",
+  "case": "concurrent_absolute_successor_replay",
+  "blocked_before_winner_commit": true,
+  "winner_committed": true,
+  "loser_sqlstate": "23514",
+  "loser_error": "ERROR:  23514: Character root permits only one exact revision successor\nCONTEXT:  PL/pgSQL function game_character_root_revision_guard() line 16 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911",
+  "committed_counts": "2|2|1|1|1",
+  "status": "PASS"
+}

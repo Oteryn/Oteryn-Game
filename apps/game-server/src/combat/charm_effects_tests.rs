@@ -364,7 +364,9 @@ fn forced_catalogue() -> Catalogue {
 
 fn event_for(hook: CharmHook) -> CharmHookEvent {
     match hook {
-        CharmHook::AttackDamageCalculation => CharmHookEvent::AttackDamageCalculation,
+        CharmHook::AttackDamageCalculation => CharmHookEvent::AttackDamageCalculation {
+            source: CharmHitSource::CharacterAttack,
+        },
         CharmHook::AttackHit => NON_LETHAL,
         CharmHook::CreatureKilled => LETHAL,
         CharmHook::IncomingCreatureAttack => CharmHookEvent::IncomingCreatureAttack,
@@ -467,7 +469,7 @@ fn charm_effect_hook_and_fail_closed_matrix_covers_every_charm() {
             (other, _) => unreachable!("{name}: {other:?}"),
         }
     }
-    // 9 charms apply today and 16 fail closed (CHARM-4, #1303).
+    // 9 return prepared damage outcomes and 16 fail closed; this does not prove gameplay wiring.
     let active = expected
         .iter()
         .filter(|(name, ..)| {
@@ -1227,7 +1229,7 @@ fn charm_effect_charm_damage_never_chains_into_another_charm() {
 }
 
 #[test]
-fn charm_effect_auto_attack_off_its_main_target_triggers_no_charm() {
+fn charm_effect_auto_attack_off_its_main_target_excludes_procs_and_carnage() {
     let catalogue = forced_catalogue();
     for charm in ["oteryn:charm.wound", "oteryn:charm.carnage"] {
         let state = State::with(RACE, &[(charm, 3)]);
@@ -1266,16 +1268,295 @@ fn charm_effect_auto_attack_off_its_main_target_triggers_no_charm() {
                 .is_empty()
         );
     }
-    // Low Blow applies before the damage of every hit, so area ammunition keeps it on every
-    // creature it hits.
+    // D186 keeps Low Blow on secondary auto targets at calculation time.
     let state = State::with(RACE, &[("oteryn:charm.low_blow", 3)]);
     let low_blow = evaluate(
         &catalogue,
         &state,
-        CharmHookEvent::AttackDamageCalculation,
+        CharmHookEvent::AttackDamageCalculation {
+            source: CharmHitSource::CharacterAutoAttackOffTarget,
+        },
         1,
     )
     .expect("evaluates");
     assert_eq!(low_blow.len(), 1);
     assert_eq!(low_blow[0].charm_key, "oteryn:charm.low_blow");
+}
+
+#[test]
+fn charm_effect_d186_leeches_include_secondary_auto_targets_at_every_stage() {
+    let catalogue = Catalogue(catalogue_charms());
+    let cases = [
+        ("oteryn:charm.vampiric_embrace", [160, 240, 320], true),
+        ("oteryn:charm.voids_call", [80, 120, 160], false),
+    ];
+    for (key, values, life) in cases {
+        for (index, value) in values.into_iter().enumerate() {
+            let stage = u8::try_from(index + 1).expect("three stages");
+            let state = State::with(RACE, &[(key, stage)]);
+            for source in [
+                CharmHitSource::CharacterAttack,
+                CharmHitSource::CharacterAutoAttackOffTarget,
+                CharmHitSource::CharmDamage,
+            ] {
+                for health_after in [9_000, 0] {
+                    let event = CharmHookEvent::committed_hit(
+                        &OwnerDamageResult {
+                            applied: true,
+                            health_before: 10_000,
+                            health_after,
+                        },
+                        source,
+                        ATTACKER,
+                        10_000,
+                    );
+                    let outcomes = evaluate(&catalogue, &state, event, 1).expect("valid hit");
+                    if source == CharmHitSource::CharmDamage {
+                        assert!(outcomes.is_empty(), "{key}: generated damage cannot leech");
+                        continue;
+                    }
+                    let evaluated = if life {
+                        CharmEffectOutcome::LifeLeechBonus {
+                            percent: pct(value),
+                        }
+                    } else {
+                        CharmEffectOutcome::ManaLeechBonus {
+                            percent: pct(value),
+                        }
+                    };
+                    assert_eq!(
+                        outcomes,
+                        vec![CharmOutcome {
+                            charm_key: key.to_owned(),
+                            stage,
+                            hook: CharmHook::AttackHit,
+                            result: CharmResult::FailedClosed {
+                                reason: CharmMissingSystem::Leech,
+                                evaluated,
+                            },
+                        }],
+                        "{key} stage {stage}, {source:?}, remaining health {health_after}",
+                    );
+                    assert_eq!(evaluate(&catalogue, &state, event, 1), Ok(outcomes));
+                }
+            }
+        }
+    }
+}
+
+#[test]
+fn charm_effect_d186_critical_bonuses_require_source_and_exclude_generated_damage() {
+    let catalogue = Catalogue(catalogue_charms());
+    for (key, values, chance) in [
+        ("oteryn:charm.low_blow", [400, 800, 900], true),
+        ("oteryn:charm.savage_blow", [2000, 4000, 4400], false),
+    ] {
+        for (index, value) in values.into_iter().enumerate() {
+            let stage = u8::try_from(index + 1).expect("three stages");
+            let state = State::with(RACE, &[(key, stage)]);
+            for source in [
+                CharmHitSource::CharacterAttack,
+                CharmHitSource::CharacterAutoAttackOffTarget,
+                CharmHitSource::CharmDamage,
+            ] {
+                let event = CharmHookEvent::AttackDamageCalculation { source };
+                let outcomes = evaluate(&catalogue, &state, event, 1).expect("valid calculation");
+                if source == CharmHitSource::CharmDamage {
+                    assert!(outcomes.is_empty(), "{key}: generated damage cannot crit");
+                    continue;
+                }
+                let evaluated = if chance {
+                    CharmEffectOutcome::CriticalHitChanceBonus {
+                        percent: pct(value),
+                    }
+                } else {
+                    CharmEffectOutcome::CriticalExtraDamageBonus {
+                        percent: pct(value),
+                    }
+                };
+                assert_eq!(
+                    outcomes,
+                    vec![CharmOutcome {
+                        charm_key: key.to_owned(),
+                        stage,
+                        hook: CharmHook::AttackDamageCalculation,
+                        result: CharmResult::FailedClosed {
+                            reason: CharmMissingSystem::CriticalHit,
+                            evaluated,
+                        },
+                    }],
+                    "{key} stage {stage}, {source:?}",
+                );
+                assert_eq!(evaluate(&catalogue, &state, event, 1), Ok(outcomes));
+            }
+        }
+    }
+}
+
+#[test]
+fn charm_effect_d186_secondary_hits_filter_each_effect_in_mixed_assignments() {
+    let catalogue = forced_catalogue();
+    for (major, minor) in [
+        ("oteryn:charm.wound", "oteryn:charm.vampiric_embrace"),
+        ("oteryn:charm.carnage", "oteryn:charm.voids_call"),
+    ] {
+        let state = State::with(RACE, &[(major, 3), (minor, 3)]);
+        let reversed = State::with(RACE, &[(minor, 3), (major, 3)]);
+        for health_after in [9_000, 0] {
+            let event = CharmHookEvent::committed_hit(
+                &OwnerDamageResult {
+                    applied: true,
+                    health_before: 10_000,
+                    health_after,
+                },
+                CharmHitSource::CharacterAutoAttackOffTarget,
+                ATTACKER,
+                10_000,
+            );
+            let outcomes = evaluate(&catalogue, &state, event, 1).expect("valid mixed assignment");
+            assert_eq!(outcomes.len(), 1, "{major} + {minor}, {health_after}");
+            assert_eq!(outcomes[0].charm_key, minor);
+            assert_eq!(outcomes[0].hook, CharmHook::AttackHit);
+            assert!(matches!(
+                outcomes[0].result,
+                CharmResult::FailedClosed {
+                    reason: CharmMissingSystem::Leech,
+                    ..
+                }
+            ));
+            assert_eq!(evaluate(&catalogue, &reversed, event, 1), Ok(outcomes));
+            let wrong_race = State::with(OTHER_RACE, &[(major, 3), (minor, 3)]);
+            assert_eq!(evaluate(&catalogue, &wrong_race, event, 1), Ok(Vec::new()));
+        }
+    }
+}
+
+#[test]
+fn charm_effect_d186_secondary_and_generated_sources_cover_the_full_catalogue() {
+    let catalogue = forced_catalogue();
+    for definition in &catalogue.0 {
+        let state = State::with(RACE, &[(definition.key(), 3)]);
+        for source in [
+            CharmHitSource::CharacterAutoAttackOffTarget,
+            CharmHitSource::CharmDamage,
+        ] {
+            let calculation = CharmHookEvent::AttackDamageCalculation { source };
+            let expected_calculation = usize::from(
+                source == CharmHitSource::CharacterAutoAttackOffTarget
+                    && matches!(
+                        definition.effect(),
+                        CharmEffect::CriticalHitChance | CharmEffect::CriticalExtraDamage
+                    ),
+            );
+            assert_eq!(
+                evaluate(&catalogue, &state, calculation, 1)
+                    .expect("calculation")
+                    .len(),
+                expected_calculation,
+                "{}: {source:?} calculation",
+                definition.key(),
+            );
+            for health_after in [9_000, 0] {
+                let committed = CharmHookEvent::committed_hit(
+                    &OwnerDamageResult {
+                        applied: true,
+                        health_before: 10_000,
+                        health_after,
+                    },
+                    source,
+                    ATTACKER,
+                    10_000,
+                );
+                let expected_hit = usize::from(
+                    source == CharmHitSource::CharacterAutoAttackOffTarget
+                        && matches!(
+                            definition.effect(),
+                            CharmEffect::LifeLeech | CharmEffect::ManaLeech
+                        ),
+                );
+                assert_eq!(
+                    evaluate(&catalogue, &state, committed, 1)
+                        .expect("committed hit")
+                        .len(),
+                    expected_hit,
+                    "{}: {source:?} remaining health {health_after}",
+                    definition.key(),
+                );
+            }
+        }
+    }
+}
+
+#[test]
+fn charm_effect_speed_definitions_match_authored_condition_bindings_and_remain_dormant() {
+    let conditions: serde_json::Value = serde_json::from_str(include_str!(
+        "../../../../tools/content-schema/condition-authoring/authored-conditions.json"
+    ))
+    .expect("authored condition inputs");
+    let charms: serde_json::Value = serde_json::from_str(include_str!(
+        "../../../../tools/content-schema/charm-authoring/samples/charms-candidate.json"
+    ))
+    .expect("Charm catalogue");
+    let catalogue = forced_catalogue();
+    for (name, kind, effect_type, hook, missing) in [
+        (
+            "cripple",
+            "paralysis",
+            "paralyse_creature_on_attack",
+            CharmHook::AttackHit,
+            CharmMissingSystem::ParalysisCondition,
+        ),
+        (
+            "numb",
+            "paralysis",
+            "paralyse_creature_after_its_attack",
+            CharmHook::IncomingCreatureHit,
+            CharmMissingSystem::ParalysisCondition,
+        ),
+        (
+            "adrenaline_burst",
+            "haste",
+            "haste_after_hit",
+            CharmHook::IncomingCreatureHit,
+            CharmMissingSystem::HasteCondition,
+        ),
+    ] {
+        let key = format!("oteryn:charm.{name}");
+        let condition_key = format!("charm.{name}");
+        let condition = conditions["rows"]
+            .as_array()
+            .expect("rows")
+            .iter()
+            .find(|row| row["key"] == condition_key)
+            .expect("condition for charm");
+        let charm = charms["charms"]
+            .as_array()
+            .expect("charms")
+            .iter()
+            .find(|row| row["key"] == key)
+            .expect("Charm definition");
+        assert_eq!(condition["used_by"], serde_json::json!(["charm", key]));
+        assert_eq!(condition["family"], "SPEED");
+        assert_eq!(condition["speed"]["kind"], kind);
+        assert_eq!(charm["effect"]["type"], effect_type);
+        assert_eq!(
+            condition["speed"]["duration_ms"],
+            charm["effect"]["duration_ms"]
+        );
+        let definition = catalogue.charm(&key).expect("engine definition");
+        assert_eq!(definition.effect().hook(), hook);
+        assert!(!definition.effect_active());
+        let expected_duration = charm["effect"]["duration_ms"].as_u64().expect("duration");
+        let result = single(&catalogue, &key, 3, event_for(hook));
+        let CharmResult::FailedClosed { reason, evaluated } = result else {
+            unreachable!("speed charms remain dormant")
+        };
+        assert_eq!(reason, missing);
+        let duration = match evaluated {
+            CharmEffectOutcome::ParalyseCreature { duration_ms }
+            | CharmEffectOutcome::Haste { duration_ms } => duration_ms,
+            _ => unreachable!("speed outcome"),
+        };
+        assert_eq!(u64::from(duration), expected_duration);
+    }
 }

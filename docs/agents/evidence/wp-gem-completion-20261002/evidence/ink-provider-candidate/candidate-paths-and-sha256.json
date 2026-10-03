@@ -1,0 +1,28 @@
+{
+  "status": "SCRATCH_CANDIDATE_ONLY_CP_PROVIDER_AND_EXACT_PATH_ADMISSION_PENDING",
+  "files": [
+    {
+      "path": "tools/content-schema/item-authoring/item_weapon_proficiency.py",
+      "sha256": "c8ba9f789266943dbb9e861181ea1bbe321071f8c3e47c4b2ec0c12a5a8ed8ba",
+      "base_sha256": "f14b0f55edfe2cdcff9995448e75ed76cab2c5c2ef1f1a81325df78bb9d76962"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/test_item_weapon_proficiency.py",
+      "sha256": "121f388818f70435e8fb5ae9083dd9fe4825bf257d351fdb93fe02f63dd6f71c",
+      "base_sha256": "990058c953932ffe5541f8f381ffa01e86b6283887d7e0887e76a1b2c07b332c"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/samples/weapon-threshold-tibiopedia-ink-manifest.json",
+      "sha256": "54dcb65092d8c370adcaa99f03d1ad87b62cce3d679d7ccfcd8567347a0712d9",
+      "base_sha256": null
+    },
+    {
+      "path": "tools/content-schema/item-authoring/samples/weapon-threshold-tibiopedia-ink-observations.json",
+      "sha256": "252190a37ebbf26f2b8846431ad04250e22910fd09a5705c53885c031c929166",
+      "base_sha256": null
+    }
+  ],
+  "patch_sha256": "375e71e31cdd7aa8bbdb29a51c46f4aed7e4d4a12f9c6a7e4819948fd7170063",
+  "added_lines": 322,
+  "removed_lines": 2
+}

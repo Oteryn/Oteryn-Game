@@ -814,12 +814,13 @@ fn accepted_d140_layout_receipt_is_separate_from_the_local_spell_candidate_budge
     );
     assert_eq!(
         std::mem::size_of::<Slot>(),
-        184,
+        // D314: measured on the merged tree with COND-1c's boxed lifecycle; budget 184.
+        176,
         "explicit local SPELL-BATCH candidate"
     );
     assert_eq!(
-        184 * 32,
-        5888,
+        176 * 32,
+        5632,
         "candidate 32-slot inline storage; heap state separately bounded"
     );
 }

@@ -189,6 +189,12 @@ admitted shapes and by a paragraph at the end of §39.3. Every other §39 obliga
 
 ## 6. Uses
 
+**Amendment (pending on acceptance of TIMED-ITEM-0; `reviews/OTERYN_GAME_TIMED_ITEM0_CHARGES_DURATION_AND_REPAIR_DECISION_2026-10-01.md` §3).** A use whose `transform {trigger: use}` would turn an
+item into a `continuous` timed form (lighting a torch or a lamp) is refused, writing nothing, until
+TIMED-ITEM-0B decides continuous duration. On the wire it answers the existing `REJECTED`
+disposition (§3); `NOT_ADMITTED` is only the internal reason, logged and not sent. No new wire value
+and no capability.
+
 ### 6.1 Food (FOOD-REGEN-1)
 
 - A new ConditionDefinition, `FoodRegeneration`, with its own conflict key:

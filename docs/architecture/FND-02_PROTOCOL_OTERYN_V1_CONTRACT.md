@@ -223,6 +223,14 @@ The v1 registry initially contains **zero optional capabilities**. Speculative c
 
 Future additive capabilities use stable numeric IDs only when an older same-major peer can safely continue without the feature and the feature cannot weaken a core invariant.
 
+**Amendment (pending on acceptance of ADMIT-0; `reviews/OTERYN_GAME_ADMIT0_WORLD_REQUIRED_CAPABILITIES_DECISION_2026-10-01.md` §3-§4).** A channel scope may declare required
+capabilities (`required_gameplay_capabilities`, beside its `world_policy_revision`, closed under each
+capability's registry `requires`, at most 16). FND-04 refuses fresh admission, reconnect and recovery
+of a peer whose supported list lacks that set, and selects every required capability. This is an
+exception to the "safely continue" precondition above for channels with a non-empty list: refusal is
+the safe outcome there for an older peer that cannot continue without the feature; the capability
+stays optional for protocol major 1 and a channel with an empty list behaves as before.
+
 Negotiation rules:
 
 - a peer's **supported** capability list is sorted, unique and bounded;
@@ -260,6 +268,13 @@ After TLS/ALPN, `ClientBootstrap` carries:
 - bounded client build ID.
 
 It does **not** carry a client-created canonical `GameSessionId`.
+
+**Amendment (pending on acceptance of SEC-CLIENT-01; `reviews/OTERYN_GAME_SEC_CLIENT01_CLIENT_INTEGRITY_AND_ANTI_BOT_DECISION_2026-10-01.md` §4, §7).** Field 8
+of `ClientBootstrap` is set aside for `bytes client_attestation`, without meaning in v1 (a
+non-empty value is ignored and emits nothing, never authority). Native transport profile 1 requires the capabilities `CLIENT_INTEGRITY_V1` and
+`INPUT_TELEMETRY_V1`, each once offered (SEC-CLIENT-01 §4.1, §5.1); `client_build_id` stays
+diagnostic and selects only the challenge corpus, never authority. A challenge answer proves only
+access to official release bytes, never client integrity (SEC-CLIENT-01 §4.0).
 
 FND-04 owns admission-material construction and validation. Before authoritative admission succeeds:
 

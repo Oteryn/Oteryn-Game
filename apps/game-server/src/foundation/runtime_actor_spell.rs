@@ -685,12 +685,15 @@ impl ChannelRuntimeV1 {
         let original = &self.carrier.slots[index];
         let Slot::Occupied {
             committed: true,
-            control_loss: None,
+            lifecycle,
             ..
         } = original
         else {
             return Err(Error::InvalidBatch);
         };
+        if lifecycle.control_loss.is_some() {
+            return Err(Error::InvalidBatch);
+        }
         let original_state = state(original)?;
         let canonical = canonical_binding(batch)?;
         if original_state.pending_source.is_some()

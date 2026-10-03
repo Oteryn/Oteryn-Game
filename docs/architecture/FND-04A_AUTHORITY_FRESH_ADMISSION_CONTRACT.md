@@ -138,6 +138,11 @@ Every authoritative revision is compared independently against the current targe
 
 No silent retarget/downgrade to another World, Channel, owner, content/ruleset/map/policy/offer generation, protocol family or Canary path.
 
+**Amendment (pending on acceptance of ADMIT-0; `reviews/OTERYN_GAME_ADMIT0_WORLD_REQUIRED_CAPABILITIES_DECISION_2026-10-01.md` §3-§5).** A `world_policy_revision` token names one immutable
+`required_gameplay_capabilities` list declared for the scope (node-boot D1/D5); its effective set is
+fixed for the scope ownership generation. Step 14 of §7 (after ownership and world eligibility) and §7.1 check it;
+every capability of the set is selected for the new GameSession.
+
 ## 7. Atomic fresh-admission linearization
 
 Precommit checks are fail-fast eligibility only until the atomic authority boundary.
@@ -155,7 +160,7 @@ Precommit checks are fail-fast eligibility only until the atomic authority bound
 11. route/runtime/current target/ownership + independent protocol/transport/ruleset/content/map/world-policy/offer revisions;
 12. GrantNonce eligibility;
 13. current AccountId->CharacterId ownership/lifecycle;
-14. current CharacterId->WorldId/world eligibility only after step 13;
+14. current CharacterId->WorldId/world eligibility only after step 13; then (ADMIT-0, pending on acceptance) the bootstrap's supported capability list contains the scope's effective required set -> else `ADMISSION_CAPABILITY_REQUIRED`, so a grant for a character the account does not currently own never learns the channel's required capabilities;
 15. AccountPresence/duplicate-login eligibility;
 16. CharacterLease/current runtime-scope acquisition/readiness;
 17. one atomic final revalidation + authority commit;
@@ -173,6 +178,7 @@ Immediately before/atomically with authority creation revalidate:
 - route/runtime observation, target lifecycle, scope ownership, runtime owner/placement/readiness;
 - protocol_major and transport_profile;
 - each `ruleset_revision`, `content_revision`, `map_revision`, `world_policy_revision`, `offer_revision` independently;
+- the scope's effective required capability set is contained in the supported list, after the revision equality and the ownership and world eligibility above (ADMIT-0, pending on acceptance);
 - AccountId->CharacterId ownership/lifecycle first;
 - CharacterId->WorldId/world eligibility second;
 - GrantNonce;
@@ -307,6 +313,7 @@ Common diagnostic envelope: `error_code`, `request_trace_id`, safe `admission_at
 | `ADMISSION_ACCOUNT_CHARACTER_CONFLICT` | `CONFLICT` | `TERMINAL` | new attempt only after ownership/lifecycle change | no partial admission | `SESSION_UNAVAILABLE` | `fresh admission account or character relationship conflicts with current authority` | ownership/lifecycle decision class; world only after ownership-safe evaluation |
 | `ADMISSION_INCUMBENT_PROTECTED` | `CONFLICT` | `TERMINAL` | new attempt only after incumbent eligibility changes | incumbent unchanged; newcomer no authority | `CHARACTER_ALREADY_ACTIVE` | `fresh admission blocked by current character authority` | incumbent state class; world/channel where policy permits |
 | `ADMISSION_CAPACITY_EXCEEDED` | `CAPACITY_EXCEEDED` | `RETRYABLE` | bounded backoff; same grant only on same current route while valid | no partial authority | `TEMPORARILY_UNAVAILABLE` | `fresh admission capacity unavailable` | capacity class; world/channel; route_revision |
+| `ADMISSION_CAPABILITY_REQUIRED` (ADMIT-0, pending on acceptance) | `UNSUPPORTED_REVISION` | `TERMINAL` | a client build supporting the channel's required capabilities; a new grant | no nonce/authority mutation | `CLIENT_UPDATE_REQUIRED` | `fresh admission requires a gameplay capability the client lacks` | missing registered capability ids, after authentication, revision equality and current ownership and world eligibility (step 14) |
 
 Complete v1 credential precedence is:
 
@@ -380,6 +387,12 @@ Require independently:
 Independently mutate after earlier validation: JWT time; key/profile evidence source age/order/decision; Platform-security source age/order/account state; route/runtime/target; protocol or any independent gameplay revision; AccountId->CharacterId; CharacterId->WorldId/world eligibility; GrantNonce; AccountPresence/incumbent; CharacterLease/fence; superseding transfer/handoff/fence/takeover/terminal authority.
 
 Each loser fails before candidate authority mutation; presence/lease/GameSession/TransportBinding become authoritative together only for the winner.
+
+**Amendment (pending on acceptance of ADMIT-0; `reviews/OTERYN_GAME_ADMIT0_WORLD_REQUIRED_CAPABILITIES_DECISION_2026-10-01.md` §4).** Fixtures: a correctly signed grant with a matching
+`world_policy_revision` and a supported list lacking a required capability -> `ADMISSION_CAPABILITY_REQUIRED`
+with no nonce consumption; an invalid signature with a lacking list -> authentication failed (the
+capability check never precedes authentication); a mismatched `world_policy_revision` -> the revision
+error, not the capability error; with the set supported, each required capability is selected.
 
 ## 13. Security/privacy
 

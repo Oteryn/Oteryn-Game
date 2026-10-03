@@ -53,6 +53,21 @@ None of this is a placement, the runtime `LocalObject` overlay or runtime serial
   65 Terrain tiles (mosaics, unbanked floors, leaves) still have no rule and stay UNKNOWN under
   `unknown_kind_examples`.
 
+## Supplemental pinned Crystal donor catalogue (`00ce02a5`)
+
+The reviewed qualification `samples/qualified-donor-routes-00ce02a5.json` selects
+125 previously ownerless Item keys whose existing donor classifier already routes
+30 to Terrain and 95 to WorldObject, including 80 corpses. Actual donor XML and
+appearance digests, EXACT bindings, current appearance continuity, names and routes
+are verified before any output. Existing Item taxonomy and materializable Items are
+rejected. Eight already-taxonomized donor routes and five unbound donor routes stay held.
+
+`build_catalogue.py --source <ff7ede5> --donor-source <00ce02a5> [--check]` preserves
+every base shard and the base census, adds separate shards using numeric ranges after the base catalog and emits
+`samples/census-crystal-donor-00ce02a5.json`. The totals become **21,455** records:
+8,578 Terrain and 12,877 WorldObject. The donor input is required once these supplemental
+shards exist. Static catalog definitions add no placements, gameplay, class or admission.
+
 ## Pinned Crystal census (`ff7ede5`)
 
 - After D149, **21,330 records**: 8,548 Terrain and 12,782 WorldObject (128 placeholder slots excluded). This

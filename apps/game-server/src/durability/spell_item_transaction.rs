@@ -2704,7 +2704,7 @@ async fn apply_consumed_equipment_epoch(
 }
 
 /// Existing real custody rows only. The root and every visited ItemInstance
-/// stay locked; all corpse-entry writers share its Channel scope lock (0041).
+/// stay locked; all corpse-entry writers share its Channel scope lock (0042).
 async fn prepare_contained_retirements(
     tx: &mut Transaction<'_, Postgres>,
     authority: &SpellItemAuthority,
