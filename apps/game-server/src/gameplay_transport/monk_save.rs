@@ -4,7 +4,9 @@
 //! Before the Character lease is released, the Channel owner writes the actor's live values with
 //! `commit_character_monk_state_save`, fenced by the current durable GameSession that owns the
 //! actor. The write must commit or be fenced out before the release; while its outcome is unknown
-//! the release waits.
+//! the release waits. It advances the CharacterRevision, so it runs in the Character's revision
+//! slot (CHAR-REV-SEQ-1); the runtime lock is taken only briefly, inside the slot, to read the
+//! values, and never across the slot wait or the durable write.
 
 use oteryn_simulation_determinism::SemanticTimeMicros;
 
@@ -66,6 +68,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             if attempt > 0 {
                 tokio::time::sleep(RECONCILE_BACKOFF).await;
             }
+            let fence = match self.current_monk_fence(admitted).await {
+                Ok(Some(fence)) => fence,
+                // The session no longer owns the actor: any write would be fenced out.
+                Ok(None) => return MonkSave::FencedOut,
+                Err(()) => continue,
+            };
+            let mut slot = self.revision_sequencer.acquire(fence.character_id).await;
             let values = {
                 let runtime = self.runtime.lock().await;
                 self.spell_states.lock().await.monk_save_values(
@@ -81,12 +90,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let Ok(state) = DurableMonkState::new(harmony, micros) else {
                 return MonkSave::Unknown;
             };
-            let fence = match self.current_monk_fence(admitted).await {
-                Ok(Some(fence)) => fence,
-                // The session no longer owns the actor: any write would be fenced out.
-                Ok(None) => return MonkSave::FencedOut,
-                Err(()) => continue,
-            };
             let Some(occurrence) = SecureIdentifiers::random::<16>().and_then(|mut bytes| {
                 bytes[6] = 0x70 | (bytes[6] & 0x0f);
                 bytes[8] = 0x80 | (bytes[8] & 0x3f);
@@ -95,9 +98,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 continue;
             };
             let request = MonkStateSaveRequest { occurrence, state };
-            match self
-                .root
-                .commit_character_monk_state_save(self.character, self.holder, fence, request)
+            match slot
+                .commit_monk_state_save(self.root, self.character, self.holder, fence, request)
                 .await
             {
                 Ok(
@@ -109,8 +111,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     CharacterProgressionError::AuthorityRejected
                     | CharacterProgressionError::RespawnPending,
                 ) => return MonkSave::FencedOut,
-                // A concurrent Character write moved the revision: read the fence again.
-                Err(CharacterProgressionError::CharacterRevisionMismatch) => {}
+                // Under the slot only a writer that bypassed the sequencer moves the revision:
+                // the save's binding includes it, so it fails closed (the slot reports the
+                // defect) and is not retried at another revision.
+                Err(CharacterProgressionError::CharacterRevisionMismatch) => {
+                    return MonkSave::Unknown;
+                }
                 Err(CharacterProgressionError::Unavailable(_)) => {
                     if let Ok(Some(_)) = self
                         .root
@@ -126,7 +132,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         MonkSave::Unknown
     }
 
-    /// The gameplay fence of the session that owns the actor, from current durable reads.
+    /// The gameplay fence of the session that owns the actor, from current durable reads. Its
+    /// expected revision is replaced by the revision slot's cursor at commit.
     /// `Ok(None)` when that session is terminal; `Err` when a read failed.
     async fn current_monk_fence(
         &self,
