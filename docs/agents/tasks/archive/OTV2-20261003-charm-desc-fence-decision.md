@@ -1,7 +1,7 @@
-# OTV2-20261003-charm-desc-fence
+# OTV2-20261003-charm-desc-fence-decision
 
 ```yaml
-task_id: OTV2-20261003-charm-desc-fence
+task_id: OTV2-20261003-charm-desc-fence-decision
 title: "CHARM-DESC-FENCE: live attacker authority for Ability damage commits (D295)"
 mode: CONTRACT
 status: completed
@@ -19,7 +19,7 @@ updated_at: 2026-10-03
 execution_policy: continuous_progress
 owned_paths:
   - docs/architecture/reviews/OTERYN_GAME_CHARM_DESC_FENCE_DECISION_2026-10-03.md
-  - docs/agents/tasks/archive/OTV2-20261003-charm-desc-fence.md
+  - docs/agents/tasks/archive/OTV2-20261003-charm-desc-fence-decision.md
 public_contracts: []
 depends_on: []
 blocks:
