@@ -40,6 +40,8 @@ precondition for allocating PREM-1b.
 - #1391 P2 4153900550: §11 scope item 3 ignores a failed pull or quarantine older than the latest
   proof. A test is added.
 - #1661 P2 4174254492: the D327 CHAR-REV-SEQ-1 tests cover build and proficiency with no retry.
+  Review round 2 (Codex P1 4174311683): both PostgreSQL case files are in the packet's
+  `owned_paths`, taken from #1661 by merging `main` rather than duplicating them.
 - #1631 P2 4173086801: CYCLOPEDIA-0 §6 sends the initial or replacement snapshot with each
   undiscovered POI that is already in range.
 
