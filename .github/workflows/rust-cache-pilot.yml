@@ -63,7 +63,7 @@ jobs:
         run: >-
           python tools/repository/benchmark_rust_cache.py
           --sccache "$RUNNER_TEMP/sccache-v0.18.0-x86_64-unknown-linux-musl/sccache"
-          --repetitions 3 --temporary-root "$RUNNER_TEMP"
+          --repetitions 2 --temporary-root "$RUNNER_TEMP"
           --output "$RUNNER_TEMP/rust-cache-results"
 
       - name: Preserve results and failure logs

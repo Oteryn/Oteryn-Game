@@ -23,9 +23,14 @@ Cold sccache added overhead; these results support a bounded pilot, not a blanke
 replacement for current Cargo caching or a promised whole-CI speedup.
 
 Measured scriptSHA256: f62b2507cf65a83944169aefbf918055f5737787e04c5917ec50bc04879043ad.
-The candidate additionally clears configured Cargo wrappers with explicit empty
-environment values; its isolation regression covers that hardening. Numeric
-results above belong to the measured script and immutable Rust source.
+The final controller additionally clears configured Cargo wrappers with explicit
+empty values and binds a private sccache configuration file. It uses two complete
+interleaved cycles, resetting the private compiler cache before each cold seed;
+the historical measurements above used a single cold seed. Free-disk preflight,
+per-phase deadlines and a75minute script budget preserve time for report upload.
+Isolation regressions and real sccache0.18.0 startup confirm the private config.
+Numeric results above belong to the measured script and immutable Rust source,
+not to the later hardened/interleaved controller.
 Published sccache archiveSHA256:45f1447fbe231e3037bde351ef70677dd212216c8d62ae7ca409fecc4d6acc89.
 
 The manual-only hosted pilot binds its controller to protected main, accepts only

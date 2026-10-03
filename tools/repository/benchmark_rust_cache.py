@@ -8,6 +8,7 @@ import json
 import os
 from pathlib import Path
 import shutil
+import signal
 import statistics
 import subprocess
 import tempfile
@@ -29,22 +30,34 @@ def local_environment(parent: dict[str, str], target: Path, cache: Path, endpoin
     env["RUSTC_WORKSPACE_WRAPPER"] = ""
     env.update(CARGO_TARGET_DIR=str(target), CARGO_INCREMENTAL="0",
                SCCACHE_DIR=str(cache), SCCACHE_SERVER_UDS=str(endpoint),
-               SCCACHE_CACHE_SIZE="2G", SCCACHE_IDLE_TIMEOUT="0")
+               SCCACHE_CACHE_SIZE="2G", SCCACHE_IDLE_TIMEOUT="0",
+               SCCACHE_CONF=str(cache.parent / "sccache.toml"))
     return env
 
 
-def run(command: list[str], env: dict[str, str], log: Path) -> float:
+def run(command: list[str], env: dict[str, str], log: Path, timeout: float) -> float:
     started = time.monotonic()
     with log.open("w") as stream:
-        result = subprocess.run(command, cwd=ROOT, env=env, stdout=stream, stderr=subprocess.STDOUT)
+        process = subprocess.Popen(command, cwd=ROOT, env=env, stdout=stream,
+                                   stderr=subprocess.STDOUT, start_new_session=True)
+        try:
+            returncode = process.wait(timeout=timeout)
+        except subprocess.TimeoutExpired:
+            # Cargo can leave rustc/linker children behind; terminate our whole group.
+            try:
+                os.killpg(process.pid, signal.SIGKILL)
+            except ProcessLookupError:
+                pass
+            process.wait()
+            raise
     elapsed = time.monotonic() - started
-    if result.returncode:
-        raise RuntimeError(f"command failed ({result.returncode}); see {log}")
+    if returncode:
+        raise RuntimeError(f"command failed ({returncode}); see {log}")
     return elapsed
 
 
 def output(command: list[str], env: dict[str, str]) -> str:
-    return subprocess.check_output(command, cwd=ROOT, env=env, text=True).strip()
+    return subprocess.check_output(command, cwd=ROOT, env=env, text=True, timeout=60).strip()
 
 
 def size(path: Path) -> int:
@@ -65,10 +78,12 @@ def main() -> int:
     parser.add_argument("--sccache", required=True, type=Path)
     parser.add_argument("--cargo", default="cargo")
     parser.add_argument("--package", choices=["oteryn-game-server"])
-    parser.add_argument("--repetitions", type=int, choices=range(2, 6), default=3)
+    parser.add_argument("--repetitions", type=int, choices=range(2, 6), default=2)
     parser.add_argument("--output", required=True, type=Path)
+    parser.add_argument("--budget-seconds", type=int, choices=range(60, 4501), default=4500)
     parser.add_argument("--temporary-root", type=Path)
     args = parser.parse_args()
+    deadline = time.monotonic() + args.budget_seconds
     args.output.mkdir(parents=True, exist_ok=False)
     wrapper = str(args.sccache.resolve(strict=True))
     report = {"schema_version": 1, "status": "running", "rows": [],
@@ -81,6 +96,7 @@ def main() -> int:
               "source_sha": output(["git", "rev-parse", "HEAD"], os.environ.copy()),
               "lock_sha256": hashlib.sha256((ROOT / "Cargo.lock").read_bytes()).hexdigest(),
               "incremental": False, "cache_backend": "isolated local disk",
+              "cache_capacity": "2G", "time_budget_seconds": args.budget_seconds,
               "rustflags": os.environ.get("RUSTFLAGS", ""),
               "encoded_rustflags": os.environ.get("CARGO_ENCODED_RUSTFLAGS", ""),
               "profile_overrides": {name: os.environ.get(name) for name in
@@ -91,31 +107,54 @@ def main() -> int:
     result_path = args.output / "results.json"
     def persist():
         report["summary"] = summarize(report["rows"])
+        report["elapsed_seconds"] = time.monotonic() - (deadline - args.budget_seconds)
         result_path.write_text(json.dumps(report, indent=2) + "\n")
 
     with tempfile.TemporaryDirectory(prefix="oteryn-rust-cache-", dir=args.temporary_root) as directory:
         scratch = Path(directory)
         target, cache = scratch / "target", scratch / "cache"
+        (scratch / "sccache.toml").write_text("# Isolated cache configuration.\n")
         env = local_environment(os.environ.copy(), target, cache, scratch / "sccache.sock")
         server_owned = False
         persist()
         try:
             report["toolchain"] = output([args.cargo, "--version"], env)
             report["sccache_version"] = output([wrapper, "--version"], env)
+            report["rustc_verbose_version"] = output([os.environ.get("RUSTC") or "rustc", "-vV"], env)
+            report["initial_free_bytes"] = shutil.disk_usage(scratch).free
+            minimum_gib = 2 if args.package else 14
+            if report["initial_free_bytes"] < minimum_gib * 1024**3:
+                raise RuntimeError(f"pilot requires {minimum_gib} GiB free before compilation")
+
+            def remaining_timeout():
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    raise RuntimeError("pilot time budget exhausted")
+                return min(1800, remaining)
+
+            report["active_phase"] = "dependency_fetch"
+            persist()
             report["dependency_fetch_seconds"] = run(
-                [args.cargo, "fetch", "--locked", "--quiet"], env, args.output / "fetch.log")
+                [args.cargo, "fetch", "--locked", "--quiet"], env, args.output / "fetch.log", remaining_timeout())
 
             def measure(case: str, iteration: int, cached: bool, clean: bool):
                 if clean and target.exists():
                     shutil.rmtree(target)  # Only our TemporaryDirectory's target.
+                free_bytes = shutil.disk_usage(scratch).free
+                minimum = (minimum_gib if clean else 1) * 1024**3
+                if free_bytes < minimum:
+                    raise RuntimeError(f"insufficient free disk for {case}: {free_bytes} bytes")
                 build_env = env.copy()
                 if cached:
                     build_env["RUSTC_WRAPPER"] = wrapper
                     output([wrapper, "--zero-stats"], env)
+                report["active_phase"] = f"{case}-{iteration}"
+                report["active_log"] = f"{case}-{iteration}.log"
+                persist()
                 row = {"case": case, "iteration": iteration,
                        "build_seconds": run(report["command"], build_env,
-                                            args.output / f"{case}-{iteration}.log"),
-                       "target_bytes": size(target)}
+                                            args.output / f"{case}-{iteration}.log", remaining_timeout()),
+                       "target_bytes": size(target), "free_bytes_before": free_bytes}
                 if cached:
                     row["sccache"] = json.loads(output([wrapper, "--show-stats", "--stats-format", "json"], env))
                     stats = row["sccache"]["stats"]
@@ -132,26 +171,37 @@ def main() -> int:
             for iteration in range(1, args.repetitions + 1):
                 measure("plain_cold", iteration, False, True)
                 measure("plain_warm_target", iteration, False, False)
-
-            output([wrapper, "--start-server"], env)
-            server_owned = True
-            initial = json.loads(output([wrapper, "--show-stats", "--stats-format", "json"], env))
-            if initial.get("cache_location") != f'Local disk: "{cache}"':
-                raise RuntimeError("sccache server does not own the isolated cache directory")
-            measure("sccache_cold", 1, True, True)
-            for iteration in range(1, args.repetitions + 1):
+                # Every cycle has a genuinely cold compiler-cache seed.
+                if server_owned:
+                    output([wrapper, "--stop-server"], env)
+                    server_owned = False
+                if cache.exists():
+                    shutil.rmtree(cache)  # Only this experiment's private cache.
+                output([wrapper, "--start-server"], env)
+                server_owned = True
+                initial = json.loads(output([wrapper, "--show-stats", "--stats-format", "json"], env))
+                if initial.get("cache_location") != f'Local disk: "{cache}"':
+                    raise RuntimeError("sccache server does not own the isolated cache directory")
+                measure("sccache_cold", iteration, True, True)
                 measure("sccache_warm_empty_target", iteration, True, True)
                 measure("sccache_warm_target", iteration, True, False)
+            report.pop("active_phase", None)
+            report.pop("active_log", None)
             report["status"] = "success"
             return 0
         except Exception as error:
             report["status"] = "failure"
             report["error"] = str(error)
+            report["timed_out"] = isinstance(error, subprocess.TimeoutExpired)
+            report["failure_kind"] = "timeout" if report["timed_out"] else "error"
             raise
         finally:
             if server_owned:
-                subprocess.run([wrapper, "--stop-server"], env=env, stdout=subprocess.DEVNULL,
-                               stderr=subprocess.DEVNULL, check=False)
+                try:
+                    subprocess.run([wrapper, "--stop-server"], env=env, stdout=subprocess.DEVNULL,
+                                   stderr=subprocess.DEVNULL, check=False, timeout=30)
+                except subprocess.TimeoutExpired:
+                    report["shutdown_error"] = "owned sccache server did not stop within30s"
             persist()
 
 
