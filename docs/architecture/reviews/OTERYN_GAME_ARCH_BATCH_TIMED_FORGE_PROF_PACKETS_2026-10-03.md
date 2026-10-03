@@ -7,6 +7,7 @@ date: 2026-10-03
 owner: Sol Supervising Architect
 requested_by: control plane (D358 topic request after FAMILIARS-0-FIX-3)
 writes_on_other_prs: none
+amended_by: ARCH-PACKET-FIX-1 (§2.3 rows, §2.5 RL-04, §2.6 rows and the Light owner; #1687 round-3 P1s 4174692081 and 4174692089; #1689 P1s 4174761344, 4174761349, 4174781962 and 4174781965); ARCH-RT-CHECKPOINT-ROWS-1 (§1.1 and §2.3: the first item and the narrowed RT-1b scope; #1689 P1 4174803489; #1692 P1s 4174859933 and 4174875997)
 ```
 
 This bundle splits and packets three requested topics:
@@ -46,7 +47,7 @@ Order:
 | PROF-SHAPE-1b | #1685 and FORGE-1a have merged |
 | TIMED-WIRE-1 | TIMED-RT-1b and carrier #1675 have merged |
 | FORGE-1b | FORGE-1a, FORGE-CONTENT-1, GOLD-FEE-2 and ITEM-MOVE-2a have merged |
-| TIMED-RT-1c | TIMED-RT-1b, ITEM-MOVE-2a, ITEM-MOVE-2b and the ITEM-USE `Light` form have merged |
+| TIMED-RT-1c | TIMED-RT-1b, ITEM-MOVE-2a, ITEM-MOVE-2b and ITEM-USE-1 have merged |
 
 **Shared files.** The packets own disjoint code paths. Four files are append-only registers that
 every persistence slice touches:
@@ -77,6 +78,11 @@ EQUIP-RT-1". Most of it does not need those slices. The minimum-sufficient split
     audit event.
   - With this, soft boots worn at login run down and become worn soft boots. That is a playable
     effect without any move slice.
+  - **Narrowed (ARCH-RT-CHECKPOINT-ROWS-1).** RT-1b hosts at login and logout only (§2.3).
+    - The slot call sites move to ITEM-MOVE-2a.
+    - The exercise binding and the composed writers move to EXERCISE-1.
+    - `main` has no character channel transfer, death, respawn or arrival path. Whichever PR adds
+      one wires the timed host for it, as a merge condition (§2.3 Scope).
 - **RT-1c: everything that rides a move or a use.**
   - `SetDeadline`, `ClearDeadline`, `PutOut` and `Expire {Deadline}` (causes 4-7), the equip forms
     (§9.2) and the `Light` use form (§9.3).
@@ -314,7 +320,7 @@ Acceptance:
 
 ```yaml
 task_id: OTV2-20261003-timed-rt-1b
-decision: TIMED-ITEM-0B §5.1 (places 1-3), §5.2-§5.3, §6.1, §8, §12 (expiry shapes); this bundle §1.1
+decision: TIMED-ITEM-0B §5.1 (place 1 at login), §5.2-§5.3, §6.1 (cadence and logout), §8, §12 (checkpoint and expiry shapes), §14; this bundle §1.1
 worker: oteryn-hard-worker   # persistence, session-generation fencing, runtime ownership
 review: independent persistence and determinism review (Codex, final frozen head)
 branch: claude/timed-rt-1b-20261003
@@ -326,15 +332,15 @@ owned_paths:
   - apps/game-server/src/durability/item_timed_state.rs
   - apps/game-server/src/durability/item_timed_state_audit.rs
   - apps/game-server/src/domain/timed_item.rs
-  - apps/game-server/src/domain/timed_item_host.rs     # new: the hosting runtime's lanes, login/respawn/arrival eligibility, §6.1 points
+  - apps/game-server/src/domain/timed_item_host.rs     # new: the hosting runtime's lanes, login eligibility, the cadence and logout §6.1 points
   - apps/game-server/src/domain/mod.rs                 # one mod line
   - apps/game-server/src/durability/mod.rs             # shared register (§0)
   - apps/game-server/tests/item_timed_state_postgres.rs
   - apps/game-server/tests/support/item_timed_state_postgres_cases.rs
-  - docs/contracts/RESOURCE_LIMITS_REGISTRY.json       # expiry shape rows (§12); own rows only
-  - docs/architecture/DUR-03_ITEM_TRANSACTION_AND_ANTI_DUPLICATION_CONTRACT.md  # §39.3 expiry shapes; own paragraphs only
+  - docs/contracts/RESOURCE_LIMITS_REGISTRY.json       # §12 checkpoint and expiry shape rows; RL-01/-02/-04/-05 only where #1681 did not register them; own rows only
+  - docs/architecture/DUR-03_ITEM_TRANSACTION_AND_ANTI_DUPLICATION_CONTRACT.md  # §39.3 checkpoint and expiry shapes; own paragraphs only
   - docs/agents/tasks/archive/OTV2-20261003-timed-rt-1b.md
-call_sites: login, respawn, arrival, logout, channel transfer and death settlement call into timed_item_host; the worker names each file at allocation and adds only the call. It does not edit foundation/runtime_actor_carrier.rs while #1675 or #1682 is open.
+call_sites: login and logout only call into timed_item_host; the worker names each file at allocation and adds only the call. `main` has no character channel transfer, death, respawn or arrival path to call from; slot call sites are ITEM-MOVE-2a's (§2.3 Scope). It does not edit foundation/runtime_actor_carrier.rs while #1675 or #1682 is open.
 validation:
   - cargo fmt --all --check
   - cargo clippy --locked -p oteryn-game-server --all-targets --quiet -- -D warnings
@@ -345,6 +351,43 @@ validation:
 
 Acceptance:
 
+- **Scope (narrowed; ARCH-RT-CHECKPOINT-ROWS-1).** RT-1b is:
+  - migration 0058 (expiry);
+  - the amendments it needs to the guards that 0011 and 0023 define, made in 0058 by replacement
+    (0011 and 0023 are not edited);
+  - the five §12 rows (checkpoint, composed checkpoint, expiry transform, expiry burn and composed
+    expiry burn);
+  - a `timed_item_host` lib wired at login and logout only.
+
+  Moved out of RT-1b (#1692 P1 4174875997):
+  - **Slot call sites** (equip, unequip, swap) move to ITEM-MOVE-2a.
+    - An item moved into a slot stays non-live until ITEM-MOVE-2a wires the host.
+    - Leaving a slot drains its lane first.
+  - **The exercise binding** (place 3) moves to EXERCISE-1, with the two composed writers
+    (composed checkpoint and composed expiry burn).
+  - **Lifecycle paths: the owner is whichever PR adds them.** `main` has no character channel
+    transfer, death, respawn or arrival path. RT-1b therefore has no call site to wire for them,
+    and no live item can pass through one. The first PR that adds any of these paths must wire
+    the timed host for that path, as a merge condition, with tests:
+    - channel transfer and death drain every lane of the actor first (TIMED-ITEM-0B §6.1);
+    - respawn and arrival rehost the items in their slots (§5.1 place 2), from the last durable
+      checkpoint.
+
+    That PR may be ITEM-MOVE-2a, EXERCISE-1 or the lifecycle path's own slice.
+
+  Each receiving slice carries what it receives here, with its tests.
+- **First item: the checkpoint rows (#1689 P1 4174803489, D317 follow-up).**
+  - #1681 (RT-1a) merged its checkpoint writer without the §12 checkpoint and composed checkpoint
+    shape rows. RT-1b's first commit registers both, before any other RT-1b work.
+  - The checkpoint row has max and max+1 tests on the DUR-03 ceilings §12 names (`DUR03-RL-01` 1,
+    `DUR03-RL-07-EVENTS` 1, `DUR03-RL-08` 3, the location lines, transform I/O, participants and
+    work units). The tests run against RT-1a's merged writer, `commit_timed_checkpoint`.
+  - RT-1a has no composed writer: `commit_timed_checkpoint` writes a plain record with no build
+    receipt (#1692 P1 4174859933). So the composed checkpoint row gets max and max+1 tests on the same
+    ceilings at the shape level only, with no writer behind them.
+  - EXERCISE-1 adds the composed checkpoint writer. Its writer-backed max and max+1 tests, which
+    it also adds to the row's `boundary_tests`, are a merge condition of EXERCISE-1.
+  - The rest of RT-1b is not reviewed until these rows are on its branch.
 - **Guard (0058).**
   - Admits causes 2 and 3 with §8's three shapes.
   - Causes 4-7 stay refused until RT-1c.
@@ -354,20 +397,43 @@ Acceptance:
   or set spent when the target is not timed.
 - **Expiry burn.** To `RETIRED` with one location line; the inert row stays and the record
   carries the before values.
-- **Composed expiry burn.** With the build receipt in §6.3's lock order (EXERCISE-0 §5.3).
+- **Composed expiry burn.** The writer, with the build receipt in §6.3's lock order (EXERCISE-0
+  §5.3), is EXERCISE-1's. RT-1b registers only its row (Rows below).
 - **Lane (§5.2).**
   - Expiry waits for an in-flight checkpoint (the D285 race).
   - An unexpected revision with current fences retries an expiry once at the same definition.
   - The §5.2 durable-exhaustion tests, including the crash between checkpoint and expiry.
 - **Host.**
-  - Items in their slot at login, respawn or arrival become live (places 1 and 2).
-  - The exercise binding API (place 3) is tested without EXERCISE-1.
-  - Logout, channel transfer and death wait for every lane of the actor to be empty.
+  - Items in their slot at login become live (place 1).
+  - Logout waits for every lane of the actor to be empty.
   - A crash returns at most one checkpoint interval (§6.2).
 - **Evidence.** One audit event per expiry (§8).
-- **Rows.** Max and max+1 tests for the expiry rows of §12.
-- **Not in scope.** RT-1c's causes and forms (§1.1), charge use by protection and every active
-  effect (TIMED-FX-1), and the wire (TIMED-WIRE-1).
+- **Rows (TIMED-ITEM-0B §12, §14).**
+  - RT-1b registers the §12 expiry shape rows it admits: expiry transform
+    (`DUR03-RL-04-TIMED-EXPIRY`), expiry burn and composed expiry burn.
+  - Expiry transform and expiry burn have max and max+1 tests on the same DUR-03 ceilings as the
+    checkpoint row, against RT-1b's own writers.
+  - Composed expiry burn is handled like the composed checkpoint row (first item): shape-level
+    tests in RT-1b, and writer-backed tests in EXERCISE-1 as one of its merge conditions.
+  - `TIMEDITEM0B-RL-01`, `-02`, `-04` and `-05` are registered by #1681 (RT-1a), with unit tests
+    on the lane. RT-1b proves each one again at the host boundary it adds, with max and max+1
+    tests:
+    - **RL-01:** the host's checkpoint cadence is accepted at 60 s and refused at 61 s, and a live
+      item hosted at login checkpoints within 60 s;
+    - **RL-02:** a host write whose outcome is known by 2,000 ms keeps the lane open, and one
+      still unknown at 2,001 ms holds the lane for reconciliation;
+    - **RL-04:** the host lib accepts 11 live items for one actor and refuses a 12th before any
+      lane opens. The test drives the lib directly, because the login wiring reaches at most ten
+      equipment slots. EXERCISE-1 repeats it with the binding as the 11th;
+    - **RL-05:** a host expiry or checkpoint issued while the lane has a write in flight waits
+      for it and is never sent as a second write.
+  - If one of those rows is missing on `main`, RT-1b registers it, with the same tests.
+  - The use form and put out rows of §12 are RT-1c's (§2.6).
+- **Not in scope.**
+  - RT-1c's causes and forms (§1.1).
+  - Charge use by protection and every active effect (TIMED-FX-1).
+  - The wire (TIMED-WIRE-1).
+  - The call sites and writers moved out above (Scope): ITEM-MOVE-2a's and EXERCISE-1's.
 
 ### 2.4 TIMED-WIRE-1
 
@@ -436,7 +502,7 @@ owned_paths:
   - apps/game-server/tests/item_forge_postgres.rs
   - apps/game-server/tests/support/item_forge_postgres_cases.rs
   - apps/game-server/tests/durability_postgres.rs      # shared register (§0)
-  - docs/contracts/RESOURCE_LIMITS_REGISTRY.json       # DUR03-RL-01/-03-FORGE, IMBFORGE0-RL-03/-07/-11/-12, the forge DUR03-RL-06 rows (DustLimit included); own rows only
+  - docs/contracts/RESOURCE_LIMITS_REGISTRY.json       # DUR03-RL-01/-03-FORGE, IMBFORGE0-RL-03/-04/-07/-11/-12, the forge DUR03-RL-06 rows (DustLimit included); own rows only
   - docs/architecture/DUR-03_ITEM_TRANSACTION_AND_ANTI_DUPLICATION_CONTRACT.md  # §15 ForgeCause, §39.3 forge shapes; own paragraphs only
   - docs/agents/tasks/active/OTV2-YYYYMMDD-forge-1b.md
 validation: as FORGE-1a, with --test item_forge_postgres
@@ -454,7 +520,30 @@ Acceptance: IMBUE-FORGE-0 §8-§10 operation by operation, `DustLimit` included:
 - the terminal `REVISION_CHANGED` is written receipt-only;
 - every refusal comes before the transaction;
 - history rows are capped by `IMBFORGE0-RL-12`;
-- the bonuses are content with Canary rates (`PARITY_PENDING`).
+- the bonuses are content with Canary rates (`PARITY_PENDING`);
+- **throughput (`IMBFORGE0-RL-04`, IMBUE-FORGE-0 §15: measured before FORGE-1 ships):**
+  - A PostgreSQL measurement case in `item_forge_postgres_cases.rs` runs concurrent forge
+    commits for distinct characters on one channel. It covers every forge shape FORGE-1b admits,
+    `DustLimit` included, on the PostgreSQL version CI pins.
+  - It reports sustained commits per second and the database p99 commit latency. The full run
+    is selected by an environment variable; CI runs a short version that checks only that the
+    harness completes and asserts no timing.
+  - The worker records the method, the host and the measured values in the task record.
+  - `IMBFORGE0-RL-04` is one registry entry: the database p99 forge commit latency, in
+    milliseconds. Its `hard_maximum` is an upper bound, as the registry defines it. It is a
+    qualification budget, not a runtime cutoff, as `MAP01-VIEWPORT-US` is registered.
+  - The throughput is not a registry limit. A `hard_maximum` cannot express a floor. The
+    qualified rate, in forge commits per channel per second, is the entry's workload: its
+    `resource` names it and its `notes` record it.
+  - Boundary tests:
+    - a full run at the qualified rate whose p99 is within the budget passes qualification;
+    - a p99 over the budget fails it.
+  - The harness fails a run that does not sustain the qualified rate before it compares any
+    p99. That is a precondition of the measurement, not a registry comparison.
+  - The worker reports both values in its FREEZE. The architect accepts them there; the worker
+    does not pick either number. If no measurement can run, the worker stops and reports, and
+    FORGE-1b does not merge without one. IMBUE-1 measures the imbuing part of RL-04 under its own
+    packet.
 
 The owned paths are refreshed at allocation against the GOLD-FEE-2 and ITEM-MOVE-2a modules
 then on `main`.
@@ -466,12 +555,18 @@ task_id: OTV2-YYYYMMDD-timed-rt-1c
 decision: TIMED-ITEM-0B §9, §10.1-§10.5, §12 (causes 4-7); this bundle §1.1
 worker: oteryn-hard-worker
 review: independent persistence and determinism review
-base: main after TIMED-RT-1b, ITEM-MOVE-2a, ITEM-MOVE-2b and the ITEM-USE Light form merge
+base: main after TIMED-RT-1b, ITEM-MOVE-2a, ITEM-MOVE-2b and ITEM-USE-1 merge
 migration_lease: 0062
-depends_on: [TIMED-RT-1b, ITEM-MOVE-2a, ITEM-MOVE-2b, ITEM-USE Light form]
-owned_paths: the remainder of the TIMED-RT-1 packet in TIMED-ITEM-0B §21: the move modules, the Ground step scheduler, and the ITEM-MOVE-WIRE-1, ITEM-USE-0, MARKET-0 and WORLD-INTERACTION-0 pointers, named at allocation; plus 0062 and the RT-1b modules
+depends_on: [TIMED-RT-1b, ITEM-MOVE-2a, ITEM-MOVE-2b, ITEM-USE-1]
+owned_paths: the remainder of the TIMED-RT-1 packet in TIMED-ITEM-0B §21: the move modules, the Ground step scheduler, and the ITEM-MOVE-WIRE-1, ITEM-USE-0, MARKET-0 and WORLD-INTERACTION-0 pointers, named at allocation; the ITEM-USE-1 module that defines `ItemUseCause` and its transaction mapping, for the `Light` variant and its use form only; plus 0062 and the RT-1b modules
 validation: as TIMED-RT-1b
 ```
 
 Acceptance: TIMED-ITEM-0B §15 conditions 3 and 5, D360's tests, and the max and max+1 tests for
-the §9.2 and §10.5 rows and for `TIMEDITEM0B-RL-06`.
+the §9.2 and §10.5 rows, the §12 use form (`ItemUseCause::Light`) and put out (`PutOut`) shape
+rows, and `TIMEDITEM0B-RL-06`. RT-1c registers each row it admits.
+
+`ItemUseCause::Light` is RT-1c's, not ITEM-USE-1's. ITEM-USE-1 provides the `ItemUseCause` shapes
+and the use path (ITEM-USE-0 §4) without `Light`. RT-1c adds the `Light` variant and its §9.3 use
+form (the TIMED-ITEM-0B amendment of ITEM-USE-0 §4.2 and §6). It registers the use form row in the
+same PR, before the variant can be reached. No `Light` form merges ahead of its §12 row.

@@ -413,6 +413,14 @@ The weapon use amendment in §39.3 admits the closed `WeaponUseCause {Ammunition
 `TimedItemCause` is reserved; its variants, including any expiry BURN sink, are admitted by
 TIMED-ITEM-0B (D285).
 
+**Amendment (pending on acceptance of TIMED-ITEM-0B; `reviews/OTERYN_GAME_TIMED_ITEM0B_RUNTIME_CHARGES_AND_DURATION_DECISION_2026-10-03.md` §8, §12).** `TimedItemCause` is the closed
+`Checkpoint`, `Expire {TimeExhausted | ChargesExhausted | Deadline}`, `SetDeadline`,
+`ClearDeadline` and `PutOut`; `Expire` is a BURN sink. Migration 0054 (TIMED-RT-1a) admits the
+plain checkpoint, a one-item `STATE_MUTATION` of the timed row with its write record and no
+location, value or `CharacterRevision` line. Every other variant is admitted by the migration
+that admits its TRANSFORM, BURN or move lines (TIMED-RT-1b); until then the record guard refuses
+it.
+
 **Amendment (pending on acceptance of PROFICIENCY-1; `reviews/OTERYN_GAME_PROFICIENCY1_PERK_MODIFICATION_AND_CATALYSTS_DECISION_2026-10-01.md` §3, §4).** The cause name `ProficiencyCause {track, slot, operation,
 occurrence}` is reserved for Weapon Proficiency modification burns (forge dust, the Lunar Ascension
 Orb). No shape is admitted yet: each composed §39.3 shape (a proficiency receipt with its burn) is

@@ -1,15 +1,18 @@
-//! D295 §3 item 3 hard wiring gate (CHARM-DESC-FENCE-1).
+//! D295 §3 item 3 hard wiring gate (CHARM-DESC-FENCE-1), relaxed by A2 (#1635).
 //!
-//! No production code may reference the three Ability damage bridges until the A2 live attacker
-//! fence merges. Only the A2 PR may remove or relax this test, together with the fence.
+//! A2 binds the attacker's lease to its runtime player slot and fences that slot for every
+//! transition that ends the session's hold. The three Ability damage bridges now read attacker
+//! authority from the bound slot, so production may call them. What stays forbidden is any
+//! production damage write that does not go through the bound slot: the raw entry that takes a
+//! caller-supplied attacker is test-only, and no production code may reference it.
 
 use std::path::Path;
 
-const BRIDGES: [&str; 3] = [
-    "commit_exact_owner_damage",
-    "commit_exact_owner_primary_damage",
-    "commit_exact_owner_charm_damage",
-];
+/// The unbound attributed write: a caller-supplied `AttackerCommand`, not the bound slot.
+const BRIDGES: [&str; 1] = ["commit_damage_for_attacker"];
+
+/// The sole home of the canonical unbound entry's definition.
+const BRIDGE_MODULE: &str = "src/foundation/runtime_actor_carrier.rs";
 
 /// Blanks comments and string/char literal contents, keeping newlines so line numbers survive.
 fn sanitize(src: &str) -> Vec<u8> {
@@ -338,9 +341,10 @@ fn cfg_test_ranges(code: &[u8], macros: &[(usize, usize)]) -> Vec<(usize, usize)
     ranges
 }
 
-/// 1-based lines of non-test production references to the bridges in one source file.
-/// `bridge_module` is true only for `src/ability/commit.rs`, the sole home of the canonical bridge
-/// definitions; a same-named function anywhere else is a reference, not an exempt definition.
+/// 1-based lines of non-test production references to the unbound entry in one source file.
+/// `bridge_module` is true only for [`BRIDGE_MODULE`], the sole home of its canonical definition;
+/// a same-named function anywhere else is a reference, not an exempt definition. A production
+/// caller inside that module is a reference too.
 fn production_references(src: &str, bridge_module: bool) -> Vec<usize> {
     let mut code = sanitize(src);
     if inner_cfg_test(&code) {
@@ -662,7 +666,7 @@ fn gate_findings(files: &[(std::path::PathBuf, String)]) -> Vec<String> {
         .zip(skipped.iter().copied())
         .filter(|(_, skipped)| !skipped)
         .flat_map(|((rel, src), _)| {
-            let bridge_module = rel == Path::new("src/ability/commit.rs");
+            let bridge_module = rel == Path::new(BRIDGE_MODULE);
             production_references(src, bridge_module)
                 .into_iter()
                 .map(move |line| format!("{}:{line}", rel.display()))
@@ -692,92 +696,137 @@ fn collect(
 }
 
 #[test]
-fn no_production_caller_of_ability_damage_bridges_before_a2() -> std::io::Result<()> {
+fn no_production_damage_write_bypasses_the_bound_attacker_slot() -> std::io::Result<()> {
     let root = Path::new(env!("CARGO_MANIFEST_DIR"));
     let mut files = Vec::new();
     collect(&root.join("src"), root, &mut files)?;
     let found = gate_findings(&files);
     assert!(
         found.is_empty(),
-        "D295 §3 item 3 hard wiring gate: production references to the Ability damage bridges \
-         {BRIDGES:?} before the A2 live attacker fence: {found:?}. Only the A2 PR, with the fence, \
-         may relax this gate."
+        "D295 §3 item 3 gate (A2): production references to the unbound attacker write \
+         {BRIDGES:?}: {found:?}. Production damage writes go through the bound slot \
+         (`commit_damage_for_bound_attacker` and the Ability bridges)."
     );
     Ok(())
 }
 
 #[test]
+fn gate_fails_a_synthetic_unbound_caller() {
+    let carrier = (
+        BRIDGE_MODULE,
+        "#[cfg(test)]\npub(crate) fn commit_damage_for_attacker() {}\n\
+         pub(crate) fn commit_damage_for_bound_attacker() {}\n",
+    );
+    let run = |extra: &[(&str, &str)]| {
+        let files: Vec<(std::path::PathBuf, String)> = [carrier]
+            .iter()
+            .chain(extra)
+            .map(|(p, s)| ((*p).into(), (*s).to_owned()))
+            .collect();
+        gate_findings(&files)
+    };
+    // The canonical test-only entry and the bound path are fine.
+    assert_eq!(run(&[]), Vec::<String>::new());
+    let bound = "fn cast(owner: &mut O) {\n    \
+                 let _ = commit_exact_owner_damage(owner, resolved, plan, actor, command);\n    \
+                 owner.commit_damage_for_bound_attacker(t, actor, command, 0, d);\n}\n";
+    assert_eq!(run(&[("src/spell/bound.rs", bound)]), Vec::<String>::new());
+    // A production caller with a caller-supplied attacker is flagged wherever it is.
+    let unbound = "fn cast(owner: &mut O) {\n    \
+                   owner.commit_damage_for_attacker(t, AttackerCommand::new(c, 1, cmd, 0), d);\n}\n";
+    assert_eq!(
+        run(&[("src/spell/cast.rs", unbound)]),
+        vec!["src/spell/cast.rs:2".to_owned()]
+    );
+    let inside = format!(
+        "{}fn live() {{ commit_damage_for_attacker(); }}\n",
+        carrier.1
+    );
+    assert_eq!(
+        gate_findings(&[(BRIDGE_MODULE.into(), inside)]),
+        vec![format!("{BRIDGE_MODULE}:4")]
+    );
+    // Removing `#[cfg(test)]` from the canonical entry keeps it exempt only as a definition.
+    let ungated = "pub(crate) fn commit_damage_for_attacker() {}\n";
+    assert_eq!(
+        gate_findings(&[("src/combat.rs".into(), ungated.to_owned())]),
+        vec!["src/combat.rs:1".to_owned()]
+    );
+}
+
+#[test]
 fn scan_flags_a_production_reference() {
-    let src = "fn live() {\n    let _ = commit_exact_owner_charm_damage(a, b, c, d);\n}\n\
-               use crate::ability::commit::commit_exact_owner_damage;\n";
+    let src = "fn live() {\n    let _ = commit_damage_for_attacker(a, b, c, d);\n}\n\
+               use crate::ability::commit::commit_damage_for_attacker;\n";
     assert_eq!(production_references(src, false), vec![2, 4]);
     assert_eq!(
-        production_references("fn f() { g(commit_exact_owner_primary_damage) }", false),
+        production_references("fn f() { g(commit_damage_for_attacker) }", false),
         vec![1]
     );
     // `#[cfg(test)]` as macro tokens does not gate the expansion.
-    let in_macro = "fn f() {\n    m!(#[cfg(test)] crate::x::commit_exact_owner_damage);\n}\n\
-                    n! { #[cfg(test)] commit_exact_owner_charm_damage() }\n";
+    let in_macro = "fn f() {\n    m!(#[cfg(test)] crate::x::commit_damage_for_attacker);\n}\n\
+                    n! { #[cfg(test)] commit_damage_for_attacker() }\n";
     assert_eq!(production_references(in_macro, false), vec![2, 4]);
-    let unicode = "μ! {\n    #[cfg(test)]\n    fn live() { commit_exact_owner_damage() }\n}\n";
+    let unicode = "μ! {\n    #[cfg(test)]\n    fn live() { commit_damage_for_attacker() }\n}\n";
     assert_eq!(production_references(unicode, false), vec![3]);
     // A Unicode-prefixed identifier is a different name, not a bridge reference.
     assert_eq!(
-        production_references("fn f() { μcommit_exact_owner_damage(); }", false),
+        production_references("fn f() { μcommit_damage_for_attacker(); }", false),
         Vec::<usize>::new()
     );
     // `#[cfg(test)]` on an element, field or arm exempts nothing beyond it.
-    let nodes = "fn f() {\n    let _ = [1, #[cfg(test)] 0, commit_exact_owner_damage()];\n\
-                 let _ = S { #[cfg(test)] a: 0, b: commit_exact_owner_charm_damage() };\n\
-                 match x { #[cfg(test)] A => 0, _ => commit_exact_owner_primary_damage() }\n\
-                 #[cfg(test)] g(); commit_exact_owner_damage();\n}\n";
+    let nodes = "fn f() {\n    let _ = [1, #[cfg(test)] 0, commit_damage_for_attacker()];\n\
+                 let _ = S { #[cfg(test)] a: 0, b: commit_damage_for_attacker() };\n\
+                 match x { #[cfg(test)] A => 0, _ => commit_damage_for_attacker() }\n\
+                 #[cfg(test)] g(); commit_damage_for_attacker();\n}\n";
     assert_eq!(production_references(nodes, false), vec![2, 3, 4, 5]);
     // A same-named wrapper outside the bridge module is no exemption, nor is a duplicate inside it.
-    let wrapper = "fn commit_exact_owner_damage() {\n    commit_exact_owner_charm_damage();\n}\n";
+    let wrapper = "fn commit_damage_for_attacker() {\n    commit_damage_for_attacker();\n}\n";
     assert_eq!(production_references(wrapper, false), vec![1, 2]);
-    let twice = "fn commit_exact_owner_damage() {}\nmod m { fn commit_exact_owner_damage() {} }\n";
+    let twice =
+        "fn commit_damage_for_attacker() {}\nmod m { fn commit_damage_for_attacker() {} }\n";
     assert_eq!(production_references(twice, true), vec![1, 2]);
     // A non-test cfg and a trailing caller after an exempt body are still references.
-    let mixed = "#[cfg(not(test))]\nfn a() { commit_exact_owner_damage(); }\n\
-                 fn commit_exact_owner_damage() {}\nfn b() { commit_exact_owner_damage(); }\n";
+    let mixed = "#[cfg(not(test))]\nfn a() { commit_damage_for_attacker(); }\n\
+                 fn commit_damage_for_attacker() {}\nfn b() { commit_damage_for_attacker(); }\n";
     assert_eq!(production_references(mixed, true), vec![2, 4]);
     // An inner cfg(test) after the leading attributes is no longer an inner attribute.
     let late =
-        "#![allow(dead_code)]\nfn a() {}\n#![cfg(test)]\nfn b() { commit_exact_owner_damage(); }";
+        "#![allow(dead_code)]\nfn a() {}\n#![cfg(test)]\nfn b() { commit_damage_for_attacker(); }";
     assert_eq!(production_references(late, false), vec![4]);
 }
 
 #[test]
 fn scan_ignores_test_comment_string_and_bridge_bodies() {
     let src = r##"
-// commit_exact_owner_damage in a line comment
-/* commit_exact_owner_charm_damage /* nested */ still a comment */
-const S: &str = "commit_exact_owner_damage";
-const R: &str = r#"commit_exact_owner_damage"#;
+// commit_damage_for_attacker in a line comment
+/* commit_damage_for_attacker /* nested */ still a comment */
+const S: &str = "commit_damage_for_attacker";
+const R: &str = r#"commit_damage_for_attacker"#;
 const C: char = '{';
 #[allow(dead_code)]
-pub(crate) fn commit_exact_owner_damage(x: u8) -> u8 { x }
-pub(crate) fn commit_exact_owner_primary_damage(x: u8) -> u8 {
-    commit_exact_owner_damage(x)
+pub(crate) fn commit_damage_for_attacker(x: u8) -> u8 { x }
+pub(crate) fn commit_damage_for_bound_attacker(x: u8) -> u8 {
+    x
 }
 #[cfg(test)]
 mod tests {
-    fn t() { commit_exact_owner_charm_damage(); }
+    fn t() { commit_damage_for_attacker(); }
 }
 #[cfg(test)]
-use super::commit_exact_owner_damage;
+use super::commit_damage_for_attacker;
 #[cfg(test)]
 #[allow(dead_code)]
-pub(crate) fn helper() { commit_exact_owner_damage(1); }
+pub(crate) fn helper() { commit_damage_for_attacker(1); }
 fn body() {
     #[cfg(test)]
-    let _probe = commit_exact_owner_charm_damage();
+    let _probe = commit_damage_for_attacker();
 }
 "##;
     assert_eq!(production_references(src, true), Vec::<usize>::new());
     for test_file in [
-        "#![cfg(test)]\nfn t() { commit_exact_owner_damage(); }",
-        "//! docs\n#![allow(dead_code)]\n# ! [ cfg ( test ) ]\nfn t() { commit_exact_owner_damage(); }",
+        "#![cfg(test)]\nfn t() { commit_damage_for_attacker(); }",
+        "//! docs\n#![allow(dead_code)]\n# ! [ cfg ( test ) ]\nfn t() { commit_damage_for_attacker(); }",
     ] {
         assert_eq!(production_references(test_file, false), Vec::<usize>::new());
     }
@@ -785,7 +834,7 @@ fn body() {
 
 #[test]
 fn test_named_files_are_skipped_only_when_test_only() {
-    let call = "fn live() { commit_exact_owner_damage(); }\n";
+    let call = "fn live() { commit_damage_for_attacker(); }\n";
     let run = |decl: &str, extra: &[(&str, &str)]| {
         let mut files = vec![
             ("src/lib.rs".into(), decl.to_owned()),
@@ -955,7 +1004,7 @@ fn explicit_loads_resolve_by_exact_path() {
 
 #[test]
 fn macro_loads_crate_roots_and_attribute_order() {
-    let call = "fn live() { commit_exact_owner_damage(); }\n";
+    let call = "fn live() { commit_damage_for_attacker(); }\n";
     let run = |files: &[(&str, &str)]| {
         let files: Vec<(std::path::PathBuf, String)> = files
             .iter()

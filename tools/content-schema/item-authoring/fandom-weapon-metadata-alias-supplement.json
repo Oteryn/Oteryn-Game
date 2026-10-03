@@ -1,0 +1,26 @@
+{
+  "accepted_owner": "ProjectV2ItemAuthoring",
+  "contract": "docs/architecture/OTERYN_WORLD_PROJECT_SOURCE_PROFILE_V2_DECISION.md",
+  "fields": [
+    {
+      "allowed_destinations": [
+        "/item/weapon/attack_modifier"
+      ],
+      "authoring_property": "weapon_attack_modifier_points",
+      "disposition": "ITEM_AUTHORING",
+      "source_field": "atk_mod",
+      "unit": "SIGNED_I32_POINTS"
+    },
+    {
+      "allowed_destinations": [
+        "/item/weapon/hit_chance_percent"
+      ],
+      "authoring_property": "weapon_absolute_hit_chance_percent",
+      "disposition": "ITEM_AUTHORING",
+      "source_field": "hit_chance",
+      "unit": "ABSOLUTE_PERCENTAGE_POINTS_0_TO_100"
+    }
+  ],
+  "purpose": "SOURCE_ONLY_NONEXECUTABLE_INTRINSIC_WEAPON_METADATA",
+  "schema": "OTERYN_FANDOM_WEAPON_METADATA_ALIAS_SUPPLEMENT/v1"
+}

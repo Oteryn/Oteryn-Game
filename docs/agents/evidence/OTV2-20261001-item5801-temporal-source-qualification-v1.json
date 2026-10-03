@@ -1,0 +1,136 @@
+{
+  "classification": {
+    "current_observation": "PROVEN",
+    "exact_identity_temporal_continuity": "DERIVED",
+    "retirement_and_replacement": "PROVEN",
+    "selector_basis": "Only these two fields use a DERIVED temporal selection; neither source facts nor other observations are globally changed."
+  },
+  "exact_binding": {
+    "disposition": "EXACT",
+    "external_id": "5801",
+    "identity_namespace": "ots/item_server_id",
+    "source_key": "oteryn:source.crystalserver",
+    "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+    "target": {
+      "family": "Item",
+      "key": "oteryn:item.tibia.i5801",
+      "revision": "definition-r1"
+    }
+  },
+  "excluded_source": {
+    "content_sha256": "7c32e5f8748d1b4798c1b755e570e488f54923f84009fe6368bfeeb7a4c27b9f",
+    "historical_values": {
+      "volume": "20",
+      "weight": "0.50"
+    },
+    "page_id": 8879,
+    "reason": "The retired 2010 Key Ring observation shares source ID5801 with the current Jewelled Backpack. It is excluded only for weight and capacity; its raw evidence remains retained.",
+    "required_current_raw_status": "deprecated",
+    "revision_id": 1012664
+  },
+  "expected_snapshot_observations": [
+    {
+      "content_sha256": "7c32e5f8748d1b4798c1b755e570e488f54923f84009fe6368bfeeb7a4c27b9f",
+      "fields": {
+        "objectclass": "Household Items",
+        "primarytype": "Containers",
+        "stackable": "no",
+        "volume": "20",
+        "weight": "0.50"
+      },
+      "page_id": 8879,
+      "revision_id": 1012664,
+      "revision_sha1": "e1d99085000ceb23d7ee40c24ab6052090b23bd3",
+      "revision_timestamp": "2023-07-11T21:24:27Z",
+      "url": "https://tibia.fandom.com/wiki/Key_Ring",
+      "wiki_title": "Key Ring"
+    },
+    {
+      "content_sha256": "c939440b09f1b27d8d151d2fefd6b08c757c416f5d2ce422671d8c773975e302",
+      "fields": {
+        "imbueslots": "1",
+        "objectclass": "Household Items",
+        "primarytype": "Containers",
+        "secondarytype": "Decorations",
+        "slot": "Container",
+        "stackable": "no",
+        "volume": "22",
+        "weight": "17.00"
+      },
+      "page_id": 46186,
+      "revision_id": 1147426,
+      "revision_sha1": "5f9657663cd6f8b6e8012e98044a14fe0f8c5300",
+      "revision_timestamp": "2025-12-08T14:38:16Z",
+      "url": "https://tibia.fandom.com/wiki/Jewelled_Backpack",
+      "wiki_title": "Jewelled Backpack"
+    }
+  ],
+  "failure_behavior": "FAIL_CLOSED_ON_ANY_INPUT_IDENTITY_SOURCE_OR_NATIVE_PRECONDITION_DRIFT",
+  "field_scope": [
+    "container.capacity",
+    "physical.weight"
+  ],
+  "item_key": "oteryn:item.tibia.i5801",
+  "native_preconditions": {
+    "blocked_groups_or_fields": "HOLD",
+    "container.capacity": {
+      "state": "KNOWN",
+      "value": 22
+    },
+    "physical.weight": "UNKNOWN_OR_KNOWN_1700_IDEMPOTENT"
+  },
+  "official_retirement": {
+    "article_date": "2010-06-09",
+    "captured_at": "2026-10-01T18:06:42.199Z",
+    "full_html_bytes": 104415,
+    "full_html_sha256": "0a59428858a79ee544d1a170259b2ae7ffdb5d1c6406b7a4634961b802e4db02",
+    "method": "Public official news captured from actual Chrome DOM; gzip transferred public HTML to the workspace.",
+    "news_id": 1356,
+    "quote": "key rings will transform into a new container, the jewelled backpack, which will have 22 slots and weigh only 17 oz.",
+    "source_kind": "public official historical news DOM; full DOMHTML hash, notHTTPresponse",
+    "url": "https://www.tibia.com/news/?subtopic=newsarchive&id=1356"
+  },
+  "required_current_source": {
+    "content_sha256": "c939440b09f1b27d8d151d2fefd6b08c757c416f5d2ce422671d8c773975e302",
+    "page_id": 46186,
+    "reason": "The current Jewelled Backpack observation matches the explicit replacement stated in higher-priority official news1356 and the pinned client name/container identity.",
+    "revision_id": 1147426,
+    "values": {
+      "volume": "22",
+      "weight": "17.00"
+    }
+  },
+  "retained_raw_wiki_observations": [
+    {
+      "content_sha256": "7c32e5f8748d1b4798c1b755e570e488f54923f84009fe6368bfeeb7a4c27b9f",
+      "page_id": 8879,
+      "revision_id": 1012664,
+      "revision_timestamp": "2023-07-11T21:24:27Z",
+      "role": "historical_deprecated_observation",
+      "title": "Key Ring",
+      "url": "https://tibia.fandom.com/wiki/Key_Ring?oldid=1012664",
+      "wikitext": "{{Infobox Object|List={{{1|}}}|GetValue={{{GetValue|}}}\n| name          = Key Ring\n| article       = a\n| actualname    = key ring\n| plural        = ?\n| itemid        = 5801\n| objectclass   = Household Items\n| primarytype   = Containers\n| implemented   = 7.8\n| volume        = 20\n| immobile      = no\n| walkable      = yes\n| pickupable    = yes\n| usable        = yes\n| weight        = 0.50\n| stackable     = no\n| droppedby     = {{Dropped By|Acolyte of the Cult|Adept of the Cult|Dark Torturer|Enlightened of the Cult|Lost Soul|Mr. Punish}}\n| value         = Negotiable\n| npcvalue      = 0\n| npcprice      = 0\n| buyfrom       = --\n| sellto        = --\n| notes         = They were removed with the [[Updates/8.6|Summer Update 2010]]. It worked similar to an ordinary [[Backpack]], but could not be equipped in the backpack slot. It was the lightest container. Players who owned one were compensated with a [[Broken Key Ring]] inside a [[Jewelled Backpack]].\n| status        = deprecated\n}}"
+    },
+    {
+      "content_sha256": "c939440b09f1b27d8d151d2fefd6b08c757c416f5d2ce422671d8c773975e302",
+      "page_id": 46186,
+      "revision_id": 1147426,
+      "revision_timestamp": "2025-12-08T14:38:16Z",
+      "role": "current_replacement_observation",
+      "title": "Jewelled Backpack",
+      "url": "https://tibia.fandom.com/wiki/Jewelled_Backpack?oldid=1147426",
+      "wikitext": "{{Infobox Object|List={{{1|}}}|GetValue={{{GetValue|}}}\n| name          = Jewelled Backpack\n| article       = a\n| actualname    = jewelled backpack\n| itemid        = 5801\n| objectclass   = Household Items\n| primarytype   = Containers\n| slot          = Container\n| secondarytype = Decorations\n| tertiarytype  = Backpacks\n| implemented   = 8.60\n| volume        = 22\n| immobile      = no\n| walkable      = yes\n| pickupable    = yes\n| usable        = yes\n| imbueslots    = 1\n| weight        = 17.00\n| stackable     = no\n| marketable    = yes\n| droppedby     = {{Dropped By|Crystal Spider|Dark Torturer|Enlightened of the Cult|Mr. Punish|The Bloodweb}}\n| value         = 3,000 - 12,000\n| npcvalue      = 0\n| npcprice      = 0\n| buyfrom       = --\n| sellto        = --\n| notes         = Obtainable in the [[Wrath of the Emperor Quest]].\n\nSee [[Backpacks]] for general information regarding backpacks.\n| history       = * This item replaced all [[Key Ring]]s. If you were using a [[Key Ring]] before the update, all the items inside it were transferred to the Jewelled Backpack and your [[Key Ring]] transformed into a [[Broken Key Ring]].\n}}"
+    }
+  ],
+  "schema": "OTERYN_ITEM5801_TEMPORAL_SOURCE_QUALIFICATION/v1",
+  "selection_policy": "EXACT_TWO_FIELDS_ONE_ID_HISTORY_RETAINED_NO_GLOBAL_DEPRECATED_FILTER",
+  "source_inputs": {
+    "binding_path": "imports/crystalserver/bindings/items.json",
+    "binding_sha256": "1d19709c28a649d8a9f32bf53e5bf43ad847d7901d6c6254833f456154d2de5a",
+    "client_path": "content/assets/files/appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.dat",
+    "client_sha256": "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2",
+    "client_version": "15.30",
+    "snapshot_path": "imports/tibiawiki/facts/items-stats.json",
+    "snapshot_sha256": "5fc20ff76f65ab8e0a6bb8f52bc366a0bc0b0b617aaaf3bc8b1c987604a2a2d6"
+  }
+}

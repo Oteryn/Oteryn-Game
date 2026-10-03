@@ -791,6 +791,19 @@ fn premium_admission_pulls_without_waiting_one_at_a_time() -> TestResult {
         premium.release(ACCOUNT);
         Ok(())
     })?;
+    run("premium_dropped", async |_, root| {
+        // Dropping the refresher (a node shutdown) cancels every schedule.
+        let pki = TestPki::new();
+        let producer =
+            TestProducer::start(&pki, |_| Reply::status(503).header("Retry-After", "1")).await;
+        let premium = refresher(root, &pki, &producer);
+        premium.admit(ACCOUNT);
+        assert!(eventually(|| producer.requests().len() == 1).await);
+        drop(premium);
+        tokio::time::sleep(Duration::from_millis(2_500)).await;
+        assert_eq!(producer.requests().len(), 1);
+        Ok(())
+    })?;
     run("premium_unconfigured", async |_, root| {
         // No configuration: no client, nothing pulled, Premium reads Free.
         let premium = PremiumRefresher::new(Arc::default(), root.clone(), None);

@@ -1,0 +1,7 @@
+# OTV2-20261002-monster-primal-registered-types
+
+Owner-directed completion. Root sole publisher; producer and focused tests only. Eleven actual RegisterPrimalPackBeast-derived creature definitions close the native summon references, producing1763Creature/95Encounter combined input. Parent helper HP70percent, experience0, emptyloot, no corpse/bestiary retained. Ten exact helper donor mitigation values; one explicitly absent until final qualified estimate. Unique source identities use registered-type-in-file fragments with physical_file separately retained; no ordinary-actor aliases. Pinned Canary source proof and baseline1697 SHA included.
+
+Three tests actually PASS with immutable baseline/source/familiar fixtures, no skips. Independent Primal packet review verifies all11schemas/native records,13Git source proofs, distinct native bindings and1763referenceclosure; selected packet completion SHA d78927ed474fbacfde847090f708c54d23d13e03033801f76af13d07af851286. Frozen residual module untouched. Final full staging/arena and this selected packet archived in successor.
+
+No runtime or authority change. Recovery model NOT_APPLICABLE. Existing prior rejected1752 staging retained as diagnostic, never qualified. Source public cached Git/HTTP; no Remote Desktop actions. #162 owns runtime fragment identity integration and protected promotion. Stacked draft governance requires main retarget after parent integration.
