@@ -20,7 +20,7 @@ from unittest.mock import patch
 ROOT = Path(__file__).resolve().parents[2]
 GATE = ROOT / ".github/workflows/merge-group-gate.yml"
 LIFECYCLE = ROOT / "tools/agents/tests/test_governance_lifecycle_discovery.py"
-APPROVED = "9e7f083a7e2a58a1d03910d90a9423dd7ec5478c"
+APPROVED = "ecbc78bf20e8db2c13eca31dd54cedc6c971bd2e"
 LIFECYCLE_COMMAND = "python tools/agents/tests/test_governance_lifecycle_discovery.py"
 REGISTERED_POSTGRES_TARGETS = (
     ("durability_postgres", "apps/game-server/tests/durability_postgres.rs"),
@@ -141,7 +141,20 @@ def _queue_lane_routing_canaries(candidate: str) -> None:
             assert namespace["result"] == dict(rust="true", windows="true", surface="full")
 
 
+def _postgres_cache_consumer_regressions() -> None:
+    for filename, job in (("rust.yml", "durability-postgres"), ("merge-group-gate.yml", "durability_postgres")):
+        text = (ROOT / ".github/workflows" / filename).read_text(encoding="utf-8")
+        block = text.split("  " + job + ":\n", 1)[1]
+        block = re.split(r"^  [A-Za-z_][A-Za-z_0-9-]*:\n", block, maxsplit=1, flags=re.M)[0]
+        assert "actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9" in block
+        assert "actions/cache/save@" not in block
+        assert "key: rust-linux-v2-1.94.0-${{ hashFiles('Cargo.lock') }}-${{ github.sha }}" in block
+        assert "            rust-linux-v2-1.94.0-${{ hashFiles('Cargo.lock') }}-\n" in block
+        assert block.index("Restore trimmed Cargo cache") < block.index("Verify locked metadata")
+
+
 def main() -> int:
+    _postgres_cache_consumer_regressions()
     spec = importlib.util.spec_from_file_location(
         "queue_policy_core", Path(__file__).with_name("validate_repository_policy_core.py")
     )
@@ -202,7 +215,7 @@ def main() -> int:
         "              expected = (pathlib.Path.cwd() / registered_path).resolve(strict=True)",
         "              observed = pathlib.Path(matches[0]['src_path']).resolve(strict=True)",
         '              verify_registered_target_binding "$name" "$path"',
-        '              cargo +1.94.0 test --locked -p oteryn-game-server --test "$name"',
+        '              cargo +1.94.0 test --locked --workspace --test "$name"',
     ):
         assert fragment in postgres, f"Merge Queue PostgreSQL routing missing: {fragment}"
     for name, target in REGISTERED_POSTGRES_TARGETS:
@@ -246,6 +259,8 @@ def main() -> int:
             )
 
         assert verify([package()]).returncode == 0
+        shadow = dict(package(), name="other-workspace-package")
+        assert verify([package(), shadow]).returncode != 0, "workspace target shadow must fail"
         rejected = verify([package(wrong_manifest)])
         assert rejected.returncode != 0 and "package manifest is" in rejected.stderr, rejected
         for packages in (
@@ -292,14 +307,14 @@ def main() -> int:
             assert changed != original and validate(changed) != 0, (job, key)
             mutations += 1
     for command in (
-        '              cargo +1.94.0 test --locked -p oteryn-game-server --test "$name"',
+        '              cargo +1.94.0 test --locked --workspace --test "$name"',
         "        run: cargo +1.94.0 test --locked -p oteryn-input-platform --target x86_64-pc-windows-msvc",
         "        run: cargo +1.94.0 test --locked -p oteryn-simulation-determinism --target x86_64-pc-windows-msvc",
     ):
         assert command in original
         for replacement in (
             command.replace("cargo", "echo cargo", 1),
-            command.replace("oteryn-", "mutated-", 1),
+            (command.replace("oteryn-", "mutated-", 1) if "oteryn-" in command else command.replace("--workspace", "-p oteryn-game-server", 1)),
         ):
             assert replacement != command
             assert validate(original.replace(command, replacement, 1)) != 0

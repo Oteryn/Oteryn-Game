@@ -263,6 +263,10 @@ pickupable (ADR-0021 §4.4). `USE` follows ITEM-USE-0 inside the house scope. Th
 the character's own depot for the house's town (DEPOT-0; GUILD-0 §7.5). Beds are inert until the
 beds decision.
 
+**Amendment (pending on acceptance of BED-0; `reviews/OTERYN_GAME_BED0_HOUSE_BEDS_DECISION_2026-10-01.md` §4-§8).** A USE on a bed part follows BED-0:
+any character the house admits may sleep (Premium, not logout-blocked); the house runtime holds the
+bed reservation, the owner wake and the bed-removed frees, and HOUSE-VIEW-1 shows occupied beds.
+
 ### 6.3 Logout and login
 
 - **Position.** In a house scope the last-position row (CHAR-POSITION-0) records the `HouseId` and

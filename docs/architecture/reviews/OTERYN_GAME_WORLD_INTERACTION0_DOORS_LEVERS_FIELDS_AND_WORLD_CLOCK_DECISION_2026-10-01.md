@@ -558,6 +558,9 @@ quest doors, quest format §3.1) stays sealed.
   **Amendment (pending on acceptance of OFFLINE-0; `reviews/OTERYN_GAME_OFFLINE0_STAMINA_AND_OFFLINE_TRAINING_DECISION_2026-10-01.md` §6).** Plus `OFFLINE_TRAINING`: a training statue accepted the
   activation and a graceful logout follows; a non-Premium user gets `SEALED` with the Premium
   message id; a logout-blocked or PZ-locked user gets `PZ_BLOCKED`.
+  **Amendment (pending on acceptance of BED-0; `reviews/OTERYN_GAME_BED0_HOUSE_BEDS_DECISION_2026-10-01.md` §9).** Plus the command `BED_SLEEP_INTENT
+  {target map_item handle, skill}` (at most 24 bytes, type number reserved at allocation) and the
+  dispositions `BED_CHOOSE_SKILL`, `BED_OCCUPIED` and `BED_WOKEN`.
 - **Without the capability** a USE on a map item keeps its MAP-WIRE-2 meaning with new outcomes
   reported as `REJECTED`; the field 4 map arm, the new command 9 sources and `PUSH_INTENT` are
   refused.
