@@ -210,6 +210,10 @@ pub(crate) struct ResolvedChest {
     pub(crate) quantity: u32,
     /// That placement's `oteryn:achievement/<slug>` key, if the chest grants one.
     pub(crate) achievement: Option<String>,
+    /// The quest transition the chest requests (QUEST-STATE-0 §5.4), recorded as an obligation
+    /// with the claim. Content declares none until QUEST-LOWER-1 lowers chest bindings, so every
+    /// chest has none and its claim is unchanged.
+    pub(crate) quest_transition: Option<String>,
 }
 
 fn durable_ref(family: &str, definition: &ContentDefinitionRef) -> TypedDefinitionRef {
@@ -261,6 +265,7 @@ pub(crate) fn resolve_chest(
         reward_item: durable_ref("Item", &reward.item),
         quantity: reward.count,
         achievement: entry.achievement.clone(),
+        quest_transition: None,
     })
 }
 
@@ -311,6 +316,7 @@ pub(crate) async fn prepare_chest_use(
         ruleset_revision: request.ruleset_revision,
         sim_revision: request.sim_revision,
         achievement: chest_achievement(achievements, chest.achievement),
+        quest_transition: chest.quest_transition,
     };
     Ok((child, mint_request))
 }
@@ -607,6 +613,7 @@ mod tests {
             },
             quantity: 1,
             achievement: None,
+            quest_transition: None,
         }
     }
 
