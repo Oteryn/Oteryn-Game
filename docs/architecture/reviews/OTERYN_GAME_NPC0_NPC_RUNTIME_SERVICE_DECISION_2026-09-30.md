@@ -286,7 +286,9 @@ the pending travel invocation, so a late commit never moves a dead actor. Travel
 price}` is confirmed like travel and runs as an item-only transaction with
 `FeeBurnCause::NpcRepair` and one item transform. v1 content: worn soft boots to soft boots for
 10,000 gold (owner answer 1a); any other repair offer needs an owner answer (D178). The repaired item
-is a direct entry of the main backpack. Content validation refuses a BUY or SELL offer of an
+is a direct entry of the main backpack. Payment is coins first, then the bank, as for travel
+(TIMED-ITEM-0A, TIMED-ITEM-0 §7; pending on acceptance of BANK-FEE-0); a junior payer pays with
+coins only. Content validation refuses a BUY or SELL offer of an
 admitted timed definition whose `count` differs from the definition's charges, since a timed item
 without a row has full charges (TIMED-ITEM-0 §4).
 

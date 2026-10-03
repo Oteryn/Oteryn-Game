@@ -191,11 +191,32 @@ refused and answers `REJECTED`.
     the repaired item's ItemInstanceId, the `TRANSFORM` line (definition before and after) and the
     timed row before and after (charges, remaining time and revision, or "absent → revision 1"). 10,000 gold fits in one crystal coin, so this only refuses a
     player who pays from 20 or more small stacks.
-  - Insufficient funds, more than 19 coin inputs, or no such item rejects the whole transaction and
-    writes nothing. The repair is paid from carried coins only: it is excluded from the BANK-FEE-0
-    bank part (DUR-03 §39.3), so a short payer is rejected rather than debited (`PARITY_PENDING`:
-    Tibia NPCs can take bank gold; admitting that for the repair needs its own amendment).
-- Amended: DUR-03 §39.3 (the `FeeBurnCause` variant), NPC-0 (the repair offer).
+  - **Bank part (TIMED-ITEM-0A; owner answer 2, #1622 5968564302; pending on acceptance of
+    BANK-FEE-0).** The repair pays as Tibia NPCs do: carried coins first, then the bank, under
+    BANK-FEE-0 §3 unchanged. If the eligible coins are worth `T >= F`, the coin plan above runs and
+    the bank is not touched. If `T < F` and the payer is not junior, every eligible coin is burned
+    whole with no change, and `F - T` is debited from the payer's (Account, World) balance as one
+    `FEE_DEBIT` value line under `FeeBurnCause::NpcRepair` (BANK-FEE-0 §4). A junior payer
+    (BANK-0 §4.4) keeps coins only.
+    - The bound still holds. The main backpack has at most 20 direct entries, and the worn soft
+      boots take one. So at most 19 coin inputs exist, the bank path mints no change, and the
+      touched items stay within 20. The repair rows above are unchanged. `DUR03-RL-03-FEE` is 1
+      when the bank is used, and 0 otherwise. The value line counts in the measured payload of
+      `DUR03-RL-07` at 19 inputs.
+    - Lock order: the item writer's fence and the `character_root` lock, then the backpack with its
+      coin entries and the repaired item, then the bank balance row (BANK-0 §4.1).
+    - The fee record's root-advance guard composes with the repair's item-only branch as it does
+      with NPC-TRADE-1 and NPC-TRAVEL-1 (BANK-FEE-0 §4.1). The bank part is an outcome, not part of
+      the request binding.
+    - The transaction's one audit event carries the value line, and no separate BANK-0 bank event
+      is emitted (BANK-FEE-0 §4.3).
+  - Rejection: the whole transaction is rejected and nothing is written when:
+    - there is no such item;
+    - there are more than 19 coin inputs on the coin path;
+    - funds are insufficient, meaning `T` plus the bank balance is below `F`, or a junior payer's
+      coins are below `F`.
+- Amended: DUR-03 §39.3 (the `FeeBurnCause` variant and, by TIMED-ITEM-0A, the bank part), NPC-0
+  (the repair offer).
 
 ## 8. Rejected options
 
@@ -214,7 +235,8 @@ refused and answers `REJECTED`.
 
 ## 10. Owner questions
 
-None open. Owner answer 1a settled the only fee source.
+None open. Owner answer 1a settled the only fee source. Owner answer 2 (#1622 5968564302) admitted
+the bank part of the repair (TIMED-ITEM-0A, §7). It adds no fee source and no sink to D178.
 
 ## 11. Decision test
 
