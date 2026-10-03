@@ -7304,6 +7304,94 @@
         "apps/game-server/src/domain/weapon_proficiency.rs proficiency_modification_needs_reconciliation"
       ],
       "notes": "PROFICIENCY-1B \u00a76.3 and \u00a712; test: weapon_proficiency::modification_tests::limits_hold_at_max_and_refuse_max_plus_one. Registered by OTV2-20261003-prof-shape-1."
+    },
+    {
+      "allocation_impact": "A live item's changed charges and time are checkpointed at most this long apart (A13 \u00a74.5); unchanged values write nothing.",
+      "boundary_tests": [
+        "max=60000: no checkpoint is issued 59,999 ms after the last one",
+        "max+1: a changed item is checkpointed once 60,000 ms have passed"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "maximum": 60000,
+        "minimum": 60000
+      },
+      "consumers": [
+        "apps/game-server/src/domain/timed_item.rs TIMEDITEM0B_RL_01_CHECKPOINT_INTERVAL_MS"
+      ],
+      "failure_category": "CAPACITY_EXCEEDED",
+      "hard_maximum": 60000,
+      "id": "TIMEDITEM0B-RL-01",
+      "notes": "\u00a76.1; the crash bound R2 is one interval. Registered by OTV2-20261003-timed-rt-1a.",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_TIMED_ITEM0B_RUNTIME_CHARGES_AND_DURATION_DECISION_2026-10-03.md",
+      "resource": "Time between checkpoints of one changed live timed item",
+      "unit": "milliseconds"
+    },
+    {
+      "allocation_impact": "An ambiguous write whose record is still unknown after this bound keeps the item inactive and reserved; nothing else is written for it until reconciliation reads the record.",
+      "boundary_tests": [
+        "max=2000: a lookup at 2,000 ms is still within the bound",
+        "max+1=2001: at 2,001 ms the lane holds for reconciliation"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "maximum": 2000,
+        "minimum": 2000
+      },
+      "consumers": [
+        "apps/game-server/src/domain/timed_item.rs ambiguous_bound_exceeded"
+      ],
+      "failure_category": "CAPACITY_EXCEEDED",
+      "hard_maximum": 2000,
+      "id": "TIMEDITEM0B-RL-02",
+      "notes": "\u00a75.2. Registered by OTV2-20261003-timed-rt-1a.",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_TIMED_ITEM0B_RUNTIME_CHARGES_AND_DURATION_DECISION_2026-10-03.md",
+      "resource": "Ambiguous timed write outcome before the lane holds for reconciliation",
+      "unit": "milliseconds"
+    },
+    {
+      "allocation_impact": "Ten equipment slots plus one exercise weapon; a twelfth lane is refused before allocation.",
+      "boundary_tests": [
+        "max=11: eleven live lanes are accepted",
+        "max+1=12: a twelfth lane is refused"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "maximum": 11,
+        "minimum": 11
+      },
+      "consumers": [
+        "apps/game-server/src/domain/timed_item.rs ActorTimedLanes::insert"
+      ],
+      "failure_category": "CAPACITY_EXCEEDED",
+      "hard_maximum": 11,
+      "id": "TIMEDITEM0B-RL-04",
+      "notes": "\u00a714. Registered by OTV2-20261003-timed-rt-1a.",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_TIMED_ITEM0B_RUNTIME_CHARGES_AND_DURATION_DECISION_2026-10-03.md",
+      "resource": "Live timed items of one actor",
+      "unit": "items"
+    },
+    {
+      "allocation_impact": "The next write is issued only when the previous outcome is known; asking again returns the write in flight.",
+      "boundary_tests": [
+        "max=1: one checkpoint is in flight",
+        "max+1=2: a second request returns the same write, never a second one"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "maximum": 1,
+        "minimum": 1
+      },
+      "consumers": [
+        "apps/game-server/src/domain/timed_item.rs TimedItemLane::next_step"
+      ],
+      "failure_category": "CAPACITY_EXCEEDED",
+      "hard_maximum": 1,
+      "id": "TIMEDITEM0B-RL-05",
+      "notes": "\u00a75.2; serializes checkpoint and expiry (D285). Registered by OTV2-20261003-timed-rt-1a.",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_TIMED_ITEM0B_RUNTIME_CHARGES_AND_DURATION_DECISION_2026-10-03.md",
+      "resource": "Timed writes in flight per item lane",
+      "unit": "writes"
     }
   ]
 }

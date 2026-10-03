@@ -9,6 +9,7 @@ pub mod death;
 pub mod equipment;
 pub mod premium;
 pub mod progression;
+pub mod timed_item;
 pub mod weapon_proficiency;
 
 use std::collections::{BTreeMap, BTreeSet};
