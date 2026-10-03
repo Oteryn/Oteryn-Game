@@ -24,12 +24,12 @@ const SHARDS: [(&str, &[u8]); 4] = [
         include_bytes!("../../../../../content/creatures/definitions/creatures-01000-01499.json"),
     ),
     (
-        "content/creatures/definitions/creatures-01500-01502.json",
-        include_bytes!("../../../../../content/creatures/definitions/creatures-01500-01502.json"),
+        "content/creatures/definitions/creatures-01500-01762.json",
+        include_bytes!("../../../../../content/creatures/definitions/creatures-01500-01762.json"),
     ),
 ];
-const CREATURE_COUNT: usize = 1_503;
-const BESTIARY_COUNT: usize = 710;
+const CREATURE_COUNT: usize = 1_763;
+const BESTIARY_COUNT: usize = 819;
 
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -226,7 +226,7 @@ mod tests {
             max_string_bytes: 900_000,
             max_locator_bytes: 128,
             max_locator_segments: 5,
-            max_reference_records: 1_503,
+            max_reference_records: 1_763,
             max_import_records: 1,
             max_reimport_states: 1,
         }
@@ -250,9 +250,9 @@ mod tests {
     }
 
     #[test]
-    fn canonical_projection_retains_all_710_real_bestiary_blocks() -> TestResult {
+    fn canonical_projection_retains_all_819_real_bestiary_blocks() -> TestResult {
         let rows = canonical_bestiary_rows(limits())?;
-        assert_eq!(rows.len(), 710);
+        assert_eq!(rows.len(), 819);
         assert!(
             rows.windows(2)
                 .all(|pair| pair[0].0.key() < pair[1].0.key())
