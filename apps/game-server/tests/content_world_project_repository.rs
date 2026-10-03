@@ -17,17 +17,17 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "content.lock.json",
         364,
-        "c0adcd0dc8bfde39544ed9857a3a6ed544aa9c92e6a97f77022a192f52186f51",
+        "ea62d8cb699b3ab977442f8fce3510ed11fd0ae5eb596a1247f65ab06bc4859b",
     ),
     (
         "definitions/declarations.json",
-        15_225_274,
-        "e553a2a894ea15f7743a94fac91b588994b3b36a80df8ca669a3b4fbde753ff9",
+        20_105_845,
+        "8e89f9a7384750b875e74e9406c2144e935427b2b25ae0184aa0c4bfd724d53c",
     ),
     (
         "definitions/reference.json",
-        25_071_783,
-        "ba9cdbf7969ee7f6db149bc6c2a1b97b646fe167612ed8f7fa48686d0dced5a9",
+        26_479_115,
+        "5c97615d1cbc3932843a1eb35a31b3774932d7b55e19aba955126decdca2e09d",
     ),
     (
         "editor/author.json",
@@ -37,7 +37,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "manifest.json",
         1_939,
-        "c42f1f78a9d0f70cae8cec7ffa60612d747719aa0de882f7b65ba6f07ddad10b",
+        "cde820c18a449c0709bac9de6e2b49e933faa2ff8f60e16cb4ae7cb17de21f79",
     ),
     (
         "presentations/bindings.json",
@@ -47,17 +47,17 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "project.json",
         390,
-        "4e11c2afd63a3c52b7478eefd2e9c6a4045662baab1a35f4bb5483112c15c9b4",
+        "9da853a6f3e328515c5474487f71b03640baff64abd0b1ff21b423b9ca201e63",
     ),
     (
         "provenance/imports.json",
-        6_739_919,
-        "aa1488b69fd55cd232f5781482ac3b0a5022fabb433a7d4cf87768ac96195a3c",
+        6_758_132,
+        "55d959897993a8ba4c98f6d0a67f5568285be2c0bcc2d7866660a0054e10e71c",
     ),
     (
         "provenance/sources.json",
-        1_413_029,
-        "82dbf6d7133fd23818e0a248cee51a85ea977609bec732b81e730e55507f57c5",
+        1_511_734,
+        "598bca60cb1039f2e6a68012a890f5f87022e7e56c4c710656a8a6bb7f6b05c3",
     ),
     (
         "worlds/world.json",
@@ -114,7 +114,7 @@ const WORLD_CATALOGUE_SHARDS: [(&str, &str); 4] = [
 const TREE_CONTRACT: &str =
     "docs/agents/evidence/OTV2-20260925-full-game-content-ruleset-tree-v1.json";
 const TREE_DIRECTORY_NODES: usize = 97;
-const TREE_SHA256: &str = "b9b6df294fc46645c06ce0fe8a79dd50407fee0bed810abf5f2f429df58deca8";
+const TREE_SHA256: &str = "84f00fdcf47a88378e229b4fae436b1e8573d1a7226a31163ed0c60edf707f5f";
 /// A12 (ITEM-ID-1b): the protected Item family less the 4,590 D149 records, on Tibia keys,
 /// plus the 404 donor epoch-2 records and the 60 appearance-only records (ITEM-ADD-1).
 const ITEMS: usize = 34_031;
@@ -358,7 +358,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
             .iter()
             .map(|b| b.reimport_states.len())
             .sum::<usize>(),
-        357
+        ENCOUNTERS + 296
     );
     let provenance = &legacy_imports[1];
     assert_eq!(provenance.batch_id, "cw2-b1-full-item-family-registry-r1");
