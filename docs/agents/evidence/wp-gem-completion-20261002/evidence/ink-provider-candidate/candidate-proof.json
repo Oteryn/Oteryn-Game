@@ -1,0 +1,26 @@
+{
+  "publication": "BLOCKED_CP_PROVIDER_AND_EXACT_PATH_ADMISSION_PENDING",
+  "canonical_staging_sha256": "b59ba0464c9449ca52cfae8918c0b3d960eb78e96e08342179fccaccbedfa36e",
+  "default_staging_sha256": "b59ba0464c9449ca52cfae8918c0b3d960eb78e96e08342179fccaccbedfa36e",
+  "default_equals_canonical_bytes": true,
+  "prospective_staging_sha256": "dd907cf892851a51cab5e7ece800e0104c5c7dff5cef2b8588a969dae53de043",
+  "changed_binding_ids": [
+    51666
+  ],
+  "raw_profiles_and_perks_unchanged": true,
+  "unchanged_fields": [
+    "authority",
+    "client_version",
+    "inputs",
+    "mastery_offset",
+    "perk_mapping",
+    "perk_raw_enums",
+    "schema",
+    "threshold_decisions",
+    "threshold_evidence_inputs",
+    "threshold_source",
+    "thresholds",
+    "profiles"
+  ],
+  "canonical_candidate_source_files_unmodified": true
+}

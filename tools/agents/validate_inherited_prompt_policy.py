@@ -135,36 +135,64 @@ def _normalize_positive_integer(raw: object, label: str) -> int:
     return int(value)
 
 
+def _valid_base_ref(value: object) -> bool:
+    """Accept a branch name without Git's reserved ref syntax."""
+    return (
+        isinstance(value, str)
+        and bool(value)
+        and value != "@"
+        and not value.startswith(("-", "/"))
+        and not value.endswith(("/", "."))
+        and not any(part.startswith(".") or part.endswith(".lock") for part in value.split("/"))
+        and not any(reserved in value for reserved in ("..", "//", "@{"))
+        and re.search(r"[\x00-\x20\x7f~^:?*\[\\]", value) is None
+    )
+
+
+def _same_repository_ref(value: object) -> bool:
+    return (
+        isinstance(value, dict)
+        and isinstance(value.get("repo"), dict)
+        and value["repo"].get("full_name") == PROVIDER
+    )
+
+
 def _pull_request_active_task_paths(
     number: int,
     expected_head: str,
+    *,
+    expected_base_ref: str = "main",
 ) -> set[str]:
-    """Return active task packets changed by one exact-head live PR snapshot.
+    """Select task packets from an exact-head, stable live PR snapshot.
 
-    Protected main may advance independently of an immutable PR head. Bind the
-    candidate to the exact head and a stable live base snapshot observed during
-    this read instead of requiring the triggering event's historical base SHA.
+    Direct calls and dispatch retain main-only scope. Native pull_request events
+    may explicitly bind their prepared stack base ref. The live base SHA may
+    have advanced since the event, but head, base ref/SHA, repositories, state
+    and file count must remain stable throughout enumeration. This selects
+    validation inputs; it does not grant integration authority or skip META checks.
     """
-    if re.fullmatch(r"[0-9a-f]{40}", expected_head) is None:
+    if not isinstance(expected_head, str) or SHA_RE.fullmatch(expected_head) is None:
         raise ValueError("expected pull request head SHA is invalid")
+    if not _valid_base_ref(expected_base_ref):
+        raise ValueError("expected pull request base ref is invalid")
 
     pr_url = f"https://api.github.com/repos/{PROVIDER}/pulls/{number}"
     pull = _request(pr_url)
     if not isinstance(pull, dict):
         raise ValueError("invalid GitHub pull response")
 
-    head = pull.get("head", {}).get("sha", "")
-    base = pull.get("base", {}).get("sha", "")
+    head_ref, base_ref = pull.get("head"), pull.get("base")
     changed_files = pull.get("changed_files")
     if pull.get("state") != "open":
         raise ValueError("live-state candidate validation requires an open pull request")
-    if pull.get("head", {}).get("repo", {}).get("full_name") != PROVIDER:
-        raise ValueError("live-state candidate validation requires a same-repository head")
-    if pull.get("base", {}).get("ref") != "main":
-        raise ValueError("live-state candidate validation requires base=main")
+    if not _same_repository_ref(head_ref) or not _same_repository_ref(base_ref):
+        raise ValueError("live-state candidate validation requires a same-repository head and base")
+    head, base = head_ref.get("sha"), base_ref.get("sha")
+    if base_ref.get("ref") != expected_base_ref:
+        raise ValueError("live pull request base ref does not match the expected base ref")
     if head != expected_head:
         raise ValueError("pull request head moved during live-state candidate validation")
-    if re.fullmatch(r"[0-9a-f]{40}", base or "") is None:
+    if not isinstance(base, str) or SHA_RE.fullmatch(base) is None:
         raise ValueError("live pull request base SHA is invalid")
     if type(changed_files) is not int or changed_files < 0 or changed_files > 3000:
         raise ValueError("invalid pull request changed-files count")
@@ -193,9 +221,12 @@ def _pull_request_active_task_paths(
         raise ValueError("invalid GitHub pull readback")
     if (
         pull_after.get("state") != "open"
-        or pull_after.get("head", {}).get("sha") != head
-        or pull_after.get("base", {}).get("sha") != base
-        or pull_after.get("base", {}).get("ref") != "main"
+        or not _same_repository_ref(pull_after.get("head"))
+        or not _same_repository_ref(pull_after.get("base"))
+        or pull_after["head"].get("sha") != head
+        or pull_after["base"].get("sha") != base
+        or pull_after["base"].get("ref") != expected_base_ref
+        or type(pull_after.get("changed_files")) is not int
         or pull_after.get("changed_files") != changed_files
     ):
         raise ValueError("pull request moved during live-state candidate validation")
@@ -248,8 +279,13 @@ def _active_task_live_scope() -> set[str] | None:
         if not isinstance(pull, dict):
             raise ValueError("pull_request event is missing pull_request payload")
         number = _normalize_positive_integer(event.get("number") or pull.get("number"), "pull_request_number")
-        head = pull.get("head", {}).get("sha", "")
-        return _pull_request_active_task_paths(number, head)
+        base = pull.get("base")
+        expected_base_ref = base.get("ref") if isinstance(base, dict) else None
+        if not _valid_base_ref(expected_base_ref):
+            raise ValueError("pull_request event base ref is missing or invalid")
+        head = pull.get("head")
+        expected_head = head.get("sha") if isinstance(head, dict) else None
+        return _pull_request_active_task_paths(number, expected_head, expected_base_ref=expected_base_ref)
 
     inputs = event.get("inputs")
     if not isinstance(inputs, dict):

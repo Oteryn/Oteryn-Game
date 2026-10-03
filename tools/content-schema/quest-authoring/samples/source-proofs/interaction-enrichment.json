@@ -1,0 +1,579 @@
+{
+  "schema": "OTERYN_QUEST_LITERAL_SOURCE_PROOFS/v1",
+  "classification": "OTS_HYPOTHESIS_ONLY",
+  "baseline": "1a5c3bbf78aae7a8bb4ac0ad035a2c178782cbba",
+  "source_proofs": [
+    {
+      "interaction": "canary:interaction/bigfoot_burden/movements_task_endurance",
+      "owner": "Movement",
+      "source": "canary",
+      "path": "data-otservbr-global/scripts/quests/bigfoot_burden/movements_task_endurance.lua",
+      "blob_sha1": "2c1dc7383bc13d9fb95ad650394632901b3a7418",
+      "line": 38,
+      "source_position": {
+        "x": 32760,
+        "y": 31811,
+        "z": 10
+      }
+    },
+    {
+      "interaction": "crystalserver:interaction/blood_brothers_quest/actions_ghost_tear",
+      "owner": "Movement",
+      "source": "crystalserver",
+      "path": "data-global/scripts/quests/blood_brothers_quest/actions_ghost_tear.lua",
+      "blob_sha1": "30478b421dae82c01f12f62f462f83f597b155c9",
+      "line": 28,
+      "source_position": {
+        "x": 32953,
+        "y": 31444,
+        "z": 1
+      }
+    },
+    {
+      "interaction": "crystalserver:interaction/blood_brothers_quest/actions_lersatio_mirrors",
+      "owner": "Movement",
+      "source": "crystalserver",
+      "path": "data-global/scripts/quests/blood_brothers_quest/actions_lersatio_mirrors.lua",
+      "blob_sha1": "5ff48ee600c4ed0bbd96e9c0aec48a4f67d042c4",
+      "line": 71,
+      "source_position": {
+        "x": 32967,
+        "y": 31459,
+        "z": 1
+      }
+    },
+    {
+      "interaction": "canary:interaction/dangerous_depth/movements_warzone_entrance",
+      "owner": "Movement",
+      "source": "canary",
+      "path": "data-otservbr-global/scripts/quests/dangerous_depth/movements_warzone_entrance.lua",
+      "blob_sha1": "ecb404fe5efd99a5e6c948a1c08ee6c37292ce21",
+      "line": 15,
+      "source_position": {
+        "x": 33367,
+        "y": 32307,
+        "z": 15
+      }
+    },
+    {
+      "interaction": "canary:interaction/dangerous_depth/movements_warzone_entrance",
+      "owner": "Movement",
+      "source": "canary",
+      "path": "data-otservbr-global/scripts/quests/dangerous_depth/movements_warzone_entrance.lua",
+      "blob_sha1": "ecb404fe5efd99a5e6c948a1c08ee6c37292ce21",
+      "line": 20,
+      "source_position": {
+        "x": 33367,
+        "y": 32307,
+        "z": 15
+      }
+    },
+    {
+      "interaction": "canary:interaction/dangerous_depth/movements_warzone_entrance",
+      "owner": "Movement",
+      "source": "canary",
+      "path": "data-otservbr-global/scripts/quests/dangerous_depth/movements_warzone_entrance.lua",
+      "blob_sha1": "ecb404fe5efd99a5e6c948a1c08ee6c37292ce21",
+      "line": 31,
+      "source_position": {
+        "x": 33208,
+        "y": 32119,
+        "z": 15
+      }
+    },
+    {
+      "interaction": "canary:interaction/dangerous_depth/movements_warzone_entrance",
+      "owner": "Movement",
+      "source": "canary",
+      "path": "data-otservbr-global/scripts/quests/dangerous_depth/movements_warzone_entrance.lua",
+      "blob_sha1": "ecb404fe5efd99a5e6c948a1c08ee6c37292ce21",
+      "line": 36,
+      "source_position": {
+        "x": 33208,
+        "y": 32119,
+        "z": 15
+      }
+    },
+    {
+      "interaction": "canary:interaction/dangerous_depth/movements_warzone_entrance",
+      "owner": "Movement",
+      "source": "canary",
+      "path": "data-otservbr-global/scripts/quests/dangerous_depth/movements_warzone_entrance.lua",
+      "blob_sha1": "ecb404fe5efd99a5e6c948a1c08ee6c37292ce21",
+      "line": 47,
+      "source_position": {
+        "x": 33534,
+        "y": 32184,
+        "z": 15
+      }
+    },
+    {
+      "interaction": "canary:interaction/dangerous_depth/movements_warzone_entrance",
+      "owner": "Movement",
+      "source": "canary",
+      "path": "data-otservbr-global/scripts/quests/dangerous_depth/movements_warzone_entrance.lua",
+      "blob_sha1": "ecb404fe5efd99a5e6c948a1c08ee6c37292ce21",
+      "line": 52,
+      "source_position": {
+        "x": 33534,
+        "y": 32184,
+        "z": 15
+      }
+    },
+    {
+      "interaction": "crystalserver:interaction/forgotten_knowledge/actions_dragonking_zyrtarch",
+      "owner": "Movement",
+      "source": "crystalserver",
+      "path": "data-global/scripts/quests/forgotten_knowledge/actions_dragonking_zyrtarch.lua",
+      "blob_sha1": "7fb6281823e7f8f4a32299be1b87e0f019304fe2",
+      "line": 67,
+      "source_position": {
+        "x": 33359,
+        "y": 31186,
+        "z": 10
+      }
+    },
+    {
+      "interaction": "crystalserver:interaction/forgotten_knowledge/actions_dragonking_zyrtarch",
+      "owner": "Ability",
+      "source": "crystalserver",
+      "path": "data-global/scripts/quests/forgotten_knowledge/actions_dragonking_zyrtarch.lua",
+      "blob_sha1": "7fb6281823e7f8f4a32299be1b87e0f019304fe2",
+      "line": 55,
+      "source_position": {
+        "x": 33357,
+        "y": 31182,
+        "z": 10
+      }
+    },
+    {
+      "interaction": "crystalserver:interaction/forgotten_knowledge/actions_dragonking_zyrtarch",
+      "owner": "Ability",
+      "source": "crystalserver",
+      "path": "data-global/scripts/quests/forgotten_knowledge/actions_dragonking_zyrtarch.lua",
+      "blob_sha1": "7fb6281823e7f8f4a32299be1b87e0f019304fe2",
+      "line": 56,
+      "source_position": {
+        "x": 33359,
+        "y": 31182,
+        "z": 12
+      }
+    },
+    {
+      "interaction": "crystalserver:interaction/forgotten_knowledge/actions_lady_tenebris",
+      "owner": "Movement",
+      "source": "crystalserver",
+      "path": "data-global/scripts/quests/forgotten_knowledge/actions_lady_tenebris.lua",
+      "blob_sha1": "906aa65721c92127fdd3fc40be1cf93516c5bb1e",
+      "line": 49,
+      "source_position": {
+        "x": 32911,
+        "y": 31603,
+        "z": 14
+      }
+    },
+    {
+      "interaction": "crystalserver:interaction/forgotten_knowledge/actions_lady_tenebris",
+      "owner": "Ability",
+      "source": "crystalserver",
+      "path": "data-global/scripts/quests/forgotten_knowledge/actions_lady_tenebris.lua",
+      "blob_sha1": "906aa65721c92127fdd3fc40be1cf93516c5bb1e",
+      "line": 39,
+      "source_position": {
+        "x": 32912,
+        "y": 31599,
+        "z": 14
+      }
+    },
+    {
+      "interaction": "crystalserver:interaction/forgotten_knowledge/actions_lloyd",
+      "owner": "Movement",
+      "source": "crystalserver",
+      "path": "data-global/scripts/quests/forgotten_knowledge/actions_lloyd.lua",
+      "blob_sha1": "c47ea4d5966cf9846192bb505fde67148e747b43",
+      "line": 66,
+      "source_position": {
+        "x": 32800,
+        "y": 32831,
+        "z": 14
+      }
+    },
+    {
+      "interaction": "crystalserver:interaction/forgotten_knowledge/actions_lloyd",
+      "owner": "Ability",
+      "source": "crystalserver",
+      "path": "data-global/scripts/quests/forgotten_knowledge/actions_lloyd.lua",
+      "blob_sha1": "c47ea4d5966cf9846192bb505fde67148e747b43",
+      "line": 55,
+      "source_position": {
+        "x": 32799,
+        "y": 32827,
+        "z": 14
+      }
+    },
+    {
+      "interaction": "crystalserver:interaction/forgotten_knowledge/actions_the_thorn_knight",
+      "owner": "Movement",
+      "source": "crystalserver",
+      "path": "data-global/scripts/quests/forgotten_knowledge/actions_the_thorn_knight.lua",
+      "blob_sha1": "920961fe7a6e0df8335d408faff47d4d85508b4c",
+      "line": 59,
+      "source_position": {
+        "x": 32624,
+        "y": 32886,
+        "z": 14
+      }
+    },
+    {
+      "interaction": "crystalserver:interaction/forgotten_knowledge/actions_the_thorn_knight",
+      "owner": "Ability",
+      "source": "crystalserver",
+      "path": "data-global/scripts/quests/forgotten_knowledge/actions_the_thorn_knight.lua",
+      "blob_sha1": "920961fe7a6e0df8335d408faff47d4d85508b4c",
+      "line": 48,
+      "source_position": {
+        "x": 32624,
+        "y": 32880,
+        "z": 14
+      }
+    },
+    {
+      "interaction": "canary:interaction/others/actions_fire_bug",
+      "owner": "Movement",
+      "source": "crystalserver",
+      "path": "data-global/scripts/quests/others/actions_fire_bug.lua",
+      "blob_sha1": "ce4ab188125de7783997dcb26113255aa36c55db",
+      "line": 65,
+      "source_position": {
+        "x": 32940,
+        "y": 31478,
+        "z": 1
+      }
+    },
+    {
+      "interaction": "canary:interaction/the_ancient_tombs/movements_enter_ashmunrah_teleport_switche_done",
+      "owner": "Movement",
+      "source": "canary",
+      "path": "data-otservbr-global/scripts/quests/the_ancient_tombs/movements_enter_ashmunrah_teleport_switche_done.lua",
+      "blob_sha1": "de0a74f932c759549468c4467f4d2d751cf26d86",
+      "line": 16,
+      "source_position": {
+        "x": 33198,
+        "y": 32885,
+        "z": 11
+      }
+    },
+    {
+      "interaction": "canary:interaction/the_ancient_tombs/movements_enter_diprath_room",
+      "owner": "Movement",
+      "source": "canary",
+      "path": "data-otservbr-global/scripts/quests/the_ancient_tombs/movements_enter_diprath_room.lua",
+      "blob_sha1": "1bd9d464725ac5c298a20006d255d92c83e058df",
+      "line": 15,
+      "source_position": {
+        "x": 33092,
+        "y": 32590,
+        "z": 15
+      }
+    },
+    {
+      "interaction": "canary:interaction/the_ancient_tombs/movements_enter_diprath_teleport_switche_done",
+      "owner": "Movement",
+      "source": "crystalserver",
+      "path": "data-global/scripts/quests/the_ancient_tombs/movements_enter_diprath_teleport_switche_done.lua",
+      "blob_sha1": "b3a5018332166603518e0056bde5f76d3de216e5",
+      "line": 12,
+      "source_position": {
+        "x": 33083,
+        "y": 32568,
+        "z": 14
+      }
+    },
+    {
+      "interaction": "canary:interaction/the_ancient_tombs/movements_enter_mahrdis_room",
+      "owner": "Movement",
+      "source": "canary",
+      "path": "data-otservbr-global/scripts/quests/the_ancient_tombs/movements_enter_mahrdis_room.lua",
+      "blob_sha1": "6182941e34c5c64a30bc8abfbf921d237c3b5bb0",
+      "line": 14,
+      "source_position": {
+        "x": 33190,
+        "y": 32947,
+        "z": 15
+      }
+    },
+    {
+      "interaction": "canary:interaction/the_ancient_tombs/movements_enter_morguthis_room",
+      "owner": "Movement",
+      "source": "canary",
+      "path": "data-otservbr-global/scripts/quests/the_ancient_tombs/movements_enter_morguthis_room.lua",
+      "blob_sha1": "041e0dec00609df040d430403516cae371b3a088",
+      "line": 14,
+      "source_position": {
+        "x": 33259,
+        "y": 32707,
+        "z": 13
+      }
+    },
+    {
+      "interaction": "canary:interaction/the_ancient_tombs/movements_enter_omruc_room",
+      "owner": "Movement",
+      "source": "canary",
+      "path": "data-otservbr-global/scripts/quests/the_ancient_tombs/movements_enter_omruc_room.lua",
+      "blob_sha1": "c1dcfedf9bf6fae7a0ab2775e02d2db5fadad8bf",
+      "line": 14,
+      "source_position": {
+        "x": 33207,
+        "y": 33002,
+        "z": 14
+      }
+    },
+    {
+      "interaction": "canary:interaction/the_ancient_tombs/movements_enter_omruc_specific",
+      "owner": "Movement",
+      "source": "canary",
+      "path": "data-otservbr-global/scripts/quests/the_ancient_tombs/movements_enter_omruc_specific.lua",
+      "blob_sha1": "3c6b5d1378caf478c2c55767d3c686da27ebed65",
+      "line": 14,
+      "source_position": {
+        "x": 33205,
+        "y": 32955,
+        "z": 14
+      }
+    },
+    {
+      "interaction": "canary:interaction/the_ancient_tombs/movements_enter_rahemos_levers",
+      "owner": "Movement",
+      "source": "canary",
+      "path": "data-otservbr-global/scripts/quests/the_ancient_tombs/movements_enter_rahemos_levers.lua",
+      "blob_sha1": "3fa01ce23327c023a9f3ff3ce59420d1914eb053",
+      "line": 14,
+      "source_position": {
+        "x": 33124,
+        "y": 32760,
+        "z": 14
+      }
+    },
+    {
+      "interaction": "canary:interaction/the_ancient_tombs/movements_enter_rahemos_room",
+      "owner": "Movement",
+      "source": "canary",
+      "path": "data-otservbr-global/scripts/quests/the_ancient_tombs/movements_enter_rahemos_room.lua",
+      "blob_sha1": "82e7a64d1d19c302740acad1201ea53d7a85c827",
+      "line": 14,
+      "source_position": {
+        "x": 33086,
+        "y": 32781,
+        "z": 14
+      }
+    },
+    {
+      "interaction": "canary:interaction/the_ancient_tombs/movements_enter_thalas_teleport_switches_done",
+      "owner": "Movement",
+      "source": "crystalserver",
+      "path": "data-global/scripts/quests/the_ancient_tombs/movements_enter_thalas_teleport_switches_done.lua",
+      "blob_sha1": "07d9736ac541522a5e48462e49422ff4729c0775",
+      "line": 13,
+      "source_position": {
+        "x": 33367,
+        "y": 32805,
+        "z": 14
+      }
+    },
+    {
+      "interaction": "canary:interaction/the_ancient_tombs/movements_enter_vashresamun_room",
+      "owner": "Movement",
+      "source": "canary",
+      "path": "data-otservbr-global/scripts/quests/the_ancient_tombs/movements_enter_vashresamun_room.lua",
+      "blob_sha1": "bfdcd763d7a97f0cbcddb024d917d04e71d9c214",
+      "line": 14,
+      "source_position": {
+        "x": 33129,
+        "y": 32657,
+        "z": 15
+      }
+    },
+    {
+      "interaction": "canary:interaction/the_ancient_tombs/movements_enter_vashresamun_specific",
+      "owner": "Movement",
+      "source": "canary",
+      "path": "data-otservbr-global/scripts/quests/the_ancient_tombs/movements_enter_vashresamun_specific.lua",
+      "blob_sha1": "fafb96b861ca749c19cfaad3eeb1e511eb650d6d",
+      "line": 14,
+      "source_position": {
+        "x": 33194,
+        "y": 32665,
+        "z": 15
+      }
+    },
+    {
+      "interaction": "canary:interaction/the_first_dragon/movements_last_teleport",
+      "owner": "Movement",
+      "source": "canary",
+      "path": "data-otservbr-global/scripts/quests/the_first_dragon/movements_last_teleport.lua",
+      "blob_sha1": "80509399d64197384cc267cfcec4a6b55e28bd88",
+      "line": 31,
+      "source_position": {
+        "x": 33585,
+        "y": 30990,
+        "z": 14
+      }
+    },
+    {
+      "interaction": "canary:interaction/the_hidden_city_of_beregar/moviments_pythius_teleport",
+      "owner": "Movement",
+      "source": "canary",
+      "path": "data-otservbr-global/scripts/quests/the_hidden_city_of_beregar/moviments_pythius_teleport.lua",
+      "blob_sha1": "e2a4b18012fcba2b414280ad50ddb8a708f81fae",
+      "line": 18,
+      "source_position": {
+        "x": 32601,
+        "y": 31397,
+        "z": 14
+      }
+    },
+    {
+      "interaction": "canary:interaction/the_new_frontier/action_prision_secret_door",
+      "owner": "Movement",
+      "source": "canary",
+      "path": "data-otservbr-global/scripts/quests/the_new_frontier/action_prision_secret_door.lua",
+      "blob_sha1": "80c4beb3d8e97b523a684ce4b92bd5b771a7b454",
+      "line": 7,
+      "source_position": {
+        "x": 33170,
+        "y": 31247,
+        "z": 11
+      }
+    },
+    {
+      "interaction": "crystalserver:interaction/the_order_of_lion_quest/moveevent_fugue",
+      "owner": "Ability",
+      "source": "crystalserver",
+      "path": "data-global/scripts/quests/the_order_of_lion_quest/moveevent_fugue.lua",
+      "blob_sha1": "829127be6b658b1d12c4e18a7d31505c1ab8a4a4",
+      "line": 64,
+      "source_position": {
+        "x": 32371,
+        "y": 32476,
+        "z": 2
+      }
+    },
+    {
+      "interaction": "canary:interaction/the_paradox_tower/move_let_the_quest",
+      "owner": "Movement",
+      "source": "canary",
+      "path": "data-otservbr-global/scripts/quests/the_paradox_tower/move_let_the _quest.lua",
+      "blob_sha1": "a20f503a9f8df9bdbd1bf361a509fb97278d09d2",
+      "line": 26,
+      "source_position": {
+        "x": 32566,
+        "y": 31959,
+        "z": 1
+      }
+    },
+    {
+      "interaction": "canary:interaction/the_paradox_tower/movement_strange_carvings_in_the_southeast",
+      "owner": "Movement",
+      "source": "canary",
+      "path": "data-otservbr-global/scripts/quests/the_paradox_tower/movement_strange_carvings_in _the_southeast.lua",
+      "blob_sha1": "f431625088884a588f3481d9045cf23a20323ad6",
+      "line": 20,
+      "source_position": {
+        "x": 32478,
+        "y": 31908,
+        "z": 7
+      }
+    },
+    {
+      "interaction": "canary:interaction/the_rookie_guard/mission12_into_fortress_enter_boss_room_teleport",
+      "owner": "Movement",
+      "source": "canary",
+      "path": "data-otservbr-global/scripts/quests/the_rookie_guard/mission12_into_fortress.lua",
+      "blob_sha1": "444b82a599049f0629001649cbfbe2ce6a2cb903",
+      "line": 573,
+      "source_position": {
+        "x": 31944,
+        "y": 32174,
+        "z": 10
+      }
+    },
+    {
+      "interaction": "canary:interaction/the_rookie_guard/mission12_into_fortress_enter_treasure_room_teleport",
+      "owner": "Movement",
+      "source": "canary",
+      "path": "data-otservbr-global/scripts/quests/the_rookie_guard/mission12_into_fortress.lua",
+      "blob_sha1": "444b82a599049f0629001649cbfbe2ce6a2cb903",
+      "line": 641,
+      "source_position": {
+        "x": 31932,
+        "y": 32171,
+        "z": 11
+      }
+    },
+    {
+      "interaction": "canary:interaction/the_rookie_guard/mission12_into_fortress_exit_treasure_room_teleport",
+      "owner": "Movement",
+      "source": "canary",
+      "path": "data-otservbr-global/scripts/quests/the_rookie_guard/mission12_into_fortress.lua",
+      "blob_sha1": "444b82a599049f0629001649cbfbe2ce6a2cb903",
+      "line": 726,
+      "source_position": {
+        "x": 32016,
+        "y": 32150,
+        "z": 7
+      }
+    },
+    {
+      "interaction": "canary:interaction/the_shattered_isles_quest/movement_teleport",
+      "owner": "Movement",
+      "source": "canary",
+      "path": "data-otservbr-global/scripts/quests/the_shattered_isles_quest/movement_teleport.lua",
+      "blob_sha1": "aceacc8805619e96f14872b61342d23f3de69bcf",
+      "line": 26,
+      "source_position": {
+        "x": 31919,
+        "y": 32596,
+        "z": 10
+      }
+    },
+    {
+      "interaction": "canary:interaction/the_shattered_isles_quest/movement_teleport",
+      "owner": "Movement",
+      "source": "canary",
+      "path": "data-otservbr-global/scripts/quests/the_shattered_isles_quest/movement_teleport.lua",
+      "blob_sha1": "aceacc8805619e96f14872b61342d23f3de69bcf",
+      "line": 42,
+      "source_position": {
+        "x": 31916,
+        "y": 32607,
+        "z": 10
+      }
+    },
+    {
+      "interaction": "canary:interaction/the_spike_tasks/movements_spike_teleport",
+      "owner": "Movement",
+      "source": "canary",
+      "path": "data-otservbr-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua",
+      "blob_sha1": "99eb195eaa2b9b2f94c10d67c06bf0956a7dc62d",
+      "line": 39,
+      "source_position": {
+        "x": 32624,
+        "y": 31855,
+        "z": 11
+      }
+    },
+    {
+      "interaction": "canary:interaction/wrath_of_the_emperor/movements_prison",
+      "owner": "Movement",
+      "source": "canary",
+      "path": "data-otservbr-global/scripts/quests/wrath_of_the_emperor/movements_prison.lua",
+      "blob_sha1": "9adb8c920793b3b579ea28534f55bf3a2ebfaee2",
+      "line": 16,
+      "source_position": {
+        "x": 33359,
+        "y": 31183,
+        "z": 8
+      }
+    }
+  ]
+}

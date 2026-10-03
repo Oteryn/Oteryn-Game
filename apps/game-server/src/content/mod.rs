@@ -30,6 +30,9 @@
 
 mod activation;
 mod artifact;
+pub(crate) mod charm_source;
+pub(crate) mod charm_source_effect;
+pub(crate) mod charm_source_json;
 mod compiler;
 mod cw2_b1_import;
 mod cw2_b4_import;

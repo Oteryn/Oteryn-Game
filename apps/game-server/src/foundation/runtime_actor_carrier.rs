@@ -11,6 +11,16 @@ use super::{
 use std::mem::size_of;
 use std::sync::Arc;
 
+#[path = "runtime_actor_conditions.rs"]
+mod runtime_actor_conditions;
+#[allow(unused_imports)] // The Foundation facade is composed by the owning consumer child.
+pub(crate) use runtime_actor_conditions::{
+    ActorConditionPlan, ActorConditionTransition, ApplicationFacts, ConditionDefinition,
+    ConditionOwnerError, ConditionSource, ConditionSourceKind, ConditionStore, ConditionType,
+    ConditionValues, SpeedRange,
+};
+use runtime_actor_conditions::{CreatureCommitState, PlayerRuntimeState};
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum CarrierError {
     InvalidCapacity,
@@ -980,7 +990,7 @@ enum Slot {
         position: Option<VersionedPosition>,
         /// Present while the committed player's durable GameSession is RECONNECTABLE
         /// after an authoritative control loss (`DISCONNECT-PROTECTION-V1`).
-        control_loss: Option<ControlLossMark>,
+        lifecycle: Box<PlayerRuntimeState>,
     },
     CreatureOccupied {
         generation: u64,
@@ -990,7 +1000,7 @@ enum Slot {
         health: i64,
         /// D140: the bounded receipt list and owner damage-application ordinal (D142). Boxed for
         /// the same footprint reason as `damage_contributors`.
-        committed: Box<DamageReceipts>,
+        committed: Box<CreatureCommitState>,
         /// D132/D3-3: this generation's running per-attacker damage accumulation. Fresh and
         /// empty on every admission; dropped with the slot on `remove`. Boxed for the same
         /// reason `target_identity` is `Arc<[u8]>` rather than inline bytes: this variant's own
@@ -1724,9 +1734,9 @@ impl ChannelRuntimeV1 {
                 Slot::Occupied {
                     game_session_id: Some(_),
                     committed: true,
-                    control_loss: Some(mark),
+                    lifecycle,
                     ..
-                } => Some(mark.epoch),
+                } => lifecycle.control_loss.map(|mark| mark.epoch),
                 _ => None,
             })
             .collect();
@@ -2085,7 +2095,7 @@ impl ChannelActorCarrier {
                 game_session_id,
                 committed,
                 position: None,
-                control_loss: None,
+                lifecycle: Box::default(),
             }
         };
         self.free_head = next_free;
@@ -2342,6 +2352,9 @@ impl ChannelActorCarrier {
         committed.entries.push(receipt);
         committed.next_ordinal = next_ordinal;
         *health = next;
+        if next == 0 {
+            committed.conditions.die();
+        }
         // D132/D3-3: attribute this applied hit to its attacker only now, at the sole mutation
         // boundary, after every replay/staleness check above -- an idempotent replay of a
         // retained occurrence returns earlier and never reaches here, so it can never
@@ -2808,7 +2821,7 @@ impl ChannelActorCarrier {
     ) -> Result<Option<ControlLossMark>, CarrierError> {
         let index = self.player_slot_index(continuity, actor_ref, game_session_id)?;
         match &self.slots[index] {
-            Slot::Occupied { control_loss, .. } => Ok(*control_loss),
+            Slot::Occupied { lifecycle, .. } => Ok(lifecycle.control_loss),
             _ => Err(CarrierError::PlayerReservationMismatch),
         }
     }
@@ -2825,17 +2838,14 @@ impl ChannelActorCarrier {
         }
         let index = self.player_slot_index(continuity, actor_ref, game_session_id)?;
         match &mut self.slots[index] {
-            Slot::Occupied {
-                control_loss: stored @ None,
-                ..
-            } => {
-                *stored = Some(mark);
-                Ok(())
-            }
-            Slot::Occupied {
-                control_loss: Some(existing),
-                ..
-            } if *existing == mark => Ok(()),
+            Slot::Occupied { lifecycle, .. } => match lifecycle.control_loss {
+                None => {
+                    lifecycle.control_loss = Some(mark);
+                    Ok(())
+                }
+                Some(existing) if existing == mark => Ok(()),
+                _ => Err(CarrierError::ControlLossConflict),
+            },
             _ => Err(CarrierError::ControlLossConflict),
         }
     }
@@ -2849,16 +2859,14 @@ impl ChannelActorCarrier {
     ) -> Result<(), CarrierError> {
         let index = self.player_slot_index(continuity, actor_ref, game_session_id)?;
         match &mut self.slots[index] {
-            Slot::Occupied {
-                control_loss: stored @ Some(_),
-                ..
-            } if stored.is_some_and(|mark| mark.epoch == epoch) => {
-                *stored = None;
-                Ok(())
-            }
-            Slot::Occupied {
-                control_loss: None, ..
-            } => Ok(()),
+            Slot::Occupied { lifecycle, .. } => match lifecycle.control_loss {
+                Some(mark) if mark.epoch == epoch => {
+                    lifecycle.control_loss = None;
+                    Ok(())
+                }
+                None => Ok(()),
+                _ => Err(CarrierError::ControlLossConflict),
+            },
             _ => Err(CarrierError::ControlLossConflict),
         }
     }
@@ -3600,7 +3608,7 @@ mod tests {
         }
     }
 
-    fn session(raw: u64) -> GameSessionId {
+    pub(super) fn session(raw: u64) -> GameSessionId {
         GameSessionId::decode(&uuid_v7(raw)).expect("valid GameSessionId fixture")
     }
 
@@ -3608,7 +3616,7 @@ mod tests {
         NodeId::decode(&uuid_v7(raw)).expect("valid NodeId fixture")
     }
 
-    fn runtime(capacity: usize) -> ChannelRuntimeV1 {
+    pub(super) fn runtime(capacity: usize) -> ChannelRuntimeV1 {
         ChannelRuntimeV1::from_committed_assignment(
             WorldId::decode(&uuid_v7(20)).expect("world"),
             ChannelId::decode(&uuid_v7(21)).expect("channel"),
@@ -3935,7 +3943,9 @@ mod tests {
             // D4/D140: `committed` widens from the inline `Option<OwnerCommitRecord>` to a boxed
             // `DamageReceipts` (up to 16 receipts + the owner ordinal live on the heap), which
             // shrinks the largest variant by 32 bytes: 200 -> 168.
-            168,
+            // COND-1c: boxing the player lifecycle replaces the inline control-loss mark with
+            // one pointer and reduces the largest variant by another 8 bytes: 168 -> 160.
+            160,
             "session binding must stay inside the already measured fixed-slot footprint"
         );
     }

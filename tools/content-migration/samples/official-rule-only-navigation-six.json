@@ -1,0 +1,131 @@
+{
+  "admission_source": {
+    "explicit_ids_sha256": "136743df391cf4ff63fe16658fca0df6b2d90ce00636ddbbc87032f29a5230ff",
+    "explicit_rule_only_count": 60,
+    "path": "apps/game-server/examples/materialize_content_world_project_v2.rs",
+    "sha256": "65a7cc0a3832b8be55d77e1c9da40d5ab5240dff3a9e252bc2c6e785127b2b03"
+  },
+  "client_artifact": {
+    "client_version": "15.30",
+    "path": "content/assets/files/appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.dat",
+    "sha256": "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2"
+  },
+  "membership_manifest": {
+    "entries_sha256": "424e445c0ea9494b1871364f10e93876ad551df0d3d5c6982d97301008b027df",
+    "path": "imports/official/appearance-membership/appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.json",
+    "sha256": "f37b5d3e1136ebc3edbae1fe7090c4914b1d717bfbf9fd7c8faeeee36b491fe8"
+  },
+  "qualified_at_sha": "d690e122b0818b64528188e2c6a66e9c46b86a56",
+  "records": [
+    {
+      "appearance_id": 51276,
+      "decoded_record_sha256": "e30f45d4d10d3eb3f0b7fbb42ca664d75583cc5994e879cc86cbece7417203b6",
+      "family_profile": "material_valuable",
+      "identity_projection_sha256": "c7db6e3590fa4c766e34fc7560abd9afe9fe41a2352f9a0e7518d038e26a691f",
+      "official_flags": {
+        "flags.cumulative": true,
+        "flags.take": true,
+        "market.category": 24
+      },
+      "official_name": "spirited soil",
+      "record_sha256": "f890959f2e65fffacd15bea6f9f2b0a109d2fc96fc727ecb39580e8a9b69950f",
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i51276",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "appearance_id": 53197,
+      "decoded_record_sha256": "b08a7fd30faea47d25b52658e1b22f39b0e570bb314f06801e95131ebb35b53c",
+      "family_profile": "equipment_offhand",
+      "identity_projection_sha256": "e0c89456dee3c518d455bc56cfd607fbf4c15b1357ae09508553b98dfcce0fe4",
+      "official_flags": {
+        "clothes.slot": 2,
+        "flags.take": true,
+        "market.category": 2
+      },
+      "official_name": "enchanted flamingo amulet of valor",
+      "record_sha256": "aaaebfbeb30292726f253f767fa4adcefe54e29bf3bb4cd2667b351a687eac78",
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i53197",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "appearance_id": 53199,
+      "decoded_record_sha256": "2849ea9ec1ecf89ac75e13e48c4370b918118276d0dd53ce9209300da8e422e3",
+      "family_profile": "equipment_offhand",
+      "identity_projection_sha256": "6d5942325401aadd72cbdb2719c9748d6e290b81c9ad1f7d09f39895b3cd22d7",
+      "official_flags": {
+        "clothes.slot": 2,
+        "flags.take": true,
+        "market.category": 2
+      },
+      "official_name": "enchanted flamingo amulet of precision",
+      "record_sha256": "a5448daef0ad03883298bfda2c26b44e80436db41c8c973889d75ef2d4ca9664",
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i53199",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "appearance_id": 53201,
+      "decoded_record_sha256": "83655c1babe590ce450499329b621085f54e54844e365df65d35f8afc6c33bf7",
+      "family_profile": "equipment_offhand",
+      "identity_projection_sha256": "a937103f630d7de3093c4ad1da32c688baaddcfd206e49cf9881eefe40f25c63",
+      "official_flags": {
+        "clothes.slot": 2,
+        "flags.take": true,
+        "market.category": 2
+      },
+      "official_name": "enchanted flamingo amulet of destruction",
+      "record_sha256": "58e4c922b6dfa6018ac6fca1280f30cc0456833fe2981d6db51cffcf4af71abc",
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i53201",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "appearance_id": 53203,
+      "decoded_record_sha256": "86a6a43fd14643268556581e1b9f205ff156496fe13e411eaa8ac739b1dfe558",
+      "family_profile": "equipment_offhand",
+      "identity_projection_sha256": "355583ec2808c1b9db165242800b4a0cbf1bd976a808e00aa2d28d209002e7f1",
+      "official_flags": {
+        "clothes.slot": 2,
+        "flags.take": true,
+        "market.category": 2
+      },
+      "official_name": "enchanted flamingo amulet of nature",
+      "record_sha256": "1854f6bc4f8d585c74079b5ee8958bd864aa8d0a0cb350b4ae0bfac3606211dc",
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i53203",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "appearance_id": 53205,
+      "decoded_record_sha256": "9b962e931bef36d5feca65536b4513459aec98f1a4e3b2071a21220f57500095",
+      "family_profile": "equipment_offhand",
+      "identity_projection_sha256": "8022ad20cd30c2ce11042c37e356a4a1a77a77d1ec9ebb1e85e462fed6edf9a5",
+      "official_flags": {
+        "clothes.slot": 2,
+        "flags.take": true,
+        "market.category": 2
+      },
+      "official_name": "enchanted swan amulet of balance",
+      "record_sha256": "aae8671ee5263e7b5649333a77e26fe00eb1f3523141f0f831a629c2a105cc38",
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i53205",
+        "revision": "definition-r1"
+      }
+    }
+  ],
+  "schema": "OTERYN_OFFICIAL_RULE_ONLY_NAVIGATION_QUALIFICATION/v1",
+  "scope": "NAVIGATION_ONLY; no native facts, classes, admission, G4 bindings or world ownership change"
+}

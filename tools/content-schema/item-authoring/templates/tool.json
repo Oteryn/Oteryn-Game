@@ -1,0 +1,30 @@
+{
+  "identity": {
+    "key": "oteryn:item.template.tool",
+    "revision": "definition-r1"
+  },
+  "display_name": "Template Tool",
+  "family_profile": "tool",
+  "delivery_task_eligible": false,
+  "taxonomy": {
+    "item_class": "tool",
+    "primary": "tool",
+    "tags": []
+  },
+  "physical": {
+    "weight": {
+      "value": "1.00",
+      "unit": "oz"
+    },
+    "movable": true,
+    "pickupable": true
+  },
+  "use": {
+    "usable": true,
+    "use_with": true
+  },
+  "trade": {
+    "tradeable": true,
+    "marketable": false
+  }
+}

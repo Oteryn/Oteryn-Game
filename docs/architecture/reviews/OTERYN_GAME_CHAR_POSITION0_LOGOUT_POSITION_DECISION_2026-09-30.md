@@ -92,6 +92,9 @@ chain, with no cause and no replay.
   never overwrites the final one, and a new login's first write is never rejected.
 - **At logout.** The final write runs inside the terminal release transaction, before
   `session_state` becomes 3, as H-1 writes before the lease is released.
+  **Amendment (pending on acceptance of OFFLINE-0; `reviews/OTERYN_GAME_OFFLINE0_STAMINA_AND_OFFLINE_TRAINING_DECISION_2026-10-01.md` §4.1).** OFFLINE-0's `logout` build marker commits in its own
+  transaction before the terminal release, as the last queued build commit (the H-1 actor-end
+  pattern), not inside it.
 - **Logout-blocked actor.** When the client closes during the ATTACK-0 in-fight deadline, the actor
   stays in the world; the final write runs in the terminal release that ends it.
 - **Periodically:** every 5 minutes (`CHARPOS0-RL-01`) while the position has changed since the

@@ -36,6 +36,20 @@ CANONICAL_CONTROL_PATHS = {
     ".github/workflows/merge-group-gate.yml",
     ".github/workflows/rust.yml",
 }
+# Explicit tool roles. New/unreviewed repository tools remain FULL until classified.
+REPOSITORY_CONTROL_TOOLS = frozenset({
+    "tools/repository/" + name for name in (
+        "classify_pr_test_lanes.py", "apply_github_settings.py",
+        "validate_repository_policy.py", "validate_repository_policy_core.py",
+        "validate_pr_gate_pg_sim.py", "validate_pr_routing_contract.py",
+        "test_validate_pr_gate_pg_sim.py", "test_validate_merge_group_pg_sim.py",
+        "test_classify_pr_test_lanes.py", "test_classify_post_merge_lanes.py",
+        "test_classify_content_routing.py",
+    )
+})
+REPOSITORY_AUXILIARY_TOOLS = frozenset({
+    "tools/repository/test_validate_game_atlas_semantic_search_triggers.py",
+})
 ROUTING_ONLY_CONTROL_DIRECTORY_PREDICATES = {
     (".github/workflows/merge-group-gate.yml", "docs/architecture"):
         b"path.startswith('docs/architecture/')",
@@ -65,6 +79,11 @@ ATLAS_INTENTIONALLY_FULL_PREFIXES = (
 SERVER_QUALIFICATION_PREFIXES = (
     "apps/game-server/src/",
     "apps/game-server/migrations/",
+    # Direct local production dependencies in apps/game-server/Cargo.toml can
+    # change boot, wire validation and simulation without touching the app.
+    "crates/foundation/",
+    "crates/protocol-oteryn/",
+    "crates/simulation-determinism/",
     "tools/qualification/",
     "vendor/",
 )
@@ -147,6 +166,14 @@ def neutral(path: str) -> bool:
     )
 
 
+def documentation_path(path: str) -> bool:
+    """Prose documentation: Markdown under docs/ or a root project document.
+
+    Agent instructions, migration controls and evidence data are excluded.
+    """
+    return neutral(path) and not path.startswith("docs/agents/evidence/")
+
+
 def agent_governance(path: str) -> bool:
     if PurePosixPath(path).name in {"AGENTS.md", "AGENTS.override.md"}:
         return True
@@ -159,7 +186,8 @@ def canonical_control(path: str) -> bool:
     return (
         path in CANONICAL_CONTROL_PATHS
         or path.startswith(".github/actions/")
-        or path.startswith("tools/repository/")
+        or path in REPOSITORY_CONTROL_TOOLS
+        or (path.startswith("tools/repository/") and path not in REPOSITORY_AUXILIARY_TOOLS)
         or path.startswith("docs/migration/")
     )
 
@@ -356,6 +384,22 @@ def standalone_directory_reference(
     )
 
 
+def quoted_directory_reference(content: bytes, pattern: str) -> bool:
+    """Require a directory literal that ends a quoted string, not prose."""
+    needle = pattern.encode("utf-8")
+    start = 0
+    while True:
+        index = content.find(needle, start)
+        if index < 0:
+            return False
+        tail = content[index + len(needle):]
+        if tail[:1] == b"/":
+            tail = tail[1:]
+        if tail[:1] in {b'"', b"'"}:
+            return True
+        start = index + 1
+
+
 def workflow_directory_reference_is_routing_only(
     consumer_path: str,
     content: bytes,
@@ -466,6 +510,10 @@ def candidate_reference_consumers(
                 )
             ):
                 continue
+            # A package names a documentation directory only through a quoted
+            # literal; doc-comment prose citing that directory is not a consumer.
+            if not control and not quoted_directory_reference(content, pattern):
+                targets = {target for target in targets if not documentation_path(target)}
             selected.update(targets)
         for target in selected:
             consumers[target].add(owner if owner is not None else CONTROL_CONSUMER)

@@ -1,0 +1,151 @@
+{
+  "anchors": [],
+  "identity": {
+    "key": "canary:interaction/kilmaresh_quest/1_fafnars_wrath/7_four_masks",
+    "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+  },
+  "rules": [
+    {
+      "branch": [
+        {
+          "then": [
+            {
+              "branch": [
+                {
+                  "then": [
+                    {
+                      "count": 1,
+                      "item": {
+                        "family": "Item",
+                        "key": "canary:item/31369",
+                        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                      },
+                      "owner": "Item",
+                      "request": "hand_out"
+                    }
+                  ],
+                  "when": {
+                    "negate": false,
+                    "object": {
+                      "field": "unique_id",
+                      "op": "==",
+                      "role": "source",
+                      "value": 40033
+                    }
+                  }
+                },
+                {
+                  "then": [
+                    {
+                      "count": 1,
+                      "item": {
+                        "family": "Item",
+                        "key": "canary:item/31370",
+                        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                      },
+                      "owner": "Item",
+                      "request": "hand_out"
+                    }
+                  ],
+                  "when": {
+                    "negate": false,
+                    "object": {
+                      "field": "unique_id",
+                      "op": "==",
+                      "role": "source",
+                      "value": 40034
+                    }
+                  }
+                },
+                {
+                  "then": [
+                    {
+                      "count": 1,
+                      "item": {
+                        "family": "Item",
+                        "key": "canary:item/31372",
+                        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                      },
+                      "owner": "Item",
+                      "request": "hand_out"
+                    }
+                  ],
+                  "when": {
+                    "negate": false,
+                    "object": {
+                      "field": "unique_id",
+                      "op": "==",
+                      "role": "source",
+                      "value": 40035
+                    }
+                  }
+                }
+              ],
+              "otherwise": [
+                {
+                  "owner": "Item",
+                  "request": "hand_out",
+                  "value_source_line": 39
+                }
+              ]
+            },
+            {
+              "authoritative": false,
+              "effect": "message",
+              "owner": "Presentation",
+              "source_line": 40
+            },
+            {
+              "owner": "Quest",
+              "progress": "canary:quest-progress/quest/u12_20/kilmaresh_quest/sixth/favor",
+              "request": "set_progress",
+              "value_source_line": 41
+            },
+            {
+              "owner": "Quest",
+              "progress": "canary:quest-progress/quest/u12_20/kilmaresh_quest/sixth/four_masks",
+              "request": "set_progress",
+              "value_source_line": 42
+            }
+          ],
+          "when": {
+            "unresolved": {
+              "line": 38
+            }
+          }
+        },
+        {
+          "then": [
+            {
+              "authoritative": false,
+              "effect": "message",
+              "owner": "Presentation",
+              "source_line": 45
+            }
+          ],
+          "when": {
+            "negate": false,
+            "quest_stage": {
+              "op": ">=",
+              "progress": "canary:quest-progress/quest/u12_20/kilmaresh_quest/sixth/favor",
+              "value": 1
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "source": {
+    "callback": "onUse",
+    "edge": "USE",
+    "target_registrations": [
+      "uid(uniqueId)"
+    ]
+  },
+  "unresolved": [
+    {
+      "line": 43,
+      "reason": "statement outside the transcribed vocabulary"
+    }
+  ]
+}

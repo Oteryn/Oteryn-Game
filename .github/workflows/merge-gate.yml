@@ -15,12 +15,15 @@ on:
 permissions: {}
 
 concurrency:
-  group: merge-gate-${{ github.event.pull_request.number }}
+  # Metadata edits cannot cancel a pending or running product qualification.
+  # Base retargets keep the normal per-PR cancellation group.
+  group: ${{ github.event.action == 'edited' && github.event.changes.base == null && format('merge-gate-edit-{0}-{1}', github.event.pull_request.number, github.run_id) || format('merge-gate-{0}', github.event.pull_request.number) }}
   cancel-in-progress: true
 
 jobs:
   scope:
     name: Merge gate / scope
+    if: github.event.pull_request.base.ref == 'main' || !github.event.pull_request.base.ref
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:
@@ -775,17 +778,17 @@ jobs:
       - name: Install Rust toolchain
         run: rustup toolchain install 1.94.0 --profile minimal --component clippy,rustfmt
 
-      - name: Restore Cargo cache saved by protected main
-        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      - name: Restore trimmed Cargo cache from protected main
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
         with:
           path: |
             ~/.cargo/registry/index/
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
             target/
-          key: rust-linux-1.94.0-${{ hashFiles('Cargo.lock') }}
+          key: rust-linux-v2-1.94.0-${{ hashFiles('Cargo.lock') }}-${{ github.sha }}
           restore-keys: |
-            rust-linux-1.94.0-
+            rust-linux-v2-1.94.0-${{ hashFiles('Cargo.lock') }}-
 
       - name: Build workspace
         run: cargo +1.94.0 build --locked --workspace --all-targets
@@ -839,6 +842,9 @@ jobs:
               if not isinstance(targets, list):
                   raise ValueError('package targets is not a list')
               matches = [target for target in targets if target.get('name') == name]
+              global_matches = [target for package in packages for target in package.get('targets', []) if target.get('name') == name and target.get('kind') == ['test']]
+              if len(global_matches) != 1:
+                  raise ValueError('expected exactly one workspace integration-test target')
               if len(matches) != 1 or matches[0].get('kind') != ['test']:
                   raise ValueError('expected exactly one integration-test target')
               expected = (pathlib.Path.cwd() / registered_path).resolve(strict=True)
@@ -868,7 +874,7 @@ jobs:
                   exit 1
                 fi
                 verify_registered_target_binding "$name" "$path"
-                cargo +1.94.0 test --locked -p oteryn-game-server --test "$name"
+                cargo +1.94.0 test --locked --workspace --test "$name"
                 ;;
               false)
                 if [[ -e "$path" || -L "$path" || -n "$classified_blob" ]]; then
@@ -1093,7 +1099,7 @@ jobs:
 
   validate:
     name: Merge gate / validate
-    if: always()
+    if: always() && (github.event.pull_request.base.ref == 'main' || !github.event.pull_request.base.ref)
     needs:
       - scope
       - lanes
@@ -1177,14 +1183,54 @@ jobs:
 
   game_gate:
     name: game-gate
-    if: always()
-    needs: validate
+    if: always() && (github.event.pull_request.base.ref == 'main' || !github.event.pull_request.base.ref)
+    needs: [scope, validate]
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:
       contents: read
+      pull-requests: read
     steps:
       - name: Require canonical aggregate success
         env:
           LEGACY_VALIDATE: ${{ needs.validate.result }}
         run: test "$LEGACY_VALIDATE" = "success"
+      - name: Revalidate isolated edit target before publishing game-gate
+        if: github.event.action == 'edited' && github.event.changes.base == null
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          EXPECTED_HEAD: ${{ needs.scope.outputs.target_sha }}
+          EXPECTED_BASE: ${{ needs.scope.outputs.base_sha }}
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          import re
+          import urllib.request
+
+          repository = os.environ['REPOSITORY']
+          number = os.environ['PR_NUMBER']
+          expected_head = os.environ['EXPECTED_HEAD']
+          expected_base = os.environ['EXPECTED_BASE']
+          if re.fullmatch(r'[1-9][0-9]*', number) is None or any(
+              re.fullmatch(r'[0-9a-f]{40}', sha) is None for sha in (expected_head, expected_base)
+          ):
+              raise SystemExit('isolated edit has invalid scope identity')
+          request = urllib.request.Request(
+              f'https://api.github.com/repos/{repository}/pulls/{number}',
+              headers={'Accept': 'application/vnd.github+json',
+                       'Authorization': f"Bearer {os.environ['GH_TOKEN']}",
+                       'X-GitHub-Api-Version': '2022-11-28'},
+          )
+          with urllib.request.urlopen(request, timeout=30) as response:
+              pull = json.load(response)
+          if (pull.get('number') != int(number) or pull.get('state') != 'open'
+              or pull.get('head', {}).get('sha') != expected_head
+              or pull.get('head', {}).get('repo', {}).get('full_name') != repository
+              or pull.get('base', {}).get('ref') != 'main'
+              or pull.get('base', {}).get('sha') != expected_base):
+              raise SystemExit('isolated edit target changed after qualification; current qualification is required')
+          print('Isolated edit still matches the qualified live head and base.')
+          PY

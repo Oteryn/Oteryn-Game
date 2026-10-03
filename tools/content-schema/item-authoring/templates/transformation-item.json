@@ -1,0 +1,29 @@
+{
+  "identity": {
+    "key": "oteryn:item.template.transformation-item",
+    "revision": "definition-r1"
+  },
+  "display_name": "Template Transformation Item",
+  "family_profile": "transformation_item",
+  "delivery_task_eligible": false,
+  "taxonomy": {
+    "item_class": "transformation",
+    "primary": "transformation-item",
+    "tags": []
+  },
+  "physical": {
+    "weight": {
+      "value": "1.00",
+      "unit": "oz"
+    },
+    "movable": true,
+    "pickupable": true
+  },
+  "lifecycle": {
+    "transforms": []
+  },
+  "use": {
+    "usable": true,
+    "use_with": true
+  }
+}

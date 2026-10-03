@@ -1,0 +1,248 @@
+{
+  "schema": "OTERYN_SOURCE_INDEX_SEMANTIC_REBIND_PROOF/v1",
+  "status": "PASS",
+  "new_cache_admission": "ONLY_WITH_EXPLICIT_NEW_RECEIPT; prior fingerprint must never be silently bypassed",
+  "root_frozen_head": "0bc47074fb10eb03a38aaff75508937e99258ed2",
+  "old_producer_sha256": {
+    "lua_writers.py": "bc6239ffc21bc4461b23a50aeb1f603fcfc7e48dddb258bf19b37a8b95e38343",
+    "lua_tables.py": "5b6c9975725ffafecc7faccce53bf6f570896b11a2e04a3b18021df8b57c7b84",
+    "scoped_storage_aliases.py": "bd4de58f4a60ab14ae57285bde15673baf4626c6da2721311b34bb6228d77e20",
+    "ots_chests.py": "7e954d46d03c88206dd55f8174c186da857ae05d2276672f8b98c50ac3b2102d"
+  },
+  "new_producer_sha256": {
+    "lua_writers.py": "b1e6a164a3c2941b77eb3a0faabee5f5b7adeadf28e46091f7b7bb483105c4a2",
+    "lua_tables.py": "5b6c9975725ffafecc7faccce53bf6f570896b11a2e04a3b18021df8b57c7b84",
+    "scoped_storage_aliases.py": "bd4de58f4a60ab14ae57285bde15673baf4626c6da2721311b34bb6228d77e20",
+    "ots_chests.py": "7e954d46d03c88206dd55f8174c186da857ae05d2276672f8b98c50ac3b2102d"
+  },
+  "previous_receipt": {
+    "path": "/tmp/quest-completion-round4/source-index-reuse-receipt.json",
+    "sha256": "07ad01d3b5da2242c33160334cb171e0dcf349123c715c09f96dd0a77d20cd09"
+  },
+  "cache": {
+    "path": "/tmp/quest-completion-round4/progress-effects/source-index.json",
+    "sha256": "55512d1f0ff38c0b4e3e61814c6decaad5e20051b964f58d8e2f5735cd301cd1"
+  },
+  "proof": {
+    "entire_module_AST_identical_except_one_guard": true,
+    "added_guard": "caller in copy_calls and qualified tokens",
+    "all_three_internal_calls_omit_copy_calls": true,
+    "default_copy_calls_empty_tuple": true,
+    "only_copy_calls_assignment_empties_tuple": true,
+    "added_guard_false_on_every_scan_reachable_path": true,
+    "index_functions_unchanged": {
+      "norm": "ed7d395b55fdeded39074f7357bbeb677c8737ff862d4e9fcb7080fd62b85643",
+      "track_of": "eaf98350ca7740a3aa6409678c6665832ada7b1bb7775a8572e44ecfbd7b5f44",
+      "script_of": "a927b01ae0febea470db24adce32a05f4dc468d8f5b05893f80065bc52da58a9",
+      "effect_of": "e08c0140cfa3c76c114f2e238b8b3110a5b81d281563e6915c17b3f05e046bf7",
+      "transition_index": "d51fdccd83af918b480f2a01b817b112585b75ab6c4b49b5c66f09b0cf660c27"
+    },
+    "other_producer_fingerprints_unchanged": true
+  },
+  "fresh_representative_scans": [
+    {
+      "fixture": "named",
+      "source_sha256": "a3c605b8350a0620665d0dc0ae6fa9abe6dd6a64bc5fd4f29f191cf507f3b773",
+      "write_count": 1,
+      "old_new_equal": true
+    },
+    {
+      "fixture": "prefix_alias",
+      "source_sha256": "e773589df43fbdaad890eeea1cbcbe7f8b88f28e21522626e553d5e056821082",
+      "write_count": 1,
+      "old_new_equal": true
+    },
+    {
+      "fixture": "table_scalar",
+      "source_sha256": "f08f3e55f53c8338df679b1e914439520f27a75b5282c40dc63ed92efcd55fc3",
+      "write_count": 1,
+      "old_new_equal": true
+    },
+    {
+      "fixture": "numeric",
+      "source_sha256": "bd6ce641ce282173628ba1ede82d205d2d12b602d95c3e8e8d88e56910bd71d1",
+      "write_count": 1,
+      "old_new_equal": true
+    },
+    {
+      "fixture": "qualified_escape",
+      "source_sha256": "c8df7f1703cecdc1091bd3a43308072c6c4622d687c12822a28d7a709964d8f4",
+      "write_count": 0,
+      "old_new_equal": true
+    },
+    {
+      "fixture": "local_scope",
+      "source_sha256": "d366fc69445d2313b8893567b7bd8d636371b0ae6f8ff9346558ee9eb7d0313c",
+      "write_count": 1,
+      "old_new_equal": true
+    },
+    {
+      "fixture": "procedural",
+      "source_sha256": "d4a31ee38466d186dffe1bd7cc23e2f46cc173f41d8440e05d816412c93a4417",
+      "write_count": 1,
+      "old_new_equal": true
+    },
+    {
+      "fixture": "world",
+      "source_sha256": "e868556341e99a42fa5a035a1e5701eb4181b5c28e26ee3d7cc6798135ab0385",
+      "write_count": 1,
+      "old_new_equal": true
+    },
+    {
+      "provider": "canary",
+      "owner": "action",
+      "path": "data-otservbr-global/scripts/quests/bigfoot_burden/actions_music.lua",
+      "pin": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "git_blob_sha1": "a850cb34215851c673fb052ace7cb0983e896d8b",
+      "sha256": "738a1da87fd0e8e61408a3a8e1828df9663d7174ddf55b5aeab3160aac180aad",
+      "write_count": 3,
+      "old_new_equal": true
+    },
+    {
+      "provider": "canary",
+      "owner": "creature_event",
+      "path": "data-otservbr-global/scripts/quests/svargrond_arena/creaturescripts_arena_kill.lua",
+      "pin": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "git_blob_sha1": "16eb4a2ce1925155f538f0d19ac882acb9b7fb15",
+      "sha256": "06d43f34a3e926a5222193f789b7b92a2d2ca9da9a5cb08fd95a200126eccbf0",
+      "write_count": 1,
+      "old_new_equal": true
+    },
+    {
+      "provider": "canary",
+      "owner": "global_event",
+      "path": "data-otservbr-global/scripts/globalevents/others/check_mount.lua",
+      "pin": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "git_blob_sha1": "497ec1a0415753af782369b6db494d40299091d4",
+      "sha256": "14d10a6381cd02648b17cd0716c86079b43364fe0abaeff9511884f31db0e6ea",
+      "write_count": 1,
+      "old_new_equal": true
+    },
+    {
+      "provider": "canary",
+      "owner": "library",
+      "path": "data-otservbr-global/lib/functions/players.lua",
+      "pin": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "git_blob_sha1": "2ec1a58e47e2a1dbd855360076c5baf15674b5e4",
+      "sha256": "044cf6bed89af8cea29afff74c5a1929635f71c434b70664de1fdf1bb79f27cc",
+      "write_count": 6,
+      "old_new_equal": true
+    },
+    {
+      "provider": "canary",
+      "owner": "movement",
+      "path": "data-otservbr-global/scripts/quests/bigfoot_burden/movements_task_endurance.lua",
+      "pin": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "git_blob_sha1": "2c1dc7383bc13d9fb95ad650394632901b3a7418",
+      "sha256": "8149d2a3e097c248f0960303e5fe99f65f9e7da96b9739de4f6feb9e132d930d",
+      "write_count": 1,
+      "old_new_equal": true
+    },
+    {
+      "provider": "canary",
+      "owner": "npc",
+      "path": "data-otservbr-global/npc/doctor_gnomedix.lua",
+      "pin": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "git_blob_sha1": "e14ab7b5d5c25ce9bc516dfff5585c78a34c6892",
+      "sha256": "dbed9ed8d3dcfae962afe9211487a209d6d054959404f43d5282132b34628c65",
+      "write_count": 1,
+      "old_new_equal": true
+    },
+    {
+      "provider": "canary",
+      "owner": "other",
+      "path": "data-otservbr-global/scripts/quests/bigfoot_burden/movements_task_ear.lua",
+      "pin": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "git_blob_sha1": "eb83a8e3a6df6541f94a94b42a14d877311a6a68",
+      "sha256": "739ab94d772262d72d2ea80c702c67ac169cbfe97fbb17333baa433648a587e9",
+      "write_count": 3,
+      "old_new_equal": true
+    },
+    {
+      "provider": "crystalserver",
+      "owner": "action",
+      "path": "data-global/scripts/quests/bigfoot_burden/actions_music.lua",
+      "pin": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "git_blob_sha1": "a850cb34215851c673fb052ace7cb0983e896d8b",
+      "sha256": "738a1da87fd0e8e61408a3a8e1828df9663d7174ddf55b5aeab3160aac180aad",
+      "write_count": 3,
+      "old_new_equal": true
+    },
+    {
+      "provider": "crystalserver",
+      "owner": "creature_event",
+      "path": "data-global/scripts/quests/svargrond_arena/creaturescripts_arena_kill.lua",
+      "pin": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "git_blob_sha1": "16eb4a2ce1925155f538f0d19ac882acb9b7fb15",
+      "sha256": "06d43f34a3e926a5222193f789b7b92a2d2ca9da9a5cb08fd95a200126eccbf0",
+      "write_count": 1,
+      "old_new_equal": true
+    },
+    {
+      "provider": "crystalserver",
+      "owner": "event_callback",
+      "path": "data-global/scripts/quests/newhaven/#ondroploot_the_corruptor.lua",
+      "pin": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "git_blob_sha1": "a6984946eeeda31766f9fc31d1008017ac557b65",
+      "sha256": "916a8de4e45ba55e3e1daa22be1910aa841fbc312db7cf795055a12ead1d1683",
+      "write_count": 1,
+      "old_new_equal": true
+    },
+    {
+      "provider": "crystalserver",
+      "owner": "global_event",
+      "path": "data-global/scripts/globalevents/others/check_mount.lua",
+      "pin": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "git_blob_sha1": "ba02d93701b4bca6d6d9d2019dc254320e81af78",
+      "sha256": "7a811588ac947fda360b0b0ce79b24391b26dd5aeef2c27ea35fbba32a1a9df8",
+      "write_count": 1,
+      "old_new_equal": true
+    },
+    {
+      "provider": "crystalserver",
+      "owner": "library",
+      "path": "data-global/lib/quests/svargrond_arena.lua",
+      "pin": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "git_blob_sha1": "e2c983bd4a0dacca1fa53777adc5497caa134160",
+      "sha256": "a45b89ae4fc771b96eb96f0d1caa98533f139576e6c8315b945423d2c3865f95",
+      "write_count": 1,
+      "old_new_equal": true
+    },
+    {
+      "provider": "crystalserver",
+      "owner": "movement",
+      "path": "data-global/scripts/quests/bigfoot_burden/movements_task_endurance.lua",
+      "pin": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "git_blob_sha1": "2c1dc7383bc13d9fb95ad650394632901b3a7418",
+      "sha256": "8149d2a3e097c248f0960303e5fe99f65f9e7da96b9739de4f6feb9e132d930d",
+      "write_count": 1,
+      "old_new_equal": true
+    },
+    {
+      "provider": "crystalserver",
+      "owner": "npc",
+      "path": "data-global/npc/doctor_gnomedix.lua",
+      "pin": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "git_blob_sha1": "aafe3d8b5d15918673da47f4f8dcc3769b7a88d0",
+      "sha256": "71f3662ac255ef0d34f1ac8db37289666b764e1116219ba95afba2be19ef799d",
+      "write_count": 1,
+      "old_new_equal": true
+    },
+    {
+      "provider": "crystalserver",
+      "owner": "other",
+      "path": "data-global/scripts/quests/bigfoot_burden/movements_task_ear.lua",
+      "pin": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "git_blob_sha1": "eb83a8e3a6df6541f94a94b42a14d877311a6a68",
+      "sha256": "739ab94d772262d72d2ea80c702c67ac169cbfe97fbb17333baa433648a587e9",
+      "write_count": 3,
+      "old_new_equal": true
+    }
+  ],
+  "limitations": [
+    "No fresh full transition_index acquisition executed.",
+    "Representative scans support the AST proof; they do not replace it.",
+    "Future code/call-site/default changes invalidate this proof.",
+    "Every donor input must remain bound to the prior immutable validated Lua inventory."
+  ]
+}

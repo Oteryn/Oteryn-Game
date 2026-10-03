@@ -1,0 +1,747 @@
+{
+  "base_head": "1caddc0d9e65ff502c8137264391cd43d06911b6",
+  "immutable_R9_core_digests": {
+    "oteryn:quest.grave_danger_quest": "a0ffd72f162b385c3b6048d666c6c1eb450f0ba7a9901d644cc6e005c3a1ea3f",
+    "oteryn:quest.kilmaresh_quest": "2e90d2d2616a920c2e5d3dab886d327f897424ad09264b43e6677de910a9d689"
+  },
+  "original_track_membership_verified": true,
+  "original_grave_graph_digest": "33edcb07c0ac59be9cc5aaa384386c04548967e55c254d24c474f048b68ba483",
+  "source_association_evidence": {
+    "schema": "OTERYN_BOUNDED_ASSOCIATION_AUDIT/v1",
+    "base_head": "1caddc0d9e65ff502c8137264391cd43d06911b6",
+    "classification": "PROVEN_IMPORTER_OWNER_ERROR",
+    "runtime_enabled": false,
+    "published_source_changed": false,
+    "tracks": [
+      {
+        "key": "canary:quest-progress/quest/u12_20/kilmaresh_quest/sixth/favor",
+        "missions": [],
+        "start_of": [],
+        "read_by_gates": [],
+        "auxiliary_of": [
+          "canary:quest/grave_danger_quest"
+        ],
+        "owner_basis": "mission track prefix",
+        "writes": {
+          "canary": 6,
+          "crystalserver": 0
+        },
+        "transitions": [
+          {
+            "key": "action_1",
+            "script": "scripts/actions/other/gems.lua",
+            "sources": {
+              "canary": {
+                "path": "data-otservbr-global/scripts/actions/other/gems.lua",
+                "line": 92,
+                "registrations": [
+                  "id(9057)",
+                  "id(index)"
+                ]
+              }
+            },
+            "write": {
+              "key": "action_1",
+              "owner": "action",
+              "callback": "onUse",
+              "from": {
+                "op": ">=",
+                "value": 1,
+                "exact": false
+              },
+              "increment": 1,
+              "servers": [
+                "canary"
+              ]
+            },
+            "source_occurrences": [
+              {
+                "source": "canary",
+                "occurrence": 4,
+                "repository": "opentibiabr/canary",
+                "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+                "target": "Storage.Quest.U12_20.KilmareshQuest.Sixth.Favor",
+                "blob_sha256": "3ebd502dc5bcdda7b284cb7901e443a302351aed9f1787b24b4a4cbf81d7d5f9",
+                "line_sha256": "e353086d71e96c8bf7709398a15c016155a44abbf42039bee40636be680f92e9",
+                "path": "data-otservbr-global/scripts/actions/other/gems.lua",
+                "line": 92,
+                "registrations": [
+                  "id(9057)",
+                  "id(index)"
+                ],
+                "write": {
+                  "key": "action_1",
+                  "owner": "action",
+                  "callback": "onUse",
+                  "from": {
+                    "op": ">=",
+                    "value": 1,
+                    "exact": false
+                  },
+                  "increment": 1,
+                  "servers": [
+                    "canary"
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "key": "action_2",
+            "script": "scripts/quests/kilmaresh_quest/1-fafnars-wrath/7-four-masks.lua",
+            "sources": {
+              "canary": {
+                "path": "data-otservbr-global/scripts/quests/kilmaresh_quest/1-fafnars-wrath/7-four-masks.lua",
+                "line": 41,
+                "registrations": [
+                  "uid(uniqueId)"
+                ]
+              }
+            },
+            "write": {
+              "key": "action_2",
+              "owner": "action",
+              "callback": "onUse",
+              "from": {
+                "op": ">=",
+                "value": 1,
+                "exact": false
+              },
+              "increment": 1,
+              "servers": [
+                "canary"
+              ]
+            },
+            "source_occurrences": [
+              {
+                "source": "canary",
+                "occurrence": 5,
+                "repository": "opentibiabr/canary",
+                "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+                "target": "Storage.Quest.U12_20.KilmareshQuest.Sixth.Favor",
+                "blob_sha256": "e8518199a170ede7f941704a26e81a4bd5c280ed320da2fac16034040d7318dd",
+                "line_sha256": "e353086d71e96c8bf7709398a15c016155a44abbf42039bee40636be680f92e9",
+                "path": "data-otservbr-global/scripts/quests/kilmaresh_quest/1-fafnars-wrath/7-four-masks.lua",
+                "line": 41,
+                "registrations": [
+                  "uid(uniqueId)"
+                ],
+                "write": {
+                  "key": "action_2",
+                  "owner": "action",
+                  "callback": "onUse",
+                  "from": {
+                    "op": ">=",
+                    "value": 1,
+                    "exact": false
+                  },
+                  "increment": 1,
+                  "servers": [
+                    "canary"
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "key": "action_3",
+            "script": "scripts/quests/kilmaresh_quest/1-fafnars-wrath/8-blessing-the-statues.lua",
+            "sources": {
+              "canary": {
+                "path": "data-otservbr-global/scripts/quests/kilmaresh_quest/1-fafnars-wrath/8-blessing-the-statues.lua",
+                "line": 35,
+                "registrations": [
+                  "id(31414)"
+                ]
+              }
+            },
+            "write": {
+              "key": "action_3",
+              "owner": "action",
+              "callback": "onUse",
+              "from": {
+                "op": ">=",
+                "value": 5,
+                "exact": false
+              },
+              "increment": 1,
+              "servers": [
+                "canary"
+              ]
+            },
+            "source_occurrences": [
+              {
+                "source": "canary",
+                "occurrence": 6,
+                "repository": "opentibiabr/canary",
+                "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+                "target": "Storage.Quest.U12_20.KilmareshQuest.Sixth.Favor",
+                "blob_sha256": "cf695f1c9f98a19f4b1d11cdb1f411d8394d605d1a69681bc46269729fe42ce4",
+                "line_sha256": "e353086d71e96c8bf7709398a15c016155a44abbf42039bee40636be680f92e9",
+                "path": "data-otservbr-global/scripts/quests/kilmaresh_quest/1-fafnars-wrath/8-blessing-the-statues.lua",
+                "line": 35,
+                "registrations": [
+                  "id(31414)"
+                ],
+                "write": {
+                  "key": "action_3",
+                  "owner": "action",
+                  "callback": "onUse",
+                  "from": {
+                    "op": ">=",
+                    "value": 5,
+                    "exact": false
+                  },
+                  "increment": 1,
+                  "servers": [
+                    "canary"
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "key": "npc_1",
+            "script": "npc/kallimae.lua",
+            "sources": {
+              "canary": {
+                "path": "data-otservbr-global/npc/kallimae.lua",
+                "line": 95,
+                "registrations": [],
+                "dialogue": {
+                  "keywords": [
+                    "yes"
+                  ],
+                  "topics": [
+                    1
+                  ]
+                }
+              }
+            },
+            "write": {
+              "key": "npc_1",
+              "owner": "npc",
+              "callback": null,
+              "from": {
+                "op": "==",
+                "value": 11,
+                "exact": true
+              },
+              "to": 12,
+              "servers": [
+                "canary"
+              ],
+              "requested_by": {
+                "npc": "canary:npc/kallimae",
+                "keywords": [
+                  "yes"
+                ],
+                "topics": [
+                  1
+                ]
+              }
+            },
+            "source_occurrences": [
+              {
+                "source": "canary",
+                "occurrence": 1,
+                "repository": "opentibiabr/canary",
+                "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+                "target": "Storage.Quest.U12_20.KilmareshQuest.Sixth.Favor",
+                "blob_sha256": "ad56b65b287717603c78ea587e54aad3a916aaa30edcf4c5662a376090006d1a",
+                "line_sha256": "d44dd9b7c20bd418ab7615cd3b20113a93cd211a9c25c788e45892a8c675ddfd",
+                "path": "data-otservbr-global/npc/kallimae.lua",
+                "line": 95,
+                "registrations": [],
+                "dialogue": {
+                  "keywords": [
+                    "yes"
+                  ],
+                  "topics": [
+                    1
+                  ]
+                },
+                "write": {
+                  "key": "npc_1",
+                  "owner": "npc",
+                  "callback": null,
+                  "from": {
+                    "op": "==",
+                    "value": 11,
+                    "exact": true
+                  },
+                  "to": 12,
+                  "servers": [
+                    "canary"
+                  ],
+                  "requested_by": {
+                    "npc": "canary:npc/kallimae",
+                    "keywords": [
+                      "yes"
+                    ],
+                    "topics": [
+                      1
+                    ]
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "key": "npc_2",
+            "script": "npc/the_empress.lua",
+            "sources": {
+              "canary": {
+                "path": "data-otservbr-global/npc/the_empress.lua",
+                "line": 65,
+                "registrations": [],
+                "dialogue": {
+                  "keywords": [],
+                  "topics": []
+                }
+              }
+            },
+            "write": {
+              "key": "npc_2",
+              "owner": "npc",
+              "callback": null,
+              "from": {
+                "op": "==",
+                "value": 10,
+                "exact": true
+              },
+              "to": 11,
+              "servers": [
+                "canary"
+              ],
+              "requested_by": {
+                "npc": "canary:npc/the_empress",
+                "keywords": [],
+                "topics": []
+              }
+            },
+            "source_occurrences": [
+              {
+                "source": "canary",
+                "occurrence": 2,
+                "repository": "opentibiabr/canary",
+                "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+                "target": "Storage.Quest.U12_20.KilmareshQuest.Sixth.Favor",
+                "blob_sha256": "403c005a051d9e972f2ded4ca18c4f56e5990b87132531164f3a9a190508d555",
+                "line_sha256": "c9af32784b4a35187ef7375bbfdfff58e0bd1c8d3f8b43655d413beeffd46306",
+                "path": "data-otservbr-global/npc/the_empress.lua",
+                "line": 65,
+                "registrations": [],
+                "dialogue": {
+                  "keywords": [],
+                  "topics": []
+                },
+                "write": {
+                  "key": "npc_2",
+                  "owner": "npc",
+                  "callback": null,
+                  "from": {
+                    "op": "==",
+                    "value": 10,
+                    "exact": true
+                  },
+                  "to": 11,
+                  "servers": [
+                    "canary"
+                  ],
+                  "requested_by": {
+                    "npc": "canary:npc/the_empress",
+                    "keywords": [],
+                    "topics": []
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "key": "npc_3",
+            "script": "npc/the_empress.lua",
+            "sources": {
+              "canary": {
+                "path": "data-otservbr-global/npc/the_empress.lua",
+                "line": 75,
+                "registrations": [],
+                "dialogue": {
+                  "keywords": [],
+                  "topics": []
+                }
+              }
+            },
+            "write": {
+              "key": "npc_3",
+              "owner": "npc",
+              "callback": null,
+              "from": null,
+              "to": 1,
+              "servers": [
+                "canary"
+              ],
+              "requested_by": {
+                "npc": "canary:npc/the_empress",
+                "keywords": [],
+                "topics": []
+              }
+            },
+            "source_occurrences": [
+              {
+                "source": "canary",
+                "occurrence": 3,
+                "repository": "opentibiabr/canary",
+                "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+                "target": "Storage.Quest.U12_20.KilmareshQuest.Sixth.Favor",
+                "blob_sha256": "403c005a051d9e972f2ded4ca18c4f56e5990b87132531164f3a9a190508d555",
+                "line_sha256": "c8cad09027cd16e2ac8fea7489fc4d93b7246e32c5bd2f92852a12e577280ab6",
+                "path": "data-otservbr-global/npc/the_empress.lua",
+                "line": 75,
+                "registrations": [],
+                "dialogue": {
+                  "keywords": [],
+                  "topics": []
+                },
+                "write": {
+                  "key": "npc_3",
+                  "owner": "npc",
+                  "callback": null,
+                  "from": null,
+                  "to": 1,
+                  "servers": [
+                    "canary"
+                  ],
+                  "requested_by": {
+                    "npc": "canary:npc/the_empress",
+                    "keywords": [],
+                    "topics": []
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "key": "canary:quest-progress/quest/u12_20/kilmaresh_quest/sixth/four_masks",
+        "missions": [],
+        "start_of": [],
+        "read_by_gates": [],
+        "auxiliary_of": [
+          "canary:quest/grave_danger_quest"
+        ],
+        "owner_basis": "mission track prefix",
+        "writes": {
+          "canary": 3,
+          "crystalserver": 0
+        },
+        "transitions": [
+          {
+            "key": "action_1",
+            "script": "scripts/actions/other/gems.lua",
+            "sources": {
+              "canary": {
+                "path": "data-otservbr-global/scripts/actions/other/gems.lua",
+                "line": 93,
+                "registrations": [
+                  "id(9057)",
+                  "id(index)"
+                ]
+              }
+            },
+            "write": {
+              "key": "action_1",
+              "owner": "action",
+              "callback": "onUse",
+              "from": null,
+              "computed": "expression",
+              "servers": [
+                "canary"
+              ]
+            },
+            "source_occurrences": [
+              {
+                "source": "canary",
+                "occurrence": 2,
+                "repository": "opentibiabr/canary",
+                "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+                "target": "Storage.Quest.U12_20.KilmareshQuest.Sixth.FourMasks",
+                "blob_sha256": "3ebd502dc5bcdda7b284cb7901e443a302351aed9f1787b24b4a4cbf81d7d5f9",
+                "line_sha256": "912f8f9d1db92abb52dea0c3ccd756a6cb6e5dc83bf2b0a9522a6ac053381fbe",
+                "path": "data-otservbr-global/scripts/actions/other/gems.lua",
+                "line": 93,
+                "registrations": [
+                  "id(9057)",
+                  "id(index)"
+                ],
+                "write": {
+                  "key": "action_1",
+                  "owner": "action",
+                  "callback": "onUse",
+                  "from": null,
+                  "computed": "expression",
+                  "servers": [
+                    "canary"
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "key": "action_2",
+            "script": "scripts/quests/kilmaresh_quest/1-fafnars-wrath/7-four-masks.lua",
+            "sources": {
+              "canary": {
+                "path": "data-otservbr-global/scripts/quests/kilmaresh_quest/1-fafnars-wrath/7-four-masks.lua",
+                "line": 42,
+                "registrations": [
+                  "uid(uniqueId)"
+                ]
+              }
+            },
+            "write": {
+              "key": "action_2",
+              "owner": "action",
+              "callback": "onUse",
+              "from": null,
+              "computed": "expression",
+              "servers": [
+                "canary"
+              ]
+            },
+            "source_occurrences": [
+              {
+                "source": "canary",
+                "occurrence": 3,
+                "repository": "opentibiabr/canary",
+                "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+                "target": "Storage.Quest.U12_20.KilmareshQuest.Sixth.FourMasks",
+                "blob_sha256": "e8518199a170ede7f941704a26e81a4bd5c280ed320da2fac16034040d7318dd",
+                "line_sha256": "cc9a000ea888f5fc79c439278ee2ad24128aacb4951ba00bdb0c8d2f59ae819a",
+                "path": "data-otservbr-global/scripts/quests/kilmaresh_quest/1-fafnars-wrath/7-four-masks.lua",
+                "line": 42,
+                "registrations": [
+                  "uid(uniqueId)"
+                ],
+                "write": {
+                  "key": "action_2",
+                  "owner": "action",
+                  "callback": "onUse",
+                  "from": null,
+                  "computed": "expression",
+                  "servers": [
+                    "canary"
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "key": "npc_1",
+            "script": "npc/the_empress.lua",
+            "sources": {
+              "canary": {
+                "path": "data-otservbr-global/npc/the_empress.lua",
+                "line": 76,
+                "registrations": [],
+                "dialogue": {
+                  "keywords": [],
+                  "topics": []
+                }
+              }
+            },
+            "write": {
+              "key": "npc_1",
+              "owner": "npc",
+              "callback": null,
+              "from": null,
+              "to": 0,
+              "servers": [
+                "canary"
+              ],
+              "requested_by": {
+                "npc": "canary:npc/the_empress",
+                "keywords": [],
+                "topics": []
+              }
+            },
+            "source_occurrences": [
+              {
+                "source": "canary",
+                "occurrence": 1,
+                "repository": "opentibiabr/canary",
+                "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+                "target": "Storage.Quest.U12_20.KilmareshQuest.Sixth.FourMasks",
+                "blob_sha256": "403c005a051d9e972f2ded4ca18c4f56e5990b87132531164f3a9a190508d555",
+                "line_sha256": "beb0dd627672309c1f2a8c657c23cffe6ecd54fbf8ce25756e32853436c68db3",
+                "path": "data-otservbr-global/npc/the_empress.lua",
+                "line": 76,
+                "registrations": [],
+                "dialogue": {
+                  "keywords": [],
+                  "topics": []
+                },
+                "write": {
+                  "key": "npc_1",
+                  "owner": "npc",
+                  "callback": null,
+                  "from": null,
+                  "to": 0,
+                  "servers": [
+                    "canary"
+                  ],
+                  "requested_by": {
+                    "npc": "canary:npc/the_empress",
+                    "keywords": [],
+                    "topics": []
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "mission_prefix_selection": {
+      "canary:quest-progress/quest/u12_20/kilmaresh_quest/sixth/favor": "quest/u12_20",
+      "canary:quest-progress/quest/u12_20/kilmaresh_quest/sixth/four_masks": "quest/u12_20"
+    },
+    "selected_prefix_owners": [
+      "canary:quest/grave_danger_quest"
+    ],
+    "track_owner_curations_match_canary_paths": false,
+    "currently_joined_graphs": [
+      {
+        "key": "canary:interaction/kilmaresh_quest/1_fafnars_wrath/7_four_masks",
+        "tracks": [
+          "canary:quest-progress/quest/u12_20/kilmaresh_quest/sixth/favor",
+          "canary:quest-progress/quest/u12_20/kilmaresh_quest/sixth/four_masks"
+        ],
+        "current_owners": [
+          "canary:quest/grave_danger_quest",
+          "canary:quest/kilmaresh_quest"
+        ]
+      },
+      {
+        "key": "canary:interaction/kilmaresh_quest/1_fafnars_wrath/8_blessing_the_statues",
+        "tracks": [
+          "canary:quest-progress/quest/u12_20/kilmaresh_quest/sixth/favor"
+        ],
+        "current_owners": [
+          "canary:quest/grave_danger_quest",
+          "canary:quest/kilmaresh_quest"
+        ]
+      }
+    ],
+    "hypothetical_two_owner_correction_join_deltas": [
+      {
+        "graph": "canary:interaction/kilmaresh_quest/1_fafnars_wrath/7_four_masks",
+        "before": [
+          "canary:quest/grave_danger_quest",
+          "canary:quest/kilmaresh_quest"
+        ],
+        "after": [
+          "canary:quest/kilmaresh_quest"
+        ]
+      }
+    ],
+    "source_proof": [
+      {
+        "repository": "opentibiabr/canary",
+        "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+        "path": "data-otservbr-global/lib/core/storages.lua",
+        "blob_sha1": "fc3c5a8160de73cc860d62ec50ffa12b5f5af8c8",
+        "blob_sha256": "05a6f2a9116e8a230d9cf6bc8e15fd306b1cca8b4520e80beb9d7a9809786d0b",
+        "spans": [
+          {
+            "line_start": 2749,
+            "line_end": 2753,
+            "role": "GraveDanger namespace",
+            "span_sha256": "2cc353d61c925385bfe29ded8e187d3997e2627a28d3d059fed776cf21bb5eb9",
+            "url": "https://github.com/opentibiabr/canary/blob/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data-otservbr-global/lib/core/storages.lua#L2749-L2753"
+          },
+          {
+            "line_start": 2766,
+            "line_end": 2768,
+            "role": "GraveDanger.Graves.Kilmaresh is separate",
+            "span_sha256": "76443fa2642c726fb738881fd4ae7a98d5f3b2885e9e9acf6f53639fcf5aaad2",
+            "url": "https://github.com/opentibiabr/canary/blob/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data-otservbr-global/lib/core/storages.lua#L2766-L2768"
+          },
+          {
+            "line_start": 2816,
+            "line_end": 2819,
+            "role": "KilmareshQuest namespace",
+            "span_sha256": "b6b9be79b4b99e8311089bda4ab3a2600c096199dab9286675a4af9d73b89fa2",
+            "url": "https://github.com/opentibiabr/canary/blob/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data-otservbr-global/lib/core/storages.lua#L2816-L2819"
+          },
+          {
+            "line_start": 2835,
+            "line_end": 2837,
+            "role": "Favor46903 and FourMasks46904",
+            "span_sha256": "87cf28842f0445b42fd441ad10f82887282773f186aae52c233475666ae4c6f6",
+            "url": "https://github.com/opentibiabr/canary/blob/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data-otservbr-global/lib/core/storages.lua#L2835-L2837"
+          }
+        ]
+      },
+      {
+        "repository": "opentibiabr/canary",
+        "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+        "path": "data-otservbr-global/lib/core/quests/catalog/047_grave_danger.lua",
+        "blob_sha1": "8b5e2b81036b76600664e7a738fa6502e375a625",
+        "blob_sha256": "a03d5cf92878a7f4c49b38b4f4bb0c716da38b63a62b8e16f2fa1138d9574baf",
+        "spans": [
+          {
+            "line_start": 1,
+            "line_end": 8,
+            "role": "GraveDanger quest journal ownership",
+            "span_sha256": "8ccd177c6f472f44efc2fe2127562ab60773a32d2b328ebee86331a6377c9b29",
+            "url": "https://github.com/opentibiabr/canary/blob/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data-otservbr-global/lib/core/quests/catalog/047_grave_danger.lua#L1-L8"
+          },
+          {
+            "line_start": 99,
+            "line_end": 104,
+            "role": "GraveDanger Kilmaresh grave mission",
+            "span_sha256": "800692c8231215bc6b836f79d7c09e8850eeff52d7ce711773a34f413824a168",
+            "url": "https://github.com/opentibiabr/canary/blob/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data-otservbr-global/lib/core/quests/catalog/047_grave_danger.lua#L99-L104"
+          }
+        ]
+      },
+      {
+        "repository": "opentibiabr/canary",
+        "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+        "path": "data-otservbr-global/scripts/quests/kilmaresh_quest/1-fafnars-wrath/7-four-masks.lua",
+        "blob_sha1": "3ab075a2f4d1606df753aedf66a7889edba0b101",
+        "blob_sha256": "e8518199a170ede7f941704a26e81a4bd5c280ed320da2fac16034040d7318dd",
+        "spans": [
+          {
+            "line_start": 34,
+            "line_end": 44,
+            "role": "callback reads/writes exact KilmareshQuest tracks",
+            "span_sha256": "d3d142febba209ebcb8527d50b177a614bf4f66a9ee799d57c9951f816c421fe",
+            "url": "https://github.com/opentibiabr/canary/blob/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data-otservbr-global/scripts/quests/kilmaresh_quest/1-fafnars-wrath/7-four-masks.lua#L34-L44"
+          }
+        ]
+      },
+      {
+        "repository": "opentibiabr/canary",
+        "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+        "path": "data-otservbr-global/npc/the_empress.lua",
+        "blob_sha1": "2483d5abaa55d76a6184a187fa8d18130103c6b8",
+        "blob_sha256": "403c005a051d9e972f2ded4ca18c4f56e5990b87132531164f3a9a190508d555",
+        "spans": [
+          {
+            "line_start": 61,
+            "line_end": 77,
+            "role": "exact Kilmaresh source NPC writes",
+            "span_sha256": "bdad5dab5662b634a79d6969f2ea53333e45c660d3bbf35a3c7023bc504217f2",
+            "url": "https://github.com/opentibiabr/canary/blob/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data-otservbr-global/npc/the_empress.lua#L61-L77"
+          }
+        ]
+      }
+    ],
+    "conclusion": "Shared update namespace is not a quest-owner boundary; GraveDanger.Graves.Kilmaresh is not KilmareshQuest.Sixth.*.",
+    "next_step": "Separate AUTHORING successor: admit exact source-qualified owner curations and full-core guard proof; preserve graphs, writes, unknowns and Native holds."
+  },
+  "native_runtime_admission": false
+}

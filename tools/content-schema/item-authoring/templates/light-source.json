@@ -1,0 +1,25 @@
+{
+  "identity": {
+    "key": "oteryn:item.template.light-source",
+    "revision": "definition-r1"
+  },
+  "display_name": "Template Unlit Light Source",
+  "family_profile": "light_source",
+  "delivery_task_eligible": false,
+  "taxonomy": {
+    "item_class": "light_source",
+    "primary": "light-source",
+    "tags": []
+  },
+  "physical": {
+    "weight": {
+      "value": "1.00",
+      "unit": "oz"
+    },
+    "movable": true,
+    "pickupable": true
+  },
+  "light": {
+    "emits": false
+  }
+}

@@ -1,0 +1,1564 @@
+{
+  "batch_id": "OTV2-20261001-item-family-alias26",
+  "captured_at": "2026-10-01T21:29:24.443Z",
+  "family": "Item",
+  "records": {
+    "oteryn:item.tibia.i25872": {
+      "availability_status": null,
+      "captured_at": "2026-10-01T20:59:53.180Z",
+      "content_sha256": "3e16e748e9940f9b7914adcbc7a80e10bd2c4214e66b19c83c23b8852be4b9a7",
+      "field": "primarytype",
+      "match_basis": "title",
+      "matched_names": [
+        "minotaur statue"
+      ],
+      "page_id": 5638,
+      "registry_key": "oteryn:item.tibia.i25872",
+      "resolution": "direct",
+      "revision_id": 1042652,
+      "revision_sha1": "b4faa9573ec9c74fc2316e0ad9311622923f6776",
+      "revision_timestamp": "2023-10-21T06:02:59Z",
+      "url": "https://tibia.fandom.com/wiki/Minotaur_Statue",
+      "value": "Decorations",
+      "wiki_title": "Minotaur Statue"
+    },
+    "oteryn:item.tibia.i2645": {
+      "availability_status": null,
+      "captured_at": "2026-10-01T20:59:53.170Z",
+      "content_sha256": "73c8c32072378b94f386f3307cacb5d5d1cf115d4fdac60a4f5456df736da1fa",
+      "field": "primarytype",
+      "match_basis": "title",
+      "matched_names": [
+        "green tapestry"
+      ],
+      "page_id": 5105,
+      "registry_key": "oteryn:item.tibia.i2645",
+      "resolution": "direct",
+      "revision_id": 1114071,
+      "revision_sha1": "b694d4fbd517b30061e7157845193e78a5717de3",
+      "revision_timestamp": "2025-07-26T09:37:14Z",
+      "url": "https://tibia.fandom.com/wiki/Green_Tapestry",
+      "value": "Decorations",
+      "wiki_title": "Green Tapestry"
+    },
+    "oteryn:item.tibia.i2649": {
+      "availability_status": null,
+      "captured_at": "2026-10-01T20:59:53.180Z",
+      "content_sha256": "f6c465ad23644838794ddc096e9216a865cec353421e304e893bb46cd8be5826",
+      "field": "primarytype",
+      "match_basis": "title",
+      "matched_names": [
+        "yellow tapestry"
+      ],
+      "page_id": 5200,
+      "registry_key": "oteryn:item.tibia.i2649",
+      "resolution": "direct",
+      "revision_id": 1017812,
+      "revision_sha1": "da2e278dc4de90e4c88575d98853f32aa0062540",
+      "revision_timestamp": "2023-07-16T02:34:42Z",
+      "url": "https://tibia.fandom.com/wiki/Yellow_Tapestry",
+      "value": "Decorations",
+      "wiki_title": "Yellow Tapestry"
+    },
+    "oteryn:item.tibia.i2654": {
+      "availability_status": null,
+      "captured_at": "2026-10-01T20:59:53.180Z",
+      "content_sha256": "ac664734a4049c06abba4fdc8750be10d51521043fb188aca8ded919a65f4321",
+      "field": "primarytype",
+      "match_basis": "title",
+      "matched_names": [
+        "red tapestry"
+      ],
+      "page_id": 5202,
+      "registry_key": "oteryn:item.tibia.i2654",
+      "resolution": "direct",
+      "revision_id": 1014936,
+      "revision_sha1": "58d1916787e33d7c88b159587ea93b3d2b5bdea7",
+      "revision_timestamp": "2023-07-15T20:56:39Z",
+      "url": "https://tibia.fandom.com/wiki/Red_Tapestry",
+      "value": "Decorations",
+      "wiki_title": "Red Tapestry"
+    },
+    "oteryn:item.tibia.i2658": {
+      "availability_status": null,
+      "captured_at": "2026-10-01T20:59:53.180Z",
+      "content_sha256": "5825cc7ccc282c3af983d40187f1f4a106e7032d549dfe6b5f9fdc0d201cbd98",
+      "field": "primarytype",
+      "match_basis": "title",
+      "matched_names": [
+        "blue tapestry"
+      ],
+      "page_id": 5199,
+      "registry_key": "oteryn:item.tibia.i2658",
+      "resolution": "direct",
+      "revision_id": 1122325,
+      "revision_sha1": "e3ea402c704b9abc266c323b89de9a8291912b1d",
+      "revision_timestamp": "2025-08-17T03:22:00Z",
+      "url": "https://tibia.fandom.com/wiki/Blue_Tapestry",
+      "value": "Decorations",
+      "wiki_title": "Blue Tapestry"
+    },
+    "oteryn:item.tibia.i37213": {
+      "availability_status": null,
+      "captured_at": "2026-10-01T21:23:49.001Z",
+      "content_sha256": "62850764c82b989699cfe95d55332a92ba28c4139ae261d7cd81f0739de45d9d",
+      "field": "primarytype",
+      "match_basis": "title",
+      "matched_names": [
+        "blue balloon"
+      ],
+      "page_id": 95940,
+      "registry_key": "oteryn:item.tibia.i37213",
+      "resolution": "direct",
+      "revision_id": 1108922,
+      "revision_sha1": "a7b836b7b19a2365f76cc9c748dd9d42a2d43023",
+      "revision_timestamp": "2025-07-08T00:58:26Z",
+      "url": "https://tibia.fandom.com/wiki/Blue_Balloon",
+      "value": "Decorations",
+      "wiki_title": "Blue Balloon"
+    },
+    "oteryn:item.tibia.i37216": {
+      "availability_status": null,
+      "captured_at": "2026-10-01T21:23:49.001Z",
+      "content_sha256": "8c397374af9777bf05b5f27c8d63cb9ffaeeca366bc7866ce89caa55d8bca701",
+      "field": "primarytype",
+      "match_basis": "title",
+      "matched_names": [
+        "pink balloon"
+      ],
+      "page_id": 95942,
+      "registry_key": "oteryn:item.tibia.i37216",
+      "resolution": "direct",
+      "revision_id": 1108936,
+      "revision_sha1": "5825dab5d29681f415814f0fdb934566da4bc0a0",
+      "revision_timestamp": "2025-07-08T01:02:58Z",
+      "url": "https://tibia.fandom.com/wiki/Pink_Balloon",
+      "value": "Decorations",
+      "wiki_title": "Pink Balloon"
+    },
+    "oteryn:item.tibia.i37219": {
+      "availability_status": null,
+      "captured_at": "2026-10-01T21:23:49.001Z",
+      "content_sha256": "07419cc8aa6522ef3534ed793deaa05101e249966b8a4c217807eb7421c976d9",
+      "field": "primarytype",
+      "match_basis": "title",
+      "matched_names": [
+        "teal balloon"
+      ],
+      "page_id": 95944,
+      "registry_key": "oteryn:item.tibia.i37219",
+      "resolution": "direct",
+      "revision_id": 1108946,
+      "revision_sha1": "29853abccbfa9e40cf040ee7e007878a92263fb9",
+      "revision_timestamp": "2025-07-08T01:04:57Z",
+      "url": "https://tibia.fandom.com/wiki/Teal_Balloon",
+      "value": "Decorations",
+      "wiki_title": "Teal Balloon"
+    },
+    "oteryn:item.tibia.i37222": {
+      "availability_status": null,
+      "captured_at": "2026-10-01T21:23:49.001Z",
+      "content_sha256": "ff87cd3ca9e63f3d86228562e204e0a81401d9396d4c381f766ba0361345ff44",
+      "field": "primarytype",
+      "match_basis": "title",
+      "matched_names": [
+        "bonelord balloon"
+      ],
+      "page_id": 95947,
+      "registry_key": "oteryn:item.tibia.i37222",
+      "resolution": "direct",
+      "revision_id": 1108952,
+      "revision_sha1": "daa594993c71c7b1d2a1a8d9daab8cdf9ff7cf74",
+      "revision_timestamp": "2025-07-08T01:09:51Z",
+      "url": "https://tibia.fandom.com/wiki/Bonelord_Balloon",
+      "value": "Decorations",
+      "wiki_title": "Bonelord Balloon"
+    },
+    "oteryn:item.tibia.i37225": {
+      "availability_status": null,
+      "captured_at": "2026-10-01T21:23:49.001Z",
+      "content_sha256": "90fbef20c16fb23e592ed10945588ccbe493b461f5e8125e9719114fa259133d",
+      "field": "primarytype",
+      "match_basis": "title",
+      "matched_names": [
+        "dwarf balloon"
+      ],
+      "page_id": 95950,
+      "registry_key": "oteryn:item.tibia.i37225",
+      "resolution": "direct",
+      "revision_id": 1108959,
+      "revision_sha1": "f63d55bcdfb4c0e2fe2e20cbc6f17c7a459fef94",
+      "revision_timestamp": "2025-07-08T01:15:37Z",
+      "url": "https://tibia.fandom.com/wiki/Dwarf_Balloon",
+      "value": "Decorations",
+      "wiki_title": "Dwarf Balloon"
+    },
+    "oteryn:item.tibia.i37228": {
+      "availability_status": null,
+      "captured_at": "2026-10-01T21:23:49.001Z",
+      "content_sha256": "5758c235d5ee04b2eeff86d6ff297a7c7789b0b4dc9ca2f1df266676a229d3ca",
+      "field": "primarytype",
+      "match_basis": "title",
+      "matched_names": [
+        "orc head balloon"
+      ],
+      "page_id": 95953,
+      "registry_key": "oteryn:item.tibia.i37228",
+      "resolution": "direct",
+      "revision_id": 1108969,
+      "revision_sha1": "0ab9a0e368b09d5ba0ada24c99c73a36660f132a",
+      "revision_timestamp": "2025-07-08T01:23:49Z",
+      "url": "https://tibia.fandom.com/wiki/Orc_Head_Balloon",
+      "value": "Decorations",
+      "wiki_title": "Orc Head Balloon"
+    },
+    "oteryn:item.tibia.i37276": {
+      "availability_status": null,
+      "captured_at": "2026-10-01T21:23:49.001Z",
+      "content_sha256": "45c1a2afa1201bea2f43ee164c881cf89c7d3f448394389131c48431011c7855",
+      "field": "primarytype",
+      "match_basis": "title",
+      "matched_names": [
+        "rotworm balloon"
+      ],
+      "page_id": 95956,
+      "registry_key": "oteryn:item.tibia.i37276",
+      "resolution": "direct",
+      "revision_id": 1108971,
+      "revision_sha1": "9e323b58cc15f24de0fd3e6e24bafc0fb4b71567",
+      "revision_timestamp": "2025-07-08T01:25:22Z",
+      "url": "https://tibia.fandom.com/wiki/Rotworm_Balloon",
+      "value": "Decorations",
+      "wiki_title": "Rotworm Balloon"
+    },
+    "oteryn:item.tibia.i37347": {
+      "availability_status": null,
+      "captured_at": "2026-10-01T21:23:49.001Z",
+      "content_sha256": "99d1ecd3e8df458ff051c8540a6949a123422a542d047b42b33743a6559175e0",
+      "field": "primarytype",
+      "match_basis": "title",
+      "matched_names": [
+        "yellow 25 years balloon"
+      ],
+      "page_id": 95958,
+      "registry_key": "oteryn:item.tibia.i37347",
+      "resolution": "direct",
+      "revision_id": 1108948,
+      "revision_sha1": "d34b32c54618b70655568d66d3ee5e5faed20566",
+      "revision_timestamp": "2025-07-08T01:05:12Z",
+      "url": "https://tibia.fandom.com/wiki/Yellow_25_Years_Balloon",
+      "value": "Decorations",
+      "wiki_title": "Yellow 25 Years Balloon"
+    },
+    "oteryn:item.tibia.i37350": {
+      "availability_status": null,
+      "captured_at": "2026-10-01T21:23:49.001Z",
+      "content_sha256": "e5b76695a1981c3feefa4f6e0ddaf49ce45ef2e45f57c9fa47bb22bd03143fed",
+      "field": "primarytype",
+      "match_basis": "title",
+      "matched_names": [
+        "green 25 years balloon"
+      ],
+      "page_id": 95961,
+      "registry_key": "oteryn:item.tibia.i37350",
+      "resolution": "direct",
+      "revision_id": 1108926,
+      "revision_sha1": "780d986e83d367e7e9b603fa8e41aad53274cfbb",
+      "revision_timestamp": "2025-07-08T01:00:55Z",
+      "url": "https://tibia.fandom.com/wiki/Green_25_Years_Balloon",
+      "value": "Decorations",
+      "wiki_title": "Green 25 Years Balloon"
+    },
+    "oteryn:item.tibia.i4056": {
+      "availability_status": null,
+      "captured_at": "2026-10-01T20:59:53.180Z",
+      "content_sha256": "a4b21050872c569919961d20e11a7e5115316f3f9d75ddd8c41467abb403eb5e",
+      "field": "primarytype",
+      "match_basis": "title",
+      "matched_names": [
+        "globe"
+      ],
+      "page_id": 5700,
+      "registry_key": "oteryn:item.tibia.i4056",
+      "resolution": "direct",
+      "revision_id": 1020116,
+      "revision_sha1": "ee08212b7e0252aeabcbe9736cd8ec357f9acf2b",
+      "revision_timestamp": "2023-07-20T17:47:46Z",
+      "url": "https://tibia.fandom.com/wiki/Globe",
+      "value": "Decorations",
+      "wiki_title": "Globe"
+    },
+    "oteryn:item.tibia.i47367": {
+      "availability_status": null,
+      "captured_at": "2026-10-01T21:29:24.443Z",
+      "content_sha256": "197b1eabb9daead8c9cf63cfb43629064cfe4b0041c4b2015b12ab990b90489e",
+      "field": "primarytype",
+      "match_basis": "title",
+      "matched_names": [
+        "large obelisk"
+      ],
+      "page_id": 107377,
+      "registry_key": "oteryn:item.tibia.i47367",
+      "resolution": "direct",
+      "revision_id": 1097496,
+      "revision_sha1": "727c7b9ec3cceb59e64f386154f60a523feba8be",
+      "revision_timestamp": "2025-04-03T13:15:05Z",
+      "url": "https://tibia.fandom.com/wiki/Large_Obelisk",
+      "value": "Lamps",
+      "wiki_title": "Large Obelisk"
+    },
+    "oteryn:item.tibia.i48457": {
+      "availability_status": null,
+      "captured_at": "2026-10-01T21:29:16.997Z",
+      "content_sha256": "82ede2819fb0367240da6d917d42c595f7e4fb6d8650319ab1fe81adb0075590",
+      "field": "primarytype",
+      "match_basis": "title",
+      "matched_names": [
+        "candy cushion"
+      ],
+      "page_id": 107118,
+      "registry_key": "oteryn:item.tibia.i48457",
+      "resolution": "direct",
+      "revision_id": 1176272,
+      "revision_sha1": "49d6911e5ce892406dab55707021e10468efa0c6",
+      "revision_timestamp": "2026-04-21T15:59:14Z",
+      "url": "https://tibia.fandom.com/wiki/Candy_Cushion",
+      "value": "Decorations",
+      "wiki_title": "Candy Cushion"
+    },
+    "oteryn:item.tibia.i6267": {
+      "availability_status": null,
+      "captured_at": "2026-10-01T21:27:24.252Z",
+      "content_sha256": "5275c2ccd3620f23198b45270f4002dd1f40f54d4842a179dd73da2dfb3cadea",
+      "field": "primarytype",
+      "match_basis": "title",
+      "matched_names": [
+        "tendrils"
+      ],
+      "page_id": 99797,
+      "registry_key": "oteryn:item.tibia.i6267",
+      "resolution": "direct",
+      "revision_id": 1020525,
+      "revision_sha1": "339e70f3209d955b62c6cf59ab65816b2a5151a9",
+      "revision_timestamp": "2023-07-20T17:48:37Z",
+      "url": "https://tibia.fandom.com/wiki/Tendrils",
+      "value": "Decorations",
+      "wiki_title": "Tendrils"
+    },
+    "oteryn:item.tibia.i7369": {
+      "availability_status": null,
+      "captured_at": "2026-10-01T21:01:11.109Z",
+      "content_sha256": "3a82e23349be25e7b7f4d485f14abd3fa16d0fe58e0fdce0b2f20883d8a535d0",
+      "field": "primarytype",
+      "match_basis": "title",
+      "matched_names": [
+        "golden goblet"
+      ],
+      "page_id": 9249,
+      "registry_key": "oteryn:item.tibia.i7369",
+      "resolution": "direct",
+      "revision_id": 1114299,
+      "revision_sha1": "61ba56e385cc478284b8dd70594624b92d254bde",
+      "revision_timestamp": "2025-07-26T09:54:22Z",
+      "url": "https://tibia.fandom.com/wiki/Golden_Goblet",
+      "value": "Decorations",
+      "wiki_title": "Golden Goblet"
+    },
+    "oteryn:item.tibia.i7519": {
+      "availability_status": null,
+      "captured_at": "2026-10-01T21:19:26.400Z",
+      "content_sha256": "68905baac351a547f0d374115b96d2f3af5180c4a1d4d69c31438bef23c220c8",
+      "field": "primarytype",
+      "match_basis": "actualname",
+      "matched_names": [
+        "something crawling"
+      ],
+      "page_id": 84430,
+      "registry_key": "oteryn:item.tibia.i7519",
+      "resolution": "direct",
+      "revision_id": 1018953,
+      "revision_sha1": "8d5ebd1756098b98dc590a8b208bbdeab59394b9",
+      "revision_timestamp": "2023-07-17T02:34:16Z",
+      "url": "https://tibia.fandom.com/wiki/Something_Crawling_(Item)",
+      "value": "Decorations",
+      "wiki_title": "Something Crawling (Item)"
+    },
+    "oteryn:item.tibia.i7741": {
+      "availability_status": null,
+      "captured_at": "2026-10-01T21:01:24.429Z",
+      "content_sha256": "9ab1616d681d56e137071c545b4be2b86dedc7f4a456c5dccc6c5be3433a696f",
+      "field": "primarytype",
+      "match_basis": "title",
+      "matched_names": [
+        "ice cube"
+      ],
+      "page_id": 16469,
+      "registry_key": "oteryn:item.tibia.i7741",
+      "resolution": "direct",
+      "revision_id": 1114397,
+      "revision_sha1": "bc9f5395f32fc3217f2e15dcf3765e4ec015de8c",
+      "revision_timestamp": "2025-07-26T09:57:30Z",
+      "url": "https://tibia.fandom.com/wiki/Ice_Cube",
+      "value": "Decorations",
+      "wiki_title": "Ice Cube"
+    },
+    "oteryn:item.tibia.i7877": {
+      "availability_status": null,
+      "captured_at": "2026-10-01T21:01:11.140Z",
+      "content_sha256": "8bff492d42a86f5636626921fcef27448d7078523c5efa72c41434722eee2ba8",
+      "field": "primarytype",
+      "match_basis": "title",
+      "matched_names": [
+        "balloons"
+      ],
+      "page_id": 13402,
+      "registry_key": "oteryn:item.tibia.i7877",
+      "resolution": "direct",
+      "revision_id": 1108925,
+      "revision_sha1": "30dd73bcf4e7df3fbdbe9ed1cc9c2b044cf33b87",
+      "revision_timestamp": "2025-07-08T01:00:19Z",
+      "url": "https://tibia.fandom.com/wiki/Balloons",
+      "value": "Decorations",
+      "wiki_title": "Balloons"
+    },
+    "oteryn:item.tibia.i7938": {
+      "availability_status": null,
+      "captured_at": "2026-10-01T21:00:05.489Z",
+      "content_sha256": "21c0f4119268d090ba3aaf9985daffaa2c6ef7afee8bceb4a30e5cd3cbe57ea1",
+      "field": "primarytype",
+      "match_basis": "title",
+      "matched_names": [
+        "goldfish bowl"
+      ],
+      "page_id": 8885,
+      "registry_key": "oteryn:item.tibia.i7938",
+      "resolution": "direct",
+      "revision_id": 1114249,
+      "revision_sha1": "fdd79b063ef26ec971a32233ee0b949f8179510d",
+      "revision_timestamp": "2025-07-26T09:52:48Z",
+      "url": "https://tibia.fandom.com/wiki/Goldfish_Bowl",
+      "value": "Decorations",
+      "wiki_title": "Goldfish Bowl"
+    },
+    "oteryn:item.tibia.i8922": {
+      "availability_status": null,
+      "captured_at": "2026-10-01T21:07:04.364Z",
+      "content_sha256": "829c685adf964bad874f43e91a99af27ab5fd707c08b90abbf110a03ef85ec8b",
+      "field": "primarytype",
+      "match_basis": "title",
+      "matched_names": [
+        "velvet tapestry"
+      ],
+      "page_id": 31467,
+      "registry_key": "oteryn:item.tibia.i8922",
+      "resolution": "direct",
+      "revision_id": 1017331,
+      "revision_sha1": "5948a0e64bf07e709305cbfa2ca3e1fa30c2c66d",
+      "revision_timestamp": "2023-07-16T02:33:47Z",
+      "url": "https://tibia.fandom.com/wiki/Velvet_Tapestry",
+      "value": "Decorations",
+      "wiki_title": "Velvet Tapestry"
+    },
+    "oteryn:item.tibia.i9435": {
+      "availability_status": null,
+      "candidates": [
+        {
+          "captured_at": "2026-10-01T20:59:53.180Z",
+          "content_sha256": "34c05afd7a00e4caa1a0bc545a28ee646a8eff4b016df6c65624f574241e4163",
+          "field": "primarytype",
+          "page_id": 5598,
+          "revision_id": 1042901,
+          "revision_sha1": "413ed06395d126f61274219a5f86e674946cbe88",
+          "revision_timestamp": "2023-10-22T03:40:07Z",
+          "url": "https://tibia.fandom.com/wiki/Statue_(Knight)",
+          "value": "Decorations",
+          "wiki_title": "Statue (Knight)"
+        },
+        {
+          "captured_at": "2026-10-01T21:06:56.750Z",
+          "content_sha256": "a26ce1fbadf8f0579d9a218f99633b99b9b5e35291ff884957b88c418988437b",
+          "field": "primarytype",
+          "page_id": 28273,
+          "revision_id": 1043079,
+          "revision_sha1": "7df7838cc6d3a7ed9d0cbf73a2f115979628b47c",
+          "revision_timestamp": "2023-10-22T10:46:53Z",
+          "url": "https://tibia.fandom.com/wiki/Statue_(King)",
+          "value": "Statues",
+          "wiki_title": "Statue (King)"
+        },
+        {
+          "captured_at": "2026-10-01T21:07:12.187Z",
+          "content_sha256": "3ef064621a3622e799d095ee556e5af7ac15e7558638dcdf42d8de08cbfda7a9",
+          "field": "primarytype",
+          "page_id": 33736,
+          "revision_id": 1016505,
+          "revision_sha1": "d5c525cea14e6e4f89d57acd667302cf272c3c61",
+          "revision_timestamp": "2023-07-16T02:32:12Z",
+          "url": "https://tibia.fandom.com/wiki/Statue_(Yalahari)",
+          "value": "Statues",
+          "wiki_title": "Statue (Yalahari)"
+        },
+        {
+          "captured_at": "2026-10-01T21:10:43.795Z",
+          "content_sha256": "3400defe737b6ea444c139ff1cc98ac8ef7554c3f8300641afe19eb47a43a55c",
+          "field": "primarytype",
+          "page_id": 60771,
+          "revision_id": 1016491,
+          "revision_sha1": "51183e53a43849c8d50b8562cf8f43d57345f49e",
+          "revision_timestamp": "2023-07-16T02:32:10Z",
+          "url": "https://tibia.fandom.com/wiki/Statue_(Demonbunny)",
+          "value": "Statues",
+          "wiki_title": "Statue (Demonbunny)"
+        },
+        {
+          "captured_at": "2026-10-01T21:10:58.921Z",
+          "content_sha256": "4b1cdd94213b2c46dd62ba6a53cd89c986d41cad0395295489eb84c07a48cf26",
+          "field": "primarytype",
+          "page_id": 65289,
+          "revision_id": 1016496,
+          "revision_sha1": "5e61fbca6914a68e510bc9ab89912207daa9e35c",
+          "revision_timestamp": "2023-07-16T02:32:11Z",
+          "url": "https://tibia.fandom.com/wiki/Statue_(Gargoyle)",
+          "value": "Statues",
+          "wiki_title": "Statue (Gargoyle)"
+        },
+        {
+          "captured_at": "2026-10-01T21:12:01.150Z",
+          "content_sha256": "50caf6a546f2c53ce0695dc7f427c52a8f666e9fe8aaf9b722678d9d8b13f74f",
+          "field": "primarytype",
+          "page_id": 71603,
+          "revision_id": 1016504,
+          "revision_sha1": "7f46b266ed38fd1575fdfaa96a40d446ddb83974",
+          "revision_timestamp": "2023-07-16T02:32:12Z",
+          "url": "https://tibia.fandom.com/wiki/Statue_(Woman)",
+          "value": "Statues",
+          "wiki_title": "Statue (Woman)"
+        },
+        {
+          "captured_at": "2026-10-01T21:12:08.559Z",
+          "content_sha256": "ba6eb4543c6c72f54b47ab99726a0cc65401ae7042d9939443423166cf827732",
+          "field": "primarytype",
+          "page_id": 74336,
+          "revision_id": 1016498,
+          "revision_sha1": "9fddd3f2ead79d1e2396e1f810a91208a16c103f",
+          "revision_timestamp": "2023-07-16T02:32:11Z",
+          "url": "https://tibia.fandom.com/wiki/Statue_(Guard)",
+          "value": "Statues",
+          "wiki_title": "Statue (Guard)"
+        },
+        {
+          "captured_at": "2026-10-01T21:12:08.559Z",
+          "content_sha256": "926e623c06832a96ca873a3c097e17b660760c6dc8c9748d72246c58c8902ae4",
+          "field": "primarytype",
+          "page_id": 74399,
+          "revision_id": 1016492,
+          "revision_sha1": "a39f764d9b57d5349fd12bf9085beccfda091718",
+          "revision_timestamp": "2023-07-16T02:32:10Z",
+          "url": "https://tibia.fandom.com/wiki/Statue_(Archer)",
+          "value": "Statues",
+          "wiki_title": "Statue (Archer)"
+        },
+        {
+          "captured_at": "2026-10-01T21:12:08.559Z",
+          "content_sha256": "419335945e13ce5f0bf1116f1a5d70bc0af4a80fc3d65bc0d766c898d16bd432",
+          "field": "primarytype",
+          "page_id": 74400,
+          "revision_id": 1016500,
+          "revision_sha1": "cca3d2dfde02c3466b8c4f068b2dd90556004456",
+          "revision_timestamp": "2023-07-16T02:32:11Z",
+          "url": "https://tibia.fandom.com/wiki/Statue_(Lancer)",
+          "value": "Statues",
+          "wiki_title": "Statue (Lancer)"
+        },
+        {
+          "captured_at": "2026-10-01T21:12:08.559Z",
+          "content_sha256": "da394c6af1ae87b5a715f1f71bf6e584992a40203c5736574858f7054d4f8f53",
+          "field": "primarytype",
+          "page_id": 74419,
+          "revision_id": 1016502,
+          "revision_sha1": "b8fdc2a83337502189deea79ab652d58b3920936",
+          "revision_timestamp": "2023-07-16T02:32:11Z",
+          "url": "https://tibia.fandom.com/wiki/Statue_(Vampire)",
+          "value": "Statues",
+          "wiki_title": "Statue (Vampire)"
+        },
+        {
+          "captured_at": "2026-10-01T21:12:08.559Z",
+          "content_sha256": "b0c810b98abc912be34650ba53388c706ee7cc9165859d77cf29d2a73d975c21",
+          "field": "primarytype",
+          "page_id": 74468,
+          "revision_id": 1016503,
+          "revision_sha1": "c3d5db84a9722904da9425b6ec391a7ff1d8ab80",
+          "revision_timestamp": "2023-07-16T02:32:11Z",
+          "url": "https://tibia.fandom.com/wiki/Statue_(Lord)",
+          "value": "Statues",
+          "wiki_title": "Statue (Lord)"
+        },
+        {
+          "captured_at": "2026-10-01T21:12:08.552Z",
+          "content_sha256": "d7cae558018b8fc403ac1b065b7f8d2ab0d276691f3a7c5fee8ad96e89460b98",
+          "field": "primarytype",
+          "page_id": 74836,
+          "revision_id": 1016495,
+          "revision_sha1": "c9a3eafcec9a91ccd23ed6539dd38ac2847838c7",
+          "revision_timestamp": "2023-07-16T02:32:11Z",
+          "url": "https://tibia.fandom.com/wiki/Statue_(Dolphin)",
+          "value": "Statues",
+          "wiki_title": "Statue (Dolphin)"
+        },
+        {
+          "captured_at": "2026-10-01T21:12:15.989Z",
+          "content_sha256": "de4407f665c580b3ab9f1becf7d6aef3e9d32fda03815fd3358fedc62f187e5b",
+          "field": "primarytype",
+          "page_id": 75176,
+          "revision_id": 1016497,
+          "revision_sha1": "b87df59e24b9d18ffd0d1327a2ffa2810c052076",
+          "revision_timestamp": "2023-07-16T02:32:11Z",
+          "url": "https://tibia.fandom.com/wiki/Statue_(Hand)",
+          "value": "Statues",
+          "wiki_title": "Statue (Hand)"
+        }
+      ],
+      "match_basis": "actualname",
+      "matched_names": [
+        "statue"
+      ],
+      "registry_key": "oteryn:item.tibia.i9435",
+      "resolution": "disambiguation"
+    },
+    "oteryn:item.tibia.i9628": {
+      "availability_status": null,
+      "captured_at": "2026-10-01T20:59:53.180Z",
+      "content_sha256": "7b49ca536e65c3a9ebb0d7740677c990f56c964301f0513acdffd2fd1c0eb882",
+      "field": "primarytype",
+      "match_basis": "title",
+      "matched_names": [
+        "telescope"
+      ],
+      "page_id": 5594,
+      "registry_key": "oteryn:item.tibia.i9628",
+      "resolution": "direct",
+      "revision_id": 1020524,
+      "revision_sha1": "0157bac7ea8b8858d99c5cd39608a05939bb179c",
+      "revision_timestamp": "2023-07-20T17:48:36Z",
+      "url": "https://tibia.fandom.com/wiki/Telescope",
+      "value": "Decorations",
+      "wiki_title": "Telescope"
+    }
+  },
+  "schema": "OTERYN_ITEM_FAMILY_FALLBACK_SNAPSHOT/v1",
+  "snapshot_sha256": "16c338cbc6b3382d08ce69ebd7aae22dcbb5f0e48bf867ec53eb3bc11d9260b0",
+  "source": {
+    "admission_source": {
+      "explicit_ids_sha256": "136743df391cf4ff63fe16658fca0df6b2d90ce00636ddbbc87032f29a5230ff",
+      "explicit_rule_only_count": 60,
+      "path": "apps/game-server/examples/materialize_content_world_project_v2.rs",
+      "sha256": "65a7cc0a3832b8be55d77e1c9da40d5ab5240dff3a9e252bc2c6e785127b2b03"
+    },
+    "bindings": {
+      "path": "imports/crystalserver/bindings/items.json",
+      "sha256": "1d19709c28a649d8a9f32bf53e5bf43ad847d7901d6c6254833f456154d2de5a"
+    },
+    "classification": "DERIVED_EXISTING_ADMITTED_ALIAS_REQUALIFICATION",
+    "client_artifact": {
+      "client_version": "15.30",
+      "path": "content/assets/files/appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.dat",
+      "sha256": "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2"
+    },
+    "engine_sha256": "8e07b435532e01b5892e19609a506f5ef721b4de6e16d112d5d3435258e96001",
+    "helper_sha256": "0abb6b0180eeef98bfa397ca3b7c9192d47806a7e97aa6423159220e82c36f03",
+    "membership_manifest": {
+      "entries_sha256": "424e445c0ea9494b1871364f10e93876ad551df0d3d5c6982d97301008b027df",
+      "path": "imports/official/appearance-membership/appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.json",
+      "sha256": "f37b5d3e1136ebc3edbae1fe7090c4914b1d717bfbf9fd7c8faeeee36b491fe8"
+    },
+    "name_guards": {
+      "oteryn:item.tibia.i25872": "minotaur statue",
+      "oteryn:item.tibia.i2645": "green tapestry",
+      "oteryn:item.tibia.i2649": "yellow tapestry",
+      "oteryn:item.tibia.i2654": "red tapestry",
+      "oteryn:item.tibia.i2658": "blue tapestry",
+      "oteryn:item.tibia.i37213": "blue balloon",
+      "oteryn:item.tibia.i37216": "pink balloon",
+      "oteryn:item.tibia.i37219": "teal balloon",
+      "oteryn:item.tibia.i37222": "bonelord balloon",
+      "oteryn:item.tibia.i37225": "dwarf balloon",
+      "oteryn:item.tibia.i37228": "orc head balloon",
+      "oteryn:item.tibia.i37276": "rotworm balloon",
+      "oteryn:item.tibia.i37347": "yellow 25 years balloon",
+      "oteryn:item.tibia.i37350": "green 25 years balloon",
+      "oteryn:item.tibia.i4056": "globe",
+      "oteryn:item.tibia.i47367": "large obelisk",
+      "oteryn:item.tibia.i48457": "candy cushion",
+      "oteryn:item.tibia.i6267": "tendrils",
+      "oteryn:item.tibia.i7369": "golden goblet",
+      "oteryn:item.tibia.i7519": "something crawling",
+      "oteryn:item.tibia.i7741": "ice cube",
+      "oteryn:item.tibia.i7877": "balloons",
+      "oteryn:item.tibia.i7938": "goldfish bowl",
+      "oteryn:item.tibia.i8922": "velvet tapestry",
+      "oteryn:item.tibia.i9435": "statue",
+      "oteryn:item.tibia.i9628": "telescope"
+    },
+    "own_source_proof": {
+      "oteryn:item.tibia.i25872": [
+        {
+          "content_sha256": "3e16e748e9940f9b7914adcbc7a80e10bd2c4214e66b19c83c23b8852be4b9a7",
+          "field": "primarytype",
+          "own_actualname": [
+            "minotaur statue"
+          ],
+          "own_itemid": [
+            "2029, 2043, 2044, 2045"
+          ],
+          "own_name": [
+            "Minotaur Statue"
+          ],
+          "page_id": 5638,
+          "raw_infobox_sha256": "3e16e748e9940f9b7914adcbc7a80e10bd2c4214e66b19c83c23b8852be4b9a7",
+          "revision_id": 1042652,
+          "revision_timestamp": "2023-10-21T06:02:59Z",
+          "source_part": "/workspace/audit-continuation/global-infobox-object-source-part-010.json",
+          "source_part_sha256": "c9aa9c2718e8dbb0912e1456c9f8d731b939405741f5c865f6c8c077ca4bab3e",
+          "title": "Minotaur Statue",
+          "value": "Decorations"
+        }
+      ],
+      "oteryn:item.tibia.i2645": [
+        {
+          "content_sha256": "73c8c32072378b94f386f3307cacb5d5d1cf115d4fdac60a4f5456df736da1fa",
+          "field": "primarytype",
+          "own_actualname": [
+            "green tapestry"
+          ],
+          "own_itemid": [
+            "2647"
+          ],
+          "own_name": [
+            "Green Tapestry"
+          ],
+          "page_id": 5105,
+          "raw_infobox_sha256": "73c8c32072378b94f386f3307cacb5d5d1cf115d4fdac60a4f5456df736da1fa",
+          "revision_id": 1114071,
+          "revision_timestamp": "2025-07-26T09:37:14Z",
+          "source_part": "/workspace/audit-continuation/global-infobox-object-source-part-009.json",
+          "source_part_sha256": "1111cb6aa707ccbe3a6492968205685b1c8298884d44084cc18b16ea2dbcfd47",
+          "title": "Green Tapestry",
+          "value": "Decorations"
+        }
+      ],
+      "oteryn:item.tibia.i2649": [
+        {
+          "content_sha256": "f6c465ad23644838794ddc096e9216a865cec353421e304e893bb46cd8be5826",
+          "field": "primarytype",
+          "own_actualname": [
+            "yellow tapestry"
+          ],
+          "own_itemid": [
+            "2650"
+          ],
+          "own_name": [
+            "Yellow Tapestry"
+          ],
+          "page_id": 5200,
+          "raw_infobox_sha256": "f6c465ad23644838794ddc096e9216a865cec353421e304e893bb46cd8be5826",
+          "revision_id": 1017812,
+          "revision_timestamp": "2023-07-16T02:34:42Z",
+          "source_part": "/workspace/audit-continuation/global-infobox-object-source-part-010.json",
+          "source_part_sha256": "c9aa9c2718e8dbb0912e1456c9f8d731b939405741f5c865f6c8c077ca4bab3e",
+          "title": "Yellow Tapestry",
+          "value": "Decorations"
+        }
+      ],
+      "oteryn:item.tibia.i2654": [
+        {
+          "content_sha256": "ac664734a4049c06abba4fdc8750be10d51521043fb188aca8ded919a65f4321",
+          "field": "primarytype",
+          "own_actualname": [
+            "red tapestry"
+          ],
+          "own_itemid": [
+            "2656"
+          ],
+          "own_name": [
+            "Red Tapestry"
+          ],
+          "page_id": 5202,
+          "raw_infobox_sha256": "ac664734a4049c06abba4fdc8750be10d51521043fb188aca8ded919a65f4321",
+          "revision_id": 1014936,
+          "revision_timestamp": "2023-07-15T20:56:39Z",
+          "source_part": "/workspace/audit-continuation/global-infobox-object-source-part-010.json",
+          "source_part_sha256": "c9aa9c2718e8dbb0912e1456c9f8d731b939405741f5c865f6c8c077ca4bab3e",
+          "title": "Red Tapestry",
+          "value": "Decorations"
+        }
+      ],
+      "oteryn:item.tibia.i2658": [
+        {
+          "content_sha256": "5825cc7ccc282c3af983d40187f1f4a106e7032d549dfe6b5f9fdc0d201cbd98",
+          "field": "primarytype",
+          "own_actualname": [
+            "blue tapestry"
+          ],
+          "own_itemid": [
+            "2659"
+          ],
+          "own_name": [
+            "Blue Tapestry"
+          ],
+          "page_id": 5199,
+          "raw_infobox_sha256": "5825cc7ccc282c3af983d40187f1f4a106e7032d549dfe6b5f9fdc0d201cbd98",
+          "revision_id": 1122325,
+          "revision_timestamp": "2025-08-17T03:22:00Z",
+          "source_part": "/workspace/audit-continuation/global-infobox-object-source-part-010.json",
+          "source_part_sha256": "c9aa9c2718e8dbb0912e1456c9f8d731b939405741f5c865f6c8c077ca4bab3e",
+          "title": "Blue Tapestry",
+          "value": "Decorations"
+        }
+      ],
+      "oteryn:item.tibia.i37213": [
+        {
+          "content_sha256": "62850764c82b989699cfe95d55332a92ba28c4139ae261d7cd81f0739de45d9d",
+          "field": "primarytype",
+          "own_actualname": [
+            "blue balloon"
+          ],
+          "own_itemid": [
+            "37471"
+          ],
+          "own_name": [
+            "Blue Balloon"
+          ],
+          "page_id": 95940,
+          "raw_infobox_sha256": "62850764c82b989699cfe95d55332a92ba28c4139ae261d7cd81f0739de45d9d",
+          "revision_id": 1108922,
+          "revision_timestamp": "2025-07-08T00:58:26Z",
+          "source_part": "/workspace/audit-continuation/global-infobox-object-source-part-143.json",
+          "source_part_sha256": "c9df340b57b8c828b7ae173839359f60b1fa81f0a3317066ba3eeabfc249ed62",
+          "title": "Blue Balloon",
+          "value": "Decorations"
+        }
+      ],
+      "oteryn:item.tibia.i37216": [
+        {
+          "content_sha256": "8c397374af9777bf05b5f27c8d63cb9ffaeeca366bc7866ce89caa55d8bca701",
+          "field": "primarytype",
+          "own_actualname": [
+            "pink balloon"
+          ],
+          "own_itemid": [
+            "37496"
+          ],
+          "own_name": [
+            "Pink Balloon"
+          ],
+          "page_id": 95942,
+          "raw_infobox_sha256": "8c397374af9777bf05b5f27c8d63cb9ffaeeca366bc7866ce89caa55d8bca701",
+          "revision_id": 1108936,
+          "revision_timestamp": "2025-07-08T01:02:58Z",
+          "source_part": "/workspace/audit-continuation/global-infobox-object-source-part-143.json",
+          "source_part_sha256": "c9df340b57b8c828b7ae173839359f60b1fa81f0a3317066ba3eeabfc249ed62",
+          "title": "Pink Balloon",
+          "value": "Decorations"
+        }
+      ],
+      "oteryn:item.tibia.i37219": [
+        {
+          "content_sha256": "07419cc8aa6522ef3534ed793deaa05101e249966b8a4c217807eb7421c976d9",
+          "field": "primarytype",
+          "own_actualname": [
+            "teal balloon"
+          ],
+          "own_itemid": [
+            "37499"
+          ],
+          "own_name": [
+            "Teal Balloon"
+          ],
+          "page_id": 95944,
+          "raw_infobox_sha256": "07419cc8aa6522ef3534ed793deaa05101e249966b8a4c217807eb7421c976d9",
+          "revision_id": 1108946,
+          "revision_timestamp": "2025-07-08T01:04:57Z",
+          "source_part": "/workspace/audit-continuation/global-infobox-object-source-part-143.json",
+          "source_part_sha256": "c9df340b57b8c828b7ae173839359f60b1fa81f0a3317066ba3eeabfc249ed62",
+          "title": "Teal Balloon",
+          "value": "Decorations"
+        }
+      ],
+      "oteryn:item.tibia.i37222": [
+        {
+          "content_sha256": "ff87cd3ca9e63f3d86228562e204e0a81401d9396d4c381f766ba0361345ff44",
+          "field": "primarytype",
+          "own_actualname": [
+            "bonelord balloon"
+          ],
+          "own_itemid": [
+            "37502"
+          ],
+          "own_name": [
+            "Bonelord Balloon"
+          ],
+          "page_id": 95947,
+          "raw_infobox_sha256": "ff87cd3ca9e63f3d86228562e204e0a81401d9396d4c381f766ba0361345ff44",
+          "revision_id": 1108952,
+          "revision_timestamp": "2025-07-08T01:09:51Z",
+          "source_part": "/workspace/audit-continuation/global-infobox-object-source-part-143.json",
+          "source_part_sha256": "c9df340b57b8c828b7ae173839359f60b1fa81f0a3317066ba3eeabfc249ed62",
+          "title": "Bonelord Balloon",
+          "value": "Decorations"
+        }
+      ],
+      "oteryn:item.tibia.i37225": [
+        {
+          "content_sha256": "90fbef20c16fb23e592ed10945588ccbe493b461f5e8125e9719114fa259133d",
+          "field": "primarytype",
+          "own_actualname": [
+            "dwarf balloon"
+          ],
+          "own_itemid": [
+            "37505"
+          ],
+          "own_name": [
+            "Dwarf Balloon"
+          ],
+          "page_id": 95950,
+          "raw_infobox_sha256": "90fbef20c16fb23e592ed10945588ccbe493b461f5e8125e9719114fa259133d",
+          "revision_id": 1108959,
+          "revision_timestamp": "2025-07-08T01:15:37Z",
+          "source_part": "/workspace/audit-continuation/global-infobox-object-source-part-143.json",
+          "source_part_sha256": "c9df340b57b8c828b7ae173839359f60b1fa81f0a3317066ba3eeabfc249ed62",
+          "title": "Dwarf Balloon",
+          "value": "Decorations"
+        }
+      ],
+      "oteryn:item.tibia.i37228": [
+        {
+          "content_sha256": "5758c235d5ee04b2eeff86d6ff297a7c7789b0b4dc9ca2f1df266676a229d3ca",
+          "field": "primarytype",
+          "own_actualname": [
+            "orc head balloon"
+          ],
+          "own_itemid": [
+            "37508"
+          ],
+          "own_name": [
+            "Orc Head Balloon"
+          ],
+          "page_id": 95953,
+          "raw_infobox_sha256": "5758c235d5ee04b2eeff86d6ff297a7c7789b0b4dc9ca2f1df266676a229d3ca",
+          "revision_id": 1108969,
+          "revision_timestamp": "2025-07-08T01:23:49Z",
+          "source_part": "/workspace/audit-continuation/global-infobox-object-source-part-143.json",
+          "source_part_sha256": "c9df340b57b8c828b7ae173839359f60b1fa81f0a3317066ba3eeabfc249ed62",
+          "title": "Orc Head Balloon",
+          "value": "Decorations"
+        }
+      ],
+      "oteryn:item.tibia.i37276": [
+        {
+          "content_sha256": "45c1a2afa1201bea2f43ee164c881cf89c7d3f448394389131c48431011c7855",
+          "field": "primarytype",
+          "own_actualname": [
+            "rotworm balloon"
+          ],
+          "own_itemid": [
+            "37511"
+          ],
+          "own_name": [
+            "Rotworm Balloon"
+          ],
+          "page_id": 95956,
+          "raw_infobox_sha256": "45c1a2afa1201bea2f43ee164c881cf89c7d3f448394389131c48431011c7855",
+          "revision_id": 1108971,
+          "revision_timestamp": "2025-07-08T01:25:22Z",
+          "source_part": "/workspace/audit-continuation/global-infobox-object-source-part-143.json",
+          "source_part_sha256": "c9df340b57b8c828b7ae173839359f60b1fa81f0a3317066ba3eeabfc249ed62",
+          "title": "Rotworm Balloon",
+          "value": "Decorations"
+        }
+      ],
+      "oteryn:item.tibia.i37347": [
+        {
+          "content_sha256": "99d1ecd3e8df458ff051c8540a6949a123422a542d047b42b33743a6559175e0",
+          "field": "primarytype",
+          "own_actualname": [
+            "yellow 25 years balloon"
+          ],
+          "own_itemid": [
+            "37513"
+          ],
+          "own_name": [
+            "Yellow 25 Years Balloon"
+          ],
+          "page_id": 95958,
+          "raw_infobox_sha256": "99d1ecd3e8df458ff051c8540a6949a123422a542d047b42b33743a6559175e0",
+          "revision_id": 1108948,
+          "revision_timestamp": "2025-07-08T01:05:12Z",
+          "source_part": "/workspace/audit-continuation/global-infobox-object-source-part-143.json",
+          "source_part_sha256": "c9df340b57b8c828b7ae173839359f60b1fa81f0a3317066ba3eeabfc249ed62",
+          "title": "Yellow 25 Years Balloon",
+          "value": "Decorations"
+        }
+      ],
+      "oteryn:item.tibia.i37350": [
+        {
+          "content_sha256": "e5b76695a1981c3feefa4f6e0ddaf49ce45ef2e45f57c9fa47bb22bd03143fed",
+          "field": "primarytype",
+          "own_actualname": [
+            "green 25 years balloon"
+          ],
+          "own_itemid": [
+            "37516"
+          ],
+          "own_name": [
+            "Green 25 Years Balloon"
+          ],
+          "page_id": 95961,
+          "raw_infobox_sha256": "e5b76695a1981c3feefa4f6e0ddaf49ce45ef2e45f57c9fa47bb22bd03143fed",
+          "revision_id": 1108926,
+          "revision_timestamp": "2025-07-08T01:00:55Z",
+          "source_part": "/workspace/audit-continuation/global-infobox-object-source-part-143.json",
+          "source_part_sha256": "c9df340b57b8c828b7ae173839359f60b1fa81f0a3317066ba3eeabfc249ed62",
+          "title": "Green 25 Years Balloon",
+          "value": "Decorations"
+        }
+      ],
+      "oteryn:item.tibia.i4056": [
+        {
+          "content_sha256": "a4b21050872c569919961d20e11a7e5115316f3f9d75ddd8c41467abb403eb5e",
+          "field": "primarytype",
+          "own_actualname": [
+            "globe"
+          ],
+          "own_itemid": [
+            "2979"
+          ],
+          "own_name": [
+            "Globe"
+          ],
+          "page_id": 5700,
+          "raw_infobox_sha256": "a4b21050872c569919961d20e11a7e5115316f3f9d75ddd8c41467abb403eb5e",
+          "revision_id": 1020116,
+          "revision_timestamp": "2023-07-20T17:47:46Z",
+          "source_part": "/workspace/audit-continuation/global-infobox-object-source-part-010.json",
+          "source_part_sha256": "c9aa9c2718e8dbb0912e1456c9f8d731b939405741f5c865f6c8c077ca4bab3e",
+          "title": "Globe",
+          "value": "Decorations"
+        }
+      ],
+      "oteryn:item.tibia.i47367": [
+        {
+          "content_sha256": "197b1eabb9daead8c9cf63cfb43629064cfe4b0041c4b2015b12ab990b90489e",
+          "field": "primarytype",
+          "own_actualname": [
+            "large obelisk"
+          ],
+          "own_itemid": [
+            "49174"
+          ],
+          "own_name": [
+            "Large Obelisk"
+          ],
+          "page_id": 107377,
+          "raw_infobox_sha256": "197b1eabb9daead8c9cf63cfb43629064cfe4b0041c4b2015b12ab990b90489e",
+          "revision_id": 1097496,
+          "revision_timestamp": "2025-04-03T13:15:05Z",
+          "source_part": "/workspace/audit-continuation/global-infobox-object-source-part-186.json",
+          "source_part_sha256": "a9b5046d8d6b25eb2fd4471066caee78a9dbece6ad4f086cf124602d256089e3",
+          "title": "Large Obelisk",
+          "value": "Lamps"
+        }
+      ],
+      "oteryn:item.tibia.i48457": [
+        {
+          "content_sha256": "82ede2819fb0367240da6d917d42c595f7e4fb6d8650319ab1fe81adb0075590",
+          "field": "primarytype",
+          "own_actualname": [
+            "candy cushion"
+          ],
+          "own_itemid": [
+            "48433, 48467"
+          ],
+          "own_name": [
+            "Candy Cushion"
+          ],
+          "page_id": 107118,
+          "raw_infobox_sha256": "82ede2819fb0367240da6d917d42c595f7e4fb6d8650319ab1fe81adb0075590",
+          "revision_id": 1176272,
+          "revision_timestamp": "2026-04-21T15:59:14Z",
+          "source_part": "/workspace/audit-continuation/global-infobox-object-source-part-185.json",
+          "source_part_sha256": "f00caac8fb3195889f6e02115bfa7d07abff0b907a34335cc20918b98e3a3eaa",
+          "title": "Candy Cushion",
+          "value": "Decorations"
+        }
+      ],
+      "oteryn:item.tibia.i6267": [
+        {
+          "content_sha256": "5275c2ccd3620f23198b45270f4002dd1f40f54d4842a179dd73da2dfb3cadea",
+          "field": "primarytype",
+          "own_actualname": [
+            "tendrils"
+          ],
+          "own_itemid": [
+            "39803"
+          ],
+          "own_name": [
+            "Tendrils"
+          ],
+          "page_id": 99797,
+          "raw_infobox_sha256": "5275c2ccd3620f23198b45270f4002dd1f40f54d4842a179dd73da2dfb3cadea",
+          "revision_id": 1020525,
+          "revision_timestamp": "2023-07-20T17:48:37Z",
+          "source_part": "/workspace/audit-continuation/global-infobox-object-source-part-153.json",
+          "source_part_sha256": "d5d213bafdfa9909f733334ad50897e466bfc451a255fae0ad7d2c08bc065b24",
+          "title": "Tendrils",
+          "value": "Decorations"
+        }
+      ],
+      "oteryn:item.tibia.i7369": [
+        {
+          "content_sha256": "3a82e23349be25e7b7f4d485f14abd3fa16d0fe58e0fdce0b2f20883d8a535d0",
+          "field": "primarytype",
+          "own_actualname": [
+            "golden goblet"
+          ],
+          "own_itemid": [
+            "5805"
+          ],
+          "own_name": [
+            "Golden Goblet"
+          ],
+          "page_id": 9249,
+          "raw_infobox_sha256": "3a82e23349be25e7b7f4d485f14abd3fa16d0fe58e0fdce0b2f20883d8a535d0",
+          "revision_id": 1114299,
+          "revision_timestamp": "2025-07-26T09:54:22Z",
+          "source_part": "/workspace/audit-continuation/global-infobox-object-source-part-015.json",
+          "source_part_sha256": "3aad5f61014013405f931530f10b259411b50e56a61be6abaf40ae64f424270d",
+          "title": "Golden Goblet",
+          "value": "Decorations"
+        }
+      ],
+      "oteryn:item.tibia.i7519": [
+        {
+          "content_sha256": "68905baac351a547f0d374115b96d2f3af5180c4a1d4d69c31438bef23c220c8",
+          "field": "primarytype",
+          "own_actualname": [
+            "something crawling"
+          ],
+          "own_itemid": [
+            "8180"
+          ],
+          "own_name": [
+            "Something Crawling (Item)"
+          ],
+          "page_id": 84430,
+          "raw_infobox_sha256": "68905baac351a547f0d374115b96d2f3af5180c4a1d4d69c31438bef23c220c8",
+          "revision_id": 1018953,
+          "revision_timestamp": "2023-07-17T02:34:16Z",
+          "source_part": "/workspace/audit-continuation/global-infobox-object-source-part-114.json",
+          "source_part_sha256": "e37c4d690195fed2981ddb51c7a3b7469e1f5d0b05596afbf8568f8c98098d43",
+          "title": "Something Crawling (Item)",
+          "value": "Decorations"
+        }
+      ],
+      "oteryn:item.tibia.i7741": [
+        {
+          "content_sha256": "9ab1616d681d56e137071c545b4be2b86dedc7f4a456c5dccc6c5be3433a696f",
+          "field": "primarytype",
+          "own_actualname": [
+            "ice cube"
+          ],
+          "own_itemid": [
+            "7441"
+          ],
+          "own_name": [
+            "Ice Cube"
+          ],
+          "page_id": 16469,
+          "raw_infobox_sha256": "9ab1616d681d56e137071c545b4be2b86dedc7f4a456c5dccc6c5be3433a696f",
+          "revision_id": 1114397,
+          "revision_timestamp": "2025-07-26T09:57:30Z",
+          "source_part": "/workspace/audit-continuation/global-infobox-object-source-part-020.json",
+          "source_part_sha256": "3b45ac0cadaf180ce82e4d0b1598ca3a6afe85d0cdb829e5a7fc6c0b29e2fcef",
+          "title": "Ice Cube",
+          "value": "Decorations"
+        }
+      ],
+      "oteryn:item.tibia.i7877": [
+        {
+          "content_sha256": "8bff492d42a86f5636626921fcef27448d7078523c5efa72c41434722eee2ba8",
+          "field": "primarytype",
+          "own_actualname": [
+            "balloons"
+          ],
+          "own_itemid": [
+            "37423"
+          ],
+          "own_name": [
+            "Balloons"
+          ],
+          "page_id": 13402,
+          "raw_infobox_sha256": "8bff492d42a86f5636626921fcef27448d7078523c5efa72c41434722eee2ba8",
+          "revision_id": 1108925,
+          "revision_timestamp": "2025-07-08T01:00:19Z",
+          "source_part": "/workspace/audit-continuation/global-infobox-object-source-part-017.json",
+          "source_part_sha256": "13475b2e2e7ee8037abd1fec807af53fd6266335cbc9578c4d0f25ce21126bda",
+          "title": "Balloons",
+          "value": "Decorations"
+        }
+      ],
+      "oteryn:item.tibia.i7938": [
+        {
+          "content_sha256": "21c0f4119268d090ba3aaf9985daffaa2c6ef7afee8bceb4a30e5cd3cbe57ea1",
+          "field": "primarytype",
+          "own_actualname": [
+            "goldfish bowl"
+          ],
+          "own_itemid": [
+            "5929"
+          ],
+          "own_name": [
+            "Goldfish Bowl"
+          ],
+          "page_id": 8885,
+          "raw_infobox_sha256": "21c0f4119268d090ba3aaf9985daffaa2c6ef7afee8bceb4a30e5cd3cbe57ea1",
+          "revision_id": 1114249,
+          "revision_timestamp": "2025-07-26T09:52:48Z",
+          "source_part": "/workspace/audit-continuation/global-infobox-object-source-part-014.json",
+          "source_part_sha256": "352363b4491fdb04e154d398a9dd4e1675849be50c1fbcacdca5b201bdd25755",
+          "title": "Goldfish Bowl",
+          "value": "Decorations"
+        }
+      ],
+      "oteryn:item.tibia.i8922": [
+        {
+          "content_sha256": "829c685adf964bad874f43e91a99af27ab5fd707c08b90abbf110a03ef85ec8b",
+          "field": "primarytype",
+          "own_actualname": [
+            "velvet tapestry"
+          ],
+          "own_itemid": [
+            "8923"
+          ],
+          "own_name": [
+            "Velvet Tapestry"
+          ],
+          "page_id": 31467,
+          "raw_infobox_sha256": "829c685adf964bad874f43e91a99af27ab5fd707c08b90abbf110a03ef85ec8b",
+          "revision_id": 1017331,
+          "revision_timestamp": "2023-07-16T02:33:47Z",
+          "source_part": "/workspace/audit-continuation/global-infobox-object-source-part-037.json",
+          "source_part_sha256": "3eb565224007b1e8660315dc6c47cadfccc74351b325ba4cf9cc987519f7a28f",
+          "title": "Velvet Tapestry",
+          "value": "Decorations"
+        }
+      ],
+      "oteryn:item.tibia.i9435": [
+        {
+          "content_sha256": "34c05afd7a00e4caa1a0bc545a28ee646a8eff4b016df6c65624f574241e4163",
+          "field": "primarytype",
+          "own_actualname": [
+            "statue"
+          ],
+          "own_itemid": [
+            "2025, 2059, 2060, 2061"
+          ],
+          "own_name": [
+            "Statue (Knight)"
+          ],
+          "page_id": 5598,
+          "raw_infobox_sha256": "34c05afd7a00e4caa1a0bc545a28ee646a8eff4b016df6c65624f574241e4163",
+          "revision_id": 1042901,
+          "revision_timestamp": "2023-10-22T03:40:07Z",
+          "source_part": "/workspace/audit-continuation/global-infobox-object-source-part-010.json",
+          "source_part_sha256": "c9aa9c2718e8dbb0912e1456c9f8d731b939405741f5c865f6c8c077ca4bab3e",
+          "title": "Statue (Knight)",
+          "value": "Decorations"
+        },
+        {
+          "content_sha256": "a26ce1fbadf8f0579d9a218f99633b99b9b5e35291ff884957b88c418988437b",
+          "field": "primarytype",
+          "own_actualname": [
+            "statue"
+          ],
+          "own_itemid": [
+            "7951, 7952"
+          ],
+          "own_name": [
+            "Statue (King)"
+          ],
+          "page_id": 28273,
+          "raw_infobox_sha256": "a26ce1fbadf8f0579d9a218f99633b99b9b5e35291ff884957b88c418988437b",
+          "revision_id": 1043079,
+          "revision_timestamp": "2023-10-22T10:46:53Z",
+          "source_part": "/workspace/audit-continuation/global-infobox-object-source-part-035.json",
+          "source_part_sha256": "796fbc8b6fcfa7c8ef8aebba67004ed51b21994ea66eef31c5217e0f22fc0f0e",
+          "title": "Statue (King)",
+          "value": "Statues"
+        },
+        {
+          "content_sha256": "3ef064621a3622e799d095ee556e5af7ac15e7558638dcdf42d8de08cbfda7a9",
+          "field": "primarytype",
+          "own_actualname": [
+            "statue"
+          ],
+          "own_itemid": [
+            "8836"
+          ],
+          "own_name": [
+            "Statue (Yalahari)"
+          ],
+          "page_id": 33736,
+          "raw_infobox_sha256": "3ef064621a3622e799d095ee556e5af7ac15e7558638dcdf42d8de08cbfda7a9",
+          "revision_id": 1016505,
+          "revision_timestamp": "2023-07-16T02:32:12Z",
+          "source_part": "/workspace/audit-continuation/global-infobox-object-source-part-039.json",
+          "source_part_sha256": "9b41583df1f18fd1a69c068f4468dda74aca45eb22b8fc951da7cd64e998ae02",
+          "title": "Statue (Yalahari)",
+          "value": "Statues"
+        },
+        {
+          "content_sha256": "3400defe737b6ea444c139ff1cc98ac8ef7554c3f8300641afe19eb47a43a55c",
+          "field": "primarytype",
+          "own_actualname": [
+            "statue"
+          ],
+          "own_itemid": [
+            "15633"
+          ],
+          "own_name": [
+            "Statue (Demonbunny)"
+          ],
+          "page_id": 60771,
+          "raw_infobox_sha256": "3400defe737b6ea444c139ff1cc98ac8ef7554c3f8300641afe19eb47a43a55c",
+          "revision_id": 1016491,
+          "revision_timestamp": "2023-07-16T02:32:10Z",
+          "source_part": "/workspace/audit-continuation/global-infobox-object-source-part-064.json",
+          "source_part_sha256": "ec88ae7004cc3d2ed6f9697b4c64653483d60af00ded6bcca5242f154f313c99",
+          "title": "Statue (Demonbunny)",
+          "value": "Statues"
+        },
+        {
+          "content_sha256": "4b1cdd94213b2c46dd62ba6a53cd89c986d41cad0395295489eb84c07a48cf26",
+          "field": "primarytype",
+          "own_actualname": [
+            "statue"
+          ],
+          "own_itemid": [
+            "8327"
+          ],
+          "own_name": [
+            "Statue (Gargoyle)"
+          ],
+          "page_id": 65289,
+          "raw_infobox_sha256": "4b1cdd94213b2c46dd62ba6a53cd89c986d41cad0395295489eb84c07a48cf26",
+          "revision_id": 1016496,
+          "revision_timestamp": "2023-07-16T02:32:11Z",
+          "source_part": "/workspace/audit-continuation/global-infobox-object-source-part-070.json",
+          "source_part_sha256": "61902f953c3f873728265a2de388ec12b425a0aae905c2dbc424b03cc29f3bd1",
+          "title": "Statue (Gargoyle)",
+          "value": "Statues"
+        },
+        {
+          "content_sha256": "50caf6a546f2c53ce0695dc7f427c52a8f666e9fe8aaf9b722678d9d8b13f74f",
+          "field": "primarytype",
+          "own_actualname": [
+            "statue"
+          ],
+          "own_itemid": [
+            "8681"
+          ],
+          "own_name": [
+            "Statue (Woman)"
+          ],
+          "page_id": 71603,
+          "raw_infobox_sha256": "50caf6a546f2c53ce0695dc7f427c52a8f666e9fe8aaf9b722678d9d8b13f74f",
+          "revision_id": 1016504,
+          "revision_timestamp": "2023-07-16T02:32:12Z",
+          "source_part": "/workspace/audit-continuation/global-infobox-object-source-part-079.json",
+          "source_part_sha256": "479b8fb78518727873b30abbf26f8b528cf7388fc6780c87062900878cab4801",
+          "title": "Statue (Woman)",
+          "value": "Statues"
+        },
+        {
+          "content_sha256": "ba6eb4543c6c72f54b47ab99726a0cc65401ae7042d9939443423166cf827732",
+          "field": "primarytype",
+          "own_actualname": [
+            "statue"
+          ],
+          "own_itemid": [
+            "9432"
+          ],
+          "own_name": [
+            "Statue (Guard)"
+          ],
+          "page_id": 74336,
+          "raw_infobox_sha256": "ba6eb4543c6c72f54b47ab99726a0cc65401ae7042d9939443423166cf827732",
+          "revision_id": 1016498,
+          "revision_timestamp": "2023-07-16T02:32:11Z",
+          "source_part": "/workspace/audit-continuation/global-infobox-object-source-part-081.json",
+          "source_part_sha256": "2757bcc412d0fc9ef5d3e1b4ebc15b2ad911bceec30fb743b9167c98ef52de6d",
+          "title": "Statue (Guard)",
+          "value": "Statues"
+        },
+        {
+          "content_sha256": "926e623c06832a96ca873a3c097e17b660760c6dc8c9748d72246c58c8902ae4",
+          "field": "primarytype",
+          "own_actualname": [
+            "statue"
+          ],
+          "own_itemid": [
+            "9436"
+          ],
+          "own_name": [
+            "Statue (Archer)"
+          ],
+          "page_id": 74399,
+          "raw_infobox_sha256": "926e623c06832a96ca873a3c097e17b660760c6dc8c9748d72246c58c8902ae4",
+          "revision_id": 1016492,
+          "revision_timestamp": "2023-07-16T02:32:10Z",
+          "source_part": "/workspace/audit-continuation/global-infobox-object-source-part-081.json",
+          "source_part_sha256": "2757bcc412d0fc9ef5d3e1b4ebc15b2ad911bceec30fb743b9167c98ef52de6d",
+          "title": "Statue (Archer)",
+          "value": "Statues"
+        },
+        {
+          "content_sha256": "419335945e13ce5f0bf1116f1a5d70bc0af4a80fc3d65bc0d766c898d16bd432",
+          "field": "primarytype",
+          "own_actualname": [
+            "statue"
+          ],
+          "own_itemid": [
+            "9434"
+          ],
+          "own_name": [
+            "Statue (Lancer)"
+          ],
+          "page_id": 74400,
+          "raw_infobox_sha256": "419335945e13ce5f0bf1116f1a5d70bc0af4a80fc3d65bc0d766c898d16bd432",
+          "revision_id": 1016500,
+          "revision_timestamp": "2023-07-16T02:32:11Z",
+          "source_part": "/workspace/audit-continuation/global-infobox-object-source-part-081.json",
+          "source_part_sha256": "2757bcc412d0fc9ef5d3e1b4ebc15b2ad911bceec30fb743b9167c98ef52de6d",
+          "title": "Statue (Lancer)",
+          "value": "Statues"
+        },
+        {
+          "content_sha256": "da394c6af1ae87b5a715f1f71bf6e584992a40203c5736574858f7054d4f8f53",
+          "field": "primarytype",
+          "own_actualname": [
+            "statue"
+          ],
+          "own_itemid": [
+            "8323"
+          ],
+          "own_name": [
+            "Statue (Vampire)"
+          ],
+          "page_id": 74419,
+          "raw_infobox_sha256": "da394c6af1ae87b5a715f1f71bf6e584992a40203c5736574858f7054d4f8f53",
+          "revision_id": 1016502,
+          "revision_timestamp": "2023-07-16T02:32:11Z",
+          "source_part": "/workspace/audit-continuation/global-infobox-object-source-part-081.json",
+          "source_part_sha256": "2757bcc412d0fc9ef5d3e1b4ebc15b2ad911bceec30fb743b9167c98ef52de6d",
+          "title": "Statue (Vampire)",
+          "value": "Statues"
+        },
+        {
+          "content_sha256": "b0c810b98abc912be34650ba53388c706ee7cc9165859d77cf29d2a73d975c21",
+          "field": "primarytype",
+          "own_actualname": [
+            "statue"
+          ],
+          "own_itemid": [
+            "8390"
+          ],
+          "own_name": [
+            "Statue (Lord)"
+          ],
+          "page_id": 74468,
+          "raw_infobox_sha256": "b0c810b98abc912be34650ba53388c706ee7cc9165859d77cf29d2a73d975c21",
+          "revision_id": 1016503,
+          "revision_timestamp": "2023-07-16T02:32:11Z",
+          "source_part": "/workspace/audit-continuation/global-infobox-object-source-part-081.json",
+          "source_part_sha256": "2757bcc412d0fc9ef5d3e1b4ebc15b2ad911bceec30fb743b9167c98ef52de6d",
+          "title": "Statue (Lord)",
+          "value": "Statues"
+        },
+        {
+          "content_sha256": "d7cae558018b8fc403ac1b065b7f8d2ab0d276691f3a7c5fee8ad96e89460b98",
+          "field": "primarytype",
+          "own_actualname": [
+            "statue"
+          ],
+          "own_itemid": [
+            "8682, 8683"
+          ],
+          "own_name": [
+            "Statue (Dolphin)"
+          ],
+          "page_id": 74836,
+          "raw_infobox_sha256": "d7cae558018b8fc403ac1b065b7f8d2ab0d276691f3a7c5fee8ad96e89460b98",
+          "revision_id": 1016495,
+          "revision_timestamp": "2023-07-16T02:32:11Z",
+          "source_part": "/workspace/audit-continuation/global-infobox-object-source-part-083.json",
+          "source_part_sha256": "f4218e3ae38e6202852a03fcbf0486785ca1cb5430c1d6bae7c4e0a8a02a0221",
+          "title": "Statue (Dolphin)",
+          "value": "Statues"
+        },
+        {
+          "content_sha256": "de4407f665c580b3ab9f1becf7d6aef3e9d32fda03815fd3358fedc62f187e5b",
+          "field": "primarytype",
+          "own_actualname": [
+            "statue"
+          ],
+          "own_itemid": [
+            "8656"
+          ],
+          "own_name": [
+            "Statue (Hand)"
+          ],
+          "page_id": 75176,
+          "raw_infobox_sha256": "de4407f665c580b3ab9f1becf7d6aef3e9d32fda03815fd3358fedc62f187e5b",
+          "revision_id": 1016497,
+          "revision_timestamp": "2023-07-16T02:32:11Z",
+          "source_part": "/workspace/audit-continuation/global-infobox-object-source-part-086.json",
+          "source_part_sha256": "04759ada9f9f95e64e07a6bd9b698f33b1dd4f33bc130b96bc290d4de43570c3",
+          "title": "Statue (Hand)",
+          "value": "Statues"
+        }
+      ],
+      "oteryn:item.tibia.i9628": [
+        {
+          "content_sha256": "7b49ca536e65c3a9ebb0d7740677c990f56c964301f0513acdffd2fd1c0eb882",
+          "field": "primarytype",
+          "own_actualname": [
+            "telescope"
+          ],
+          "own_itemid": [
+            "3484, 3485, 3486, 3487"
+          ],
+          "own_name": [
+            "Telescope"
+          ],
+          "page_id": 5594,
+          "raw_infobox_sha256": "7b49ca536e65c3a9ebb0d7740677c990f56c964301f0513acdffd2fd1c0eb882",
+          "revision_id": 1020524,
+          "revision_timestamp": "2023-07-20T17:48:36Z",
+          "source_part": "/workspace/audit-continuation/global-infobox-object-source-part-010.json",
+          "source_part_sha256": "c9aa9c2718e8dbb0912e1456c9f8d731b939405741f5c865f6c8c077ca4bab3e",
+          "title": "Telescope",
+          "value": "Decorations"
+        }
+      ]
+    },
+    "parent_head": "df777898d6a03e3cf0fd63aaceedcc5c0f0a68b6",
+    "qualification_cutoff": "2026-09-27T23:59:59Z",
+    "scope": "NAVIGATION_ONLY",
+    "source_inventory_sha256": "0a791b742840f052aa6b512d06f0785f0c9e8ebb5745e2cc8fd6646cbb9df544",
+    "stats": {
+      "path": "imports/tibiawiki/facts/items-stats.json",
+      "sha256": "49d43cbe6957e6edc16aeda72e05152c55606e9381452ea74d7a63b5a5e91e4a"
+    }
+  }
+}

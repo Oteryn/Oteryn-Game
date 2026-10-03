@@ -1,0 +1,2932 @@
+{
+  "schema": "OTERYN_ROUND9_SELECTION/v1",
+  "base_head": "0bdc2f404b1f75fae8fa05ecb48bcef65159765c",
+  "family_index_path": "content/quests/definitions/index.json",
+  "family_index_sha256": "0d9408d8f8298a4c3d0c8b7d7bc4b0b922e9344befaaa674277582188381abfd",
+  "shard_inputs": [
+    {
+      "path": "content/quests/definitions/quests-00000-00099.json",
+      "sha256": "c887e65dc41de61a2b61121d25dd63693a9cb0d7ea90e39643e20a5bd00d7559"
+    },
+    {
+      "path": "content/quests/definitions/quests-00100-00199.json",
+      "sha256": "655348d2da9c3dae91c0c4e8fd62cbe0ff8d9808d497130f955756d5b68313cc"
+    },
+    {
+      "path": "content/quests/definitions/quests-00200-00299.json",
+      "sha256": "b0db5c0122a5d9243f31f33be2b2edd3b83a8dd8fa80515e5a7562b2e55d5d47"
+    },
+    {
+      "path": "content/quests/definitions/quests-00300-00351.json",
+      "sha256": "52997b06343ebd94d6298765473c38fff4297e39143cfd855b14ba26f8c63db0"
+    }
+  ],
+  "selection_count": 242,
+  "selection_rule": "definition.readiness == waiting_data; canonical identity key lexicographic order",
+  "records": [
+    {
+      "identity": {
+        "key": "oteryn:quest.25_years_of_tibia_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "25 Years of Tibia Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "crystalserver:quest/25_years_of_tibia_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.a_father_s_burden_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "A Father's Burden Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/a_father_s_burden_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.a_piece_of_cake",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "A Piece of Cake",
+      "source_identity": {
+        "family": "Quest",
+        "key": "crystalserver:quest/a_piece_of_cake",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.a_pirates_tail",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "A Pirate's Tail Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/a_pirates_tail",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.adventurers_guild",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Adventurers Guild",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/adventurers_guild",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.adventures_of_galthen_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Adventures of Galthen Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/adventures_of_galthen_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.afflicted_outfits_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Afflicted Outfits Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "crystalserver:quest/afflicted_outfits_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.alawar_s_vault_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Alawar's Vault Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/alawar_s_vault_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.an_interest_in_botany_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "An Interest In Botany Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/an_interest_in_botany_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.an_uneasy_alliance_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "An Uneasy Alliance Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/an_uneasy_alliance_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.ancient_aucar_outfits_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Ancient Aucar Outfits Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "crystalserver:quest/ancient_aucar_outfits_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.assassin_outfit",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Assassin Outfits Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/assassin_outfit",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.awash_world_change",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Awash World Change",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/awash_world_change",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.barbarian_arena_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Barbarian Arena Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/barbarian_arena_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.barbarian_test",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Barbarian Test Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/barbarian_test",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.battle_mage_outfits_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Battle Mage Outfits Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/battle_mage_outfits_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.bear_room_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Bear Room Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/bear_room_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.behemoth_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Behemoth Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/behemoth_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.berserk_potion_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Berserk Potion Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "crystalserver:quest/berserk_potion_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.berserker_treasure_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Berserker Treasure Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/berserker_treasure_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.between_the_lines_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Between the Lines Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "crystalserver:quest/between_the_lines_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.bigfoot_s_burden_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Bigfoot's Burden Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/bigfoot_s_burden_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.black_knight_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Black Knight Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/black_knight_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.blood_brothers_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Blood Brothers Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/blood_brothers_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.bloody_tusks_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Bloody Tusks Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "crystalserver:quest/bloody_tusks_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.bored_mini_world_change",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Bored Mini World Change",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/bored_mini_world_change",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.brotherhood_outfits_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Brotherhood Outfits Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/brotherhood_outfits_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.cave_explorer_outfits_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Cave Explorer Outfits Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/cave_explorer_outfits_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.chayenne_realm",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Realm of Dreams Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/chayenne_realm",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.children_of_the_revolution_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Children of the Revolution Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/children_of_the_revolution_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.chyllfroest_mini_world_change",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Chyllfroest Mini World Change",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/chyllfroest_mini_world_change",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.citizen_outfits_quest_on_rook",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Citizen Outfits Quest on Rook",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/citizen_outfits_quest_on_rook",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.cradle_of_monsters",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "The Cradle of Monsters Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/cradle_of_monsters",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.crystal_warlord_outfits_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Crystal Warlord Outfits Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/crystal_warlord_outfits_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.cults_of_tibia_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Cults of Tibia Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/cults_of_tibia_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.dangerous_depths_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Dangerous Depths Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/dangerous_depths_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.dark_trails_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Dark Trails Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/dark_trails_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.dawnport_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Dawnport Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/dawnport_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.dead_archer_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Dead Archer Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/dead_archer_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.decaying_defender_outfits_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Decaying Defender Outfits Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/decaying_defender_outfits_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.deeper_fibula_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Deeper Fibula Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/deeper_fibula_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.deeplings_worldchange",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Deeplings World Change",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/deeplings_worldchange",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.demon_helmet_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Demon Helmet Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/demon_helmet_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.demon_oak",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "The Demon Oak Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/demon_oak",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.demon_outfits_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Demon Outfits Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/demon_outfits_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.desert_dungeon_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "The Desert Dungeon Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/desert_dungeon_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.devil_helmet_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Devil Helmet Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/devil_helmet_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.draconia_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Draconia Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/draconia_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.dragon_corpse_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Dragon Corpse Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/dragon_corpse_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.dragon_tower_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Dragon Tower Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/dragon_tower_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.dream_warden_outfits_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Dream Warden Outfits Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/dream_warden_outfits_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.dream_warrior_outfits_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Dream Warrior Outfits Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "crystalserver:quest/dream_warrior_outfits_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.dreamer_s_challenge_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Dreamer's Challenge Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/dreamer_s_challenge_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.druid_outfits_quest_on_rook",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Druid Outfits Quest on Rook",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/druid_outfits_quest_on_rook",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.edron_goblin_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Edron Goblin Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/edron_goblin_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.elemental_spheres_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Elemental Spheres Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/elemental_spheres_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.elementalist_outfits_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Elementalist Outfits Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/elementalist_outfits_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.emperor_s_cookies_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Emperor's Cookies Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/emperor_s_cookies_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.factions",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Factions",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/factions",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.falconer_outfits_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Falconer Outfits Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/falconer_outfits_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.fanfare_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Fanfare Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/fanfare_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.feaster_of_souls_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Feaster of Souls Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/feaster_of_souls_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.feral_trappers_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Feral Trappers Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "crystalserver:quest/feral_trappers_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.ferumbras_ascension_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Ferumbras' Ascension Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/ferumbras_ascension_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.festive_outfits_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Festive Outfits Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/festive_outfits_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.fiend_slayer_outfits_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Fiend Slayer Outfits Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/fiend_slayer_outfits_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.fire_axe_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Fire Axe Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/fire_axe_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.fire_fighter_outfits_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Fire-Fighter Outfits Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/fire_fighter_outfits_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.fishing_box_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Fishing Box Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/fishing_box_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.forgotten_knowledge_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Forgotten Knowledge Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/forgotten_knowledge_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.formal_dress_outfits_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Formal Dress Outfits Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "crystalserver:quest/formal_dress_outfits_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.formogar_mine_hoist",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Formorgar Mines Hoist Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/formogar_mine_hoist",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.friends_and_traders",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Friends and Traders",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/friends_and_traders",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.frost_dragon_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Frost Dragon Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "crystalserver:quest/frost_dragon_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.fury_gates_mini_world_change",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Fury Gates Mini World Change",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/fury_gates_mini_world_change",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.geomancer_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Geomancer Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/geomancer_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.ghoul_room_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Ghoul Room Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/ghoul_room_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.giant_smithhammer_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Giant Smithhammer Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/giant_smithhammer_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.glooth_engineer_outfits_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Glooth Engineer Outfits Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/glooth_engineer_outfits_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.goblin_merchant_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Goblin Merchant Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/goblin_merchant_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.goblin_temple_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Goblin Temple Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/goblin_temple_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.golden_outfits_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Golden Outfits Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/golden_outfits_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.grave_danger_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Grave Danger Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/grave_danger_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.grimvale_mini_world_change",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Grimvale Mini World Change",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/grimvale_mini_world_change",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.grimvale_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Grimvale Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/grimvale_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.hand_of_the_inquisition_outfits_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Hand of the Inquisition Outfits Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/hand_of_the_inquisition_outfits_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.heart_of_destruction_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Heart of Destruction Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/heart_of_destruction_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.hero_of_rathleton_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Hero of Rathleton Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/hero_of_rathleton_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.hidden_threats_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Hidden Threats Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/hidden_threats_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.horse_station_world_change",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Horse Station World Change",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/horse_station_world_change",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.hot_cuisine_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Hot Cuisine Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/hot_cuisine_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.hunter_outfits_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Hunter Outfits Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/hunter_outfits_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.hunting_for_tokens",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Hunting for Tokens Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/hunting_for_tokens",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.hydra_egg_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Hydra Egg Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/hydra_egg_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.illuminator_outfit_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Illuminator Outfit Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "crystalserver:quest/illuminator_outfit_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.illuminator_outfits_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Illuminator Outfits Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "crystalserver:quest/illuminator_outfits_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.in_service_of_yalahar_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "In Service of Yalahar Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/in_service_of_yalahar_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.inukaya_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Inukaya Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/inukaya_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.iron_helmet_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Iron Helmet Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/iron_helmet_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.katana_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Katana Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/katana_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.killing_in_the_name_of_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Killing in the Name of... Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/killing_in_the_name_of_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.kilmaresh_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Kilmaresh Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/kilmaresh_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.koshei_the_deathless_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Koshei the Deathless Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/koshei_the_deathless_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.krailos_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Krailos Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/krailos_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.life_ring_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Life Ring Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/life_ring_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.lion_trophy_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Lion Trophy Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/lion_trophy_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.lions_rock",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Lion's Rock Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/lions_rock",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.liquid_black_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Liquid Black Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/liquid_black_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.longsword_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Longsword Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/longsword_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.machinery_of_war_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Machinery of War Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/machinery_of_war_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.mad_mage_room_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Mad Mage Room Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/mad_mage_room_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.makeshift_warrior_outfits_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Makeshift Warrior Outfits Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/makeshift_warrior_outfits_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.marlin_trophy_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Marlin Trophy Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/marlin_trophy_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.medusa_shield_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Medusa Shield Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/medusa_shield_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.minotaur_hell_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Minotaur Hell Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/minotaur_hell_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.newhaven_legion_helmet_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Newhaven Legion Helmet Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/newhaven_legion_helmet_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.newhaven_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Newhaven Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "crystalserver:quest/newhaven_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.nightmare_isles_mini_world_change",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Nightmare Isles Mini World Change",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/nightmare_isles_mini_world_change",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.nightmare_outfits_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Nightmare Outfits Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/nightmare_outfits_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.no_rest_for_the_wicked_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "No Rest for the Wicked Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/no_rest_for_the_wicked_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.nobleman_outfits_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Nobleman Outfits Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/nobleman_outfits_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.obsidian_knife_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Obsidian Knife Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/obsidian_knife_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.opticording_sphere_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Opticording Sphere Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/opticording_sphere_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.oramond_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Oramond Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/oramond_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.orc_shaman_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Orc Shaman Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/orc_shaman_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.oriental_outfits_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Oriental Outfits Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/oriental_outfits_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.oriental_trader_mini_world_change",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Oriental Trader Mini World Change",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/oriental_trader_mini_world_change",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.ornamented_shield_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Ornamented Shield Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/ornamented_shield_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.outfit_and_addon_quests",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Outfit and Addon Quests",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/outfit_and_addon_quests",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.overhunting_world_change",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Overhunting World Change",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/overhunting_world_change",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.panpipe_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Panpipe Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/panpipe_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.parchment_room_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Parchment Room Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/parchment_room_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.pick_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Pick Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/pick_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.pilgrimage_of_ashes",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Pilgrimage of Ashes Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/pilgrimage_of_ashes",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.poison_daggers_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Poison Daggers Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/poison_daggers_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.poltergeist_outfits_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Poltergeist Outfits Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/poltergeist_outfits_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.power_bolts_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Power Bolts Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/power_bolts_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.power_ring_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Power Ring Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/power_ring_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.present_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Present Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/present_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.primal_ordeal_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Primal Ordeal Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/primal_ordeal_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.rapier_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Rapier Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/rapier_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.rascoohan_outfits_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Rascoohan Outfits Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/rascoohan_outfits_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.revenant_outfits_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Revenant Outfits Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/revenant_outfits_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.rift_warrior_outfits_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Rift Warrior Outfits Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/rift_warrior_outfits_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.roshamuul_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Roshamuul Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/roshamuul_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.rotten_blood_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Rotten Blood Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/rotten_blood_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.rottin_wood_and_the_married_men_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Rottin Wood and the Married Men Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/rottin_wood_and_the_married_men_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.royal_costume_outfits_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Royal Costume Outfits Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/royal_costume_outfits_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.sam_s_old_backpack_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Sam's Old Backpack Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/sam_s_old_backpack_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.sanctuary_of_the_lizard_god",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Sanctuary of the Lizard God Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/sanctuary_of_the_lizard_god",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.scale_armor_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Scale Armor Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/scale_armor_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.sea_of_light_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Sea of Light Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/sea_of_light_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.secret_service_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Secret Service Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/secret_service_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.serpentine_tower_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Serpentine Tower Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/serpentine_tower_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.shadows_of_yalahar_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Shadows of Yalahar Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/shadows_of_yalahar_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.shaman_treasure_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Shaman Treasure Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/shaman_treasure_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.short_sword_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Short Sword Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/short_sword_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.silver_amulet_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Silver Amulet Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/silver_amulet_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.silver_brooch_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Silver Brooch Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/silver_brooch_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.sinatuki_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Sinatuki Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/sinatuki_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.skeleton_decoration_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Skeleton Decoration Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "crystalserver:quest/skeleton_decoration_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.skull_of_ratha",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Skull of Ratha Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/skull_of_ratha",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.small_health_potion",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Small Health Potion Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/small_health_potion",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.soil_guardian_outfits_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Soil Guardian Outfits Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/soil_guardian_outfits_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.soul_war_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Soul War Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/soul_war_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.spike_task",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Spike Task",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/spike_task",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.spirithunters_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Spirithunters Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/spirithunters_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.stampede_mini_world_change",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Stampede Mini World Change",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/stampede_mini_world_change",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.steal_from_thieves_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Steal From Thieves Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/steal_from_thieves_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.stealth_ring_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Stealth Ring Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/stealth_ring_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.steamship_world_change",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Steamship World Change",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/steamship_world_change",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.steel_helmet_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Steel Helmet Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/steel_helmet_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.strong_potions_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Strong Potions Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/strong_potions_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.swamp_fever_world_change",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Swamp Fever World Change",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/swamp_fever_world_change",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.targuna_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Targuna Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "crystalserver:quest/targuna_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.thais_lighthouse_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Thais Lighthouse Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/thais_lighthouse_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.thawing_mini_world_change",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Thawing Mini World Change",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/thawing_mini_world_change",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.the_ancient_tombs_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "The Ancient Tombs Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/the_ancient_tombs_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.the_annihilator_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "The Annihilator Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/the_annihilator_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.the_ape_city_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "The Ape City Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/the_ape_city_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.the_beginning_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "The Beginning Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/the_beginning_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.the_cursed_crystal",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "The Cursed Crystal Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/the_cursed_crystal",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.the_djinn_war_efreet_faction",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "The Djinn War - Efreet Faction",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/the_djinn_war_efreet_faction",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.the_djinn_war_marid_faction",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "The Djinn War - Marid Faction",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/the_djinn_war_marid_faction",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.the_dream_courts_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "The Dream Courts Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/the_dream_courts_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.the_explorer_society_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "The Explorer Society Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/the_explorer_society_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.the_first_dragon_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "The First Dragon Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/the_first_dragon_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.the_gravedigger_of_drefia_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "The Gravedigger of Drefia Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/the_gravedigger_of_drefia_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.the_hidden_city_of_beregar_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "The Hidden City of Beregar Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/the_hidden_city_of_beregar_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.the_hunt_for_the_sea_serpent",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "The Hunt for the Sea Serpent Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/the_hunt_for_the_sea_serpent",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.the_ice_islands_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "The Ice Islands Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/the_ice_islands_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.the_inquisition_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "The Inquisition Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/the_inquisition_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.the_isle_of_evil_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "The Isle of Evil Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/the_isle_of_evil_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.the_mages_tower_world_change",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "The Mage's Tower World Change",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/the_mages_tower_world_change",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.the_mummys_curse_world_change",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "The Mummy's Curse World Change",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/the_mummys_curse_world_change",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.the_new_frontier_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "The New Frontier Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/the_new_frontier_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.the_order_of_the_lion_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "The Order of the Lion Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/the_order_of_the_lion_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.the_order_of_the_stag_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "The Order of the Stag Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "crystalserver:quest/the_order_of_the_stag_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.the_outlaw_camp_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "The Outlaw Camp Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/the_outlaw_camp_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.the_paradox_tower_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "The Paradox Tower Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/the_paradox_tower_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.the_pits_of_inferno_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "The Pits of Inferno Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/the_pits_of_inferno_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.the_postman_missions_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "The Postman Missions Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/the_postman_missions_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.the_queen_of_the_banshees_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "The Queen of the Banshees Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/the_queen_of_the_banshees_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.the_rookie_guard_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "The Rookie Guard Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/the_rookie_guard_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.the_roost_of_the_graveborn_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "The Roost of the Graveborn Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "crystalserver:quest/the_roost_of_the_graveborn_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.the_scatterbrained_sorcerer_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "The Scatterbrained Sorcerer Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/the_scatterbrained_sorcerer_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.the_secret_library_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "The Secret Library Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/the_secret_library_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.the_shattered_isles_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "The Shattered Isles Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/the_shattered_isles_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.the_spirit_will_get_you_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "The Spirit Will Get You Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/the_spirit_will_get_you_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.the_tainted_soul",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "The Tainted Souls Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/the_tainted_soul",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.the_thieves_guild_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "The Thieves Guild Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/the_thieves_guild_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.the_travelling_trader_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "The Travelling Trader Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/the_travelling_trader_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.the_ultimate_challenges",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "The Ultimate Challenges",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/the_ultimate_challenges",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.the_way_of_the_monk_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "The Way of the Monk Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/the_way_of_the_monk_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.the_white_raven_monastery_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "The White Raven Monastery Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/the_white_raven_monastery_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.their_masters_voice",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Their Master's Voice World Change",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/their_masters_voice",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.thornfire_world_change",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Thornfire World Change",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/thornfire_world_change",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.threatened_dreams_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Threatened Dreams Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/threatened_dreams_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.tibia_tales",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Tibia Tales",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/tibia_tales",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.time_ring_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Time Ring Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/time_ring_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.tinder_box_quest_chyllfroest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Tinder Box Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/tinder_box_quest_chyllfroest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.to_blind_the_enemy_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "To Blind the Enemy Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/to_blind_the_enemy_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.too_hot_to_handle_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Too Hot to Handle Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/too_hot_to_handle_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.tower_defence_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Tower Defence Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/tower_defence_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.treasure_hunt_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Treasure Hunt Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/treasure_hunt_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.treasure_island_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Treasure Island Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "crystalserver:quest/treasure_island_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.triangle_tower_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Triangle Tower Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/triangle_tower_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.troll_cave_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Troll Cave Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/troll_cave_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.troll_sabotage_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Troll Sabotage Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/troll_sabotage_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.tutorial",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Tutorial",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/tutorial",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.twenty_miles_beneath_the_sea_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Twenty Miles Beneath the Sea Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/twenty_miles_beneath_the_sea_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.unnatural_selection_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Unnatural Selection Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/unnatural_selection_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.vampire_shield_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Vampire Shield Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/vampire_shield_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.warmaster_outfits_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Warmaster Outfits Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/warmaster_outfits_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.waterfall_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Waterfall Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/waterfall_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.wayfarer_outfits_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Wayfarer Outfits Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/wayfarer_outfits_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.wedding_ring_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Wedding Ring Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/wedding_ring_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.what_a_foolish_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "What a Foolish Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/what_a_foolish_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.winterlight_solstice",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Winterlight Solstice",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/winterlight_solstice",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.within_the_tides_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Within the Tides Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "crystalserver:quest/within_the_tides_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.wrath_of_the_emperor_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Wrath of the Emperor Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/wrath_of_the_emperor_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:quest.yalaharian_outfits_quest",
+        "revision": "quest-r1"
+      },
+      "wiki_title": "Yalaharian Outfits Quest",
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/yalaharian_outfits_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    }
+  ]
+}

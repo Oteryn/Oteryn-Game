@@ -159,8 +159,8 @@
     "progress_gates_linked_to_wiki_quest": 176,
     "by_status": {
       "approved_omission": 1,
-      "mapped": 437,
-      "unresolved_semantics": 15
+      "mapped": 435,
+      "unresolved_semantics": 17
     }
   },
   "entries": [
@@ -6887,8 +6887,8 @@
         32328,
         8
       ],
-      "status": "mapped",
-      "resolution": "present in both servers and identical",
+      "status": "unresolved_semantics",
+      "resolution": "Shared NPC gate: unique quest owner UNKNOWN; Shared KnightwatchTowerDoor41014 is written by both Nightmare DreamMaster and Brotherhood BoneMaster source branches (Canary NPC writerL124/L128 and CrystalL94/L99). Distinct BR/Fandom quest pages; unique quest owner UNKNOWN. No collapse into Nightmare merely from Storage namespace.",
       "destination": "canary:door-gate/progress/quest/u7_9/nightmare_outfits/knightwatch_tower_door",
       "sources": [
         {
@@ -6913,8 +6913,8 @@
         32328,
         8
       ],
-      "status": "mapped",
-      "resolution": "present in both servers and identical",
+      "status": "unresolved_semantics",
+      "resolution": "Shared NPC gate: unique quest owner UNKNOWN; Shared KnightwatchTowerDoor41014 is written by both Nightmare DreamMaster and Brotherhood BoneMaster source branches (Canary NPC writerL124/L128 and CrystalL94/L99). Distinct BR/Fandom quest pages; unique quest owner UNKNOWN. No collapse into Nightmare merely from Storage namespace.",
       "destination": "canary:door-gate/progress/quest/u7_9/nightmare_outfits/knightwatch_tower_door",
       "sources": [
         {
@@ -11144,5 +11144,6 @@
         }
       ]
     }
-  ]
+  ],
+  "source_checks": []
 }
