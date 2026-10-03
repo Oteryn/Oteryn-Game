@@ -30,10 +30,13 @@ external_repositories: []
 ## Outcome
 
 Candidate decision `CHARM4-INCOMING-EFFECT-ORDER-V1`: one creature attack is one occurrence; Dodge
-first (a dodge cancels damage, drain and attached conditions, and nothing else rolls); then the
-owner commits; hook 4 runs only on a hit taken, Parry then the minor; Parry reflects the
-unmitigated rolled damage, reduced by the creature's armor, not its resistances; Void Inversion
-last. Child CHARM-DEF-1.
+first (a dodge cancels damage, drain and attached conditions, and nothing else rolls); then
+mitigation without commit; hook 4 runs only on a hit (health damage after mitigation > 0), Parry
+before the commit; Void Inversion replaces the drain before the commit; the commit then applies
+the mana shield (after the defensive charms, CONDITIONS-0 §3.3), health, the drain and attached
+conditions; the minor applies after the commit. Parry reflects the unmitigated rolled damage,
+reduced by the creature's armor, not its resistances. Mixed occurrences run both hooks on their
+own components. Child CHARM-DEF-1.
 
 ## Architecture and source of truth
 
