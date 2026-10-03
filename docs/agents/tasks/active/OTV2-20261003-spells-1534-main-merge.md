@@ -108,6 +108,14 @@ No new gameplay, no change to SQL bodies, no review trigger, auto-merge or Jira 
   tile-aimed area visibility uses the populated sight origin; CodeQL HIGH GuildStats script
   extraction uses html.parser; spell readiness and starter bundle samples regenerated with
   convert_spells.py from the pinned sources.
+- D358 merge_group NODE_BOOT_FAIL (use_wire: Accepted then ProtocolError 1004): the PR's
+  first entry adds Character data reads (cast facts, build, stance, current root) through
+  the node's single ready-only holder (`try_acquire_ready`, max 1 connection); a concurrent
+  pass (the other session's grace release or tick) makes one read refuse, so the fresh actor
+  stayed unpositioned (admission-only). Fix: the pre-write first-entry refusals
+  (Unavailable, StaleAuthority) are repeated from fresh reads, bounded by
+  `RECONCILE_ATTEMPTS` with `RECONCILE_BACKOFF`; those paths wrote no runtime state and the
+  durable inits are idempotent. Not reproduced locally (PR head passed node boot locally).
 - D357 open: the r23 evidence-log whitespace repair was refused by the session's permission
   policy as evidence tampering; r25 source-world non-canonical Canary item keys and two
   dangling Item keys need a content decision. world-metadata (35600), Item+Mount

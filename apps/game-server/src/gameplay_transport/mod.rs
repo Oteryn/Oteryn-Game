@@ -1649,9 +1649,25 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         // the Channel owner write the first-entry position. A failure here
         // writes nothing and fabricates no rollback: the committed actor stays
         // unpositioned and is not input-eligible.
-        let (first_entry, item_fence) = self
-            .initialize_first_entry(&request, attempt.game_session_id, attempt.transport, actor)
-            .await;
+        // Every refusal before the Channel-owner write is a read of current authority or data
+        // through the single ready-only holder, which a concurrent pass (another session's
+        // release or tick) can briefly hold; the attempt wrote no runtime state, so it is
+        // repeated from fresh reads, bounded, before the actor is left unpositioned.
+        let mut attempt_round = 0;
+        let (first_entry, item_fence) = loop {
+            attempt_round += 1;
+            let result = self
+                .initialize_first_entry(&request, attempt.game_session_id, attempt.transport, actor)
+                .await;
+            if !matches!(
+                result.0,
+                FirstEntryOutcome::RefusedUnavailable | FirstEntryOutcome::RefusedStaleAuthority
+            ) || attempt_round >= RECONCILE_ATTEMPTS
+            {
+                break result;
+            }
+            tokio::time::sleep(RECONCILE_BACKOFF).await;
+        };
         #[cfg(test)]
         if std::env::var_os("OTERYN_SEAM_SPELL_MANIFEST").is_some() {
             eprintln!("SEAM_EVIDENCE spell_first_entry outcome={first_entry:?}");
