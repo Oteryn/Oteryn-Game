@@ -271,6 +271,9 @@ counts. Items already carried stay carried when capacity falls (Global).
   `game_character_forge_dust` (CharacterId, `balance` 0 to `dust_limit`, `dust_limit` 100-225,
   `last_entry_id`) with an immutable ledger (`GAIN`, `SPEND`, `CONVERT`, `LIMIT_RAISE`), as
   BANK-0 §3. Character scope, not Account: Global keeps dust per character.
+  **Amendment (pending on acceptance of PROFICIENCY-1; `reviews/OTERYN_GAME_PROFICIENCY1_PERK_MODIFICATION_AND_CATALYSTS_DECISION_2026-10-01.md` §4).** Weapon Proficiency modifications, ranks and
+  reshape offers will become a second dust sink under `ProficiencyCause`, using the same ledger and
+  lock, once a later DUR-03 amendment admits their shape; nothing is admitted yet.
 - **Slivers and exalted cores are items**: stackable, marketable and tradeable per content.
 - **Dust limit:** raised by one for (limit − 75) dust, up to 225 (Canary; `PARITY_PENDING`). A
   gain above the limit is lost, as in Global; the lost part is recorded in the ledger entry.

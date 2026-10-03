@@ -1,0 +1,1060 @@
+{
+  "actual_node_vm_cases": [
+    {
+      "current_runtime_unmitigated_floor": {
+        "elemental_base_damage_before_levelcap": 630,
+        "resource_damage": 340
+      },
+      "elemental_at_example_level_100": {
+        "oteryn_level_capped_base": 200,
+        "tibiapal": 631
+      },
+      "input": {
+        "hp": 12613,
+        "resistance": "100%",
+        "resource": 6813,
+        "type": "Overpower"
+      },
+      "observed_round": {
+        "cap": 1009,
+        "elemental": 631,
+        "resource": 341
+      },
+      "rendered_damage": {
+        "elemental": 631,
+        "resource": 341
+      }
+    },
+    {
+      "current_runtime_unmitigated_floor": {
+        "elemental_base_damage_before_levelcap": 630,
+        "resource_damage": 170
+      },
+      "elemental_at_example_level_100": {
+        "oteryn_level_capped_base": 200,
+        "tibiapal": 631
+      },
+      "input": {
+        "hp": 12613,
+        "resistance": "100%",
+        "resource": 6821,
+        "type": "Overflux"
+      },
+      "observed_round": {
+        "cap": 1009,
+        "elemental": 631,
+        "resource": 171
+      },
+      "rendered_damage": {
+        "elemental": 631,
+        "resource": 171
+      }
+    },
+    {
+      "current_runtime_unmitigated_floor": {
+        "elemental_base_damage_before_levelcap": 0,
+        "resource_damage": 0
+      },
+      "elemental_at_example_level_100": {
+        "oteryn_level_capped_base": 0,
+        "tibiapal": 1
+      },
+      "input": {
+        "hp": 11,
+        "resistance": "100%",
+        "resource": 11,
+        "type": "Overpower"
+      },
+      "observed_round": {
+        "cap": 1,
+        "elemental": 1,
+        "resource": 1
+      },
+      "rendered_damage": {
+        "elemental": 1,
+        "resource": 1
+      }
+    },
+    {
+      "current_runtime_unmitigated_floor": {
+        "elemental_base_damage_before_levelcap": 630,
+        "resource_damage": 340
+      },
+      "elemental_at_example_level_100": {
+        "oteryn_level_capped_base": 200,
+        "tibiapal": 693
+      },
+      "input": {
+        "hp": 12600,
+        "resistance": "110%",
+        "resource": 6800,
+        "type": "Overpower"
+      },
+      "observed_round": {
+        "cap": 1008,
+        "elemental": 693,
+        "resource": 340
+      },
+      "rendered_damage": {
+        "elemental": 693,
+        "resource": 340
+      }
+    },
+    {
+      "current_runtime_unmitigated_floor": {
+        "elemental_base_damage_before_levelcap": 630,
+        "resource_damage": 170
+      },
+      "elemental_at_example_level_100": {
+        "oteryn_level_capped_base": 200,
+        "tibiapal": 693
+      },
+      "input": {
+        "hp": 12600,
+        "resistance": "110%",
+        "resource": 6800,
+        "type": "Overflux"
+      },
+      "observed_round": {
+        "cap": 1008,
+        "elemental": 693,
+        "resource": 170
+      },
+      "rendered_damage": {
+        "elemental": 693,
+        "resource": 170
+      }
+    },
+    {
+      "current_runtime_unmitigated_floor": {
+        "elemental_base_damage_before_levelcap": 50,
+        "resource_damage": 80
+      },
+      "elemental_at_example_level_100": {
+        "oteryn_level_capped_base": 50,
+        "tibiapal": 0
+      },
+      "input": {
+        "hp": 1000,
+        "resistance": "0%",
+        "resource": 100000,
+        "type": "Overpower"
+      },
+      "observed_round": {
+        "cap": 80,
+        "elemental": 0,
+        "resource": 5000
+      },
+      "rendered_damage": {
+        "elemental": 0,
+        "resource": 80
+      }
+    },
+    {
+      "current_runtime_unmitigated_floor": {
+        "elemental_base_damage_before_levelcap": 50,
+        "resource_damage": 80
+      },
+      "elemental_at_example_level_100": {
+        "oteryn_level_capped_base": 50,
+        "tibiapal": 100
+      },
+      "input": {
+        "hp": 1000,
+        "resistance": "200%",
+        "resource": 100000,
+        "type": "Overflux"
+      },
+      "observed_round": {
+        "cap": 80,
+        "elemental": 100,
+        "resource": 2500
+      },
+      "rendered_damage": {
+        "elemental": 100,
+        "resource": 80
+      }
+    }
+  ],
+  "all_description_values_and_costs_match": true,
+  "browser_test": "ROOT_AGENT_OWNS_CHROMIUM_SNAPSHOT_TEST",
+  "calculator_semantics": {
+    "elemental": "Math.round(monster_max_health*0.05*sensitivity_percent/100)",
+    "explicit_pre_mitigation_disclaimer": {
+      "line": 9,
+      "path": "charm_calculator.html"
+    },
+    "no_armor_or_monster_mitigation_input": true,
+    "no_elemental_level_cap": true,
+    "no_player_level_input": true,
+    "no_trigger_chance_or_expected_dps_calculation": true,
+    "resource_overflux": "min(Math.round(max_mana*0.025),Math.round(monster_max_health*0.08))",
+    "resource_overpower": "min(Math.round(max_health*0.05),Math.round(monster_max_health*0.08))",
+    "unsupported_effects": [
+      "parry",
+      "dodge",
+      "low_blow",
+      "savage_blow",
+      "carnage",
+      "fatal_hold",
+      "void_inversion",
+      "vampiric_embrace",
+      "voids_call",
+      "gut",
+      "scavenge",
+      "adrenaline_burst",
+      "cleanse",
+      "cripple",
+      "numb",
+      "bless"
+    ]
+  },
+  "cannot_claim": [
+    "Full parity of combat effects or official Global formulas",
+    "Equipment gates tested by actual battle execution",
+    "AoE triggering, kill attribution, cleanse immunity duration, death loss or skinning simulated",
+    "Live tibiapal.com observed; these are pinned source/VM observations"
+  ],
+  "captured_input_sha256": "a976fc5c9e41061b60318c9bd3ada330515c013b07e8b3347d86365e4fb8ef12",
+  "description_count": 25,
+  "description_mismatches": [],
+  "fixture_note": "Factual derivatives of pinned source/Node observations. Original description strings and rendered HTML omitted. No live-site or combat parity claim.",
+  "live_site_test": false,
+  "local_comparison_inputs": [
+    {
+      "path": "content/charms/charms-00000-00024.json",
+      "sha256": "ce118bb9933ed5fae362c819aa0c0b50c043df4c9829de9ea7d03f89d73e3afe"
+    },
+    {
+      "path": "rulesets/progression/charms/mechanics.json",
+      "sha256": "6e9fa13b8957f5d5639436ca644ca7c5181b153c3cbc08ce7b9f90d53fdd0025"
+    },
+    {
+      "path": "apps/game-server/src/combat/charm_effects.rs",
+      "sha256": "242e209ca6d6fb00faa26e21830f2b85678440d564bda5fafdfa16eb26fba930"
+    }
+  ],
+  "mode": "READ_ONLY_SOURCE_AND_NODE_VM",
+  "rows": [
+    {
+      "asserted_semantics": {
+        "bonus_mode": "additive critical chance percentage points",
+        "bonus_values": [
+          4,
+          8,
+          9
+        ],
+        "equipment_gate": "Critical Hit weapon"
+      },
+      "calculator_scope_note": "Planner describes values only; no effect simulation.",
+      "calculator_simulates_this_charm": false,
+      "catalogue_costs": [
+        800,
+        1200,
+        4000
+      ],
+      "catalogue_values": [
+        4,
+        8,
+        9
+      ],
+      "cost_match": true,
+      "coverage_notes": "Critical Hit weapon prerequisite and additive percentage points preserved. No critical-hit simulation or RNG sharing test exists in this planner/calculator.",
+      "duration_match": true,
+      "key": "oteryn:charm.low_blow",
+      "mechanics_coverage": "BROAD_DESCRIPTION_COVERED",
+      "name": "Low Blow",
+      "numeric_match": true,
+      "planner_source_line": 19
+    },
+    {
+      "asserted_semantics": {
+        "bonus_mode": "additive critical extra damage percentage points",
+        "bonus_values": [
+          20,
+          40,
+          44
+        ],
+        "equipment_gate": "Critical Hit weapon"
+      },
+      "calculator_scope_note": "Planner describes values only; no effect simulation.",
+      "calculator_simulates_this_charm": false,
+      "catalogue_costs": [
+        800,
+        1200,
+        4000
+      ],
+      "catalogue_values": [
+        20,
+        40,
+        44
+      ],
+      "cost_match": true,
+      "coverage_notes": "Critical Hit weapon prerequisite and additive percentage points preserved. No critical-hit simulation or RNG sharing test exists in this planner/calculator.",
+      "duration_match": true,
+      "key": "oteryn:charm.savage_blow",
+      "mechanics_coverage": "BROAD_DESCRIPTION_COVERED",
+      "name": "Savage Blow",
+      "numeric_match": true,
+      "planner_source_line": 20
+    },
+    {
+      "asserted_semantics": {
+        "proc_values": [
+          5,
+          10,
+          11
+        ],
+        "resource": "maximum health",
+        "resource_damage_percent": 5
+      },
+      "calculator_scope_note": "Resource hit amount comparison only, not trigger or battle simulation.",
+      "calculator_simulates_this_charm": true,
+      "catalogue_costs": [
+        600,
+        900,
+        3000
+      ],
+      "catalogue_values": [
+        5,
+        10,
+        11
+      ],
+      "cost_match": true,
+      "coverage_notes": "No semantic mismatch in exposed description; detailed algorithm remains unverified by TibiaPal.",
+      "duration_match": true,
+      "key": "oteryn:charm.overpower",
+      "mechanics_coverage": "BROAD_DESCRIPTION_COVERED",
+      "name": "Overpower",
+      "numeric_match": true,
+      "planner_source_line": 21
+    },
+    {
+      "asserted_semantics": {
+        "proc_values": [
+          5,
+          10,
+          11
+        ],
+        "resource": "maximum mana",
+        "resource_damage_percent": 2.5
+      },
+      "calculator_scope_note": "Resource hit amount comparison only, not trigger or battle simulation.",
+      "calculator_simulates_this_charm": true,
+      "catalogue_costs": [
+        600,
+        900,
+        3000
+      ],
+      "catalogue_values": [
+        5,
+        10,
+        11
+      ],
+      "cost_match": true,
+      "coverage_notes": "No semantic mismatch in exposed description; detailed algorithm remains unverified by TibiaPal.",
+      "duration_match": true,
+      "key": "oteryn:charm.overflux",
+      "mechanics_coverage": "BROAD_DESCRIPTION_COVERED",
+      "name": "Overflux",
+      "numeric_match": true,
+      "planner_source_line": 22
+    },
+    {
+      "asserted_semantics": {
+        "damage_element": "physical",
+        "damage_percent_killed_max_hp": 15,
+        "proc_values": [
+          10,
+          20,
+          22
+        ],
+        "recipient": "nearby monsters",
+        "trigger": "killing monster"
+      },
+      "calculator_scope_note": "Planner describes values only; no effect simulation.",
+      "calculator_simulates_this_charm": false,
+      "catalogue_costs": [
+        600,
+        900,
+        3000
+      ],
+      "catalogue_values": [
+        10,
+        20,
+        22
+      ],
+      "cost_match": true,
+      "coverage_notes": "15% killed-monster HP, physical element and nearby recipients agree. Geometry, 6x-level cap, armor, death credit and proc chains are not asserted by TibiaPal description/calculator.",
+      "duration_match": true,
+      "key": "oteryn:charm.carnage",
+      "mechanics_coverage": "BROAD_DESCRIPTION_COVERED",
+      "name": "Carnage",
+      "numeric_match": true,
+      "planner_source_line": 23
+    },
+    {
+      "asserted_semantics": {
+        "effect": "reflect to aggressor",
+        "proc_values": [
+          5,
+          10,
+          11
+        ],
+        "trigger": "any damage taken"
+      },
+      "calculator_scope_note": "Planner describes values only; no effect simulation.",
+      "calculator_simulates_this_charm": false,
+      "catalogue_costs": [
+        400,
+        600,
+        2000
+      ],
+      "catalogue_values": [
+        5,
+        10,
+        11
+      ],
+      "cost_match": true,
+      "coverage_notes": "No semantic mismatch in exposed description; detailed algorithm remains unverified by TibiaPal.",
+      "duration_match": true,
+      "key": "oteryn:charm.parry",
+      "mechanics_coverage": "BROAD_DESCRIPTION_COVERED",
+      "name": "Parry",
+      "numeric_match": true,
+      "planner_source_line": 24
+    },
+    {
+      "asserted_semantics": {
+        "effect": "dodge attack without taking damage",
+        "proc_values": [
+          5,
+          10,
+          11
+        ]
+      },
+      "calculator_scope_note": "Planner describes values only; no effect simulation.",
+      "calculator_simulates_this_charm": false,
+      "catalogue_costs": [
+        240,
+        360,
+        1200
+      ],
+      "catalogue_values": [
+        5,
+        10,
+        11
+      ],
+      "cost_match": true,
+      "coverage_notes": "No semantic mismatch in exposed description; detailed algorithm remains unverified by TibiaPal.",
+      "duration_match": true,
+      "key": "oteryn:charm.dodge",
+      "mechanics_coverage": "BROAD_DESCRIPTION_COVERED",
+      "name": "Dodge",
+      "numeric_match": true,
+      "planner_source_line": 25
+    },
+    {
+      "asserted_semantics": {
+        "damage_element": "physical",
+        "damage_percent_creature_max_hp": 5,
+        "proc_values": [
+          5,
+          10,
+          11
+        ]
+      },
+      "calculator_scope_note": "For elemental charms calculator supplies a generic sensitivity formula only; it does not simulate an attack or a trigger.",
+      "calculator_simulates_this_charm": true,
+      "catalogue_costs": [
+        240,
+        360,
+        1200
+      ],
+      "catalogue_values": [
+        5,
+        10,
+        11
+      ],
+      "cost_match": true,
+      "coverage_notes": "No semantic mismatch in exposed description; detailed algorithm remains unverified by TibiaPal.",
+      "duration_match": true,
+      "key": "oteryn:charm.wound",
+      "mechanics_coverage": "BROAD_DESCRIPTION_COVERED",
+      "name": "Wound",
+      "numeric_match": true,
+      "planner_source_line": 26
+    },
+    {
+      "asserted_semantics": {
+        "damage_element": "earth",
+        "damage_percent_creature_max_hp": 5,
+        "proc_values": [
+          5,
+          10,
+          11
+        ]
+      },
+      "calculator_scope_note": "For elemental charms calculator supplies a generic sensitivity formula only; it does not simulate an attack or a trigger.",
+      "calculator_simulates_this_charm": true,
+      "catalogue_costs": [
+        240,
+        360,
+        1200
+      ],
+      "catalogue_values": [
+        5,
+        10,
+        11
+      ],
+      "cost_match": true,
+      "coverage_notes": "No semantic mismatch in exposed description; detailed algorithm remains unverified by TibiaPal.",
+      "duration_match": true,
+      "key": "oteryn:charm.poison",
+      "mechanics_coverage": "BROAD_DESCRIPTION_COVERED",
+      "name": "Poison",
+      "numeric_match": true,
+      "planner_source_line": 27
+    },
+    {
+      "asserted_semantics": {
+        "damage_element": "ice",
+        "damage_percent_creature_max_hp": 5,
+        "proc_values": [
+          5,
+          10,
+          11
+        ]
+      },
+      "calculator_scope_note": "For elemental charms calculator supplies a generic sensitivity formula only; it does not simulate an attack or a trigger.",
+      "calculator_simulates_this_charm": true,
+      "catalogue_costs": [
+        320,
+        480,
+        1600
+      ],
+      "catalogue_values": [
+        5,
+        10,
+        11
+      ],
+      "cost_match": true,
+      "coverage_notes": "No semantic mismatch in exposed description; detailed algorithm remains unverified by TibiaPal.",
+      "duration_match": true,
+      "key": "oteryn:charm.freeze",
+      "mechanics_coverage": "BROAD_DESCRIPTION_COVERED",
+      "name": "Freeze",
+      "numeric_match": true,
+      "planner_source_line": 28
+    },
+    {
+      "asserted_semantics": {
+        "damage_element": "energy",
+        "damage_percent_creature_max_hp": 5,
+        "proc_values": [
+          5,
+          10,
+          11
+        ]
+      },
+      "calculator_scope_note": "For elemental charms calculator supplies a generic sensitivity formula only; it does not simulate an attack or a trigger.",
+      "calculator_simulates_this_charm": true,
+      "catalogue_costs": [
+        320,
+        480,
+        1600
+      ],
+      "catalogue_values": [
+        5,
+        10,
+        11
+      ],
+      "cost_match": true,
+      "coverage_notes": "No semantic mismatch in exposed description; detailed algorithm remains unverified by TibiaPal.",
+      "duration_match": true,
+      "key": "oteryn:charm.zap",
+      "mechanics_coverage": "BROAD_DESCRIPTION_COVERED",
+      "name": "Zap",
+      "numeric_match": true,
+      "planner_source_line": 29
+    },
+    {
+      "asserted_semantics": {
+        "damage_element": "death",
+        "damage_percent_creature_max_hp": 5,
+        "proc_values": [
+          5,
+          10,
+          11
+        ]
+      },
+      "calculator_scope_note": "For elemental charms calculator supplies a generic sensitivity formula only; it does not simulate an attack or a trigger.",
+      "calculator_simulates_this_charm": true,
+      "catalogue_costs": [
+        360,
+        540,
+        1800
+      ],
+      "catalogue_values": [
+        5,
+        10,
+        11
+      ],
+      "cost_match": true,
+      "coverage_notes": "No semantic mismatch in exposed description; detailed algorithm remains unverified by TibiaPal.",
+      "duration_match": true,
+      "key": "oteryn:charm.curse",
+      "mechanics_coverage": "BROAD_DESCRIPTION_COVERED",
+      "name": "Curse",
+      "numeric_match": true,
+      "planner_source_line": 30
+    },
+    {
+      "asserted_semantics": {
+        "damage_element": "fire",
+        "damage_percent_creature_max_hp": 5,
+        "proc_values": [
+          5,
+          10,
+          11
+        ]
+      },
+      "calculator_scope_note": "For elemental charms calculator supplies a generic sensitivity formula only; it does not simulate an attack or a trigger.",
+      "calculator_simulates_this_charm": true,
+      "catalogue_costs": [
+        400,
+        600,
+        2000
+      ],
+      "catalogue_values": [
+        5,
+        10,
+        11
+      ],
+      "cost_match": true,
+      "coverage_notes": "No semantic mismatch in exposed description; detailed algorithm remains unverified by TibiaPal.",
+      "duration_match": true,
+      "key": "oteryn:charm.enflame",
+      "mechanics_coverage": "BROAD_DESCRIPTION_COVERED",
+      "name": "Enflame",
+      "numeric_match": true,
+      "planner_source_line": 31
+    },
+    {
+      "asserted_semantics": {
+        "damage_element": "holy",
+        "damage_percent_creature_max_hp": 5,
+        "proc_values": [
+          5,
+          10,
+          11
+        ]
+      },
+      "calculator_scope_note": "For elemental charms calculator supplies a generic sensitivity formula only; it does not simulate an attack or a trigger.",
+      "calculator_simulates_this_charm": true,
+      "catalogue_costs": [
+        600,
+        900,
+        3000
+      ],
+      "catalogue_values": [
+        5,
+        10,
+        11
+      ],
+      "cost_match": true,
+      "coverage_notes": "No semantic mismatch in exposed description; detailed algorithm remains unverified by TibiaPal.",
+      "duration_match": true,
+      "key": "oteryn:charm.divine_wrath",
+      "mechanics_coverage": "BROAD_DESCRIPTION_COVERED",
+      "name": "Divine Wrath",
+      "numeric_match": true,
+      "planner_source_line": 32
+    },
+    {
+      "asserted_semantics": {
+        "duration_ms": 30000,
+        "effect": "prevent fleeing",
+        "proc_values": [
+          30,
+          45,
+          60
+        ]
+      },
+      "calculator_scope_note": "Planner describes values only; no effect simulation.",
+      "calculator_simulates_this_charm": false,
+      "catalogue_costs": [
+        100,
+        150,
+        225
+      ],
+      "catalogue_values": [
+        30,
+        45,
+        60
+      ],
+      "cost_match": true,
+      "coverage_notes": "Duration and broad effect agree. Exact speed/flee formulas/reapplication are not asserted or simulated by TibiaPal.",
+      "duration_match": true,
+      "key": "oteryn:charm.fatal_hold",
+      "mechanics_coverage": "BROAD_DESCRIPTION_COVERED",
+      "name": "Fatal Hold",
+      "numeric_match": true,
+      "planner_source_line": 33
+    },
+    {
+      "asserted_semantics": {
+        "effect": "gain mana instead of losing it when taking mana drain damage",
+        "proc_values": [
+          20,
+          30,
+          40
+        ]
+      },
+      "calculator_scope_note": "Planner describes values only; no effect simulation.",
+      "calculator_simulates_this_charm": false,
+      "catalogue_costs": [
+        100,
+        150,
+        225
+      ],
+      "catalogue_values": [
+        20,
+        30,
+        40
+      ],
+      "cost_match": true,
+      "coverage_notes": "No semantic mismatch in exposed description; detailed algorithm remains unverified by TibiaPal.",
+      "duration_match": true,
+      "key": "oteryn:charm.void_inversion",
+      "mechanics_coverage": "BROAD_DESCRIPTION_COVERED",
+      "name": "Void Inversion",
+      "numeric_match": true,
+      "planner_source_line": 34
+    },
+    {
+      "asserted_semantics": {
+        "bonus_mode": "adds life leech amount",
+        "bonus_values": [
+          1.6,
+          2.4,
+          3.2
+        ],
+        "equipment_gate": "equipment providing life leech"
+      },
+      "calculator_scope_note": "Planner describes values only; no effect simulation.",
+      "calculator_simulates_this_charm": false,
+      "catalogue_costs": [
+        100,
+        150,
+        225
+      ],
+      "catalogue_values": [
+        1.6,
+        2.4,
+        3.2
+      ],
+      "cost_match": true,
+      "coverage_notes": "Equipment prerequisite and additive amount preserved. TibiaPal does not test no-equipment, leech chances, critical, AoE scaling, overkill, or rounding.",
+      "duration_match": true,
+      "key": "oteryn:charm.vampiric_embrace",
+      "mechanics_coverage": "BROAD_DESCRIPTION_COVERED",
+      "name": "Vampiric Embrace",
+      "numeric_match": true,
+      "planner_source_line": 35
+    },
+    {
+      "asserted_semantics": {
+        "bonus_mode": "adds mana leech amount",
+        "bonus_values": [
+          0.8,
+          1.2,
+          1.6
+        ],
+        "equipment_gate": "equipment providing mana leech"
+      },
+      "calculator_scope_note": "Planner describes values only; no effect simulation.",
+      "calculator_simulates_this_charm": false,
+      "catalogue_costs": [
+        100,
+        150,
+        225
+      ],
+      "catalogue_values": [
+        0.8,
+        1.2,
+        1.6
+      ],
+      "cost_match": true,
+      "coverage_notes": "Equipment prerequisite and additive amount preserved. TibiaPal does not test no-equipment, leech chances, critical, AoE scaling, overkill, or rounding.",
+      "duration_match": true,
+      "key": "oteryn:charm.voids_call",
+      "mechanics_coverage": "BROAD_DESCRIPTION_COVERED",
+      "name": "Void's Call",
+      "numeric_match": true,
+      "planner_source_line": 36
+    },
+    {
+      "asserted_semantics": {
+        "bonus_values": [
+          6,
+          9,
+          12
+        ],
+        "effect": "more creature products",
+        "probability_or_quantity": "NOT ASSERTED"
+      },
+      "calculator_scope_note": "Planner describes values only; no effect simulation.",
+      "calculator_simulates_this_charm": false,
+      "catalogue_costs": [
+        100,
+        150,
+        225
+      ],
+      "catalogue_values": [
+        6,
+        9,
+        12
+      ],
+      "cost_match": true,
+      "coverage_notes": "Package correctly preserves probability-versus-quantity UNKNOWN; TibiaPal says more creature products, not how.",
+      "duration_match": true,
+      "key": "oteryn:charm.gut",
+      "mechanics_coverage": "BROAD_DESCRIPTION_COVERED",
+      "name": "Gut",
+      "numeric_match": true,
+      "planner_source_line": 37
+    },
+    {
+      "asserted_semantics": {
+        "bonus_mode": "positive relative skin/dust success chance enhancement",
+        "bonus_values": [
+          60,
+          90,
+          120
+        ],
+        "eligibility": "skinnable/dustable creature"
+      },
+      "calculator_scope_note": "Planner describes values only; no effect simulation.",
+      "calculator_simulates_this_charm": false,
+      "catalogue_costs": [
+        100,
+        150,
+        225
+      ],
+      "catalogue_values": [
+        60,
+        90,
+        120
+      ],
+      "cost_match": true,
+      "coverage_notes": "No semantic mismatch in exposed description; detailed algorithm remains unverified by TibiaPal.",
+      "duration_match": true,
+      "key": "oteryn:charm.scavenge",
+      "mechanics_coverage": "BROAD_DESCRIPTION_COVERED",
+      "name": "Scavenge",
+      "numeric_match": true,
+      "planner_source_line": 38
+    },
+    {
+      "asserted_semantics": {
+        "duration_ms": 10000,
+        "effect": "move faster",
+        "proc_values": [
+          6,
+          9,
+          12
+        ],
+        "trigger": "after getting hit"
+      },
+      "calculator_scope_note": "Planner describes values only; no effect simulation.",
+      "calculator_simulates_this_charm": false,
+      "catalogue_costs": [
+        100,
+        150,
+        225
+      ],
+      "catalogue_values": [
+        6,
+        9,
+        12
+      ],
+      "cost_match": true,
+      "coverage_notes": "Duration and broad effect agree. Exact speed/flee formulas/reapplication are not asserted or simulated by TibiaPal.",
+      "duration_match": true,
+      "key": "oteryn:charm.adrenaline_burst",
+      "mechanics_coverage": "BROAD_DESCRIPTION_COVERED",
+      "name": "Adrenaline Burst",
+      "numeric_match": true,
+      "planner_source_line": 39
+    },
+    {
+      "asserted_semantics": {
+        "effect": "remove one negative status",
+        "immunity": "temporary to removed status",
+        "proc_values": [
+          6,
+          9,
+          12
+        ],
+        "trigger": "when hit"
+      },
+      "calculator_scope_note": "Planner describes values only; no effect simulation.",
+      "calculator_simulates_this_charm": false,
+      "catalogue_costs": [
+        100,
+        150,
+        225
+      ],
+      "catalogue_values": [
+        6,
+        9,
+        12
+      ],
+      "cost_match": true,
+      "coverage_notes": "Package includes removal+same-status temporary immunity; exact 11000ms and eligible statuses remain OTS hypotheses. Broad removal+immunity facts are grouped into OTS-qualified parameters rather than separate structured facts.",
+      "duration_match": true,
+      "key": "oteryn:charm.cleanse",
+      "mechanics_coverage": "BROAD_DESCRIPTION_COVERED",
+      "name": "Cleanse",
+      "numeric_match": true,
+      "planner_source_line": 40
+    },
+    {
+      "asserted_semantics": {
+        "duration_ms": 10000,
+        "effect": "paralyze creature",
+        "proc_values": [
+          6,
+          9,
+          12
+        ]
+      },
+      "calculator_scope_note": "Planner describes values only; no effect simulation.",
+      "calculator_simulates_this_charm": false,
+      "catalogue_costs": [
+        100,
+        150,
+        225
+      ],
+      "catalogue_values": [
+        6,
+        9,
+        12
+      ],
+      "cost_match": true,
+      "coverage_notes": "Duration and broad effect agree. Exact speed/flee formulas/reapplication are not asserted or simulated by TibiaPal.",
+      "duration_match": true,
+      "key": "oteryn:charm.cripple",
+      "mechanics_coverage": "BROAD_DESCRIPTION_COVERED",
+      "name": "Cripple",
+      "numeric_match": true,
+      "planner_source_line": 41
+    },
+    {
+      "asserted_semantics": {
+        "duration_ms": 10000,
+        "effect": "paralyze creature after its attack",
+        "proc_values": [
+          6,
+          9,
+          12
+        ]
+      },
+      "calculator_scope_note": "Planner describes values only; no effect simulation.",
+      "calculator_simulates_this_charm": false,
+      "catalogue_costs": [
+        100,
+        150,
+        225
+      ],
+      "catalogue_values": [
+        6,
+        9,
+        12
+      ],
+      "cost_match": true,
+      "coverage_notes": "Duration and broad effect agree. Exact speed/flee formulas/reapplication are not asserted or simulated by TibiaPal.",
+      "duration_match": true,
+      "key": "oteryn:charm.numb",
+      "mechanics_coverage": "BROAD_DESCRIPTION_COVERED",
+      "name": "Numb",
+      "numeric_match": true,
+      "planner_source_line": 42
+    },
+    {
+      "asserted_semantics": {
+        "bonus_values": [
+          6,
+          9,
+          12
+        ],
+        "effect": "reduce skill and XP loss",
+        "trigger": "killed by chosen creature"
+      },
+      "calculator_scope_note": "Planner describes values only; no effect simulation.",
+      "calculator_simulates_this_charm": false,
+      "catalogue_costs": [
+        100,
+        150,
+        225
+      ],
+      "catalogue_values": [
+        6,
+        9,
+        12
+      ],
+      "cost_match": true,
+      "coverage_notes": "Chosen-killer race requirement exists in common assignment_race and candidate_loss_math notes; killer attribution remains unverified by TibiaPal.",
+      "duration_match": true,
+      "key": "oteryn:charm.bless",
+      "mechanics_coverage": "BROAD_DESCRIPTION_COVERED",
+      "name": "Bless",
+      "numeric_match": true,
+      "planner_source_line": 43
+    }
+  ],
+  "runtime_comparison_findings": [
+    {
+      "classification": "OBSERVED_SOURCE_DIFFERENCE",
+      "current_runtime": "floor exact fixed-point division",
+      "example": "Overpower maxHP=6813 =>341 in TibiaPal vs340 runtime; Overflux maxMana=6821 =>171 vs170; monsterHP=12613 elemental =>631 vs630 pre cap",
+      "id": "ROUNDING_DIFF",
+      "official_rounding": "UNKNOWN; calculator is not official ground truth",
+      "tibiapal": "Math.round"
+    },
+    {
+      "catalogue_and_owner_rule": "min(5% monsterHP,2*playerLevel) before recipient resistance",
+      "classification": "OBSERVED_SCOPE_LIMIT",
+      "example": "monsterHP12613, sensitivity100%, level100: calculator631 vs level-capped base200",
+      "id": "ELEMENTAL_LEVELCAP_ABSENT",
+      "tibiapal": "No level input, always 5% monsterHP times sensitivity"
+    },
+    {
+      "classification": "EXPLICIT_SCOPE_LIMIT",
+      "id": "MITIGATION_NOT_SIMULATED",
+      "tibiapal": "Explicitly pre-mitigation; sensitivity supported but generic monster mitigation absent"
+    }
+  ],
+  "schema": "OTERYN_TIBIAPAL_DESCRIPTION_AUDIT/v1",
+  "sources": [
+    {
+      "path": "scripts/charm_planner.js",
+      "repository": "PawelKusnierek/TibiaPal",
+      "revision": "61ffa3e0502879ccec44e59ead859e92b6d88531",
+      "sha256": "18de343c48b73bbd37e21dc2aae3e7afb17b3c7b3b734f4f9768062307b13b8e"
+    },
+    {
+      "path": "scripts/charm_calculator.js",
+      "repository": "PawelKusnierek/TibiaPal",
+      "revision": "61ffa3e0502879ccec44e59ead859e92b6d88531",
+      "sha256": "04a94974bea35657987085fcc8eaa08060d5478b5a744a0993304a590c4b9811"
+    },
+    {
+      "path": "charm_calculator.html",
+      "repository": "PawelKusnierek/TibiaPal",
+      "revision": "61ffa3e0502879ccec44e59ead859e92b6d88531",
+      "sha256": "80037c53add5e89355257484687e4023c116b0c84dc53d032c13139e17b1a363"
+    }
+  ]
+}

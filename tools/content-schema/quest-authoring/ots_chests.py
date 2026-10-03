@@ -43,6 +43,9 @@ CONFLICT_DECISIONS = json.loads((ROOT / 'conflict_decisions.json').read_text())
 # Curated links for claims the automatic kv_quest_name/storage_key/label/section match could not
 # confidently make (a section-only candidate or no link at all): claim key -> {quest_title, basis, evidence}.
 CHEST_QUEST_LINKS = {row['claim']: row for row in json.loads((ROOT / 'chest_quest_links.json').read_text())['links']}
+# Exact curator titles establish the shared quest identity; no fuzzy name inference.
+SCRIPT_QUEST_KEYS = {row['title']: row['key']
+                     for row in json.loads((ROOT / 'script_quests.json').read_text())['quests'] if row.get('key')}
 
 
 def decided(decision):
@@ -261,7 +264,8 @@ def repeat(entries):
 def quest_key(wiki):
     """One identity per wiki quest across slices: the Canary namespace when Canary implements the quest at all."""
     namespace = 'canary' if wiki.get('canary') in ('IMPLEMENTED', 'PARTIAL') else 'crystalserver'
-    return f'{namespace}:quest/{slug(wiki["title"])}'
+    key = SCRIPT_QUEST_KEYS.get(wiki['title'], slug(wiki['title']))
+    return f'{namespace}:quest/{key}'
 
 
 def joined(text):
@@ -423,6 +427,14 @@ def build(repos, coverage):
                      'path': f'{SOURCES[n]["datapack"]}/{p}', 'blob_sha1': git_blob(repos[n], f'{SOURCES[n]["datapack"]}/{p}')}
                     for n in repos for p in (CHESTS, SCRIPT)],
         'counts': {},
+        'quest_source_aliases': sorted([
+            {'source': f"{quest['identity']['key'].split(':', 1)[0]}:quest/{slug(quest['wiki']['title'])}",
+             'target': quest['identity']['key'], 'wiki_pageid': quest['wiki']['pageid'],
+             'basis': 'exact script_quests.json curator title/key'}
+            for quest in quests.values()
+            if SCRIPT_QUEST_KEYS.get(quest['wiki']['title'])
+            and SCRIPT_QUEST_KEYS[quest['wiki']['title']] != slug(quest['wiki']['title'])],
+            key=lambda alias: alias['source']),
         'entries': sorted(manifest_entries, key=lambda e: json.dumps(e, sort_keys=True)),
     }
     counts = defaultdict(int)

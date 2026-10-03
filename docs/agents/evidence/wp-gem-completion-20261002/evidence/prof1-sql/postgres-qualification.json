@@ -1,0 +1,12 @@
+{
+  "database": "oteryn_prof1_sql_syntax_20261001",
+  "container": "oteryn-wp-pg-20261001",
+  "server": "17.6",
+  "baseline_migrations": 30,
+  "sql_sha256": "9bde3bfcc946e18600913e295a983998321f4fdfd9dd244bf5b28a28e04142b5",
+  "status": "ISOLATED_PG_DDL_AND_CATALOGUE_PASS",
+  "candidate_rolled_back": true,
+  "candidate_tables_remaining": 0,
+  "shared_or_live_database_modified": false,
+  "qualification_limit": "No writer/integrity/authority/trigger-behavior qualification; root owns actual cases. Base roles created by inherited0006 are NOLOGIN local test groups, not runtime activation."
+}

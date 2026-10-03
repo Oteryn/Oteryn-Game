@@ -1,0 +1,1142 @@
+{
+  "approved_core_digests": [
+    {
+      "from_digest": "12b5c131b408e231f7da98db41dff49342e6809266715843dff40b0ac3278b45",
+      "key": "oteryn:quest.steal_from_thieves_quest",
+      "to_digest": "68bc9da79b6b51c4947783f9a838ad78daffef3bef1a621eb331dc7176a3c8d7"
+    },
+    {
+      "from_digest": "c9861b042580289c1e2a24dfaa75033be44b6c886a724987a88cfc9c67d76a2c",
+      "key": "oteryn:quest.the_gravedigger_of_drefia_quest",
+      "to_digest": "50bc4f24a26608e908aebc5dace85cd6cb81f85b77d5b525ebf5d5ddc921a6c3"
+    },
+    {
+      "from_digest": "4d6965a069a62c36773b9d597725612c223885c34035e87def93f69198bcb675",
+      "key": "oteryn:quest.the_thieves_guild_quest",
+      "to_digest": "53cb22fa6e0330c485e4fcd8c889dc1d93dc7e1be6d1baf682bfc43b3a06ba0e"
+    }
+  ],
+  "classification": "OTS_HYPOTHESIS_ONLY",
+  "curation": {
+    "path": "tools/content-schema/quest-authoring/samples/owner-associations/track-owner-patch.json",
+    "sha256": "4f332bf0c3ce845aa77a875261a3663f66981c40dc65f70297db637a77da6b0e"
+  },
+  "evidence": {
+    "path": "tools/content-schema/quest-authoring/samples/owner-associations/evidence.json",
+    "sha256": "930b310b67e59b0be360bf909476edde7cb915204707ea64ae43179d4c4ae26d"
+  },
+  "native_runtime_admission": false,
+  "relocated_graph": {
+    "anchors": [],
+    "identity": {
+      "key": "canary:interaction/others/actions_steal_from_thieves",
+      "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+    },
+    "rules": [
+      {
+        "branch": [
+          {
+            "then": [
+              {
+                "branch": [
+                  {
+                    "then": [
+                      {
+                        "authoritative": false,
+                        "effect": "message",
+                        "owner": "Presentation",
+                        "source_line": 9
+                      }
+                    ],
+                    "when": {
+                      "negate": false,
+                      "quest_stage": {
+                        "op": ">",
+                        "progress": "canary:quest-progress/quest/u8_2/the_thieves_guild_quest/steal_from_thieves",
+                        "value": 1
+                      }
+                    }
+                  }
+                ],
+                "otherwise": [
+                  {
+                    "owner": "Item",
+                    "request": "hand_out",
+                    "value_source_line": 14
+                  },
+                  {
+                    "owner": "Quest",
+                    "progress": "canary:quest-progress/quest/u8_2/the_thieves_guild_quest/steal_from_thieves",
+                    "request": "set_progress",
+                    "to": 2
+                  },
+                  {
+                    "authoritative": false,
+                    "effect": "message",
+                    "owner": "Presentation",
+                    "source_line": 16
+                  }
+                ]
+              }
+            ],
+            "when": {
+              "unresolved": {
+                "line": 7
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "source": {
+      "callback": "onUse",
+      "edge": "USE",
+      "target_registrations": [
+        "aid(19910)"
+      ]
+    },
+    "unresolved": []
+  },
+  "relocated_graph_key": "canary:interaction/others/actions_steal_from_thieves",
+  "schema": "OTERYN_REVIEWED_SOURCE_OWNER_ASSOCIATIONS/v1",
+  "tracks": [
+    {
+      "key": "canary:quest-progress/quest/u8_2/the_thieves_guild_quest/steal_from_thieves",
+      "new": {
+        "auxiliary_of": [
+          "canary:quest/steal_from_thieves_quest"
+        ],
+        "key": "canary:quest-progress/quest/u8_2/the_thieves_guild_quest/steal_from_thieves",
+        "missions": [],
+        "note": "Exact Ahmet yes/topic2 start, yes/topic3 Bag235 return and UID19910 action write the separately named StealFromThieves track. Prefix TheThievesGuildQuest is a source namespace, not the owner of this side quest. Adjacent Mission04 documents branch remains The Thieves Guild. Initial value, canonical bounds and NPC item/reward lowering remain UNKNOWN.",
+        "owner_basis": "track_owners.json",
+        "read_by_gates": [],
+        "start_of": [],
+        "transitions": [
+          {
+            "key": "action_1",
+            "script": "scripts/quests/others/actions_steal_from_thieves.lua",
+            "source_occurrences": [
+              {
+                "blob_sha256": "cf029fb4b5f0d9a8adb119c1cae81da2eef80a6d9f768e25e3af28cd8dcbc9ec",
+                "line": 15,
+                "line_sha256": "15f078f6ca3c6686843fc4f25b6cdb22320f956ce64695f718b03fa971e05a7b",
+                "occurrence": 3,
+                "path": "data-otservbr-global/scripts/quests/others/actions_steal_from_thieves.lua",
+                "registrations": [
+                  "aid(19910)"
+                ],
+                "repository": "opentibiabr/canary",
+                "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+                "source": "canary",
+                "target": "Storage.Quest.U8_2.TheThievesGuildQuest.StealFromThieves",
+                "write": {
+                  "callback": "onUse",
+                  "from": {
+                    "exact": true,
+                    "op": "<=",
+                    "value": 1
+                  },
+                  "key": "action_1",
+                  "owner": "action",
+                  "servers": [
+                    "canary"
+                  ],
+                  "to": 2
+                }
+              },
+              {
+                "blob_sha256": "cf029fb4b5f0d9a8adb119c1cae81da2eef80a6d9f768e25e3af28cd8dcbc9ec",
+                "line": 15,
+                "line_sha256": "15f078f6ca3c6686843fc4f25b6cdb22320f956ce64695f718b03fa971e05a7b",
+                "occurrence": 3,
+                "path": "data-global/scripts/quests/others/actions_steal_from_thieves.lua",
+                "registrations": [
+                  "aid(19910)"
+                ],
+                "repository": "zimbadev/crystalserver",
+                "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+                "source": "crystalserver",
+                "target": "Storage.Quest.U8_2.TheThievesGuildQuest.StealFromThieves",
+                "write": {
+                  "callback": "onUse",
+                  "from": {
+                    "exact": true,
+                    "op": "<=",
+                    "value": 1
+                  },
+                  "key": "action_1",
+                  "owner": "action",
+                  "servers": [
+                    "crystalserver"
+                  ],
+                  "to": 2
+                }
+              }
+            ],
+            "sources": {
+              "canary": {
+                "line": 15,
+                "path": "data-otservbr-global/scripts/quests/others/actions_steal_from_thieves.lua",
+                "registrations": [
+                  "aid(19910)"
+                ]
+              },
+              "crystalserver": {
+                "line": 15,
+                "path": "data-global/scripts/quests/others/actions_steal_from_thieves.lua",
+                "registrations": [
+                  "aid(19910)"
+                ]
+              }
+            },
+            "write": {
+              "callback": "onUse",
+              "from": {
+                "exact": true,
+                "op": "<=",
+                "value": 1
+              },
+              "key": "action_1",
+              "owner": "action",
+              "servers": [
+                "canary",
+                "crystalserver"
+              ],
+              "to": 2
+            }
+          },
+          {
+            "key": "npc_1",
+            "script": "npc/ahmet.lua",
+            "source_occurrences": [
+              {
+                "blob_sha256": "017953fa96f21272f93aeb2273d5cb09edeb27baf3fcdb30dd6a3a1acc8cf0d1",
+                "dialogue": {
+                  "keywords": [
+                    "yes"
+                  ],
+                  "topics": [
+                    2
+                  ]
+                },
+                "line": 150,
+                "line_sha256": "906b24ca8e25e8619f9a81bd4b42401114af5eb24184bae1aa69e5390c60fe08",
+                "occurrence": 1,
+                "path": "data-otservbr-global/npc/ahmet.lua",
+                "registrations": [],
+                "repository": "opentibiabr/canary",
+                "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+                "source": "canary",
+                "target": "Storage.Quest.U8_2.TheThievesGuildQuest.StealFromThieves",
+                "write": {
+                  "callback": null,
+                  "from": null,
+                  "key": "npc_1",
+                  "owner": "npc",
+                  "requested_by": {
+                    "keywords": [
+                      "yes"
+                    ],
+                    "npc": "canary:npc/ahmet",
+                    "topics": [
+                      2
+                    ]
+                  },
+                  "servers": [
+                    "canary"
+                  ],
+                  "to": 1
+                }
+              },
+              {
+                "blob_sha256": "7141a6ed014f4ca77031a6c83f41f7ff9603bf35a645004be53754e7bfa62797",
+                "dialogue": {
+                  "keywords": [
+                    "yes"
+                  ],
+                  "topics": [
+                    2
+                  ]
+                },
+                "line": 148,
+                "line_sha256": "906b24ca8e25e8619f9a81bd4b42401114af5eb24184bae1aa69e5390c60fe08",
+                "occurrence": 1,
+                "path": "data-global/npc/ahmet.lua",
+                "registrations": [],
+                "repository": "zimbadev/crystalserver",
+                "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+                "source": "crystalserver",
+                "target": "Storage.Quest.U8_2.TheThievesGuildQuest.StealFromThieves",
+                "write": {
+                  "callback": null,
+                  "from": null,
+                  "key": "npc_1",
+                  "owner": "npc",
+                  "requested_by": {
+                    "keywords": [
+                      "yes"
+                    ],
+                    "npc": "crystal:npc/ahmet",
+                    "topics": [
+                      2
+                    ]
+                  },
+                  "servers": [
+                    "crystalserver"
+                  ],
+                  "to": 1
+                }
+              }
+            ],
+            "sources": {
+              "canary": {
+                "dialogue": {
+                  "keywords": [
+                    "yes"
+                  ],
+                  "topics": [
+                    2
+                  ]
+                },
+                "line": 150,
+                "path": "data-otservbr-global/npc/ahmet.lua",
+                "registrations": []
+              },
+              "crystalserver": {
+                "dialogue": {
+                  "keywords": [
+                    "yes"
+                  ],
+                  "topics": [
+                    2
+                  ]
+                },
+                "line": 148,
+                "path": "data-global/npc/ahmet.lua",
+                "registrations": []
+              }
+            },
+            "write": {
+              "callback": null,
+              "from": null,
+              "key": "npc_1",
+              "owner": "npc",
+              "requested_by": {
+                "keywords": [
+                  "yes"
+                ],
+                "npc": "canary:npc/ahmet",
+                "topics": [
+                  2
+                ]
+              },
+              "servers": [
+                "canary",
+                "crystalserver"
+              ],
+              "to": 1
+            }
+          },
+          {
+            "key": "npc_2",
+            "script": "npc/ahmet.lua",
+            "source_occurrences": [
+              {
+                "blob_sha256": "017953fa96f21272f93aeb2273d5cb09edeb27baf3fcdb30dd6a3a1acc8cf0d1",
+                "dialogue": {
+                  "keywords": [
+                    "yes"
+                  ],
+                  "topics": [
+                    3
+                  ]
+                },
+                "line": 154,
+                "line_sha256": "9e6b66201bc23642ad9ae03d1d147429ed758ac1849bcbc24b2a71d819e36103",
+                "occurrence": 2,
+                "path": "data-otservbr-global/npc/ahmet.lua",
+                "registrations": [],
+                "repository": "opentibiabr/canary",
+                "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+                "source": "canary",
+                "target": "Storage.Quest.U8_2.TheThievesGuildQuest.StealFromThieves",
+                "write": {
+                  "callback": null,
+                  "from": null,
+                  "key": "npc_2",
+                  "owner": "npc",
+                  "requested_by": {
+                    "keywords": [
+                      "yes"
+                    ],
+                    "npc": "canary:npc/ahmet",
+                    "topics": [
+                      3
+                    ]
+                  },
+                  "servers": [
+                    "canary"
+                  ],
+                  "to": 3
+                }
+              },
+              {
+                "blob_sha256": "7141a6ed014f4ca77031a6c83f41f7ff9603bf35a645004be53754e7bfa62797",
+                "dialogue": {
+                  "keywords": [
+                    "yes"
+                  ],
+                  "topics": [
+                    3
+                  ]
+                },
+                "line": 152,
+                "line_sha256": "9e6b66201bc23642ad9ae03d1d147429ed758ac1849bcbc24b2a71d819e36103",
+                "occurrence": 2,
+                "path": "data-global/npc/ahmet.lua",
+                "registrations": [],
+                "repository": "zimbadev/crystalserver",
+                "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+                "source": "crystalserver",
+                "target": "Storage.Quest.U8_2.TheThievesGuildQuest.StealFromThieves",
+                "write": {
+                  "callback": null,
+                  "from": null,
+                  "key": "npc_2",
+                  "owner": "npc",
+                  "requested_by": {
+                    "keywords": [
+                      "yes"
+                    ],
+                    "npc": "crystal:npc/ahmet",
+                    "topics": [
+                      3
+                    ]
+                  },
+                  "servers": [
+                    "crystalserver"
+                  ],
+                  "to": 3
+                }
+              }
+            ],
+            "sources": {
+              "canary": {
+                "dialogue": {
+                  "keywords": [
+                    "yes"
+                  ],
+                  "topics": [
+                    3
+                  ]
+                },
+                "line": 154,
+                "path": "data-otservbr-global/npc/ahmet.lua",
+                "registrations": []
+              },
+              "crystalserver": {
+                "dialogue": {
+                  "keywords": [
+                    "yes"
+                  ],
+                  "topics": [
+                    3
+                  ]
+                },
+                "line": 152,
+                "path": "data-global/npc/ahmet.lua",
+                "registrations": []
+              }
+            },
+            "write": {
+              "callback": null,
+              "from": null,
+              "key": "npc_2",
+              "owner": "npc",
+              "requested_by": {
+                "keywords": [
+                  "yes"
+                ],
+                "npc": "canary:npc/ahmet",
+                "topics": [
+                  3
+                ]
+              },
+              "servers": [
+                "canary",
+                "crystalserver"
+              ],
+              "to": 3
+            }
+          }
+        ],
+        "writes": {
+          "canary": 3,
+          "crystalserver": 3
+        }
+      },
+      "old": {
+        "auxiliary_of": [
+          "canary:quest/the_thieves_guild_quest"
+        ],
+        "key": "canary:quest-progress/quest/u8_2/the_thieves_guild_quest/steal_from_thieves",
+        "missions": [],
+        "owner_basis": "mission track prefix",
+        "read_by_gates": [],
+        "start_of": [],
+        "transitions": [
+          {
+            "key": "action_1",
+            "script": "scripts/quests/others/actions_steal_from_thieves.lua",
+            "source_occurrences": [
+              {
+                "blob_sha256": "cf029fb4b5f0d9a8adb119c1cae81da2eef80a6d9f768e25e3af28cd8dcbc9ec",
+                "line": 15,
+                "line_sha256": "15f078f6ca3c6686843fc4f25b6cdb22320f956ce64695f718b03fa971e05a7b",
+                "occurrence": 3,
+                "path": "data-otservbr-global/scripts/quests/others/actions_steal_from_thieves.lua",
+                "registrations": [
+                  "aid(19910)"
+                ],
+                "repository": "opentibiabr/canary",
+                "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+                "source": "canary",
+                "target": "Storage.Quest.U8_2.TheThievesGuildQuest.StealFromThieves",
+                "write": {
+                  "callback": "onUse",
+                  "from": {
+                    "exact": true,
+                    "op": "<=",
+                    "value": 1
+                  },
+                  "key": "action_1",
+                  "owner": "action",
+                  "servers": [
+                    "canary"
+                  ],
+                  "to": 2
+                }
+              },
+              {
+                "blob_sha256": "cf029fb4b5f0d9a8adb119c1cae81da2eef80a6d9f768e25e3af28cd8dcbc9ec",
+                "line": 15,
+                "line_sha256": "15f078f6ca3c6686843fc4f25b6cdb22320f956ce64695f718b03fa971e05a7b",
+                "occurrence": 3,
+                "path": "data-global/scripts/quests/others/actions_steal_from_thieves.lua",
+                "registrations": [
+                  "aid(19910)"
+                ],
+                "repository": "zimbadev/crystalserver",
+                "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+                "source": "crystalserver",
+                "target": "Storage.Quest.U8_2.TheThievesGuildQuest.StealFromThieves",
+                "write": {
+                  "callback": "onUse",
+                  "from": {
+                    "exact": true,
+                    "op": "<=",
+                    "value": 1
+                  },
+                  "key": "action_1",
+                  "owner": "action",
+                  "servers": [
+                    "crystalserver"
+                  ],
+                  "to": 2
+                }
+              }
+            ],
+            "sources": {
+              "canary": {
+                "line": 15,
+                "path": "data-otservbr-global/scripts/quests/others/actions_steal_from_thieves.lua",
+                "registrations": [
+                  "aid(19910)"
+                ]
+              },
+              "crystalserver": {
+                "line": 15,
+                "path": "data-global/scripts/quests/others/actions_steal_from_thieves.lua",
+                "registrations": [
+                  "aid(19910)"
+                ]
+              }
+            },
+            "write": {
+              "callback": "onUse",
+              "from": {
+                "exact": true,
+                "op": "<=",
+                "value": 1
+              },
+              "key": "action_1",
+              "owner": "action",
+              "servers": [
+                "canary",
+                "crystalserver"
+              ],
+              "to": 2
+            }
+          },
+          {
+            "key": "npc_1",
+            "script": "npc/ahmet.lua",
+            "source_occurrences": [
+              {
+                "blob_sha256": "017953fa96f21272f93aeb2273d5cb09edeb27baf3fcdb30dd6a3a1acc8cf0d1",
+                "dialogue": {
+                  "keywords": [
+                    "yes"
+                  ],
+                  "topics": [
+                    2
+                  ]
+                },
+                "line": 150,
+                "line_sha256": "906b24ca8e25e8619f9a81bd4b42401114af5eb24184bae1aa69e5390c60fe08",
+                "occurrence": 1,
+                "path": "data-otservbr-global/npc/ahmet.lua",
+                "registrations": [],
+                "repository": "opentibiabr/canary",
+                "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+                "source": "canary",
+                "target": "Storage.Quest.U8_2.TheThievesGuildQuest.StealFromThieves",
+                "write": {
+                  "callback": null,
+                  "from": null,
+                  "key": "npc_1",
+                  "owner": "npc",
+                  "requested_by": {
+                    "keywords": [
+                      "yes"
+                    ],
+                    "npc": "canary:npc/ahmet",
+                    "topics": [
+                      2
+                    ]
+                  },
+                  "servers": [
+                    "canary"
+                  ],
+                  "to": 1
+                }
+              },
+              {
+                "blob_sha256": "7141a6ed014f4ca77031a6c83f41f7ff9603bf35a645004be53754e7bfa62797",
+                "dialogue": {
+                  "keywords": [
+                    "yes"
+                  ],
+                  "topics": [
+                    2
+                  ]
+                },
+                "line": 148,
+                "line_sha256": "906b24ca8e25e8619f9a81bd4b42401114af5eb24184bae1aa69e5390c60fe08",
+                "occurrence": 1,
+                "path": "data-global/npc/ahmet.lua",
+                "registrations": [],
+                "repository": "zimbadev/crystalserver",
+                "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+                "source": "crystalserver",
+                "target": "Storage.Quest.U8_2.TheThievesGuildQuest.StealFromThieves",
+                "write": {
+                  "callback": null,
+                  "from": null,
+                  "key": "npc_1",
+                  "owner": "npc",
+                  "requested_by": {
+                    "keywords": [
+                      "yes"
+                    ],
+                    "npc": "crystal:npc/ahmet",
+                    "topics": [
+                      2
+                    ]
+                  },
+                  "servers": [
+                    "crystalserver"
+                  ],
+                  "to": 1
+                }
+              }
+            ],
+            "sources": {
+              "canary": {
+                "dialogue": {
+                  "keywords": [
+                    "yes"
+                  ],
+                  "topics": [
+                    2
+                  ]
+                },
+                "line": 150,
+                "path": "data-otservbr-global/npc/ahmet.lua",
+                "registrations": []
+              },
+              "crystalserver": {
+                "dialogue": {
+                  "keywords": [
+                    "yes"
+                  ],
+                  "topics": [
+                    2
+                  ]
+                },
+                "line": 148,
+                "path": "data-global/npc/ahmet.lua",
+                "registrations": []
+              }
+            },
+            "write": {
+              "callback": null,
+              "from": null,
+              "key": "npc_1",
+              "owner": "npc",
+              "requested_by": {
+                "keywords": [
+                  "yes"
+                ],
+                "npc": "canary:npc/ahmet",
+                "topics": [
+                  2
+                ]
+              },
+              "servers": [
+                "canary",
+                "crystalserver"
+              ],
+              "to": 1
+            }
+          },
+          {
+            "key": "npc_2",
+            "script": "npc/ahmet.lua",
+            "source_occurrences": [
+              {
+                "blob_sha256": "017953fa96f21272f93aeb2273d5cb09edeb27baf3fcdb30dd6a3a1acc8cf0d1",
+                "dialogue": {
+                  "keywords": [
+                    "yes"
+                  ],
+                  "topics": [
+                    3
+                  ]
+                },
+                "line": 154,
+                "line_sha256": "9e6b66201bc23642ad9ae03d1d147429ed758ac1849bcbc24b2a71d819e36103",
+                "occurrence": 2,
+                "path": "data-otservbr-global/npc/ahmet.lua",
+                "registrations": [],
+                "repository": "opentibiabr/canary",
+                "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+                "source": "canary",
+                "target": "Storage.Quest.U8_2.TheThievesGuildQuest.StealFromThieves",
+                "write": {
+                  "callback": null,
+                  "from": null,
+                  "key": "npc_2",
+                  "owner": "npc",
+                  "requested_by": {
+                    "keywords": [
+                      "yes"
+                    ],
+                    "npc": "canary:npc/ahmet",
+                    "topics": [
+                      3
+                    ]
+                  },
+                  "servers": [
+                    "canary"
+                  ],
+                  "to": 3
+                }
+              },
+              {
+                "blob_sha256": "7141a6ed014f4ca77031a6c83f41f7ff9603bf35a645004be53754e7bfa62797",
+                "dialogue": {
+                  "keywords": [
+                    "yes"
+                  ],
+                  "topics": [
+                    3
+                  ]
+                },
+                "line": 152,
+                "line_sha256": "9e6b66201bc23642ad9ae03d1d147429ed758ac1849bcbc24b2a71d819e36103",
+                "occurrence": 2,
+                "path": "data-global/npc/ahmet.lua",
+                "registrations": [],
+                "repository": "zimbadev/crystalserver",
+                "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+                "source": "crystalserver",
+                "target": "Storage.Quest.U8_2.TheThievesGuildQuest.StealFromThieves",
+                "write": {
+                  "callback": null,
+                  "from": null,
+                  "key": "npc_2",
+                  "owner": "npc",
+                  "requested_by": {
+                    "keywords": [
+                      "yes"
+                    ],
+                    "npc": "crystal:npc/ahmet",
+                    "topics": [
+                      3
+                    ]
+                  },
+                  "servers": [
+                    "crystalserver"
+                  ],
+                  "to": 3
+                }
+              }
+            ],
+            "sources": {
+              "canary": {
+                "dialogue": {
+                  "keywords": [
+                    "yes"
+                  ],
+                  "topics": [
+                    3
+                  ]
+                },
+                "line": 154,
+                "path": "data-otservbr-global/npc/ahmet.lua",
+                "registrations": []
+              },
+              "crystalserver": {
+                "dialogue": {
+                  "keywords": [
+                    "yes"
+                  ],
+                  "topics": [
+                    3
+                  ]
+                },
+                "line": 152,
+                "path": "data-global/npc/ahmet.lua",
+                "registrations": []
+              }
+            },
+            "write": {
+              "callback": null,
+              "from": null,
+              "key": "npc_2",
+              "owner": "npc",
+              "requested_by": {
+                "keywords": [
+                  "yes"
+                ],
+                "npc": "canary:npc/ahmet",
+                "topics": [
+                  3
+                ]
+              },
+              "servers": [
+                "canary",
+                "crystalserver"
+              ],
+              "to": 3
+            }
+          }
+        ],
+        "writes": {
+          "canary": 3,
+          "crystalserver": 3
+        }
+      }
+    },
+    {
+      "key": "canary:quest-progress/quest/u10_10/the_gravedigger_of_drefia/mission05",
+      "new": {
+        "auxiliary_of": [
+          "canary:quest/the_gravedigger_of_drefia_quest"
+        ],
+        "key": "canary:quest-progress/quest/u10_10/the_gravedigger_of_drefia/mission05",
+        "missions": [],
+        "owner_basis": "exclusive curated NPC writers",
+        "read_by_gates": [],
+        "source_storage": {
+          "expression": "Storage.Quest.U10_10.TheGravediggerOfDrefia.Mission05",
+          "line": 1841,
+          "path": "data-otservbr-global/lib/core/storages.lua",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "storage_id": 44206
+        },
+        "start_of": [],
+        "transitions": [
+          {
+            "key": "npc_1",
+            "script": "npc/omrabas.lua",
+            "source_occurrences": [
+              {
+                "blob_sha256": "26b8b6c512d4049cfd6c5683da1b3840d0d447923c99d915d99895a271ff25ff",
+                "dialogue": {
+                  "keywords": [
+                    "mission"
+                  ],
+                  "topics": []
+                },
+                "line": 82,
+                "line_sha256": "f56f1bdda538e403e1b405a48c9455e517b51d03b30fd6b9641b3b46c69d7928",
+                "occurrence": 1,
+                "path": "data-otservbr-global/npc/omrabas.lua",
+                "registrations": [],
+                "repository": "opentibiabr/canary",
+                "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+                "source": "canary",
+                "target": "Storage.Quest.U10_10.TheGravediggerOfDrefia.Mission05",
+                "write": {
+                  "callback": null,
+                  "from": null,
+                  "key": "npc_1",
+                  "owner": "npc",
+                  "requested_by": {
+                    "keywords": [
+                      "mission"
+                    ],
+                    "npc": "canary:npc/omrabas",
+                    "topics": []
+                  },
+                  "servers": [
+                    "canary"
+                  ],
+                  "to": 1
+                }
+              },
+              {
+                "blob_sha256": "a2666b8881321b77e4f23767c314f2a4bf60de132c7ae752199126024758e25b",
+                "dialogue": {
+                  "keywords": [
+                    "mission"
+                  ],
+                  "topics": []
+                },
+                "line": 80,
+                "line_sha256": "f56f1bdda538e403e1b405a48c9455e517b51d03b30fd6b9641b3b46c69d7928",
+                "occurrence": 1,
+                "path": "data-global/npc/omrabas.lua",
+                "registrations": [],
+                "repository": "zimbadev/crystalserver",
+                "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+                "source": "crystalserver",
+                "target": "Storage.Quest.U10_10.TheGravediggerOfDrefia.Mission05",
+                "write": {
+                  "callback": null,
+                  "from": null,
+                  "key": "npc_1",
+                  "owner": "npc",
+                  "requested_by": {
+                    "keywords": [
+                      "mission"
+                    ],
+                    "npc": "crystal:npc/omrabas",
+                    "topics": []
+                  },
+                  "servers": [
+                    "crystalserver"
+                  ],
+                  "to": 1
+                }
+              }
+            ],
+            "sources": {
+              "canary": {
+                "dialogue": {
+                  "keywords": [
+                    "mission"
+                  ],
+                  "topics": []
+                },
+                "line": 82,
+                "path": "data-otservbr-global/npc/omrabas.lua",
+                "registrations": []
+              },
+              "crystalserver": {
+                "dialogue": {
+                  "keywords": [
+                    "mission"
+                  ],
+                  "topics": []
+                },
+                "line": 80,
+                "path": "data-global/npc/omrabas.lua",
+                "registrations": []
+              }
+            },
+            "write": {
+              "callback": null,
+              "from": null,
+              "key": "npc_1",
+              "owner": "npc",
+              "requested_by": {
+                "keywords": [
+                  "mission"
+                ],
+                "npc": "canary:npc/omrabas",
+                "topics": []
+              },
+              "servers": [
+                "canary",
+                "crystalserver"
+              ],
+              "to": 1
+            }
+          }
+        ],
+        "writes": {
+          "canary": 1,
+          "crystalserver": 1
+        }
+      },
+      "old": {
+        "auxiliary_of": [],
+        "key": "canary:quest-progress/quest/u10_10/the_gravedigger_of_drefia/mission05",
+        "missions": [],
+        "owner_basis": "UNKNOWN",
+        "read_by_gates": [],
+        "source_checks": {
+          "owner": "UNKNOWN: exact source reader/declaration retained; owning quest, initial value, bounds and native Character policy are not inferred"
+        },
+        "source_storage": {
+          "expression": "Storage.Quest.U10_10.TheGravediggerOfDrefia.Mission05",
+          "line": 1841,
+          "path": "data-otservbr-global/lib/core/storages.lua",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "storage_id": 44206
+        },
+        "start_of": [],
+        "transitions": [
+          {
+            "key": "npc_1",
+            "script": "npc/omrabas.lua",
+            "source_occurrences": [
+              {
+                "blob_sha256": "26b8b6c512d4049cfd6c5683da1b3840d0d447923c99d915d99895a271ff25ff",
+                "dialogue": {
+                  "keywords": [
+                    "mission"
+                  ],
+                  "topics": []
+                },
+                "line": 82,
+                "line_sha256": "f56f1bdda538e403e1b405a48c9455e517b51d03b30fd6b9641b3b46c69d7928",
+                "occurrence": 1,
+                "path": "data-otservbr-global/npc/omrabas.lua",
+                "registrations": [],
+                "repository": "opentibiabr/canary",
+                "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+                "source": "canary",
+                "target": "Storage.Quest.U10_10.TheGravediggerOfDrefia.Mission05",
+                "write": {
+                  "callback": null,
+                  "from": null,
+                  "key": "npc_1",
+                  "owner": "npc",
+                  "requested_by": {
+                    "keywords": [
+                      "mission"
+                    ],
+                    "npc": "canary:npc/omrabas",
+                    "topics": []
+                  },
+                  "servers": [
+                    "canary"
+                  ],
+                  "to": 1
+                }
+              },
+              {
+                "blob_sha256": "a2666b8881321b77e4f23767c314f2a4bf60de132c7ae752199126024758e25b",
+                "dialogue": {
+                  "keywords": [
+                    "mission"
+                  ],
+                  "topics": []
+                },
+                "line": 80,
+                "line_sha256": "f56f1bdda538e403e1b405a48c9455e517b51d03b30fd6b9641b3b46c69d7928",
+                "occurrence": 1,
+                "path": "data-global/npc/omrabas.lua",
+                "registrations": [],
+                "repository": "zimbadev/crystalserver",
+                "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+                "source": "crystalserver",
+                "target": "Storage.Quest.U10_10.TheGravediggerOfDrefia.Mission05",
+                "write": {
+                  "callback": null,
+                  "from": null,
+                  "key": "npc_1",
+                  "owner": "npc",
+                  "requested_by": {
+                    "keywords": [
+                      "mission"
+                    ],
+                    "npc": "crystal:npc/omrabas",
+                    "topics": []
+                  },
+                  "servers": [
+                    "crystalserver"
+                  ],
+                  "to": 1
+                }
+              }
+            ],
+            "sources": {
+              "canary": {
+                "dialogue": {
+                  "keywords": [
+                    "mission"
+                  ],
+                  "topics": []
+                },
+                "line": 82,
+                "path": "data-otservbr-global/npc/omrabas.lua",
+                "registrations": []
+              },
+              "crystalserver": {
+                "dialogue": {
+                  "keywords": [
+                    "mission"
+                  ],
+                  "topics": []
+                },
+                "line": 80,
+                "path": "data-global/npc/omrabas.lua",
+                "registrations": []
+              }
+            },
+            "write": {
+              "callback": null,
+              "from": null,
+              "key": "npc_1",
+              "owner": "npc",
+              "requested_by": {
+                "keywords": [
+                  "mission"
+                ],
+                "npc": "canary:npc/omrabas",
+                "topics": []
+              },
+              "servers": [
+                "canary",
+                "crystalserver"
+              ],
+              "to": 1
+            }
+          }
+        ],
+        "writes": {
+          "canary": 1,
+          "crystalserver": 1
+        }
+      }
+    }
+  ]
+}

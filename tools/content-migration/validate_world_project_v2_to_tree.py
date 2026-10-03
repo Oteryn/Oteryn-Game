@@ -10,6 +10,9 @@ import sys
 from pathlib import Path
 from typing import Any
 
+from item_taxonomy import build_taxonomy, legacy_profile, taxonomy_inputs
+from world_project_v2_to_tree import capability_relations
+
 ROOT = Path(__file__).resolve().parents[2]
 LEGACY = ROOT / "content" / "world"
 # Canary creature admission wave A (OTERYN_WORLD_PROJECT_V2_CREATURE_ADMISSION_V1 §7).
@@ -37,7 +40,8 @@ CHARM_COUNT = 25
 PROFICIENCY_COUNT = 443
 PROFICIENCY_BINDING_COUNT = 664  # 642 + 22 bound by the ITEM-ADD-1 donor epoch-2 Items
 # RewardClaim likewise (tools/content-schema/reward-claim-authoring).
-REWARD_CLAIM_COUNT = 231
+REWARD_CLAIM_COUNT = len(json.loads(
+    (ROOT / "tools/content-schema/quest-authoring/samples/chests/claims.json").read_text())["claims"])
 # StarterKit likewise (tools/content-schema/starter-kit-authoring).
 STARTER_KIT_COUNT = 1
 SERVICE_FAMILY_COUNTS = {"Service.Trade": 324, "Service.Travel": 56}
@@ -98,6 +102,8 @@ def authoring_value(entry: dict[str, Any], path: str) -> Any:
 def validate_item_enrichment(reference: Any, declarations: Any, sources: Any, batches: list[Any],
                              migrated_authoring: dict[tuple[str, str, str], dict[str, Any]]) -> tuple[int, int, int, int]:
     """Round-trip Item authoring/taxonomy/relations and prove per-fact provenance."""
+    from quest_reward_item_semantics import load_admissions
+    reward_admissions = load_admissions(ROOT)
     staged = load(ROOT / "docs/agents/evidence/OTV2-20260925-item-enrichment-wave1-staged.json")
     stats = load(ROOT / "docs/agents/evidence/OTV2-20260930-item-stats-promotion-v2.json")
     content_path = {"weapon.range_cells": "weapon.range"}
@@ -113,10 +119,15 @@ def validate_item_enrichment(reference: Any, declarations: Any, sources: Any, ba
     definitions = {target_id(row["identity"]): row for row in reference["records"]}
 
     rebuilt = {key: dict(value) for key, value in migrated_authoring.items()}
+    require(taxonomy["records"] == build_taxonomy(
+        definitions, legacy_authoring, assignments, *taxonomy_inputs(ROOT)
+    ), "TAXONOMY_SOURCE_COVERAGE")
     for row in taxonomy["records"]:
         key = target_id(row["target"])
         require(key in definitions, "TAXONOMY_TARGET_UNRESOLVED")
-        require(row["family_profile"] == assignments.get(row["source_taxonomy"]["primary"]), "TAXONOMY_FAMILY_PROFILE")
+        if "source_evidence" in row:
+            continue  # Source-qualified navigation supplement; never legacy authoring.
+        require(row["family_profile"] == legacy_profile(row["source_taxonomy"]["primary"], assignments), "TAXONOMY_FAMILY_PROFILE")
         require(row["family_profile"] is None or row["family_profile"] in set(assignments.values()), "TAXONOMY_PROFILE_UNKNOWN")
         rebuilt.setdefault(key, {"item": row["target"]})["taxonomy"] = row["source_taxonomy"]
     require(canonical_sorted(list(rebuilt.values())) == canonical_sorted(list(legacy_authoring.values())), "ITEM_AUTHORING_ROUNDTRIP")
@@ -126,16 +137,20 @@ def validate_item_enrichment(reference: Any, declarations: Any, sources: Any, ba
     require(set(staged_items) == set(legacy_authoring), "WAVE1_AUTHORING_TARGETS")
     relation_count = 0
     seen_sources = set()
+    expected_relations = {
+        key: capability_relations(definition, legacy_authoring.get(key))
+        for key, definition in definitions.items() if key[0] == "Item"
+    }
     for row in relations["records"]:
         key = target_id(row["source"])
         require(key in definitions and key not in seen_sources, "RELATION_SOURCE_UNRESOLVED")
         seen_sources.add(key)
         rulesets = sorted(relation["ruleset"] for relation in row["relations"])
-        require(rulesets == staged_items[key]["capability_relations"], "RELATION_DERIVATION_DISAGREES")
+        require(row["relations"] == expected_relations[key], "RELATION_DERIVATION_DISAGREES")
         for ruleset in rulesets:
             require((ROOT / ruleset / "index.json").is_file(), f"RELATION_RULESET_UNRESOLVED:{ruleset}")
         relation_count += len(rulesets)
-    require(sum(bool(item["capability_relations"]) for item in staged["items"]) == len(seen_sources), "RELATION_COVERAGE")
+    require({key for key, values in expected_relations.items() if values} == seen_sources, "RELATION_COVERAGE")
 
     batch = next(row for row in batches if row["batch_id"] == staged["batch_id"])
     require(batch["source_artifact_sha256"] == staged["source"]["snapshot_sha256"] == facts["snapshot_sha256"], "PROVENANCE_BATCH_DIGEST")
@@ -159,11 +174,13 @@ def validate_item_enrichment(reference: Any, declarations: Any, sources: Any, ba
         for entry in record["authoring_facts"]:
             authoring_value(legacy_authoring[key], entry["field_path"])
             fact_count += 1
-        # Blocked contracts stay UNKNOWN even when the source carried a value. Weight is no
-        # longer blocked: the owner fixed its unit (hundredths of an ounce, 2026-09-30) and
-        # ITEM-SEM-2b promotes it from TibiaWiki.
+        # B3 §4.3 supersedes the old maximum hold only for this digest-verified
+        # reward admission's proven stackable items. Other blocked facts stay unknown.
         for blocked in ("stack.stack_max",):
-            require(blocked not in known, f"BLOCKED_FIELD_PROMOTED:{blocked}")
+            if blocked in known:
+                admitted = reward_admissions.get(key[1])
+                require(admitted is not None and admitted[0]["stackable"] and known[blocked] == 100,
+                        f"BLOCKED_FIELD_PROMOTED:{blocked}")
         require(definitions[key].get("semantics", {}).get("equipment", {}).get("state", "UNKNOWN") == "UNKNOWN", "BLOCKED_EQUIPMENT_PROMOTED")
     require(fact_count == staged["counts"]["definition_facts"] + staged["counts"]["authoring_facts"], "PROVENANCE_FACT_COUNT")
     return len(legacy_authoring), len(taxonomy["records"]), relation_count, fact_count
@@ -339,6 +356,9 @@ def validate_dialogue(declarations: Any) -> int:
 
 def main() -> int:
     reference = load(LEGACY / "definitions" / "reference.json")
+    # Equivalence is protected legacy plus the accepted tree-first reward Item packet.
+    from quest_reward_item_semantics import apply_admissions
+    apply_admissions([row for row in reference["records"] if row["identity"]["family"] == "Item"], ROOT)
     declarations = load(LEGACY / "definitions" / "declarations.json")
     legacy_mount_declarations = [row for row in declarations["records"] if row.get("kind") == "Mount"]
     require(len(legacy_mount_declarations) == 252, "LEGACY_MOUNT_COUNT")
@@ -356,10 +376,16 @@ def main() -> int:
         "legacy_mutated": False,
         "runtime_switch_authorized": False,
     }, "COMPATIBILITY_BOUNDARY")
+    from world_project_v2_to_tree import retained_quest_registration
+    quest_families, quest_paths = retained_quest_registration(ROOT)
+    if quest_families:
+        require("Quest" in project["migrated_families"] and "Quest" not in project["next_population_families"], "QUEST_PROJECT_REGISTRATION")
+        require(set(quest_paths).issubset({row["path"] for row in manifest["managed_files"]}), "QUEST_MANAGED_FILES")
     require(lock["family_counts"] == {"Item": 34031, "Mount": 252, **CREATURE_FAMILY_COUNTS, "NPC": NPC_COUNT,
                                        "Encounter": ENCOUNTER_COUNT, "Dialogue": DIALOGUE_COUNT, **SERVICE_FAMILY_COUNTS,
                                        "Charm": CHARM_COUNT, "Proficiency": PROFICIENCY_COUNT,
-                                       "RewardClaim": REWARD_CLAIM_COUNT, "StarterKit": STARTER_KIT_COUNT},
+                                       "RewardClaim": REWARD_CLAIM_COUNT, "StarterKit": STARTER_KIT_COUNT,
+                                       **{family: value["records"] for family, value in quest_families.items()}},
             "LOCK_COUNTS")
     require(lock["source_binding_counts"]["NPC"] == NPC_BINDING_COUNT, "LOCK_NPC_BINDING_COUNT")
     require(item_index["record_count"] == 34031 and len(item_index["shards"]) == 69, "ITEM_INDEX")

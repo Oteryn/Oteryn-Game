@@ -27,16 +27,21 @@ the equivalent getter method). Any other line or condition stays unresolved with
 positions become named anchors with the coordinates kept as evidence. Every output is OTS_HYPOTHESIS_ONLY.
 """
 import argparse
+import ast
 import glob
 import hashlib
 import json
 import re
 from collections import Counter
+from functools import lru_cache
+import xml.etree.ElementTree as ET
 from pathlib import Path
 
 import lua_blocks
 import lua_tables
-from lua_writers import REGISTRATION, argument, expand_aliases, storage_aliases, strip_code
+from scoped_storage_aliases import expand_scoped_storage_aliases
+from lua_writers import (REGISTRATION, argument, expand_aliases, storage_aliases,
+                         builtin_binding_is_pristine, mask_code, scalar_leaf_paths, static_name_is_immutable, strip_code, unconditional_prefix)
 from ots_chests import CONFLICT_DECISIONS, REVISION, ROOT, SOURCES, check_checkout, decided, git_blob, ref, slug, unused_decisions
 from ots_questlog import norm, script_of, track_of
 from validate_quest_content import BLOCKED, BLOCKED_DUPLICATE_SCHEDULED_REVERT, BLOCKED_INCOMPLETE_CALL, BLOCKED_SCHEDULED_REVERT_DELAY
@@ -120,6 +125,20 @@ REVERT_METHOD = re.compile(r'(\w+)[:.](revertItem|decay)\(')
 ADD_STOP_EVENT = re.compile(r'\b(?:add|stop)Event\(')
 
 
+def lexical_finditer(pattern, text):
+    """Select a raw match only when its call head lies outside lexical literals."""
+    compiled = re.compile(pattern) if isinstance(pattern, str) else pattern
+    masked = mask_code(text)
+    for match in compiled.finditer(text):
+        first = next((i for i in range(match.start(), match.end()) if not text[i].isspace()), None)
+        if first is not None and masked[first] == text[first] and not masked[first].isspace():
+            yield match
+
+
+def lexical_search(pattern, text):
+    return next(lexical_finditer(pattern, text), None)
+
+
 def parse_revert(code, raw):
     """Whether `raw` is a revert call, and what it provably reverts: (is_revert, receiver, literal
     position groups, literal delay in ms, scheduled, incomplete). Each form is gated on a match in
@@ -135,7 +154,7 @@ def parse_revert(code, raw):
     one the way an inherently undelayed `:decay()`/`:revertItem(...)` call is allowed to. `incomplete`
     is true only when a form that parses an argument list has one that never closes on this line (a
     multi-line call): its own fields are never read from that partial text."""
-    if POSITION_REVERT_ITEM.search(code) and (m := POSITION_REVERT_ITEM.search(raw)):
+    if POSITION_REVERT_ITEM.search(code) and (m := lexical_search(POSITION_REVERT_ITEM, raw)):
         args_text = call_complete(raw, m.end())
         if args_text is None:
             return True, None, None, None, False, True
@@ -143,9 +162,9 @@ def parse_revert(code, raw):
         target = args[0] if args else None
         pos = POSITION.fullmatch(target) if target else None
         return True, None, (pos.groups() if pos else None), None, False, False
-    if REVERT_METHOD.search(code) and (m := REVERT_METHOD.search(raw)):
+    if REVERT_METHOD.search(code) and (m := lexical_search(REVERT_METHOD, raw)):
         return True, m.group(1), None, None, False, False
-    if ADD_STOP_EVENT.search(code) and (m := ADD_STOP_EVENT.search(raw)):
+    if ADD_STOP_EVENT.search(code) and (m := lexical_search(ADD_STOP_EVENT, raw)):
         args_text = call_complete(raw, m.end())
         if args_text is None:
             return True, None, None, None, True, True
@@ -165,44 +184,124 @@ def parse_revert(code, raw):
     return False, None, None, None, False, False
 
 
-def call_complete(text, start):
-    """The rest of a call's argument list from `start`, up to its own closing parenthesis -- or `None`
-    when that closing parenthesis is not on this line at all (a multi-line call): `lua_writers.argument`
-    is read one physical line at a time, so a call whose argument list is still open at end of line would
-    otherwise be handed to `split_args` as if it were complete, silently dropping or misreading whatever
-    the next line(s) actually contribute. A D38 operation is typed only from a call this confirms closed;
-    otherwise its child stays blocked with `BLOCKED_INCOMPLETE_CALL`, never guessed from partial text."""
-    depth, i = 0, start
-    while i < len(text):
-        c = text[i]
+def delimiters(text):
+    """Bracket/boolean separators outside quoted strings; never interpret Lua."""
+    depth, quote, escaped = 0, None, False
+    for i, c in enumerate(text):
+        if quote:
+            if escaped:
+                escaped = False
+            elif c == "\\":
+                escaped = True
+            elif c == quote:
+                quote = None
+            continue
+        if c in "\"'":
+            quote = c
+            continue
+        yield i, c, depth
         if c in '({[':
             depth += 1
         elif c in ')}]':
-            if depth == 0:
-                return text[start:i]
             depth -= 1
-        i += 1
+
+
+def call_complete(text, start):
+    """A complete call's own arguments, respecting quoted punctuation and nesting."""
+    for i, c, depth in delimiters(text[start:]):
+        if c == ')' and depth == 0:
+            return text[start:start + i]
     return None
 
 
 def split_args(text):
-    """The top-level, comma-separated arguments of a call's argument-list text (bracket-nesting aware,
-    so a literal `Position(x, y, z)` argument is not itself split on its own commas)."""
-    if not text.strip():
-        return []
-    parts, depth, current = [], 0, ''
-    for c in text:
-        if c in '({[':
-            depth += 1
-        elif c in ')}]':
-            depth -= 1
-        if c == ',' and depth == 0:
-            parts.append(current)
-            current = ''
-        else:
-            current += c
-    parts.append(current)
-    return [p.strip() for p in parts]
+    cuts = [i for i, c, depth in delimiters(text) if c == ',' and depth == 0]
+    bounds = [-1, *cuts, len(text)]
+    return [text[a + 1:b].strip() for a, b in zip(bounds, bounds[1:])] if text.strip() else []
+
+
+def multiline_conditions(commentless, masked):
+    """Fold only a complete if/elseif header, retaining every physical line index.
+
+    A top-level trailing `then` ends the header. Unsupported expressions still
+    reach condition(), while control statements or unbalanced brackets prevent
+    folding. Never consume a callback body when a source header is incomplete.
+    """
+    output, headers = list(masked), {}
+    for start, code in enumerate(masked):
+        if not re.match(r'^\s*(?:if|elseif)\b', code) or re.search(r'\bthen\b', code):
+            continue
+        chunks, stack, complete = [], [], False
+        for index in range(start, min(start + 64, len(masked))):
+            raw = commentless[index].strip()
+            indent = len(commentless[index]) - len(commentless[index].lstrip())
+            visible = masked[index][indent:].rstrip()
+            if re.search(r'[\"\']', visible):
+                break  # a quote left by the lexer is not a complete literal
+            if re.search(r'\b(?:setStorageValue|createItem|createMonster|addItem|removeItem|addItemEx|addAchievement|addOutfit|addOutfitAddon|addMount|addExperience|teleportTo|sendTextMessage|say|addCondition|removeCondition|setBossCooldown|addEvent|remove|transform)\s*\(', visible):
+                break  # effectful predicates require their own source evidence
+            if index > start and re.search(r'\b(?:if|elseif|else|end|for|while|repeat|until|function|return|local|break)\b', visible):
+                break
+            terminal = None
+            for offset, character in enumerate(visible):
+                if character in '([{':
+                    stack.append(character)
+                elif character in ')]}':
+                    if not stack or stack.pop() != {')': '(', ']': '[', '}': '{'}[character]:
+                        break
+                elif not stack and re.match(r'\bthen\b', visible[offset:]) and (offset == 0 or not re.match(r'\w', visible[offset - 1])):
+                    terminal = offset
+                    break
+            else:
+                chunks.append(raw)
+                if sum(map(len, chunks)) <= 8192:
+                    continue
+                break
+            if terminal is not None and not visible[terminal + 4:].strip():
+                chunks.append(raw[:terminal] + 'then')
+                complete = True
+            break
+        if complete:
+            headers[start + 1] = ' '.join(chunks)
+            output[start] = mask_code(headers[start + 1])
+            output[start + 1:index + 1] = [''] * (index - start)
+    return output, headers
+
+
+class LiteralParser(lua_tables.Parser):
+    """Only Position's literal constructor is added to the existing table subset."""
+    def value(self):
+        if self.peek()[1] == 'Position' and self.peek(1)[1] == '(':
+            self.next()
+            self.expect('(')
+            value = super().value()
+            if self.peek()[1] == ',':
+                self.expect(',')
+                y = super().value()
+                self.expect(',')
+                z = super().value()
+                if not all(type(v) is int for v in (value, y, z)):
+                    raise lua_tables.LuaError('Position coordinates are not literal integers')
+                value = {'x': value, 'y': y, 'z': z}
+            self.expect(')')
+            return value
+        return super().value()
+
+
+@lru_cache(maxsize=4)
+def item_names(repo):
+    """Exact XML names only: duplicate names/ranges never choose an arbitrary ID."""
+    path = Path(repo) / 'data/items/items.xml'
+    if not path.exists():
+        return {}
+    names = {}
+    for item in ET.parse(path).getroot().findall('item'):
+        name = item.get('name', '').lower()
+        if not name:
+            continue
+        ident = int(item.get('id')) if item.get('id', '').isdigit() else None
+        names[name] = ident if name not in names else None
+    return {name: ident for name, ident in names.items() if ident is not None}
 
 
 def strip_internal(rules):
@@ -230,11 +329,132 @@ CHAIN_STEP = re.compile(r'\.([A-Za-z_]\w*)|\[(\d+)\]|\[([A-Za-z_]\w*)\]')
 VALUE_ALIAS = re.compile(r'^local\s+(\w+)\s*=\s*((?:\w+:getStorageValue|Game\.getStorageValue)\([^()]*\))$')
 
 
+def pristine_constructor(lines, name):
+    """Bare calls are not root escapes; mutations/shadows/reflection still reject."""
+    code = mask_code('\n'.join(lines))
+    if re.search(r'\b(?:_G|_ENV|rawset|getfenv|setfenv|load|loadstring|loadfile|dofile|require|debug)\b', code):
+        return False
+    proof = re.sub(rf'(?<![\w.:]){re.escape(name)}\s*(?=\()', f'{name}.__constructor__', code)
+    return builtin_binding_is_pristine(proof.splitlines(), name)
+
+
+def readonly_table_lines(lines):
+    """Complete literal constructors have no gameplay effects, including Position.
+
+    Never skip an expression, function, incomplete table or trailing statement.
+    Physical lines remain intact for the control-flow/source witness machinery.
+    """
+    result = set()
+    position_safe = pristine_constructor(lines, 'Position')
+    def primitive(value):
+        if isinstance(value, dict):
+            if 'fields' in value:
+                # Lua evaluates every constructor field, including overwritten
+                # duplicate keys. Inspect the original AST before dict collapse.
+                return all(type(field['key']) in (int, float, str, bool)
+                           and primitive(field['value']) for field in value['fields'])
+            return not ({'expr', 'function'} & value.keys()) and all(primitive(v) for v in value.values())
+        if isinstance(value, list):
+            return all(primitive(v) for v in value)
+        return value is None or type(value) in (int, float, str, bool)
+    for index, line in enumerate(lines):
+        header = re.match(r'^\s*local\s+\w+\s*=\s*(\{)', line)
+        if not header:
+            continue
+        # The parser can see following statements; only the closing line is
+        # consumed, and everything after its brace on that line must be empty.
+        text = '\n'.join(lines[index:index + 256])[header.start(1):]
+        if len(text) > 32768:
+            text = text[:32768]
+        try:
+            parser = LiteralParser(text)
+            value = parser.table()
+            last = parser.tokens[parser.i - 1][2]
+            closing = parser.tokens[parser.i - 1]
+            tail = parser.peek()
+            if not primitive(value) or (tail[0] != 'eof' and tail[2] == last):
+                continue
+            tokens = parser.tokens[:parser.i]
+            calls = [token for i, token in enumerate(tokens[:-1]) if token[0] == 'name' and tokens[i + 1][1] == '(']
+            if calls and (not position_safe or any(token[1] != 'Position' for token in calls)):
+                continue
+            if closing[1] != '}':
+                continue
+            result.update(range(index + 1, index + last + 1))
+        except (lua_tables.LuaError, IndexError, ValueError, TypeError):
+            pass
+    return result
+
+
+def typed_tile_item_removal(script, raw, number, in_loop=False):
+    # Existing library proof rejects direct constructor calls as escapes.
+    # Normalize only lexical bare calls for that proof; declarations, shadows
+    # and escaped root values remain visible and still fail closed.
+    code = mask_code('\n'.join(script.lines))
+    if re.search(r'\b(?:_G|_ENV|rawset|getfenv|setfenv|load|loadfile|dofile)\b', code):
+        return None
+    proof = re.sub(r'\bTile\s*(?=\()', 'Tile.__constructor__', code)
+    if not builtin_binding_is_pristine(proof.splitlines(), 'Tile'):
+        return None
+    statement = strip_code(raw).strip()
+    match = re.fullmatch(r'Tile\(([^()]*)\):getItemById\(([^()]*)\):remove\(\)\s*;?', statement)
+    if not match:
+        return None
+    args = [arg.strip() for arg in match[1].split(',')]
+    if len(args) != 3:
+        return None
+    item_id = script.literal(match[2], before=number)
+    if type(item_id) is not int or item_id <= 0:
+        return None
+    coordinates = [script.literal(arg, before=number) for arg in args]
+    ranges = [(value, value) if type(value) is int else None for value in coordinates]
+    if any(value is None for value in ranges):
+        # The sole nonliteral position component may be a proven finite numeric
+        # loop counter. This narrow three-line loop has no mutation or control
+        # flow hidden between its header and its one statement.
+        if not in_loop or number < 2 or number >= len(script.lines):
+            return None
+        header = strip_code(script.lines[number - 2]).strip()
+        loop = re.fullmatch(r'for\s+([A-Za-z_]\w*)\s*=\s*([^,]+),\s*([^,]+)\s+do', header)
+        if not loop or strip_code(script.lines[number]).strip() != 'end':
+            return None
+        bounds = [script.literal(loop[i], before=number - 1) for i in (2, 3)]
+        if any(type(value) is not int for value in bounds) or not 0 <= bounds[0] <= bounds[1] <= 65535:
+            return None
+        unresolved = [i for i, value in enumerate(coordinates) if type(value) is not int]
+        if len(unresolved) != 1 or args[unresolved[0]] != loop[1]:
+            return None
+        ranges[unresolved[0]] = tuple(bounds)
+    if any(not 0 <= low <= high <= limit for (low, high), limit in zip(ranges, (65535, 65535, 15))):
+        return None
+    return {'owner': 'WorldObject', 'operation': 'REMOVE', 'value_source_line': number}
+
 class Script:
     def __init__(self, server, repo, path, transitions, name):
         self.server, self.path, self.name = server, path, name
+        self.repo = str(repo)
+        self.current_line = 0
+        self.literal_aliases = {}
         self.namespace = 'canary' if server == 'canary' else 'crystalserver'
         self.lines = (Path(repo) / path).read_text(errors='replace').split('\n')
+        self.commentless_lines = mask_code('\n'.join(self.lines), literals=False, long_literals=True).split('\n')
+        # Reuse the progress importer's exact lexical argument proof; keep originals
+        # for mutation/actor proofs and evidence. Reflection leaves aliases opaque.
+        dynamic = re.search(r'\b(?:_G|_ENV|rawset|getfenv|setfenv|load|loadfile|loadstring|dofile|require|debug)\b',
+                            mask_code('\n'.join(self.lines)))
+        scoped = '\n'.join(self.lines) if dynamic else expand_scoped_storage_aliases('\n'.join(self.lines))
+        self.scoped_lines = mask_code(scoped, literals=False, long_literals=True).split('\n')
+        self.scoped_receivers = set()
+        self.code_lines = mask_code('\n'.join(self.lines)).split('\n')
+        self.block_lines, self.condition_headers = multiline_conditions(self.commentless_lines, self.code_lines)
+        self.readonly_tables = readonly_table_lines(self.commentless_lines)
+        self.player_constructor_safe = pristine_constructor(self.lines, "Player")
+        self.builtin_proofs = {root: builtin_binding_is_pristine(self.lines, root) for root in ('Game', 'table')}
+        # Pinned Tile(position) only reads coordinates; qualified/shadowed calls
+        # are excluded before admitting this constructor as a non-aliasing copy.
+        self.position_copy_calls = {'Game.createMonster', 'Game.createItem'}
+        if pristine_constructor(self.lines, 'Tile') and pristine_constructor(self.lines, 'Position'):
+            self.position_copy_calls.add('Tile')
         self.transitions = transitions
         self.anchors, self.unresolved = [], []
         self.roles, self.players, self.declared, self.containers = {}, set(), {}, {}
@@ -267,20 +487,150 @@ class Script:
         names = [n.strip() for n in params.split(',')]
         self.roles = {n: r for n, r in zip(names, ROLES.get(callback, ())) if r}
         self.callback = callback
+        self.scoped_receivers = set()
+        # No shadowing or mutation: only one declaration in the file, before this use,
+        # either before all functions or in this callback. Branch-selected values stay unknown.
+        prefix = unconditional_prefix(self.lines)
+        body_nodes = lua_blocks.parse(self.block_lines, lua_blocks.function_body(self.block_lines, number))
+        # A branch local is visible only in its branch and descendants, never siblings.
+        self.line_scopes = {}
+        def index_scope(nodes, scope=()):
+            for index, node in enumerate(nodes):
+                if node[0] == 'stmt':
+                    self.line_scopes[node[1]] = scope
+                elif node[0] in ('block', 'deferred'):
+                    for n in node[1]:
+                        self.line_scopes[n] = (*scope, ('opaque', index))
+                elif node[0] == 'if':
+                    for branch, (_, n, children) in enumerate(node[1]):
+                        self.line_scopes[n] = scope
+                        index_scope(children, (*scope, (index, branch)))
+                    index_scope(node[2], (*scope, (index, 'else')))
+        index_scope(body_nodes)
+        body_numbers = {n for n, scope in self.line_scopes.items()
+                        if not any(part[0] == 'opaque' for part in scope)}
+        self.alias_scopes = {}
+        self.literal_aliases = {}
+        self.visible_tables = {}
+        for n, line in enumerate(self.lines, 1):
+            m = re.fullmatch(r'\s*local\s+(\w+)\s*=\s*(.+?)\s*(?:--.*)?', line)
+            if m and (n in prefix or n in body_numbers) and self.immutable(m.group(1)):
+                self.alias_scopes[m.group(1)] = None if n in prefix else self.line_scopes[n]
+                if m.group(2).startswith('{'):
+                    self.visible_tables[m.group(1)] = n
+                else:
+                    expression = m.group(2)
+                    if expression.startswith('Position('):
+                        if not static_name_is_immutable(self.lines, m.group(1), references=True,
+                                                        copy_calls=self.position_copy_calls):
+                            continue
+                    elif CHAIN.fullmatch(expression):
+                        value = self.literal(expression, before=n)
+                        storage = isinstance(value, dict) and set(value) == {'expr'} and LITERAL_STORAGE.fullmatch(value['expr'])
+                        if type(value) not in (int, float, str, bool) and not storage:
+                            continue
+                    self.literal_aliases[m.group(1)] = (n, expression)
         actor = next((n for n, r in self.roles.items() if r == 'actor'), None)
         self.players = {actor} if callback == 'onUse' else set()
         self.containers = {}
-        body = [self.raw(n) for n in lua_blocks.function_body(self.lines, number)]
-        declared = [m for text in body if (m := VALUE_ALIAS.match(text))]
+        self.container_scopes = {}
         # an alias counts only when declared once and never assigned again in the callback, so every later
         # read sees the storage value it was declared with
-        self.value_aliases = {m.group(1): m.group(2) for m in declared
-                              if sum(1 for d in declared if d.group(1) == m.group(1)) == 1
-                              and not any(re.match(rf'^(local\s+)?{re.escape(m.group(1))}\s*=(?!=)', text)
-                                          for text in body if not VALUE_ALIAS.match(text))}
-        for line in self.lines[number:]:
-            if actor and (m := re.match(rf'\s*local\s+(\w+)\s*=\s*{actor}:getPlayer\(\)', line)):
+        callback_lines = [self.lines[n - 1] for n in lua_blocks.function_body(self.code_lines, number)]
+        self.value_aliases = {}
+        for n in sorted(body_numbers):
+            if (m := VALUE_ALIAS.match(self.raw(n))) and static_name_is_immutable(callback_lines, m.group(1)):
+                self.value_aliases[m.group(1)] = (n, m.group(2), self.line_scopes[n])
+        self.player_aliases = {}
+        # getId() can fall through Player's numeric GUID lookup for a non-player.
+        # Retain that spelling only after an exact same-actor player guard.
+        player_known_lines = set()
+        def player_guards(nodes, known=False):
+            for node in nodes:
+                if node[0] == 'stmt':
+                    if known:
+                        player_known_lines.add(node[1])
+                elif node[0] == 'if':
+                    branches = node[1]
+                    exact = len(branches) == 1 and actor and re.fullmatch(
+                        rf'if\s+(not\s+)?{actor}:isPlayer\(\)\s+then', self.raw(branches[0][1]))
+                    for _, line, body in branches:
+                        player_guards(body, known or bool(exact and not exact[1]))
+                    player_guards(node[2], known or bool(exact and exact[1]))
+                    if exact and exact[1] and not node[2]:
+                        body = branches[0][2]
+                        if len(body) == 1 and body[0][0] == 'stmt' and re.fullmatch(
+                                r'return(?:\s+(?:true|false))?', self.raw(body[0][1])):
+                            known = True
+        player_guards(body_nodes, callback == 'onUse')
+        actor_unchanged = actor and static_name_is_immutable([f'local {actor} = nil', *callback_lines], actor)
+        for n in sorted(body_numbers):
+            raw = self.raw(n)
+            getter = actor and re.fullmatch(rf'local\s+(\w+)\s*=\s*{actor}:getPlayer\(\)', raw)
+            constructor = (actor_unchanged and self.player_constructor_safe
+                           and re.fullmatch(rf'local\s+(\w+)\s*=\s*Player\(\s*{actor}(?::getId\(\))?\s*\)', raw))
+            if constructor and ':getId()' in raw and n not in player_known_lines:
+                constructor = None
+            m = getter or constructor
+            if m and static_name_is_immutable(callback_lines, m.group(1)):
+                self.player_aliases[m.group(1)] = (n, self.line_scopes[n])
                 self.players.add(m.group(1))
+        self.scoped_receivers = {name for name in self.players if builtin_binding_is_pristine(
+            [self.lines[n - 1] for n in sorted(self.line_scopes)
+             if n != self.player_aliases.get(name, (None,))[0]], name)}
+        # Refresh snapshot reads once acting-player aliases and their scopes are known.
+        for n in sorted(body_numbers):
+            if (m := VALUE_ALIAS.match(self.raw(n))) and static_name_is_immutable(callback_lines, m.group(1)):
+                self.value_aliases[m.group(1)] = (n, m.group(2), self.line_scopes[n])
+
+        # getId on a use target is an Item type only after its own isItem guard.
+        self.item_target_lines = set()
+        target = next((n for n, role in self.roles.items() if role == 'use_target'), None)
+        dynamic = re.search(r'\b(?:_G|_ENV|rawset|getfenv|setfenv|load|loadfile|loadstring|dofile|require|debug|getmetatable|setmetatable)\b',
+                            mask_code('\n'.join(self.lines)))
+        proof_lines = [re.sub(rf'(?<![\w.:])type\(\s*{re.escape(target or "missing_target")}\s*\)',
+                              f'{target}:__source_type__()', line) for line in callback_lines]
+        proof_lines = [re.sub(rf'\bnot\s+{re.escape(target or "missing_target")}\b(?!\s*[.:\[])',
+                              f'not {target}:__source_truthiness__()', line) for line in proof_lines]
+        if (target and not dynamic and pristine_constructor(self.lines, 'Item')
+                and pristine_constructor(self.lines, 'type') and builtin_binding_is_pristine(proof_lines, target)):
+            def item_guards(nodes, known=False):
+                for node in nodes:
+                    if known:
+                        self.item_target_lines.update([node[1]] if node[0] == 'stmt' else
+                                                      [n for _, n, _ in node[1]] if node[0] == 'if' else [])
+                    if node[0] != 'if':
+                        continue
+                    branches = node[1]
+                    header = self.condition_headers.get(branches[0][1], self.raw(branches[0][1]))
+                    test = re.sub(r'^if\s+|\s+then.*$', '', header).strip()
+                    cuts = [i for i, _, depth in delimiters(test) if depth == 0 and re.match(r'\bor\b', test[i:])]
+                    bounds = [-2, *cuts, len(test)]
+                    terms = [test[a + 2:b].strip() for a, b in zip(bounds, bounds[1:])]
+                    positive = len(branches) == 1 and test == f'{target}:isItem()'
+                    negative = len(branches) == 1 and f'not {target}:isItem()' in terms
+                    for _, _, body in branches:
+                        item_guards(body, known or positive)
+                    # lua_blocks models terminating returns by putting continuation
+                    # in otherwise; a false disjunction makes every term false.
+                    item_guards(node[2], known or negative)
+            item_guards(body_nodes)
+
+    def proven_player(self, name, number):
+        if self.callback == 'onUse' and self.roles.get(name) == 'actor':
+            return True
+        if name in self.player_aliases:
+            declaration, scope = self.player_aliases[name]
+            current = self.line_scopes.get(number, ())
+            return declaration < number and current[:len(scope)] == scope
+        return False
+
+    def proven_container(self, name, number):
+        if name not in self.container_scopes:
+            return False
+        declaration, scope = self.container_scopes[name]
+        current = self.line_scopes.get(number, ())
+        return declaration < number and current[:len(scope)] == scope
 
     @staticmethod
     def xyz(match):
@@ -312,44 +662,243 @@ class Script:
     def track(self, storage):
         """The catalogue's progress track for a storage, whichever server declared it (D33), else this server's."""
         path = track_of(storage)
-        return self.declared.get(norm(path), f'{self.namespace}:quest-progress/{path}')
+        return self.declared.get(path, f'{self.namespace}:quest-progress/{path}')
+
+    def immutable(self, name):
+        return static_name_is_immutable(self.lines, name)
 
     def discover_tables(self):
-        """Every `Name = { … }` table literal in this file, read once with lua_tables so a storage key that is a
-        path into one of them (`config.storage`, `rewards[3148].storage`) can be resolved without evaluating Lua.
-        Any parse trouble (a table holding something lua_tables cannot read) just leaves this file's tables empty:
-        the keys stay unresolved rather than guessed."""
-        text = '\n'.join(self.lines)
-        names = {m.group(1) for m in NAME_TABLE.finditer(text)}
-        try:
-            parsed = lua_tables.assignments(text, names)
-            return {name: lua_tables.as_python(table) for name, table in parsed.items()}
-        except Exception:
-            return {}
+        # Parse each independently: an unsupported constructor must not erase a sibling literal.
+        text, out = '\n'.join(self.lines), {}
+        for name in sorted({m.group(1) for m in NAME_TABLE.finditer(text)}):
+            if not self.immutable(name):
+                continue
+            try:
+                parser = LiteralParser(text)
+                while parser.peek()[0] != 'eof':
+                    kind, token, declaration_line = parser.next()
+                    if kind == 'name' and token == name and parser.peek()[1] == '=' and parser.peek(1)[1] == '{':
+                        parser.next()
+                        value = lua_tables.as_python(parser.table())
+                        # The new copy proof admits only fully pure original ASTs,
+                        # before any duplicate-key collapse performed by as_python.
+                        copies = self.position_copy_calls
+                        if declaration_line not in self.readonly_tables:
+                            copies = copies - {'Tile'}
+                        if static_name_is_immutable(self.lines, name, references=True,
+                                                    scalar_paths=scalar_leaf_paths(value, name),
+                                                    copy_calls=copies):
+                            out[name] = value
+            except (lua_tables.LuaError, IndexError, TypeError, ValueError):
+                pass
+        return out
 
-    def resolve_chain(self, expr):
-        """A dotted/bracket-indexed path rooted at one of this file's table literals, resolved to its leaf value
-        (never a runtime-selected entry: a `[name]` step, indexing by a variable or loop counter, stops it)."""
+    def visible(self, name, number):
+        scope = self.alias_scopes.get(name)
+        current = self.line_scopes.get(number, ())
+        return scope is None or current[:len(scope)] == scope
+
+    def arithmetic(self, expr, seen, before):
+        """Only exact integer +,-,* over already proven literals; never execute Lua/Python."""
+        if (len(expr) > 1024 or not re.fullmatch(r'[A-Za-z0-9_.\[\]() +*\-\t]+', expr)
+                or any(depth > 32 for _, _, depth in delimiters(expr))):
+            return None
+        # Lua decimal/hex integer tokens only; reject Python 0b/0o/underscores.
+        try:
+            number_tokens = lua_tables.tokenize(expr)
+        except lua_tables.LuaError:
+            return None
+        for index, (kind, token, _) in enumerate(number_tokens):
+            if kind == 'number':
+                if not re.fullmatch(r'0[xX][0-9a-fA-F]+|[0-9]+', token):
+                    return None
+                if index + 1 < len(number_tokens) and number_tokens[index + 1][0] in ('name', 'number'):
+                    return None
+        try:
+            tree = ast.parse(expr, mode='eval').body
+            if sum(1 for _ in ast.walk(tree)) > 128:
+                return None
+            def value(node, depth=0):
+                if depth > 32:
+                    return None
+                if isinstance(node, ast.Constant) and type(node.value) is int:
+                    return node.value if abs(node.value) <= 2**53 - 1 else None
+                if isinstance(node, (ast.Name, ast.Attribute, ast.Subscript)):
+                    result = self.literal(ast.unparse(node).replace(' ', ''), seen, before)
+                    return result if type(result) is int and abs(result) <= 2**53 - 1 else None
+                if isinstance(node, ast.UnaryOp) and isinstance(node.op, (ast.UAdd, ast.USub)):
+                    operand = value(node.operand, depth + 1)
+                    return None if operand is None else operand if isinstance(node.op, ast.UAdd) else -operand
+                if isinstance(node, ast.BinOp) and isinstance(node.op, (ast.Add, ast.Sub, ast.Mult)):
+                    left, right = value(node.left, depth + 1), value(node.right, depth + 1)
+                    if left is None or right is None:
+                        return None
+                    result = left + right if isinstance(node.op, ast.Add) else left - right if isinstance(node.op, ast.Sub) else left * right
+                    return result if abs(result) <= 2**53 - 1 else None
+                return None
+            return value(tree)
+        except (SyntaxError, ValueError, RecursionError):
+            return None
+
+    def literal(self, expr, seen=(), before=None):
+        """Resolve the closed immutable subset; runtime calls, indexes and arithmetic stay unknown."""
+        limit = self.current_line if before is None else before
+        expr = expr.strip()
+        if expr in seen or len(seen) > 32:
+            return None
+        if re.fullmatch(r'-?\d+', expr):
+            return int(expr)
+        if re.fullmatch(r'0[xX][0-9a-fA-F]+', expr):
+            return int(expr, 16)
+        if re.fullmatch(r'"[^"\\]*"|\'[^\'\\]*\'', expr):
+            return expr[1:-1]
+        if expr in self.literal_aliases and expr not in seen:
+            line, value = self.literal_aliases[expr]
+            if line < limit and self.visible(expr, limit):
+                return self.literal(value, (*seen, expr), before=line)
+        if re.search(r'[+*\-]', expr) and expr not in seen:
+            return self.arithmetic(expr, (*seen, expr), limit)
         m = CHAIN.fullmatch(expr)
-        if not m or m.group(1) not in self.tables:
+        if (not m or m.group(1) not in self.tables or m.group(1) not in self.visible_tables
+                or self.visible_tables[m.group(1)] >= limit or not self.visible(m.group(1), limit)):
             return None
         value = self.tables[m.group(1)]
         for field, index, runtime in CHAIN_STEP.findall(m.group(2)):
             if runtime:
-                return None
-            if field:
-                if not isinstance(value, dict) or field not in value:
+                index_value = self.literal(runtime, (*seen, expr), before=limit)
+                if type(index_value) is not int:
                     return None
-                value = value[field]
+                index = str(index_value)
+            if field and isinstance(value, dict):
+                value = value.get(field)
+            elif index and isinstance(value, list) and 1 <= int(index) <= len(value):
+                value = value[int(index) - 1]
+            elif index and isinstance(value, dict):
+                value = value.get(int(index))
             else:
-                index = int(index)
-                if isinstance(value, list) and 1 <= index <= len(value):
-                    value = value[index - 1]
-                elif isinstance(value, dict) and index in value:
-                    value = value[index]
-                else:
-                    return None
+                return None
+        if isinstance(value, dict) and set(value) == {'expr'}:
+            resolved = self.literal(value['expr'], (*seen, expr), before=self.visible_tables[m.group(1)]) if value['expr'] != expr else None
+            return resolved if resolved is not None else value
         return value
+
+    def resolve_chain(self, expr):
+        return self.literal(expr)
+
+    def position(self, expr, seen=(), before=None):
+        if not expr:
+            return None
+        limit = self.current_line if before is None else before
+        expr = expr.strip()
+        if m := POSITION.fullmatch(expr):
+            return self.xyz(m.groups())
+        if expr in self.literal_aliases and expr not in seen:
+            line, value = self.literal_aliases[expr]
+            if line < limit and self.visible(expr, limit):
+                return self.position(value, (*seen, expr), before=line)
+        if expr.startswith('Position(') and (args := call_complete(expr, len('Position('))) is not None:
+            if expr == 'Position(' + args + ')':
+                arguments = split_args(args)
+                if len(arguments) == 1:
+                    return self.position(args, seen, before=limit)
+                if len(arguments) == 3:
+                    values = tuple(self.literal(a, seen, before=limit) for a in arguments)
+                    if all(type(v) is int and 0 <= v <= maximum for v, maximum in zip(values, (65535, 65535, 15))):
+                        return values
+        value = self.literal(expr, before=limit)
+        if isinstance(value, dict) and set(value) == {'x', 'y', 'z'} and all(type(v) is int for v in value.values()):
+            return (value['x'], value['y'], value['z'])
+        return None
+
+    def finite_reward_lookup(self, expr, number, receiver):
+        """SOURCE-only finite UID selection; each primitive leaf is a separate guarded grant.
+
+        Never execute the selector or replace it with an unconditional bundle of rewards.
+        Unknown selectors retain the original opaque child through an otherwise branch.
+        """
+        match = re.fullmatch(r'(\w+)\[(\w+)\.(uid|itemid)\]', expr.strip())
+        if not match or self.roles.get(match.group(2)) != 'source':
+            return None
+        root, selector, _ = match.groups()
+        if number not in self.line_scopes or any(p[0] == 'opaque' for p in self.line_scopes[number]):
+            return None
+        body = [self.lines[n - 1] for n in sorted(self.line_scopes)]
+        if not builtin_binding_is_pristine(body, selector) or not builtin_binding_is_pristine(body, receiver):
+            return None  # reassignment, shadowing, mutation or escaping source object
+        declarations = [n for n in unconditional_prefix(self.lines)
+                        if re.match(rf'\s*local\s+{re.escape(root)}\s*=\s*\{{', self.lines[n - 1])]
+        if len(declarations) != 1 or declarations[0] >= number:
+            return None
+        try:
+            text = '\n'.join(self.lines[declarations[0] - 1:])
+            parser = LiteralParser(text[text.index('{'):])
+            parsed = parser.table()
+            if not all(type(f['key']) is int and type(f['value']) in (int, str) for f in parsed['fields']):
+                return None  # original AST, before duplicate-key collapse, must be scalar/pure
+            values = lua_tables.as_python(parsed)
+        except (lua_tables.LuaError, IndexError, TypeError, ValueError):
+            return None
+        if (not isinstance(values, dict) or not values or len(values) > 128
+                or not all(type(k) is int and 0 < k <= 65535 and type(v) in (int, str)
+                           for k, v in values.items())):
+            return None
+        paths = scalar_leaf_paths(values, root) | {expr.strip()}
+        tokens = [t for t in lua_tables.tokenize('\n'.join(self.lines))
+                  if t[0] not in ('comment', 'lcomment', 'string', 'lstring')]
+        # The shared immutable-name proof rejects simple writes; also reject a
+        # leaf in the first/middle slot of a compound assignment LHS.
+        def after_path(index):
+            index += 1
+            while index < len(tokens):
+                if tokens[index][1] == '.' and index + 1 < len(tokens):
+                    index += 2
+                elif tokens[index][1] == '[':
+                    depth = 1
+                    index += 1
+                    while index < len(tokens) and depth:
+                        depth += (tokens[index][1] == '[') - (tokens[index][1] == ']')
+                        index += 1
+                else:
+                    break
+            return index
+        for i, token in enumerate(tokens):
+            if token[0] != 'name' or token[1] != root or i and tokens[i - 1][1] in ('.', ':'):
+                continue
+            end = after_path(i)
+            compound = end < len(tokens) and tokens[end][1] == ','
+            while end + 1 < len(tokens) and tokens[end][1] == ',' and tokens[end + 1][0] == 'name':
+                end = after_path(end + 1)
+            if compound and end < len(tokens) and tokens[end][1] == '=':
+                return None
+        dynamic_environment = any(t[0] == 'name' and t[1] in {
+            '_G', '_ENV', 'rawset', 'getfenv', 'setfenv', 'load', 'loadstring', 'loadfile', 'dofile', 'require', 'debug'
+        } for t in tokens)
+        if dynamic_environment:
+            return None
+        pristine_pairs = all(i + 1 < len(tokens) and tokens[i + 1][1] == '('
+                             and (i == 0 or tokens[i - 1][1] not in ('function', 'local', '.', ':'))
+                             for i, t in enumerate(tokens) if t[0] == 'name' and t[1] == 'pairs')
+        # pairs returns the original table as iterator state; only generic-for
+        # reads are allowed, never a captured iterator/state assignment.
+        generic_pairs = all(re.fullmatch(r'\s*for\s+\w+(?:\s*,\s*\w+)?\s+in\s+pairs\(\s*\w+\s*\)\s+do\s*', line)
+                            for line in self.code_lines if re.search(r'\bpairs\s*\(', line))
+        copies = {'pairs'} if pristine_pairs and generic_pairs else set()
+        if not static_name_is_immutable(self.lines, root, references=True,
+                                        scalar_paths=paths, copy_calls=copies):
+            return None
+        resolved = {}
+        for uid, value in values.items():
+            ident = value if type(value) is int else item_names(self.repo).get(value.lower())
+            if type(ident) is not int or ident <= 0:
+                return None
+            resolved[uid] = ident
+        return resolved
+
+    def item_id(self, expr):
+        value = self.literal(expr)
+        if type(value) is int and value > 0:
+            return value
+        return item_names(self.repo).get(value.lower()) if isinstance(value, str) else None
 
     def resolve_storage(self, expr):
         """A storage-key expression as a literal `Storage.…` path or integer: already literal, or a path into a
@@ -367,7 +916,13 @@ class Script:
         return None
 
     def raw(self, number):
-        return expand_aliases(re.sub(r'--.*$', '', self.lines[number - 1]).strip(), self.aliases)
+        original = self.commentless_lines[number - 1].strip()
+        scoped = self.scoped_lines[number - 1].strip()
+        receivers = re.findall(r'(\w+):(?:get|set)StorageValue\(', scoped)
+        if (scoped != original and receivers and all(name in self.scoped_receivers
+                and self.proven_player(name, number) for name in receivers)):
+            original = scoped
+        return expand_aliases(original, self.aliases)
 
     def read_only(self, code):
         """A local assignment or table-constructor line whose calls only read state."""
@@ -378,9 +933,76 @@ class Script:
         return all(READ_ONLY.match(name) for name in re.findall(r'(\w+)\s*\(', code))
 
     def condition(self, text, number):
+        self.current_line = number
         # never inside a string literal (e.g. the `"switchNum"` key of the very call an alias stands for)
-        for alias, expr in self.value_aliases.items():
+        for alias, (declaration, expr, scope) in self.value_aliases.items():
+            current = self.line_scopes.get(number, ())
+            if declaration >= number or current[:len(scope)] != scope:
+                continue
+            if any('setStorageValue(' in strip_code(line) for line in self.lines[declaration:number - 1]):
+                continue  # a snapshot cannot be rewritten as a live read after a state write
             text = re.sub(rf'(?<![\w.:"\']){re.escape(alias)}(?![\w"\'])', expr, text)
+        text = text.strip()
+        while text.startswith('(') and call_complete(text, 1) == text[1:-1]:
+            text = text[1:-1].strip()
+        # Lua's precedence is `not`, then `and`, then `or`; split only outside brackets/strings.
+        for join in ('or', 'and'):
+            cuts = [i for i, _, depth in delimiters(text) if depth == 0
+                    and re.match(rf'\b{join}\b', text[i:]) and (i == 0 or not text[i - 1].isalnum() and text[i - 1] != '_')]
+            if cuts:
+                bounds = [-len(join), *cuts, len(text)]
+                terms = [text[a + len(join):b].strip() for a, b in zip(bounds, bounds[1:])]
+                parsed = [self.condition(t, number) for t in terms]
+                if any('unresolved' in p for p in parsed):
+                    return {'unresolved': {'line': number}}
+                return {('any' if join == 'or' else 'all'): parsed}
+        if text.startswith('not (') and call_complete(text, 5) == text[5:-1]:
+            def invert(value):
+                if 'all' in value or 'any' in value:
+                    key = 'all' if 'all' in value else 'any'
+                    return {('any' if key == 'all' else 'all'): [invert(v) for v in value[key]]}
+                if 'negate' in value:
+                    value['negate'] = not value['negate']
+                return value
+            return invert(self.condition(text[5:-1], number))
+        # Fresh literal lists or immutable literal tables: express exact membership
+        # through existing closed predicates, without runtime-selected indexes.
+        membership = re.fullmatch(r'(not\s+)?table\.contains\((.*)\)', text)
+        if membership and self.builtin_proofs['table']:
+            args = split_args(membership.group(2))
+            if len(args) == 2:
+                values = self.literal(args[0])
+                if args[0].startswith('{'):
+                    try:
+                        parser = LiteralParser(args[0])
+                        values = lua_tables.as_python(parser.table())
+                        if parser.peek()[0] != 'eof':
+                            values = None
+                    except (lua_tables.LuaError, IndexError):
+                        values = None
+                if isinstance(values, list) and values and all(type(v) is int for v in values):
+                    conditions = [self.condition(f'{args[1]} == {v}', number) for v in values]
+                    if not any('unresolved' in c for c in conditions):
+                        if membership.group(1):
+                            for c in conditions:
+                                c['negate'] = not c['negate']
+                        return conditions[0] if len(conditions) == 1 else {('all' if membership.group(1) else 'any'): conditions}
+        # Convert only static comparison operands; do not substitute strings as Lua code.
+        if m := re.fullmatch(r'(.+?)\s*(==|~=|<=|>=|<|>)\s*(.+)', text):
+            value = self.literal(m.group(3))
+            if type(value) is int:
+                text = f'{m.group(1)} {m.group(2)} {value}'
+        text = re.sub(r':getItemCount\(([^()]*)\)',
+                      lambda m: f':getItemCount({ident})' if (ident := self.item_id(m.group(1))) else m.group(0), text)
+        text = re.sub(r'\b(\w+):getId\(\)',
+                      lambda m: f'{m.group(1)}.itemid' if self.roles.get(m.group(1)) in ('source', 'contact')
+                      or (self.roles.get(m.group(1)) == 'use_target' and number in self.item_target_lines)
+                      else m.group(0), text)
+        # Player(actor) returns this actor or nil. Equality to nil/boolean
+        # therefore uses the existing acting-player predicate, never another id.
+        nullable = re.fullmatch(r'(\w+)\s*(==|~=)\s*nil', text)
+        if nullable and nullable[1] in self.player_aliases and self.proven_player(nullable[1], number):
+            return {'actor_is_player': True, 'negate': nullable[2] == '=='}
         parts = re.split(r'\s+(and|or)\s+', text)
         terms, joins = parts[0::2], set(parts[1::2])
         if len(joins) > 1:
@@ -405,13 +1027,13 @@ class Script:
             elif (m := re.fullmatch(r'(\w+):(getActionId|getUniqueId|getSubType)\(\)\s*(==|~=)\s*(\d+)', body)) and m.group(1) in self.roles:
                 out.append({'object': {'role': self.roles[m.group(1)], 'field': METHOD_FIELDS[m.group(2)],
                                        'op': m.group(3), 'value': int(m.group(4))}, 'negate': negate})
-            elif body in self.players or ((m := re.fullmatch(r'(\w+):isPlayer\(\)', body))
+            elif self.proven_player(body, number) or ((m := re.fullmatch(r'(\w+):isPlayer\(\)', body))
                                           and self.roles.get(m.group(1)) == 'actor'):
                 out.append({'actor_is_player': True, 'negate': negate})
-            elif (m := re.fullmatch(r'(\w+):getLevel\(\)\s*(==|~=|<=|>=|<|>)\s*(\d+)', body)) and m.group(1) in self.players:
+            elif (m := re.fullmatch(r'(\w+):getLevel\(\)\s*(==|~=|<=|>=|<|>)\s*(\d+)', body)) and self.proven_player(m.group(1), number):
                 out.append({'actor_level': {'op': m.group(2), 'value': int(m.group(3))}, 'negate': negate})
             elif (m := re.fullmatch(r'(\w+):getItemCount\(\s*(\d+)\s*\)\s*(==|~=|<=|>=|<|>)\s*(\d+)', body)) \
-                    and m.group(1) in self.players:
+                    and self.proven_player(m.group(1), number):
                 out.append({'actor_item_count': {'item': ref('Item', f'{self.namespace}:item/{m.group(2)}'),
                                                  'op': m.group(3), 'value': int(m.group(4))}, 'negate': negate})
             else:
@@ -420,43 +1042,124 @@ class Script:
             return out[0]
         return {('any' if 'or' in joins else 'all'): out}
 
+    def local_relocation_helper(self, raw, number):
+        """Closed local helper: relocation plus owner-neutral presentation only."""
+        call = re.fullmatch(r'(\w+)\((.*)\)', raw)
+        if not call or any(p[0] == 'opaque' for p in self.line_scopes.get(number, ())):
+            return None
+        name, arguments = call.groups()
+        candidates = [node[1] for node in lua_blocks.parse(self.block_lines, list(range(1, len(self.lines) + 1)))
+                      if node[0] == 'block' and re.fullmatch(rf'local function {name}\([^)]*\)', self.raw(node[1][0]))]
+        if len(candidates) != 1 or candidates[0][0] >= number:
+            return None
+        block = candidates[0]
+        params = split_args(self.raw(block[0]).split('(', 1)[1][:-1])
+        args = split_args(arguments)
+        if (len(params) not in (2, 3) or len(set(params)) != len(params) or len(args) != len(params)
+                or not all(re.fullmatch(r'\w+', p) for p in params) or self.raw(block[-1]) != 'end'):
+            return None
+        actor, destination = params[:2]
+        body = [(n, self.raw(n)) for n in block[1:-1] if self.raw(n)]
+        if not body or body[0][1] != f'{actor}:teleportTo({destination})':
+            return None
+        presentations = []
+        for line, statement in body[1:]:
+            if re.fullmatch(rf'{actor}:getPosition\(\):sendMagicEffect\(CONST_ME_\w+\)', statement):
+                presentations.append({'owner': 'Presentation', 'effect': 'magic_effect', 'authoritative': False})
+            elif re.fullmatch(rf'{actor}:sendTextMessage\((?:\d+|MESSAGE_\w+),\s*(?:"[^"\\]*"|{params[2] if len(params) == 3 else "(?!)"})\)', statement):
+                presentations.append({'owner': 'Presentation', 'effect': 'message', 'authoritative': False, 'source_line': line})
+            else:
+                return None
+        proof = self.lines[:]; proof[block[0] - 1] = ''
+        if not pristine_constructor(proof, name) or not self.proven_player(args[0], number):
+            return None
+        callback_lines = [self.lines[n - 1] for n in self.line_scopes]
+        actor_proof = [re.sub(rf'^(\s*){name}\(\s*{args[0]}\s*,', rf'\1{name}(0,', self.lines[n - 1])
+                       for n in self.line_scopes if n != self.player_aliases.get(args[0], (None,))[0]]
+        actor_proof = [re.sub(rf'^(\s*if\s+(?:not\s+)?){args[0]}(\s+then\s*)$',
+                              rf'\1{args[0]}.__identity_read__\2', line) for line in actor_proof]
+        if not builtin_binding_is_pristine(actor_proof, args[0]):
+            return None
+        if len(args) == 3 and not isinstance(self.literal(args[2]), str):
+            return None
+        position = self.position(args[1])
+        if position and all(v >= 0 for v in position):
+            target = {'kind': 'anchor', 'anchor': self.anchor(tuple(str(v) for v in position) + (None, None, None))}
+        elif args[1] == 'fromPosition':
+            declaration = max(n for n in range(1, number) if CALLBACK.match(self.lines[n - 1]))
+            if 'fromPosition' not in split_args(self.lines[declaration - 1].split('(', 1)[1].split(')', 1)[0]):
+                return None
+            if not static_name_is_immutable(['local fromPosition = nil', *callback_lines], 'fromPosition',
+                                            references=True, copy_calls={name}):
+                return None
+            target = {'kind': 'previous_position'}
+        else:
+            return None
+        return [{'owner': 'Movement', 'request': 'relocate', 'scope': 'in_scope', 'target': target}, *presentations]
+
     def children(self, number, in_loop=False):
-        code, raw = strip_code(self.lines[number - 1]).strip(), self.raw(number)
+        self.current_line = number
+        if number in self.readonly_tables:
+            return []
+        raw = self.raw(number)
+        code = mask_code(raw).strip()
         found = []
-        for m in re.finditer(r'(\w+):setStorageValue\(\s*([\w.\[\]]+)\s*,', raw):
+        if not in_loop and (helper_children := self.local_relocation_helper(raw, number)) is not None:
+            return helper_children
+        for call in re.finditer(r'(\w+):\w+\(', mask_code(raw)):
+            if call.group(1) in self.player_aliases and not self.proven_player(call.group(1), number):
+                self.unresolved.append({'line': number, 'reason': 'receiver outside its proven acting-player scope'})
+                return found
+        actor_effect = re.compile(r'(\w+):(addItem|removeItem|addAchievement|addOutfitAddon|addOutfit|addMount|addExperience|setStorageValue)\(')
+        for receiver in actor_effect.finditer(mask_code(raw)):
+            name, method = receiver.groups()
+            if not self.proven_player(name, number) and not (method == 'addItem' and self.proven_container(name, number)):
+                self.unresolved.append({'line': number, 'reason': 'effect receiver not proven to be the acting player in this scope'})
+                return found
+        for m in lexical_finditer(r'(\w+):setStorageValue\(\s*([\w.\[\]]+)\s*,', raw):
             target = self.resolve_storage(m.group(2))
             if target is None:
                 continue
             track = self.track(target)
-            value = raw[m.end():].split(')')[0].strip()
+            value_text = call_complete(raw, m.end())
+            value = self.literal(value_text) if value_text is not None else None
             child = {'owner': 'Quest', 'request': 'set_progress', 'progress': track,
-                     **({'to': int(value)} if re.fullmatch(r'-?\d+', value) else {'value_source_line': number})}
+                     **({'to': value} if type(value) is int else {'value_source_line': number})}
             key = self.transitions.get((norm(track_of(target)), script_of(self.path), number))
             if key:
                 child['transition'] = key
             found.append(child)
-        for m in re.finditer(r'Game\.setStorageValue\(\s*"?([\w.\[\]]+)"?\s*,\s*([^)]*)\)', raw):
+        for m in lexical_finditer(r'Game\.setStorageValue\(\s*"?([\w.\[\]]+)"?\s*,\s*([^)]*)\)', raw):
             key = m.group(1)
             if re.search(r'\[[^\d\]]', key):
                 continue  # a runtime index (a loop counter, a role field): not a fixed world-state name
             value = m.group(2).strip()
             found.append({'owner': 'Quest', 'request': 'set_world_state', 'key': f'{self.namespace}:world-state/{slug(key)}',
                           **({'to': int(value)} if re.fullmatch(r'-?\d+', value) else {'value_source_line': number})})
-        if (m := re.search(r'Game\.createMonster\(\s*"([^"]+)"\s*,\s*(.*)', raw)):
-            pos = POSITION.search(m.group(2))
-            found.append({'owner': 'Ability', 'effect': 'summon',
-                          'creature': ref('Creature', f'{self.namespace}:creature/{slug(m.group(1))}'),
-                          **({'anchor': self.anchor(pos.groups())} if pos else {'anchor_source_line': number})})
-        if 'teleportTo(' in code and (tm := TELEPORT_CALL.search(raw)):
+        if 'Game.createMonster(' in code and (m := lexical_search(r'Game\.createMonster\(', raw)):
+            if not self.builtin_proofs['Game']:
+                self.unresolved.append({'line': number, 'reason': 'engine function binding not proven unchanged'})
+                return found
+            text = call_complete(raw, m.end())
+            args = split_args(text) if text is not None else []
+            name = self.literal(args[0]) if args else None
+            if isinstance(name, str) and name:
+                pos = self.position(args[1]) if len(args) >= 2 else None
+                found.append({'owner': 'Ability', 'effect': 'summon',
+                              'creature': ref('Creature', f'{self.namespace}:creature/{slug(name)}'),
+                              **({'anchor': self.anchor(tuple(str(v) for v in pos) + (None, None, None))}
+                                 if pos and all(v >= 0 for v in pos) else {'anchor_source_line': number})})
+        if 'teleportTo(' in code and (tm := lexical_search(TELEPORT_CALL, raw)):
             target_args = split_args(argument(raw, tm.end()))
             target = target_args[0] if target_args else None
-            pos = POSITION.fullmatch(target) if target else None
-            if pos:
+            position = self.position(target)
+            if position and all(v >= 0 for v in position):
+                pos_groups = tuple(str(v) for v in position) + (None, None, None)
                 # D37: a relocation to a named anchor, in the current scope (VSL-MOVE-01/ChannelRuntime);
                 # cross-Channel/Instance relocation (SCOPE_HANDOFF) has no source signal here and stays
                 # out of scope until that contract exists (proposal §3).
                 found.append({'owner': 'Movement', 'request': 'relocate', 'scope': 'in_scope',
-                              'target': {'kind': 'anchor', 'anchor': self.anchor(pos.groups())}})
+                              'target': {'kind': 'anchor', 'anchor': self.anchor(pos_groups)}})
             elif target == 'fromPosition':
                 found.append({'owner': 'Movement', 'request': 'relocate', 'scope': 'in_scope',
                               'target': {'kind': 'previous_position'}})
@@ -475,13 +1178,19 @@ class Script:
         # `player:say("Game.createItem(2793)")`) is never mistaken for the real call; `raw` is then
         # searched only to parse the call `code` already confirmed is really there. The argument may
         # hold one nested call (`removeItem(ids[math.random(#ids)], 1)`).
-        removal = REMOVE_METHOD.search(code) and re.search(r'([\w.]+(?:\([^()]*\))?):(remove|removeItem)\(((?:[^()]|\([^()]*\))*)\)', raw)
+        removal = REMOVE_METHOD.search(code) and lexical_search(r'([\w.]+(?:\([^()]*\))?):(remove|removeItem)\(((?:[^()]|\([^()]*\))*)\)', raw)
         consumed = removal and self.consumed(removal, number)
+        tile_removal = typed_tile_item_removal(self, raw, number, in_loop) if code.startswith("Tile(") else None
         if consumed:
             found.append(consumed)
-        elif removal and self.creature(removal.group(1)):
+        elif removal and removal.group(1) in self.player_aliases and not self.proven_player(removal.group(1), number):
+            self.unresolved.append({'line': number, 'reason': 'removal receiver outside its proven player scope'})
+            return found
+        elif removal and self.creature(removal.group(1), number):
             self.unresolved.append({'line': number, 'reason': 'creature removal without an accepted owner'})
             return found
+        elif tile_removal:
+            found.append(tile_removal)
         elif removal:
             receiver = removal.group(1)
             literal_pos = POSITION.fullmatch(receiver) if '(' in receiver else None
@@ -498,50 +1207,40 @@ class Script:
                 if literal_pos:
                     child['anchor'] = self.anchor(literal_pos.groups())
                 found.append(child)
-        elif TRANSFORM_CALL.search(code) and (m := TRANSFORM_CALL.search(raw)):
+        elif TRANSFORM_CALL.search(code) and (m := lexical_search(TRANSFORM_CALL, raw)):
             # from/to are rarely both literal in one call (the current id is usually implicit, read from
             # the object the script already holds), so this stays with its source line rather than guessed.
             found.append({'owner': 'WorldObject', 'operation': 'TRANSFORM', 'value_source_line': number,
                          '_identity': m.group(1)})
-        elif CREATE_CALL.search(code) and (m := CREATE_CALL.search(raw)):
+        elif CREATE_CALL.search(code) and (m := lexical_search(CREATE_CALL, raw)):
+            if m.group(1) == 'Game' and not self.builtin_proofs['Game']:
+                self.unresolved.append({'line': number, 'reason': 'engine function binding not proven unchanged'})
+                return found
             constructor = CREATE_ITEM.match(code)
             args_text = call_complete(raw, m.end())
-            if constructor and constructor.group(1) in self.created_items:
-                # a reward-container constructor (this local is a hand-out/contents item, DUR-03), never
-                # a world placement, even though the call itself is `Game.createItem(...)`.
-                pass
-            elif args_text is None:
-                # the call's argument list never closes on this line (a multi-line call): never typed
-                # from partial args (invariant: not recognized exactly stays blocked, never guessed).
+            args = split_args(args_text) if args_text is not None else []
+            item_id = self.item_id(args[0]) if args else None
+            count = self.literal(args[1]) if len(args) >= 2 else 1
+            position = self.position(args[2]) if len(args) == 3 else None
+            valid = (m.group(1) == 'Game' and 1 <= len(args) <= 3
+                     and type(count) is int and count >= 0
+                     and (len(args) < 3 or position is not None))
+            if args_text is None:
                 found.append({'owner': 'WorldObject', 'status': 'blocked', 'reason': BLOCKED_INCOMPLETE_CALL, 'source_line': number})
+            elif not valid:
+                found.append({'owner': 'WorldObject', 'status': 'blocked', 'reason': BLOCKED_WORLD_OBJECT, 'source_line': number})
+            elif constructor and constructor.group(1) in self.created_items and len(args) <= 2:
+                pass  # proven positionless container contents constructor, not a map placement
             else:
-                args = split_args(args_text)
-                item_id = args[0] if args and re.fullmatch(r'\d+', args[0]) else None
-                extra = args[1:]
-                # engine signature `createItem(itemId, count/subtype, position)`: a bare integer among
-                # the extra arguments is the count/subtype, never a placement; a literal Position is the
-                # anchor; anything else could be a placement expression (C3: no dynamic geometry), so it
-                # stays blocked.
-                literal_pos = next((a for a in extra if POSITION.fullmatch(a)), None)
-                ambiguous = any(not re.fullmatch(r'\d+', a) and not POSITION.fullmatch(a) for a in extra)
                 literal = {'def': ref('Item', f'{self.namespace}:item/{item_id}')} if item_id else {'value_source_line': number}
                 identity = (assigned := ASSIGNED_LOCAL.match(code)) and assigned.group(1)
-                if ambiguous:
-                    found.append({'owner': 'WorldObject', 'status': 'blocked', 'reason': BLOCKED_WORLD_OBJECT, 'source_line': number})
-                elif literal_pos:
-                    # C3: CREATE only binds a pre-authored anchor with a fixed footprint; a literal
-                    # position argument names one.
-                    child = {'owner': 'WorldObject', 'operation': 'CREATE',
-                             'anchor': self.anchor(POSITION.fullmatch(literal_pos).groups()), **literal}
-                    if identity:
-                        child['_identity'] = identity
-                    found.append(child)
-                else:
-                    child = {'owner': 'WorldObject', 'operation': 'CREATE', **literal}
-                    if identity:
-                        child['_identity'] = identity
-                    found.append(child)
-        elif RETAG_CALL.search(code) and (m := RETAG_CALL.search(raw)):
+                child = {'owner': 'WorldObject', 'operation': 'CREATE', **literal}
+                if position:
+                    child['anchor'] = self.anchor(tuple(str(v) for v in position) + (None, None, None))
+                if identity:
+                    child['_identity'] = identity
+                found.append(child)
+        elif RETAG_CALL.search(code) and (m := lexical_search(RETAG_CALL, raw)):
             # D38/coordinator decision 1c: a transition between two states of the same collision class;
             # the action id itself is not modeled as data.
             found.append({'owner': 'WorldObject', 'operation': 'RETAG', 'value_source_line': number,
@@ -562,12 +1261,12 @@ class Script:
                 found.append({'owner': 'WorldObject', '_revert': True, '_revert_receiver': receiver,
                               '_revert_position': pos, '_revert_delay_ms': delay, '_revert_scheduled': scheduled,
                               '_source_line': number})
-        if (m := CONTAINER_FILL.match(raw)) and m.group(1) in self.containers:
+        if (m := CONTAINER_FILL.match(raw)) and self.proven_container(m.group(1), number):
             # a plain item added to a reward container built earlier in this same callback (DUR-03): its contents
             self.containers[m.group(1)].setdefault('contents', []).append(
                 {'item': ref('Item', f'{self.namespace}:item/{m.group(2)}'), 'count': int(m.group(3) or 1)})
             return found
-        if (m := CONTAINER_FILL_EX.match(raw)) and m.group(1) in self.containers:
+        if (m := CONTAINER_FILL_EX.match(raw)) and self.proven_container(m.group(1), number):
             # membership alone only proves this local is a positionless reward constructor (never a
             # world CREATE, see self.created_items above); its item id is resolvable here only when
             # that constructor's own id argument was itself a literal.
@@ -578,34 +1277,54 @@ class Script:
             else:
                 self.unresolved.append({'line': number, 'reason': 'container reward item is not a plain literal item type'})
             return found
-        if (m := re.search(r'(\w+):addItem\(\s*(\d+)?\s*(?:,\s*(\d+)\s*)?', raw)) and m.group(1) in self.players | {'player'}:
+        if re.search(r':addItem\(', code) and (m := lexical_search(r'(\w+):addItem\(', raw)) and self.proven_player(m.group(1), number):
+            args_text = call_complete(raw, m.end())
+            args = split_args(args_text) if args_text is not None else []
+            ident = self.item_id(args[0]) if args else None
+            count = self.literal(args[1]) if len(args) == 2 else 1 if len(args) == 1 else None
             child = {'owner': 'Item', 'request': 'hand_out',
-                     **({'item': ref('Item', f'{self.namespace}:item/{m.group(2)}'), 'count': int(m.group(3) or 1)}
-                        if m.group(2) and raw[m.end():m.end() + 1] == ')' else {'value_source_line': number})}
-            found.append(child)
-            if 'item' in child and (alias := re.match(r'local\s+(\w+)\s*=', raw)):
-                # this local now names the container, so a later plain `NAME:addItem(...)`/`:addItemEx(...)` in the
-                # same callback is that reward's contents, not a separate unowned effect
+                     **({'item': ref('Item', f'{self.namespace}:item/{ident}'), 'count': count}
+                        if ident and type(count) is int and count > 0 else {'value_source_line': number})}
+            if 'value_source_line' in child and ident:
+                child['item'] = ref('Item', f'{self.namespace}:item/{ident}')
+            if len(args) > 2:
+                self.unresolved.append({'line': number, 'reason': 'Item hand-out additional arguments outside the transcribed vocabulary'})
+            from reward_aliases import selector_expression
+            reward_expr = selector_expression(self, args[0], number) if args else None
+            selection = (self.finite_reward_lookup(reward_expr, number, m.group(1))
+                         if reward_expr and len(args) <= 2 and type(count) is int and count > 0 and not in_loop else None)
+            if selection:
+                found.append({'branch': [
+                    {'when': {'object': {'role': 'source', 'op': '==',
+                               **({'field': 'item_type', 'item': ref('Item', f'{self.namespace}:item/{uid}')}
+                                  if reward_expr.endswith('.itemid]') else {'field': 'unique_id', 'value': uid})}, 'negate': False},
+                     'then': [{'owner': 'Item', 'request': 'hand_out',
+                               'item': ref('Item', f'{self.namespace}:item/{item_id}'), 'count': count}]}
+                    for uid, item_id in sorted(selection.items())], 'otherwise': [child]})
+            else:
+                found.append(child)
+            if 'item' in child and 'count' in child and (alias := re.match(r'local\s+(\w+)\s*=', raw)):
                 self.containers[alias.group(1)] = child
-        if re.search(r':addAchievement\(', raw):
-            if (m := re.search(r':addAchievement\(\s*"([^"]+)"\s*\)', raw)):
+                self.container_scopes[alias.group(1)] = (number, self.line_scopes.get(number, ()))
+        if lexical_search(r':addAchievement\(', raw):
+            if (m := lexical_search(r':addAchievement\(\s*"([^"]+)"\s*\)', raw)):
                 found.append({'owner': 'Achievement', 'request': 'grant',
                               'achievement': ref('Achievement', f'{self.namespace}:achievement/{slug(m.group(1))}')})
             else:
                 # a table-driven achievement id (e.g. `reward.achievement[1]`): the achievement itself is not literal
                 found.append({'owner': 'Achievement', 'request': 'grant', 'value_source_line': number})
-        if (m := re.search(r'(\w+):addOutfitAddon\(\s*"?(\d+)"?\s*(?:,\s*"?(\d+)"?\s*)?', raw)) and m.group(1) in self.players | {'player'}:
+        if (m := lexical_search(r'(\w+):addOutfitAddon\(\s*"?(\d+)"?\s*(?:,\s*"?(\d+)"?\s*)?', raw)) and self.proven_player(m.group(1), number):
             found.append({'owner': 'Outfit', 'request': 'grant',
                           **({'looktype': int(m.group(2)), **({'addon': int(m.group(3))} if m.group(3) else {})}
                              if m.group(2) else {'value_source_line': number})})
-        if (m := re.search(r'(\w+):addOutfit\(\s*"?(\d+)"?\s*(?:,\s*"?(\d+)"?\s*)?', raw)) and m.group(1) in self.players | {'player'}:
+        if (m := lexical_search(r'(\w+):addOutfit\(\s*"?(\d+)"?\s*(?:,\s*"?(\d+)"?\s*)?', raw)) and self.proven_player(m.group(1), number):
             found.append({'owner': 'Outfit', 'request': 'grant',
                           **({'looktype': int(m.group(2)), **({'addon': int(m.group(3))} if m.group(3) else {})}
                              if m.group(2) else {'value_source_line': number})})
-        if (m := re.search(r'(\w+):addMount\(\s*"?(\d+)"?\s*\)?', raw)) and m.group(1) in self.players | {'player'}:
+        if (m := lexical_search(r'(\w+):addMount\(\s*"?(\d+)"?\s*\)?', raw)) and self.proven_player(m.group(1), number):
             found.append({'owner': 'Mount', 'request': 'grant',
                           **({'mount': int(m.group(2))} if m.group(2) else {'value_source_line': number})})
-        if (m := re.search(r'(\w+):addExperience\(\s*(\d+)?', raw)) and m.group(1) in self.players | {'player'}:
+        if (m := lexical_search(r'(\w+):addExperience\(\s*(\d+)?', raw)) and self.proven_player(m.group(1), number):
             found.append({'owner': 'Experience', 'request': 'grant',
                           **({'amount': int(m.group(2))} if m.group(2) else {'value_source_line': number})})
         if re.search(r':addMapMark\(', code):
@@ -639,19 +1358,21 @@ class Script:
         """A removal that takes an item from its holder is DUR-03 consumption, never map state (D38): the player's
         `removeItem`, or `remove` on the item used (`onUse`) or dropped onto the edge (`onAddItem`)."""
         receiver, method, args = removal.groups()
-        if method == 'removeItem' and receiver in self.players | {'player'}:
-            m = re.fullmatch(r'\s*(\d+)\s*(?:,\s*(\d+)\s*)?', args)
+        if method == 'removeItem' and self.proven_player(receiver, number):
+            parts = split_args(args)
+            ident = self.item_id(parts[0]) if parts else None
+            count = self.literal(parts[1]) if len(parts) == 2 else 1 if len(parts) == 1 else None
             return {'owner': 'Item', 'request': 'consume',
-                    **({'item': ref('Item', f'{self.namespace}:item/{m.group(1)}'), 'count': int(m.group(2) or 1)}
-                       if m else {'value_source_line': number})}
+                    **({'item': ref('Item', f'{self.namespace}:item/{ident}'), 'count': count}
+                       if ident and type(count) is int and count > 0 else {'value_source_line': number})}
         role = self.roles.get(receiver)
         if method == 'remove' and ((role == 'source' and self.callback == 'onUse') or role == 'contact'):
             return {'owner': 'Item', 'request': 'consume', 'object': 'used_item' if role == 'source' else 'contact'}
         return None
 
-    def creature(self, receiver):
+    def creature(self, receiver, number):
         """A receiver that holds a creature, not an item."""
-        return (self.roles.get(receiver) == 'actor' or receiver in self.players
+        return (self.roles.get(receiver) == 'actor' or self.proven_player(receiver, number)
                 or re.search(r'(?i)creature|monster|boss|npc|summon|spectator', receiver) is not None)
 
     def revert(self, out, child):
@@ -714,7 +1435,8 @@ class Script:
                           if re.search(r'\baddEvent\(', self.raw(node[1][0])) else 'function literal outside the transcribed vocabulary')
                 self.unresolved.append({'line': node[1][0], 'reason': reason})
             elif node[0] == 'if':
-                branches = [{'when': self.condition(re.sub(r'^(else)?if\s+|\s+then.*$', '', self.raw(line)), line),
+                branches = [{'when': self.condition(re.sub(r'^(else)?if\s+|\s+then.*$', '',
+                             expand_aliases(self.condition_headers.get(line, self.raw(line)), self.aliases)), line),
                              'then': self.convert(body)} for _, line, body in node[1]]
                 otherwise = self.convert(node[2])
                 out.append({'branch': branches, **({'otherwise': otherwise} if otherwise else {})})
@@ -723,8 +1445,8 @@ class Script:
     def interactions(self):
         """One definition per callback; a file may redefine the same script object several times, so each
         callback takes the registrations that follow it up to the next object definition."""
-        starts = [n for n, line in enumerate(self.lines, 1) if CALLBACK.match(line)]
-        objects = [n for n, line in enumerate(self.lines, 1) if OBJECT_LINE.match(line)]
+        starts = [n for n, line in enumerate(self.code_lines, 1) if CALLBACK.match(line)]
+        objects = [n for n, line in enumerate(self.code_lines, 1) if OBJECT_LINE.match(line)]
         out, stem = [], self.name
         for index, number in enumerate(starts):
             m = CALLBACK.match(self.lines[number - 1])
@@ -733,7 +1455,7 @@ class Script:
                                     if (r := REGISTRATION.match(line)) and r.group(1) == m.group(1)})
             self.anchors, self.unresolved = [], []
             self.bind(number, m.group(2))
-            nodes = lua_blocks.parse(self.lines, lua_blocks.function_body(self.lines, number))
+            nodes = lua_blocks.parse(self.block_lines, lua_blocks.function_body(self.block_lines, number))
             rules = self.convert(nodes)
             strip_internal(rules)
             # several callbacks in one file are told apart by their script object, which both servers share even when
@@ -770,7 +1492,7 @@ def transition_keys(questlog_dir):
         for mission in quest.get('missions', []):
             track = progress.get(mission['progress'], {})
             for evidence in track.get('transitions', []):
-                for source in evidence['sources'].values():
+                for source in evidence.get('source_occurrences', list(evidence['sources'].values())):
                     keys[(norm(mission['progress'].split('/', 1)[1]), script_of(source['path']), source['line'])] = \
                         f'{quest["identity"]["key"]}#{mission["key"]}:{evidence["key"]}'
     return keys
@@ -844,10 +1566,24 @@ def unused_overrides(used):
         raise SystemExit(f'interaction overrides without a matching unresolved line: {stale}')
 
 
+def declared_progress_paths(progress):
+    """Explicit same-path aliases retain the mission track identity regardless of row order."""
+    keys = {row['key'] for row in progress}
+    result = {}
+    for row in progress:
+        path = row['key'].split('/', 1)[1]
+        target = row.get('alias_of', row['key'])
+        if target not in keys or target.split('/', 1)[1] != path:
+            raise ValueError('progress alias has no declared exact-path target')
+        if path in result and result[path] != target:
+            raise ValueError('progress path has conflicting identities without an explicit alias')
+        result[path] = target
+    return result
+
+
 def build(repos, scripts, questlog_dir):
     keys = transition_keys(questlog_dir)
-    declared_by_path = {norm(t['key'].split('/', 1)[1]): t['key']
-                        for t in json.loads((questlog_dir / 'progress.json').read_text())['progress']}
+    declared_by_path = declared_progress_paths(json.loads((questlog_dir / 'progress.json').read_text())['progress'])
     by_script = {}
     for name, repo in repos.items():
         pack = SOURCES[name]['datapack']
@@ -880,13 +1616,22 @@ def build(repos, scripts, questlog_dir):
         if primary['identity']['key'] in OVERRIDES:
             primary = dict(primary, rules=json.loads(json.dumps(primary['rules'])))
             apply_overrides(primary['rules'], primary['identity']['key'], used_overrides)
-            status = 'unresolved_semantics' if primary['unresolved'] or unresolved_conditions(primary) else 'mapped'
+            if status != 'conflict':
+                status = 'unresolved_semantics' if primary['unresolved'] or unresolved_conditions(primary) else 'mapped'
         interactions.append({k: v for k, v in primary.items() if k not in ('script', 'callback_line')})
-        manifest_entries.append({'destination': primary['identity']['key'], 'status': status, 'resolution': resolution,
+        entry = {'destination': primary['identity']['key'], 'status': status, 'resolution': resolution,
                                  'sources': [{'source': n, 'path': SOURCES[n]['datapack'] + '/' + i['script'],
                                               'callback_line': i['callback_line'],
                                               'blob_sha1': git_blob(repos[n], SOURCES[n]['datapack'] + '/' + i['script'])}
-                                             for n, i in pair.items()]})
+                                             for n, i in pair.items()]}
+        if status == 'conflict':
+            # Retain both typed source graphs. The selected graph is evidence,
+            # never a resolution or a readiness promotion for this conflict.
+            entry['conflict_alternatives'] = [
+                {'source': name, 'interaction': {k: v for k, v in graph.items()
+                                               if k not in ('script', 'callback_line')}}
+                for name, graph in sorted(pair.items())]
+        manifest_entries.append(entry)
     unused_decisions('interactions', used)
     unused_overrides(used_overrides)
     children = [c for i in interactions for c in walk(i['rules'])]

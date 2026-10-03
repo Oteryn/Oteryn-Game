@@ -1,0 +1,245 @@
+{
+  "schema": "OTERYN_CLOSED_SEVEN_CURRENT_DOM_WITNESSES/v1",
+  "records": {
+    "39571": {
+      "http_status": 200,
+      "source_url": "https://tibiopedia.pl/items/Canary_Feather",
+      "capture_utc": "2026-10-01T23:35:27.691205+00:00",
+      "article_revision": "UNKNOWN",
+      "article_revision_timestamp": "UNKNOWN",
+      "at_cutoff_continuity": "UNKNOWN",
+      "full_html_sha256_declared_capture_coordinate": "0709d40b2639649904a590af354d6b6337b326f8181d61525c97b46dcdd04503",
+      "full_html_utf8_bytes_declared_capture_coordinate": 89982,
+      "full_html_retained_in_repository": false,
+      "raw_numeric_itemid": "NOT_ESTABLISHED; target ID is a DERIVED official unique-name join",
+      "method": "Normal anonymous HTTP, guest language/layout selection only, two bounded concurrent public page requests, no login/private data/no retries",
+      "excerpts": {
+        "document_title": {
+          "raw": "<title>Items: Canary Feather - Tibia ~ Tibiopedia.pl</title>",
+          "sha256": "f0daa19fda5009890bf4d15ddfc3358dcdce2766458e138110b02ea8fe5a2569",
+          "offset_in_full_html_declared": 220
+        },
+        "own_caption_prefix": {
+          "raw": "<caption>\n\t\t\t\tCanary Feather\t\t\t\t\t\t\t\t\t",
+          "sha256": "bddccb38289cf8bbb2500cf67b181a7c786bad3aa1550cb6464d7ecf30477aca",
+          "offset_in_full_html_declared": 41931
+        },
+        "own_category_header": {
+          "raw": "<tr>\n\t\t\t\t<td width=\"29.9%\" colspan=\"2\" rowspan=\"4\" class=\"monsterPic\"><img src=\"https://tibiopedia.pl/images/static/items/canary_feather.gif\" alt=\"Canary Feather\" /></td>\n\t\t\t\t<td width=\"31.8%\" colspan=\"5\" style=\"border-bottom:0;border-top:0;\"><center><strong>Class</strong></center></td>\n\t\t\t\t<td width=\"38.3%\" colspan=\"4\" style=\"border-bottom:0;border-top:0;\"><center><strong>Subclass</strong></center></td>\n\t\t\t</tr>",
+          "sha256": "83c4103291983d425b73ff91b0f5aef252e634e8633cdcd828cc4aaad6594562",
+          "offset_in_full_html_declared": 42397
+        },
+        "own_category_values": {
+          "raw": "<tr>\n\t\t\t\t<td width=\"31.8%\" colspan=\"5\"><center><a class=\"thinlink\" href=\"https://tibiopedia.pl/items/others\">Others</a></center></td>\n\t\t\t\t<td width=\"38.3%\" colspan=\"4\"><center><a class=\"thinlink\" href=\"https://tibiopedia.pl/items/others#quest\">Quest</a></center></td>\n\t\t\t</tr>",
+          "sha256": "266942eea8e06d9bf1ecb0e7228b52839023b17164fdbab9ff4352337c748d45",
+          "offset_in_full_html_declared": 42817
+        }
+      },
+      "original_public_capture": {
+        "path": "/workspace/audit-continuation/item-remaining260-own-function-tibiopedia-public-source-part-000.json",
+        "sha256": "5a15935a9e26f85a114aa934b3cc354ca66df25438836ba63a1525468a707014",
+        "page_ordinal": 3
+      }
+    },
+    "43778": {
+      "http_status": 200,
+      "source_url": "https://tibiopedia.pl/items/Organic_Acid",
+      "capture_utc": "2026-10-01T23:35:27.776909+00:00",
+      "article_revision": "UNKNOWN",
+      "article_revision_timestamp": "UNKNOWN",
+      "at_cutoff_continuity": "UNKNOWN",
+      "full_html_sha256_declared_capture_coordinate": "91f140159c7f9bb50ae1d6e494a36ccfc3df089f41d5d56cc0db36bdbf98ba0b",
+      "full_html_utf8_bytes_declared_capture_coordinate": 91985,
+      "full_html_retained_in_repository": false,
+      "raw_numeric_itemid": "NOT_ESTABLISHED; target ID is a DERIVED official unique-name join",
+      "method": "Normal anonymous HTTP, guest language/layout selection only, two bounded concurrent public page requests, no login/private data/no retries",
+      "excerpts": {
+        "document_title": {
+          "raw": "<title>Items: Organic Acid - Tibia ~ Tibiopedia.pl</title>",
+          "sha256": "9af7133e68d1499405b4b50f0ebafa078127f11c958ad2dd2480f296ae4c3261",
+          "offset_in_full_html_declared": 220
+        },
+        "own_caption_prefix": {
+          "raw": "<caption>\n\t\t\t\tOrganic Acid\t\t\t\t\t\t\t\t\t",
+          "sha256": "a4a8a401c8685ed3776eb96ba4656ace29a2d17411735729a6c5f75ccc2c7fdf",
+          "offset_in_full_html_declared": 41927
+        },
+        "own_category_header": {
+          "raw": "<tr>\n\t\t\t\t<td width=\"29.9%\" colspan=\"2\" rowspan=\"4\" class=\"monsterPic\"><img src=\"https://tibiopedia.pl/images/static/items/organic_acid.gif\" alt=\"Organic Acid\" /></td>\n\t\t\t\t<td width=\"31.8%\" colspan=\"5\" style=\"border-bottom:0;border-top:0;\"><center><strong>Class</strong></center></td>\n\t\t\t\t<td width=\"38.3%\" colspan=\"4\" style=\"border-bottom:0;border-top:0;\"><center><strong>Subclass</strong></center></td>\n\t\t\t</tr>",
+          "sha256": "4d2d998c056af2e7bab8e5a0f9768b64303e744d165771c6210dcf7659107693",
+          "offset_in_full_html_declared": 42387
+        },
+        "own_category_values": {
+          "raw": "<tr>\n\t\t\t\t<td width=\"31.8%\" colspan=\"5\"><center><a class=\"thinlink\" href=\"https://tibiopedia.pl/items/others\">Others</a></center></td>\n\t\t\t\t<td width=\"38.3%\" colspan=\"4\"><center><a class=\"thinlink\" href=\"https://tibiopedia.pl/items/others#quest\">Quest</a></center></td>\n\t\t\t</tr>",
+          "sha256": "266942eea8e06d9bf1ecb0e7228b52839023b17164fdbab9ff4352337c748d45",
+          "offset_in_full_html_declared": 42803
+        }
+      },
+      "original_public_capture": {
+        "path": "/workspace/audit-continuation/item-remaining260-own-function-tibiopedia-public-source-part-000.json",
+        "sha256": "5a15935a9e26f85a114aa934b3cc354ca66df25438836ba63a1525468a707014",
+        "page_ordinal": 4
+      }
+    },
+    "43779": {
+      "http_status": 200,
+      "source_url": "https://tibiopedia.pl/items/Unstable_Darklight_Matter",
+      "capture_utc": "2026-10-01T23:35:27.942577+00:00",
+      "article_revision": "UNKNOWN",
+      "article_revision_timestamp": "UNKNOWN",
+      "at_cutoff_continuity": "UNKNOWN",
+      "full_html_sha256_declared_capture_coordinate": "3078fb496870a5cd3ef9c6d239de6f539af1033ef6db09b0c92cf686b56d6bb4",
+      "full_html_utf8_bytes_declared_capture_coordinate": 91509,
+      "full_html_retained_in_repository": false,
+      "raw_numeric_itemid": "NOT_ESTABLISHED; target ID is a DERIVED official unique-name join",
+      "method": "Normal anonymous HTTP, guest language/layout selection only, two bounded concurrent public page requests, no login/private data/no retries",
+      "excerpts": {
+        "document_title": {
+          "raw": "<title>Items: Unstable Darklight Matter - Tibia ~ Tibiopedia.pl</title>",
+          "sha256": "0ac7754a1d93bd0d15c5d85cb769cc50df5a806633f774bafdb22be5ddd25cee",
+          "offset_in_full_html_declared": 220
+        },
+        "own_caption_prefix": {
+          "raw": "<caption>\n\t\t\t\tUnstable Darklight Matter\t\t\t\t\t\t\t\t\t",
+          "sha256": "62c67790e669e29a64baf468db201a207e74ea6102db6936c34be3498655c325",
+          "offset_in_full_html_declared": 41953
+        },
+        "own_category_header": {
+          "raw": "<tr>\n\t\t\t\t<td width=\"29.9%\" colspan=\"2\" rowspan=\"4\" class=\"monsterPic\"><img src=\"https://tibiopedia.pl/images/static/items/unstable_darklight_matter.gif\" alt=\"Unstable Darklight Matter\" /></td>\n\t\t\t\t<td width=\"31.8%\" colspan=\"5\" style=\"border-bottom:0;border-top:0;\"><center><strong>Class</strong></center></td>\n\t\t\t\t<td width=\"38.3%\" colspan=\"4\" style=\"border-bottom:0;border-top:0;\"><center><strong>Subclass</strong></center></td>\n\t\t\t</tr>",
+          "sha256": "3275db629dda548cf3410073cb19228cdce87908008bb1610fbef3641599e5c4",
+          "offset_in_full_html_declared": 42452
+        },
+        "own_category_values": {
+          "raw": "<tr>\n\t\t\t\t<td width=\"31.8%\" colspan=\"5\"><center><a class=\"thinlink\" href=\"https://tibiopedia.pl/items/others\">Others</a></center></td>\n\t\t\t\t<td width=\"38.3%\" colspan=\"4\"><center><a class=\"thinlink\" href=\"https://tibiopedia.pl/items/others#quest\">Quest</a></center></td>\n\t\t\t</tr>",
+          "sha256": "266942eea8e06d9bf1ecb0e7228b52839023b17164fdbab9ff4352337c748d45",
+          "offset_in_full_html_declared": 42894
+        }
+      },
+      "original_public_capture": {
+        "path": "/workspace/audit-continuation/item-remaining260-own-function-tibiopedia-public-source-part-000.json",
+        "sha256": "5a15935a9e26f85a114aa934b3cc354ca66df25438836ba63a1525468a707014",
+        "page_ordinal": 5
+      }
+    },
+    "43780": {
+      "http_status": 200,
+      "source_url": "https://tibiopedia.pl/items/Yellow_Darklight_Matter",
+      "capture_utc": "2026-10-01T23:35:28.058326+00:00",
+      "article_revision": "UNKNOWN",
+      "article_revision_timestamp": "UNKNOWN",
+      "at_cutoff_continuity": "UNKNOWN",
+      "full_html_sha256_declared_capture_coordinate": "7adc4db0cb977cfe986e5a55810f863baf97141a694bd9e552cc13d3cc6a725b",
+      "full_html_utf8_bytes_declared_capture_coordinate": 91580,
+      "full_html_retained_in_repository": false,
+      "raw_numeric_itemid": "NOT_ESTABLISHED; target ID is a DERIVED official unique-name join",
+      "method": "Normal anonymous HTTP, guest language/layout selection only, two bounded concurrent public page requests, no login/private data/no retries",
+      "excerpts": {
+        "document_title": {
+          "raw": "<title>Items: Yellow Darklight Matter - Tibia ~ Tibiopedia.pl</title>",
+          "sha256": "afbdb957c4f5a6d823cf9ff417970125cc13412e04d62d13b44a08d094792c36",
+          "offset_in_full_html_declared": 220
+        },
+        "own_caption_prefix": {
+          "raw": "<caption>\n\t\t\t\tYellow Darklight Matter\t\t\t\t\t\t\t\t\t",
+          "sha256": "7a107784444bbbe5e455d8ed3d5de263109c0c24860bab472ec7ef52c3e5e370",
+          "offset_in_full_html_declared": 41949
+        },
+        "own_category_header": {
+          "raw": "<tr>\n\t\t\t\t<td width=\"29.9%\" colspan=\"2\" rowspan=\"4\" class=\"monsterPic\"><img src=\"https://tibiopedia.pl/images/static/items/yellow_darklight_matter.gif\" alt=\"Yellow Darklight Matter\" /></td>\n\t\t\t\t<td width=\"31.8%\" colspan=\"5\" style=\"border-bottom:0;border-top:0;\"><center><strong>Class</strong></center></td>\n\t\t\t\t<td width=\"38.3%\" colspan=\"4\" style=\"border-bottom:0;border-top:0;\"><center><strong>Subclass</strong></center></td>\n\t\t\t</tr>",
+          "sha256": "8b6732289bee88cc6aa59ef468cc97f4fe10b5e71483fd11e008c6928756c07c",
+          "offset_in_full_html_declared": 42442
+        },
+        "own_category_values": {
+          "raw": "<tr>\n\t\t\t\t<td width=\"31.8%\" colspan=\"5\"><center><a class=\"thinlink\" href=\"https://tibiopedia.pl/items/others\">Others</a></center></td>\n\t\t\t\t<td width=\"38.3%\" colspan=\"4\"><center><a class=\"thinlink\" href=\"https://tibiopedia.pl/items/others#quest\">Quest</a></center></td>\n\t\t\t</tr>",
+          "sha256": "266942eea8e06d9bf1ecb0e7228b52839023b17164fdbab9ff4352337c748d45",
+          "offset_in_full_html_declared": 42880
+        }
+      },
+      "original_public_capture": {
+        "path": "/workspace/audit-continuation/item-remaining260-own-function-tibiopedia-public-source-part-000.json",
+        "sha256": "5a15935a9e26f85a114aa934b3cc354ca66df25438836ba63a1525468a707014",
+        "page_ordinal": 6
+      }
+    },
+    "43781": {
+      "http_status": 200,
+      "source_url": "https://tibiopedia.pl/items/Darklight_Obsidian_Axe",
+      "capture_utc": "2026-10-01T23:35:28.183801+00:00",
+      "article_revision": "UNKNOWN",
+      "article_revision_timestamp": "UNKNOWN",
+      "at_cutoff_continuity": "UNKNOWN",
+      "full_html_sha256_declared_capture_coordinate": "8fd5290c9712b94894ae7a8402f8bfc6444ce6df6ec292d7e68ae552fe565304",
+      "full_html_utf8_bytes_declared_capture_coordinate": 92059,
+      "full_html_retained_in_repository": false,
+      "raw_numeric_itemid": "NOT_ESTABLISHED; target ID is a DERIVED official unique-name join",
+      "method": "Normal anonymous HTTP, guest language/layout selection only, two bounded concurrent public page requests, no login/private data/no retries",
+      "excerpts": {
+        "document_title": {
+          "raw": "<title>Items: Darklight Obsidian Axe - Tibia ~ Tibiopedia.pl</title>",
+          "sha256": "0282a68cbbbd521c3ff54fe5e5b9b4c5192486c2c9e27da70d2d9d6c510db6d3",
+          "offset_in_full_html_declared": 220
+        },
+        "own_caption_prefix": {
+          "raw": "<caption>\n\t\t\t\tDarklight Obsidian Axe\t\t\t\t\t\t\t\t\t",
+          "sha256": "aec3f2a90918bd3d68102276798fe3e694f1d6ed85ba56ad3e155da003023dc8",
+          "offset_in_full_html_declared": 41947
+        },
+        "own_category_header": {
+          "raw": "<tr>\n\t\t\t\t<td width=\"29.9%\" colspan=\"2\" rowspan=\"4\" class=\"monsterPic\"><img src=\"https://tibiopedia.pl/images/static/items/darklight_obsidian_axe.gif\" alt=\"Darklight Obsidian Axe\" /></td>\n\t\t\t\t<td width=\"31.8%\" colspan=\"5\" style=\"border-bottom:0;border-top:0;\"><center><strong>Class</strong></center></td>\n\t\t\t\t<td width=\"38.3%\" colspan=\"4\" style=\"border-bottom:0;border-top:0;\"><center><strong>Subclass</strong></center></td>\n\t\t\t</tr>",
+          "sha256": "6977c5d7b1f0225a78d17908d5c3ff952dc4398c4bd41d72a740579a1ee94e1e",
+          "offset_in_full_html_declared": 42437
+        },
+        "own_category_values": {
+          "raw": "<tr>\n\t\t\t\t<td width=\"31.8%\" colspan=\"5\"><center><a class=\"thinlink\" href=\"https://tibiopedia.pl/items/others\">Others</a></center></td>\n\t\t\t\t<td width=\"38.3%\" colspan=\"4\"><center><a class=\"thinlink\" href=\"https://tibiopedia.pl/items/others#quest\">Quest</a></center></td>\n\t\t\t</tr>",
+          "sha256": "266942eea8e06d9bf1ecb0e7228b52839023b17164fdbab9ff4352337c748d45",
+          "offset_in_full_html_declared": 42873
+        }
+      },
+      "original_public_capture": {
+        "path": "/workspace/audit-continuation/item-remaining260-own-function-tibiopedia-public-source-part-000.json",
+        "sha256": "5a15935a9e26f85a114aa934b3cc354ca66df25438836ba63a1525468a707014",
+        "page_ordinal": 7
+      }
+    },
+    "43782": {
+      "http_status": 200,
+      "source_url": "https://tibiopedia.pl/items/Lichen_Gobbler",
+      "capture_utc": "2026-10-01T23:35:28.432603+00:00",
+      "article_revision": "UNKNOWN",
+      "article_revision_timestamp": "UNKNOWN",
+      "at_cutoff_continuity": "UNKNOWN",
+      "full_html_sha256_declared_capture_coordinate": "2148bbcd370bc448bcd964ebcd237bb5dc091e9557c5b8fc12ebad5fe6f7112e",
+      "full_html_utf8_bytes_declared_capture_coordinate": 91464,
+      "full_html_retained_in_repository": false,
+      "raw_numeric_itemid": "NOT_ESTABLISHED; target ID is a DERIVED official unique-name join",
+      "method": "Normal anonymous HTTP, guest language/layout selection only, two bounded concurrent public page requests, no login/private data/no retries",
+      "excerpts": {
+        "document_title": {
+          "raw": "<title>Items: Lichen Gobbler - Tibia ~ Tibiopedia.pl</title>",
+          "sha256": "bae1ef4505c8e5ceca60cc7305c9caf2ccfbb7183a30455a27489993d913af34",
+          "offset_in_full_html_declared": 220
+        },
+        "own_caption_prefix": {
+          "raw": "<caption>\n\t\t\t\tLichen Gobbler\t\t\t\t\t\t\t\t\t",
+          "sha256": "5fbd0a5f557e9762a94e57d7ad2413b450a875688bf0e4d7263737cef62d30f1",
+          "offset_in_full_html_declared": 41931
+        },
+        "own_category_header": {
+          "raw": "<tr>\n\t\t\t\t<td width=\"29.9%\" colspan=\"2\" rowspan=\"4\" class=\"monsterPic\"><img src=\"https://tibiopedia.pl/images/static/items/lichen_gobbler.gif\" alt=\"Lichen Gobbler\" /></td>\n\t\t\t\t<td width=\"31.8%\" colspan=\"5\" style=\"border-bottom:0;border-top:0;\"><center><strong>Class</strong></center></td>\n\t\t\t\t<td width=\"38.3%\" colspan=\"4\" style=\"border-bottom:0;border-top:0;\"><center><strong>Subclass</strong></center></td>\n\t\t\t</tr>",
+          "sha256": "29cfedeec397ebfd06464e4d83f01477d0e3f2969d531b7a0ea729cb333647aa",
+          "offset_in_full_html_declared": 42397
+        },
+        "own_category_values": {
+          "raw": "<tr>\n\t\t\t\t<td width=\"31.8%\" colspan=\"5\"><center><a class=\"thinlink\" href=\"https://tibiopedia.pl/items/others\">Others</a></center></td>\n\t\t\t\t<td width=\"38.3%\" colspan=\"4\"><center><a class=\"thinlink\" href=\"https://tibiopedia.pl/items/others#quest\">Quest</a></center></td>\n\t\t\t</tr>",
+          "sha256": "266942eea8e06d9bf1ecb0e7228b52839023b17164fdbab9ff4352337c748d45",
+          "offset_in_full_html_declared": 42817
+        }
+      },
+      "original_public_capture": {
+        "path": "/workspace/audit-continuation/item-remaining260-own-function-tibiopedia-public-source-part-000.json",
+        "sha256": "5a15935a9e26f85a114aa934b3cc354ca66df25438836ba63a1525468a707014",
+        "page_ordinal": 8
+      }
+    }
+  }
+}

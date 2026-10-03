@@ -62,6 +62,18 @@
         "docs/agents/tasks/archive/OTV2-20260928-world-base-map.md",
         "live GitHub Issue/PR/CI state"
       ]
+    },
+    {
+      "handover_id": "OTV2-20261001-item-catalog-audit-and-map-handover",
+      "path": "docs/agents/reports/OTV2-20261001-item-catalog-audit-and-map-handover.md",
+      "status": "historical",
+      "authoritative": false,
+      "expiry_rule": "Retained counts and code findings apply only to the recorded revisions. Re-resolve current main, draft PR/head, ownership, accepted contracts and CI before continuation; changes supersede current-state claims without erasing historical evidence.",
+      "superseded_by": [
+        "live GitHub Issue/PR/CI state",
+        "docs/architecture/ADR-0021-world-map-runtime-loading.md",
+        "current main Item, Terrain and WorldObject catalogues"
+      ]
     }
   ]
 }

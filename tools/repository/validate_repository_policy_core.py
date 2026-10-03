@@ -46,14 +46,15 @@ EXPECTED_MERGE_GATE_SCOPE_JOB_SHA256 = (
 EXPECTED_MERGE_GATE_VALIDATE_JOB_SHA256 = (
     "eeb3e5f3c8244d412096b770071c2e1757505d9f0f180b10f36f5b9597beab13"
 )
+EXPECTED_MERGE_GATE_FINAL_JOB_SHA256 = "3f521f187d0a9b8e998e9fa022a3a16e7b988ec5ba873cb2955562230043efaa"
 EXPECTED_MERGE_GATE_LANES_JOB_SHA256 = "c8564e6c8ce3df2a9ea57fdf17306cc23d7350fd712a8f55bf2b0215e27caccd"
 EXPECTED_MERGE_GATE_ROUTING_CONTRACT_JOB_SHA256 = "3db16b5afec9a2786506e7558af09b298d878a0cb5b0a8b20748f4a3afaddbd6"
 EXPECTED_ROUTING_CONTRACT_VALIDATOR_BLOB = "ce2fc840f22fd75c0ccb067d9807698a87650f77"
 EXPECTED_MERGE_GATE_ATLAS_FULLWORLD_JOB_SHA256 = "0910d3ef6afed2e689c687d1c6692963336c4b737def32fea41bbb5c4c08eb40"
 EXPECTED_MERGE_GATE_NODE_BOOT_JOB_SHA256 = "3f59ad249da2e820f23495120e88f7456a63a47655810adfcf3345764bf68d68"
 EXPECTED_MERGE_GATE_SERVER_SEAM_JOB_SHA256 = "a62f892daddbbaa96f764ecd22ab0c2edf0084c4d40415d46d1dc12f00ecff4e"
-EXPECTED_MERGE_GROUP_GATE_BLOB = "9e7f083a7e2a58a1d03910d90a9423dd7ec5478c"
-EXPECTED_POST_MERGE_RUST_SHA256 = "3b01c30bab7988572670b47bf5dccda7dafb8db7879ec59b6da99a3d061fdf75"
+EXPECTED_MERGE_GROUP_GATE_BLOB = "860a684e5ec71f50ae899f9db36b7c07f9fca623"
+EXPECTED_POST_MERGE_RUST_SHA256 = "d942814a212cd1697ca02da71c17cd0bdf29589f557b80bd0fead2a88dfba5fb"
 EXPECTED_MERGE_GROUP_GATE_TOP_LEVEL_KEYS = [
     "name",
     "on",
@@ -69,6 +70,7 @@ EXPECTED_MERGE_GROUP_JOB_KEYS = [
     "candidate",
     "dependency_review",
     "codeql",
+    "atlas_fullworld",
     "rust_linux",
     "durability_postgres",
     "rust_windows",
@@ -377,6 +379,8 @@ def main() -> int:
             )
         if "workflow_dispatch:" in text:
             errors.append("merge gate must not execute pull-request code through workflow_dispatch")
+        if "  group: ${{ github.event.action == 'edited' && github.event.changes.base == null && format('merge-gate-edit-{0}-{1}', github.event.pull_request.number, github.run_id) || format('merge-gate-{0}', github.event.pull_request.number) }}\n" not in text:
+            errors.append("merge gate metadata edits must not cancel product qualifications")
         scope_block = indented_yaml_mapping_block(text, "scope", 2)
         scope_digest = hashlib.sha256(scope_block.encode("utf-8")).hexdigest() if scope_block else None
         if scope_digest != EXPECTED_MERGE_GATE_SCOPE_JOB_SHA256:
@@ -426,12 +430,15 @@ def main() -> int:
             for fragment in (
                 "    name: game-gate\n",
                 "    if: always()\n",
-                "    needs: validate\n",
+                "    needs: [scope, validate]\n",
                 "          LEGACY_VALIDATE: ${{ needs.validate.result }}\n",
                 "        run: test \"$LEGACY_VALIDATE\" = \"success\"\n",
             ):
                 if fragment not in game_gate_block:
                     errors.append(f"game-gate aggregate missing canonical fragment: {fragment.strip()}")
+        final_digest = hashlib.sha256(game_gate_block.encode("utf-8")).hexdigest() if game_gate_block else None
+        if final_digest != EXPECTED_MERGE_GATE_FINAL_JOB_SHA256:
+            errors.append("game-gate must retain canonical aggregation and the isolated edit live-target fence")
         for required_fragment in (
             "pull request head moved after event head was resolved",
             "changed_files = pull.get('changed_files')",
@@ -502,6 +509,21 @@ def main() -> int:
                 "github/codeql-action/init@2892aa5e19bbd11bc0cff5427e3b750a04d9e3c2",
                 "github/codeql-action/analyze@2892aa5e19bbd11bc0cff5427e3b750a04d9e3c2",
             ),
+            "atlas_fullworld": (
+                "    name: Merge Queue / Atlas fullworld source\n",
+                "    needs: candidate\n",
+                "    if: needs.candidate.outputs.atlas_fullworld != 'false'\n",
+                "ref: ${{ github.event.merge_group.head_sha }}",
+                "EXPECTED_SHA: ${{ github.event.merge_group.head_sha }}",
+                'run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"',
+                "python -S -m py_compile",
+                "tools/game-atlas-fullworld-source/producer.py",
+                "tools/game-atlas-fullworld-source/self_test.py",
+                "tools/reference-world-corridor-census/content_source_batch.py",
+                "tools/reference-world-corridor-census/content_source_batch_self_test.py",
+                "run: python -S tools/game-atlas-fullworld-source/self_test.py",
+                "run: python -S tools/reference-world-corridor-census/content_source_batch_self_test.py",
+            ),
             "rust_linux": (
                 "    name: Merge Queue / Rust Linux workspace\n",
                 "cargo +1.94.0 build --locked --workspace --all-targets",
@@ -529,7 +551,7 @@ def main() -> int:
                 "expected = (pathlib.Path.cwd() / registered_path).resolve(strict=True)",
                 "observed = pathlib.Path(matches[0]['src_path']).resolve(strict=True)",
                 'verify_registered_target_binding "$name" "$path"',
-                'cargo +1.94.0 test --locked -p oteryn-game-server --test "$name"',
+                'cargo +1.94.0 test --locked --workspace --test "$name"',
                 "run_registered_target durability_postgres apps/game-server/tests/durability_postgres.rs",
                 "run_registered_target character_authority_postgres apps/game-server/tests/character_authority_postgres.rs",
                 "run_registered_target runtime_scope_assignment_postgres apps/game-server/tests/runtime_scope_assignment_postgres.rs",
@@ -573,10 +595,12 @@ def main() -> int:
             "game_gate": (
                 "    name: game-gate\n",
                 "    if: always()\n",
-                "    needs: [candidate, dependency_review, codeql, rust_linux, durability_postgres, rust_windows, rust_supply_chain, node_boot, server_seam]\n",
+                "    needs: [candidate, dependency_review, codeql, atlas_fullworld, rust_linux, durability_postgres, rust_windows, rust_supply_chain, node_boot, server_seam]\n",
                 "          CANDIDATE: ${{ needs.candidate.result }}\n",
                 "          DEPENDENCY_REVIEW: ${{ needs.dependency_review.result }}\n",
                 "          CODEQL: ${{ needs.codeql.result }}\n",
+                "          ATLAS_FULLWORLD_REQUIRED: ${{ needs.candidate.outputs.atlas_fullworld }}\n",
+                "          ATLAS_FULLWORLD: ${{ needs.atlas_fullworld.result }}\n",
                 "          RUST_LINUX: ${{ needs.rust_linux.result }}\n",
                 "          DURABILITY_POSTGRES: ${{ needs.durability_postgres.result }}\n",
                 "          RUST_WINDOWS: ${{ needs.rust_windows.result }}\n",

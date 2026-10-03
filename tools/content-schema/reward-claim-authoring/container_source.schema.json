@@ -1,0 +1,85 @@
+{
+  "$id": "oteryn:schema/source-container-compiled/v1",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Pinned SOURCE container recipes; no native admission",
+  "type": "object", "additionalProperties": false,
+  "required": ["schema", "classification", "scope", "input_sha256", "provenance", "source_fluid_evidence", "source_quantity_wiki_evidence", "records", "summary"],
+  "properties": {
+    "schema": {"const": "OTERYN_SOURCE_CONTAINER_COMPILED/v1"},
+    "classification": {"const": "OTS_HYPOTHESIS_ONLY"},
+    "scope": {"const": "SOURCE_RECIPES_ONLY_NO_NATIVE_ADMISSION"},
+    "input_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "provenance": {"type": "object"},
+    "source_fluid_evidence": {"type": "object"},
+    "source_quantity_wiki_evidence": {"type": "object"},
+    "records": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/record"}},
+    "summary": {
+      "type": "object", "additionalProperties": false,
+      "required": ["records", "placements", "logical_roles", "AUTHORED", "WAITING_DATA", "CONFLICT"],
+      "properties": {
+        "records": {"type": "integer", "minimum": 1}, "placements": {"type": "integer", "minimum": 1},
+        "logical_roles": {"type": "integer", "minimum": 0}, "AUTHORED": {"type": "integer", "minimum": 0},
+        "WAITING_DATA": {"type": "integer", "minimum": 0}, "CONFLICT": {"type": "integer", "minimum": 0}
+      }
+    }
+  },
+  "$defs": {
+    "unknown": {"type": "object", "additionalProperties": false, "required": ["state"], "properties": {"state": {"const": "UNKNOWN"}}},
+    "positive": {"oneOf": [{"$ref": "#/$defs/unknown"}, {"type": "object", "additionalProperties": false, "required": ["state", "value"], "properties": {"state": {"const": "KNOWN"}, "value": {"type": "integer", "minimum": 1}}}]},
+    "ref": {
+      "type": "object", "additionalProperties": false, "required": ["family", "key", "revision"],
+      "properties": {"family": {"const": "Item"}, "key": {"type": "string", "pattern": "^oteryn:item\\.tibia\\.i[0-9]+$"}, "revision": {"type": "string", "minLength": 1}}
+    },
+    "nullable_ref": {"oneOf": [{"$ref": "#/$defs/ref"}, {"type": "null"}]},
+    "fluid": {
+      "type": "object", "additionalProperties": false, "required": ["subtype", "symbol"],
+      "properties": {"subtype": {"type": "integer"}, "symbol": {"type": "string"}},
+      "oneOf": [{"properties": {"subtype": {"const": 1}, "symbol": {"const": "WATER"}}}, {"properties": {"subtype": {"const": 2}, "symbol": {"const": "WINE"}}}, {"properties": {"subtype": {"const": 9}, "symbol": {"const": "MILK"}}}]
+    },
+    "node": {
+      "type": "object", "additionalProperties": false, "required": ["item", "count"],
+      "allOf": [{"if": {"required": ["contents"]}, "then": {"properties": {"count": {"const": 1}}}}],
+      "properties": {"item": {"$ref": "#/$defs/ref"}, "count": {"type": "integer", "minimum": 1, "maximum": 100}, "contents": {"type": "array", "maxItems": 499, "items": {"$ref": "#/$defs/node"}}, "source_fluid": {"$ref": "#/$defs/fluid"}}
+    },
+    "tree": {"oneOf": [{"$ref": "#/$defs/unknown"}, {
+      "type": "object", "additionalProperties": false, "required": ["state", "value"],
+      "properties": {"state": {"const": "KNOWN"}, "value": {"allOf": [{"$ref": "#/$defs/node"}, {"required": ["contents"], "properties": {"count": {"const": 1}}}]}}
+    }]},
+    "entry": {
+      "type": "object", "additionalProperties": false,
+      "required": ["source_reward_index", "item", "source_raw_argument", "source_executed_quantity", "quantity_basis", "normalized_quantity"],
+      "properties": {
+        "source_reward_index": {"type": "integer", "minimum": 0}, "item": {"$ref": "#/$defs/nullable_ref"},
+        "source_raw_argument": {"type": "integer", "minimum": 1}, "source_executed_quantity": {"$ref": "#/$defs/positive"},
+        "normalized_quantity": {"$ref": "#/$defs/positive"}, "source_fluid": {"$ref": "#/$defs/fluid"},
+        "quantity_basis": {"enum": ["SOURCE_LITERAL", "SOURCE_FLUID_SUBTYPE", "SOURCE_CHARGES_SUBTYPE", "SOURCE_LITERAL_CORROBORATED_BY_PINNED_WIKI", "CONFLICTING_SOURCE_REWARDS"]}
+      }
+    },
+    "constraint": {"oneOf": [
+      {"type": "object", "additionalProperties": false, "required": ["kind", "item"], "properties": {"kind": {"enum": ["ITEM_NOT_MATERIALIZABLE", "FLUID_INSTANCE_NATIVE_ADMISSION_UNRESOLVED"]}, "item": {"$ref": "#/$defs/ref"}}},
+      {"type": "object", "additionalProperties": false, "required": ["kind", "value", "maximum", "item"], "properties": {"kind": {"const": "CONTAINER_CAPACITY_ABOVE_ADMITTED_MAXIMUM"}, "value": {"type": "integer", "minimum": 21}, "maximum": {"const": 20}, "item": {"$ref": "#/$defs/ref"}}},
+      {"type": "object", "additionalProperties": false, "required": ["kind", "value", "maximum"], "properties": {"kind": {"const": "CONTAINER_ENTRIES_ABOVE_ADMITTED_MAXIMUM"}, "value": {"type": "integer", "minimum": 21}, "maximum": {"const": 20}}}
+    ]},
+    "placement": {
+      "type": "object", "additionalProperties": false,
+      "required": ["placement_index", "source_position", "container", "definition_capacity", "entries", "item_tree", "data_status", "source_checks", "native_constraints"],
+      "properties": {
+        "placement_index": {"type": "integer", "minimum": 0},
+        "source_position": {"type": "object", "additionalProperties": false, "required": ["x", "y", "z"], "properties": {"x": {"type": "integer", "minimum": 0, "maximum": 65535}, "y": {"type": "integer", "minimum": 0, "maximum": 65535}, "z": {"type": "integer", "minimum": 0, "maximum": 15}}},
+        "container": {"$ref": "#/$defs/nullable_ref"}, "definition_capacity": {"$ref": "#/$defs/positive"},
+        "entries": {"type": "array", "items": {"$ref": "#/$defs/entry"}}, "item_tree": {"$ref": "#/$defs/tree"},
+        "data_status": {"enum": ["AUTHORED", "WAITING_DATA", "CONFLICT"]},
+        "source_checks": {"type": "array", "uniqueItems": true, "items": {"enum": ["ITEM_REFERENCE_UNKNOWN", "CONTAINER_CAPACITY_UNKNOWN", "CONTAINER_RANDOM_RECIPE_UNRESOLVED", "SOURCE_CHARGE_MISMATCH", "CHARGE_DEFINITION_UNKNOWN", "ITEM_STACK_SEMANTICS_UNKNOWN", "SOURCE_STACK_COUNT_CLAMP_CONFLICT", "SOURCE_NONSTACK_COUNT_CONFLICT", "RECIPE_EXCEEDS_COMPILER_BOUND", "CONTENTS_EXCEED_DEFINITION_CAPACITY"]}},
+        "native_constraints": {"type": "array", "items": {"$ref": "#/$defs/constraint"}}
+      },
+      "allOf": [{"if": {"properties": {"data_status": {"const": "AUTHORED"}}}, "then": {"properties": {"item_tree": {"properties": {"state": {"const": "KNOWN"}}}, "source_checks": {"maxItems": 0}}}, "else": {"properties": {"item_tree": {"$ref": "#/$defs/unknown"}, "source_checks": {"minItems": 1}}}}]
+    },
+    "record": {
+      "type": "object", "additionalProperties": false, "required": ["original_record", "placements", "native_lowering"],
+      "properties": {
+        "original_record": {"type": "object"}, "placements": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/placement"}},
+        "native_lowering": {"type": "object", "additionalProperties": false, "required": ["status", "pending_implementation"], "properties": {"status": {"const": "WAITING_IMPLEMENTATION"}, "pending_implementation": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}}}}
+      }
+    }
+  }
+}

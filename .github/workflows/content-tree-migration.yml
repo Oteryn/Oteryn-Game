@@ -16,10 +16,14 @@ on:
       - content/world/editor/author.json
       - content/world/provenance/sources.json
       - imports/tibiawiki/bindings/**
+      - imports/tibiawiki/facts/items-family-fallback*.json
+      - imports/tibiawiki/facts/items-family-alias26-20261001.json
+      - imports/tibiawiki/facts/items-external-family18-20261001.json
       - tools/content-migration/**
       - tools/content-schema/starter-kit-authoring/**
       - tools/content-schema/imbuement-authoring/**
       - rulesets/items/imbuements/**
+      - tools/content-schema/item-authoring/requirements.txt
       - .github/workflows/content-tree-migration.yml
   workflow_dispatch:
 
@@ -54,6 +58,9 @@ jobs:
           python-version: '3.12'
           check-latest: false
 
+      - name: Install pinned authoring dependencies
+        run: python -m pip install -r tools/content-schema/item-authoring/requirements.txt
+
       - name: Install imbuement authoring validator
         run: python -m pip install -r tools/content-schema/imbuement-authoring/requirements.txt
 
@@ -69,6 +76,11 @@ jobs:
             tools/content-migration/test_world_project_v2_to_tree.py \
             tools/content-migration/validate_world_project_v2_to_tree.py
           python tools/content-migration/test_world_project_v2_to_tree.py
+          python tools/content-migration/test_item_taxonomy.py
+          python tools/content-migration/test_item_navigation_source_supplement.py
+          python tools/content-migration/test_item_engine_navigation.py
+          python tools/content-migration/test_item_external_family_refinement.py
+          python tools/content-migration/test_item_bounded7_navigation.py
           python tools/content-migration/validate_world_project_v2_to_tree.py
 
       - name: Check StarterKit seals against the base revision
