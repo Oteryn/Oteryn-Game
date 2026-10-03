@@ -15,7 +15,7 @@ PROOF = (
     "docs/agents/evidence/"
     "OTV2-20261002-item-stack-default-successor8-source-qualification-v1.json"
 )
-PROOF_SHA = "f54f066cc186cce0829346664485d3a993d80ed9fc291096c2641008755fa990"
+PROOF_SHA = "a1640f8199342fd2171c20ac88aa1f3314dd752b3f95106692e4d31703db9b21"
 RECEIPT = (
     "docs/agents/evidence/"
     "OTV2-20261003-item-stack-default-successor8-current-parent-receipt-v2.json"

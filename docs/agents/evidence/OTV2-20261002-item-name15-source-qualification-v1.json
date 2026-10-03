@@ -14,7 +14,7 @@
   },
   "global_own_id_frame": {
     "path": "docs/agents/evidence/OTV2-20261001-item-movable-source-qualification-v1.json",
-    "sha256": "ae0698adc7df7e25b88569b22de87a020661381a0623ea84d5333a576b12be06"
+    "sha256": "39a5ced0cdf57ccb81db5edd429bb41be5da744bcf673a44169aafd6d149d7bb"
   },
   "historical_source": {
     "native_definition_digests_historical_only": true,
@@ -26,18 +26,18 @@
     "sha256": "20cc6407be8d811348c151c5fcd4814d858dfef5f11a5cdf0f18be43fe27b179"
   },
   "input_digests": {
-    "apps/game-server/src/content/item_name_promotion.rs": "0e35a7d6f83f98aadbd1672775e558d254629b8919727f58a8ef6f12b21927fb",
+    "apps/game-server/src/content/item_name_promotion.rs": "b3db3af9d5d84ab9f88df01e857f12e080b12326cc9269b244aef6dce63c9d1b",
     "content/items/aliases.json": "128bc354816199702c26f83120e6fb7846fb2608fb5ee1c16085f63268e592f2",
-    "docs/agents/evidence/OTV2-20261002-item-name-promotion-v1.json": "df202253ef9b0a4817eba98dcacb5a65960828e022e34b9590efdb96952f4383",
-    "docs/agents/evidence/OTV2-20261002-item-name-source-qualification-v1.json": "9a22bb2e4238c42ebcbd5714d6c6f08c39f5a140ae67ee61c78223d7952ca7fc",
+    "docs/agents/evidence/OTV2-20261002-item-name-promotion-v1.json": "fcc6dcc001bffa1febb2a240d7f4a87b44badab77d59a9372b92e7c3b8b3586a",
+    "docs/agents/evidence/OTV2-20261002-item-name-source-qualification-v1.json": "7334bd60fb715130f32341dcb2cf6b7c591a0d5ab52dab5c2fe2bcacc6037dfd",
     "imports/crystalserver/bindings/items.json": "1d19709c28a649d8a9f32bf53e5bf43ad847d7901d6c6254833f456154d2de5a",
     "imports/official/appearance-membership/admitted.json": "19f99b709d9a28c1730632e27672adb0a03ef11bf7d1f4b2647a4090f3df0718",
     "imports/official/appearance-membership/appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.json": "f37b5d3e1136ebc3edbae1fe7090c4914b1d717bfbf9fd7c8faeeee36b491fe8",
     "tools/content-schema/item-authoring/appearance_membership.py": "0746bb0e350fb04503919295a718907afc87866b0299fa277b914c74e85cfc09",
     "tools/content-schema/item-authoring/engine_items.py": "0a494fd64d7774507b4d9e493492a7ffc9d99d751dd2ed4fec73561cb06f5b06",
-    "tools/content-schema/item-authoring/lower_client_market_packet.py": "850ee01d3b4831c412856b77720c0996122e4f67ed4603b0e6337637dc09457e",
-    "tools/content-schema/item-authoring/lower_item_name_packet.py": "d79622c4b307e76e701cc15890b99c61a1c56294b0db5ab49b98cfbd7dc955eb",
-    "tools/content-schema/item-authoring/lower_wiki_movable_packet.py": "dc9a9c622f8d8081c7245f4600405b18bd20e5a8459b77686119a585a8977476",
+    "tools/content-schema/item-authoring/lower_client_market_packet.py": "adb64e5012dc7b1a26a49aebdcdca8cd8b6cdb91008ae7e843f748af9d50e79a",
+    "tools/content-schema/item-authoring/lower_item_name_packet.py": "8cc141b1ae4599927efa8e53dc4115be71fd85fbd3289780337ba94d49a418b9",
+    "tools/content-schema/item-authoring/lower_wiki_movable_packet.py": "5947e69bb6eb43851516f0d2705fb7720d176a9b99c8de6e04d879a0a0498199",
     "tools/content-schema/item-authoring/lower_wiki_stack_default_packet.py": "5969b009ed326991e6db310b3e3c48640ae5a5ac361c9c34f5619740bff8ce2e",
     "tools/content-schema/item-authoring/samples/promotion-crystal-ff7ede5.json": "69d5c1ff24b979658fc24a310d6715c131cfca6abe759ff1fa29479da0ecffe2"
   },

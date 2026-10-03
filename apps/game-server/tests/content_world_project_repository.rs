@@ -17,7 +17,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "content.lock.json",
         364,
-        "6cea1e76bdd2d91a8eb7d89f498e6b25b9bf4f2ab35cd6733663a8b780394ac6",
+        "c23ce8b36957d57db629af1fe608f15f1d4290757e2e6ccfdd1f3209161bc38a",
     ),
     (
         "definitions/declarations.json",
@@ -37,7 +37,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "manifest.json",
         1_939,
-        "3a1aef986c94490fe6eff0b2116165661840aa209196e3982709785b95611e2b",
+        "1da0172a37ede784e3150c1a625b1003a5aac6b4ff3d6eadbb5208cfbe6b23f8",
     ),
     (
         "presentations/bindings.json",
@@ -47,12 +47,12 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "project.json",
         390,
-        "42c8a7b84f21a928546bd970c445e5eb1b0cff794eb59f7c87cb47f5d72723fe",
+        "bb69b665b62df1ec76aa1cf3a2e0ba5275555eee4a1fca1eb6599ab8e4c89576",
     ),
     (
         "provenance/imports.json",
         6_758_132,
-        "55d959897993a8ba4c98f6d0a67f5568285be2c0bcc2d7866660a0054e10e71c",
+        "cff0c73bf9148a497384e594624bb0d4efd78329c5487fd62d242de15814ebef",
     ),
     (
         "provenance/sources.json",
@@ -114,7 +114,7 @@ const WORLD_CATALOGUE_SHARDS: [(&str, &str); 4] = [
 const TREE_CONTRACT: &str =
     "docs/agents/evidence/OTV2-20260925-full-game-content-ruleset-tree-v1.json";
 const TREE_DIRECTORY_NODES: usize = 97;
-const TREE_SHA256: &str = "48e7d671b4db6cf1e654041c5440da26cd98781d56adaf5e567561418b74be0c";
+const TREE_SHA256: &str = "84f32bc41fdd710ecea776fe60500c7676ae5aea949d025bcfe65512c927c1e2";
 /// A12 (ITEM-ID-1b): the protected Item family less the 4,590 D149 records, on Tibia keys,
 /// plus the 404 donor epoch-2 records and the 61 appearance-only records (ITEM-ADD-1, Snowball 53855).
 const ITEMS: usize = 34_032;

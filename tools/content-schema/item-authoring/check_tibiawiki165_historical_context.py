@@ -150,7 +150,7 @@ def weapon_owner_scope(root=ROOT):
         forge.checked(
             root,
             "docs/agents/evidence/OTV2-20261002-item-forge289-promotion-v1.json",
-            "3961eb05c99666d6e09e8fb53c825df964dde3651051704412d478ef2dde5f02",
+            "18db9c0067f2e1a9a7091fdf3fd38c1cf56ce81b7807a239f745dd4aea962682",
         )
     )
     parent = proof["current_parent_authoring"]
@@ -186,7 +186,7 @@ def current_weapon103(root=ROOT):
     expected = forge.checked(
         root,
         "docs/agents/evidence/OTV2-20261002-item-weapon-metadata-promotion-v1.json",
-        "5814324f49b967e147b8d66b4d465161cf5b05bcec510670b999b563fd3e162c",
+        "0d488fa70164e14b695f3dbc25d8d4a5ac701b1eb511220c556dd3b706e445df",
     )
     if actual != expected:
         raise ValueError("historical411/current103 packet reproduction drift")

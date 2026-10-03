@@ -11,16 +11,16 @@
   "existing_owner": "ProjectV2ItemAuthoring.weapon_attack_modifier_points; signed i32 points; /item/weapon/attack_modifier",
   "unchanged_weapon79_proof": {
     "path": "docs/agents/evidence/OTV2-20261002-item-weapon-metadata-source-qualification-v1.json",
-    "sha256": "96f5cd5379ff34a4bb0242a221685e7b5b2be5b6bf155d9484d70f55054aff39"
+    "sha256": "1a609cc01d223537d420c68ca83e089592e065ed2f6faf32ed70822b4f18c19c"
   },
   "global_own_id_bridge": {
     "path": "docs/agents/evidence/OTV2-20261001-item-movable-source-qualification-v1.json",
-    "sha256": "ae0698adc7df7e25b88569b22de87a020661381a0623ea84d5333a576b12be06",
+    "sha256": "39a5ced0cdf57ccb81db5edd429bb41be5da744bcf673a44169aafd6d149d7bb",
     "pages": 9980
   },
   "name139_packet": {
     "path": "docs/agents/evidence/OTV2-20261002-item-name-promotion-v1.json",
-    "sha256": "df202253ef9b0a4817eba98dcacb5a65960828e022e34b9590efdb96952f4383"
+    "sha256": "fcc6dcc001bffa1febb2a240d7f4a87b44badab77d59a9372b92e7c3b8b3586a"
   },
   "historical_proposal": {
     "path": "/workspace/audit-continuation/remaining-native-owner-gap-source-proposals.json",
@@ -30,7 +30,7 @@
     "tools/content-schema/item-authoring/engine_items.py": "0a494fd64d7774507b4d9e493492a7ffc9d99d751dd2ed4fec73561cb06f5b06",
     "tools/content-census/item_wiki_family_capture.py": "0abb6b0180eeef98bfa397ca3b7c9192d47806a7e97aa6423159220e82c36f03",
     "imports/crystalserver/bindings/items.json": "1d19709c28a649d8a9f32bf53e5bf43ad847d7901d6c6254833f456154d2de5a",
-    "imports/tibiawiki/facts/items-stats.json": "49d43cbe6957e6edc16aeda72e05152c55606e9381452ea74d7a63b5a5e91e4a"
+    "imports/tibiawiki/facts/items-stats.json": "379f2d468fdb8e5ec7b40d98e4ec62f1b1b189b4b2ad9c40c4a69869123c5864"
   },
   "official_current": {
     "label": "client-15.30",
@@ -4194,18 +4194,18 @@
   "accepted_name_priority_contracts": [
     {
       "path": "docs/agents/evidence/OTV2-20261001-item-movable-source-qualification-v1.json",
-      "sha256": "ae0698adc7df7e25b88569b22de87a020661381a0623ea84d5333a576b12be06",
+      "sha256": "39a5ced0cdf57ccb81db5edd429bb41be5da744bcf673a44169aafd6d149d7bb",
       "field": "source_name_priority",
       "value": "UNIQUE_NONEMPTY_ACTUALNAME_THEN_NAME_ONLY_IF_ACTUALNAME_ABSENT"
     },
     {
       "path": "tools/content-schema/item-authoring/lower_wiki_movable_packet.py",
-      "sha256": "dc9a9c622f8d8081c7245f4600405b18bd20e5a8459b77686119a585a8977476",
+      "sha256": "5947e69bb6eb43851516f0d2705fb7720d176a9b99c8de6e04d879a0a0498199",
       "method": "reasons actualname then name only when actualname absent"
     },
     {
       "path": "tools/content-schema/item-authoring/lower_item_name_packet.py",
-      "sha256": "d79622c4b307e76e701cc15890b99c61a1c56294b0db5ab49b98cfbd7dc955eb",
+      "sha256": "8cc141b1ae4599927efa8e53dc4115be71fd85fbd3289780337ba94d49a418b9",
       "method": "Published Name139 exact own-ID names: nonempty actualname first"
     }
   ],

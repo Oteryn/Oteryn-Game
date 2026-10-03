@@ -107,7 +107,7 @@
     },
     {
       "path": "tools/content-schema/item-authoring/lower_wiki_movable_packet.py",
-      "sha256": "dc9a9c622f8d8081c7245f4600405b18bd20e5a8459b77686119a585a8977476"
+      "sha256": "5947e69bb6eb43851516f0d2705fb7720d176a9b99c8de6e04d879a0a0498199"
     },
     {
       "path": "tools/content-census/item_wiki_family_capture.py",
