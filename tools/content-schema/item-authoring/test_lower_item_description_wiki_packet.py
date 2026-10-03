@@ -26,17 +26,23 @@ class WikiDescriptions(unittest.TestCase):
         )
         return s, old, d, params
 
-    def test_full_cohorts_disjoint1629_keep_periods_and_existing_materializability(
+    def test_full_cohorts_disjoint1628_keep_periods_and_existing_materializability(
         self,
     ):
         strict, wiki = lane.strict.build(), lane.build()
         strict_ids = {r["target"]["key"] for r in strict["promotions"]}
         wiki_ids = {r["target"]["key"] for r in wiki["promotions"]}
         self.assertFalse(strict_ids & wiki_ids)
-        self.assertEqual(len(strict_ids | wiki_ids), 1629)
+        self.assertEqual(len(strict_ids | wiki_ids), 1628)
         self.assertEqual(
-            sum(r["headers"]["materializable"] for r in wiki["promotions"]), 11
+            sum(r["headers"]["materializable"] for r in wiki["promotions"]), 10
         )
+        # D289: i901 keeps its accepted Native core hold; its literal is held, not promoted.
+        self.assertEqual(
+            [(h["target"]["key"], h["reason"]) for h in wiki["holds"]],
+            [("oteryn:item.tibia.i901", "D289_ACCEPTED_NATIVE_CORE_HOLD")],
+        )
+        self.assertNotIn("oteryn:item.tibia.i901", wiki_ids)
         for row in wiki["promotions"]:
             self.assertTrue(row["description"].endswith("."))
 

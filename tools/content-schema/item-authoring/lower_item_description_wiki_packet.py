@@ -3,6 +3,7 @@
 import argparse
 import json
 
+import d289_holds
 import lower_item_description_packet as strict
 
 ROOT = strict.ROOT
@@ -103,7 +104,7 @@ def build(root=ROOT):
     members = {label: {r[0]: r for r in m["entries"]} for label, m in manifests.items()}
     aliases = json.loads((root / "content/items/aliases.json").read_text())["entries"]
     wiki = json.loads((root / strict.base.WIKI).read_text())["records"]
-    rows, seen = [], set()
+    rows, holds, seen = [], [], set()
     for source in proof["records"]:
         iid, target = source["source_item_id"], source["target"]
         ordinal = source["source_row_ordinal"]
@@ -152,14 +153,30 @@ def build(root=ROOT):
         params = strict.names.witness_params(
             source, indexed, pages, proof["qualification_cutoff"]
         )
+        if target["key"] in d289_holds.NATIVE_CORE_HOLD_KEYS:
+            # D289: the accepted Native core hold wins; no description is promoted.
+            holds.append(
+                {
+                    "reason": d289_holds.NATIVE_CORE_HOLD,
+                    "source_item_id": iid,
+                    "target": target,
+                }
+            )
+            continue
         rows.append(qualify(source, prior, definitions[target["key"]], owners, params))
+    d289_holds.require_hits(
+        d289_holds.NATIVE_CORE_HOLD_KEYS,
+        [h["target"]["key"] for h in holds],
+        "Wiki description",
+    )
     if (
         len(seen) != 1515
         or seen != {r["source_item_id"] for r in historical["records"]}
         or seen & {r["source_item_id"] for r in original["records"]}
-        or sum(r["headers"]["materializable"] for r in rows) != 11
+        or len(rows) != 1514
+        or sum(r["headers"]["materializable"] for r in rows) != 10
     ):
-        raise ValueError("closed disjoint1515/1504False/11True scope drift")
+        raise ValueError("closed disjoint1515/D289hold1/1504False/10True scope drift")
     return {
         "schema": "OTERYN_ITEM_DESCRIPTION_PROMOTION/v1",
         "compiler": {
@@ -173,8 +190,9 @@ def build(root=ROOT):
             "policy": proof["accepted_source_policy"],
         },
         "world_owner_inputs": maps,
-        "counts": {"items": 1515, "fields": 1515},
+        "counts": {"items": 1514, "fields": 1514, "holds": len(holds)},
         "promotions": rows,
+        "holds": holds,
     }
 
 
@@ -192,7 +210,7 @@ def main():
     else:
         OUTPUT.write_bytes(data)
     print(
-        "closed1515 full Wiki literals, differing XML retained; Native siblings unchanged"
+        "closed1515 (1514 promoted, D289 hold 1) full Wiki literals, differing XML retained; Native siblings unchanged"
     )
 
 

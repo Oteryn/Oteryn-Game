@@ -6,6 +6,7 @@ import json
 from collections import defaultdict
 from pathlib import Path
 
+import d289_holds
 from engine_items import decode_appearance_object, protobuf_fields
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -116,6 +117,18 @@ def build(root=ROOT):
                 }
             )
             continue
+        if key in d289_holds.NATIVE_CORE_HOLD_KEYS:
+            if iid in proof["rune_ids"]:
+                raise ValueError(f"D289 held magic rune: {iid}")
+            # D289: the accepted Native core hold wins; no pickupability is promoted.
+            holds.append(
+                {
+                    "appearance_id": iid,
+                    "item_key": key,
+                    "reason": d289_holds.NATIVE_CORE_HOLD,
+                }
+            )
+            continue
         d = definitions[key]
         leaf(d.get("semantics", {}), "physical", "pickupable", True)
         source = {
@@ -155,7 +168,12 @@ def build(root=ROOT):
         k: sum(r["kind"] == k for r in rows)
         for k in ("PICKUPABLE_TRUE", "RUNE_STACK_100")
     }
-    if kinds != {"PICKUPABLE_TRUE": 6756, "RUNE_STACK_100": 39} or len(holds) != 496:
+    d289_holds.require_hits(
+        d289_holds.NATIVE_CORE_HOLD_KEYS,
+        [h["item_key"] for h in holds if h["reason"] == d289_holds.NATIVE_CORE_HOLD],
+        "physical",
+    )
+    if kinds != {"PICKUPABLE_TRUE": 6755, "RUNE_STACK_100": 39} or len(holds) != 497:
         raise ValueError(f"bounded physical scope drift: {kinds}, holds={len(holds)}")
     return {
         "schema": "OTERYN_ITEM_PHYSICAL_PROMOTION/v1",
@@ -169,8 +187,8 @@ def build(root=ROOT):
         "policy": proof["policy"],
         "counts": {
             "promotions": len(rows),
-            "fields": 6834,
-            "distinct_items": 6756,
+            "fields": 6833,
+            "distinct_items": 6755,
             "holds": len(holds),
             **kinds,
         },

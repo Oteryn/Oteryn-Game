@@ -17,7 +17,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "content.lock.json",
         364,
-        "8969d57915ca365a2ee42fb6652baf5bdd22dfc12c55d9f25a846656fa676ed6",
+        "5d7e898a4215aa393e45fa1363517a60071521301e8cb8a97b577a2f7b06380e",
     ),
     (
         "definitions/declarations.json",
@@ -26,8 +26,8 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "definitions/reference.json",
-        25_072_677,
-        "08d905512d61f9d909daa532e02c7f249e25ef1c8e48c1d9835b16ebd99f93cd",
+        25_072_152,
+        "3dd90e7e73d1ccbb768654f702e7f001709e0dafe51d914926c4d4cda99dad06",
     ),
     (
         "editor/author.json",
@@ -37,7 +37,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "manifest.json",
         1_939,
-        "fadbe6526a85cd57204f4df8e75b87fb1b31cf20917c077a4088cbb26539ae6c",
+        "68e21d894eadd415aa09f245cbe01a5b18c3b691848318c15bb25c8f41d6b15d",
     ),
     (
         "presentations/bindings.json",
@@ -47,7 +47,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "project.json",
         390,
-        "df2b79ebd4b1cfdfef0324144fbe2d1603a6e1599e7a07de60cc83b9252af549",
+        "874b5a28016c13d18e92a9aa886b086ff5090fb2ee22b8cb0735e95e0bfb6584",
     ),
     (
         "provenance/imports.json",
@@ -114,7 +114,7 @@ const WORLD_CATALOGUE_SHARDS: [(&str, &str); 4] = [
 const TREE_CONTRACT: &str =
     "docs/agents/evidence/OTV2-20260925-full-game-content-ruleset-tree-v1.json";
 const TREE_DIRECTORY_NODES: usize = 97;
-const TREE_SHA256: &str = "47f83501aa458a045146e03576501d46ec6c5fa5eca7af535ecadfdb31a9a611";
+const TREE_SHA256: &str = "5948c128bfd3422d28e226af4c837b2334ae306c7b7adc173f69c90e4fa015a2";
 /// A12 (ITEM-ID-1b): the protected Item family less the 4,590 D149 records, on Tibia keys,
 /// plus the 404 donor epoch-2 records and the 60 appearance-only records (ITEM-ADD-1).
 const ITEMS: usize = 34_031;
@@ -1275,7 +1275,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
         (
             item_description_wiki_promotion::ITEM_DESCRIPTION_WIKI_PACKET,
             item_description_wiki_promotion::ITEM_DESCRIPTION_WIKI_PACKET_SHA256,
-            1515,
+            1514,
         ),
     ] {
         assert_eq!(
@@ -1299,7 +1299,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
             assert!(description_rows.insert(key, row.clone()).is_none());
         }
     }
-    assert_eq!(description_rows.len(), 1629);
+    assert_eq!(description_rows.len(), 1628);
     assert_eq!(
         Sha256::digest(item_numeric_modifier_promotion::ITEM_NUMERIC_MODIFIER_PACKET)
             .iter()
@@ -1348,7 +1348,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
             assert!(numeric_keys.insert(key));
         }
     }
-    assert_eq!(known_description_keys.len(), 1629);
+    assert_eq!(known_description_keys.len(), 1628);
     assert_eq!(numeric_keys.len(), 17);
     assert_eq!(
         Sha256::digest(item_name15_promotion::ITEM_NAME15_PACKET)
@@ -1524,15 +1524,16 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     // Physical fact initialization exposes one additional explicit wiki negative (i20129).
     // Documented-default No adds 1,487 leaves; 500 overlap this older atom census.
     // Seven genuine historical defaults add seven leaves; three overlap this census.
-    // Affirmative official marketability adds 4,891 leaves without altering admission.
+    // Affirmative official marketability adds 4,890 leaves without altering admission
+    // (D289 holds i901, which enters this census through no other atom).
     // Eight successor defaults add eight false leaves; all already have Wave 1 atoms.
     assert_eq!(
         wave1_items,
-        164 + 995 + 27 + 1_788 + 1 + 11 + 987 + 4 + 2519
+        164 + 995 + 27 + 1_788 + 1 + 11 + 987 + 4 + 2518
     );
     assert_eq!(
         wave1_fields,
-        290 + 1_269 + 49 + 1 + 2_345 + 1 + 11 + 1_487 + 7 + 4_891 + 8
+        290 + 1_269 + 49 + 1 + 2_345 + 1 + 11 + 1_487 + 7 + 4_890 + 8
     );
     // The declared timer has its own census: it is not one of the older v1/Wave 1 atoms.
     let (charge_fields, duration_fields) = linked
@@ -1699,9 +1700,9 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     }
     assert_eq!(
         (pickup_fields, positive_stacks, weight_fields),
-        (6756, 39, 6513 + 4)
+        (6755, 39, 6513 + 4)
     );
-    assert_eq!((movable_true, movable_false), (5692, 0));
+    assert_eq!((movable_true, movable_false), (5691, 0));
     assert_eq!(
         (
             document_groups,
@@ -1710,7 +1711,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
             not_writeable,
             text_lengths
         ),
-        (98, 82, 54, 17, 55)
+        (97, 82, 54, 16, 55)
     );
     assert_eq!(mantra_keys.len(), 49);
     assert_eq!(

@@ -9,8 +9,8 @@ import lower_client_physical_packet as lower
 class PhysicalPacketTests(unittest.TestCase):
     def test_whole_retained_scope_is_exact_bound_with_affirmative_object_proof(self):
         packet = lower.build()
-        self.assertEqual(packet["counts"]["fields"], 6834)
-        self.assertEqual(packet["counts"]["distinct_items"], 6756)
+        self.assertEqual(packet["counts"]["fields"], 6833)
+        self.assertEqual(packet["counts"]["distinct_items"], 6755)
         self.assertEqual(packet["counts"]["RUNE_STACK_100"], 39)
         for row in packet["promotions"]:
             source = row["source"]
@@ -21,6 +21,18 @@ class PhysicalPacketTests(unittest.TestCase):
             self.assertEqual(len(source["object_sha256"]), 64)
         self.assertEqual(
             sum(r["reason"] == "EXISTING_MAP_OWNER" for r in packet["holds"]), 241
+        )
+        # D289: the accepted Native core hold keeps i901 out of the promotions.
+        self.assertEqual(
+            [
+                r["item_key"]
+                for r in packet["holds"]
+                if r["reason"] == "D289_ACCEPTED_NATIVE_CORE_HOLD"
+            ],
+            ["oteryn:item.tibia.i901"],
+        )
+        self.assertNotIn(
+            "oteryn:item.tibia.i901", {r["item_key"] for r in packet["promotions"]}
         )
 
     def test_blocked_or_conflicting_field_never_becomes_known(self):

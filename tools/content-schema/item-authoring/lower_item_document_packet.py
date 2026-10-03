@@ -6,6 +6,7 @@ import re
 from collections import Counter
 from pathlib import Path
 
+import d289_holds
 from engine_items import decode_appearance_object, protobuf_fields
 from lower_client_market_packet import WORLD_FLAGS
 from lower_wiki_stack_default_packet import checked, exact_bindings, raw_parameters, sha
@@ -169,7 +170,7 @@ def build(root=ROOT):
                 for r in json.loads(path.read_text()).get("records", [])
                 if r.get("provenance", {}).get("item_pointer")
             )
-    rows, seen = [], set()
+    rows, holds, seen = [], [], set()
     absent = set(proof["world_owner_baseline"]["candidate_absence_keys"])
     for source in proof["records"]:
         iid, key = source["source_item_id"], source["target"]["key"]
@@ -180,6 +181,24 @@ def build(root=ROOT):
         ):
             raise ValueError("document scope/object/World baseline drift")
         seen.add(iid)
+        held = d289_holds.DOCUMENT_HOLDS.get(key)
+        if held:
+            # D289: the accepted Native leaf wins; the conflicting source fact is held.
+            if (
+                source["facts"] != held["source_facts"]
+                or source["target"] != source["binding"]["target"]
+            ):
+                raise ValueError("document D289 held source drift")
+            holds.append(
+                {
+                    "decision": d289_holds.DECISION,
+                    "reason": held["reason"],
+                    "source_facts": source["facts"],
+                    "source_item_id": iid,
+                    "target": source["target"],
+                }
+            )
+            continue
         rows.append(
             qualify(
                 source,
@@ -190,20 +209,30 @@ def build(root=ROOT):
                 proof["qualification_cutoff"],
             )
         )
+    d289_holds.require_hits(
+        d289_holds.DOCUMENT_HOLDS, [h["target"]["key"] for h in holds], "document"
+    )
     counts = Counter(member for row in rows for member in row["facts"])
     if (
         len(seen) != 98
-        or sum(counts.values()) != 208
-        or counts != {"readable": 82, "writeable": 71, "max_text_length": 55}
+        or len(rows) != 97
+        or sum(counts.values()) != 207
+        or counts != {"readable": 82, "writeable": 70, "max_text_length": 55}
     ):
-        raise ValueError("document closed208/98 scope drift")
+        raise ValueError("document closed207/97 scope drift")
     return {
         "schema": "OTERYN_ITEM_DOCUMENT_PROMOTION/v1",
         "compiler": {"path": COMPILER, "sha256": sha((root / COMPILER).read_bytes())},
         "sources": {"proof_path": PROOF, "proof_sha256": PROOF_SHA},
         "world_owner_inputs": maps,
-        "counts": {"fields": 208, "items": 98, "by_field": dict(counts)},
+        "counts": {
+            "fields": 207,
+            "items": 97,
+            "holds": len(holds),
+            "by_field": dict(counts),
+        },
         "promotions": rows,
+        "holds": holds,
     }
 
 
@@ -220,7 +249,7 @@ def main():
             raise SystemExit("document packet drift")
     else:
         OUTPUT.write_bytes(data)
-    print("document208 fields/98Items")
+    print("document207 fields/97Items, D289 holds 1")
 
 
 if __name__ == "__main__":

@@ -19,6 +19,9 @@ on:
       - imports/tibiawiki/facts/items-stats.json
       - imports/tibiawiki/source-evidence/stack-default-successor8/**
       - docs/agents/evidence/OTV2-20261002-item-stack-default-successor8-*.json
+      - docs/agents/evidence/OTV2-20261003-item-stack-default-successor8-*.json
+      - docs/agents/evidence/OTV2-20261003-item-market-true-promotion-v2.json
+      - docs/agents/evidence/OTV2-20261003-item-movable-promotion-v2.json
       - imports/tibiawiki/batches.json
       - imports/tibiawiki/sources.json
       - tools/content-census/item_wiki_family_capture.py
@@ -192,6 +195,16 @@ jobs:
         run: |
           python test_lower_wiki_movable_packet.py
           python lower_wiki_movable_packet.py --check
+
+      - name: D289 Market v2 holds and packet drift
+        run: |
+          python test_lower_client_market_d289_packet.py
+          python lower_client_market_d289_packet.py --check
+
+      - name: D289 movable v2 holds and packet drift
+        run: |
+          python test_lower_wiki_movable_d289_packet.py
+          python lower_wiki_movable_d289_packet.py --check
 
       - name: Explicit document qualification guards and packet drift
         run: |

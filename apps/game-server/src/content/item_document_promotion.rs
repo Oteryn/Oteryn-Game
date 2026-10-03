@@ -9,7 +9,7 @@ pub const ITEM_DOCUMENT_PACKET: &[u8] = include_bytes!(
     "../../../../docs/agents/evidence/OTV2-20261001-item-document-promotion-v1.json"
 );
 pub const ITEM_DOCUMENT_PACKET_SHA256: &str =
-    "bf42290e24008984a48fe6e12b0c3b3989cf5fc3cb7ac880f9b23ec58ba88134";
+    "d83101b5cb2231b55ed331960c35e57f2ac58e9db9e76ef632db8c02f61e33ba";
 #[derive(Deserialize)]
 struct Packet {
     schema: String,
@@ -58,7 +58,7 @@ pub fn apply_item_document_promotion_v1(draft: &mut ProjectV2Draft) -> Result<us
             } => Some((&*identity, semantics)),
             _ => None,
         });
-    apply_rows(items, ITEM_DOCUMENT_PACKET, 208, 98)
+    apply_rows(items, ITEM_DOCUMENT_PACKET, 207, 97)
 }
 fn check<T: PartialEq>(old: &ReferenceItemField<T>, value: &T) -> Result<(), String> {
     match old {

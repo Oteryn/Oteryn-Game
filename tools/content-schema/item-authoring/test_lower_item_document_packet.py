@@ -149,6 +149,29 @@ class DocumentSources(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "all-present"):
             doc.qualify(*args)
 
+    def test_d289_holds_i2820_conflicting_source_fact(self):
+        packet = doc.build()
+        self.assertEqual(
+            packet["counts"],
+            {
+                "fields": 207,
+                "items": 97,
+                "holds": 1,
+                "by_field": {"readable": 82, "writeable": 70, "max_text_length": 55},
+            },
+        )
+        self.assertEqual(
+            [
+                (h["target"]["key"], h["reason"], h["source_facts"])
+                for h in packet["holds"]
+            ],
+            [("oteryn:item.tibia.i2820", "HELD_SOURCE_CONFLICT", {"writeable": False})],
+        )
+        self.assertNotIn(
+            "oteryn:item.tibia.i2820",
+            {r["target"]["key"] for r in packet["promotions"]},
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

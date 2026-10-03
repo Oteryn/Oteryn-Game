@@ -6,9 +6,9 @@ use super::{
 };
 
 pub const ITEM_MOVABLE_PACKET: &[u8] =
-    include_bytes!("../../../../docs/agents/evidence/OTV2-20261001-item-movable-promotion-v1.json");
+    include_bytes!("../../../../docs/agents/evidence/OTV2-20261003-item-movable-promotion-v2.json");
 pub const ITEM_MOVABLE_PACKET_SHA256: &str =
-    "e619b930e877fde117996a867c11676ce423aeca4931d3ae6f37a4afdd799939";
+    "c893cb91a2ce832218fbfbd2e0ed530e890345c8cdcb0d5c3ecbbb707eb0bac8";
 
 pub fn apply_item_movable_promotion_v1(
     draft: &mut ProjectV2Draft,
@@ -25,5 +25,5 @@ pub fn apply_item_movable_promotion_v1(
         } => Some((identity.key.as_str(), *stack_class, semantics)),
         _ => None,
     });
-    apply_rows(items, ITEM_MOVABLE_PACKET, 5692, 5692)
+    apply_rows(items, ITEM_MOVABLE_PACKET, 5691, 5691)
 }

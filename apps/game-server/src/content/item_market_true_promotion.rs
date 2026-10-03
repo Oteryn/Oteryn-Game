@@ -7,10 +7,10 @@ use serde::Deserialize;
 use std::collections::{BTreeMap, BTreeSet};
 
 pub const ITEM_MARKET_TRUE_PACKET: &[u8] = include_bytes!(
-    "../../../../docs/agents/evidence/OTV2-20261001-item-market-true-promotion-v1.json"
+    "../../../../docs/agents/evidence/OTV2-20261003-item-market-true-promotion-v2.json"
 );
 pub const ITEM_MARKET_TRUE_PACKET_SHA256: &str =
-    "a3caa1afa06b56ead7e54531408be02caf1b94e13d6c72d087b3669e91d8c312";
+    "af3d42fae3d503c40a1caafcef88b30c34433b99576434553801f2a6b3e6be1a";
 #[derive(Deserialize)]
 struct Packet {
     schema: String,
@@ -46,7 +46,7 @@ pub fn apply_item_market_true_promotion_v1(
         } => Some((identity.key.as_str(), semantics)),
         _ => None,
     });
-    apply_rows(items, ITEM_MARKET_TRUE_PACKET, 4893)
+    apply_rows(items, ITEM_MARKET_TRUE_PACKET, 4892)
 }
 fn current(semantics: &ReferenceItemSemantics) -> Result<Option<bool>, String> {
     use ReferenceItemField::{Known, Unknown};
