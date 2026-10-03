@@ -61,8 +61,15 @@ stays.
    - It closes P1 4172944113 for the frozen-generation case only.
 3. **Hard wiring gate (binding).** No production caller may be added for any of the three bridges
    until the follow-up fence (item 4) is merged.
-   - Removing their `#[allow(dead_code)]` is the observable trigger.
-   - A PR that adds such a caller without the fence fails review on this decision.
+   - **Trigger:** the existence of any non-test production reference to `commit_exact_owner_damage`,
+     `commit_exact_owner_primary_damage` or `commit_exact_owner_charm_damage`: any reference outside
+     their own definitions and outside `#[cfg(test)]` code and `*_tests.rs` modules. The
+     `#[allow(dead_code)]` attribute is not the trigger: a redundant attribute keeps compiling, so
+     its presence proves nothing.
+   - **Structural check.** #1625, which adds two of the three bridges, adds in the same PR a
+     `game-server` test that scans `src/` and fails when such a reference exists. The test names
+     this decision and A2. Only the A2 PR may remove or relax it, together with the fence.
+   - A PR that adds such a caller without the fence fails that test and review on this decision.
    - While the gate holds, no live path can reach a stale-tuple damage write.
 4. **Follow-up task, direction A2** (admission and composition lane; high risk; it needs the owning
    admission/session contract and independent review):
@@ -112,5 +119,6 @@ stays.
 ## 6. Before-freeze checklist
 
 1. Owned paths only: this file and its task record.
-2. No code change. #1625's writer replies on 4173012827 citing this decision.
+2. No code change. #1625's writer replies on 4173012827 citing this decision and adds the
+   structural check of item 3.
 3. Split work: the A2 task (control plane opens it).

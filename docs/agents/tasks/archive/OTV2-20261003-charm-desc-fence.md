@@ -50,5 +50,32 @@ grace-expiry path.
 
 ## Acceptance criteria
 
-- [ ] Decision on an exact frozen head with passing validators.
+- [x] Decision on an exact frozen head with passing validators.
 - [ ] Independent exact-head review (authority, fencing).
+- [ ] Protected Merge Queue integration.
+
+## Excluded scope
+
+- Code. The structural gate check is added by #1625 (decision item 3); the fence is A2's.
+
+## Validation
+
+- `python3 tools/agents/validate_governance.py`: "Validated 22 required policy documents and 9
+  project lanes." `git diff --cached --check`: clean. Both run on the frozen head before the push.
+
+## Self-review
+
+- Method: whole-diff reread against FND-04 and FND-04B, `ability/commit.rs`, `ability/mod.rs`,
+  `foundation/runtime_actor_carrier.rs` and `gameplay_transport/mod.rs`.
+- Verdict: no open finding at freeze.
+
+## Independent review
+
+- required: YES (authority and fencing decision). The control plane triggers it on the frozen head.
+- Round on 7a26bec3/8bf2ce08: in-place rebind for A2 (fixed in 7bcf8e48).
+- Round on 7bcf8e48: P1 4173284936 (the gate trigger is a non-test production reference, checked
+  structurally) and P2 4173284940 (this record's sections); both fixed in one push.
+
+## PR and closeout
+
+- PR #1638. Record archived in the final authoring commit; it reaches `main` only if the PR merges.
