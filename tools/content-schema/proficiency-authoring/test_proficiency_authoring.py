@@ -328,6 +328,31 @@ def test_shaping_semantic_rules() -> None:
     shaping = full_shaping()
     shaping["pool"]["entries"][0]["rank_values"][3]["values"] = {"probability": 0.1}
     expect_shaping_invalid(shaping, "rank 4: values must be exactly")
+    # The actual rank values are checked as a perk and by the sign rules (4174328922).
+    shaping = full_shaping()
+    shaping["pool"]["entries"][0]["rank_values"][2]["values"] = {"value": -1}
+    expect_shaping_invalid(shaping, "rank 3: skill_bonus value must be positive")
+    shaping = full_shaping()
+    shaping["pool"]["entries"][0] = {
+        "identity": {
+            "kind": "homing_missile",
+            "element": "fire",
+            "missile_client_id": 1,
+        },
+        "weight": known_cell("weight", 1),
+        "rank_values": [
+            known_cell("values", {"probability": 0.01, "multiplier": 2.0})
+            for _ in range(10)
+        ],
+    }
+    catalogue = shaping_sample()
+    catalogue["shapings"] = [shaping]
+    assert sa.validate(catalogue, sa.committed_proficiencies()) == []
+    shaping["pool"]["entries"][0]["rank_values"][0]["values"] = {
+        "probability": 2,
+        "multiplier": -1,
+    }
+    expect_shaping_invalid(shaping, "rank 1: values are not a valid perk")
     shaping = full_shaping()
     shaping["pool"]["entries"] = (
         shaping["pool"]["entries"] * 16 + shaping["pool"]["entries"][:1]
@@ -344,12 +369,13 @@ def test_shaping_admission() -> None:
     full = full_shaping()
     assert sa.admitted(full, "MODIFY", slot=1) and sa.admitted(full, "MODIFY", slot=2)
     assert sa.admitted(full, "RANK_UP", rank=1, entry=0)
-    assert not sa.admitted(full, "RANK_UP", rank=10, entry=0)
+    # RANK_MAX and POOL_TOO_SMALL are runtime checks, not admission (4174328919).
+    assert sa.admitted(full, "RANK_UP", rank=10, entry=0)
+    assert sa.admitted(full, "ORB_RANK", rank=10, entry=0)
     assert sa.admitted(full, "ORB_RANK", rank=3, entry=2)
     assert sa.admitted(full, "RESHAPE_OFFER", rank=5)
     assert sa.admitted(full, "CLEAR")
-    # Exactly 3 entries leave only 2 besides the current one: no offer.
-    assert not sa.admitted(full_shaping(entries=3), "RESHAPE_OFFER", rank=1)
+    assert sa.admitted(full_shaping(entries=3), "RESHAPE_OFFER", rank=1)
     # One entry without a value at the row's rank closes the offer (4174160821).
     gap = full_shaping()
     gap["pool"]["entries"][3]["rank_values"][4] = {"state": "UNKNOWN"}

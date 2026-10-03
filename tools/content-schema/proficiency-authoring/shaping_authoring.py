@@ -69,16 +69,32 @@ def entry_errors(where: str, entry: dict, perks: Draft202012Validator) -> list[s
             f"{where}: identity carries value fields {sorted(fields & set(identity))}"
         )
         return errors
-    candidate = dict(identity) | {name: 1 for name in fields}
-    if kind == "spell_augment" and identity.get("augment") == "cooldown":
-        candidate["value"] = -1
-    if list(perks.iter_errors(candidate)):
+    cooldown = kind == "spell_augment" and identity.get("augment") == "cooldown"
+    placeholder = {name: 1 for name in fields}
+    if cooldown:
+        placeholder["value"] = -1
+    if kind in pa.NO_VALUE_KINDS:
+        placeholder["probability"] = 0.5
+    if list(perks.iter_errors(dict(identity) | placeholder)):
         errors.append(f"{where}: identity is not a perk of the Proficiency schema")
+        return errors
     for rank, cell in enumerate(entry["rank_values"], start=1):
-        if known(cell) and set(cell["values"]) != fields:
+        if not known(cell):
+            continue
+        values = cell["values"]
+        if set(values) != fields:
             errors.append(
                 f"{where} rank {rank}: values must be exactly {sorted(fields)}"
             )
+            continue
+        # The actual values must form a valid perk, with the catalogue's sign rules.
+        if list(perks.iter_errors(dict(identity) | values)):
+            errors.append(f"{where} rank {rank}: values are not a valid perk")
+        elif "value" in values and (
+            values["value"] >= 0 if cooldown else values["value"] <= 0
+        ):
+            sign = "negative" if cooldown else "positive"
+            errors.append(f"{where} rank {rank}: {kind} value must be {sign}")
     return errors
 
 
@@ -150,6 +166,8 @@ def admitted(
     """PROFICIENCY-1B section 3.3: an operation is admitted only when every cell it reads is KNOWN.
 
     `slot` is MODIFY's slot; `rank` is the row's current rank; `entry` is the row's entry index.
+    Admission reads cells only. Runtime preconditions (POOL_TOO_SMALL, RANK_MAX, a pending offer)
+    are section 5's checks and never turn into NOT_ADMITTED here.
     RESHAPE_CHOOSE reads no cell: it follows the pending offer, which was paid under its own
     revision, so it is admitted whenever an offer is pending (a runtime check, not content).
     """
@@ -173,17 +191,17 @@ def admitted(
     if not known(shaping["pool"]):
         return False
     if operation == "RESHAPE_OFFER":
+        # A pool of OFFER_SIZE or fewer is POOL_TOO_SMALL, a runtime check (section 5).
         return (
             known(costs["reshape_offer"])
             and _pool_drawable(shaping)
-            and len(shaping["pool"]["entries"]) > OFFER_SIZE
             and _values_known(shaping, rank)
         )
     if entry is None or not 0 <= entry < len(shaping["pool"]["entries"]):
         raise ValueError(f"{operation} needs the row's entry index")
-    if rank == RANKS:
-        return False
     if operation == "RANK_UP":
+        if rank == RANKS:
+            return True  # no step cell to read; RANK_MAX is a runtime check (section 5)
         return known(costs["rank_steps"][rank - 1]) and _values_known(
             shaping, rank + 1, entry
         )
