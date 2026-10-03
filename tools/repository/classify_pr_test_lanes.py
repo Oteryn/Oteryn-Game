@@ -79,6 +79,11 @@ ATLAS_INTENTIONALLY_FULL_PREFIXES = (
 SERVER_QUALIFICATION_PREFIXES = (
     "apps/game-server/src/",
     "apps/game-server/migrations/",
+    # Direct local production dependencies in apps/game-server/Cargo.toml can
+    # change boot, wire validation and simulation without touching the app.
+    "crates/foundation/",
+    "crates/protocol-oteryn/",
+    "crates/simulation-determinism/",
     "tools/qualification/",
     "vendor/",
 )
