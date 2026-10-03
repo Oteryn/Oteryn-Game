@@ -1409,7 +1409,7 @@ authority, conservation) is unchanged.
   row before and after (charges, remaining time and revision, or "absent → revision 1"). These
   lines count in the measured payload of `DUR03-RL-07` at 19 coin inputs. `NpcRepair` takes the
   **BANK-FEE-0 bank part** below like `NpcTravel` (TIMED-ITEM-0A, owner answer 2; TIMED-ITEM-0
-  §7): with `T < F`, a non-junior payer burns every eligible coin whole with no change and pays
+  §7; implemented by TIMED-REPAIR-1 only after GOLD-FEE-2): with `T < F`, a non-junior payer burns every eligible coin whole with no change and pays
   `F - T` as one `FEE_DEBIT` value line (`DUR03-RL-03-FEE` 1, also in the `DUR03-RL-07` payload);
   the repair rows are unchanged, since at most 19 coin inputs fit beside the repaired item. Every other timed
   shape (checkpoints, expiry, equip forms) is TIMED-ITEM-0B's (D285).

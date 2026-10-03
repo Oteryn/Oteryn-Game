@@ -8,7 +8,7 @@ status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/timed-item0a-bank-repair
-pr: "the PR named in the #1622 FREEZE_SHA entry"
+pr: 1633
 base_sha: 061e1e4e263b2faf946e7693a51d00932a21c83e
 head_sha: "exact frozen head in the #1622 FREEZE_SHA entry"
 final_head_sha: "exact frozen head in the #1622 FREEZE_SHA entry"
@@ -24,7 +24,9 @@ owned_paths:
   - docs/agents/tasks/archive/OTV2-20261003-timed-item0a.md
 public_contracts:
   - docs/architecture/DUR-03_ITEM_TRANSACTION_AND_ANTI_DUPLICATION_CONTRACT.md
-depends_on: []
+depends_on:
+  - "BANK-FEE-0 acceptance (docs/agents/tasks/archive/OTV2-20260930-bank-fee0.md)"
+  - "GOLD-FEE-2 (bank FEE_DEBIT writer, ledger, schema and audit; gates TIMED-REPAIR-1 bank path)"
 blocks: []
 cross_repository_coordination_id: null
 external_repositories: []
@@ -38,7 +40,7 @@ Tibia. TIMED-ITEM-0 §7 replaces its coins-only exclusion with the BANK-FEE-0 §
 the DUR-03 §39.3 `NpcRepair` paragraph follow. The repair rows are unchanged: the worn item takes
 one of the 20 main-backpack entries, so at most 19 coin inputs exist, and the bank path mints no
 change. No new fee source or sink is added (D178). The bank part is pending on acceptance of
-BANK-FEE-0. Allocation: D286 (#1622 comment 5968568302), after #1471 merged.
+BANK-FEE-0, and TIMED-REPAIR-1 implements it only after GOLD-FEE-2. Allocation: D286 (#1622 comment 5968568302), after #1471 merged.
 
 Edits are limited to the NPC-0 repair paragraph and the DUR-03 `NpcRepair` sentence.
 

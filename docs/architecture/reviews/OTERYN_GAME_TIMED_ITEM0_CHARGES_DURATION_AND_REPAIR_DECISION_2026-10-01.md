@@ -192,7 +192,10 @@ refused and answers `REJECTED`.
     timed row before and after (charges, remaining time and revision, or "absent → revision 1"). 10,000 gold fits in one crystal coin, so this only refuses a
     player who pays from 20 or more small stacks.
   - **Bank part (TIMED-ITEM-0A; owner answer 2, #1622 5968564302; pending on acceptance of
-    BANK-FEE-0).** The repair pays as Tibia NPCs do: carried coins first, then the bank, under
+    BANK-FEE-0 and on GOLD-FEE-2).** The bank `FEE_DEBIT` writer, its ledger entry, schema and audit
+    belong to GOLD-FEE-2 (BANK-FEE-0 §4). TIMED-REPAIR-1 admits the bank path only after GOLD-FEE-2
+    has merged. Until then the repair stays coins only and rejects a short payer. The repair pays as
+    Tibia NPCs do: carried coins first, then the bank, under
     BANK-FEE-0 §3 unchanged. If the eligible coins are worth `T >= F`, the coin plan above runs and
     the bank is not touched. If `T < F` and the payer is not junior, every eligible coin is burned
     whole with no change, and `F - T` is debited from the payer's (Account, World) balance as one
@@ -242,7 +245,8 @@ the bank part of the repair (TIMED-ITEM-0A, §7). It adds no fee source and no s
 
 - **Must decide now:** YES. The soft boots repair (owner answer 1a) and the catalogue facts need the
   table shape; TIMED-ITEM-0B needs fixed invariants to build on.
-- **Blocked:** TIMED-REPAIR-1, TIMED-CONTENT-1, TIMED-ITEM-0B.
+- **Blocked:** TIMED-REPAIR-1, TIMED-CONTENT-1, TIMED-ITEM-0B. TIMED-REPAIR-1's bank path also
+  depends on GOLD-FEE-2 (§7).
 - **Minimum sufficient:** one table with its guard and three invariants, one repair offer with its
   rows.
 - **Harder later:** "no row means full values", "absent row = revision 0" and the monotonic
