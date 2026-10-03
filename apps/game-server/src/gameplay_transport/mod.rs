@@ -426,14 +426,33 @@ pub async fn serve_gameplay(
         quest_catalogue: None,
         quest_sessions: std::sync::Mutex::default(),
     };
-    serve_listener(
-        listener,
-        &tls,
-        limits,
-        &authority,
-        &SecureIdentifiers,
-        &(),
-        shutdown,
+    // QUEST-STATE-0 §5.4: the owner cadence requests failed quest obligations again, whether or
+    // not the session's connection runs any other cadence. It never ends on its own.
+    let quest_retries = async {
+        loop {
+            if first(
+                tokio::time::sleep(QUEST_RETRY_CADENCE),
+                shutdown.cancelled(),
+            )
+            .await
+            .is_none()
+            {
+                std::future::pending::<()>().await;
+            }
+            authority.refresh_due_quest_sessions().await;
+        }
+    };
+    first(
+        serve_listener(
+            listener,
+            &tls,
+            limits,
+            &authority,
+            &SecureIdentifiers,
+            &(),
+            shutdown,
+        ),
+        quest_retries,
     )
     .await;
     Ok(())
@@ -529,6 +548,10 @@ pub(crate) struct ComposedFreshAdmission<'a, 'f, 's> {
 #[derive(Debug)]
 pub(crate) struct QuestSession {
     /// `None`: the load failed or exceeded a bound; quest actions fail closed.
+    #[allow(
+        dead_code,
+        reason = "the session copy is read by QUEST-PRED-1's predicates"
+    )]
     pub(crate) copy: Option<crate::durability::quest_state::QuestStateCopy>,
     /// When the pending obligations may be requested again after a failed attempt.
     pub(crate) retry_at: Option<std::time::Instant>,
@@ -536,14 +559,25 @@ pub(crate) struct QuestSession {
 
 /// The backoff before pending obligations are requested again (QUEST-STATE-0 §5.4).
 const QUEST_OBLIGATION_RETRY: Duration = Duration::from_secs(60);
+/// How often the owner looks for sessions whose quest backoff has passed.
+const QUEST_RETRY_CADENCE: Duration = Duration::from_secs(10);
 
 impl ComposedFreshAdmission<'_, '_, '_> {
     /// QUEST-STATE-0 §7 and §5.4: load the admitted session's quest copy and request its
     /// pending obligations again, in the Character's revision slot. A failed load fails the
-    /// session's quest actions closed, never the login; a failed attempt is retried after
-    /// [`QUEST_OBLIGATION_RETRY`].
+    /// session's quest actions closed, never the login.
     async fn admit_quest_session(&self, admitted: &AdmittedSession) {
-        let session = match self.current_quest_fence(admitted.game_session_id).await {
+        self.refresh_quest_session(admitted.game_session_id, true)
+            .await;
+    }
+
+    /// Reload the quest copy of `session` from the store and request its pending obligations
+    /// again. A failed load or an attempt without an outcome is tried again after
+    /// [`QUEST_OBLIGATION_RETRY`] on the owner cadence. `insert` is false for a refresh of a
+    /// session that may have ended meanwhile: it then updates only a session still present.
+    async fn refresh_quest_session(&self, session: GameSessionId, insert: bool) {
+        let fence = self.current_quest_fence(session).await;
+        let (copy, retry) = match fence {
             Some(fence) => {
                 let admission = crate::durability::quest_state::admit_character_quest_state(
                     &self.revision_sequencer,
@@ -554,66 +588,48 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     self.quest_catalogue.as_ref(),
                 )
                 .await;
-                QuestSession {
-                    copy: admission.copy,
-                    retry_at: admission
-                        .retry
-                        .then(|| std::time::Instant::now() + QUEST_OBLIGATION_RETRY),
-                }
+                let retry = admission.retry || admission.copy.is_none();
+                (admission.copy, retry)
             }
-            None => QuestSession {
-                copy: None,
-                retry_at: None,
-            },
+            None => (None, false),
         };
-        if let Ok(mut sessions) = self.quest_sessions.lock() {
-            sessions.insert(admitted.game_session_id, session);
+        let entry = QuestSession {
+            copy,
+            retry_at: retry.then(|| std::time::Instant::now() + QUEST_OBLIGATION_RETRY),
+        };
+        if let Ok(mut sessions) = self.quest_sessions.lock()
+            && (insert || sessions.contains_key(&session))
+        {
+            sessions.insert(session, entry);
         }
     }
 
-    /// Request the pending obligations of `session` again once its backoff has passed. The
-    /// copy is taken out of the map for the attempt, so the map lock is never held across an
-    /// await.
-    async fn retry_quest_obligations(&self, session: GameSessionId) {
+    /// The owner cadence: refresh every session whose backoff has passed. The map lock is
+    /// never held across an await.
+    async fn refresh_due_quest_sessions(&self) {
         let now = std::time::Instant::now();
-        let mut copy = {
-            let Ok(mut sessions) = self.quest_sessions.lock() else {
-                return;
-            };
-            let Some(entry) = sessions.get_mut(&session) else {
-                return;
-            };
-            if entry.retry_at.is_none_or(|at| now < at) {
-                return;
-            }
-            entry.retry_at = None;
-            let Some(copy) = entry.copy.take() else {
-                return;
-            };
-            copy
+        let due: Vec<GameSessionId> = match self.quest_sessions.lock() {
+            Ok(mut sessions) => sessions
+                .iter_mut()
+                .filter(|(_, entry)| entry.retry_at.is_some_and(|at| at <= now))
+                .map(|(session, entry)| {
+                    entry.retry_at = None;
+                    *session
+                })
+                .collect(),
+            Err(_) => return,
         };
-        let retry = match self.current_quest_fence(session).await {
-            Some(fence) => {
-                crate::durability::quest_state::request_pending_obligations(
-                    &self.revision_sequencer,
-                    self.root,
-                    self.character,
-                    self.holder,
-                    fence,
-                    self.quest_catalogue.as_ref(),
-                    &mut copy,
-                )
-                .await
-            }
-            None => Some(true),
-        };
+        for session in due {
+            self.refresh_quest_session(session, false).await;
+        }
+    }
+
+    /// Refresh `session` on the owner cadence after the backoff.
+    fn schedule_quest_refresh(&self, session: GameSessionId) {
         if let Ok(mut sessions) = self.quest_sessions.lock()
             && let Some(entry) = sessions.get_mut(&session)
         {
-            entry.copy = retry.map(|_| copy);
-            entry.retry_at = retry
-                .unwrap_or(false)
-                .then(|| std::time::Instant::now() + QUEST_OBLIGATION_RETRY);
+            entry.retry_at = Some(std::time::Instant::now() + QUEST_OBLIGATION_RETRY);
         }
     }
 
@@ -826,6 +842,23 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             request,
         )
         .await;
+        // QUEST-STATE-0 §5.4: a chest that advances a quest left a PENDING obligation with its
+        // claim; request it in this session. An outcome that is not proven is picked up by the
+        // owner cadence after the backoff.
+        if crate::interaction_chest_use::resolve_chest(self.chest, &chest.key)
+            .is_ok_and(|resolved| resolved.quest_transition.is_some())
+        {
+            match disposition {
+                world_object::UseDisposition::Committed => {
+                    self.refresh_quest_session(command.game_session_id, false)
+                        .await;
+                }
+                world_object::UseDisposition::Rejected => {
+                    self.schedule_quest_refresh(command.game_session_id);
+                }
+                _ => {}
+            }
+        }
         UseOutcome {
             disposition,
             committed: None,
@@ -1214,9 +1247,6 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         actor: ExactActorRef,
         game_session_id: GameSessionId,
     ) -> Option<(u64, actor_spell::ActorVitals)> {
-        // QUEST-STATE-0 §5.4: the periodic owner cadence also requests a failed obligation
-        // again once its backoff has passed, before the runtime lock is taken.
-        self.retry_quest_obligations(game_session_id).await;
         let now = self.owner_now();
         let runtime = self.runtime.lock().await;
         let mut states = self.spell_states.lock().await;

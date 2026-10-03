@@ -91,7 +91,9 @@ QUEST-STATE-0 §3-§6 and §13 as packet §14 states them, with account completi
   the copy and requests each `PENDING` obligation again through the revision slot. The
   production `ComposedFreshAdmission` runs it at fresh admission and at resume, keeps the copy per
   session (a failed load fails quest actions closed, not login), and requests a failed attempt
-  again after 60 seconds on the owner cadence. No quest catalogue is loaded yet
+  again after 60 seconds on the owner cadence. That cadence runs beside the listener in
+  `serve_gameplay` for every session, and a committed chest USE whose chest names a transition
+  requests its obligation in the same session. No quest catalogue is loaded yet
   (`quest_catalogue: None`), so obligations stay pending until QUEST-LOWER-1.
 - **Recovery integrity**: `verify_character_integrity` counts quest receipts in the chain.
 
@@ -122,6 +124,14 @@ QUEST-STATE-0 §3-§6 and §13 as packet §14 states them, with account completi
 ## Review
 
 Independent persistence review (Codex) on the final frozen head; the control plane requests it.
+
+- Round 1 on `a3a5e44`: two P1s, both accepted and fixed in the repair candidate.
+  - 4174607861: the obligation retry depended on the vitals-only Serene tick. It now runs on an
+    unconditional owner cadence in `serve_gameplay`, which reloads the session copy and also
+    retries a failed load.
+  - 4174607858: a chest claim's new obligation waited for the next admission. A committed chest
+    USE whose chest names a transition now refreshes the session at once; an unproven outcome is
+    refreshed on the cadence after the backoff.
 
 ## Deviations and open points
 
