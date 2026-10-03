@@ -9,6 +9,7 @@ import tempfile
 import textwrap
 import unittest
 from test_main_job_applicability import MainJobApplicabilityTests  # noqa: F401
+from test_merge_authority_applicability import MergeAuthorityApplicabilityTests  # noqa: F401
 from contextlib import redirect_stderr, redirect_stdout
 from unittest.mock import patch
 
