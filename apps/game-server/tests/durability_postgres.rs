@@ -23,6 +23,8 @@ mod authority_recovery;
 #[allow(dead_code)]
 #[path = "support/bestiary_postgres_harness.rs"]
 mod bestiary_postgres_harness;
+#[path = "support/character_forge_dust_postgres_cases.rs"]
+mod character_forge_dust_postgres_cases;
 #[path = "support/character_proficiency_modification_postgres_cases.rs"]
 mod character_proficiency_modification_postgres_cases;
 #[path = "support/character_revision_sequencer_postgres_cases.rs"]

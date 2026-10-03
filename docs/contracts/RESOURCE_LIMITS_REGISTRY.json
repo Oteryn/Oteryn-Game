@@ -7392,6 +7392,29 @@
       "owner_contract": "../architecture/reviews/OTERYN_GAME_TIMED_ITEM0B_RUNTIME_CHARGES_AND_DURATION_DECISION_2026-10-03.md",
       "resource": "Timed writes in flight per item lane",
       "unit": "writes"
+    },
+    {
+      "id": "IMBFORGE0-RL-08",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_IMBUE_FORGE0_IMBUEMENTS_AND_EXALTATION_FORGE_DECISION_2026-09-30.md",
+      "resource": "Forge dust limit of one Character (the balance is 0 to the limit)",
+      "unit": "forge dust",
+      "hard_maximum": 225,
+      "configurable_range": {
+        "minimum": 100,
+        "maximum": 225
+      },
+      "failure_category": "INVALID_INPUT",
+      "allocation_impact": "The limit starts at 100 and is a SMALLINT within 100-225; a gain above the limit credits up to it and records the lost part, and a spend above the balance is refused before any write.",
+      "client_visible": false,
+      "boundary_tests": [
+        "min=100 and max=225: accepted by the dust_limit CHECK",
+        "min-1=99 and max+1=226: rejected by the dust_limit CHECK (game_character_forge_dust_limit_range)"
+      ],
+      "consumers": [
+        "apps/game-server/migrations/0059_character_forge_dust.sql game_character_forge_dust_limit_range",
+        "apps/game-server/src/domain/forge_dust.rs DUST_LIMIT_MIN, DUST_LIMIT_MAX"
+      ],
+      "notes": "IMBUE-FORGE-0 \u00a79 and \u00a715. Raising the limit costs (limit - 75) dust (Canary, PARITY_PENDING) and is FORGE-1b's DustLimit operation. Registered by OTV2-20261003-forge-1a."
     }
   ]
 }
