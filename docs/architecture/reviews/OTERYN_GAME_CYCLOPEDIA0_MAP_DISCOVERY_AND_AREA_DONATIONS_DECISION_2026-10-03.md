@@ -190,15 +190,48 @@ A new World Bundle revision is classified under DUR-04 §12 by what it changes:
   - grants already made stay.
 - In a world that holds none of the state above, any revision is `COMPATIBLE_NO_MIGRATION`.
 
-CYC-CONTENT-1's report lists each such change between two revisions. The classification is
-checked when the bundle is staged and verified (ADR-0021 §4.7), against the world's discovery,
-pool and epoch state. A revision that fails it is never activated, so no reset starts with it.
+CYC-CONTENT-1's report lists each such change between two revisions. The classification is a
+function of the two revisions and of whether the world holds any of the state above. It is checked
+twice:
 
-**Ordering against a reset.** All Cyclopedia commands (start, shuffle, POI found, donate, Charos)
-run only in admitted sessions, so none runs while a reset holds admission closed. Each command
-reads the content revision of the active bundle. The §4.2a normalization runs at the character's
-first load after activation. The area achievement is checked against the catalogue of the active
-revision inside the completing transaction (§4.3).
+1. **Pre-check at staging** (ADR-0021 §4.7, "staged and verified"). A revision that fails it is
+   never staged, so no reset starts with it.
+2. **Commit check at activation.** The world can gain state between staging and the reset. So the
+   classification is evaluated again against live state inside the step 4 activation transaction.
+   That point is quiescent: admission has been closed since step 1, and step 2 has ended every old
+   ownership generation, so no Cyclopedia write can commit any more (see "Ordering" below). The
+   transaction locks every pool row of the world, reads the discovery, exploration and epoch rows,
+   and classifies. If the result is `INCOMPATIBLE_REQUIRES_PRODUCT_DECISION`, the transaction
+   writes nothing: no new digest, no epoch N+1, no ACTIVATED. The record stays RETIRING and
+   admission stays closed, which is ADR-0021's fail-closed state. No Cyclopedia state is ever
+   reinterpreted under the new revision.
+
+Leaving that state needs a way to replace the target of a RETIRING record or to reactivate the
+previous bundle. ADR-0021 does not define one. Until an ADR-0021 amendment does, CYC-CONTENT-1
+stages a revision that is structural against the active one only for a world that holds none of
+the state above, and the commit check stays as the guard against a race. The amendment is listed
+in §8.
+
+**Ordering against a reset.** Every Cyclopedia write (start, shuffle, POI found, normalize,
+donate, Charos) is a write of an admitted session under its session-generation fence, and a
+donation's pool increment commits in the same transaction as its fenced Character write (§5.3).
+So none can commit after step 2 of a reset has ended the old generation: an in-flight write fails
+its fence and changes nothing. Each write re-checks its own preconditions against the active
+revision inside its transaction, not before it:
+
+- start and shuffle: the subarea is discoverable and undiscovered, the account is premium, and the
+  expected character revision matches;
+- POI found: the exploration row is the one the event was computed from (expected revision and
+  pool revision), and the found radius holds for the committed position;
+- normalize: the pinned pool revision still differs from the active one at the expected character
+  revision, so a retry after a commit does nothing;
+- donate: §5.3;
+- Charos: the count of fully discovered areas is derived inside the grant transaction;
+- area completion: the area achievement is checked against the catalogue of the active revision
+  inside the completing transaction (§4.3).
+
+The §4.2a normalization runs at the character's first load after activation. A crash during any of
+these transactions rolls it back, and the retry draws the same positions from the same occurrence.
 
 ### 4.3 Finding a POI
 
@@ -255,7 +288,9 @@ never share creatures; only the selection record is shared.
 
 ### 5.3 Donation
 
-- The character donates `F` gold to an eligible area that is not improved in the current epoch.
+- The character donates `F` gold to an area that is donation-eligible in the active revision and
+  is not improved in the current epoch. Both conditions are checked inside the donation
+  transaction, after the pool row is locked. The epoch row is immutable during its epoch.
 - `F` is between 1 and `CYC0-RL-04`, which is at most BANK0-RL-01. There is no premium or minimum
   rule until CYC-PARITY-1 shows one.
 - **Payment** follows BANK-FEE-0 §3: coins in the main backpack first, then the (Account, World)
@@ -264,8 +299,8 @@ never share creatures; only the selection record is shared.
   occurrence }`. This decision authorizes the variant, and CYC-DONATE-1 amends DUR-03's closed
   cause paragraph with it.
 - **Transaction.** The burn, any bank debit and the pool increment, at the expected pool revision,
-  are one transaction. The lock order is the gold fee order, then the bank balance, then the pool
-  row.
+  are one transaction under the character's session-generation fence. The lock order is the gold
+  fee order, then the bank balance, then the pool row. If the fence fails, nothing commits.
 - Nothing is refunded or minted back.
 
 This decision adds `AreaDonation` as a new fee source and gold sink to the D178 list, next to
@@ -276,7 +311,10 @@ This decision adds `AreaDonation` as a new fee source and gold sink to the D178 
 Selection belongs to the world reset of ADR-0021 §4.7 (the server save is a `WorldReset`,
 CREATURE-AI-0 §6.5). It runs **after** step 4 has committed the ACTIVATED record for epoch N+1 with
 its target bundle digest, and **before** any channel of the world admits a player. Admission stays
-closed in between. Selection is **one transaction** keyed (WorldId, epoch N+1):
+closed in between. Selection is **one transaction** keyed (WorldId, epoch N+1). It first reads the reset record
+inside the transaction and stops unless it is ACTIVATED for epoch N+1 with the active digest. The
+epoch row has a unique key on (WorldId, epoch); if it already exists, the transaction ends without
+a draw.
 
 1. It locks every `game_world_area_donations` row of the world, in area id order. A donation
    (§5.3) takes the same row lock, so the selection reads one stable snapshot. No donation can run
@@ -297,8 +335,9 @@ SIM-DETERMINISM-01 §12, so a retry reproduces the same outcome from the same sn
 **Recovery.**
 - If activation fails or crashes while the reset record is RETIRING, there is no epoch N+1, so no
   selection runs. ADR-0021 recovery resumes the reset, and selection follows its activation.
-- If the world boots with an ACTIVATED epoch and no epoch row for it, boot runs the selection
-  before admission opens.
+- A crash during the selection transaction rolls it back. Boot then sees an ACTIVATED epoch with
+  no epoch row and runs the selection again before admission opens. The pool rows are unchanged,
+  so the same occurrences draw the same outcome.
 - If the epoch row exists, the job reads it and never draws or resets again.
 - A boot whose epoch row names a different bundle digest than the active one refuses admission.
   This is the same fail-closed rule as ADR-0021 §4.2.
@@ -353,6 +392,9 @@ the value is set. Nothing is guessed.
 - the order of the random and donation draws;
 - how factors combine beyond event plus area;
 - confirmation of the 33% chance in official text.
+
+One open dependency is not a parity value: an ADR-0021 amendment that lets a reset whose commit
+check (§4.2a) fails leave RETIRING, by replacing the target or by reactivating the previous bundle.
 
 ## 9. Decision test
 
