@@ -41,6 +41,13 @@ stays.
   - So an old slot is removed only once its session is terminal.
   - The packet said this function had no production caller. That claim was wrong, and this
     decision corrects it.
+  - `remove_terminal_session` calls `RuntimeActorCarrier::remove_terminal_player`, which calls
+    `remove`: it destroys the slot, its position and its runtime state, and invalidates the actor
+    reference. It is an actor-retirement path, not a session-replacement path.
+- **Session continuity (FND-04 line 106; FND-04B lines 380 and 429).** A terminal GameSession never revives.
+  While the same actor stays `PRESENT_UNCONTROLLED`, post-grace recovery attaches a **new**
+  GameSessionId to that exact actor at one atomic boundary, without resetting actor or gameplay
+  state. Within grace, `player_control_loss` and `restore_player_control` keep the same session.
 
 ## 3. Decision
 
@@ -61,10 +68,19 @@ stays.
    admission/session contract and independent review):
    - admission binds `CharacterId` to the player slot, and at most one live slot exists per
      character;
-   - a new session's admission refuses or evicts the old slot at once, through the authoritative
-     terminal fact, so takeover never leaves the old slot usable until grace expiry;
-   - it reuses the existing `remove_terminal_session` path rather than adding a second cleanup
-     route;
+   - a new session's admission ends the old session's control at once, through the authoritative
+     terminal fact, so takeover never leaves the old session able to command the actor until grace
+     expiry;
+   - **session replacement is an in-place rebind, never a removal.** A2 adds one carrier operation
+     that, in the same atomic boundary as the FND-04B recovery or takeover, detaches the terminal
+     session from the slot and binds the new GameSessionId to the **same** actor slot. The slot,
+     its actor reference and generation, its position and its runtime state are preserved, as
+     FND-04B requires for a `PRESENT_UNCONTROLLED` actor. A command that still carries the old
+     session then fails the slot's session check;
+   - `remove_terminal_session` stays only for actor retirement, when the actor legally becomes
+     `ABSENT` (FND-04B line 107). A2 must not route a session replacement through it, and it confirms
+     that the grace-expiry callers (`gameplay_transport/mod.rs` lines 547 and 1040) remove only an
+     actor that is leaving the world, not one that post-grace recovery may still attach to;
    - the damage write validates the attacker's live slot and its session against the command;
    - **B** (the lease generation stored on the slot) may be added under A2 as an equality check.
      On its own it is rejected, because it keeps the lifecycle gap.
@@ -73,7 +89,7 @@ stays.
 
 - **A (a "live slot" check alone).** Between takeover and the terminal fact, the old slot stays
   committed under the old session. A stale command with the old actor ref would pass.
-- **B alone.** It has the same lifecycle gap as A unless A2's eviction is in place.
+- **B alone.** It has the same lifecycle gap as A unless A2's takeover and in-place rebind are in place.
 - **A2 inside #1625.** It changes session and fencing semantics in a charm-damage PR, without the
   owning contract.
 - **Reverting e07fd3ff (b).** That would lose the typed seam and reopen the frozen-generation case
@@ -88,8 +104,9 @@ stays.
 - **Supersede if:**
   - a live caller is needed before A2 lands (that caller's PR then carries the fence itself);
   - the admission contract chooses a different single-live-slot mechanism.
-- **Deliberately not decided:** the exact eviction or refusal semantics for a second session, the
-  slot schema, and the wire behaviour toward an evicted client. All three belong to the A2 task and
+- **Deliberately not decided:** the exact refusal semantics for a second session, the rebind
+  operation's name and signature, the slot schema, and the wire behaviour toward a displaced
+  client. All three belong to the A2 task and
   its contract.
 
 ## 6. Before-freeze checklist
