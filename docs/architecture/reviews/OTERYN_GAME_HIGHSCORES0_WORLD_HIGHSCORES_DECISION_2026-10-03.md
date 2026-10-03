@@ -31,7 +31,7 @@
 | Child | Worker | Builds | Depends on |
 |---|---|---|---|
 | HS-1 | impl, persistence review | the snapshot tables, the per-World snapshot job, the categories of §3 that have a source, ranks and filters (§4, §5) | CHAR-BUILD-1b (build writer); CHARM-1 (Charm Points); account achievements (`0021`) |
-| HS-WIRE-1 | impl, protocol review | capability `HIGHSCORES_V1` and the paged query (§6) | HS-1 |
+| HS-WIRE-1 | impl, protocol review | capability 9 `HIGHSCORES_V1` and command type 14, the paged query (§6) | HS-1 |
 
 Later, each with its own decision or amendment:
 - Boss Points, when the Bosstiary state of BOSS-RAID-0 §10 exists (HS-1 adds the category then);
@@ -139,8 +139,10 @@ who may read them?
 
 ## 6. Wire (HS-WIRE-1)
 
-- **Capability `HIGHSCORES_V1`**, number reserved by the control plane before HS-WIRE-1, with one
-  command type (number from the control plane).
+- **Capability 9 `HIGHSCORES_V1`** (owner: the Highscores module), with command type **14**
+  `HIGHSCORES_QUERY_V1` and no state domain; not offered before HS-WIRE-1 ships. The numbers are
+  the control plane's leases in STATE (cap 9, cmd 14). The leased domain 14 is not used and stays
+  unclaimed. HS-WIRE-1 registers them in the FND-02 registry with its `.proto`.
 - **Query.** `HighscoresQueryV1 {category, vocation (0 = all), page}` for the session's own World.
   The result carries `{category, computed_at, page, has_more, rows[<= 50]}`; each row is `{rank,
   name, vocation, level, value}`. A page beyond the last returns no rows.
@@ -204,5 +206,5 @@ None. Every choice above is a reversible architect ruling under owner rule 59058
 2. **Serialization:** one repeatable-read read transaction per snapshot; no write to any source.
 3. **Restart:** snapshots are durable; a failed job keeps the previous one.
 4. **Typed references:** WorldId, CharacterId, AccountId, category id.
-5. **Wire:** §6, capability `HIGHSCORES_V1`.
+5. **Wire:** §6, capability 9 `HIGHSCORES_V1`, command type 14; no state domain.
 6. **Split work:** 1,000 rows per list, 50 per page; one World per job run.
