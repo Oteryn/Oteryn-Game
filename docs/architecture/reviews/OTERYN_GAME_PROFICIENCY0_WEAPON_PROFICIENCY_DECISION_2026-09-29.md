@@ -297,8 +297,8 @@ gives trees, thresholds and perks to content. Its rule 6 requires versioned defi
 **Amendment (pending on acceptance of PROFICIENCY-1; `reviews/OTERYN_GAME_PROFICIENCY1_PERK_MODIFICATION_AND_CATALYSTS_DECISION_2026-10-01.md` §3-§6).** Perk modification, ranks, reshape, clear, the
 Lunar Ascension Orb and catalysts are decided there: up to 2 modification rows per track (one per
 level), `MODIFIED_LEVEL`, migration lines that carry the modification rows, the reserved
-`perk_modification` and `ProficiencyCause`, and a fail-closed gate: every operation and catalyst
-refuses `NOT_ADMITTED` until PROFICIENCY-1B admits it with its DUR-03 shape and value evidence.
+`perk_modification` and `ProficiencyCause`, and a fail-closed gate: no operation command exists and no catalyst
+has a use until PROFICIENCY-1B adds each with its DUR-03 shape and value evidence.
 
 - **Parity gates (Stage B decision 10).** The point table, the thresholds of levels 2-6 and of
   Mastery, and multi-player weighting are UNKNOWN. PROF-2 may build them behind a versioned

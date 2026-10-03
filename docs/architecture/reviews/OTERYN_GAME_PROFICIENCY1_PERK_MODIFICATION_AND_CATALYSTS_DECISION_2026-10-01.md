@@ -25,7 +25,7 @@
 
 | Child | Worker | Builds | Depends on |
 |---|---|---|---|
-| PROF-SHAPE-1 | hard (persistence), persistence review | the modification table and its constraints (§3), the reserved causes, the operation commands answering `NOT_ADMITTED` (§4) | PROF-1 |
+| PROF-SHAPE-1 | hard (persistence), persistence review | the modification table and its constraints (§3), the reserved causes (§3) | PROF-1 |
 | PROF-SHAPE-CONTENT-1 | content lane | evidence for pools, odds, rank values, costs and catalyst effects (§2), each with its evidence class | PROF-CONTENT-1 |
 
 The operations themselves, their receipts and their wire are built after PROFICIENCY-1B.
@@ -95,21 +95,22 @@ Table `game_character_proficiency_modifications`:
 - **Reserved causes.** The receipt cause `perk_modification` (PROFICIENCY-0's chain) and the DUR-03
   burn cause `ProficiencyCause {track, slot, operation, occurrence}` are reserved names. Their lines,
   CHECKs and shapes are PROFICIENCY-1B's.
-- While every operation is `NOT_ADMITTED` (§4), no row is ever written; the table, keys and
+- While no operation exists at runtime (§4), no row is ever written; the table, keys and
   retention invariant exist so that PROFICIENCY-1B adds behaviour, not a schema change.
 
 ## 4. Operations and the gate
 
 The closed operation list is `MODIFY`, `RANK_UP`, `ORB_RANK`, `RESHAPE_OFFER`, `RESHAPE_CHOOSE` and
-`CLEAR`. No other operation exists. **Every one is `NOT_ADMITTED`** in this decision: the server
-answers it with that typed result (PROF-WIRE-0 §5) and writes nothing. PROFICIENCY-1B admits each
-with its semantics, its composed DUR-03 §39.3 shape and its value evidence (official, owner-verified
+`CLEAR`. No other operation exists. This decision **builds none of them**: no command, no command
+number, no refusal and no wire exists until PROFICIENCY-1B, which adds each command, its typed
+results (including `NOT_ADMITTED` for an operation whose values are not yet evidenced, PROF-WIRE-0
+§5) and its payload under capability 2, and admits each operation with its semantics, its composed DUR-03 §39.3 shape and its value evidence (official, owner-verified
 TibiaPal or tibiatools.io, then English TibiaWiki; OTS sources are not evidence here). A gold cost
 is a new fee source (D178) and needs an owner answer first. If evidence never appears for some
 value, the architect puts a declared difference to the owner in one batch.
 
-**Catalysts.** No catalyst is admitted; using one is refused `NOT_ADMITTED`, and catalysts stay
-ordinary tradeable items. Their effect kind decides their transaction (a progress grant is a
+**Catalysts.** No catalyst is admitted: a catalyst has no admitted use, so ITEM-USE-0 answers its
+existing result for an item without a use, and catalysts stay ordinary tradeable items. Their effect kind decides their transaction (a progress grant is a
 composed burn-plus-receipt shape; a timed multiplier is a condition or item state), so they get
 their own decision with that evidence. The Test Proficiency Catalyst stays not admitted until
 evidence shows it exists on Global servers.
@@ -122,12 +123,12 @@ evidence shows it exists on Global servers.
 | `PROF1-RL-02` rank | 1..10 |
 
 Each with max and max+1 tests, plus: a second row for an already modified level violates the
-UNIQUE key; every operation and catalyst use answers `NOT_ADMITTED` and writes nothing.
+UNIQUE key; a catalyst use writes nothing.
 
 ## 6. Entry conditions for PROFICIENCY-1B
 
 PROFICIENCY-1B, the value-shape amendment, is accepted only when it states and tests each of these
-(the findings of review rounds 1-6 on this PR):
+(the findings of review rounds 1-7 on this PR):
 
 1. **Occurrence.** The occurrence derives from the CommandId exactly as PROFICIENCY-0 §4.3 does; a
    retry returns the first receipt by key before any write.
@@ -149,6 +150,8 @@ PROFICIENCY-1B, the value-shape amendment, is accepted only when it states and t
 8. **Wire.** Command payloads with a **measured** byte bound, and the re-measured `ACTOR_PROFICIENCY`
    snapshot bound (PROF-WIRE-0 RL-01) including the rows.
 9. **Values** for every admitted operation, by the evidence order of §4.
+12. **Commands.** Each operation's command, command number, typed results (`NOT_ADMITTED` included)
+    and payload under capability 2, added together with the operation.
 10. **Retention check.** The §3 invariant is enforced serialized with content activation and with
     proficiency writes (an activation that would drop or change a referenced shaping revision is
     refused, and a write cannot reference a revision being retired), not only at build time.
@@ -183,8 +186,8 @@ None now. A gold cost, or a value that evidence never settles, comes back to the
 - **Must decide now:** YES. PROF-1 and PROF-2 are allocated (D281); the track, its migration line and
   the selection rule must know the modification rows exist.
 - **Blocked:** PROF-1's migration line and `MODIFIED_LEVEL`; PROFICIENCY-1B.
-- **Minimum sufficient:** one table with its keys, two reserved causes, a closed operation list that
-  answers `NOT_ADMITTED`, a retention invariant and the entry conditions for 1B.
+- **Minimum sufficient:** one table with its keys, two reserved causes, a closed list of operation names whose commands
+  exist only in 1B, a retention invariant and the entry conditions for 1B.
 - **Harder later:** the table and its keys join the Character state, so changing them needs a
   migration; the retained shaping revisions grow the content build while referenced; the six
   operation names are fixed.
@@ -200,5 +203,5 @@ None now. A gold cost, or a value that evidence never settles, comes back to the
 2. **Serialization:** no write in this decision; PROFICIENCY-1B defines the transactions.
 3. **Restart:** nothing new.
 4. **Typed references:** track (CharacterId, item key), shaping revision and entry.
-5. **Wire:** none; operations answer `NOT_ADMITTED` under capability 2.
+5. **Wire:** none; the commands, their results and payloads are PROFICIENCY-1B's.
 6. **Split work:** PROFICIENCY-1B.

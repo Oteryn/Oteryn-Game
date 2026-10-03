@@ -39,8 +39,8 @@ external_repositories: []
   (character, item key, level); slot 1 at level 3, slot 2 at Mastery; `MODIFIED_LEVEL`.
 - Shaping revisions retained while referenced; incompatible definition revisions clear the row in the
   migration receipt.
-- Reserved `perk_modification` and `ProficiencyCause`; every operation and catalyst answers
-  `NOT_ADMITTED`.
+- Reserved `perk_modification` and `ProficiencyCause`; no operation command, refusal or wire exists
+  and catalysts have no use until PROFICIENCY-1B.
 - PROFICIENCY-1B entry conditions: CommandId-derived occurrence, revision binding with a persisted
   terminal refusal, receipt CHECKs, offers (rank frozen while pending), shaping-revision migration,
   draws, composed shapes, measured wire bounds, values.
