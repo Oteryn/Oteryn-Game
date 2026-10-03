@@ -96,20 +96,30 @@ stays.
      `ABSENT` (FND-04B line 107). A2 must not route a session replacement through it, and it confirms
      that the grace-expiry callers (`gameplay_transport/mod.rs` lines 547 and 1040) remove only an
      actor that is leaving the world, not one that post-grace recovery may still attach to;
-   - **the damage write checks live authority, mandatorily.** At the write boundary it validates the
-     attacker's live slot and its session against the command, **and** compares the supplied lease
-     generation for equality with the live lease authority (the generation bound on the slot at
-     admission or rebind). A missing binding refuses. The per-creature high-water mark
-     (`DamageContributors::admission`) stays a monotonic guard, but it is not authority: with no
-     high-water yet it accepts any generation, so it never substitutes for this check;
-   - **B** (the lease generation stored on the slot) is therefore part of A2, not optional. On its
-     own, without A2's slot and session binding, it is rejected because it keeps the lifecycle gap.
+   - **every damage write is fenced by the current owning lease authority (mandatory).** At the
+     write boundary it validates the attacker's live slot and its session against the command, and
+     the attacker's lease must be the one the owning lease authority currently holds. A2 meets
+     this in one of two ways:
+     - it consults the current lease authority at the write; or
+     - every lease or session terminal transition (expiry, release, revocation, takeover) fences or
+       invalidates the slot synchronously, in the same critical section as that transition and
+       before the durable holder is cleared, so no queued write can see the old tuple as current.
+   - **stored equality is never authority.** A generation copied into the slot at admission or
+     rebind (B) is a snapshot; an equality check against it may be kept as a cheap pre-check, but it
+     never satisfies the requirement above. The per-creature high-water mark
+     (`DamageContributors::admission`) is a monotonic guard, not authority: with no high-water yet
+     it accepts any generation. A missing binding refuses;
+   - **lease lifecycle mechanics are not designed here.** Which of the two ways, the lock and
+     ordering between `release_expired_loss`, revocation and the carrier's runtime lock, and the
+     invalidation operation belong to the follow-up decision **CHARM-DESC-FENCE-LEASE** (a later
+     bundle), which A2 depends on.
 
 ## 4. Rejected options
 
 - **A (a "live slot" check alone).** Between takeover and the terminal fact, the old slot stays
   committed under the old session. A stale command with the old actor ref would pass.
-- **B alone.** It has the same lifecycle gap as A unless A2's takeover and in-place rebind are in place.
+- **B alone, or B as the authority.** A stored generation is a snapshot: a terminal transition
+  that clears the durable holder before the slot is fenced leaves the old tuple matching.
 - **A2 inside #1625.** It changes session and fencing semantics in a charm-damage PR, without the
   owning contract.
 - **Reverting e07fd3ff (b).** That would lose the typed seam and reopen the frozen-generation case
@@ -126,7 +136,8 @@ stays.
   - a live caller is needed before A2 lands (that caller's PR then carries the fence itself);
   - the admission contract chooses a different single-live-slot mechanism.
 - **Deliberately not decided:** second-session semantics (FND-04A §8 and FND-04B §10 and §19 govern; any
-  takeover needs its own accepted flow), the rebind operation's name and signature, the slot
+  takeover needs its own accepted flow); the lease lifecycle mechanics of the write fence
+  (CHARM-DESC-FENCE-LEASE); the rebind operation's name and signature, the slot
   schema, and the wire behaviour toward a displaced client. They belong to the A2 task and its
   owning contracts.
 
@@ -134,4 +145,5 @@ stays.
 
 1. Owned paths only: this file and its task record.
 2. No code change. CHARM-DESC-FENCE-1 adds the structural check of item 3.
-3. Split work: the A2 task (control plane opens it).
+3. Split work: the A2 task and the CHARM-DESC-FENCE-LEASE decision it depends on (control plane
+   opens both).

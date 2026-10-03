@@ -36,7 +36,7 @@ D295 is ruled C plus (a):
 - the `CharacterLease` seam stays;
 - a binding gate allows no production caller of the three Ability damage bridges until the A2
   follow-up (a character-bound single live slot, rebind only after a terminal session or an
-  accepted takeover flow, and a mandatory live lease-generation check at the write) is merged.
+  accepted takeover flow, and every damage write fenced by the current owning lease authority) is merged.
 
 This also corrects the packet: `remove_terminal_session` has production callers on the
 grace-expiry path.
@@ -83,7 +83,10 @@ grace-expiry path.
 - Record moved to its own task id and path (main already held the #1625 record's path).
 - Round on 87396ffb: P1 4173424040 (the lease-generation check is mandatory at the write) and
   P1 4173424046 (no preemption of a healthy controller; rebind only after a terminal session or an
-  accepted takeover flow). Fixed in the next head.
+  accepted takeover flow). Fixed in 36d6483d.
+- Round on 36d6483d: P1 4173440012 (a stored generation is a snapshot). D282 narrowing: A2 requires
+  every damage write to be fenced by the current owning lease authority; stored equality is never
+  authority; the lease lifecycle mechanics move to the follow-up decision CHARM-DESC-FENCE-LEASE.
 
 ## PR and closeout
 
