@@ -4,7 +4,7 @@
 task_id: OTV2-20261003-charm-desc-fence-lease-decision
 title: "CHARM-DESC-FENCE-LEASE (D324): lease lifecycle mechanics of the attacker write fence"
 mode: CONTRACT
-status: validating
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: arch/p2-bundle-d309-20261003

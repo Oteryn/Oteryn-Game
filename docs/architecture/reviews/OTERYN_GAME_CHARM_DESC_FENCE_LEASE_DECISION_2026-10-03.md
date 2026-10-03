@@ -73,12 +73,26 @@ runtime lock, and defines the invalidation operation.
      - the slot is not fenced;
      - the lease binding is present.
      A missing binding refuses.
+   - **One transition per session at a time.** A fence is never replaced. Fencing also refuses
+     when the slot already carries a fence for that session, whatever its token. The only
+     exception is an idempotent join: a retry of the same transition presents the same token and
+     gets the existing fence back.
+     - A second, overlapping transition does not start its own durable attempt. For example,
+       logout or revocation can arrive while a grace-expiry transition is still unsettled. The
+       second transition waits for the first transition's step (c) and then re-evaluates:
+       - if the session is terminal, the second transition's goal is already met and it does
+         nothing;
+       - if the fence was lifted, it starts again at step (a) with its own token.
+     - A revocation is never dropped by this wait. It is satisfied by the terminal outcome, or it
+       runs after the lift.
+     - Only the fence owner's step (c) settles or lifts the fence. So no lift can happen while
+       another transition's release is committed but not yet settled.
 3. **Settling (step c), by durable outcome.**
 
    | Durable outcome | Step (c) |
    |---|---|
    | `Released` or `Terminal` | Retire the actor with `remove_terminal_session`, or rebind in place (D295 item 4). The old session's fence is never lifted for that session, which is terminal. |
-   | `NotApplicable` or `NotExpired`, or a refusal that is definitely uncommitted | Lift the fence with the exact token. A lift with any other token is a no-op. |
+   | `NotApplicable` or `NotExpired`, or a refusal that is definitely uncommitted | Lift the fence with the exact token, but only if the durable row read by that same attempt shows the session still holding the lease. A lift with any other token is a no-op. If the row shows the session no longer holds the lease, settle as `Terminal` and keep the session fenced. A `NotApplicable` caused by a release that committed elsewhere therefore never reopens writes. |
    | Unknown (lost acknowledgement, store error) | Keep the fence and retry. The outcome is reconciled from the durable row and never decided again. |
 
    - **Rebind retires the old fence atomically.**
@@ -157,6 +171,12 @@ runtime lock, and defines the invalidation operation.
 3. A2's tests prove each of the following:
    - a write between fence and commit is refused;
    - `NotApplicable` lifts the fence by its exact token, and a wrong token is a no-op;
+   - fencing refuses while a fence for the session is set, so an overlapping second transition
+     (grace expiry, then logout or revocation) never replaces the token; a retry with the same
+     token joins idempotently; after the first transition settles, the second does nothing on a
+     terminal session and starts at step (a) after a lift;
+   - a `NotApplicable` whose durable row shows the session no longer holding the lease settles as
+     `Terminal`, and the session stays fenced;
    - an unknown outcome keeps the fence;
    - a resume lifts the fence with its epoch;
    - a terminal session is never unfenced;
