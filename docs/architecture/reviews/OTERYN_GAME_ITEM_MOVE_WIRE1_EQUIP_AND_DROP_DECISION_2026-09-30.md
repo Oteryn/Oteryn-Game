@@ -133,6 +133,14 @@ How does a player equip and unequip items, and drop and pick up items on the gro
   equipping never advances `CharacterRevision`. Stats from equipment are derived at runtime;
   ATTACK-0 reads the equipped weapon and shield.
 
+**Amendment (TIMED-RT-1b slot wiring; `reviews/OTERYN_GAME_ARCH_BATCH_TIMED_FORGE_PROF_PACKETS_2026-10-03.md`
+§2.3 Scope, ARCH-SLOT-WIRING-1).** TIMED-RT-1b and ITEM-MOVE-2a are not ordered. Whichever of the
+two merges second wires the `timed_item_host` slot call sites, as a merge condition with tests:
+- an equip or swap into a slot makes the timed item live there (TIMED-ITEM-0B §5.1);
+- an unequip or swap out of a slot drains that item's lane first (§6.1).
+
+Until then, an item moved into a slot stays non-live. The adjacent amendments' order is unchanged.
+
 **Amendment (pending on acceptance of BAGS-0;
 `reviews/OTERYN_GAME_BAGS0_CONTAINERS_WITH_CONTENTS_DECISION_2026-09-30.md` §6, §9).**
 A container with contents may enter the empty container slot and may leave it as a tree to a
