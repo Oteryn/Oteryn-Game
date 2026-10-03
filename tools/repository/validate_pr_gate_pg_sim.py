@@ -117,7 +117,7 @@ def validate() -> list[str]:
         linux,
         "rust_linux",
         (
-            "    if: needs.lanes.outputs.rust == 'true'\n",
+            "    if: needs.scope.outputs.full_ci == 'true' && needs.lanes.outputs.rust == 'true'\n",
             "      pull-requests: read\n",
             "    services:\n",
             "      postgres:\n",
@@ -222,7 +222,7 @@ def validate() -> list[str]:
             windows,
             "rust_windows",
             (
-                "    if: needs.lanes.outputs.windows == 'true'\n",
+                "    if: needs.scope.outputs.full_ci == 'true' && needs.lanes.outputs.windows == 'true'\n",
                 "          ref: ${{ needs.scope.outputs.target_sha }}\n",
                 "          EXPECTED_SHA: ${{ needs.scope.outputs.target_sha }}\n",
                 "if ((git rev-parse HEAD).Trim() -ne \"$env:EXPECTED_SHA\")",
