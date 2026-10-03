@@ -685,11 +685,14 @@ impl DurabilityRoot {
                             })
                         });
                     let simulation: String = state.try_get("simulation_revision")?;
-                    // §6.2: compare the bound set before admission; a moved set is terminal.
-                    if let (Some(resolved), Some(active)) = (&resolved, &active)
-                        && (resolved.definition_revision != command.bound().definition_revision
-                            || active.revision != command.bound().shaping_revision
-                            || simulation != command.bound().simulation_revision)
+                    // §6.2: compare the bound set before admission; a moved set is terminal. A
+                    // bound member that no longer resolves has moved too, so a later reappearance
+                    // can never commit this occurrence.
+                    if resolved.as_ref().map(|resolved| resolved.definition_revision.as_str())
+                        != Some(command.bound().definition_revision.as_str())
+                        || active.as_ref().map(|active| active.revision.as_str())
+                            != Some(command.bound().shaping_revision.as_str())
+                        || simulation != command.bound().simulation_revision
                     {
                         insert_terminal(&mut tx, character, &command).await?;
                         commit_semantic_transaction(tx, deadline).await?;

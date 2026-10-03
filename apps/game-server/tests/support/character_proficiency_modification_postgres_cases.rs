@@ -583,27 +583,6 @@ fn refusals_follow_the_order_and_write_nothing() -> TestResult {
             R::NotAdmitted,
         )
         .await?;
-        let axe = Command::new(
-            occurrence(30),
-            AXE,
-            1,
-            Kind::Clear,
-            revision(3),
-            Bound {
-                definition_revision: "definition-1".into(),
-                shaping_revision: "shaping-1".into(),
-                simulation_revision: "simulation-1".into(),
-            },
-        )
-        .map_err(debug)?;
-        let before = snapshot(a.h).await?;
-        let axe_outcome = a.modify(3, axe).await.map_err(debug)?;
-        assert_eq!(
-            axe_outcome,
-            Outcome::Refused(R::NotAdmitted),
-            "the axe has no shaping content"
-        );
-        assert_eq!(snapshot(a.h).await?, before);
         a.refuse(
             "stale track revision",
             3,
@@ -759,6 +738,34 @@ fn a_moved_revision_set_is_terminal_and_outside_the_chain() -> TestResult {
             a.h.count("game_character_proficiency_modification_terminals")
                 .await?,
             1
+        );
+        // A bound member that no longer resolves (the axe has no shaping content) has moved
+        // too: the occurrence is terminal, so reappearing content can never commit it.
+        let axe = Command::new(
+            occurrence(41),
+            AXE,
+            1,
+            Kind::Clear,
+            revision(3),
+            Bound {
+                definition_revision: "definition-1".into(),
+                shaping_revision: "shaping-1".into(),
+                simulation_revision: "simulation-1".into(),
+            },
+        )
+        .map_err(debug)?;
+        assert_eq!(
+            a.modify(3, axe.clone()).await.map_err(debug)?,
+            Outcome::RevisionChanged
+        );
+        assert_eq!(
+            a.modify(3, axe).await.map_err(debug)?,
+            Outcome::RevisionChanged
+        );
+        assert_eq!(
+            a.h.count("game_character_proficiency_modification_terminals")
+                .await?,
+            2
         );
         a.verify().await
     })
