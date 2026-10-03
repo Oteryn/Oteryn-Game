@@ -785,6 +785,7 @@ fn chest(
         ruleset_revision: "ruleset-1".into(),
         sim_revision: "sim-1".into(),
         achievement: None,
+        quest_transition: None,
     }
 }
 
@@ -2572,4 +2573,493 @@ fn a_claim_that_became_pending_after_freeze_refuses_the_commit() -> TestResult {
         drop(seal);
         harness.cleanup().await
     })
+}
+
+// QUEST-STATE-1 (QUEST-STATE-0 §5.4): a chest that also advances a quest records a `PENDING`
+// obligation with its claim. The claim stays item-only; the quest writer later consumes the
+// obligation in its own transaction, or sets it `REFUSED` or `WAITING_MIGRATION`.
+
+mod quest_obligations {
+    use super::*;
+    use crate::durability::character_progression::CharacterProgressionError;
+    use crate::durability::character_revision_sequencer::CharacterRevisionSequencer;
+    use crate::durability::quest_state::quest::{
+        QuestComparison, QuestEffect, QuestEffectKind, QuestRefusal, QuestStateCatalogue,
+        QuestTrack, QuestTransition,
+    };
+    use crate::durability::quest_state::{
+        QuestAdmission, QuestCause, QuestTransitionOutcome, QuestTransitionRequest,
+        admit_character_quest_state,
+    };
+    use std::sync::Arc;
+
+    const QUEST: &str = "oteryn:quest/fixture.chest";
+    const STAGE: &str = "oteryn:quest-progress/fixture.chest.stage";
+    const START: &str = "oteryn:quest-transition/fixture.chest.start";
+    const STEP: &str = "oteryn:quest-transition/fixture.chest.step";
+    const NOT_ALLOWED: &str = "quest obligation transition is not allowed";
+    const UNPROVEN: &str = "quest obligation must commit with its reward-claim MINT receipt";
+
+    /// `step` is the amount the step adds; another amount is another definition hash.
+    fn quest_catalogue(step: i64) -> TestResult<Arc<QuestStateCatalogue>> {
+        let transition = |key: &str, from, effect| QuestTransition {
+            key: key.into(),
+            quest: QUEST.into(),
+            effects: vec![QuestEffect {
+                track: STAGE.into(),
+                from,
+                effect,
+            }],
+            completes: false,
+        };
+        Ok(Arc::new(
+            QuestStateCatalogue::new(
+                "content-1",
+                vec![QuestTrack {
+                    key: STAGE.into(),
+                    quest: QUEST.into(),
+                    initial: -1,
+                    min: -1,
+                    max: 10,
+                }],
+                vec![
+                    transition(START, QuestComparison::Eq(-1), QuestEffectKind::Set(1)),
+                    transition(
+                        STEP,
+                        QuestComparison::Between(1, 9),
+                        QuestEffectKind::Add(step),
+                    ),
+                ],
+            )
+            .map_err(debug)?,
+        ))
+    }
+
+    fn gameplay_fence() -> TestResult<CurrentCharacterGameplayFence> {
+        let item = fence()?;
+        Ok(CurrentCharacterGameplayFence {
+            character_id: item.character_id,
+            game_session_id: item.game_session_id,
+            connection_generation: item.connection_generation,
+            character_lease_generation: item.character_lease_generation,
+            runtime_scope: item.runtime_scope,
+            scope_ownership_generation: item.scope_ownership_generation,
+            // The revision slot replaces it with its cursor.
+            expected_character_revision: crate::domain::CharacterRevision::new(1).map_err(debug)?,
+        })
+    }
+
+    fn with_transition(
+        command_id: u64,
+        claim: &str,
+        transition: &str,
+    ) -> TestResult<RewardClaimMintRequest> {
+        let mut request = coins(command(command_id)?, claim, 1);
+        request.quest_transition = Some(transition.into());
+        Ok(request)
+    }
+
+    /// Every obligation, ordered by command: (command, transition, state, result code).
+    async fn obligations(pool: &sqlx::PgPool) -> TestResult<Vec<(String, String, String, String)>> {
+        Ok(sqlx::query_as(
+            "SELECT claim_command_id::text, transition_key, state, coalesce(result_code, '-') \
+               FROM game_character_quest_obligations ORDER BY claim_command_id",
+        )
+        .fetch_all(pool)
+        .await?)
+    }
+
+    async fn rejected_sql(pool: &sqlx::PgPool, script: &str, message: &str) -> TestResult {
+        let before = obligations(pool).await?;
+        let mut tx = pool.begin().await?;
+        let error = match sqlx::raw_sql(sqlx::AssertSqlSafe(script.to_owned()))
+            .execute(&mut *tx)
+            .await
+        {
+            Ok(_) => tx.commit().await.err(),
+            Err(error) => Some(error),
+        }
+        .ok_or_else(|| format!("{script}: expected rejection"))?;
+        let database = error.as_database_error().ok_or("not a database error")?;
+        assert_eq!(
+            database.code().as_deref(),
+            Some("23514"),
+            "{script}: {error}"
+        );
+        assert_eq!(
+            database.constraint().unwrap_or(database.message()),
+            message,
+            "{script}"
+        );
+        assert_eq!(obligations(pool).await?, before, "{script} changed nothing");
+        Ok(())
+    }
+
+    async fn request_obligation(
+        harness: &Harness,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        sequencer: &CharacterRevisionSequencer,
+        command_id: u64,
+        transition: &str,
+        catalogue: &Arc<QuestStateCatalogue>,
+    ) -> TestResult<Result<QuestTransitionOutcome, CharacterProgressionError>> {
+        let fence = gameplay_fence()?;
+        let mut slot = sequencer.acquire(fence.character_id).await;
+        Ok(slot
+            .commit_quest_transition(
+                &harness.root,
+                authority,
+                &harness.node,
+                fence,
+                QuestTransitionRequest {
+                    transition_key: transition.into(),
+                    cause: QuestCause::ClaimObligation(command(command_id)?),
+                },
+                Arc::clone(catalogue),
+            )
+            .await)
+    }
+
+    async fn admit(
+        harness: &Harness,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        sequencer: &CharacterRevisionSequencer,
+        catalogue: Option<&Arc<QuestStateCatalogue>>,
+    ) -> TestResult<QuestAdmission> {
+        Ok(admit_character_quest_state(
+            sequencer,
+            &harness.root,
+            authority,
+            &harness.node,
+            gameplay_fence()?,
+            catalogue,
+        )
+        .await)
+    }
+
+    #[test]
+    fn a_quest_obligation_rides_on_its_claim_and_the_quest_writer_consumes_it() -> TestResult {
+        let Some(admin) = configured_admin() else {
+            return Ok(());
+        };
+        runtime()?.block_on(async move {
+            let harness = Harness::create(admin, "obligation").await?;
+            let pool = &harness.pool;
+            let seal = harness.recovery.seal_current().map_err(debug)?;
+            let authority = harness
+                .root
+                .open_character_authority(&seal)
+                .await
+                .map_err(debug)?;
+            harness.equip_backpack(&authority, 1).await?;
+            let catalogue = quest_catalogue(1)?;
+            let sequencer = CharacterRevisionSequencer::new();
+
+            // A claim without a transition is unchanged: no obligation.
+            harness
+                .claimed(&authority, coins(command(2)?, "fixture:chest.plain", 1))
+                .await?;
+            assert!(obligations(pool).await?.is_empty());
+
+            // With one, the items and the PENDING row commit together, and the claim does not
+            // advance the CharacterRevision (composition rule 1).
+            let before = harness.footprint().await?;
+            let first = harness
+                .claimed(
+                    &authority,
+                    with_transition(3, "fixture:chest.quest", START)?,
+                )
+                .await?;
+            assert_eq!(
+                harness.footprint().await?,
+                before
+                    .iter()
+                    .zip([1, 1, 1, 1, 0, 1, 1])
+                    .map(|(n, d)| n + d)
+                    .collect::<Vec<_>>()
+            );
+            let pending = vec![(
+                "3".to_owned(),
+                START.to_owned(),
+                "PENDING".to_owned(),
+                "-".to_owned(),
+            )];
+            assert_eq!(obligations(pool).await?, pending);
+            assert_eq!(harness.character_revision().await?, "1");
+            // The replay returns the claim and writes no second row.
+            match harness
+                .claim(
+                    &authority,
+                    fence()?,
+                    with_transition(3, "fixture:chest.quest", START)?,
+                )
+                .await
+                .map_err(debug)?
+            {
+                RewardClaimMintOutcome::AlreadyCommitted(result) => assert_eq!(result, first),
+                other => return Err(format!("expected the retained claim, got {other:?}").into()),
+            }
+            // The transition is part of the intent: the same command without it conflicts.
+            assert!(matches!(
+                harness
+                    .claim(
+                        &authority,
+                        fence()?,
+                        coins(command(3)?, "fixture:chest.quest", 1)
+                    )
+                    .await,
+                Err(RewardClaimMintError::ConflictingCause)
+            ));
+            assert_eq!(obligations(pool).await?, pending);
+
+            // The row is never deleted, never inserted without its claim, never consumed
+            // without its receipt, and moves only PENDING -> REFUSED or WAITING_MIGRATION.
+            let character = uuid_text(id(CHARACTER));
+            let session = uuid_text(id(SESSION));
+            for (script, message) in [
+                (
+                    "DELETE FROM game_character_quest_obligations;".to_owned(),
+                    NOT_ALLOWED,
+                ),
+                (
+                    "UPDATE game_character_quest_obligations SET state = 'CONSUMED';".to_owned(),
+                    NOT_ALLOWED,
+                ),
+                (
+                    "UPDATE game_character_quest_obligations SET transition_key = \
+                       'oteryn:quest-transition/other';"
+                        .to_owned(),
+                    NOT_ALLOWED,
+                ),
+                (
+                    "UPDATE game_character_quest_obligations SET state = 'REFUSED', \
+                       result_code = 'REVISION_MISMATCH';"
+                        .to_owned(),
+                    "game_character_quest_obligation_result",
+                ),
+                (
+                    format!(
+                        "INSERT INTO game_character_quest_obligations(claim_game_session_id, \
+                           claim_command_id, character_id, transition_key, state, result_code, \
+                           created_at, updated_at) \
+                         VALUES ('{session}', 99, '{character}', '{START}', 'PENDING', NULL, 1, 1);"
+                    ),
+                    UNPROVEN,
+                ),
+                (
+                    format!(
+                        "INSERT INTO game_character_quest_obligations(claim_game_session_id, \
+                           claim_command_id, character_id, transition_key, state, result_code, \
+                           created_at, updated_at) \
+                         VALUES ('{session}', 98, '{character}', '{START}', 'REFUSED', \
+                           'STAGE_MISMATCH', 1, 1);"
+                    ),
+                    NOT_ALLOWED,
+                ),
+            ] {
+                rejected_sql(pool, &script, message).await?;
+            }
+
+            // Admission without quest content loads the copy and leaves the obligation pending.
+            let admission = admit(&harness, &authority, &sequencer, None).await?;
+            let copy = admission.copy.ok_or("copy")?;
+            assert_eq!(copy.pending_obligations().count(), 1);
+            assert!(!admission.retry);
+            assert_eq!(obligations(pool).await?, pending);
+
+            // Admission with it requests the obligation again: one receipt, the row CONSUMED
+            // in the same transaction, the copy advanced.
+            let admission = admit(&harness, &authority, &sequencer, Some(&catalogue)).await?;
+            let copy = admission.copy.ok_or("copy")?;
+            assert!(!admission.retry);
+            assert_eq!(copy.tracks().get(STAGE), Some(&1));
+            assert!(copy.obligations().is_empty());
+            let consumed = (
+                "3".to_owned(),
+                START.to_owned(),
+                "CONSUMED".to_owned(),
+                "-".to_owned(),
+            );
+            assert_eq!(obligations(pool).await?, vec![consumed.clone()]);
+            assert_eq!(harness.character_revision().await?, "2");
+            // CONSUMED is terminal and kept: the receipt's proof.
+            for script in [
+                "DELETE FROM game_character_quest_obligations;",
+                "UPDATE game_character_quest_obligations SET state = 'PENDING';",
+            ] {
+                rejected_sql(pool, script, NOT_ALLOWED).await?;
+            }
+            let kind: String = sqlx::query_scalar(
+                "SELECT cause_kind FROM game_character_quest_receipts \
+                  WHERE cause_ordinal = 3 AND transition_key = $1",
+            )
+            .bind(START)
+            .fetch_one(pool)
+            .await?;
+            assert_eq!(kind, "claim_obligation");
+            // Requested again, the obligation replays its receipt.
+            assert!(matches!(
+                request_obligation(&harness, &authority, &sequencer, 3, START, &catalogue).await?,
+                Ok(QuestTransitionOutcome::AlreadyCommitted(_))
+            ));
+
+            // A validation refusal sets the row REFUSED with its code; it is terminal.
+            harness
+                .claimed(
+                    &authority,
+                    with_transition(4, "fixture:chest.quest2", START)?,
+                )
+                .await?;
+            assert_eq!(
+                request_obligation(&harness, &authority, &sequencer, 4, START, &catalogue)
+                    .await?
+                    .map_err(debug)?,
+                QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)
+            );
+            assert_eq!(
+                obligations(pool).await?,
+                vec![
+                    consumed,
+                    (
+                        "4".to_owned(),
+                        START.to_owned(),
+                        "REFUSED".to_owned(),
+                        "STAGE_MISMATCH".to_owned()
+                    )
+                ]
+            );
+            assert_eq!(harness.character_revision().await?, "2");
+            assert_eq!(
+                request_obligation(&harness, &authority, &sequencer, 4, START, &catalogue)
+                    .await?
+                    .map_err(debug)?,
+                QuestTransitionOutcome::ObligationClosed
+            );
+            rejected_sql(
+                pool,
+                "UPDATE game_character_quest_obligations SET state = 'PENDING', \
+                   result_code = NULL;",
+                NOT_ALLOWED,
+            )
+            .await?;
+
+            // REVISION_MISMATCH waits for a migration: kept, counted, never retried.
+            harness
+                .claimed(
+                    &authority,
+                    with_transition(5, "fixture:chest.quest3", STEP)?,
+                )
+                .await?;
+            let changed = quest_catalogue(2)?;
+            let admission = admit(&harness, &authority, &sequencer, Some(&changed)).await?;
+            let copy = admission.copy.ok_or("copy")?;
+            assert_eq!(copy.obligations().len(), 1);
+            assert_eq!(copy.pending_obligations().count(), 0);
+            let waiting = obligations(pool).await?;
+            assert_eq!(
+                waiting[2],
+                (
+                    "5".to_owned(),
+                    STEP.to_owned(),
+                    "WAITING_MIGRATION".to_owned(),
+                    "REVISION_MISMATCH".to_owned()
+                )
+            );
+            let admission = admit(&harness, &authority, &sequencer, Some(&changed)).await?;
+            assert_eq!(
+                admission.copy.ok_or("copy")?.pending_obligations().count(),
+                0
+            );
+            assert_eq!(obligations(pool).await?, waiting, "not retried");
+            assert_eq!(
+                request_obligation(&harness, &authority, &sequencer, 5, STEP, &catalogue)
+                    .await?
+                    .map_err(debug)?,
+                QuestTransitionOutcome::ObligationClosed
+            );
+            // Only its own transition consumes an obligation.
+            assert!(matches!(
+                request_obligation(&harness, &authority, &sequencer, 5, START, &catalogue).await?,
+                Err(CharacterProgressionError::InvalidInput)
+            ));
+            assert_eq!(harness.character_revision().await?, "2");
+
+            drop(authority);
+            harness
+                .root
+                .open_character_authority(&seal)
+                .await
+                .map_err(debug)?;
+            drop(seal);
+            harness.cleanup().await
+        })
+    }
+
+    #[test]
+    fn a_claim_at_rl_07_open_obligations_is_refused_writing_nothing() -> TestResult {
+        let Some(admin) = configured_admin() else {
+            return Ok(());
+        };
+        runtime()?.block_on(async move {
+            let harness = Harness::create(admin, "obligationsfull").await?;
+            let seal = harness.recovery.seal_current().map_err(debug)?;
+            let authority = harness
+                .root
+                .open_character_authority(&seal)
+                .await
+                .map_err(debug)?;
+            harness.equip_backpack(&authority, 1).await?;
+            // 63 open obligations of earlier claims (one waiting for a migration), written
+            // outside the guards.
+            harness
+                .tamper(&format!(
+                    "INSERT INTO game_character_quest_obligations(claim_game_session_id, \
+                       claim_command_id, character_id, transition_key, state, result_code, \
+                       created_at, updated_at) \
+                     SELECT '{session}', n, '{character}', '{START}', \
+                            CASE WHEN n = 100 THEN 'WAITING_MIGRATION' ELSE 'PENDING' END, \
+                            CASE WHEN n = 100 THEN 'REVISION_MISMATCH' END, 1, 1 \
+                       FROM generate_series(100, 162) n",
+                    session = uuid_text(id(60)),
+                    character = uuid_text(id(CHARACTER)),
+                ))
+                .await?;
+            // The 64th commits; a 65th is refused before anything is written.
+            harness
+                .claimed(&authority, with_transition(2, "fixture:chest.q64", START)?)
+                .await?;
+            assert_eq!(harness.count("game_character_quest_obligations").await?, 64);
+            let before = harness.footprint().await?;
+            refused(
+                harness
+                    .claim(
+                        &authority,
+                        fence()?,
+                        with_transition(3, "fixture:chest.q65", START)?,
+                    )
+                    .await,
+                RewardClaimRefusal::ObligationsFull,
+            )?;
+            assert_eq!(harness.footprint().await?, before);
+            assert_eq!(harness.count("game_character_quest_obligations").await?, 64);
+            // A claim without a transition is unaffected; a terminal REFUSED row does not count.
+            harness
+                .claimed(&authority, coins(command(4)?, "fixture:chest.plain", 1))
+                .await?;
+            harness
+                .tamper(
+                    "UPDATE game_character_quest_obligations \
+                        SET state = 'REFUSED', result_code = 'STAGE_MISMATCH' \
+                      WHERE claim_command_id = 101",
+                )
+                .await?;
+            harness
+                .claimed(&authority, with_transition(5, "fixture:chest.q65", START)?)
+                .await?;
+            assert_eq!(harness.count("game_character_quest_obligations").await?, 65);
+            drop(authority);
+            drop(seal);
+            harness.cleanup().await
+        })
+    }
 }
