@@ -37,12 +37,17 @@ membership in the Bestiary decided?
   not adopt the Bestiary class. Kill thresholds and charm points come from Canary (`FirstUnlock`,
   `SecondUnlock`, `toKill`, `CharmsPoints`, see `canary_batch.py` `bestiary_payload`).
 - The schema's `bestiary` carries `class`, `taxonomy`, `difficulty`, `occurrence`, `stars`,
-  `kill_thresholds`, `charm_points`, `locations` and `notes`. The v2 mapping matches difficulty,
-  occurrence, thresholds and charm points. Class, taxonomy, stars and locations are a GAP there
-  (§5).
-- The official 15.30 client staticdata (`imports/cipsoft-staticdata/creatures/`) lists 833
-  Bestiary races with `source_id` and name. Two fields there look like a difficulty tier (`f4`)
-  and an occurrence tier (`f5`). That reading is inferred, not labelled by the source.
+  `kill_thresholds`, `charm_points`, `locations` and `notes`. The v2 project format already
+  carries class, taxonomy, stars and locations (`ProjectV2BestiaryDetails`) next to difficulty,
+  occurrence, thresholds and charm points; only `notes` remains a GAP there.
+
+**DERIVED (client staticdata, cross-check only)**
+
+- The official 15.30 client staticdata (`imports/cipsoft-staticdata/creatures/`) has a top-level
+  table of 833 records with `source_id` and name. Its README states that reading this table as the
+  Bestiary race table is inferred, not source-labelled. So are the readings of `f4` as a
+  difficulty tier and `f5` as an occurrence tier. This decision uses the table only as a
+  DERIVED cross-check and join key, never as PROVEN Bestiary membership.
 
 **PROVEN (English TibiaWiki, read 2026-10-03)**
 
@@ -99,7 +104,7 @@ string stops the conversion. Nothing falls back to Canary silently.
 
 A creature has a Bestiary profile when both of these hold:
 
-- it is in the official client race table (`imports/cipsoft-staticdata/creatures/`), joined by the
+- it is in the client race table (`imports/cipsoft-staticdata/creatures/`, DERIVED), joined by the
   Canary or Crystal `raceId` equal to `source_id` with the names equal case-insensitively, or, for
   a D44 wiki-authored creature, by the exact client name;
 - its reference-date wiki page states all three of `bestiaryclass`, `bestiarylevel` and
@@ -144,11 +149,22 @@ difference.
 ### 3.6 Effect on consumers
 
 - Charm progression (CHARM-0) and proficiency points (PROF-EFFECT-0 §3.2) read the converted
-  profile, so they take the new values with the next content revision. No state migration is
-  needed: kill counters and points already earned are character state. A changed threshold
-  applies to the next unlock check.
-- A removed profile ends Bestiary progress, charm assignment and proficiency points for that
-  creature, as in Tibia. The CHARM runtime child handles assigned charms on such races when it
+  profile. Kill counters and unlocks are character state, but Charm Points earned are derived from
+  the current entries (`derive_balance` over `completed_entry_charm_points`), so a content change
+  can lower a balance that was already spent. The content revision that adopts D48 is classified
+  under DUR-04 §12:
+  - in a world that holds no Bestiary or Charm character state, it is `COMPATIBLE_NO_MIGRATION`;
+  - in a world that holds such state, a revision where every changed entry keeps or raises its
+    charm points and keeps or lowers its thresholds, and no profile with progress is removed, is
+    `COMPATIBLE_NO_MIGRATION`;
+  - any other revision in such a world is `INCOMPATIBLE_REQUIRES_PRODUCT_DECISION` and is not
+    admitted until that decision exists. Two parts of it are fixed now. Charm unlocks already
+    bought are never revoked. The available balance never goes below 0, so a shortfall only
+    blocks new unlocks. The CHARM owner child implements both parts before such a revision ships.
+  - MONSTER-D15B-1's report lists every entry whose charm points fall, whose thresholds rise or
+    whose profile is removed, so the classification is checked, not assumed.
+- A removed profile ends further Bestiary progress, charm assignment and proficiency points for
+  that creature, under the classification above. The CHARM runtime child handles assigned charms on such races when it
   ships. Until then no runtime consumes the content.
 
 ## 4. Decision test
