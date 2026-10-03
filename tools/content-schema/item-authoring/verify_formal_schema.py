@@ -1061,8 +1061,15 @@ def main():
                 "warning_count": len(warnings),
             }
         )
+    template_profiles = {read(path)["family_profile"] for path in templates}
+    catalog_profiles = {
+        row["profile_id"] for row in read(ROOT / "profile-catalog.json")["profiles"]
+    }
     results.append(
-        {"name": "expected template count is 13", "passed": len(templates) == 13}
+        {
+            "name": "every catalog family has a valid starting template",
+            "passed": template_profiles == catalog_profiles,
+        }
     )
 
     for field, value in (
@@ -1341,6 +1348,27 @@ def main():
         expected_error="family cannot be both allowed and excluded",
     )
     case(
+        "reject taxonomy class inconsistent with family profile",
+        lambda item, dependencies, manifest: item["taxonomy"].__setitem__(
+            "item_class", "food"
+        ),
+        expected_error="taxonomy/item_class",
+    )
+    case(
+        "reject duplicate imbuement family ceilings",
+        lambda item, dependencies, manifest: item.__setitem__(
+            "imbuement",
+            {
+                "slot_count": 2,
+                "allowed_family_max_tiers": [
+                    {"family": "life_leech", "max_tier": 2},
+                    {"family": "life_leech", "max_tier": 3},
+                ],
+            },
+        ),
+        expected_error="allowed_family_max_tiers",
+    )
+    case(
         "reject Wiki reverse relation mislabeled as Item definition",
         lambda item, dependencies, manifest: (
             manifest["sources"][0].update(
@@ -1544,6 +1572,7 @@ def main():
     case(
         "engine type value routes a portable container into Item taxonomy",
         lambda item, dependencies, manifest: (
+            item.__setitem__("family_profile", "container"),
             item["taxonomy"].__setitem__("item_class", "container"),
             catalog_field(
                 manifest,

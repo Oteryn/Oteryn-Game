@@ -88,4 +88,6 @@ for script in ("test_reward_claim_authoring.py", "test_reward_claim_variant_auth
 starter_kit_tool = ROOT / "tools" / "content-schema" / "starter-kit-authoring"
 subprocess.run([sys.executable, "test_starter_kit_authoring.py"], cwd=starter_kit_tool, check=True)
 
+subprocess.run([sys.executable, str(ROOT / "tools/content-migration/test_item_taxonomy.py")], check=True)
+subprocess.run([sys.executable, str(ROOT / "tools/content-migration/test_item_official_navigation.py")], check=True)
 print(f"PASS managed_files={len(paths)} item_shards=69")

@@ -12,6 +12,7 @@ with the real identity index and disposition catalog (`test_engine_items`' own
 from __future__ import annotations
 
 import copy
+import hashlib
 import json
 import tempfile
 from pathlib import Path
@@ -533,7 +534,12 @@ def test_catalogue_shards_each_family_and_marks_it_populated():
 def test_committed_catalogue_matches_the_census_sample():
     sample = json.loads(world_objects.DEFAULT_SAMPLE.read_text(encoding="utf-8"))
     for family, (directory, prefix, _notes) in build_catalogue.CATALOGUES.items():
-        shards = sorted((build_catalogue.ROOT / directory).glob(f"{prefix}-*.json"))
+        shards = sorted(
+            path
+            for path in (build_catalogue.ROOT / directory).glob(f"{prefix}-*.json")
+            if path
+            not in (build_catalogue.donor_shards() | build_catalogue.official_shards())
+        )
         count = 0
         previous = 0
         for shard in shards:
@@ -550,6 +556,130 @@ def test_committed_catalogue_matches_the_census_sample():
             (build_catalogue.ROOT / directory / "index.json").read_text()
         )
         check(marker["population_state"] == "POPULATED", marker)
+
+
+def test_qualified_donor_identity_and_precedence_fail_closed():
+    item_id = 54335
+    key = "oteryn:item.tibia.i54335"
+    identity = {"family": "Item", "key": key, "revision": "definition-r1"}
+    binding = {
+        "disposition": "EXACT",
+        "external_id": "54335",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": build_catalogue.donor_census.DONOR_COMMIT,
+        "target": identity,
+    }
+    definition = {"identity": identity, "materializable": False}
+    donor = synthetic_sources(
+        "crystal",
+        {item_id: {"name": "fixture corpse", "flags": {"flags.corpse": True}}},
+    )
+    sources = synthetic_sources("crystal", {})
+    sources.update(wiki_family_fallback={}, owner_family_decisions={})
+    memberships = (
+        {item_id: [item_id, "a" * 64, "b" * 64]},
+        {item_id: [item_id, "a" * 64, "c" * 64]},
+    )
+    meta = dict(
+        META,
+        revision=build_catalogue.donor_census.DONOR_COMMIT,
+        profile=build_catalogue.DONOR_PROFILE,
+    )
+    expected = world_objects.build_world_object(
+        item_id,
+        key,
+        "corpse",
+        donor["items"][item_id],
+        donor["appearances"][item_id],
+        meta,
+    )
+    entry = {
+        "source_item_id": item_id,
+        "item_key": key,
+        "name": "fixture corpse",
+        "owner": "WorldObject",
+        "reason": "corpse",
+        "identity_projection_sha256": "a" * 64,
+        "donor_record_sha256": "b" * 64,
+        "official_current_record_sha256": "c" * 64,
+        "validated_record_sha256": hashlib.sha256(
+            world_objects.canonical_bytes(expected)
+        ).hexdigest(),
+    }
+    args = [sources, donor, entry, binding, definition, False, memberships]
+    record = build_catalogue.build_qualified_donor_record(*args)
+    check(record == expected, "qualified fixture retains actual donor generation")
+    check(
+        record["provenance"]["source"]["revision"] != META["revision"],
+        "donor is not relabelled as the base generation",
+    )
+    for label, index, mutation in (
+        ("ambiguous binding", 3, lambda value: value.update(disposition="AMBIGUOUS")),
+        (
+            "wrong source generation",
+            3,
+            lambda value: value.update(source_revision=META["revision"]),
+        ),
+        ("materializable Item", 4, lambda value: value.update(materializable=True)),
+        ("unproven name", 2, lambda value: value.update(name="different corpse")),
+        (
+            "reviewed route changed",
+            2,
+            lambda value: value.update(reason="fixed_carpet"),
+        ),
+        (
+            "record evolution",
+            2,
+            lambda value: value.update(validated_record_sha256="d" * 64),
+        ),
+    ):
+        changed = copy.deepcopy(args)
+        mutation(changed[index])
+        check(raises(build_catalogue.build_qualified_donor_record, *changed), label)
+    changed = copy.deepcopy(args)
+    changed[5] = True
+    check(
+        raises(build_catalogue.build_qualified_donor_record, *changed),
+        "existing Item taxonomy is retained",
+    )
+    changed = copy.deepcopy(args)
+    changed[6][1][item_id][1] = "e" * 64
+    check(
+        raises(build_catalogue.build_qualified_donor_record, *changed),
+        "equal numbers do not override broken appearance identity continuity",
+    )
+    changed = copy.deepcopy(args)
+    changed[0]["items"][item_id] = donor["items"][item_id]
+    check(
+        raises(build_catalogue.build_qualified_donor_record, *changed),
+        "base source owner classification is never replaced by donor",
+    )
+
+
+def test_committed_donor_qualification_and_catalogue():
+    qualification = build_catalogue.qualified_donor_routes()
+    expected = {row["item_key"]: row for row in qualification["records"]}
+    found = {}
+    for directory, prefix, _notes in build_catalogue.CATALOGUES.values():
+        for path in sorted(build_catalogue.donor_shards()):
+            if path.parent != build_catalogue.ROOT / directory:
+                continue
+            for record in json.loads(path.read_bytes())["records"]:
+                key = record["provenance"]["item_pointer"]["key"]
+                check(key not in found, "unique donor owner")
+                check(key in expected, "no unreviewed donor id")
+                check(record["identity"]["family"] == expected[key]["owner"], key)
+                check(not world_objects.validate_record(record), key)
+                found[key] = record
+    check(set(found) == set(expected), "exact reviewed 125-id catalogue scope")
+    census = json.loads(build_catalogue.DONOR_CENSUS.read_bytes())
+    check(census["records"]["total"] == 125, census)
+    check(census["records"]["by_family"] == {"Terrain": 30, "WorldObject": 95}, census)
+    check(
+        census["qualification_sha256"] == build_catalogue.DONOR_QUALIFICATION_SHA256,
+        "census binds exact reviewed qualification",
+    )
 
 
 if __name__ == "__main__":
