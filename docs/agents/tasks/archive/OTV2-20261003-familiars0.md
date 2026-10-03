@@ -46,9 +46,22 @@ loses it and keeps the cooldown. Children FAMILIAR-CONTENT-1 and FAMILIAR-1.
 
 ## High-risk authority/recovery qualification
 
-`NOT_APPLICABLE`: docs only.
+The decision defines a durable Character write path, so FAMILIAR-1 must prove these cases (§5):
+- **Stale generation.** A write from an older `session_generation` (a late clean-end save or a
+  removal after a takeover) is refused and changes no column.
+- **Restart after a crash.** A row left `open = true` by an older generation loads as lost:
+  `familiar_remaining_ms = 0`, `open = false`, cooldown unchanged.
+- **Restart after a clean end.** A row with `open = false` and time left returns the familiar
+  with that time; the cooldown keeps its saved value.
+- **Replay.** A retried cast command returns its first outcome and writes the row once; a retried
+  session-end save with the same revision is a no-op.
+- **Fenced write.** Every write is a compare-and-set on `revision` inside the writer's fenced
+  Character transaction; the cast write commits only with the mana and the admission.
 
 ## Acceptance criteria
 
 - [ ] Exact-head validation and independent review of the frozen head.
+- Review round (Codex on 6a78bcd2): P1 4173319549 (mana and the support group cooldown in the cast
+  order), P1 4173319551 (clean-end discriminator `open`), P2 4173319554 (this qualification);
+  all fixed in one push.
 - [ ] Protected integration through Merge Queue.

@@ -85,13 +85,15 @@ How does a character summon, keep and lose a familiar, and what survives a logou
 Checks, in order; any failure spends no mana and starts no cooldown:
 
 1. the spell's level, vocation and Premium checks;
-2. the owner is not inside a boss room admitted by lever (BOSS-RAID-0 §6);
-3. the owner has no summon of any kind (R1);
-4. the familiar cooldown has run out (§5);
-5. SUMMON-1's placement finds a tile.
+2. the standard spell-core checks, unchanged: enough mana for the spell (§C.1's table) and the
+   2 s `support` group cooldown not active;
+3. the owner is not inside a boss room admitted by lever (BOSS-RAID-0 §6);
+4. the owner has no summon of any kind (R1);
+5. the familiar cooldown has run out (§5);
+6. SUMMON-1's placement finds a tile.
 
-A success commits, in one acquisition: mana, the familiar's admission and the state row of §5
-(remaining time 900 s, cooldown 1800 s).
+A success commits, in one acquisition: mana, the familiar's admission, the 2 s `support` group
+cooldown and the state row of §5 (remaining time 900 s, cooldown 1800 s, `open = true`).
 
 While the familiar exists, it counts toward the cap of 2 (`RL-19`), so the owner may still add
 one ordinary summon (R1).
@@ -99,15 +101,26 @@ one ordinary summon (R1).
 ## 5. Durable state (FAMILIAR-1)
 
 - `game_character_familiar_state`: `character_id` (primary key), `familiar_remaining_ms`
-  (0 = none), `cooldown_remaining_ms`, `revision`, and the writing `session_generation`.
+  (0 = none), `cooldown_remaining_ms`, `open` (the clean-end discriminator), `revision`, and the
+  writing `session_generation`.
+- **`open`.** The cast write sets `open = true`: a live familiar exists for that generation. A
+  clean session-end write and a removal write set `open = false`. So a row that is still
+  `open = true` from an older generation at the next login was never closed: its session did not
+  end cleanly.
 - **Remaining, not wall clock.** Both values are stored as time left, because both freeze while
   offline (R2). The runtime counts them down while the owner is online.
 - **Writes** are session-generation fenced Character writes: at the cast; at a clean session end
   (logout, channel transfer, the end of the in-fight deadline); and at removal (§7). A write from
   a stale generation is refused.
-- **Crash.** After a session that did not end cleanly, the next login reads the last written row
-  and sets `familiar_remaining_ms` to 0 (the familiar is lost); the cooldown keeps its last
-  written value, so a crash never shortens it.
+- **Crash.** At login, the new session's fenced load reads the row. If `open = true` and its
+  `session_generation` is older than the new one, the earlier session crashed: the load writes
+  `familiar_remaining_ms = 0` and `open = false` under the new generation (the familiar is lost),
+  and keeps `cooldown_remaining_ms` as last written, so a crash never shortens it. If
+  `open = false`, the row is a clean save and a positive `familiar_remaining_ms` returns (§7).
+- **Fencing and replay.** Every write is a compare-and-set on `revision` under the writer's
+  session generation; a write from an older generation is refused and changes nothing. The cast
+  write is part of the cast acquisition, so a retried cast command replays its first outcome and
+  never writes the row twice.
 - The row is gameplay state, not a DUR-03 value. A missing row means no familiar and no cooldown.
 - The familiar spell's in-memory cooldown is the row's value; SPELL-D2's runtime cooldown is not
   used for these five spells.
@@ -199,8 +212,8 @@ None. Every choice above is a reversible architect ruling under owner rule 59058
 1. **Contracts:** none amended.
 2. **Serialization:** the row is written in the cast acquisition and at session end, fenced by
    session generation.
-3. **Restart:** a clean end keeps the familiar's time; a crash loses the familiar and keeps the
-   cooldown.
+3. **Restart:** a clean end (`open = false`) keeps the familiar's time; a crash (`open = true`
+   from an older generation) loses the familiar and keeps the cooldown.
 4. **Typed references:** CharacterId, spell id, creature key.
 5. **Wire:** none new (§8).
 6. **Split work:** one row per character; one familiar per owner.
