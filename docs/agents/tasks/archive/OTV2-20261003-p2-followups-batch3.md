@@ -34,6 +34,8 @@ blocks: []
 | #1358 4149546495: every admitted offer direction needs a status | reproduces: dropping Baltim's `BuyFromPlayer` entry passed | fixed |
 | #1358 4149546503: enforce the value OWNER_REVIEW selects | reproduces: changing Storkus's outfit or Flickering Soul's movement passed | fixed (also covers WIKI_IMAGE) |
 
+Codex review of `c0a0416f` raised P2 4174133976, a regression in this fix: an opposite direction that `wiki_offers()` adds later (`origin: 'wiki'`) was counted against the arbiter row. The CP chose to fix it now (D359 follow-up), so wiki-origin offers are excluded from the comparison, with a regression test.
+
 Batch-3 items outside this module, reported to the CP: #1435 4155353123 (wheel authoring, a separate module); #1391 4153900550 (premium consumer fence, authority); CYCLOPEDIA-0 4173086801 (the replacement snapshot carries in-range POIs, protocol).
 
 ## Excluded scope
@@ -42,7 +44,7 @@ No change to the sample report, to `promotion_candidates.py` output, to runtime,
 
 ## Validation
 
-- `python -m unittest test_promotion.py` (in `tools/content-schema/npc-authoring`): 75 tests OK; both new tests failed before the fix
+- `python -m unittest test_promotion.py` (in `tools/content-schema/npc-authoring`): 75 tests OK; both new tests failed before the fix, and the wiki-origin case failed before the repair
 - `python -m unittest test_npc_authoring.py`: OK
 - `python validate_promotion.py samples/promotion-candidates-v1.json`: 1112/1112 candidates valid
 - `ruff check validate_promotion.py test_promotion.py`: clean

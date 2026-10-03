@@ -408,7 +408,7 @@ def candidate_errors(candidate, index):
             if isinstance(fact, str) and re.fullmatch(r'trade\.\d+', fact):
                 offered = sorted(((offer.get('direction'), offer.get('unit_price'))
                                   for offer in (candidate.get('trade_service') or {}).get('offers') or []
-                                  if offer.get('source_item_id') == int(fact[len('trade.'):])
+                                  if offer.get('source_item_id') == int(fact[len('trade.'):]) and offer.get('origin') != 'wiki'
                                   and offer.get('count') is None and offer.get('sub_type') is None), key=str)
                 stated = sorted(((entry.get('direction'), entry.get('price'))
                                  for entry in row.get('directions') or [] if isinstance(entry, dict)), key=str)

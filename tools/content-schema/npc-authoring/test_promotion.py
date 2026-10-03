@@ -920,6 +920,12 @@ class PromotionValidatorTests(unittest.TestCase):
         broken_row = next(r for r in find_candidate(broken, 'Baltim')['arbitration'] if r == row)
         broken_row['directions'][0]['price'] += 1
         self.assertTrue(validate_promotion.errors(broken))
+        # a direction the wikis add later (D13, origin 'wiki') is not part of the arbitrated source offer
+        added = copy.deepcopy(report)
+        offers = find_candidate(added, 'Albinius')['trade_service']['offers']
+        source = next(o for o in offers if o['source_item_id'] == 51442 and o['direction'] == 'SellToPlayer')
+        offers.append({**source, 'direction': 'BuyFromPlayer', 'unit_price': 100, 'origin': 'wiki'})
+        self.assertFalse([e for e in validate_promotion.errors(added) if 'are not every direction' in e])
 
     def test_owner_review_rows_keep_the_selected_value(self):
         # #1358 4149546503: without the rebuild inputs, the reviewed field still equals the chosen source's value
