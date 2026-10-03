@@ -85,7 +85,7 @@ fn existing_all_thirteen_batches_preserved_idempotently_and_conflict_atomic() {
             .iter()
             .map(|b| b.reimport_states.len())
             .sum::<usize>(),
-        61
+        104
     );
     let prior = batches.clone();
     assert_eq!(raw::append(&mut batches), Ok(296));
