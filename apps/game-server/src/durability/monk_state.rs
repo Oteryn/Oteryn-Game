@@ -145,6 +145,8 @@ impl DurabilityRoot {
     /// `commit_character_experience` and serializes with every Character writer on the
     /// `character_root` row lock. While a death's respawn is pending the stored values are the
     /// death's zeros, and a save that would change them is refused.
+    /// Runtime callers reach it only through a
+    /// [`RevisionSlot`](super::character_revision_sequencer::RevisionSlot) (CHAR-REV-SEQ-1).
     pub async fn commit_character_monk_state_save(
         &self,
         authority: &ReconciledCharacterAuthority<'_, '_>,

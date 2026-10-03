@@ -15,6 +15,7 @@ pub mod character_build;
 pub mod character_death;
 pub mod character_proficiency;
 pub mod character_progression;
+pub mod character_revision_sequencer;
 pub mod charm_state;
 pub mod content_activation;
 mod db;
