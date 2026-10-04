@@ -42,7 +42,8 @@ The map wire (MAP-WIRE-1, MAP-WIRE-2, MAP-CLIENT-1) is outside this batch (§1.8
 | File | Owner | Others |
 |---|---|---|
 | `content/world/spawns/**` | SPAWN-ADMIT-1 | none |
-| `.github/workflows/world-bundle.yml` | WORLD-BUNDLE-CI-1 (new) | none |
+| `.github/workflows/merge-gate.yml`, `.github/workflows/merge-group-gate.yml` | WORLD-BUNDLE-CI-1: the `world_bundle` job, its entry in the `validate` and `game_gate` needs and its required-result check only (§1.2) | not at the same time as any other packet that changes a gate job; the control plane serializes them |
+| `tools/repository/classify_pr_test_lanes.py`, `tools/repository/validate_repository_policy_core.py` and their tests | WORLD-BUNDLE-CI-1: the `world_bundle_required` predicate, its lane output and the pinned job digests and needs lines only | as above |
 | `content/world/pins/**` | WORLD-BUNDLE-CI-1 (new), then SPAWN-ADMIT-1: the pin refresh only (§1.2) | WORLD-CONTENT-SERVE-1 reads it and does not write it |
 | `apps/game-server/src/map/mod.rs` | CHEST-PLACE-BIND-1: the sparse `unique` table, with each entry's palette appearance id, and its accessor only (§2.3) | not at the same time as MAP-OVERLAY-1a or MAP-CUTOVER-1 if they touch it; the control plane serializes them |
 | `apps/game-server/src/content/world_reward_claims.rs` | CHEST-PLACE-BIND-1 (new) | WORLD-CONTENT-SERVE-1 calls it and does not change it |
@@ -62,7 +63,7 @@ No packet here takes a migration lease (§1.7) or changes a protocol registry ro
    on `main`. It is a CI and tooling pin, and no World serves it.
 2. **SPAWN-ADMIT-1** after #1791 and WORLD-BUNDLE-CI-1 merge. Replacing the spawn family changes
    the bundle digest, so the same PR refreshes the imported World's pin from its own tree. The
-   `world-bundle.yml` job must pass on that PR (§1.2).
+   `world_bundle` job must pass inside `game-gate` on that PR and in its merge group (§1.2).
 3. **CHEST-PLACE-BIND-1** now. It needs MAP-LOAD-1 only.
 4. **WORLD-CONTENT-SERVE-1** after MAP-CUTOVER-1, WORLD-BUNDLE-CI-1, SPAWN-ADMIT-1,
    CHEST-PLACE-BIND-1 and CHEST-QUEST-BIND-1 merge. The pin it serves is therefore the one
@@ -100,8 +101,20 @@ No packet here takes a migration lease (§1.7) or changes a protocol registry ro
   - `entry_start`, the native cell where CHAR-POSITION-0 places a first login until HOME-TOWN
     exists;
   - the World Project commit the bundle was built from.
-- The workflow `world-bundle.yml` builds the bundle from `content/world/` with the compiler and
-  uploads it as an artifact named by its digest. It runs on a change to any compiler input
+- **In `game-gate`.** `game-gate` is the only required status, so the pin check runs inside it.
+  A `world_bundle` job in `merge-gate.yml` (pull_request) and in `merge-group-gate.yml`
+  (merge_group) builds the bundle from `content/world/` with the compiler, checks every pin and
+  uploads the bundle as an artifact named by its digest.
+  - Both `game_gate` aggregates need it. Each fails closed, as for `atlas_fullworld` and
+    `server_seam`: when the lane says it is required, any result other than `success` fails
+    `game-gate`; when the lane says it is not required, `skipped` passes.
+  - The lane is `world_bundle_required(files, changed_count, complete)` in
+    `tools/repository/classify_pr_test_lanes.py`. It is true when a changed path, or the
+    previous path of a rename, is a compiler input below, and true when the file list is
+    incomplete. The merge group calls the same predicate from the protected base, as it does for
+    `atlas_fullworld_required`.
+  - There is no separate `world-bundle.yml` workflow, so no second copy of the check can drift.
+- The job is required on a change to any compiler input
   (`tools/world-bundle-compiler/src/main.rs` `project` and `registry`):
   - `content/world/**`: placements and their shards, terrain, objects, transitions, spawns,
     Worlds and the pins;
@@ -202,15 +215,39 @@ placements are bound.
     function in `apps/game-server/src/content/world_activation.rs` (WORLD-CONTENT-SERVE-1). It
     is the domain tag `oteryn:world-activation/server/v1`, followed by:
     - the bundle digest and the pin's `content_revision`;
+    - the World's `ruleset_revision` and `sim_revision`, which the chest `USE` occurrence binds
+      (§1.6);
     - the pin's `entry_start`, as native `(x, y, floor)`;
-    - each served claim, in canonical `PlacementKey` order, with its bound cell and bundle
-      `placement_key` and its quest transition (CHEST-QUEST-BIND-1);
+    - each served claim, in canonical `PlacementKey` order, with:
+      - its claim definition (`family`, `production_key`, `revision_ref`), its policy (`once`)
+        and readiness;
+      - its bound cell, bundle `placement_key` and the chest's resolved definition
+        (`family:key@revision`) and map revision;
+      - each reward entry (Item key and count), its backpack and its `achievement` key, if any;
+      - its quest transition (CHEST-QUEST-BIND-1);
     - the canonical projection of every runtime definition the served path reads: the
       `ItemDefinitionFacts` (definition, stack class, container capacity, container-slot
       pattern) of each reward Item and backpack, ascending by definition;
+    - the achievement-catalogue projection: the entry count of the World's
+      `AchievementCatalogue` (the MINT commit reads it), then each achievement key that a served
+      claim references, ascending by key, with its state (`earnable` or `retired`) and its
+      catalogue revision. An `Absent` key already refuses activation
+      (`OTERYN_ACHIEVEMENT_OWNER_CONTRACT_V1` §3.3), so it is never projected;
     - the digest of the quest catalogue the World loads (QUEST-CAT-BOOT-1).
   - Changing any of these changes the bytes and so the digest. A semantic change to a referenced
-    Item therefore gives a new activation, even when the claims and the bundle are unchanged.
+    Item or achievement therefore gives a new activation, even when the claims and the bundle are
+    unchanged.
+  - **Coverage rule.** Every Content input that `chest_use`, the quest refresh or SPAWN-1b reads
+    at run time is in the artifact, directly or through a digest it contains:
+    - `chest_use`: the claim, placement, reward and achievement fields above, the Item facts, the
+      achievement projection and the three revisions;
+    - the quest refresh: the claims' quest transitions, the quest catalogue digest and the
+      `content_revision` its tracks are keyed by;
+    - SPAWN-1b: the spawn points and creature definitions, which are compiler inputs (§1.2) and
+      so bound by the bundle digest.
+    The reach rule and other code constants are fixed by the binary and versioned by the
+    `ruleset_revision` and `sim_revision` in the artifact. A later packet that makes one of
+    these paths read another Content input adds it to `WorldActivationServerV1` in the same PR.
   - `entry_start` is in the artifact because the node places first logins there (§2.4). A
     change to it alone is a new activation.
   - **Client artifact.** `WorldActivationClientV1` is `oteryn:world-activation/client/v1`
@@ -323,8 +360,8 @@ validation:
   - points whose cell cannot admit their creature are listed as compile diagnostics;
   - the frame matches the placements' frame `global-target-2026-09-27`;
   - regenerating gives no diff;
-  - the imported World's pin is refreshed to the digest of this tree, and the `world-bundle.yml`
-    job passes on the PR.
+  - the imported World's pin is refreshed to the digest of this tree, and the `world_bundle` job
+    passes inside `game-gate` on the PR.
 - **Not in scope:** the held groups, any runtime change (SPAWN-1b), a change to the
   `imports/` tree or to #1791.
 
@@ -335,12 +372,19 @@ task_id: OTV2-20261004-world-bundle-ci-1
 decision: ARCH-WORLD-CONTENT-SERVE-1 §1.2-§1.3
 depends_on: []
 worker: oteryn-impl-worker
-review: CI and provenance review on the frozen head
+review: CI, protection and provenance review on the frozen head; CODEOWNERS review for `.github/workflows/` and `tools/repository/`
 branch: allocated by the control plane
 base: main
 migration_lease: none
 owned_paths:
-  - .github/workflows/world-bundle.yml
+  - .github/workflows/merge-gate.yml                      # the world_bundle job, its validate needs entry and required-result check only
+  - .github/workflows/merge-group-gate.yml               # the world_bundle job, the candidate lane output, its game_gate needs entry and required-result check only
+  - tools/repository/classify_pr_test_lanes.py           # world_bundle_required and its lane output only
+  - tools/repository/validate_repository_policy_core.py  # the pinned world_bundle job digests and the updated needs lines only
+  - tools/repository/test_classify_pr_test_lanes.py
+  - tools/repository/test_main_job_applicability.py
+  - tools/repository/test_validate_pr_gate_pg_sim.py
+  - tools/repository/test_validate_merge_group_pg_sim.py
   - content/world/pins/**                                # the schema and one non-production pin
   - tools/world-bundle-compiler/src/main.rs              # a --check-pin mode only, if needed
   - tools/world-bundle-compiler/tests/**
@@ -350,12 +394,14 @@ validation:
   - cargo clippy --locked -p oteryn-world-bundle-compiler --all-targets -- -D warnings
   - cargo test --locked -p oteryn-world-bundle-compiler
   - python3 tools/repository/validate_repository_policy.py
+  - python3 -m unittest discover -s tools/repository -p 'test_*.py'
   - python3 tools/agents/validate_governance.py
   - git diff --check
 ```
 
 - **Builds:**
-  - the workflow (§1.2);
+  - the `world_bundle` job in both gate workflows, inside `game-gate` (§1.2);
+  - the `world_bundle_required` lane;
   - the pin schema;
   - one non-production pin for the imported World, with its digest, revisions, `entry_start`
     and source commit;
@@ -365,11 +411,21 @@ validation:
   - a pin with a wrong digest fails the job;
   - a production pin on a `non-production` build fails the job;
   - `entry_start` must be a walkable, non-blocking base cell inside the World bounds;
-  - the artifact name carries the digest.
+  - the artifact name carries the digest;
+  - a PR with a stale pin fails `game-gate`, and the same stale pin in a merge group fails the
+    merge group's `game-gate`;
+  - a PR that changes no compiler input skips the job and passes `game-gate`;
+  - with the lane required, a `skipped`, `cancelled` or `failure` result of the job fails
+    `game-gate` in both workflows;
+  - `world_bundle_required` is true for each §1.2 input path, for a rename out of one, and for an
+    incomplete file list, and false for a docs-only change;
+  - the PR and merge-group gate simulations (`test_validate_pr_gate_pg_sim.py`,
+    `test_validate_merge_group_pg_sim.py`) cover the new needs entry, and the repository policy
+    check pins the new job blocks.
 - **Not in scope:**
   - a production pin, production artifact storage and fetching by the node;
-  - a change to the `game-gate` required set: the job is not added to it unless the control
-    plane allocates that separately.
+  - a change to the repository's required status set: `game-gate` stays the only required
+    status, and the check is added inside it.
 
 ### 2.3 CHEST-PLACE-BIND-1
 
@@ -483,8 +539,15 @@ validation:
   - A stale session generation or item fence is refused, and nothing is written.
   - On a production pin, one unbound candidate refuses boot with `ContentActivation`. On a
     non-production pin it is left out and counted.
-  - Changing the bundle digest, the served claim set, one reward Item's stack class, the quest
-    catalogue or `entry_start` changes `server_artifact_digest`.
+  - Changing only one of these changes `server_artifact_digest`, and an issuance made before the
+    change refuses boot with `ContentActivation("digest")`:
+    - the bundle digest, the served claim set or `entry_start`;
+    - the `ruleset_revision` or `sim_revision`;
+    - one served claim's revision, one reward count, its backpack or its `achievement` key;
+    - one reward Item's stack class;
+    - a referenced achievement's state (`earnable` to `retired`) or its revision;
+    - the achievement catalogue's entry count;
+    - the quest catalogue.
   - Issuer and node: an issuance made for a pin, followed by a change to only that pin's
     `entry_start`, refuses boot with `ContentActivation("digest")`. A fresh issuance for the
     changed pin boots.
@@ -519,6 +582,12 @@ validation:
   every pin. The rule compares palette appearance ids instead (§1.4).
 - **Digesting only the bundle and the claims.** A semantic change to a reward Item would keep
   the digest, so two different behaviours would share one activation (§1.5).
+- **Digesting the whole achievement catalogue.** A change to an achievement that no served
+  claim references would then force a new activation. The projection binds exactly what
+  `chest_use` reads (§1.5).
+- **A separate `world-bundle.yml` workflow outside `game-gate`.** `game-gate` is the only
+  required status, so a stale pin would merge with that workflow red. A second required status
+  would change repository protection. The job runs inside `game-gate` instead (§1.2).
 - **The bundle `placement_key` as the durable source placement.** It changes with every
   bundle, so a claim audit would name a key that no longer exists (ADR-0021 §4.2).
 - **Merging the Canary and CrystalServer spawn sets.** It needs a per-point source choice, and

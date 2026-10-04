@@ -72,6 +72,20 @@ external_repositories: []
     content packet, admits them (§1.4).
   - P1 4179378375: `entry_start` is part of `WorldActivationServerV1`. An issuer and node test
     shows that a change to it alone refuses the prior issuance (§1.5, §2.4).
+- #1792 Codex round 4 (CP D619):
+  - P1 4179411647: the pin check is a `world_bundle` job inside `game-gate`, in
+    `merge-gate.yml` and `merge-group-gate.yml`, gated by a `world_bundle_required` lane and
+    failing closed when required. There is no separate `world-bundle.yml`. WORLD-BUNDLE-CI-1
+    owns both gate workflows' job and needs entries, the classifier lane, the pinned job
+    digests and their tests (§0.2, §1.2, §2.2).
+  - P1 4179411651: `WorldActivationServerV1` carries an achievement-catalogue projection: the
+    catalogue entry count, then each referenced achievement key with its state and revision.
+    A change to only one of them refuses the prior issuance (§1.5, §2.4).
+  - Sweep: the artifact also binds the `ruleset_revision` and `sim_revision`, each served
+    claim's definition, policy, readiness, chest definition, map revision, reward counts,
+    backpack and achievement key. A coverage rule lists every Content input of `chest_use`, the
+    quest refresh and SPAWN-1b, and makes a later new input join the artifact in the same PR
+    (§1.5).
 - Durable rows keep canonical identities; the bundle `placement_key` stays in memory. No
   migration, wire or contract change (§1.6-§1.8).
 
