@@ -16,9 +16,10 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use serde::Deserialize;
+use serde_json::Value;
 
 use crate::Error;
-use crate::bundle::Family;
+use crate::bundle::{Family, MAX_GROUND_SPEED, Terrain, TerrainKind};
 use crate::compile::{KeyResolver, Resolution};
 
 /// A typed definition reference `{family, key, revision}`.
@@ -51,6 +52,36 @@ struct ItemDefinition {
 struct CatalogueRecord {
     identity: Reference,
     provenance: Provenance,
+    // Terrain records only; a WorldObject record's fields are never read.
+    #[serde(default)]
+    kind: Option<Field>,
+    #[serde(default)]
+    walkable: Option<Field>,
+    #[serde(default)]
+    ground_speed: Option<Field>,
+}
+
+/// A catalogue field `{state, value}`; only `KNOWN` carries a value.
+#[derive(Deserialize)]
+struct Field {
+    state: String,
+    #[serde(default)]
+    value: Option<Value>,
+}
+
+impl Field {
+    fn known(field: Option<Field>) -> Option<Value> {
+        field.filter(|f| f.state == "KNOWN").and_then(|f| f.value)
+    }
+}
+
+/// What the compiler knows of a Terrain record's classification, read leniently when the shard
+/// is added and judged only when a placed palette entry routes to the record.
+#[derive(Debug, Default)]
+struct Classified {
+    kind: Option<Value>,
+    walkable: Option<Value>,
+    ground_speed: Option<Value>,
 }
 
 #[derive(Deserialize)]
@@ -66,6 +97,8 @@ pub struct Registry {
     items: BTreeMap<String, (Reference, Option<Reference>)>,
     /// Terrain key to whether its record points at an Item.
     terrain: BTreeMap<String, bool>,
+    /// Terrain key to the fields format v2 carries.
+    classified: BTreeMap<String, Classified>,
     /// Item key to the `item_pointer` naming it and the catalogue record that holds it.
     routes: BTreeMap<String, (Reference, Reference)>,
     /// Every Terrain and WorldObject identity, `(family, key)`.
@@ -124,6 +157,14 @@ impl Registry {
             let pointer = record.provenance.item_pointer;
             if family == "Terrain" {
                 self.terrain.insert(identity.key.clone(), pointer.is_some());
+                self.classified.insert(
+                    identity.key.clone(),
+                    Classified {
+                        kind: Field::known(record.kind),
+                        walkable: Field::known(record.walkable),
+                        ground_speed: Field::known(record.ground_speed),
+                    },
+                );
             }
             let Some(pointer) = pointer else { continue };
             if pointer.family != "Item" {
@@ -187,10 +228,116 @@ impl Registry {
         Ok(())
     }
 
+    /// The terrain semantics of a palette key (format v2, ADR-0021 §4.2): the Terrain record the
+    /// key routes to, if any. Stops on a Terrain record with an UNKNOWN kind, a `ground` record
+    /// with an UNKNOWN `walkable` or `ground_speed`, a speed outside `0..=1000` and a walkable
+    /// ground with speed 0. A WorldObject route and a plain Item are never read.
+    pub fn terrain_of(&self, key: &str) -> Result<Option<Terrain>, Error> {
+        let record = match self.ids.get(key) {
+            Some((Family::Terrain, _)) => key,
+            Some((Family::Item, _)) => match self.route(key) {
+                Some(record) if record.family == "Terrain" => &record.key,
+                _ => return Ok(None),
+            },
+            None => return Ok(None),
+        };
+        let fields = self.classified.get(record).ok_or_else(|| {
+            Error::Key(format!("Terrain record {record} is not in the catalogue"))
+        })?;
+        let unclassified = |what: &str| Error::Key(format!("Terrain record {record}: {what}"));
+        let kind = match fields.kind.as_ref().and_then(Value::as_str) {
+            Some("ground") => TerrainKind::Ground,
+            Some("border") => TerrainKind::Border,
+            Some("wall") => TerrainKind::Wall,
+            Some("roof") => TerrainKind::Roof,
+            Some("field") => TerrainKind::Field,
+            _ => return Err(unclassified("kind is UNKNOWN or not a Terrain kind")),
+        };
+        let terrain = if kind == TerrainKind::Ground {
+            let walkable = fields
+                .walkable
+                .as_ref()
+                .and_then(Value::as_bool)
+                .ok_or_else(|| unclassified("ground walkable is UNKNOWN"))?;
+            let speed = fields
+                .ground_speed
+                .as_ref()
+                .and_then(Value::as_u64)
+                .and_then(|speed| u16::try_from(speed).ok())
+                .filter(|speed| *speed <= MAX_GROUND_SPEED)
+                .ok_or_else(|| unclassified("ground_speed is UNKNOWN or outside 0..=1000"))?;
+            if walkable && speed == 0 {
+                return Err(unclassified("a walkable ground has speed 0"));
+            }
+            Terrain {
+                kind,
+                walkable: Some(walkable),
+                ground_speed: Some(speed),
+            }
+        } else {
+            Terrain {
+                kind,
+                walkable: None,
+                ground_speed: None,
+            }
+        };
+        Ok(Some(terrain))
+    }
+
+    /// Counts the placed palette entries by terrain class, for the parity report (§1.4). Never
+    /// stops: what [`Registry::terrain_of`] would refuse is counted, not raised.
+    pub fn terrain_counts<'a>(&self, placed: impl IntoIterator<Item = &'a str>) -> TerrainCounts {
+        let mut counts = TerrainCounts::default();
+        for key in placed {
+            match self.terrain_of(key) {
+                Ok(Some(terrain)) => {
+                    *counts
+                        .by_kind
+                        .entry(format!("{:?}", terrain.kind).to_lowercase())
+                        .or_default() += 1;
+                }
+                Ok(None) => match self.ids.get(key) {
+                    Some((Family::Item, _)) if self.route(key).is_some() => {
+                        counts.world_object += 1
+                    }
+                    Some((Family::Item, _)) => counts.plain_item += 1,
+                    _ => {}
+                },
+                Err(_) => {
+                    counts.refused += 1;
+                    let record = match self.ids.get(key) {
+                        Some((Family::Terrain, _)) => Some(key),
+                        _ => self.route(key).map(|record| record.key.as_str()),
+                    };
+                    let kind = record.and_then(|record| self.classified.get(record));
+                    if kind.is_some_and(|f| f.kind.as_ref().and_then(Value::as_str).is_none()) {
+                        counts.unknown_kind += 1;
+                    }
+                }
+            }
+        }
+        counts
+    }
+
     /// The catalogue record an Item key routes to, if any.
     pub fn route(&self, item: &str) -> Option<&Reference> {
         self.routes.get(item).map(|(_, record)| record)
     }
+}
+
+/// Placed palette entries by terrain class (the MAP-BUNDLE-2 parity report).
+#[derive(Clone, Debug, Default, PartialEq, Eq, serde::Serialize)]
+pub struct TerrainCounts {
+    /// Terrain-routed entries by `kind`.
+    pub by_kind: BTreeMap<String, usize>,
+    /// Terrain-routed entries whose kind is UNKNOWN; each stops the compile.
+    pub unknown_kind: usize,
+    /// Terrain-routed entries the compiler refuses for any reason, `unknown_kind` included.
+    pub refused: usize,
+    /// WorldObject-routed entries, written as `null`.
+    pub world_object: usize,
+    /// Plain Item entries, written as `null`.
+    pub plain_item: usize,
 }
 
 impl KeyResolver for Registry {
@@ -200,5 +347,9 @@ impl KeyResolver for Registry {
             None if self.provisional.contains(key) => Resolution::Provisional,
             None => Resolution::Unknown,
         }
+    }
+
+    fn terrain(&self, key: &str) -> Result<Option<Terrain>, Error> {
+        self.terrain_of(key)
     }
 }

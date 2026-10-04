@@ -252,7 +252,8 @@ Builds the wire only:
 - capability 15 `ITEM_USE_V1`, `offered: false`, `requires: [4]`; CAP-NEG-1 selects it only with
   its closure;
 - `USE_INTENT` field 5 `ItemByDefinitionV1 {definition_index: uint32}` in the `target` oneof,
-  field 4 `use_with` (`creature {actor_id, generation}`) outside it, field 3 still reserved;
+  field 4 `use_with` outside it, whose `creature` is the existing `EntityRefV1` (imported from
+  `world_spatial_v1.proto`, no new message), field 3 still reserved;
 - dispositions `REQUIREMENT_NOT_MET`, `EXHAUSTED`, `FULL`, `NO_TARGET`, sent only under
   capability 15;
 - the server: without capability 15, a non-corpse use stays `NOTHING_TO_USE` and a command with
@@ -263,6 +264,9 @@ Tests:
 
 - codec round trip of fields 2, 4 and 5; field 4 with field 1, with a corpse handle, or alone is
   refused by the decoder or the dispatcher as ITEM-USE-0 §3 says; field 3 present is refused;
+- field 4's `creature` is `EntityRefV1`: an identity of 15 or 17 bytes, or generation 0, is
+  `REJECTED`; a well-formed reference to an entity outside the session's view, or a stale
+  generation, is `NO_TARGET` under capability 15 (ITEM-USE-0 §3);
 - the payload at 529 bytes accepted and 530 refused (`ITEMUSE0-RL-03`), and the result at most
   4 bytes;
 - a session without capability 15 that sends field 4 or 5 gets `REJECTED`; a non-corpse field 2

@@ -37,11 +37,13 @@ impl PlaceholderScene {
             }
         }
         let tiles = TileBatch::from_cells(&view, &atlas, &cells)?;
-        // Fixtures until VIS-2: three entities and one tile object (a boulder).
+        // Fixtures until VIS-2: four entities (player, creature, other player, NPC) and one tile object (a boulder).
         let visible = [
             (0, 0, TargetKind::Entity, PlaceholderCell::Player),
             (3, -1, TargetKind::Entity, PlaceholderCell::Creature),
             (-3, 2, TargetKind::Entity, PlaceholderCell::OtherPlayer),
+            // Wire kind 5 (NPC) is an actor entry: drawn and targeted like any actor.
+            (-4, -1, TargetKind::Entity, PlaceholderCell::OtherPlayer),
             (-2, -2, TargetKind::Object, PlaceholderCell::Stone),
         ]
         .map(|(x, y, kind, cell)| {
@@ -151,8 +153,8 @@ mod tests {
         let scene = PlaceholderScene::new()?;
         assert_eq!(scene.tiles().len(), (SCENE_COLUMNS * SCENE_ROWS) as usize);
         assert_eq!(scene.tiles().vertex_count(), 165 * 6);
-        assert_eq!(scene.sprites().len(), 4);
-        assert_eq!(scene.sprites().vertex_count(), 24);
+        assert_eq!(scene.sprites().len(), 5);
+        assert_eq!(scene.sprites().vertex_count(), 30);
         Ok(())
     }
 
@@ -188,14 +190,14 @@ mod tests {
             let picked = scene.select_tile(tile)?;
             assert_eq!(picked.map(|p| p.kind), Some(kind));
             assert_eq!(scene.target(), picked);
-            assert_eq!(scene.sprites().len(), 5);
-            assert_eq!(scene.sprites().instances()[4].position, [x, y]);
+            assert_eq!(scene.sprites().len(), 6);
+            assert_eq!(scene.sprites().instances()[5].position, [x, y]);
         }
         // An empty tile keeps the target; clearing removes the highlight.
         assert_eq!(scene.select_tile(TileCoord::new(5, 3))?, None);
-        assert_eq!(scene.sprites().len(), 5);
+        assert_eq!(scene.sprites().len(), 6);
         scene.clear_target()?;
-        assert_eq!(scene.sprites().len(), 4);
+        assert_eq!(scene.sprites().len(), 5);
         Ok(())
     }
 

@@ -8,7 +8,9 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use crate::Error;
 use crate::b3::{self, Region};
-use crate::bundle::{self, BuildClass, Extent, Family, Identity, Manifest, PaletteEntry, Sector};
+use crate::bundle::{
+    self, BuildClass, Extent, Family, Identity, Manifest, PaletteEntry, Sector, Terrain,
+};
 use crate::project::{Families, LegacyPosition};
 use crate::sector::{Item, Tile};
 
@@ -23,6 +25,11 @@ pub enum Resolution {
 
 pub trait KeyResolver {
     fn resolve(&self, key: &str) -> Resolution;
+
+    /// The terrain semantics of a resolved key (format v2): `Some` for a route to a Terrain
+    /// record, `None` for a WorldObject route or a plain Item. Fails closed when a Terrain
+    /// record is not classified well enough to write.
+    fn terrain(&self, key: &str) -> Result<Option<Terrain>, Error>;
 }
 
 pub struct Input<'a> {
@@ -152,6 +159,19 @@ pub fn parity(regions: &[Vec<u8>], families: &Families) -> Result<Parity, Error>
     Ok(report)
 }
 
+/// The palette indices that the regions place, contents of containers included.
+pub fn placed_palette(regions: &[Vec<u8>]) -> Result<BTreeSet<u32>, Error> {
+    let mut budget = bundle::BUNDLE_BUDGET;
+    let mut placed = BTreeSet::new();
+    for data in regions {
+        let region = b3::decode_region(data, bundle::TILE_LIMITS, &mut budget)?;
+        for tile in region.sectors.iter().flat_map(|(_, _, tiles)| tiles) {
+            placed.extend(tile.items.iter().map(|item| item.palette));
+        }
+    }
+    Ok(placed)
+}
+
 /// The CrystalServer import profile: `native.floor = -legacy.z`, checked.
 fn native_floor(z: u8) -> Result<i8, Error> {
     i8::try_from(z)
@@ -238,12 +258,16 @@ impl State<'_> {
                     if item.depth == 0 {
                         top_level = top_level.saturating_add(1);
                     }
-                    let entry = PaletteEntry {
-                        key: key.clone(),
-                        family,
-                        id,
-                    };
-                    self.used.entry(item.palette).or_insert(entry);
+                    if !self.used.contains_key(&item.palette) {
+                        let terrain = self.resolver.terrain(key)?;
+                        let entry = PaletteEntry {
+                            key: key.clone(),
+                            family,
+                            id,
+                            terrain,
+                        };
+                        self.used.insert(item.palette, entry);
+                    }
                     kept.push(item);
                 }
                 Resolution::Resolved(..) => {}
@@ -474,6 +498,7 @@ pub fn equivalence(
                 key: palette[at as usize].clone(),
                 family,
                 id,
+                terrain: resolver.terrain(&palette[at as usize])?,
             }),
             _ => Err(Error::Format(
                 "equivalence: a kept key does not resolve".into(),

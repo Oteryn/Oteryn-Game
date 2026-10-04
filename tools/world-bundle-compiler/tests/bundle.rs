@@ -3,7 +3,9 @@
 use std::error::Error as StdError;
 
 use oteryn_world_bundle_compiler::Error;
-use oteryn_world_bundle_compiler::bundle::{self, BuildClass, Extent, Family, Identity, Manifest};
+use oteryn_world_bundle_compiler::bundle::{
+    self, BuildClass, Extent, Family, Identity, Manifest, Terrain, TerrainKind,
+};
 use oteryn_world_bundle_compiler::compile::{Compiled, Input, KeyResolver, Resolution, compile};
 use oteryn_world_bundle_compiler::project::Families;
 use oteryn_world_bundle_compiler::sector::{self, Attrs, Item, Tile};
@@ -25,6 +27,14 @@ impl KeyResolver for Resolver {
             "donor:99" => Resolution::Provisional,
             _ => Resolution::Unknown,
         }
+    }
+
+    fn terrain(&self, key: &str) -> Result<Option<Terrain>, Error> {
+        Ok((key == "terrain:grass").then_some(Terrain {
+            kind: TerrainKind::Ground,
+            walkable: Some(true),
+            ground_speed: Some(150),
+        }))
     }
 }
 
@@ -419,7 +429,7 @@ fn reader_matches_the_python_b3_codec() -> TestResult {
 fn reseal(mut bytes: Vec<u8>) -> Vec<u8> {
     let body = bytes.len() - 32;
     let mut hash = <sha2::Sha256 as sha2::Digest>::new();
-    sha2::Digest::update(&mut hash, b"OTERYN_WORLD_BUNDLE/v1\0");
+    sha2::Digest::update(&mut hash, b"OTERYN_WORLD_BUNDLE/v2\0");
     sha2::Digest::update(&mut hash, &bytes[..body]);
     let digest: [u8; 32] = sha2::Digest::finalize(hash).into();
     bytes[body..].copy_from_slice(&digest);
