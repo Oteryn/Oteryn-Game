@@ -25,7 +25,7 @@ public_contracts: []
 RewardClaim variant migration packet seals the digest of each authoring source it reads, so
 `reward_claim_variant_migration.py --check` failed on `main` with "variant migration packet is
 stale". The packet is regenerated with `reward_claim_variant_migration.py`. Only
-`authoring_sources[*].sha256` values change (65 entries); the variant set (105 variants, eligible
+`authoring_sources[*].sha256` values change (61 of 84 entries); the variant set (105 variants, eligible
 plain missing 0) is unchanged. No other file pins the packet's digest.
 
 ## Validation
