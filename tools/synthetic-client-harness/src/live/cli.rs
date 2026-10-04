@@ -6,7 +6,9 @@
 use super::controller::LiveController;
 use super::input::LiveInput;
 use super::model::{DOOR_TILE, LiveCommand, RenderModel, Viewport, render_text, tile_centre_pixel};
-use oteryn_dev_client::{JoinRequest, connect_session};
+use oteryn_dev_client::{
+    ChatIntent, ChatRoom, ChatSpeechMode, JoinRequest, MAX_CHAT_TEXT_BYTES, connect_session,
+};
 use oteryn_input_actions::{
     ButtonState, InputError, KeyCode, Modifiers, MouseButton, NormalizedInputEvent,
     PointerCoordinate, PointerDelta, PointerMotion, PointerPosition,
@@ -42,6 +44,8 @@ input lines: up down left right (or w a s d) | use | click PX PY | quit
              cast SPELL_INDEX self|none|attack|position X Y FLOOR [aim]
              wait MS (0..30000; connection remains serviced)
              expect Cast|CoolingDown|LevelTooLow|MagicLevelTooLow|NotEnoughMana|NotEnoughSoul|NotAvailable|TargetRequired|TargetIllegal|Rejected
+chat lines:  say TEXT | yell TEXT | whisper TEXT | pm NAME TEXT | room N TEXT | open N | close N
+             (rooms: 1 World, 2 English, 3 Help, 4 Advertising)
 script: same commands, blank lines and # comments; at most 4096 lines / 1 MiB / 5 min waits";
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -168,9 +172,11 @@ pub fn load_root_certificate(path: &std::path::Path) -> Result<CertificateDer<'s
 }
 
 /// One line typed into the terminal.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum LineCommand {
     Key(KeyCode),
+    /// One chat intent (`say`, `yell`, `whisper`, `pm`, `room`, `open`, `close`).
+    Chat(ChatIntent),
     /// Click the door tile.
     UseDoor,
     Click(i32, i32),
@@ -184,8 +190,60 @@ pub enum LineCommand {
     Quit,
 }
 
+fn room_for(word: &str) -> Option<ChatRoom> {
+    match word {
+        "1" => Some(ChatRoom::World),
+        "2" => Some(ChatRoom::English),
+        "3" => Some(ChatRoom::Help),
+        "4" => Some(ChatRoom::Advertising),
+        _ => None,
+    }
+}
+
+/// `word` and the rest of `text` after it, trimmed (the chat text keeps its inner spacing).
+fn split_word(text: &str) -> Option<(&str, &str)> {
+    let text = text.trim();
+    let end = text.find(char::is_whitespace).unwrap_or(text.len());
+    let (word, rest) = text.split_at(end);
+    (!word.is_empty()).then_some((word, rest.trim()))
+}
+
+/// A chat line, or `None` when it is not one (or its text is empty or over the wire bound).
+fn parse_chat(line: &str) -> Option<ChatIntent> {
+    let (verb, rest) = split_word(line)?;
+    let text = |text: &str| {
+        (!text.is_empty() && text.len() <= MAX_CHAT_TEXT_BYTES).then(|| text.to_owned())
+    };
+    let say = |mode| text(rest).map(|text| ChatIntent::Say { mode, text });
+    match verb {
+        "say" => say(ChatSpeechMode::Say),
+        "yell" => say(ChatSpeechMode::Yell),
+        "whisper" => say(ChatSpeechMode::Whisper),
+        "pm" => {
+            let (name, body) = split_word(rest)?;
+            Some(ChatIntent::Private {
+                recipient_name: name.to_owned(),
+                text: text(body)?,
+            })
+        }
+        "room" => {
+            let (room, body) = split_word(rest)?;
+            Some(ChatIntent::Room {
+                room: room_for(room)?,
+                text: text(body)?,
+            })
+        }
+        "open" => Some(ChatIntent::OpenRoom(room_for(rest)?)),
+        "close" => Some(ChatIntent::CloseRoom(room_for(rest)?)),
+        _ => None,
+    }
+}
+
 #[must_use]
 pub fn parse_line(line: &str) -> Option<LineCommand> {
+    if let Some(intent) = parse_chat(line) {
+        return Some(LineCommand::Chat(intent));
+    }
     let mut words = line.split_whitespace();
     let command = match words.next()? {
         "up" | "w" => LineCommand::Key(KeyCode::ARROW_UP),
@@ -323,9 +381,11 @@ pub fn events_for(
             Some((px, py)) => click(px, py),
             None => Ok(Vec::new()),
         },
+        // Chat is not an input event: the loop dispatches it as a command.
         LineCommand::Cast { .. }
         | LineCommand::Wait(_)
         | LineCommand::Expect(_)
+        | LineCommand::Chat(_)
         | LineCommand::Quit => Ok(Vec::new()),
     }
 }
@@ -435,6 +495,10 @@ pub fn run(args: &[String]) -> Result<(), Box<dyn Error>> {
                 command_count += 1;
                 match command {
                     LineCommand::Quit => break,
+                    LineCommand::Chat(intent) => {
+                        controller.dispatch(LiveCommand::Chat(intent)).await?;
+                        println!("{}", render_text(view, controller.model()));
+                    }
                     LineCommand::Wait(duration) => {
                         if controller.idle(duration).await? {
                             println!("{}", render_text(view, controller.model()));

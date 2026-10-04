@@ -2,8 +2,10 @@
 //! [`RenderModel`], and pixel click -> [`LiveCommand`]. No I/O, no GPU, no window.
 
 use oteryn_dev_client::{
-    CastOutcome, EntityKind, EntityRef, JoinSnapshot, SessionEvent, StepOutcome, UseOutcome,
-    WorldEntities, WorldSpatialEntitiesDelta, WorldSpatialEntity,
+    CastOutcome, ChatDisposition, ChatIntent, ChatLine, ChatLog, ChatOutcome, ChatRoom,
+    ChatRoomSet, ChatSpeechMode, EntityKind, EntityRef, JoinSnapshot, MAX_CHAT_LOG_LINES,
+    SessionEvent, StepOutcome, UseOutcome, WorldEntities, WorldSpatialEntitiesDelta,
+    WorldSpatialEntity,
 };
 use oteryn_foundation::ProcessGeneration;
 use oteryn_protocol_oteryn::actor_spell::{ActorVitals, SpellCastDisposition, SpellTarget};
@@ -67,9 +69,26 @@ pub enum Notice {
     DoorTooFar,
     DoorRejected,
     SpellCast(SpellCastDisposition),
+    /// A chat intent was accepted; its line or room change arrives as a pushed delta.
+    ChatSent,
+    /// `MUTED`: nothing was said; the server names the wait.
+    ChatMuted(u32),
+    /// `EXHAUSTED`: nothing was said; the server names the wait.
+    ChatExhausted(u32),
+    /// Any other refusal (level, vocation, recipient offline, room closed, unavailable).
+    ChatRefused,
 }
 
 impl Notice {
+    #[must_use]
+    pub fn text(self) -> String {
+        match self {
+            Self::ChatMuted(seconds) => format!("muted, wait {seconds} s"),
+            Self::ChatExhausted(seconds) => format!("chat exhausted, wait {seconds} s"),
+            other => other.as_str().to_owned(),
+        }
+    }
+
     #[must_use]
     pub const fn as_str(self) -> &'static str {
         match self {
@@ -95,6 +114,10 @@ impl Notice {
                 SpellCastDisposition::TargetIllegal => "spell target illegal",
                 SpellCastDisposition::Rejected => "spell rejected",
             },
+            Self::ChatSent => "chat sent",
+            Self::ChatMuted(_) => "muted",
+            Self::ChatExhausted(_) => "chat exhausted",
+            Self::ChatRefused => "chat refused",
         }
     }
 }
@@ -115,11 +138,79 @@ pub struct RenderModel {
     pub own_identity: Option<[u8; 16]>,
     /// The entity a click selected; cleared when it leaves or a click finds none.
     pub selected: Option<EntityRef>,
+    /// The chat pane; empty and without rooms unless the server selected capability 7.
+    pub chat: ChatPane,
     pub notice: Notice,
 }
 
+/// The open rooms and the last [`MAX_CHAT_LOG_LINES`] lines, oldest first.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct ChatPane {
+    pub rooms: ChatRoomSet,
+    pub lines: Vec<ChatLine>,
+}
+
+impl ChatPane {
+    /// The pane of a session's chat log.
+    #[must_use]
+    pub fn from_log(log: &ChatLog) -> Self {
+        Self {
+            rooms: log.rooms(),
+            lines: log.lines().cloned().collect(),
+        }
+    }
+
+    fn push(&mut self, line: ChatLine) {
+        if self.lines.len() == MAX_CHAT_LOG_LINES {
+            self.lines.remove(0);
+        }
+        self.lines.push(line);
+    }
+}
+
+/// The room's display name.
+#[must_use]
+pub const fn room_name(room: ChatRoom) -> &'static str {
+    match room {
+        ChatRoom::World => "World",
+        ChatRoom::English => "English",
+        ChatRoom::Help => "Help",
+        ChatRoom::Advertising => "Advertising",
+    }
+}
+
+/// One line as the pane draws it: `Name says:`, `Name whispers:`, `Name yells:`, `Name
+/// (private):`, `[Room] Name:`; a `DROPPED` marker stands for lines the server shed.
+#[must_use]
+pub fn render_chat_line(line: &ChatLine) -> String {
+    match line {
+        ChatLine::Local {
+            speaker_name,
+            mode,
+            text,
+            ..
+        } => {
+            let verb = match mode {
+                ChatSpeechMode::Say => "says",
+                ChatSpeechMode::Whisper => "whispers",
+                ChatSpeechMode::Yell => "yells",
+            };
+            format!("{speaker_name} {verb}: {text}")
+        }
+        ChatLine::Private { speaker_name, text } => {
+            format!("{speaker_name} (private): {text}")
+        }
+        ChatLine::Room {
+            room,
+            speaker_name,
+            text,
+        } => format!("[{}] {speaker_name}: {text}", room_name(*room)),
+        ChatLine::Dropped => "-- DROPPED: chat lines were lost --".to_owned(),
+    }
+}
+
 /// What one input asks the session to do.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum LiveCommand {
     Step(StepDirection),
     UseDoor {
@@ -132,6 +223,8 @@ pub enum LiveCommand {
     },
     /// Select the top entity on `Tile` (clears the selection when there is none). Local only.
     Select(Tile),
+    /// Send one chat intent.
+    Chat(ChatIntent),
 }
 
 #[must_use]
@@ -182,6 +275,7 @@ impl RenderModel {
             entities: BTreeMap::new(),
             own_identity: None,
             selected: None,
+            chat: ChatPane::default(),
             notice: Notice::Joined,
         }
     }
@@ -293,6 +387,20 @@ impl RenderModel {
         next
     }
 
+    /// The model after a chat result. `MUTED`, `EXHAUSTED` and every refusal change nothing but
+    /// the notice (a line and a room change only ever arrive as pushed deltas).
+    #[must_use]
+    pub fn apply_chat(&self, outcome: &ChatOutcome) -> Self {
+        let mut next = self.clone();
+        next.notice = match outcome.disposition {
+            ChatDisposition::Ok => Notice::ChatSent,
+            ChatDisposition::Muted => Notice::ChatMuted(outcome.wait_seconds),
+            ChatDisposition::Exhausted => Notice::ChatExhausted(outcome.wait_seconds),
+            _ => Notice::ChatRefused,
+        };
+        next
+    }
+
     fn apply_entities_delta(&mut self, delta: &WorldSpatialEntitiesDelta) {
         for reference in &delta.leave {
             self.entities.remove(reference);
@@ -340,6 +448,8 @@ impl RenderModel {
                     next.overlay_revision = delta.new_revision;
                 }
                 SessionEvent::ActorVitals(delta) => next.vitals = Some(delta.value),
+                SessionEvent::ChatLine(delta) => next.chat.push(delta.value.clone()),
+                SessionEvent::ChatRooms(delta) => next.chat.rooms = delta.value,
             }
         }
         next
@@ -467,14 +577,18 @@ pub fn render_text(view: Viewport, model: &RenderModel) -> String {
         for col in 0..i64::from(view.cols) {
             let x = i64::from(model.actor.x) + col - cx;
             let y = i64::from(model.actor.y) + row - cy;
-            let tile = Tile {
-                x: i32::try_from(x).unwrap_or(i32::MAX),
-                y: i32::try_from(y).unwrap_or(i32::MAX),
-                floor: model.actor.floor,
+            // A cell outside the i32 world has no tile: never substitute a real coordinate.
+            let tile = match (i32::try_from(x), i32::try_from(y)) {
+                (Ok(x), Ok(y)) => Some(Tile {
+                    x,
+                    y,
+                    floor: model.actor.floor,
+                }),
+                _ => None,
             };
             let glyph = if (col, row) == (cx, cy) {
                 '@'
-            } else if let Some(entity) = model.top_entity_at(tile) {
+            } else if let Some(entity) = tile.and_then(|tile| model.top_entity_at(tile)) {
                 kind_glyph(entity.kind)
             } else {
                 match model.door {
@@ -519,7 +633,19 @@ pub fn render_text(view: Viewport, model: &RenderModel) -> String {
         model.actor.x,
         model.actor.y,
         model.actor.floor,
-        model.notice.as_str()
+        model.notice.text()
     ));
+    if model.chat.rooms != ChatRoomSet::default() || !model.chat.lines.is_empty() {
+        let rooms: Vec<&str> = ChatRoom::ALL
+            .into_iter()
+            .filter(|room| model.chat.rooms.contains(*room))
+            .map(room_name)
+            .collect();
+        out.push_str(&format!("chat [{}]\n", rooms.join(", ")));
+        for line in &model.chat.lines {
+            out.push_str(&render_chat_line(line));
+            out.push('\n');
+        }
+    }
     out
 }
