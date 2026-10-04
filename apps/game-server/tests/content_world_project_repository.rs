@@ -17,7 +17,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "content.lock.json",
         364,
-        "2dcbadd4281026a47bbea43de4abcf8651c93a8c50eaa8fd7cd27d622c40f49b",
+        "4decdb9876b556639d517de72869afebfa9397603838d819c972b5c8c726bc98",
     ),
     (
         "definitions/declarations.json",
@@ -26,8 +26,8 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "definitions/reference.json",
-        26_542_542,
-        "fdb0095907b6f3cf5b9ea359c07be92739140be5fbdfc74c8e61b040f726c22f",
+        26_598_694,
+        "3791f0142bcc3bfa0395153c3f40a84e971b47c38eaa301b07e2dc49cc5b49fc",
     ),
     (
         "editor/author.json",
@@ -37,7 +37,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "manifest.json",
         1_939,
-        "1745b7b587476e34d1fac4ec088dc7d8a131c1430686f494566a857bebf23e4f",
+        "d875f8a071b76db757b9fc5c781d27cc9cc123efbb6db9f671299c2a3edcc2cb",
     ),
     (
         "presentations/bindings.json",
@@ -47,7 +47,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "project.json",
         390,
-        "cf93c197e10ce585afd9941623da9aeb35fd32965357c24f638d75185dac2a27",
+        "3a682d195e8936b38b668418f19b022cbf27e89480f591a2bd5e2ec19fd2edce",
     ),
     (
         "provenance/imports.json",
@@ -114,7 +114,7 @@ const WORLD_CATALOGUE_SHARDS: [(&str, &str); 4] = [
 const TREE_CONTRACT: &str =
     "docs/agents/evidence/OTV2-20260925-full-game-content-ruleset-tree-v1.json";
 const TREE_DIRECTORY_NODES: usize = 97;
-const TREE_SHA256: &str = "1504334e7269bc6c7e852c6a428613a8629630e33266a9a9c5aa02c9c5373cd0";
+const TREE_SHA256: &str = "3386677d060946205e44fb94e83b6c28a553b0777191c29c50882177f1b95a24";
 /// A12 (ITEM-ID-1b): the protected Item family less the 4,590 D149 records, on Tibia keys,
 /// plus the 404 donor epoch-2 records and the 60 appearance-only records (ITEM-ADD-1).
 const ITEMS: usize = 34_031;
@@ -1566,9 +1566,10 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     // ITEM-SEM-2b adds 328 TibiaWiki atoms on these v1 paths where v1 had none; it replaces,
     // never removes, the others. Capacity adds 17 unknown atoms; declared charges add one.
     // Explicit relative hit facts add 28 atoms on Items already in this census.
+    // TIMED-CONTENT-1 adds one charges atom on these paths where none was promoted.
     assert_eq!(
         promoted_fields,
-        ITEM_SEMANTIC_PROMOTION_LOWERING_V1_FIELD_COUNT + 12 - 204 + 328 + 39 + 17 + 1 + 28
+        ITEM_SEMANTIC_PROMOTION_LOWERING_V1_FIELD_COUNT + 12 - 204 + 328 + 39 + 17 + 1 + 28 + 1
     );
     let (wave1_items, wave1_fields) = linked
         .definitions
@@ -1632,8 +1633,11 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
                 durations + usize::from(duration),
             )
         });
-    assert_eq!(charge_fields, 125 + 1);
-    assert_eq!(duration_fields, 138);
+    // TIMED-CONTENT-1 adds one evidenced charges count (items-stats had none for it).
+    assert_eq!(charge_fields, 125 + 1 + 1);
+    // TIMED-CONTENT-1 adds 50 durations (its 50 `temporal.duration_ms` rows) and clears the 21
+    // durations the stats promotion had put on inactive equip forms (TIMED-ITEM-0 §4).
+    assert_eq!(duration_fields, 138 + 50 - 21);
     // Resistance vectors were entirely unknown in the predecessor. Count their typed
     // percentages as atoms so a missing list member cannot hide behind the vector count.
     let (mut resistance_vectors, mut resistance_atoms, mut equipment_patterns) = (0, 0, 0);

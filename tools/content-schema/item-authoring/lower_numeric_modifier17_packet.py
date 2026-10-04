@@ -14,7 +14,7 @@ COMPILER = "tools/content-schema/item-authoring/lower_numeric_modifier17_packet.
 RECEIPT = (
     "docs/agents/evidence/OTV2-20261002-item-numeric-modifier17-current-receipt-v1.json"
 )
-RECEIPT_SHA = "427e648a656f35c6855dfc1d1020d80ac6c2aae2fd9833c14457adc73846d4f2"
+RECEIPT_SHA = "be0b91420416b1e8f9f12bea285c0d42d6e7ca46060286b7737be0939a134957"
 OUTPUT = (
     ROOT
     / "docs/agents/evidence/OTV2-20261002-item-numeric-modifier17-promotion-v1.json"
