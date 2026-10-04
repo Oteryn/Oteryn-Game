@@ -63,9 +63,14 @@ external_repositories: []
   fix) and the packet. The open P1 4177026515 and P2 4177026518 moved with it and are answered
   there. §1.2-§1.4 and §2.1 stay here as pointers.
 - #1733 P1 4177057911: type-2 audit activation has two phases. In phase 1, GOLD-FEE-2 reads (1,V1)
-  and (2,V2) and still emits (1,V1). In phase 2, GOLD-FEE-ACT-1 is the single reviewed switch: an
-  activation row plus an outbox trigger, applied only once every node runs phase-1 code, so no V1
-  is emitted after the boundary. Qualification tests are listed (§0, §1.7, §2.5, §4).
+  and (2,V2) and still emits (1,V1). Phase 2 is a separate reviewed switch, applied only once every
+  node runs the code that reads the activation, so no V1 is emitted after the boundary (§0, §1.7,
+  §2.5, §4).
+- Control plane D497 (6a): phase 2 moved to GOLD-FEE-ACT-PACKET-1 (#1746), with GOLD-FEE-ACT-1
+  (readiness) and GOLD-FEE-ACT-2 (the switch). The open P1 4177113877 (in-flight inserts, fixed by
+  an advisory fence) and P1 4177113872 (every type-2 writer owned) moved with it and are answered
+  there. §1.7 keeps phase 1 and a pointer; GOLD-FEE-2 no longer adds the activation table or
+  trigger (§0, §1.7, §2.3, §2.5).
 - No code, contract or wire change.
 
 ## Validation
