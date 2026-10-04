@@ -2,7 +2,7 @@
 
 ```yaml
 task_id: OTV2-20261004-arch-core-loop-packets-2c
-title: "ARCH-CORE-LOOP-PACKETS-2 part C: Premium gameplay wiring and the first house, guild and party packets"
+title: "ARCH-CORE-LOOP-PACKETS-2 part C: the first house, guild and party packets"
 mode: CONTRACT
 status: completed
 repository: Oteryn/Oteryn-Game
@@ -21,44 +21,34 @@ owned_paths:
   - docs/agents/tasks/archive/OTV2-20261004-arch-core-loop-packets-2c.md
 public_contracts: []
 depends_on: []
-blocks: [PREM-WIRE-1, ECON-RET-0, BED-CONTENT-1, SCOPE-HANDOFF-1, CHAT-2, GUILD-1, PARTY-1]
+blocks: [ECON-RET-0, BED-CONTENT-1, SCOPE-HANDOFF-1, CHAT-2, PARTY-1]
 cross_repository_coordination_id: null
 external_repositories: []
 ```
 
 ## Outcome
 
-- **D486 item 4:** PREM-WIRE-1 (§2.1) adds three things:
-  - a fail-closed trusted clock from the kernel NTP state (`ntp_adjtime`, `maxerror`), which reads
-    as `None` when unsynchronized or not on Linux (§1.1);
-  - one per-command `premium_current(account_id)` seam (§1.2);
-  - the PREM-4 spell cast check.
+- **D486 item 5:** this batch has packets for:
+  - ECON-RET-0: the guild and market retention profiles in one privacy review. BANK-RET-0 stays
+    with #1733 §2.3, with no duplicate.
+  - BED-CONTENT-1, SCOPE-HANDOFF-1, CHAT-2 and PARTY-1.
 
-  The yell gate is wired by the later of CHAT-1b-2b and PREM-WIRE-1. PREM-2b waits for PREM-5,
-  because nothing can be promoted yet (§1.3, §3).
-- **D486 item 5:** packets for ECON-RET-0 (the guild and market retention profiles in one
-  privacy review; BANK-RET-0 stays with #1733 §2.3, with no duplicate), BED-CONTENT-1, SCOPE-HANDOFF-1, CHAT-2, GUILD-1 and PARTY-1. Each packet
-  lists what it needs for acceptance (§1.5, §2), and §3 lists every held child with what releases
-  it.
+  Each packet lists what it needs for acceptance (§1.2, §2), and §3 lists every held child with
+  what releases it.
+- **D490 split:** the Premium-gated part moves to PREMIUM-ACTIVATION-0 (#1743). That covers
+  D486 item 4: the trusted clock, the `PremiumStatus` seam, the activation latch, the consumer
+  table, PREM-WIRE-1 and GUILD-1. These findings move with it and are answered there:
+  - P1 4176929764;
+  - P1 4176947451;
+  - P1 4176973984;
+  - P1 4176993795;
+  - P1 4176993801;
+  - P2 4176993804.
 - Control plane queue (§5):
   1. BANK-RET-0 (#1733) and ECON-RET-0 first.
   2. ADMIT-0 acceptance.
-  3. PREM-5 together with PREM-2b.
-  4. Relay key authority.
-- **#1738 P1 4176929764:** the Premium seam is gated on `PremiumActivation`, which defaults to
-  `None` in production. A configured snapshot source cannot make `premium_current` true before
-  PREM-1's activation record and separate owner authority (PREMIUM-DELIVERY-0 §10.3) (§1.2, §2.1).
-- #1738 P1 4176947451: the seam returns `PremiumStatus` (`NotActivated`, `Current` or
-  `NotCurrent`). GUILD-1 consumes it, so the G1 a pre-delivery bypass holds before activation
-  and Premium is enforced after it. GUILD-1 also depends on PREM-WIRE-1 (§1.2, §1.3, §2.1, §2.6).
+  3. Relay key authority.
 - #1738 P2 4176947456: the five mandatory decision answers are in §6.
-- #1738 P1 4176973984: the switch-over is conservative and irreversible.
-  - `NotActivated` only while `upper < S` and no latch is set.
-  - A durable insert-only latch is written once `upper >= S`, and after it only `Current` or
-    `NotCurrent` is possible.
-  - `Current` needs `lower >= S`.
-  - PREM-WIRE-1 leases one migration for the latch. Window and rollback tests are added (§1.2,
-    §2.1).
 - No code, contract, wire or migration change.
 
 ## Validation

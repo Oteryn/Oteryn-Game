@@ -1,14 +1,15 @@
-# Architect batch: Premium gameplay wiring and the first house, guild and party packets
+# Architect batch: the first house, guild and party packets
 
 - Batch: `ARCH-CORE-LOOP-PACKETS-2` part C (D486 items 4 and 5)
 - Status: **ACCEPTED WHEN THIS DECISION MERGES** for the rulings, order and packets below. They
-  implement accepted semantics only: PREMIUM-ACTIVATION §4.1 and §4.6, PREMIUM-DELIVERY-0 §5,
-  HOUSE-OWN-0, HOUSE-RUNTIME-0 §4, BED-0 §3, GUILD-0 §4.4, PARTY-PVP-0, BANK-0, MARKET-0 and CHAT-0
+  implement accepted semantics only: HOUSE-OWN-0, HOUSE-RUNTIME-0 §4, BED-0 §3, GUILD-0 §4.4, PARTY-PVP-0, BANK-0, MARKET-0 and CHAT-0
   §5.
 - Role: Sol Supervising Architect (`OTV2_SOL_SUPERVISING_ARCHITECT` 1.3)
-- Answers: control plane D486 item 4 (a Premium gameplay wiring packet) and item 5 (the first
-  HOUSE, GUILD and PARTY-PVP children that can be allocated now, with what each needs for
-  acceptance).
+- Answers: control plane D486 item 5 (the first HOUSE, GUILD and PARTY-PVP children that can
+  be allocated now, with what each needs for acceptance). D486 item 4 (Premium gameplay wiring)
+  and GUILD-1, which is Premium-gated, moved to PREMIUM-ACTIVATION-0 (#1743,
+  `OTERYN_GAME_PREMIUM_ACTIVATION0_GAMEPLAY_SWITCH_OVER_DECISION_2026-10-04.md`) by control plane
+  D490.
 - Amends: nothing.
 - Runtime, migration, wire and production authority: NONE. Each packet needs its #162
   allocation. A packet that needs a migration leases its number from the control plane at
@@ -17,138 +18,35 @@
 
 ## 0. Findings on `main` (8a005cf6)
 
-1. **No gameplay path reads Premium.** PREM-1a, PREM-1b and PREM-1c-harden are merged.
-   `PremiumRefresher` admits and releases each account with its sessions
-   (`gameplay_transport/mod.rs`, `admit_premium` and `release_premium`). But
-   `PremiumConsumer::premium_current(account_id, now)` and `premium_entitlement_ended` have no
-   gameplay caller.
-2. **No trusted time source exists.** `TrustedNow::new(now_us, uncertainty_us)` returns `None`
-   when the uncertainty exceeds `MAX_CLOCK_SKEW_US` (5 s). Outside `premium/`, nothing in the game
-   server constructs a `TrustedNow`. PREMIUM-DELIVERY-0 §5 requires an NTP-synchronized node clock
-   with uncertainty ≤ 5 s, and an unsynchronized node reads Premium as not current.
-3. **The spell check is wired to false.** `spell/cast.rs` builds
-   `CasterState { premium: false, .. }` with the note "SPELL-D5: Premium activation is not
-   authorized". `spell/mod.rs` refuses `spell.premium && !caster.premium` as `PremiumRequired`,
-   which is shown as `NotAvailable`. The V1 spell book (`exura`, `exura gran`, `exana pox`) has no
-   Premium spell, so today the check only fails closed for spells added later.
-4. **The yell gate waits on the same fact.** `chat/spam.rs` lets a character yell below level 20
-   only with `premium_current`, which is false today. CHAT-1b-2a holds `chat/**` now.
-5. **Promotion has no source.** PREM-2a's pure rules are merged (`domain/premium.rs`:
-   `promotion_benefit_current`, `soul_maximum`, `apply_soul_gain`). No character can become
-   promoted until the NPC service PREM-5 exists, so promotion state alone changes nothing a player
-   sees.
-6. **House roots are partly built.** HOUSE-CUSTODY-1 is merged (migration `0025`), and so are
+1. **House roots are partly built.** HOUSE-CUSTODY-1 is merged (migration `0025`), and so are
    COND-1a (`ability/condition.rs`), DEATH-1, GOLD-FEE-1b and spell P3b-2 vitals.
-7. **Two retention profiles block the economy roots.** BANK-1 needs BANK-RET-0 and GUILD-1 needs
+2. **Two retention profiles block the economy roots.** BANK-1 needs BANK-RET-0 and GUILD-1 needs
    GUILD-RET-0. MARKET-1 also needs MARKET-RET-0. None of the three is decided, and the game event
    foundation registry has no economy or guild profile. So BANK-1 and GUILD-1 cannot start, and
    neither can everything after them: HOUSE-1, GUILD-BANK-1, GUILDHALL-1 and MARKET-1.
    BANK-RET-0 is packeted in #1733 §2.3, so this batch packets only GUILD-RET-0 and
-   MARKET-RET-0 (§2.2).
-8. **House ownership has a long chain.** HOUSE-1 needs BANK-1 and INBOX-1. INBOX-1 needs DEPOT-1,
+   MARKET-RET-0 (§2.1).
+3. **House ownership has a long chain.** HOUSE-1 needs BANK-1 and INBOX-1. INBOX-1 needs DEPOT-1,
    which waits on DEPOT-WIRE-1 (playable-first), which in turn waits on MAP-LOAD-1 and MAP-WIRE-1.
    A house with no owner admits nobody but an operator test (HOUSE-RUNTIME-0 §5). So no house
    interior is playable before HOUSE-1.
-9. **Chat relay is the party root.** PARTY-1 and GUILD-CHAT-1 need CHAT-2, the World relay
+4. **Chat relay is the party root.** PARTY-1 and GUILD-CHAT-1 need CHAT-2, the World relay
    (CHAT-0 §5). CHAT-2 writes `chat/**`, which CHAT-1b-2a and then CHAT-1b-2b hold. It needs a
    relay key per World as an environment secret.
-10. **The house exit waits on ADMIT-0.** HOUSE-RUNTIME-0 §4 refuses the transfer back into a
-    channel scope until ADMIT-0 §3.2's lifting conditions hold. ADMIT-0 is CANDIDATE.
+5. **The house exit waits on ADMIT-0.** HOUSE-RUNTIME-0 §4 refuses the transfer back into a
+   channel scope until ADMIT-0 §3.2's lifting conditions hold. ADMIT-0 is CANDIDATE.
 
 ## 1. Rulings
 
-### 1.1 The trusted clock (PREMIUM-DELIVERY-0 §5)
-
-- **Source.** The time source is the kernel's NTP discipline state, read with `ntp_adjtime`
-  (modes 0, read only) through the `libc` crate. `libc` 0.2 is already in `Cargo.lock`, so this
-  adds no new crate. It is the upstream interface that `chronyd`, `ntpd` and `systemd-timesyncd`
-  all keep current. Oteryn writes no time daemon and no NTP client.
-- **Reading.** One call returns the realtime clock and its error bound together:
-  - `now_us` is the returned `time` (microseconds, or nanoseconds divided down under `STA_NANO`);
-  - `uncertainty_us` is `maxerror`;
-  - the result is `TrustedNow::new(now_us, uncertainty_us)`, so the existing 5 s bound applies
-    unchanged.
-- **Fail closed.** These all read as `None`, which means Premium is not current:
-  - the return state is `TIME_ERROR`;
-  - `STA_UNSYNC` is set;
-  - the call fails;
-  - the target is not Linux (a `cfg` stub returns `None`).
-- **Seam.** A `TrustedClock` trait has one method, `now() -> Option<TrustedNow>`. The system
-  implementation is the reading above. Tests use a fixed implementation. The gameplay runtime
-  takes a clock at construction, and production composition passes the system one.
-- **Not cached.** The clock is read once per gameplay command that needs Premium, never stored.
-  An unsynchronized node therefore stops granting Premium at its next command.
-
-### 1.2 The Premium read seam (PREMIUM-ACTIVATION §4.1)
-
-- The runtime exposes `premium_status(account_id) -> PremiumStatus`, a closed enum of
-  `NotActivated`, `Current` and `NotCurrent` (#1738 P1 4176947451). This is the single gameplay
-  read, and no consumer calls `PremiumConsumer` directly. `premium_current(account_id)` is just
-  `premium_status(account_id) == Current`.
-  - `NotActivated`: Premium has not started, so a consumer whose rule has a pre-delivery
-    behaviour (GUILD-0 §3.2 and §3.3, owner answer G1 a) applies it.
-  - `Current` and `NotCurrent`: Premium has started, and the rule is enforced.
-- The account is the admitted controller's `account_id`, which the connection already holds. It
-  is passed down with the command, never looked up from the actor.
-- Login always succeeds (§4.1). Admission reads no Premium.
-- When no Platform entitlement source is configured, every account reads Free. This is the
-  current production state, and the packet does not change it.
-- **Activation gate (PREMIUM-DELIVERY-0 §10.3, #1738 P1 4176929764).** A configured snapshot
-  source alone grants nothing. The runtime takes an `Option<PremiumActivation>` at construction,
-  holding the activation record's id and its switch-over instant `S`.
-- **Conservative, irreversible switch-over (#1738 P1 4176973984, PROD-ENTITLEMENTS-01 §7,
-  §16).** `TrustedNow` gives a window: `lower = now_us - uncertainty_us` and
-  `upper = now_us + uncertainty_us`. A durable latch records that the switch-over may have
-  happened. It is one row per activation id in a new table, written with
-  `INSERT … ON CONFLICT DO NOTHING` and never updated or deleted. The status is decided in this
-  order:
-  1. The activation is `None` (the default and the production composition): `NotActivated`.
-  2. The latch state is unknown, because the boot read has not succeeded or a read or write
-     failed: `NotCurrent`.
-  3. The clock reads `None`: `NotCurrent`. Once an activation exists, an unknown time never
-     reopens the pre-delivery behaviour.
-  4. The latch is not set and `upper < S`, so the switch-over has certainly not happened:
-     `NotActivated`.
-  5. The latch is not set and `upper >= S`, so the switch-over may have happened. The latch is
-     written durably first, and if the write fails the status is `NotCurrent`.
-  6. The latch is set (now, or by an earlier command or boot) and `lower < S`, so the window
-     still straddles `S`: `NotCurrent`.
-  7. Otherwise (latch set and `lower >= S`), the refresher's
-     `PremiumConsumer::premium_current(account_id, now)`: `Current` or `NotCurrent`.
-  Once the latch is set, nothing returns `NotActivated` for that activation id: not a clock
-  rollback, not a restart, and not a larger uncertainty. The status can only be `Current` or
-  `NotCurrent`. The latch is read at boot and then held in memory, and it is only ever written
-  from unset to set.
-  Without an activation, a configured snapshot source alone is still `NotActivated` and grants
-  nothing. PREM-WIRE-1 builds only the gate. Setting a
-  production activation needs PREM-1's activation record: PREM-1b merged, PREM-P live, the
-  cross-repository end-to-end test and the `PROD-ENTITLEMENTS-01` §6.6 rollout evidence. It also
-  needs separate owner authority, so no packet in this batch sets it.
-
-### 1.3 Who wires each Premium consumer
-
-| Consumer | Rule | Owner | When |
-|---|---|---|---|
-| Spell cast check | PREMIUM-ACTIVATION §4.6 (PREM-4) | PREM-WIRE-1 | now (§2.1) |
-| Yell below level 20 | CHAT-0 §6 | the later of CHAT-1b-2b and PREM-WIRE-1 | if CHAT-1b-2b is later, it calls the §1.2 seam; if PREM-WIRE-1 is later, it touches only the one `chat/spam.rs` call site, after CHAT-1b-2b merges and under a control plane lease |
-| Promotion, soul maximum, death input | §4.2, §4.3 (PREM-2) | PREM-2b, together with PREM-5 | after NPC-TALK-1 (§3); before that nothing can be promoted (§0.5) |
-| Premium areas | §4.5 (PREM-3) | PREM-3 | once the map bundle carries the area flag (§3) |
-| Premium blessings and NPC services | §4.4 (PREM-5) | PREM-5 | after NPC-TALK-1 (§3) |
-| Training statue | OFFLINE-0 §6 | STATUE-1 | with OFFLINE-1 (§3) |
-| Guild founding, levels 1 and 2, leadership job | GUILD-0 §3.2, §3.3 (G1 a) | GUILD-1 | `NotActivated`: not required and the job writes nothing. `Current`: allowed. `NotCurrent`: `NOT_PREMIUM`, and a lapse keeps the rank (§2.6) |
-
-Every consumer calls the §1.2 seam once per command and stores no result. A consumer with no
-pre-delivery rule treats `NotActivated` as `NotCurrent`.
-
-### 1.4 Order of the social roots
+### 1.1 Order of the social roots
 
 These chains run in parallel, each with one writer:
 
-1. **Retention:** BANK-RET-0 (#1733 §2.3), then BANK-1. In parallel, ECON-RET-0 (§2.2), then
-   GUILD-1 (§2.6) and later MARKET-1.
-2. **Party and PvP:** CHAT-1b-2b, then CHAT-2 (§2.5), then PARTY-1 (§2.7), then PVP-1.
-3. **House entry:** SCOPE-HANDOFF-1 (§2.4), then HOUSE-RUNTIME-1 (after HOUSE-1 for owned houses).
-4. **Beds:** BED-CONTENT-1 (§2.3), in the content lane.
+1. **Retention:** BANK-RET-0 (#1733 §2.3), then BANK-1. In parallel, ECON-RET-0 (§2.1), then
+   GUILD-1 (#1743 §2.2, which also needs PREM-WIRE-1) and later MARKET-1.
+2. **Party and PvP:** CHAT-1b-2b, then CHAT-2 (§2.4), then PARTY-1 (§2.5), then PVP-1.
+3. **House entry:** SCOPE-HANDOFF-1 (§2.3), then HOUSE-RUNTIME-1 (after HOUSE-1 for owned houses).
+4. **Beds:** BED-CONTENT-1 (§2.2), in the content lane.
 5. **House ownership:** the map packets, then DEPOT-WIRE-1, DEPOT-1, INBOX-1, BANK-1, and then
    HOUSE-1.
 
@@ -157,7 +55,7 @@ longest hard step in chain 3, and HOUSE-RUNTIME-0 builds it so that the later Ch
 reuse it. It is accepted infrastructure of an accepted decision, not speculative. All the other
 packets here are either on the playable path or a precondition of it.
 
-### 1.5 Acceptance needs
+### 1.2 Acceptance needs
 
 Every packet needs exact-head validation, the independent review listed, and protected
 integration through `game-gate` and Merge Queue. A packet that needs anything more lists it in
@@ -166,89 +64,7 @@ after merge. It never lowers a review.
 
 ## 2. Packets
 
-### 2.1 PREM-WIRE-1 (PREM-4 with the clock and the read seam)
-
-```yaml
-task_id: OTV2-20261004-prem-wire-1
-decision: this batch §1.1-§1.3; PREMIUM-ACTIVATION §4.1, §4.6; PREMIUM-DELIVERY-0 §5
-worker: oteryn-hard-worker
-review: security review (time and entitlement) and spell review (Codex, final frozen head)
-branch: claude/prem-wire-1-20261004
-base: main
-depends_on: [PREM-1c-harden]
-migration_lease: one number from the control plane at allocation (the activation latch table, §1.2)
-owned_paths:
-  - apps/game-server/migrations/<lease>_premium_activation_latch.sql
-  - apps/game-server/src/durability/premium_activation_latch.rs
-  - apps/game-server/src/durability/mod.rs   # module wiring only
-  - apps/game-server/tests/support/premium_activation_latch_postgres_cases.rs
-  - apps/game-server/src/premium/clock.rs
-  - apps/game-server/src/premium/mod.rs
-  - apps/game-server/src/spell/cast.rs
-  - apps/game-server/src/gameplay_transport/mod.rs
-  - apps/game-server/src/gameplay_transport/actor_spell.rs
-  - apps/game-server/src/gameplay_transport/connection.rs
-  - apps/game-server/Cargo.toml
-  - Cargo.lock
-  - docs/agents/tasks/archive/OTV2-20261004-prem-wire-1.md
-validation:
-  - cargo fmt --all -- --check
-  - cargo clippy --locked -p oteryn-game-server --all-targets -- -D warnings
-  - cargo test --locked -p oteryn-game-server --quiet
-  - python tools/agents/validate_governance.py
-  - python tools/repository/validate_repository_policy.py
-  - git diff --check
-acceptance: none beyond §1.5
-```
-
-Builds:
-
-- `TrustedClock` with the system and fixed implementations (§1.1).
-- `PremiumStatus` and the runtime seam `premium_status(account_id)`, with `premium_current`
-  derived from it (§1.2). Both sit behind the `PremiumActivation` gate, and production
-  composition passes `None`.
-- `cast_spell` takes the admitted account. `CasterState.premium` is the seam's value, read once
-  at cast time, and the SPELL-D5 note is removed.
-
-Touch rules:
-
-- The connection and test fakes change only by the added account argument.
-- The packet touches no `chat/**`, protocol, registry or content file. Its one migration is the
-  latch table (`activation_id` TEXT primary key, `latched_at_us` BIGINT), with no UPDATE or
-  DELETE grant.
-- If `gameplay_transport/mod.rs` is leased to another lane at allocation, the control plane
-  serializes the two.
-
-Acceptance tests:
-
-- A Premium fixture spell is refused for a Free account (`NotAvailable`).
-- The same spell is cast when the consumer reads current under a fixed synced clock.
-- It is refused when the clock reads `None`.
-- With a configured snapshot source whose consumer reads current, the spell is still refused
-  when the activation is `None`, and when the clock reads 1 µs before the switch-over. It is cast
-  at the switch-over instant.
-- The production composition test asserts that the activation is `None`.
-- Status table: no activation gives `NotActivated`, even with a source reading current.
-  - An activation with a `None` clock gives `NotCurrent`.
-  - 1 µs before the switch-over gives `NotActivated`.
-  - At the switch-over, a consumer reading current gives `Current`, and one reading not current
-    gives `NotCurrent`.
-- Uncertainty window, with `S` and an uncertainty of 1,000 µs:
-  - `now = S - 1,001` gives `NotActivated` and writes no latch;
-  - `now = S - 1,000` writes the latch and gives `NotCurrent`;
-  - `now = S + 999` gives `NotCurrent`;
-  - `now = S + 1,000` with a current consumer gives `Current`.
-- Rollback after crossing: after the latch is written, setting the clock back to `S - 10 s`
-  gives `NotCurrent`, never `NotActivated`. The same holds after a restart that re-reads the latch
-  from Postgres. A latch write failure gives `NotCurrent` and leaves the latch unset. A failed boot
-  read gives `NotCurrent` for every account until a read succeeds.
-- An uncertainty of 5,000,000 µs is current; 5,000,001 µs is not.
-- `STA_UNSYNC` and `TIME_ERROR` map to `None`; this is a unit test of the decoding function over
-  a `timex` value, so no kernel state is needed.
-- The non-Linux stub returns `None`.
-- The V1 book's three spells cast for a Free account exactly as before.
-
-### 2.2 ECON-RET-0 (GUILD-RET-0 and MARKET-RET-0)
+### 2.1 ECON-RET-0 (GUILD-RET-0 and MARKET-RET-0)
 
 ```yaml
 task_id: OTV2-20261004-econ-ret-0
@@ -289,7 +105,7 @@ type, code or schema. GUILD-1 and MARKET-1 bind these ids when they register the
 bank profile is BANK-RET-0 (#1733 §2.3), and this packet does not touch it. If both land in the
 registry together, the second rebases its `retention_profiles` entries onto the first.
 
-### 2.3 BED-CONTENT-1
+### 2.2 BED-CONTENT-1
 
 ```yaml
 task_id: OTV2-20261004-bed-content-1
@@ -303,8 +119,8 @@ migration_lease: none
 owned_paths: the Item-definition bed facts, their converter, the BED-0 §3 bed validator with
   its exception list, and docs/agents/tasks/archive/OTV2-20261004-bed-content-1.md; the control
   plane fixes the exact content and tool paths at allocation against the map lane
-validation: the content lane's item and bundle checks and the governance checks of §2.2
-acceptance: none beyond §1.5
+validation: the content lane's item and bundle checks and the governance checks of §2.1
+acceptance: none beyond §1.2
 ```
 
 Builds BED-0 §3:
@@ -320,7 +136,7 @@ Any other mismatch fails the bundle. If the active bundle places no beds yet, th
 tests use a fixture house, and the packet does not wait on the map lane. No runtime reads the
 facts before BED-1.
 
-### 2.4 SCOPE-HANDOFF-1
+### 2.3 SCOPE-HANDOFF-1
 
 ```yaml
 task_id: OTV2-20261004-scope-handoff-1
@@ -357,7 +173,7 @@ Acceptance tests, each with a crash point:
 - a crash after commit admits it once, with a fresh `GameSessionId`;
 - a concurrent revocation either refuses the admission or finds the character inside.
 
-### 2.5 CHAT-2 (World relay)
+### 2.4 CHAT-2 (World relay)
 
 ```yaml
 task_id: OTV2-20261004-chat-2
@@ -395,44 +211,7 @@ Acceptance tests:
 - a listener that is down refuses with `CHAT_UNAVAILABLE`;
 - the maximum payload seals to 1,216 bytes.
 
-### 2.6 GUILD-1
-
-```yaml
-task_id: OTV2-20261004-guild-1
-decision: GUILD-0 §3, §4 (owner answers G1a, G2a)
-worker: oteryn-hard-worker
-review: hard, persistence and security review (Codex, final frozen head)
-branch: claude/guild-1-20261004
-base: main after ECON-RET-0 and PREM-WIRE-1 merge
-depends_on: [ECON-RET-0, PREM-WIRE-1]
-migration_lease: one number from the control plane at allocation
-owned_paths: the guild module, its migration and tests, the guild event registration, and
-  docs/agents/tasks/archive/OTV2-20261004-guild-1.md
-acceptance: none beyond §1.5
-```
-
-Builds GUILD-0 §3 and §4:
-
-- the guild, rank, member, invitation and account-leadership tables;
-- the found, invite, join, leave, exclude, rank, resign and disband transactions;
-- the formation and vice World jobs;
-- the guild event, bound to ECON-RET-0's guild profile;
-- the Premium rule through `PremiumStatus` (§1.2, §1.3), not a boolean. Founding and every move
-  into levels 1 and 2 take the actor Account's status:
-  - `NotActivated` needs no Premium, which is the G1 a pre-delivery bypass;
-  - `Current` passes;
-  - `NotCurrent` is refused with `NOT_PREMIUM`.
-  The §3.3 daily job reads each leadership Account's status. On `NotActivated` it writes nothing.
-  After activation it applies §3.3, and a lapse keeps the rank.
-
-Acceptance tests: found and rank-to-vice under each of the three statuses; the job under
-`NotActivated` writes nothing; after the switch-over a Free leader is handled per §3.3; a lapse
-keeps the rank. The transactions take the status as an input, so the tests use a fixed seam.
-
-The packet has no wire. Its playable entry is GUILD-WIRE-1, which waits on GUILD-BANK-1 (§3).
-GUILD-1 can still start now, because GUILD-0 says it does not wait for houses.
-
-### 2.7 PARTY-1
+### 2.5 PARTY-1
 
 ```yaml
 task_id: OTV2-20261004-party-1
@@ -445,7 +224,7 @@ depends_on: [CHAT-2]
 migration_lease: one number from the control plane at allocation
 owned_paths: the party module, its migration and tests, the relay change hint, and
   docs/agents/tasks/archive/OTV2-20261004-party-1.md
-acceptance: none beyond §1.5
+acceptance: none beyond §1.2
 ```
 
 Builds PARTY-PVP-0 §3 and §4:
@@ -461,31 +240,19 @@ World) is allocatable, since DEATH-1 is merged.
 
 | Child | Waits on | Released by |
 |---|---|---|
-| PREM-2b (promotion state, soul maximum, death input) | a promotion source | PREM-5, after NPC-TALK-1; packeted together with it |
-| PREM-3 (Premium areas) | the area flag in the map bundle; Movement entry refusal | the map packets (another agent prepares maps) |
-| PREM-5 (blessings, NPC services) | NPC-TALK-1 | NPC lane |
 | BANK-1 | BANK-RET-0 | #1733 §2.3 |
 | INBOX-1 | DEPOT-1, which waits on DEPOT-WIRE-1, MAP-LOAD-1 and MAP-WIRE-1 | the map packets |
-| HOUSE-1, HOUSE-ACL-1, HOUSE-WIRE-1 | BANK-1; INBOX-1; SCOPE-HANDOFF-1 for the runtime child | chains 1, 3 and 5 of §1.4 |
-| HOUSE-RUNTIME-1, HOUSE-VIEW-1, HOUSE-ITEM-WIRE-1 | SCOPE-HANDOFF-1; HOUSE-1; the MAP-WIRE-1 children; a wire decision for the last | §2.4, then HOUSE-1 |
+| HOUSE-1, HOUSE-ACL-1, HOUSE-WIRE-1 | BANK-1; INBOX-1; SCOPE-HANDOFF-1 for the runtime child | chains 1, 3 and 5 of §1.1 |
+| HOUSE-RUNTIME-1, HOUSE-VIEW-1, HOUSE-ITEM-WIRE-1 | SCOPE-HANDOFF-1; HOUSE-1; the MAP-WIRE-1 children; a wire decision for the last | §2.3, then HOUSE-1 |
 | BED-1, BED-REGEN-1 | OFFLINE-1, STATUE-1, HOUSE-RUNTIME-1, HOUSE-VIEW-1, WORLDINT-WIRE-1; DUR-02 | their roots |
 | GUILD-BANK-1, GUILDHALL-1, GUILD-WIRE-1 | BANK-1; HOUSE-1, HOUSE-ACL-1; HOUSE-WIRE-1 | chains 1 and 5 |
-| GUILD-CHAT-1, PARTY-CHAT-1 | CHAT-2 (and GUILD-1 or PARTY-1) | §2.5 |
-| PVP-1 | PARTY-1 | §2.7 |
-| PARTY-XP-1 | PARTY-1; the D118 XP lane; D3-4 | §2.7 and the XP lane |
+| GUILD-CHAT-1, PARTY-CHAT-1 | CHAT-2 (and GUILD-1 or PARTY-1) | §2.4 |
+| PVP-1 | PARTY-1 | §2.5 |
+| PARTY-XP-1 | PARTY-1; the D118 XP lane; D3-4 | §2.5 and the XP lane |
 | PVP-RT-1, PVP-BLOCK-1, PVP-DEATH-1, PVP-WIRE-1 | ATTACK-1, COND-1, PVP-1; SPEED-1; DEATH-3; VIS-2, ATTACK-WIRE-1 | their roots |
 
 ## 4. Rejected options
 
-- **Reading `SystemTime` with no error bound.** This fails PREMIUM-DELIVERY-0 §5: an
-  unsynchronized node would grant Premium on a wrong clock.
-- **An in-process NTP client or querying chrony over its socket.** Both add a protocol and a
-  dependency when the kernel already exposes the disciplined error bound. A fork of a time crate
-  is rejected for the same reason.
-- **Caching `premium_current` in the session.** A cache would outlive an entitlement end or a
-  loss of sync. The refresher already holds the entitlement, so reading per command is cheap.
-- **Building PREM-2b now.** Promotion state with no way to promote is infrastructure no player
-  reaches (§0.5).
 - **One retention decision per child.** Three profiles of one shape go through one privacy review
   instead of three (AGENTS.md batching).
 - **Starting HOUSE-1 against a stub bank or inbox.** That would build durable value on a
@@ -494,35 +261,29 @@ World) is allocatable, since DEATH-1 is merged.
 ## 5. Decision queue for the control plane
 
 1. **Route BANK-RET-0 (#1733 §2.3) and ECON-RET-0 first.** BANK-RET-0 releases BANK-1.
-   ECON-RET-0 releases GUILD-1 and MARKET-1. Through them every house, guildhall and market child
+   ECON-RET-0 releases GUILD-1 (with PREM-WIRE-1, #1743) and MARKET-1. Through them every house, guildhall and market child
    is released.
 2. **ADMIT-0 acceptance.** SCOPE-HANDOFF-1's exit, and every later scope transfer, wait on it.
    Recommendation: send ADMIT-0 to its protocol and security review with the FND-04 owner.
-3. **PREM-5 together with PREM-2b.** Packet them after NPC-TALK-1 is allocated.
-4. **The relay key.** Before CHAT-2 can be qualified on a protected environment, provisioning a
+3. **The relay key.** Before CHAT-2 can be qualified on a protected environment, provisioning a
    per-World relay secret needs separate authority from the owner.
 
 ## 6. Decision test
 
 The mandatory answers (ARCHITECTURE_DECISION_DISCIPLINE, #1738 P2 4176947456):
 
-1. **Must decide now?** YES. PREM-WIRE-1, ECON-RET-0, BED-CONTENT-1, SCOPE-HANDOFF-1, CHAT-2,
-   GUILD-1 and PARTY-1 are the next allocatable work in their lanes (D486 items 4 and 5).
+1. **Must decide now?** YES. ECON-RET-0, BED-CONTENT-1, SCOPE-HANDOFF-1, CHAT-2 and PARTY-1 are
+   the next allocatable work in their lanes (D486 item 5).
 2. **What is blocked?** Without these packets nothing is blocked unsafely, but nothing in these
-   lanes can start. The spell Premium check, yell gate, guild, party and house chains (§1.4, §3)
-   all wait on them.
-3. **What becomes harder later?** The `PremiumStatus` enum is the gameplay read every Premium
-   consumer binds to (§1.3). Changing its variants later touches every consumer. The guild and
-   market retention profiles are immutable after first admission (§2.2).
+   lanes can start. The guild, party and house chains (§1.1, §3) all wait on them.
+3. **What becomes harder later?** The guild and market retention profiles are immutable after
+   first admission (§2.1).
 4. **What would supersede it?** Any of these would reopen this batch:
-   - PREM-P amending the activation semantics of PREMIUM-DELIVERY-0 §10.3;
-   - a measured clock failure rate that makes `ntp_adjtime` unusable on the production nodes;
    - an owner answer above the 90-day retention ceiling;
    - ADMIT-0 rejecting the scope handoff shape.
 5. **What is not decided?** The following stay with their owners:
-   - Premium activation and its date (PREM-1's record and owner authority);
+   - Premium gameplay wiring, GUILD-1 and the Premium held children (PREMIUM-ACTIVATION-0, #1743);
    - the relay key's provisioning;
-   - PREM-2b and PREM-5;
    - house ownership, guildhalls and the market;
    - BANK-RET-0 (#1733);
    - every held child in §3.
@@ -530,9 +291,7 @@ The mandatory answers (ARCHITECTURE_DECISION_DISCIPLINE, #1738 P2 4176947456):
 | Question | Answer |
 |---|---|
 | Does a Free account's play change? | No |
-| Can an unsynchronized node grant Premium? | No (§1.1) |
-| Can a configured source grant Premium before activation? | No (§1.2) |
-| Does any packet here touch `chat/**` while CHAT-1b-2 holds it? | No (§1.3, §2.5) |
+| Does any packet here touch `chat/**` while CHAT-1b-2 holds it? | No (§2.4) |
 | Does any packet need a number not leased by the control plane? | No |
-| Is any packet infrastructure no player reaches? | Only SCOPE-HANDOFF-1, by ruling §1.4 |
+| Is any packet infrastructure no player reaches? | Only SCOPE-HANDOFF-1, by ruling §1.1 |
 | Is any production or secret mutation authorized? | No |
