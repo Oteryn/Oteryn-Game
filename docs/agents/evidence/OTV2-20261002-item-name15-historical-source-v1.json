@@ -4422,7 +4422,7 @@
       "bytes": 27656,
       "commit": "1b026969a8b2236737bff537b3eddb3c909781b2",
       "path": "docs/agents/evidence/OTV2-20261002-item-name-promotion-v1.json",
-      "sha256": "df202253ef9b0a4817eba98dcacb5a65960828e022e34b9590efdb96952f4383"
+      "sha256": "cf01b5ddc3955bb5a46194d7edbd3cd4744acba269233ef0f2c3ba64b465eed8"
     },
     {
       "bytes": 9754,
@@ -4434,7 +4434,7 @@
       "bytes": 9813,
       "commit": "1b026969a8b2236737bff537b3eddb3c909781b2",
       "path": "apps/game-server/src/content/item_name_promotion.rs",
-      "sha256": "0e35a7d6f83f98aadbd1672775e558d254629b8919727f58a8ef6f12b21927fb"
+      "sha256": "299788140ec74e3c6fbc9849d348ebbdecb9f27b2c9a5e75cffdf4f707b41e9f"
     },
     {
       "bytes": 8678,
@@ -4918,7 +4918,7 @@
       "bytes": 609,
       "commit": "1b026969a8b2236737bff537b3eddb3c909781b2",
       "path": "content/world/objects/index.json",
-      "sha256": "a0dbd7f2c0c0b09b5457b189128c7cbd7dd2a4553e2a3c00063092372c3b65d7"
+      "sha256": "f23cb0a1a89c20e9957834fe63e1e8a01531cbba6ecb76a1e0ffde5c90a6b7cc"
     },
     {
       "bytes": 914539,
@@ -5080,7 +5080,7 @@
       "bytes": 530,
       "commit": "1b026969a8b2236737bff537b3eddb3c909781b2",
       "path": "content/world/terrain/index.json",
-      "sha256": "89ae879da01b6a81e1e6a1c6a06b2632a2678066e0eb71404a5a7882bd516c44"
+      "sha256": "baf9f79b334c9478895ae824c67aad32e06eb4e7b09435570389dd64ad455836"
     },
     {
       "bytes": 537179,
