@@ -1,0 +1,69 @@
+// ATTACK-0 §3 (docs/architecture/reviews/OTERYN_GAME_ATTACK0_ATTACK_TARGET_AND_AUTO_ATTACK_DECISION_2026-09-30.md,
+// with docs/architecture/reviews/OTERYN_GAME_ARCH_BATCH_CORE_LOOP_PACKETS_2026-10-04.md §0.1 and §2.1):
+// typed payloads of capability 17 ATTACK_V1 (requires 6 WORLD_SPATIAL_ENTITIES), command types
+// 11 ATTACK_TARGET_INTENT and 12 FIGHT_MODES_INTENT and state domain 10 ACTOR_COMBAT_STATE
+// (snapshot type 1, delta type 1). Numbers leased to ATTACK-WIRE-1 by the #1622 control plane
+// (D486). FND-02 envelopes own CommandRef, server sequence, domain ID and revisions; these
+// payloads never duplicate them. A target is the spatial identity of a creature the session sees
+// in WORLD_SPATIAL_ENTITIES: a 16-byte identity and a non-zero actor generation. Unknown fields,
+// repeated fields, zero and unknown enum values, an explicit false bool, and values outside the
+// declared bounds all fail closed.
+syntax = "proto3";
+
+package oteryn.protocol.v1.attack;
+
+import "world_spatial_v1.proto";
+
+enum FightMode {
+  FIGHT_MODE_UNSPECIFIED = 0;
+  FIGHT_MODE_OFFENSIVE = 1;
+  FIGHT_MODE_BALANCED = 2;
+  FIGHT_MODE_DEFENSIVE = 3;
+}
+
+// CHASE is carried now; the server treats it as STAND until CHASE-1 (RANGED-0 §8).
+enum ChaseMode {
+  CHASE_MODE_UNSPECIFIED = 0;
+  CHASE_MODE_STAND = 1;
+  CHASE_MODE_CHASE = 2;
+}
+
+enum AttackIntentDisposition {
+  ATTACK_INTENT_DISPOSITION_UNSPECIFIED = 0;
+  ATTACK_INTENT_DISPOSITION_OK = 1;
+  ATTACK_INTENT_DISPOSITION_TARGET_NOT_VISIBLE = 2;
+  ATTACK_INTENT_DISPOSITION_TARGET_NOT_A_CREATURE = 3;
+  ATTACK_INTENT_DISPOSITION_PROTECTION_ZONE = 4;
+  ATTACK_INTENT_DISPOSITION_REENTRY_PROTECTED = 5;
+  ATTACK_INTENT_DISPOSITION_REJECTED = 6;
+}
+
+// ClientCommand.payload of command type 11. An absent target stops attacking; a present one
+// needs a 16-byte identity and a non-zero generation. At most 31 bytes. ATTACK0-RL-01 bounds
+// these commands per GameSession per second.
+message AttackTargetIntentV1 {
+  oteryn.protocol.v1.world_spatial.EntityRefV1 target = 1;
+}
+
+// ClientCommand.payload of command type 12. Both enums are required; secure is omitted when
+// false. At most 6 bytes. ATTACK0-RL-02 bounds these commands per GameSession per second.
+message FightModesIntentV1 {
+  FightMode fight_mode = 1;
+  ChaseMode chase = 2;
+  bool secure = 3;
+}
+
+// CommandResult.payload of command types 11 and 12. At most 2 bytes.
+message AttackIntentResultV1 {
+  AttackIntentDisposition disposition = 1;
+}
+
+// Snapshot type 1 and delta type 1 of domain 10: the own actor's whole combat state. The target
+// is absent when the actor attacks nothing. At most 39 bytes.
+message ActorCombatStateV1 {
+  oteryn.protocol.v1.world_spatial.EntityRefV1 target = 1;
+  FightMode fight_mode = 2;
+  ChaseMode chase = 3;
+  bool secure = 4;
+  bool in_fight = 5;
+}

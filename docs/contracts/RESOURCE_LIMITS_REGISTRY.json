@@ -8552,6 +8552,52 @@
       "owner_contract": "OTERYN_WORLD_BUNDLE_FORMAT_V1.md",
       "resource": "Respawn delay of one spawn point",
       "unit": "milliseconds"
+    },
+    {
+      "id": "ATTACK0-RL-01",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_ATTACK0_ATTACK_TARGET_AND_AUTO_ATTACK_DECISION_2026-09-30.md",
+      "resource": "ATTACK_TARGET_INTENT commands (command type 11) of one GameSession",
+      "unit": "commands per second",
+      "hard_maximum": 25,
+      "configurable_range": {
+        "minimum": 25,
+        "maximum": 25
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "A per-GameSession sliding window of at most 25 target change instants in any 1 s, carried in the session continuity so a reconnect, resume or transfer never resets it. Each accepted command changes one runtime field and sends one domain 10 delta of at most 39 bytes, so a session costs at most 25 changes and about 1 KB of deltas per second. An over-rate command has no effect and gets CommandStatus REJECTED with an empty payload.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=25: 25 target changes in one second are applied",
+        "max+1=26: a 26th target change in the same second is REJECTED without effect, also after a reconnect; one a second later is applied"
+      ],
+      "consumers": [
+        "crates/protocol-oteryn/src/attack.rs MAX_ATTACK_TARGET_CHANGES_PER_SECOND",
+        "ATTACK-1b: the game-server dispatch of command type 11 enforces the window"
+      ],
+      "notes": "ATTACK-0 \u00a73 and ARCH-CORE-LOOP-PACKETS-2 \u00a72.1. The value is Canary's own bound: config.lua.dist maxPacketsPerSecond = 25 caps every client packet of one connection, and ProtocolGame::parseAttack (0xA1) and parseFightModes (0xA0) have no tighter per-action limit, so no Canary-faithful client sends more. The oteryn-protocol-oteryn test attack::tests::the_registries_bind_the_attack_constants binds this row to the constant; the enforcement test lands with ATTACK-1b. Registered by OTV2-20261004-attack-wire-1."
+    },
+    {
+      "id": "ATTACK0-RL-02",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_ATTACK0_ATTACK_TARGET_AND_AUTO_ATTACK_DECISION_2026-09-30.md",
+      "resource": "FIGHT_MODES_INTENT commands (command type 12) of one GameSession",
+      "unit": "commands per second",
+      "hard_maximum": 25,
+      "configurable_range": {
+        "minimum": 25,
+        "maximum": 25
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "A per-GameSession sliding window of at most 25 fight mode change instants in any 1 s, carried in the session continuity so a reconnect, resume or transfer never resets it. Each accepted command changes one runtime field and sends one domain 10 delta of at most 39 bytes, so a session costs at most 25 changes and about 1 KB of deltas per second. An over-rate command has no effect and gets CommandStatus REJECTED with an empty payload.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=25: 25 fight mode changes in one second are applied",
+        "max+1=26: a 26th fight mode change in the same second is REJECTED without effect, also after a reconnect; one a second later is applied"
+      ],
+      "consumers": [
+        "crates/protocol-oteryn/src/attack.rs MAX_FIGHT_MODE_CHANGES_PER_SECOND",
+        "ATTACK-1b: the game-server dispatch of command type 12 enforces the window"
+      ],
+      "notes": "ATTACK-0 \u00a73 and ARCH-CORE-LOOP-PACKETS-2 \u00a72.1. The value is Canary's own bound: config.lua.dist maxPacketsPerSecond = 25 caps every client packet of one connection, and ProtocolGame::parseAttack (0xA1) and parseFightModes (0xA0) have no tighter per-action limit, so no Canary-faithful client sends more. The oteryn-protocol-oteryn test attack::tests::the_registries_bind_the_attack_constants binds this row to the constant; the enforcement test lands with ATTACK-1b. Registered by OTV2-20261004-attack-wire-1."
     }
   ]
 }
