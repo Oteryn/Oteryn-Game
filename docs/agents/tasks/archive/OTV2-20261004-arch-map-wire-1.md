@@ -52,6 +52,14 @@ external_repositories: []
 - Q5b adds `MapItemV1.appearance_id` (from the palette key, 0..=65,535) to the candidate and
   splits the sprite pipeline into MAP-SPRITE-1, parallel to MAP-WIRE-2. MAP-CLIENT-1 depends on
   both.
+- #1793 Codex round 2 (CP D615):
+  - P1 4179361854: `MapItemV1` carries a family-tagged definition reference, a oneof of
+    `item_definition_ref` (1) and `terrain_definition_ref` (8, the Terrain palette compact id).
+  - P1 4179361856: assets are checked against the `sha256` in the 15.30 manifest, not against
+    the hash token in the file name.
+  - P2 4179361859: a Ground or overlay item takes its appearance from its item content
+    definition key; a donor key uses its `source_item_id`.
+  - P2 4179361866: the depth pattern uses `z = -floor`, with a floor -7 example and test.
 - No code or registry change.
 
 ## Validation

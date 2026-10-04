@@ -79,7 +79,10 @@ message MapViewHeaderV1 {
 }
 
 message MapItemV1 {
-  uint32 item_definition_ref = 1; // non-zero; the WorldSpatialEntityV1 item reference space
+  oneof definition {              // exactly one, non-zero (§3 Definition reference)
+    uint32 item_definition_ref = 1;    // an Item: the WorldSpatialEntityV1 item reference space
+    uint32 terrain_definition_ref = 8; // a Terrain record: its bundle palette compact id
+  }
   uint32 count = 2;               // 1..=100 for stackables, else 1
   uint32 sub_type = 3;            // fluid or charge subtype, 0 if none
   oneof origin {
@@ -116,6 +119,7 @@ message WorldMapViewDeltaV1 {
   - unsorted or duplicate tiles;
   - a `base_ordinal` of 64 or more;
   - a zero handle, a `display_only` that is not `true`, or not exactly one origin;
+  - not exactly one definition reference, or a zero one;
   - a count outside its range;
   - a `ground_speed` above 1000;
   - an `appearance_id` above 65,535.
@@ -143,12 +147,27 @@ message WorldMapViewDeltaV1 {
     `MAPW-RL-03`, a snapshot is sent instead.
   - Reach for `USE` and move is at most a few tiles, so every reachable item is within the budget
     unless more than 1,024 handle-bearing entries lie nearer to the actor.
+- **Definition reference.** Item ids and Terrain catalogue ids are separate spaces, so an entry
+  names its family.
+  - A base entry whose palette entry has family `item`, and every overlay-added or Ground item,
+    sends `item_definition_ref`, in the WorldSpatialEntityV1 item reference space.
+  - A base entry whose palette entry has family `terrain` sends `terrain_definition_ref`. This
+    is the palette entry's compact `id` in the Terrain catalogue of the bundle's content
+    revision, which the header's `bundle_digest` pins.
+  - Neither reference is trusted for a command. A command names a base entry by its key (§4),
+    and an item by its handle.
+  - The oneof sends one 1-byte tag and one varint, so the per-item bound holds.
 - **Appearance.** `appearance_id` names the 15.30 client appearance object the client draws
-  (owner #1793 Q5b). The server takes it from the entry's bundle palette key: `<id>` of
-  `oteryn:item.tibia.i<id>` or `oteryn:terrain.tibia.i<id>`. Any other key sends 0, and the
-  client draws a placeholder. `item_definition_ref` stays the item identity; `appearance_id` is
-  only for drawing and is never trusted for a command. The field adds at most 4 bytes, so the
-  per-item and per-tile bounds hold.
+  (owner #1793 Q5b). The server derives it from a definition key:
+  - `<id>` of an `oteryn:item.tibia.i<id>` or `oteryn:terrain.tibia.i<id>` key;
+  - `source_item_id` of a provisional donor key (ARCH-WORLD-CONTENT-SERVE-1 §1.4).
+  - The key of a base entry is its bundle palette key. An overlay-added or Ground item is not
+    in the palette, so its key is the definition key of its item content definition (the key
+    the active content generation maps its `item_definition_ref` to).
+  - Any other key sends 0, and the client draws a placeholder.
+  - The definition reference stays the identity. `appearance_id` is only for drawing and is
+    never trusted for a command.
+  - The field adds at most 4 bytes, so the per-item and per-tile bounds hold.
 - **Generation match.** The client binds the view to `(content_generation, bundle_digest,
   reset_epoch)`. A delta whose header differs from the snapshot's is a `STATE_REVISION_MISMATCH`.
   The client sends the existing `ResyncRequest` and draws nothing from that delta. The server

@@ -162,7 +162,10 @@ validation:
   - the move of Ground items and corpses out of domain 1 under capability 18;
   - the map-view handle budget (`MAPW-RL-04`, nearest-first, `display_only` beyond it) and the
     session handle table bounded by `ITEMV0-RL-03-MAP-VIEW` (contract §3);
-  - each entry's `appearance_id`, taken from its palette key (contract §3);
+  - each entry's family-tagged definition reference: `item_definition_ref` for Items,
+    `terrain_definition_ref` for Terrain palette entries (contract §3);
+  - each entry's `appearance_id`, taken from its palette key, or for an overlay-added or Ground
+    item from its item content definition key (contract §3);
   - the admission refusal without capability 18 on a bundle World;
   - the 40-byte target resolution, with the binding lookup to the canonical `PlacementKey`.
 - **Acceptance:**
@@ -174,8 +177,13 @@ validation:
     one more;
   - capability 18 without capability 4 is refused at negotiation;
   - an `oteryn:item.tibia.i<id>` or `oteryn:terrain.tibia.i<id>` entry is sent with
-    `appearance_id` = `<id>`, any other key with 0, and an `appearance_id` above 65,535 fails
+    `appearance_id` = `<id>`, and a provisional donor entry with its `source_item_id` (28827 for
+    the donor chest). Any other key is sent with 0. An `appearance_id` above 65,535 fails
     closed;
+  - a Ground item whose definition is not in the bundle palette is sent with the
+    `appearance_id` of its item content definition key;
+  - a Terrain base entry is sent with `terrain_definition_ref` and an Item entry with
+    `item_definition_ref`; both, neither or a zero reference fails closed;
   - encoded-size tests at the bounds: a 10-entry tile with the largest values is at most 360 bytes;
     a full 2,016-tile snapshot is at most 725,888 bytes, in at most two chunks; a 248-tile delta
     is at most 93,376 bytes;
@@ -230,11 +238,11 @@ validation:
 
 - **Source and pin.**
   - The asset directory is `content/assets/files/`.
-  - `catalog-content.json` must match the SHA-256 recorded in
-    `imports/official/client-assets/15.30/manifest.json`, and so must the `appearances` file it
-    names. Each sprite sheet must match the SHA-256 in its own file name, checked when the sheet
-    is first loaded.
-  - A mismatch or a missing file fails closed for that file. The loader returns an error, and
+  - Every file is checked against the `sha256` of its entry, found by file name, in
+    `imports/official/client-assets/15.30/manifest.json`. This covers `catalog-content.json`,
+    the `appearances` file it names, and each sprite sheet when it is first loaded.
+  - The hash token in a file name is never the check.
+  - A file with no manifest entry, a mismatch or a missing file fails closed for that file. The loader returns an error, and
     the caller draws the placeholder cell. Nothing panics.
 - **Upstream first.**
   - Appearances are decoded with the workspace `prost` (`=0.14.4`) derive, on hand-written
@@ -256,7 +264,11 @@ validation:
     32x64, 64x32, 64x64). It decodes sheets on demand.
   - `resolve(appearance_id, count, sub_type, x, y, floor)`: returns the 32x32 cells to draw,
     each with its pixel offset. The pattern is chosen as the Tibia client does:
-    - position patterns `x % pattern_width`, `y % pattern_height`, `floor % pattern_depth`;
+    - position patterns `x % pattern_width`, `y % pattern_height`, `z % pattern_depth`.
+      Here `z = -floor` normalises the native floor `-15..=0` to the client's `0..=15`, the
+      inverse of the import profile `native.floor = -legacy.z`. For example, floor -7 with
+      pattern depth 2 selects depth pattern `7 % 2 = 1`. A raw negative floor is never used as
+      a pattern index;
     - the stackable count pattern from the count thresholds 1, 2, 3, 4, 5, 10, 25, 50;
     - fluid and splash sub-types.
   - In the renderer, a sprite atlas page of 32-pixel cells. Cells are written by sub-rectangle
@@ -280,6 +292,9 @@ validation:
   - the pinned catalogue and appearances load, with 43,516 objects and a maximum id of 55,117;
   - a corrupted byte in a sheet, the catalogue or the appearances file fails closed with an
     error, and the test asserts the error;
+  - a sheet renamed to the hash token of its altered bytes still fails against its manifest
+    `sha256`, and a sheet with no manifest entry fails closed;
+  - floors -7 and 0 select depth patterns from `z` = 7 and 0, never from a negative index;
   - known ids decode to their recorded frame size and first-pixel colour:
     - a ground with a 4x4 position pattern resolves to different cells at `(0,0)` and `(1,0)`;
     - a stackable resolves to different cells at counts 1, 5 and 100;
@@ -333,7 +348,7 @@ validation:
       displacement, elevation and the draw-order flags;
     - floors above the actor's are drawn in perspective;
     - an `appearance_id` of 0, or one that fails to resolve, is drawn with the placeholder cell
-      for its `item_definition_ref`;
+      for its definition reference;
   - the asset directory is `content/assets/files/` by default, or `--assets <dir>`. When the
     pinned catalogue is missing or does not match, the client logs it once and draws
     placeholders;
@@ -375,6 +390,11 @@ validation:
 - **A client-side table from `item_definition_ref` to appearance.** The reference is a compact
   id of one content revision (format §3), so the table would need versioned distribution. The
   server already holds the palette key, which names the appearance, so it sends `appearance_id`.
+- **One definition reference for Items and Terrain.** The Item and Terrain catalogue compact
+  ids overlap, so an untagged reference would be ambiguous. A bundle palette index alone cannot
+  name overlay-added or Ground items, which are not in the palette.
+- **Trusting the hash token in a sheet's file name.** Renaming a file would bypass the check.
+  The manifest `sha256` is the pin.
 - **A prepared on-disk sprite cache, as in the experiment.** On-demand decoding in memory is
   enough for the viewport, and a disk cache adds invalidation for no measured need.
 
