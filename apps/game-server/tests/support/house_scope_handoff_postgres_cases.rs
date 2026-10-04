@@ -343,6 +343,114 @@ fn crash_after_commit_admits_once_with_a_fresh_session() -> TestResult {
 }
 
 #[test]
+fn a_replaced_house_session_keeps_its_house_and_origin() -> TestResult {
+    run("hsh_replace_keeps_house", async |harness| {
+        prepare(harness, &harness.root, HANDOFF).await?;
+        let seal = harness.recovery.seal_current().map_err(debug)?;
+        let authority = harness
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        let outcome = harness
+            .root
+            .commit_house_entry(&authority, &harness.node, commit(HANDOFF)?)
+            .await
+            .map_err(debug)?;
+        assert!(matches!(outcome, HouseCommitOutcome::Committed(_)));
+        // The terminal replacement path: terminalize the predecessor, write the replacement
+        // receipt, then insert the candidate with the runtime scope and no house columns.
+        let mut tx = harness.pool.begin().await?;
+        sqlx::query(
+            "UPDATE game_durability_reconnect_sessions SET session_state = 3 \
+              WHERE game_session_id = encode($1,'hex')::uuid",
+        )
+        .bind(id(DESTINATION).as_slice())
+        .execute(&mut *tx)
+        .await?;
+        sqlx::query(
+            "INSERT INTO game_durability_session_replacements \
+             SELECT character_id, game_session_id, encode($2,'hex')::uuid, '\\x0101010101010101', \
+                    current_generation, character_lease_generation, scope_ownership_generation \
+               FROM game_durability_reconnect_sessions \
+              WHERE game_session_id = encode($1,'hex')::uuid",
+        )
+        .bind(id(DESTINATION).as_slice())
+        .bind(id(63).as_slice())
+        .execute(&mut *tx)
+        .await?;
+        let candidate = "INSERT INTO game_durability_reconnect_sessions (\
+                game_session_id, account_id, character_id, world_id, runtime_scope_kind, \
+                runtime_scope_world_id, runtime_scope_channel_id, runtime_scope_instance_id, \
+                control_loss_epoch, original_grace_deadline, predecessor_generation, \
+                character_lease_generation, scope_ownership_generation, current_generation, \
+                attempt_count, session_state) \
+             SELECT encode($2,'hex')::uuid, account_id, character_id, world_id, runtime_scope_kind, \
+                    runtime_scope_world_id, runtime_scope_channel_id, runtime_scope_instance_id, \
+                    1, 500, current_generation, character_lease_generation, \
+                    scope_ownership_generation, current_generation, 0, 1 \
+               FROM game_durability_reconnect_sessions \
+              WHERE game_session_id = encode($1,'hex')::uuid";
+        sqlx::query(candidate)
+            .bind(id(DESTINATION).as_slice())
+            .bind(id(63).as_slice())
+            .execute(&mut *tx)
+            .await?;
+        tx.commit().await?;
+        let replacement = sqlx::query(
+            "SELECT runtime_scope_house_key, uuid_send(origin_channel_id) AS origin \
+               FROM game_durability_reconnect_sessions \
+              WHERE game_session_id = encode($1,'hex')::uuid",
+        )
+        .bind(id(63).as_slice())
+        .fetch_one(&harness.pool)
+        .await?;
+        assert_eq!(
+            replacement.try_get::<String, _>("runtime_scope_house_key")?,
+            HOUSE_KEY
+        );
+        assert_eq!(
+            replacement.try_get::<Vec<u8>, _>("origin")?,
+            id(43).to_vec()
+        );
+        // The replacement still occupies the house.
+        let occupants: Vec<Vec<u8>> = sqlx::query_scalar(
+            "SELECT uuid_send(game_session_id) FROM game_durability_reconnect_sessions \
+              WHERE runtime_scope_world_id = encode($1,'hex')::uuid \
+                AND runtime_scope_house_key = $2 AND session_state IN (1, 2)",
+        )
+        .bind(id(WORLD).as_slice())
+        .bind(HOUSE_KEY)
+        .fetch_all(&harness.pool)
+        .await?;
+        assert_eq!(occupants, vec![id(63).to_vec()]);
+        // Without a replacement receipt no session takes the house instance id bare.
+        sqlx::query(
+            "UPDATE game_durability_reconnect_sessions SET session_state = 3 \
+              WHERE game_session_id = encode($1,'hex')::uuid",
+        )
+        .bind(id(63).as_slice())
+        .execute(&harness.pool)
+        .await?;
+        let error = sqlx::query(candidate)
+            .bind(id(63).as_slice())
+            .bind(id(64).as_slice())
+            .execute(&harness.pool)
+            .await
+            .err()
+            .ok_or("bare house instance session admitted")?;
+        assert_eq!(
+            error
+                .as_database_error()
+                .and_then(|error| error.code())
+                .as_deref(),
+            Some("23514")
+        );
+        Ok(())
+    })
+}
+
+#[test]
 fn revocation_committed_first_refuses_the_admission() -> TestResult {
     run("hsh_revoke_first", async |harness| {
         prepare(harness, &harness.root, HANDOFF).await?;
@@ -517,9 +625,22 @@ fn entry_refusals_and_fences_hold() -> TestResult {
             )?)
             .await
             .map_err(debug)?;
-        assert!(
-            matches!(revoked, HouseScopeAssignmentOutcome::Committed(ref a) if !a.assigned),
-            "{revoked:?}"
+        let HouseScopeAssignmentOutcome::Committed(revoked) = revoked else {
+            return Err(format!("unexpected revoke: {revoked:?}").into());
+        };
+        assert!(!revoked.assigned);
+        // Like the Channel writer, a revoked house scope cannot be revoked again.
+        assert_eq!(
+            root.assign_house_scope(house_request(
+                11,
+                HouseScopeAssignmentCommand::Revoke {
+                    house: house()?,
+                    predecessor: revoked.predecessor(),
+                },
+            )?)
+            .await
+            .map_err(debug)?,
+            HouseScopeAssignmentOutcome::Rejected(AssignmentRejection::NotAssigned)
         );
         assert!(matches!(
             root.commit_house_entry(&authority, node, commit(HANDOFF)?)

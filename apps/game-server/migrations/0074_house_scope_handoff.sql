@@ -11,7 +11,9 @@
 --     Channel grants are for a Channel scope;
 --   * reconnect sessions of scope kind 2 may name the house (`runtime_scope_house_key`) and the
 --     origin Channel (`origin_channel_id`); the instance id of a house session is derived from
---     the HouseId by `game_house_scope_instance_id`, so one house has one instance id;
+--     the HouseId by `game_house_scope_instance_id`, so one house has one instance id; a
+--     terminal replacement of a house session inherits its predecessor's house and origin
+--     Channel, and no other session may take a house instance id without them;
 --   * `game_house_scope_handoffs`: one row per entry handoff, PREPARED (1) while the source
 --     session stays live, COMMITTED (2) in the transaction that makes the source terminal and
 --     admits the house session. Abort deletes a PREPARED row and its tile reservation; a
@@ -167,6 +169,43 @@ ALTER TABLE game_durability_reconnect_sessions
          AND (get_byte(uuid_send(origin_channel_id), 6) >> 4) = 7
          AND (get_byte(uuid_send(origin_channel_id), 8) & 192) = 128)
     );
+
+-- A terminal replacement (0001 receipt, then the candidate row) inserts the candidate with the
+-- predecessor's runtime scope but no house columns: it inherits them from the predecessor named
+-- by its replacement receipt. Any other session of a house instance id without them is refused.
+CREATE INDEX game_durability_house_scope_instance_sessions
+    ON game_durability_reconnect_sessions (runtime_scope_world_id, runtime_scope_instance_id)
+    WHERE runtime_scope_house_key IS NOT NULL;
+CREATE FUNCTION game_house_scope_session_inherit() RETURNS trigger
+LANGUAGE plpgsql AS $$
+BEGIN
+    IF NEW.runtime_scope_kind = 2 AND NEW.runtime_scope_house_key IS NULL THEN
+        SELECT p.runtime_scope_house_key, p.origin_channel_id
+          INTO NEW.runtime_scope_house_key, NEW.origin_channel_id
+          FROM game_durability_session_replacements r
+          JOIN game_durability_reconnect_sessions p
+            ON p.game_session_id = r.predecessor_game_session_id
+         WHERE r.character_id = NEW.character_id
+           AND r.candidate_game_session_id = NEW.game_session_id
+           AND p.character_id = NEW.character_id
+           AND p.runtime_scope_kind = 2
+           AND p.runtime_scope_world_id = NEW.runtime_scope_world_id
+           AND p.runtime_scope_instance_id = NEW.runtime_scope_instance_id
+           AND p.runtime_scope_house_key IS NOT NULL;
+        IF NEW.runtime_scope_house_key IS NULL AND EXISTS (
+                SELECT 1 FROM game_durability_reconnect_sessions s
+                WHERE s.runtime_scope_world_id = NEW.runtime_scope_world_id
+                  AND s.runtime_scope_instance_id = NEW.runtime_scope_instance_id
+                  AND s.runtime_scope_house_key IS NOT NULL) THEN
+            RAISE EXCEPTION 'a house scope session must name its house and origin Channel'
+                USING ERRCODE = '23514';
+        END IF;
+    END IF;
+    RETURN NEW;
+END; $$;
+CREATE TRIGGER game_house_scope_session_inherit BEFORE INSERT
+    ON game_durability_reconnect_sessions FOR EACH ROW
+    EXECUTE FUNCTION game_house_scope_session_inherit();
 
 -- Entry handoffs. state: 1 PREPARED, 2 COMMITTED. direction: 1 entry (the only one admitted).
 CREATE TABLE game_house_scope_handoffs (

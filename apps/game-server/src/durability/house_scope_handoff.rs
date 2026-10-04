@@ -579,7 +579,7 @@ pub(crate) async fn assign_house_scope_in_transaction(
         ));
     }
     let current = sqlx::query(
-        "SELECT scope_kind, ownership_generation::text AS generation, \
+        "SELECT scope_kind, state, ownership_generation::text AS generation, \
                 source_revision::text AS revision \
            FROM game_runtime_scope_assignments WHERE scope_key = $1 FOR UPDATE",
     )
@@ -592,19 +592,26 @@ pub(crate) async fn assign_house_scope_in_transaction(
             if row.try_get::<i16, _>("scope_kind")? != SCOPE_KIND_HOUSE {
                 return Err(DurabilityError::InvalidStoredState);
             }
-            Some(HouseScopePredecessor {
+            let predecessor = HouseScopePredecessor {
                 ownership_generation: parse_u64(&row.try_get::<String, _>("generation")?)?,
                 source_revision: parse_u64(&row.try_get::<String, _>("revision")?)?,
-            })
+            };
+            Some((predecessor, row.try_get::<i16, _>("state")?))
         }
     };
     let rejection = match (&request.command, current) {
         (HouseScopeAssignmentCommand::Assign { .. }, None) => None,
-        (
-            HouseScopeAssignmentCommand::Replace { predecessor, .. }
-            | HouseScopeAssignmentCommand::Revoke { predecessor, .. },
-            Some(current),
-        ) if *predecessor == current => None,
+        (HouseScopeAssignmentCommand::Replace { predecessor, .. }, Some((current, _)))
+            if *predecessor == current =>
+        {
+            None
+        }
+        // Like the Channel writer: only an assigned house scope can be revoked.
+        (HouseScopeAssignmentCommand::Revoke { predecessor, .. }, Some((current, state)))
+            if *predecessor == current =>
+        {
+            (state != ASSIGNMENT_ASSIGNED).then_some(AssignmentRejection::NotAssigned)
+        }
         _ => Some(AssignmentRejection::PredecessorMismatch),
     };
     if let Some(rejection) = rejection {
@@ -635,7 +642,7 @@ pub(crate) async fn assign_house_scope_in_transaction(
             AssignmentRejection::SourceRevisionExhausted,
         ));
     };
-    let Some(ownership_generation) = current.map_or(Some(1), |current| {
+    let Some(ownership_generation) = current.map_or(Some(1), |(current, _)| {
         current.ownership_generation.checked_add(1)
     }) else {
         return Ok(HouseScopeAssignmentOutcome::Rejected(

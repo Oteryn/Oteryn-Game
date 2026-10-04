@@ -69,6 +69,10 @@ external_repositories: []
   whose assignment is a house scope as an operation conflict instead of decoding its NULL
   `channel_id`; `character_authority.rs` reads only Channel assignments (`scope_kind = 1`). The
   audit found no other world-level consumer: the others match an exact `channel_id`.
+- **Codex round 2.** A terminal replacement of a house session inherits its predecessor's house
+  key and origin Channel (0074 `BEFORE INSERT` trigger keyed by the replacement receipt), so it
+  stays in house occupancy; a session of a house instance id without them is refused (`23514`).
+  Revoking a house scope that is not assigned is `NotAssigned`, like the Channel writer.
 
 ## Tests
 
@@ -81,13 +85,14 @@ external_repositories: []
   Character inside; the stub and a changed guild revision refuse `NO_ACCESS`; exit, stale fence, closed house, busy, replay, grant, revoked house scope
   and committed-row immutability; a house assignment key reused for a Channel revoke is an
   operation conflict, and with the Channel revoked and the house still assigned bootstrap is
-  refused.
+  refused; a replaced house session keeps its house and origin and stays in occupancy; a
+  revoked house scope revoked again is `NotAssigned`.
 
 ## Validation
 
 - `cargo fmt --all --check`: pass
 - `cargo clippy --locked -p oteryn-game-server --all-targets -- -D warnings`: pass
-- `cargo test --locked -p oteryn-game-server` with PostgreSQL 17.6: pass (21984 passed, 0 failed)
+- `cargo test --locked -p oteryn-game-server` with PostgreSQL 17.6: pass (21985 passed, 0 failed)
 - `python tools/agents/validate_governance.py`: pass
 - `python -m unittest discover -s tools/agents/tests`: pass (54 tests)
 
