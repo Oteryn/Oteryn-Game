@@ -12,6 +12,9 @@ pub const COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT: u32 = 1;
 pub const STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY: u32 = 1;
 pub const DELTA_TYPE_WORLD_SPATIAL_V1: u32 = 1;
 pub const SNAPSHOT_TYPE_WORLD_SPATIAL_V1: u32 = 1;
+/// Capability 13 `PACED_MOVEMENT_V1` (SPEED-1, CONDITIONS-0 §4.3): extends the command type 1
+/// result with [`StepDisposition::TooEarly`] and owns no command type or domain.
+pub const CAPABILITY_PACED_MOVEMENT_V1: u32 = 13;
 
 /// First-child semantic bounds (#642 packet 5853255180).
 pub const MAX_STEP_INTENT_BYTES: usize = 4;
@@ -38,6 +41,8 @@ pub enum StepDisposition {
     Moved = 1,
     Blocked = 2,
     Rejected = 3,
+    /// A second early step while one waits in the pacing buffer; only under capability 13.
+    TooEarly = 4,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -146,11 +151,22 @@ pub fn encode_step_result(disposition: StepDisposition) -> Vec<u8> {
     output
 }
 
+/// The command type 1 result of a session without capability 13: `TOO_EARLY` fails closed.
 pub fn decode_step_result(payload: &[u8]) -> Result<StepDisposition, WorldSpatialError> {
+    decode_step_result_paced(payload, false)
+}
+
+/// The command type 1 result; `paced` is whether the session selected capability 13
+/// `PACED_MOVEMENT_V1`, the only case in which `TOO_EARLY` (4) is admitted.
+pub fn decode_step_result_paced(
+    payload: &[u8],
+    paced: bool,
+) -> Result<StepDisposition, WorldSpatialError> {
     match read_single_enum(payload, MAX_STEP_RESULT_BYTES)? {
         1 => Ok(StepDisposition::Moved),
         2 => Ok(StepDisposition::Blocked),
         3 => Ok(StepDisposition::Rejected),
+        4 if paced => Ok(StepDisposition::TooEarly),
         _ => Err(WorldSpatialError::Malformed),
     }
 }
@@ -304,6 +320,35 @@ mod tests {
             decode_step_result(&[0x08, 0x00]),
             Err(WorldSpatialError::Malformed)
         );
+    }
+
+    #[test]
+    fn too_early_decodes_only_under_capability_13() {
+        let bytes = encode_step_result(StepDisposition::TooEarly);
+        assert_eq!(bytes, [0x08, 0x04]);
+        assert!(bytes.len() <= MAX_STEP_RESULT_BYTES);
+        assert_eq!(
+            decode_step_result_paced(&bytes, true),
+            Ok(StepDisposition::TooEarly)
+        );
+        assert_eq!(
+            decode_step_result_paced(&bytes, false),
+            Err(WorldSpatialError::Malformed)
+        );
+        for disposition in [
+            StepDisposition::Moved,
+            StepDisposition::Blocked,
+            StepDisposition::Rejected,
+        ] {
+            let bytes = encode_step_result(disposition);
+            assert_eq!(decode_step_result_paced(&bytes, true), Ok(disposition));
+        }
+        for unknown in [[0x08, 0x00], [0x08, 0x05]] {
+            assert_eq!(
+                decode_step_result_paced(&unknown, true),
+                Err(WorldSpatialError::Malformed)
+            );
+        }
     }
 
     #[test]

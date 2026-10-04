@@ -3,6 +3,10 @@
 //! Everything here is pure and transport-free. `StepDir` mirrors the four `step` directions
 //! (north is `y - 1`); N4 maps it 1:1 onto the session's `step` command. No command, wire
 //! message or server behaviour is added.
+//!
+//! SPEED-1 step pacing (CONDITIONS-0 §4.2, §4.3): the client reads the same checked-in step-speed
+//! table as the server and waits a moved step's duration before sending the next one, so a paced
+//! walk never sends a step the server would hold or refuse.
 
 use oteryn_input_actions::{
     ActionId, ActionPhase, Binding, BindingMap, ContextDefinition, ContextId, ContextKind,
@@ -10,6 +14,8 @@ use oteryn_input_actions::{
     RepeatPolicy,
 };
 use oteryn_renderer::{TileCoord, TileView};
+use std::sync::OnceLock;
+use std::time::Duration;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum StepDir {
@@ -53,12 +59,77 @@ pub enum StepResult {
     Refused,
 }
 
+const STEP_SPEED_TABLE_JSON: &str = include_str!("../../../content/movement/step_speed_v1.json");
+/// The digest the server verifies the same file against (`movement/speed.rs`).
+const STEP_SPEED_TABLE_SHA256_U16LE: &str =
+    "323b70ceb76edc53ed341a31d67fea5543149689ead9ad51856286e792bfe436";
+/// The effective speed range the table covers (CONDITIONS-0 §4.1 clamp).
+pub const SPEED_MIN: u16 = 10;
+/// The ground speed of a tile whose ground item names none; every tile the client knows today
+/// (MAP-WIRE-2 adds per-tile ground speed).
+pub const DEFAULT_GROUND_SPEED: u16 = 150;
+const SERVER_BEAT_MS: u64 = 50;
+
+/// The checked-in step-speed table (`content/movement/step_speed_v1.json`).
+#[derive(Debug)]
+pub struct StepSpeedTable {
+    step_speed: Vec<u16>,
+}
+
+impl StepSpeedTable {
+    /// Read the table file: the pinned digest, the range and one positive u16 per speed.
+    fn parse(text: &str) -> Option<Self> {
+        let digest = format!("\"sha256_u16le\": \"{STEP_SPEED_TABLE_SHA256_U16LE}\"");
+        if !text.contains(&digest)
+            || !text.contains("\"speed_min\": 10,")
+            || !text.contains("\"speed_max\": 65535,")
+        {
+            return None;
+        }
+        let (_, rest) = text.split_once("\"step_speed\": [")?;
+        let (values, _) = rest.split_once(']')?;
+        let step_speed = values
+            .split(',')
+            .map(|value| value.trim().parse::<u16>().ok().filter(|v| *v > 0))
+            .collect::<Option<Vec<u16>>>()?;
+        (step_speed.len() == usize::from(u16::MAX - SPEED_MIN) + 1).then_some(Self { step_speed })
+    }
+
+    /// The embedded table, read once. `None` only if the file is malformed, which the tests rule
+    /// out.
+    #[must_use]
+    pub fn embedded() -> Option<&'static Self> {
+        static TABLE: OnceLock<Option<StepSpeedTable>> = OnceLock::new();
+        TABLE
+            .get_or_init(|| Self::parse(STEP_SPEED_TABLE_JSON))
+            .as_ref()
+    }
+
+    /// Step duration (CONDITIONS-0 §4.2), exactly as the server computes it:
+    /// `floor(1000 × ground speed / step speed)` ms rounded up to 50 ms. `None` below the speed
+    /// clamp or on ground speed 0, where nothing paces.
+    #[must_use]
+    pub fn step_duration(&self, speed: u16, ground_speed: u16) -> Option<Duration> {
+        if ground_speed == 0 {
+            return None;
+        }
+        let index = usize::from(speed.checked_sub(SPEED_MIN)?);
+        let step_speed = u64::from(*self.step_speed.get(index)?);
+        let raw = 1000 * u64::from(ground_speed) / step_speed;
+        Some(Duration::from_millis(
+            raw.div_ceil(SERVER_BEAT_MS) * SERVER_BEAT_MS,
+        ))
+    }
+}
+
 /// Click-to-tile state: one goal, one outstanding step. No pathfinding over unknown terrain:
 /// the walk stops on the first refusal or on arrival.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct ClickWalk {
     goal: Option<TileCoord>,
     pending: bool,
+    /// SPEED-1: the client clock time before which the next step is not sent.
+    ready_at: Option<Duration>,
 }
 
 impl ClickWalk {
@@ -67,6 +138,7 @@ impl ClickWalk {
         Self {
             goal: None,
             pending: false,
+            ready_at: None,
         }
     }
 
@@ -106,6 +178,25 @@ impl ClickWalk {
         if matches!(result, StepResult::Refused) {
             self.goal = None;
         }
+    }
+
+    /// SPEED-1: [`Self::next_step`] at client clock time `now`, holding the step until the
+    /// previous moved step's duration has passed.
+    pub fn next_paced_step(&mut self, own: TileCoord, now: Duration) -> Option<StepDir> {
+        if self.ready_at.is_some_and(|ready| now < ready) {
+            return None;
+        }
+        self.next_step(own)
+    }
+
+    /// SPEED-1: [`Self::on_result`] received at `now`. A moved step's `duration` (from
+    /// [`StepSpeedTable::step_duration`]) passes before the next step is sent; the server's clock
+    /// started when it sent the result, so a step sent after it is never early.
+    pub fn on_paced_result(&mut self, result: StepResult, now: Duration, duration: Duration) {
+        if matches!(result, StepResult::Moved) {
+            self.ready_at = now.checked_add(duration);
+        }
+        self.on_result(result);
     }
 }
 
@@ -287,6 +378,53 @@ mod tests {
         assert_eq!(walk.next_step(t(1, 0)), Some(StepDir::East));
         walk.on_result(StepResult::Moved);
         assert_eq!(walk.next_step(t(2, 0)), None);
+        assert_eq!(walk.goal(), None);
+    }
+
+    #[test]
+    fn the_embedded_step_speed_table_matches_the_server_and_canary() -> Result<(), &'static str> {
+        let table = StepSpeedTable::embedded().ok_or("the checked-in table reads")?;
+        let ms = Duration::from_millis;
+        // Canary `04b83b51` samples: speed 110 → 278, 220 → 500, 10 → 9.
+        assert_eq!(
+            table.step_duration(110, DEFAULT_GROUND_SPEED),
+            Some(ms(550))
+        );
+        assert_eq!(
+            table.step_duration(220, DEFAULT_GROUND_SPEED),
+            Some(ms(300))
+        );
+        assert_eq!(table.step_duration(110, 200), Some(ms(750)));
+        assert_eq!(table.step_duration(SPEED_MIN, 1_000), Some(ms(111_150)));
+        assert_eq!(table.step_duration(SPEED_MIN - 1, 150), None);
+        assert_eq!(table.step_duration(110, 0), None);
+        assert!(
+            StepSpeedTable::parse(&STEP_SPEED_TABLE_JSON.replacen("323b", "423b", 1)).is_none()
+        );
+        assert!(
+            StepSpeedTable::parse(&STEP_SPEED_TABLE_JSON.replacen("    9,", "    0,", 1)).is_none()
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn a_paced_walk_waits_each_moved_step_duration() {
+        let ms = Duration::from_millis;
+        let mut walk = ClickWalk::new();
+        walk.set_goal(t(3, 0));
+        assert_eq!(walk.next_paced_step(t(0, 0), ms(0)), Some(StepDir::East));
+        walk.on_paced_result(StepResult::Moved, ms(40), ms(550));
+        assert_eq!(walk.next_paced_step(t(1, 0), ms(589)), None);
+        assert_eq!(walk.next_paced_step(t(1, 0), ms(590)), Some(StepDir::East));
+        walk.on_paced_result(StepResult::Moved, ms(630), ms(750));
+        assert_eq!(walk.next_paced_step(t(2, 0), ms(1_000)), None);
+        assert_eq!(
+            walk.next_paced_step(t(2, 0), ms(1_380)),
+            Some(StepDir::East)
+        );
+        // A refusal ends the walk and leaves the clock where the last moved step put it.
+        walk.on_paced_result(StepResult::Refused, ms(1_400), ms(550));
+        assert_eq!(walk.next_paced_step(t(2, 0), ms(5_000)), None);
         assert_eq!(walk.goal(), None);
     }
 

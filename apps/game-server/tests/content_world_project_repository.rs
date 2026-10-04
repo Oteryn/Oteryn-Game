@@ -17,7 +17,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "content.lock.json",
         364,
-        "4decdb9876b556639d517de72869afebfa9397603838d819c972b5c8c726bc98",
+        "c1a80b62f7d9e30b9ec58228cb2b0c281e98963f924a6991181bca4b201d6d98",
     ),
     (
         "definitions/declarations.json",
@@ -26,8 +26,8 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "definitions/reference.json",
-        26_598_694,
-        "3791f0142bcc3bfa0395153c3f40a84e971b47c38eaa301b07e2dc49cc5b49fc",
+        26_597_860,
+        "f03c88cc4cd66c71599188ea5550ada6250255077c5ad02e2a81e773c2441d58",
     ),
     (
         "editor/author.json",
@@ -37,7 +37,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "manifest.json",
         1_939,
-        "d875f8a071b76db757b9fc5c781d27cc9cc123efbb6db9f671299c2a3edcc2cb",
+        "e7d963349ccdf583a8e87b8064b67714636734e0763c653109daf13f25f8104d",
     ),
     (
         "presentations/bindings.json",
@@ -47,7 +47,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "project.json",
         390,
-        "3a682d195e8936b38b668418f19b022cbf27e89480f591a2bd5e2ec19fd2edce",
+        "8f4ba72cf2d75cf77704953300409f0988c5ceeb4d9420c19b931b2df6d88ce4",
     ),
     (
         "provenance/imports.json",
@@ -114,7 +114,7 @@ const WORLD_CATALOGUE_SHARDS: [(&str, &str); 4] = [
 const TREE_CONTRACT: &str =
     "docs/agents/evidence/OTV2-20260925-full-game-content-ruleset-tree-v1.json";
 const TREE_DIRECTORY_NODES: usize = 97;
-const TREE_SHA256: &str = "3386677d060946205e44fb94e83b6c28a553b0777191c29c50882177f1b95a24";
+const TREE_SHA256: &str = "4d8b931cc1a3c307a2d4b23539f85391080bbf007c437188c30a9c2d0b97a2b4";
 /// A12 (ITEM-ID-1b): the protected Item family less the 4,590 D149 records, on Tibia keys,
 /// plus the 404 donor epoch-2 records and the 60 appearance-only records (ITEM-ADD-1).
 const ITEMS: usize = 34_031;
@@ -1635,9 +1635,10 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
         });
     // TIMED-CONTENT-1 adds one evidenced charges count (items-stats had none for it).
     assert_eq!(charge_fields, 125 + 1 + 1);
-    // TIMED-CONTENT-1 adds 50 durations (its 50 `temporal.duration_ms` rows) and clears the 21
-    // durations the stats promotion had put on inactive equip forms (TIMED-ITEM-0 §4).
-    assert_eq!(duration_fields, 138 + 50 - 21);
+    // The timed promotion adds 49 durations (its 49 `temporal.duration_ms` rows; TIMED-CONTENT-2
+    // omits the one-way i9394) and clears the 21 durations the stats promotion had put on
+    // inactive equip forms (TIMED-ITEM-0 §4).
+    assert_eq!(duration_fields, 138 + 49 - 21);
     // Resistance vectors were entirely unknown in the predecessor. Count their typed
     // percentages as atoms so a missing list member cannot hide behind the vector count.
     let (mut resistance_vectors, mut resistance_atoms, mut equipment_patterns) = (0, 0, 0);
