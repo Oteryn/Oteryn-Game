@@ -8456,6 +8456,102 @@
         "apps/game-server/src/gameplay_transport/quest_log.rs QueryWindow"
       ],
       "notes": "QUEST-GATE-0 \u00a77 and \u00a79 (the BAGS-WIRE-1b per-GameSession window); test: gameplay_transport::connection::quest_log::tests::queries_are_limited_to_2_per_second_per_game_session. Registered by OTV2-20261004-quest-log-wire-1."
+    },
+    {
+      "allocation_impact": "Checked from the count before anything is reserved for it (compiler, writer and reader share spawn::validate); the reader also needs one byte per element.",
+      "boundary_tests": [
+        "a table of 2,048 sources of 64 points (131,072 points) validates, encodes inside the raw cap and decodes equal",
+        "one more point is refused as Limit by validate and by decode; the reference map holds 83,286"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "maximum": 131072,
+        "minimum": 131072
+      },
+      "consumers": [
+        "world bundle compiler",
+        "game server World runtime (MAP-LOAD-1)",
+        "game server creature spawn runtime (SPAWN-1b)"
+      ],
+      "failure_category": "INVALID_INPUT",
+      "hard_maximum": 131072,
+      "id": "CREATUREAI0-RL-01",
+      "notes": "SPAWN-CONTENT-1; CREATURE-AI-0 \u00a76.1; format document \u00a713. Test: tools/world-bundle-compiler/tests/spawns.rs.",
+      "owner_contract": "OTERYN_WORLD_BUNDLE_FORMAT_V1.md",
+      "resource": "Spawn points of one World map in the spawn family of a bundle",
+      "unit": "points"
+    },
+    {
+      "allocation_impact": "Checked from the count before anything is reserved for it (compiler, writer and reader share spawn::validate); the reader also needs one byte per element.",
+      "boundary_tests": [
+        "a table of 65,536 sources validates",
+        "65,537 sources are refused as Limit; the reference map holds 51,896"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "maximum": 65536,
+        "minimum": 65536
+      },
+      "consumers": [
+        "world bundle compiler",
+        "game server World runtime (MAP-LOAD-1)",
+        "game server creature spawn runtime (SPAWN-1b)"
+      ],
+      "failure_category": "INVALID_INPUT",
+      "hard_maximum": 65536,
+      "id": "CREATUREAI0-RL-02",
+      "notes": "SPAWN-CONTENT-1; CREATURE-AI-0 \u00a76.1; format document \u00a713. Test: tools/world-bundle-compiler/tests/spawns.rs.",
+      "owner_contract": "OTERYN_WORLD_BUNDLE_FORMAT_V1.md",
+      "resource": "Spawn sources of one World map in the spawn family of a bundle",
+      "unit": "sources"
+    },
+    {
+      "allocation_impact": "Checked from the count before anything is reserved for it (compiler, writer and reader share spawn::validate); the reader also needs one byte per element.",
+      "boundary_tests": [
+        "a source of 64 points validates and a shard of 64 points is accepted",
+        "65 points are refused as Limit by validate and by the Spawn.Source shard parse; the reference map's largest source holds 55"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "maximum": 64,
+        "minimum": 64
+      },
+      "consumers": [
+        "world bundle compiler",
+        "game server World runtime (MAP-LOAD-1)",
+        "game server creature spawn runtime (SPAWN-1b)"
+      ],
+      "failure_category": "INVALID_INPUT",
+      "hard_maximum": 64,
+      "id": "CREATUREAI0-RL-03",
+      "notes": "SPAWN-CONTENT-1; CREATURE-AI-0 \u00a76.1; format document \u00a713. Test: tools/world-bundle-compiler/tests/spawns.rs.",
+      "owner_contract": "OTERYN_WORLD_BUNDLE_FORMAT_V1.md",
+      "resource": "Points of one spawn source",
+      "unit": "points"
+    },
+    {
+      "allocation_impact": "A value check on a point; it reserves nothing.",
+      "boundary_tests": [
+        "1,000 ms and 86,400,000 ms validate (and 1,000 ms is accepted by the shard parse)",
+        "999 ms and 86,400,001 ms are refused as Limit by validate and by the shard parse; the reference map spans 5 s to 54,784 s"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "maximum": 86400000,
+        "minimum": 1000
+      },
+      "consumers": [
+        "world bundle compiler",
+        "game server World runtime (MAP-LOAD-1)",
+        "game server creature spawn runtime (SPAWN-1b)"
+      ],
+      "failure_category": "INVALID_INPUT",
+      "hard_maximum": 86400000,
+      "id": "CREATUREAI0-RL-13",
+      "notes": "SPAWN-CONTENT-1; CREATURE-AI-0 \u00a76.1; format document \u00a713. Test: tools/world-bundle-compiler/tests/spawns.rs.",
+      "owner_contract": "OTERYN_WORLD_BUNDLE_FORMAT_V1.md",
+      "resource": "Respawn delay of one spawn point",
+      "unit": "milliseconds"
     }
   ]
 }
