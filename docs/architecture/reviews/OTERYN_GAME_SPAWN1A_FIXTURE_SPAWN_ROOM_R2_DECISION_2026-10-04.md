@@ -156,7 +156,7 @@ owned_paths:
   - apps/game-server/src/foundation/runtime_actor_carrier.rs
   - apps/game-server/src/ai/spawn*.rs                   # new: spawn-source seam, respawn chain
   - apps/game-server/src/ai/mod.rs
-  - apps/game-server/src/content/production.rs  # FirstProduction Amendment 04: population 1..=2, aggregate 2, cell_keys, RECORD_SPAWN_CELL, the recomputed maxima and their max/max+1 tests
+  - apps/game-server/src/content/production.rs  # FirstProduction Amendment 04: population 1..=2, aggregate 2, cell_keys, RECORD_SPAWN_CELL (kind 19) and the record-kind uniqueness test, the recomputed maxima and their max/max+1 tests
   - apps/game-server/src/content/mod.rs  # re-exports of the changed FirstProduction items only
   - apps/game-server/tests/content_first_production.rs  # Amendment 04 boundary tests and regenerated goldens
   - tools/agents/tests/test_governance_lifecycle_first_production_content_registry.py  # Amendment 04 final values

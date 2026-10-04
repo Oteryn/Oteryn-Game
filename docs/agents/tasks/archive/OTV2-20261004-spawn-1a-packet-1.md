@@ -51,6 +51,9 @@ external_repositories: []
   - Native source Amendment 02: five room cells, six placements, `cell_keys` and the spawn inputs.
   - SPAWN-1a owns `production.rs`, the registry rows and the governance registry test, with max
     and max+1 tests (§1.4, §2.1).
+- #1745 P1 4177134666 (owner D498 8a): `RECORD_SPAWN_CELL` takes kind 19, the first unused one,
+  because 18 is `RECORD_RNG_PURPOSE`. SPAWN-1a adds a test that every record kind is distinct
+  (FirstProduction Amendment 04 §3).
 - No code, contract or wire change.
 
 ## Validation

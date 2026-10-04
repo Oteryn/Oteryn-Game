@@ -34,10 +34,13 @@ list does not go into the spawn record:
 
 - `RECORD_SPAWN` (9) drops its cell field and keeps seven fields: key, creature, behavior,
   population_limit, recovery, multiplicity, eligibility_scope.
-- New `RECORD_SPAWN_CELL` (18) has three fields: spawn key, ordinal (decimal `u16`, 0-based) and cell key.
+- New `RECORD_SPAWN_CELL` (19) has three fields: spawn key, ordinal (decimal `u16`, 0-based) and cell key.
   A spawn has exactly `population_limit` such records, with ordinals 0..n-1 in canonical order, directly
   after its spawn record. A missing, extra, duplicate, out-of-order or dangling record refuses, and so
   does a duplicate cell.
+- Kind 19 is the first unused server record kind. Kinds 1-18 are taken, and 18 is
+  `RECORD_RNG_PURPOSE` (#1745 P1 4177134666). Client kinds start at 108. SPAWN-1a adds a test in
+  `production.rs` that every record kind constant, server and client, is distinct.
 - The carrier magic and `PROFILE_VERSION` stay. The only producer is the in-repository compiler and no
   artifact is deployed (production activation is NONE), so the decoder changes in place, as Amendment 02
   did. Every committed digest and golden is regenerated with the repository tooling.
