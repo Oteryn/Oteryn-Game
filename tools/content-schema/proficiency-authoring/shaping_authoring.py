@@ -188,7 +188,7 @@ def admitted(
         )
     if rank is None or not 1 <= rank <= RANKS:
         raise ValueError(f"{operation} needs the row's rank 1..{RANKS}")
-    if operation in ("RANK_UP", "ORB_RANK") and rank == RANKS:
+    if operation == "RANK_UP" and rank == RANKS:
         return True  # reads no cell; RANK_MAX is a runtime check (section 5)
     if not known(shaping["pool"]):
         return False
