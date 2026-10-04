@@ -282,12 +282,14 @@ fn commands_and_domains_follow_the_selection() {
     }
     // Capability 1: commands 4 and 5, domains 4 and 5. Capability 7: command 13, domain 12.
     // Capability 8: domain 13. Capability 10: domain 15. Capability 16: command 22, domain 16.
+    // Capability 17: commands 11 and 12, domain 10.
     for (capability, commands, domains) in [
         (1, &[4, 5][..], &[4, 5][..]),
         (7, &[13][..], &[12][..]),
         (8, &[][..], &[13][..]),
         (10, &[][..], &[15][..]),
         (16, &[22][..], &[16][..]),
+        (17, &[11, 12][..], &[10][..]),
     ] {
         let selected = selection(&[capability]);
         for &command in commands {
@@ -303,6 +305,9 @@ fn commands_and_domains_follow_the_selection() {
     assert!(!selection(&[7]).domain_selected(13));
     assert!(!selection(&[14]).command_selected(22));
     assert!(!selection(&[14]).domain_selected(16));
+    assert!(!selection(&[16]).command_selected(11));
+    assert!(!selection(&[16]).command_selected(12));
+    assert!(!selection(&[16]).domain_selected(10));
 }
 
 // The production connection path: `admit_frame` and `serve_admitted` with an injected offered
