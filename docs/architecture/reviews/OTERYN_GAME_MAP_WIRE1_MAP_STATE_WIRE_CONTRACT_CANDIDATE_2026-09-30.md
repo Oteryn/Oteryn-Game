@@ -1,9 +1,8 @@
-# MAP-WIRE-1 Map state on the wire
+# MAP-WIRE-1 Map state on the wire (2026-09-30 design)
 
 - Contract: `MAP-WIRE1-MAP-STATE-V1`
-- Status: **CONTRACT CANDIDATE** (ADR-0021 §5). The owner answered M1 with b (2026-09-30, §10), the
-  design written here: the server streams the map as in Tibia. Acceptance needs exact-head
-  validation, independent protocol and security review and protected integration.
+- Status: **SUPERSEDED**. This design candidate has been superseded by the accepted MAP-WIRE-1 contract candidate (`docs/contracts/protocol-oteryn/candidates/MAP_WIRE_1_WORLD_MAP_VIEW_CANDIDATE_V1.md`). Architectural decisions and packet definitions are in `docs/architecture/reviews/OTERYN_GAME_ARCH_MAP_WIRE_PACKETS_2026-10-04.md`.
+- Original candidate status (2026-09-30): CONTRACT CANDIDATE (ADR-0021 §5). The owner answered M1 with b (2026-09-30, §10), the design written here: the server streams the map as in Tibia. Acceptance needs exact-head validation, independent protocol and security review and protected integration.
 - Role: Sol Supervising Architect (`OTV2_SOL_SUPERVISING_ARCHITECT` 1.3)
 - Answers: the control plane's map lane scheduling (#162 5914289140: MAP-WIRE-1 after CONDITIONS-0;
   DEPOT-WIRE-1 and the house views depend on it) and ADR-0021 §5's wire child
@@ -18,6 +17,22 @@
 - Runtime, protocol registration and production authority: NONE. The children need their own
   #162 allocations; numbers are reserved there.
 - `MERGE_AUTHORITY: WORK_COORDINATOR_ONLY`
+
+## Supersession Summary
+
+This document is retained as evidence of the original 2026-09-30 design exploration. The accepted MAP-WIRE-1 contract candidate supersedes this design with the following key changes:
+
+**Superseded sections (replaced by new contract):**
+- §3 (What the server sends): Viewport bounds, ground/corpse carriage model and handle table mechanics are redefined in the new candidate
+- §5 (One order on a tile): Stack ordering and corpse handling revised
+- §6 (Handles): Handle budget and table management restructured
+- §7 (Snapshots and deltas): Snapshot triggers and delta boundaries refined
+- §8 (Bounds): All performance limits and measurements updated
+
+**Evidence sections (retained for reference):**
+- §1-§2 (Question and Facts): Core problem statement and proven facts remain valid
+- §4 (Base items and domain 1): Base item treatment logic retained
+- §9-§13 (Capability through before-freeze checklist): Design rationale and testing strategy remain reference material
 
 ## Implementation brief
 
