@@ -8,6 +8,7 @@ status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/prof-snowball-rekey-20261003
+pr: 1753
 base_sha: 8588b1bb
 owner: claude-code-session-01YYfF5Rgp5EEG6NFs4aFJED (control-plane allocation D418/D419)
 created_at: 2026-10-03
