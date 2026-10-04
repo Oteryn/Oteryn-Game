@@ -135,6 +135,22 @@ spawn in `runtime_actor_carrier.rs` is a test helper, not content, and SPAWN-1a 
 (#1735 P1 4176889390). No production path
 calls them: a running channel has no creatures today.
 
+**The rat's cell (#1735 P1 4176940109).** The committed spawn sits on `oteryn:cell/entry-east`,
+which is a step-and-return proof cell. The product bindings (NATIVE-ENTRY-ROOM-PRODUCT-BINDINGS
+§1, after the joins) forbid an activated spawn there. The room fills its bounds (start, east,
+north and door), so SPAWN-1a ships room revision 2, which changes only these things:
+
+- a fifth cell `oteryn:cell/entry-den` at (2, 0, 0): Walkable, same terrain, region and area,
+  `CandidateOnly`;
+- bounds become (0, -1, 3, 1);
+- the spawn's `cell_key`, and `accepted::SPAWN_CELL`, become `entry-den`;
+- `oteryn:map/entry-r1` becomes `oteryn:map/entry-r2`, and `oteryn:content/entry-r1` becomes
+  `oteryn:content/entry-r2`. No other revision changes.
+
+Start, east, north, the door and the relocation are unchanged. The den is adjacent only to
+east, and it is not a proof cell. The bindings amendment (that document, "Amendment 2026-10-04")
+records revision 2. It takes effect when SPAWN-1a merges.
+
 **Ruling.** SPAWN-1 may realize the D116 fixture spawn before MAP-LOAD-1. It splits as follows.
 
 - **SPAWN-1a** (hard, performance review). It works from the fixture World's spawn source, read
@@ -410,7 +426,11 @@ owned_paths:
   - apps/game-server/src/foundation/runtime_actor_carrier.rs
   - apps/game-server/src/ai/spawn*.rs                   # new: spawn-source seam, respawn chain
   - apps/game-server/src/ai/mod.rs
-  - apps/game-server/src/content/project/native_entry.rs  # the activated spawn source in the content pin parts
+  - apps/game-server/src/content/project/native_entry.rs  # the activated spawn source in the content pin parts; accepted pins for room revision 2 (§1.4)
+  - apps/game-server/src/content/project/native_entry_room.json  # room revision 2: the entry-den cell, the bounds, the spawn cell, map and content r2 (§1.4)
+  - apps/game-server/src/content/activation.rs  # NativeEntryContentPin, into_channel_parts, activate_native_entry_room (#1735 P1 4176940094)
+  - apps/game-server/src/interaction/chest_use.rs  # entry_chest::MAP_REVISION only, which must equal accepted::REVISIONS[1]
+  - tools/monster-lab/arena_map.py  # only if it pins the room's cells or revisions
   - apps/game-server/src/node/serve.rs                  # boot composition only: pass the spawn source to the runtime constructor
   - docs/contracts/RESOURCE_LIMITS_REGISTRY.json       # CREATUREAI0-RL-12, -14
   - docs/agents/tasks/archive/OTV2-20261004-spawn-1a.md
@@ -435,6 +455,13 @@ Acceptance:
   The spawn source therefore comes from the same activated generation as the content pin, never
   from a second read. A boot test drives that path and finds one rat before readiness.
   `world_runtime.rs` is not on this path and is not touched.
+- Room revision 2 (§1.4):
+  - the rat is realized on `entry-den`, and no proof cell holds a creature;
+  - the start/east step-and-return proof and the door tests pass unchanged;
+  - a revision-2 source with the spawn on `entry-east` or `entry-start` is refused;
+  - a revision-1 pin is refused by the revision-2 qualifier;
+  - every committed digest and golden is regenerated with the repository tooling, never by hand,
+    and the monster-lab tests pass.
 - A dead rat respawns one full delay later.
 - A player's interest blocks a blockable point, and the successor is a full delay later.
 - The warning precedes admission by 4,200 ms.

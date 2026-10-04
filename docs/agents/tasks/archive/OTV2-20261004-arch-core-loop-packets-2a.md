@@ -21,6 +21,7 @@ owned_paths:
   - docs/architecture/reviews/OTERYN_GAME_ATTACK0_ATTACK_TARGET_AND_AUTO_ATTACK_DECISION_2026-09-30.md
   - docs/architecture/reviews/OTERYN_GAME_CHAT0_PLAYER_CHAT_DECISION_2026-09-30.md
   - docs/architecture/reviews/OTERYN_GAME_CREATURE_AI0_CREATURE_AI_SPAWNS_AND_SUMMONS_DECISION_2026-10-01.md
+  - docs/architecture/reviews/OTERYN_GAME_NATIVE_ENTRY_ROOM_PRODUCT_BINDINGS_DECISION_2026-09-26.md
   - docs/agents/tasks/archive/OTV2-20261004-arch-core-loop-packets-2a.md
 public_contracts: []
 depends_on: []
@@ -48,7 +49,11 @@ external_repositories: []
   `node/serve.rs`, and realizes before the listener binds. `world_runtime.rs` drops out (§2.7).
 - #1735 P2 4176889397: the ATTACK-0 brief moves client target selection and the fight-mode
   buttons to ATTACK-CLIENT-1 (part B §2.5).
-- No code, contract or wire change.
+- #1735 P1 4176940094: SPAWN-1a owns `content/activation.rs`.
+- #1735 P1 4176940109: SPAWN-1a ships room revision 2, which moves the rat to a new non-proof
+  cell `entry-den` with map and content r2. The amendment is recorded in the product bindings
+  decision and takes effect on SPAWN-1a's merge (§1.4, §2.7).
+- No code, contract or wire change in this PR.
 
 ## Validation
 
