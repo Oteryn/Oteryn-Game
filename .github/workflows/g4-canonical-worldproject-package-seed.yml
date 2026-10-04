@@ -79,10 +79,6 @@ jobs:
           # --check (area-authoring-schema) pin their bytes.
           rm -- "$tracked"/terrain/terrain-*.json "$tracked"/objects/objects-*.json
           rm -- "$tracked"/areas/cities/areas-*.json "$tracked"/areas/regions/areas-*.json
-          # The spawn family (SPAWN-CONTENT-1) is not a WorldProject locator either; the
-          # world-bundle compiler reads it and tools/world-bundle-compiler/convert_spawns.py
-          # --check pins its bytes. Remove exactly its index and shards.
-          rm -- "${tracked:?}"/spawns/index.json "${tracked:?}"/spawns/spawns-*.json
           find "$tracked" -mindepth 1 -type d -empty -delete
           diff --no-dereference --recursive "$tracked" "$RUNNER_TEMP/world-a"
 
