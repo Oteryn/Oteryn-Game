@@ -101,6 +101,8 @@ Server-only authoritative fields MUST NOT be serialized into client artifacts an
 
 Client and server artifacts MUST carry compatible revision/capability metadata so incompatible pairs fail closed. Client data MUST remain non-authoritative even when it mirrors server definitions.
 
+The typed Reference Item artifact `OTERYN_REFERENCE_PLAYABLE_ARTIFACT/v5` (ITEM-SEM-2b-3) is the only typed profile the compiler writes. It adds two things to v4's grammar: the base-vocation value `None` (wire 6, the A13 key `none`), and the use-requirements group 17 (`min_level`, `min_magic_level`, `vocations` and a required `enforcement_mode`, `ON_USE` only). Group 17 is client-safe, and RUNE-USE-0 and RANGED-0 enforce it. A v4 artifact still decodes under its own profile, with vocation values 1-5, group ids 1-16 and its v1 resource ceilings. A reader refuses an artifact whose manifest profile id differs from its header profile. v5's ceilings are in `OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V2.md`.
+
 ## 9. Immutable World Bundle
 
 A published World Bundle or equivalent runtime artifact MUST be immutable and content-addressed by integrity digest.

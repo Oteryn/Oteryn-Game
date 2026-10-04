@@ -15,9 +15,11 @@ Fields (2b-1): attack, defense, defense modifier, armor, range, weapon type, ele
 attacks, imbuement slots, equipment patterns, weight, positive charge counts and explicit
 durations. Charges/durations require a single-ID source page, preserve known conflicts
 and blocked states, and do not admit behavior or materialization. Equipment (2b-2) follows
-the wiki slot (runes and ammunition wait for 2b-3); absent requirements remain
-UNKNOWN, and unsupported vocations or hand claims hold the complete pattern. Use
-requirements are reported for 2b-3, and the record of written counts and held rows is
+the wiki slot, and ammunition without a slot takes the Extra slot (2b-3); absent
+requirements remain UNKNOWN, and unsupported vocations or hand claims hold the complete
+pattern. `without` is the vocation `NONE` (2b-3). Use requirements (runes, ammunition, the
+Extra slot and slotless Items) are lowered into `use_requirements` with
+`enforcement_mode: ON_USE` (2b-3), and the record of written counts and held rows is
 written next to the packet. Weight is in hundredths of an ounce, as in Tibia
 (owner decision 2026-09-30: 41.00 oz = 4100).
 
@@ -35,6 +37,7 @@ from collections import Counter, defaultdict
 from fractions import Fraction
 from pathlib import Path
 
+from d289_holds import SEALED_STATE_DECISION, SEALED_STATE_HOLD, require_hits
 from key_ring5801_source_selection import load_context, select
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -120,6 +123,8 @@ VOCATIONS = {
     "monk": "MONK",
     "paladin": "PALADIN",
     "sorcerer": "SORCERER",
+    # ITEM-SEM-2b-3: the A13 key `none`, a character without a vocation.
+    "without": "NONE",
 }
 VOCATION_ORDER = tuple(VOCATIONS.values())
 
@@ -133,12 +138,16 @@ def known(value):
 # hand with them.
 NON_QUIVER_LEFT_HAND = "oteryn:equipment-group.non_quiver_left_hand"
 HAND_SLOTS = ("Weapon Hand", "Both Hands", "Shield Hand", "Shield")
-# 2b-2 holds these for ITEM-SEM-2b-3 (the `none` vocation and the use-requirements group).
+# Requirement facts that bind use, not equip (ITEM-SEM-2b-3).
 REQUIREMENT_FIELDS = ("levelrequired", "vocrequired", "mlrequired")
+# D310 (extends D289): main's sealed reward_stack_normalization.json pins i3450's definition
+# digest, so its Extra pattern and use requirements are held, not written.
+SEALED_STATE_REQUIREMENT_KEYS = frozenset({"oteryn:item.tibia.i3450"})
+SEALED_STATE_REQUIREMENT_FIELDS = ("equipment.patterns", "use_requirements")
 
 
 def vocations(raw):
-    """Base vocation keys, or None for an unsupported token (`without` until 2b-3).
+    """Vocation keys (`without` is `NONE`), or None for an unsupported token.
 
     `None` is no restriction: the vocation list stays UNKNOWN. A promoted vocation is
     matched against its base key by the equip rule (ITEM-MOVE-2a), not here.
@@ -154,7 +163,7 @@ def vocations(raw):
 
 def use_requirements(fields):
     """Requirement facts that bind use, not equip (ITEM-SEM-2b-2 §2.4): runes, ammunition,
-    the Extra slot and slotless Items. 2b-2 reports them; 2b-3 lowers them."""
+    the Extra slot and slotless Items."""
     slot = fields.get("slot")
     if slot is not None and slot != "Extra Slot" and "mlrequired" not in fields:
         return None
@@ -166,18 +175,57 @@ def use_requirements(fields):
     return raw or None
 
 
+def use_requirement_row(fields):
+    """The use-requirements group (ITEM-SEM-2b-3): level, magic level and vocations that
+    RUNE-USE-0 and RANGED-0 enforce at use. A `0` level or magic level writes nothing."""
+    raw = use_requirements(fields)
+    if raw is None:
+        return None, None
+    unknown = {"state": "UNKNOWN"}
+    value = {
+        "min_level": unknown,
+        "min_magic_level": unknown,
+        "vocations": unknown,
+        "enforcement_mode": "ON_USE",
+    }
+    for name, target in (
+        ("levelrequired", "min_level"),
+        ("mlrequired", "min_magic_level"),
+    ):
+        if name in raw:
+            parsed = unsigned(raw[name], 65535)
+            if parsed is None:
+                return raw, "MALFORMED"
+            if parsed:
+                value[target] = known(parsed)
+    if "vocrequired" in raw:
+        values = vocations(raw["vocrequired"])
+        if values is None:
+            return raw, "MALFORMED"
+        if values:
+            value["vocations"] = known(values)
+    if all(
+        value[name] == unknown for name in ("min_level", "min_magic_level", "vocations")
+    ):
+        return None, None
+    return raw, {"kind": "USE_REQUIREMENTS", "value": value}
+
+
 def equipment(fields):
     """One compact equip pattern from the wiki slot (ITEM-SEM-2b-2 §2).
 
     The slot fixes the hands and the occupancy of `domain/equipment.rs`. Level and
     vocations are equip requirements only outside the Extra slot; there they bind use and
-    are held for 2b-3, as are runes and ammunition (no equipment block, as before 2b-2). Missing requirements remain UNKNOWN; a vocation token
-    that is not a base vocation or a slot/hands disagreement holds the whole pattern.
+    go to `use_requirements`. Ammunition without a slot takes the Extra slot (2b-3); runes
+    get no equipment block. Missing requirements remain UNKNOWN; a vocation token that is
+    not a known vocation or a slot/hands disagreement holds the whole pattern.
     """
     slot = fields.get("slot")
     primary = fields.get("primarytype", "")
-    # Runes and ammunition bind use, not equip; ITEM-SEM-2b-3 lowers them.
-    if slot is None or "Rune" in primary or primary == "Ammunition":
+    if slot is None and primary == "Ammunition":
+        slot = "Extra Slot"
+    # Runes bind use, not equip.
+    if slot is None or "Rune" in primary:
         return None, None
     raw = {
         name: fields[name]
@@ -534,6 +582,7 @@ FIELDS = {
         "imbueslots", "COUNT_U8", lambda raw: unsigned(raw, 255)
     ),
     "physical.weight": scalar("weight", "WEIGHT_CENTI_OZ", weight),
+    "use_requirements": use_requirement_row,
 }
 
 
@@ -585,6 +634,7 @@ def build(snapshot, item_ids, definitions=None, routed_keys=(), temporal_context
         "equipment_holds": [],
         "physical_field_holds": [],
         "requirement_holds": [],
+        "sealed_state_holds": [],
     }
     # Records are keyed by Item key or, without an Item record, by the bare Tibia id (#1325).
     for record in sorted(
@@ -623,6 +673,21 @@ def build(snapshot, item_ids, definitions=None, routed_keys=(), temporal_context
                 if res[0] is not None
             ]
             if not present:
+                continue
+            key = ITEM_KEY.format(record["item_id"])
+            if (
+                key in SEALED_STATE_REQUIREMENT_KEYS
+                and field_path in SEALED_STATE_REQUIREMENT_FIELDS
+            ):
+                report["sealed_state_holds"].append(
+                    {
+                        "item_key": key,
+                        "field_path": field_path,
+                        "decision": SEALED_STATE_DECISION,
+                        "reason": SEALED_STATE_HOLD,
+                        "held_typed_values": [res[1] for _obs, res in present],
+                    }
+                )
                 continue
             if field_path in QUALIFIED_PHYSICAL_FIELDS:
                 key = ITEM_KEY.format(record["item_id"])
@@ -674,9 +739,7 @@ def build(snapshot, item_ids, definitions=None, routed_keys=(), temporal_context
                     )
                     continue
             if field_path == "equipment.patterns" and any(
-                "Rune" in obs["fields"].get("primarytype", "")
-                or obs["fields"].get("primarytype") == "Ammunition"
-                for obs in observations
+                "Rune" in obs["fields"].get("primarytype", "") for obs in observations
             ):
                 report["conflict"][field_path] += 1
                 report["equipment_holds"].append(
@@ -716,9 +779,25 @@ def build(snapshot, item_ids, definitions=None, routed_keys=(), temporal_context
                             "classification": "CONFLICT" if conflict else "UNKNOWN",
                             "reason": "SLOT_HANDS_DISAGREE"
                             if conflict
-                            else "VOCATION_WITHOUT_HELD_FOR_ITEM_SEM_2B3"
+                            else "UNSUPPORTED_VOCATION_TOKEN"
                             if without
                             else "UNSUPPORTED_OR_MALFORMED_EQUIPMENT_FACTS",
+                            "sources": [
+                                {
+                                    "page_id": obs["page_id"],
+                                    "revision_id": obs["revision_id"],
+                                    "values": res[0],
+                                }
+                                for obs, res in present
+                            ],
+                        }
+                    )
+                if field_path == "use_requirements":
+                    report["requirement_holds"].append(
+                        {
+                            "item_key": ITEM_KEY.format(record["item_id"]),
+                            "classification": "UNKNOWN",
+                            "reason": "UNSUPPORTED_OR_MALFORMED_USE_REQUIREMENT",
                             "sources": [
                                 {
                                     "page_id": obs["page_id"],
@@ -742,6 +821,22 @@ def build(snapshot, item_ids, definitions=None, routed_keys=(), temporal_context
                             "item_key": ITEM_KEY.format(record["item_id"]),
                             "classification": "CONFLICT",
                             "reason": "WIKI_EQUIPMENT_OBSERVATIONS_DISAGREE",
+                            "sources": [
+                                {
+                                    "page_id": obs["page_id"],
+                                    "revision_id": obs["revision_id"],
+                                    "values": res[0],
+                                }
+                                for obs, res in present
+                            ],
+                        }
+                    )
+                if field_path == "use_requirements":
+                    report["requirement_holds"].append(
+                        {
+                            "item_key": ITEM_KEY.format(record["item_id"]),
+                            "classification": "CONFLICT",
+                            "reason": "WIKI_USE_REQUIREMENT_OBSERVATIONS_DISAGREE",
                             "sources": [
                                 {
                                     "page_id": obs["page_id"],
@@ -786,30 +881,23 @@ def build(snapshot, item_ids, definitions=None, routed_keys=(), temporal_context
                     "typed_value": typed[0],
                 }
             )
-        held = [
-            (obs, use_requirements(obs["fields"]))
-            for obs in observations
-            if use_requirements(obs["fields"])
-        ]
-        if held:
-            report["requirement_holds"].append(
-                {
-                    "item_key": ITEM_KEY.format(record["item_id"]),
-                    "classification": "UNKNOWN",
-                    "reason": "USE_REQUIREMENT_HELD_FOR_ITEM_SEM_2B3",
-                    "sources": [
-                        {
-                            "page_id": obs["page_id"],
-                            "revision_id": obs["revision_id"],
-                            "values": values,
-                        }
-                        for obs, values in held
-                    ],
-                }
-            )
         for name in UNSUPPORTED_PARAMS:
             if any(name in row["fields"] for row in observations):
                 report["unsupported"][name] += 1
+    # Every D310 hold must hit exactly once whenever its Item is in scope.
+    require_hits(
+        [
+            (key, field)
+            for key in sorted(SEALED_STATE_REQUIREMENT_KEYS)
+            if int(key.rsplit(".i", 1)[1]) in item_ids
+            for field in SEALED_STATE_REQUIREMENT_FIELDS
+        ],
+        [
+            (hold["item_key"], hold["field_path"])
+            for hold in report["sealed_state_holds"]
+        ],
+        "item stat promotion",
+    )
     counts = Counter(row["field_path"] for row in rows)
     return rows, report, counts
 
@@ -847,6 +935,7 @@ def packet_bytes(snapshot, item_ids, compiler_sha256):
             "equipment_holds": report["equipment_holds"],
             "physical_field_holds": report["physical_field_holds"],
             "requirement_holds": report["requirement_holds"],
+            "sealed_state_holds": report["sealed_state_holds"],
             "conflict": dict(sorted(report["conflict"].items())),
             "malformed": dict(sorted(report["malformed"].items())),
             "unsupported": dict(sorted(report["unsupported"].items())),
@@ -888,6 +977,15 @@ def record_bytes(packet_data):
     packet = json.loads(packet_data)
     counts = Counter()
     for row in packet["promotions"]:
+        if row["field_path"] == "use_requirements":
+            value = row["typed_value"]["value"]
+            counts["use_requirements"] += 1
+            for name in ("min_level", "min_magic_level", "vocations"):
+                if value[name]["state"] == "KNOWN":
+                    counts[f"use_requirements_with_{name}"] += 1
+            if "NONE" in value["vocations"].get("value", []):
+                counts["use_requirements_vocation:NONE"] += 1
+            continue
         if row["field_path"] != "equipment.patterns":
             continue
         pattern = row["typed_value"]["value"][0]
@@ -896,6 +994,8 @@ def record_bytes(packet_data):
         for name in ("level", "vocations"):
             if pattern[name]["state"] == "KNOWN":
                 counts[f"with_{name}"] += 1
+        if "NONE" in pattern["vocations"].get("value", []):
+            counts["vocation:NONE"] += 1
         if pattern["additional_reserved_slots"].get("value"):
             counts["reserved:SHIELD"] += 1
         if pattern["mutually_exclusive_groups"].get("value"):
@@ -913,6 +1013,7 @@ def record_bytes(packet_data):
                 "reported": {
                     "equipment_holds": report["equipment_holds"],
                     "requirement_holds": report["requirement_holds"],
+                    "sealed_state_holds": report["sealed_state_holds"],
                 },
             },
             sort_keys=True,
