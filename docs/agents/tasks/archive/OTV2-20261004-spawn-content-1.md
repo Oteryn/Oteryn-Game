@@ -9,7 +9,7 @@ repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/spawn-content-1-20261004
 issue: 1622
-pr: null
+pr: 1759
 head_sha: "exact frozen head in the FREEZE_SHA message to the control plane"
 final_head_sha: "exact frozen head in the FREEZE_SHA message to the control plane"
 owner: claude-code-session_01FqspUyiMBJXa3VZqUkq6ra
