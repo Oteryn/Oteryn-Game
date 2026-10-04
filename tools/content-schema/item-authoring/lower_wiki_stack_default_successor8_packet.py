@@ -20,7 +20,7 @@ RECEIPT = (
     "docs/agents/evidence/"
     "OTV2-20261003-item-stack-default-successor8-current-parent-receipt-v2.json"
 )
-RECEIPT_SHA = "9415bc33dca11fa6a4d0c6545c39c6c5be9ba1fa84a09f7f6642685927a6a921"
+RECEIPT_SHA = "7ecec01dce6832b2776c0cdab08b8b3674ca3d41c262c3f7fb505e72fad641f6"
 OUTPUT = (
     "docs/agents/evidence/OTV2-20261002-item-stack-default-successor8-promotion-v1.json"
 )

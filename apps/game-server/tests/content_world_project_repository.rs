@@ -17,7 +17,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "content.lock.json",
         364,
-        "29594519d5c5ad928e50e9838b71b90bfa633fe6c72a1f99be46a266719be2b2",
+        "c8bc6fbae51a3360eea24dd2035a99df8ccbcfeca127db6a850f120e4d215928",
     ),
     (
         "definitions/declarations.json",
@@ -26,8 +26,8 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "definitions/reference.json",
-        26_598_879,
-        "0a7a737a98174043929b1270ecd9ca3bc90726b54b3c1497282593a8801d462d",
+        26_606_984,
+        "c32aeaf21030459bc426e2a907d8ea06bc0d4059e7e1dadd10af230f15892f67",
     ),
     (
         "editor/author.json",
@@ -36,8 +36,8 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "manifest.json",
-        1_939,
-        "e1e6538cb0602a2c0a91d82d023c2ea9d0af64b10483190bbeeeefdf62cf9833",
+        1939,
+        "d8e0ebe8a89c8404cf4e1799691e3c06289ab165ea1a2479f032383462ce5660",
     ),
     (
         "presentations/bindings.json",
@@ -47,7 +47,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "project.json",
         390,
-        "5dbe588fdf424e902c9d538729429ed1a8259a5a383871bbea7851572830de8a",
+        "a06013831634dd2bf0f1a154350595c7fd14e29c53c7d7fd59fc8e9f6019e4da",
     ),
     (
         "provenance/imports.json",
@@ -114,7 +114,7 @@ const WORLD_CATALOGUE_SHARDS: [(&str, &str); 4] = [
 const TREE_CONTRACT: &str =
     "docs/agents/evidence/OTV2-20260925-full-game-content-ruleset-tree-v1.json";
 const TREE_DIRECTORY_NODES: usize = 97;
-const TREE_SHA256: &str = "1bb27c17900f29a087be2f3b4d1bb132bda2f33582c35c1678e89957cd1805f8";
+const TREE_SHA256: &str = "83f9330ffdcf83b8a511f4680946ad4f08cbcb6ba1d6a3cc6986e823b180e3f0";
 /// A12 (ITEM-ID-1b): the protected Item family less the 4,590 D149 records, on Tibia keys,
 /// plus the 404 donor epoch-2 records and the 61 appearance-only records (ITEM-ADD-1, Snowball 53855).
 const ITEMS: usize = 34_032;
@@ -1635,9 +1635,10 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
         });
     // TIMED-CONTENT-1 adds one evidenced charges count (items-stats had none for it).
     assert_eq!(charge_fields, 125 + 1 + 1);
-    // TIMED-CONTENT-1 adds 50 durations (its 50 `temporal.duration_ms` rows) and clears the 21
-    // durations the stats promotion had put on inactive equip forms (TIMED-ITEM-0 §4).
-    assert_eq!(duration_fields, 138 + 50 - 21);
+    // The timed promotion adds 49 durations (its 49 `temporal.duration_ms` rows; TIMED-CONTENT-2
+    // omits the one-way i9394) and clears the 21 durations the stats promotion had put on
+    // inactive equip forms (TIMED-ITEM-0 §4).
+    assert_eq!(duration_fields, 138 + 49 - 21);
     // Resistance vectors were entirely unknown in the predecessor. Count their typed
     // percentages as atoms so a missing list member cannot hide behind the vector count.
     let (mut resistance_vectors, mut resistance_atoms, mut equipment_patterns) = (0, 0, 0);
@@ -1785,12 +1786,14 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
         (97, 82, 54, 16, 55)
     );
     assert_eq!(mantra_keys.len(), 49);
+    // EQUIP-CONTENT-1 adds the Canary fallback rows: 21 modifier lists (28 atoms) and 11
+    // resistance lists (19 atoms) on Items whose every wiki page is silent on the group.
     assert_eq!(
         (modifier_vectors, modifier_atoms),
-        (419 + 26 + 49 + 17, 619 + 63 + 114 + 50)
+        (419 + 26 + 49 + 17 + 21, 619 + 63 + 114 + 50 + 28)
     );
-    assert_eq!(resistance_vectors, 391);
-    assert_eq!(resistance_atoms, 625);
+    assert_eq!(resistance_vectors, 391 + 11);
+    assert_eq!(resistance_atoms, 625 + 19);
     // The independent predecessor census includes the separately admitted starter pattern.
     // ITEM-SEM-2b-3 adds 7 `none` patterns and 35 slotless ammunition Extra patterns.
     assert_eq!(equipment_patterns, 1_791 + 42 + 2);

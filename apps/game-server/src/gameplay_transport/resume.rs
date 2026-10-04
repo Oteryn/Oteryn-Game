@@ -38,6 +38,7 @@ use crate::foundation::{
     StateDomainRevisionV1,
 };
 use oteryn_protocol_oteryn::achievement_notices::STATE_DOMAIN_ACCOUNT_ACHIEVEMENT_NOTICES;
+use oteryn_protocol_oteryn::container_tree::STATE_DOMAIN_CONTAINER_VIEWS;
 use oteryn_protocol_oteryn::item_view::{
     STATE_DOMAIN_CHARACTER_INVENTORY, STATE_DOMAIN_OPEN_CONTAINER,
 };
@@ -290,6 +291,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             domains.push(
                 StateDomainRevisionV1::new(STATE_DOMAIN_ACCOUNT_ACHIEVEMENT_NOTICES, revision)
                     .map_err(|_| Unavailable)?,
+            );
+        }
+        // BAGS-WIRE-1: with capability 14, the domain 14 high-water revision. Its views closed
+        // with the lost connection; the resumed snapshot is empty above it.
+        if lost
+            .continuity
+            .selected_capabilities
+            .domain_selected(STATE_DOMAIN_CONTAINER_VIEWS)
+        {
+            domains.push(
+                StateDomainRevisionV1::new(
+                    STATE_DOMAIN_CONTAINER_VIEWS,
+                    lost.continuity.item_view.views_revision,
+                )
+                .map_err(|_| Unavailable)?,
             );
         }
         let fnd02 = Fnd02ReconciliationFenceV1::new(

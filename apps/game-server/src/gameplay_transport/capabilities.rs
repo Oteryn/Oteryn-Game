@@ -20,10 +20,17 @@ use oteryn_protocol_oteryn::charm::{
 use oteryn_protocol_oteryn::chat::{
     CAPABILITY_CHAT_V1, COMMAND_TYPE_CHAT_INTENT, STATE_DOMAIN_CHAT,
 };
+use oteryn_protocol_oteryn::container_tree::{
+    CAPABILITY_CONTAINER_TREE_V1, COMMAND_TYPE_CONTAINER_VIEW_INTENT, STATE_DOMAIN_CONTAINER_VIEWS,
+};
 use oteryn_protocol_oteryn::item_view::{
     CAPABILITY_ITEM_EQUIP_DROP_V1, CAPABILITY_ITEM_VIEW_MOVE_V1, COMMAND_TYPE_ITEM_MOVE_INTENT,
     STATE_DOMAIN_CHARACTER_INVENTORY, STATE_DOMAIN_OPEN_CONTAINER,
 };
+use oteryn_protocol_oteryn::quest_log::{
+    CAPABILITY_QUEST_LOG_V1, COMMAND_TYPE_QUEST_LOG_QUERY, STATE_DOMAIN_QUEST_LOG,
+};
+use oteryn_protocol_oteryn::world_spatial::CAPABILITY_PACED_MOVEMENT_V1;
 
 /// One capability the server offers, with the capabilities that must also be selected for it
 /// (the registry entry's `requires`, empty when the entry has none).
@@ -33,17 +40,21 @@ pub(crate) struct OfferedCapability {
     pub(crate) requires: &'static [u32],
 }
 
-/// The production offered set: the registry's `offered: true` entries, ascending by ID. Empty
-/// until a packet offers a capability, so production selects nothing. A test keeps it equal to
-/// the registry and within `REGISTERED_CAPABILITY_IDS_V1`.
-pub(crate) const PRODUCTION_OFFERED_CAPABILITIES: &[OfferedCapability] = &[];
+/// The production offered set: the registry's `offered: true` entries, ascending by ID. SPEED-1
+/// offers capability 13 `PACED_MOVEMENT_V1`. A test keeps it equal to the registry and within
+/// `REGISTERED_CAPABILITY_IDS_V1`.
+pub(crate) const PRODUCTION_OFFERED_CAPABILITIES: &[OfferedCapability] = &[OfferedCapability {
+    id: CAPABILITY_PACED_MOVEMENT_V1,
+    requires: &[],
+}];
 
 /// The command types and state domains each registered capability owns
 /// (`PROTOCOL_OTERYN_V1_REGISTRY.json`; a test keeps them equal). Capability 6
 /// `WORLD_SPATIAL_ENTITIES` is not listed: it extends the core domain 1 with payload type 2, which
 /// the visibility encoders gate on the selected set themselves. Capability 12
 /// `ITEM_EQUIP_DROP_V1` owns none either: it extends command type 9 and domain 9 of capability 4,
-/// whose codecs gate the extension on the selected set.
+/// whose codecs gate the extension on the selected set. Capability 13 `PACED_MOVEMENT_V1` owns
+/// none: it extends the command type 1 result, whose encoder gates `TOO_EARLY` on the selection.
 const GATED: &[(u32, &[u32], &[u32])] = &[
     (
         CAPABILITY_BESTIARY_CHARMS_V1,
@@ -76,6 +87,17 @@ const GATED: &[(u32, &[u32], &[u32])] = &[
     ),
     (CAPABILITY_ANALYSER_V1, &[], &[STATE_DOMAIN_ACTOR_ANALYSER]),
     (CAPABILITY_ITEM_EQUIP_DROP_V1, &[], &[]),
+    (CAPABILITY_PACED_MOVEMENT_V1, &[], &[]),
+    (
+        CAPABILITY_CONTAINER_TREE_V1,
+        &[COMMAND_TYPE_CONTAINER_VIEW_INTENT],
+        &[STATE_DOMAIN_CONTAINER_VIEWS],
+    ),
+    (
+        CAPABILITY_QUEST_LOG_V1,
+        &[COMMAND_TYPE_QUEST_LOG_QUERY],
+        &[STATE_DOMAIN_QUEST_LOG],
+    ),
 ];
 
 /// Bound of one session's selection. A test keeps the production offered set within it.

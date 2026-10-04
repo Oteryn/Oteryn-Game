@@ -1,0 +1,4069 @@
+{
+  "activation": "DRAFT_NOT_RUNTIME_READY",
+  "architecture_reconciliation": "GLOBAL_SOURCE_CONFLICTS_REQUIRE_ARCHITECTURE_UPDATE",
+  "combat_profile": "imbuement-combat.json",
+  "current_behavior_profile": "current-behavior-answers.json",
+  "definitions": [
+    {
+      "candidate_key": "bash",
+      "category": "bash",
+      "item_eligibility_binding": {
+        "candidate_key": "bash",
+        "catalogue": "imbuement-eligibility.json"
+      },
+      "name": "Bash",
+      "parity": "AUDITED_WITH_EXPLICIT_GAPS",
+      "tiers": [
+        {
+          "access": {
+            "catalogue": "imbuement-access.json",
+            "direct_shrine_target_unequipped_required": true,
+            "premium_required": false,
+            "profile": "Bash",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED",
+            "tier": "basic"
+          },
+          "apply_fee_gold": 7500,
+          "clear_fee_gold": 15000,
+          "duration_ms": 72000000,
+          "effect": {
+            "amount": 1,
+            "kind": "skill_bonus",
+            "skill": "club"
+          },
+          "materials": [
+            {
+              "count": 20,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i9657",
+                "revision": "definition-r1"
+              },
+              "source_name": "Cyclops Toe"
+            }
+          ],
+          "name": "Basic",
+          "provenance": {
+            "access": "imbuement-access.json",
+            "duration": "manual",
+            "effect": "wiki_br",
+            "fees": "global-rules-evidence.json",
+            "materials": "wiki_br"
+          },
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i53751",
+            "revision": "definition-r1"
+          },
+          "tier": 1
+        },
+        {
+          "access": {
+            "catalogue": "imbuement-access.json",
+            "direct_shrine_target_unequipped_required": true,
+            "premium_required": true,
+            "profile": "Bash",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED",
+            "tier": "intricate"
+          },
+          "apply_fee_gold": 60000,
+          "clear_fee_gold": 15000,
+          "duration_ms": 72000000,
+          "effect": {
+            "amount": 2,
+            "kind": "skill_bonus",
+            "skill": "club"
+          },
+          "materials": [
+            {
+              "count": 20,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i9657",
+                "revision": "definition-r1"
+              },
+              "source_name": "Cyclops Toe"
+            },
+            {
+              "count": 15,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i22189",
+                "revision": "definition-r1"
+              },
+              "source_name": "Ogre Nose Ring"
+            }
+          ],
+          "name": "Intricate",
+          "provenance": {
+            "access": "imbuement-access.json",
+            "duration": "manual",
+            "effect": "wiki_br",
+            "fees": "global-rules-evidence.json",
+            "materials": "wiki_br"
+          },
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i51724",
+            "revision": "definition-r1"
+          },
+          "tier": 2
+        },
+        {
+          "access": {
+            "catalogue": "imbuement-access.json",
+            "direct_shrine_target_unequipped_required": true,
+            "premium_required": true,
+            "profile": "Bash",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED",
+            "tier": "powerful"
+          },
+          "apply_fee_gold": 250000,
+          "clear_fee_gold": 15000,
+          "duration_ms": 72000000,
+          "effect": {
+            "amount": 4,
+            "kind": "skill_bonus",
+            "skill": "club"
+          },
+          "materials": [
+            {
+              "count": 20,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i9657",
+                "revision": "definition-r1"
+              },
+              "source_name": "Cyclops Toe"
+            },
+            {
+              "count": 15,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i22189",
+                "revision": "definition-r1"
+              },
+              "source_name": "Ogre Nose Ring"
+            },
+            {
+              "count": 10,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i10405",
+                "revision": "definition-r1"
+              },
+              "source_name": "Warmaster's Wristguards"
+            }
+          ],
+          "name": "Powerful",
+          "provenance": {
+            "access": "imbuement-access.json",
+            "duration": "manual",
+            "effect": "wiki_br",
+            "fees": "global-rules-evidence.json",
+            "materials": "wiki_br"
+          },
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i51444",
+            "revision": "definition-r1"
+          },
+          "tier": 3
+        }
+      ]
+    },
+    {
+      "candidate_key": "blockade",
+      "category": "blockade",
+      "item_eligibility_binding": {
+        "candidate_key": "blockade",
+        "catalogue": "imbuement-eligibility.json"
+      },
+      "name": "Blockade",
+      "parity": "AUDITED_WITH_EXPLICIT_GAPS",
+      "tiers": [
+        {
+          "access": {
+            "catalogue": "imbuement-access.json",
+            "direct_shrine_target_unequipped_required": true,
+            "premium_required": false,
+            "profile": "Blockade",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED",
+            "tier": "basic"
+          },
+          "apply_fee_gold": 7500,
+          "clear_fee_gold": 15000,
+          "duration_ms": 72000000,
+          "effect": {
+            "amount": 1,
+            "kind": "skill_bonus",
+            "skill": "shielding"
+          },
+          "materials": [
+            {
+              "count": 20,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i9641",
+                "revision": "definition-r1"
+              },
+              "source_name": "Piece of Scarab Shell"
+            }
+          ],
+          "name": "Basic",
+          "provenance": {
+            "access": "imbuement-access.json",
+            "duration": "manual",
+            "effect": "wiki_br",
+            "fees": "global-rules-evidence.json",
+            "materials": "wiki_br"
+          },
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i53752",
+            "revision": "definition-r1"
+          },
+          "tier": 1
+        },
+        {
+          "access": {
+            "catalogue": "imbuement-access.json",
+            "direct_shrine_target_unequipped_required": true,
+            "premium_required": true,
+            "profile": "Blockade",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED",
+            "tier": "intricate"
+          },
+          "apply_fee_gold": 60000,
+          "clear_fee_gold": 15000,
+          "duration_ms": 72000000,
+          "effect": {
+            "amount": 2,
+            "kind": "skill_bonus",
+            "skill": "shielding"
+          },
+          "materials": [
+            {
+              "count": 20,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i9641",
+                "revision": "definition-r1"
+              },
+              "source_name": "Piece of Scarab Shell"
+            },
+            {
+              "count": 25,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i11703",
+                "revision": "definition-r1"
+              },
+              "source_name": "Brimstone Shell"
+            }
+          ],
+          "name": "Intricate",
+          "provenance": {
+            "access": "imbuement-access.json",
+            "duration": "manual",
+            "effect": "wiki_br",
+            "fees": "global-rules-evidence.json",
+            "materials": "wiki_br"
+          },
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i51725",
+            "revision": "definition-r1"
+          },
+          "tier": 2
+        },
+        {
+          "access": {
+            "catalogue": "imbuement-access.json",
+            "direct_shrine_target_unequipped_required": true,
+            "premium_required": true,
+            "profile": "Blockade",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED",
+            "tier": "powerful"
+          },
+          "apply_fee_gold": 250000,
+          "clear_fee_gold": 15000,
+          "duration_ms": 72000000,
+          "effect": {
+            "amount": 4,
+            "kind": "skill_bonus",
+            "skill": "shielding"
+          },
+          "materials": [
+            {
+              "count": 20,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i9641",
+                "revision": "definition-r1"
+              },
+              "source_name": "Piece of Scarab Shell"
+            },
+            {
+              "count": 25,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i11703",
+                "revision": "definition-r1"
+              },
+              "source_name": "Brimstone Shell"
+            },
+            {
+              "count": 25,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i20199",
+                "revision": "definition-r1"
+              },
+              "source_name": "Frazzle Skin"
+            }
+          ],
+          "name": "Powerful",
+          "provenance": {
+            "access": "imbuement-access.json",
+            "duration": "manual",
+            "effect": "wiki_br",
+            "fees": "global-rules-evidence.json",
+            "materials": "wiki_br"
+          },
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i51445",
+            "revision": "definition-r1"
+          },
+          "tier": 3
+        }
+      ]
+    },
+    {
+      "candidate_key": "chop",
+      "category": "chop",
+      "item_eligibility_binding": {
+        "candidate_key": "chop",
+        "catalogue": "imbuement-eligibility.json"
+      },
+      "name": "Chop",
+      "parity": "AUDITED_WITH_EXPLICIT_GAPS",
+      "tiers": [
+        {
+          "access": {
+            "catalogue": "imbuement-access.json",
+            "direct_shrine_target_unequipped_required": true,
+            "premium_required": false,
+            "profile": "Chop",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED",
+            "tier": "basic"
+          },
+          "apply_fee_gold": 7500,
+          "clear_fee_gold": 15000,
+          "duration_ms": 72000000,
+          "effect": {
+            "amount": 1,
+            "kind": "skill_bonus",
+            "skill": "axe"
+          },
+          "materials": [
+            {
+              "count": 20,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i10196",
+                "revision": "definition-r1"
+              },
+              "source_name": "Orc Tooth"
+            }
+          ],
+          "name": "Basic",
+          "provenance": {
+            "access": "imbuement-access.json",
+            "duration": "manual",
+            "effect": "wiki_br",
+            "fees": "global-rules-evidence.json",
+            "materials": "wiki_br"
+          },
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i53753",
+            "revision": "definition-r1"
+          },
+          "tier": 1
+        },
+        {
+          "access": {
+            "catalogue": "imbuement-access.json",
+            "direct_shrine_target_unequipped_required": true,
+            "premium_required": true,
+            "profile": "Chop",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED",
+            "tier": "intricate"
+          },
+          "apply_fee_gold": 60000,
+          "clear_fee_gold": 15000,
+          "duration_ms": 72000000,
+          "effect": {
+            "amount": 2,
+            "kind": "skill_bonus",
+            "skill": "axe"
+          },
+          "materials": [
+            {
+              "count": 20,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i10196",
+                "revision": "definition-r1"
+              },
+              "source_name": "Orc Tooth"
+            },
+            {
+              "count": 25,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i11447",
+                "revision": "definition-r1"
+              },
+              "source_name": "Battle Stone"
+            }
+          ],
+          "name": "Intricate",
+          "provenance": {
+            "access": "imbuement-access.json",
+            "duration": "manual",
+            "effect": "wiki_br",
+            "fees": "global-rules-evidence.json",
+            "materials": "wiki_br"
+          },
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i51726",
+            "revision": "definition-r1"
+          },
+          "tier": 2
+        },
+        {
+          "access": {
+            "catalogue": "imbuement-access.json",
+            "direct_shrine_target_unequipped_required": true,
+            "premium_required": true,
+            "profile": "Chop",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED",
+            "tier": "powerful"
+          },
+          "apply_fee_gold": 250000,
+          "clear_fee_gold": 15000,
+          "duration_ms": 72000000,
+          "effect": {
+            "amount": 4,
+            "kind": "skill_bonus",
+            "skill": "axe"
+          },
+          "materials": [
+            {
+              "count": 20,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i10196",
+                "revision": "definition-r1"
+              },
+              "source_name": "Orc Tooth"
+            },
+            {
+              "count": 25,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i11447",
+                "revision": "definition-r1"
+              },
+              "source_name": "Battle Stone"
+            },
+            {
+              "count": 20,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i21200",
+                "revision": "definition-r1"
+              },
+              "source_name": "Moohtant Horn"
+            }
+          ],
+          "name": "Powerful",
+          "provenance": {
+            "access": "imbuement-access.json",
+            "duration": "manual",
+            "effect": "wiki_br",
+            "fees": "global-rules-evidence.json",
+            "materials": "wiki_br"
+          },
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i51446",
+            "revision": "definition-r1"
+          },
+          "tier": 3
+        }
+      ]
+    },
+    {
+      "candidate_key": "cloud_fabric",
+      "category": "cloud_fabric",
+      "item_eligibility_binding": {
+        "candidate_key": "cloud_fabric",
+        "catalogue": "imbuement-eligibility.json"
+      },
+      "name": "Cloud Fabric",
+      "parity": "AUDITED_WITH_EXPLICIT_GAPS",
+      "tiers": [
+        {
+          "access": {
+            "catalogue": "imbuement-access.json",
+            "direct_shrine_target_unequipped_required": true,
+            "premium_required": false,
+            "profile": "Cloud Fabric",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED",
+            "tier": "basic"
+          },
+          "apply_fee_gold": 7500,
+          "clear_fee_gold": 15000,
+          "duration_ms": 72000000,
+          "effect": {
+            "absorb_bps": 300,
+            "element": "energy",
+            "kind": "protection"
+          },
+          "materials": [
+            {
+              "count": 20,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i9644",
+                "revision": "definition-r1"
+              },
+              "source_name": "Wyvern Talisman"
+            }
+          ],
+          "name": "Basic",
+          "provenance": {
+            "access": "imbuement-access.json",
+            "duration": "manual",
+            "effect": "wiki_br",
+            "fees": "global-rules-evidence.json",
+            "materials": "wiki_br"
+          },
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i53754",
+            "revision": "definition-r1"
+          },
+          "tier": 1
+        },
+        {
+          "access": {
+            "catalogue": "imbuement-access.json",
+            "direct_shrine_target_unequipped_required": true,
+            "premium_required": true,
+            "profile": "Cloud Fabric",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED",
+            "tier": "intricate"
+          },
+          "apply_fee_gold": 60000,
+          "clear_fee_gold": 15000,
+          "duration_ms": 72000000,
+          "effect": {
+            "absorb_bps": 800,
+            "element": "energy",
+            "kind": "protection"
+          },
+          "materials": [
+            {
+              "count": 20,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i9644",
+                "revision": "definition-r1"
+              },
+              "source_name": "Wyvern Talisman"
+            },
+            {
+              "count": 15,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i14079",
+                "revision": "definition-r1"
+              },
+              "source_name": "Crawler Head Plating"
+            }
+          ],
+          "name": "Intricate",
+          "provenance": {
+            "access": "imbuement-access.json",
+            "duration": "manual",
+            "effect": "wiki_br",
+            "fees": "global-rules-evidence.json",
+            "materials": "wiki_br"
+          },
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i51727",
+            "revision": "definition-r1"
+          },
+          "tier": 2
+        },
+        {
+          "access": {
+            "catalogue": "imbuement-access.json",
+            "direct_shrine_target_unequipped_required": true,
+            "premium_required": true,
+            "profile": "Cloud Fabric",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED",
+            "tier": "powerful"
+          },
+          "apply_fee_gold": 250000,
+          "clear_fee_gold": 15000,
+          "duration_ms": 72000000,
+          "effect": {
+            "absorb_bps": 1500,
+            "element": "energy",
+            "kind": "protection"
+          },
+          "materials": [
+            {
+              "count": 20,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i9644",
+                "revision": "definition-r1"
+              },
+              "source_name": "Wyvern Talisman"
+            },
+            {
+              "count": 15,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i14079",
+                "revision": "definition-r1"
+              },
+              "source_name": "Crawler Head Plating"
+            },
+            {
+              "count": 10,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i9665",
+                "revision": "definition-r1"
+              },
+              "source_name": "Wyrm Scale"
+            }
+          ],
+          "name": "Powerful",
+          "provenance": {
+            "access": "imbuement-access.json",
+            "duration": "manual",
+            "effect": "wiki_br",
+            "fees": "global-rules-evidence.json",
+            "materials": "wiki_br"
+          },
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i51447",
+            "revision": "definition-r1"
+          },
+          "tier": 3
+        }
+      ]
+    },
+    {
+      "candidate_key": "demon_presence",
+      "category": "demon_presence",
+      "item_eligibility_binding": {
+        "candidate_key": "demon_presence",
+        "catalogue": "imbuement-eligibility.json"
+      },
+      "name": "Demon Presence",
+      "parity": "AUDITED_WITH_EXPLICIT_GAPS",
+      "tiers": [
+        {
+          "access": {
+            "catalogue": "imbuement-access.json",
+            "direct_shrine_target_unequipped_required": true,
+            "premium_required": false,
+            "profile": "Demon Presence",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED",
+            "tier": "basic"
+          },
+          "apply_fee_gold": 7500,
+          "clear_fee_gold": 15000,
+          "duration_ms": 72000000,
+          "effect": {
+            "absorb_bps": 300,
+            "element": "holy",
+            "kind": "protection"
+          },
+          "materials": [
+            {
+              "count": 25,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i9639",
+                "revision": "definition-r1"
+              },
+              "source_name": "Cultish Robe"
+            }
+          ],
+          "name": "Basic",
+          "provenance": {
+            "access": "imbuement-access.json",
+            "duration": "manual",
+            "effect": "wiki_br",
+            "fees": "global-rules-evidence.json",
+            "materials": "wiki_br"
+          },
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i53755",
+            "revision": "definition-r1"
+          },
+          "tier": 1
+        },
+        {
+          "access": {
+            "catalogue": "imbuement-access.json",
+            "direct_shrine_target_unequipped_required": true,
+            "premium_required": true,
+            "profile": "Demon Presence",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED",
+            "tier": "intricate"
+          },
+          "apply_fee_gold": 60000,
+          "clear_fee_gold": 15000,
+          "duration_ms": 72000000,
+          "effect": {
+            "absorb_bps": 800,
+            "element": "holy",
+            "kind": "protection"
+          },
+          "materials": [
+            {
+              "count": 25,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i9639",
+                "revision": "definition-r1"
+              },
+              "source_name": "Cultish Robe"
+            },
+            {
+              "count": 25,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i9638",
+                "revision": "definition-r1"
+              },
+              "source_name": "Cultish Mask"
+            }
+          ],
+          "name": "Intricate",
+          "provenance": {
+            "access": "imbuement-access.json",
+            "duration": "manual",
+            "effect": "wiki_br",
+            "fees": "global-rules-evidence.json",
+            "materials": "wiki_br"
+          },
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i51728",
+            "revision": "definition-r1"
+          },
+          "tier": 2
+        },
+        {
+          "access": {
+            "catalogue": "imbuement-access.json",
+            "direct_shrine_target_unequipped_required": true,
+            "premium_required": true,
+            "profile": "Demon Presence",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED",
+            "tier": "powerful"
+          },
+          "apply_fee_gold": 250000,
+          "clear_fee_gold": 15000,
+          "duration_ms": 72000000,
+          "effect": {
+            "absorb_bps": 1500,
+            "element": "holy",
+            "kind": "protection"
+          },
+          "materials": [
+            {
+              "count": 25,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i9639",
+                "revision": "definition-r1"
+              },
+              "source_name": "Cultish Robe"
+            },
+            {
+              "count": 25,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i9638",
+                "revision": "definition-r1"
+              },
+              "source_name": "Cultish Mask"
+            },
+            {
+              "count": 20,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i10304",
+                "revision": "definition-r1"
+              },
+              "source_name": "Hellspawn Tail"
+            }
+          ],
+          "name": "Powerful",
+          "provenance": {
+            "access": "imbuement-access.json",
+            "duration": "manual",
+            "effect": "wiki_br",
+            "fees": "global-rules-evidence.json",
+            "materials": "wiki_br"
+          },
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i51448",
+            "revision": "definition-r1"
+          },
+          "tier": 3
+        }
+      ]
+    },
+    {
+      "candidate_key": "dragon_hide",
+      "category": "dragon_hide",
+      "item_eligibility_binding": {
+        "candidate_key": "dragon_hide",
+        "catalogue": "imbuement-eligibility.json"
+      },
+      "name": "Dragon Hide",
+      "parity": "AUDITED_WITH_EXPLICIT_GAPS",
+      "tiers": [
+        {
+          "access": {
+            "catalogue": "imbuement-access.json",
+            "direct_shrine_target_unequipped_required": true,
+            "premium_required": false,
+            "profile": "Dragon Hide",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED",
+            "tier": "basic"
+          },
+          "apply_fee_gold": 7500,
+          "clear_fee_gold": 15000,
+          "duration_ms": 72000000,
+          "effect": {
+            "absorb_bps": 300,
+            "element": "fire",
+            "kind": "protection"
+          },
+          "materials": [
+            {
+              "count": 20,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i5877",
+                "revision": "definition-r1"
+              },
+              "source_name": "Green Dragon Leather"
+            }
+          ],
+          "name": "Basic",
+          "provenance": {
+            "access": "imbuement-access.json",
+            "duration": "manual",
+            "effect": "wiki_br",
+            "fees": "global-rules-evidence.json",
+            "materials": "wiki_br"
+          },
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i53756",
+            "revision": "definition-r1"
+          },
+          "tier": 1
+        },
+        {
+          "access": {
+            "catalogue": "imbuement-access.json",
+            "direct_shrine_target_unequipped_required": true,
+            "premium_required": true,
+            "profile": "Dragon Hide",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED",
+            "tier": "intricate"
+          },
+          "apply_fee_gold": 60000,
+          "clear_fee_gold": 15000,
+          "duration_ms": 72000000,
+          "effect": {
+            "absorb_bps": 800,
+            "element": "fire",
+            "kind": "protection"
+          },
+          "materials": [
+            {
+              "count": 20,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i5877",
+                "revision": "definition-r1"
+              },
+              "source_name": "Green Dragon Leather"
+            },
+            {
+              "count": 10,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i16131",
+                "revision": "definition-r1"
+              },
+              "source_name": "Blazing Bone"
+            }
+          ],
+          "name": "Intricate",
+          "provenance": {
+            "access": "imbuement-access.json",
+            "duration": "manual",
+            "effect": "wiki_br",
+            "fees": "global-rules-evidence.json",
+            "materials": "wiki_br"
+          },
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i51729",
+            "revision": "definition-r1"
+          },
+          "tier": 2
+        },
+        {
+          "access": {
+            "catalogue": "imbuement-access.json",
+            "direct_shrine_target_unequipped_required": true,
+            "premium_required": true,
+            "profile": "Dragon Hide",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED",
+            "tier": "powerful"
+          },
+          "apply_fee_gold": 250000,
+          "clear_fee_gold": 15000,
+          "duration_ms": 72000000,
+          "effect": {
+            "absorb_bps": 1500,
+            "element": "fire",
+            "kind": "protection"
+          },
+          "materials": [
+            {
+              "count": 20,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i5877",
+                "revision": "definition-r1"
+              },
+              "source_name": "Green Dragon Leather"
+            },
+            {
+              "count": 10,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i16131",
+                "revision": "definition-r1"
+              },
+              "source_name": "Blazing Bone"
+            },
+            {
+              "count": 5,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i11658",
+                "revision": "definition-r1"
+              },
+              "source_name": "Draken Sulphur"
+            }
+          ],
+          "name": "Powerful",
+          "provenance": {
+            "access": "imbuement-access.json",
+            "duration": "manual",
+            "effect": "wiki_br",
+            "fees": "global-rules-evidence.json",
+            "materials": "wiki_br"
+          },
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i51449",
+            "revision": "definition-r1"
+          },
+          "tier": 3
+        }
+      ]
+    },
+    {
+      "candidate_key": "electrify",
+      "category": "elemental_damage",
+      "item_eligibility_binding": {
+        "candidate_key": "electrify",
+        "catalogue": "imbuement-eligibility.json"
+      },
+      "name": "Electrify",
+      "parity": "AUDITED_WITH_EXPLICIT_GAPS",
+      "tiers": [
+        {
+          "access": {
+            "catalogue": "imbuement-access.json",
+            "direct_shrine_target_unequipped_required": true,
+            "premium_required": false,
+            "profile": "Electrify",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED",
+            "tier": "basic"
+          },
+          "apply_fee_gold": 7500,
+          "clear_fee_gold": 15000,
+          "duration_ms": 72000000,
+          "effect": {
+            "element": "energy",
+            "kind": "elemental_conversion",
+            "share_bps": 1000
+          },
+          "materials": [
+            {
+              "count": 25,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i18993",
+                "revision": "definition-r1"
+              },
+              "source_name": "Rorc Feather"
+            }
+          ],
+          "name": "Basic",
+          "provenance": {
+            "access": "imbuement-access.json",
+            "duration": "manual",
+            "effect": "wiki_br",
+            "fees": "global-rules-evidence.json",
+            "materials": "wiki_br"
+          },
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i53757",
+            "revision": "definition-r1"
+          },
+          "tier": 1
+        },
+        {
+          "access": {
+            "catalogue": "imbuement-access.json",
+            "direct_shrine_target_unequipped_required": true,
+            "premium_required": true,
+            "profile": "Electrify",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED",
+            "tier": "intricate"
+          },
+          "apply_fee_gold": 60000,
+          "clear_fee_gold": 15000,
+          "duration_ms": 72000000,
+          "effect": {
+            "element": "energy",
+            "kind": "elemental_conversion",
+            "share_bps": 2500
+          },
+          "materials": [
+            {
+              "count": 25,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i18993",
+                "revision": "definition-r1"
+              },
+              "source_name": "Rorc Feather"
+            },
+            {
+              "count": 5,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i21975",
+                "revision": "definition-r1"
+              },
+              "source_name": "Peacock Feather Fan"
+            }
+          ],
+          "name": "Intricate",
+          "provenance": {
+            "access": "imbuement-access.json",
+            "duration": "manual",
+            "effect": "wiki_br",
+            "fees": "global-rules-evidence.json",
+            "materials": "wiki_br"
+          },
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i51730",
+            "revision": "definition-r1"
+          },
+          "tier": 2
+        },
+        {
+          "access": {
+            "catalogue": "imbuement-access.json",
+            "direct_shrine_target_unequipped_required": true,
+            "premium_required": true,
+            "profile": "Electrify",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED",
+            "tier": "powerful"
+          },
+          "apply_fee_gold": 250000,
+          "clear_fee_gold": 15000,
+          "duration_ms": 72000000,
+          "effect": {
+            "element": "energy",
+            "kind": "elemental_conversion",
+            "share_bps": 5000
+          },
+          "materials": [
+            {
+              "count": 25,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i18993",
+                "revision": "definition-r1"
+              },
+              "source_name": "Rorc Feather"
+            },
+            {
+              "count": 5,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i21975",
+                "revision": "definition-r1"
+              },
+              "source_name": "Peacock Feather Fan"
+            },
+            {
+              "count": 1,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i23508",
+                "revision": "definition-r1"
+              },
+              "source_name": "Energy Vein"
+            }
+          ],
+          "name": "Powerful",
+          "provenance": {
+            "access": "imbuement-access.json",
+            "duration": "manual",
+            "effect": "wiki_br",
+            "fees": "global-rules-evidence.json",
+            "materials": "wiki_br"
+          },
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i51450",
+            "revision": "definition-r1"
+          },
+          "tier": 3
+        }
+      ]
+    },
+    {
+      "candidate_key": "epiphany",
+      "category": "epiphany",
+      "item_eligibility_binding": {
+        "candidate_key": "epiphany",
+        "catalogue": "imbuement-eligibility.json"
+      },
+      "name": "Epiphany",
+      "parity": "AUDITED_WITH_EXPLICIT_GAPS",
+      "tiers": [
+        {
+          "access": {
+            "catalogue": "imbuement-access.json",
+            "direct_shrine_target_unequipped_required": true,
+            "premium_required": false,
+            "profile": "Epiphany",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED",
+            "tier": "basic"
+          },
+          "apply_fee_gold": 7500,
+          "clear_fee_gold": 15000,
+          "duration_ms": 72000000,
+          "effect": {
+            "amount": 1,
+            "kind": "skill_bonus",
+            "skill": "magic_level"
+          },
+          "materials": [
+            {
+              "count": 25,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i9635",
+                "revision": "definition-r1"
+              },
+              "source_name": "Elvish Talisman"
+            }
+          ],
+          "name": "Basic",
+          "provenance": {
+            "access": "imbuement-access.json",
+            "duration": "manual",
+            "effect": "wiki_br",
+            "fees": "global-rules-evidence.json",
+            "materials": "wiki_br"
+          },
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i53758",
+            "revision": "definition-r1"
+          },
+          "tier": 1
+        },
+        {
+          "access": {
+            "catalogue": "imbuement-access.json",
+            "direct_shrine_target_unequipped_required": true,
+            "premium_required": true,
+            "profile": "Epiphany",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED",
+            "tier": "intricate"
+          },
+          "apply_fee_gold": 60000,
+          "clear_fee_gold": 15000,
+          "duration_ms": 72000000,
+          "effect": {
+            "amount": 2,
+            "kind": "skill_bonus",
+            "skill": "magic_level"
+          },
+          "materials": [
+            {
+              "count": 25,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i9635",
+                "revision": "definition-r1"
+              },
+              "source_name": "Elvish Talisman"
+            },
+            {
+              "count": 15,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i11452",
+                "revision": "definition-r1"
+              },
+              "source_name": "Broken Shamanic Staff"
+            }
+          ],
+          "name": "Intricate",
+          "provenance": {
+            "access": "imbuement-access.json",
+            "duration": "manual",
+            "effect": "wiki_br",
+            "fees": "global-rules-evidence.json",
+            "materials": "wiki_br"
+          },
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i51731",
+            "revision": "definition-r1"
+          },
+          "tier": 2
+        },
+        {
+          "access": {
+            "catalogue": "imbuement-access.json",
+            "direct_shrine_target_unequipped_required": true,
+            "premium_required": true,
+            "profile": "Epiphany",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED",
+            "tier": "powerful"
+          },
+          "apply_fee_gold": 250000,
+          "clear_fee_gold": 15000,
+          "duration_ms": 72000000,
+          "effect": {
+            "amount": 4,
+            "kind": "skill_bonus",
+            "skill": "magic_level"
+          },
+          "materials": [
+            {
+              "count": 25,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i9635",
+                "revision": "definition-r1"
+              },
+              "source_name": "Elvish Talisman"
+            },
+            {
+              "count": 15,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i11452",
+                "revision": "definition-r1"
+              },
+              "source_name": "Broken Shamanic Staff"
+            },
+            {
+              "count": 15,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i10309",
+                "revision": "definition-r1"
+              },
+              "source_name": "Strand of Medusa Hair"
+            }
+          ],
+          "name": "Powerful",
+          "provenance": {
+            "access": "imbuement-access.json",
+            "duration": "manual",
+            "effect": "wiki_br",
+            "fees": "global-rules-evidence.json",
+            "materials": "wiki_br"
+          },
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i51451",
+            "revision": "definition-r1"
+          },
+          "tier": 3
+        }
+      ]
+    },
+    {
+      "candidate_key": "featherweight",
+      "category": "featherweight",
+      "item_eligibility_binding": {
+        "candidate_key": "featherweight",
+        "catalogue": "imbuement-eligibility.json"
+      },
+      "name": "Featherweight",
+      "parity": "AUDITED_WITH_EXPLICIT_GAPS",
+      "tiers": [
+        {
+          "access": {
+            "catalogue": "imbuement-access.json",
+            "direct_shrine_target_unequipped_required": true,
+            "premium_required": false,
+            "profile": "Featherweight",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED",
+            "tier": "basic"
+          },
+          "apply_fee_gold": 7500,
+          "clear_fee_gold": 15000,
+          "duration_ms": 72000000,
+          "effect": {
+            "increase_bps": 300,
+            "kind": "capacity_bonus"
+          },
+          "materials": [
+            {
+              "count": 20,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i25694",
+                "revision": "definition-r1"
+              },
+              "source_name": "Fairy Wings"
+            }
+          ],
+          "name": "Basic",
+          "provenance": {
+            "access": "imbuement-access.json",
+            "duration": "manual",
+            "effect": "wiki_br",
+            "fees": "global-rules-evidence.json",
+            "materials": "wiki_br"
+          },
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i53759",
+            "revision": "definition-r1"
+          },
+          "tier": 1
+        },
+        {
+          "access": {
+            "catalogue": "imbuement-access.json",
+            "direct_shrine_target_unequipped_required": true,
+            "premium_required": true,
+            "profile": "Featherweight",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED",
+            "tier": "intricate"
+          },
+          "apply_fee_gold": 60000,
+          "clear_fee_gold": 15000,
+          "duration_ms": 72000000,
+          "effect": {
+            "increase_bps": 800,
+            "kind": "capacity_bonus"
+          },
+          "materials": [
+            {
+              "count": 20,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i25694",
+                "revision": "definition-r1"
+              },
+              "source_name": "Fairy Wings"
+            },
+            {
+              "count": 10,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i25702",
+                "revision": "definition-r1"
+              },
+              "source_name": "Little Bowl of Myrrh"
+            }
+          ],
+          "name": "Intricate",
+          "provenance": {
+            "access": "imbuement-access.json",
+            "duration": "manual",
+            "effect": "wiki_br",
+            "fees": "global-rules-evidence.json",
+            "materials": "wiki_br"
+          },
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i51732",
+            "revision": "definition-r1"
+          },
+          "tier": 2
+        },
+        {
+          "access": {
+            "catalogue": "imbuement-access.json",
+            "direct_shrine_target_unequipped_required": true,
+            "premium_required": true,
+            "profile": "Featherweight",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED",
+            "tier": "powerful"
+          },
+          "apply_fee_gold": 250000,
+          "clear_fee_gold": 15000,
+          "duration_ms": 72000000,
+          "effect": {
+            "increase_bps": 1500,
+            "kind": "capacity_bonus"
+          },
+          "materials": [
+            {
+              "count": 20,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i25694",
+                "revision": "definition-r1"
+              },
+              "source_name": "Fairy Wings"
+            },
+            {
+              "count": 10,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i25702",
+                "revision": "definition-r1"
+              },
+              "source_name": "Little Bowl of Myrrh"
+            },
+            {
+              "count": 5,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i20205",
+                "revision": "definition-r1"
+              },
+              "source_name": "Goosebump Leather"
+            }
+          ],
+          "name": "Powerful",
+          "provenance": {
+            "access": "imbuement-access.json",
+            "duration": "manual",
+            "effect": "wiki_br",
+            "fees": "global-rules-evidence.json",
+            "materials": "wiki_br"
+          },
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i51452",
+            "revision": "definition-r1"
+          },
+          "tier": 3
+        }
+      ]
+    },
+    {
+      "candidate_key": "frost",
+      "category": "elemental_damage",
+      "item_eligibility_binding": {
+        "candidate_key": "frost",
+        "catalogue": "imbuement-eligibility.json"
+      },
+      "name": "Frost",
+      "parity": "AUDITED_WITH_EXPLICIT_GAPS",
+      "tiers": [
+        {
+          "access": {
+            "catalogue": "imbuement-access.json",
+            "direct_shrine_target_unequipped_required": true,
+            "premium_required": false,
+            "profile": "Frost",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED",
+            "tier": "basic"
+          },
+          "apply_fee_gold": 7500,
+          "clear_fee_gold": 15000,
+          "duration_ms": 72000000,
+          "effect": {
+            "element": "ice",
+            "kind": "elemental_conversion",
+            "share_bps": 1000
+          },
+          "materials": [
+            {
+              "count": 25,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i9661",
+                "revision": "definition-r1"
+              },
+              "source_name": "Frosty Heart"
+            }
+          ],
+          "name": "Basic",
+          "provenance": {
+            "access": "imbuement-access.json",
+            "duration": "manual",
+            "effect": "wiki_br",
+            "fees": "global-rules-evidence.json",
+            "materials": "wiki_br"
+          },
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i53760",
+            "revision": "definition-r1"
+          },
+          "tier": 1
+        },
+        {
+          "access": {
+            "catalogue": "imbuement-access.json",
+            "direct_shrine_target_unequipped_required": true,
+            "premium_required": true,
+            "profile": "Frost",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED",
+            "tier": "intricate"
+          },
+          "apply_fee_gold": 60000,
+          "clear_fee_gold": 15000,
+          "duration_ms": 72000000,
+          "effect": {
+            "element": "ice",
+            "kind": "elemental_conversion",
+            "share_bps": 2500
+          },
+          "materials": [
+            {
+              "count": 25,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i9661",
+                "revision": "definition-r1"
+              },
+              "source_name": "Frosty Heart"
+            },
+            {
+              "count": 10,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i21801",
+                "revision": "definition-r1"
+              },
+              "source_name": "Seacrest Hair"
+            }
+          ],
+          "name": "Intricate",
+          "provenance": {
+            "access": "imbuement-access.json",
+            "duration": "manual",
+            "effect": "wiki_br",
+            "fees": "global-rules-evidence.json",
+            "materials": "wiki_br"
+          },
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i51733",
+            "revision": "definition-r1"
+          },
+          "tier": 2
+        },
+        {
+          "access": {
+            "catalogue": "imbuement-access.json",
+            "direct_shrine_target_unequipped_required": true,
+            "premium_required": true,
+            "profile": "Frost",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED",
+            "tier": "powerful"
+          },
+          "apply_fee_gold": 250000,
+          "clear_fee_gold": 15000,
+          "duration_ms": 72000000,
+          "effect": {
+            "element": "ice",
+            "kind": "elemental_conversion",
+            "share_bps": 5000
+          },
+          "materials": [
+            {
+              "count": 25,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i9661",
+                "revision": "definition-r1"
+              },
+              "source_name": "Frosty Heart"
+            },
+            {
+              "count": 10,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i21801",
+                "revision": "definition-r1"
+              },
+              "source_name": "Seacrest Hair"
+            },
+            {
+              "count": 5,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i9650",
+                "revision": "definition-r1"
+              },
+              "source_name": "Polar Bear Paw"
+            }
+          ],
+          "name": "Powerful",
+          "provenance": {
+            "access": "imbuement-access.json",
+            "duration": "manual",
+            "effect": "wiki_br",
+            "fees": "global-rules-evidence.json",
+            "materials": "wiki_br"
+          },
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i51453",
+            "revision": "definition-r1"
+          },
+          "tier": 3
+        }
+      ]
+    },
+    {
+      "candidate_key": "lich_shroud",
+      "category": "lich_shroud",
+      "item_eligibility_binding": {
+        "candidate_key": "lich_shroud",
+        "catalogue": "imbuement-eligibility.json"
+      },
+      "name": "Lich Shroud",
+      "parity": "AUDITED_WITH_EXPLICIT_GAPS",
+      "tiers": [
+        {
+          "access": {
+            "catalogue": "imbuement-access.json",
+            "direct_shrine_target_unequipped_required": true,
+            "premium_required": false,
+            "profile": "Lich Shroud",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED",
+            "tier": "basic"
+          },
+          "apply_fee_gold": 7500,
+          "clear_fee_gold": 15000,
+          "duration_ms": 72000000,
+          "effect": {
+            "absorb_bps": 200,
+            "element": "death",
+            "kind": "protection"
+          },
+          "materials": [
+            {
+              "count": 25,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i11466",
+                "revision": "definition-r1"
+              },
+              "source_name": "Flask of Embalming Fluid"
+            }
+          ],
+          "name": "Basic",
+          "provenance": {
+            "access": "imbuement-access.json",
+            "duration": "manual",
+            "effect": "wiki_br",
+            "fees": "global-rules-evidence.json",
+            "materials": "wiki_br"
+          },
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i53761",
+            "revision": "definition-r1"
+          },
+          "tier": 1
+        },
+        {
+          "access": {
+            "catalogue": "imbuement-access.json",
+            "direct_shrine_target_unequipped_required": true,
+            "premium_required": true,
+            "profile": "Lich Shroud",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED",
+            "tier": "intricate"
+          },
+          "apply_fee_gold": 60000,
+          "clear_fee_gold": 15000,
+          "duration_ms": 72000000,
+          "effect": {
+            "absorb_bps": 500,
+            "element": "death",
+            "kind": "protection"
+          },
+          "materials": [
+            {
+              "count": 25,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i11466",
+                "revision": "definition-r1"
+              },
+              "source_name": "Flask of Embalming Fluid"
+            },
+            {
+              "count": 20,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i22007",
+                "revision": "definition-r1"
+              },
+              "source_name": "Gloom Wolf Fur"
+            }
+          ],
+          "name": "Intricate",
+          "provenance": {
+            "access": "imbuement-access.json",
+            "duration": "manual",
+            "effect": "wiki_br",
+            "fees": "global-rules-evidence.json",
+            "materials": "wiki_br"
+          },
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i51734",
+            "revision": "definition-r1"
+          },
+          "tier": 2
+        },
+        {
+          "access": {
+            "catalogue": "imbuement-access.json",
+            "direct_shrine_target_unequipped_required": true,
+            "premium_required": true,
+            "profile": "Lich Shroud",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED",
+            "tier": "powerful"
+          },
+          "apply_fee_gold": 250000,
+          "clear_fee_gold": 15000,
+          "duration_ms": 72000000,
+          "effect": {
+            "absorb_bps": 1000,
+            "element": "death",
+            "kind": "protection"
+          },
+          "materials": [
+            {
+              "count": 25,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i11466",
+                "revision": "definition-r1"
+              },
+              "source_name": "Flask of Embalming Fluid"
+            },
+            {
+              "count": 20,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i22007",
+                "revision": "definition-r1"
+              },
+              "source_name": "Gloom Wolf Fur"
+            },
+            {
+              "count": 5,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i9660",
+                "revision": "definition-r1"
+              },
+              "source_name": "Mystical Hourglass"
+            }
+          ],
+          "name": "Powerful",
+          "provenance": {
+            "access": "imbuement-access.json",
+            "duration": "manual",
+            "effect": "wiki_br",
+            "fees": "global-rules-evidence.json",
+            "materials": "wiki_br"
+          },
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i51454",
+            "revision": "definition-r1"
+          },
+          "tier": 3
+        }
+      ]
+    },
+    {
+      "candidate_key": "precision",
+      "category": "precision",
+      "item_eligibility_binding": {
+        "candidate_key": "precision",
+        "catalogue": "imbuement-eligibility.json"
+      },
+      "name": "Precision",
+      "parity": "AUDITED_WITH_EXPLICIT_GAPS",
+      "tiers": [
+        {
+          "access": {
+            "catalogue": "imbuement-access.json",
+            "direct_shrine_target_unequipped_required": true,
+            "premium_required": false,
+            "profile": "Precision",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED",
+            "tier": "basic"
+          },
+          "apply_fee_gold": 7500,
+          "clear_fee_gold": 15000,
+          "duration_ms": 72000000,
+          "effect": {
+            "amount": 1,
+            "kind": "skill_bonus",
+            "skill": "distance"
+          },
+          "materials": [
+            {
+              "count": 25,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i11464",
+                "revision": "definition-r1"
+              },
+              "source_name": "Elven Scouting Glass"
+            }
+          ],
+          "name": "Basic",
+          "provenance": {
+            "access": "imbuement-access.json",
+            "duration": "manual",
+            "effect": "wiki_br",
+            "fees": "global-rules-evidence.json",
+            "materials": "wiki_br"
+          },
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i53762",
+            "revision": "definition-r1"
+          },
+          "tier": 1
+        },
+        {
+          "access": {
+            "catalogue": "imbuement-access.json",
+            "direct_shrine_target_unequipped_required": true,
+            "premium_required": true,
+            "profile": "Precision",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED",
+            "tier": "intricate"
+          },
+          "apply_fee_gold": 60000,
+          "clear_fee_gold": 15000,
+          "duration_ms": 72000000,
+          "effect": {
+            "amount": 2,
+            "kind": "skill_bonus",
+            "skill": "distance"
+          },
+          "materials": [
+            {
+              "count": 25,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i11464",
+                "revision": "definition-r1"
+              },
+              "source_name": "Elven Scouting Glass"
+            },
+            {
+              "count": 20,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i18994",
+                "revision": "definition-r1"
+              },
+              "source_name": "Elven Hoof"
+            }
+          ],
+          "name": "Intricate",
+          "provenance": {
+            "access": "imbuement-access.json",
+            "duration": "manual",
+            "effect": "wiki_br",
+            "fees": "global-rules-evidence.json",
+            "materials": "wiki_br"
+          },
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i51735",
+            "revision": "definition-r1"
+          },
+          "tier": 2
+        },
+        {
+          "access": {
+            "catalogue": "imbuement-access.json",
+            "direct_shrine_target_unequipped_required": true,
+            "premium_required": true,
+            "profile": "Precision",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED",
+            "tier": "powerful"
+          },
+          "apply_fee_gold": 250000,
+          "clear_fee_gold": 15000,
+          "duration_ms": 72000000,
+          "effect": {
+            "amount": 4,
+            "kind": "skill_bonus",
+            "skill": "distance"
+          },
+          "materials": [
+            {
+              "count": 25,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i11464",
+                "revision": "definition-r1"
+              },
+              "source_name": "Elven Scouting Glass"
+            },
+            {
+              "count": 20,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i18994",
+                "revision": "definition-r1"
+              },
+              "source_name": "Elven Hoof"
+            },
+            {
+              "count": 10,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i10298",
+                "revision": "definition-r1"
+              },
+              "source_name": "Metal Spike"
+            }
+          ],
+          "name": "Powerful",
+          "provenance": {
+            "access": "imbuement-access.json",
+            "duration": "manual",
+            "effect": "wiki_br",
+            "fees": "global-rules-evidence.json",
+            "materials": "wiki_br"
+          },
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i51455",
+            "revision": "definition-r1"
+          },
+          "tier": 3
+        }
+      ]
+    },
+    {
+      "candidate_key": "punch",
+      "category": "punch",
+      "item_eligibility_binding": {
+        "candidate_key": "punch",
+        "catalogue": "imbuement-eligibility.json"
+      },
+      "name": "Punch",
+      "parity": "AUDITED_WITH_EXPLICIT_GAPS",
+      "tiers": [
+        {
+          "access": {
+            "catalogue": "imbuement-access.json",
+            "direct_shrine_target_unequipped_required": true,
+            "premium_required": false,
+            "profile": "Punch",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED",
+            "tier": "basic"
+          },
+          "apply_fee_gold": 7500,
+          "clear_fee_gold": 15000,
+          "duration_ms": 72000000,
+          "effect": {
+            "amount": 1,
+            "kind": "skill_bonus",
+            "skill": "fist"
+          },
+          "materials": [
+            {
+              "count": 25,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i10281",
+                "revision": "definition-r1"
+              },
+              "source_name": "Tarantula Egg"
+            }
+          ],
+          "name": "Basic",
+          "provenance": {
+            "access": "imbuement-access.json",
+            "duration": "manual",
+            "effect": "wiki_br",
+            "fees": "global-rules-evidence.json",
+            "materials": "wiki_br"
+          },
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i53763",
+            "revision": "definition-r1"
+          },
+          "tier": 1
+        },
+        {
+          "access": {
+            "catalogue": "imbuement-access.json",
+            "direct_shrine_target_unequipped_required": true,
+            "premium_required": true,
+            "profile": "Punch",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED",
+            "tier": "intricate"
+          },
+          "apply_fee_gold": 60000,
+          "clear_fee_gold": 15000,
+          "duration_ms": 72000000,
+          "effect": {
+            "amount": 2,
+            "kind": "skill_bonus",
+            "skill": "fist"
+          },
+          "materials": [
+            {
+              "count": 25,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i10281",
+                "revision": "definition-r1"
+              },
+              "source_name": "Tarantula Egg"
+            },
+            {
+              "count": 20,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i11489",
+                "revision": "definition-r1"
+              },
+              "source_name": "Mantassin Tail"
+            }
+          ],
+          "name": "Intricate",
+          "provenance": {
+            "access": "imbuement-access.json",
+            "duration": "manual",
+            "effect": "wiki_br",
+            "fees": "global-rules-evidence.json",
+            "materials": "wiki_br"
+          },
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i51736",
+            "revision": "definition-r1"
+          },
+          "tier": 2
+        },
+        {
+          "access": {
+            "catalogue": "imbuement-access.json",
+            "direct_shrine_target_unequipped_required": true,
+            "premium_required": true,
+            "profile": "Punch",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED",
+            "tier": "powerful"
+          },
+          "apply_fee_gold": 250000,
+          "clear_fee_gold": 15000,
+          "duration_ms": 72000000,
+          "effect": {
+            "amount": 4,
+            "kind": "skill_bonus",
+            "skill": "fist"
+          },
+          "materials": [
+            {
+              "count": 25,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i10281",
+                "revision": "definition-r1"
+              },
+              "source_name": "Tarantula Egg"
+            },
+            {
+              "count": 20,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i11489",
+                "revision": "definition-r1"
+              },
+              "source_name": "Mantassin Tail"
+            },
+            {
+              "count": 15,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i40529",
+                "revision": "definition-r1"
+              },
+              "source_name": "Gold-Brocaded Cloth"
+            }
+          ],
+          "name": "Powerful",
+          "provenance": {
+            "access": "imbuement-access.json",
+            "duration": "manual",
+            "effect": "wiki_br",
+            "fees": "global-rules-evidence.json",
+            "materials": "wiki_br"
+          },
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i51456",
+            "revision": "definition-r1"
+          },
+          "tier": 3
+        }
+      ]
+    },
+    {
+      "candidate_key": "quara_scale",
+      "category": "quara_scale",
+      "item_eligibility_binding": {
+        "candidate_key": "quara_scale",
+        "catalogue": "imbuement-eligibility.json"
+      },
+      "name": "Quara Scale",
+      "parity": "AUDITED_WITH_EXPLICIT_GAPS",
+      "tiers": [
+        {
+          "access": {
+            "catalogue": "imbuement-access.json",
+            "direct_shrine_target_unequipped_required": true,
+            "premium_required": false,
+            "profile": "Quara Scale",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED",
+            "tier": "basic"
+          },
+          "apply_fee_gold": 7500,
+          "clear_fee_gold": 15000,
+          "duration_ms": 72000000,
+          "effect": {
+            "absorb_bps": 300,
+            "element": "ice",
+            "kind": "protection"
+          },
+          "materials": [
+            {
+              "count": 25,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i10295",
+                "revision": "definition-r1"
+              },
+              "source_name": "Winter Wolf Fur"
+            }
+          ],
+          "name": "Basic",
+          "provenance": {
+            "access": "imbuement-access.json",
+            "duration": "manual",
+            "effect": "wiki_br",
+            "fees": "global-rules-evidence.json",
+            "materials": "wiki_br"
+          },
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i53764",
+            "revision": "definition-r1"
+          },
+          "tier": 1
+        },
+        {
+          "access": {
+            "catalogue": "imbuement-access.json",
+            "direct_shrine_target_unequipped_required": true,
+            "premium_required": true,
+            "profile": "Quara Scale",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED",
+            "tier": "intricate"
+          },
+          "apply_fee_gold": 60000,
+          "clear_fee_gold": 15000,
+          "duration_ms": 72000000,
+          "effect": {
+            "absorb_bps": 800,
+            "element": "ice",
+            "kind": "protection"
+          },
+          "materials": [
+            {
+              "count": 25,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i10295",
+                "revision": "definition-r1"
+              },
+              "source_name": "Winter Wolf Fur"
+            },
+            {
+              "count": 15,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i10307",
+                "revision": "definition-r1"
+              },
+              "source_name": "Thick Fur"
+            }
+          ],
+          "name": "Intricate",
+          "provenance": {
+            "access": "imbuement-access.json",
+            "duration": "manual",
+            "effect": "wiki_br",
+            "fees": "global-rules-evidence.json",
+            "materials": "wiki_br"
+          },
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i51737",
+            "revision": "definition-r1"
+          },
+          "tier": 2
+        },
+        {
+          "access": {
+            "catalogue": "imbuement-access.json",
+            "direct_shrine_target_unequipped_required": true,
+            "premium_required": true,
+            "profile": "Quara Scale",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED",
+            "tier": "powerful"
+          },
+          "apply_fee_gold": 250000,
+          "clear_fee_gold": 15000,
+          "duration_ms": 72000000,
+          "effect": {
+            "absorb_bps": 1500,
+            "element": "ice",
+            "kind": "protection"
+          },
+          "materials": [
+            {
+              "count": 25,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i10295",
+                "revision": "definition-r1"
+              },
+              "source_name": "Winter Wolf Fur"
+            },
+            {
+              "count": 15,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i10307",
+                "revision": "definition-r1"
+              },
+              "source_name": "Thick Fur"
+            },
+            {
+              "count": 10,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i14012",
+                "revision": "definition-r1"
+              },
+              "source_name": "Deepling Warts"
+            }
+          ],
+          "name": "Powerful",
+          "provenance": {
+            "access": "imbuement-access.json",
+            "duration": "manual",
+            "effect": "wiki_br",
+            "fees": "global-rules-evidence.json",
+            "materials": "wiki_br"
+          },
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i51457",
+            "revision": "definition-r1"
+          },
+          "tier": 3
+        }
+      ]
+    },
+    {
+      "candidate_key": "reap",
+      "category": "elemental_damage",
+      "item_eligibility_binding": {
+        "candidate_key": "reap",
+        "catalogue": "imbuement-eligibility.json"
+      },
+      "name": "Reap",
+      "parity": "AUDITED_WITH_EXPLICIT_GAPS",
+      "tiers": [
+        {
+          "access": {
+            "catalogue": "imbuement-access.json",
+            "direct_shrine_target_unequipped_required": true,
+            "premium_required": false,
+            "profile": "Reap",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED",
+            "tier": "basic"
+          },
+          "apply_fee_gold": 7500,
+          "clear_fee_gold": 15000,
+          "duration_ms": 72000000,
+          "effect": {
+            "element": "death",
+            "kind": "elemental_conversion",
+            "share_bps": 1000
+          },
+          "materials": [
+            {
+              "count": 25,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i11484",
+                "revision": "definition-r1"
+              },
+              "source_name": "Pile of Grave Earth"
+            }
+          ],
+          "name": "Basic",
+          "provenance": {
+            "access": "imbuement-access.json",
+            "duration": "manual",
+            "effect": "wiki_br",
+            "fees": "global-rules-evidence.json",
+            "materials": "wiki_br"
+          },
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i53765",
+            "revision": "definition-r1"
+          },
+          "tier": 1
+        },
+        {
+          "access": {
+            "catalogue": "imbuement-access.json",
+            "direct_shrine_target_unequipped_required": true,
+            "premium_required": true,
+            "profile": "Reap",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED",
+            "tier": "intricate"
+          },
+          "apply_fee_gold": 60000,
+          "clear_fee_gold": 15000,
+          "duration_ms": 72000000,
+          "effect": {
+            "element": "death",
+            "kind": "elemental_conversion",
+            "share_bps": 2500
+          },
+          "materials": [
+            {
+              "count": 25,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i11484",
+                "revision": "definition-r1"
+              },
+              "source_name": "Pile of Grave Earth"
+            },
+            {
+              "count": 20,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i9647",
+                "revision": "definition-r1"
+              },
+              "source_name": "Demonic Skeletal Hand"
+            }
+          ],
+          "name": "Intricate",
+          "provenance": {
+            "access": "imbuement-access.json",
+            "duration": "manual",
+            "effect": "wiki_br",
+            "fees": "global-rules-evidence.json",
+            "materials": "wiki_br"
+          },
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i51738",
+            "revision": "definition-r1"
+          },
+          "tier": 2
+        },
+        {
+          "access": {
+            "catalogue": "imbuement-access.json",
+            "direct_shrine_target_unequipped_required": true,
+            "premium_required": true,
+            "profile": "Reap",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED",
+            "tier": "powerful"
+          },
+          "apply_fee_gold": 250000,
+          "clear_fee_gold": 15000,
+          "duration_ms": 72000000,
+          "effect": {
+            "element": "death",
+            "kind": "elemental_conversion",
+            "share_bps": 5000
+          },
+          "materials": [
+            {
+              "count": 25,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i11484",
+                "revision": "definition-r1"
+              },
+              "source_name": "Pile of Grave Earth"
+            },
+            {
+              "count": 20,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i9647",
+                "revision": "definition-r1"
+              },
+              "source_name": "Demonic Skeletal Hand"
+            },
+            {
+              "count": 5,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i10420",
+                "revision": "definition-r1"
+              },
+              "source_name": "Petrified Scream"
+            }
+          ],
+          "name": "Powerful",
+          "provenance": {
+            "access": "imbuement-access.json",
+            "duration": "manual",
+            "effect": "wiki_br",
+            "fees": "global-rules-evidence.json",
+            "materials": "wiki_br"
+          },
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i51458",
+            "revision": "definition-r1"
+          },
+          "tier": 3
+        }
+      ]
+    },
+    {
+      "candidate_key": "scorch",
+      "category": "elemental_damage",
+      "item_eligibility_binding": {
+        "candidate_key": "scorch",
+        "catalogue": "imbuement-eligibility.json"
+      },
+      "name": "Scorch",
+      "parity": "AUDITED_WITH_EXPLICIT_GAPS",
+      "tiers": [
+        {
+          "access": {
+            "catalogue": "imbuement-access.json",
+            "direct_shrine_target_unequipped_required": true,
+            "premium_required": false,
+            "profile": "Scorch",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED",
+            "tier": "basic"
+          },
+          "apply_fee_gold": 7500,
+          "clear_fee_gold": 15000,
+          "duration_ms": 72000000,
+          "effect": {
+            "element": "fire",
+            "kind": "elemental_conversion",
+            "share_bps": 1000
+          },
+          "materials": [
+            {
+              "count": 25,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i9636",
+                "revision": "definition-r1"
+              },
+              "source_name": "Fiery Heart"
+            }
+          ],
+          "name": "Basic",
+          "provenance": {
+            "access": "imbuement-access.json",
+            "duration": "manual",
+            "effect": "wiki_br",
+            "fees": "global-rules-evidence.json",
+            "materials": "wiki_br"
+          },
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i53766",
+            "revision": "definition-r1"
+          },
+          "tier": 1
+        },
+        {
+          "access": {
+            "catalogue": "imbuement-access.json",
+            "direct_shrine_target_unequipped_required": true,
+            "premium_required": true,
+            "profile": "Scorch",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED",
+            "tier": "intricate"
+          },
+          "apply_fee_gold": 60000,
+          "clear_fee_gold": 15000,
+          "duration_ms": 72000000,
+          "effect": {
+            "element": "fire",
+            "kind": "elemental_conversion",
+            "share_bps": 2500
+          },
+          "materials": [
+            {
+              "count": 25,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i9636",
+                "revision": "definition-r1"
+              },
+              "source_name": "Fiery Heart"
+            },
+            {
+              "count": 5,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i5920",
+                "revision": "definition-r1"
+              },
+              "source_name": "Green Dragon Scale"
+            }
+          ],
+          "name": "Intricate",
+          "provenance": {
+            "access": "imbuement-access.json",
+            "duration": "manual",
+            "effect": "wiki_br",
+            "fees": "global-rules-evidence.json",
+            "materials": "wiki_br"
+          },
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i51739",
+            "revision": "definition-r1"
+          },
+          "tier": 2
+        },
+        {
+          "access": {
+            "catalogue": "imbuement-access.json",
+            "direct_shrine_target_unequipped_required": true,
+            "premium_required": true,
+            "profile": "Scorch",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED",
+            "tier": "powerful"
+          },
+          "apply_fee_gold": 250000,
+          "clear_fee_gold": 15000,
+          "duration_ms": 72000000,
+          "effect": {
+            "element": "fire",
+            "kind": "elemental_conversion",
+            "share_bps": 5000
+          },
+          "materials": [
+            {
+              "count": 25,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i9636",
+                "revision": "definition-r1"
+              },
+              "source_name": "Fiery Heart"
+            },
+            {
+              "count": 5,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i5920",
+                "revision": "definition-r1"
+              },
+              "source_name": "Green Dragon Scale"
+            },
+            {
+              "count": 5,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i5954",
+                "revision": "definition-r1"
+              },
+              "source_name": "Demon Horn"
+            }
+          ],
+          "name": "Powerful",
+          "provenance": {
+            "access": "imbuement-access.json",
+            "duration": "manual",
+            "effect": "wiki_br",
+            "fees": "global-rules-evidence.json",
+            "materials": "wiki_br"
+          },
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i51459",
+            "revision": "definition-r1"
+          },
+          "tier": 3
+        }
+      ]
+    },
+    {
+      "candidate_key": "slash",
+      "category": "slash",
+      "item_eligibility_binding": {
+        "candidate_key": "slash",
+        "catalogue": "imbuement-eligibility.json"
+      },
+      "name": "Slash",
+      "parity": "AUDITED_WITH_EXPLICIT_GAPS",
+      "tiers": [
+        {
+          "access": {
+            "catalogue": "imbuement-access.json",
+            "direct_shrine_target_unequipped_required": true,
+            "premium_required": false,
+            "profile": "Slash",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED",
+            "tier": "basic"
+          },
+          "apply_fee_gold": 7500,
+          "clear_fee_gold": 15000,
+          "duration_ms": 72000000,
+          "effect": {
+            "amount": 1,
+            "kind": "skill_bonus",
+            "skill": "sword"
+          },
+          "materials": [
+            {
+              "count": 25,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i9691",
+                "revision": "definition-r1"
+              },
+              "source_name": "Lion's Mane"
+            }
+          ],
+          "name": "Basic",
+          "provenance": {
+            "access": "imbuement-access.json",
+            "duration": "manual",
+            "effect": "wiki_br",
+            "fees": "global-rules-evidence.json",
+            "materials": "wiki_br"
+          },
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i53767",
+            "revision": "definition-r1"
+          },
+          "tier": 1
+        },
+        {
+          "access": {
+            "catalogue": "imbuement-access.json",
+            "direct_shrine_target_unequipped_required": true,
+            "premium_required": true,
+            "profile": "Slash",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED",
+            "tier": "intricate"
+          },
+          "apply_fee_gold": 60000,
+          "clear_fee_gold": 15000,
+          "duration_ms": 72000000,
+          "effect": {
+            "amount": 2,
+            "kind": "skill_bonus",
+            "skill": "sword"
+          },
+          "materials": [
+            {
+              "count": 25,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i9691",
+                "revision": "definition-r1"
+              },
+              "source_name": "Lion's Mane"
+            },
+            {
+              "count": 25,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i21202",
+                "revision": "definition-r1"
+              },
+              "source_name": "Mooh'tah Shell"
+            }
+          ],
+          "name": "Intricate",
+          "provenance": {
+            "access": "imbuement-access.json",
+            "duration": "manual",
+            "effect": "wiki_br",
+            "fees": "global-rules-evidence.json",
+            "materials": "wiki_br"
+          },
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i51740",
+            "revision": "definition-r1"
+          },
+          "tier": 2
+        },
+        {
+          "access": {
+            "catalogue": "imbuement-access.json",
+            "direct_shrine_target_unequipped_required": true,
+            "premium_required": true,
+            "profile": "Slash",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED",
+            "tier": "powerful"
+          },
+          "apply_fee_gold": 250000,
+          "clear_fee_gold": 15000,
+          "duration_ms": 72000000,
+          "effect": {
+            "amount": 4,
+            "kind": "skill_bonus",
+            "skill": "sword"
+          },
+          "materials": [
+            {
+              "count": 25,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i9691",
+                "revision": "definition-r1"
+              },
+              "source_name": "Lion's Mane"
+            },
+            {
+              "count": 25,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i21202",
+                "revision": "definition-r1"
+              },
+              "source_name": "Mooh'tah Shell"
+            },
+            {
+              "count": 5,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i9654",
+                "revision": "definition-r1"
+              },
+              "source_name": "War Crystal"
+            }
+          ],
+          "name": "Powerful",
+          "provenance": {
+            "access": "imbuement-access.json",
+            "duration": "manual",
+            "effect": "wiki_br",
+            "fees": "global-rules-evidence.json",
+            "materials": "wiki_br"
+          },
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i51460",
+            "revision": "definition-r1"
+          },
+          "tier": 3
+        }
+      ]
+    },
+    {
+      "candidate_key": "snake_skin",
+      "category": "snake_skin",
+      "item_eligibility_binding": {
+        "candidate_key": "snake_skin",
+        "catalogue": "imbuement-eligibility.json"
+      },
+      "name": "Snake Skin",
+      "parity": "AUDITED_WITH_EXPLICIT_GAPS",
+      "tiers": [
+        {
+          "access": {
+            "catalogue": "imbuement-access.json",
+            "direct_shrine_target_unequipped_required": true,
+            "premium_required": false,
+            "profile": "Snake Skin",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED",
+            "tier": "basic"
+          },
+          "apply_fee_gold": 7500,
+          "clear_fee_gold": 15000,
+          "duration_ms": 72000000,
+          "effect": {
+            "absorb_bps": 300,
+            "element": "earth",
+            "kind": "protection"
+          },
+          "materials": [
+            {
+              "count": 25,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i17823",
+                "revision": "definition-r1"
+              },
+              "source_name": "Piece of Swampling Wood"
+            }
+          ],
+          "name": "Basic",
+          "provenance": {
+            "access": "imbuement-access.json",
+            "duration": "manual",
+            "effect": "wiki_br",
+            "fees": "global-rules-evidence.json",
+            "materials": "wiki_br"
+          },
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i53768",
+            "revision": "definition-r1"
+          },
+          "tier": 1
+        },
+        {
+          "access": {
+            "catalogue": "imbuement-access.json",
+            "direct_shrine_target_unequipped_required": true,
+            "premium_required": true,
+            "profile": "Snake Skin",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED",
+            "tier": "intricate"
+          },
+          "apply_fee_gold": 60000,
+          "clear_fee_gold": 15000,
+          "duration_ms": 72000000,
+          "effect": {
+            "absorb_bps": 800,
+            "element": "earth",
+            "kind": "protection"
+          },
+          "materials": [
+            {
+              "count": 25,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i17823",
+                "revision": "definition-r1"
+              },
+              "source_name": "Piece of Swampling Wood"
+            },
+            {
+              "count": 20,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i9694",
+                "revision": "definition-r1"
+              },
+              "source_name": "Snake Skin"
+            }
+          ],
+          "name": "Intricate",
+          "provenance": {
+            "access": "imbuement-access.json",
+            "duration": "manual",
+            "effect": "wiki_br",
+            "fees": "global-rules-evidence.json",
+            "materials": "wiki_br"
+          },
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i51741",
+            "revision": "definition-r1"
+          },
+          "tier": 2
+        },
+        {
+          "access": {
+            "catalogue": "imbuement-access.json",
+            "direct_shrine_target_unequipped_required": true,
+            "premium_required": true,
+            "profile": "Snake Skin",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED",
+            "tier": "powerful"
+          },
+          "apply_fee_gold": 250000,
+          "clear_fee_gold": 15000,
+          "duration_ms": 72000000,
+          "effect": {
+            "absorb_bps": 1500,
+            "element": "earth",
+            "kind": "protection"
+          },
+          "materials": [
+            {
+              "count": 25,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i17823",
+                "revision": "definition-r1"
+              },
+              "source_name": "Piece of Swampling Wood"
+            },
+            {
+              "count": 20,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i9694",
+                "revision": "definition-r1"
+              },
+              "source_name": "Snake Skin"
+            },
+            {
+              "count": 10,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i11702",
+                "revision": "definition-r1"
+              },
+              "source_name": "Brimstone Fangs"
+            }
+          ],
+          "name": "Powerful",
+          "provenance": {
+            "access": "imbuement-access.json",
+            "duration": "manual",
+            "effect": "wiki_br",
+            "fees": "global-rules-evidence.json",
+            "materials": "wiki_br"
+          },
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i51461",
+            "revision": "definition-r1"
+          },
+          "tier": 3
+        }
+      ]
+    },
+    {
+      "candidate_key": "strike",
+      "category": "strike",
+      "item_eligibility_binding": {
+        "candidate_key": "strike",
+        "catalogue": "imbuement-eligibility.json"
+      },
+      "name": "Strike",
+      "parity": "AUDITED_WITH_EXPLICIT_GAPS",
+      "tiers": [
+        {
+          "access": {
+            "catalogue": "imbuement-access.json",
+            "direct_shrine_target_unequipped_required": true,
+            "premium_required": false,
+            "profile": "Strike",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED",
+            "tier": "basic"
+          },
+          "apply_fee_gold": 7500,
+          "clear_fee_gold": 15000,
+          "duration_ms": 72000000,
+          "effect": {
+            "chance_bps": 500,
+            "extra_damage_bps": 500,
+            "kind": "critical",
+            "value_semantics": "ADDITIVE_IMBUEMENT_MODIFIER"
+          },
+          "materials": [
+            {
+              "count": 20,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i11444",
+                "revision": "definition-r1"
+              },
+              "source_name": "Protective Charm"
+            }
+          ],
+          "name": "Basic",
+          "provenance": {
+            "access": "imbuement-access.json",
+            "duration": "manual",
+            "effect": "global-rules-evidence.json#strike_additive_modifiers",
+            "fees": "global-rules-evidence.json",
+            "materials": "wiki_br"
+          },
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i53769",
+            "revision": "definition-r1"
+          },
+          "tier": 1
+        },
+        {
+          "access": {
+            "catalogue": "imbuement-access.json",
+            "direct_shrine_target_unequipped_required": true,
+            "premium_required": true,
+            "profile": "Strike",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED",
+            "tier": "intricate"
+          },
+          "apply_fee_gold": 60000,
+          "clear_fee_gold": 15000,
+          "duration_ms": 72000000,
+          "effect": {
+            "chance_bps": 500,
+            "extra_damage_bps": 1500,
+            "kind": "critical",
+            "value_semantics": "ADDITIVE_IMBUEMENT_MODIFIER"
+          },
+          "materials": [
+            {
+              "count": 20,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i11444",
+                "revision": "definition-r1"
+              },
+              "source_name": "Protective Charm"
+            },
+            {
+              "count": 25,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i10311",
+                "revision": "definition-r1"
+              },
+              "source_name": "Sabretooth (Item)"
+            }
+          ],
+          "name": "Intricate",
+          "provenance": {
+            "access": "imbuement-access.json",
+            "duration": "manual",
+            "effect": "global-rules-evidence.json#strike_additive_modifiers",
+            "fees": "global-rules-evidence.json",
+            "materials": "wiki_br"
+          },
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i51742",
+            "revision": "definition-r1"
+          },
+          "tier": 2
+        },
+        {
+          "access": {
+            "catalogue": "imbuement-access.json",
+            "direct_shrine_target_unequipped_required": true,
+            "premium_required": true,
+            "profile": "Strike",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED",
+            "tier": "powerful"
+          },
+          "apply_fee_gold": 250000,
+          "clear_fee_gold": 15000,
+          "duration_ms": 72000000,
+          "effect": {
+            "chance_bps": 500,
+            "extra_damage_bps": 4000,
+            "kind": "critical",
+            "value_semantics": "ADDITIVE_IMBUEMENT_MODIFIER"
+          },
+          "materials": [
+            {
+              "count": 20,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i11444",
+                "revision": "definition-r1"
+              },
+              "source_name": "Protective Charm"
+            },
+            {
+              "count": 25,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i10311",
+                "revision": "definition-r1"
+              },
+              "source_name": "Sabretooth (Item)"
+            },
+            {
+              "count": 5,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i22728",
+                "revision": "definition-r1"
+              },
+              "source_name": "Vexclaw Talon"
+            }
+          ],
+          "name": "Powerful",
+          "provenance": {
+            "access": "imbuement-access.json",
+            "duration": "manual",
+            "effect": "global-rules-evidence.json#strike_additive_modifiers",
+            "fees": "global-rules-evidence.json",
+            "materials": "wiki_br"
+          },
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i51462",
+            "revision": "definition-r1"
+          },
+          "tier": 3
+        }
+      ]
+    },
+    {
+      "candidate_key": "swiftness",
+      "category": "swiftness",
+      "item_eligibility_binding": {
+        "candidate_key": "swiftness",
+        "catalogue": "imbuement-eligibility.json"
+      },
+      "name": "Swiftness",
+      "parity": "AUDITED_WITH_EXPLICIT_GAPS",
+      "tiers": [
+        {
+          "access": {
+            "catalogue": "imbuement-access.json",
+            "direct_shrine_target_unequipped_required": true,
+            "premium_required": false,
+            "profile": "Swiftness",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED",
+            "tier": "basic"
+          },
+          "apply_fee_gold": 7500,
+          "clear_fee_gold": 15000,
+          "duration_ms": 72000000,
+          "effect": {
+            "amount": 10,
+            "kind": "speed_bonus"
+          },
+          "materials": [
+            {
+              "count": 15,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i17458",
+                "revision": "definition-r1"
+              },
+              "source_name": "Damselfly Wing"
+            }
+          ],
+          "name": "Basic",
+          "provenance": {
+            "access": "imbuement-access.json",
+            "duration": "manual",
+            "effect": "wiki_br",
+            "fees": "global-rules-evidence.json",
+            "materials": "wiki_br"
+          },
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i53770",
+            "revision": "definition-r1"
+          },
+          "tier": 1
+        },
+        {
+          "access": {
+            "catalogue": "imbuement-access.json",
+            "direct_shrine_target_unequipped_required": true,
+            "premium_required": true,
+            "profile": "Swiftness",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED",
+            "tier": "intricate"
+          },
+          "apply_fee_gold": 60000,
+          "clear_fee_gold": 15000,
+          "duration_ms": 72000000,
+          "effect": {
+            "amount": 15,
+            "kind": "speed_bonus"
+          },
+          "materials": [
+            {
+              "count": 15,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i17458",
+                "revision": "definition-r1"
+              },
+              "source_name": "Damselfly Wing"
+            },
+            {
+              "count": 25,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i10302",
+                "revision": "definition-r1"
+              },
+              "source_name": "Compass"
+            }
+          ],
+          "name": "Intricate",
+          "provenance": {
+            "access": "imbuement-access.json",
+            "duration": "manual",
+            "effect": "wiki_br",
+            "fees": "global-rules-evidence.json",
+            "materials": "wiki_br"
+          },
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i51743",
+            "revision": "definition-r1"
+          },
+          "tier": 2
+        },
+        {
+          "access": {
+            "catalogue": "imbuement-access.json",
+            "direct_shrine_target_unequipped_required": true,
+            "premium_required": true,
+            "profile": "Swiftness",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED",
+            "tier": "powerful"
+          },
+          "apply_fee_gold": 250000,
+          "clear_fee_gold": 15000,
+          "duration_ms": 72000000,
+          "effect": {
+            "amount": 30,
+            "kind": "speed_bonus"
+          },
+          "materials": [
+            {
+              "count": 15,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i17458",
+                "revision": "definition-r1"
+              },
+              "source_name": "Damselfly Wing"
+            },
+            {
+              "count": 25,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i10302",
+                "revision": "definition-r1"
+              },
+              "source_name": "Compass"
+            },
+            {
+              "count": 20,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i14081",
+                "revision": "definition-r1"
+              },
+              "source_name": "Waspoid Wing"
+            }
+          ],
+          "name": "Powerful",
+          "provenance": {
+            "access": "imbuement-access.json",
+            "duration": "manual",
+            "effect": "wiki_br",
+            "fees": "global-rules-evidence.json",
+            "materials": "wiki_br"
+          },
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i51463",
+            "revision": "definition-r1"
+          },
+          "tier": 3
+        }
+      ]
+    },
+    {
+      "candidate_key": "vampirism",
+      "category": "vampirism",
+      "item_eligibility_binding": {
+        "candidate_key": "vampirism",
+        "catalogue": "imbuement-eligibility.json"
+      },
+      "name": "Vampirism",
+      "parity": "AUDITED_WITH_EXPLICIT_GAPS",
+      "tiers": [
+        {
+          "access": {
+            "catalogue": "imbuement-access.json",
+            "direct_shrine_target_unequipped_required": true,
+            "premium_required": false,
+            "profile": "Vampirism",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED",
+            "tier": "basic"
+          },
+          "apply_fee_gold": 7500,
+          "clear_fee_gold": 15000,
+          "duration_ms": 72000000,
+          "effect": {
+            "chance_bps": 10000,
+            "kind": "leech",
+            "resource": "health",
+            "share_bps": 500
+          },
+          "materials": [
+            {
+              "count": 25,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i9685",
+                "revision": "definition-r1"
+              },
+              "source_name": "Vampire Teeth"
+            }
+          ],
+          "name": "Basic",
+          "provenance": {
+            "access": "imbuement-access.json",
+            "duration": "manual",
+            "effect": "wiki_br",
+            "fees": "global-rules-evidence.json",
+            "materials": "wiki_br"
+          },
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i53771",
+            "revision": "definition-r1"
+          },
+          "tier": 1
+        },
+        {
+          "access": {
+            "catalogue": "imbuement-access.json",
+            "direct_shrine_target_unequipped_required": true,
+            "premium_required": true,
+            "profile": "Vampirism",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED",
+            "tier": "intricate"
+          },
+          "apply_fee_gold": 60000,
+          "clear_fee_gold": 15000,
+          "duration_ms": 72000000,
+          "effect": {
+            "chance_bps": 10000,
+            "kind": "leech",
+            "resource": "health",
+            "share_bps": 1000
+          },
+          "materials": [
+            {
+              "count": 25,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i9685",
+                "revision": "definition-r1"
+              },
+              "source_name": "Vampire Teeth"
+            },
+            {
+              "count": 15,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i9633",
+                "revision": "definition-r1"
+              },
+              "source_name": "Bloody Pincers"
+            }
+          ],
+          "name": "Intricate",
+          "provenance": {
+            "access": "imbuement-access.json",
+            "duration": "manual",
+            "effect": "wiki_br",
+            "fees": "global-rules-evidence.json",
+            "materials": "wiki_br"
+          },
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i51744",
+            "revision": "definition-r1"
+          },
+          "tier": 2
+        },
+        {
+          "access": {
+            "catalogue": "imbuement-access.json",
+            "direct_shrine_target_unequipped_required": true,
+            "premium_required": true,
+            "profile": "Vampirism",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED",
+            "tier": "powerful"
+          },
+          "apply_fee_gold": 250000,
+          "clear_fee_gold": 15000,
+          "duration_ms": 72000000,
+          "effect": {
+            "chance_bps": 10000,
+            "kind": "leech",
+            "resource": "health",
+            "share_bps": 2500
+          },
+          "materials": [
+            {
+              "count": 25,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i9685",
+                "revision": "definition-r1"
+              },
+              "source_name": "Vampire Teeth"
+            },
+            {
+              "count": 15,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i9633",
+                "revision": "definition-r1"
+              },
+              "source_name": "Bloody Pincers"
+            },
+            {
+              "count": 5,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i9663",
+                "revision": "definition-r1"
+              },
+              "source_name": "Piece of Dead Brain"
+            }
+          ],
+          "name": "Powerful",
+          "provenance": {
+            "access": "imbuement-access.json",
+            "duration": "manual",
+            "effect": "wiki_br",
+            "fees": "global-rules-evidence.json",
+            "materials": "wiki_br"
+          },
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i51464",
+            "revision": "definition-r1"
+          },
+          "tier": 3
+        }
+      ]
+    },
+    {
+      "candidate_key": "venom",
+      "category": "elemental_damage",
+      "item_eligibility_binding": {
+        "candidate_key": "venom",
+        "catalogue": "imbuement-eligibility.json"
+      },
+      "name": "Venom",
+      "parity": "AUDITED_WITH_EXPLICIT_GAPS",
+      "tiers": [
+        {
+          "access": {
+            "catalogue": "imbuement-access.json",
+            "direct_shrine_target_unequipped_required": true,
+            "premium_required": false,
+            "profile": "Venom",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED",
+            "tier": "basic"
+          },
+          "apply_fee_gold": 7500,
+          "clear_fee_gold": 15000,
+          "duration_ms": 72000000,
+          "effect": {
+            "element": "earth",
+            "kind": "elemental_conversion",
+            "share_bps": 1000
+          },
+          "materials": [
+            {
+              "count": 25,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i9686",
+                "revision": "definition-r1"
+              },
+              "source_name": "Swamp Grass"
+            }
+          ],
+          "name": "Basic",
+          "provenance": {
+            "access": "imbuement-access.json",
+            "duration": "manual",
+            "effect": "wiki_br",
+            "fees": "global-rules-evidence.json",
+            "materials": "wiki_br"
+          },
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i53772",
+            "revision": "definition-r1"
+          },
+          "tier": 1
+        },
+        {
+          "access": {
+            "catalogue": "imbuement-access.json",
+            "direct_shrine_target_unequipped_required": true,
+            "premium_required": true,
+            "profile": "Venom",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED",
+            "tier": "intricate"
+          },
+          "apply_fee_gold": 60000,
+          "clear_fee_gold": 15000,
+          "duration_ms": 72000000,
+          "effect": {
+            "element": "earth",
+            "kind": "elemental_conversion",
+            "share_bps": 2500
+          },
+          "materials": [
+            {
+              "count": 25,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i9686",
+                "revision": "definition-r1"
+              },
+              "source_name": "Swamp Grass"
+            },
+            {
+              "count": 20,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i9640",
+                "revision": "definition-r1"
+              },
+              "source_name": "Poisonous Slime"
+            }
+          ],
+          "name": "Intricate",
+          "provenance": {
+            "access": "imbuement-access.json",
+            "duration": "manual",
+            "effect": "wiki_br",
+            "fees": "global-rules-evidence.json",
+            "materials": "wiki_br"
+          },
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i51745",
+            "revision": "definition-r1"
+          },
+          "tier": 2
+        },
+        {
+          "access": {
+            "catalogue": "imbuement-access.json",
+            "direct_shrine_target_unequipped_required": true,
+            "premium_required": true,
+            "profile": "Venom",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED",
+            "tier": "powerful"
+          },
+          "apply_fee_gold": 250000,
+          "clear_fee_gold": 15000,
+          "duration_ms": 72000000,
+          "effect": {
+            "element": "earth",
+            "kind": "elemental_conversion",
+            "share_bps": 5000
+          },
+          "materials": [
+            {
+              "count": 25,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i9686",
+                "revision": "definition-r1"
+              },
+              "source_name": "Swamp Grass"
+            },
+            {
+              "count": 20,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i9640",
+                "revision": "definition-r1"
+              },
+              "source_name": "Poisonous Slime"
+            },
+            {
+              "count": 2,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i21194",
+                "revision": "definition-r1"
+              },
+              "source_name": "Slime Heart"
+            }
+          ],
+          "name": "Powerful",
+          "provenance": {
+            "access": "imbuement-access.json",
+            "duration": "manual",
+            "effect": "wiki_br",
+            "fees": "global-rules-evidence.json",
+            "materials": "wiki_br"
+          },
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i51465",
+            "revision": "definition-r1"
+          },
+          "tier": 3
+        }
+      ]
+    },
+    {
+      "candidate_key": "vibrancy",
+      "category": "vibrancy",
+      "item_eligibility_binding": {
+        "candidate_key": "vibrancy",
+        "catalogue": "imbuement-eligibility.json"
+      },
+      "name": "Vibrancy",
+      "parity": "AUDITED_WITH_EXPLICIT_GAPS",
+      "tiers": [
+        {
+          "access": {
+            "catalogue": "imbuement-access.json",
+            "direct_shrine_target_unequipped_required": true,
+            "premium_required": false,
+            "profile": "Vibrancy",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED",
+            "tier": "basic"
+          },
+          "apply_fee_gold": 7500,
+          "clear_fee_gold": 15000,
+          "duration_ms": 72000000,
+          "effect": {
+            "kind": "paralysis_recovery",
+            "remove_chance_bps": 1500,
+            "sequence_profile": "imbuement-combat.json#vibrancy_sequence",
+            "trigger": "additional_paralysis_attack_while_paralysed"
+          },
+          "materials": [
+            {
+              "count": 20,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i22053",
+                "revision": "definition-r1"
+              },
+              "source_name": "Wereboar Hooves"
+            }
+          ],
+          "name": "Basic",
+          "provenance": {
+            "access": "imbuement-access.json",
+            "duration": "manual",
+            "effect": "wiki_br",
+            "fees": "global-rules-evidence.json",
+            "materials": "wiki_br"
+          },
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i53773",
+            "revision": "definition-r1"
+          },
+          "tier": 1
+        },
+        {
+          "access": {
+            "catalogue": "imbuement-access.json",
+            "direct_shrine_target_unequipped_required": true,
+            "premium_required": true,
+            "profile": "Vibrancy",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED",
+            "tier": "intricate"
+          },
+          "apply_fee_gold": 60000,
+          "clear_fee_gold": 15000,
+          "duration_ms": 72000000,
+          "effect": {
+            "kind": "paralysis_recovery",
+            "remove_chance_bps": 2500,
+            "sequence_profile": "imbuement-combat.json#vibrancy_sequence",
+            "trigger": "additional_paralysis_attack_while_paralysed"
+          },
+          "materials": [
+            {
+              "count": 20,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i22053",
+                "revision": "definition-r1"
+              },
+              "source_name": "Wereboar Hooves"
+            },
+            {
+              "count": 15,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i23507",
+                "revision": "definition-r1"
+              },
+              "source_name": "Crystallized Anger"
+            }
+          ],
+          "name": "Intricate",
+          "provenance": {
+            "access": "imbuement-access.json",
+            "duration": "manual",
+            "effect": "wiki_br",
+            "fees": "global-rules-evidence.json",
+            "materials": "wiki_br"
+          },
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i51746",
+            "revision": "definition-r1"
+          },
+          "tier": 2
+        },
+        {
+          "access": {
+            "catalogue": "imbuement-access.json",
+            "direct_shrine_target_unequipped_required": true,
+            "premium_required": true,
+            "profile": "Vibrancy",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED",
+            "tier": "powerful"
+          },
+          "apply_fee_gold": 250000,
+          "clear_fee_gold": 15000,
+          "duration_ms": 72000000,
+          "effect": {
+            "kind": "paralysis_recovery",
+            "remove_chance_bps": 5000,
+            "sequence_profile": "imbuement-combat.json#vibrancy_sequence",
+            "trigger": "additional_paralysis_attack_while_paralysed"
+          },
+          "materials": [
+            {
+              "count": 20,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i22053",
+                "revision": "definition-r1"
+              },
+              "source_name": "Wereboar Hooves"
+            },
+            {
+              "count": 15,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i23507",
+                "revision": "definition-r1"
+              },
+              "source_name": "Crystallized Anger"
+            },
+            {
+              "count": 5,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i28567",
+                "revision": "definition-r1"
+              },
+              "source_name": "Quill"
+            }
+          ],
+          "name": "Powerful",
+          "provenance": {
+            "access": "imbuement-access.json",
+            "duration": "manual",
+            "effect": "wiki_br",
+            "fees": "global-rules-evidence.json",
+            "materials": "wiki_br"
+          },
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i51466",
+            "revision": "definition-r1"
+          },
+          "tier": 3
+        }
+      ]
+    },
+    {
+      "candidate_key": "void",
+      "category": "void",
+      "item_eligibility_binding": {
+        "candidate_key": "void",
+        "catalogue": "imbuement-eligibility.json"
+      },
+      "name": "Void",
+      "parity": "AUDITED_WITH_EXPLICIT_GAPS",
+      "tiers": [
+        {
+          "access": {
+            "catalogue": "imbuement-access.json",
+            "direct_shrine_target_unequipped_required": true,
+            "premium_required": false,
+            "profile": "Void",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED",
+            "tier": "basic"
+          },
+          "apply_fee_gold": 7500,
+          "clear_fee_gold": 15000,
+          "duration_ms": 72000000,
+          "effect": {
+            "chance_bps": 10000,
+            "kind": "leech",
+            "resource": "mana",
+            "share_bps": 300
+          },
+          "materials": [
+            {
+              "count": 25,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i11492",
+                "revision": "definition-r1"
+              },
+              "source_name": "Rope Belt"
+            }
+          ],
+          "name": "Basic",
+          "provenance": {
+            "access": "imbuement-access.json",
+            "duration": "manual",
+            "effect": "wiki_br",
+            "fees": "global-rules-evidence.json",
+            "materials": "wiki_br"
+          },
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i53774",
+            "revision": "definition-r1"
+          },
+          "tier": 1
+        },
+        {
+          "access": {
+            "catalogue": "imbuement-access.json",
+            "direct_shrine_target_unequipped_required": true,
+            "premium_required": true,
+            "profile": "Void",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED",
+            "tier": "intricate"
+          },
+          "apply_fee_gold": 60000,
+          "clear_fee_gold": 15000,
+          "duration_ms": 72000000,
+          "effect": {
+            "chance_bps": 10000,
+            "kind": "leech",
+            "resource": "mana",
+            "share_bps": 500
+          },
+          "materials": [
+            {
+              "count": 25,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i11492",
+                "revision": "definition-r1"
+              },
+              "source_name": "Rope Belt"
+            },
+            {
+              "count": 25,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i20200",
+                "revision": "definition-r1"
+              },
+              "source_name": "Silencer Claws"
+            }
+          ],
+          "name": "Intricate",
+          "provenance": {
+            "access": "imbuement-access.json",
+            "duration": "manual",
+            "effect": "wiki_br",
+            "fees": "global-rules-evidence.json",
+            "materials": "wiki_br"
+          },
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i51747",
+            "revision": "definition-r1"
+          },
+          "tier": 2
+        },
+        {
+          "access": {
+            "catalogue": "imbuement-access.json",
+            "direct_shrine_target_unequipped_required": true,
+            "premium_required": true,
+            "profile": "Void",
+            "runtime_quest_binding": "QUEST_FAMILY_NOT_POPULATED",
+            "tier": "powerful"
+          },
+          "apply_fee_gold": 250000,
+          "clear_fee_gold": 15000,
+          "duration_ms": 72000000,
+          "effect": {
+            "chance_bps": 10000,
+            "kind": "leech",
+            "resource": "mana",
+            "share_bps": 800
+          },
+          "materials": [
+            {
+              "count": 25,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i11492",
+                "revision": "definition-r1"
+              },
+              "source_name": "Rope Belt"
+            },
+            {
+              "count": 25,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i20200",
+                "revision": "definition-r1"
+              },
+              "source_name": "Silencer Claws"
+            },
+            {
+              "count": 5,
+              "item_binding": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i22730",
+                "revision": "definition-r1"
+              },
+              "source_name": "Some Grimeleech Wings"
+            }
+          ],
+          "name": "Powerful",
+          "provenance": {
+            "access": "imbuement-access.json",
+            "duration": "manual",
+            "effect": "wiki_br",
+            "fees": "global-rules-evidence.json",
+            "materials": "wiki_br"
+          },
+          "scroll_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i51467",
+            "revision": "definition-r1"
+          },
+          "tier": 3
+        }
+      ]
+    }
+  ],
+  "engine_reference_profile": "crystal-imbuements-evidence.json",
+  "global_research_profile": "global-research-closure.json",
+  "global_rules_profile": "global-rules-evidence.json",
+  "missing_item_proposals": "missing-item-definitions.json",
+  "observation_plan_profile": "global-observation-plan.json",
+  "owner_authoring_policy_profile": "owner-authoring-policy.json",
+  "schema": "OTERYN_IMBUEMENT_AUTHORING_CATALOGUE/v1",
+  "source_facts_sha256": "7ee2221886abdc80d27ce5cd13e58bdecab8b3c5210a7e0e7a36efc52771070e",
+  "supporting_catalogues": {
+    "crystal-imbuements-evidence.json": "2a5723725bd1046e36dc54453ec836810f2b1e972a05d4886eeebeafefbe45fe",
+    "current-behavior-answers.json": "1e0d89d2b40d5db0aadb91769d5178c51c6c0475129b8348e7da575ed751f91a",
+    "global-observation-plan.json": "a4913ee8dc03ba6fd80e620a44fde56a3610e73b19912247e56a5e3d53d81afb",
+    "global-research-closure.json": "0ccab4e6907570413f74e5c5a05d3a390900af4b92b7516ea7dcdbd15c73050a",
+    "global-rules-evidence.json": "5f04de7e15226dfa57b36cd9d6f6d03c847f020bbc0efebe118bde02742e3413",
+    "imbuement-access.json": "c05984cb8f0ac0e41b4f8bebd7bc2c93be24ea3cbbb86c0d95859e0a8a917f2d",
+    "imbuement-bindings.json": "1b7640df513afe5cf79297c1701282e288c28dfc6587de19cbf2655fa980bfea",
+    "imbuement-combat.json": "5f14f4d9748e956fe36d779dbebcd6daeb90ff27ff0eb6abadbe7237cc7d57e7",
+    "imbuement-eligibility.json": "712a1181da5db3494144fe1fce92e33478dd13cd624ea6ed46b63cef57eb40a2",
+    "missing-item-definitions.json": "0b90ec4d5afe9a8aca3f4838dc0916ba06755a315b745d4dd68f954f91569c30",
+    "missing-item-source-facts.json": "48441ebbf409780739a318808dc292cec2b8b0225437d1a92aacd614604e6461",
+    "owner-authoring-policy.json": "c71b9351980fe70b8a83aafcfcca3e03a1ff9445427fedd842214ee89ae73079"
+  },
+  "target": "global-tibia-current-2026-10-01"
+}

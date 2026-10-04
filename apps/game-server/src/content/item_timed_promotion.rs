@@ -26,9 +26,9 @@ use std::collections::{BTreeMap, BTreeSet};
 pub const ITEM_TIMED_PROMOTION_V1_PACKET: &[u8] =
     include_bytes!("../../../../docs/agents/evidence/OTV2-20261003-timed-item-facts-v1.json");
 pub const ITEM_TIMED_PROMOTION_V1_PACKET_SHA256: &str =
-    "9bcbac636416f846a0c3f8ede6b864a27ff71e7295938d8cc5af993437a3f6d9";
-pub const ITEM_TIMED_PROMOTION_V1_FIELD_COUNT: usize = 276;
-pub const ITEM_TIMED_PROMOTION_V1_ITEM_COUNT: usize = 111;
+    "fc53e05d14afc889d6a47204e503ea4e2db579ee0af1d92e91de984c91012338";
+pub const ITEM_TIMED_PROMOTION_V1_FIELD_COUNT: usize = 271;
+pub const ITEM_TIMED_PROMOTION_V1_ITEM_COUNT: usize = 110;
 const SCHEMA: &str = "OTERYN_ITEM_TIMED_PROMOTION/v1";
 /// TIMEDITEM0-RL-01: charges per item.
 pub const MAX_CHARGES: u32 = 65_535;

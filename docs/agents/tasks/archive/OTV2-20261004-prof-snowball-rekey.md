@@ -23,7 +23,6 @@ owned_paths:
   - apps/game-server/src/content/item_forge3332_promotion.rs
   - apps/game-server/src/content/item_hit_magic_promotion.rs
   - apps/game-server/src/content/item_identity.rs
-  - apps/game-server/src/content/project/v2/proficiency/import.rs
   - apps/game-server/src/content/item_mantra_bond_modifier_promotion.rs
   - apps/game-server/src/content/item_market_true_promotion.rs
   - apps/game-server/src/content/item_movable_promotion.rs
@@ -39,6 +38,7 @@ owned_paths:
   - apps/game-server/src/content/item_timed_promotion.rs
   - apps/game-server/src/content/item_use_observation_promotion.rs
   - apps/game-server/src/content/item_weapon_metadata_promotion.rs
+  - apps/game-server/src/content/project/v2/proficiency/import.rs
   - apps/game-server/tests/content_item_identity.rs
   - apps/game-server/tests/content_world_project_repository.rs
   - content/abilities/definitions/index.json
@@ -111,6 +111,7 @@ owned_paths:
   - docs/agents/evidence/OTV2-20261002-item-weapon-metadata-source-qualification-v2.json
   - docs/agents/evidence/OTV2-20261002-stack-default-historical-native-context-v1.json
   - docs/agents/evidence/OTV2-20261002-tibiawiki165-historical-import-context-v1.json
+  - docs/agents/evidence/OTV2-20261003-equip-abilities-sources-v1.json
   - docs/agents/evidence/OTV2-20261003-item-equipment-requirements-v1.json
   - docs/agents/evidence/OTV2-20261003-item-market-true-promotion-v2.json
   - docs/agents/evidence/OTV2-20261003-item-movable-promotion-v2.json
@@ -124,6 +125,8 @@ owned_paths:
   - imports/tibiawiki/facts/items-family-alias26-20261001.json
   - imports/tibiawiki/facts/items-stats.json
   - imports/tibiawiki/sources.json
+  - rulesets/items/imbuements/catalogue.json
+  - rulesets/items/imbuements/index.json
   - tools/content-migration/item_bounded7_navigation.py
   - tools/content-migration/item_engine_navigation.py
   - tools/content-migration/item_external_family_refinement.py
@@ -188,6 +191,9 @@ digest moves from `5fc20ff7…` to `2e6e083d…`.
   keep their original pins.
 - Merged `main` after #1712. The owner approved the `--theirs` resolution of 79 conflicts, the reset of
   pin-only files to `main`, and a regenerate-and-cascade pass.
+- Merged `main` `0282bb52` after the Codex review of `b6dc109c`. The 24 conflicts were pins and generated output;
+  they took `main`'s side and were regenerated and re-pinned by the same tools. The receipt was rebuilt against
+  `0282bb52`. Hand-written changes are unchanged apart from the item count in the WorldProject repository test.
 
 ## Validation
 

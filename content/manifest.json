@@ -654,8 +654,36 @@
     },
     {
       "path": "imports/tibiawiki/sources.json"
+    },
+    {
+      "path": "rulesets/items/imbuements/access.json"
+    },
+    {
+      "path": "rulesets/items/imbuements/catalogue.json"
+    },
+    {
+      "path": "rulesets/items/imbuements/equipment.json"
+    },
+    {
+      "path": "rulesets/items/imbuements/index.json"
+    },
+    {
+      "path": "rulesets/items/imbuements/owner-policy.json"
     }
   ],
   "project_revision": "tree-npc-reviewed-definitions-r1",
+  "rulesets": {
+    "Imbuements": {
+      "counts": {
+        "bound_equipment_profiles": 627,
+        "families": 24,
+        "held_equipment_observations": 36,
+        "tiers": 72,
+        "unregistered_equipment_items": 2
+      },
+      "index": "rulesets/items/imbuements/index.json",
+      "runtime_admission": "BLOCKED"
+    }
+  },
   "schema": "OTERYN_GAME_CONTENT_TREE_MANIFEST/v1"
 }

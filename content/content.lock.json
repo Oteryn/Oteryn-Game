@@ -45,10 +45,43 @@
     "declarations": "803ee25def726a8df3a1658d9b0d3f5c4b3d4c8d",
     "editor": "ec0ee6cb9195cb6db3f12b1f226fbbf0cac536e7",
     "imports": "b46c019867b9c25bb9d92412d53285d92eb0326a",
-    "reference": "5b56aba1dd8603d9df4dcc64a048c50fb7714a75",
+    "reference": "c636d0c484a4470722da3b184c7bdec98908d2a6",
     "sources": "795d778f166d826b6a794c52ddc91363fc7bd3cb"
   },
   "project_revision": "tree-npc-reviewed-definitions-r1",
+  "ruleset_counts": {
+    "Imbuements": {
+      "bound_equipment_profiles": 627,
+      "families": 24,
+      "held_equipment_observations": 36,
+      "tiers": 72,
+      "unregistered_equipment_items": 2
+    }
+  },
+  "ruleset_files": {
+    "Imbuements": [
+      {
+        "path": "rulesets/items/imbuements/access.json",
+        "sha256": "cc8be9bc187bc6a58cd8919277fea4ef9cbffad3eee3a13c74c278571ec8cba5"
+      },
+      {
+        "path": "rulesets/items/imbuements/catalogue.json",
+        "sha256": "c8541c8ba564c0110107f247f85a06f93612a1da8ca0f32d4cd5a3e586420ba9"
+      },
+      {
+        "path": "rulesets/items/imbuements/equipment.json",
+        "sha256": "45a7297db49d8aeb89354d49137619814d4b0772ea11df458eb9e5cfa677f953"
+      },
+      {
+        "path": "rulesets/items/imbuements/index.json",
+        "sha256": "ad167908fe30109a1407b06e6e9e7cac21bdd9d3c598e5e4eec044e5ca315ce8"
+      },
+      {
+        "path": "rulesets/items/imbuements/owner-policy.json",
+        "sha256": "b2c481493bb2305d52867469b4cde6314ffd1a4fa461c4a105e73782c7754c7d"
+      }
+    ]
+  },
   "schema": "OTERYN_GAME_CONTENT_TREE_LOCK/v1",
   "source_binding_counts": {
     "Creature": 1763,

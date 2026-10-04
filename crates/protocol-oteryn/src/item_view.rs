@@ -16,6 +16,10 @@
 //! `GROUND {WorldTilePosition}` destinations to command type 9 and three results. The
 //! `_with_equip_drop` codecs take the session's selection; without it they behave exactly as
 //! ITEM-VIEW-1a, so domain 9 field 3, destination fields 3 and 4 and results 10 to 12 fail closed.
+//!
+//! BAGS-WIRE-1 (BAGS-0 §5): capability 14 `CONTAINER_TREE_V1` (`container_tree`) adds the
+//! `CONTAINER {handle}` destination, field 5. The `_for` intent codecs take an
+//! [`ItemMoveSelection`]; without capability 14 field 5 fails closed.
 
 // The client-side codecs (view decode, intent encode) are exercised by the tests; the server
 // composes its own direction in ITEM-VIEW-1b and ITEM-MOVE-1.
@@ -203,12 +207,24 @@ pub struct WorldTilePosition {
     pub floor: i16,
 }
 
-/// The `ItemMoveIntentV1.destination` oneof. `Equipment` and `Ground` need capability 12.
+/// The `ItemMoveIntentV1.destination` oneof. `Equipment` and `Ground` need capability 12,
+/// `Container` capability 14.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ItemMoveDestination {
     MainBackpack,
     Equipment(EquipmentSlot),
     Ground(WorldTilePosition),
+    /// Into the named visible container (BAGS-0 §5).
+    Container(ItemHandle),
+}
+
+/// The capabilities of a session's selection that extend command type 9.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub struct ItemMoveSelection {
+    /// Capability 12: the `equipment` and `ground` destinations.
+    pub equip_drop: bool,
+    /// Capability 14: the `container` destination.
+    pub container_tree: bool,
 }
 
 /// `ItemMoveIntentV1`.
@@ -281,7 +297,7 @@ pub fn decode_item_target(input: &[u8]) -> WireResult<ItemHandle> {
     nonzero_u64(handle.unwrap_or(0))
 }
 
-fn encode_entry(output: &mut Vec<u8>, field: u64, entry: &ItemEntry) {
+pub(crate) fn encode_entry(output: &mut Vec<u8>, field: u64, entry: &ItemEntry) {
     let mut body = Vec::with_capacity(MAX_ITEM_ENTRY_BYTES);
     push_varint_field(&mut body, 1, entry.handle.get());
     push_varint_field(&mut body, 2, u64::from(entry.item_definition_ref.get()));
@@ -290,7 +306,7 @@ fn encode_entry(output: &mut Vec<u8>, field: u64, entry: &ItemEntry) {
     push_message_field(output, field, &body);
 }
 
-fn decode_entry(input: &[u8]) -> WireResult<ItemEntry> {
+pub(crate) fn decode_entry(input: &[u8]) -> WireResult<ItemEntry> {
     if input.len() > MAX_ITEM_ENTRY_BYTES {
         return Err(ItemViewWireError::LimitExceeded);
     }
@@ -568,11 +584,31 @@ pub fn encode_item_move_intent_with_equip_drop(
     intent: &ItemMoveIntent,
     equip_drop: bool,
 ) -> WireResult<Vec<u8>> {
+    encode_item_move_intent_for(
+        intent,
+        ItemMoveSelection {
+            equip_drop,
+            container_tree: false,
+        },
+    )
+}
+
+/// A destination the selection does not admit is refused.
+pub fn encode_item_move_intent_for(
+    intent: &ItemMoveIntent,
+    selection: ItemMoveSelection,
+) -> WireResult<Vec<u8>> {
     let mut output = Vec::with_capacity(MAX_ITEM_MOVE_INTENT_EQUIP_DROP_BYTES);
     push_varint_field(&mut output, 1, intent.source.get());
     match intent.destination {
         ItemMoveDestination::MainBackpack => push_message_field(&mut output, 2, &[]),
-        _ if !equip_drop => return malformed(),
+        ItemMoveDestination::Container(handle) if selection.container_tree => {
+            let mut body = Vec::with_capacity(MAX_ITEM_TARGET_BYTES);
+            push_varint_field(&mut body, 1, handle.get());
+            push_message_field(&mut output, 5, &body);
+        }
+        ItemMoveDestination::Container(_) => return malformed(),
+        _ if !selection.equip_drop => return malformed(),
         ItemMoveDestination::Equipment(slot) => {
             let mut body = Vec::with_capacity(2);
             push_varint_field(&mut body, 1, slot as u64);
@@ -597,7 +633,26 @@ pub fn decode_item_move_intent_with_equip_drop(
     payload: &[u8],
     equip_drop: bool,
 ) -> WireResult<ItemMoveIntent> {
-    let bound = if equip_drop {
+    decode_item_move_intent_for(
+        payload,
+        ItemMoveSelection {
+            equip_drop,
+            container_tree: false,
+        },
+    )
+}
+
+/// With `container_tree`, field 5 `container` is a destination too (its handle is required). The
+/// capability 12 bound covers it, so a selection with capability 14 keeps 29 bytes.
+pub fn decode_item_move_intent_for(
+    payload: &[u8],
+    selection: ItemMoveSelection,
+) -> WireResult<ItemMoveIntent> {
+    let ItemMoveSelection {
+        equip_drop,
+        container_tree,
+    } = selection;
+    let bound = if equip_drop || container_tree {
         MAX_ITEM_MOVE_INTENT_EQUIP_DROP_BYTES
     } else {
         MAX_ITEM_MOVE_INTENT_BYTES
@@ -623,6 +678,10 @@ pub fn decode_item_move_intent_with_equip_drop(
             0x22 if equip_drop => {
                 let position = decode_position(read_bytes(payload, &mut cursor)?)?;
                 set_once(&mut destination, ItemMoveDestination::Ground(position))?;
+            }
+            0x2a if container_tree => {
+                let handle = decode_item_target(read_bytes(payload, &mut cursor)?)?;
+                set_once(&mut destination, ItemMoveDestination::Container(handle))?;
             }
             _ => return malformed(),
         }

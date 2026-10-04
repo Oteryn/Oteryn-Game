@@ -1,0 +1,88 @@
+// BAGS-0 §5 (BAGS0-CONTAINERS-WITH-CONTENTS-V1, docs/architecture/reviews/
+// OTERYN_GAME_BAGS0_CONTAINERS_WITH_CONTENTS_DECISION_2026-09-30.md): typed payloads of capability 14
+// CONTAINER_TREE_V1 (requires capabilities 4 ITEM_VIEW_MOVE_V1 and 12 ITEM_EQUIP_DROP_V1), state
+// domain 14 CONTAINER_VIEWS (snapshot type 1, delta type 1) and command type 21
+// CONTAINER_VIEW_INTENT. The same capability adds the CONTAINER destination of command type 9
+// (item_view_v1.proto, ItemMoveIntentV1 field 5) and lets USE field 2 name a container handle as an
+// OPEN in a new view. Numbers allocated by the #1622 control plane and registered by BAGS-WIRE-1;
+// the server does not offer the capability before BAGS-1.
+//
+// Without the capability nothing here is sent, command type 21 is refused as unsupported and
+// command type 9 keeps its earlier destinations. Domains 9 and 11 keep their meaning; a corpse stays
+// a domain 11 view at depth 1.
+//
+// FND-02 envelopes own CommandRef, the domain ID and revisions; these payloads never duplicate them.
+// Unknown fields, repeated singular fields, an empty oneof, zero and unknown enum values, a zero
+// handle, item definition, count or capacity, a view id above 15, views out of ascending order, a
+// handle repeated where it must be unique, and counts and bytes over their registered bounds fail
+// closed.
+syntax = "proto3";
+
+package oteryn.protocol.v1.container_tree;
+
+import "item_view_v1.proto";
+
+// One open container view. At most 646 encoded bytes (view id 2, container 11, parent 11,
+// capacity 2, 20 entry elements of 31).
+message ContainerViewV1 {
+  // 0 to 15 (BAGS0-RL-03), unique within the domain.
+  uint32 view_id = 1;
+  // Required: the container the view shows, by its item, not its position.
+  uint64 container_handle = 2;
+  // The container's parent, for UP; absent (0) when the parent is not visible.
+  uint64 parent_handle = 3;
+  // The container's entry count, 1 to 20 (GAMEITEM01-CONTAINER-ENTRIES-MAX).
+  uint32 capacity = 4;
+  // The direct entries in display order, at most `capacity`.
+  repeated oteryn.protocol.v1.item_view.ItemEntryV1 entries = 5;
+}
+
+// StateDomainSnapshot.payload of domain 14, snapshot type 1, and StateDelta.payload of domain 14,
+// delta type 1. A delta carries every open view. Views in strictly ascending view id, at most 16
+// (BAGS0-RL-03), and at most 10,384 bytes. Within a view the container, the parent and the entries
+// hold distinct handles; across views no two views show the same container and no entry appears
+// twice. An empty payload means no view is open, as after every admission and reconnect.
+message ContainerViewsV1 {
+  repeated ContainerViewV1 views = 1;
+}
+
+// Open the container `handle` in a new view, or in place of the open view `replace_view`.
+message ContainerOpenV1 {
+  // Required.
+  uint64 handle = 1;
+  // 0 to 15 when present.
+  optional uint32 replace_view = 2;
+}
+
+// An open view, 0 to 15.
+message ContainerViewRefV1 {
+  uint32 view_id = 1;
+}
+
+// ClientCommand.payload of command type 21. Non-durable and without an occurrence, as a corpse
+// open. At most 15 bytes.
+message ContainerViewIntentV1 {
+  oneof action {
+    ContainerOpenV1 open = 1;
+    ContainerViewRefV1 close = 2;
+    // Replace the view by its parent container.
+    ContainerViewRefV1 up = 3;
+  }
+}
+
+enum ContainerViewOutcomeV1 {
+  CONTAINER_VIEW_OUTCOME_UNSPECIFIED = 0;
+  CONTAINER_VIEW_OUTCOME_OPENED = 1;
+  CONTAINER_VIEW_OUTCOME_CLOSED = 2;
+  // The handle or view no longer resolves, or the view has no visible parent.
+  CONTAINER_VIEW_OUTCOME_STALE = 3;
+  CONTAINER_VIEW_OUTCOME_TOO_FAR = 4;
+  CONTAINER_VIEW_OUTCOME_NOT_A_CONTAINER = 5;
+  // A new view while 16 are open.
+  CONTAINER_VIEW_OUTCOME_TOO_MANY_VIEWS = 6;
+}
+
+// CommandResult.payload of command type 21: outcome only, never state. At most 4 bytes.
+message ContainerViewResultV1 {
+  ContainerViewOutcomeV1 outcome = 1;
+}

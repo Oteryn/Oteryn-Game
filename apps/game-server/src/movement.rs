@@ -23,6 +23,8 @@ use crate::foundation::{
 };
 use std::num::NonZeroUsize;
 mod interest;
+pub(crate) mod pacing;
+pub(crate) mod speed;
 
 pub(crate) const LOCAL_STEP_CANDIDATES_PER_DECISION: usize = 1;
 

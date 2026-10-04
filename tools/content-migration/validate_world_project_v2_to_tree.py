@@ -5,6 +5,8 @@ from __future__ import annotations
 
 import hashlib
 import json
+import subprocess
+import sys
 from pathlib import Path
 from typing import Any
 
@@ -805,6 +807,9 @@ def main() -> int:
         f"proficiency_records={PROFICIENCY_COUNT} proficiency_bindings={PROFICIENCY_BINDING_COUNT} "
         f"reward_claim_records={REWARD_CLAIM_COUNT} starter_kit_records={STARTER_KIT_COUNT}"
     )
+    subprocess.run([sys.executable,
+                    str(ROOT / "tools/content-schema/imbuement-authoring/imbuement_content.py"),
+                    "content", "--check"], cwd=ROOT, check=True)
     return 0
 
 if __name__ == "__main__":

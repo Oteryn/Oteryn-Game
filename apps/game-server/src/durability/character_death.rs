@@ -10,12 +10,21 @@
 //! state only.  Until DEATH-3 a death selects no Amulet of Loss and loses no
 //! item; no durable promotion or Premium state exists yet, so the D66
 //! promotion reduction never applies.
+//!
+//! DEATH-2 adds the consumption of the pending respawn (DEATH-0 §3.4) and the
+//! sequenced settlement the Channel owner runs off its lane for one runtime
+//! death: commit (or replay) the death in the Character's revision slot, then
+//! consume its pending respawn, before the player is placed again.
 
-use super::character_authority::{ReconciledCharacterAuthority, assert_recovery_fence};
-use super::character_progression::{
-    CharacterProgressionError, CurrentCharacterGameplayFence, assert_gameplay_fence, numeric_u64,
-    policy_digest, state_matches_root, stored_context_matches, uuid_text, valid_revision,
+use super::character_authority::{
+    CharacterAuthorityError, ReconciledCharacterAuthority, assert_recovery_fence,
 };
+use super::character_progression::{
+    CharacterProgressionError, CurrentCharacterGameplayFence, ProgressionInitializationRequest,
+    assert_gameplay_fence, numeric_u64, policy_digest, state_matches_root, stored_context_matches,
+    uuid_text, valid_revision,
+};
+use super::character_revision_sequencer::{CharacterRevisionSequencer, RevisionSlot};
 use super::db::{
     begin_semantic_transaction, commit_semantic_transaction, lock_admission_relations,
 };
@@ -101,6 +110,13 @@ pub struct CommittedCharacterDeath {
 pub enum CharacterDeathOutcome {
     Committed(CommittedCharacterDeath),
     AlreadyCommitted(CommittedCharacterDeath),
+}
+
+/// The pending respawn one consumption deleted (DEATH-0 §3.4).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ConsumedRespawn {
+    pub occurrence: PlayerDeathOccurrence,
+    pub respawn_position: Vec<u8>,
 }
 
 impl DurabilityRoot {
@@ -385,6 +401,153 @@ impl DurabilityRoot {
             .await?
     }
 
+    /// Consume the Character's pending respawn (DEATH-0 §3.4) under the
+    /// fences of a death: the recovery fence, the admission relation locks
+    /// and the full gameplay fence with its `character_root` row lock, at the
+    /// fence's expected revision.  `occurrence` names the death being
+    /// respawned; `None` consumes whichever respawn is pending (the next
+    /// admission after a restart).  Returns the deleted row, or `None` when no
+    /// respawn (of that occurrence) is pending, so a retry deletes nothing
+    /// twice.  It advances no CharacterRevision; a stale fence deletes nothing.
+    pub async fn consume_pending_respawn(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        occurrence: Option<PlayerDeathOccurrence>,
+    ) -> Result<Option<ConsumedRespawn>> {
+        if fence.character_lease_generation == 0
+            || !matches!(fence.runtime_scope, RuntimeScopeRefV1::Channel { .. })
+        {
+            return Err(CharacterProgressionError::InvalidInput);
+        }
+        let recovery = authority
+            .record_for(self)
+            .map_err(|_| CharacterProgressionError::AuthorityRejected)?;
+        let node = node.clone();
+
+        self.try_issue_semantic_pass()?
+            .run(move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    assert_recovery_fence(&mut tx, &recovery).await?;
+                    lock_admission_relations(&mut tx).await?;
+                    if let Err(error) = assert_gameplay_fence(&mut tx, &fence, &node).await? {
+                        return Ok(Err(error));
+                    }
+                    let row = sqlx::query(
+                        "DELETE FROM game_character_pending_respawns \
+                          WHERE character_id = encode($1,'hex')::uuid \
+                            AND ($2::bytea IS NULL \
+                                 OR death_occurrence_id = encode($2,'hex')::uuid) \
+                         RETURNING death_occurrence_id::text, respawn_position",
+                    )
+                    .bind(fence.character_id.as_bytes().as_slice())
+                    .bind(occurrence.map(|occurrence| occurrence.0.to_vec()))
+                    .fetch_optional(&mut *tx)
+                    .await?;
+                    let consumed = match row {
+                        None => None,
+                        Some(row) => {
+                            let id: String = row.try_get("death_occurrence_id")?;
+                            Some(ConsumedRespawn {
+                                occurrence: PlayerDeathOccurrence::from_bytes(uuid_text(&id)?)
+                                    .map_err(|_| DurabilityError::InvalidStoredState)?,
+                                respawn_position: row.try_get("respawn_position")?,
+                            })
+                        }
+                    };
+                    commit_semantic_transaction(tx, deadline).await?;
+                    Ok(Ok(consumed))
+                })
+            })
+            .await?
+    }
+
+    /// DEATH-2 (first player death decision §4.3-§4.5): the durable part of
+    /// one runtime death, run by the Channel owner off its lane, in the
+    /// Character's revision slot.  A retained receipt is replayed at its
+    /// original revision; a new death commits at the slot's cursor (a missing
+    /// progression row runs the D88 initializer first, as an XP award does, and
+    /// an earlier death's unconsumed respawn is consumed first: the actor that
+    /// died again was alive and placed, so that respawn has happened).
+    /// The death's own pending respawn is then consumed, so the respawn the
+    /// caller places next never leaves the obligation behind.  A retry after
+    /// any partial outcome converges: the death replays and the consumption
+    /// finds nothing left.
+    pub async fn settle_player_death<const N: usize>(
+        &self,
+        sequencer: &CharacterRevisionSequencer,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        request: CharacterDeathRequest<N>,
+    ) -> Result<CommittedCharacterDeath> {
+        let occurrence = request.occurrence;
+        let mut slot = sequencer.acquire(fence.character_id).await;
+        let original = self
+            .reconcile_character_death(authority, occurrence)
+            .await?
+            .map(|death| death.original_character_revision);
+        let outcome = match slot
+            .commit_death(self, authority, node, fence, request.clone(), original)
+            .await
+        {
+            Err(CharacterProgressionError::MissingProgressionState) if original.is_none() => {
+                let expected_character_revision = slot_cursor(&mut slot, self, authority).await?;
+                self.initialize_character_progression(
+                    authority,
+                    node,
+                    CurrentCharacterGameplayFence {
+                        expected_character_revision,
+                        ..fence
+                    },
+                    ProgressionInitializationRequest {
+                        context: request.context.clone(),
+                        policy_revision: request.policy_revision.clone(),
+                        reward_revision: request.reward_revision.clone(),
+                        policy: request.policy.clone(),
+                    },
+                )
+                .await?;
+                slot.commit_death(self, authority, node, fence, request, None)
+                    .await?
+            }
+            // An earlier death's respawn was never consumed (its admission's consumption
+            // failed), yet this actor is alive and placed: that respawn has happened.
+            Err(CharacterProgressionError::RespawnPending) if original.is_none() => {
+                let expected_character_revision = slot_cursor(&mut slot, self, authority).await?;
+                self.consume_pending_respawn(
+                    authority,
+                    node,
+                    CurrentCharacterGameplayFence {
+                        expected_character_revision,
+                        ..fence
+                    },
+                    None,
+                )
+                .await?;
+                slot.commit_death(self, authority, node, fence, request, None)
+                    .await?
+            }
+            outcome => outcome?,
+        };
+        let (CharacterDeathOutcome::Committed(committed)
+        | CharacterDeathOutcome::AlreadyCommitted(committed)) = outcome;
+        let expected_character_revision = slot_cursor(&mut slot, self, authority).await?;
+        self.consume_pending_respawn(
+            authority,
+            node,
+            CurrentCharacterGameplayFence {
+                expected_character_revision,
+                ..fence
+            },
+            Some(occurrence),
+        )
+        .await?;
+        Ok(committed)
+    }
+
     /// Read a retained death outcome after a lost response, before respawn.
     /// This proves only what committed for the occurrence and never
     /// reacquires gameplay authority.
@@ -412,6 +575,21 @@ impl DurabilityRoot {
             })
             .await?
     }
+}
+
+async fn slot_cursor(
+    slot: &mut RevisionSlot,
+    root: &DurabilityRoot,
+    authority: &ReconciledCharacterAuthority<'_, '_>,
+) -> Result<CharacterRevision> {
+    slot.cursor(root, authority)
+        .await
+        .map_err(|error| match error {
+            CharacterAuthorityError::Unavailable(error) => {
+                CharacterProgressionError::Unavailable(error)
+            }
+            _ => CharacterProgressionError::AuthorityRejected,
+        })
 }
 
 fn validate_request<const N: usize>(
@@ -573,6 +751,15 @@ mod tests {
     use crate::domain::progression::LevelThreshold;
     use crate::foundation::{ConnectionGeneration, GameSessionId, ScopeOwnershipGeneration};
     use oteryn_simulation_determinism::RoundingMode;
+
+    /// The DEATH-2 consumption and settlement are linked in every crate that compiles this
+    /// module, as the writer is in `durability::character_progression_linkage`.
+    #[test]
+    fn respawn_consumption_api_is_linked() {
+        let _ = std::mem::size_of::<ConsumedRespawn>();
+        let _ = DurabilityRoot::consume_pending_respawn;
+        let _ = DurabilityRoot::settle_player_death::<2>;
+    }
 
     fn id(seed: u8) -> [u8; 16] {
         [

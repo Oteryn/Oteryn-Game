@@ -8002,6 +8002,460 @@
         "the ITEM-VIEW-1b session handle table"
       ],
       "notes": "ITEM-MOVE-WIRE-0 \u00a74.1 and \u00a74.4. The codec test binds the derivation; the table enforcing it is ITEM-VIEW-1b's. Registered by OTV2-20261003-item-view-1a."
+    },
+    {
+      "id": "BAGS0-RL-03",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_BAGS0_CONTAINERS_WITH_CONTENTS_DECISION_2026-09-30.md",
+      "resource": "Open container views of one GameSession (domain 14 CONTAINER_VIEWS)",
+      "unit": "views per GameSession",
+      "hard_maximum": 16,
+      "configurable_range": {
+        "minimum": 16,
+        "maximum": 16
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Canary's 4-bit container id. Each view holds at most 20 entries (GAMEITEM01-CONTAINER-ENTRIES-MAX). A new view while 16 are open is TOO_MANY_VIEWS; a seventeenth view and a view id above 15 fail closed in the codec.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=16: sixteen views encode, decode and open",
+        "max+1=17: a seventeenth view fails closed both ways, view id 16 fails closed, and a seventeenth OPEN is TOO_MANY_VIEWS"
+      ],
+      "consumers": [
+        "crates/protocol-oteryn/src/container_tree.rs MAX_CONTAINER_VIEWS",
+        "apps/game-server/src/gameplay_transport/container_view.rs"
+      ],
+      "notes": "BAGS-0 \u00a75 and \u00a710; tests: container_tree::tests::views_hold_16_views_of_20_entries_and_refuse_more, container_view::tests::a_seventeenth_open_is_too_many_views. Registered by OTV2-20261003-bags-wire-1."
+    },
+    {
+      "id": "BAGS0-RL-04",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_BAGS0_CONTAINERS_WITH_CONTENTS_DECISION_2026-09-30.md",
+      "resource": "CONTAINER_VIEW_INTENT commands (command type 21) of one GameSession",
+      "unit": "commands per second",
+      "hard_maximum": 10,
+      "configurable_range": {
+        "minimum": 10,
+        "maximum": 10
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "A per-session window of at most 10 command instants in any 1 s. Each command makes at most one observation read and one whole-view domain 14 delta (at most 10,384 bytes), so a session costs at most 10 reads and about 104 KB of deltas per second. An over-rate command has no effect and gets CommandStatus REJECTED with an empty payload; the result set is unchanged.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=10: ten commands in one second are served",
+        "max+1=11: an eleventh command in the same second is REJECTED without effect; one a second later is served"
+      ],
+      "consumers": [
+        "apps/game-server/src/gameplay_transport/container_view.rs MAX_VIEW_COMMANDS_PER_WINDOW and ViewCommandWindow (carried in ItemViewContinuity)"
+      ],
+      "notes": "BAGS-0 \u00a75 and \u00a710 (measured and registered by BAGS-WIRE-1); the window is per GameSession and survives reconnect, resume and transfer; tests: container_view::tests::view_commands_are_limited_to_10_per_second, container_view::tests::the_view_command_window_is_carried_across_reconnect_and_transfer, container_view::tests::connection::the_view_command_rate_is_per_game_session_across_a_reconnect. Registered by OTV2-20261003-bags-wire-1."
+    },
+    {
+      "id": "BAGS0-RL-03-BYTES",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_BAGS0_CONTAINERS_WITH_CONTENTS_DECISION_2026-09-30.md",
+      "resource": "Encoded ContainerViewsV1 (domain 14 snapshot and delta payload)",
+      "unit": "bytes",
+      "hard_maximum": 10384,
+      "configurable_range": {
+        "minimum": 10384,
+        "maximum": 10384
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Measured: one ContainerViewV1 is at most 646 bytes (view id 2, container 11, parent 11, capacity 2, 20 entry elements of 31), 649 as an element; 16 elements are 10,384 bytes, within the FND-02 65,536-byte payload limit, so BAGS0-RL-03 stands.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=10384: sixteen views of twenty worst-case entries encode to exactly 10,384 bytes and decode",
+        "max+1=10385: a payload one byte over fails closed before parsing"
+      ],
+      "consumers": [
+        "crates/protocol-oteryn/src/container_tree.rs MAX_CONTAINER_VIEWS_BYTES",
+        "docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json state domain 14"
+      ],
+      "notes": "BAGS-0 \u00a710 CONTAINER_VIEWS snapshot bytes; test: container_tree::tests::views_hold_16_views_of_20_entries_and_refuse_more. Registered by OTV2-20261003-bags-wire-1."
+    },
+    {
+      "id": "ITEMV0-RL-03-CONTAINER-TREE",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_BAGS0_CONTAINERS_WITH_CONTENTS_DECISION_2026-09-30.md",
+      "resource": "Live item handles of one GameSession that selected capability 14 CONTAINER_TREE_V1",
+      "unit": "handles per GameSession",
+      "hard_maximum": 637,
+      "configurable_range": {
+        "minimum": 637,
+        "maximum": 637
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Measured as ITEMV0-RL-03 (301) plus, for each of the 16 views (BAGS0-RL-03), its container, which may be visible in no other view, and its 20 entries: 301 + 16 x 21 = 637, above the BAGS-0 floor of 382. The handle table of a capability 14 session is bounded by this value before inserting; a session without capability 14 keeps ITEMV0-RL-03.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=637: the views at their bounds hold 637 live handles",
+        "max+1=638: the table refuses a handle beyond the views' bounds"
+      ],
+      "consumers": [
+        "crates/protocol-oteryn/src/container_tree.rs MAX_LIVE_ITEM_HANDLES_CONTAINER_TREE",
+        "apps/game-server/src/gameplay_transport/item_view.rs ItemHandleTable"
+      ],
+      "notes": "BAGS-0 \u00a75 and \u00a710 (ITEMV0-RL-03 re-measured; D469 2a keeps ITEMV0-RL-03 at 301 for sessions without capability 14). Tests: container_tree::tests::live_handle_bound_adds_16_views_of_21_items, container_view::tests::the_container_tree_bound_holds_637_handles_and_refuses_638. Registered by OTV2-20261003-bags-wire-1."
+    },
+    {
+      "id": "WHEEL0-RL-01",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_WHEEL0_WHEEL_OF_DESTINY_DELIVERY_DECISION_2026-09-30.md",
+      "resource": "Wheel of Destiny slots of one Character",
+      "unit": "slots per Character",
+      "hard_maximum": 36,
+      "configurable_range": {
+        "minimum": 36,
+        "maximum": 36
+      },
+      "failure_category": "INVALID_INPUT",
+      "allocation_impact": "A fixed [u16; 36] in memory; slot rows CHECK slot BETWEEN 1 AND 36 and receipt vectors have cardinality 36; a slot is at most its capacity (50..200), so a Character holds at most 4 x 1000 = 4000 points (allocated_total CHECK).",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=36: slots 1..36 are stored and the ruleset reader requires exactly 36 topology slots",
+        "max+1=37: slot 37 fails the slot CHECK and an adjacency entry naming slot 37 refuses the ruleset"
+      ],
+      "consumers": [
+        "apps/game-server/src/durability/character_wheel.rs WHEEL_SLOTS, WheelSlots, WheelRuleset::from_catalogue",
+        "apps/game-server/migrations/0070_character_wheel_allocation.sql"
+      ],
+      "notes": "WHEEL-0 \u00a74 and \u00a78; tests: character_wheel::tests::a_malformed_catalogue_is_refused, slots_and_occurrences_are_bounded. Registered by WHEEL-W1."
+    },
+    {
+      "id": "WHEEL0-RL-02",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_WHEEL0_WHEEL_OF_DESTINY_DELIVERY_DECISION_2026-09-30.md",
+      "resource": "Domain points of the highest revelation stage",
+      "unit": "domain points",
+      "hard_maximum": 1000,
+      "configurable_range": {
+        "minimum": 1000,
+        "maximum": 1000
+      },
+      "failure_category": "INVALID_INPUT",
+      "allocation_impact": "No allocation; revelation stages 1, 2 and 3 start at 250, 500 and 1000 points in one domain, and a domain holds at most 1000 points (nine slots).",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=1000: 999 points give stage 2 and 1000 give stage 3",
+        "max+1: a domain cannot hold 1001 points (its capacities sum to 1000)"
+      ],
+      "consumers": [
+        "apps/game-server/src/durability/character_wheel.rs REVELATION_THRESHOLDS, WheelStages::derive"
+      ],
+      "notes": "WHEEL-0 \u00a72 and \u00a78 (thresholds 250/500/1000); test: character_wheel::tests::revelation_stages_follow_the_thresholds. Registered by WHEEL-W1."
+    },
+    {
+      "id": "WHEEL0-RL-03",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_WHEEL0_WHEEL_OF_DESTINY_DELIVERY_DECISION_2026-09-30.md",
+      "resource": "Augment stage of one Wheel augment perk",
+      "unit": "stage",
+      "hard_maximum": 2,
+      "configurable_range": {
+        "minimum": 2,
+        "maximum": 2
+      },
+      "failure_category": "INVALID_INPUT",
+      "allocation_impact": "No allocation; the stage counts the full slots whose conviction perk names the augment, capped at 2.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=2: two full slots of one augment give stage 2",
+        "max+1: a third copy still gives stage 2"
+      ],
+      "consumers": [
+        "apps/game-server/src/durability/character_wheel.rs MAX_AUGMENT_STAGE, WheelStages::derive"
+      ],
+      "notes": "WHEEL-0 \u00a73 and \u00a78; test: character_wheel::tests::augments_count_full_slots_only. Registered by WHEEL-W1."
+    },
+    {
+      "id": "WHEEL0-RL-04",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_WHEEL0_WHEEL_OF_DESTINY_DELIVERY_DECISION_2026-09-30.md",
+      "resource": "Level above which the Wheel opens",
+      "unit": "levels",
+      "hard_maximum": 50,
+      "configurable_range": {
+        "minimum": 50,
+        "maximum": 50
+      },
+      "failure_category": "INVALID_INPUT",
+      "allocation_impact": "No allocation; available points are max(0, level - 50) plus extra points (0 until their owners exist), one per level.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=50: level 50 is not eligible and has 0 points",
+        "max+1=51: level 51 is eligible with 1 point"
+      ],
+      "consumers": [
+        "apps/game-server/src/durability/character_wheel.rs WHEEL_LEVEL_OFFSET, available_points, eligibility"
+      ],
+      "notes": "WHEEL-0 \u00a76.1, \u00a76.3 and \u00a78; tests: character_wheel::tests::validation_applies_each_rule, an_ineligible_or_not_current_allocation_derives_zero. Registered by WHEEL-W1."
+    },
+    {
+      "id": "WHEEL0-RL-05",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_WHEEL0_WHEEL_OF_DESTINY_DELIVERY_DECISION_2026-09-30.md",
+      "resource": "Distance from a town temple position at which Wheel points may be removed",
+      "unit": "tiles",
+      "hard_maximum": 10,
+      "configurable_range": {
+        "minimum": 10,
+        "maximum": 10
+      },
+      "failure_category": "INVALID_INPUT",
+      "allocation_impact": "No allocation; a change that lowers any slot is refused (REMOVAL_NOT_AT_TEMPLE) unless the caller's at_temple fact holds: a protection zone within 10 tiles of a temple position of the active bundle.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=10: a removal at the temple is admitted",
+        "max+1=11: a removal away from the temple is REMOVAL_NOT_AT_TEMPLE"
+      ],
+      "consumers": [
+        "apps/game-server/src/durability/character_wheel.rs TEMPLE_REMOVAL_RADIUS, WheelChangeFacts::at_temple, WheelRuleset::validate"
+      ],
+      "notes": "WHEEL-0 \u00a77.3 and \u00a78; the position check is the W-2 caller's; tests: character_wheel::tests::validation_applies_each_rule, character_wheel_postgres_cases::wheel_changes_commit_replay_and_refuse_writing_nothing. Registered by WHEEL-W1."
+    },
+    {
+      "id": "WHEEL0-RL-06",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_WHEEL0_WHEEL_OF_DESTINY_DELIVERY_DECISION_2026-09-30.md",
+      "resource": "Slot values in one Wheel receipt",
+      "unit": "small integers per receipt",
+      "hard_maximum": 72,
+      "configurable_range": {
+        "minimum": 72,
+        "maximum": 72
+      },
+      "failure_category": "INVALID_INPUT",
+      "allocation_impact": "Two SMALLINT[] vectors of cardinality 36 (before and after) plus fixed fields; the vectors CHECK cardinality 36, one dimension and 0..200 per value.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=72: a receipt stores both 36-slot vectors",
+        "max+1: a 37-value vector fails the receipt vector CHECK"
+      ],
+      "consumers": [
+        "apps/game-server/migrations/0070_character_wheel_allocation.sql game_character_wheel_receipt_vectors",
+        "apps/game-server/src/durability/character_wheel.rs WheelSlots::stored"
+      ],
+      "notes": "WHEEL-0 \u00a78; test: character_wheel::tests::slots_and_occurrences_are_bounded. Registered by WHEEL-W1."
+    },
+    {
+      "id": "WHEEL0-RL-07-CHANGE",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_WHEEL0_WHEEL_OF_DESTINY_DELIVERY_DECISION_2026-09-30.md",
+      "resource": "CharacterRevisions and receipts of one Wheel allocation change",
+      "unit": "receipts per change",
+      "hard_maximum": 1,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 1
+      },
+      "failure_category": "INVALID_INPUT",
+      "allocation_impact": "One change writes 1 CharacterRevision and 1 ALLOCATION receipt, 0 items and 0 value lines; a refused or unchanged replacement (NO_CHANGE) writes nothing.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=1: a change commits one receipt at one CharacterRevision",
+        "max+1: no second receipt; the replay of the occurrence returns the first"
+      ],
+      "consumers": [
+        "apps/game-server/src/durability/character_wheel.rs DurabilityRoot::commit_character_wheel",
+        "apps/game-server/migrations/0070_character_wheel_allocation.sql"
+      ],
+      "notes": "WHEEL-0 \u00a78 row 'Allocation change' (unnumbered in the decision); test: character_wheel_postgres_cases::wheel_changes_commit_replay_and_refuse_writing_nothing. Registered by WHEEL-W1."
+    },
+    {
+      "id": "WHEEL0-RL-08-RESET",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_WHEEL0_WHEEL_OF_DESTINY_DELIVERY_DECISION_2026-09-30.md",
+      "resource": "Wheel reset receipts of one Character per reset revision",
+      "unit": "receipts per Character per reset revision",
+      "hard_maximum": 1,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 1
+      },
+      "failure_category": "INVALID_INPUT",
+      "allocation_impact": "A reset writes 1 CharacterRevision and 1 RULESET_RESET receipt, 0 items and 0 value lines, once per Character per reset revision; its occurrence is derived from the Character and both revisions, so a replay writes nothing.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=1: the admission reset commits once",
+        "max+1: a second admission finds the stored revision active and writes nothing"
+      ],
+      "consumers": [
+        "apps/game-server/src/durability/character_wheel.rs DurabilityRoot::reset_character_wheel, admit_character_wheel",
+        "apps/game-server/migrations/0070_character_wheel_allocation.sql"
+      ],
+      "notes": "WHEEL-0 \u00a78 row 'Wheel reset (WHEEL0-RST-1)' (unnumbered in the decision); test: character_wheel_postgres_cases::the_admission_reset_clears_a_stale_allocation_once. Registered by WHEEL-W1."
+    },
+    {
+      "id": "QUESTGATE0-RL-06",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_QUEST_GATE0_QUEST_GATES_AND_NPC_QUESTS_DECISION_2026-09-30.md",
+      "resource": "Tracked quests of one GameSession (domain 16 QUEST_LOG tracker)",
+      "unit": "quests per GameSession",
+      "hard_maximum": 10,
+      "configurable_range": {
+        "minimum": 10,
+        "maximum": 10
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "QUEST-GATE-0 \u00a79 value (PARITY_PENDING). A track query names at most 10 distinct listed quests and replaces the set; the tracker shows each one's visible missions as one quest line of at most QUESTGATE0-RL-08-BYTES. An eleventh index fails closed in the codec and the query is REJECTED.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=10: ten tracked quests encode, decode and are tracked",
+        "max+1=11: an eleventh index fails closed both ways and the track query is REJECTED without effect"
+      ],
+      "consumers": [
+        "crates/protocol-oteryn/src/quest_log.rs MAX_TRACKED_QUESTS",
+        "apps/game-server/src/gameplay_transport/quest_log.rs"
+      ],
+      "notes": "QUEST-GATE-0 \u00a77 and \u00a79 (PARITY_PENDING: Tibia's tracker limit is not yet evidenced); tests: quest_log::tests::queries_round_trip_within_62_bytes_and_fail_closed, quest_log::tests::the_domain_holds_a_view_and_10_tracked_lines_within_its_bound, gameplay_transport::connection::quest_log::tests::track_replaces_the_set_and_refuses_unlisted_or_eleven_quests. Registered by OTV2-20261004-quest-log-wire-1."
+    },
+    {
+      "id": "QUESTGATE0-RL-07",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_QUEST_GATE0_QUEST_GATES_AND_NPC_QUESTS_DECISION_2026-09-30.md",
+      "resource": "Quests in one quest list projection (domain 16 QuestListV1)",
+      "unit": "quests per projection",
+      "hard_maximum": 1024,
+      "configurable_range": {
+        "minimum": 1024,
+        "maximum": 1024
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "As QUESTSTATE0-RL-05 (quest states per Character). A list entry is at most 10 bytes as an element, so 1,024 entries are 10,240 bytes, within QUESTGATE0-RL-08-BYTES. A quest log catalogue with more listable quests does not load.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=1024: 1,024 ascending entries encode and decode",
+        "max+1=1025: a 1,025th entry fails closed both ways"
+      ],
+      "consumers": [
+        "crates/protocol-oteryn/src/quest_log.rs MAX_LISTED_QUESTS",
+        "apps/game-server/src/quest/log.rs"
+      ],
+      "notes": "QUEST-GATE-0 \u00a79; tests: quest_log::tests::the_list_holds_1024_ascending_quests_and_refuses_more, quest::log::tests::at_most_1024_quests_are_listable. Registered by OTV2-20261004-quest-log-wire-1."
+    },
+    {
+      "id": "QUESTGATE0-RL-08",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_QUEST_GATE0_QUEST_GATES_AND_NPC_QUESTS_DECISION_2026-09-30.md",
+      "resource": "Missions of one quest line (domain 16 QuestLineV1)",
+      "unit": "missions per quest line",
+      "hard_maximum": 128,
+      "configurable_range": {
+        "minimum": 128,
+        "maximum": 128
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Measured 87 (Killing in the Name Of), the largest of 529 missions in 58 quests. A quest with more missions does not load; a line with more fails closed in the codec.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=128: a line of 128 missions encodes and decodes",
+        "max+1=129: a 129th mission fails closed both ways"
+      ],
+      "consumers": [
+        "crates/protocol-oteryn/src/quest_log.rs MAX_QUEST_LINE_MISSIONS",
+        "apps/game-server/src/quest/log.rs"
+      ],
+      "notes": "QUEST-GATE-0 \u00a79 (measured by QUEST-LOG-WIRE-1). Measured over content/quests/definitions (58 storyline quests with missions, 529 missions) from each mission's name and the longest journal text reference length, a template counted with 20 bytes per placeholder. Tests: quest_log::tests::a_line_holds_128_missions_within_its_byte_bound_and_refuses_more, quest::log::tests::a_catalogue_over_the_bounds_does_not_load. Registered by OTV2-20261004-quest-log-wire-1."
+    },
+    {
+      "id": "QUESTGATE0-RL-08-NAME",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_QUEST_GATE0_QUEST_GATES_AND_NPC_QUESTS_DECISION_2026-09-30.md",
+      "resource": "UTF-8 bytes of one mission name in domain 16",
+      "unit": "bytes",
+      "hard_maximum": 128,
+      "configurable_range": {
+        "minimum": 128,
+        "maximum": 128
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Measured 49. A longer or empty name does not load and fails closed in the codec.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=128: a 128-byte name encodes and decodes",
+        "max+1: a 130-byte name (two-byte characters) fails closed"
+      ],
+      "consumers": [
+        "crates/protocol-oteryn/src/quest_log.rs MAX_MISSION_NAME_BYTES",
+        "apps/game-server/src/quest/log.rs"
+      ],
+      "notes": "QUEST-GATE-0 \u00a79 (QUESTGATE0-RL-08 payload bytes). Measured over content/quests/definitions (58 storyline quests with missions, 529 missions) from each mission's name and the longest journal text reference length, a template counted with 20 bytes per placeholder. Test: quest_log::tests::names_and_texts_are_bounded_utf8_and_names_are_required. Registered by OTV2-20261004-quest-log-wire-1."
+    },
+    {
+      "id": "QUESTGATE0-RL-08-TEXT",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_QUEST_GATE0_QUEST_GATES_AND_NPC_QUESTS_DECISION_2026-09-30.md",
+      "resource": "UTF-8 bytes of one journal text in domain 16, template counters filled in",
+      "unit": "bytes",
+      "hard_maximum": 1024,
+      "configurable_range": {
+        "minimum": 1024,
+        "maximum": 1024
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Measured 463. A journal entry whose worst case (each template counter as 20 bytes, the longest i64) is longer does not load; a longer text fails closed in the codec.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=1024: a 1,024-byte text encodes and decodes",
+        "max+1: a 1,026-byte text (two-byte characters) fails closed"
+      ],
+      "consumers": [
+        "crates/protocol-oteryn/src/quest_log.rs MAX_JOURNAL_TEXT_BYTES",
+        "apps/game-server/src/quest/log.rs"
+      ],
+      "notes": "QUEST-GATE-0 \u00a79 (QUESTGATE0-RL-08 payload bytes); the Tibia Global text itself arrives with QUEST-CONTENT-2. Measured over content/quests/definitions (58 storyline quests with missions, 529 missions) from each mission's name and the longest journal text reference length, a template counted with 20 bytes per placeholder. Test: quest_log::tests::names_and_texts_are_bounded_utf8_and_names_are_required. Registered by OTV2-20261004-quest-log-wire-1."
+    },
+    {
+      "id": "QUESTGATE0-RL-08-BYTES",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_QUEST_GATE0_QUEST_GATES_AND_NPC_QUESTS_DECISION_2026-09-30.md",
+      "resource": "Encoded QuestLineV1 (one quest line or tracked quest of domain 16)",
+      "unit": "bytes",
+      "hard_maximum": 16384,
+      "configurable_range": {
+        "minimum": 16384,
+        "maximum": 16384
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Measured 13,057 for the worst case of the largest quest (Killing in the Name Of, every mission visible with its longest text). The catalogue computes each quest's worst case at load and refuses a catalogue over the bound, so a projected line always fits; the encoder refuses one byte more.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=16384: a line of exactly 16,384 bytes encodes and decodes",
+        "max+1=16385: one more text byte is refused before any byte is emitted"
+      ],
+      "consumers": [
+        "crates/protocol-oteryn/src/quest_log.rs MAX_QUEST_LINE_BYTES",
+        "apps/game-server/src/gameplay_transport/quest_log.rs QuestLogLines"
+      ],
+      "notes": "QUEST-GATE-0 \u00a79 (QUESTGATE0-RL-08 payload bytes). Measured over content/quests/definitions (58 storyline quests with missions, 529 missions) from each mission's name and the longest journal text reference length, a template counted with 20 bytes per placeholder. Tests: quest_log::tests::a_line_holds_128_missions_within_its_byte_bound_and_refuses_more, gameplay_transport::connection::quest_log::tests::content_whose_worst_case_line_is_over_the_bound_does_not_load. Registered by OTV2-20261004-quest-log-wire-1."
+    },
+    {
+      "id": "QUESTGATE0-RL-08-DOMAIN-BYTES",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_QUEST_GATE0_QUEST_GATES_AND_NPC_QUESTS_DECISION_2026-09-30.md",
+      "resource": "Encoded QuestLogV1 (domain 16 snapshot and delta payload)",
+      "unit": "bytes",
+      "hard_maximum": 180268,
+      "configurable_range": {
+        "minimum": 180268,
+        "maximum": 180268
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "The view (the list, at most 10,240 bytes, or one line) and 10 tracked lines, each element at most 4 + 16,384 bytes: 11 x 16,388 = 180,268, within the FND-02 delta (262,144) and snapshot chunk (524,288) bounds.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=180268: a worst-case view and ten worst-case tracked lines encode to exactly 180,268 bytes and decode",
+        "max+1=180269: a payload one byte over fails closed before parsing"
+      ],
+      "consumers": [
+        "crates/protocol-oteryn/src/quest_log.rs MAX_QUEST_LOG_BYTES",
+        "docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json state domain 16"
+      ],
+      "notes": "QUEST-GATE-0 \u00a77 and \u00a79; test: quest_log::tests::the_domain_holds_a_view_and_10_tracked_lines_within_its_bound. Registered by OTV2-20261004-quest-log-wire-1."
+    },
+    {
+      "id": "QUESTGATE0-RL-09",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_QUEST_GATE0_QUEST_GATES_AND_NPC_QUESTS_DECISION_2026-09-30.md",
+      "resource": "QUEST_LOG_QUERY commands (command type 22) of one GameSession",
+      "unit": "commands per second",
+      "hard_maximum": 2,
+      "configurable_range": {
+        "minimum": 2,
+        "maximum": 2
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "A per-GameSession sliding window of at most 2 query instants in any 1 s, carried in the session continuity so a reconnect, resume or transfer never resets it. Each query reads the session copy once and sends one whole-domain delta of at most 180,268 bytes, so a session costs at most 2 projections and about 360 KB of deltas per second. An over-rate query has no effect and gets CommandStatus REJECTED with an empty payload.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=2: two queries in one second are served",
+        "max+1=3: a third query in the same second is REJECTED without effect, also after a reconnect; one a second later is served"
+      ],
+      "consumers": [
+        "apps/game-server/src/gameplay_transport/quest_log.rs QueryWindow"
+      ],
+      "notes": "QUEST-GATE-0 \u00a77 and \u00a79 (the BAGS-WIRE-1b per-GameSession window); test: gameplay_transport::connection::quest_log::tests::queries_are_limited_to_2_per_second_per_game_session. Registered by OTV2-20261004-quest-log-wire-1."
     }
   ]
 }

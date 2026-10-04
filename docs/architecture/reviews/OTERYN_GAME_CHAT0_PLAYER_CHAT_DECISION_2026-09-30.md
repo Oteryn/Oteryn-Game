@@ -25,6 +25,11 @@
 | CHAT-1 | impl, protocol review | capability `CHAT_V1`, the chat command and domain, local speech with its ranges, the NPC greeting, the spam limiter and in-memory mute (§3, §4, §6, §7) | this decision |
 | CHAT-2 | hard, security and privacy review | the World relay with its key, readiness and log preconditions (§5), private messages, the World rooms, the durable mute row | CHAT-1 |
 
+**Amendment (core loop batch, `OTERYN_GAME_ARCH_BATCH_CORE_LOOP_PACKETS_2026-10-04.md` §1.2).** CHAT-1 is built as CHAT-1a
+(merged), CHAT-1b-1 (the wire, merged), CHAT-1b-2a (pure: the per-session line queue, the
+census and the mute read, in `chat/**`) and CHAT-1b-2b (dispatch, domain 12, the offer of
+capability 7). CHAT-1b-2b reuses the CAP-NEG-1 selection seam instead of waiting for CHARM-5-COMP.
+
 Later, each with its own decision: party and guild chat, private chat channels (Premium), the VIP
 list, rule-violation reports (with Platform), chat history.
 
