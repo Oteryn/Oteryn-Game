@@ -48,8 +48,8 @@ works:
 - `node/serve.rs` reads `OTERYN_NATIVE_GAMEPLAY_MANIFEST`, decodes it with
   `NativeGameplayInput::from_manifest` and calls `activate_native_entry_room_with_gameplay`.
 - The spell book is then `native.spell_book()`.
-- `oteryn-game-ops content-activation` reads the same variable. It computes the server, client and
-  frame-binding digests of the room *with* the gameplay artifact.
+- `oteryn-game-ops --config <ops-config> content activate` reads the same variable. It computes
+  the server, client and frame-binding digests of the room *with* the gameplay artifact.
 - `activate_qualified_native_entry_room` refuses boot (`DigestMismatch`,
   `FrameBindingMismatch`) unless the issued digests match that room.
 
@@ -104,10 +104,13 @@ These need production or test-server authority. The repository grants neither.
 2. **Issue the activation** with the real command, under that variable:
 
    ```text
-   oteryn-game-ops content activate --world <W> --channel <C> --sequence <N+1> --previous <N> \
-     --request content-activation-<W>-<C>-<N+1>.json
+   oteryn-game-ops --config <ops-config> content activate --world <W> --channel <C> \
+     --sequence <N+1> --previous <N> --request content-activation-<W>-<C>-<N+1>.json
    ```
 
+   - `--config` is required. It names the root-owned operator configuration, which holds the
+     operator state directory and the control database connection. The command runs as root and
+     refuses the service user.
    - `<N>` is the scope's current activation sequence (`empty` if none).
    - The request file is created in the operator state directory with the computed server, client
      and frame-binding digests of the room *with* the gameplay artifact, and is then recorded.
@@ -175,7 +178,7 @@ owned_paths:
   - apps/game-server/src/gameplay_transport/familiar_cast_dispatch.rs  # only a §1.2 refusal fix the sweep finds
   - apps/game-server/src/gameplay_transport/native_companion_item_cast.rs  # only a §1.2 refusal fix the sweep finds
   - apps/game-server/src/gameplay_transport/native_world_item_cast.rs # only a §1.2 refusal fix the sweep finds
-  - tools/qualification/node_boot/run.sh                               # default spell manifest
+  - tools/qualification/node_boot/run.sh                               # default spell manifest and repository-root staging
   - tools/qualification/spells/README.md
   - tools/content-schema/native-gameplay/README.md
   - content/abilities/SPELL-IMPORT.md
@@ -215,9 +218,21 @@ Builds:
 - **Refusal fixes**, only for what the sweep finds (§1.2), within the dispatch files listed above.
   `spell/cast.rs` and `ordinary_combat.rs` are SPELL-LOCK-1's. A finding there is reported to
   the control plane for SPELL-LOCK-1 or a later batch.
-- **Qualification default.** `tools/qualification/node_boot/run.sh` defaults
+- **Qualification default and staging.** `tools/qualification/node_boot/run.sh` defaults
   `NODE_BOOT_SPELL_MANIFEST` to `content/spells.manifest.json` instead of the r21 reference
   artifact. The baseline boot (`NODE_BOOT_SPELLS=0`) stays available.
+  - Today the stager (`run.sh`, the `PY_STAGE` block) takes the manifest's directory as its
+    source root and rejects any `..` locator. The canonical manifest's `source_world` and
+    `wheel_profile` locators leave `content/`, so it must change.
+  - The staging root becomes the repository root. Each locator is resolved against the
+    manifest's directory, must stay inside the repository root, and must match its pinned
+    `sha256`. Absolute and backslash locators stay refused.
+  - Only the manifest and its declared, hash-bound inputs are staged, under their
+    repository-relative paths (`content/spells.manifest.json`, `content/...`, `imports/...`,
+    `rulesets/...`). No unrelated sibling is published.
+  - `OTERYN_NATIVE_GAMEPLAY_MANIFEST` and `NODE_BOOT_SPELL_MANIFEST` point at
+    `$BASE/gameplay/<manifest path relative to the repository root>` instead of its basename.
+  - The r21 reference artifact still stages and boots under an explicit `NODE_BOOT_SPELL_MANIFEST`.
 - **Docs.** The two READMEs and `SPELL-IMPORT.md` describe the §1.3 activation and state that the
   variable is the single selector.
 

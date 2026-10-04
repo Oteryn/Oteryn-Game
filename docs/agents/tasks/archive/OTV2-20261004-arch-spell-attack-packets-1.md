@@ -46,6 +46,11 @@ external_repositories: []
   - no rollout or availability promise: a mismatched node refuses readiness until its
     configuration and the activation match, and rollback is a baseline issuance at the next
     sequence.
+- **#1787 round 2, 4179150924, 4179150930 and 4179150933:**
+  - the activation command carries the required `--config <ops-config>`, in §1.1 and §1.3;
+  - SPELL-BOOK-ACTIVATE-1 changes the node-boot stager to hash-bound staging from the repository
+    root, keeping repository-relative paths, because the canonical manifest's locators leave
+    `content/` (§2.1).
 - No code, contract or wire change.
 
 ## Validation
