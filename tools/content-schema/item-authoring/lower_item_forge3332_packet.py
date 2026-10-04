@@ -18,7 +18,7 @@ OUTPUT = ROOT / "docs/agents/evidence/OTV2-20261001-item-forge3332-promotion-v1.
 
 DEPENDENCIES = {
     "tools/content-schema/item-authoring/engine_items.py": "0a494fd64d7774507b4d9e493492a7ffc9d99d751dd2ed4fec73561cb06f5b06",
-    "tools/content-schema/item-authoring/lower_client_market_packet.py": "850ee01d3b4831c412856b77720c0996122e4f67ed4603b0e6337637dc09457e",
+    "tools/content-schema/item-authoring/lower_client_market_packet.py": "adb64e5012dc7b1a26a49aebdcdca8cd8b6cdb91008ae7e843f748af9d50e79a",
     "tools/content-schema/item-authoring/lower_wiki_stack_default_packet.py": "5969b009ed326991e6db310b3e3c48640ae5a5ac361c9c34f5619740bff8ce2e",
 }
 

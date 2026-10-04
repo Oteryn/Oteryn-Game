@@ -15,9 +15,9 @@ from item_official_navigation import qualification_inputs
 from item_wiki_family_capture import parse_infobox_fields, resolve_infobox_fields
 
 ALIAS_PATH = "imports/tibiawiki/facts/items-family-alias26-20261001.json"
-ALIAS_SHA = "4c41a1c0bdf655b6c016e0bbe832548a3cc333f9b5295691496b77432f4d4af5"
+ALIAS_SHA = "03c08223c9e5c8e74538545a72a31c0a28f69b077e173ea0fab9661298a3dd2c"
 SEVEN_PATH = "tools/content-migration/samples/navigation-seven-20261001.json"
-SEVEN_SHA = "8fc1b349b227c04241132c43029cec6bcf287c69cd1103cabf605764a01205d8"
+SEVEN_SHA = "65e1397cc55b05fea732ad738e329f98f9b4a68c36ee4c33ef413d71e6836739"
 SEVEN_IDS = frozenset({40522, 43946, 43947, 44048, 44432, 44433, 24415})
 
 

@@ -34,11 +34,11 @@
     },
     "dom_helper": {
       "path": "tools/content-migration/item_external_family_refinement.py",
-      "sha256": "c46ec174f7656f64ca374fd2753b9351184fcecb342ae061ff9150f91cece9fb"
+      "sha256": "e178f7db6bed07567dece0fe8e008f3835a6c03eb542b14d70ec1efe5e9f8cd1"
     },
     "a12_helper": {
       "path": "tools/content-migration/item_official_navigation.py",
-      "sha256": "7b95c5cac5bdc71dc07afd14dfcf36364d26473ad915a95bd1d4e0205927b2c7"
+      "sha256": "f3b44cd1124625413082d77b4bb1c62a8c354a0850b699ebcf9cfde6a8933a60"
     },
     "bindings": {
       "path": "imports/crystalserver/bindings/items.json",
@@ -46,7 +46,7 @@
     },
     "retained_stats": {
       "path": "imports/tibiawiki/facts/items-stats.json",
-      "sha256": "49d43cbe6957e6edc16aeda72e05152c55606e9381452ea74d7a63b5a5e91e4a"
+      "sha256": "379f2d468fdb8e5ec7b40d98e4ec62f1b1b189b4b2ad9c40c4a69869123c5864"
     },
     "current_artifact": {
       "appearances_sha256": "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2",
@@ -59,9 +59,9 @@
     "current_membership_entries_sha256": "424e445c0ea9494b1871364f10e93876ad551df0d3d5c6982d97301008b027df",
     "native_admission": {
       "path": "apps/game-server/src/content/item_identity.rs",
-      "sha256": "dccd6090906217a2e79f5d656d25457f9439e96d8579e91898b44c4bbea79aa8",
-      "explicit_rule_only_count": 60,
-      "explicit_ids_sha256": "136743df391cf4ff63fe16658fca0df6b2d90ce00636ddbbc87032f29a5230ff",
+      "sha256": "af45ce42e72045c2bfc8d0cc8bb9201926bdb8abe959010e415d1d7722205733",
+      "explicit_rule_only_count": 61,
+      "explicit_ids_sha256": "9876779fad9a347536584ef7384b69e3e46b1f94b64b7aabf2d9d5e1a49b7c61",
       "original_qualification_coordinate": "/workspace/audit-continuation/frozen-taxonomy-df777898/apps/game-server/examples/materialize_content_world_project_v2.rs"
     },
     "actual_Crystal_revision": "ff7ede593c69d4c658b382c97443e8155926924a",

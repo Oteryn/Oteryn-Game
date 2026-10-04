@@ -1,9 +1,9 @@
 {
   "admission_source": {
-    "explicit_ids_sha256": "136743df391cf4ff63fe16658fca0df6b2d90ce00636ddbbc87032f29a5230ff",
-    "explicit_rule_only_count": 60,
+    "explicit_ids_sha256": "9876779fad9a347536584ef7384b69e3e46b1f94b64b7aabf2d9d5e1a49b7c61",
+    "explicit_rule_only_count": 61,
     "path": "apps/game-server/src/content/item_identity.rs",
-    "sha256": "dccd6090906217a2e79f5d656d25457f9439e96d8579e91898b44c4bbea79aa8"
+    "sha256": "af45ce42e72045c2bfc8d0cc8bb9201926bdb8abe959010e415d1d7722205733"
   },
   "official_source": {
     "artifact": "content/assets/files/appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.dat",

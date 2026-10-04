@@ -15,12 +15,12 @@ PROOF = (
     "docs/agents/evidence/"
     "OTV2-20261002-item-stack-default-successor8-source-qualification-v1.json"
 )
-PROOF_SHA = "96ce87a055a3cf472198d2677e0275b24cc888d707247f4d834101b68c91a263"
+PROOF_SHA = "872c4cd163d704249438f7cf54be6dd6d14a10a32470bd60e563083b9a4e8a01"
 RECEIPT = (
     "docs/agents/evidence/"
     "OTV2-20261003-item-stack-default-successor8-current-parent-receipt-v2.json"
 )
-RECEIPT_SHA = "5d6f08ebaa9c6d7948efdcbcb9aca9e6862cbd8056a201c761b20af7d5e893b2"
+RECEIPT_SHA = "7ecec01dce6832b2776c0cdab08b8b3674ca3d41c262c3f7fb505e72fad641f6"
 OUTPUT = (
     "docs/agents/evidence/OTV2-20261002-item-stack-default-successor8-promotion-v1.json"
 )
