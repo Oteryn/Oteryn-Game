@@ -1,6 +1,6 @@
-# Oteryn World Bundle format v1
+# Oteryn World Bundle format (v2; the file name keeps V1)
 
-- Format ID: `OTERYN_WORLD_BUNDLE/v1`
+- Format ID: `OTERYN_WORLD_BUNDLE/v2` (v1 is retired and has no reader; see "Format v2" below)
 - Owner: `Oteryn/Oteryn-Game`, MAP-BUNDLE-1 (ADR-0021 §5)
 - Status: **CANDIDATE.** ADR-0005 §3 requires an accepted schema contract before a runtime
   treats a serializer as a permanent format. This document is accepted together with
@@ -33,7 +33,7 @@ All integers are little endian unless the payload grammar (§5) says varint.
 | Offset | Size | Field | Rule |
 |---|---|---|---|
 | 0 | 4 | magic | `"OTWB"` |
-| 4 | 2 | `format_version` u16 | `1` |
+| 4 | 2 | `format_version` u16 | `2` |
 | 6 | 2 | reserved u16 | `0` |
 | 8 | 4 | `manifest_length` u32 | at most `MAP01-BUNDLE-MANIFEST-BYTES` |
 | 12 | 4 | `sector_count` u32 | at most `MAP01-BUNDLE-SECTOR-COUNT` |
@@ -55,14 +55,14 @@ reader rejects unknown fields at every level (fail closed); a new field needs a 
 
 | Field | Meaning |
 |---|---|
-| `format` | `"OTERYN_WORLD_BUNDLE/v1"` |
-| `min_reader_version` | lowest reader `format_version` able to read the file; `1` |
+| `format` | `"OTERYN_WORLD_BUNDLE/v2"` |
+| `min_reader_version` | lowest reader `format_version` able to read the file; `2` |
 | `projection_class` | `"server"` (ADR-0021 §4.2). A client projection is not part of v1. |
 | `compiler_version` | set by the compiler, never by its caller: `oteryn-world-bundle-compiler/<crate version> zstd/<library version>` (§6) |
 | `build_class` | `"production"` or `"non-production"`, §8 |
 | `identity` | the compiler inputs copied unchanged: `project_format_version`, `world_schema_version`, `content_revision`, `content_lock_digest`, `min_runtime_version`, `required_capabilities` (list), `ruleset_compatibility` (list), `provenance_summary` (ADR-0005 §3, DUR-04 §9) |
 | `world` | `min_x`, `min_y`, `max_x`, `max_y` (native, half-open) and `floors`: native floors strictly ascending within `-15..0` (ADR-0021 §4.3) |
-| `palette` | list of `{key, family, id}`; the list index is the bundle palette index used by the payloads |
+| `palette` | list of `{key, family, id, terrain}` (`terrain`: Format v2); the list index is the bundle palette index used by the payloads |
 | `draft_areas` | keys of the draft areas compiled in, sorted and unique; empty in a production bundle |
 | `skipped_provisional_keys` | provisional keys skipped in this build, sorted and unique; empty in a production bundle |
 | `dropped_teleports` | placement keys (§7, JSON numbers) of the top-level entries whose zero-destination `teleport` attribute the compiler dropped (§10, OPEN-3), strictly ascending; each must name a top-level entry of the bundle. Such an entry is never materialized (ADR-0021 §4.4). Allowed in a production bundle |
@@ -123,7 +123,7 @@ already writes canonical varints.
 
 - **Per sector.** The table row holds the SHA-256 of the stored frame. A reader checks it before
   it decompresses the frame, so a corrupt frame never reaches the decompressor.
-- **Bundle digest.** `SHA-256("OTERYN_WORLD_BUNDLE/v1" || 0x00 || file[0 .. len − 32])`, stored
+- **Bundle digest.** `SHA-256("OTERYN_WORLD_BUNDLE/v2" || 0x00 || file[0 .. len − 32])`, stored
   as the last 32 bytes. It covers the header, the manifest (including `build_class` and the
   content revision), the table and every frame. It is the bundle identity used for pinning
   (ADR-0021 §4.2), the Ground `map_revision` (§4.4) and `MapItemMaterialization`.
@@ -313,3 +313,38 @@ and closes OPEN-4; MAP-BUNDLE-1b-2 implements OPEN-1 and OPEN-2 (key resolution)
 - A reader accepts only versions it knows and a manifest whose `min_reader_version` it meets.
 - Content changes do not change the format: a new content revision or map produces a new bundle
   with a new digest, activated only at a planned world reset (ADR-0021 §4.7).
+
+## 12. Format v2 (MAP-BUNDLE-2; decision MAP-LOAD-PACKET-1 §1.4)
+
+`OTERYN_WORLD_BUNDLE/v2` has `format_version` 2 and `min_reader_version` 2. It changes one thing
+against v1: each `palette` entry gains the required member `terrain`. The layout, the payload
+grammar, the digest rule (its domain string now names v2) and every v1 limit are unchanged. The
+compiler writes only v2 and the reader accepts only v2; a v1 bundle is refused like any unknown
+version. The server reads no Terrain catalogue (ADR-0021 §4.2, D189): the one bundle digest
+authenticates the terrain semantics with every other byte.
+
+The compiler routes each palette entry with the OPEN-1 rules (§10) and writes `terrain`:
+
+- `null` for a WorldObject route and a plain Item. Such an entry is not ground and not walkable,
+  and its record's fields are not read.
+- `{"kind", "walkable", "ground_speed"}` for a Terrain route (a `terrain` key, or an `item` key
+  whose one catalogue record is a Terrain record). `kind` is one of `ground`, `border`, `wall`,
+  `roof` and `field`. For `ground`, `walkable` is a boolean and `ground_speed` is an integer in
+  `0..=1000`; a walkable ground has a speed of at least 1, and a non-walkable ground may have any
+  speed in `0..=1000`, 0 included. For every other kind both members are `null`. All three
+  members are always present.
+
+The compiler fails closed: it stops on a placed Terrain-routed record whose `kind` is UNKNOWN (or
+not one of the five), on a `ground` record whose `walkable` or `ground_speed` is UNKNOWN, on a
+speed outside `0..=1000`, and on speed 0 with `walkable` true. A WorldObject or plain-Item route
+is never checked for a Terrain kind. The `parity` command adds a `terrain` object: placed entries
+per kind, the Terrain-routed entries with an UNKNOWN kind (`unknown_kind`) and those the compiler
+would refuse (`refused`), and the WorldObject-routed and plain-Item entries (`null`).
+
+The reader fails closed, inside the manifest parse that `MAP01-BUNDLE-MANIFEST-BYTES` already
+bounds: it rejects a missing `terrain`, a shape that does not fit the `kind`, an unknown `kind`,
+an out-of-range or non-integer speed, a walkable ground with speed 0, an unknown member, and a
+`terrain: null` on a `family` `terrain` entry. The writer refuses the same manifests.
+
+A change of a record's kind, walkable flag or ground speed takes a new bundle, activated only at
+a planned World reset (§11; ADR-0021 §4.7). A later Terrain field is a later format version.
