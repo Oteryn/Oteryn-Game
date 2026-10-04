@@ -6,7 +6,7 @@ def witness(p,ptr):return {'path':str(p),'sha256':sha(p),'json_pointer':ptr,'acc
 def records(folder):
  for p in sorted((R/folder).glob('*.json')):
   for n,row in enumerate(json.loads(p.read_text()).get('records',[])):
-   yield p.relative_to(R),n,row['definition']
+   if 'definition' in row:yield p.relative_to(R),n,row['definition']
 items={};names=collections.defaultdict(list)
 for p,n,d in records('content/items/definitions'):
  items[d['identity']['key']]=(p,n,d)
