@@ -1,0 +1,45 @@
+{
+  "spell": {
+    "carrier": "instant",
+    "cooldown_ms": 50000,
+    "costs": {
+      "mana": 110
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "support"
+      }
+    ],
+    "name": "Mentor Other",
+    "presentation": {
+      "cast_cue": "canary.sound:spell_heal_friend"
+    },
+    "reference_spell_id": 277,
+    "requirements": {
+      "level": 150,
+      "premium": true,
+      "vocation_display_flags": [
+        {
+          "show_in_description": true,
+          "vocation": "monk"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "exalted_monk"
+        }
+      ],
+      "vocations": [
+        "exalted_monk",
+        "monk"
+      ]
+    },
+    "targeting": {
+      "aggressive": false,
+      "allow_on_self": true,
+      "parameter": "player_name",
+      "range_tiles": 7
+    },
+    "words": "uteta tio"
+  }
+}

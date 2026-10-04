@@ -1,0 +1,45 @@
+{
+  "spell": {
+    "carrier": "instant",
+    "cooldown_ms": 10000,
+    "costs": {
+      "mana": 140
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "attack"
+      },
+      {
+        "cooldown_ms": 6000,
+        "group": "greatbeams"
+      }
+    ],
+    "name": "Great Death Beam",
+    "reference_spell_id": 260,
+    "requirements": {
+      "learning_required": true,
+      "level": 300,
+      "premium": false,
+      "vocation_display_flags": [
+        {
+          "show_in_description": true,
+          "vocation": "sorcerer"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "master_sorcerer"
+        }
+      ],
+      "vocations": [
+        "master_sorcerer",
+        "sorcerer"
+      ]
+    },
+    "targeting": {
+      "block_walls": true,
+      "needs_direction": true
+    },
+    "words": "exevo max mort"
+  }
+}

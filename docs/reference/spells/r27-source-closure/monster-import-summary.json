@@ -1,0 +1,79 @@
+{
+  "schema_version": 1,
+  "runtime_activation": false,
+  "sources": [
+    {
+      "source": "canary",
+      "repository": "opentibiabr/canary",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "monster_directories": [
+        "data-otservbr-global/monster",
+        "data-canary/monster"
+      ],
+      "script_directories": [
+        "data/scripts",
+        "data-otservbr-global/scripts",
+        "data-canary/scripts"
+      ],
+      "source_monster_files": 1723,
+      "registered_spell_names": 804,
+      "registered_spell_definitions": 843,
+      "outcomes": {
+        "CANDIDATE_STRUCTURE_RESOLVED": 1629,
+        "CANDIDATE_BLOCKED": 93,
+        "not_monster_registration": 1
+      },
+      "slot_outcomes": {
+        "mapped": 6762,
+        "unresolved_semantics": 54,
+        "approved_omission": 5
+      }
+    },
+    {
+      "source": "crystal",
+      "repository": "zimbadev/crystalserver",
+      "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "monster_directories": [
+        "data-global/monster",
+        "data-crystal/monster"
+      ],
+      "script_directories": [
+        "data/scripts",
+        "data-global/scripts",
+        "data-crystal/scripts"
+      ],
+      "source_monster_files": 3518,
+      "registered_spell_names": 869,
+      "registered_spell_definitions": 1517,
+      "outcomes": {
+        "CANDIDATE_STRUCTURE_RESOLVED": 3279,
+        "CANDIDATE_BLOCKED": 229,
+        "STRUCTURE_INVALID": 7,
+        "source_not_evaluated": 1,
+        "not_monster_registration": 2
+      },
+      "slot_outcomes": {
+        "mapped": 13790,
+        "unresolved_semantics": 121,
+        "approved_omission": 10
+      }
+    }
+  ],
+  "source_input_root": "/workspace/spells-r22-monster-import-current/source-inputs",
+  "source_first": true,
+  "external_reference_inputs": 0,
+  "elapsed_seconds": 79.599,
+  "total_monster_profiles": 5237,
+  "total_source_spell_slots": 20742,
+  "total_spell_registrations": 2360,
+  "external_spell_verification_counts": {
+    "NOT_VERIFIED": 20742
+  },
+  "limits": [
+    "Every candidate retains source-scoped identities; conversion does not allocate native Game/protocol identities.",
+    "Converter historical engine rules/approved encounter omissions are reference assumptions; latest source engine parity and external gameplay verification remain explicit requirements.",
+    "External wiki/official/calculator inputs were not loaded or applied; source/schema closure comes first.",
+    "Both donor source populations remain distinct; duplicate monster/spell names do not authorize source precedence.",
+    "Full wild monster AI and encounter callback consumers are not activated by this import."
+  ]
+}

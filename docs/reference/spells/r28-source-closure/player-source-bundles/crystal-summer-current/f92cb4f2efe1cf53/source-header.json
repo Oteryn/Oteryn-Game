@@ -1,0 +1,42 @@
+{
+  "spell": {
+    "carrier": "instant",
+    "cooldown_ms": 2000,
+    "costs": {
+      "mana": 120,
+      "soul": 1
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "support"
+      }
+    ],
+    "name": "Food",
+    "presentation": {
+      "cast_cue": "canary.sound:spell_food"
+    },
+    "reference_spell_id": 42,
+    "requirements": {
+      "level": 14,
+      "vocation_display_flags": [
+        {
+          "show_in_description": true,
+          "vocation": "druid"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "elder_druid"
+        }
+      ],
+      "vocations": [
+        "druid",
+        "elder_druid"
+      ]
+    },
+    "targeting": {
+      "aggressive": false
+    },
+    "words": "exevo pan"
+  }
+}

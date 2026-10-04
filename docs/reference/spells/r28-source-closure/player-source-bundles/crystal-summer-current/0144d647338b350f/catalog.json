@@ -1,0 +1,14 @@
+{
+  "definitions": [
+    {
+      "family": "Item",
+      "key": "candidate:item/source/crystal-summer-current/3149",
+      "revision": "source-player-r28"
+    },
+    {
+      "family": "Item",
+      "key": "candidate:spell/source/crystal-summer-current/0144d647338b350f/item/2122",
+      "revision": "source-player-r28"
+    }
+  ]
+}
