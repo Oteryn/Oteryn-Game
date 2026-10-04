@@ -9,7 +9,7 @@ repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/item-use-wire-1-20261004
 issue: 1622
-pr: PENDING
+pr: 1761
 decision: ITEM-USE-0 §3; ARCH-BATCH-ROOT-PACKETS-V1 §0.1 and §2.2 (D485), wire lane
 builds_on: ATTACK-WIRE-1 (#1758) pattern; VIS-2 EntityRefV1; ITEM-MOVE-WIRE-0 §4.3 (field 2)
 migration_lease: none
