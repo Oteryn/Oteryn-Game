@@ -225,7 +225,6 @@ def build(snapshot, canary, item_ids, stackable_ids):
         "skipped": Counter(),
         "wiki_canary_disagree": Counter(),
         "out_of_scope_timed_canary_items": Counter(),
-        "show_count_not_modelled": 0,
         "examples": defaultdict(list),
     }
     wiki = wiki_facts(snapshot, report)
@@ -245,6 +244,16 @@ def build(snapshot, canary, item_ids, stackable_ids):
     def skip(reason, item_id):
         report["skipped"][reason] += 1
         note(report, f"skipped:{reason}", item_id)
+
+    def reciprocal(active, inactive):
+        # TIMED-ITEM-0B: an inactive form is one that equips back into the timed form it unequips from.
+        return (
+            inactive in item_ids
+            and canary_int(canary.get(active, ("", {}))[1], "transformdeequipto")
+            == inactive
+            and canary_int(canary.get(inactive, ("", {}))[1], "transformequipto")
+            == active
+        )
 
     timed = {}  # item id -> facts for an admitted timed definition
     for item_id in sorted(scoped & item_ids):
@@ -307,10 +316,17 @@ def build(snapshot, canary, item_ids, stackable_ids):
         if duration and duration[0] > MAX_DURATION_MS:
             skip("DURATION_ABOVE_RL_02", item_id)
             duration = None
+        deequip = canary_int(attrs, "transformdeequipto")
+        if (
+            (charges or duration)
+            and deequip is not None
+            and not reciprocal(item_id, deequip)
+        ):
+            skip("NON_RECIPROCAL_EQUIP_PAIR", item_id)
+            continue
         mode = None
         if duration:
-            paired = canary_int(attrs, "transformdeequipto") is not None
-            if paired or attrs.get("stopduration") == "1":
+            if deequip is not None or attrs.get("stopduration") == "1":
                 mode = "ON_EQUIP"
             elif item_id in light_ids:
                 mode = "CONTINUOUS"
@@ -360,6 +376,7 @@ def build(snapshot, canary, item_ids, stackable_ids):
         )
 
     timed_ids = set(timed)
+    show_count = {}  # TIMED-WIRE-1 input; the Reference Item model has no field for it yet
     for item_id in sorted(timed):
         facts = timed[item_id]
         attrs = facts["attrs"]
@@ -368,8 +385,7 @@ def build(snapshot, canary, item_ids, stackable_ids):
             add(
                 item_id, "charges.count", {"kind": "COUNT_U32", "value": value}, sources
             )
-            if attrs.get("showcharges") == "1":
-                report["show_count_not_modelled"] += 1
+            show_count[ITEM_KEY.format(item_id)] = attrs.get("showcharges") == "1"
         if facts["duration"]:
             value, sources = facts["duration"]
             add(
@@ -416,7 +432,10 @@ def build(snapshot, canary, item_ids, stackable_ids):
         attrs = canary.get(item_id, ("", {}))[1]
         target = canary_int(attrs, "transformequipto")
         if target and target in timed_ids:
-            transform(item_id, "equip", target, attrs, "transformequipto")
+            if reciprocal(target, item_id):
+                transform(item_id, "equip", target, attrs, "transformequipto")
+            else:
+                skip("NON_RECIPROCAL_EQUIP_PAIR", item_id)
         elif target and target not in timed_ids:
             skip("EQUIP_TARGET_NOT_TIMED", item_id)
         use = canary_int(attrs, "transformonuse")
@@ -424,11 +443,11 @@ def build(snapshot, canary, item_ids, stackable_ids):
             transform(item_id, "use", use, attrs, "transformonuse")
     rows.sort(key=lambda row: (row["item_key"], row["field_path"]))
     counts = Counter(row["field_path"] for row in rows)
-    return rows, report, counts
+    return rows, report, counts, dict(sorted(show_count.items()))
 
 
 def packet_bytes(snapshot, canary, item_ids, stackable_ids, compiler_sha256):
-    rows, report, counts = build(snapshot, canary, item_ids, stackable_ids)
+    rows, report, counts, show_count = build(snapshot, canary, item_ids, stackable_ids)
     packet = {
         "compiler": {"path": COMPILER_PATH, "sha256": compiler_sha256},
         "counts": {
@@ -457,10 +476,10 @@ def packet_bytes(snapshot, canary, item_ids, stackable_ids, compiler_sha256):
             "out_of_scope_timed_canary_items": dict(
                 sorted(report["out_of_scope_timed_canary_items"].items())
             ),
-            "show_count_not_modelled": report["show_count_not_modelled"],
             "examples": {k: v for k, v in sorted(report["examples"].items())},
         },
         "schema": SCHEMA,
+        "show_count": show_count,
         "source": {
             "canary": {
                 "path": "imports/canary/items-xml/items.xml",
