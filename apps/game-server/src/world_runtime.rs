@@ -19,6 +19,11 @@ use crate::world_object_revert::RevertSchedulingCapability;
 use std::collections::{BTreeMap, BTreeSet};
 use std::error::Error;
 use std::fmt::{self, Display, Formatter};
+use std::sync::Arc;
+
+/// MAP-LOAD-1: the World's base map, loaded once and shared by every Channel of the World
+/// (ADR-0021 §4.1). No runtime holds one yet; MAP-CUTOVER-1 boots from it.
+pub(crate) type WorldBaseHandle = Arc<crate::map::WorldBase>;
 
 const DISPOSITION_COMMITTED: &str = "COMMITTED";
 const DISPOSITION_NO_CHANGE: &str = "NO_CHANGE";

@@ -83,6 +83,7 @@ pub mod domain;
 pub mod durability;
 pub mod foundation;
 mod gameplay_transport;
+pub mod map;
 #[allow(
     dead_code,
     reason = "unactivated local Movement proof awaits the separate production composition lease"
