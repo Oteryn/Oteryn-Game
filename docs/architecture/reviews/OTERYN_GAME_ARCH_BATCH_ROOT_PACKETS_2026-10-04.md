@@ -133,6 +133,19 @@ The move changes no byte and no rule of the format document, and the compiler's 
 - MAP-LOAD-1 adds a map-backed `GroundSpeedSource` next to `EngineeringGroundSpeed`. Production
   keeps `EngineeringGroundSpeed` (150) until MAP-CLIENT-1 switches server and client together
   (ADR-0021 amendment). The map source is built and tested, not wired into the live path.
+- **Where the semantics come from (#1733 P1 4176957737).** The bundle carries only a palette key,
+  family and compact id (format §3, §5), and the server's `TerrainDefinition` holds only a key, so
+  neither gives kind, walkable or ground speed. The bundle format stays v1: the loader takes a
+  second input, the Terrain catalogue of the World Project (`content/world/terrain/terrain-*.json`)
+  at the bundle's `identity.content_revision`. The loader refuses the pair unless the catalogue's
+  `project_revision` and lock digest (`content/world/content.lock.json`) equal the bundle's
+  `content_revision` and `content_lock_digest`. A palette entry of family `terrain` resolves to the
+  record with that key; one of family `item` resolves to the one Terrain record whose
+  `item_pointer` names that key, or to none (not ground, not walkable). The loader reads `kind`,
+  `walkable` and `ground_speed` from the resolved record and refuses the bundle when a palette
+  key of family `terrain` has no record, two records point at one Item key, or a `ground` record
+  has an UNKNOWN `walkable` or `ground_speed`. Versioning the format would move the same data into
+  every bundle and needs a format v2 and a compiler change; the catalogue input needs neither.
 
 ### 1.5 NPC-BEHAVIOUR-0 acceptance review
 
@@ -254,7 +267,7 @@ owned_paths:
   - Cargo.toml                                     # one workspace member
   - Cargo.lock
   - apps/game-server/Cargo.toml                    # the new dependency
-  - apps/game-server/src/map/**                    # new: base model, loader, pin check
+  - apps/game-server/src/map/**                    # new: base model, loader, pin check, Terrain catalogue reader (§1.4)
   - apps/game-server/src/movement/speed.rs         # the map-backed GroundSpeedSource
   - apps/game-server/src/world_runtime.rs          # the Arc<WorldBase> handle only; no live wiring
   - apps/game-server/tests/map_load_*.rs
@@ -276,8 +289,9 @@ Builds:
 - `WorldBase`: a compact, read-only model of every tile (positions, palette-resolved item compact
   ids, the ground item and its ground speed, the walkable flag), decoded eagerly and shared by
   `Arc` by every channel of the World (ADR-0021 §4.1);
-- the load function, which takes the bundle bytes and the expected pins (digest, schema versions,
-  content revision, production flag) and returns a `WorldBase` or a typed error; a production World
+- the load function, which takes the bundle bytes, the revision-matched Terrain catalogue (§1.4)
+  and the expected pins (digest, schema versions, content revision, production flag) and returns a
+  `WorldBase` or a typed error; a production World
   refuses a bundle whose `build_class` is not `production` (missing counts as `non-production`);
 - the map-backed `GroundSpeedSource` (§1.4); production keeps `EngineeringGroundSpeed`.
 
@@ -293,6 +307,10 @@ checked-in binary):
   bundle;
 - each MAP01-BUNDLE-* and MAP01-TILE-* cap at its maximum (accepted) and maximum + 1 (refused),
   among them 64 top-level entries and 4,096 entries per tile;
+- the Terrain catalogue (§1.4): a catalogue whose revision or lock digest differs from the
+  bundle's is refused; a `terrain` palette key without a record, two records pointing at one Item
+  key, and a `ground` record with an UNKNOWN `walkable` or `ground_speed` each refuse the bundle;
+  an Item palette key with no Terrain record loads as not ground;
 - ground speed 0 non-walkable accepted, 0 walkable refused, 1,000 accepted, 1,001 refused (#1707
   P2 4175486632);
 - the map source returns the tile's ground speed for a non-150 tile and 0 for a tile without a

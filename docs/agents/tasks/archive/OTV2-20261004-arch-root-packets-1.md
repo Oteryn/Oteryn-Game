@@ -59,6 +59,9 @@ external_repositories: []
 - #1733 P1 4176934053: `0072` replaces `0010`'s single-value revision and profile CHECKs with
   one tuple CHECK, `(1, V1)` or `(2, V2)`. Both tuples are qualified and the mixed tuples are
   refused (§1.7, §2.5).
+- #1733 P1 4176957737: MAP-LOAD-1 takes the World Project Terrain catalogue at the bundle's
+  content revision as a second loader input, pinned by revision and lock digest, for kind,
+  walkable and ground speed; the bundle format stays v1 (§1.4, §2.1).
 - No code, contract or wire change.
 
 ## Validation
