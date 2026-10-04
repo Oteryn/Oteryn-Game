@@ -8,6 +8,10 @@
 //! function raises one typed SQLSTATE per refusal, which [`CharacterInboxDeliveryError`]
 //! classifies for the callers and their tests. This module has no writer.
 
+// The read helpers have no in-crate caller until HOUSE-1b and MARKET-1; test crates that include
+// `durability` by path would otherwise flag them.
+#![allow(dead_code)]
+
 use super::DurabilityError;
 use super::character_progression::{numeric_u64, uuid_text};
 use sqlx::Row;
