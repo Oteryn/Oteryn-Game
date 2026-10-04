@@ -1,0 +1,34 @@
+{
+  "spell": {
+    "carrier": "rune",
+    "cooldown_ms": 2000,
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "support"
+      }
+    ],
+    "name": "convince creature rune",
+    "presentation": {
+      "cast_cue": "canary.sound:spell_or_rune",
+      "impact_cue": "canary.sound:spell_convince_creature_rune"
+    },
+    "reference_rune_item_id": 3177,
+    "reference_spell_id": 12,
+    "requirements": {
+      "level": 16
+    },
+    "rune": {
+      "allow_far_use": true,
+      "blocking": {
+        "creature": false,
+        "solid": true
+      },
+      "charges": 1,
+      "magic_level": 5
+    },
+    "targeting": {
+      "needs_target": true
+    }
+  }
+}

@@ -1,0 +1,125 @@
+{
+  "blockers": [],
+  "candidate_key": "candidate:spell/source/canary-main-current/0e4071f93b88199a",
+  "conversion_notes": [
+    "Exact source-only native descriptor; current donor bytes equal qualified template bytes",
+    "{\"current_bytes_equal_template_bytes\": true, \"current_source_revision\": \"04b83b512114bfd888000d6e1433ed8ecaec7c5b\", \"external_value_overrides_used\": false, \"full_cast_sha256\": \"5022b31ac05478de4a527e5c4496edf67f9002980ee650507bd3c45e380c86d2\", \"module\": \"native_world_items\", \"module_sha256\": \"5f414b9b3e489fd1dc5715b9dd54e1fbe56c3ab8b68a6b494b66fb6f7cc44fa3\", \"qualified_template_revision\": \"99902524e052f37574194466c2949c576e4ab269\", \"source_helper_proofs\": []}"
+  ],
+  "dependencies": {
+    "abilities": 0,
+    "effects": 0,
+    "formulas": 0
+  },
+  "engine_default_proofs": [
+    {
+      "path": "src/creatures/combat/spells.hpp",
+      "sha256": "663eebe354cf2d7a14eeb11aa1a0ed7371c34562812806d6afdcbcaf19f7799d"
+    },
+    {
+      "path": "data/XML/vocations.xml",
+      "sha256": "d3ecc1319710012265e8225649d9cae3dbb6d1f90036310a8b81f6e40a8a3a14"
+    },
+    {
+      "path": "src/creatures/combat/spells.cpp",
+      "sha256": "18f44b128c5cdc1f40283e8f5527ca0d53045fcd00e3edaef7c2a778fd58a035"
+    }
+  ],
+  "external_sources_used": false,
+  "item_owner_bindings_required": [
+    {
+      "family": "Item",
+      "key": "candidate:item/source/canary-main-current/3577",
+      "revision": "source-player-r28"
+    },
+    {
+      "family": "Item",
+      "key": "candidate:item/source/canary-main-current/3582",
+      "revision": "source-player-r28"
+    },
+    {
+      "family": "Item",
+      "key": "candidate:item/source/canary-main-current/3585",
+      "revision": "source-player-r28"
+    },
+    {
+      "family": "Item",
+      "key": "candidate:item/source/canary-main-current/3592",
+      "revision": "source-player-r28"
+    },
+    {
+      "family": "Item",
+      "key": "candidate:item/source/canary-main-current/3600",
+      "revision": "source-player-r28"
+    },
+    {
+      "family": "Item",
+      "key": "candidate:item/source/canary-main-current/3601",
+      "revision": "source-player-r28"
+    },
+    {
+      "family": "Item",
+      "key": "candidate:item/source/canary-main-current/3607",
+      "revision": "source-player-r28"
+    }
+  ],
+  "logical_key": [
+    "instant",
+    "food"
+  ],
+  "mechanics_reference": {
+    "imported_facts": "source-callback-facts.jsonl.gz",
+    "registration_key": "canary-main-current/data/scripts/spells/support/food.lua#1",
+    "source_callback_scope": "cached exact source callback expressions and cast tier",
+    "source_capture": "canary-main-current-registered-spells.json",
+    "source_capture_sha256": "e2ae95ee301d9395b3ed545b496cfadb549541735fd85ee342beb78a5a64f47c"
+  },
+  "native_execution_qualified": false,
+  "registration_key": "canary-main-current/data/scripts/spells/support/food.lua#1",
+  "remaining_mechanics": [],
+  "runtime_activation": false,
+  "schema": "OTERYN_SOURCE_PLAYER_BUNDLE_RECEIPT/v1",
+  "schema_and_semantic_validation_errors": [],
+  "source_header": {
+    "carrier": "instant",
+    "cooldown_ms": 2000,
+    "costs": {
+      "mana": 120,
+      "soul": 1
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "support"
+      }
+    ],
+    "name": "Food",
+    "presentation": {
+      "cast_cue": "canary.sound:spell_food"
+    },
+    "reference_spell_id": 42,
+    "requirements": {
+      "level": 14,
+      "vocation_display_flags": [
+        {
+          "show_in_description": true,
+          "vocation": "druid"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "elder_druid"
+        }
+      ],
+      "vocations": [
+        "druid",
+        "elder_druid"
+      ]
+    },
+    "targeting": {
+      "aggressive": false
+    },
+    "words": "exevo pan"
+  },
+  "source_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+  "source_sha256": "5022b31ac05478de4a527e5c4496edf67f9002980ee650507bd3c45e380c86d2",
+  "status": "CANDIDATE_SCHEMA_VALID"
+}

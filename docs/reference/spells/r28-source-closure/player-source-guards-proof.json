@@ -1,0 +1,37 @@
+{
+  "schema": "OTERYN_PLAYER_SOURCE_GUARDS/v1/proof",
+  "records": 483,
+  "unique_source_files": 481,
+  "record_count": 483,
+  "format": "jsonl_gzip",
+  "gzip_path": "docs/reference/spells/r28-source-closure/player-source-guards.jsonl.gz",
+  "gzip_sha256": "b916540f5179eb70a637525df60c1eeb7f76def79d6b16e3061caa33714224e3",
+  "schema_path": "tools/content-schema/spell-authoring/player-source-guards.schema.json",
+  "source_revisions": {
+    "canary-main-current": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+    "crystal-summer-current": "00ce02a57ca5a12e48f32a3476e37471167e4c3f"
+  },
+  "input_registrars_sha256": "8db03b0abd81fa6e05a75cbab625c07574025956c7377d43365c2b66de8563c0",
+  "input_callback_facts_sha256": "77c90d487f673b66f59c61a3831048870861ae88e5f34a8fcd46dca32a64ccd8",
+  "payload_sha256": "41377f9dd7c6a6c54ce0ef2e458c56d78632266fe849e1fe7c60fc5f97002b5a",
+  "archive_sha256": "b916540f5179eb70a637525df60c1eeb7f76def79d6b16e3061caa33714224e3",
+  "schema_sha256": "92ab737cbc8436f7cc348f6dc82fa41ef967b94dfd1abf4fce89423c288fdf05",
+  "source_pins": [
+    "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+    "04b83b512114bfd888000d6e1433ed8ecaec7c5b"
+  ],
+  "events": 15735,
+  "guards": 642,
+  "by_snapshot": {
+    "canary-main-current": 234,
+    "crystal-summer-current": 249
+  },
+  "all_records_schema_valid": true,
+  "runtime_activation": false,
+  "external_sources_used": 0,
+  "limitations": [
+    "Lexical whole-file source evidence; not a Lua AST, CFG or normalized executable guard.",
+    "Conditions and nonliteral argument expressions remain unresolved; no callbacks executed.",
+    "Repeated registration records may share source-file events; event totals are not unique mechanics."
+  ]
+}
