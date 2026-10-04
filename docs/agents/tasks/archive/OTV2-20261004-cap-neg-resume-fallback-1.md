@@ -46,11 +46,16 @@ Packet: `docs/architecture/reviews/OTERYN_GAME_ARCH_BATCH_ITEM_EQUIP_PACKETS_202
   one `release_terminal` path: fence, monk save, store commit, then retire the exact actor only
   after the terminal fact. A refused or unavailable commit lifts the fence and keeps the session.
   The mismatch release also returns the premium seat and forgets the lost entry.
-- `resume.rs`: the capability check moved after every other resume check (credential, account,
-  character, World, RECONNECTABLE epoch within grace, current claims, runtime facts). Only a
-  resume refused for the capability mismatch alone releases; every other refusal releases
-  nothing. The resume is still refused, so the client falls back to fresh admission, which now
-  succeeds at once with a new `GameSessionId`.
+- `resume.rs`: the capability check runs after every other resume check (credential, account,
+  character, World, RECONNECTABLE epoch within grace, runtime facts) and after the complete
+  authorization of the candidate, attempt budget and current claims (#1708 Codex P1). Only a
+  resume refused for the capability mismatch alone releases; every other refusal, an exhausted
+  attempt budget included, releases nothing. The resume is still refused, so the client falls
+  back to fresh admission, which now succeeds at once with a new `GameSessionId`.
+- An unproven mismatch release is never a final refusal (#1708 Codex P2): `release_terminal`
+  reconciles it from the durable row (TERMINAL retires the actor; a session still holding the
+  lease lifts this exact fence), and the resume returns `Unavailable` with the lost entry kept, so
+  a retry repeats the release. Grace expiry remains the backstop.
 - No migration (lease 0067 unused), no wire, registry or contract change, no capability offered.
   CompleteReconnect `EarlyTerminalReplacement` stays refused by the PostgreSQL adapter.
 
@@ -64,8 +69,12 @@ Packet: `docs/architecture/reviews/OTERYN_GAME_ARCH_BATCH_ITEM_EQUIP_PACKETS_202
   commits under a new session id, with the lease advanced and the session-use ledger revision
   increased.
 - Scenario 5: no mismatch release after the original grace deadline.
-- `complete_reconnect_resumes…`: an operation relabelled `EarlyTerminalReplacement` is never
+- `complete_reconnect_resumes…`: an exhausted attempt budget refuses the complete authorization
+  (`AttemptCapacityExceeded`) that the mismatch release waits for, and the session stays
+  RECONNECTABLE. An operation relabelled `EarlyTerminalReplacement` is never
   encoded. The same-session resume with a matching set is unchanged.
+- Unit: `capability_mismatch_refusal` is final (`Rejected`) only for a proven release; `Unknown`
+  is `Unavailable`.
 
 ## Validation
 

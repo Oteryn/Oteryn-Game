@@ -5772,6 +5772,38 @@ fn assert_early_terminal_replacement_refused(
     assert!(durability::fresh_admission::encode_complete_reconnect(&replacement).is_err());
 }
 
+#[inline(never)]
+fn assert_exhausted_budget_refused<S: foundation::CompleteReconnectSourceV1>(
+    source: impl FnOnce(foundation::RetainedRecoveryBudgetV1) -> Box<S>,
+    identity: foundation::ReconnectIdentityV1,
+    proof: foundation::CompleteReconnectProofV1,
+    now: i64,
+) -> Result<(), Box<dyn std::error::Error>> {
+    use foundation::*;
+    let mut entries = Vec::new();
+    for attempt in 30..38u8 {
+        entries.push(RetainedRecoveryAttemptV1 {
+            attempt: authority_matrix::checked(ReconnectAttemptRef::new(u64::from(attempt)))?,
+            transport: authority_matrix::checked(AuthenticatedTransportRefV1::decode(
+                &[attempt; 16],
+            ))?,
+            disposition: RetainedRecoveryAttemptDispositionV1::Terminal,
+        });
+    }
+    let budget = authority_matrix::checked(RetainedRecoveryBudgetV1::restore(
+        authority_matrix::checked(ControlLossEpochRefV1::new(1))?,
+        RecoveryEpochStateV1::Open,
+        true,
+        entries,
+    ))?;
+    let source = source(budget);
+    assert_eq!(
+        CompleteReconnectAuthorizationV1::authorize(source.as_ref(), identity, proof, now).err(),
+        Some(ReconnectDurabilityErrorV1::AttemptCapacityExceeded)
+    );
+    Ok(())
+}
+
 #[test]
 fn complete_reconnect_resumes_an_owning_loss_session_exactly_once()
 -> Result<(), Box<dyn std::error::Error>> {
@@ -5859,7 +5891,7 @@ fn complete_reconnect_resumes_an_owning_loss_session_exactly_once()
     if !postgres_e2e_is_configured()? {
         return Ok(());
     }
-    tokio::runtime::Builder::new_current_thread().enable_all().build()?.block_on(async {
+    tokio::runtime::Builder::new_current_thread().enable_all().build()?.block_on(Box::pin(async {
         let database = postgres::IsolatedPostgres::create("complete_reconnect").await?;
         let result = async {
             let url = database.database_url()?;
@@ -6042,6 +6074,28 @@ fn complete_reconnect_resumes_an_owning_loss_session_exactly_once()
                 let reservations: i64 = sqlx::query_scalar("SELECT count(*) FROM game_durability_transport_ref_reservations WHERE transport_ref = $1").bind([0x61u8; 16].as_slice()).fetch_one(&pool).await?;
                 assert_eq!(reservations, 0);
             }
+            {
+                // D449 (#1708 Codex P1): an exhausted attempt budget refuses the complete
+                // authorization itself. `resume_lost` checks the capability only after this
+                // authorization passed, so a capability mismatch on an exhausted budget is refused
+                // like any other and releases nothing: the session stays RECONNECTABLE.
+                let verified = verify_recovery_grant_durability_v2(&token, now, &RecoveryDurabilityTrustContextV2::from_owning_source(&security), &recovery)
+                    .map_err(|error| format!("verify: {error:?}"))?;
+                let current = source.current.lock().map_err(|_| "owner lock")?.clone();
+                let security = security.clone();
+                assert_exhausted_budget_refused(
+                    move |budget| {
+                        let mut current = current;
+                        current.snapshot.budget = budget;
+                        Box::new(Owner { current: std::sync::Mutex::new(current), security })
+                    },
+                    identity.clone(),
+                    CompleteReconnectProofV1::V2(Box::new(verified)),
+                    now,
+                )?;
+                let (current, _) = store.current_session_at(lost.commit().game_session_id()).await?;
+                assert_eq!(current.session_state(), GameSessionState::Reconnectable);
+            }
             let mut flow = CompleteReconnectFlowV1::begin(authorization, None).map_err(|e| format!("begin: {e:?}"))?;
             let prepare = std::sync::Arc::new(flow.take_request(CompleteReconnectRequestKindV1::Prepare).map_err(|e| format!("take prepare: {e:?}"))?);
             let prepared = store.apply_complete_reconnect(prepare.clone(), source.clone()).await?;
@@ -6144,7 +6198,7 @@ fn complete_reconnect_resumes_an_owning_loss_session_exactly_once()
         }.await;
         database.cleanup().await?;
         result
-    })
+    }))
 }
 
 #[test]

@@ -1025,6 +1025,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             };
             tokio::time::sleep(pause).await;
         }
+        if matches!(release, TerminalRelease::CapabilityMismatch(_)) {
+            // D449: an unproven mismatch release is reconciled from the durable row. TERMINAL
+            // settles as released; a session still holding the lease lifts this exact fence, so
+            // the client's retry can repeat the release under a fresh token.
+            return match self.settle_unended(&store, session, actor, token).await {
+                UnendedSettle::Terminal => {
+                    self.premium.release(controller.account_id);
+                    self.retire(session, actor).await
+                }
+                UnendedSettle::Lifted | UnendedSettle::Unknown => GraceExpiryResult::Unknown,
+            };
+        }
         GraceExpiryResult::Unknown
     }
 
