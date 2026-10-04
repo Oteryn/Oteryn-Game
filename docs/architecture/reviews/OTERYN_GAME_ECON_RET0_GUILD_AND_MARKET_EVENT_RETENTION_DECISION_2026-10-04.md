@@ -28,10 +28,26 @@ proof, reconciliation and bounded support and security investigation.
 
 | Profile id | Packet | Purpose | Notes |
 |---|---|---|---|
-| `ECONOMY_LEDGER_RETENTION_V1` | BANK-RET-0 | `ECONOMY_LEDGER`: bank balances, ledger entries and coin lines (P30D) | for BANK-1's event type 3; no market analytics, public history, detector or AI use |
+| `ECONOMY_LEDGER_RETENTION_V1` | BANK-RET-0 | `ECONOMY_LEDGER`: bank balances, ledger entries and coin lines, and the stash, house and mail events (P30D) | for BANK-1's event type 3 and the stash, house and mail events (§1.1); no market analytics, public history, detector or AI use |
 | `DUR03_ONE_ITEM_DURABLE_AUDIT_RETENTION_V2` | BANK-RET-0 | the V1 purpose plus the bank part of a fee (the `FEE_DEBIT` value line) | `policy_revision` 2; every other field, P90D included, is V1's; see §2 |
 | `MARKET_ECONOMY_LEDGER_RETENTION_V1` | MARKET-RET-0 | `ECONOMY_LEDGER`: market operations, escrow, matching, fees, Inbox delivery (P30D) | for MARKET-1's market event; no market analytics, public price or trade history, balancing, detector or AI use |
 | `GUILD_ACTIVITY_RETENTION_V1` | GUILD-RET-0 | `GUILD_ACTIVITY`: the member activity log (read by current members of that guild only, per-guild isolated, within 30 days; P30D), plus proof and reconciliation of membership, rank, guild bank and guildhall operations | P30D equals the member log window (`GUILD0-RL-10`); a guild bank entry is also within `ECONOMY_LEDGER` for proof only |
+
+### 1.1 Designated consumers of the economy profile
+
+Three accepted decisions already bind their event to BANK-RET-0's economy profile, so its purpose
+and its operational reader (`authorized bank, stash, house and mail operations`) cover them. Each
+stays P30D, because none of the three states a retention duration:
+
+- stash events: SUPPLY-STASH-0 §7 (`OTERYN_GAME_SUPPLY_STASH0_SUPPLY_STASH_DECISION_2026-10-03.md`
+  line 238, "under the `ECONOMY_LEDGER` purpose that BANK-RET-0 defines");
+- house events: HOUSE-OWN-0 §17 (`OTERYN_GAME_HOUSE_OWN0_HOUSE_OWNERSHIP_DECISION_2026-09-30.md`
+  line 268, "retention under BANK-RET-0's economy profile");
+- mail events: MAIL-0 §11 (`OTERYN_GAME_MAIL0_PARCELS_AND_LETTERS_DECISION_2026-09-30.md` line
+  230, "Retention under BANK-RET-0's economy profile (as HOUSE-OWN-0)").
+
+Each event type is still registered by its own child (STASH-1, HOUSE-1, MAIL-1). The reader set
+widens by role names only; no export or access path is added here.
 
 The authoritative bank, ledger, operation, coin-line, offer, escrow and guild tables are game
 state, not event retention, and are never deleted by these profiles.
@@ -80,8 +96,9 @@ Risks and mitigations:
 
 Each duration is justified separately.
 
-- **Bank, P30D.** BANK-0 §5 and BANK-FEE-0 §4.3 only defer the bank event's retention to BANK-RET-0
-  and state no duration. The authoritative balance, ledger, operation and coin-line tables are
+- **Bank (and the stash, house and mail consumers), P30D.** BANK-0 §5 and BANK-FEE-0 §4.3 only
+  defer the bank event's retention to BANK-RET-0 and state no duration; §1.1 shows the stash,
+  house and mail contracts state none either. The authoritative balance, ledger, operation and coin-line tables are
   never deleted (BANK-0 §3), so the event is a proof copy, not the record. No accepted
   requirement needs more than 30 days, so the shortest backed duration applies.
 - **DUR-03 V2, P90D (unchanged).** V2 is V1 plus the bank part of a fee. Its duration is V1's by

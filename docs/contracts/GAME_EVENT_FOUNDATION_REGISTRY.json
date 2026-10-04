@@ -74,11 +74,11 @@
     },
     {
       "id": "ECONOMY_LEDGER_RETENTION_V1",
-      "purpose": "Prove and reconcile bank balances, ledger entries and coin lines and support bounded bank operations, support and security investigation; no market analytics, public history, detector or AI-use purpose.",
+      "purpose": "Prove and reconcile bank balances, ledger entries and coin lines, and the value and item lines of the stash (SUPPLY-STASH-0 §7), house (HOUSE-OWN-0 §17) and mail (MAIL-0 §11) events that the ECONOMY_LEDGER purpose designates, and support bounded economy operations, support and security investigation; no market analytics, public history, detector or AI-use purpose.",
       "privacy_class": "RESTRICTED_PLAYER_LINKED",
       "finite_retention_duration_or_ceiling": "P30D = 2,592,000 elapsed seconds from the immutable trusted-server timestamp in the event's ANL envelope; lifetime [start, expiry), never recomputed or refreshed",
       "permitted_roles": [
-        "authorized bank operations",
+        "authorized bank, stash, house and mail operations",
         "authorized support",
         "authorized security"
       ],
