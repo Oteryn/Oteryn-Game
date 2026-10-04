@@ -2,9 +2,9 @@
 
 ```yaml
 task_id: SPELL-LOCK-1
-title: "SPELL-LOCK-1 release channel guards before durable I/O; spell hardening"
+title: "SPELL-LOCK-1: release channel guards before durable I/O; spell hardening"
 mode: IMPLEMENT
-status: in_progress
+status: frozen
 repository: Oteryn/Oteryn-Game
 issue: 1622
 lane_id: spells
@@ -39,10 +39,10 @@ external_repositories: []
 
 ## Scope (1): Channel guards across durable I/O
 
-Reported to the control plane as a BLOCKER. Every semantic-pass spell path interleaves
-transaction reads with `ChannelRuntimeV1` mutation. `ChannelRuntimeV1` carries no revision a
-re-acquire fence could check, and both that type and `gameplay_transport/*` were embargoed behind
-VIS-3 #1772. The recommended split is a follow-up task SPELL-LOCK-2 after #1772.
+Not in this PR. Reported to the control plane as a BLOCKER: every semantic-pass spell path
+interleaves transaction reads with `ChannelRuntimeV1` mutation, and `ChannelRuntimeV1` carries no
+revision a re-acquire fence could check. The control plane moved Codex finding 4178405815 to a
+separate task, SPELL-LOCK-2, which starts with a design proposal.
 
 ## Scope (2): #1534 deep-review hardening
 
@@ -59,7 +59,8 @@ VIS-3 #1772. The recommended split is a follow-up task SPELL-LOCK-2 after #1772.
   unchanged.
 - `vitals_delta` from revision 0: actor revisions start at 1, so 0 means the join carried no
   `ACTOR_VITALS` snapshot. The Serene and spell-result paths skip the delta then instead of
-  disconnecting the session.
+  disconnecting the session. A connection test proves a cast from such a session answers its
+  result and the next command, and fails without the guard.
 
 ## Validation
 
@@ -67,6 +68,9 @@ VIS-3 #1772. The recommended split is a follow-up task SPELL-LOCK-2 after #1772.
 - `cargo clippy -p oteryn-game-server -p oteryn-session --all-targets -- -D warnings`: pass.
 - `cargo test -p oteryn-game-server --lib spell::`: pass.
 - `cargo test -p oteryn-game-server --lib ordinary_combat`: pass.
+- `cargo test -p oteryn-game-server --lib gameplay_transport::connection`: pass.
 - `cargo test -p oteryn-session`: pass.
 - `python3 tools/content-schema/native-gameplay/verify_house_privacy_pg.py --url <local PostgreSQL 17>`:
   every case passes, the six spell Item guard cases included.
+- The CI-registered Rust PostgreSQL targets need the `oteryn_test_admin` role on port 5432, which
+  this session could not create; they run in CI.
