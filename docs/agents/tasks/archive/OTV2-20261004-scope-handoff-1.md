@@ -10,7 +10,7 @@ issue: 1622
 lane_id: house
 base_branch: main
 branch: claude/scope-handoff-1-20261004
-pr: PENDING
+pr: 1782
 base_sha: ba8b8df
 head_sha: "exact frozen head in the FREEZE_SHA report to the control plane"
 final_head_sha: "exact frozen head in the FREEZE_SHA report to the control plane"
@@ -79,9 +79,11 @@ external_repositories: []
 
 ## Validation
 
-- `cargo fmt --all --check`, `cargo clippy --locked -p oteryn-game-server --all-targets -- -D
-  warnings`, `cargo test --locked -p oteryn-game-server` with PostgreSQL 17.6,
-  `python tools/agents/validate_governance.py`: see the PR body.
+- `cargo fmt --all --check`: pass
+- `cargo clippy --locked -p oteryn-game-server --all-targets -- -D warnings`: pass
+- `cargo test --locked -p oteryn-game-server` with PostgreSQL 17.6: pass (21983 passed, 0 failed)
+- `python tools/agents/validate_governance.py`: pass
+- `python -m unittest discover -s tools/agents/tests`: pass (54 tests)
 
 ## Review
 
