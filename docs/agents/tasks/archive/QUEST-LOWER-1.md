@@ -4,13 +4,14 @@
 task_id: QUEST-LOWER-1
 title: "QUEST-LOWER-1 quest tracks and transitions lowered from source progress, and the catalogue loader"
 mode: IMPLEMENT
-status: in_progress
+status: completed
 repository: Oteryn/Oteryn-Game
 issue: 162
 lane_id: content
 base_branch: main
 branch: claude/quest-lower-1
-pr: null
+pr: 1727
+head_sha: "exact frozen head in the FREEZE_SHA report to the control plane"
 base_sha: 53a60a6
 owner: claude-code-session-01D5nNBpM7TsqwtTbqf5rePu (content worker)
 control_plane: claude-code-session-013KJX6mv8LQveCKKXYgAX94
@@ -24,8 +25,9 @@ owned_paths:
   - content/quests/missions/quest-state.json
   - content/quests/missions/index.json
   - apps/game-server/src/quest/loader.rs
-  - apps/game-server/src/quest/mod.rs   # `pub mod loader;` and two module-doc sentences only
-  - docs/agents/tasks/QUEST-LOWER-1.md
+  # Granted by the control plane (option 1a): `pub mod loader;` and the module-doc sentences only.
+  - apps/game-server/src/quest/mod.rs
+  - docs/agents/tasks/archive/QUEST-LOWER-1.md
 depends_on:
   - "QUEST-STATE-1 merged (#1684, the catalogue type)"
   - "QUEST-CONTENT-1 in part (#1596, the Quest definitions)"
@@ -73,4 +75,14 @@ external_repositories: []
 
 ## Validation
 
+- `python3 tools/content-schema/quest-authoring/run_checks.py`: pass (includes `quest_state_lowering.py --check` and `test_quest_state_lowering.py`, 6 tests).
+- `python3 tools/content-schema/validate_materialized_game_tree.py`: pass.
+- `cargo fmt --all --check`: pass.
+- `cargo clippy --locked -p oteryn-game-server --all-targets -- -D warnings`: pass.
+- `cargo test --locked -p oteryn-game-server`: pass (PostgreSQL targets in their no-database mode; 4 new loader tests).
+- `python tools/agents/validate_governance.py`: pass.
+- `python -m unittest discover -s tools/agents/tests`: pass.
+
 ## Review
+
+Control plane routes review on the frozen head. Control plane answers: 1a and 2a. The assumptions are accepted, but QUEST-STATE-0 wins wherever it fixes a rule. The PR body lists the unlowered and NOT_SUPPORTED items for each quest.
