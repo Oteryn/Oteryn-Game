@@ -1,0 +1,94 @@
+syntax = "proto3";
+
+package oteryn.events.v2;
+
+// Registered event type 3 BANK_OPERATION (GAME_EVENT_FOUNDATION_REGISTRY.json), schema revision 1,
+// retention ECONOMY_LEDGER_RETENTION_V1. Owner: BANK-0
+// (docs/architecture/reviews/OTERYN_GAME_BANK0_ACCOUNT_BANK_BALANCE_DECISION_2026-09-30.md §5),
+// built by BANK-1 (apps/game-server/src/durability/bank_audit.rs, migration 0071).
+//
+// Carried as the payload of the foundation EventEnvelope (envelope revision 1,
+// docs/contracts/game-events/v1/foundation.proto) with event_type_id = 3, the operation's World
+// and Channel, transaction_event ordinal = count = 1, and no game_session_id, command_id,
+// connection_generation or causation: the cause carries the operation occurrence.
+//
+// One event per committed DEPOSIT, WITHDRAW or TRANSFER operation of the Account bank balance;
+// a refused operation emits none. The gates accept only this closed, canonical shape: unknown
+// fields, a non-canonical encoding and any bound violation reject. Bounds:
+// RESOURCE_LIMITS_REGISTRY.json BANK0-RL-01..03, DUR03-RL-01-BANK, DUR03-RL-03-BANK and
+// DUR03-RL-07-BANK-PAYLOAD-BYTES / -ENVELOPE-BYTES.
+
+message BankOperationV1 {
+  uint32 interpretation_revision = 1;           // exactly 1
+  BankOperationCauseV1 cause = 2;
+  bytes acting_character_id = 3;                // 16-byte UUIDv7
+  bytes world_id = 4;                           // 16-byte UUIDv7
+  bytes channel_id = 5;                         // 16-byte UUIDv7
+  uint64 runtime_scope_ownership_generation = 6; // >= 1
+  // Gold pieces: deposit 1..20,000,000, withdraw 1..1,009,999, transfer 1..999,999,999,999.
+  uint64 amount = 7;
+  bytes backpack_item_instance_id = 8;          // deposit and withdraw only; empty for a transfer
+  // Deposit: 1..20 inputs in the gold fee plan's order (worth ascending, then display order;
+  // every input but the last wholly consumed), then 0..2 change outputs (platinum, then gold).
+  // Withdraw: 1..3 outputs, the canonical split (crystal, then platinum, then gold).
+  // Transfer: none. Outputs take consecutive new entries after every other entry.
+  repeated BankCoinLineV1 coin_lines = 9;
+  // Deposit and withdraw: one CONVERSION line. Transfer: TRANSFER_OUT, then TRANSFER_IN on
+  // another Account of the same World, both TRANSFER lines with the operation's amount.
+  repeated BankValueLineV1 value_lines = 10;
+  bytes recipient_character_id = 11;            // transfer only; empty otherwise
+}
+
+message BankOperationCauseV1 {
+  oneof cause {
+    BankConversionCauseV1 conversion = 1;
+    BankTransferCauseV1 transfer = 2;
+  }
+}
+
+// BankConversionCause { Deposit | Withdraw, occurrence }.
+message BankConversionCauseV1 {
+  uint32 kind = 1;        // 1 = DEPOSIT, 2 = WITHDRAW
+  bytes occurrence = 2;   // 16-byte UUIDv7 runtime occurrence
+}
+
+// BankTransferCause { occurrence }.
+message BankTransferCauseV1 {
+  bytes occurrence = 1;   // 16-byte UUIDv7 runtime occurrence
+}
+
+message BankItemDefinitionV1 {
+  string family = 1;          // "Item"
+  string production_key = 2;  // a coin: oteryn:item.tibia.i3031 / i3035 / i3043
+  string revision_ref = 3;    // 1..512 bytes
+}
+
+message BankItemStateV1 {
+  bytes item_instance_id = 1; // 16-byte UUIDv7
+  bytes world_id = 2;
+  BankItemDefinitionV1 definition = 3;
+  uint32 quantity = 4;        // 0..100
+  uint32 lifecycle = 5;       // 1 = LIVE, 2 = RETIRED (quantity 0)
+}
+
+// One coin item of a deposit or withdrawal. Every coin line is a CONVERSION line (DUR-03 §17).
+message BankCoinLineV1 {
+  uint32 direction = 1;         // 1 = input (before and after), 2 = output (after only)
+  BankItemStateV1 before = 2;
+  BankItemStateV1 after = 3;
+  uint64 placement_ordinal = 4; // the direct backpack entry, >= 1
+  uint32 line_class = 5;        // 1 = CONVERSION
+}
+
+// The closed value line (BANK-0 §5): one balance change of one ledger entry.
+message BankValueLineV1 {
+  bytes entry_id = 1;       // 16-byte UUIDv7 ledger entry
+  string asset = 2;         // "gold"
+  bytes account_id = 3;     // 16-byte UUIDv7
+  bytes world_id = 4;       // the operation's World
+  uint32 kind = 5;          // 1 = DEPOSIT, 2 = WITHDRAW, 3 = TRANSFER_OUT, 4 = TRANSFER_IN
+  uint32 line_class = 6;    // 1 = CONVERSION, 2 = TRANSFER
+  uint64 amount = 7;
+  uint64 balance_before = 8; // 0..999,999,999,999
+  uint64 balance_after = 9;  // before + amount (DEPOSIT, TRANSFER_IN) or - amount
+}
