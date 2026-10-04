@@ -10,7 +10,8 @@
 //!   or goes up to the parent. A handle or view that no longer resolves, or a parent that is not
 //!   visible, is `STALE`; the Channel owner's observation decides reach and what the item is.
 //!   At most 10 view commands per second on a sliding window (`BAGS0-RL-04`): one over the rate
-//!   is `REJECTED` with an empty payload before decoding.
+//!   is `REJECTED` with an empty payload before decoding. The window ([`ViewCommandWindow`]) is
+//!   per GameSession: it travels in the session continuity across reconnect, resume and transfer.
 //! - **`USE`.** With the capability, `USE` on a container handle opens it in a new view; a corpse
 //!   stays a domain 11 view at depth 1.
 //!
@@ -27,7 +28,7 @@ use oteryn_protocol_oteryn::container_tree::{
     encode_container_views,
 };
 use oteryn_protocol_oteryn::item_view::ItemEntry;
-use std::collections::{BTreeMap, VecDeque};
+use std::collections::BTreeMap;
 use std::iter;
 use tokio::time::{Duration, Instant};
 
@@ -96,29 +97,42 @@ pub(crate) enum ContainerPlan {
     Observe(PendingOpen),
 }
 
-/// One connection's open container views and its view command rate.
+/// `BAGS0-RL-04`: the instants of one GameSession's view commands still inside the sliding
+/// window. It is carried in [`super::item_view::ItemViewContinuity`], so a reconnect, resume or
+/// transfer keeps it.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) struct ViewCommandWindow([Option<Instant>; MAX_VIEW_COMMANDS_PER_WINDOW]);
+
+impl ViewCommandWindow {
+    pub(crate) const EMPTY: Self = Self([None; MAX_VIEW_COMMANDS_PER_WINDOW]);
+
+    /// Whether one more view command fits the sliding window ending at `now`; if so it is
+    /// recorded in a place that is free or has left the window.
+    pub(crate) fn admit(&mut self, now: Instant) -> bool {
+        let free = self.0.iter_mut().find(|slot| {
+            !matches!(slot, Some(at) if now.saturating_duration_since(*at) < VIEW_COMMAND_WINDOW)
+        });
+        let Some(slot) = free else {
+            return false;
+        };
+        *slot = Some(now);
+        true
+    }
+}
+
+impl Default for ViewCommandWindow {
+    fn default() -> Self {
+        Self::EMPTY
+    }
+}
+
+/// One connection's open container views.
 #[derive(Debug, Default)]
 pub(crate) struct ContainerViewState {
     views: BTreeMap<u8, OpenView>,
-    recent: VecDeque<Instant>,
 }
 
 impl ContainerViewState {
-    /// `BAGS0-RL-04`: whether one more view command fits the sliding window ending at `now`.
-    pub(crate) fn admit(&mut self, now: Instant) -> bool {
-        while let Some(first) = self.recent.front() {
-            if now.saturating_duration_since(*first) < VIEW_COMMAND_WINDOW {
-                break;
-            }
-            self.recent.pop_front();
-        }
-        if self.recent.len() >= MAX_VIEW_COMMANDS_PER_WINDOW {
-            return false;
-        }
-        self.recent.push_back(now);
-        true
-    }
-
     pub(crate) fn open_views(&self) -> usize {
         self.views.len()
     }

@@ -8044,9 +8044,9 @@
         "max+1=11: an eleventh command in the same second is REJECTED without effect; one a second later is served"
       ],
       "consumers": [
-        "apps/game-server/src/gameplay_transport/container_view.rs MAX_CONTAINER_VIEW_COMMANDS_PER_SECOND"
+        "apps/game-server/src/gameplay_transport/container_view.rs MAX_VIEW_COMMANDS_PER_WINDOW and ViewCommandWindow (carried in ItemViewContinuity)"
       ],
-      "notes": "BAGS-0 \u00a75 and \u00a710 (measured and registered by BAGS-WIRE-1); test: container_view::tests::view_commands_are_limited_to_10_per_second. Registered by OTV2-20261003-bags-wire-1."
+      "notes": "BAGS-0 \u00a75 and \u00a710 (measured and registered by BAGS-WIRE-1); the window is per GameSession and survives reconnect, resume and transfer; tests: container_view::tests::view_commands_are_limited_to_10_per_second, container_view::tests::the_view_command_window_is_carried_across_reconnect_and_transfer, container_view::tests::connection::the_view_command_rate_is_per_game_session_across_a_reconnect. Registered by OTV2-20261003-bags-wire-1."
     },
     {
       "id": "BAGS0-RL-03-BYTES",
