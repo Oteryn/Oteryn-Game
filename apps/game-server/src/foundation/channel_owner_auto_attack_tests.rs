@@ -1,7 +1,7 @@
 //! ATTACK-1b (ATTACK-0 §3, §4, §9): the Channel owner's attack entries on a real
 //! `ChannelRuntimeV1` with a native qualification rat, the two intent windows and the domain 10
 //! continuity. The swing commit itself is tested in `runtime_actor_carrier::attacker_fence_tests`
-//! and the composed kill in `tests/support/attack_kill_reward_postgres_cases.rs`.
+//! and the swing-to-settlement composition in `tests/support/attack_kill_reward_postgres_cases.rs`.
 #![allow(clippy::expect_used, clippy::unwrap_used, clippy::panic)]
 
 use super::*;
@@ -580,4 +580,154 @@ fn a_source_world_floor_is_seen_on_its_own_plane_only() {
     // Visibility floors keep the reference rules, other floors included.
     assert!(sees(at(0, 0, 7), at(1, 0, 7)));
     assert!(sees(at(5, 5, 7), at(4, 4, 6)));
+}
+
+/// Codex P1 on #1798: a closed client held by its in-fight deadline stays a creature target,
+/// so a monster hit during the hold extends the deadline instead of letting the actor leave.
+#[test]
+fn a_disconnect_mid_fight_stays_a_creature_target_and_a_monster_hit_extends_the_hold() {
+    use crate::ability::RevisionSet;
+    use crate::ability::creature_bite::{CreatureBiteVitals, CreatureHit, creature_damage};
+    use crate::ai_monster_melee::{Dispatch, MeleeDefinition, MonsterMeleeOwner};
+    use crate::ai_think::{
+        AttackReadiness, CreatureThinkInput, PerceivedPlayer, PerceivedPlayerId,
+    };
+    use oteryn_simulation_determinism::{DecisionOccurrenceId, GameplayDecisionRoot};
+
+    struct Vitals(u32);
+    impl CreatureBiteVitals for Vitals {
+        fn apply_creature_damage(
+            &mut self,
+            _: &ChannelRuntimeV1,
+            _: ExactActorRef,
+            _: GameSessionId,
+            magnitude: u32,
+            _: crate::foundation::owner_timer::SemanticTimeMicros,
+        ) -> Option<CreatureHit> {
+            let damage = creature_damage(self.0, magnitude);
+            self.0 = damage.health_after;
+            Some(CreatureHit {
+                damage,
+                vitals_revision: 1,
+                death: None,
+            })
+        }
+    }
+
+    let mut owner = owner();
+    let (player, session) = (owner.player, owner.session);
+    let rat = owner
+        .runtime
+        .visible_entities()
+        .creatures
+        .first()
+        .unwrap()
+        .actor;
+    // Not in fight: a lost client is no creature target.
+    owner
+        .runtime
+        .record_control_loss(
+            player,
+            session,
+            ControlLossMark {
+                epoch: 1,
+                grace_deadline: 1,
+            },
+        )
+        .unwrap();
+    assert_eq!(
+        owner
+            .attack
+            .creature_target_protection(&owner.runtime, player, session, at(T0)),
+        None
+    );
+    // A hit taken before the disconnect holds the closed client for 60 s.
+    owner
+        .attack
+        .record_hit_taken(&owner.runtime, player, session, at(T0));
+    let now = at(T0 + 30_000_000);
+    assert_eq!(
+        owner
+            .attack
+            .creature_target_protection(&owner.runtime, player, session, now),
+        Some(false)
+    );
+    // The rat bites the held actor through the monster melee owner.
+    let definition = MeleeDefinition::new(
+        owner.runtime.content_pin().server_artifact_digest(),
+        2000,
+        1_000_000,
+        8,
+        8,
+    )
+    .unwrap();
+    let input = CreatureThinkInput {
+        provenance: crate::ai::AiProvenance::new(crate::ai::AiProvenanceInput {
+            scope_id: 1,
+            scope_generation: 1,
+            actor_generation: 1,
+            behavior_revision: 1,
+            content_revision: 1,
+            navigation_revision: 1,
+            ruleset_revision: 1,
+            determinism_profile_revision: 1,
+        }),
+        decision_root: GameplayDecisionRoot::from_bytes([3; 32]),
+        occurrence: DecisionOccurrenceId::from_bytes([3; 16]),
+        path_work_id: 1,
+        position: OPEN_RAT,
+        home: OPEN_RAT,
+        attack: AttackReadiness {
+            off_cooldown: false,
+            chance_percent: 0,
+        },
+    };
+    let perceived = [PerceivedPlayer {
+        id: PerceivedPlayerId::new(1),
+        position: OPEN_PLAYER,
+        legal_attack_target: true,
+    }];
+    let revisions = RevisionSet::new(
+        "ruleset:ai-v1",
+        "content:1",
+        "world:ai-v1",
+        "formula:source-melee-baseline",
+        "simulation:v1",
+    )
+    .unwrap();
+    let attack = &owner.attack;
+    let runtime = &owner.runtime;
+    let dispatch = MonsterMeleeOwner::default()
+        .think(
+            runtime,
+            &mut Vitals(150),
+            rat,
+            1,
+            definition,
+            input,
+            &perceived,
+            |_| {
+                if attack.creature_target_protection(runtime, player, session, now)? {
+                    return None;
+                }
+                Some((
+                    player,
+                    session,
+                    crate::ability::creature_bite::ReentryProtection {
+                        protected_until: None,
+                    },
+                ))
+            },
+            revisions,
+            crate::foundation::owner_timer::SemanticTimeMicros::from_micros(now.get()),
+        )
+        .unwrap();
+    assert!(matches!(dispatch, Dispatch::Bite(Ok(_))), "{dispatch:?}");
+    owner
+        .attack
+        .record_hit_taken(&owner.runtime, player, session, now);
+    assert_eq!(
+        owner.attack.in_fight_until(player, session, now),
+        Some(at(T0 + 90_000_000))
+    );
 }

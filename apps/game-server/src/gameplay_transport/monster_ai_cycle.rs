@@ -52,6 +52,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if census.len() > ResourceLimit::ActiveActors.maximum() {
             return;
         }
+        // ATTACK-1b: lock order runtime, spell states, attack.
+        let mut attack = self.attack.lock().await;
+        let semantic_now =
+            oteryn_simulation_determinism::SemanticTimeMicros::from_micros(now.get());
         let mut targets = census
             .iter()
             .filter_map(|(actor, position, session)| {
@@ -63,9 +67,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 }
                 let state = states.get(&runtime, *actor, session)?;
                 let invisible = state.owned_invisible_at(now.get()).ok()?;
-                let protected = runtime
-                    .current_player_reentry_protection(*actor, session, now.get())
-                    .ok()?;
+                let protected =
+                    attack.creature_target_protection(&runtime, *actor, session, semantic_now)?;
                 let p = position.position();
                 let tile = room
                     .movement_cells()
@@ -101,8 +104,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let cursor = states.monster_ai_cursor % monsters.len();
         let count = monsters.len().min(ResourceLimit::EvaluationWork.maximum());
         let mut melee_owner = std::mem::take(&mut states.monster_melee);
-        // ATTACK-1b: lock order runtime, spell states, attack.
-        let mut attack = self.attack.lock().await;
         for offset in 0..count {
             let (actor, position, _) = monsters[(cursor + offset) % monsters.len()];
             let Ok(snapshot) = runtime.companion_snapshot(*actor) else {
@@ -288,12 +289,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     );
                 }
             }
-            attack.record_hit_taken(
-                &runtime,
-                player,
-                session,
-                oteryn_simulation_determinism::SemanticTimeMicros::from_micros(now.get()),
-            );
+            attack.record_hit_taken(&runtime, player, session, semantic_now);
         }
         states.monster_melee = melee_owner;
         states.monster_ai_cursor = (cursor + count) % monsters.len();

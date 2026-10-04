@@ -1,11 +1,12 @@
-// ATTACK-1b: a creature killed by auto-attack swings settles loot and XP
-// through the same VSL-COMBAT-01 / DEATH-2 composition
-// (`combat::settle_creature_death_rewards`). The harness mirrors
+// ATTACK-1b: a creature killed by swing commits composes with the
+// VSL-COMBAT-01 / DEATH-2 settlement (`combat::settle_creature_death_rewards`)
+// when that settlement is called explicitly. The harness mirrors
 // `combat_death_reward_postgres_cases.rs`; only the damage source differs:
 // every hit is one swing `(lineage command, swing_ordinal)` of a bound
 // player attacker, committed exactly as the Channel owner's auto-attack
-// drain commits it.
-
+// drain commits it. The live drain only projects the death
+// (`project_fixed_one_creature_death`); calling the settlement from it is
+// KILL-REWARD-COMP-1 (CP D655).
 use crate::character_recovery_fence::CharacterRecoveryStore;
 use crate::combat::{
     CreatureDeathRewardInput, DeathGroundContext, DurabilitySession, LootDefinitionRef,
@@ -595,7 +596,7 @@ impl Harness {
 /// The fixture creature (health 20) dies to in-order swings of one lineage;
 /// a replayed swing returns its retained receipt without a second write.
 #[test]
-fn an_auto_attack_kill_mints_the_loot_and_awards_the_xp() -> TestResult {
+fn swing_committed_kill_composes_with_explicit_reward_settlement() -> TestResult {
     let Some(admin) = configured_admin() else {
         return Ok(());
     };

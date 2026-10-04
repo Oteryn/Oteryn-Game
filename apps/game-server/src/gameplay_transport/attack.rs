@@ -450,6 +450,30 @@ impl ChannelAttackStates {
         }
     }
 
+    /// Whether a creature may resolve `actor` as its melee target, and if so whether re-entry
+    /// protection covers it. A closed client held in the world by its in-fight deadline
+    /// (ATTACK0-RL-03) stays a target with no re-entry window, so a hit extends the hold; any
+    /// other actor under control loss is no target.
+    pub(crate) fn creature_target_protection(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        now: SemanticTimeMicros,
+    ) -> Option<bool> {
+        match runtime.current_player_reentry_protection(actor, session, now.get()) {
+            Ok(protected) => Some(protected),
+            Err(_) => {
+                runtime
+                    .player_control_facts(actor, session)
+                    .ok()?
+                    .control_loss?;
+                self.in_fight_until(actor, session, now)?;
+                Some(false)
+            }
+        }
+    }
+
     /// A creature hit `actor`: the in-fight deadline runs from `now`.
     pub(crate) fn record_hit_taken(
         &mut self,
