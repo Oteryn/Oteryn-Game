@@ -71,6 +71,67 @@
       "deletion_or_anonymization_policy": "Delete the retained player-linked event envelope and payload at ordinary expiry; do not replace deletion with indefinite anonymized or pseudonymous retention. Expiry never weakens receipt/source-cause replay protection or ItemInstance non-reuse evidence.",
       "legal_hold_policy": "Explicit case/legal authorization must record reason, authorizing actor, start time and exact affected records or scope, with audited placement, access, scope change and release; release returns to the original expiry without resetting the clock.",
       "policy_revision": 1
+    },
+    {
+      "id": "ECONOMY_LEDGER_RETENTION_V1",
+      "purpose": "Prove and reconcile bank balances, ledger entries and coin lines, and the value and item lines of the stash (SUPPLY-STASH-0 §7), house (HOUSE-OWN-0 §17) and mail (MAIL-0 §11) events that the ECONOMY_LEDGER purpose designates, and support bounded economy operations, support and security investigation; no market analytics, public history, detector or AI-use purpose.",
+      "privacy_class": "RESTRICTED_PLAYER_LINKED",
+      "finite_retention_duration_or_ceiling": "P30D = 2,592,000 elapsed seconds from the immutable trusted-server timestamp in the event's ANL envelope; lifetime [start, expiry), never recomputed or refreshed",
+      "permitted_roles": [
+        "authorized bank, stash, house and mail operations",
+        "authorized support",
+        "authorized security"
+      ],
+      "export_redaction_policy": "Case-scoped audited export redacts unrelated player-linked envelope and payload fields; export does not extend retention or create an indefinite investigative copy.",
+      "deletion_or_anonymization_policy": "Delete the retained player-linked event envelope and payload at ordinary expiry; do not replace deletion with indefinite anonymized or pseudonymous retention. Expiry never weakens the authoritative bank balance, ledger, operation and coin-line tables, which retention never deletes (BANK-0 §3).",
+      "legal_hold_policy": "Explicit case/legal authorization must record reason, authorizing actor, start time and exact affected records or scope, with audited placement, access, scope change and release; release returns to the original expiry without resetting the clock.",
+      "policy_revision": 1
+    },
+    {
+      "id": "DUR03_ONE_ITEM_DURABLE_AUDIT_RETENTION_V2",
+      "purpose": "Prove and reconcile the first closed DUR-03 one-item MINT/TRANSFER transactions and support bounded DUR-03 operations, support and security investigation; the bank part of a gold fee (the FEE_DEBIT value line of GOLD-FEE-2) is within this purpose for proof and reconciliation only; no other economy, market, trade, public history, balancing, detector or AI-use purpose.",
+      "privacy_class": "RESTRICTED_PLAYER_LINKED",
+      "finite_retention_duration_or_ceiling": "P90D = 7,776,000 elapsed seconds from the immutable trusted-server timestamp in the event's ANL envelope; lifetime [start, expiry), never recomputed or refreshed",
+      "permitted_roles": [
+        "authorized DUR-03 operations",
+        "authorized support",
+        "authorized security"
+      ],
+      "export_redaction_policy": "Case-scoped audited export redacts unrelated player-linked envelope and payload fields; export does not extend retention or create an indefinite investigative copy.",
+      "deletion_or_anonymization_policy": "Delete the retained player-linked event envelope and payload at ordinary expiry; do not replace deletion with indefinite anonymized or pseudonymous retention. Expiry never weakens receipt/source-cause replay protection or ItemInstance non-reuse evidence.",
+      "legal_hold_policy": "Explicit case/legal authorization must record reason, authorizing actor, start time and exact affected records or scope, with audited placement, access, scope change and release; release returns to the original expiry without resetting the clock.",
+      "policy_revision": 2
+    },
+    {
+      "id": "MARKET_ECONOMY_LEDGER_RETENTION_V1",
+      "purpose": "ECONOMY_LEDGER: prove and reconcile World Market operations (offers, escrow, matching, fees and Inbox delivery) and support bounded market operations, support and security investigation; no market analytics, public price or trade history, balancing, detector or AI-use purpose.",
+      "privacy_class": "RESTRICTED_PLAYER_LINKED",
+      "finite_retention_duration_or_ceiling": "P30D = 2,592,000 elapsed seconds from the immutable trusted-server timestamp in the event's ANL envelope; lifetime [start, expiry), never recomputed or refreshed",
+      "permitted_roles": [
+        "authorized market operations",
+        "authorized support",
+        "authorized security"
+      ],
+      "export_redaction_policy": "Case-scoped audited export redacts unrelated player-linked envelope and payload fields; export does not extend retention or create an indefinite investigative copy.",
+      "deletion_or_anonymization_policy": "Delete the retained player-linked event envelope and payload at ordinary expiry; do not replace deletion with indefinite anonymized or pseudonymous retention. Expiry never weakens the authoritative offer, escrow, ledger and operation state, which this profile never deletes.",
+      "legal_hold_policy": "Explicit case/legal authorization must record reason, authorizing actor, start time and exact affected records or scope, with audited placement, access, scope change and release; release returns to the original expiry without resetting the clock.",
+      "policy_revision": 1
+    },
+    {
+      "id": "GUILD_ACTIVITY_RETENTION_V1",
+      "purpose": "GUILD_ACTIVITY: serve the member-visible guild activity log (GUILD0-RL-10, 30 days) and prove and reconcile guild membership, rank, guild-bank and guildhall operations; a guild bank entry is also within ECONOMY_LEDGER for proof and reconciliation only; support bounded guild, support and security investigation; no public history, analytics, detector or AI-use purpose.",
+      "privacy_class": "RESTRICTED_PLAYER_LINKED",
+      "finite_retention_duration_or_ceiling": "P30D = 2,592,000 elapsed seconds from the immutable trusted-server timestamp in the event's ANL envelope; lifetime [start, expiry), never recomputed or refreshed; equal to the 30-day member log window (GUILD0-RL-10)",
+      "permitted_roles": [
+        "current members of the guild, reading only that guild's own entries within the 30-day member window (GUILD0-RL-10), isolated per guild for an event that holds entries for several guilds",
+        "authorized guild operations",
+        "authorized support",
+        "authorized security"
+      ],
+      "export_redaction_policy": "A member read returns only the reader's own guild entries within the 30-day window and redacts every other guild's entry and unrelated player-linked fields of a multi-guild event (GUILD-0 §4.4, ANL-01 §16). Case-scoped audited export redacts unrelated player-linked envelope and payload fields; export does not extend retention or create an indefinite investigative copy.",
+      "deletion_or_anonymization_policy": "Delete the retained player-linked event envelope and payload at ordinary expiry; do not replace deletion with indefinite anonymized or pseudonymous retention. Expiry never weakens the authoritative guild, membership and guild bank tables, which this profile never deletes.",
+      "legal_hold_policy": "Explicit case/legal authorization must record reason, authorizing actor, start time and exact affected records or scope, with audited placement, access, scope change and release; release returns to the original expiry without resetting the clock.",
+      "policy_revision": 1
     }
   ],
   "event_type_rules": {
