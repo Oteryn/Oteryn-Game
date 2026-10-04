@@ -55,6 +55,8 @@ external_repositories: []
 - #1734 P2s: ENTITY-CLIENT-1 decodes the capability-6 type-2 snapshot in `Session::admit`, and
   SESSION-PUSH-1 consumes deltas push-driven without predicting the next domain (§1.2, §2.1,
   §2.2).
+- #1736 P1 4176941104: a second same-domain delta after the stop is read by the next exchange
+  or idle read, not by the same exchange (§2.1).
 - No code, contract, wire, registry or migration change.
 
 ## Validation

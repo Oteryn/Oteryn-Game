@@ -205,8 +205,10 @@ Acceptance:
   session.
 - A domain 3 delta between a step's `CommandResult` and its domain 1 delta applies as pushed,
   and the step still completes with its domain 1 delta. No order of domains is assumed.
-- Two consecutive domain 1 deltas after a `Moved` result both apply by revision. The outcome
-  carries the first, and the second is queued as an event. No attribution check exists.
+- Two consecutive domain 1 deltas after a `Moved` result: the step ends after the first and its
+  outcome carries it. The second is not read in that exchange. The next command's exchange or
+  the next idle read applies it by revision and queues it as an event, so nothing is lost or
+  double-applied (#1736 P1 4176941104). No attribution check exists.
 - The game-server dev-client qualification stage compiles unchanged.
 
 ### 2.2 ENTITY-CLIENT-1 (the playable-track N6)
