@@ -23,6 +23,13 @@
 | SPELL-TARGET-1 | spell lane | the spell Target Resolver: `ATTACK_TARGET` resolves to the §4 target, and single-target damage spells stop being rejected (`spell/cast.rs`) | ATTACK-1 |
 | ATTACK-PARITY-1 | impl | the parity fixtures of §6 against the TibiaPal damage calculator | ATTACK-1 |
 
+**Amendment (core loop batch, `OTERYN_GAME_ARCH_BATCH_CORE_LOOP_PACKETS_2026-10-04.md` §0.1, §1.1).** ATTACK-WIRE-1 holds the
+leases capability 17 `ATTACK_V1` (requires 6), command types 11 and 12 and domain 10. ATTACK-1
+splits into ATTACK-1a (pure: attack state, swing key, deadline rule, validity and formulas, in
+`combat/attack/**`) and ATTACK-1b (the timer, creature melee, hooks, logout blocker, dispatch,
+domain 10 and the offer of capability 17). SPELL-TARGET-1 and ATTACK-PARITY-1 depend on ATTACK-1b
+and ATTACK-1a respectively.
+
 Later, each with its own decision or amendment: distance and throwing weapons (ammunition use
 needs a DUR-03 burn cause), wands and rods (mana cost), chase movement, PvP (PARTY-PVP-0).
 
