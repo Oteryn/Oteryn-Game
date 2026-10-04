@@ -7,7 +7,7 @@ date: 2026-10-03
 owner: Sol Supervising Architect
 requested_by: control plane (after #1696: ITEM-MOVE-2a, ITEM-MOVE-2b, EQUIP-RT-1, EXERCISE-1, and what else the accepted EQUIP-0, EXERCISE-0, DEPOT-0, BAGS-0 and IMBUE-FORGE-0 allow)
 writes_on_other_prs: none
-amended_by: ARCH-ITEM-PACKETS-AMEND-1 (§0.1, §0.2, §0.3, §1.4, §1.7, §1.9-§1.12, §2.0a, §2.0b (#1702 P1s 4175377704, 4175377707, 4175398447 and 4175398456; P2 4175398450), §2.1, §2.2, §2.2a, §2.3, §2.6, §2.8, §2.9; #1698 round-3 P1 4175197224 and P2 4175197230; #1696 P1 4175041166; control plane: ITEM-SEM-2b-2 narrowed to the patterns model)
+amended_by: ARCH-ITEM-PACKETS-AMEND-1 (§0.1, §0.2, §0.3, §1.4, §1.7, §1.9-§1.12, §2.0a, §2.0b (#1702 P1s 4175377704, 4175377707, 4175398447 and 4175398456; P2 4175398450), §2.1, §2.2, §2.2a, §2.3, §2.6, §2.8, §2.9; #1698 round-3 P1 4175197224 and P2 4175197230; #1696 P1 4175041166; control plane: ITEM-SEM-2b-2 narrowed to the patterns model); ARCH-ITEM-PACKETS-AMEND-2 (§0.1, §0.2, §0.3, §1.9, §1.11, §1.12, §1.13, §2.0c, §2.2a, §2.4; D448, D449; #1702 P1 4175418427 and P2 4175418429; #1703 P2s 4175400422 and 4175400425)
 ```
 
 This bundle packets the item chain that the four requested slices sit on, in order of playable
@@ -37,6 +37,7 @@ highest migration is 0057; D417 granted 0058-0062, so the proposals start at 006
 | Packet | Migration | Capability / command / state domain |
 |---|---|---|
 | CAP-NEG-1 | none | none (selects registered capabilities; allocates none) |
+| CAP-NEG-RESUME-FALLBACK-1 | 0067 (proposed, only if a migration is needed) | none |
 | NPC-VIS-1 | none | none (entity kind 5 `Npc` in capability 6's schema) |
 | VIS-3 | none | none (offers the registered capability 6 `WORLD_SPATIAL_ENTITIES`) |
 | ITEM-VIEW-1a | none | capability 4 `ITEM_VIEW_MOVE_V1`, state domains 9 `CHARACTER_INVENTORY` and 11 `OPEN_CONTAINER`, command type 9 `ITEM_MOVE_INTENT` (all assigned by D212; nothing new) |
@@ -69,13 +70,14 @@ already applied. Each migration packet's acceptance repeats this as a merge cond
 | # | Packet | Worker | Starts when |
 |---|---|---|---|
 | 0 | CAP-NEG-1 | hard, protocol and session review | now (§1.9) |
+| 0c | CAP-NEG-RESUME-FALLBACK-1 | hard, persistence and session review | CAP-NEG-1 (#1705) has merged (§1.13) |
 | 0a | NPC-VIS-1 | impl, protocol review | NPC-BEHAVIOUR-0 is accepted and ITEM-VIEW-1a has merged (§1.10) |
-| 0b | VIS-3 | hard, protocol and session review | NPC-VIS-1, ITEM-VIEW-1a and CAP-NEG-1 have merged (§1.10) |
+| 0b | VIS-3 | hard, protocol and session review | NPC-VIS-1, ITEM-VIEW-1a, CAP-NEG-1 and CAP-NEG-RESUME-FALLBACK-1 have merged (§1.10, §1.13) |
 | 1 | ITEM-VIEW-1a | impl, protocol review | now |
 | 2 | ITEM-SEM-2b-2 | impl, content review | now (§1.4) |
 | 2a | ITEM-SEM-2b-3 | hard, contract review | ITEM-SEM-2b-2 has merged; not open together with EQUIP-CONTENT-1 (§1.12) |
-| 3 | SPEED-1 | impl, movement review | CAP-NEG-1 has merged |
-| 4 | ITEM-VIEW-1b | hard, protocol and session review | ITEM-VIEW-1a and CAP-NEG-1 have merged |
+| 3 | SPEED-1 | impl, movement review | CAP-NEG-1 and CAP-NEG-RESUME-FALLBACK-1 have merged (§1.13) |
+| 4 | ITEM-VIEW-1b | hard, protocol and session review | ITEM-VIEW-1a, CAP-NEG-1 and CAP-NEG-RESUME-FALLBACK-1 have merged (§1.13) |
 | 5 | ITEM-EQUIP-WIRE-1 | impl, protocol review | ITEM-VIEW-1a has merged |
 | 6 | ITEM-MOVE-1 | hard, persistence review | ITEM-VIEW-1b and VIS-3 have merged (§1.10) |
 | 7 | ITEM-CLIENT-1 | impl | ITEM-MOVE-1 has merged |
@@ -90,7 +92,7 @@ already applied. Each migration packet's acceptance repeats this as a merge cond
 | 16 | ITEM-CLIENT-3 | impl, client review | ITEM-CLIENT-2 and BAGS-1 have merged |
 | 17 | ITEM-CLIENT-4 | impl, client review | ITEM-CLIENT-3 and ITEM-MOVE-2b have merged |
 
-Items 0-2 can run in parallel now; SPEED-1, ITEM-VIEW-1b and VIS-3 follow CAP-NEG-1. Items 4 and 5, and later 9 and 11, can run in parallel. The
+Items 0-2 can run in parallel now; CAP-NEG-RESUME-FALLBACK-1 follows CAP-NEG-1, and SPEED-1, ITEM-VIEW-1b and VIS-3 follow both. Items 4 and 5, and later 9 and 11, can run in parallel. The
 client packets 7, 15, 16 and 17 own the same client files and therefore run one at a time, in
 that order. If ITEM-MOVE-2b merges before BAGS-1, ITEM-CLIENT-4 may go before ITEM-CLIENT-3;
 the control plane swaps their bases and records the swap.
@@ -115,7 +117,9 @@ only; the second of two open packets merges `main` as a union):
   `crates/protocol-oteryn/src/world_spatial.rs` and `world_spatial_entities.rs`, and
   `apps/game-server/src/gameplay_transport/world_spatial.rs` (NPC-VIS-1, VIS-3, ITEM-VIEW-1a,
   SPEED-1 and ITEM-MOVE-2b: each only the field, kind, disposition or function its packet names).
-  `world_spatial_entities.rs` is edited serially: ITEM-VIEW-1a, then NPC-VIS-1, then VIS-3.
+  `world_spatial_entities.rs` is edited serially: ITEM-VIEW-1a first, then ITEM-VIEW-1b (the
+  `item_handle` uniqueness check), NPC-VIS-1 and VIS-3 one at a time in merge order, each merging
+  `main` before it freezes.
 
 `gameplay_transport/item_move.rs` is created by ITEM-MOVE-1 and then owned in turn by ITEM-MOVE-2a,
 BAGS-1 and ITEM-MOVE-2b; the order in §0.2 never has two of them open at once except BAGS-1 and
@@ -199,7 +203,13 @@ the typed artifact profile), so it is a hard slice with contract review:
 Both additions are a new grammar: a v4 reader accepts only vocation values 1-5 and group ids
 1-16. 2b-3 therefore always allocates a new typed artifact profile (`OTERYN_REFERENCE_PLAYABLE_ARTIFACT/v5`
 with its compiler and canonicalization profiles), writes only v5, and keeps explicit decoding of v4
-(#1702 P1 4175398456). 2b-3 and EQUIP-CONTENT-1
+(#1702 P1 4175398456). The new grammar also invalidates the accepted v4 resource profile
+(`OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V1`): the registry caps groups at 16 (server)
+and 11 (client), vocation sets at 5, and record and artifact bytes derived from that grammar. 2b-3
+therefore owns the resource-profile tool, a v5 architecture profile, its evidence and the
+`RESOURCE_LIMITS_REGISTRY.json` rows, and recomputes and registers every v5 ceiling (groups 17,
+vocations 6, record and artifact bytes) with max and max+1 tests before the codec is released
+(D448, #1702 P1 4175418427). 2b-3 and EQUIP-CONTENT-1
 own the same lowering paths and content tree, so they are never open together: the first allocated
 goes first, and the other starts from `main` after it merges. ITEM-MOVE-2a does not wait for 2b-3;
 it admits `none` from the moment the value exists (§2.8).
@@ -240,6 +250,8 @@ CHARM-5-COMP, which is not in flight. CAP-NEG-1 builds it now, alone, as the roo
 CHARM-5-COMP and CHAT-1b-2 then reuse it and keep only their routing and offering. A packet that
 offers a capability (VIS-3, ITEM-MOVE-1, SPEED-1, ITEM-MOVE-2a, BAGS-1) proves the capability is
 selected in a production-path admission test.
+No packet offers a capability before CAP-NEG-RESUME-FALLBACK-1 has merged, so that a client
+whose resume is refused for a capability mismatch can be admitted fresh at once (§1.13).
 
 ### 1.10 Capability 4 needs capability 6 offered first (VIS-3)
 
@@ -274,6 +286,24 @@ The client must pace with the same ground speed as the server (#1702 P1 41753777
   speed is not 150 and shows the server step duration and the client pacing equal.
 So server and client change source together, and neither paces from map data before the other
 has it.
+
+MAP-WIRE-2 also admits ground speed before it reaches the wire (#1702 P2 4175418429): the
+authoring schema (`terrain.schema.json`) accepts any nonnegative integer, so MAP-WIRE-2 bounds
+it to 1..=1,000 in the schema and in `world_objects.py`, the bundle compiler rejects a value
+outside the range, and MAP-LOAD-1's reader refuses such a bundle, each with max and max+1 tests.
+Valid authored content then cannot fail a map snapshot at runtime (MAP-WIRE-1 amendment).
+
+### 1.13 A capability mismatch on resume falls back to a fresh admission that succeeds (D449)
+
+CAP-NEG-1 refuses a resume whose supported set lacks a selected capability, and the client then
+falls back to fresh admission. While the old session is RECONNECTABLE, that fresh admission
+finds the character held by its incumbent and is refused, so the first client release that
+changes its supported set locks its players out until the reconnect window ends. The retirement
+that frees the character is `CompleteReconnect` in `EarlyTerminalReplacement` mode, and the PG
+adapter refuses it today (`durability/fresh_admission.rs` `write_complete_reconnect`: a
+replacement onto a new session has no durable owner). CAP-NEG-RESUME-FALLBACK-1 (§2.0c) gives it
+one. It follows CAP-NEG-1 (#1705), and no capability is offered before it merges: SPEED-1, VIS-3
+and ITEM-VIEW-1b wait for it (§0.2), and ITEM-MOVE-1 follows VIS-3.
 
 ### 1.8 Not packeted now
 
@@ -336,6 +366,47 @@ Acceptance:
 - Tests run with an injected offered set: selection, the `requires` closure, resume equality, and
   the empty production set.
 - Not in scope: offering any capability, chat or charm routing.
+
+### 2.0c CAP-NEG-RESUME-FALLBACK-1
+
+```yaml
+task_id: OTV2-20261004-cap-neg-resume-fallback-1
+decision: D449; FND-DUR-GAMESESSION-NONREUSE-V1 (WP2 semantics, WP4 persistence); CAP-NEG-1 §2.0 resume rule; this bundle §1.13
+worker: oteryn-hard-worker   # durable session-use ledger, admission and resume state
+review: independent persistence and session review (Codex, final frozen head)
+branch: claude/cap-neg-resume-fallback-1-20261004
+base: main after CAP-NEG-1 (#1705) merges
+migration_lease: 0067 (proposed; only if the durable owner needs a schema change; §0.1 merge condition)
+depends_on: [CAP-NEG-1]
+owned_paths:
+  - apps/game-server/src/durability/fresh_admission.rs          # the durable EarlyTerminalReplacement owner in write_complete_reconnect and its reader
+  - apps/game-server/src/durability/schema.rs                   # only if 0067 is needed
+  - apps/game-server/migrations/0067_*.sql                      # only if needed
+  - apps/game-server/src/foundation/admission_recovery_inner.rs # the replacement path's durable hand-off only
+  - apps/game-server/src/gameplay_transport/connection.rs       # shared register (§0.3): the capability-mismatch refusal retires the incumbent
+  - apps/game-server/src/gameplay_transport/resume.rs           # the mismatch refusal only
+  - apps/game-server/tests/durability_postgres.rs               # shared register (§0.3)
+  - docs/agents/tasks/archive/OTV2-20261004-cap-neg-resume-fallback-1.md
+validation:
+  - cargo test --locked -p oteryn-game-server --quiet
+  - cargo test --locked -p oteryn-game-server --test durability_postgres --quiet   # PostgreSQL lane
+```
+
+Acceptance:
+
+- `CompleteReconnect` in `EarlyTerminalReplacement` mode is durable in the PG adapter: the
+  replacement onto a new GameSession has a durable owner, the old session's terminal record and
+  the new session's use are members of the character's session-use ledger in one transaction,
+  and the WP2 nonreuse and WP4 persistence and reload rules hold (no GameSession id reused, the
+  ledger revision monotonic, a reload after a crash at every step sees either the old session
+  RECONNECTABLE or the old session terminal and the new one admitted, never both or neither).
+- A resume refused for a capability mismatch retires the RECONNECTABLE incumbent through that
+  path, and the client's following fresh admission succeeds at once, without waiting for the
+  reconnect window (production-path test with an injected offered set).
+- A replay or a concurrent second replacement fails closed, and a ledger that is exhausted
+  still returns `EarlyTerminalReplacementGameSessionLedgerExhausted` (tests).
+- A same-session resume with a matching capability set is unchanged (regression test).
+- Not in scope: offering any capability, fast-reconnect proof delivery.
 
 ### 2.0a NPC-VIS-1
 
@@ -467,8 +538,13 @@ owned_paths:
   - tools/content-schema/item-authoring/{lower_wiki_stats_packet.py,test_lower_wiki_stats_packet.py,README.md}
   - apps/game-server/src/content/item_stats_promotion.rs
   - content/world/** and the content tree (regenerated)
+  - tools/reference-item-resource-profile/**                 # v5 ceilings
+  - docs/architecture/OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V2.md  # new: the v5 profile
+  - docs/agents/evidence/OTV2-20261003-item-sem-2b3-v5-resource-evidence.{json,md}  # new
+  - docs/contracts/RESOURCE_LIMITS_REGISTRY.json            # shared register (§0.3): the v5 rows
   - docs/agents/tasks/archive/OTV2-20261003-item-sem-2b3-vocation-none-and-use-requirements.md
 validation:
+  - python3 tools/reference-item-resource-profile/item_resource_profile.py
   - cargo test --locked -p oteryn-game-server --quiet
   - cargo test --locked -p oteryn-game-server --test content_reference_artifact --quiet
   - python3 -m unittest tools/content-schema/item-authoring/test_lower_wiki_stats_packet.py
@@ -485,6 +561,9 @@ Acceptance:
 - The 2b-2 reported rows are lowered: the `without` Items (2b-2 §2.5) get their patterns with
   `none`, and the 53 `mlrequired` runes and the ammunition get `requirements`; the record lists
   the counts.
+- Before the codec is released, every v5 ceiling is recomputed with the resource-profile tool and
+  registered: server and client group counts (17 server), the vocation set (6), and record and
+  artifact bytes, each with max and max+1 tests; v4 rows stay for v4 decoding (§1.12, D448).
 - Not in scope: enforcing use requirements (RUNE-USE-0, RANGED-0), Premium.
 
 ### 2.3 SPEED-1
@@ -560,9 +639,12 @@ owned_paths:
   - apps/game-server/src/gameplay_transport/connection.rs       # shared register (§0.3): the USE item-target decode and domain 9 and 11 emission only
   - apps/game-server/src/interaction/dispatch.rs                # the USE item-target arm only
   - apps/game-server/src/interaction/corpse_open.rs             # new: open and close (§4.3)
+  - crates/protocol-oteryn/src/lib.rs                           # the capability 4 requires 6 check in accepted and resume-accepted only
+  - crates/protocol-oteryn/src/world_spatial_entities.rs        # the item_handle uniqueness check only
   - docs/agents/tasks/archive/OTV2-20261003-item-view-1b.md
 validation:
   - cargo test --locked -p oteryn-game-server --quiet
+  - cargo test --locked -p oteryn-protocol-oteryn --quiet
 ```
 
 Acceptance:
@@ -578,6 +660,10 @@ Acceptance:
 - USE with an item target opens a corpse within Chebyshev 1 on the same floor; dispositions
   `COMMITTED`, `TOO_FAR`, `STALE_STATE`, `NOTHING_TO_USE`. Opening writes nothing. Every closing
   trigger of §4.3 has a test. The D133 disclosure is recorded as `PARITY_PENDING`.
+- Before capability 4 can be offered (#1703 P2s 4175400422 and 4175400425): the protocol crate
+  refuses an accepted or resume-accepted value whose selected set contains capability 4 without
+  capability 6, and refuses a spatial snapshot or delta in which two entities carry the same
+  nonzero `item_handle`, each on encode and decode, with a test per message.
 - Capability 4 stays `offered: false`; the tests negotiate it directly.
 - Not in scope: command 9 handling, the client.
 
@@ -1053,7 +1139,8 @@ Acceptance:
 - No packet starts before its prerequisites; no two open packets own the same path except the
   §0.3 registers.
 - Every offered capability is selectable on the production path (§1.9, CAP-NEG-1), with its
-  `requires` offered first (§1.10).
+  `requires` offered first (§1.10), and a client whose supported set changes can always fall
+  back to a fresh admission that succeeds (§1.13, CAP-NEG-RESUME-FALLBACK-1).
 - Every value a packet reads has a production source or an allocated seam with the packet that
   supplies it (§1.11).
 - Migration history stays monotonic in any merge order (§0.1 merge condition and re-lease).
