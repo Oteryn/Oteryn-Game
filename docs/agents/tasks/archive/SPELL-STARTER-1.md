@@ -9,7 +9,7 @@ repository: Oteryn/Oteryn-Game
 issue: 1622
 base_branch: main
 branch: claude/spell-starter-1-20261004
-pr: null
+pr: 1788
 base_sha: 69f171fc
 owner: claude-code-session-011Kn4hMg8QT5ueru2QCGDiM
 control_plane: claude-code-session-013KJX6mv8LQveCKKXYgAX94
