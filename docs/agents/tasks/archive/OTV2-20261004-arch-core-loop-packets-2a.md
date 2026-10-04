@@ -66,6 +66,11 @@ external_repositories: []
   P1 4177035356 (r2 package and lock identities), P1 4177035359 (`qualification.rs`) and
   P1 4177035362 (`test_arena_map.py`). This PR keeps the SPAWN-1a/1b split ruling (§1.4, §2.7
   stub) and SPAWN-1b.
+- #1735 P1 4177074825: ATTACK-1a declares `combat_attack` from `lib.rs`, top-level like
+  `combat_pickup`, not from `combat.rs` (§2.2), matching #1737.
+- #1735 P1 4177074827: SPAWN-CONTENT-1 owns `crates/world-bundle/**` for the spawn-family decode,
+  only if MAP-LOAD-1 merges first (§2.6).
+- #1735 P2 4177074834: deferred to CHAT-2 (control plane).
 - No code, contract or wire change in this PR.
 
 ## Validation

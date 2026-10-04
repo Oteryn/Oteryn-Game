@@ -223,12 +223,12 @@ branch: claude/attack-1a-20261004
 base: main
 owned_paths:
   - apps/game-server/src/combat/attack/**             # new
-  - apps/game-server/src/combat.rs                    # `#[path = "combat/attack/mod.rs"] pub(crate) mod attack;` only (the file's explicit-path rule)
+  - apps/game-server/src/lib.rs                       # `#[path = "combat/attack/mod.rs"] mod combat_attack;` only, top-level like `combat_pickup` (#1735 P1 4177074825)
   - docs/agents/tasks/archive/OTV2-20261004-attack-1a.md
 validation:
   - cargo fmt --all -- --check
   - cargo clippy -p oteryn-game-server --all-targets -- -D warnings
-  - cargo test --locked -p oteryn-game-server combat::attack
+  - cargo test --locked -p oteryn-game-server combat_attack
   - python tools/agents/validate_governance.py
   - git diff --check
 ```
@@ -244,7 +244,10 @@ Acceptance:
 - Armor removal for armor 1 to 3 and above 3.
 - The RNG purposes are a closed enum.
 
-Not in scope: anything outside `combat/attack/**` and the one `mod` line.
+Not in scope: anything outside `combat/attack/**` and the one `mod` line in `lib.rs`. The module
+is top-level, not under `combat.rs`, because it uses `crate::spell::formula` and `combat.rs` is
+also compiled standalone by `foundation/mod.rs` and the Postgres test binaries, which carry no
+`spell` module (#1735 P1 4177074825).
 
 ### 2.3 ATTACK-1b
 
@@ -376,11 +379,13 @@ owned_paths:
   - docs/contracts/OTERYN_WORLD_BUNDLE_FORMAT_V1.md    # spawn family section
   - docs/contracts/RESOURCE_LIMITS_REGISTRY.json       # CREATUREAI0-RL-01..-03, -13
   - content/world/**                                   # spawn family source; the exact path is named at allocation
+  - crates/world-bundle/**                             # only if MAP-LOAD-1 has merged first: the spawn-family decode (§1.3; #1735 P1 4177074827)
   - docs/agents/tasks/archive/OTV2-20261004-spawn-content-1.md
 validation:
   - cargo fmt --all -- --check
   - cargo clippy -p oteryn-world-bundle-compiler --all-targets -- -D warnings
   - cargo test --locked -p oteryn-world-bundle-compiler
+  - cargo test --locked -p oteryn-world-bundle            # only if it edits crates/world-bundle
   - python tools/agents/validate_governance.py
   - git diff --check
 ```
