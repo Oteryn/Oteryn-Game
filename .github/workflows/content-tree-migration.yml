@@ -21,6 +21,11 @@ on:
       - imports/tibiawiki/facts/items-external-family18-20261001.json
       - tools/content-migration/**
       - tools/content-schema/starter-kit-authoring/**
+      - tools/content-schema/imbuement-authoring/**
+      - imports/tibiawiki/facts/items-stats.json
+      - content/assets/files/appearances-*.dat
+      - tools/content-census/stage_proficiencies.py
+      - rulesets/items/imbuements/**
       - tools/content-schema/item-authoring/requirements.txt
       - .github/workflows/content-tree-migration.yml
   workflow_dispatch:
@@ -58,6 +63,14 @@ jobs:
 
       - name: Install pinned authoring dependencies
         run: python -m pip install -r tools/content-schema/item-authoring/requirements.txt
+
+      - name: Install imbuement authoring validator
+        run: python -m pip install -r tools/content-schema/imbuement-authoring/requirements.txt
+
+      - name: Validate imported imbuement data and negative cases
+        run: |
+          python tools/content-schema/imbuement-authoring/imbuement_content.py content --check
+          python -m unittest discover -s tools/content-schema/imbuement-authoring -p 'test_*.py' -q
 
       - name: Validate successor Item/Mount tree against legacy WorldProject
         run: |

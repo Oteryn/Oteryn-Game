@@ -4,7 +4,7 @@
   "kind": "static_content",
   "owner": "Quest",
   "repository": "Oteryn/Oteryn-Game",
-  "population_state": "READY_UNPOPULATED",
+  "population_state": "POPULATED",
   "contract": "docs/architecture/OTERYN_FULL_GAME_CONTENT_AND_RULESET_TREE_V1.md",
-  "notes": "Mission/node authoring."
+  "notes": "Mission/node authoring. quest-state.json: QuestState tracks and transitions lowered from the Quest definitions by tools/content-schema/quest-authoring/quest_state_lowering.py."
 }
