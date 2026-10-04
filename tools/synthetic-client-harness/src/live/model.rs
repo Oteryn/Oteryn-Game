@@ -1,12 +1,16 @@
 //! Pure state and geometry mapping for the live harness: join snapshot / command outcome ->
 //! [`RenderModel`], and pixel click -> [`LiveCommand`]. No I/O, no GPU, no window.
 
-use oteryn_dev_client::{JoinSnapshot, SessionEvent, StepOutcome, UseOutcome};
+use oteryn_dev_client::{
+    EntityKind, EntityRef, JoinSnapshot, SessionEvent, StepOutcome, UseOutcome, WorldEntities,
+    WorldSpatialEntitiesDelta, WorldSpatialEntity,
+};
 use oteryn_foundation::ProcessGeneration;
 use oteryn_protocol_oteryn::actor_spell::ActorVitals;
 use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectOverlayEntry};
 use oteryn_protocol_oteryn::world_spatial::{StepDirection, StepDisposition};
 use oteryn_renderer::{RendererError, SurfaceDecision, SurfaceEvent, SurfaceState};
+use std::collections::BTreeMap;
 
 /// The native entry room's one door placement (accepted content `accepted::DOOR_CELL`).
 pub const DOOR_PLACEMENT: &[u8] = b"oteryn:cell/entry-door";
@@ -91,6 +95,12 @@ pub struct RenderModel {
     pub overlay_revision: u64,
     /// Own-actor vitals, once the server has sent them (join snapshot or a pushed delta).
     pub vitals: Option<ActorVitals>,
+    /// The visible entities when the server selected capability 6; empty otherwise.
+    pub entities: BTreeMap<EntityRef, WorldSpatialEntity>,
+    /// The own actor's identity (drawn as `@`, never as an entity glyph), once known.
+    pub own_identity: Option<[u8; 16]>,
+    /// The entity a click selected; cleared when it leaves or a click finds none.
+    pub selected: Option<EntityRef>,
     pub notice: Notice,
 }
 
@@ -98,7 +108,11 @@ pub struct RenderModel {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum LiveCommand {
     Step(StepDirection),
-    UseDoor { expected_revision: u64 },
+    UseDoor {
+        expected_revision: u64,
+    },
+    /// Select the top entity on `Tile` (clears the selection when there is none). Local only.
+    Select(Tile),
 }
 
 #[must_use]
@@ -133,6 +147,9 @@ impl RenderModel {
             door: snapshot.world_object_overlay.iter().find_map(door_view),
             overlay_revision: snapshot.world_object_overlay_revision,
             vitals: None,
+            entities: BTreeMap::new(),
+            own_identity: None,
+            selected: None,
             notice: Notice::Joined,
         }
     }
@@ -175,6 +192,91 @@ impl RenderModel {
     }
 }
 
+/// Selection and draw order on one tile: creature, NPC, player, corpse, ground item.
+const fn kind_rank(kind: EntityKind) -> u8 {
+    match kind {
+        EntityKind::Creature => 0,
+        EntityKind::Npc => 1,
+        EntityKind::Player => 2,
+        EntityKind::Corpse => 3,
+        EntityKind::GroundItem => 4,
+    }
+}
+
+/// The glyph of an entity kind; the own actor is `@` and is never drawn through this.
+const fn kind_glyph(kind: EntityKind) -> char {
+    match kind {
+        EntityKind::Creature => 'C',
+        EntityKind::Npc => 'N',
+        EntityKind::Player => 'P',
+        EntityKind::Corpse => 'x',
+        EntityKind::GroundItem => 'i',
+    }
+}
+
+const fn kind_name(kind: EntityKind) -> &'static str {
+    match kind {
+        EntityKind::Creature => "creature",
+        EntityKind::Npc => "npc",
+        EntityKind::Player => "player",
+        EntityKind::Corpse => "corpse",
+        EntityKind::GroundItem => "item",
+    }
+}
+
+impl RenderModel {
+    /// The model with the session's entity store as its entities (the join snapshot, or a store
+    /// the session already holds).
+    #[must_use]
+    pub fn with_entities(&self, store: &WorldEntities) -> Self {
+        let mut next = self.clone();
+        next.own_identity = Some(*store.own_identity());
+        next.entities = store
+            .iter()
+            .map(|entity| (entity.entity, *entity))
+            .collect();
+        next
+    }
+
+    /// The entity a click on `tile` selects: the top one by creature, NPC, player, corpse, ground
+    /// item (ties by entity reference). The own actor is not selectable.
+    #[must_use]
+    pub fn top_entity_at(&self, tile: Tile) -> Option<&WorldSpatialEntity> {
+        self.entities
+            .values()
+            .filter(|entity| {
+                Some(entity.entity.identity) != self.own_identity
+                    && entity.position.x == tile.x
+                    && entity.position.y == tile.y
+                    && entity.position.floor == tile.floor
+            })
+            .min_by_key(|entity| kind_rank(entity.kind))
+    }
+
+    /// The model after a click on `tile`: that tile's top entity is selected, or nothing is.
+    #[must_use]
+    pub fn select_at(&self, tile: Tile) -> Self {
+        let mut next = self.clone();
+        next.selected = self.top_entity_at(tile).map(|entity| entity.entity);
+        next
+    }
+
+    fn apply_entities_delta(&mut self, delta: &WorldSpatialEntitiesDelta) {
+        for reference in &delta.leave {
+            self.entities.remove(reference);
+        }
+        for entity in delta.update.iter().chain(&delta.enter) {
+            self.entities.insert(entity.entity, *entity);
+        }
+        if self
+            .selected
+            .is_some_and(|selected| !self.entities.contains_key(&selected))
+        {
+            self.selected = None;
+        }
+    }
+}
+
 impl RenderModel {
     /// The model after the pushed deltas the session applied, in order (the notice is kept).
     #[must_use]
@@ -189,6 +291,15 @@ impl RenderModel {
                         y: position.y,
                         floor: position.floor,
                     };
+                }
+                SessionEvent::WorldSpatialEntities(delta) => {
+                    let position = delta.value.actor_position;
+                    next.actor = Tile {
+                        x: position.x,
+                        y: position.y,
+                        floor: position.floor,
+                    };
+                    next.apply_entities_delta(&delta.value);
                 }
                 SessionEvent::WorldObjectOverlay(delta) => {
                     if let Some(door) = door_view(&delta.value) {
@@ -283,7 +394,8 @@ pub fn tile_centre_pixel(view: Viewport, actor: Tile, tile: Tile) -> Option<(i32
 }
 
 /// A click on the door tile is `USE` of the door under the mirror's current overlay revision;
-/// a click anywhere else does nothing.
+/// a click on any other tile of the grid selects that tile's top entity; off the grid it does
+/// nothing.
 #[must_use]
 pub fn command_for_click(
     view: Viewport,
@@ -291,10 +403,13 @@ pub fn command_for_click(
     px: i32,
     py: i32,
 ) -> Option<LiveCommand> {
-    let door = model.door?;
-    (tile_at_pixel(view, model.actor, px, py)? == door.tile).then_some(LiveCommand::UseDoor {
-        expected_revision: model.overlay_revision,
-    })
+    let tile = tile_at_pixel(view, model.actor, px, py)?;
+    match model.door {
+        Some(door) if door.tile == tile => Some(LiveCommand::UseDoor {
+            expected_revision: model.overlay_revision,
+        }),
+        _ => Some(LiveCommand::Select(tile)),
+    }
 }
 
 /// Semantic movement action id -> wire step direction.
@@ -309,8 +424,9 @@ pub fn step_direction_for_action(action: &str) -> Option<StepDirection> {
     }
 }
 
-/// One frame of the model as text: `@` actor, `+` closed door, `/` open door, `?` door in an
-/// unrecognised state, `.` ground; north is up. Followed by a one-line status.
+/// One frame of the model as text: `@` actor, `C` creature, `N` npc, `P` player, `x` corpse, `i`
+/// ground item (the top entity of a tile, ordered like selection), `+` closed door, `/` open
+/// door, `?` door in an unrecognised state, `.` ground; north is up. Followed by a one-line status.
 #[must_use]
 pub fn render_text(view: Viewport, model: &RenderModel) -> String {
     let (cx, cy) = view.centre();
@@ -319,8 +435,15 @@ pub fn render_text(view: Viewport, model: &RenderModel) -> String {
         for col in 0..i64::from(view.cols) {
             let x = i64::from(model.actor.x) + col - cx;
             let y = i64::from(model.actor.y) + row - cy;
+            let tile = Tile {
+                x: i32::try_from(x).unwrap_or(i32::MAX),
+                y: i32::try_from(y).unwrap_or(i32::MAX),
+                floor: model.actor.floor,
+            };
             let glyph = if (col, row) == (cx, cy) {
                 '@'
+            } else if let Some(entity) = model.top_entity_at(tile) {
+                kind_glyph(entity.kind)
             } else {
                 match model.door {
                     Some(door)
@@ -347,8 +470,20 @@ pub fn render_text(view: Viewport, model: &RenderModel) -> String {
             vitals.health, vitals.max_health, vitals.mana, vitals.max_mana
         )
     });
+    let selected = model
+        .selected
+        .and_then(|reference| model.entities.get(&reference))
+        .map_or_else(String::new, |entity| {
+            format!(
+                " | selected {} ({}, {}, {})",
+                kind_name(entity.kind),
+                entity.position.x,
+                entity.position.y,
+                entity.position.floor
+            )
+        });
     out.push_str(&format!(
-        "actor ({}, {}, {}){vitals} | {}\n",
+        "actor ({}, {}, {}){vitals}{selected} | {}\n",
         model.actor.x,
         model.actor.y,
         model.actor.floor,
