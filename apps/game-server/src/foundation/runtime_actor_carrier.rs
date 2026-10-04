@@ -952,7 +952,7 @@ impl CurrentOwnerExactActorCommit<'_> {
         command: CommandRef,
     ) -> Result<CharacterLease, CarrierError> {
         self.carrier
-            .bound_attacker_lease(self.continuity, attacker.0, command)
+            .bound_attacker_lease(self.continuity, attacker.0, command.game_session_id())
     }
 
     /// The attributed damage commit whose attacker authority is the bound slot of `attacker`,
@@ -977,6 +977,41 @@ impl CurrentOwnerExactActorCommit<'_> {
                 sub_ordinal,
             )),
             false,
+        )
+    }
+
+    /// ATTACK-1b swing identity: every swing of one attack lineage reuses the lineage's
+    /// `CommandRef` (the `AttackTarget` command), and `swing_ordinal` is the swing's index within
+    /// that lineage. The bound-attacker session fence is unchanged. Within one lineage the
+    /// ordinal is strictly increasing (a replay returns the retained receipt; a lower or equal
+    /// unretained ordinal is `StaleAttackerSequence`); against other commands of the same session
+    /// the admission is deferred like a SPELL-BATCH completion, so the high-water mark never
+    /// lowers.
+    pub(crate) fn commit_swing_damage_for_bound_attacker(
+        &mut self,
+        actor: ExactActorRef,
+        attacker: ExactActorRef,
+        lineage: CommandRef,
+        swing_ordinal: u16,
+        damage: OwnerDamageCommand<'_>,
+    ) -> Result<OwnerDamageResult, CarrierError> {
+        let lease = self.bound_attacker_lease(attacker, lineage)?;
+        let command = AttackerCommand::new(
+            lease.character_id(),
+            lease.generation(),
+            lineage,
+            swing_ordinal,
+        );
+        self.carrier
+            .swing_lineage_admission(self.continuity, actor.0, command)?;
+        self.carrier.commit_creature_damage_inner_bounded(
+            self.continuity,
+            actor.0,
+            damage,
+            Some(command),
+            false,
+            u16::MAX,
+            true,
         )
     }
 }
@@ -2090,6 +2125,17 @@ impl ChannelRuntimeV1 {
         })
     }
 
+    /// A2: the current bound lease of `actor`'s player slot held by `game_session_id`, read
+    /// without a write (ATTACK-1b Charm hooks). Same checks as the commit-time read.
+    pub(crate) fn bound_attacker_lease(
+        &self,
+        actor: ExactActorRef,
+        game_session_id: GameSessionId,
+    ) -> Result<CharacterLease, CarrierError> {
+        self.carrier
+            .bound_attacker_lease(&self.continuity, actor.0, game_session_id)
+    }
+
     /// Mirror one committed durable control loss onto the still-present player actor.
     /// Recording the identical decision again is a no-op; a different one conflicts.
     pub(crate) fn record_control_loss(
@@ -2998,6 +3044,44 @@ impl ChannelActorCarrier {
         )
     }
 
+    /// ATTACK-1b: refuses a swing ordinal at or below the attacker's mark for the same lineage
+    /// (`lease`, session and sequence) unless its exact receipt is retained, which the commit
+    /// then replays idempotently.
+    fn swing_lineage_admission(
+        &self,
+        continuity: &NamespaceContinuityGuard,
+        actor_ref: ActorRef,
+        attacker: AttackerCommand,
+    ) -> Result<(), CarrierError> {
+        let index = self.validate_ref(continuity, actor_ref)?;
+        let Slot::CreatureOccupied {
+            committed,
+            damage_contributors,
+            ..
+        } = &self.slots[index]
+        else {
+            return Err(CarrierError::NotCreature);
+        };
+        if committed
+            .entries
+            .iter()
+            .any(|record| record.origin == Some(attacker.origin()))
+        {
+            return Ok(());
+        }
+        match damage_contributors.high_water(attacker.character) {
+            Some((lease, session, sequence, sub_ordinal))
+                if lease == attacker.lease_generation
+                    && session == attacker.session
+                    && sequence == attacker.sequence
+                    && attacker.sub_ordinal <= sub_ordinal =>
+            {
+                Err(CarrierError::StaleAttackerSequence)
+            }
+            _ => Ok(()),
+        }
+    }
+
     // Local SPELL-BATCH candidate: a sealed scheduler input can complete an older command;
     // the existing Ability bridge above retains its accepted two-effect/high-water limits.
     #[allow(clippy::too_many_arguments)]
@@ -3742,12 +3826,12 @@ impl ChannelActorCarrier {
         &self,
         continuity: &NamespaceContinuityGuard,
         attacker: ActorRef,
-        command: CommandRef,
+        game_session_id: GameSessionId,
     ) -> Result<CharacterLease, CarrierError> {
         // The three checks, in order: the slot holds the command's session; it is not fenced;
         // its lease is bound.
         let index =
-            self.player_slot_index(continuity, attacker, command.game_session_id())
+            self.player_slot_index(continuity, attacker, game_session_id)
                 .map_err(|error| match error {
                     CarrierError::PlayerReservationMismatch
                     | CarrierError::StaleActorGeneration => CarrierError::SupersededAttackerSession,
@@ -4415,6 +4499,8 @@ pub(crate) struct CombatDeathFixture {
     /// D4: `strike_by` derives one fixture command per distinct occurrence text, so the same
     /// text replays as the same `(session, sequence)` command (test-only bookkeeping).
     strike_commands: Vec<(String, u64)>,
+    /// ATTACK-1b: the bound player attacker of [`Self::swing`], when built with one.
+    attacker: Option<ExactActorRef>,
 }
 
 #[cfg(test)]
@@ -4443,13 +4529,43 @@ impl CombatDeathFixture {
         scope_generation: ScopeOwnershipGeneration,
         health: i64,
     ) -> Result<Self, CarrierError> {
+        Self::build(world_id, channel_id, scope_generation, health, 1)
+    }
+
+    /// ATTACK-1b: the fixture creature plus one bound player attacker (Character `character`,
+    /// lease generation 1) of the fixture swing session, for [`Self::swing`].
+    pub(crate) fn new_with_bound_attacker(
+        world_id: WorldId,
+        channel_id: ChannelId,
+        scope_generation: ScopeOwnershipGeneration,
+        character: CharacterId,
+    ) -> Result<Self, CarrierError> {
+        let mut fixture = Self::build(world_id, channel_id, scope_generation, Self::HEALTH, 2)?;
+        let lease =
+            CharacterLease::new(character, 1).map_err(|_| CarrierError::InvalidActorIdentity)?;
+        let attacker = fixture.carrier.admit_bound_test_attacker(
+            &fixture.owner,
+            Self::swing_session()?,
+            lease,
+        )?;
+        fixture.attacker = Some(attacker);
+        Ok(fixture)
+    }
+
+    fn build(
+        world_id: WorldId,
+        channel_id: ChannelId,
+        scope_generation: ScopeOwnershipGeneration,
+        health: i64,
+        capacity: usize,
+    ) -> Result<Self, CarrierError> {
         let mut owner =
             NamespaceContinuityGuard::from_pre_production_grant(PreProductionContinuityGrant {
                 world_id,
                 channel_id,
                 scope_generation,
             });
-        let mut carrier = ChannelActorCarrier::bootstrap_pre_production(&mut owner, 1)?;
+        let mut carrier = ChannelActorCarrier::bootstrap_pre_production(&mut owner, capacity)?;
         let actor = carrier.admit_creature(&owner, ActorState(1), Self::TARGET, health)?;
         let context = PreProductionPositionContext {
             world_id,
@@ -4465,7 +4581,50 @@ impl CombatDeathFixture {
             carrier,
             actor: ExactActorRef(actor),
             strike_commands: Vec::new(),
+            attacker: None,
         })
+    }
+
+    fn swing_session() -> Result<GameSessionId, CarrierError> {
+        let mut session = [0_u8; 16];
+        session[6] = 0x70;
+        session[8] = 0x80;
+        session[15] = 2;
+        GameSessionId::decode(&session).map_err(|_| CarrierError::InvalidActorIdentity)
+    }
+
+    /// ATTACK-1b: one auto-attack swing of the bound attacker, committed under the swing
+    /// identity `(lineage command `lineage`, swing_ordinal)` exactly as the Channel owner's
+    /// auto-attack drain commits it.
+    pub(crate) fn swing(
+        &mut self,
+        lineage: u64,
+        swing_ordinal: u16,
+        damage: i64,
+    ) -> Result<OwnerDamageResult, CarrierError> {
+        let attacker = self.attacker.ok_or(CarrierError::InvalidActorIdentity)?;
+        let lineage = CommandRef::new(
+            Self::swing_session()?,
+            super::CommandId::new(lineage).map_err(|_| CarrierError::InvalidActorIdentity)?,
+        );
+        let binding = format!(
+            "fixture:attack.swing.v1\0{}\0{swing_ordinal}",
+            lineage.command_id().get()
+        );
+        self.carrier
+            .current_owner_exact_commit(&self.owner)
+            .commit_swing_damage_for_bound_attacker(
+                self.actor,
+                attacker,
+                lineage,
+                swing_ordinal,
+                OwnerDamageCommand {
+                    target: Self::TARGET.as_bytes(),
+                    occurrence: &[],
+                    binding: binding.as_bytes(),
+                    damage,
+                },
+            )
     }
 
     pub(crate) const fn actor(&self) -> ExactActorRef {
@@ -6687,6 +6846,97 @@ mod attacker_fence_tests {
             ))
         );
         assert_eq!(f.carrier.slots, before);
+    }
+
+    impl Fixture {
+        fn swing(
+            &mut self,
+            lineage: CommandRef,
+            ordinal: u16,
+        ) -> Result<OwnerDamageResult, CarrierError> {
+            let binding = format!("swing:{}:{ordinal}", lineage.command_id().get());
+            self.carrier
+                .current_owner_exact_commit(&self.continuity)
+                .commit_swing_damage_for_bound_attacker(
+                    self.creature,
+                    self.attacker,
+                    lineage,
+                    ordinal,
+                    OwnerDamageCommand {
+                        target: b"target:one",
+                        occurrence: &[],
+                        binding: binding.as_bytes(),
+                        damage: 1,
+                    },
+                )
+        }
+    }
+
+    /// ATTACK-1b swing identity: many swings of one lineage commit on the same creature, a
+    /// replay of a retained swing is idempotent, a lower or equal unretained ordinal is refused,
+    /// the session fence still holds and the high-water mark never lowers.
+    #[test]
+    fn swings_of_one_lineage_commit_in_order_and_never_rewind() {
+        let mut f = fixture(40);
+        let lineage = command(1, 5);
+        for ordinal in 0..4 {
+            let hit = f.swing(lineage, ordinal).expect("swing commits");
+            assert!(hit.applied);
+            assert_eq!(hit.health_before - hit.health_after, 1);
+        }
+        assert_eq!(f.health(), 96);
+        // An exact replay of a retained swing returns its receipt without a second write.
+        let replay = f.swing(lineage, 3).expect("replay");
+        assert!(!replay.applied);
+        assert_eq!(f.health(), 96);
+        // A different-bytes swing under an already committed ordinal is not a new swing.
+        let before = f.carrier.slots.clone();
+        let binding = b"swing:other";
+        assert!(
+            f.carrier
+                .current_owner_exact_commit(&f.continuity)
+                .commit_swing_damage_for_bound_attacker(
+                    f.creature,
+                    f.attacker,
+                    lineage,
+                    3,
+                    OwnerDamageCommand {
+                        target: b"target:one",
+                        occurrence: &[],
+                        binding,
+                        damage: 1,
+                    },
+                )
+                .is_err()
+        );
+        assert_eq!(f.carrier.slots, before);
+        // A later lineage (a new `ATTACK_TARGET`) starts again at ordinal 0.
+        let next = command(1, 6);
+        assert!(f.swing(next, 0).expect("new lineage").applied);
+        assert!(f.swing(next, 1).expect("new lineage").applied);
+        assert_eq!(f.health(), 94);
+        // Once the retained receipt is gone, a lower or equal ordinal of the current lineage is
+        // stale, never a fresh write.
+        if let Slot::CreatureOccupied { committed, .. } = &mut f.carrier.slots[0] {
+            committed.entries.clear();
+        }
+        let before = f.carrier.slots.clone();
+        assert_eq!(f.swing(next, 1), Err(CarrierError::StaleAttackerSequence));
+        assert_eq!(f.swing(next, 0), Err(CarrierError::StaleAttackerSequence));
+        assert_eq!(f.carrier.slots, before);
+        // A spell command of the same session after the swings keeps the mark; the lineage
+        // continues and the mark is never lowered by it.
+        assert!(f.hit(f.attacker, command(1, 7)).expect("spell").applied);
+        assert!(f.swing(next, 2).expect("lineage continues").applied);
+        assert_eq!(
+            f.hit(f.attacker, command(1, 7)).map(|r| r.applied),
+            Ok(false)
+        );
+        // The bound-attacker session fence still refuses a superseded session.
+        assert_eq!(f.swing(command(9, 8), 0), SUPERSEDED);
+        let token = WriteFenceToken::Transition(3);
+        assert_eq!(f.fence(token), Ok(WriteFenceSet::Fenced));
+        assert_eq!(f.swing(next, 3), SUPERSEDED);
     }
 
     #[test]

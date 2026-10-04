@@ -311,6 +311,57 @@ pub(crate) fn commit_exact_owner_damage(
         .map_err(OwnerCommitError::Owner)
 }
 
+/// ATTACK-1b `AutoAttack` bridge: the same exact one-target Damage plan checks as
+/// [`commit_exact_owner_damage`], committed under the swing identity `(lineage, swing_ordinal)`
+/// of [`crate::foundation::CurrentOwnerExactActorCommit::commit_swing_damage_for_bound_attacker`].
+/// The plan's own sub-occurrence must be 0: a swing plan has exactly one effect.
+pub(crate) fn commit_exact_owner_swing_damage(
+    owner: &mut crate::foundation::CurrentOwnerExactActorCommit<'_>,
+    resolved: &super::exact_actor_resolution::ResolvedExactActor,
+    plan: &EffectPlan,
+    attacker: crate::foundation::ExactActorRef,
+    lineage: crate::foundation::CommandRef,
+    swing_ordinal: u16,
+) -> Result<crate::foundation::OwnerDamageResult, OwnerCommitError> {
+    use super::exact_actor_resolution::ExactActorSource;
+    if plan.occurrence() != resolved.occurrence()
+        || plan.intent().candidate_count() != 1
+        || plan.intent().resolved_targets().len() != 1
+        || plan.effects().len() != 1
+        || plan.commit_group().mode() != super::CommitGroupMode::Atomic
+        || !matches!(
+            (resolved.source(), plan.intent().proposal_source()),
+            (ExactActorSource::Client, super::ProposalSource::Client)
+        )
+    {
+        return Err(OwnerCommitError::InvalidPlan);
+    }
+    let Effect::Damage { target, magnitude } = &plan.effects()[0] else {
+        return Err(OwnerCommitError::InvalidPlan);
+    };
+    if target != &plan.intent().resolved_targets()[0]
+        || *magnitude <= 0
+        || plan.sub_occurrence(0).map(|sub| sub.ordinal()) != Some(0)
+    {
+        return Err(OwnerCommitError::InvalidPlan);
+    }
+    let binding = encode_owner_damage_plan(plan).map_err(OwnerCommitError::Plan)?;
+    owner
+        .commit_swing_damage_for_bound_attacker(
+            resolved.target(),
+            attacker,
+            lineage,
+            swing_ordinal,
+            crate::foundation::OwnerDamageCommand {
+                target: target.as_str().as_bytes(),
+                occurrence: &[],
+                binding: &binding,
+                damage: *magnitude,
+            },
+        )
+        .map_err(OwnerCommitError::Owner)
+}
+
 /// Immutable provenance minted only after the existing atomic owner commit. This is not current
 /// authority: the descendant still requires an independently supplied owner and command fence.
 #[derive(Debug)]

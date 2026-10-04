@@ -4,8 +4,9 @@
 use super::ComposedFreshAdmission;
 use crate::ability::creature_bite::ReentryProtection;
 use crate::ai::{AiProvenance, AiProvenanceInput, ResourceLimit};
-use crate::ai_monster_melee::MeleeDefinition;
+use crate::ai_monster_melee::{Dispatch, MeleeDefinition};
 use crate::ai_think::{AttackReadiness, CreatureThinkInput, PerceivedPlayer, PerceivedPlayerId};
+use crate::combat::charm_effects::CharmHookEvent;
 use crate::content::{LogicalCell, ProjectV2AuthoringProfileData};
 use crate::foundation::MovementLocalPosition;
 use crate::foundation::owner_timer::SemanticTimeMicros;
@@ -100,6 +101,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let cursor = states.monster_ai_cursor % monsters.len();
         let count = monsters.len().min(ResourceLimit::EvaluationWork.maximum());
         let mut melee_owner = std::mem::take(&mut states.monster_melee);
+        // ATTACK-1b: lock order runtime, spell states, attack.
+        let mut attack = self.attack.lock().await;
         for offset in 0..count {
             let (actor, position, _) = monsters[(cursor + offset) % monsters.len()];
             let Ok(snapshot) = runtime.companion_snapshot(*actor) else {
@@ -220,7 +223,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             ) else {
                 continue;
             };
-            let _ = melee_owner.think(
+            let decision_root = GameplayDecisionRoot::from_bytes(root);
+            let decision_occurrence = DecisionOccurrenceId::from_bytes(occurrence);
+            let race_key = snapshot.state.policy.definition_key.clone();
+            // ATTACK-1b: the player this think resolved, for the incoming hooks below.
+            let attacked = std::cell::Cell::new(None);
+            let dispatch = melee_owner.think(
                 &runtime,
                 &mut *states,
                 *actor,
@@ -234,6 +242,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     if protected {
                         return None;
                     }
+                    attacked.set(Some((actor, session)));
                     // The immutable runtime borrow and exact current protection
                     // read above remain live through the synchronous bite commit.
                     Some((
@@ -246,6 +255,44 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 },
                 revisions,
                 SemanticTimeMicros::from_micros(now.get()),
+            );
+            // ATTACK-0 §4: a creature attack on a player runs the incoming Charm hooks, and a
+            // landed attack starts the player's in-fight deadline. A replayed think returns its
+            // recorded dispatch without resolving a target again, so nothing runs twice.
+            let (Some((player, session)), Ok(dispatch)) = (attacked.get(), dispatch) else {
+                continue;
+            };
+            let base_damage = match dispatch {
+                Dispatch::Bite(Ok(applied)) => Some(u64::from(applied.requested)),
+                Dispatch::ZeroDamage => None,
+                Dispatch::Bite(Err(_)) | Dispatch::Decision(_) => continue,
+            };
+            if let Ok(lease) = runtime.bound_attacker_lease(player, session) {
+                let character = *lease.character_id().as_bytes();
+                super::attack::run_charm_hook(
+                    self.imported_charms,
+                    character,
+                    &race_key,
+                    &decision_root,
+                    decision_occurrence,
+                    CharmHookEvent::IncomingCreatureAttack,
+                );
+                if let Some(base_damage) = base_damage {
+                    super::attack::run_charm_hook(
+                        self.imported_charms,
+                        character,
+                        &race_key,
+                        &decision_root,
+                        decision_occurrence,
+                        CharmHookEvent::IncomingCreatureHit { base_damage },
+                    );
+                }
+            }
+            attack.record_hit_taken(
+                &runtime,
+                player,
+                session,
+                oteryn_simulation_determinism::SemanticTimeMicros::from_micros(now.get()),
             );
         }
         states.monster_melee = melee_owner;
