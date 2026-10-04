@@ -12,9 +12,9 @@
 --   * reconnect sessions of scope kind 2 may name the house (`runtime_scope_house_key`) and the
 --     origin Channel (`origin_channel_id`); the instance id of a house session is derived from
 --     the HouseId by `game_house_scope_instance_id`, so one house has one instance id; a
---     terminal replacement of a house session inherits its predecessor's house and origin
---     Channel only while that house is ASSIGNED at the replacement's generation, and no other
---     session may take the instance id of an assigned house without them;
+--     house session is never replaced (a reconnect into a house is a fresh entry handoff from
+--     the Channel), and no session may take the instance id of an assigned house without
+--     naming its house and origin Channel;
 --   * `game_house_scope_handoffs`: one row per entry handoff, PREPARED (1) while the source
 --     session stays live, COMMITTED (2) in the transaction that makes the source terminal and
 --     admits the house session. Abort deletes a PREPARED row and its tile reservation; a
@@ -172,43 +172,29 @@ ALTER TABLE game_durability_reconnect_sessions
     );
 
 -- A terminal replacement (0001 receipt, then the candidate row) inserts the candidate with the
--- predecessor's runtime scope but no house columns: it inherits them from the predecessor named
--- by its replacement receipt. Any other session whose instance id is that of a house ever
--- assigned (assignment rows are never deleted) without them is refused, the first one included.
+-- predecessor's runtime scope but no house columns. A candidate whose receipt names a house
+-- session predecessor is refused: a reconnect into a house is a fresh entry handoff. Any other
+-- session whose instance id is that of a house ever assigned (assignment rows are never deleted)
+-- without its house and origin Channel is refused, the first one included.
 CREATE INDEX game_runtime_scope_house_instances
     ON game_runtime_scope_assignments (world_id, game_house_scope_instance_id(world_id, house_key))
     WHERE scope_kind = 2;
-CREATE FUNCTION game_house_scope_session_inherit() RETURNS trigger
+CREATE FUNCTION game_house_scope_session_guard() RETURNS trigger
 LANGUAGE plpgsql AS $$
 BEGIN
-    IF NEW.runtime_scope_kind = 2 AND NEW.runtime_scope_house_key IS NULL THEN
-        SELECT p.runtime_scope_house_key, p.origin_channel_id
-          INTO NEW.runtime_scope_house_key, NEW.origin_channel_id
-          FROM game_durability_session_replacements r
-          JOIN game_durability_reconnect_sessions p
-            ON p.game_session_id = r.predecessor_game_session_id
-         WHERE r.character_id = NEW.character_id
-           AND r.candidate_game_session_id = NEW.game_session_id
-           AND p.character_id = NEW.character_id
-           AND p.runtime_scope_kind = 2
-           AND p.runtime_scope_world_id = NEW.runtime_scope_world_id
-           AND p.runtime_scope_instance_id = NEW.runtime_scope_instance_id
-           AND p.runtime_scope_house_key IS NOT NULL;
-        -- An inherited house must still be ASSIGNED at the session's generation; replace and
-        -- revoke always raise the generation, so this also names the current holder. The
-        -- FOR SHARE lock serializes the replacement with a concurrent replace or revoke.
-        IF NEW.runtime_scope_house_key IS NOT NULL THEN
-            PERFORM 1 FROM game_runtime_scope_assignments a
-             WHERE a.scope_kind = 2
-               AND a.world_id = NEW.runtime_scope_world_id
-               AND a.house_key = NEW.runtime_scope_house_key
-               AND a.state = 1
-               AND a.ownership_generation = NEW.scope_ownership_generation
-               FOR SHARE;
-            IF NOT FOUND THEN
-                RAISE EXCEPTION 'a house scope session replacement requires its current house assignment'
-                    USING ERRCODE = '23514';
-            END IF;
+    IF NEW.runtime_scope_kind = 2 THEN
+        -- A house session is never replaced: a reconnect into a house is a fresh entry handoff
+        -- from the Channel.
+        IF EXISTS (
+                SELECT 1
+                  FROM game_durability_session_replacements r
+                  JOIN game_durability_reconnect_sessions p
+                    ON p.game_session_id = r.predecessor_game_session_id
+                 WHERE r.character_id = NEW.character_id
+                   AND r.candidate_game_session_id = NEW.game_session_id
+                   AND p.runtime_scope_house_key IS NOT NULL) THEN
+            RAISE EXCEPTION 'a house scope session is not replaced; a reconnect enters through a fresh handoff'
+                USING ERRCODE = '23514';
         END IF;
         IF NEW.runtime_scope_house_key IS NULL AND EXISTS (
                 SELECT 1 FROM game_runtime_scope_assignments a
@@ -222,9 +208,9 @@ BEGIN
     END IF;
     RETURN NEW;
 END; $$;
-CREATE TRIGGER game_house_scope_session_inherit BEFORE INSERT
+CREATE TRIGGER game_house_scope_session_guard BEFORE INSERT
     ON game_durability_reconnect_sessions FOR EACH ROW
-    EXECUTE FUNCTION game_house_scope_session_inherit();
+    EXECUTE FUNCTION game_house_scope_session_guard();
 
 -- Entry handoffs. state: 1 PREPARED, 2 COMMITTED. direction: 1 entry (the only one admitted).
 CREATE TABLE game_house_scope_handoffs (

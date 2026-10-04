@@ -12,8 +12,10 @@
 //!   stays live. [`DurabilityRoot::commit_house_entry`] re-reads house access through
 //!   `game_house_access` inside the commit transaction, then terminalizes the
 //!   source session and admits a fresh house session in the same transaction. A PREPARED
-//!   handoff found after a crash is aborted by [`DurabilityRoot::reconcile_house_entries`], so
-//!   the Character stays in its source session; a COMMITTED one is final and replays.
+//!   handoff found after a crash is aborted by [`DurabilityRoot::reconcile_house_entries`] of
+//!   the node holding its origin Channel, so the Character stays in its source session; a
+//!   COMMITTED one is final and replays. A house session is never replaced: a reconnect into a
+//!   house is a fresh entry handoff.
 //! * Only the entry direction exists. The exit into a Channel scope and the §4.3 fallback stay
 //!   refused ([`HouseHandoffError::ExitNotAdmitted`]) until ADMIT-0 defines that admission.
 //!
@@ -508,24 +510,28 @@ impl DurabilityRoot {
             .await?
     }
 
-    /// Recovery: abort every PREPARED entry of `character` (all Characters when `None`). A
-    /// PREPARED row never committed, so its Character still holds its source session; a
-    /// COMMITTED row is final and is left as retained history.
+    /// Restart recovery of the proving node: abort the PREPARED entries (of `character` only,
+    /// when given) whose origin Channel the proven current incarnation of `node` holds at the
+    /// source session's generation. Another node's PREPARED entry is never touched. A PREPARED
+    /// row never committed, so its Character still holds its source session; a COMMITTED row is
+    /// final and is left as retained history.
     pub async fn reconcile_house_entries(
         &self,
         authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
         character: Option<CharacterId>,
     ) -> Result<HouseReconcileReport> {
         let recovery = authority
             .record_for(self)
             .map_err(|_| HouseHandoffError::AuthorityRejected)?;
+        let node = node.clone();
         self.try_issue_semantic_pass()?
             .run(move |holder, deadline| {
                 Box::pin(async move {
                     let mut tx = begin_semantic_transaction(holder, deadline).await?;
                     assert_recovery_fence(&mut tx, &recovery).await?;
                     lock_admission_relations(&mut tx).await?;
-                    match reconcile_house_entries_in_transaction(&mut tx, character).await {
+                    match reconcile_house_entries_in_transaction(&mut tx, &node, character).await {
                         Ok(report) => {
                             commit_semantic_transaction(tx, deadline).await?;
                             Ok(Ok(report))
@@ -1157,14 +1163,35 @@ pub(crate) async fn abort_house_entry_in_transaction(
 /// Reconcile inside a fenced transaction. Never commits.
 pub(crate) async fn reconcile_house_entries_in_transaction(
     tx: &mut Transaction<'_, Postgres>,
+    node: &NodeIncarnationProof,
     character: Option<CharacterId>,
 ) -> Result<HouseReconcileReport> {
+    if !prove_current_incarnation(tx, node).await? {
+        return Err(HouseHandoffError::AuthorityRejected);
+    }
+    let fact = node.fact();
+    // The origin Channel assignment row is locked FOR SHARE, so a concurrent replace or revoke
+    // of it waits for this transaction.
     let rows: Vec<Vec<u8>> = sqlx::query_scalar(
-        "DELETE FROM game_house_scope_handoffs \
-          WHERE state = 1 AND ($1::bytea IS NULL OR character_id = encode($1,'hex')::uuid) \
-          RETURNING uuid_send(handoff_id)",
+        "WITH owned AS ( \
+           SELECT h.handoff_id FROM game_house_scope_handoffs h \
+             JOIN game_runtime_scope_assignments a \
+               ON a.scope_key = '\\x01'::bytea || uuid_send(h.world_id) \
+                                || uuid_send(h.origin_channel_id) \
+              AND a.scope_kind = 1 AND a.state = 1 \
+              AND a.ownership_generation = h.source_scope_ownership_generation \
+              AND a.holder_node_id = encode($2,'hex')::uuid \
+              AND a.holder_registration_revision = $3::text::numeric(20,0) \
+            WHERE h.state = 1 \
+              AND ($1::bytea IS NULL OR h.character_id = encode($1,'hex')::uuid) \
+              FOR SHARE OF a) \
+         DELETE FROM game_house_scope_handoffs h USING owned o \
+          WHERE h.handoff_id = o.handoff_id AND h.state = 1 \
+          RETURNING uuid_send(h.handoff_id)",
     )
     .bind(character.map(|character| character.as_bytes().to_vec()))
+    .bind(fact.node_id().as_bytes().as_slice())
+    .bind(fact.registration_revision().to_string())
     .fetch_all(&mut **tx)
     .await?;
     let mut aborted = rows

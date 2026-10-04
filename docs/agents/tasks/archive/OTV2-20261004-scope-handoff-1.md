@@ -69,10 +69,9 @@ external_repositories: []
   whose assignment is a house scope as an operation conflict instead of decoding its NULL
   `channel_id`; `character_authority.rs` reads only Channel assignments (`scope_kind = 1`). The
   audit found no other world-level consumer: the others match an exact `channel_id`.
-- **Codex round 2.** A terminal replacement of a house session inherits its predecessor's house
-  key and origin Channel (0074 `BEFORE INSERT` trigger keyed by the replacement receipt), so it
-  stays in house occupancy; a session of a house instance id without them is refused (`23514`).
-  Revoking a house scope that is not assigned is `NotAssigned`, like the Channel writer.
+- **Codex round 2.** A session of a house instance id without its house key and origin Channel
+  is refused (`23514`, 0074 `BEFORE INSERT` trigger); the replacement inheritance added here was
+  removed in round 5. Revoking a house scope that is not assigned is `NotAssigned`, like the Channel writer.
 - **Codex round 3 (owner-approved extra P1 round).** Commit re-reads the origin Channel
   assignment `FOR SHARE` at the source session's generation and holder before terminalizing the
   source; a replaced or revoked origin is `AuthorityRejected`. The bare-session refusal derives
@@ -81,9 +80,14 @@ external_repositories: []
 - **Codex round 4 (architect ruling, D573).** Entry is same-node only: prepare requires the
   house scope held by the proving node, and a house assigned to another node is `BUSY` before
   anything is written (`HOUSE_CLOSED` stays for a house not assigned at the generation); commit
-  keeps both same-node proofs. A replacement inheriting a house requires that house ASSIGNED at
-  the replacement's scope generation and locks the assignment `FOR SHARE` (else `23514`); a
-  refused replacement falls back to HOUSE-RUNTIME-0 §4.3 recovery.
+  keeps both same-node proofs.
+- **Codex round 5 (owner decision 1b, narrowed scope).** A house session is never replaced: the
+  0074 trigger refuses a candidate whose replacement receipt names a house session predecessor
+  (`23514`); a reconnect into a house is a fresh entry handoff from the Channel. The inheritance
+  arm and its `FOR SHARE` check are removed. `reconcile_house_entries` takes the recovering
+  node's incarnation proof and aborts only the PREPARED handoffs whose origin Channel that proven
+  current incarnation holds at the source generation (assignment locked `FOR SHARE`); there is
+  no global cleanup.
 
 ## Not in scope
 
@@ -102,19 +106,18 @@ external_repositories: []
   Character inside; the stub and a changed guild revision refuse `NO_ACCESS`; exit, stale fence, closed house, busy, replay, grant, revoked house scope
   and committed-row immutability; a house assignment key reused for a Channel revoke is an
   operation conflict, and with the Channel revoked and the house still assigned bootstrap is
-  refused; a replaced house session keeps its house and origin and stays in occupancy; a
-  revoked house scope revoked again is `NotAssigned`; an origin Channel revoked after prepare
+  refused; replacing a house session is refused (`23514`) and a bare candidate without a
+  receipt is refused; a restart reconcile by another node keeps a live PREPARED handoff, the
+  owning node's reconcile aborts it; a revoked house scope revoked again is `NotAssigned`; an origin Channel revoked after prepare
   fails the commit with the source session live; a bare first session of an assigned house is
   refused (`23514`); a house assigned to another node is `BUSY` at prepare with no handoff row
-  or reservation; a replacement after a house replace or a revoke is refused (`23514`), and a
-  replacement at the current generation inherits the house while a concurrent revoke waits on
-  its `FOR SHARE` lock.
+  or reservation.
 
 ## Validation
 
 - `cargo fmt --all --check`: pass
 - `cargo clippy --locked -p oteryn-game-server --all-targets -- -D warnings`: pass
-- `cargo test --locked -p oteryn-game-server` with PostgreSQL 17.6: pass (24429 passed, 0 failed, merged with main at 69f171fc)
+- `cargo test --locked -p oteryn-game-server` with PostgreSQL 17.6: pass (24428 passed, 0 failed, merged with main at 69f171fc)
 - `python tools/agents/validate_governance.py`: pass
 - `python -m unittest discover -s tools/agents/tests`: pass (54 tests)
 
