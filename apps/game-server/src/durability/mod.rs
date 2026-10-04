@@ -27,6 +27,7 @@ pub mod content_activation;
 mod db;
 pub mod fresh_admission;
 pub mod fresh_admission_composition;
+pub mod house_scope_handoff;
 pub mod item_decay_retire;
 pub mod item_decay_retire_audit;
 pub mod item_fee_burn;

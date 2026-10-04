@@ -2298,6 +2298,10 @@ mod account_characters_projection_postgres_cases;
 #[path = "support/premium_fence_postgres_cases.rs"]
 mod premium_fence_postgres_cases;
 
+// SCOPE-HANDOFF-1 house scope entry handoff (migration 0074) on the CHARM-2 harness.
+#[path = "support/house_scope_handoff_postgres_cases.rs"]
+mod house_scope_handoff_postgres_cases;
+
 // CHAR-BUILD-1a build state, build receipts and death build fields (migration
 // 0030) and their admission verifier checks, on the CHARM-2 harness included above.
 #[path = "support/character_build_postgres_cases.rs"]
