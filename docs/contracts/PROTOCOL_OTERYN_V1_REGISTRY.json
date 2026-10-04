@@ -146,6 +146,17 @@
       "state_domains": [16],
       "offered": false,
       "offer_gate": "QUEST-LOG-WIRE-1: the server does not offer this capability before the quest log content (missions, journal text and hide_when_completed, QUEST-CONTENT-2) and the production session copy source are composed. Without it selected, domain 16 is never sent and command type 22 is refused as unsupported. The domain is computed from the session's quest copy and never stored; a copy that is not loaded shows nothing and refuses every query."
+    },
+    {
+      "id": 17,
+      "name": "ATTACK_V1",
+      "owner_decision": "ATTACK-0 §3 (docs/architecture/reviews/OTERYN_GAME_ATTACK0_ATTACK_TARGET_AND_AUTO_ATTACK_DECISION_2026-09-30.md) with ARCH-CORE-LOOP-PACKETS-2 §0.1 and §2.1 (docs/architecture/reviews/OTERYN_GAME_ARCH_BATCH_CORE_LOOP_PACKETS_2026-10-04.md); numbers leased by the #1622 control plane (D486) and registered by ATTACK-WIRE-1",
+      "owner": "current ChannelRuntime (the runtime actor's attack target, fight modes and in-fight deadline)",
+      "requires": [6],
+      "command_types": [11, 12],
+      "state_domains": [10],
+      "offered": false,
+      "offer_gate": "ATTACK-1b: the server does not offer this capability before the owner-cycle auto-attack, the dispatch of command types 11 and 12 and the domain 10 emission are composed, with a production-path admission test that selects it. It requires 6 WORLD_SPATIAL_ENTITIES, whose entries name the targets. Without it selected, domain 10 is never sent and command types 11 and 12 are refused as unsupported."
     }
   ],
   "command_types": [
@@ -214,6 +225,26 @@
       "result_schema": "docs/contracts/protocol-oteryn/v1/account_achievements_v1.proto#AccountAchievementsResult",
       "max_payload_bytes": 6,
       "max_result_payload_bytes": 32788
+    },
+    {
+      "id": 11,
+      "name": "ATTACK_TARGET_INTENT",
+      "owner_decision": "ATTACK-0 §3 (docs/architecture/reviews/OTERYN_GAME_ATTACK0_ATTACK_TARGET_AND_AUTO_ATTACK_DECISION_2026-09-30.md) with ARCH-CORE-LOOP-PACKETS-2 §0.1 and §2.1 (docs/architecture/reviews/OTERYN_GAME_ARCH_BATCH_CORE_LOOP_PACKETS_2026-10-04.md); numbers leased by the #1622 control plane (D486) and registered by ATTACK-WIRE-1",
+      "capability": 17,
+      "payload_schema": "docs/contracts/protocol-oteryn/v1/attack_v1.proto#AttackTargetIntentV1",
+      "result_schema": "docs/contracts/protocol-oteryn/v1/attack_v1.proto#AttackIntentResultV1",
+      "max_payload_bytes": 31,
+      "max_result_payload_bytes": 2
+    },
+    {
+      "id": 12,
+      "name": "FIGHT_MODES_INTENT",
+      "owner_decision": "ATTACK-0 §3 (docs/architecture/reviews/OTERYN_GAME_ATTACK0_ATTACK_TARGET_AND_AUTO_ATTACK_DECISION_2026-09-30.md) with ARCH-CORE-LOOP-PACKETS-2 §0.1 and §2.1 (docs/architecture/reviews/OTERYN_GAME_ARCH_BATCH_CORE_LOOP_PACKETS_2026-10-04.md); numbers leased by the #1622 control plane (D486) and registered by ATTACK-WIRE-1",
+      "capability": 17,
+      "payload_schema": "docs/contracts/protocol-oteryn/v1/attack_v1.proto#FightModesIntentV1",
+      "result_schema": "docs/contracts/protocol-oteryn/v1/attack_v1.proto#AttackIntentResultV1",
+      "max_payload_bytes": 6,
+      "max_result_payload_bytes": 2
     },
     {
       "id": 13,
@@ -396,6 +427,30 @@
           "name": "CHARACTER_INVENTORY_SNAPSHOT_V1",
           "payload_schema": "docs/contracts/protocol-oteryn/v1/item_view_v1.proto#CharacterInventoryV1",
           "max_payload_bytes": 966
+        }
+      ]
+    },
+    {
+      "id": 10,
+      "name": "ACTOR_COMBAT_STATE",
+      "owner_decision": "ATTACK-0 §3 (docs/architecture/reviews/OTERYN_GAME_ATTACK0_ATTACK_TARGET_AND_AUTO_ATTACK_DECISION_2026-09-30.md) with ARCH-CORE-LOOP-PACKETS-2 §0.1 and §2.1 (docs/architecture/reviews/OTERYN_GAME_ARCH_BATCH_CORE_LOOP_PACKETS_2026-10-04.md); numbers leased by the #1622 control plane (D486) and registered by ATTACK-WIRE-1",
+      "owner": "current ChannelRuntime",
+      "capability": 17,
+      "revision": "per GameSessionId, monotonic and never reused (FND-02 §15) across reconnect, resume and channel transfer; every admission, reconnect, resume and transfer sends a snapshot above any revision the session has seen; a delta carries the whole state after each change. The in-fight flag survives a reconnect to the same GameSession; the target is cleared on reconnect and transfer (ATTACK-0 §3)",
+      "delta_types": [
+        {
+          "id": 1,
+          "name": "ACTOR_COMBAT_STATE_DELTA_V1",
+          "payload_schema": "docs/contracts/protocol-oteryn/v1/attack_v1.proto#ActorCombatStateV1",
+          "max_payload_bytes": 39
+        }
+      ],
+      "snapshot_types": [
+        {
+          "id": 1,
+          "name": "ACTOR_COMBAT_STATE_SNAPSHOT_V1",
+          "payload_schema": "docs/contracts/protocol-oteryn/v1/attack_v1.proto#ActorCombatStateV1",
+          "max_payload_bytes": 39
         }
       ]
     },
