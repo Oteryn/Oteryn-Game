@@ -1,0 +1,48 @@
+# OTV2-20261004-social-map-packets
+
+```yaml
+task_id: OTV2-20261004-social-map-packets
+title: "SOCIAL-MAP-PACKETS-1: PARTY-1, GUILD-1, HOUSE-1a/1b and the map overlay and cutover packets"
+mode: CONTRACT
+status: completed
+repository: Oteryn/Oteryn-Game
+base_branch: main
+branch: claude/social-map-packets-20261004
+issue: 162
+pr: 0
+head_sha: "exact frozen head in the #162 FREEZE_SHA entry"
+final_head_sha: "exact frozen head in the #162 FREEZE_SHA entry"
+owner: claude-code-session_01YL1cQaLL3BquJajKivZVhw (Sol Supervising Architect)
+created_at: 2026-10-04
+updated_at: 2026-10-04
+execution_policy: continuous_progress
+owned_paths:
+  - docs/architecture/reviews/OTERYN_GAME_SOCIAL_MAP_PACKETS_2026-10-04.md
+  - docs/architecture/reviews/OTERYN_GAME_PREMIUM_ACTIVATION0_GAMEPLAY_SWITCH_OVER_DECISION_2026-10-04.md
+  - docs/agents/tasks/archive/OTV2-20261004-social-map-packets.md
+public_contracts: []
+depends_on: [ACCEPT-SOCIAL-MAP-0]
+blocks: [PARTY-1, GUILD-1, HOUSE-1a, HOUSE-1b, MAP-OVERLAY-1a, MAP-OVERLAY-1b, MAP-OVERLAY-1c, MAP-CUTOVER-1]
+cross_repository_coordination_id: null
+external_repositories: []
+```
+
+## Outcome
+
+- Control plane order after D551: detailed packets for PARTY-1, GUILD-1, HOUSE-1 and the map
+  overlay and cutover, in one PR. BED-0 and ECON-RET-0 stay out.
+- HOUSE-1 splits into HOUSE-1a (acquisition) and HOUSE-1b (tenancy, needs INBOX-1 and
+  MAP-OVERLAY-1c). MAP-OVERLAY-1 splits into 1a (overlay), 1b (map item MINT) and 1c (World reset).
+- Rulings: the step-4 recheck takes `LOCK TABLE game_item_house_interior_locations IN SHARE MODE`
+  after the reset record row; `WorldReset` widens the `0015` retirement tables with a cause
+  discriminator; GUILD-1 waits on BANK-1 and PREM-WIRE-1, not INBOX-1 (corrects #1771 §3).
+- PREMIUM-ACTIVATION-0 §1.3 gains the house acquisition consumer row.
+- Candidate bases are named per packet; none is accepted here.
+- No code, migration, registry, event type or wire change.
+
+## Validation
+
+- `python tools/agents/validate_governance.py`: pass
+- `python tools/repository/validate_repository_policy.py`: pass
+- `python -m unittest discover -s tools/agents/tests`: pass
+- `git diff --check`: pass
