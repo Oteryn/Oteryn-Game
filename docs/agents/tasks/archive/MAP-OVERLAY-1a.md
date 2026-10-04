@@ -9,7 +9,7 @@ repository: Oteryn/Oteryn-Game
 issue: 1622
 base_branch: main
 branch: agent/map-overlay-1a-20261004
-pr: PENDING
+pr: 1800
 base_sha: 673f092e
 owner: oteryn-hard-worker
 control_plane: claude-code-session-013KJX6mv8LQveCKKXYgAX94
@@ -60,3 +60,7 @@ external_repositories: []
 ## Review
 
 The persistence review runs on the final frozen head; the control plane requests it.
+
+Round 1 (Codex P1 on 7dd47744): removals refunded entries whose `Vec` and table slots stayed
+allocated. Removal, unhide and expiry now shrink capacity back within its charge, checked by
+`capacity_within_charge` and a churn test.

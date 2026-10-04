@@ -47,15 +47,18 @@ after the fill minus before. x86_64, 4 vCPU, release.
   dropped item. The difference is the conservative bound; at it, 64 MiB still holds about 390,000
   volatile entries per channel.
 
-Hash tables and `Vec`s keep their capacity after removal; the refund makes the gate logical.
-Capacity a structure retains was charged when it was filled, so it never exceeds the peak the
-budget admitted.
+Removal, unhide and expiry also give back capacity: a tile's `Vec` of added entries is shrunk once
+it holds more than the 4 + 2 per entry slots charged for it, and the tile and Ground tables once
+they hold more than 2 per element plus 16 (the remainder is in the fixed charge). The B-tree frees
+its nodes itself. `ChannelOverlay::capacity_within_charge` checks this, so after any sequence of
+removals `used_bytes` still bounds what the overlay retains, not only its peak.
 
 ## Tests
 
 `cargo test --locked -p oteryn-game-server map_overlay` covers the packet acceptance: two
 channels share one base with separate overlays; hide and add up to ordinal 63, ordinal 64 refused,
 a 65th base entry refused at load; no merge with a base stack; expiry within 1 s of the decay and
-never before; atomic volatile refusal at the budget; durable admission over it with the alarm;
+never before; atomic volatile refusal at the budget; capacity given back when a hidden tile is filled to
+the budget and emptied tile after tile, and when tile records are released; durable admission over it with the alarm;
 the Ground rebuild of every item, failing closed on a `map_revision` mismatch, another World or
 Channel, a bad or unmapped position, or a duplicate.

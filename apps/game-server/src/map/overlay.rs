@@ -250,6 +250,25 @@ fn item_cost(item: &AddedItem) -> usize {
 }
 
 /// The deadline second of a decay instant: the first whole second at or after it.
+/// Whether a tile's `Vec` of added entries holds no more slots than were charged for it: the
+/// minimum 4 in `TILE_COST` and 2 per entry in `item_cost`.
+fn added_within_charge(added: &Vec<AddedEntry>) -> bool {
+    added.capacity() <= 4 + 2 * added.len()
+}
+
+/// Whether a hash table holds no more slots than its `table_slot` charges cover; the small-table
+/// remainder of 16 slots is in `FIXED_COST`. Growth doubles, so only removal can break it.
+fn table_within_charge<K, V>(table: &HashMap<K, V>) -> bool {
+    table.capacity() <= 2 * table.len() + 16
+}
+
+/// Gives back what removals left a hash table holding beyond its charges.
+fn trim_table<K: Eq + std::hash::Hash, V>(table: &mut HashMap<K, V>) {
+    if !table_within_charge(table) {
+        table.shrink_to(table.len());
+    }
+}
+
 fn deadline_second(decays_at_ms: u64) -> u64 {
     decays_at_ms.div_ceil(1000)
 }
@@ -378,6 +397,17 @@ impl ChannelOverlay {
         self.ground.get(item_instance_id).copied()
     }
 
+    /// Whether every retained structure holds no more capacity than the accounted bytes charge
+    /// for, so `used_bytes` bounds the overlay's heap after any sequence of removals.
+    pub fn capacity_within_charge(&self) -> bool {
+        table_within_charge(&self.tiles)
+            && table_within_charge(&self.ground)
+            && self
+                .tiles
+                .values()
+                .all(|tile| added_within_charge(&tile.added))
+    }
+
     /// Admits `cost` bytes, or refuses without any change.
     fn admit(&mut self, cost: usize, admission: Admission) -> Result<(), OverlayError> {
         let after = self.used.saturating_add(cost);
@@ -417,6 +447,7 @@ impl ChannelOverlay {
         if self.tiles.get(&pos).is_some_and(TileOverlay::is_empty) {
             self.tiles.remove(&pos);
             self.used -= TILE_COST;
+            trim_table(&mut self.tiles);
         }
     }
 
@@ -523,6 +554,12 @@ impl ChannelOverlay {
             .position(|entry| entry.id == id)
             .ok_or(OverlayError::NoEntry)?;
         let entry = tile.added.remove(at);
+        // The refund covers the entry's slots only, so a tile kept by its hides or other entries
+        // gives back the slots the removal freed rather than holding them uncharged.
+        if !added_within_charge(&tile.added) {
+            let keep = tile.added.len().max(4);
+            tile.added.shrink_to(keep);
+        }
         self.used -= entry.cost;
         match &entry.item {
             AddedItem::Volatile {
@@ -535,6 +572,7 @@ impl ChannelOverlay {
             AddedItem::Volatile { .. } => {}
             AddedItem::Ground(ground) => {
                 self.ground.remove(&ground.item_instance_id);
+                trim_table(&mut self.ground);
             }
         }
         self.release_tile(pos);

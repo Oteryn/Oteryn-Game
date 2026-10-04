@@ -431,6 +431,51 @@ fn map_overlay_refuses_a_volatile_entry_over_the_budget_atomically() -> TestResu
 }
 
 #[test]
+fn map_overlay_removal_gives_back_the_capacity_its_refund_releases() -> TestResult {
+    let base = base()?;
+    let budget = 64 * 1024;
+    let mut overlay = ChannelOverlay::with_budget(Arc::clone(&base), world()?, channel(2)?, budget);
+    // A hidden tile keeps its record, so emptying its added entries must not keep their slots
+    // uncharged; filled to the budget and emptied tile after tile, the uncharged capacity would
+    // add up past it.
+    for x in 0..32 {
+        let pos = TilePos { x, y: 3, floor: -7 };
+        overlay.hide(pos, 0, Admission::Refusable)?;
+        let kept = overlay.used_bytes();
+        let mut entries = Vec::new();
+        loop {
+            match overlay.add_volatile(pos, coin(1), Some(9_000)) {
+                Ok(id) => entries.push(id),
+                Err(OverlayError::OverBudget { .. }) => break,
+                Err(error) => return Err(error.into()),
+            }
+        }
+        assert!(entries.len() > 100);
+        assert!(overlay.used_bytes() <= budget);
+        assert!(overlay.capacity_within_charge());
+        for id in entries {
+            overlay.remove(pos, id)?;
+            assert!(overlay.capacity_within_charge());
+        }
+        assert_eq!(overlay.used_bytes(), kept);
+        assert!(overlay.tile(pos).ok_or("tile")?.added().is_empty());
+    }
+    // So do the tile records: hide across the sector, then show it all again.
+    let mut overlay = ChannelOverlay::new(Arc::clone(&base), world()?, channel(2)?);
+    let empty = overlay.used_bytes();
+    let sector = || (0..32).flat_map(|x| (0..32).map(move |y| TilePos { x, y, floor: -7 }));
+    for pos in sector() {
+        overlay.hide(pos, 0, Admission::Refusable)?;
+    }
+    for pos in sector() {
+        overlay.unhide(pos, 0)?;
+        assert!(overlay.capacity_within_charge());
+    }
+    assert_eq!(overlay.used_bytes(), empty);
+    Ok(())
+}
+
+#[test]
 fn map_overlay_admits_a_durable_item_over_the_budget_and_raises_the_alarm() -> TestResult {
     let base = base()?;
     let channel_id = channel(2)?;
