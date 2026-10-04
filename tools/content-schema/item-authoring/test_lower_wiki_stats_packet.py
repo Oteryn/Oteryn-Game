@@ -148,9 +148,8 @@ def test_equipment_requirements_and_holds():
     )
     for override in (
         {"hands": "One"},
-        {"vocrequired": "without"},
-        {"vocrequired": "knights and without"},
-        {"vocrequired": "paladins and without"},
+        {"vocrequired": "knights and dragons"},
+        {"vocrequired": "knights and knights"},
         {"levelrequired": "65536"},
     ):
         assert lower.equipment(fields | override)[1] == "MALFORMED"
@@ -165,6 +164,8 @@ def test_equipment_requirements_and_holds():
         {1, 2854},
     )
     assert not rows and report["conflict"]["equipment.patterns"] == 1
+    # A rune page next to a gear page is a conflict; an ammunition page in the Extra slot
+    # disagrees with a gear page like any two patterns (ITEM-SEM-2b-3).
     for primary in ("Attack Runes", "Ammunition"):
         excluded = {"primarytype": primary, "slot": "Extra Slot", "levelrequired": "27"}
         for pages in ([(1, fields), (2, excluded)], [(2, excluded), (1, fields)]):
@@ -234,12 +235,14 @@ def test_slot_mappings():
     assert other["mutually_exclusive_groups"] == unknown
     one_hand = pattern_of({"slot": "Weapon Hand", "primarytype": "Distance Weapons"})
     assert one_hand["mutually_exclusive_groups"] == lower.known([])
-    # Ammunition keeps no equipment block; its slot and requirements wait for 2b-3.
+    # Ammunition without a slot takes the Extra slot; its level binds use (ITEM-SEM-2b-3).
     for ammo in (
         {"primarytype": "Ammunition", "levelrequired": "20"},
         {"primarytype": "Ammunition", "slot": "Extra Slot"},
     ):
-        assert lower.equipment(ammo) == (None, None)
+        ammo_pattern = pattern_of(ammo)
+        assert ammo_pattern["primary_slot"] == lower.known("EXTRA")
+        assert ammo_pattern["level"] == unknown and ammo_pattern["vocations"] == unknown
     extra = pattern_of({"slot": "Extra Slot", "hands": "One", "vocrequired": "knights"})
     assert extra["vocations"] == unknown and extra["level"] == unknown
 
@@ -259,11 +262,21 @@ def test_vocations_and_levels():
         assert pattern_of({"slot": "Head", "vocrequired": raw})["vocations"] == (
             lower.known(expected)
         ), raw
-    # `None` is no restriction; `without` waits for the `none` key (ITEM-SEM-2b-3).
+    # `None` is no restriction; `without` is the A13 key `none` (ITEM-SEM-2b-3).
     assert pattern_of({"slot": "Head", "vocrequired": "None"})["vocations"] == unknown
-    assert (
-        lower.equipment({"slot": "Finger", "vocrequired": "without"})[1] == "MALFORMED"
-    )
+    assert pattern_of({"slot": "Finger", "vocrequired": "without"})[
+        "vocations"
+    ] == lower.known(["NONE"])
+    assert pattern_of(
+        {
+            "slot": "Shield Hand",
+            "primarytype": "Quivers",
+            "vocrequired": "paladins and without",
+        }
+    )["vocations"] == lower.known(["PALADIN", "NONE"])
+    assert pattern_of({"slot": "Weapon Hand", "vocrequired": "Without"})[
+        "vocations"
+    ] == lower.known(["NONE"])
     assert pattern_of({"slot": "Head", "levelrequired": "0"})["level"] == unknown
     assert pattern_of({"slot": "Head", "levelrequired": "8"})["level"] == lower.known(8)
     rows, report, _ = lower.build(
@@ -292,26 +305,96 @@ def test_vocations_and_levels():
                     )
                 ],
                 5: [(5, {"primarytype": "Ammunition", "levelrequired": "20"})],
+                6: [(6, {"primarytype": "Attack Runes", "mlrequired": "0"})],
+                7: [
+                    (
+                        7,
+                        {
+                            "primarytype": "Attack Runes",
+                            "levelrequired": "27",
+                            "mlrequired": "4",
+                            "vocrequired": "monks, druids, sorcerers, paladins, knights",
+                        },
+                    )
+                ],
+                8: [
+                    (
+                        8,
+                        {
+                            "primarytype": "Liquids",
+                            "vocrequired": "Sorcerers and Druids",
+                        },
+                    )
+                ],
+                9: [(9, {"primarytype": "Attack Runes", "mlrequired": "four"})],
             }
         ),
-        {1, 2, 3, 4, 5},
+        {1, 2, 3, 4, 5, 6, 7, 8, 9},
     )
     assert {
         hold["item_key"][-2:]: hold["reason"] for hold in report["equipment_holds"]
-    } == {
-        "i1": "VOCATION_WITHOUT_HELD_FOR_ITEM_SEM_2B3",
-        "i2": "SLOT_HANDS_DISAGREE",
-    }
-    assert [
-        (hold["item_key"][-2:], hold["sources"][0]["values"])
-        for hold in report["requirement_holds"]
-    ] == [
-        ("i4", {"levelrequired": "24", "mlrequired": "4"}),
-        ("i5", {"levelrequired": "20"}),
-    ]
+    } == {"i2": "SLOT_HANDS_DISAGREE"}
     got = rows_by(rows)
+    unknown_requirement = {"state": "UNKNOWN"}
+    assert got[("oteryn:item.tibia.i1", "equipment.patterns")]["value"][0][
+        "vocations"
+    ] == lower.known(["NONE"])
     assert ("oteryn:item.tibia.i4", "equipment.patterns") not in got
-    assert ("oteryn:item.tibia.i5", "equipment.patterns") not in got
+    assert got[("oteryn:item.tibia.i4", "use_requirements")] == {
+        "kind": "USE_REQUIREMENTS",
+        "value": {
+            "min_level": lower.known(24),
+            "min_magic_level": lower.known(4),
+            "vocations": unknown_requirement,
+            "enforcement_mode": "ON_USE",
+        },
+    }
+    assert got[("oteryn:item.tibia.i5", "equipment.patterns")]["value"][0][
+        "primary_slot"
+    ] == lower.known("EXTRA")
+    assert got[("oteryn:item.tibia.i5", "use_requirements")]["value"] == {
+        "min_level": lower.known(20),
+        "min_magic_level": unknown_requirement,
+        "vocations": unknown_requirement,
+        "enforcement_mode": "ON_USE",
+    }
+    # A zero level or magic level is no requirement and writes nothing.
+    assert ("oteryn:item.tibia.i3", "use_requirements") not in got
+    assert ("oteryn:item.tibia.i6", "use_requirements") not in got
+    # All five vocations are kept as written, not collapsed.
+    assert got[("oteryn:item.tibia.i7", "use_requirements")]["value"]["vocations"] == (
+        lower.known(["DRUID", "KNIGHT", "MONK", "PALADIN", "SORCERER"])
+    )
+    assert got[("oteryn:item.tibia.i8", "use_requirements")]["value"]["vocations"] == (
+        lower.known(["DRUID", "SORCERER"])
+    )
+    assert ("oteryn:item.tibia.i9", "use_requirements") not in got
+    assert [
+        (hold["item_key"][-2:], hold["reason"]) for hold in report["requirement_holds"]
+    ] == [("i9", "UNSUPPORTED_OR_MALFORMED_USE_REQUIREMENT")]
+    assert lower.use_requirement_row({"slot": "Head", "levelrequired": "8"}) == (
+        None,
+        None,
+    )
+
+
+def test_sealed_state_hold():
+    # D310: i3450's definition is pinned by the sealed reward stack proof.
+    ammo = {"primarytype": "Ammunition", "levelrequired": "55"}
+    rows, report, _ = lower.build(snapshot({3450: [(1, ammo)]}), {3450})
+    assert [row["field_path"] for row in rows] == ["weapon.weapon_type"]
+    assert [
+        (hold["field_path"], hold["decision"]) for hold in report["sealed_state_holds"]
+    ] == [
+        ("equipment.patterns", "D310"),
+        ("use_requirements", "D310"),
+    ]
+    try:
+        lower.build(snapshot({3450: [(1, {"primarytype": "Ammunition"})]}), {3450})
+    except ValueError as error:
+        assert "D289 hold scope drift" in str(error)
+    else:
+        raise AssertionError("a D310 hold that hits nothing must fail closed")
 
 
 def test_charges_and_duration_qualification():
@@ -420,6 +503,7 @@ def main():
     test_equipment_requirements_and_holds()
     test_slot_mappings()
     test_vocations_and_levels()
+    test_sealed_state_hold()
     test_charges_and_duration_qualification()
     counts = test_committed_packet_rebuilds()
     print(

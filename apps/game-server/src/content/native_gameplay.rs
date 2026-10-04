@@ -2136,14 +2136,21 @@ fn projected_equipment_claims(
         level,
         vocations: vocations
             .iter()
-            .map(|v| match v {
-                ReferenceBaseVocation::Druid => EquipmentBaseVocation::Druid,
-                ReferenceBaseVocation::Knight => EquipmentBaseVocation::Knight,
-                ReferenceBaseVocation::Monk => EquipmentBaseVocation::Monk,
-                ReferenceBaseVocation::Paladin => EquipmentBaseVocation::Paladin,
-                ReferenceBaseVocation::Sorcerer => EquipmentBaseVocation::Sorcerer,
+            .map(|v| {
+                Ok(match v {
+                    ReferenceBaseVocation::Druid => EquipmentBaseVocation::Druid,
+                    ReferenceBaseVocation::Knight => EquipmentBaseVocation::Knight,
+                    ReferenceBaseVocation::Monk => EquipmentBaseVocation::Monk,
+                    ReferenceBaseVocation::Paladin => EquipmentBaseVocation::Paladin,
+                    ReferenceBaseVocation::Sorcerer => EquipmentBaseVocation::Sorcerer,
+                    // The equipment ABI admits the five base vocations only; an artifact v5
+                    // `None` requirement fails closed until its equip semantics are accepted.
+                    ReferenceBaseVocation::None => {
+                        return Err(rejected("equipment vocation none"));
+                    }
+                })
             })
-            .collect(),
+            .collect::<Result<_, _>>()?,
     })
 }
 

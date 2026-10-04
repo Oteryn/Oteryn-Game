@@ -36,6 +36,7 @@ pub mod item_fee_burn_audit;
 pub mod item_mint;
 pub mod item_mint_audit;
 pub mod item_timed_state;
+pub mod item_timed_state_audit;
 pub mod item_transfer;
 pub mod item_transfer_audit;
 pub mod monk_state;

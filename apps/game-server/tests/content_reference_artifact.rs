@@ -186,7 +186,7 @@ fn promoted_atom_count(semantics: &ReferenceItemSemantics) -> usize {
 }
 
 #[test]
-fn protected_semantic_promotion_round_trips_exact_14643_atoms_through_artifact_v4_server_and_client()
+fn protected_semantic_promotion_round_trips_exact_14643_atoms_through_artifact_v5_server_and_client()
 -> Result<(), Box<dyn std::error::Error>> {
     let linked = promoted_family_linked()?;
     assert_eq!(linked.definitions.len(), CW2_B1_FULL_ITEM_FAMILY_COUNT);
@@ -233,11 +233,11 @@ fn protected_semantic_promotion_round_trips_exact_14643_atoms_through_artifact_v
     )?;
     assert_eq!(
         server.artifact_profile_id(),
-        "OTERYN_REFERENCE_PLAYABLE_ARTIFACT/v4"
+        "OTERYN_REFERENCE_PLAYABLE_ARTIFACT/v5"
     );
     assert_eq!(
         client.artifact_profile_id(),
-        "OTERYN_REFERENCE_PLAYABLE_ARTIFACT/v4"
+        "OTERYN_REFERENCE_PLAYABLE_ARTIFACT/v5"
     );
 
     let mut server_promoted = 0_usize;
@@ -281,7 +281,7 @@ fn presentation() -> ReferenceItemPresentation {
 }
 
 #[test]
-fn typed_item_v4_representative_families_round_trip_through_project_and_both_projections()
+fn typed_item_v5_representative_families_round_trip_through_project_and_both_projections()
 -> Result<(), Box<dyn std::error::Error>> {
     use ReferenceItemField::{Conflict, Known, NotApplicable, Unknown};
     let capabilities = std::array::from_fn(|index| match index % 4 {
@@ -473,7 +473,42 @@ fn typed_item_v4_representative_families_round_trip_through_project_and_both_pro
         },
     ));
 
-    assert_eq!(cases.len(), 11);
+    // ITEM-SEM-2b-3: the vocation `None` and the use-requirements group (artifact v5).
+    cases.push((
+        "use_requirements_and_vocation_none",
+        ReferenceItemSemantics {
+            presentation: Known(presentation()),
+            equipment: Known(ReferenceItemEquipment {
+                patterns: Known(vec![ReferenceEquipmentPattern {
+                    pattern_id: 1,
+                    primary_slot: Known(ReferenceEquipmentSlot::Shield),
+                    additional_reserved_slots: Known(Vec::new()),
+                    mutually_exclusive_groups: Known(Vec::new()),
+                    vocations: Known(vec![
+                        ReferenceBaseVocation::Paladin,
+                        ReferenceBaseVocation::None,
+                    ]),
+                    level: Unknown,
+                    compatibility_rule: Unknown,
+                }]),
+            }),
+            use_requirements: Known(ReferenceItemUseRequirements {
+                min_level: Known(27),
+                min_magic_level: Known(4),
+                vocations: Known(vec![
+                    ReferenceBaseVocation::Druid,
+                    ReferenceBaseVocation::Knight,
+                    ReferenceBaseVocation::Monk,
+                    ReferenceBaseVocation::Paladin,
+                    ReferenceBaseVocation::Sorcerer,
+                ]),
+                enforcement_mode: ReferenceUseEnforcementMode::OnUse,
+            }),
+            ..Default::default()
+        },
+    ));
+
+    assert_eq!(cases.len(), 12);
     let (linked, cases) = typed_family_linked(cases)?;
     assert_eq!(linked.definitions.len(), CW2_B1_FULL_ITEM_FAMILY_COUNT);
     let compiled = compile_reference_playable(&linked)?;
@@ -497,7 +532,7 @@ fn typed_item_v4_representative_families_round_trip_through_project_and_both_pro
             .expect(name);
         assert_eq!(
             server.artifact_profile_id(),
-            "OTERYN_REFERENCE_PLAYABLE_ARTIFACT/v4",
+            "OTERYN_REFERENCE_PLAYABLE_ARTIFACT/v5",
             "{name}"
         );
         assert_eq!(

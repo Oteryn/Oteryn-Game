@@ -104,6 +104,17 @@
       ],
       "offered": false,
       "offer_gate": "ANALYSER-EMIT-1: the server does not offer this capability before the first emitter ships. Without it selected, domain 15 is never sent."
+    },
+    {
+      "id": 12,
+      "name": "ITEM_EQUIP_DROP_V1",
+      "owner_decision": "ITEM-MOVE-WIRE-1 §3 (docs/architecture/reviews/OTERYN_GAME_ITEM_MOVE_WIRE1_EQUIP_AND_DROP_DECISION_2026-09-30.md, #162 5912405163); number allocated by the #1622 control plane and registered by ITEM-EQUIP-WIRE-1",
+      "owner": "current ChannelRuntime (views and handles); Item durability (the TRANSFER behind command type 9)",
+      "requires": [4],
+      "command_types": [],
+      "state_domains": [],
+      "offered": false,
+      "offer_gate": "ITEM-MOVE-2a: the server does not offer this capability before command type 9 equips. It extends command type 9 and domain 9 of capability 4 and owns neither. Without it selected, domain 9 carries no equipment (field 3 fails closed, at most 930 bytes), command type 9 keeps the main backpack destination only (fields 3 and 4 fail closed, at most 13 bytes) and the outcomes 10 to 12 are never sent. The command type 9 and domain 9 max_payload_bytes are the bounds under this capability."
     }
   ],
   "command_types": [
@@ -161,7 +172,7 @@
       "capability": 4,
       "payload_schema": "docs/contracts/protocol-oteryn/v1/item_view_v1.proto#ItemMoveIntentV1",
       "result_schema": "docs/contracts/protocol-oteryn/v1/item_view_v1.proto#ItemMoveResultV1",
-      "max_payload_bytes": 13,
+      "max_payload_bytes": 29,
       "max_result_payload_bytes": 4
     },
     {
@@ -325,7 +336,7 @@
           "id": 1,
           "name": "CHARACTER_INVENTORY_DELTA_V1",
           "payload_schema": "docs/contracts/protocol-oteryn/v1/item_view_v1.proto#CharacterInventoryV1",
-          "max_payload_bytes": 930
+          "max_payload_bytes": 966
         }
       ],
       "snapshot_types": [
@@ -333,7 +344,7 @@
           "id": 1,
           "name": "CHARACTER_INVENTORY_SNAPSHOT_V1",
           "payload_schema": "docs/contracts/protocol-oteryn/v1/item_view_v1.proto#CharacterInventoryV1",
-          "max_payload_bytes": 930
+          "max_payload_bytes": 966
         }
       ]
     },

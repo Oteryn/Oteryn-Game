@@ -145,6 +145,11 @@ No new gameplay, no change to SQL bodies, no review trigger, auto-merge or Jira 
 - Main e63a5aa9 merge (#1709, #1704, #1701, #1703, union only): the protocol module list keeps
   both `item_view` and `spell_presentation_candidate`; main's 0060 alters proficiency
   modification lines only and does not touch the progression guard, so 0068 is unchanged.
+- Main d028be62 merge (#1710, #1711, #1700): the six content `index.json` files take main's
+  `legacy_source` and keep the PR's `spell_imports`. One semantic adaptation: #1710 adds
+  `ReferenceBaseVocation::None`, and the PR's equipment-claims projection now rejects it
+  (fail closed) because the equipment ABI admits the five base vocations only. Main's 0058
+  does not touch the progression guard.
 
 ### Follow-ups (control plane)
 

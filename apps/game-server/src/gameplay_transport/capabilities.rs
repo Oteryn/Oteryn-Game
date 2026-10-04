@@ -21,8 +21,8 @@ use oteryn_protocol_oteryn::chat::{
     CAPABILITY_CHAT_V1, COMMAND_TYPE_CHAT_INTENT, STATE_DOMAIN_CHAT,
 };
 use oteryn_protocol_oteryn::item_view::{
-    CAPABILITY_ITEM_VIEW_MOVE_V1, COMMAND_TYPE_ITEM_MOVE_INTENT, STATE_DOMAIN_CHARACTER_INVENTORY,
-    STATE_DOMAIN_OPEN_CONTAINER,
+    CAPABILITY_ITEM_EQUIP_DROP_V1, CAPABILITY_ITEM_VIEW_MOVE_V1, COMMAND_TYPE_ITEM_MOVE_INTENT,
+    STATE_DOMAIN_CHARACTER_INVENTORY, STATE_DOMAIN_OPEN_CONTAINER,
 };
 
 /// One capability the server offers, with the capabilities that must also be selected for it
@@ -41,7 +41,9 @@ pub(crate) const PRODUCTION_OFFERED_CAPABILITIES: &[OfferedCapability] = &[];
 /// The command types and state domains each registered capability owns
 /// (`PROTOCOL_OTERYN_V1_REGISTRY.json`; a test keeps them equal). Capability 6
 /// `WORLD_SPATIAL_ENTITIES` is not listed: it extends the core domain 1 with payload type 2, which
-/// the visibility encoders gate on the selected set themselves.
+/// the visibility encoders gate on the selected set themselves. Capability 12
+/// `ITEM_EQUIP_DROP_V1` owns none either: it extends command type 9 and domain 9 of capability 4,
+/// whose codecs gate the extension on the selected set.
 const GATED: &[(u32, &[u32], &[u32])] = &[
     (
         CAPABILITY_BESTIARY_CHARMS_V1,
@@ -73,6 +75,7 @@ const GATED: &[(u32, &[u32], &[u32])] = &[
         &[STATE_DOMAIN_ACCOUNT_ACHIEVEMENT_NOTICES],
     ),
     (CAPABILITY_ANALYSER_V1, &[], &[STATE_DOMAIN_ACTOR_ANALYSER]),
+    (CAPABILITY_ITEM_EQUIP_DROP_V1, &[], &[]),
 ];
 
 /// Bound of one session's selection. A test keeps the production offered set within it.
