@@ -35,13 +35,19 @@ external_repositories: []
   and the registry binding to V2 at revision 2), applied only once every node runs
   GOLD-FEE-ACT-1 code (§1.1, §2).
 - #1733 P1 4177113877: activation and every type-2 insert are serialized by one advisory key.
-  Writers take it shared as their first statement, the trigger takes it shared for any unfenced
+  Every type-2 transaction opener takes it shared as its first statement, the trigger takes it shared for any unfenced
   insert, and activation takes it exclusive, so the activation commit cannot overtake a V1
   transaction (§1.2, §1.3).
 - #1733 P1 4177113872: GOLD-FEE-ACT-1 owns all six type-2 writers (`item_mint.rs`,
   `item_transfer.rs`, `reward_claim_mint.rs`, `item_decay_retire.rs`, `item_timed_state.rs`,
   `item_fee_burn.rs`) and `item_mint_audit.rs`. Each takes its tuple from one activation read in
   its transaction, and a coverage test checks every insert site (§1.4, §2.1).
+- #1746 P1 4177155975: the fee burn runs inside its source's transaction, after the Character
+  root fence. So the fence is taken by the transaction opener, as its first statement, through
+  `begin_type2_transaction`, which returns the tuple in a `Type2Transaction`. `charm_state.rs`
+  opens the fee transaction this way and passes the tuple to `burn_fee_in_transaction`. Every
+  other fee caller on `main` at allocation is covered the same way, and source tests check the
+  coverage and the lock order (§1.2, §1.4, §2.1).
 - No code, contract or wire change.
 
 ## Validation

@@ -22,7 +22,11 @@ GOLD-FEE-2, no BANK-1 and no activation table. The type-2 outbox is `0010`'s
 `game_item_audit_outbox`, and every writer binds the compile-time constants
 `item_mint_audit::EVENT_SCHEMA_REVISION` and `item_mint_audit::RETENTION_PROFILE_ID` directly:
 `item_mint.rs`, `item_transfer.rs`, `reward_claim_mint.rs`, `item_decay_retire.rs`,
-`item_timed_state.rs` and `item_fee_burn.rs`.
+`item_timed_state.rs` and `item_fee_burn.rs`. Five of them open their own transaction with
+`begin_semantic_transaction` and then take the recovery fence, the admission relations and the
+Character root. The fee writer, `burn_fee_in_transaction`, opens none: it runs inside its source's
+sequenced Character transaction, after those locks. `character_revision_sequencer.rs` allows that
+call only from `charm_state.rs` today.
 
 ## 1. Rulings
 
@@ -52,10 +56,14 @@ and every type-2 insert are serialized by one transaction-scoped advisory lock:
 
 - **The key.** One fixed 64-bit key, `TYPE2_AUDIT_ACTIVATION_FENCE`. It is defined once in
   `item_mint_audit.rs` and in the migration, and a test checks that the two values agree.
-- **Writers take it shared.** Each type-2 writing transaction runs
-  `pg_advisory_xact_lock_shared(key)` as its **first statement**, before any row lock, and holds it
-  until commit or rollback. Taking it first means a writer never waits for the fence while holding
-  a row lock, so the fence adds no wait cycle among writers.
+- **Writers take it shared, at the transaction opener.** Every transaction that can insert a
+  type-2 event takes `pg_advisory_xact_lock_shared(key)` as its **first statement**, right after
+  `BEGIN`. That is before the recovery fence, the admission relations, the Character root fence and
+  any row lock, and it holds the lock until commit or rollback. The opener is the code that calls
+  `begin_semantic_transaction`, not the writer function. So for the fee burn the opener is its
+  source (§1.4), never `burn_fee_in_transaction` itself (#1746 P1 4177155975). Taking it first means
+  no transaction waits for the fence while holding a row or root lock, so the fence adds no wait
+  cycle.
 - **Activation takes it exclusive.** The activation transaction runs `SET LOCAL lock_timeout = '5s'`
   and then `pg_advisory_xact_lock(key)`. Only then does it insert the row, and it commits.
 - **Why this is enough.** The exclusive lock is granted only when no writer holds the shared one.
@@ -81,28 +89,46 @@ The migration adds a `BEFORE INSERT` trigger on `game_item_audit_outbox`:
 
 For a fenced writer, the refusal cannot happen: its read (§1.4) and its insert are in one fence
 hold, so they agree. A refusal is therefore a typed error, never retried. It only stops an
-unfenced or older binary from writing V1 after the boundary.
+unfenced or older binary from writing V1 after the boundary. An unfenced binary takes the lock
+in the trigger, after its row locks. GOLD-FEE-ACT-2's precondition (§1.1) is that no such binary
+is alive when the exclusive request is made, so no wait cycle forms. If one is alive against the
+precondition, PostgreSQL's deadlock detector aborts one side, with no effect.
 
-### 1.4 Every type-2 writer reads the activation in its transaction (#1733 P1 4177113872)
+### 1.4 Every type-2 transaction reads the activation when it opens (#1733 P1 4177113872, #1746 P1 4177155975)
 
-`item_mint_audit.rs` gains one function used by every writer. It takes the shared fence, reads the
-row, and returns the tuple, `(1, V1)` or `(2, V2)`. It is called once, as the transaction's first
-statement, and the tuple goes to that transaction's one outbox insert and to its audit encoding.
-The compile-time revision and profile constants stop being bound in SQL.
+`db.rs` gains `begin_type2_transaction(holder, deadline)`. It is `begin_semantic_transaction`
+followed by the shared fence and the activation read, in that order, as the first statements. It
+returns a `Type2Transaction`, which wraps the transaction and carries the selected tuple, `(1, V1)`
+or `(2, V2)`. The tuple type has no other constructor. Every type-2 outbox insert and audit
+encoding takes its tuple from a `Type2Transaction`, so a type-2 insert compiles only inside a
+transaction opened this way. The compile-time revision and profile constants stop being bound in
+SQL.
 
-The writers that change, each in its own file:
+The openers that change:
 
-- `item_mint.rs`;
-- `item_transfer.rs`;
-- `reward_claim_mint.rs`;
-- `item_decay_retire.rs`;
-- `item_timed_state.rs`;
-- `item_fee_burn.rs`. When the read returns `(1, V1)`, a fee with `T < F` is refused as in stage
-  1. When it returns `(2, V2)`, the bank part of GOLD-FEE-2 is open. This replaces the fixed
+- `item_mint.rs`, `item_transfer.rs`, `reward_claim_mint.rs`, `item_decay_retire.rs` and
+  `item_timed_state.rs`. Each transaction that reaches its outbox insert is opened with
+  `begin_type2_transaction`. Their read-only transactions are not changed.
+- `charm_state.rs`, the fee source. The `charm_state.rs` transaction that calls the fee burn is
+  opened with `begin_type2_transaction`, before its recovery fence, admission relations and
+  Character root. It passes its `Type2Transaction` to the fee burn.
+- `item_fee_burn.rs`. `burn_fee_in_transaction` takes the `Type2Transaction` in place of a bare
+  transaction. It takes no lock of its own for the fence. With `(1, V1)`, a fee with `T < F` is
+  refused as in stage 1. With `(2, V2)`, the bank part of GOLD-FEE-2 is open. This replaces the fixed
   `(1, V1)` of phase 1 (#1733 §1.7).
+- Any other caller of `burn_fee_in_transaction` on `main` when the packet is allocated is in this
+  packet's owned paths and changes the same way. That covers a later fee source (NPC-TRADE-1,
+  NPC-TRAVEL-1, IMBUE-1, FORGE-1, CHARM-6) if one has merged by then. The control plane adds its
+  file at allocation. The sequencer's caller allowlist stays the gate.
 
-A type-2 writer added later uses the same function. A test enumerates the outbox insert sites of
-`apps/game-server/src/durability/` and fails if one does not take the tuple from it.
+Coverage, checked by tests:
+
+- **Insert sites.** A source test enumerates the outbox insert sites and the
+  `burn_fee_in_transaction(` call sites in `apps/game-server/src/`. It fails if any of them is
+  reached from a transaction not opened by `begin_type2_transaction`.
+- **Ordering.** A source test checks that in each type-2 opener, `begin_type2_transaction` comes
+  before `assert_recovery_fence`, `lock_admission_relations` and the gameplay fence.
+- **New writers.** A type-2 writer added later uses the same opener.
 
 ### 1.5 The switch
 
@@ -131,7 +157,11 @@ migration_lease: the next free number, leased by the control plane at allocation
 depends_on: [GOLD-FEE-2]
 owned_paths:
   - apps/game-server/migrations/<leased>_type2_audit_activation.sql  # the empty table, its grants and immutability trigger, the outbox BEFORE INSERT trigger and the fence key
-  - apps/game-server/src/durability/item_mint_audit.rs  # the fence key, the activation read and the tuple type
+  - apps/game-server/src/durability/item_mint_audit.rs  # the fence key and the tuple type
+  - apps/game-server/src/durability/db.rs  # begin_type2_transaction only
+  - apps/game-server/src/durability/charm_state.rs  # the fee source's transaction opener only (§1.4)
+  - apps/game-server/src/durability/character_revision_sequencer.rs  # only if its fee-caller allowlist test must name the new signature
+  - any other burn_fee_in_transaction caller on main at allocation, added by the control plane (§1.4)
   - apps/game-server/src/durability/item_mint.rs
   - apps/game-server/src/durability/item_transfer.rs
   - apps/game-server/src/durability/reward_claim_mint.rs
@@ -147,6 +177,8 @@ validation:
   - cargo test --locked -p oteryn-game-server item_decay_retire
   - cargo test --locked -p oteryn-game-server item_timed_state
   - cargo test --locked -p oteryn-game-server item_fee_burn
+  - cargo test --locked -p oteryn-game-server charm_state
+  - cargo test --locked -p oteryn-game-server character_revision_sequencer
   - cargo check --locked --workspace --all-targets
   - python3 tools/agents/validate_governance.py
 ```
@@ -167,8 +199,12 @@ Tests:
 - **Unfenced insert.** A raw `(1, V1)` insert that does not take the fence, from a connection
   holding no lock, is still fenced by the trigger and refused after the row. A raw `(2, V2)` is
   refused before it.
-- **Coverage** (P1 4177113872). Every outbox insert site takes its tuple from the activation
-  read, and the fence key in Rust equals the key in the migration.
+- **Coverage** (#1733 P1 4177113872, #1746 P1 4177155975). These are the two source tests of §1.4.
+  Also, the fence key in Rust equals the key in the migration.
+- **Fee source lock order** (#1746 P1 4177155975). A charm fee transaction and a concurrent
+  activation are run with the activation's exclusive request queued. No wait cycle forms: the charm
+  transaction either holds the fence from `BEGIN` and commits, or waits for the fence before it
+  takes any Character root or row lock.
 - **Immutability.** The row cannot be updated or deleted.
 - **Mixed nodes.** A GOLD-FEE-2 binary and a GOLD-FEE-ACT-1 binary on one database, with the table
   empty, verify each other's events.
@@ -229,11 +265,11 @@ migration merge condition.
 
 - **Must decide now:** YES. #1733's phase 2 had two open P1 findings, and GOLD-FEE-2's bank part
   stays closed until the switch.
-- **Minimum sufficient:** one empty table, one fence key, one trigger, one read function used by
-  six writers, and one migration with a registry line. No new event type, payload or verifier.
+- **Minimum sufficient:** one empty table, one fence key, one trigger, one transaction opener used by
+  every type-2 transaction, and one migration with a registry line. No new event type, payload or verifier.
 - **Superseding evidence:** a persistence review showing an insert path the fence does not cover;
   a different migration number from the control plane.
 - **Deliberately not decided:** the deploy tooling that produces the evidence of §1.1; any later
   retention profile.
-- **Harder later:** every new type-2 writer must take the fence first. The coverage test enforces
-  this.
+- **Harder later:** every new type-2 transaction, a new fee source included, must be opened with
+  `begin_type2_transaction`. The tuple type and the coverage tests enforce this.
