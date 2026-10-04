@@ -1,8 +1,9 @@
 # ITEM-USE-0 Using items: food and potions
 
 - Decision: `ITEM-USE0-FOOD-AND-POTIONS-V1`
-- Status: **CANDIDATE**. Acceptance needs exact-head validation, independent review (protocol,
-  persistence and combat) and protected integration. It integrates after ITEM-MOVE-WIRE-0
+- Status: **ACCEPTED** when ACCEPT-ITEMUSE-BANK-0
+  (`OTERYN_GAME_ACCEPT_ITEMUSE_BANK0_ACCEPTANCE_DECISION_2026-10-04.md`) merges, after exact-head
+  validation, independent review (protocol, persistence and combat) and protected integration. It integrates after ITEM-MOVE-WIRE-0
   (PR #1344), whose item target it extends.
 - Role: Sol Supervising Architect (`OTV2_SOL_SUPERVISING_ARCHITECT` 1.3)
 - Answers: the architect programme plan (#162 5910870596, M1): a player cannot eat or drink a
@@ -79,8 +80,8 @@ How does a player eat and drink a potion?
 
 ## 3. Wire (ITEM-USE-WIRE-1, amends USE-WIRE-V1)
 
-- **Capability `ITEM_USE_V1`**, which requires capability 4; its number is reserved on #162 at
-  allocation. Without it the server keeps ITEM-MOVE-WIRE-0's meaning (a non-corpse item is
+- **Capability 15 `ITEM_USE_V1`**, which requires capability 4 (number leased by the control
+  plane, ARCH-BATCH-ROOT-PACKETS-V1 §0.1; ITEM-USE-WIRE-1 registers it). Without it the server keeps ITEM-MOVE-WIRE-0's meaning (a non-corpse item is
   `NOTHING_TO_USE`), sends no new disposition, and a command with field 4 or 5 is `REJECTED`.
 - **The used item** (the `target` oneof):
   - field 2, `ItemTargetV1 {handle}`, for a main backpack direct entry (and, after ITEM-MOVE-2a,
@@ -132,7 +133,7 @@ registry entry ITEM-USE-1 assigns. Later variants (rune, ammunition, bait) need 
 this list.
 
 **Amendment (pending on acceptance of RUNE-USE-0;
-`OTERYN_GAME_ITEM_USE0_USING_ITEMS_DECISION_2026-09-30.md` §4.2).** RUNE-USE-0 §5 adds a third
+`reviews/OTERYN_GAME_RUNE_USE0_USING_RUNES_DECISION_2026-09-30.md` §5).** RUNE-USE-0 §5 adds a third
 variant, `Rune`: a one-unit burn of the used rune stack with the same audit operation, committed
 before the rune's frozen cast applies. Runes use their own in-flight slot, beside this decision's
 (RUNE-USE-0 §7).
