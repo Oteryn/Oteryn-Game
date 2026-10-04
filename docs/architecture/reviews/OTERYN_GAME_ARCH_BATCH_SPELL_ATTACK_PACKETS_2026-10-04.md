@@ -91,14 +91,35 @@ disposition the existing code uses for its family. A finding that needs a new ow
 
 These need production or test-server authority. The repository grants neither.
 
-1. Deploy `content/` from the merged commit next to the node, and set
-   `OTERYN_NATIVE_GAMEPLAY_MANIFEST=<deployed>/content/spells.manifest.json` for the node service
-   **and** for the `oteryn-game-ops` invocation of the next step.
-2. Run `oteryn-game-ops content-activation --world <W> --channel <C> --sequence <current+1> --previous <current>`
-   with that variable set. Approve the request through the usual control-plane issuance, so the
-   issued digests cover the gameplay artifact.
-3. Restart the node. A digest or frame-binding mismatch refuses readiness and the previous
-   generation stays live. Rolling back means unsetting the variable and issuing the baseline digests at the next sequence.
+1. **Deploy the manifest tree with its layout.** The manifest's paths are relative to its own
+   directory, and two of them leave `content/`:
+   - `source_world.path` is `../imports/spells/r25/source-world.json`;
+   - `wheel_profile.path` is `../rulesets/progression/wheel-of-destiny/spell-profile.json`.
+
+   So deploy, from the merged commit, `content/`, `imports/spells/r25/source-world.json` and
+   `rulesets/progression/wheel-of-destiny/spell-profile.json` under one root `<R>`, with their
+   repository-relative paths kept. Set `OTERYN_NATIVE_GAMEPLAY_MANIFEST=<R>/content/spells.manifest.json`
+   for the node service **and** for the `oteryn-game-ops` run of step 2. A missing or unreadable
+   referenced file refuses the decode (`BootError::ContentActivation`), so the node does not boot.
+2. **Issue the activation** with the real command, under that variable:
+
+   ```text
+   oteryn-game-ops content activate --world <W> --channel <C> --sequence <N+1> --previous <N> \
+     --request content-activation-<W>-<C>-<N+1>.json
+   ```
+
+   - `<N>` is the scope's current activation sequence (`empty` if none).
+   - The request file is created in the operator state directory with the computed server, client
+     and frame-binding digests of the room *with* the gameplay artifact, and is then recorded.
+   - The operator needs the Content-activation grant for the scope. If the outcome is unknown,
+     re-run with the same `--request` file: it replays exactly.
+3. **Restart the node** with the variable set. If the digests or the frame binding do not match
+   the newest activation, the node refuses readiness (`DigestMismatch`, `FrameBindingMismatch`).
+   This batch specifies no rollout mechanism and promises no availability during the switch: a
+   refused node stays down until its configuration and the activation match.
+   - To go back, unset the variable and issue the baseline digests at the next sequence with a new
+     request file (`--sequence <N+2> --previous <N+1>`), then restart.
+   - Run all three steps on a test node first.
 
 The content is `baseline_test` magnitude with source approximation flags. It is test and
 preproduction content, not production numerical parity (`content/test-packs/spells/r25/README.md`).

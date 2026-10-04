@@ -39,6 +39,13 @@ external_repositories: []
   merge.
 - **RUNE-USE-0** stays a candidate. It is accepted after ITEM-USE-1 is packeted, and its children
   keep their order (§1.5).
+- **#1787 P1s 4179125682, 4179125690, 4179125692** (§1.3):
+  - deploy the manifest tree with `imports/spells/r25/source-world.json` and
+    `rulesets/progression/wheel-of-destiny/spell-profile.json`, keeping repository-relative paths;
+  - the real command is `content activate ... --request <file>`, with a named request file;
+  - no rollout or availability promise: a mismatched node refuses readiness until its
+    configuration and the activation match, and rollback is a baseline issuance at the next
+    sequence.
 - No code, contract or wire change.
 
 ## Validation
