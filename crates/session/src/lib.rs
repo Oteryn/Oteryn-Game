@@ -1376,15 +1376,21 @@ impl<S: SessionStream> Session<S> {
                     .await?
                 {
                     SessionEvent::WorldSpatial(delta) => Some(delta),
-                    SessionEvent::WorldSpatialEntities(delta) => Some(AppliedDelta {
-                        server_sequence: delta.server_sequence,
-                        base_revision: delta.base_revision,
-                        new_revision: delta.new_revision,
-                        value: WorldSpatialObservation {
-                            content_generation: delta.value.content_generation,
-                            actor_position: delta.value.actor_position,
-                        },
-                    }),
+                    SessionEvent::WorldSpatialEntities(delta) => {
+                        // The outcome carries only the observation; the entity enter/update/leave
+                        // lists reach consumers through the event queue.
+                        let observation = AppliedDelta {
+                            server_sequence: delta.server_sequence,
+                            base_revision: delta.base_revision,
+                            new_revision: delta.new_revision,
+                            value: WorldSpatialObservation {
+                                content_generation: delta.value.content_generation,
+                                actor_position: delta.value.actor_position,
+                            },
+                        };
+                        self.queue_event(SessionEvent::WorldSpatialEntities(delta))?;
+                        Some(observation)
+                    }
                     other => {
                         return Err(SessionError::UnexpectedDomain {
                             expected: world_spatial::STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
@@ -3316,7 +3322,55 @@ mod tests {
                     .collect::<Vec<_>>(),
                 vec![at(1, 0)]
             );
-            assert!(session.take_events().is_empty());
+            // The claimed delta also reaches the queue so consumers see its entity lists.
+            let events = session.take_events();
+            assert!(matches!(
+                events.as_slice(),
+                [SessionEvent::WorldSpatialEntities(queued)]
+                    if queued.new_revision == 6 && queued.value == moved
+            ));
+            drop(session);
+            peer.await??;
+            Ok(())
+        })?
+    }
+
+    #[test]
+    fn a_step_delta_makes_entities_appear_move_and_leave_in_the_store_and_queue()
+    -> Result<(), BoxError> {
+        block_on(async {
+            let walker = actor(EntityKind::Creature, 7, 0, at(4, 0));
+            let walker_moved = actor(EntityKind::Creature, 7, 0, at(5, 0));
+            let stale = corpse(2, at(3, 0));
+            let arrived = corpse(5, at(2, 0));
+            let step_delta = entities_delta(
+                at(1, 0),
+                vec![arrived],
+                vec![own(at(1, 0)), walker_moved],
+                vec![stale.entity],
+            );
+            let (client, peer) = entity_peer(
+                entity_snapshot(vec![walker, stale.clone()]),
+                &[6, 13],
+                vec![
+                    Step::ReadCommand,
+                    result_frame(41, 7, StepDisposition::Moved)?,
+                    entities_push(42, 5, 6, &step_delta)?,
+                ],
+            );
+            let mut session = Session::admit(client, entity_admission()?).await?;
+            session.step(StepDirection::East).await?;
+            let stored = session.world_entities().ok_or("capability 6 selected")?;
+            assert!(stored.get(&arrived.entity).is_some());
+            assert!(stored.get(&stale.entity).is_none());
+            assert_eq!(
+                stored.get(&walker.entity).map(|entity| entity.position),
+                Some(at(5, 0))
+            );
+            assert!(matches!(
+                session.take_events().as_slice(),
+                [SessionEvent::WorldSpatialEntities(queued)] if queued.value == step_delta
+            ));
             drop(session);
             peer.await??;
             Ok(())
