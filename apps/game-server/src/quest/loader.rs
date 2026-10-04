@@ -8,6 +8,11 @@
 //! comparison, a record naming another quest, or a catalogue `QuestStateCatalogue::new`
 //! refuses fails the whole load closed; nothing is skipped.
 //!
+//! An effect whose source `from` was not lowered exactly (`from_exact: false`: the generator
+//! kept one comparison of a compound source condition) is not executable: it loads as
+//! [`QuestEffectKind::Computed`], so its transition is refused `NOT_SUPPORTED` until the omitted
+//! predicates are lowered, and never runs on a partial guard.
+//!
 //! The source keys and the NPC `requested_by` bindings stay beside the catalogue
 //! ([`LoweredQuestState`]): they are content evidence for the callers that bind them
 //! (NPC-QUEST-CONTENT-1) and never reach the store or the wire.
@@ -149,8 +154,7 @@ struct Transition {
 struct Effect {
     track: String,
     from: Tagged,
-    #[serde(rename = "from_exact")]
-    _from_exact: IgnoredAny,
+    from_exact: bool,
     effect: Tagged,
 }
 
@@ -213,11 +217,17 @@ pub fn parse_quest_state(
                 .effects
                 .into_iter()
                 .map(|effect| {
+                    let from = comparison(&effect.from)
+                        .ok_or_else(|| QuestLoadError::Comparison(transition.key.clone()))?;
+                    let kind = effect_kind(&effect.effect)
+                        .ok_or_else(|| QuestLoadError::Effect(transition.key.clone()))?;
                     Ok(QuestEffect {
-                        from: comparison(&effect.from)
-                            .ok_or_else(|| QuestLoadError::Comparison(transition.key.clone()))?,
-                        effect: effect_kind(&effect.effect)
-                            .ok_or_else(|| QuestLoadError::Effect(transition.key.clone()))?,
+                        from,
+                        effect: if effect.from_exact {
+                            kind
+                        } else {
+                            QuestEffectKind::Computed
+                        },
                         track: effect.track,
                     })
                 })
@@ -388,6 +398,53 @@ mod tests {
                 .evaluate(transition, &BTreeMap::new(), 0),
             Err(QuestRefusal::NotSupported)
         );
+    }
+
+    #[test]
+    fn an_inexact_source_guard_is_refused_not_supported() {
+        let document = document();
+        let (quest, index) = document["quests"]
+            .as_array()
+            .expect("quests")
+            .iter()
+            .enumerate()
+            .flat_map(|(quest, entry)| {
+                let transitions = entry["transitions"].as_array().expect("transitions");
+                (0..transitions.len()).map(move |index| (quest, index))
+            })
+            .find(|&(quest, index)| {
+                let effects = document["quests"][quest]["transitions"][index]["effects"]
+                    .as_array()
+                    .expect("effects");
+                effects.iter().any(|effect| effect["from_exact"] == false)
+                    && effects
+                        .iter()
+                        .all(|effect| effect["effect"]["kind"] != "COMPUTED")
+            })
+            .expect("an inexact transition with closed effects");
+        let key = document["quests"][quest]["transitions"][index]["key"]
+            .as_str()
+            .expect("key")
+            .to_owned();
+        let evaluate = |lowered: &LoweredQuestState| {
+            let transition = lowered.catalogue().transition(&key).expect("loaded");
+            lowered
+                .catalogue()
+                .evaluate(transition, &BTreeMap::new(), 0)
+                .err()
+        };
+        assert_eq!(evaluate(&embedded()), Some(QuestRefusal::NotSupported));
+
+        // The same transition with its guard marked exact is executable again.
+        let mut exact = document.clone();
+        for effect in exact["quests"][quest]["transitions"][index]["effects"]
+            .as_array_mut()
+            .expect("effects")
+        {
+            effect["from_exact"] = true.into();
+        }
+        let exact = reparse(&exact).expect("exact guard loads");
+        assert_ne!(evaluate(&exact), Some(QuestRefusal::NotSupported));
     }
 
     #[test]

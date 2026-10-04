@@ -62,7 +62,9 @@ external_repositories: []
   and mission value. Two exceptions: an `ADD` or computed track is bounded above by the source
   storage width (2^31 - 1), and a `SET_NOW` track by `i64::MAX`.
 - **Inexact comparisons:** a `from` comparison the source reads as not exact (a compound
-  condition) is kept, so it fails closed. It is marked `from_exact: false`; there are 221.
+  condition) is kept and marked `from_exact: false`; there are 221 such effects. The loader
+  loads each such effect as `Computed`, so its transition is refused `NOT_SUPPORTED` until the
+  omitted predicates are lowered (219 transitions beyond the 168 computed ones).
 - **Completion:** `completes: true` only where every mission of a quest reads one track, and only
   for a `SET` of that track to the greatest mission end value. That gives 6 quests and 4
   transitions. For the other 52 storyline quests completion needs all their mission tracks, so
