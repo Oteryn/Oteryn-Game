@@ -11,7 +11,7 @@
     },
     {
       "path": "tools/content-schema/item-authoring/lower_wiki_stats_packet.py",
-      "sha256": "3bb802361cbbc483695277ceb6e974c5c4e143a5f44ef7b7677bde9c87ff03db"
+      "sha256": "d5b5bb64f372710ea74b49282816b8ea8ed1e151599b7c36ee52f65fe8cb2148"
     },
     {
       "path": "tools/content-schema/item-authoring/lower_wiki_stack_default_packet.py",
@@ -23,7 +23,7 @@
     },
     {
       "path": "tools/content-schema/item-authoring/lower_elemental_magic_modifier_packet.py",
-      "sha256": "95cdea1fc3b8c57350daf4d381033928f09526530b96f622ad973674d350dfef"
+      "sha256": "1cc2b5026edb2ec3a8928f1ccff6cdc2d90bc65b0b2494fd974037ea17570d3f"
     },
     {
       "path": "tools/content-census/item_wiki_family_capture.py",
@@ -43,7 +43,7 @@
     },
     {
       "path": "apps/game-server/src/content/reference_playable.rs",
-      "sha256": "e50682b67ca36431f9a6b9eb018a8cb17a08cf7e4fdc66c33a5831dc83f4e3ad"
+      "sha256": "5424c687ef3b43815dbcd75f0fd739d95a8c8aa66aa74986c8ed870514268d6c"
     },
     {
       "path": "tools/content-schema/item-authoring/appearance_membership.py",
