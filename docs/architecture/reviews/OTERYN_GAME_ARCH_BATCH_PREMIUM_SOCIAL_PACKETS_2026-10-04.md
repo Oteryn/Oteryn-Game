@@ -43,6 +43,8 @@
    GUILD-RET-0. MARKET-1 also needs MARKET-RET-0. None of the three is decided, and the game event
    foundation registry has no economy or guild profile. So BANK-1 and GUILD-1 cannot start, and
    neither can everything after them: HOUSE-1, GUILD-BANK-1, GUILDHALL-1 and MARKET-1.
+   BANK-RET-0 is packeted in #1733 §2.3, so this batch packets only GUILD-RET-0 and
+   MARKET-RET-0 (§2.2).
 8. **House ownership has a long chain.** HOUSE-1 needs BANK-1 and INBOX-1. INBOX-1 needs DEPOT-1,
    which waits on DEPOT-WIRE-1 (playable-first), which in turn waits on MAP-LOAD-1 and MAP-WIRE-1.
    A house with no owner admits nobody but an operator test (HOUSE-RUNTIME-0 §5). So no house
@@ -105,7 +107,8 @@ Every consumer calls the §1.2 seam once per command and stores no result.
 
 These chains run in parallel, each with one writer:
 
-1. **Retention:** ECON-RET-0 (§2.2), then BANK-1 and GUILD-1 (§2.6).
+1. **Retention:** BANK-RET-0 (#1733 §2.3), then BANK-1. In parallel, ECON-RET-0 (§2.2), then
+   GUILD-1 (§2.6) and later MARKET-1.
 2. **Party and PvP:** CHAT-1b-2b, then CHAT-2 (§2.5), then PARTY-1 (§2.7), then PVP-1.
 3. **House entry:** SCOPE-HANDOFF-1 (§2.4), then HOUSE-RUNTIME-1 (after HOUSE-1 for owned houses).
 4. **Beds:** BED-CONTENT-1 (§2.3), in the content lane.
@@ -182,11 +185,11 @@ Acceptance tests:
 - The non-Linux stub returns `None`.
 - The V1 book's three spells cast for a Free account exactly as before.
 
-### 2.2 ECON-RET-0 (BANK-RET-0, GUILD-RET-0 and MARKET-RET-0)
+### 2.2 ECON-RET-0 (GUILD-RET-0 and MARKET-RET-0)
 
 ```yaml
 task_id: OTV2-20261004-econ-ret-0
-decision: BANK-0 (BANK-RET-0), GUILD-0 §4.4 (GUILD-RET-0), MARKET-0 (MARKET-RET-0)
+decision: GUILD-0 §4.4 (GUILD-RET-0), MARKET-0 (MARKET-RET-0); BANK-RET-0 is #1733 §2.3, not this packet
 mode: CONTRACT
 worker: architect or oteryn-impl-worker under the control plane's routing (these children are "control plane routes")
 review: privacy review (Codex, final frozen head)
@@ -195,7 +198,7 @@ base: main
 depends_on: []
 migration_lease: none
 owned_paths:
-  - docs/architecture/reviews/OTERYN_GAME_ECON_RET0_ECONOMY_AND_GUILD_EVENT_RETENTION_DECISION_2026-10-04.md
+  - docs/architecture/reviews/OTERYN_GAME_ECON_RET0_GUILD_AND_MARKET_EVENT_RETENTION_DECISION_2026-10-04.md
   - docs/contracts/GAME_EVENT_FOUNDATION_REGISTRY.json (the new retention_profiles entries only)
   - docs/agents/tasks/archive/OTV2-20261004-econ-ret-0.md
 validation:
@@ -206,9 +209,8 @@ validation:
 acceptance: owner answer for any duration above the 90-day ordinary ceiling
 ```
 
-Builds three immutable profiles with every `required_profile_fields` entry of the registry:
+Builds two immutable profiles with every `required_profile_fields` entry of the registry:
 
-- the bank event, purpose `ECONOMY_LEDGER`;
 - the market event, purpose `ECONOMY_LEDGER`;
 - the guild event, with a ceiling of at least the 30-day member log (`GUILD0-RL-10`).
 
@@ -220,8 +222,9 @@ The profiles follow the Character and DUR-03 retention decisions:
 
 A duration above 90 days, or a purpose beyond proof, reconciliation and bounded support and
 security investigation, is an owner question returned as `QUESTION`. The packet writes no event
-type, code or schema. BANK-1, GUILD-1 and MARKET-1 bind these ids when they register their
-events.
+type, code or schema. GUILD-1 and MARKET-1 bind these ids when they register their events. The
+bank profile is BANK-RET-0 (#1733 §2.3), and this packet does not touch it. If both land in the
+registry together, the second rebases its `retention_profiles` entries onto the first.
 
 ### 2.3 BED-CONTENT-1
 
@@ -387,7 +390,7 @@ World) is allocatable, since DEATH-1 is merged.
 | PREM-2b (promotion state, soul maximum, death input) | a promotion source | PREM-5, after NPC-TALK-1; packeted together with it |
 | PREM-3 (Premium areas) | the area flag in the map bundle; Movement entry refusal | the map packets (another agent prepares maps) |
 | PREM-5 (blessings, NPC services) | NPC-TALK-1 | NPC lane |
-| BANK-1 | ECON-RET-0 | §2.2 |
+| BANK-1 | BANK-RET-0 | #1733 §2.3 |
 | INBOX-1 | DEPOT-1, which waits on DEPOT-WIRE-1, MAP-LOAD-1 and MAP-WIRE-1 | the map packets |
 | HOUSE-1, HOUSE-ACL-1, HOUSE-WIRE-1 | BANK-1; INBOX-1; SCOPE-HANDOFF-1 for the runtime child | chains 1, 3 and 5 of §1.4 |
 | HOUSE-RUNTIME-1, HOUSE-VIEW-1, HOUSE-ITEM-WIRE-1 | SCOPE-HANDOFF-1; HOUSE-1; the MAP-WIRE-1 children; a wire decision for the last | §2.4, then HOUSE-1 |
@@ -416,8 +419,9 @@ World) is allocatable, since DEATH-1 is merged.
 
 ## 5. Decision queue for the control plane
 
-1. **Route ECON-RET-0 first.** It releases BANK-1 and GUILD-1, and through them every house,
-   guildhall and market child.
+1. **Route BANK-RET-0 (#1733 §2.3) and ECON-RET-0 first.** BANK-RET-0 releases BANK-1.
+   ECON-RET-0 releases GUILD-1 and MARKET-1. Through them every house, guildhall and market child
+   is released.
 2. **ADMIT-0 acceptance.** SCOPE-HANDOFF-1's exit, and every later scope transfer, wait on it.
    Recommendation: send ADMIT-0 to its protocol and security review with the FND-04 owner.
 3. **PREM-5 together with PREM-2b.** Packet them after NPC-TALK-1 is allocated.

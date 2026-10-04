@@ -36,12 +36,12 @@ external_repositories: []
 
   The yell gate is wired by the later of CHAT-1b-2b and PREM-WIRE-1. PREM-2b waits for PREM-5,
   because nothing can be promoted yet (§1.3, §3).
-- **D486 item 5:** packets for ECON-RET-0 (the bank, guild and market retention profiles in one
-  privacy review), BED-CONTENT-1, SCOPE-HANDOFF-1, CHAT-2, GUILD-1 and PARTY-1. Each packet
+- **D486 item 5:** packets for ECON-RET-0 (the guild and market retention profiles in one
+  privacy review; BANK-RET-0 stays with #1733 §2.3, with no duplicate), BED-CONTENT-1, SCOPE-HANDOFF-1, CHAT-2, GUILD-1 and PARTY-1. Each packet
   lists what it needs for acceptance (§1.5, §2), and §3 lists every held child with what releases
   it.
 - Control plane queue (§5):
-  1. ECON-RET-0 first.
+  1. BANK-RET-0 (#1733) and ECON-RET-0 first.
   2. ADMIT-0 acceptance.
   3. PREM-5 together with PREM-2b.
   4. Relay key authority.
