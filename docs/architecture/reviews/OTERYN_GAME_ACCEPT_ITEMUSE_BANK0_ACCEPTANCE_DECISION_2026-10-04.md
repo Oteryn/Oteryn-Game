@@ -41,6 +41,12 @@ Each lens was reviewed by a separate non-authoring, read-only agent against `mai
   depends on 15. Fixed: §3 pins capability 15, the control plane's lease (capability ids and state
   domain ids are separate registries; domain 15 `ACTOR_ANALYSER` does not collide).
 - P2: the RUNE-USE-0 amendment in §4.2 cited ITEM-USE-0 itself. Fixed: it cites RUNE-USE-0 §5.
+- Protocol P1 (#1750 4177200352): field 4 named `{actor_id, generation}` rather than the D85 wire
+  identity. Fixed:
+  - §3 pins `use_with`'s `creature` to the existing `EntityRefV1`: 16 identity bytes and a nonzero
+    generation, otherwise `REJECTED`; a stale or unseen reference is `NO_TARGET`;
+  - the ITEM-USE-WIRE-1 packet (ARCH-BATCH-ROOT-PACKETS-V1 §2.2) imports it and tests both
+    constraints.
 - Verified with no finding: fields 4 and 5 and the 529-byte bound, the `ItemUseCause` shapes, item
   only transactions with no CharacterRevision advance, idempotency by CommandRef, one use in flight,
   the GAME-ABILITY-01 pipeline, typed cooldown keys and the food regeneration condition.

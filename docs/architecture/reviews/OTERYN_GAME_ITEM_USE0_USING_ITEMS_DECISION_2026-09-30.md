@@ -93,8 +93,13 @@ How does a player eat and drink a potion?
     equipment slots join after ITEM-MOVE-2a. Nested bags are out of scope (`PARITY_PENDING`:
     Canary searches them).
 - **Field 4, `use_with`**, outside the oneof, valid only with field 2 or 5 for a potion:
-  `creature {actor_id, generation}`, a D85 identity visible to the session. Absent means the user.
-  Field 4 with food, with a corpse, or with field 1 fails closed. Field 3 stays reserved.
+  `creature`, the existing `EntityRefV1 {bytes identity, uint64 generation}`
+  (`world_spatial_v1.proto`), the D85 identity of an entity visible to the session. No new target
+  encoding is defined. Absent means the user. A present `creature` needs exactly 16 identity bytes
+  and a nonzero generation, as `ATTACK_TARGET_INTENT` requires (ARCH-CORE-LOOP-PACKETS-2); anything
+  else is `REJECTED`. A well-formed reference to an entity the session does not see, or to a stale
+  generation, is `NO_TARGET`. Field 4 with food, with a corpse, or with field 1 fails closed. Field 3
+  stays reserved.
 - **Reach:** food and potions on the user; a potion on a creature at Chebyshev distance 1, same
   floor.
 - **New dispositions** (only under `ITEM_USE_V1`): `REQUIREMENT_NOT_MET`, `EXHAUSTED`, `FULL`,
