@@ -39,6 +39,7 @@ mod cw2_b4_import;
 mod digest;
 pub mod encounter_map_item;
 mod fixture;
+pub mod item_abilities;
 pub mod item_admission;
 pub mod item_capacity_promotion;
 pub mod item_description_promotion;
