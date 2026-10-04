@@ -273,7 +273,7 @@ pub(super) fn apply(draft: &mut ProjectV2Draft) -> AdmissionResult<usize> {
         ),
         (
             "definitions/reference.json",
-            "3791f0142bcc3bfa0395153c3f40a84e971b47c38eaa301b07e2dc49cc5b49fc",
+            "a43c4b147010630230a16a435448ca36c4a66a48f3e8ec967dff0cdd1ed2ce35",
         ),
     ] {
         let bytes = before
