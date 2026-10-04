@@ -52,7 +52,7 @@
     "status": "INITIAL_SOURCE_ONLY_INACTIVE_UNPUBLISHED; INITIAL_COMPILER_AND_RECEIPT_EXACT_EXTERNAL_CHECKPOINT_FD251646; NOT_A_RUNTIME_OR_CI_APPLIER"
   },
   "input_pins": {
-    "apps/game-server/src/content/reference_playable.rs": "5424c687ef3b43815dbcd75f0fd739d95a8c8aa66aa74986c8ed870514268d6c",
+    "apps/game-server/src/content/reference_playable.rs": "fd81a9d9359e11c3f1f841b78b4d10246bc886dcabec692b51cc7e7ba98e44d7",
     "docs/agents/evidence/OTV2-20261001-item-movable-source-qualification-v1.json": "ae0698adc7df7e25b88569b22de87a020661381a0623ea84d5333a576b12be06",
     "imports/crystalserver/bindings/items.json": "1d19709c28a649d8a9f32bf53e5bf43ad847d7901d6c6254833f456154d2de5a",
     "imports/official/appearance-membership/admitted.json": "19f99b709d9a28c1730632e27672adb0a03ef11bf7d1f4b2647a4090f3df0718",
@@ -65,7 +65,7 @@
     "tools/content-schema/item-authoring/appearance_membership.py": "0746bb0e350fb04503919295a718907afc87866b0299fa277b914c74e85cfc09",
     "tools/content-schema/item-authoring/engine_items.py": "0a494fd64d7774507b4d9e493492a7ffc9d99d751dd2ed4fec73561cb06f5b06",
     "tools/content-schema/item-authoring/lower_elemental_magic_modifier_packet.py": "1cc2b5026edb2ec3a8928f1ccff6cdc2d90bc65b0b2494fd974037ea17570d3f",
-    "tools/content-schema/item-authoring/lower_mantra_bond_modifier_packet.py": "1eb88af759b99cbf796f5d9e173b439260cc04507b7d895f906e2054f1fdee91",
+    "tools/content-schema/item-authoring/lower_mantra_bond_modifier_packet.py": "a67f605b038d9553768d4b79309d4a09f405aa9197a516d3050e3471ea7394b5",
     "tools/content-schema/item-authoring/lower_wiki_movable_packet.py": "dc9a9c622f8d8081c7245f4600405b18bd20e5a8459b77686119a585a8977476",
     "tools/content-schema/item-authoring/lower_wiki_stack_default_packet.py": "5969b009ed326991e6db310b3e3c48640ae5a5ac361c9c34f5619740bff8ce2e",
     "tools/content-schema/item-authoring/lower_wiki_stats_packet.py": "d5b5bb64f372710ea74b49282816b8ea8ed1e151599b7c36ee52f65fe8cb2148",

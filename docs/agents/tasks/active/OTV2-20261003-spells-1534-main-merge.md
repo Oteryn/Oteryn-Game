@@ -244,3 +244,26 @@ owner_action_required: null
 blocker: null
 next_action: report FREEZE to the control plane; afterwards only merge main when predecessors land
 ```
+
+## Re-pin after merging origin/main 8588b1bb (owner decision 1a, 2026-10-04)
+
+Merging main (after #1712) left only this PR's own `reference_playable.rs` drift: the file moved from `5424c687ef3b43815dbcd75f0fd739d95a8c8aa66aa74986c8ed870514268d6c` to `fd81a9d9359e11c3f1f841b78b4d10246bc886dcabec692b51cc7e7ba98e44d7`. The current pins of the numeric17 receipt and the Mantra/Bond source qualification were moved to the new digest. Each packet was regenerated with its own generator, and the pins were cascaded on top of #1712's pins until every `--check` passed. Every changed file is identical to its pre-merge content once 64-hex digests are masked. The historical witnesses (magic-capacity4 source qualification, numeric13 source proof v2, numeric17 source qualification v1, native-loader proof) stay unchanged.
+
+Merge adaptations: `release_terminal` (main's refactor of the abandoned release) keeps this PR's familiar save and spell-training save around the monk save. The `item_view_tests.rs` test authority (#1713) takes the PR's five-parameter `step` signature.
+
+| File | Old digest | New digest | Result |
+|---|---|---|---|
+| `apps/game-server/src/content/item_elemental_magic_modifier_promotion.rs` | `b1e786ac7c72e80612402b618774f21de581fe6737fffeca08b0977f54f2c801` | `7fe2bac00cf4e9372f007e13dcbc0f371bb6ed62ce034e811e3e9b11f7c06c93` | pin constants only |
+| `apps/game-server/src/content/item_mantra_bond_modifier_promotion.rs` | `ffbde846a435a2493900acb202b24976450422d965c89c8994566ee75a142d11` | `a7725fd37cbc20c05300a691b1577467d47563bbf1f4d86a83c44a8266b5e01d` | pin constants only |
+| `apps/game-server/src/content/item_numeric_modifier_promotion.rs` | `5ec194692eca4c0a5d1037403276bdda75737a98f9507ffcdfcd33e17289f3ac` | `92ef6b774a53c20f571b1040ae2c4e882d3dd8a2e8ada8297f0fabeb1822b14e` | pin constants only |
+| `apps/game-server/src/content/item_stack_default_successor8_promotion.rs` | `f6a81742b7ed3812d5a6d8fba6bf95551b3ad48e24e83ead41145b6bec5b544c` | `ca28a8eedbed70316703a37a9f837ab673d99687a240b76d49aa161f25e3dea0` | pin constants only |
+| `docs/agents/evidence/OTV2-20261002-item-elemental-magic-modifier-promotion-v1.json` | `bcb8410d40202d7fa4676c8dfa04e3e6a5a514c7294cd34277d754d82b446c70` | `ebbf84a95092defc72ee47a74de00ef952dafc2cbb7fc2bb2933bb6b1420ebe5` | digest-only, rows unchanged |
+| `docs/agents/evidence/OTV2-20261002-item-mantra-bond-promotion-v1.json` | `64c051bbe5648a2a87e5de0462c626e58b6d421cf0c37ce992d5bf3e07514a37` | `ec0c44a1f85fd7a542815a8579ba7bede882b7bd5b71ac066f37357351960ff7` | digest-only, rows unchanged |
+| `docs/agents/evidence/OTV2-20261002-item-mantra-bond-source-qualification-v1.json` | `c7145af1f27e7d5db54fdc1659acfcbee347aeb2f0a8e1edfead669eb4f82a9a` | `e4b92c87087c301698ac21db2159b5f98db32d3985433cfbc018ad9daf33753e` | digest-only, rows unchanged |
+| `docs/agents/evidence/OTV2-20261002-item-numeric-modifier17-current-receipt-v1.json` | `be0b91420416b1e8f9f12bea285c0d42d6e7ca46060286b7737be0939a134957` | `d965b48f56bcbbaf72f733f0b961c997eab4ef3f77ab4d76438e16b791f37286` | digest-only, rows unchanged |
+| `docs/agents/evidence/OTV2-20261002-item-numeric-modifier17-promotion-v1.json` | `1a8ffbaa48be0c50e12b9ae21271bef0699e98410cb69435b2cd195976e46710` | `5d816ef227021d7e2ab3a347a4b2617fe86ac4383dbea6b9d9c12fec59713538` | digest-only, rows unchanged |
+| `docs/agents/evidence/OTV2-20261002-item-stack-default-successor8-promotion-v1.json` | `aaad7f5cd2b96a60e42aec5dbce1e0f48e33f338009974ee2fbdca38436c970a` | `527e864e71da60d5f669fb511885d72a585b351dc0029631e6da4a43a5f4702d` | digest-only, rows unchanged |
+| `docs/agents/evidence/OTV2-20261003-item-stack-default-successor8-current-parent-receipt-v2.json` | `5d6f08ebaa9c6d7948efdcbcb9aca9e6862cbd8056a201c761b20af7d5e893b2` | `8957686e121607e0f30a97fb31bbfebfbeb042052ddc95b5dc2419038c374800` | digest-only, rows unchanged |
+| `tools/content-schema/item-authoring/lower_mantra_bond_modifier_packet.py` | `1eb88af759b99cbf796f5d9e173b439260cc04507b7d895f906e2054f1fdee91` | `a67f605b038d9553768d4b79309d4a09f405aa9197a516d3050e3471ea7394b5` | pin constants only |
+| `tools/content-schema/item-authoring/lower_numeric_modifier17_packet.py` | `4ab1d4dc6eee5f7e0636f06b28830c4a40e3a20a6979d4ad155bdbcf4813d19f` | `d895516ad8d4640699ffaab09db91757e996ab27bd487a6c7bf0fafa1f02df79` | pin constants only |
+| `tools/content-schema/item-authoring/lower_wiki_stack_default_successor8_packet.py` | `d8b7df69edeb02bdf030e45ca695276af044606057ec7af37d8dc1238f371d56` | `6db74d7b32e8a6b33da6bf7313db4b54c275b32a21b5d8f665be64bba8a7cde6` | pin constants only |

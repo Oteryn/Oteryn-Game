@@ -544,7 +544,13 @@ mod connection {
             Some(observation(HERE))
         }
 
-        async fn step(&self, _actor: ExactActorRef, _direction: StepDirection) -> StepOutcome {
+        async fn step(
+            &self,
+            _actor: ExactActorRef,
+            _game_session_id: GameSessionId,
+            _command_id: u64,
+            _direction: StepDirection,
+        ) -> StepOutcome {
             StepOutcome {
                 disposition: StepDisposition::Moved,
                 moved_to: self.step_to.map(observation),

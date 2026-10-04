@@ -43,7 +43,7 @@
     },
     {
       "path": "apps/game-server/src/content/reference_playable.rs",
-      "sha256": "5424c687ef3b43815dbcd75f0fd739d95a8c8aa66aa74986c8ed870514268d6c"
+      "sha256": "fd81a9d9359e11c3f1f841b78b4d10246bc886dcabec692b51cc7e7ba98e44d7"
     },
     {
       "path": "tools/content-schema/item-authoring/appearance_membership.py",
