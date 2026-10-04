@@ -17,11 +17,18 @@ use super::actor_spell::{
     SpellCastIntent, SpellCastOutcome, decode_spell_cast_intent, encode_actor_vitals,
     encode_spell_cast_result,
 };
+use super::capabilities::{
+    OfferedCapability, PRODUCTION_OFFERED_CAPABILITIES, SelectedCapabilities,
+};
+use super::item_view::{
+    CloseTrigger, InventoryItems, ItemKey, ItemTargetObservation, ItemViewContinuity,
+    ItemViewDelta, OpenDecision, SessionItemView,
+};
 use super::tcp_tls::{FrameReader, read_frame, write_frame};
 use super::world_object::{
     COMMAND_TYPE_USE_INTENT, DELTA_TYPE_WORLD_OBJECT_OVERLAY_V1,
     SNAPSHOT_TYPE_WORLD_OBJECT_OVERLAY_V1, STATE_DOMAIN_WORLD_OBJECT_OVERLAY, UseDisposition,
-    WorldObjectOverlayEntry, decode_use_intent, encode_use_result,
+    UseTarget, WorldObjectOverlayEntry, decode_use_intent_target, encode_use_result,
     encode_world_object_overlay_delta, encode_world_object_overlay_snapshot,
 };
 use super::world_spatial::{
@@ -39,11 +46,13 @@ use oteryn_protocol_oteryn::account_achievements::{
     COMMAND_TYPE_ACCOUNT_ACHIEVEMENTS_QUERY, decode_account_achievements_query,
 };
 use oteryn_protocol_oteryn::achievement_notices::{
-    AchievementEarned, AchievementWatermark, DELTA_TYPE_ACHIEVEMENT_EARNED_V1,
-    SNAPSHOT_TYPE_ACHIEVEMENT_NOTICES_V1, STATE_DOMAIN_ACCOUNT_ACHIEVEMENT_NOTICES,
-    encode_achievement_earned, encode_achievement_notices_snapshot,
+    AchievementEarned, AchievementWatermark, CAPABILITY_ACHIEVEMENT_NOTICES_V1,
+    DELTA_TYPE_ACHIEVEMENT_EARNED_V1, SNAPSHOT_TYPE_ACHIEVEMENT_NOTICES_V1,
+    STATE_DOMAIN_ACCOUNT_ACHIEVEMENT_NOTICES, encode_achievement_earned,
+    encode_achievement_notices_snapshot,
 };
 use oteryn_protocol_oteryn::encode_command_error_result;
+use oteryn_protocol_oteryn::item_view::STATE_DOMAIN_CHARACTER_INVENTORY;
 
 /// Foundation schema revision served by this build (FND-02 v1 contract).
 pub(crate) const SERVER_SCHEMA_REVISION: u32 = 1;
@@ -64,6 +73,9 @@ pub(crate) struct ResumeAttempt<'a> {
     pub(crate) recovery_material: &'a [u8],
     pub(crate) transport: AuthenticatedTransportRefV1,
     pub(crate) last_applied_server_sequence: u64,
+    /// The resuming client's supported capabilities: a resume that lacks one the session
+    /// selected is refused (CAP-NEG-1).
+    pub(crate) supported_capabilities: &'a [u32],
 }
 
 /// Authority-committed admission: the only state that lets a transport claim a
@@ -113,6 +125,12 @@ pub(crate) struct SessionContinuity {
     /// composed. Otherwise the domain's revision: 0 at the session's first snapshot, plus 1 for
     /// each delta. It is cumulative per GameSession: a resume carries it and never resets it.
     pub(crate) achievement_notice_revision: Option<u64>,
+    /// CAP-NEG-1: the capabilities selected at this GameSession's fresh admission. A resume or
+    /// channel transfer carries them unchanged and never widens them.
+    pub(crate) selected_capabilities: SelectedCapabilities,
+    /// ITEM-VIEW-1b: the item handle counter, the domain 9 and 11 high-water revisions and the
+    /// open corpse. Used only with capability 4; a resume or channel transfer carries it.
+    pub(crate) item_view: ItemViewContinuity,
 }
 
 impl SessionContinuity {
@@ -126,6 +144,13 @@ impl SessionContinuity {
         spatial_revision: 1,
         overlay_revision: 0,
         achievement_notice_revision: None,
+        selected_capabilities: SelectedCapabilities::NONE,
+        item_view: ItemViewContinuity {
+            handle_counter: 0,
+            inventory_revision: 0,
+            container_revision: 0,
+            open_corpse: None,
+        },
     };
 }
 
@@ -209,6 +234,12 @@ pub(crate) trait FreshAdmissionAuthority {
         async { Err(AdmissionRefusal::Unavailable) }
     }
 
+    /// The capabilities this server offers at fresh admission (CAP-NEG-1). Production offers
+    /// the registry's offered set; tests inject theirs.
+    fn offered_capabilities(&self) -> &'static [OfferedCapability] {
+        PRODUCTION_OFFERED_CAPABILITIES
+    }
+
     /// The admitted actor's current own-actor observation for the initial snapshot, or `None`
     /// when this authority serves no gameplay (transport-only fixtures).
     fn observe(
@@ -248,6 +279,28 @@ pub(crate) trait FreshAdmissionAuthority {
         _target: super::world_object::WorldObjectTarget,
     ) -> impl Future<Output = UseOutcome> {
         async { UseOutcome::rejected() }
+    }
+
+    /// ITEM-VIEW-1b: the admitted Character's main backpack and its direct entries
+    /// (`read_character_backpack`) for domain 9, read for the snapshot and after each committed
+    /// `USE`. `None` when it cannot be read: a session that selected capability 4 then fails
+    /// closed.
+    fn observe_character_inventory(
+        &self,
+        _actor: ExactActorRef,
+        _game_session_id: GameSessionId,
+    ) -> impl Future<Output = Option<InventoryItems>> {
+        async { None }
+    }
+
+    /// ITEM-VIEW-1b: the Channel owner's view of the item a `USE` handle resolved to, with the
+    /// actor's position, read together. `None` when it cannot be observed (`STALE_STATE`).
+    fn observe_item_target(
+        &self,
+        _actor: ExactActorRef,
+        _target: ItemKey,
+    ) -> impl Future<Output = Option<ItemTargetObservation>> {
+        async { None }
     }
 
     /// The admitted actor's current `ACTOR_VITALS` revision and value for the initial snapshot,
@@ -564,17 +617,26 @@ where
                     recovery_material: resume.reconnect_material,
                     transport,
                     last_applied_server_sequence: resume.last_applied_server_sequence,
+                    supported_capabilities: resume.supported_capabilities,
                 })
                 .await
                 .map_err(|_| ConnectionEnd::ResumeUnavailable)?;
             let continuity = resumed.continuity;
+            // CAP-NEG-1: the resumed session keeps its original selection. The owning authority
+            // refuses a resume that cannot keep it before committing; this never acknowledges one.
+            if !continuity
+                .selected_capabilities
+                .resumable_with(resume.supported_capabilities)
+            {
+                return Err(ConnectionEnd::AdmittedThenDisconnected(resumed));
+            }
             let accepted = encode_server_resume_accepted(&ServerResumeAcceptedValue {
                 game_session_id: resumed.game_session_id,
                 connection_generation: continuity.connection_generation,
                 current_server_sequence: continuity.server_sequence,
                 next_command_id: continuity.next_command_id,
                 schema_revision: SERVER_SCHEMA_REVISION,
-                selected_capabilities: &[],
+                selected_capabilities: continuity.selected_capabilities.as_slice(),
             })
             .map_err(|_| ConnectionEnd::AdmittedThenDisconnected(resumed))?;
             write_frame(stream, &accepted)
@@ -595,16 +657,30 @@ where
             AdmissionRefusal::Unavailable,
         ));
     };
+    // CAP-NEG-1: the client's supported capabilities the server offers, with their `requires`.
+    let Some(selected) = SelectedCapabilities::select(
+        authority.offered_capabilities(),
+        bootstrap.supported_capabilities,
+    ) else {
+        return Err(ConnectionEnd::AdmissionRefused(
+            AdmissionRefusal::Unavailable,
+        ));
+    };
     let attempt = FreshAdmissionAttempt {
         character_id: bootstrap.character_id,
         admission_material: bootstrap.admission_material,
         game_session_id,
         transport,
     };
-    let admitted = authority
+    let mut admitted = authority
         .admit(attempt)
         .await
         .map_err(ConnectionEnd::AdmissionRefused)?;
+    admitted.continuity.selected_capabilities = selected;
+    // ACHIEVEMENT-0 §5: a session that selected capability 8 starts domain 13 at revision 0.
+    admitted.continuity.achievement_notice_revision = selected
+        .contains(CAPABILITY_ACHIEVEMENT_NOTICES_V1)
+        .then_some(0);
     let accepted = encode_server_accepted(&crate::foundation::ServerAcceptedValue {
         game_session_id: admitted.game_session_id,
         world_id: admitted.world_id,
@@ -613,7 +689,7 @@ where
         current_server_sequence: 0,
         next_command_id: 1,
         schema_revision: SERVER_SCHEMA_REVISION,
-        selected_capabilities: &[],
+        selected_capabilities: selected.as_slice(),
     })
     .map_err(|_| ConnectionEnd::AdmittedThenDisconnected(admitted))?;
     write_frame(stream, &accepted)
@@ -698,7 +774,15 @@ where
     // ACHIEVEMENT-0 §5: with capability 8, the account's watermark at the current revision. A
     // join, resync or reconnect sends this snapshot and never re-sends a delta. A selected
     // domain whose watermark cannot be read fails closed.
-    let notices = match admitted.continuity.achievement_notice_revision {
+    let notices_selected = admitted
+        .continuity
+        .selected_capabilities
+        .domain_selected(STATE_DOMAIN_ACCOUNT_ACHIEVEMENT_NOTICES);
+    let notices = match admitted
+        .continuity
+        .achievement_notice_revision
+        .filter(|_| notices_selected)
+    {
         None => None,
         Some(notice_revision) => {
             let watermark = match admitted.controller {
@@ -741,6 +825,43 @@ where
             snapshot_type: SNAPSHOT_TYPE_ACTOR_VITALS_V1,
             payload: &vitals_payload,
         });
+    }
+    // ITEM-VIEW-1b: with capability 4, domains 9 and 11 above every revision the session has
+    // seen, with fresh handles. The revisions advance before the write. An unreadable backpack
+    // fails closed; the carried open corpse is shown again only while it is in reach.
+    let mut item_view = None;
+    let item_snapshot;
+    if admitted
+        .continuity
+        .selected_capabilities
+        .domain_selected(STATE_DOMAIN_CHARACTER_INVENTORY)
+    {
+        let mut view = SessionItemView::resume(admitted.continuity.item_view);
+        let Some(inventory) = authority
+            .observe_character_inventory(actor, admitted.game_session_id)
+            .await
+        else {
+            return ConnectionEnd::AdmittedThenDisconnected(admitted);
+        };
+        let reopen = match view.carried_open_corpse() {
+            Some(key) => authority.observe_item_target(actor, key).await,
+            None => None,
+        };
+        let snapshot = view.snapshot(inventory, reopen);
+        admitted.continuity.item_view = view.continuity();
+        let Ok(snapshot) = snapshot else {
+            return ConnectionEnd::AdmittedThenDisconnected(admitted);
+        };
+        item_snapshot = snapshot;
+        for domain in &item_snapshot {
+            domains.push(DomainSnapshot {
+                domain_id: domain.domain_id,
+                revision: domain.revision,
+                snapshot_type: domain.snapshot_type,
+                payload: &domain.payload,
+            });
+        }
+        item_view = Some(view);
     }
     if let Some((notice_revision, payload)) = &notices {
         domains.push(DomainSnapshot {
@@ -927,16 +1048,49 @@ where
             Use(UseOutcome),
             Spell(SpellCastOutcome),
             Achievements(AccountAchievementsReply),
+            /// ITEM-VIEW-1b: `USE` with an item target; the domain 11 delta follows the result.
+            UseItem(OpenDecision, Option<ItemViewDelta>),
             Unregistered,
         }
-        let mut dispatch = if command.command_type == COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT {
+        // CAP-NEG-1: a command type owned by a capability the session did not select is refused
+        // like an unregistered one, before any decode or authority call.
+        let mut dispatch = if !admitted
+            .continuity
+            .selected_capabilities
+            .command_selected(command.command_type)
+        {
+            Dispatch::Unregistered
+        } else if command.command_type == COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT {
             match decode_step_intent(command.payload) {
                 Ok(direction) => Dispatch::Step(authority.step(actor, direction).await),
                 Err(_) => Dispatch::Step(StepOutcome::rejected()),
             }
         } else if command.command_type == COMMAND_TYPE_USE_INTENT {
-            match decode_use_intent(command.payload) {
-                Ok(target) => Dispatch::Use(
+            match decode_use_intent_target(
+                admitted.continuity.selected_capabilities.as_slice(),
+                command.payload,
+            ) {
+                // ITEM-VIEW-1b §4.3: a handle that is not live is STALE before any authority
+                // call; opening writes nothing.
+                Ok(UseTarget::Item(handle)) => {
+                    let key = item_view.as_ref().and_then(|view| view.resolve(handle));
+                    let observation = match key {
+                        Some(key) => authority.observe_item_target(actor, key).await,
+                        None => None,
+                    };
+                    match (item_view.as_mut(), key, observation) {
+                        (Some(view), Some(key), Some(observation)) => {
+                            let opened = view.open(key, observation);
+                            admitted.continuity.item_view = view.continuity();
+                            let Ok((decision, delta)) = opened else {
+                                return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                            };
+                            Dispatch::UseItem(decision, delta)
+                        }
+                        _ => Dispatch::UseItem(OpenDecision::StaleState, None),
+                    }
+                }
+                Ok(UseTarget::WorldObject(target)) => Dispatch::Use(
                     authority
                         .use_object(
                             actor,
@@ -1014,6 +1168,15 @@ where
                 },
                 encode_spell_cast_result(outcome.disposition),
             ),
+            Dispatch::UseItem(decision, _) => (
+                CommandStatus::Accepted,
+                encode_use_result(match decision {
+                    OpenDecision::Open => UseDisposition::Committed,
+                    OpenDecision::TooFar => UseDisposition::TooFar,
+                    OpenDecision::StaleState => UseDisposition::StaleState,
+                    OpenDecision::NothingToUse => UseDisposition::NothingToUse,
+                }),
+            ),
             Dispatch::Achievements(AccountAchievementsReply::Page(payload)) => {
                 // The page is written once; move it out instead of copying up to 32 KiB.
                 (CommandStatus::Accepted, std::mem::take(payload))
@@ -1072,9 +1235,62 @@ where
                     // before-the-write ordering bug the overlay path did).
                     revision = new_revision;
                     admitted.continuity.spatial_revision = revision;
+                    // ITEM-VIEW-1b §4.3: a step out of reach or to another floor closes the
+                    // open corpse.
+                    if let Some(view) = item_view.as_mut() {
+                        let closed = view.close(&CloseTrigger::Moved {
+                            to: observation.actor_position,
+                        });
+                        admitted.continuity.item_view = view.continuity();
+                        let Ok(closed) = closed else {
+                            return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                        };
+                        if let Some(delta) = closed {
+                            let Some((delta_sequence, frame)) =
+                                item_view_delta(generation, sequence, &delta)
+                            else {
+                                return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                            };
+                            sequence = delta_sequence;
+                            admitted.continuity.server_sequence = sequence;
+                            if write_frame(stream, &frame).await.is_err() {
+                                return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                            }
+                        }
+                    }
                 }
             }
             Dispatch::Use(outcome) => {
+                // ITEM-VIEW-1b: a committed `USE` (the chest MINT) may have changed the
+                // backpack; its domain 9 delta follows the durable commit, only when the view
+                // changed. An unreadable backpack fails closed; the resumed snapshot restores it.
+                if outcome.disposition == UseDisposition::Committed
+                    && let Some(view) = item_view.as_mut()
+                {
+                    let Some(inventory) = authority
+                        .observe_character_inventory(actor, admitted.game_session_id)
+                        .await
+                    else {
+                        return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                    };
+                    let changed = view.inventory_committed(inventory);
+                    admitted.continuity.item_view = view.continuity();
+                    let Ok(changed) = changed else {
+                        return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                    };
+                    if let Some(delta) = changed {
+                        let Some((delta_sequence, frame)) =
+                            item_view_delta(generation, sequence, &delta)
+                        else {
+                            return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                        };
+                        sequence = delta_sequence;
+                        admitted.continuity.server_sequence = sequence;
+                        if write_frame(stream, &frame).await.is_err() {
+                            return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                        }
+                    }
+                }
                 // WORLD_OBJECT_OVERLAY (domain 2, delta type 1) is Channel-global, not
                 // per-connection: its "from" revision is always the committed entry's own
                 // revision minus one, since `LocalObjectRuntime::attempt_use` only ever commits
@@ -1113,7 +1329,10 @@ where
                 // that may have reached the client is never reused, even if the write fails.
                 // ACH-NOTIFY-2: an `Unknown` notice with capability 8 fails closed after the
                 // result; the resumed connection's snapshot restores the watermark.
-                let notice_revision = admitted.continuity.achievement_notice_revision;
+                let notice_revision = admitted
+                    .continuity
+                    .achievement_notice_revision
+                    .filter(|_| notices_selected);
                 if notice_revision.is_some() && outcome.earned == EarnedNotice::Unknown {
                     return ConnectionEnd::AdmittedThenDisconnected(admitted);
                 }
@@ -1163,7 +1382,18 @@ where
                     }
                 }
             }
-            Dispatch::Achievements(_) | Dispatch::Unregistered => {}
+            Dispatch::UseItem(_, Some(delta)) => {
+                let Some((delta_sequence, frame)) = item_view_delta(generation, sequence, &delta)
+                else {
+                    return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                };
+                sequence = delta_sequence;
+                admitted.continuity.server_sequence = sequence;
+                if write_frame(stream, &frame).await.is_err() {
+                    return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                }
+            }
+            Dispatch::UseItem(_, None) | Dispatch::Achievements(_) | Dispatch::Unregistered => {}
         }
     }
 }
@@ -1190,6 +1420,27 @@ fn vitals_delta(
     )
     .ok()?;
     Some((delta_sequence, delta))
+}
+
+/// One whole-view domain 9 or 11 delta at the sequence after `sequence`; `None` on an encoding
+/// fault.
+fn item_view_delta(
+    generation: u64,
+    sequence: u64,
+    delta: &ItemViewDelta,
+) -> Option<(u64, Vec<u8>)> {
+    let delta_sequence = sequence.checked_add(1)?;
+    let frame = encode_state_delta(
+        generation,
+        delta_sequence,
+        delta.domain_id,
+        delta.from,
+        delta.to,
+        delta.delta_type,
+        &delta.payload,
+    )
+    .ok()?;
+    Some((delta_sequence, frame))
 }
 
 async fn close_admitted<S: AsyncWrite + Unpin>(
@@ -1873,6 +2124,8 @@ mod tests {
                     spatial_revision: 2,
                     overlay_revision: 0,
                     achievement_notice_revision: None,
+                    selected_capabilities: SelectedCapabilities::NONE,
+                    item_view: ItemViewContinuity::default(),
                 }
             );
             // The unregistered type and the replayed ID never reached Movement.
@@ -3084,9 +3337,18 @@ mod tests {
         })
     }
 
+    /// A session that selected capability 8, at notice `revision`.
     fn with_notices(revision: u64) -> SessionContinuity {
         SessionContinuity {
             achievement_notice_revision: Some(revision),
+            selected_capabilities: SelectedCapabilities::select(
+                &[OfferedCapability {
+                    id: CAPABILITY_ACHIEVEMENT_NOTICES_V1,
+                    requires: &[],
+                }],
+                &[CAPABILITY_ACHIEVEMENT_NOTICES_V1],
+            )
+            .expect("selection"),
             ..SessionContinuity::FRESH
         }
     }

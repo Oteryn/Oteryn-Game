@@ -4905,6 +4905,237 @@
       ]
     },
     {
+      "id": "DUR04-REFERENCE-ITEM-PROFILE-V2-SERVER-GROUPS-PER-RECORD",
+      "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V2.md",
+      "resource": "Present typed capability groups in one artifact v5 server-authoritative Item body",
+      "unit": "groups",
+      "hard_maximum": 17,
+      "configurable_range": {
+        "minimum": 0,
+        "maximum": 17
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Reject group count before group-vector allocation; reject duplicates, noncanonical order and unknown critical groups (ids 1-17).",
+      "client_visible": false,
+      "boundary_tests": [
+        "17 known ordered unique groups accepted",
+        "18 groups rejected before allocation",
+        "group id 18, duplicate or unsorted group rejected"
+      ],
+      "notes": "v4 keeps 16 under the V1 row (ITEM-SEM-2b-3, D448)."
+    },
+    {
+      "id": "DUR04-REFERENCE-ITEM-PROFILE-V2-CLIENT-GROUPS-PER-RECORD",
+      "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V2.md",
+      "resource": "Present typed capability groups in one artifact v5 client-safe Item body",
+      "unit": "groups",
+      "hard_maximum": 12,
+      "configurable_range": {
+        "minimum": 0,
+        "maximum": 12
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Reject group count before allocation and reject every server-only group through the v5 projection allowlist (v4 allowlist plus UseRequirements).",
+      "client_visible": true,
+      "boundary_tests": [
+        "12 allowlisted ordered unique groups accepted",
+        "13 groups rejected before allocation",
+        "each server-only group rejected independently"
+      ],
+      "notes": "v4 keeps 11 under the V1 row."
+    },
+    {
+      "id": "DUR04-REFERENCE-ITEM-PROFILE-V2-EQUIPMENT-VOCATIONS",
+      "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V2.md",
+      "resource": "Vocation allow-set entries per artifact v5 Equipment pattern",
+      "unit": "vocations",
+      "hard_maximum": 6,
+      "configurable_range": {
+        "minimum": 0,
+        "maximum": 6
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Check count before allocation; require sorted unique members from the closed six-value domain (five base vocations and None).",
+      "client_visible": true,
+      "boundary_tests": [
+        "6 unique vocations including None accepted",
+        "7th entry rejected before allocation",
+        "duplicate or unknown vocation (wire 7) rejected"
+      ]
+    },
+    {
+      "id": "DUR04-REFERENCE-ITEM-PROFILE-V2-TRADE-VOCATIONS",
+      "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V2.md",
+      "resource": "Vocation entries per artifact v5 TradeRestrictions record",
+      "unit": "vocations",
+      "hard_maximum": 6,
+      "configurable_range": {
+        "minimum": 0,
+        "maximum": 6
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Check count before allocation; require sorted unique members from the closed six-value domain.",
+      "client_visible": false,
+      "boundary_tests": [
+        "6 unique vocations accepted",
+        "7th entry rejected before allocation",
+        "duplicate or unknown vocation rejected"
+      ]
+    },
+    {
+      "id": "DUR04-REFERENCE-ITEM-PROFILE-V2-USE-REQUIREMENT-VOCATIONS",
+      "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V2.md",
+      "resource": "Vocation entries per artifact v5 use-requirements group",
+      "unit": "vocations",
+      "hard_maximum": 6,
+      "configurable_range": {
+        "minimum": 0,
+        "maximum": 6
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Check count before allocation; require sorted unique members from the closed six-value domain.",
+      "client_visible": true,
+      "boundary_tests": [
+        "6 unique vocations accepted",
+        "7th entry rejected before allocation",
+        "duplicate or unknown vocation rejected"
+      ],
+      "notes": "Group 17; enforcement_mode admits ON_USE only. Enforcement belongs to RUNE-USE-0 and RANGED-0."
+    },
+    {
+      "id": "DUR04-REFERENCE-ITEM-PROFILE-V2-SERVER-RECORD-BYTES",
+      "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V2.md",
+      "resource": "One artifact v5 typed server-authoritative Item body record",
+      "unit": "bytes",
+      "hard_maximum": 3577,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 3577
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Reject declared record length before slicing, copying or field decode.",
+      "client_visible": false,
+      "boundary_tests": [
+        "3,577-byte semantically valid record accepted",
+        "3,578 bytes rejected before record allocation",
+        "truncated record rejected"
+      ]
+    },
+    {
+      "id": "DUR04-REFERENCE-ITEM-PROFILE-V2-CLIENT-RECORD-BYTES",
+      "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V2.md",
+      "resource": "One artifact v5 typed client-safe Item body record",
+      "unit": "bytes",
+      "hard_maximum": 3454,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 3454
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Reject declared record length before slicing, copying or field decode.",
+      "client_visible": true,
+      "boundary_tests": [
+        "3,454-byte semantically valid record accepted",
+        "3,455 bytes rejected before record allocation",
+        "truncated record rejected"
+      ]
+    },
+    {
+      "id": "DUR04-REFERENCE-ITEM-PROFILE-V2-SERVER-BODY-BYTES",
+      "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V2.md",
+      "resource": "Artifact v5 server-authoritative Item body section",
+      "unit": "bytes",
+      "hard_maximum": 136487589,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 136487589
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Use checked multiplication and addition; reject the section length before body allocation.",
+      "client_visible": false,
+      "boundary_tests": [
+        "136,487,589 bytes accepted",
+        "136,487,590 bytes rejected before allocation",
+        "checked arithmetic overflow rejected"
+      ]
+    },
+    {
+      "id": "DUR04-REFERENCE-ITEM-PROFILE-V2-CLIENT-BODY-BYTES",
+      "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V2.md",
+      "resource": "Artifact v5 client-safe Item body section",
+      "unit": "bytes",
+      "hard_maximum": 131794278,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 131794278
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Use checked multiplication and addition; reject the section length before body allocation.",
+      "client_visible": true,
+      "boundary_tests": [
+        "131,794,278 bytes accepted",
+        "131,794,279 bytes rejected before allocation",
+        "checked arithmetic overflow rejected"
+      ]
+    },
+    {
+      "id": "DUR04-REFERENCE-ITEM-PROFILE-V2-SERVER-ARTIFACT-BYTES",
+      "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V2.md",
+      "resource": "One encoded artifact v5 server-authoritative Reference Item artifact",
+      "unit": "bytes",
+      "hard_maximum": 177285126,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 177285126
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Reject the artifact length before section parsing, copying or digest work beyond the header.",
+      "client_visible": false,
+      "boundary_tests": [
+        "177,285,126 bytes accepted",
+        "177,285,127 bytes rejected before parsing",
+        "checked arithmetic overflow rejected"
+      ]
+    },
+    {
+      "id": "DUR04-REFERENCE-ITEM-PROFILE-V2-CLIENT-ARTIFACT-BYTES",
+      "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V2.md",
+      "resource": "One encoded artifact v5 client-safe Reference Item artifact",
+      "unit": "bytes",
+      "hard_maximum": 172591815,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 172591815
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Reject the artifact length before section parsing, copying or digest work beyond the header.",
+      "client_visible": true,
+      "boundary_tests": [
+        "172,591,815 bytes accepted",
+        "172,591,816 bytes rejected before parsing",
+        "checked arithmetic overflow rejected"
+      ]
+    },
+    {
+      "id": "DUR04-REFERENCE-ITEM-PROFILE-V2-GENERATION-PAIR-BYTES",
+      "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V2.md",
+      "resource": "Combined encoded artifact v5 server and client-safe Reference Item artifacts in one generation",
+      "unit": "bytes",
+      "hard_maximum": 349876941,
+      "configurable_range": {
+        "minimum": 2,
+        "maximum": 349876941
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Use checked addition and validate both projection maxima before staging either artifact as a pair.",
+      "client_visible": false,
+      "boundary_tests": [
+        "349,876,941 cumulative bytes accepted only when both projection maxima pass",
+        "349,876,942 bytes rejected before pair staging",
+        "checked-add overflow rejects the generation without partial publication"
+      ]
+    },
+    {
       "id": "MOVE-RL-03",
       "owner_contract": "OTERYN_V2_STAGE_C_VSL_OWNER_ACCEPTANCE_20260816.md",
       "resource": "Attempted adjacent destination candidates in one isolated Movement local-step decision",
@@ -5905,6 +6136,75 @@
         "apps/game-server/migrations/0031_character_gold_fee_change_mint.sql (stored envelope ceiling, re-measured)"
       ],
       "notes": "CHARACTER-GOLD-FEE-BOUNDARY-V1 \u00a74.6 (D174-D178 and the \u00a72 at-most-2-change-outputs interpretation); fee shape only, the one-item DUR03-RL-01..08 rows are unchanged; registered by OTV2-20260930-gold-fee-1a. GOLD-FEE-1b (OTV2-20260930-gold-fee-1b) admits platinum/crystal and the change MINTs within these rows and re-measured this RL-07 byte row (was 24,181 / 24,495 B for gold only)."
+    },
+    {
+      "id": "DUR03-RL-03-PROF",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_PROFICIENCY1B_PERK_MODIFICATION_VALUE_SHAPES_DECISION_2026-10-03.md",
+      "resource": "Value lines in one perk modification receipt",
+      "unit": "value lines per receipt",
+      "hard_maximum": 1,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 1
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Checked before any write; never truncated; the shape is fixed, so a plan over it fails closed (InvalidStoredState) before any write. One line carries the receipt's dust cost; 0060 re-proves it at commit.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=1 admitted",
+        "max+1=2 rejected (CAPACITY_EXCEEDED)"
+      ],
+      "consumers": [
+        "apps/game-server/src/durability/character_proficiency_modification.rs (ProficiencyModificationUsage: checked after the plan, before any write)",
+        "apps/game-server/migrations/0060_proficiency_modification_value_lines.sql (dust guard: a receipt with dust has exactly one line and one equal SPEND entry)"
+      ],
+      "notes": "PROFICIENCY-1B composed dust burn shape (DUR-03 \u00a739.3 amendment); dust SPEND only, the orb BURN is not admitted and its DUR03-RL-01/02-PROF rows are registered by the orb slice; registered by OTV2-20261003-prof-shape-1b."
+    },
+    {
+      "id": "DUR03-RL-06-PROF-PARTICIPANTS",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_PROFICIENCY1B_PERK_MODIFICATION_VALUE_SHAPES_DECISION_2026-10-03.md",
+      "resource": "Plan participants in one perk modification transaction",
+      "unit": "participants per logical transaction",
+      "hard_maximum": 1,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 1
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Checked before any write; never truncated; the shape is fixed, so a plan over it fails closed (InvalidStoredState) before any write. The acting Character is the only participant.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=1 admitted",
+        "max+1=2 rejected (CAPACITY_EXCEEDED)"
+      ],
+      "consumers": [
+        "apps/game-server/src/durability/character_proficiency_modification.rs (ProficiencyModificationUsage: checked after the plan, before any write)",
+        "apps/game-server/migrations/0060_proficiency_modification_value_lines.sql (dust guard: a receipt with dust has exactly one line and one equal SPEND entry)"
+      ],
+      "notes": "PROFICIENCY-1B composed dust burn shape (DUR-03 \u00a739.3 amendment); dust SPEND only, the orb BURN is not admitted and its DUR03-RL-01/02-PROF rows are registered by the orb slice; registered by OTV2-20261003-prof-shape-1b."
+    },
+    {
+      "id": "DUR03-RL-06-PROF-EFFECT-WORK-UNITS",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_PROFICIENCY1B_PERK_MODIFICATION_VALUE_SHAPES_DECISION_2026-10-03.md",
+      "resource": "Effect work units in one perk modification transaction",
+      "unit": "work units per logical transaction",
+      "hard_maximum": 4,
+      "configurable_range": {
+        "minimum": 3,
+        "maximum": 4
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Checked before any write; never truncated; the shape is fixed, so a plan over it fails closed (InvalidStoredState) before any write. Receipt, slot state and audit 3, plus 1 for the dust line and its SPEND entry.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=4 admitted",
+        "max+1=5 rejected (CAPACITY_EXCEEDED)"
+      ],
+      "consumers": [
+        "apps/game-server/src/durability/character_proficiency_modification.rs (ProficiencyModificationUsage: checked after the plan, before any write)",
+        "apps/game-server/migrations/0060_proficiency_modification_value_lines.sql (dust guard: a receipt with dust has exactly one line and one equal SPEND entry)"
+      ],
+      "notes": "PROFICIENCY-1B composed dust burn shape (DUR-03 \u00a739.3 amendment); dust SPEND only, the orb BURN is not admitted and its DUR03-RL-01/02-PROF rows are registered by the orb slice; registered by OTV2-20261003-prof-shape-1b."
     },
     {
       "id": "DUR03-AUDIT-RETENTION-S",
@@ -7392,6 +7692,316 @@
       "owner_contract": "../architecture/reviews/OTERYN_GAME_TIMED_ITEM0B_RUNTIME_CHARGES_AND_DURATION_DECISION_2026-10-03.md",
       "resource": "Timed writes in flight per item lane",
       "unit": "writes"
+    },
+    {
+      "id": "IMBFORGE0-RL-08",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_IMBUE_FORGE0_IMBUEMENTS_AND_EXALTATION_FORGE_DECISION_2026-09-30.md",
+      "resource": "Forge dust limit of one Character (the balance is 0 to the limit)",
+      "unit": "forge dust",
+      "hard_maximum": 225,
+      "configurable_range": {
+        "minimum": 100,
+        "maximum": 225
+      },
+      "failure_category": "INVALID_INPUT",
+      "allocation_impact": "The limit starts at 100 and is a SMALLINT within 100-225; a gain above the limit credits up to it and records the lost part, and a spend above the balance is refused before any write.",
+      "client_visible": false,
+      "boundary_tests": [
+        "min=100 and max=225: accepted by the dust_limit CHECK",
+        "min-1=99 and max+1=226: rejected by the dust_limit CHECK (game_character_forge_dust_limit_range)"
+      ],
+      "consumers": [
+        "apps/game-server/migrations/0059_character_forge_dust.sql game_character_forge_dust_limit_range",
+        "apps/game-server/src/domain/forge_dust.rs DUST_LIMIT_MIN, DUST_LIMIT_MAX"
+      ],
+      "notes": "IMBUE-FORGE-0 \u00a79 and \u00a715. Raising the limit costs (limit - 75) dust (Canary, PARITY_PENDING) and is FORGE-1b's DustLimit operation. Registered by OTV2-20261003-forge-1a."
+    },
+    {
+      "allocation_impact": "The one timed item; a composed shape's receipt rows are charged against the receipt's own rows.",
+      "boundary_tests": [
+        "max=1: every timed shape touches its one item",
+        "max+1=2: refused before any write"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "maximum": 1,
+        "minimum": 1
+      },
+      "consumers": [
+        "apps/game-server/src/durability/item_timed_state_audit.rs TimedShape::check"
+      ],
+      "failure_category": "CAPACITY_EXCEEDED",
+      "hard_maximum": 1,
+      "id": "DUR03-RL-01-TIMED",
+      "notes": "\u00a712. Registered by OTV2-20261003-timed-rt-1b.",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_TIMED_ITEM0B_RUNTIME_CHARGES_AND_DURATION_DECISION_2026-10-03.md",
+      "resource": "Touched item instances in one timed checkpoint or expiry transaction (all five \u00a712 shapes)",
+      "unit": "item instances"
+    },
+    {
+      "allocation_impact": "None: the row write and the in-place transform leave the location as it is.",
+      "boundary_tests": [
+        "max=0: a checkpoint and an expiry transform carry no location line",
+        "max+1=1: refused"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "maximum": 0,
+        "minimum": 0
+      },
+      "consumers": [
+        "apps/game-server/src/durability/item_timed_state_audit.rs TimedShape::check"
+      ],
+      "failure_category": "CAPACITY_EXCEEDED",
+      "hard_maximum": 0,
+      "id": "DUR03-RL-02-TIMED-WRITE",
+      "notes": "\u00a712. Registered by OTV2-20261003-timed-rt-1b.",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_TIMED_ITEM0B_RUNTIME_CHARGES_AND_DURATION_DECISION_2026-10-03.md",
+      "resource": "Location lines of a timed checkpoint, composed checkpoint or expiry transform",
+      "unit": "location lines"
+    },
+    {
+      "allocation_impact": "The one removed container entry of the retired item.",
+      "boundary_tests": [
+        "max=1: the burn removes its one entry",
+        "max+1=2: refused"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "maximum": 1,
+        "minimum": 1
+      },
+      "consumers": [
+        "apps/game-server/src/durability/item_timed_state_audit.rs TimedShape::check"
+      ],
+      "failure_category": "CAPACITY_EXCEEDED",
+      "hard_maximum": 1,
+      "id": "DUR03-RL-02-TIMED-EXPIRY-BURN",
+      "notes": "\u00a712; a burn is always from a container entry. Registered by OTV2-20261003-timed-rt-1b.",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_TIMED_ITEM0B_RUNTIME_CHARGES_AND_DURATION_DECISION_2026-10-03.md",
+      "resource": "Location lines of an expiry burn or composed expiry burn",
+      "unit": "location lines"
+    },
+    {
+      "allocation_impact": "One input and one output, the same instance; every other timed shape admits none (INVALID_INPUT, as DUR03-RL-04).",
+      "boundary_tests": [
+        "max=1: one input and one output are accepted",
+        "max+1=2: a second input or output is refused"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "maximum": 1,
+        "minimum": 1
+      },
+      "consumers": [
+        "apps/game-server/src/durability/item_timed_state_audit.rs TimedShape::check and check_timed_expiry"
+      ],
+      "failure_category": "CAPACITY_EXCEEDED",
+      "hard_maximum": 1,
+      "id": "DUR03-RL-04-TIMED-EXPIRY",
+      "notes": "\u00a78, \u00a712; amends DUR03-RL-04 for this shape only. Registered by OTV2-20261003-timed-rt-1b.",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_TIMED_ITEM0B_RUNTIME_CHARGES_AND_DURATION_DECISION_2026-10-03.md",
+      "resource": "Transform inputs/outputs of one expiry transform (PRESERVE_INSTANCE, in place)",
+      "unit": "transform inputs/outputs per logical transaction"
+    },
+    {
+      "allocation_impact": "The holder.",
+      "boundary_tests": [
+        "max=1: the holder",
+        "max+1=2: refused"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "maximum": 1,
+        "minimum": 1
+      },
+      "consumers": [
+        "apps/game-server/src/durability/item_timed_state_audit.rs TimedShape::check"
+      ],
+      "failure_category": "CAPACITY_EXCEEDED",
+      "hard_maximum": 1,
+      "id": "DUR03-RL-06-TIMED-CHECKPOINT-PARTICIPANTS",
+      "notes": "\u00a712. Registered by OTV2-20261003-timed-rt-1b.",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_TIMED_ITEM0B_RUNTIME_CHARGES_AND_DURATION_DECISION_2026-10-03.md",
+      "resource": "Participants of a timed checkpoint or composed checkpoint",
+      "unit": "participants"
+    },
+    {
+      "allocation_impact": "The row write and its record.",
+      "boundary_tests": [
+        "max=2: accepted",
+        "max+1=3: refused"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "maximum": 2,
+        "minimum": 2
+      },
+      "consumers": [
+        "apps/game-server/src/durability/item_timed_state_audit.rs TimedShape::check"
+      ],
+      "failure_category": "CAPACITY_EXCEEDED",
+      "hard_maximum": 2,
+      "id": "DUR03-RL-06-TIMED-CHECKPOINT-EFFECT-WORK-UNITS",
+      "notes": "\u00a712. Registered by OTV2-20261003-timed-rt-1b.",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_TIMED_ITEM0B_RUNTIME_CHARGES_AND_DURATION_DECISION_2026-10-03.md",
+      "resource": "Effect work units of a timed checkpoint or composed checkpoint",
+      "unit": "work units"
+    },
+    {
+      "allocation_impact": "The holder.",
+      "boundary_tests": [
+        "max=1: the holder",
+        "max+1=2: refused"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "maximum": 1,
+        "minimum": 1
+      },
+      "consumers": [
+        "apps/game-server/src/durability/item_timed_state_audit.rs TimedShape::check"
+      ],
+      "failure_category": "CAPACITY_EXCEEDED",
+      "hard_maximum": 1,
+      "id": "DUR03-RL-06-TIMED-EXPIRY-PARTICIPANTS",
+      "notes": "\u00a712. Registered by OTV2-20261003-timed-rt-1b.",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_TIMED_ITEM0B_RUNTIME_CHARGES_AND_DURATION_DECISION_2026-10-03.md",
+      "resource": "Participants of an expiry transform, burn or composed burn",
+      "unit": "participants"
+    },
+    {
+      "allocation_impact": "The record, the item change, the row or location change and the audit event.",
+      "boundary_tests": [
+        "max=4: accepted",
+        "max+1=5: refused"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "maximum": 4,
+        "minimum": 4
+      },
+      "consumers": [
+        "apps/game-server/src/durability/item_timed_state_audit.rs TimedShape::check"
+      ],
+      "failure_category": "CAPACITY_EXCEEDED",
+      "hard_maximum": 4,
+      "id": "DUR03-RL-06-TIMED-EXPIRY-EFFECT-WORK-UNITS",
+      "notes": "\u00a712. Registered by OTV2-20261003-timed-rt-1b.",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_TIMED_ITEM0B_RUNTIME_CHARGES_AND_DURATION_DECISION_2026-10-03.md",
+      "resource": "Effect work units of an expiry transform, burn or composed burn",
+      "unit": "work units"
+    },
+    {
+      "allocation_impact": "One timed_expiry event per expiry; a checkpoint has none. Payload and envelope bytes stay DUR03-RL-07-PAYLOAD/ENVELOPE.",
+      "boundary_tests": [
+        "max=1: an expiry carries its one event",
+        "max+1=2: refused"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "maximum": 1,
+        "minimum": 1
+      },
+      "consumers": [
+        "apps/game-server/src/durability/item_timed_state_audit.rs TimedShape::check and encode_timed_expiry_event"
+      ],
+      "failure_category": "CAPACITY_EXCEEDED",
+      "hard_maximum": 1,
+      "id": "DUR03-RL-07-TIMED-EVENTS",
+      "notes": "\u00a78, \u00a712. Registered by OTV2-20261003-timed-rt-1b.",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_TIMED_ITEM0B_RUNTIME_CHARGES_AND_DURATION_DECISION_2026-10-03.md",
+      "resource": "Durable audit events of one timed transaction",
+      "unit": "events"
+    },
+    {
+      "allocation_impact": "The bounded replay of an ambiguous outcome by (item, expected revision).",
+      "boundary_tests": [
+        "max=3: accepted",
+        "max+1=4: refused"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "maximum": 3,
+        "minimum": 3
+      },
+      "consumers": [
+        "apps/game-server/src/durability/item_timed_state_audit.rs TimedShape::check"
+      ],
+      "failure_category": "CAPACITY_EXCEEDED",
+      "hard_maximum": 3,
+      "id": "DUR03-RL-08-TIMED",
+      "notes": "\u00a712. Registered by OTV2-20261003-timed-rt-1b.",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_TIMED_ITEM0B_RUNTIME_CHARGES_AND_DURATION_DECISION_2026-10-03.md",
+      "resource": "Retry work units of one timed transaction",
+      "unit": "work units"
+    },
+    {
+      "id": "ITEMV0-RL-01",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_ITEM_MOVE_WIRE0_ITEM_VIEW_AND_MOVE_DECISION_2026-09-30.md",
+      "resource": "Items in one CHARACTER_INVENTORY view (domain 9 snapshot type 1 or delta type 1), the main backpack slot included",
+      "unit": "items per view",
+      "hard_maximum": 30,
+      "configurable_range": {
+        "minimum": 30,
+        "maximum": 30
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "The decoder refuses the 30th direct entry (31st item) before decoding it and any payload over 930 bytes (30 entries of at most 31 bytes) before reading it; the encoder refuses the same view before emitting a byte.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=30: the main backpack and 29 entries round-trip within 930 bytes",
+        "max+1=31: 31 items are refused in both directions"
+      ],
+      "consumers": [
+        "crates/protocol-oteryn/src/item_view.rs MAX_CHARACTER_INVENTORY_ITEMS, MAX_CHARACTER_INVENTORY_BYTES"
+      ],
+      "notes": "ITEM-MOVE-WIRE-0 \u00a74.4; the value 30 is ITEM-MOVE-WIRE-1 \u00a76.3 (the main backpack, 20 entries and later the nine equipment slots), superseding WIRE-0's 21. Within FND02-STATE-DELTA-PAYLOAD-BYTES and FND02-SNAPSHOT-CHUNK-BYTES. Registered by OTV2-20261003-item-view-1a."
+    },
+    {
+      "id": "ITEMV0-RL-02",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_ITEM_MOVE_WIRE0_ITEM_VIEW_AND_MOVE_DECISION_2026-09-30.md",
+      "resource": "Entries in one OPEN_CONTAINER view (domain 11 snapshot type 1 or delta type 1)",
+      "unit": "entries per view",
+      "hard_maximum": 16,
+      "configurable_range": {
+        "minimum": 16,
+        "maximum": 16
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "The decoder refuses a 17th entry before decoding it and any payload over 507 bytes (the container handle and 16 entries of at most 31 bytes) before reading it; the encoder refuses the same view before emitting a byte.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=16: a corpse with 16 entries round-trips within 507 bytes",
+        "max+1=17: 17 entries are refused in both directions"
+      ],
+      "consumers": [
+        "crates/protocol-oteryn/src/item_view.rs MAX_OPEN_CONTAINER_ENTRIES, MAX_OPEN_CONTAINER_BYTES"
+      ],
+      "notes": "ITEM-MOVE-WIRE-0 \u00a74.4: the corpse container capacity, equal to GAMEITEM01-CORPSE-CONTAINER-ENTRIES-MAX. Within FND02-STATE-DELTA-PAYLOAD-BYTES and FND02-SNAPSHOT-CHUNK-BYTES. Registered by OTV2-20261003-item-view-1a."
+    },
+    {
+      "id": "ITEMV0-RL-03",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_ITEM_MOVE_WIRE0_ITEM_VIEW_AND_MOVE_DECISION_2026-09-30.md",
+      "resource": "Live item handles of one GameSession (items in at least one of the session's views)",
+      "unit": "handles per GameSession",
+      "hard_maximum": 301,
+      "configurable_range": {
+        "minimum": 301,
+        "maximum": 301
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Measured as the sum of the view bounds: 255 domain-1 objects (MOVE-RL-11 less the own player), 30 domain-9 items (ITEMV0-RL-01) and 16 domain-11 entries (ITEMV0-RL-02); the open corpse keeps its domain-1 handle. The handle table (ITEM-VIEW-1b) is bounded by this value before inserting; a handle leaving every view is dropped, and the table never grows past the views it serves.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=301: the views at their bounds hold 301 live handles",
+        "max+1=302: the table refuses a handle beyond the views' bounds"
+      ],
+      "consumers": [
+        "crates/protocol-oteryn/src/item_view.rs MAX_LIVE_ITEM_HANDLES",
+        "the ITEM-VIEW-1b session handle table"
+      ],
+      "notes": "ITEM-MOVE-WIRE-0 \u00a74.1 and \u00a74.4. The codec test binds the derivation; the table enforcing it is ITEM-VIEW-1b's. Registered by OTV2-20261003-item-view-1a."
     }
   ]
 }

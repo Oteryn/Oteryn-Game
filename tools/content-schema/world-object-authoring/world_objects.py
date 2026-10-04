@@ -509,10 +509,18 @@ def validate_record(record):
         if section not in record and kind == section_kind:
             errors.append(f"{section}: required on kind {section_kind!r}")
     import official_corpses
+    import qualified_world
 
     source = record["provenance"]["source"]
     if (
+        source.get("profile") in qualified_world.PROFILES
+        or record["provenance"]["source_item_id"] in qualified_world.IDS
+        or record["provenance"]["item_pointer"]["key"] in qualified_world.KEYS
+    ):
+        errors.extend(qualified_world.validate_record(record))
+    if (
         source.get("engine") == "official_client"
+        and source.get("profile") not in qualified_world.PROFILES
         or source.get("profile") == official_corpses.PROFILE
         or record["provenance"]["source_item_id"] in official_corpses.IDS
         or record["provenance"]["item_pointer"]["key"] in official_corpses.KEYS

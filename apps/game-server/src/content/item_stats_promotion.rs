@@ -7,6 +7,11 @@
 //! switch: each row sets its field to the wiki value, replacing whatever an earlier promotion
 //! put there. A field the wiki is silent on is left as it is.
 //! Equipment rows contain one source-qualified pattern; absent restrictions remain Unknown.
+//! ITEM-SEM-2b-2 adds the non-quiver left-hand group and keeps the Extra slot free of
+//! equip requirements; promoted vocations are matched by the equip rule, not here.
+//! ITEM-SEM-2b-3 admits the vocation `None` and lowers use requirements (runes, ammunition,
+//! the Extra slot and slotless Items) into `use_requirements`, enforced on use by
+//! RUNE-USE-0 and RANGED-0, not here.
 //! They do not grant materialization or a legal destination, and the main backpack retains
 //! its separately qualified starter admission. Declared charges and duration do not infer
 //! consumption, decay, activation, materialization or any other temporal behavior.
@@ -16,12 +21,13 @@
 //! Item record, and a field may appear once per item; anything else fails closed.
 
 use super::{
-    ProjectReferenceRecord, ProjectV2Draft, REFERENCE_ITEM_MAX_MODIFIERS,
-    REFERENCE_ITEM_MAX_RESISTANCES, ReferenceCells, ReferenceElementalAttack,
-    ReferenceEquipmentPattern, ReferenceEquipmentSlot, ReferenceItemCharges,
-    ReferenceItemEquipment, ReferenceItemField, ReferenceItemImbuement, ReferenceItemPhysical,
-    ReferenceItemProtection, ReferenceItemSemantics, ReferenceItemSkillModifiers,
-    ReferenceItemTemporal, ReferenceItemWeapon, ReferenceMilliseconds, ReferenceModifierBinding,
+    ProjectReferenceRecord, ProjectV2Draft, REFERENCE_ITEM_MAX_BASE_VOCATIONS,
+    REFERENCE_ITEM_MAX_MODIFIERS, REFERENCE_ITEM_MAX_RESISTANCES, ReferenceCells,
+    ReferenceElementalAttack, ReferenceEquipmentPattern, ReferenceEquipmentSlot,
+    ReferenceItemCharges, ReferenceItemEquipment, ReferenceItemField, ReferenceItemImbuement,
+    ReferenceItemPhysical, ReferenceItemProtection, ReferenceItemSemantics,
+    ReferenceItemSkillModifiers, ReferenceItemTemporal, ReferenceItemUseRequirements,
+    ReferenceItemWeapon, ReferenceMilliseconds, ReferenceModifierBinding,
     ReferenceModifierParameter, ReferenceRationalPercent, ReferenceResistance,
     ReferenceResistanceKind, ReferenceSignedPoints, ReferenceSkillModifierKind,
     ReferenceWeaponElement, ReferenceWeaponType, world_project_sha256,
@@ -33,8 +39,8 @@ use std::collections::{BTreeMap, BTreeSet};
 pub const ITEM_STATS_PROMOTION_V2_PACKET: &[u8] =
     include_bytes!("../../../../docs/agents/evidence/OTV2-20260930-item-stats-promotion-v2.json");
 pub const ITEM_STATS_PROMOTION_V2_PACKET_SHA256: &str =
-    "aeed35542222289537e3eafe0dbf279b8f17d09ba3a210a3818e194642f7e1fc";
-pub const ITEM_STATS_PROMOTION_V2_FIELD_COUNT: usize = 13_298;
+    "194e3dd3f0e001449eeff3da60506bec7955b39815f058355a4b25b994b3ba5f";
+pub const ITEM_STATS_PROMOTION_V2_FIELD_COUNT: usize = 13_414;
 pub const ITEM_STATS_PROMOTION_V2_ITEM_COUNT: usize = 6_533;
 const SCHEMA: &str = "OTERYN_ITEM_STATS_PROMOTION/v2";
 
@@ -120,6 +126,7 @@ enum TypedValue {
     Resistances(Vec<DeclaredResistance>),
     Modifiers(Vec<ReferenceModifierBinding>),
     WeightCentiOz(u32),
+    UseRequirements(ReferenceItemUseRequirements),
 }
 
 #[derive(Deserialize)]
@@ -432,6 +439,12 @@ fn set_field(
             )?;
             set_declared(&mut modifiers.modifiers, entries.clone(), row)?
         }
+        ("use_requirements", TypedValue::UseRequirements(value)) => {
+            if !qualified_use_requirements(value) {
+                return Err(wrong());
+            }
+            set(&mut semantics.use_requirements, value.clone())
+        }
         ("protection.resistances", TypedValue::Resistances(entries)) => {
             if entries.is_empty()
                 || entries.len() > REFERENCE_ITEM_MAX_RESISTANCES
@@ -457,34 +470,75 @@ fn set_field(
     })
 }
 
-// This packet lowers one observed equip pattern, never an arbitrary grammar.
+/// The one occupancy group of `domain/equipment.rs` the packet may name (ITEM-SEM-2b-2).
+pub const NON_QUIVER_LEFT_HAND_GROUP: &str = "oteryn:equipment-group.non_quiver_left_hand";
+
+// This packet lowers one observed equip pattern, never an arbitrary grammar (ITEM-SEM-2b-2 §2):
+// a two-handed weapon reserves the shield slot or, for a distance weapon, the non-quiver
+// left-hand group, which shields and spellbooks reserve too. The Extra slot carries no equip
+// requirement, and level 0 is no requirement.
 fn qualified_equipment_pattern(pattern: &ReferenceEquipmentPattern) -> bool {
+    use ReferenceEquipmentSlot::{Extra, Shield, Weapon};
     use ReferenceItemField::{Known, Unknown};
     let Known(primary) = pattern.primary_slot else {
         return false;
     };
+    let reserves_shield = match &pattern.additional_reserved_slots {
+        Unknown => false,
+        Known(slots) if slots.is_empty() => false,
+        Known(slots) if primary == Weapon && slots.as_slice() == [Shield] => true,
+        _ => return false,
+    };
+    let groups_qualified = match &pattern.mutually_exclusive_groups {
+        Unknown => true,
+        Known(groups) => {
+            groups.is_empty()
+                || (groups.len() == 1
+                    && groups[0].as_str() == NON_QUIVER_LEFT_HAND_GROUP
+                    && matches!(primary, Weapon | Shield)
+                    && !reserves_shield)
+        }
+        _ => false,
+    };
     pattern.pattern_id == 1
-        && matches!(pattern.mutually_exclusive_groups, Unknown)
+        && groups_qualified
         && matches!(pattern.compatibility_rule, Unknown)
-        && matches!(pattern.level, Known(_) | Unknown)
-        && match &pattern.additional_reserved_slots {
+        && match pattern.level {
             Unknown => true,
-            Known(slots) => {
-                slots.is_empty()
-                    || (primary == ReferenceEquipmentSlot::Weapon
-                        && slots.as_slice() == [ReferenceEquipmentSlot::Shield])
-            }
+            Known(level) => level > 0 && primary != Extra,
             _ => false,
         }
         && match &pattern.vocations {
             Unknown => true,
-            Known(values) => {
-                !values.is_empty()
-                    && values.len() <= 5
-                    && values.windows(2).all(|pair| pair[0] < pair[1])
-            }
+            Known(values) => primary != Extra && qualified_vocations(values),
             _ => false,
         }
+}
+
+fn qualified_vocations(values: &[super::ReferenceBaseVocation]) -> bool {
+    !values.is_empty()
+        && values.len() <= REFERENCE_ITEM_MAX_BASE_VOCATIONS
+        && values.windows(2).all(|pair| pair[0] < pair[1])
+}
+
+// ITEM-SEM-2b-3: a known requirement is never zero, and a group carries at least one.
+fn qualified_use_requirements(value: &ReferenceItemUseRequirements) -> bool {
+    use ReferenceItemField::{Known, Unknown};
+    let level = |field: &ReferenceItemField<u16>| match field {
+        Unknown => true,
+        Known(value) => *value > 0,
+        _ => false,
+    };
+    level(&value.min_level)
+        && level(&value.min_magic_level)
+        && match &value.vocations {
+            Unknown => true,
+            Known(values) => qualified_vocations(values),
+            _ => false,
+        }
+        && !(value.min_level.is_unknown()
+            && value.min_magic_level.is_unknown()
+            && value.vocations.is_unknown())
 }
 
 /// The Known group of `field`, created (all members Unknown) when the group is Unknown.
@@ -705,11 +759,147 @@ mod tests {
                 "compatibility_rule",
                 serde_json::json!({"state": "KNOWN", "value": null}),
             ),
+            ("level", serde_json::json!({"state": "KNOWN", "value": 0})),
+            (
+                "mutually_exclusive_groups",
+                serde_json::json!({"state": "KNOWN", "value": [NON_QUIVER_LEFT_HAND_GROUP]}),
+            ),
+            (
+                "mutually_exclusive_groups",
+                serde_json::json!({"state": "KNOWN", "value": ["oteryn:equipment-group.other"]}),
+            ),
         ] {
             let mut invalid = pattern.clone();
             invalid[field] = bad;
             assert!(apply_pattern(invalid).is_err(), "{field}");
         }
+        // ITEM-SEM-2b-2: a two-handed bow and a shield reserve the non-quiver left-hand group.
+        let group = serde_json::json!({"state": "KNOWN", "value": [NON_QUIVER_LEFT_HAND_GROUP]});
+        let mut bow = pattern.clone();
+        bow["additional_reserved_slots"] = serde_json::json!({"state": "KNOWN", "value": []});
+        bow["mutually_exclusive_groups"] = group.clone();
+        assert!(apply_pattern(bow).is_ok());
+        let mut shield = pattern.clone();
+        shield["primary_slot"] = serde_json::json!({"state": "KNOWN", "value": "SHIELD"});
+        shield["additional_reserved_slots"] = serde_json::json!({"state": "KNOWN", "value": []});
+        shield["mutually_exclusive_groups"] = group.clone();
+        assert!(apply_pattern(shield.clone()).is_ok());
+        let mut helmet = shield;
+        helmet["primary_slot"] = serde_json::json!({"state": "KNOWN", "value": "HEAD"});
+        assert!(apply_pattern(helmet).is_err(), "group outside the hands");
+        // The Extra slot runs no level or vocation check.
+        let mut extra = pattern.clone();
+        extra["primary_slot"] = serde_json::json!({"state": "KNOWN", "value": "EXTRA"});
+        extra["additional_reserved_slots"] = serde_json::json!({"state": "KNOWN", "value": []});
+        assert!(
+            apply_pattern(extra.clone()).is_err(),
+            "extra with requirements"
+        );
+        extra["level"] = serde_json::json!({"state": "UNKNOWN"});
+        assert!(
+            apply_pattern(extra.clone()).is_err(),
+            "extra with vocations"
+        );
+        extra["vocations"] = serde_json::json!({"state": "UNKNOWN"});
+        assert!(apply_pattern(extra).is_ok());
+        // ITEM-SEM-2b-3: `None` (a character without a vocation) is a vocation like the others.
+        let mut quiver = pattern.clone();
+        quiver["primary_slot"] = serde_json::json!({"state": "KNOWN", "value": "SHIELD"});
+        quiver["additional_reserved_slots"] = serde_json::json!({"state": "KNOWN", "value": []});
+        quiver["level"] = serde_json::json!({"state": "UNKNOWN"});
+        quiver["vocations"] = serde_json::json!({"state": "KNOWN", "value": ["PALADIN", "NONE"]});
+        let semantics = apply_pattern(quiver.clone()).expect("paladin and none");
+        let ReferenceItemField::Known(equipment) = &semantics.equipment else {
+            panic!("equipment group");
+        };
+        let ReferenceItemField::Known(patterns) = &equipment.patterns else {
+            panic!("patterns");
+        };
+        assert_eq!(
+            patterns[0].vocations,
+            ReferenceItemField::Known(vec![
+                super::super::ReferenceBaseVocation::Paladin,
+                super::super::ReferenceBaseVocation::None,
+            ])
+        );
+        quiver["vocations"] = serde_json::json!({"state": "KNOWN", "value": ["DRUID", "KNIGHT", "MONK", "PALADIN", "SORCERER", "NONE"]});
+        assert!(apply_pattern(quiver.clone()).is_ok(), "six vocations");
+        quiver["vocations"] = serde_json::json!({"state": "KNOWN", "value": ["NONE", "PALADIN"]});
+        assert!(apply_pattern(quiver).is_err(), "unordered");
+    }
+
+    #[test]
+    fn use_requirements_are_typed_and_reject_invalid_claims() {
+        let requirements = serde_json::json!({
+            "min_level": {"state": "KNOWN", "value": 27},
+            "min_magic_level": {"state": "KNOWN", "value": 4},
+            "vocations": {"state": "KNOWN", "value": ["DRUID", "SORCERER"]},
+            "enforcement_mode": "ON_USE"
+        });
+        let apply_requirements = |value: serde_json::Value| {
+            let typed = serde_json::json!({"kind": "USE_REQUIREMENTS", "value": value});
+            let bytes = packet(&row(KEY, "use_requirements", &typed.to_string()), 1, 1);
+            let mut semantics = ReferenceItemSemantics::default();
+            apply(&bytes, &mut semantics).map(|_| semantics)
+        };
+        let semantics = apply_requirements(requirements.clone()).expect("rune requirements");
+        let ReferenceItemField::Known(value) = &semantics.use_requirements else {
+            panic!("use requirements");
+        };
+        assert_eq!(value.min_level, ReferenceItemField::Known(27));
+        assert_eq!(value.min_magic_level, ReferenceItemField::Known(4));
+        assert_eq!(
+            value.enforcement_mode,
+            super::super::ReferenceUseEnforcementMode::OnUse
+        );
+        let mut level_only = requirements.clone();
+        level_only["min_magic_level"] = serde_json::json!({"state": "UNKNOWN"});
+        level_only["vocations"] = serde_json::json!({"state": "UNKNOWN"});
+        assert!(apply_requirements(level_only).is_ok());
+        for (field, bad) in [
+            ("enforcement_mode", serde_json::json!("ON_EQUIP")),
+            (
+                "min_level",
+                serde_json::json!({"state": "KNOWN", "value": 0}),
+            ),
+            (
+                "min_magic_level",
+                serde_json::json!({"state": "KNOWN", "value": 0}),
+            ),
+            ("min_level", serde_json::json!({"state": "CONFLICT"})),
+            (
+                "vocations",
+                serde_json::json!({"state": "KNOWN", "value": []}),
+            ),
+            (
+                "vocations",
+                serde_json::json!({"state": "KNOWN", "value": ["SORCERER", "DRUID"]}),
+            ),
+            (
+                "vocations",
+                serde_json::json!({"state": "KNOWN", "value": ["WITHOUT"]}),
+            ),
+        ] {
+            let mut invalid = requirements.clone();
+            invalid[field] = bad;
+            assert!(apply_requirements(invalid).is_err(), "{field}");
+        }
+        let mut missing_mode = requirements.clone();
+        missing_mode
+            .as_object_mut()
+            .expect("object")
+            .remove("enforcement_mode");
+        assert!(
+            apply_requirements(missing_mode).is_err(),
+            "mode is required"
+        );
+        let empty = serde_json::json!({
+            "min_level": {"state": "UNKNOWN"},
+            "min_magic_level": {"state": "UNKNOWN"},
+            "vocations": {"state": "UNKNOWN"},
+            "enforcement_mode": "ON_USE"
+        });
+        assert!(apply_requirements(empty).is_err(), "no requirement");
     }
 
     #[test]

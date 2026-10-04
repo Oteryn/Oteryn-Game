@@ -1566,8 +1566,9 @@ fn database_rejects_unproven_item_and_location_changes() -> TestResult {
         assert!(harness.on_ground(loose).await?);
         assert_eq!(harness.count("game_item_container_entries").await?, 1);
 
-        // Least privilege: the runtime role may only perform TRANSFER writes, and (0023) delete
-        // a backpack entry, which commits only as a proven fee whole burn.
+        // Least privilege: the runtime role may only perform TRANSFER writes, (0023) delete
+        // a backpack entry, which commits only as a proven fee whole burn, and (0058) change an
+        // item's definition, which commits only as a proven timed expiry transform.
         let grants: Vec<bool> = sqlx::query_scalar(
             "SELECT unnest(ARRAY[\
                has_table_privilege('oteryn_game_runtime','game_item_ground_locations','DELETE'),\
@@ -1575,8 +1576,10 @@ fn database_rejects_unproven_item_and_location_changes() -> TestResult {
                has_column_privilege('oteryn_game_runtime','game_item_instances','lifecycle','UPDATE'),\
                has_column_privilege('oteryn_game_runtime','game_item_instances',\
                  'last_transaction_id','UPDATE'),\
-               NOT has_column_privilege('oteryn_game_runtime','game_item_instances',\
+               has_column_privilege('oteryn_game_runtime','game_item_instances',\
                  'definition_production_key','UPDATE'),\
+               NOT has_column_privilege('oteryn_game_runtime','game_item_instances',\
+                 'definition_family','UPDATE'),\
                NOT has_table_privilege('oteryn_game_runtime','game_item_instances','DELETE'),\
                has_table_privilege('oteryn_game_runtime','game_item_container_slots','INSERT'),\
                has_table_privilege('oteryn_game_runtime','game_item_container_entries','INSERT'),\
@@ -1609,7 +1612,7 @@ fn database_rejects_unproven_item_and_location_changes() -> TestResult {
         )
         .fetch_all(&harness.pool)
         .await?;
-        assert_eq!(grants.len(), 24);
+        assert_eq!(grants.len(), 25);
         assert!(grants.iter().all(|granted| *granted), "{grants:?}");
 
         drop(authority);

@@ -805,7 +805,7 @@ mod writer {
         verify_character_proficiency_history_with_definitions,
     };
     use crate::durability::character_proficiency_modification::{
-        clear_migrated_modifications, level_has_active_modification,
+        clear_migrated_modifications, has_modification_terminal, level_has_active_modification,
     };
     use crate::durability::character_progression::{
         CharacterProgressionError, CurrentCharacterGameplayFence, assert_gameplay_fence,
@@ -1023,6 +1023,9 @@ mod writer {
                 commit_semantic_transaction(tx, deadline).await?;
                 return Ok(Ok(ProficiencyCommitOutcome::AlreadyCommitted(committed)));
             }
+            if has_modification_terminal(&mut tx, request.occurrence()).await? {
+                return Ok(Err(CharacterProgressionError::ConflictingOccurrence));
+            }
             let root = match assert_gameplay_fence(&mut tx, &fence, &node).await? {
                 Ok(root) => root, Err(error) => return Ok(Err(error)),
             };
@@ -1196,6 +1199,8 @@ mod writer {
                                 decode_receipt(&mut tx, &row, &request, definitions.as_deref())
                                     .await?,
                             )
+                        } else if has_modification_terminal(&mut tx, request.occurrence()).await? {
+                            return Ok(Err(CharacterProgressionError::ConflictingOccurrence));
                         } else {
                             None
                         };

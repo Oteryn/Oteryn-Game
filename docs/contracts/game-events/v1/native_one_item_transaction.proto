@@ -47,6 +47,12 @@ package oteryn.events.v1;
 // <= 25,712 B). GOLD-FEE-1b adds platinum and crystal inputs and the additive
 // change fields 11-12 (at most a platinum and a gold change MINT); a GOLD-FEE-1a
 // event decodes with change 0 and no change line.
+// The timed expiry (operation tag 7, TIMED-RT-1b; DUR-03 §39.3 timed-item
+// amendment, decision TIMEDITEM0B-RUNTIME-CHARGES-AND-DURATION-V1 §8/§12) is one
+// server-originated event per expiry of one held timed item: an expiry
+// TRANSFORM (PRESERVE_INSTANCE, in place, 1 input / 1 output) to its decay
+// target, or an expiry burn to RETIRED from its container entry. Its own rows
+// are DUR03-RL-*-TIMED*; payload and envelope stay within DUR03-RL-07.
 // Historical game-events/v1/item_transaction.proto and
 // game-events/v2/item_transaction.proto remain unchanged.
 
@@ -58,6 +64,7 @@ message OneItemTransactionV1 {
     OneItemRewardClaimMintV1 reward_claim_mint = 4; // CHEST-1 only (see above)
     OneItemDecayRetireV1 decay_retire = 5; // D3-6 corpse decay only (see above)
     OneItemFeeBurnV1 fee_burn = 6; // coin fee BURN only (see above)
+    OneItemTimedExpiryV1 timed_expiry = 7; // timed expiry only (see above)
   }
 }
 
@@ -294,4 +301,33 @@ message OneItemFeeBurnV1 {
   // change / 100 platinum, then change % 100 gold, each only when positive, in
   // consecutive new entries after the burn lines.
   repeated OneItemFeeChangeMintV1 change = 12; // 0..2
+}
+
+// One side of the timed row: absent values are a spent row (a transform to a
+// target that is not timed); revision 0 is an item without a row.
+message OneItemTimedRowV1 {
+  optional uint32 charges = 1;      // 1..65,535 (TIMEDITEM0-RL-01)
+  optional uint64 remaining_ms = 2; // 0..604,800,000 (TIMEDITEM0-RL-02)
+  uint64 revision = 3;
+}
+
+// Timed expiry (TIMED-RT-1b). A transform keeps the instance, quantity and
+// location and changes the definition, the row reset to the target's full
+// values (never 0 ms) or spent at revision + 1. A burn keeps the definition,
+// retires the item (quantity 0) from its container entry and leaves the row
+// as it was (row_after = row_before).
+message OneItemTimedExpiryV1 {
+  OneItemStateV1 before = 1;
+  OneItemStateV1 after = 2;
+  bytes character_id = 3; // the holder, 16-byte UUIDv7
+  bytes world_id = 4;
+  bytes channel_id = 5;
+  uint64 runtime_scope_ownership_generation = 6; // non-zero
+  // Exactly one location before: a container entry or the CharacterEquipment
+  // `container` slot. A burn's location is always an entry.
+  OneItemContainerEntryV1 container_entry = 7;
+  bool equipment_container_slot = 8;
+  uint32 reason = 9; // 1 TimeExhausted, 2 ChargesExhausted
+  OneItemTimedRowV1 row_before = 10;
+  OneItemTimedRowV1 row_after = 11;
 }
