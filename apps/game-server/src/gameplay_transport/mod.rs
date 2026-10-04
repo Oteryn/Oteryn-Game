@@ -6,6 +6,7 @@ mod capabilities;
 pub(crate) mod charm;
 mod connection;
 pub(crate) mod fresh_evidence;
+mod item_view;
 mod monk_save;
 #[cfg(test)]
 mod qualification;

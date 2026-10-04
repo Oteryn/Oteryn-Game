@@ -8,21 +8,25 @@
 // The caller is the connection composition (VIS-3); until then only the tests exercise it.
 #![cfg_attr(not(test), allow(dead_code))]
 
+use oteryn_protocol_oteryn::item_view::CAPABILITY_ITEM_VIEW_MOVE_V1;
 pub(crate) use oteryn_protocol_oteryn::world_spatial::*;
 pub(crate) use oteryn_protocol_oteryn::world_spatial_entities::*;
 
 /// Server side: the payload type and bytes one session receives for a full snapshot. A session
 /// that selected capability 6 gets the entity revision; every other session keeps the v1 type
-/// with its own actor only.
+/// with its own actor only. With capability 4 every object also carries the session's item
+/// handle (ITEM-VIEW-1b, attached by `item_view::SessionItemView`).
 pub(crate) fn encode_visibility_snapshot(
     selected_capabilities: &[u32],
     snapshot: &WorldSpatialEntitiesSnapshot,
 ) -> Result<(u32, Vec<u8>), WorldSpatialError> {
     if selected_capabilities.contains(&CAPABILITY_WORLD_SPATIAL_ENTITIES) {
-        Ok((
-            SNAPSHOT_TYPE_WORLD_SPATIAL_ENTITIES_V2,
-            encode_world_spatial_entities_snapshot(snapshot)?,
-        ))
+        let payload = if selected_capabilities.contains(&CAPABILITY_ITEM_VIEW_MOVE_V1) {
+            encode_world_spatial_entities_snapshot_with_item_handles(snapshot)?
+        } else {
+            encode_world_spatial_entities_snapshot(snapshot)?
+        };
+        Ok((SNAPSHOT_TYPE_WORLD_SPATIAL_ENTITIES_V2, payload))
     } else {
         validate_snapshot(snapshot)?;
         Ok((
@@ -41,10 +45,12 @@ pub(crate) fn encode_visibility_delta(
     delta: &WorldSpatialEntitiesDelta,
 ) -> Result<(u32, Vec<u8>), WorldSpatialError> {
     if selected_capabilities.contains(&CAPABILITY_WORLD_SPATIAL_ENTITIES) {
-        Ok((
-            DELTA_TYPE_WORLD_SPATIAL_ENTITIES_V2,
-            encode_world_spatial_entities_delta(delta)?,
-        ))
+        let payload = if selected_capabilities.contains(&CAPABILITY_ITEM_VIEW_MOVE_V1) {
+            encode_world_spatial_entities_delta_with_item_handles(delta)?
+        } else {
+            encode_world_spatial_entities_delta(delta)?
+        };
+        Ok((DELTA_TYPE_WORLD_SPATIAL_ENTITIES_V2, payload))
     } else {
         validate_delta(delta)?;
         Ok((
@@ -205,5 +211,57 @@ mod tests {
                 );
             }
         }
+    }
+
+    /// ITEM-VIEW-1b: with capability 4 every object carries its item handle on the snapshot and
+    /// the delta; without it the handle is never sent.
+    #[test]
+    fn an_object_carries_its_item_handle_only_with_capability_4() {
+        let corpse = |handle: Option<u64>| WorldSpatialEntity {
+            detail: EntityDetail::Object {
+                item_definition_ref: 4240,
+                quantity: 1,
+                item_handle: handle.and_then(oteryn_protocol_oteryn::item_view::ItemHandle::new),
+            },
+            entity: EntityRef {
+                identity: [9; ENTITY_IDENTITY_BYTES],
+                generation: 0,
+            },
+            ..entity(9, EntityKind::Corpse)
+        };
+        let mut handled = snapshot();
+        handled.entities.push(corpse(Some(5)));
+        let with = [
+            CAPABILITY_WORLD_SPATIAL_ENTITIES,
+            CAPABILITY_ITEM_VIEW_MOVE_V1,
+        ];
+        let (kind, payload) = encode_visibility_snapshot(&with, &handled).expect("handles");
+        assert_eq!(
+            decode_world_spatial_snapshot_view(&with, kind, &payload),
+            Ok(WorldSpatialSnapshotView::Entities(handled.clone()))
+        );
+        // Without capability 4 the handle is not sent.
+        let without = [CAPABILITY_WORLD_SPATIAL_ENTITIES];
+        let (kind, payload) = encode_visibility_snapshot(&without, &handled).expect("no handles");
+        let mut unhandled = handled.clone();
+        unhandled.entities[2] = corpse(None);
+        assert_eq!(
+            decode_world_spatial_snapshot_view(&without, kind, &payload),
+            Ok(WorldSpatialSnapshotView::Entities(unhandled.clone()))
+        );
+        // With capability 4 an object without its handle fails closed.
+        assert!(encode_visibility_snapshot(&with, &unhandled).is_err());
+        let delta = WorldSpatialEntitiesDelta {
+            content_generation: [7; 32],
+            actor_position: handled.actor_position,
+            enter: vec![corpse(Some(5))],
+            update: Vec::new(),
+            leave: Vec::new(),
+        };
+        let (kind, payload) = encode_visibility_delta(&with, &delta).expect("handles");
+        assert_eq!(
+            decode_world_spatial_delta_view(&with, kind, &payload),
+            Ok(WorldSpatialDeltaView::Entities(delta))
+        );
     }
 }

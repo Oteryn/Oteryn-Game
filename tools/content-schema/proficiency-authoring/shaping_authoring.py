@@ -188,6 +188,8 @@ def admitted(
         )
     if rank is None or not 1 <= rank <= RANKS:
         raise ValueError(f"{operation} needs the row's rank 1..{RANKS}")
+    if operation == "RANK_UP" and rank == RANKS:
+        return True  # reads no cell; RANK_MAX is a runtime check (section 5)
     if not known(shaping["pool"]):
         return False
     if operation == "RESHAPE_OFFER":
@@ -200,8 +202,6 @@ def admitted(
     if entry is None or not 0 <= entry < len(shaping["pool"]["entries"]):
         raise ValueError(f"{operation} needs the row's entry index")
     if operation == "RANK_UP":
-        if rank == RANKS:
-            return True  # no step cell to read; RANK_MAX is a runtime check (section 5)
         return known(costs["rank_steps"][rank - 1]) and _values_known(
             shaping, rank + 1, entry
         )
