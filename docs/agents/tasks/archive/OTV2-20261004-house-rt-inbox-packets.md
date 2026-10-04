@@ -39,8 +39,9 @@ external_repositories: []
 - One replaceable access function keeps the HOUSE-CUSTODY-0 §3.5 closure in the database before
   HOUSE-1a. While SCOPE-HANDOFF-1's exit gate is closed, house entry stays closed.
 - Amended:
-  - #1773 dependencies: HOUSE-1a and MAP-OVERLAY-1c wait on HOUSE-RUNTIME-1a; HOUSE-1b waits on
-    INBOX-1a. HOUSE-1a also replaces the access bodies;
+  - #1773 dependencies: HOUSE-1a waits on HOUSE-RUNTIME-1a, 1b and 1c; MAP-OVERLAY-1c on
+    HOUSE-RUNTIME-1a; HOUSE-1b on INBOX-1a. HOUSE-1a writes the final access body and its grant
+    and fence parts, which HOUSE-ACL-1 and HOUSE-1b each replace;
   - #1738 §2.3: SCOPE-HANDOFF-1 creates the stub;
   - the HOUSE-RUNTIME-0 child table.
 - No code, migration number, contract or wire change.

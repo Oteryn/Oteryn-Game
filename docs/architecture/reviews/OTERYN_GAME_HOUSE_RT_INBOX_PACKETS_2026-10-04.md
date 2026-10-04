@@ -22,6 +22,9 @@
   - #1773 §0.1 and §2.3-§2.4: HOUSE-1a waits on HOUSE-RUNTIME-1a, 1b and 1c, MAP-OVERLAY-1c on
     HOUSE-RUNTIME-1a, HOUSE-1b on INBOX-1a; HOUSE-1a replaces the house access function and
     creates its two parts, which HOUSE-ACL-1 and HOUSE-1b each replace (§1.2, §1.5).
+- Amended after merge by `ARCH-HOUSE-RT-INBOX-FIX-1`: the Inbox cause kinds are rows of a
+  registry table, not a closed CHECK (§2.4), and HOUSE-1a waits on the acceptance of
+  HOUSE-RUNTIME-1b and 1c, not only on their merge (§0.2, §1.5).
 - Runtime, migration, registry, protocol and production authority: NONE. Each packet needs its
   #162 allocation.
 - `MERGE_AUTHORITY: WORK_COORDINATOR_ONLY`
@@ -61,7 +64,8 @@
 Downstream, as amended in this PR:
 - HOUSE-1a waits on BANK-1, HOUSE-RUNTIME-1a, 1b and 1c, and PREM-WIRE-1. HOUSE-CUSTODY-0 §4
   and HOUSE-OWN-0 order ownership after the whole interior runtime: no house is sold before
-  players can enter it;
+  players can enter it. For 1b and 1c, "waits on" means accepted, not merged: their
+  exit-dependent acceptance items are met, so SCOPE-HANDOFF-1's exit gate has lifted (§1.5);
 - MAP-OVERLAY-1c waits on MAP-OVERLAY-1b and HOUSE-RUNTIME-1a;
 - HOUSE-1b waits on HOUSE-1a, INBOX-1a and MAP-OVERLAY-1c.
 
@@ -216,6 +220,11 @@ exactly as SCOPE-HANDOFF-1 ships it. While the gate is closed, those tests asser
 refusal and the closed entry. The exit-dependent acceptance items then stay open, so
 HOUSE-RUNTIME-1b stays CANDIDATE after merge until they are met (#1738 §1.2). The packet adds no
 way to open the gate.
+
+Ownership waits for that acceptance, not for the merge. The control plane allocates HOUSE-1a only
+when HOUSE-RUNTIME-1b and 1c are both accepted with every exit-dependent item met. Until then a
+house could be sold while every entry refuses `HOUSE_CLOSED`. HOUSE-1b, HOUSE-ACL-1, HOUSE-WIRE-1
+and GUILDHALL-1 all wait on HOUSE-1a, so the same gate holds them.
 
 ### 1.6 The Inbox is two packets
 
@@ -502,9 +511,12 @@ Builds:
     It takes no session fence, so the recipient may be offline or on another channel.
   - **Errors.** It refuses only an item with contents, a Character of another World, and an
     item still in another location at commit (the exclusivity guard).
-  - **Cause kinds.** `cause_kind` is a closed CHECK. INBOX-1a defines the column with no kind.
-    Each caller adds its kind in its own migration: HOUSE-1b adds `HOUSE_DISPOSITION`, and
-    MARKET-1 adds its own.
+  - **Cause kinds.** `cause_kind` is a foreign key to a registry table,
+    `game_character_inbox_cause_kinds (cause_kind TEXT PRIMARY KEY)`. INBOX-1a creates the table
+    empty. Each caller INSERTs its own kind row in its own migration: HOUSE-1b inserts
+    `HOUSE_DISPOSITION`, and MARKET-1 inserts its own. The insert is additive, so callers merge in
+    any order and none can erase another's kind. No migration deletes or renames a kind row, and
+    the FK is RESTRICT. No runtime role has a grant on the table.
   - **Delivery record.** Each delivery writes a delivery record keyed by (item, cause), which is
     the placement proof.
   - **Grants.** The function is SECURITY DEFINER, and no runtime role gets EXECUTE on it. Only
@@ -513,7 +525,7 @@ Builds:
   caller's event, from the returned location.
 
 Acceptance tests (a test-only SECURITY DEFINER caller in the test database, with a test cause kind
-added by test code, stands in for HOUSE-1b):
+row inserted by test code, stands in for HOUSE-1b):
 
 - a delivery to an offline Character and to one on another channel commits, without a session
   fence;
@@ -521,6 +533,8 @@ added by test code, stands in for HOUSE-1b):
 - 100,001 deliveries are all accepted: the counter exceeds `MARKET0-RL-06`, and nothing refuses;
 - an item with contents, a Character of another World, and an item still in another location at
   commit are each refused;
+- a delivery with a cause kind that has no registry row is refused, and a kind row that a delivery
+  record references cannot be deleted;
 - the runtime role cannot execute the function, insert into or delete from the Inbox table, or
   update the counter;
 - an Inbox row cannot be updated or deleted. Death, the `WorldReset` retirement and a channel
@@ -594,6 +608,11 @@ Acceptance tests:
 - **Entry allowed while the exit is gated.** A character could be stuck inside (§1.5).
 - **One INBOX-1 after DEPOT-1.** HOUSE-1b would then wait on the whole depot and map wire chain
   for a delivery that needs none of it (§1.6).
+- **A closed `cause_kind` CHECK widened by each caller.** A CHECK cannot be extended by adding a
+  constraint, so each caller would replace it, and the last to merge would erase the others'
+  kinds. Registry rows are additive (§2.4).
+- **HOUSE-1a after the merge of HOUSE-RUNTIME-1b.** 1b can merge CANDIDATE with every entry
+  refused, so houses would be sold before anyone can enter them (§1.5).
 - **Building the out-shapes now.** No client can call them before the Inbox view (§1.7).
 - **Extending `OneItemTransferV1` with house and Inbox locations.** Changing its exactly-one source
   and destination rules would touch every existing type 2 validator. A new operation under a
