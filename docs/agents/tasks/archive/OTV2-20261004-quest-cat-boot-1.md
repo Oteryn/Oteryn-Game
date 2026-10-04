@@ -10,7 +10,7 @@ issue: 1622
 lane_id: quest
 base_branch: main
 branch: agent/quest-cat-boot-1-20261004
-pr: PENDING
+pr: 1801
 base_sha: 673f092e
 head_sha: "exact frozen head in the FREEZE_SHA report to the control plane"
 final_head_sha: "exact frozen head in the FREEZE_SHA report to the control plane"
@@ -62,3 +62,5 @@ external_repositories: []
 - `cargo fmt --check`, `cargo clippy -p oteryn-game-server --all-targets -- -D warnings`,
   `cargo test -p oteryn-game-server`, `git diff --check`. The PostgreSQL case needs the canonical
   PostgreSQL 17.6 target and runs in CI.
+- `python tools/agents/validate_governance.py`: pass
+- `python -m unittest discover -s tools/agents/tests`: 54 tests, OK
