@@ -252,7 +252,7 @@ fn the_production_set_selects_only_capability_13_whatever_the_client_supports()
         SelectedCapabilities::select(PRODUCTION_OFFERED_CAPABILITIES, &everything)
             .as_ref()
             .map(SelectedCapabilities::as_slice),
-        Some(&[13][..])
+        Some(&[6, 13][..])
     );
     Ok(())
 }
@@ -555,18 +555,22 @@ fn fresh_admission_echoes_and_keeps_the_selection() -> Result<(), Box<dyn Error>
 }
 
 #[test]
-fn production_admission_selects_capability_13_and_nothing_else() -> Result<(), Box<dyn Error>> {
+fn production_admission_selects_capabilities_6_and_13_and_nothing_else()
+-> Result<(), Box<dyn Error>> {
     run(async {
-        // SPEED-1 (§1.9): the production offered set selects capability 13 for a client that
-        // supports it, and only it.
+        // SPEED-1 and VIS-3 (§1.9): the production offered set selects capabilities 6 and 13 for
+        // a client that supports them, and only them.
         let authority = NegotiatingAuthority::new(None);
         let (admitted, frames) = admit(&authority, &bootstrap(&[1, 6, 7, 8, 10, 13])?).await?;
-        assert_eq!(accepted_selection(&frames)?, [13]);
+        assert_eq!(accepted_selection(&frames)?, [6, 13]);
         let admitted = admitted.map_err(|end| format!("{end:?}"))?;
-        assert_eq!(admitted.continuity.selected_capabilities.as_slice(), [13]);
+        assert_eq!(
+            admitted.continuity.selected_capabilities.as_slice(),
+            [6, 13]
+        );
         assert_eq!(admitted.continuity.achievement_notice_revision, None);
-        // A client without it selects nothing.
-        let (admitted, frames) = admit(&authority, &bootstrap(&[1, 6, 7, 8, 10])?).await?;
+        // A client without them selects nothing.
+        let (admitted, frames) = admit(&authority, &bootstrap(&[1, 7, 8, 10])?).await?;
         assert_eq!(accepted_selection(&frames)?, Vec::<u32>::new());
         let admitted = admitted.map_err(|end| format!("{end:?}"))?;
         assert_eq!(

@@ -444,10 +444,13 @@ mod connection {
         encode_use_item_intent, encode_use_result,
     };
     use super::super::super::world_spatial::{
-        CAPABILITY_WORLD_SPATIAL_ENTITIES, COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT,
-        DELTA_TYPE_WORLD_SPATIAL_V1, SNAPSHOT_TYPE_WORLD_SPATIAL_V1,
+        CAPABILITY_WORLD_SPATIAL_ENTITIES, COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT, EntityDetail,
+        EntityKind, EntityRef, PLACEHOLDER_ACTOR_DIRECTION, PLACEHOLDER_APPEARANCE_REF,
+        PLACEHOLDER_HEALTH_PERCENT, SNAPSHOT_TYPE_WORLD_SPATIAL_V1,
         STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY, StepDirection, StepDisposition,
-        WorldSpatialObservation, encode_step_intent, encode_step_result, encode_world_spatial,
+        WorldSpatialEntitiesDelta, WorldSpatialEntitiesSnapshot, WorldSpatialEntity,
+        WorldSpatialObservation, encode_step_intent, encode_step_result, encode_visibility_delta,
+        encode_visibility_snapshot, encode_world_spatial,
     };
     use super::*;
     use crate::foundation::{
@@ -688,13 +691,51 @@ mod connection {
         }
     }
 
-    /// The join snapshot the connection must send: domain 1, then 9 and 11 from `mirror`.
+    /// VIS-3: the session's own actor, the only entity the fixture's Channel shows.
+    fn own_actor(position: ActorPosition) -> WorldSpatialEntity {
+        let world_id = WorldId::decode(&uuid_v7(0x33)).expect("world");
+        let channel_id = ChannelId::decode(&uuid_v7(0x44)).expect("channel");
+        WorldSpatialEntity {
+            kind: EntityKind::Player,
+            entity: EntityRef {
+                identity: ExactActorRef::transport_fixture(world_id, channel_id)
+                    .placement_identity(),
+                generation: 0,
+            },
+            position,
+            detail: EntityDetail::Actor {
+                direction: PLACEHOLDER_ACTOR_DIRECTION,
+                appearance_ref: PLACEHOLDER_APPEARANCE_REF,
+                health_percent: PLACEHOLDER_HEALTH_PERCENT,
+            },
+        }
+    }
+
+    /// The join snapshot the connection must send: domain 1, then 9 and 11 from `mirror`. With
+    /// capability 4 (and so 6) domain 1 is the entity revision (VIS-3).
     fn snapshot(item_domains: Option<&[ItemViewSnapshotDomain; 2]>) -> Vec<Vec<u8>> {
-        let spatial = encode_world_spatial(&observation(HERE));
+        let (snapshot_type, spatial) = if item_domains.is_some() {
+            let own = own_actor(HERE);
+            encode_visibility_snapshot(
+                item_view_selected().as_slice(),
+                &WorldSpatialEntitiesSnapshot {
+                    content_generation: observation(HERE).content_generation,
+                    actor_position: HERE,
+                    own_identity: own.entity.identity,
+                    entities: vec![own],
+                },
+            )
+            .expect("spatial")
+        } else {
+            (
+                SNAPSHOT_TYPE_WORLD_SPATIAL_V1,
+                encode_world_spatial(&observation(HERE)),
+            )
+        };
         let mut domains = vec![DomainSnapshot {
             domain_id: STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
             revision: 1,
-            snapshot_type: SNAPSHOT_TYPE_WORLD_SPATIAL_V1,
+            snapshot_type,
             payload: &spatial,
         }];
         for domain in item_domains.into_iter().flatten() {
@@ -853,15 +894,28 @@ mod connection {
                     CommandStatus::Accepted,
                     &encode_step_result(StepDisposition::Moved),
                 )?,
-                encode_state_delta(
-                    1,
-                    2,
-                    STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
-                    1,
-                    2,
-                    DELTA_TYPE_WORLD_SPATIAL_V1,
-                    &encode_world_spatial(&observation(at(9, 10, 7))),
-                )?,
+                {
+                    let (delta_type, payload) = encode_visibility_delta(
+                        item_view_selected().as_slice(),
+                        &WorldSpatialEntitiesDelta {
+                            content_generation: observation(HERE).content_generation,
+                            actor_position: at(9, 10, 7),
+                            enter: Vec::new(),
+                            update: vec![own_actor(at(9, 10, 7))],
+                            leave: Vec::new(),
+                        },
+                    )
+                    .expect("spatial delta");
+                    encode_state_delta(
+                        1,
+                        2,
+                        STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
+                        1,
+                        2,
+                        delta_type,
+                        &payload,
+                    )?
+                },
                 delta_frame(3, &closed),
             ]);
             assert_eq!(frames, expected);

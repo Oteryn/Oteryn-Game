@@ -1685,6 +1685,44 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         Some(Self::observation(&runtime, snapshot.position()))
     }
 
+    /// VIS-3: the Channel's players and live creatures, read in one owner work item. Corpses are
+    /// not shown until their item binding lands (D3-7).
+    async fn observe_visible_entities(
+        &self,
+        actor: ExactActorRef,
+    ) -> Option<world_spatial::ChannelEntities> {
+        use world_spatial::VisibleKind;
+        let runtime = self.runtime.lock().await;
+        let visible = runtime.visible_entities();
+        let entities = (visible
+            .players
+            .iter()
+            .map(|entry| (VisibleKind::Player, entry)))
+        .chain(
+            visible
+                .creatures
+                .iter()
+                .map(|entry| (VisibleKind::Creature, entry)),
+        )
+        .map(|(kind, entry)| world_spatial::ChannelEntity {
+            kind,
+            identity: entry.actor.placement_identity(),
+            generation: entry.generation,
+            position: ActorPosition {
+                x: entry.position.x,
+                y: entry.position.y,
+                floor: entry.position.floor,
+            },
+            revision: entry.revision,
+        })
+        .collect();
+        Some(world_spatial::ChannelEntities {
+            content_generation: runtime.content_pin().client_artifact_digest(),
+            observer: actor.placement_identity(),
+            entities,
+        })
+    }
+
     /// The Channel's current door `WORLD_OBJECT_OVERLAY` (USE-WIRE-V1, #162 5868482467), for
     /// the join/resync snapshot. Channel-global, unlike `observe`: no actor is involved.
     async fn observe_world_object_overlay(&self) -> Option<world_object::WorldObjectOverlayEntry> {

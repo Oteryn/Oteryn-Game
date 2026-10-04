@@ -440,9 +440,10 @@ mod connection {
         encode_use_result,
     };
     use super::super::super::world_spatial::{
-        CAPABILITY_WORLD_SPATIAL_ENTITIES, SNAPSHOT_TYPE_WORLD_SPATIAL_V1,
-        STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY, StepDirection, WorldSpatialObservation,
-        encode_world_spatial,
+        CAPABILITY_WORLD_SPATIAL_ENTITIES, EntityDetail, EntityKind, EntityRef,
+        PLACEHOLDER_ACTOR_DIRECTION, PLACEHOLDER_APPEARANCE_REF, PLACEHOLDER_HEALTH_PERCENT,
+        STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY, StepDirection, WorldSpatialEntitiesSnapshot,
+        WorldSpatialEntity, WorldSpatialObservation, encode_visibility_snapshot,
     };
     use super::*;
     use crate::foundation::{
@@ -669,16 +670,45 @@ mod connection {
         }
     }
 
-    /// The join snapshot: domain 1, then 9 and 11, then 14 when given.
+    /// The join snapshot: domain 1 (VIS-3: the own actor, the only entity of the fixture's
+    /// Channel), then 9 and 11, then 14 when given.
     fn snapshot(
         items: &[ItemViewSnapshotDomain; 2],
         views: Option<&ItemViewSnapshotDomain>,
     ) -> Vec<Vec<u8>> {
-        let spatial = encode_world_spatial(&observation());
+        let world_id = WorldId::decode(&uuid_v7(0x33)).expect("world");
+        let channel_id = ChannelId::decode(&uuid_v7(0x44)).expect("channel");
+        let own = WorldSpatialEntity {
+            kind: EntityKind::Player,
+            entity: EntityRef {
+                identity: ExactActorRef::transport_fixture(world_id, channel_id)
+                    .placement_identity(),
+                generation: 0,
+            },
+            position: HERE,
+            detail: EntityDetail::Actor {
+                direction: PLACEHOLDER_ACTOR_DIRECTION,
+                appearance_ref: PLACEHOLDER_APPEARANCE_REF,
+                health_percent: PLACEHOLDER_HEALTH_PERCENT,
+            },
+        };
+        let (snapshot_type, spatial) = encode_visibility_snapshot(
+            &[
+                CAPABILITY_ITEM_VIEW_MOVE_V1,
+                CAPABILITY_WORLD_SPATIAL_ENTITIES,
+            ],
+            &WorldSpatialEntitiesSnapshot {
+                content_generation: observation().content_generation,
+                actor_position: HERE,
+                own_identity: own.entity.identity,
+                entities: vec![own],
+            },
+        )
+        .expect("spatial");
         let mut domains = vec![DomainSnapshot {
             domain_id: STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
             revision: 1,
-            snapshot_type: SNAPSHOT_TYPE_WORLD_SPATIAL_V1,
+            snapshot_type,
             payload: &spatial,
         }];
         for domain in items.iter().chain(views) {

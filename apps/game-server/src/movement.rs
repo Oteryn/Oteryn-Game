@@ -22,7 +22,7 @@ use crate::foundation::{
     MovementLocalPosition, MovementPositionContext, MovementPositionSnapshot,
 };
 use std::num::NonZeroUsize;
-mod interest;
+pub(crate) mod interest;
 pub(crate) mod pacing;
 pub(crate) mod speed;
 

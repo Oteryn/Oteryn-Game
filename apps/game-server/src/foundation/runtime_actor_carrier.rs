@@ -790,6 +790,23 @@ impl RuntimeCorpseProjection {
     }
 }
 
+/// VIS-3: one actor of [`ChannelRuntimeV1::visible_entities`]; `revision` is the position
+/// revision.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) struct VisibleRuntimeActor {
+    pub(crate) actor: ExactActorRef,
+    pub(crate) generation: u64,
+    pub(crate) position: MovementLocalPosition,
+    pub(crate) revision: u64,
+}
+
+/// VIS-3: the entities of [`ChannelRuntimeV1::visible_entities`], by kind.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub(crate) struct VisibleRuntimeEntities {
+    pub(crate) players: Vec<VisibleRuntimeActor>,
+    pub(crate) creatures: Vec<VisibleRuntimeActor>,
+}
+
 /// Opaque, single-use handoff from the owner commit record to Combat. It is
 /// deliberately neither Clone nor Copy and has no caller-visible constructor.
 #[derive(Debug, PartialEq, Eq)]
@@ -1553,6 +1570,51 @@ impl ChannelRuntimeV1 {
                 _ => None,
             })
             .collect()
+    }
+
+    /// VIS-3 (MOVE-RL-11 §4.2, D524): every entity this Channel shows in
+    /// `WORLD_SPATIAL_VISIBILITY` under the pinned Movement context, read in one owner work item:
+    /// committed present players and live creatures. Corpses wait on their item binding (D3-7).
+    /// Read-only: a value snapshot of the existing `slots`, never an authority token.
+    pub(crate) fn visible_entities(&self) -> VisibleRuntimeEntities {
+        let context = self.pinned_position_context();
+        let carrier = &self.carrier;
+        let actor = |version: &VersionedPosition| VisibleRuntimeActor {
+            actor: ExactActorRef(ActorRef {
+                world_id: carrier.world_id,
+                channel_id: carrier.channel_id,
+                scope_generation: carrier.scope_generation,
+                actor_local_id: version.actor_local_id,
+                actor_local_generation: version.actor_local_generation,
+            }),
+            generation: version.actor_local_generation.0,
+            position: MovementLocalPosition {
+                x: version.position.x,
+                y: version.position.y,
+                floor: version.position.floor,
+            },
+            revision: version.revision,
+        };
+        let mut visible = VisibleRuntimeEntities::default();
+        for slot in carrier.slots.iter() {
+            match slot {
+                Slot::Occupied {
+                    game_session_id: Some(_),
+                    committed: true,
+                    position: Some(version),
+                    ..
+                } if version.context == context => visible.players.push(actor(version)),
+                Slot::CreatureOccupied {
+                    health,
+                    position: Some(version),
+                    ..
+                } if *health > 0 && version.context == context => {
+                    visible.creatures.push(actor(version));
+                }
+                _ => {}
+            }
+        }
+        visible
     }
 
     /// AI-4 (GAME-AI-01 slice §4.6): true only while `actor` names a live (`health > 0`)
@@ -5287,6 +5349,84 @@ mod tests {
             ChannelActorCarrier::bootstrap_pre_production(&mut continuity, 1),
             Err(CarrierError::NamespaceAlreadyClaimed)
         );
+    }
+
+    /// VIS-3: `visible_entities` reads committed positioned players and live creatures under the
+    /// pinned context, and nothing else; it changes nothing.
+    #[test]
+    fn visible_entities_are_the_pinned_players_and_live_creatures() {
+        let mut runtime = runtime(6);
+        let at = |x: i32| MovementLocalPosition { x, y: 5, floor: 7 };
+        let player = |runtime: &mut ChannelRuntimeV1, raw: u64, x: i32| {
+            let reservation = runtime
+                .reserve_fresh_session(session(raw))
+                .expect("reserve");
+            let actor = runtime.commit_fresh_session(reservation).expect("commit");
+            runtime
+                .initialize_movement_test_position(actor, at(x))
+                .expect("position");
+            actor
+        };
+        let shown = player(&mut runtime, 30, 1);
+        // Positioned under another context: never shown.
+        let other_context = player(&mut runtime, 31, 2);
+        // Reserved but not committed: never shown.
+        runtime.reserve_fresh_session(session(32)).expect("reserve");
+        let live = runtime.admit_test_creature(at(3)).expect("creature");
+        // Dead: never shown.
+        runtime.admit_test_creature(at(4)).expect("creature");
+        let pinned = runtime.pinned_position_context();
+        for slot in runtime.carrier.slots.iter_mut() {
+            match slot {
+                Slot::Occupied {
+                    position: Some(version),
+                    ..
+                }
+                | Slot::CreatureOccupied {
+                    position: Some(version),
+                    ..
+                } if version.position.x != 2 => version.context = pinned,
+                _ => {}
+            }
+            if let Slot::CreatureOccupied {
+                health,
+                position: Some(version),
+                ..
+            } = slot
+                && version.position.x == 4
+            {
+                *health = 0;
+            }
+        }
+        let before = runtime.carrier.slots.clone();
+
+        let visible = runtime.visible_entities();
+        assert_eq!(
+            visible
+                .players
+                .iter()
+                .map(|entry| entry.actor)
+                .collect::<Vec<_>>(),
+            [shown]
+        );
+        assert_ne!(shown, other_context);
+        assert_eq!(visible.players[0].position, at(1));
+        assert_eq!(
+            visible.players[0].generation,
+            shown.0.actor_local_generation.0
+        );
+        assert_eq!(
+            visible
+                .creatures
+                .iter()
+                .map(|entry| entry.actor)
+                .collect::<Vec<_>>(),
+            [live]
+        );
+        assert_eq!(visible.creatures[0].position, at(3));
+        // Read-only.
+        assert_eq!(runtime.carrier.slots, before);
+        assert_eq!(runtime.visible_entities(), visible);
     }
 }
 
