@@ -7,7 +7,7 @@ import sys
 import unittest
 import builder
 
-ROOT=Path(os.environ.get('QUEST_COMPONENT_REPO_ROOT','/workspace/quest-data-completion-80-worktree'))
+ROOT=Path(os.environ.get('QUEST_COMPONENT_REPO_ROOT',str(Path(__file__).resolve().parents[6])))
 ASSIGNMENT=Path(os.environ.get('QUEST_COMPONENT_ASSIGNMENT',str(ROOT/'tools/content-schema/quest-authoring/samples/donor-source/components248/assignments/all.json')))
 MANIFEST=Path(os.environ.get('QUEST_COMPONENT_CORPUS_MANIFEST','/workspace/quest-donor-first/evidence/corpus-manifest.json'))
 
@@ -65,6 +65,7 @@ class BoundedProfiles(unittest.TestCase):
         self.assertEqual(builder.attack_names(text,span,self.mask,self.next,self.tables),[])
 
 
+@unittest.skipUnless(MANIFEST.is_file(), 'donor corpus manifest is an external input (QUEST_COMPONENT_CORPUS_MANIFEST)')
 class RealReferences(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
