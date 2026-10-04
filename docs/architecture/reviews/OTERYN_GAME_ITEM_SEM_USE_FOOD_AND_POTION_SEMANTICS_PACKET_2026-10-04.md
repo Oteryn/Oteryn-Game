@@ -12,7 +12,9 @@
   - ARCH-BATCH-ITEM-EQUIP-PACKETS §1.12 and §2.2a (ITEM-SEM-2b-3, #1710): the hard content-contract
     pattern, artifact v5 and the use-requirements group 17;
   - DUR-04 and `OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V2.md` (the v5 ceilings);
-  - GAME-ABILITY-01 (the Ability → Effect → Formula chain, effect families `Damage` and `Heal`);
+  - GAME-ABILITY-01 (the ability pipeline that ITEM-USE-0 §6.2 runs a potion through);
+  - STARTER-CONTENT-1 and TIMED-CONTENT-1 (the pinned admission and facts packets applied by the
+    materializer);
   - the TibiaWiki field census (`regenseconds` → `consumable.regeneration_seconds`).
 - Amends: nothing. ITEM-USE-0 names one child, ITEM-SEM-USE; this packet splits it into a contract
   slice and a content slice (§1.1). ITEM-USE-1 depends on both.
@@ -26,13 +28,13 @@ ITEM-SEM-USE-1 goes first. ITEM-SEM-USE-2 starts from `main` after it merges. Ne
 migration, a capability or a wire change.
 
 They do not overlap the in-flight core-loop packets: ATTACK-1b, CREATURE-*, CHAT-*, MAP-*,
-DEATH-2b and BANK-1 do not own the content model or the item and ability content trees. Three
-open PRs share files:
+DEATH-2b and BANK-1 do not own the content model or the item content tree. These open PRs share
+files:
 
 | Shared path | Open writer | Rule |
 |---|---|---|
 | `content/items/**` (the items-stats cascade) | PROF-SNOWBALL-REKEY-1 (#1753) | ITEM-SEM-USE-2 starts after #1753 merges or closes; it never opens on top of a stale content tree |
-| `content/abilities/**` | the spell import PRs (#1534, #1755) | ITEM-SEM-USE-2 adds only new `oteryn:ability.item.*`, effect and formula records in new shards; it does not regenerate existing shards. If a spell import merges first, ITEM-SEM-USE-2 rebases its new shards onto `main` by merge, not by regeneration |
+| `apps/game-server/src/content/item_admission.rs`, the materializer example, `content/world/**` | D3-7 (#1770), and every PR that regenerates the World Project | the PR that merges second takes `main` in with a merge commit and reruns the tools (§2.2) |
 | `docs/contracts/RESOURCE_LIMITS_REGISTRY.json` | the shared register | ITEM-SEM-USE-1 adds the v6 rows; v5 rows stay |
 
 ## 1. Rulings
@@ -46,21 +48,22 @@ no typed group lowers it. No ability content models a potion.
 The ITEM-USE-0 child row reads as a content task, but the content has nowhere to go. As in
 2b-3 (§1.12 there), a new group is a durable content-contract change, so:
 
-- **ITEM-SEM-USE-1** (hard, contract review) adds the group, the effect family and artifact v6,
-  with no content rows;
-- **ITEM-SEM-USE-2** (content lane) lowers the rows.
+- **ITEM-SEM-USE-1** (hard, contract review) adds the group and artifact v6, with no content rows;
+- **ITEM-SEM-USE-2** (content lane) admits the missing rows and lowers the values.
 
 ### 1.2 Group 18 `consumption`
 
 A new group joins `ReferenceItemSemantics`, id 18, server-only (the client allowlist is unchanged).
 Its known value is a closed enum:
 
-- `Food { regeneration_seconds }`, 1-1,200 inclusive. ITEM-USE-0 §6.1 adds this to the remaining
-  `FoodRegeneration` time and refuses at 1,200 s, so a larger value could never be eaten. A source
-  row above 1,200 is reported and not lowered.
-- `Potion { ability, empty_flask }`:
-  - `ability` is a `TypedDefinitionRef` of family Ability, resolved at load like other
-    references. An unresolved reference fails the load closed.
+- `Food { regeneration_seconds }`, 1-1,199 inclusive. ITEM-USE-0 §6.1 adds this to the remaining
+  `FoodRegeneration` time and refuses when the total would reach 1,200 s, so a value of 1,200 or
+  more could never be eaten (#1767 P2 4177976626). A source row of 1,200 s or more is reported and
+  not lowered.
+- `Potion { restores, empty_flask }`:
+  - `restores` lists one or two entries `{ resource, min, max }`. `resource` is the closed enum
+    `Health | Mana`, with at most one entry per resource, in the order `Health`, `Mana`. The bounds
+    are `1 <= min <= max <= 10,000`. A spirit potion has both entries.
   - `empty_flask` is `Known(target)` (an Item definition) or `KnownNone` (no flask, as attribute
     potions). ITEM-USE-0 §4.1 reads it: a flask is a TRANSFORM, no flask is a BURN.
 
@@ -70,24 +73,33 @@ A potion leaves one flask unit from a stack of up to 100, and ITEM-USE-0 §4.1 p
 Requirements stay in group 17 (`use_requirements`, `on_use`). ITEM-USE-0 §6.2 reads them;
 ITEM-SEM-USE-2 lowers the potion rows into it.
 
-### 1.3 Effect family `ManaRestore`
+### 1.3 The potion magnitudes are carried by the Item artifact (#1767 P1 4177976617)
 
-GAME-ABILITY-01 content has two effect families, `Damage` and `Heal`. All 670 `Heal` effects
-restore health. A mana potion needs a mana restore. Canary uses a separate call for it
-(`doTargetCombatMana`, `potions.lua`, OTS_HYPOTHESIS_ONLY).
+The activated Item artifact is the only generation-fenced carrier the runtime reads for an Item.
+It holds no Ability, Effect or Formula records: `compile_with_profile` refuses every non-Item
+definition, and `ReferenceFormulaDefinition` keeps no authored range. A potion that names an
+Ability record could not be resolved from the artifact.
 
-A third family, `ManaRestore`, joins `ReferenceEffectFamily`, `EffectFamilyDocument` and the model
-`EffectFamily`. Its formula is a `Range`. It is closed, like the other two. The runtime meaning (a
-mana gain clamped to max mana, never a damage event) is ITEM-USE-1's (ITEM-USE-0 §6.2). A spirit
-potion is one ability with two effects, `Heal` then `ManaRestore`.
+So the ranges live in group 18 itself, and the v6 Item artifact carries and bounds them. No
+Ability, Effect or Formula content is written for potions, and no effect family is added to the
+content model.
 
-Rejected: a `Heal` with a resource field. It changes the meaning of every existing `Heal` record.
+ITEM-USE-0 §6.2 still holds. ITEM-USE-1 builds the GAME-ABILITY-01 invocation, with origin
+`ItemUse` and keyed by the CommandRef, from the group 18 entries: a `Health` entry is a health
+restore and a `Mana` entry is a mana restore, each drawn from `[min, max]`. The runtime effect
+representation of those two restores, including a mana restore clamped to max mana and never a
+damage event, is ITEM-USE-1's (#1767 P2 4177976623: the runtime `EffectFamily` has only
+`Damage`, so ITEM-USE-1 owns both restores).
+
+Rejected:
+- **Ability content records for potions.** The artifact cannot carry them. A second activated
+  carrier for abilities is a larger contract with no other current consumer.
+- **A `Heal` with a resource field.** It changes the meaning of every existing `Heal` record.
 
 ### 1.4 Artifact v6
 
-Group 18 and the third family are new grammar. A v5 reader accepts group ids 1-17 only.
-ITEM-SEM-USE-1 therefore allocates `OTERYN_REFERENCE_PLAYABLE_ARTIFACT/v6`, with its compiler and
-canonicalization profiles:
+Group 18 is new grammar. A v5 reader accepts group ids 1-17 only. ITEM-SEM-USE-1 therefore
+allocates `OTERYN_REFERENCE_PLAYABLE_ARTIFACT/v6`, with its compiler and canonicalization profiles:
 
 - the compiler writes only v6;
 - v5 keeps explicit decoding under its own profile;
@@ -101,10 +113,8 @@ The v6 grammar invalidates the v5 resource profile. ITEM-SEM-USE-1 owns:
 - the registry rows.
 
 It recomputes and registers every v6 ceiling with max and max+1 tests before the codec is
-released (D448): server groups 18, client groups unchanged at 12, and record and artifact bytes.
-
-If the effect family does not reach the artifact, the profile tool records that and the family adds
-no ceiling.
+released (D448): server groups 18, client groups unchanged at 12, two `restores` entries, and
+record and artifact bytes.
 
 ### 1.5 Sources and scope of ITEM-SEM-USE-2
 
@@ -119,23 +129,41 @@ Sources come in this order (ITEM-USE-0 child row):
 
 Each lowered row records its source. A Canary-only value is `OTS_HYPOTHESIS_ONLY` in the evidence.
 
+The lowering follows the TIMED-CONTENT-1 precedent. A tool lowers the sources into a pinned facts
+packet, and a materializer step applies it to the World Project, which is then regenerated by the
+tools. No content shard is edited by hand.
+
 Rows:
 
-- **Food:** every edible item with a TibiaWiki `regenseconds` (Canary as fallback) and a
-  materializable definition. The record lists the count lowered and the count reported (no
-  source, above 1,200 s, or not materializable).
+- **Food:** every edible item with a TibiaWiki `regenseconds` (Canary as fallback) that is
+  materializable after the admission below. The record lists the count lowered and the count
+  reported (no source, 1,200 s or more, or not materializable).
 - **Potions:** the eleven healing and mana potions:
-  - health, strong health, great health, ultimate health and supreme health;
-  - mana, strong mana, great mana and ultimate mana;
-  - great spirit and ultimate spirit.
+  - health i266, strong health i236, great health i239, ultimate health i7643, supreme health
+    i23375;
+  - mana i268, strong mana i237, great mana i238, ultimate mana i23373;
+  - great spirit i7642, ultimate spirit i23374.
 
-  Each potion gets:
-  - one `oteryn:ability.item.<slug>` Ability with `Heal` and/or `ManaRestore` effects and
-    `Range` formulas;
-  - its group 18 `Potion` value;
-  - its group 17 requirements (level, vocations, `on_use`).
-- **Flasks:** the empty flask definitions that the potions name (`empty potion flask` i283 and
-  its strong and great variants). Each potion's `empty_flask` names one of them.
+  Each potion gets its group 18 `Potion` value (ranges and flask) and its group 17 requirements
+  (level, vocations, `on_use`).
+- **Flasks:** the empty potion flask i283, the empty strong potion flask i284 and the empty great
+  potion flask i285. Each potion's `empty_flask` names one of them.
+
+**Admission (#1767 P1 4177976619).** On `main`, ten of these rows are identity-only
+(`materializable: false`, stack class `Unknown`, `stack` `Unknown`): the six potions i236, i7643,
+i23375, i23373, i7642 and i23374, ham i3582, and the three flasks i283, i284 and i285. A potion or
+flask that cannot be materialized cannot be used or produced. ITEM-SEM-USE-2 admits exactly these
+ten rows with a pinned admission packet, schema `OTERYN_ITEM_ADMISSION/v3`, on the
+STARTER-CONTENT-1 pattern:
+
+- the shape is `materializable: true`, stack class `StackCapable`, `stack` `Known { stackable:
+  true, stack_max: 100 }`, matching the five potions already admitted on `main`;
+- the admission is strict: it fails closed unless the row is still identity-only with an
+  `Unknown` stack;
+- every row records TibiaWiki and Canary stackability as evidence. A source that says
+  non-stackable stops the slice with a QUESTION to the control plane;
+- no other Item is admitted. Other edible items that are not materializable are reported, not
+  admitted.
 
 Attribute potions (berserk, mastermind, bullseye and similar) are out of scope. They apply
 conditions that have no definition yet.
@@ -144,13 +172,14 @@ conditions that have no definition yet.
 
 When both slices merge:
 
+- the potions, flasks and ham of §1.5 are materializable and stack-capable;
 - `consumption` is known for the rows of §1.5;
 - `Unknown` means "not usable as food or potion", and ITEM-USE-1 returns its non-usable
   disposition;
-- a potion's ability resolves;
-- its effects are `Heal` and `ManaRestore` only.
+- a potion's magnitudes are its group 18 `restores` entries, read from the activated Item
+  artifact (§1.3).
 
-ITEM-USE-1 does not read `consumable` from authoring.
+ITEM-USE-1 does not read `consumable` from authoring, and it reads no Ability content for potions.
 
 ## 2. Packets
 
@@ -166,11 +195,9 @@ base: main
 migration_lease: none
 depends_on: [ITEM-SEM-2b-3]
 owned_paths:
-  - apps/game-server/src/content/reference_playable.rs     # group 18, ReferenceEffectFamily::ManaRestore
+  - apps/game-server/src/content/reference_playable.rs     # group 18
   - apps/game-server/src/content/reference_artifact.rs     # v6 profile; v5 decoding kept
   - apps/game-server/src/content/project/v2.rs             # authoring → typed lowering of group 18
-  - apps/game-server/src/content/project.rs                # EffectFamilyDocument::ManaRestore
-  - apps/game-server/src/content/model.rs                  # EffectFamily::ManaRestore
   - apps/game-server/tests/content_reference_artifact.rs
   - docs/architecture/DUR-04_CONTENT_WORLD_AND_SCRIPTING_CONTRACT.md  # own paragraph
   - tools/reference-item-resource-profile/**               # v6 ceilings
@@ -188,19 +215,20 @@ validation:
 Acceptance:
 
 - The v6 profile is new, and the compiler writes only v6. Group 18 exists only in v6. An unknown
-  group id, an unknown `consumption` variant or a fourth effect family fails closed (tests).
+  group id, an unknown `consumption` variant or an unknown `resource` fails closed (tests).
 - A v5 artifact still decodes under its own profile. A v5 reader refuses v6 by profile id
   (cross-profile tests).
-- `Food` round-trips at 1 and 1,200 and rejects 0 and 1,201.
-- `Potion` round-trips with `Known` and `KnownNone` flasks. A potion whose ability does not
-  resolve, or resolves to a non-Ability family, fails the load (test).
-- `ManaRestore` lowers from authoring and round-trips. Every existing `Damage` and `Heal` record
-  is byte-identical in the regenerated artifact (test or digest evidence).
+- `Food` round-trips at 1 and 1,199 and rejects 0 and 1,200.
+- `Potion` round-trips with one and two `restores` entries and with `Known` and `KnownNone`
+  flasks. It rejects zero or three entries, two entries for one resource, `Mana` before `Health`,
+  `min` 0, `min > max` and `max` 10,001. A `Known` flask that does not resolve to an Item fails
+  the load (tests).
 - Every v6 ceiling is recomputed with the tool and registered with max and max+1 tests before
   the codec is released. The v5 rows stay for v5 decoding.
 - No content rows; the content tree changes only where the v6 header re-digests it.
 - Not in scope:
-  - the `ManaRestore` runtime and the `FoodRegeneration` condition (ITEM-USE-1, FOOD-REGEN-1);
+  - the restore runtime and the `FoodRegeneration` condition (ITEM-USE-1, FOOD-REGEN-1);
+  - effect families in the content model or the runtime (§1.3);
   - any wire change.
 
 ### 2.2 ITEM-SEM-USE-2
@@ -208,7 +236,7 @@ Acceptance:
 ```yaml
 task_id: OTV2-20261004-item-sem-use-2-food-and-potion-content
 decision: ITEM-USE-0 child row; this packet §1.5, §1.6
-worker: oteryn-impl-worker   # content lowering under an accepted contract
+worker: oteryn-impl-worker   # content lowering and admission under an accepted contract
 review: content review (Codex, final frozen head)
 branch: claude/item-sem-use-2-20261004
 base: main after ITEM-SEM-USE-1 merges, and after #1753 merges or closes
@@ -218,35 +246,41 @@ owned_paths:
   - tools/content-schema/item-authoring/lower_item_consumption_packet.py       # new
   - tools/content-schema/item-authoring/test_lower_item_consumption_packet.py  # new
   - tools/content-schema/item-authoring/README.md                               # own section
-  - content/items/definitions/**        # group 17 and 18 values of the §1.5 rows only
-  - content/abilities/definitions/abilities-item-*.json   # new shards only
-  - content/abilities/effects/effects-item-*.json         # new shards only
-  - content/abilities/formulas/formulas-item-*.json       # new shards only
-  - content/abilities/{definitions,effects,formulas}/index.json  # record counts
-  - docs/agents/evidence/OTV2-20261004-item-sem-use-2-consumption-sources.{json,md}  # new
+  - docs/agents/evidence/OTV2-20261004-item-consumption-facts-v1.json           # new, pinned
+  - docs/agents/evidence/OTV2-20261004-item-sem-use-2-consumption-sources.md    # new
+  - docs/agents/evidence/OTV2-20261004-consumable-item-admission.json           # new, pinned
+  - apps/game-server/src/content/item_consumption_promotion.rs                  # new
+  - apps/game-server/src/content/item_admission.rs        # the v3 shape; v1 unchanged
+  - apps/game-server/src/content/mod.rs                   # one module line
+  - apps/game-server/examples/materialize_content_world_project_v2.rs  # call lines and count prints
+  - apps/game-server/tests/content_world_project_repository.rs         # admission and consumption assertions
+  - content/items/** and content/world/**   # regenerated by the materializer and world_project_v2_to_tree.py only
   - docs/agents/tasks/archive/OTV2-20261004-item-sem-use-2-food-and-potion-content.md
 validation:
   - python3 -m unittest tools/content-schema/item-authoring/test_lower_item_consumption_packet.py
   - cargo test --locked -p oteryn-game-server --quiet
   - cargo test --locked -p oteryn-game-server --test content_reference_artifact --quiet
+  - cargo test --locked -p oteryn-game-server --test content_world_project_repository --quiet
+  - the content-tree regeneration check (the repository CI step for content/world)
 ```
+
+Shared files: D3-7 (#1770) also adds an admission shape (`v2`) to `item_admission.rs` and a call
+line to the materializer. The PR that merges second takes `main` in with a merge commit, keeps both
+shapes and reruns the tools. Generated files are never merged by hand.
 
 Acceptance:
 
 - The lowering is a reproducible tool run from the recorded sources, and running it twice gives
-  the same tree (test).
+  the same packet (test).
 - Every lowered row names its source (TibiaWiki revision, or Canary `04b83b51` file and line).
+- **Admission:** exactly the ten rows of §1.5 are admitted with the v3 shape; a second run fails
+  closed; the v1 backpack result is unchanged (tests).
 - **Food:** the record lists the lowered and reported counts by reason. Ham (i3582) is lowered,
   with its value checked against TibiaWiki.
-- **Potions:** the eleven potions of §1.5 each have:
-  - group 18 `Potion`, with a resolving ability;
-  - the ranges as `Range` formulas;
-  - their flask;
-  - their group 17 requirements.
-
-  The health potion (i266) names the empty potion flask (i283). Both spirit potions carry two
-  effects in the order `Heal`, `ManaRestore`.
-- Existing shards of `content/abilities` are byte-identical, apart from `index.json` counts.
+- **Potions:** the eleven potions of §1.5 each have group 18 `Potion` with their ranges and
+  flask, and their group 17 requirements. The health potion (i266) names the empty potion flask
+  (i283). Both spirit potions carry two entries, `Health` then `Mana`.
+- `content/abilities/**` does not change.
 - No item outside the §1.5 rows changes (diff test against `main`).
 - Not in scope:
   - attribute potions;
@@ -260,8 +294,9 @@ Acceptance:
   authoring only would leave ITEM-USE-1 reading an untyped schema.
 - **The flask as `use_transform` `Use`.** That entry is a whole-item self-transform. It cannot
   express one flask unit from a stack (§1.2).
-- **Potion effects as `Heal` with a resource field.** It changes the meaning of 670 existing
-  records (§1.3).
+- **Potion abilities as content records.** The Item artifact cannot carry or resolve them (§1.3).
+- **Hand-written shard edits for the ten unadmitted rows.** Generated content is written only by
+  the tools; the admission packet keeps the facts pinned (§1.5).
 - **Food value in Canary units (× 12 at runtime).** TibiaWiki states seconds. Storing seconds keeps
   one unit from source to `FoodRegeneration`.
 - **One hard slice for model and content.** That would be over the batch size, and the content
@@ -271,8 +306,8 @@ Acceptance:
 
 - **Must decide now:** YES. ITEM-USE-1 and FOOD-REGEN-1 have no content to read, so a character
   cannot eat or drink.
-- **Smallest sufficient:** one group, one effect family, one artifact profile, eleven potions and
-  the edible food set. No attribute potions.
-- **Reversible:** group 18 and `ManaRestore` are additive. A wrong value is a content revision.
+- **Smallest sufficient:** one group, one artifact profile, one admission of ten rows, eleven
+  potions and the edible food set. No effect family and no attribute potions.
+- **Reversible:** group 18 is additive. A wrong value is a content revision.
 - **Superseding evidence:** official food or potion values. A changed row is a content revision,
   not a contract change.

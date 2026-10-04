@@ -30,10 +30,14 @@ external_repositories: []
 
 - ITEM-SEM-USE splits into a hard contract slice and a content slice. The typed model has no food,
   potion or flask field (packet §1.1).
-- ITEM-SEM-USE-1 adds group 18 `consumption` (`Food`, `Potion` with ability and flask), the effect
-  family `ManaRestore` and artifact v6 with recomputed ceilings (§1.2-§1.4, §2.1).
-- ITEM-SEM-USE-2 lowers the edible food set, the eleven healing and mana potions, their abilities,
-  flasks and requirements, from TibiaWiki first and Canary as fallback (§1.5, §2.2).
+- ITEM-SEM-USE-1 adds group 18 `consumption` (`Food` 1-1,199 s; `Potion` with inline health and
+  mana ranges and a flask) and artifact v6 with recomputed ceilings. The Item artifact carries the
+  potion magnitudes, so no Ability content and no effect family are added (§1.2-§1.4, §2.1;
+  #1767 P1 4177976617, P2 4177976623 and 4177976626).
+- ITEM-SEM-USE-2 admits the ten identity-only potions, flasks and ham with a pinned v3 admission
+  packet. It then lowers the edible food set and the eleven potions with their ranges, flasks and
+  requirements through a pinned facts packet, from TibiaWiki first and Canary as fallback (§1.5,
+  §2.2; #1767 P1 4177976619).
 - No code, contract or wire change.
 
 ## Validation
