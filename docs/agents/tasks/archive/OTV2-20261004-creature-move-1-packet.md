@@ -9,7 +9,7 @@ repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/creature-move-1-packet-20261004
 issue: 162
-pr: 0
+pr: 1765
 head_sha: "exact frozen head in the #162 FREEZE_SHA entry"
 final_head_sha: "exact frozen head in the #162 FREEZE_SHA entry"
 owner: claude-code-session_01YL1cQaLL3BquJajKivZVhw (Sol Supervising Architect)
