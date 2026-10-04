@@ -84,27 +84,49 @@
 - **Conservative, irreversible switch-over (#1738 P1 4176973984, PROD-ENTITLEMENTS-01 §7,
   §16).** `TrustedNow` gives a window: `lower = now_us - uncertainty_us` and
   `upper = now_us + uncertainty_us`. A durable latch records that the switch-over may have
-  happened. It is a new table with one row per activation (`activation_id` TEXT primary key,
-  `switch_over_us` BIGINT, `latched_at_us` BIGINT), written with `INSERT … ON CONFLICT DO
-  NOTHING` and never updated or deleted. Any row in it means Premium has been delivered on this
-  deployment, whatever the current configuration says.
+  happened. It is a new single-row table (#1743 P1 4177047049): `id` SMALLINT primary key with
+  `CHECK (id = 1)`, `activation_id` TEXT, `switch_over_us` BIGINT and `latched_at_us` BIGINT,
+  all NOT NULL. It is written only by `INSERT … (id = 1) ON CONFLICT (id) DO NOTHING RETURNING`
+  and never updated or deleted. The row means Premium has been delivered on this deployment,
+  whatever the current configuration says. Because the key is the constant 1, not the
+  activation, two nodes with different configured activations cannot both latch: exactly one
+  insert wins. A node whose insert returns no row re-reads the table and holds the winner's row,
+  and step 1 then compares it with its own configuration. A node whose read fails holds nothing
+  and reads `NotCurrent`.
 - **The latch is the durable truth, never a cache of it (#1738 P1 4176993795, P1 4176993801).**
-  A process holds a latch row in memory once it has read or written one, and only ever moves from
-  "none held" to "held". While it holds none, it re-reads the table before it may return
+  A process holds the latch row in memory once it has read or written it, and only ever moves
+  from "none held" to "held". While it holds none, it re-reads the table before it may return
   `NotActivated`, so a row written by another node, or by an earlier deployment, is always seen.
-  The re-read is one indexed read of a table of a few rows, and it happens only before delivery
-  and only for a command that needs Premium. After a row is held, no read is made.
+  The re-read is one primary-key read, and it happens only before delivery and only for a
+  command that needs Premium. After the row is held, no read is made.
+- **A pre-delivery bypass is fenced against the latch (#1743 P1 4177047054).** Both sides take
+  one transaction-scoped Postgres advisory lock with a fixed key, registered with the migration:
+  - the latch insert runs in a transaction that first takes it exclusively
+    (`pg_advisory_xact_lock`);
+  - a `NotActivated` result is only ever produced inside a transaction that first takes it shared
+    (`pg_advisory_xact_lock_shared`) and then reads the table. The consumer applies its bypass
+    while that lock is held:
+    - a durable consumer (GUILD-1's found, rank and job writes) writes in that same transaction,
+      so its rows commit before any latch can;
+    - an in-process consumer (the Wheel spell exception) applies the cast before the transaction
+      commits and the lock is released.
+  A latch commit therefore waits for every bypass that already read an empty table, and every
+  read after the latch commit sees the row. No bypass applies after the durable switch-over.
+  `premium_status` returns `NotActivated` to no caller outside such a transaction. A lock or
+  read failure gives `NotCurrent`.
 - The status is decided in this order:
   1. **A row is held.** Premium has been delivered, so the status is `Current` or `NotCurrent`,
      never `NotActivated`:
      - the configured activation is `None`, or its id or `S` differs from the held row's (a
-       configuration or deployment rollback): `NotCurrent` (#1738 P1 4176993801);
+       configuration or deployment rollback, or the losing node of a mixed rollout):
+       `NotCurrent` (#1738 P1 4176993801, #1743 P1 4177047049);
      - the clock reads `None`: `NotCurrent`;
      - `lower < S`, so the window still straddles `S`: `NotCurrent`;
      - otherwise the refresher's `PremiumConsumer::premium_current(account_id, now)`:
        `Current` or `NotCurrent`.
-  2. **No row is held.** The table is re-read. A failed read gives `NotCurrent`. A row found is
-     held, and step 1 applies.
+  2. **No row is held.** The shared lock is taken and the table is re-read in the caller's
+     transaction. A failed lock or read gives `NotCurrent`. A row found is held, and step 1
+     applies.
   3. **The table is empty and the activation is `None`** (the default and the production
      composition): `NotActivated`.
   4. **The table is empty, an activation exists and the clock reads `None`:** `NotCurrent`. Once
@@ -112,8 +134,10 @@
   5. **The table is empty, an activation exists and `upper < S`,** so the switch-over has
      certainly not happened: `NotActivated`.
   6. **The table is empty, an activation exists and `upper >= S`,** so the switch-over may have
-     happened. The row is written durably first and then held, and step 1 applies. If the write
-     fails, the status is `NotCurrent` and nothing is held.
+     happened. The caller's shared transaction gives no bypass. A separate transaction takes
+     the exclusive lock and inserts the row; the returned row, or the winner's on conflict, is
+     held, and step 1 applies. If the write fails, the status is `NotCurrent` and nothing is
+     held.
   Once any row exists, nothing returns `NotActivated` again on any node: not a clock rollback, a
   VM restore, a restart, a larger uncertainty, a node that booted before `S`, nor a deployment
   that drops or changes the activation.
@@ -156,9 +180,9 @@ review: security review (time and entitlement) and spell review (Codex, final fr
 branch: claude/prem-wire-1-20261004
 base: main
 depends_on: [PREM-1c-harden]
-migration_lease: one number from the control plane at allocation (the activation latch table, §1.2)
+migration_lease: 0073 (reserved by the control plane for the activation latch table, §1.2)
 owned_paths:
-  - apps/game-server/migrations/<lease>_premium_activation_latch.sql
+  - apps/game-server/migrations/0073_premium_activation_latch.sql
   - apps/game-server/src/durability/premium_activation_latch.rs
   - apps/game-server/src/durability/mod.rs   # module wiring only
   - apps/game-server/tests/support/premium_activation_latch_postgres_cases.rs
@@ -197,8 +221,9 @@ Touch rules:
 
 - The connection and test fakes change only by the added account argument.
 - The packet touches no `chat/**`, protocol, registry or content file. Its one migration is the
-  latch table (§1.2: `activation_id` TEXT primary key, `switch_over_us` BIGINT, `latched_at_us`
-  BIGINT), with no UPDATE or DELETE grant.
+  single-row latch table (§1.2: `id` SMALLINT primary key with `CHECK (id = 1)`,
+  `activation_id` TEXT, `switch_over_us` BIGINT, `latched_at_us` BIGINT), with no UPDATE or
+  DELETE grant. The advisory lock key is a named constant next to the latch code.
 - If `gameplay_transport/mod.rs` is leased to another lane at allocation, the control plane
   serializes the two.
 
@@ -227,6 +252,15 @@ Acceptance tests:
 - Two nodes on one Postgres (#1738 P1 4176993795): both start before `S`, node A crosses and
   writes the row, and node B, with its clock then set back to `S - 10 s` before its first
   post-boundary command, reads `NotCurrent`.
+- Mixed rollout (#1743 P1 4177047049): two nodes on one Postgres with different activation ids
+  both cross `S` and latch concurrently. Exactly one insert wins, both nodes hold the winner's
+  row, and the losing node reads `NotCurrent` for every account. A second insert never adds a
+  row.
+- Bypass fence (#1743 P1 4177047054): node B takes the shared lock and reads an empty table, and
+  node A then tries to latch. A's insert does not commit until B's transaction ends, and B's
+  bypass write is committed before the row. A read that starts after A's commit sees the row
+  and never returns `NotActivated`. `premium_status` called outside a shared-lock transaction
+  never returns `NotActivated`.
 - Configuration rollback (#1738 P1 4176993801): with a row in the table, a runtime built with
   activation `None`, or with a different id or `S`, reads `NotCurrent` for every account, and
   never `NotActivated`.
@@ -296,6 +330,11 @@ GUILD-1 can still start now, because GUILD-0 says it does not wait for houses.
   is rejected for the same reason.
 - **Caching `premium_current` in the session.** A cache would outlive an entitlement end or a
   loss of sync. The refresher already holds the entitlement, so reading per command is cheap.
+- **A latch keyed by the activation.** Two nodes with different configured activations would
+  both insert and both read `Current` (#1743 P1 4177047049).
+- **Re-reading the latch without a fence.** A latch committed between the read and the bypass
+  would let the bypass apply after the switch-over (#1743 P1 4177047054). A seeded row locked
+  `FOR SHARE` needs an UPDATE grant on the latch, and the advisory lock does not.
 - **A latch read only at boot.** A node that booted before `S` would never see another node's
   row (#1738 P1 4176993795).
 - **Keying the delivered state on the configured activation.** A deployment that drops the

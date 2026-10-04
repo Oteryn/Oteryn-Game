@@ -41,6 +41,12 @@ external_repositories: []
   latch row stores `switch_over_us` (§1.2, §2.1).
 - #1738 P2 4176993804: `CasterState` carries `PremiumStatus`. A `wheel_unlock` spell skips the
   Premium check under `NotActivated`, as WHEEL-0 §6.2 requires (§1.3, §2.1).
+- #1743 P1 4177047049: the latch is a single-row table keyed by the constant 1 and written by
+  insert-if-absent. In a mixed rollout exactly one node wins; the others hold the winner's row and
+  read `NotCurrent`. Migration lease 0073 (§1.2, §2.1).
+- #1743 P1 4177047054: a `NotActivated` result exists only inside a transaction that holds a
+  shared advisory lock, and the bypass is applied under it. The latch insert takes the lock
+  exclusively, so no bypass applies after the durable switch-over (§1.2, §2.1, §4).
 - No code, contract, wire or migration change.
 
 ## Validation
