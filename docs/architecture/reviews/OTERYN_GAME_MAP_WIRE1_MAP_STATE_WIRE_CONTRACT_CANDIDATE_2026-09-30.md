@@ -33,10 +33,13 @@ steps from it and switches SPEED-1's server seam to MAP-LOAD-1's map source in t
 merge condition, with a production-path test on a tile whose ground speed is not 150. The field
 joins the §3 allowlist and the §8 bounds as amended there (#1702 P2 4175398450).
 MAP-WIRE-2 also admits the value before it reaches the wire (ARCH-ITEM-PACKETS-AMEND-2, #1702 P2
-4175418429): it bounds ground speed to 1..=1,000 in `terrain.schema.json` and `world_objects.py`,
+4175418429): it bounds ground speed to 0..=1,000 in `terrain.schema.json` and `world_objects.py`,
 the bundle compiler rejects a value outside the range, and MAP-LOAD-1's reader refuses such a
-bundle. Each of the four tests 0 and 1,001 rejected and 1 and 1,000 accepted (#1707 P2
-4175486632).
+bundle. The value 0 is admitted only on non-walkable ground (`walkable` KNOWN `false`, 200 current
+Terrain records); the converter, the compiler and the reader reject it elsewhere, and nothing
+paces on 0 (#1707 P1 4175507772). Each of the four tests 0 on non-walkable ground and 1,000
+accepted and 1,001 rejected; the converter, the compiler and the reader also test 0 on walkable
+ground rejected (#1707 P2 4175486632).
 
 ## 1. Question
 
@@ -79,8 +82,9 @@ overlay hides or moves, and the items players leave on the ground?
   channel overlay: the base entries the overlay does not hide, where the overlay currently places
   them. The client holds no map file and sees only the area it is in, as in Tibia.
 - **Allowlist** (DUR-04 §8). Per tile: its position (implicit, §7) and, under the amendment of the
-  Implementation brief, its ground speed: a varint in 1..=1,000 (the content maximum is 850),
-  omitted when 150 or when the ground item has none; a value outside the range fails the encode.
+  Implementation brief, its ground speed: a varint in 0..=1,000 (the content maximum is 850; 0
+  only on non-walkable ground), omitted when 150 or when the ground item has none; a value outside
+  the range fails the encode. The encoding is unchanged by admitting 0, so the §8 bounds stand.
   Per base item:
   - the client item type (the appearance id already in the client artifact);
   - count or subtype, only where the appearance needs it (stackables, fluids);

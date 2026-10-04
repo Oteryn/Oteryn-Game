@@ -7,7 +7,7 @@ date: 2026-10-03
 owner: Sol Supervising Architect
 requested_by: control plane (after #1696: ITEM-MOVE-2a, ITEM-MOVE-2b, EQUIP-RT-1, EXERCISE-1, and what else the accepted EQUIP-0, EXERCISE-0, DEPOT-0, BAGS-0 and IMBUE-FORGE-0 allow)
 writes_on_other_prs: none
-amended_by: ARCH-ITEM-PACKETS-AMEND-1 (§0.1, §0.2, §0.3, §1.4, §1.7, §1.9-§1.12, §2.0a, §2.0b (#1702 P1s 4175377704, 4175377707, 4175398447 and 4175398456; P2 4175398450), §2.1, §2.2, §2.2a, §2.3, §2.6, §2.8, §2.9; #1698 round-3 P1 4175197224 and P2 4175197230; #1696 P1 4175041166; control plane: ITEM-SEM-2b-2 narrowed to the patterns model); ARCH-ITEM-PACKETS-AMEND-2 (§0.1, §0.2, §0.3, §1.9, §1.11, §1.12, §1.13, §2.0b, §2.0c, §2.2a, §2.3, §2.4; D448, D449; #1702 P1 4175418427 and P2 4175418429; #1703 P2s 4175400422 and 4175400425; #1707 P1 4175486625, P2s 4175486629 and 4175486632)
+amended_by: ARCH-ITEM-PACKETS-AMEND-1 (§0.1, §0.2, §0.3, §1.4, §1.7, §1.9-§1.12, §2.0a, §2.0b (#1702 P1s 4175377704, 4175377707, 4175398447 and 4175398456; P2 4175398450), §2.1, §2.2, §2.2a, §2.3, §2.6, §2.8, §2.9; #1698 round-3 P1 4175197224 and P2 4175197230; #1696 P1 4175041166; control plane: ITEM-SEM-2b-2 narrowed to the patterns model); ARCH-ITEM-PACKETS-AMEND-2 (§0.1, §0.2, §0.3, §1.9, §1.11, §1.12, §1.13, §2.0b, §2.0c, §2.2a, §2.3, §2.4; D448, D449; #1702 P1 4175418427 and P2 4175418429; #1703 P2s 4175400422 and 4175400425; #1707 P1s 4175486625 and 4175507772, P2s 4175486629 and 4175486632)
 ```
 
 This bundle packets the item chain that the four requested slices sit on, in order of playable
@@ -292,10 +292,16 @@ has it.
 
 MAP-WIRE-2 also admits ground speed before it reaches the wire (#1702 P2 4175418429): the
 authoring schema (`terrain.schema.json`) accepts any nonnegative integer, so MAP-WIRE-2 bounds
-it to 1..=1,000 in the schema and in `world_objects.py`, the bundle compiler rejects a value
-outside the range, and MAP-LOAD-1's reader refuses such a bundle. Each of the four (schema,
-converter, compiler, reader) tests 0 and 1,001 rejected and 1 and 1,000 accepted
-(#1707 P2 4175486632).
+it to 0..=1,000 in the schema and in `world_objects.py`, the bundle compiler rejects a value
+outside the range, and MAP-LOAD-1's reader refuses such a bundle. The value 0 is admitted only on
+non-walkable ground (`walkable` KNOWN `false`): 200 current Terrain records, such as
+`oteryn:terrain.tibia.i1316`, carry KNOWN 0 there (#1707 P1 4175507772). The schema bounds the
+range; the converter, the compiler and the reader also reject 0 where `walkable` is not KNOWN
+`false`. The wire may carry 0, but nothing paces on it: a step onto a non-walkable tile is refused
+before its duration is computed, and a pacing seam that receives 0 refuses the step. Each of the
+four (schema, converter, compiler, reader) tests 0 on non-walkable ground and 1,000 accepted and
+1,001 rejected; the converter, the compiler and the reader also test 0 on walkable ground
+rejected (#1707 P2 4175486632, P1 4175507772).
 Valid authored content then cannot fail a map snapshot at runtime (MAP-WIRE-1 amendment).
 
 ### 1.13 A capability mismatch on resume falls back to a fresh admission that succeeds (D449)

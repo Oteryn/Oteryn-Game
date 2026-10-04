@@ -37,7 +37,7 @@ external_repositories: []
 - **D448, #1702 P1 4175418427:** ITEM-SEM-2b-3 now owns the resource-profile tool, a v5
   architecture profile, evidence and the registry rows. It recomputes every v5 ceiling, with
   max/max+1 tests, before the codec is released (§1.12, §2.2a).
-- **#1702 P2 4175418429:** MAP-WIRE-2 admits ground speed in 1..=1,000 in the schema,
+- **#1702 P2 4175418429:** MAP-WIRE-2 admits ground speed in 0..=1,000 in the schema,
   `world_objects.py`, the bundle compiler and MAP-LOAD-1's reader (§1.11, MAP-WIRE-1 amendment).
 - **#1703 P2s 4175400422 and 4175400425:** ITEM-VIEW-1b validates that capability 4 requires 6
   in accepted and resume-accepted, and that `item_handle` is unique per snapshot/delta, before
@@ -50,6 +50,10 @@ external_repositories: []
   `base` and `depends_on`; CHARM-5-COMP and CHAT-1b-2 list it when they are packeted (§1.9).
 - **#1707 P2 4175486632:** ground-speed admission tests 0, 1, 1,000 and 1,001 in the schema, the
   converter, the compiler and the reader (§1.11, MAP-WIRE-1 amendment).
+- **#1707 P1 4175507772:** 200 Terrain records carry KNOWN ground speed 0 on non-walkable ground,
+  so the range is 0..=1,000 with 0 admitted only where `walkable` is KNOWN `false`; nothing paces
+  on 0. Tests: 0 non-walkable accepted, 0 walkable rejected, 1,000 accepted, 1,001 rejected; the
+  §8 encoding and bounds are unchanged (§1.11, MAP-WIRE-1 amendment).
 - No code, contract or wire change.
 
 ## Validation
