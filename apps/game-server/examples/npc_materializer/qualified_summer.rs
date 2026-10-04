@@ -281,7 +281,7 @@ pub(super) fn apply(draft: &mut ProjectV2Draft) -> AdmissionResult<usize> {
             .get(locator)
             .ok_or("missing summer predecessor")?;
         if hex_sha256(bytes) != expected {
-            return Err("summer complete predecessor digest drifted".into());
+            return Err(format!("summer complete predecessor digest drifted DIAG {locator} {expected} {}", hex_sha256(bytes)).into());
         }
     }
     apply_packet(draft, serde_json::from_slice(PACKET)?)

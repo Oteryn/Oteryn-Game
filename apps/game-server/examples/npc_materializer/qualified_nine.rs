@@ -584,7 +584,7 @@ pub(super) fn apply(draft: &mut ProjectV2Draft) -> AdmissionResult<usize> {
                 "nine-definition complete predecessor custody pending published 1132 predecessor",
             )?
         {
-            return Err("nine-definition complete predecessor digest drifted".into());
+            return Err(format!("nine-definition complete predecessor digest drifted DIAG {locator} {} {}", expected.unwrap_or_default(), hex_sha256(bytes)).into());
         }
     }
     apply_packet(draft, serde_json::from_slice(PACKET)?)

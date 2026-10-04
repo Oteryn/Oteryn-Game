@@ -589,7 +589,7 @@ pub(super) fn apply(draft: &mut ProjectV2Draft) -> AdmissionResult<usize> {
             .get(locator)
             .ok_or("missing complete bounded-definition predecessor")?;
         if hex_sha256(bytes) != expected.ok_or("bounded-definition complete predecessor custody pending published 1141 predecessor")? {
-            return Err("bounded-definition complete predecessor digest drifted".into());
+            return Err(format!("bounded-definition complete predecessor digest drifted DIAG {locator} {} {}", expected.unwrap_or_default(), hex_sha256(bytes)).into());
         }
     }
     let mut tree = sha2::Sha256::new();
@@ -605,7 +605,7 @@ pub(super) fn apply(draft: &mut ProjectV2Draft) -> AdmissionResult<usize> {
         .map(|byte| format!("{byte:02x}"))
         .collect::<String>();
     if actual != PREDECESSOR_TREE {
-        return Err("bounded-definition complete canonical tree drifted".into());
+        return Err(format!("bounded-definition complete canonical tree drifted DIAG tree {PREDECESSOR_TREE} {actual}").into());
     }
     apply_packet(draft, serde_json::from_slice(PACKET)?)
 }

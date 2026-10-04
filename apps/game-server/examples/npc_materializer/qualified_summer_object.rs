@@ -468,7 +468,7 @@ pub(super) fn apply(draft: &mut ProjectV2Draft) -> AdmissionResult<usize> {
                 "summer-object complete predecessor custody pending internal Playerbots stage",
             )?
         {
-            return Err("summer-object complete predecessor digest drifted".into());
+            return Err(format!("summer-object complete predecessor digest drifted DIAG {locator} {} {}", expected.unwrap_or_default(), hex_sha256(bytes)).into());
         }
     }
     apply_packet(draft, serde_json::from_slice(PACKET)?)
