@@ -169,7 +169,7 @@ Builds, from HOUSE-RUNTIME-0 §4:
 The admission commit re-reads the property row under FOR SHARE. **Amendment
 (`OTERYN_GAME_HOUSE_RT_INBOX_PACKETS_2026-10-04.md` §1.2).** It reads it through
 `game_house_access(world_id, house_key, character_id)`, which this packet creates as a stub
-returning no row; the owner children replace its body. The packet admits nobody into a
+returning no row; HOUSE-1a replaces its body. The packet admits nobody into a
 real house: with no HOUSE-1 there is no owner, so HOUSE-RUNTIME-0 §10's operator test is the only entry, and
 tests use it.
 

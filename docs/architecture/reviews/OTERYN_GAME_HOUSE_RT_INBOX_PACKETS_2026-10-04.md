@@ -19,8 +19,9 @@
 - Amends, in this PR:
   - HOUSE-RUNTIME-0's child table: HOUSE-RUNTIME-1 is split into 1a, 1b and 1c (§1.1);
   - #1738 §2.3: SCOPE-HANDOFF-1 also builds the house access function (§1.2);
-  - #1773 §0.1 and §2.3-§2.4: HOUSE-1a and MAP-OVERLAY-1c wait on HOUSE-RUNTIME-1a, HOUSE-1b
-    waits on INBOX-1a, and HOUSE-1a replaces the house access function (§1.2, §1.5).
+  - #1773 §0.1 and §2.3-§2.4: HOUSE-1a waits on HOUSE-RUNTIME-1a, 1b and 1c, MAP-OVERLAY-1c on
+    HOUSE-RUNTIME-1a, HOUSE-1b on INBOX-1a; HOUSE-1a replaces the house access function and
+    creates its two parts, which HOUSE-ACL-1 and HOUSE-1b each replace (§1.2, §1.5).
 - Runtime, migration, registry, protocol and production authority: NONE. Each packet needs its
   #162 allocation.
 - `MERGE_AUTHORITY: WORK_COORDINATOR_ONLY`
@@ -58,12 +59,14 @@
 | INBOX-1b | INBOX-1a, DEPOT-1; allocated with the Inbox view child (§1.7) |
 
 Downstream, as amended in this PR:
-- HOUSE-1a waits on BANK-1, HOUSE-RUNTIME-1a and PREM-WIRE-1;
+- HOUSE-1a waits on BANK-1, HOUSE-RUNTIME-1a, 1b and 1c, and PREM-WIRE-1. HOUSE-CUSTODY-0 §4
+  and HOUSE-OWN-0 order ownership after the whole interior runtime: no house is sold before
+  players can enter it;
 - MAP-OVERLAY-1c waits on MAP-OVERLAY-1b and HOUSE-RUNTIME-1a;
 - HOUSE-1b waits on HOUSE-1a, INBOX-1a and MAP-OVERLAY-1c.
 
 Every other document that names HOUSE-RUNTIME-1 as a dependency means all three halves. That
-covers HOUSE-VIEW-1, BED-1 and the HOUSE-ITEM-WIRE-1 row of #1738 §3.
+covers HOUSE-1a, HOUSE-VIEW-1, BED-1 and the HOUSE-ITEM-WIRE-1 row of #1738 §3.
 
 ### 0.3 Leases
 
@@ -87,7 +90,8 @@ covers HOUSE-VIEW-1, BED-1 and the HOUSE-ITEM-WIRE-1 row of #1738 §3.
 | `apps/game-server/src/durability/mod.rs` | each persistence packet: its `mod` lines only |
 | `apps/game-server/tests/character_authority_postgres.rs` | each persistence packet: its path-mod lines only |
 | `apps/game-server/src/durability/item_mint_audit.rs` | HOUSE-RUNTIME-1a and INBOX-1b: the new operation arm and the oneof tag list only |
-| the house access function `game_house_access` | SCOPE-HANDOFF-1 (stub), then HOUSE-1a, HOUSE-ACL-1 and HOUSE-1b, each by `CREATE OR REPLACE` in its own migration (§1.2) |
+| the house access function `game_house_access` | SCOPE-HANDOFF-1 (stub), then HOUSE-1a (final body), by `CREATE OR REPLACE` in its own migration; no later child replaces it (§1.2) |
+| the access parts `game_house_access_grant` and `game_house_access_fence` | HOUSE-1a (stubs); then HOUSE-ACL-1 replaces the grant part only and HOUSE-1b the fence part only, each by `CREATE OR REPLACE` in its own migration (§1.2) |
 | the SCOPE-HANDOFF-1 handoff module | HOUSE-RUNTIME-1b (the exit callers) and HOUSE-RUNTIME-1c (the house-column clear in the exit commit): their call sites only |
 
 ## 1. Rulings
@@ -100,10 +104,11 @@ HOUSE-RUNTIME-0's child table gives HOUSE-RUNTIME-1 three things with different 
 - the live interior, which also needs the map;
 - the house position, which also needs the last-position row.
 
-One packet would wait on all of MAP-LOAD-1 and CHAR-POSITION-1, and so would HOUSE-1a and
-MAP-OVERLAY-1c. Neither consumer needs the live interior:
-- HOUSE-1a needs the shapes' access check and the closure it opens;
-- MAP-OVERLAY-1c needs a HouseInterior insert path for its step-4 recheck test.
+One packet would wait on all of MAP-LOAD-1 and CHAR-POSITION-1, and so would MAP-OVERLAY-1c,
+which needs only a HouseInterior insert path for its step-4 recheck test. HOUSE-1a still waits
+on all three halves: HOUSE-CUSTODY-0 §4 and HOUSE-OWN-0 order ownership after the whole interior
+runtime, so no player buys a house they cannot enter. The split also keeps each half within one
+reviewable batch.
 
 So:
 - **HOUSE-RUNTIME-1a** (§2.1): the three HOUSE-RUNTIME-0 §6.1 shapes with provenance, their
@@ -134,13 +139,29 @@ closure: a player writer is admitted only for a house with an owner and a grant.
 - **The stub.** SCOPE-HANDOFF-1 creates the function as a stub that returns no row. With the stub,
   every house refuses `NO_ACCESS`, which is HOUSE-RUNTIME-0 §5.1 "a house with no owner admits
   nobody". This amends #1738 §2.3, which is not yet allocated.
-- **The replacements.** Each later child replaces the body by `CREATE OR REPLACE` in its own
-  migration, with the same signature:
-  - HOUSE-1a reads `game_house_properties` FOR SHARE and returns `OWNER` for the owner only. This
-    is #1773 §1.10's owner-only access.
-  - HOUSE-ACL-1 adds the subowner, guest, exclusion and guild-entry rows.
-  - HOUSE-1b makes `DISPOSITION` return the fenced state.
-- **The test house.** The HOUSE-RUNTIME-0 §10 test house replaces the body in the test database
+- **One replacement, then composable parts.** HOUSE-1a replaces the stub body once, by
+  `CREATE OR REPLACE` in its own migration with the same signature, and that body is final: no
+  later child replaces `game_house_access`. The body:
+  - reads `game_house_properties` FOR SHARE and returns `OWNER` for the owner. This is #1773
+    §1.10's owner-only access;
+  - for anyone else, calls `game_house_access_grant(world_id, house_key, character_id)`, which
+    returns `SUBOWNER`, `GUEST`, an exclusion, or no row, with the guild revisions it used;
+  - takes the property state from `game_house_access_fence(world_id, house_key)`, which returns
+    the fenced or unfenced state.
+
+  HOUSE-1a creates both parts as stubs: the grant part returns no row, and the fence part returns
+  the state HOUSE-1a's own property row holds. Each part then has one owner, which replaces only
+  that part by `CREATE OR REPLACE` with the same signature:
+  - HOUSE-ACL-1 replaces the grant part with the subowner, guest, exclusion and guild-entry
+    rows;
+  - HOUSE-1b replaces the fence part so that `DISPOSITION` returns the fenced state.
+
+  HOUSE-ACL-1 and HOUSE-1b stay parallel and may merge in either order: neither writes the other's
+  part or the composed body, so neither can erase the other's behaviour. The locks keep the
+  HOUSE-RUNTIME-0 §4.1 order inside the body: the property row, then the fence part's rows, then
+  the grant part's rows. A change to the composed body or to a part's signature is a new
+  architect decision.
+- **The test house.** The HOUSE-RUNTIME-0 §10 test house replaces the `game_house_access` body in the test database
   from test code, reading a fixture table that the test creates. It is never a migration, and no
   production World can reach it.
 - **Grants.** The runtime role gets EXECUTE on the function only through the SECURITY DEFINER
@@ -556,8 +577,13 @@ Acceptance tests:
 
 ## 3. Rejected options
 
-- **One HOUSE-RUNTIME-1.** HOUSE-1a and MAP-OVERLAY-1c would wait on MAP-LOAD-1 and
-  CHAR-POSITION-1, which they do not need. It would also exceed the batch limit.
+- **One HOUSE-RUNTIME-1.** MAP-OVERLAY-1c would wait on MAP-LOAD-1 and CHAR-POSITION-1, which it
+  does not need. It would also exceed the batch limit.
+- **HOUSE-1a after HOUSE-RUNTIME-1a only.** It would sell houses before players can enter them,
+  against HOUSE-CUSTODY-0 §4 and HOUSE-OWN-0's rejected "auctions before the interior runtime".
+- **Each owner child replacing the whole access body.** HOUSE-ACL-1 and HOUSE-1b are parallel,
+  so whichever merged last would erase the other's clause. One final body with two parts, each
+  with one owner, composes in either order (§1.2).
 - **A runtime-only role check before HOUSE-1a.** Granting EXECUTE on the shapes with the role
   checked only in Rust would open the HOUSE-CUSTODY-0 §3.5 closure in the database. The access
   function keeps it closed until an owner child replaces the body.
