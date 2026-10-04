@@ -111,6 +111,13 @@ external_repositories: []
     `content/world/pins/<world slug>.ruleset.json`, not from `native_entry.rs`. The node refuses
     boot on a bundle without its `REVISIONS[2]`, and a unit test ties the file to the constant.
     A sweep records that every identity source is under a compiler input path (§1.2, §2.2, §2.4).
+- #1792 Codex round 8 (CP):
+  - P1 4179564957: `WorldActivationServerV1` binds the pin's `inputs_digest` and a
+    creature-facts projection over the whole canonical definition, as the node loads it from its
+    embedded shards, of every creature the spawn frame names. The coverage rule no longer says the
+    bundle digest binds creature facts. A speed-only mutation must change the digest (§1.5, §2.4).
+  - P1 4179564960: the typed `WorldId` is the first field of both the server and client
+    artifacts. Changing only the `WorldId` must change both digests (§1.5, §2.4).
 - Durable rows keep canonical identities; the bundle `placement_key` stays in memory. No
   migration, wire or contract change (§1.6-§1.8).
 

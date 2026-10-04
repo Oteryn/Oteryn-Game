@@ -49,6 +49,7 @@ The map wire (MAP-WIRE-1, MAP-WIRE-2, MAP-CLIENT-1) is outside this batch (§1.8
 | `apps/game-server/src/content/world_reward_claims.rs` | CHEST-PLACE-BIND-1 (new) | WORLD-CONTENT-SERVE-1 calls it and does not change it |
 | `apps/game-server/src/content/mod.rs` | CHEST-PLACE-BIND-1, then WORLD-CONTENT-SERVE-1: each its `mod` line and re-export only | none at the same time |
 | `apps/game-server/src/content/activation.rs`, `src/content/production.rs` | WORLD-CONTENT-SERVE-1: `activate_world_bundle`, `WorldBundleContentPin` and the World-artifact staging branch only (§1.5) | none at the same time |
+| `apps/game-server/src/content/project/bestiary.rs` | WORLD-CONTENT-SERVE-1: a `pub(crate)` accessor to the embedded definition shard bytes only (§1.5) | none at the same time; the decoder and shards stay unchanged |
 | `apps/game-server/src/bin/oteryn-game-ops.rs` | WORLD-CONTENT-SERVE-1: the bundle-World mode of `content activate` only (§1.5) | none at the same time |
 | `apps/game-server/src/node/serve.rs` | QUEST-CAT-BOOT-1 and CHEST-QUEST-BIND-1 first, then WORLD-CONTENT-SERVE-1 | none at the same time |
 | `apps/game-server/src/interaction/chest_use.rs` | CHEST-QUEST-BIND-1 first, then WORLD-CONTENT-SERVE-1 | none at the same time |
@@ -279,7 +280,9 @@ placements are bound.
   - **Server artifact.** `WorldActivationServerV1` is one canonical byte sequence, built by one
     function in `apps/game-server/src/content/world_activation.rs` (WORLD-CONTENT-SERVE-1). It
     is the domain tag `oteryn:world-activation/server/v1`, followed by:
-    - the bundle digest and the pin's `content_revision`;
+    - the typed `WorldId` the pin serves (`content::model::WorldId`, as a `u16` length and its
+      UTF-8 bytes), so one bundle and claim set issued for two Worlds give two digests;
+    - the bundle digest, the pin's `inputs_digest` (§1.2) and the pin's `content_revision`;
     - the World's `ruleset_revision` and `sim_revision`, which the chest `USE` occurrence binds
       (§1.6), and the bundle's whole `Identity` (§1.2);
     - the pin's `entry_start`, as native `(x, y, floor)`;
@@ -304,7 +307,15 @@ placements are bound.
       claim references, ascending by key, with its state (`earnable` or `retired`) and its
       catalogue revision. An `Absent` key already refuses activation
       (`OTERYN_ACHIEVEMENT_OWNER_CONTRACT_V1` §3.3), so it is never projected;
-    - the digest of the quest catalogue the World loads (QUEST-CAT-BOOT-1).
+    - the digest of the quest catalogue the World loads (QUEST-CAT-BOOT-1);
+    - the creature-facts projection: SHA-256 over `oteryn:world-activation/creatures/v1`, then,
+      for each creature definition that the bundle's spawn frame names, ascending by definition
+      key and each once, the key and the canonical JSON bytes of that definition as the node
+      loads it (the `content/creatures/definitions/**` shards embedded in the binary,
+      `content/project/bestiary.rs`). The bytes are the whole definition, so every runtime fact,
+      speed included, is bound whatever field SPAWN-1b later reads, and the projection is taken
+      from what the node runs, not from the tree the pin was built from. A spawn naming a
+      definition the node lacks refuses activation.
   - Changing any of these changes the bytes and so the digest. A semantic change to a referenced
     Item or achievement therefore gives a new activation, even when the claims and the bundle are
     unchanged.
@@ -314,16 +325,18 @@ placements are bound.
       eligible-backpack Item facts, the achievement projection and the three revisions;
     - the quest refresh: the claims' quest transitions, the quest catalogue digest and the
       `content_revision` its tracks are keyed by;
-    - SPAWN-1b: the spawn points and creature definitions, which are compiler inputs (§1.2) and
-      so bound by the bundle digest.
+    - SPAWN-1b: the spawn points, bound by the bundle digest, and the creature definitions
+      they name, bound by the creature-facts projection. The bundle digest alone does not bind
+      creature facts the bundle does not store; `inputs_digest` binds the whole compiler-input
+      tree the pin was built from.
     The reach rule and other code constants are fixed by the binary and versioned by the
     `ruleset_revision` and `sim_revision` in the artifact. A later packet that makes one of
     these paths read another Content input adds it to `WorldActivationServerV1` in the same PR.
   - `entry_start` is in the artifact because the node places first logins there (§2.4). A
     change to it alone is a new activation.
   - **Client artifact.** `WorldActivationClientV1` is `oteryn:world-activation/client/v1`
-    followed by the bundle digest, because the client reads nothing beyond the bundle-bound
-    view.
+    followed by the typed `WorldId`, encoded as in the server artifact, and the bundle digest,
+    because the client reads nothing beyond the bundle-bound view of that World.
   - **Frame binding.** The digest is SHA-256 over `oteryn:world-activation/frame/v1` and the
     bundle's frame id (`global-target-2026-09-27`).
   - **Limits.** The server artifact is at most 1 MiB, checked with the existing
@@ -594,6 +607,7 @@ owned_paths:
   - apps/game-server/src/content/world_activation.rs     # new: the bundle-World activation artifacts (§1.5)
   - apps/game-server/src/content/activation.rs           # activate_world_bundle and WorldBundleContentPin only
   - apps/game-server/src/content/production.rs           # the StagedGeneration::stage branch for the World activation artifact only
+  - apps/game-server/src/content/project/bestiary.rs     # a pub(crate) accessor to the embedded definition shard bytes only
   - apps/game-server/src/content/mod.rs                  # the mod line and re-export only
   - apps/game-server/src/bin/oteryn-game-ops.rs          # the bundle-World mode of `content activate` only
   - docs/agents/tasks/archive/OTV2-20261004-world-content-serve-1.md
@@ -629,6 +643,11 @@ validation:
   - Changing only one of these changes `server_artifact_digest`, and an issuance made before the
     change refuses boot with `ContentActivation("digest")`:
     - the bundle digest, the served claim set or `entry_start`;
+    - the `WorldId` alone, with the same bundle and claims (this also changes
+      `client_artifact_digest`);
+    - the pin's `inputs_digest`;
+    - one non-period fact of a creature the spawn frame names, for example its speed, in the
+      embedded definitions, with the bundle unchanged;
     - the `ruleset_revision` or `sim_revision`;
     - one served claim's revision, one reward count or its `achievement` key;
     - the container capacity or container-slot pattern of an eligible backpack that no served
