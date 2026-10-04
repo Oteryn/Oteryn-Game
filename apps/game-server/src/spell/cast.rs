@@ -922,6 +922,7 @@ pub(crate) struct PaidOrdinaryCast {
 }
 #[allow(clippy::too_many_arguments)]
 pub(crate) fn prepare_ordinary_owner_cast_with_caster(
+    book: &SpellBook,
     state: &PlayerSpellState,
     spell: &SpellDefinition,
     operational: &super::OperationalCastFacts,
@@ -933,6 +934,7 @@ pub(crate) fn prepare_ordinary_owner_cast_with_caster(
 ) -> Result<PaidOrdinaryCast, SpellCastDisposition> {
     if state.pending_stance.is_some()
         || state.training_checkpoint.is_some()
+        || !book.spells.contains(spell)
         || !matches!(
             spell.execution,
             super::Execution::Effects(_)
