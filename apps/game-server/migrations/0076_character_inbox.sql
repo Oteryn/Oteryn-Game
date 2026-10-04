@@ -64,8 +64,9 @@ CREATE TABLE game_character_inbox_deliveries (
         REFERENCES game_item_instances (item_instance_id, world_id)
 );
 
--- Every location table, the Inbox included, joins this function (0025 body
--- plus the Inbox count and the Inbox contents rule).
+-- Every location table, the Inbox included, joins this function (0035 body,
+-- the union of 0025 and the equipment slots, plus the Inbox count and the
+-- Inbox contents rule).
 CREATE OR REPLACE FUNCTION game_item_location_exclusive(p_item UUID) RETURNS void
 LANGUAGE plpgsql SECURITY DEFINER AS $$
 DECLARE
@@ -87,6 +88,7 @@ BEGIN
         + (SELECT count(*) FROM game_item_container_entries WHERE item_instance_id = p_item)
         + (SELECT count(*) FROM game_item_corpse_container_entries WHERE item_instance_id = p_item)
         + (SELECT count(*) FROM game_item_house_interior_locations WHERE item_instance_id = p_item)
+        + (SELECT count(*) FROM game_character_equipment_slots WHERE item_instance_id = p_item)
         + (SELECT count(*) FROM game_item_character_inbox_locations WHERE item_instance_id = p_item);
     IF v_locations <> (v_lifecycle = 1)::INT THEN
         RAISE EXCEPTION 'DUR-03 item must have exactly one location while live and none when retired'
