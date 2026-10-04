@@ -25,9 +25,9 @@ impl ChannelRuntimeV1 {
     }
 
     /// Place the committed player of `game_session_id` at `position` as one position successor:
-    /// [`Self::respawn_position`] for a runtime respawn, or the recorded respawn position a fresh
-    /// admission consumes, which the caller has checked is a Walkable cell of the pinned
-    /// generation. A stale actor, another session or an unpositioned actor moves nothing.
+    /// [`Self::respawn_position`] for a runtime respawn, or the cell
+    /// [`Self::place_admitted_respawn`] selects for a fresh admission. A stale actor, another
+    /// session or an unpositioned actor moves nothing.
     pub(crate) fn place_respawned_player(
         &mut self,
         actor: ExactActorRef,
@@ -49,6 +49,71 @@ impl ChannelRuntimeV1 {
             )
             .map(MovementPositionSnapshot)
     }
+
+    /// DEATH-2b and CHAR-POSITION-0 §3.3: place an admitted player for its pending respawn.
+    /// The recorded cell is used if it is `admissible` and free. Otherwise the NPC-0 §6.1 fallback
+    /// applies: the nearest admissible free cell of the same floor within Chebyshev distance
+    /// [`RESPAWN_FALLBACK_RADIUS`], in spiral order (north first, clockwise), else step 4, the
+    /// respawn position. An undecodable record goes straight to step 4. A free cell is one no
+    /// other live actor occupies.
+    pub(crate) fn place_admitted_respawn(
+        &mut self,
+        actor: ExactActorRef,
+        game_session_id: GameSessionId,
+        recorded: Option<MovementLocalPosition>,
+        admissible: impl Fn(MovementLocalPosition) -> bool,
+    ) -> Result<MovementPositionSnapshot, CarrierError> {
+        self.player_control_facts(actor, game_session_id)?;
+        let current = self.carrier.read_position(&self.continuity, actor.0)?;
+        let free = |cell: MovementLocalPosition| {
+            let cell = LocalPosition {
+                x: cell.x,
+                y: cell.y,
+                floor: cell.floor,
+            };
+            cell == current.version.position
+                || !self.carrier.cell_occupied(current.version.context, cell)
+        };
+        let target = recorded
+            .and_then(|recorded| {
+                respawn_fallback_cells(recorded).find(|cell| admissible(*cell) && free(*cell))
+            })
+            .unwrap_or_else(|| self.respawn_position());
+        self.place_respawned_player(actor, game_session_id, target)
+    }
+}
+
+/// NPC-0 §6.1: the placement fallback searches within this Chebyshev distance.
+const RESPAWN_FALLBACK_RADIUS: i32 = 3;
+
+/// `recorded`, then each ring of the same floor out to [`RESPAWN_FALLBACK_RADIUS`], each ring
+/// from its north cell clockwise (north is `y - 1`, east is `x + 1`).
+fn respawn_fallback_cells(
+    recorded: MovementLocalPosition,
+) -> impl Iterator<Item = MovementLocalPosition> {
+    let ring = |radius: i32| {
+        // The north edge from the middle eastward, then the east, south and west edges, then
+        // the north edge from its west corner back to the middle.
+        let north_east = (0..radius).map(move |dx| (dx, -radius));
+        let east = (-radius..radius).map(move |dy| (radius, dy));
+        let south = (-radius + 1..=radius).rev().map(move |dx| (dx, radius));
+        let west = (-radius + 1..=radius).rev().map(move |dy| (-radius, dy));
+        let north_west = (-radius..0).map(move |dx| (dx, -radius));
+        north_east
+            .chain(east)
+            .chain(south)
+            .chain(west)
+            .chain(north_west)
+    };
+    std::iter::once((0, 0))
+        .chain((1..=RESPAWN_FALLBACK_RADIUS).flat_map(ring))
+        .filter_map(move |(dx, dy)| {
+            Some(MovementLocalPosition {
+                x: recorded.x.checked_add(dx)?,
+                y: recorded.y.checked_add(dy)?,
+                floor: recorded.floor,
+            })
+        })
 }
 
 #[cfg(test)]

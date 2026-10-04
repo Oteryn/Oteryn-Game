@@ -900,10 +900,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     /// committed before the previous actor ended. In the Character's revision slot and under the
     /// admitted session's fences, before the session's other Character writes, its pending
     /// respawn is read, the new actor is placed at the recorded respawn position, and only then
-    /// is the obligation consumed. A position that is not a Walkable cell of the pinned
-    /// generation, a placement that cannot complete or a failed write leaves the row for the next
-    /// admission; the Character writers refuse with `RespawnPending` until then. `true` only when
-    /// no respawn is pending or exactly the placed one was consumed.
+    /// is the obligation consumed. A recorded cell that is not valid or not free uses the
+    /// CHAR-POSITION-0 §3.3 fallback, so a placement is always defined. A placement that cannot
+    /// complete or a failed read or write leaves the row for the next admission; the Character
+    /// writers refuse with `RespawnPending` until then. `true` only when no respawn is pending or
+    /// exactly the placed one was consumed.
     async fn consume_admitted_respawn(&self, session: GameSessionId, actor: ExactActorRef) -> bool {
         let Ok(Some(fence)) = self.current_quest_fence(session).await else {
             return false;
@@ -947,9 +948,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         admitted_respawn_consumed(pending.occurrence, consumed)
     }
 
-    /// DEATH-2b: place the admitted actor at its recorded respawn position, in one Channel owner
-    /// turn: the cell must be a Walkable cell of the pinned generation's own movement cells and
-    /// not a closed door. `false` moves nothing.
+    /// DEATH-2b: place the admitted actor for its pending respawn, in one Channel owner turn: at
+    /// the recorded cell if it is an admissible free cell, else by the CHAR-POSITION-0 §3.3
+    /// fallback (`ChannelRuntimeV1::place_admitted_respawn`). `false` only when the actor cannot
+    /// be placed at all, and then nothing moves.
     async fn place_admitted_respawn(
         &self,
         session: GameSessionId,
@@ -957,17 +959,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         recorded: &[u8],
     ) -> bool {
         let mut runtime = self.runtime.lock().await;
-        let Some(cell) = admissible_respawn_cell(
-            self.movement_cells.index(),
-            self.movement_cells.scope(),
-            self.world_id,
-            runtime.content_pin().server_artifact_digest(),
-            self.door.lock().await.blocking_cells(),
-            recorded,
-        ) else {
-            return false;
-        };
-        runtime.place_respawned_player(actor, session, cell).is_ok()
+        let pinned_digest = runtime.content_pin().server_artifact_digest();
+        let door = self.door.lock().await;
+        runtime
+            .place_admitted_respawn(actor, session, respawn_cell(recorded), |cell| {
+                respawn_cell_admissible(
+                    self.movement_cells.index(),
+                    self.movement_cells.scope(),
+                    self.world_id,
+                    pinned_digest,
+                    door.blocking_cells(),
+                    cell,
+                )
+            })
+            .is_ok()
     }
 
     /// QUEST-STATE-0 §7 and §5.4: load the admitted session's quest copy and request its
@@ -2896,28 +2901,25 @@ fn cell_bytes(cell: crate::foundation::MovementLocalPosition) -> Vec<u8> {
     bytes
 }
 
-/// DEATH-2b: the recorded respawn cell, only if it is a Walkable cell of the pinned generation's
-/// own movement cells in this World and no closed door blocks it.
-fn admissible_respawn_cell(
+/// DEATH-2b and CHAR-POSITION-0 §3.3 "valid": `cell` is a Walkable cell of the pinned
+/// generation's own movement cells in this World, and no closed door blocks it.
+fn respawn_cell_admissible(
     index: &crate::content::static_cell_engine::EngineeringStaticCellIndex,
     scope: &crate::content::static_cell_engine::EngineeringStaticCellScope,
     world_id: crate::foundation::WorldId,
     pinned_digest: [u8; 32],
     door_cells: &std::collections::BTreeSet<crate::content::LogicalCell>,
-    recorded: &[u8],
-) -> Option<crate::foundation::MovementLocalPosition> {
-    let cell = respawn_cell(recorded)?;
-    if scope.world_id != world_id || scope.generation_digest != pinned_digest {
-        return None;
-    }
+    cell: crate::foundation::MovementLocalPosition,
+) -> bool {
     let target = crate::content::LogicalCell {
         x: cell.x,
         y: cell.y,
         z: i32::from(cell.floor),
     };
-    (index.lookup(scope, target) == Ok(crate::content::CollisionClass::Walkable)
-        && !door_cells.contains(&target))
-    .then_some(cell)
+    scope.world_id == world_id
+        && scope.generation_digest == pinned_digest
+        && index.lookup(scope, target) == Ok(crate::content::CollisionClass::Walkable)
+        && !door_cells.contains(&target)
 }
 
 /// DEATH-2b: the consumption settled the respawn only if it deleted exactly the occurrence the
@@ -4408,9 +4410,9 @@ mod tests {
         assert!(holders.counts().is_empty());
     }
 
-    /// DEATH-2b: only a recorded cell that is Walkable in the pinned generation's own movement
-    /// cells of this World, and not a closed door, is admissible; a blocked or absent cell, a
-    /// door, a foreign World or generation and an undecodable record are refused.
+    /// DEATH-2b: only a cell that is Walkable in the pinned generation's own movement cells of
+    /// this World, and not a closed door, is admissible; a blocked or absent cell, a door and a
+    /// foreign World or generation are not, and an undecodable record has no cell.
     #[test]
     fn a_respawn_cell_must_be_walkable_unblocked_and_of_the_pinned_generation() {
         use crate::content::static_cell_engine::{
@@ -4450,30 +4452,23 @@ mod tests {
         ])
         .expect("index");
         let doors = BTreeSet::from([LogicalCell { x: 5, y: 4, z: 7 }]);
-        let at = |x| cell_bytes(MovementLocalPosition { x, y: 4, floor: 7 });
-        let admit = |world, digest, recorded: &[u8]| {
-            admissible_respawn_cell(&index, &scope, world, digest, &doors, recorded)
+        let at = |x| MovementLocalPosition { x, y: 4, floor: 7 };
+        let admit = |world, digest, cell| {
+            respawn_cell_admissible(&index, &scope, world, digest, &doors, cell)
         };
-        assert_eq!(
-            admit(world, [9; 32], &at(3)),
-            Some(MovementLocalPosition {
-                x: 3,
-                y: 4,
-                floor: 7,
-            })
-        );
-        assert_eq!(admit(world, [9; 32], &at(6)), None, "blocked cell");
-        assert_eq!(admit(world, [9; 32], &at(4)), None, "absent cell");
-        assert_eq!(admit(world, [9; 32], &at(5)), None, "closed door");
-        assert_eq!(admit(world, [8; 32], &at(3)), None, "foreign generation");
+        assert!(admit(world, [9; 32], at(3)));
+        assert!(!admit(world, [9; 32], at(6)), "blocked cell");
+        assert!(!admit(world, [9; 32], at(4)), "absent cell");
+        assert!(!admit(world, [9; 32], at(5)), "closed door");
+        assert!(!admit(world, [8; 32], at(3)), "foreign generation");
         let foreign = WorldId::decode(&[
             0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x72, 0x22, 0x92, 0x22, 0x22, 0x22, 0x22, 0x22,
             0x22, 0x22,
         ])
         .expect("foreign world");
-        assert_eq!(admit(foreign, [9; 32], &at(3)), None, "foreign World");
+        assert!(!admit(foreign, [9; 32], at(3)), "foreign World");
         assert_eq!(
-            admit(world, [9; 32], &at(3)[..9]),
+            respawn_cell(&cell_bytes(at(3))[..9]),
             None,
             "undecodable record"
         );
