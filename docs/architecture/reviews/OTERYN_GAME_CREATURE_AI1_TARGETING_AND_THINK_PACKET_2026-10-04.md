@@ -170,8 +170,12 @@ It builds:
    target, and has no active condition (`runtime_actor_conditions.rs`). An idle creature has no
    pending think. A committed player move or admission wakes the creatures among the VIS-1
    interest candidates of that player (at most `MOVE-RL-09`, 1,024). Each woken creature gets one
-   think, due at once, unless one is already pending. Walk back before idling is CREATURE-MOVE-1's
-   (§1.1).
+   think, due at once, unless one is already pending. A creature's own admission also wakes it:
+   every admission (a realization, a respawn, a summon, the AI-2 test path) schedules the creature's
+   first think, due at once. A creature admitted inside a stationary player's view therefore acts
+   without waiting for that player to move (CREATURE-AI-0 §6.3 admits non-blockable respawns next
+   to players). If that think perceives no player, the creature goes idle. Walk back before idling
+   is CREATURE-MOVE-1's (§1.1).
 2. **Perception** (§4.2). A creature perceives a player when the player's interest area contains
    the creature: the `can_see` predicate of `movement/interest.rs`, under the floor rule. There is
    no second geometry. Candidates are taken in the MOVE-RL-11 canonical order from the creature,
@@ -220,6 +224,8 @@ Acceptance:
   - the nearer rat targets the player and bites every 2,000 ms through the swing;
   - a rat at 5 health or less steps away from the player and still bites when adjacent;
   - when the player walks out of view, the rats go idle and stop costing thinks.
+  - a rat admitted inside the view of a player who does not move targets that player on its
+    first think.
 - A player in a protection zone, under re-entry protection or on another floor is never targeted.
   A target that becomes ineligible is dropped on the next think.
 - A profile with `change_target` {interval 2,000 ms, chance 1,000,000 ppm} and two eligible players
