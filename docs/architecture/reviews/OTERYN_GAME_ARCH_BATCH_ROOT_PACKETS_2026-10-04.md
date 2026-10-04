@@ -1,0 +1,492 @@
+# Architect batch: root packets for the map, item use and bank fee chains
+
+```yaml
+decision_id: ARCH-BATCH-ROOT-PACKETS-V1
+status: CANDIDATE
+date: 2026-10-04
+owner: Sol Supervising Architect
+requested_by: control plane (ARCH-ROOT-PACKETS-1; the missing roots named by ARCH-BATCH-ITEM-EQUIP-PACKETS-V1 §3) and the owner (2026-10-04, #162; answers recorded in §1.1)
+writes_on_other_prs: none
+```
+
+This batch packets the three roots that block the most packeted and unpacketed work:
+MAP-LOAD-1 (the map chain: MAP-OVERLAY-1, MAP-WIRE-1, DEPOT-WIRE-1, NPC-ACTOR-1 and the ground speed
+source of SPEED-1), ITEM-USE-WIRE-1 (food, potions, IMBUE-WIRE-1, FORGE-CONTENT-1) and GOLD-FEE-2
+(stage 2 of D174, which IMBUE-1, FORGE-1, CHARM-6, NPC-TRADE-1 and NPC-TRAVEL-1 consume). It also
+packets the two bank packets GOLD-FEE-2 needs (BANK-RET-0, BANK-1), records the acceptance review of
+NPC-BEHAVIOUR-0, and disposes of Issue #513's resource limits.
+
+The batch changes no code, no contract and no wire. Its rulings in §1 are architecture rulings
+under the decisions they cite. Live PR and Issue state governs. When this was written:
+
+- on `main`: MAP-BUNDLE-1 (the format document, the compiler and its reader in
+  `tools/world-bundle-compiler`), SPEED-1 (#1715, capability 13 and the `GroundSpeedSource` seam),
+  CAP-NEG-1 (#1705), CAP-NEG-RESUME-FALLBACK-1 (#1708), ITEM-VIEW-1a (#1703), ITEM-VIEW-1b
+  (#1713), BAGS-WIRE-1b (#1730), GOLD-FEE-1b (`0031`, the three coins and the change guards),
+  the gold fee writer `durability/item_fee_burn.rs` with its one source `CharmUnassign`;
+- not built: any runtime map reader, any bank table or code, `ITEM_USE_V1`, fields 4 and 5 of
+  `USE_INTENT`.
+
+## 0. Leases, order and shared files
+
+### 0.1 Leases
+
+Proposed; the control plane leases. A worker that needs another number stops and asks.
+
+| Packet | Migration | Capability / command / event / profile |
+|---|---|---|
+| MAP-LOAD-1 | none | none |
+| ITEM-USE-WIRE-1 | none | capability 15 `ITEM_USE_V1` (proposed; `offered: false`, `requires: [4]`); no new command type (USE stays command type 2) |
+| BANK-RET-0 | none | retention profile `ECONOMY_LEDGER_RETENTION_V1` (purpose `ECONOMY_LEDGER`) |
+| BANK-1 | 0068 (proposed) | game event type 3 `BANK_OPERATION` (proposed) |
+| GOLD-FEE-2 | 0070 (proposed) | none (the fee event stays event type 2) |
+
+Migrations 0061-0067 are leased to FORGE-1b, TIMED-RT-1c, ITEM-MOVE-2a, BAGS-1, ITEM-MOVE-2b,
+EXERCISE-1 and (conditionally) CAP-NEG-RESUME-FALLBACK-1, and `main` already carries 0069. The
+number 0068 is the only free number below 0069. A migration merged with a number lower than one
+already applied is refused by the ordered runner, so each migration packet's acceptance carries the
+merge condition: **it merges only when every lower leased migration has merged or been released by
+the control plane.** If BANK-1 would wait on a stalled lower lease, the control plane re-leases it
+the next free number above the highest applied one; the worker renames the file only on that
+instruction.
+
+Capability numbers registered on `main` are 1, 4, 6, 7, 8, 10, 12, 13 and 14. Numbers 2, 3, 5, 9 and
+11 are reserved by accepted decisions (WEAPON_PROFICIENCY, NPC_SERVICE, DEPOT, HIGHSCORES,
+TIMED_ITEMS). 15 is the next unreserved number.
+
+### 0.2 Order
+
+| Step | Packet | Worker / review | Starts when |
+|---|---|---|---|
+| 1 | MAP-LOAD-1 | hard, security review of the reader | this batch merges |
+| 1 | ITEM-USE-WIRE-1 | impl, protocol review | this batch merges |
+| 1 | BANK-RET-0 | control plane routes; privacy review | this batch merges |
+| 2 | BANK-1 | hard, persistence review | BANK-RET-0 has merged |
+| 3 | GOLD-FEE-2 | hard, persistence review | BANK-1 has merged |
+
+The three step-1 packets touch disjoint files except `RESOURCE_LIMITS_REGISTRY.json` (MAP-LOAD-1
+changes MAP01 rows, ITEM-USE-WIRE-1 adds ITEMUSE0-RL-03). They are separate rows; the second to
+merge takes `main` in with a merge commit and keeps both.
+
+### 0.3 Shared files
+
+| File | Packets | Rule |
+|---|---|---|
+| `docs/contracts/RESOURCE_LIMITS_REGISTRY.json` | MAP-LOAD-1, ITEM-USE-WIRE-1, BANK-1, GOLD-FEE-2 | each edits only its own rows |
+| `docs/contracts/GAME_EVENT_FOUNDATION_REGISTRY.json` | BANK-RET-0, BANK-1, GOLD-FEE-2 | BANK-RET-0 the profiles, BANK-1 event type 3, GOLD-FEE-2 nothing unless §2.5 says so |
+| `apps/game-server/src/durability/mod.rs` | BANK-1, GOLD-FEE-2 | module lines and re-exports only |
+| `Cargo.toml`, `Cargo.lock` | MAP-LOAD-1 | one new workspace member (§1.3) |
+
+## 1. Rulings
+
+### 1.1 Owner answers recorded (2026-10-04)
+
+- **BANK-0 Q1 = b.** A junior (starter-island) character cannot use the bank until it has left the
+  island; it pays with coins only. BANK-0 §4.4, §4.3 and §11 are updated by this batch: the
+  assumption becomes the owner's decision. GOLD-FEE-2 keeps stage 1 for a junior payer
+  (BANK-FEE-0 §3).
+- **Batch scope 2a.** BANK-RET-0 and BANK-1 are packeted here, in the order BANK-RET-0, BANK-1,
+  GOLD-FEE-2, and #513's limits are reviewed here (§1.6).
+- **Bundle staging** was left to the architect; §1.2 rules it.
+- **Next wave.** MAP-OVERLAY-1, ITEM-USE-1 and NPC-ACTOR-1 are packeted in the next architect
+  batch, after this one merges, so this batch stays one review round.
+
+### 1.2 Bundle staging: a CI-built artifact pinned by digest
+
+The production World Bundle is not checked in (about 23.7 MB) and is not built on the node. It is
+an artifact built by repository CI with the compiler from the pinned World Project source, and
+its digest is pinned in the World's configuration. The server loads a bundle only if its digest,
+checksums, schema versions, content revision and `build_class` match the pins (ADR-0021 §4.2); any
+other bundle stops the World before admission.
+
+- One reproducible source: compilation is deterministic (MAP-BUNDLE-1), so CI can rebuild the
+  artifact and compare digests. The other agent that prepares map sources feeds the World Project
+  source; it never hands the server a bundle.
+- Rejected: building at node start (couples boot to the compiler and its inputs, and makes boot
+  time depend on compilation); a checked-in bundle (a 23.7 MB binary in Git, reviewed by nobody);
+  a bundle fetched from an unpinned location.
+- MAP-LOAD-1 implements the check against a pinned digest passed in by its caller and tests it.
+  Where the pin lives in the World configuration, the CI job and the artifact store bind
+  MAP-CUTOVER-1, which is packeted with the next wave; they are not MAP-LOAD-1's.
+- Coordination with the agent preparing maps goes through the control plane.
+
+### 1.3 One bundle byte layout, shared by the compiler and the server
+
+`tools/world-bundle-compiler/src/bundle.rs` and `sector.rs` already hold a reader (`read_with`,
+`ReadCaps`, `sector::decode`) used by the compiler's own tests. The server must not depend on a
+tool crate, and a second reader would let the two drift. MAP-LOAD-1 therefore moves the byte-layout
+types, the reader and its caps into one new library crate, `crates/world-bundle`
+(`oteryn-world-bundle`), with no dependency on the compiler or the server. The compiler keeps its
+writer and depends on the new crate for the layout; `apps/game-server` depends on it for reading.
+The move changes no byte and no rule of the format document, and the compiler's tests stay green.
+
+### 1.4 The ground item of a tile, and the ground-speed source
+
+- A tile's ground item is the first top-level entry whose resolved Terrain record has kind
+  `ground`. 2,244 Terrain records are kind `ground`, and each has a KNOWN `ground_speed`; border,
+  wall, roof and field records have none.
+- A tile with no ground item is not walkable and has no ground speed. The map source returns 0 for
+  it, and for a ground item whose `walkable` is KNOWN `false` (the 200 records with speed 0;
+  ARCH-ITEM-PACKETS-AMEND-2 §1.11). `player_step_duration` already refuses 0, so nothing paces on
+  it.
+- MAP-LOAD-1 adds a map-backed `GroundSpeedSource` next to `EngineeringGroundSpeed`. Production
+  keeps `EngineeringGroundSpeed` (150) until MAP-CLIENT-1 switches server and client together
+  (ADR-0021 amendment). The map source is built and tested, not wired into the live path.
+
+### 1.5 NPC-BEHAVIOUR-0 acceptance review
+
+NPC-BEHAVIOUR-0 was reviewed against its sources:
+
+- §3 (one runtime actor per placement per channel; `NPCBEH0-RL-01` 2,048) matches NPC-0 §3.2 and the
+  multichannel model. Kind 5 `Npc` in capability 6's schema is safe because capability 6 is not
+  offered (`PRODUCTION_OFFERED_CAPABILITIES` holds only 13) and kind 5 is absent from
+  `world_spatial_entities.rs`; NPC-VIS-1 adds it before VIS-3 offers capability 6.
+- §4 (a 1,000 ms think only while perceived; `NPCBEH0-RL-02` 256; RNG streams `NPC_WANDER` and
+  `NPC_VOICE`) matches SIM-DETERMINISM-01 §10 and §12 and CREATURE-AI-0 §5.1.
+- §5 (walking), §6 (voices) and §7 (focus queue in GAME-NPC-SERVICE; `NPC0-RL-07` 4 tiles) stay
+  within the boundaries they cite. Its R1-R3 are ruled a, and it has no owner question.
+
+One defect: the decision amends four documents without an `Amends` line. This batch adds:
+"MOVE-RL-11 §4.2, §4.3, §4.5; CREATURE-AI-0 §4.1, §7; CHAT-0 §3; NPC-0 §4.1". One clarification:
+the VSL-MOVE-01 occurrences `NPC_STEP`, `NPC_RELOCATE` and `NPC_TURN` are defined by NPC-ACTOR-1
+under VSL-MOVE-01 §10, not by this decision.
+
+Result: **ACCEPTED WHEN THIS DECISION MERGES.** This batch sets NPC-BEHAVIOUR-0's status line.
+NPC-VIS-1's gate (ARCH-BATCH-ITEM-EQUIP-PACKETS-V1 §0.2 step 0a) is then met when this batch
+merges, because ITEM-VIEW-1a has merged.
+
+### 1.6 Issue #513 (DUR03-RL limits)
+
+The DUR-03 resource maxima decision (D50-D52, merged in `0f80b8c`) set the limits, and B4
+registered them in `RESOURCE_LIMITS_REGISTRY.json` with evidence
+`docs/agents/evidence/OTV2-20260928-dur03-b4-binding-513.md`:
+`DUR03-RL-01` 1, `RL-02` 2, `RL-03` 0, `RL-04` 0, `RL-05` 0, `RL-06` 1/3, `RL-07` (1 event,
+9,216 B envelope, 7,936 B payload, 512 B key, 128 B technical), `RL-08` 3, and the P90D audit
+retention.
+
+Review: they are still correct for every shape on `main`. Later shapes extend them only through
+per-shape rows, never by raising the base rows: `DUR03-RL-03-BANK` and `DUR03-RL-01-BANK` (BANK-1),
+`DUR03-RL-03-FEE` (GOLD-FEE-2), and the shapes' own rows. Each such packet re-measures the
+`DUR03-RL-07` envelope with its added lines and registers the measured value, with a max and
+max+1 test.
+
+Disposition: nothing in #513 blocks work. `DUR03-RL-08` (3) is the one value the decision says
+stage C must decide again. Recommendation to the control plane: close #513 and record the stage C
+re-decision of `DUR03-RL-08` on the stage C task, and move its active task record
+(`docs/agents/tasks/active/OTV2-20260917-dur03-reference-one-item-resource-evidence-513.md`,
+status `blocked`) to the archive in that close. The record is outside this batch's owned paths.
+
+### 1.7 The bank event's retention
+
+`DUR03_ONE_ITEM_DURABLE_AUDIT_RETENTION_V1` excludes an economy purpose, so the bank event
+cannot reuse it. BANK-RET-0 adds `ECONOMY_LEDGER_RETENTION_V1` for event type 3: purpose
+`ECONOMY_LEDGER` (prove and reconcile bank balances, ledger entries and coin lines; no market
+analytics, public history, detector or AI use), privacy class `RESTRICTED_PLAYER_LINKED`, a
+finite ceiling no longer than P90D unless the privacy review records why, and the same legal-hold
+and deletion rules as the DUR-03 profile.
+
+A fee event that carries a `FEE_DEBIT` value line (GOLD-FEE-2) stays event type 2, whose profile
+is fixed per event type. BANK-RET-0 therefore also decides, in the same review, whether event type
+2's profile gains a revision that admits the bank part of a fee, or whether a fee with a bank
+part needs its own event type. The architect's recommendation is the revision: one fee event per
+fee, as BANK-FEE-0 §4.3 requires, under a profile that names that purpose.
+
+The ledger, balance, operation and coin-line tables are authoritative game state, not event
+retention. They are never deleted by retention (BANK-0 §3 grants no DELETE).
+
+### 1.8 BANK-1 scope
+
+BANK-1 builds the four tables, guards, grants, the writer and event of BANK-0 §3-§5 for the four
+kinds `DEPOSIT`, `WITHDRAW`, `TRANSFER_OUT` and `TRANSFER_IN`, and a Rust entry point per
+operation. It has no wire and no NPC: BANK-NPC-1 calls the entry points. The ledger kind and the
+entry's operation reference are CHECK-constrained columns that a later migration widens, as
+GOLD-FEE-2 does for `FEE_DEBIT` and the fee record; the house, guild and Market kinds of the
+pending amendments are their own children's work, not BANK-1's. A junior character is refused
+with `JUNIOR_ACCOUNT` (sender) or `RECIPIENT_CANNOT_RECEIVE_TRANSFERS` (recipient). Until the
+starter island and its departure fact exist (D119, DAWNPORT-1), no character is junior, so the
+check is a function over that fact that returns "not junior", with a test that it refuses once
+the fact says "on the island".
+
+## 2. Packets
+
+### 2.1 MAP-LOAD-1
+
+```yaml
+task_id: MAP-LOAD-1
+decision: ADR-0021 §4.1, §4.2, §4.8 and the §1.11 amendment; OTERYN_WORLD_BUNDLE_FORMAT_V1 §9; this batch §1.2-§1.4
+worker: oteryn-hard-worker
+review: security review of the bundle reader (ADR-0021 §4.8)
+branch: allocated by the control plane
+base: main (MAP-BUNDLE-1 and SPEED-1 merged)
+migration_lease: none
+depends_on: [MAP-BUNDLE-1, SPEED-1]
+owned_paths:
+  - crates/world-bundle/**                         # new crate: layout, reader, caps (§1.3)
+  - tools/world-bundle-compiler/**                 # moves the reader out; depends on the new crate
+  - Cargo.toml                                     # one workspace member
+  - Cargo.lock
+  - apps/game-server/Cargo.toml                    # the new dependency
+  - apps/game-server/src/map/**                    # new: base model, loader, pin check
+  - apps/game-server/src/movement/speed.rs         # the map-backed GroundSpeedSource
+  - apps/game-server/src/world_runtime.rs          # the Arc<WorldBase> handle only; no live wiring
+  - apps/game-server/tests/map_load_*.rs
+  - docs/contracts/RESOURCE_LIMITS_REGISTRY.json   # MAP01-BASE-LOAD-MS, -BASE-RSS-BYTES, -VIEWPORT-US: measured value and evidence
+  - docs/contracts/OTERYN_WORLD_BUNDLE_FORMAT_V1.md # the "Runtime reader" line only
+  - docs/agents/evidence/MAP-LOAD-1-*.md            # the measurement evidence
+validation:
+  - cargo test --locked -p oteryn-world-bundle
+  - cargo test --locked -p oteryn-world-bundle-compiler
+  - cargo test --locked -p oteryn-game-server map_load
+  - cargo check --locked --workspace --all-targets
+  - cargo run --locked -p oteryn-architecture-check
+```
+
+Builds:
+
+- the new crate (§1.3), with the format document's §9 rules: reject the whole bundle on the first
+  failure, every MAP01-BUNDLE-* and MAP01-TILE-* cap checked before allocation;
+- `WorldBase`: a compact, read-only model of every tile (positions, palette-resolved item compact
+  ids, the ground item and its ground speed, the walkable flag), decoded eagerly and shared by
+  `Arc` by every channel of the World (ADR-0021 §4.1);
+- the load function, which takes the bundle bytes and the expected pins (digest, schema versions,
+  content revision, production flag) and returns a `WorldBase` or a typed error; a production World
+  refuses a bundle whose `build_class` is not `production` (missing counts as `non-production`);
+- the map-backed `GroundSpeedSource` (§1.4); production keeps `EngineeringGroundSpeed`.
+
+Not in scope: the overlay, Ground rebuild, MINT of map items and reset (MAP-OVERLAY-1), booting
+from the bundle and the CI artifact (MAP-CUTOVER-1), the wire (MAP-WIRE-1/2).
+
+Tests (in the PR, against a small fixture bundle that the test compiles with the compiler, not a
+checked-in binary):
+
+- load and tile-by-tile equivalence: compiler input, bundle and `WorldBase` agree on every tile;
+- negative: wrong digest, wrong content revision, wrong schema version, non-production bundle in
+  a production World, a corrupt sector checksum, an unknown top-level key; each refuses the whole
+  bundle;
+- each MAP01-BUNDLE-* and MAP01-TILE-* cap at its maximum (accepted) and maximum + 1 (refused),
+  among them 64 top-level entries and 4,096 entries per tile;
+- ground speed 0 non-walkable accepted, 0 walkable refused, 1,000 accepted, 1,001 refused (#1707
+  P2 4175486632);
+- the map source returns the tile's ground speed for a non-150 tile and 0 for a tile without a
+  ground item; `player_step_duration` refuses both 0 cases;
+- a fuzz target (or a bounded property test in CI) over the reader that never panics and never
+  allocates past the caps;
+- the budgets: a measurement over the real bundle on the reference node, run manually and recorded
+  as evidence, confirms or revises `MAP01-BASE-LOAD-MS` (5,000 ms), `MAP01-BASE-RSS-BYTES`
+  (1 GiB) and `MAP01-VIEWPORT-US` (100 µs p99 for 18x14 over the visible floors). A revision above
+  the ADR value stops and asks the architect. `MAP01-CHANNEL-OVERLAY-BYTES` is MAP-OVERLAY-1's.
+
+Acceptance: the tests above pass; the compiler's existing tests pass unchanged; the security
+review of the reader is recorded on the PR; the format document's "Runtime reader" line names
+the new crate.
+
+### 2.2 ITEM-USE-WIRE-1
+
+```yaml
+task_id: ITEM-USE-WIRE-1
+decision: ITEM-USE-0 §3 with the BAGS-0 §8 amendment; this batch §0.1
+worker: oteryn-impl-worker
+review: protocol review
+branch: allocated by the control plane
+base: main (ITEM-VIEW-1a, ITEM-VIEW-1b, CAP-NEG-1 and CAP-NEG-RESUME-FALLBACK-1 merged)
+migration_lease: none
+depends_on: [ITEM-VIEW-1a, ITEM-VIEW-1b, CAP-NEG-1, CAP-NEG-RESUME-FALLBACK-1]
+owned_paths:
+  - docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json   # capability 15 ITEM_USE_V1, offered false, requires [4]; the four dispositions
+  - docs/contracts/protocol-oteryn/v1/world_object_v1.proto  # USE_INTENT fields 4 and 5, field 3 reserved
+  - docs/contracts/RESOURCE_LIMITS_REGISTRY.json      # ITEMUSE0-RL-03
+  - crates/protocol-oteryn/src/lib.rs                 # capability constant and registered set
+  - crates/protocol-oteryn/src/world_object.rs
+  - crates/protocol-oteryn/tests/** (new codec tests for USE_INTENT, if the crate keeps them out of src)
+  - apps/game-server/src/gameplay_transport/capabilities.rs  # 15 in the gated, not the offered set
+  - apps/game-server/src/gameplay_transport/connection.rs    # USE dispatch: refuse fields 4 and 5 without capability 15
+  - apps/game-server/tests/item_use_wire_*.rs
+validation:
+  - cargo test --locked -p oteryn-protocol-oteryn
+  - cargo test --locked -p oteryn-game-server item_use_wire
+  - cargo check --locked --workspace --all-targets
+```
+
+Builds the wire only:
+
+- capability 15 `ITEM_USE_V1`, `offered: false`, `requires: [4]`; CAP-NEG-1 selects it only with
+  its closure;
+- `USE_INTENT` field 5 `ItemByDefinitionV1 {definition_index: uint32}` in the `target` oneof,
+  field 4 `use_with` (`creature {actor_id, generation}`) outside it, field 3 still reserved;
+- dispositions `REQUIREMENT_NOT_MET`, `EXHAUSTED`, `FULL`, `NO_TARGET`, sent only under
+  capability 15;
+- the server: without capability 15, a non-corpse use stays `NOTHING_TO_USE` and a command with
+  field 4 or 5 is `REJECTED`. The capability is never offered here, so every live session takes
+  that path. What a use does under capability 15 is ITEM-USE-1's, which offers it.
+
+Tests:
+
+- codec round trip of fields 2, 4 and 5; field 4 with field 1, with a corpse handle, or alone is
+  refused by the decoder or the dispatcher as ITEM-USE-0 §3 says; field 3 present is refused;
+- the payload at 529 bytes accepted and 530 refused (`ITEMUSE0-RL-03`), and the result at most
+  4 bytes;
+- a session without capability 15 that sends field 4 or 5 gets `REJECTED`; a non-corpse field 2
+  still gets `NOTHING_TO_USE`; a corpse field 2 still opens the corpse;
+- capability 15 is registered, not offered, requires 4, and a selection of 15 without 4 is
+  refused by CAP-NEG-1; a resume that would change the selected set takes the
+  CAP-NEG-RESUME-FALLBACK-1 path (§1.9 of the item batch).
+
+Acceptance: the tests above; the protocol review on the PR; the PR does not change
+`PRODUCTION_OFFERED_CAPABILITIES`.
+
+### 2.3 BANK-RET-0
+
+```yaml
+task_id: BANK-RET-0
+decision: BANK-0 §5; BANK-FEE-0 §4.3; this batch §1.7
+worker: control plane routes (contract-only change)
+review: privacy review
+branch: allocated by the control plane
+base: main
+migration_lease: none
+depends_on: [BANK-0]
+owned_paths:
+  - docs/contracts/GAME_EVENT_FOUNDATION_REGISTRY.json   # ECONOMY_LEDGER_RETENTION_V1; event type 2 profile revision (or the alternative of §1.7)
+  - tools/agents/tests/** (only if a registry test must name the new profile)
+validation:
+  - python3 tools/agents/validate_governance.py
+  - python3 tools/repository/validate_repository_policy.py
+  - the registry's own tests (tools/agents/tests)
+```
+
+Builds the profile of §1.7 with every `required_profile_fields` entry, and records the event
+type 2 choice. Acceptance: the privacy review on the PR; the registry validates; no event type is
+added (BANK-1 adds type 3).
+
+### 2.4 BANK-1
+
+```yaml
+task_id: BANK-1
+decision: BANK-0 §3-§5 and §8 (Q1 = b); this batch §1.7, §1.8
+worker: oteryn-hard-worker
+review: persistence review
+branch: allocated by the control plane
+base: main (GOLD-FEE-1b and BANK-RET-0 merged)
+migration_lease: 0068 (proposed; merge condition of §0.1)
+depends_on: [GOLD-FEE-1b, BANK-RET-0]
+owned_paths:
+  - apps/game-server/migrations/0068_account_bank.sql
+  - apps/game-server/src/durability/bank.rs            # writer: deposit, withdraw, transfer
+  - apps/game-server/src/durability/bank_audit.rs      # event type 3, value lines
+  - apps/game-server/src/durability/mod.rs             # module lines only
+  - apps/game-server/tests/bank_*.rs
+  - docs/contracts/GAME_EVENT_FOUNDATION_REGISTRY.json # event type 3 BANK_OPERATION
+  - docs/contracts/game-events/v2/bank_operation.proto # the bank event and the closed value-line message
+  - docs/contracts/RESOURCE_LIMITS_REGISTRY.json       # the BANK-0 §8 rows and the measured DUR03-RL-07 envelope of the bank event
+validation:
+  - cargo test --locked -p oteryn-game-server bank_
+  - cargo test --locked -p oteryn-game-server item_fee_burn
+  - cargo check --locked --workspace --all-targets
+```
+
+Builds BANK-0 §3-§5 within §1.8: the balance, operation, ledger and coin-line tables with their
+deferred guards and grants; the branches of the `0010`, `0011`, `0012` and `0023` proofs that accept
+a coin line of a committed bank operation; the writer with the lock order of BANK-0 §4.1, replay
+by occurrence and binding, and the typed refusals of BANK-0 §4.3 (junior included); the bank event
+and its outbox. It registers the §8 rows before the code that relies on them.
+
+Tests:
+
+- each operation commits one transaction with the entries and lines its kind needs; the balance
+  equals its latest entry; a transfer's two entries commit together;
+- limits at max and max + 1: balance 999,999,999,999 accepted and one more refused before any write
+  (typed, never a CHECK abort); deposit 20,000,000 and 20 input stacks, withdraw 1,009,999 and 3
+  output stacks, transfer 999,999,999,999; each + 1 refused;
+- replay: the same occurrence and binding returns the first outcome; a changed binding conflicts;
+- crash: an abort at each step leaves no partial row; an ambiguous commit resolves by replay;
+- guards: a hand-written row that breaks each deferred guard is refused at commit (as the `0023`
+  tests do), and the runtime role cannot DELETE;
+- junior: a junior sender is `JUNIOR_ACCOUNT`, a junior recipient
+  `RECIPIENT_CANNOT_RECEIVE_TRANSFERS` (§1.8);
+- the existing gold fee tests pass unchanged, with the rewritten guard functions.
+
+Acceptance: the tests above; the persistence review on the PR; the migration merge condition.
+
+### 2.5 GOLD-FEE-2
+
+```yaml
+task_id: GOLD-FEE-2
+decision: BANK-FEE-0 §3-§5; BANK-0 Q1 = b; this batch §1.7
+worker: oteryn-hard-worker
+review: persistence review
+branch: allocated by the control plane
+base: main (BANK-1 merged)
+migration_lease: 0070 (proposed; merge condition of §0.1)
+depends_on: [BANK-1, BANK-RET-0, GOLD-FEE-1b]
+owned_paths:
+  - apps/game-server/migrations/0070_character_gold_fee_bank_debit.sql  # 0023 and 0010 widening; FEE_DEBIT kind and fee reference on the ledger
+  - apps/game-server/src/durability/item_fee_burn.rs
+  - apps/game-server/src/durability/item_fee_burn_audit.rs
+  - apps/game-server/src/durability/bank.rs        # the FEE_DEBIT entry writer only
+  - apps/game-server/tests/item_fee_burn_*.rs
+  - apps/game-server/tests/gold_fee_bank_*.rs
+  - docs/contracts/RESOURCE_LIMITS_REGISTRY.json   # DUR03-RL-03-FEE; the re-measured DUR03-RL-07 envelope with the value line
+validation:
+  - cargo test --locked -p oteryn-game-server item_fee_burn
+  - cargo test --locked -p oteryn-game-server gold_fee_bank
+  - cargo test --locked -p oteryn-game-server bank_
+  - cargo check --locked --workspace --all-targets
+```
+
+Builds BANK-FEE-0 §3 and §4 for the one fee source on `main`, `CharmUnassign`: coins first; when
+`T < F`, every eligible input burned whole and `F - T` debited from the payer's balance by one
+`FEE_DEBIT` entry in the same transaction; a junior payer keeps stage 1. The `0023` record gains
+`bank_debit_gold_units`, its conservation CHECK and the coins-first guard; the `0010` outbox item
+may be NULL only for a fee wholly paid from the bank; the Rust audit accepts the value line and
+drops the 20,000,000 cap. NPC BUY and travel take the bank part in NPC-TRADE-1 and NPC-TRAVEL-1,
+whichever lands later (BANK-FEE-0 §5).
+
+Tests:
+
+- `T >= F` unchanged (the existing tests pass as they are); `T < F` with enough balance burns every
+  eligible input whole and debits `F - T`; with too little balance it is `InsufficientFunds` and
+  nothing is written; `T = 0` with no backpack pays wholly from the bank;
+- the conservation CHECK and the coins-first guard refuse a hand-written record with change and a
+  bank part, or with an untouched eligible input;
+- the same-transaction guard both ways: a fee with a bank part and no `FEE_DEBIT`, or a `FEE_DEBIT`
+  with no fee or a different amount, is refused at commit;
+- limits: a fee equal to `T` plus 999,999,999,999 accepted, one more refused; `DUR03-RL-03-FEE` 1
+  with a bank part, 0 without; the event at the re-measured envelope maximum accepted and + 1
+  refused;
+- replay and crash: the bank part is an outcome, recalculated after a known abort and returned by
+  the occurrence replay after an ambiguous commit;
+- a junior payer with `T < F` is refused as in stage 1.
+
+Acceptance: the tests above; the persistence review on the PR; the migration merge condition.
+
+## 3. What this unblocks
+
+| Work | Was blocked by | After this batch |
+|---|---|---|
+| MAP-OVERLAY-1, MAP-CUTOVER-1, MAP-WIRE-1/2, DEPOT-WIRE-1, DEPOT-CONTENT-1 | no map reader | packetable after MAP-LOAD-1 (next wave) |
+| ITEM-USE-1, FOOD-REGEN-1, IMBUE-WIRE-1, IMBUE-CONTENT-1, FORGE-CONTENT-1 | no `ITEM_USE_V1` wire | packetable after ITEM-USE-WIRE-1 (ITEM-USE-1 in the next wave) |
+| IMBUE-1, FORGE-1, CHARM-6, NPC-TRADE-1, NPC-TRAVEL-1 bank part | GOLD-FEE-2 not packeted | packeted (§2.5) |
+| BANK-NPC-1, STASH-1, HOUSE-OWN-1, MAIL-1 economy retention | no bank tables, no economy profile | after BANK-1 and BANK-RET-0 |
+| NPC-VIS-1, NPC-ACTOR-1 | NPC-BEHAVIOUR-0 not accepted | accepted when this batch merges (§1.5) |
+
+## 4. Rejected options
+
+- **Packet the next wave now.** It would double this batch's review and needs MAP-LOAD-1's
+  `WorldBase` shape for MAP-OVERLAY-1; it comes in the next batch.
+- **Keep the reader in the compiler crate.** A server depending on a tool crate, or a second
+  reader, is rejected (§1.3).
+- **One migration for BANK-1 and GOLD-FEE-2.** The persistence reviews are separate and BANK-1 is
+  useful on its own (BANK-NPC-1, STASH-1).
+- **Reuse the DUR-03 retention profile for the bank event.** Its purpose excludes the economy
+  (§1.7).
+
+## 5. Decision test
+
+- **Must decide now:** YES. The three roots block the most packeted work (§3), and the owner asked
+  for the bank chain in this batch.
+- **Minimum sufficient:** five packets; each builds only what its decision says, the wire packet
+  offers nothing, and the map packet wires nothing into the live path.
+- **Superseding evidence:** a MAP-LOAD-1 measurement over the ADR-0021 budgets; a privacy review
+  that refuses §1.7; a different capability or migration number from the control plane.
+- **Deliberately not decided:** MAP-OVERLAY-1, MAP-CUTOVER-1 (including where the digest pin
+  lives), ITEM-USE-1, NPC-ACTOR-1, BANK-NPC-1, the house, guild and Market ledger kinds.

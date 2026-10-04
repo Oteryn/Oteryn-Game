@@ -2,8 +2,8 @@
 
 - Decision: `BANK0-ACCOUNT-WORLD-BANK-BALANCE-V1`
 - Status: **CANDIDATE**. Acceptance needs exact-head validation, independent review (persistence
-  and economy) and protected integration. Owner question Q1 (§11) is open; §4.4 applies its
-  recommended answer as a reversible assumption. Amended by the owner's recipient-feedback
+  and economy) and protected integration. Owner question Q1 (§11) is answered **b** (owner,
+  2026-10-04, recorded in ARCH-BATCH-ROOT-PACKETS-V1 §1.1); §4.4 applies it. Amended by the owner's recipient-feedback
   decision (2026-09-30, #162): transfer refusals are typed results the sender sees (§4.3).
 - Role: Sol Supervising Architect (`OTV2_SOL_SUPERVISING_ARCHITECT` 1.3)
 - Answers: the owner's direction to start the bank ("bank i depozyt (drugi etap opłat, pełna
@@ -193,10 +193,10 @@ fails silently or by a CHECK abort. The names follow MAIL-0 (#1404) §5 and §7.
 |---|---|---|
 | `OK` | the transfer commits | "Very well. You have transferred {amount} gold to {name}." |
 | `UNKNOWN_RECIPIENT` | no live character of that name on the sender's World: a name that never existed, an invalid or overlong name, a deleted character, a character of another World, or a confirmed recipient renamed before the commit | "This player does not exist." |
-| `RECIPIENT_CANNOT_RECEIVE_TRANSFERS` | a junior recipient (§4.4, while Q1 b applies), or a credit above `BANK0-RL-01` on the recipient's balance | "You cannot transfer money to this account." |
+| `RECIPIENT_CANNOT_RECEIVE_TRANSFERS` | a junior recipient (§4.4, Q1 b), or a credit above `BANK0-RL-01` on the recipient's balance | "You cannot transfer money to this account." |
 | `SAME_ACCOUNT` | a recipient of the sender's own Account, the sender included | "This character already shares your bank balance." |
 | `INSUFFICIENT_BALANCE` | an amount above the sender's balance | "There is not enough gold on your account." |
-| `JUNIOR_ACCOUNT` | a junior sender (§4.4, while Q1 b applies) | "You can use the bank once you have left the island." |
+| `JUNIOR_ACCOUNT` | a junior sender (§4.4, Q1 b) | "You can use the bank once you have left the island." |
 
 - **Anti-enumeration.** `UNKNOWN_RECIPIENT` never says whether a name exists on another World,
   once existed, or was renamed: a deleted character, a non-existent one and one on a different
@@ -246,7 +246,7 @@ fails silently or by a CHECK abort. The names follow MAIL-0 (#1404) §5 and §7.
 - **Definition** (architect application of Global, which ties junior status to the island): a
   character is junior until it has left the starter island, the departure fact of D119 and
   DAWNPORT-1. Until that island and fact exist, no character is junior.
-- **Use** (assumption pending Q1, answer b): a junior character cannot use the bank at all; it
+- **Use** (owner answer Q1 b, 2026-10-04): a junior character cannot use the bank at all; it
   pays with coins only. So a new character cannot draw on the Account's shared gold, which is what
   Global's junior rule prevents.
 
@@ -342,7 +342,7 @@ the supersessions stated there.
 - **Must decide now:** YES. The owner asked for the bank now, and BANK-FEE-0 builds on it.
 - **Minimum sufficient:** one asset, balance, operation, ledger and coin-line tables, three
   operations, one event.
-- **Superseding evidence:** an owner change of the scope, or the Q1 answer.
+- **Superseding evidence:** an owner change of the scope, or of the Q1 answer.
 - **Deliberately not decided:** fees from the bank (BANK-FEE-0), coin exchange, house rent, Market,
   the Gold Pouch, a character moved to another Account or sold (the balance stays with the
   Account), interest (none in Tibia).
@@ -353,6 +353,9 @@ the supersessions stated there.
 Context: with 1b the balance is shared by all characters of the Account on a World; Global's junior
 accounts exist so a new character cannot use the main character's gold.
 a) Yes, fully; b) no bank use until it leaves the island, coins only (recommended); c) fees only.
+
+**Answer (owner, 2026-10-04): b.** A junior character cannot use the bank until it has left the
+island and pays with coins only (§4.4, §4.3; ARCH-BATCH-ROOT-PACKETS-V1 §1.1).
 
 ## 12. Before-freeze checklist
 
