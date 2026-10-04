@@ -23,8 +23,8 @@ use oteryn_protocol_oteryn::world_spatial::{self, StepDirection, WorldSpatialObs
 use oteryn_protocol_oteryn::{CharacterId, FoundationProtocolError, MessageType};
 use oteryn_session::{Admission, CLIENT_SUPPORTED_CAPABILITIES, Session, SessionError};
 pub use oteryn_session::{
-    AppliedDelta, CastOutcome, CommandOutcome, DuplicateOutcome, JoinSnapshot, StepOutcome,
-    UseOutcome,
+    AppliedDelta, CastOutcome, CommandOutcome, DuplicateOutcome, JoinSnapshot, MAX_QUEUED_EVENTS,
+    SessionEvent, StepOutcome, UseOutcome,
 };
 use oteryn_session_tcp::{TcpAdapterError, TcpConnect, TcpTlsStream};
 use rustls::pki_types::CertificateDer;
@@ -176,6 +176,14 @@ pub enum DevClientError {
     UnselectedDomain {
         domain_id: u32,
     },
+    /// A pushed `StateDelta` named a domain the session keeps no store for.
+    UnsupportedPushedDomain {
+        domain_id: u32,
+    },
+    /// More pushed deltas than `MAX_QUEUED_EVENTS` were left undrained.
+    EventQueueOverflow {
+        limit: usize,
+    },
 }
 
 /// Every `SessionError` arm is listed (no wildcard), so a variant added to the session crate
@@ -267,6 +275,10 @@ impl From<SessionError> for DevClientError {
                 Self::CapabilityNotSelected { capability }
             }
             SessionError::UnselectedDomain { domain_id } => Self::UnselectedDomain { domain_id },
+            SessionError::UnsupportedPushedDomain { domain_id } => {
+                Self::UnsupportedPushedDomain { domain_id }
+            }
+            SessionError::EventQueueOverflow { limit } => Self::EventQueueOverflow { limit },
         }
     }
 }
@@ -429,6 +441,14 @@ impl fmt::Display for DevClientError {
             Self::CapabilityNotSelected { capability } => {
                 write!(formatter, "capability {capability} is not selected")
             }
+            Self::UnsupportedPushedDomain { domain_id } => write!(
+                formatter,
+                "server pushed a delta of domain {domain_id}, which this session keeps no store for"
+            ),
+            Self::EventQueueOverflow { limit } => write!(
+                formatter,
+                "more than {limit} pushed deltas were left undrained"
+            ),
             Self::UnselectedDomain { domain_id } => write!(
                 formatter,
                 "server sent domain {domain_id} of an unselected capability"
@@ -521,6 +541,12 @@ impl DevClientSession {
     /// Returns (and clears) the duplicate-status results received while reading command results.
     pub fn take_duplicate_outcomes(&mut self) -> Vec<DuplicateOutcome> {
         self.session.take_duplicate_outcomes()
+    }
+
+    /// Returns (and clears) the pushed deltas applied since the last call. See
+    /// `Session::take_events`.
+    pub fn take_events(&mut self) -> Vec<SessionEvent> {
+        self.session.take_events()
     }
 
     /// See `Session::service_liveness`.
@@ -1866,20 +1892,30 @@ mod tests {
         );
         assert_eq!(
             session.use_object(door, 2).await?,
-            door_use_outcome(
-                8,
-                43,
-                UseDisposition::Committed,
-                door_delta(44, 2, DOOR_OPEN_STATE)
-            )
+            door_use_outcome(8, 43, UseDisposition::Committed, None)
+        );
+        // A use returns at its result: the door delta behind it is read by the next exchange.
+        assert_eq!(
+            session.world_object_overlay(),
+            &[door_entry(
+                DOOR_STATE,
+                JOIN_DOOR_REVISION,
+                CONTENT_GENERATION
+            )]
+        );
+        assert_eq!(
+            session.step(StepDirection::North).await?,
+            step_outcome(9, 45, StepDisposition::Moved, moved_to(46, 6, 1, -1))
         );
         assert_eq!(
             session.world_object_overlay(),
             &[door_entry(DOOR_OPEN_STATE, 3, CONTENT_GENERATION)]
         );
         assert_eq!(
-            session.step(StepDirection::North).await?,
-            step_outcome(9, 45, StepDisposition::Moved, moved_to(46, 6, 1, -1))
+            session.take_events(),
+            vec![SessionEvent::WorldObjectOverlay(
+                door_delta(44, 2, DOOR_OPEN_STATE).ok_or("door delta")?
+            )]
         );
         assert_eq!(
             session.use_object(door, 3).await?,
@@ -1891,16 +1927,17 @@ mod tests {
         );
         assert_eq!(
             session.use_object(door, 3).await?,
-            door_use_outcome(
-                12,
-                50,
-                UseDisposition::Committed,
-                door_delta(51, 3, DOOR_STATE)
-            )
+            door_use_outcome(12, 50, UseDisposition::Committed, None)
         );
         assert_eq!(
             session.step(StepDirection::North).await?,
             step_outcome(13, 52, StepDisposition::Blocked, None)
+        );
+        assert_eq!(
+            session.take_events(),
+            vec![SessionEvent::WorldObjectOverlay(
+                door_delta(51, 3, DOOR_STATE).ok_or("door delta")?
+            )]
         );
         assert_eq!(
             session.use_object(door, 2).await?,
@@ -2076,10 +2113,14 @@ mod tests {
         .await?;
         let result = match action {
             Action::Step => session.step(StepDirection::East).await.map(|_| ()),
-            Action::Use => session
+            // A use returns at its result, so a bad delta behind it fails the next idle read.
+            Action::Use => match session
                 .use_object(DOOR_PLACEMENT.as_bytes(), JOIN_DOOR_REVISION)
                 .await
-                .map(|_| ()),
+            {
+                Ok(_) => session.service_liveness(Duration::from_millis(200)).await,
+                Err(error) => Err(error),
+            },
         };
         match &result {
             Err(error) if expected(error) => {}
@@ -2218,17 +2259,14 @@ mod tests {
     {
         let moved = step_result_frame(41, 7, StepDisposition::Moved)?;
         let spatial = spatial_payload(1, 0, CONTENT_GENERATION);
-        // Wrong domain (the overlay domain's own delta).
+        // A domain the session keeps no store for.
         block_on(assert_command_fails(
             Action::Step,
-            vec![moved.clone(), overlay_delta_frame(42, 2, DOOR_OPEN_STATE)?],
+            vec![moved.clone(), state_delta_frame(42, 4242, 0, 1, 1, b"x")?],
             |error| {
                 matches!(
                     error,
-                    DevClientError::UnexpectedDomain {
-                        expected: 1,
-                        actual: 2
-                    }
+                    DevClientError::UnsupportedPushedDomain { domain_id: 4242 }
                 )
             },
         ))??;
@@ -2295,16 +2333,17 @@ mod tests {
     fn an_overlay_delta_naming_the_wrong_domain_or_base_or_generation_is_rejected()
     -> Result<(), BoxError> {
         let committed = use_result_frame(41, 7, UseDisposition::Committed)?;
-        // Wrong domain (the spatial domain's delta).
+        // A spatial delta based on the wrong revision.
         block_on(assert_command_fails(
             Action::Use,
-            vec![committed.clone(), spatial_delta_frame(42, 5, 1, 0)?],
+            vec![committed.clone(), spatial_delta_frame(42, 4, 1, 0)?],
             |error| {
                 matches!(
                     error,
-                    DevClientError::UnexpectedDomain {
-                        expected: 2,
-                        actual: 1
+                    DevClientError::StateRevisionMismatch {
+                        domain_id: 1,
+                        expected_base: 5,
+                        actual_base: 4
                     }
                 )
             },
@@ -2418,9 +2457,10 @@ mod tests {
             Ok(())
         })
         .await?;
-        let result = session
+        session
             .use_object(DOOR_PLACEMENT.as_bytes(), JOIN_DOOR_REVISION)
-            .await;
+            .await?;
+        let result = session.service_liveness(Duration::from_millis(200)).await;
         assert!(matches!(
             result,
             Err(DevClientError::OverlayEntryRevisionMismatch {

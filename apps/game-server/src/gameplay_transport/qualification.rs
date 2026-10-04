@@ -3188,7 +3188,7 @@ async fn seam_clients(clients: SeamClients<'_>) -> TestResult {
     }
     {
         use crate::gameplay_transport::world_object::{UseDisposition, WorldObjectOverlayEntry};
-        use oteryn_dev_client::{AppliedDelta, CommandOutcome};
+        use oteryn_dev_client::{AppliedDelta, CommandOutcome, SessionEvent};
         let spatial_baseline = dev_client_snapshot.world_spatial_revision;
         let content_generation = dev_client_content_generation;
         let moved =
@@ -3214,20 +3214,24 @@ async fn seam_clients(clients: SeamClients<'_>) -> TestResult {
             state: state.as_bytes().to_vec(),
             revision,
         };
-        let committed_use =
-            |command_id: u64, result_sequence: u64, base: u64, state: &str| CommandOutcome {
-                command_id,
-                status: CommandStatus::Accepted,
-                disposition: UseDisposition::Committed,
-                result_server_sequence: result_sequence,
-                world_spatial_delta: None,
-                world_object_overlay_delta: Some(AppliedDelta {
-                    server_sequence: result_sequence + 1,
-                    base_revision: base,
-                    new_revision: base + 1,
-                    value: door_entry(state, base + 1),
-                }),
-            };
+        // A `COMMITTED` use names no domain, so the exchange returns at its result and carries no
+        // delta (SESSION-PUSH-1); the door's domain 2 delta arrives through the event path.
+        let committed_use = |command_id: u64, result_sequence: u64| CommandOutcome {
+            command_id,
+            status: CommandStatus::Accepted,
+            disposition: UseDisposition::Committed,
+            result_server_sequence: result_sequence,
+            world_spatial_delta: None,
+            world_object_overlay_delta: None,
+        };
+        let door_event = |result_sequence: u64, base: u64, state: &str| {
+            SessionEvent::WorldObjectOverlay(AppliedDelta {
+                server_sequence: result_sequence + 1,
+                base_revision: base,
+                new_revision: base + 1,
+                value: door_entry(state, base + 1),
+            })
+        };
 
         // cmd1: east (0,0) -> (1,0), adjacent to the door cell (1,-1).
         let step_east = dev_client
@@ -3244,15 +3248,18 @@ async fn seam_clients(clients: SeamClients<'_>) -> TestResult {
             .use_object(&door_placement, door_revision)
             .await
             .map_err(|error| format!("dev client use open: {error}"))?;
+        dev_client_expect("use open", &use_open, &committed_use(2, 3))?;
+        // The door's domain 2 delta (base, new revision, entry) is read idle and asserted from the
+        // event path before the next command.
+        let open_events = dev_client_door_events(&mut dev_client).await?;
         dev_client_expect(
-            "use open",
-            &use_open,
-            &committed_use(
-                2,
+            "use open door delta",
+            &open_events,
+            &vec![door_event(
                 3,
                 door_revision,
                 crate::content::accepted::DOOR_OPEN_STATE,
-            ),
+            )],
         )?;
         // cmd3: north (1,0) -> (1,-1), through the now open doorway.
         let step_through = dev_client
@@ -3279,15 +3286,16 @@ async fn seam_clients(clients: SeamClients<'_>) -> TestResult {
             .use_object(&door_placement, door_revision + 1)
             .await
             .map_err(|error| format!("dev client use close: {error}"))?;
+        dev_client_expect("use close", &use_close, &committed_use(5, 9))?;
+        let close_events = dev_client_door_events(&mut dev_client).await?;
         dev_client_expect(
-            "use close",
-            &use_close,
-            &committed_use(
-                5,
+            "use close door delta",
+            &close_events,
+            &vec![door_event(
                 9,
                 door_revision + 1,
                 crate::content::accepted::DOOR_CLOSED_STATE,
-            ),
+            )],
         )?;
 
         // The session's own applied state: back at (1,0,0), door closed at revision + 2, every
@@ -3399,6 +3407,24 @@ fn dev_client_expect<T: PartialEq + std::fmt::Debug + ?Sized>(
     } else {
         Err(format!("dev client {label} diverged: {actual:?} (expected {expected:?})").into())
     }
+}
+
+/// Reads the idle session until a pushed delta is queued (bounded, 5s) and returns the queued
+/// events: a `COMMITTED` use returns at its result, so the door delta behind it is read here.
+async fn dev_client_door_events(
+    session: &mut oteryn_dev_client::DevClientSession,
+) -> TestResult<Vec<oteryn_dev_client::SessionEvent>> {
+    for _ in 0..20 {
+        session
+            .service_liveness(std::time::Duration::from_millis(250))
+            .await
+            .map_err(|error| format!("dev client idle read: {error}"))?;
+        let events = session.take_events();
+        if !events.is_empty() {
+            return Ok(events);
+        }
+    }
+    Err("dev client door delta never arrived".into())
 }
 
 /// Durable session state, current loss epoch and grace seconds counted from that loss's decision.

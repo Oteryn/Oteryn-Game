@@ -33,6 +33,7 @@ owned_paths:
   - docs/contracts/ (migration-number references only)
   - tools/content-schema/native-gameplay/README.md (migration-number references only)
   - apps/game-server/src/gameplay_transport/connection.rs
+  - crates/session/src/lib.rs, tools/synthetic-client-harness/src/live/ (main merge union only)
   - crates/protocol-oteryn/src/ (merge union and test lint allows only)
   - apps/game-server/tests/ (mount allows, D325 case, stack fix)
   - docs/agents/tasks/active/OTV2-20261003-spells-1534-main-merge.md
@@ -56,9 +57,7 @@ rewrite) and stays semantically a union of both sides.
 - **PROVEN** D313 (owner 3a): `main` owns `0032_character_proficiency.sql`. The PR's
   never-merged migrations `0032_character_familiar_state.sql` .. `0051` move by +1 to
   `0033` .. `0052` with byte-identical SQL bodies; code, test-support and doc references
-  to their numbers follow. Hash-bound historical r21 validation reports under
-  `docs/reference/spells/r21-local-candidate/` record base `fafc51ef` paths and stay
-  unchanged as evidence.
+  to their numbers follow.
 - **PROVEN** D314 (owner 4b): the runtime actor slot candidate budget is 184 bytes for the
   PR's boxed `spell_combat` on top of COND-1c's boxed player lifecycle (160).
 
@@ -110,8 +109,7 @@ No new gameplay, no change to SQL bodies, no review trigger, auto-merge or Jira 
   arms, search_path pin, REVOKE), covered by
   `proficiency_familiar_and_quest_writes_share_the_0068_progression_guard`; no later main
   migration (0058, 0060) touches the guard. Content `index.json` files take main's
-  `legacy_source` and keep the PR's `spell_imports`. Main's test stubs' join-snapshot
-  expectations include the always-sent empty overlay domain. The protocol module list keeps
+  `legacy_source` and keep the PR's `spell_imports`. The protocol module list keeps
   `item_view` and `spell_presentation_candidate`. #1710's `ReferenceBaseVocation::None` is
   rejected (fail closed) by the equipment-claims projection: the equipment ABI admits the five
   base vocations only.
@@ -249,4 +247,5 @@ familiar clause, the search_path pin and REVOKE
 D495 S3-A: `wp5_s3a/compose.yml`, `platform-fpm.Dockerfile` and the S3-B README equal main.
 G4 `item_key_references` stays deferred to ITEM-KEY-R25-1.
 DEATH-2 (main 44f79d7f): the PR's creature bite path is lethal and records main's player death;
-the PR's `tick_vitals` respawns; a dead player's step is refused.
+the PR's `tick_vitals` respawns; a dead player's step is refused. Main's session pushed-delta
+store replaces this PR's unsolicited-vitals reader; the harness keeps casts on top of it.

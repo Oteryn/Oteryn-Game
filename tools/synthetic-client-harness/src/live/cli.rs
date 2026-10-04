@@ -424,7 +424,9 @@ pub fn run(args: &[String]) -> Result<(), Box<dyn Error>> {
                             }
                         },
                         Err(TryRecvError::Empty) => {
-                            controller.idle(IDLE_SLICE).await?;
+                            if controller.idle(IDLE_SLICE).await? {
+                                println!("{}", render_text(view, controller.model()));
+                            }
                             continue;
                         }
                         Err(TryRecvError::Disconnected) => break,
@@ -433,7 +435,11 @@ pub fn run(args: &[String]) -> Result<(), Box<dyn Error>> {
                 command_count += 1;
                 match command {
                     LineCommand::Quit => break,
-                    LineCommand::Wait(duration) => controller.idle(duration).await?,
+                    LineCommand::Wait(duration) => {
+                        if controller.idle(duration).await? {
+                            println!("{}", render_text(view, controller.model()));
+                        }
+                    }
                     LineCommand::Expect(expected) => {
                         let actual = controller.last_cast().map(|outcome| outcome.disposition);
                         if actual != Some(expected) {
