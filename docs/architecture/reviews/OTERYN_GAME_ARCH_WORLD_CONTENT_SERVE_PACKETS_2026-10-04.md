@@ -266,6 +266,14 @@ placements are bound.
   - It contains the `plain` records with `readiness: ready` whose reward items resolve to
     admitted, materializable Item definitions.
   - Variants and claims that are not ready stay out (`WAITING_*`).
+  - A candidate carries only fields that the server artifact encodes: `claim.per`,
+    `claim.repeat.kind: once`, `identity`, `provenance`, `quest`, `readiness` and, per
+    placement, `appearance_tibia_id`, `project_position`, `source_binding.legacy_unique_ids`,
+    exactly one `reward.items[]` entry and an optional `achievement_grant` of the encoded form.
+    A ready record with any other field (`repeat.hours`, `reward.container`, `random_one_of`,
+    `key_binding`, `written_text`, `data_holds`) or with more or fewer than one reward item is
+    left out (`WAITING_UNENCODED_FIELD`), so no served field is outside the artifact. Today all
+    219 ready plain claims (234 placements) pass this check.
   - Of the served candidates, only bound claims (§1.4) are served.
 - **Boot gate.**
   - The node computes the binding report at Content activation.
@@ -279,20 +287,61 @@ placements are bound.
   `game_content_activations` (migration 0008). No column is added.
   - **Server artifact.** `WorldActivationServerV1` is one canonical byte sequence, built by one
     function in `apps/game-server/src/content/world_activation.rs` (WORLD-CONTENT-SERVE-1). It
-    is the domain tag `oteryn:world-activation/server/v1`, followed by:
-    - the typed `WorldId` the pin serves (`content::model::WorldId`, as a `u16` length and its
-      UTF-8 bytes), so one bundle and claim set issued for two Worlds give two digests;
+    is the domain tag `oteryn:world-activation/server/v1`, followed by the fields below.
+    Strings are a `u32` big-endian length and UTF-8 bytes, integers are big-endian of their
+    declared width, an optional value is a `0`/`1` byte before it, and a list is a `u32` count
+    before its items.
+    - the World's `foundation::WorldId`, as the 16 canonical bytes of its UUIDv7 with no length
+      prefix. Its source is the scope's recorded issuance `world_id`, as for the native
+      issuance. One bundle and claim set issued for two Worlds give two digests;
+    - the generation-identity block. It holds every field of `GenerationIdentity` and
+      `ProductionArtifactMetadata` in `content/production.rs`, in that struct's field order, each
+      derived from one source:
+      - `package_key`, `package_revision`, `semantic_schema_version` and `licensing_metadata`:
+        the same fields of `content/world/manifest.json`;
+      - `source_manifest_digest`: lowercase hex SHA-256 of the `manifest.json` bytes as stored,
+        which must equal `project.json` `manifest_sha256`;
+      - `package_provenance_digest`: `PackageManifestBinding::package_provenance_digest` over
+        those five fields, which must equal the single `content.lock.json` entry
+        (`ContentLockBinding::validate`);
+      - `content_lock_token`: `content.lock.json` `revision_digest_token`;
+      - `migration_class`: `COMPATIBLE_NO_MIGRATION`;
+      - `capability_profile`: the constant `content:world-bundle-activation-v1`;
+      - the eight `FirstProductionRevisionSet` members:
+        - `content`: the pin's `content_revision`;
+        - `map`: `oteryn:map/world-bundle/<bundle digest hex>`;
+        - `ruleset`, `world_policy` and `sim_profile`: `native_entry` `REVISIONS[2]`, `[3]` and
+          `[6]`, the revisions the served path's code implements; the `ruleset` value must be in
+          the bundle's `ruleset_compatibility`;
+        - `compiler`: `oteryn:compiler/world-bundle-v<world_bundle::VERSION>`, with the compiler
+          source bound by `inputs_digest`;
+        - `canonicalization`: `oteryn:canonicalization/world-activation-v1`;
+        - `profile_revision`: the constant `WORLD_BUNDLE_ACTIVATION_PROFILE/v1`.
+      Each value must pass its `ProductionKey`, `ProductionAtom` or `Sha256HexDigest` check, or
+      activation refuses. Nothing in `GenerationIdentity` comes from outside this block, the
+      `WorldId` above and the two artifact digests;
     - the bundle digest, the pin's `inputs_digest` (§1.2) and the pin's `content_revision`;
     - the World's `ruleset_revision` and `sim_revision`, which the chest `USE` occurrence binds
       (§1.6), and the bundle's whole `Identity` (§1.2);
     - the pin's `entry_start`, as native `(x, y, floor)`;
-    - each served claim, in canonical `PlacementKey` order, with:
-      - its claim definition (`family`, `production_key`, `revision_ref`), its policy (`once`)
-        and readiness;
-      - its bound cell, bundle `placement_key` and the chest's resolved definition
-        (`family:key@revision`) and map revision;
-      - each reward entry (Item key and count) and its `achievement` key, if any;
-      - its quest transition (CHEST-QUEST-BIND-1);
+    - the served claims, ascending by claim `identity.key`, each with:
+      - its `identity` key and revision, `claim.per`, `repeat.kind` (`once`) and readiness;
+      - its `provenance` `pilot_key` and `pilot_revision`;
+      - its `quest` reference (`family`, `key`, `revision`), optional;
+      - its placement count, then every placement of the claim, in canonical `PlacementKey`
+        order (§1.6), each with:
+        - its placement index and canonical `PlacementKey`;
+        - its `appearance_tibia_id` and `project_position` (`x`, `y`, `z`);
+        - its crystalserver `unique_id` and every `source_binding.legacy_unique_ids` entry
+          (`server`, `unique_id`), in source order;
+        - its bound native cell, bundle `placement_key`, the chest's resolved definition
+          (`family:key@revision`) and the map revision;
+        - its one reward item (`family`, `key`, `revision`) and `count`;
+        - its `achievement_grant` (`state`, achievement `family`, `key`, `revision`, `owner`,
+          `request`), optional;
+        - its quest transition (CHEST-QUEST-BIND-1).
+      Today this is 219 claims and 234 placements. Each placement field that `resolve_chest`,
+      `prepare_chest_use` or the MINT commit reads is one of these fields;
     - the canonical projection of every runtime definition the served path reads: the
       `ItemDefinitionFacts` (definition, stack class, container capacity, container-slot
       pattern) of each reward Item and of every eligible backpack, ascending by definition and
@@ -335,19 +384,28 @@ placements are bound.
   - `entry_start` is in the artifact because the node places first logins there (§2.4). A
     change to it alone is a new activation.
   - **Client artifact.** `WorldActivationClientV1` is `oteryn:world-activation/client/v1`
-    followed by the typed `WorldId`, encoded as in the server artifact, and the bundle digest,
-    because the client reads nothing beyond the bundle-bound view of that World.
+    followed by the 16-byte `foundation::WorldId`, encoded as in the server artifact, and the
+    bundle digest, because the client reads nothing beyond the bundle-bound view of that World.
   - **Frame binding.** The digest is SHA-256 over `oteryn:world-activation/frame/v1` and the
     bundle's frame id (`global-target-2026-09-27`).
   - **Limits.** The server artifact is at most 1 MiB, checked with the existing
     `FirstProductionLimits` check (234 placements and their definitions are a few KiB).
-  - **Staging.** `StagedGeneration::stage` recognizes the server artifact by its tag, as it
-    recognizes the native source-world carrier. It:
-    - checks both SHA-256 values against the expectation before decoding;
-    - decodes the artifact and checks it canonically;
-    - returns a `GenerationIdentity` with the pin's revisions.
+  - **Staging.** `StagedGeneration::stage` recognizes the server artifact by its tag, before the
+    first-production base path and in the same way as the native source-world carrier. It:
+    - checks the limits and both SHA-256 values against the expectation before decoding;
+    - decodes the server artifact, re-encodes it and refuses any byte difference, and decodes
+      the client artifact and refuses a `WorldId` or bundle digest unequal to the server's;
+    - builds `ProductionArtifactMetadata` and `GenerationIdentity` only from the decoded
+      identity block, the decoded `WorldId` and the two digests, and refuses with
+      `RevisionMismatch` unless the metadata equals the expectation's, as `verify_expected`
+      does. `activate_world_bundle` derives that expectation with the same function from the
+      same sources;
+    - checks the World branch's own `profile_revision` and `capability_profile` constants. The
+      first-production constants stay checked only on the first-production path.
   - **Activation.** `activate_world_bundle(controller, quiescence, world, issuance, inputs)`
-    builds both artifacts from the loaded bundle and the served claims. It calls `stage_primary`,
+    builds both artifacts from the loaded bundle and the served claims. It refuses with
+    `WorldMismatch` when `issuance.world_id` is not the node scope's `WorldId`, as
+    `activate_native_entry_room` does. It calls `stage_primary`,
     then `activate` with the boot quiescence guard, as `activate_native_entry_room` does. It
     returns a `WorldBundleContentPin`, which holds:
     - the identity and the activation sequence;
@@ -649,7 +707,13 @@ validation:
     - one non-period fact of a creature the spawn frame names, for example its speed, in the
       embedded definitions, with the bundle unchanged;
     - the `ruleset_revision` or `sim_revision`;
-    - one served claim's revision, one reward count or its `achievement` key;
+    - one served claim's revision, its `pilot_revision` or its `quest` reference;
+    - one placement's reward count, reward Item revision, `achievement_grant`,
+      `project_position`, `appearance_tibia_id` or one `legacy_unique_ids` entry, with the
+      other placements of the claim unchanged;
+    - the World's 16 `WorldId` bytes;
+    - each generation-identity field, for example the `package_revision`,
+      `licensing_metadata`, `content_lock_token` and one `FirstProductionRevisionSet` member;
     - the container capacity or container-slot pattern of an eligible backpack that no served
       claim rewards;
     - one field of the bundle's `Identity`;
@@ -664,6 +728,13 @@ validation:
     without an issuance, or under a non-quiescent guard, is refused, and the controller's
     active generation has the World artifact's identity.
   - A World artifact with a changed byte, a non-canonical order or over 1 MiB fails staging.
+    Staging against an expectation whose identity differs in one field refuses with
+    `RevisionMismatch`, and a client artifact with another `WorldId` or bundle digest fails
+    staging. The active generation's `GenerationIdentity` equals the §1.5 derivation field for
+    field, and an issuance whose `world_id` is not the scope's refuses with `WorldMismatch`.
+  - A ready plain record with a field outside the encoded set (§1.5), or with two reward items,
+    is left out as `WAITING_UNENCODED_FIELD`, and all 219 ready plain claims of today's corpus
+    pass the check.
   - `content activate --world-pin --bundle` issues digests that the node's boot check accepts.
     An issuance from the native mode, or from another bundle or claim set, refuses boot with
     `ContentActivation("digest")`. Replaying a request file reissues the same digests.

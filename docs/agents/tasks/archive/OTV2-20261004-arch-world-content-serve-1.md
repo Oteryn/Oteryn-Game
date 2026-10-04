@@ -118,6 +118,19 @@ external_repositories: []
     bundle digest binds creature facts. A speed-only mutation must change the digest (§1.5, §2.4).
   - P1 4179564960: the typed `WorldId` is the first field of both the server and client
     artifacts. Changing only the `WorldId` must change both digests (§1.5, §2.4).
+- #1792 Codex round 9 (CP):
+  - P1 4179600071: the server artifact encodes every placement under its claim, in canonical
+    `PlacementKey` order, with its position, unique ids, binding, reward item and count,
+    achievement grant and quest transition (219 claims, 234 placements). A ready record with a
+    field outside the encoded set is left out as `WAITING_UNENCODED_FIELD` (§1.5, §2.4).
+  - P1 4179600075: both artifacts carry `foundation::WorldId` as its 16 canonical UUIDv7 bytes,
+    from the scope's issuance; `activate_world_bundle` refuses `WorldMismatch` (§1.5, §2.4).
+  - P1 4179600079: a generation-identity block carries every `GenerationIdentity` field, each
+    with an exact source derivation, and staging builds the identity only from it and refuses an
+    unequal expectation (§1.5, §2.4).
+  - Self-audit against `StagedGeneration::stage`, `GenerationIdentity`,
+    `ProductionArtifactMetadata`, `verify_expected`, `resolve_chest`, `prepare_chest_use`, the
+    MINT commit, the reward-claim field census and the bestiary loader.
 - Durable rows keep canonical identities; the bundle `placement_key` stays in memory. No
   migration, wire or contract change (§1.6-§1.8).
 
