@@ -35,6 +35,8 @@ owned_paths:
   - crates/protocol-oteryn/src/ (merge union and test lint allows only)
   - apps/game-server/tests/ (mount allows, D325 case, stack fix)
   - docs/agents/tasks/active/OTV2-20261003-spells-1534-main-merge.md
+  - apps/game-server/src/gameplay_transport/ (merge adaptations to main)
+  - apps/game-server/src/content/item_*_promotion.rs, docs/agents/evidence/OTV2-2026100*-item-*.json, tools/content-schema/item-authoring/lower_*.py (re-pin, owner decision 1a)
 public_contracts: []
 depends_on: [D313, D314, D319, D325, D339, D357]
 blocks: []
@@ -97,59 +99,26 @@ No new gameplay, no change to SQL bodies, no review trigger, auto-merge or Jira 
 - Join snapshot (main ACH-NOTIFY-1): the PR's always-present empty world object overlay
   domain is kept and main's achievement notice domain follows it; main's notice
   expectation helper includes the empty overlay domain.
-- Pre-existing PR-head defects fixed before freeze (D325): the complete-reconnect
-  scenario future is boxed off the 2 MiB test stack; `clippy -D warnings` is clean for
-  game-server and protocol-oteryn (mechanical fixes, reasoned allows matching main's
-  conventions, test-module allows). Hand-written delta about 630 added / 290 removed lines.
+- D325 pre-freeze fixes: complete-reconnect future boxed off the test stack; clippy clean.
 - D339: merged current main once (merge, not rebase); later predecessor merges only
   merge main.
 
-- D357 candidate (P1 round 1 of 2): server-seam scenario future boxed (stack); Codex P1
-  tile-aimed area visibility uses the populated sight origin; CodeQL HIGH GuildStats script
-  extraction uses html.parser; spell readiness and starter bundle samples regenerated with
-  convert_spells.py from the pinned sources.
-- D358 merge_group NODE_BOOT_FAIL (use_wire: Accepted then ProtocolError 1004): the PR's
-  first entry adds Character data reads (cast facts, build, stance, current root) through
-  the node's single ready-only holder (`try_acquire_ready`, max 1 connection); a concurrent
-  pass (the other session's grace release or tick) makes one read refuse, so the fresh actor
-  stayed unpositioned (admission-only). Fix: the pre-write first-entry refusals
-  (Unavailable, StaleAuthority) are repeated from fresh reads, bounded by
-  `RECONCILE_ATTEMPTS` with `RECONCILE_BACKOFF`; those paths wrote no runtime state and the
-  durable inits are idempotent. Not reproduced locally (PR head passed node boot locally).
-- D357 open: the r23 evidence-log whitespace repair was refused by the session's permission
-  policy as evidence tampering; r25 source-world non-canonical Canary item keys and two
-  dangling Item keys need a content decision. world-metadata (35600), Item+Mount
-  TAXONOMY_SOURCE_COVERAGE and the 14 retired taxonomy keys fail on main itself.
-- Main merges after D357 (no rebase): encounter domain taken from `main` (#1599 carrier);
-  `forge_dust` modules and the populated Wheel catalogue unioned with the PR's
-  `spell_imports` overlay on `rulesets/progression/wheel-of-destiny/index.json`.
-
-- Main 602ebe4b merge (QUEST-STATE-1 #1684, union only): main's 0056 re-issues
-  `game_character_progression_consistency_guard` without the familiar arms. CP 1a moves
-  the D325 union from 0053 to leased `0068_character_progression_guard_union.sql`: the
-  0032 proficiency, 0033 familiar and 0056 quest arms (revision-one EXISTS, chain SELECT,
-  transition receipts) plus the search_path pin and REVOKE; no main migration in
-  0057..0067 re-issues the guard. The integrity chain CTE unions familiar and quest
-  receipts; the transport keeps main's quest retry loop joined with the PR's source owner
-  cycles and both method sets; `character_authority_postgres` keeps the stance, familiar
-  and quest case modules.
-  `proficiency_familiar_and_quest_writes_share_the_0068_progression_guard` interleaves
-  familiar, proficiency, quest and familiar writes on one Character (revision 5) and
-  re-verifies from a fresh authority.
-- Main 2a5ce70c merge (CAP-NEG-1 #1705, ITEM-SEM-2b-2 #1706, union only): the six content
-  `index.json` files take main's `legacy_source` blob (fe0d845b, matching the merged world
-  `reference.json`) and keep the PR's `spell_imports`; main's `capabilities_tests` stub of
-  `FreshAdmissionAuthority::step` takes the PR's session and command parameters, and its
-  domain-selection expectation includes the always-sent empty overlay domain. No main
-  migration touches the progression guard.
-- Main e63a5aa9 merge (#1709, #1704, #1701, #1703, union only): the protocol module list keeps
-  both `item_view` and `spell_presentation_candidate`; main's 0060 alters proficiency
-  modification lines only and does not touch the progression guard, so 0068 is unchanged.
-- Main d028be62 merge (#1710, #1711, #1700): the six content `index.json` files take main's
-  `legacy_source` and keep the PR's `spell_imports`. One semantic adaptation: #1710 adds
-  `ReferenceBaseVocation::None`, and the PR's equipment-claims projection now rejects it
-  (fail closed) because the equipment ABI admits the five base vocations only. Main's 0058
-  does not touch the progression guard.
+- D357/D358 (history in git): server-seam future boxed; tile-aimed area visibility uses the
+  sight origin; GuildStats extraction uses html.parser; spell samples regenerated; pre-write
+  first-entry refusals retried from fresh reads (`RECONCILE_ATTEMPTS`). Open: r23 evidence-log
+  whitespace (refused as evidence tampering), r25 item keys (ITEM-KEY-R25-1).
+- Main merges (merge commits, union only): #1599 encounter domain from main; Wheel catalogue
+  unions `spell_imports`; QUEST-STATE-1 moved the D325 guard union to leased
+  `0068_character_progression_guard_union.sql` (0032 proficiency, 0033 familiar, 0056 quest
+  arms, search_path pin, REVOKE), covered by
+  `proficiency_familiar_and_quest_writes_share_the_0068_progression_guard`; no later main
+  migration (0058, 0060) touches the guard. Content `index.json` files take main's
+  `legacy_source` and keep the PR's `spell_imports`. Main's test stubs of
+  `FreshAdmissionAuthority::step` take the PR's five parameters, and their join-snapshot
+  expectations include the always-sent empty overlay domain. The protocol module list keeps
+  `item_view` and `spell_presentation_candidate`. #1710's `ReferenceBaseVocation::None` is
+  rejected (fail closed) by the equipment-claims projection: the equipment ABI admits the five
+  base vocations only.
 
 ### Follow-ups (control plane)
 
@@ -158,11 +127,8 @@ No new gameplay, no change to SQL bodies, no review trigger, auto-merge or Jira 
   `build_source_world.py`, required by `native_spell_world.rs` as `source-map-r3`) and the
   dangling `oteryn:item.tibia.i40450` (spell native profiles and the r25 test pack). Move
   the aliases to canonical `oteryn:item.tibia.i<N>` keys and author the i40450 Item record.
-- PARTY-DECLINE (CP 1a, supersedes the D245 deferral; Codex P2 on `world_party.rs`
-  Decline): Decline locks the requested party row, and a decline that removed an
-  invitation closes that party when it is leader-only with no invitations left.
-  `declining_the_last_invitation_closes_the_leader_only_inviting_party` covers the sole,
-  shared and repeated declines.
+- PARTY-DECLINE (CP 1a): a Decline that removes the last invitation closes a leader-only
+  party (`declining_the_last_invitation_closes_the_leader_only_inviting_party`).
 
 ## Validation
 
@@ -247,23 +213,23 @@ next_action: report FREEZE to the control plane; afterwards only merge main when
 
 ## Re-pin after merging origin/main 8588b1bb (owner decision 1a, 2026-10-04)
 
-Merging main (after #1712) left only this PR's own `reference_playable.rs` drift: the file moved from `5424c687ef3b43815dbcd75f0fd739d95a8c8aa66aa74986c8ed870514268d6c` to `fd81a9d9359e11c3f1f841b78b4d10246bc886dcabec692b51cc7e7ba98e44d7`. The current pins of the numeric17 receipt and the Mantra/Bond source qualification were moved to the new digest. Each packet was regenerated with its own generator, and the pins were cascaded on top of #1712's pins until every `--check` passed. Every changed file is identical to its pre-merge content once 64-hex digests are masked. The historical witnesses (magic-capacity4 source qualification, numeric13 source proof v2, numeric17 source qualification v1, native-loader proof) stay unchanged.
+Merging main (after #1712) left only this PR's own `reference_playable.rs` drift: the file moved from `5424c687ef3b` to `fd81a9d9359e`. The current pins of the numeric17 receipt and the Mantra/Bond source qualification were moved to the new digest. Each packet was regenerated with its own generator, and the pins were cascaded on top of #1712's pins until every `--check` passed. Every changed file is identical to its pre-merge content once 64-hex digests are masked. The historical witnesses (magic-capacity4 source qualification, numeric13 source proof v2, numeric17 source qualification v1, native-loader proof) stay unchanged.
 
-Merge adaptations: `release_terminal` (main's refactor of the abandoned release) keeps this PR's familiar save and spell-training save around the monk save. The `item_view_tests.rs` test authority (#1713) takes the PR's five-parameter `step` signature.
+Merge adaptations: `release_terminal` (main's refactor of the abandoned release) keeps this PR's familiar save and spell-training save around the monk save. The `item_view_tests.rs` test authority (#1713) takes the PR's five-parameter `step` signature, and its expected join snapshot carries the PR's always-sent empty overlay domain.
 
-| File | Old digest | New digest | Result |
+| File | Old digest (12) | New digest (12) | Result |
 |---|---|---|---|
-| `apps/game-server/src/content/item_elemental_magic_modifier_promotion.rs` | `b1e786ac7c72e80612402b618774f21de581fe6737fffeca08b0977f54f2c801` | `7fe2bac00cf4e9372f007e13dcbc0f371bb6ed62ce034e811e3e9b11f7c06c93` | pin constants only |
-| `apps/game-server/src/content/item_mantra_bond_modifier_promotion.rs` | `ffbde846a435a2493900acb202b24976450422d965c89c8994566ee75a142d11` | `a7725fd37cbc20c05300a691b1577467d47563bbf1f4d86a83c44a8266b5e01d` | pin constants only |
-| `apps/game-server/src/content/item_numeric_modifier_promotion.rs` | `5ec194692eca4c0a5d1037403276bdda75737a98f9507ffcdfcd33e17289f3ac` | `92ef6b774a53c20f571b1040ae2c4e882d3dd8a2e8ada8297f0fabeb1822b14e` | pin constants only |
-| `apps/game-server/src/content/item_stack_default_successor8_promotion.rs` | `f6a81742b7ed3812d5a6d8fba6bf95551b3ad48e24e83ead41145b6bec5b544c` | `ca28a8eedbed70316703a37a9f837ab673d99687a240b76d49aa161f25e3dea0` | pin constants only |
-| `docs/agents/evidence/OTV2-20261002-item-elemental-magic-modifier-promotion-v1.json` | `bcb8410d40202d7fa4676c8dfa04e3e6a5a514c7294cd34277d754d82b446c70` | `ebbf84a95092defc72ee47a74de00ef952dafc2cbb7fc2bb2933bb6b1420ebe5` | digest-only, rows unchanged |
-| `docs/agents/evidence/OTV2-20261002-item-mantra-bond-promotion-v1.json` | `64c051bbe5648a2a87e5de0462c626e58b6d421cf0c37ce992d5bf3e07514a37` | `ec0c44a1f85fd7a542815a8579ba7bede882b7bd5b71ac066f37357351960ff7` | digest-only, rows unchanged |
-| `docs/agents/evidence/OTV2-20261002-item-mantra-bond-source-qualification-v1.json` | `c7145af1f27e7d5db54fdc1659acfcbee347aeb2f0a8e1edfead669eb4f82a9a` | `e4b92c87087c301698ac21db2159b5f98db32d3985433cfbc018ad9daf33753e` | digest-only, rows unchanged |
-| `docs/agents/evidence/OTV2-20261002-item-numeric-modifier17-current-receipt-v1.json` | `be0b91420416b1e8f9f12bea285c0d42d6e7ca46060286b7737be0939a134957` | `d965b48f56bcbbaf72f733f0b961c997eab4ef3f77ab4d76438e16b791f37286` | digest-only, rows unchanged |
-| `docs/agents/evidence/OTV2-20261002-item-numeric-modifier17-promotion-v1.json` | `1a8ffbaa48be0c50e12b9ae21271bef0699e98410cb69435b2cd195976e46710` | `5d816ef227021d7e2ab3a347a4b2617fe86ac4383dbea6b9d9c12fec59713538` | digest-only, rows unchanged |
-| `docs/agents/evidence/OTV2-20261002-item-stack-default-successor8-promotion-v1.json` | `aaad7f5cd2b96a60e42aec5dbce1e0f48e33f338009974ee2fbdca38436c970a` | `527e864e71da60d5f669fb511885d72a585b351dc0029631e6da4a43a5f4702d` | digest-only, rows unchanged |
-| `docs/agents/evidence/OTV2-20261003-item-stack-default-successor8-current-parent-receipt-v2.json` | `5d6f08ebaa9c6d7948efdcbcb9aca9e6862cbd8056a201c761b20af7d5e893b2` | `8957686e121607e0f30a97fb31bbfebfbeb042052ddc95b5dc2419038c374800` | digest-only, rows unchanged |
-| `tools/content-schema/item-authoring/lower_mantra_bond_modifier_packet.py` | `1eb88af759b99cbf796f5d9e173b439260cc04507b7d895f906e2054f1fdee91` | `a67f605b038d9553768d4b79309d4a09f405aa9197a516d3050e3471ea7394b5` | pin constants only |
-| `tools/content-schema/item-authoring/lower_numeric_modifier17_packet.py` | `4ab1d4dc6eee5f7e0636f06b28830c4a40e3a20a6979d4ad155bdbcf4813d19f` | `d895516ad8d4640699ffaab09db91757e996ab27bd487a6c7bf0fafa1f02df79` | pin constants only |
-| `tools/content-schema/item-authoring/lower_wiki_stack_default_successor8_packet.py` | `d8b7df69edeb02bdf030e45ca695276af044606057ec7af37d8dc1238f371d56` | `6db74d7b32e8a6b33da6bf7313db4b54c275b32a21b5d8f665be64bba8a7cde6` | pin constants only |
+| `apps/game-server/src/content/item_elemental_magic_modifier_promotion.rs` | `b1e786ac7c72` | `7fe2bac00cf4` | pins only |
+| `apps/game-server/src/content/item_mantra_bond_modifier_promotion.rs` | `ffbde846a435` | `a7725fd37cbc` | pins only |
+| `apps/game-server/src/content/item_numeric_modifier_promotion.rs` | `5ec194692eca` | `92ef6b774a53` | pins only |
+| `apps/game-server/src/content/item_stack_default_successor8_promotion.rs` | `f6a81742b7ed` | `ca28a8eedbed` | pins only |
+| `evidence/OTV2-20261002-item-elemental-magic-modifier-promotion-v1.json` | `bcb8410d4020` | `ebbf84a95092` | digest-only |
+| `evidence/OTV2-20261002-item-mantra-bond-promotion-v1.json` | `64c051bbe564` | `ec0c44a1f85f` | digest-only |
+| `evidence/OTV2-20261002-item-mantra-bond-source-qualification-v1.json` | `c7145af1f27e` | `e4b92c87087c` | digest-only |
+| `evidence/OTV2-20261002-item-numeric-modifier17-current-receipt-v1.json` | `be0b91420416` | `d965b48f56bc` | digest-only |
+| `evidence/OTV2-20261002-item-numeric-modifier17-promotion-v1.json` | `1a8ffbaa48be` | `5d816ef22702` | digest-only |
+| `evidence/OTV2-20261002-item-stack-default-successor8-promotion-v1.json` | `aaad7f5cd2b9` | `527e864e71da` | digest-only |
+| `evidence/OTV2-20261003-item-stack-default-successor8-current-parent-receipt-v2.json` | `5d6f08ebaa9c` | `8957686e1216` | digest-only |
+| `item-authoring/lower_mantra_bond_modifier_packet.py` | `1eb88af759b9` | `a67f605b038d` | pins only |
+| `item-authoring/lower_numeric_modifier17_packet.py` | `4ab1d4dc6eee` | `d895516ad8d4` | pins only |
+| `item-authoring/lower_wiki_stack_default_successor8_packet.py` | `d8b7df69edeb` | `6db74d7b32e8` | pins only |
