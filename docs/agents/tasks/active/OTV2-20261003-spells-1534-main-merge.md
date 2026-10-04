@@ -85,13 +85,10 @@ No new gameplay, no change to SQL bodies, no review trigger, auto-merge or Jira 
   lifecycle owner version (Speed/Light/ManaShield, infallible) keeps its name; the PR's
   spell-owner version (every effect without a pending tick, time-guarded) becomes
   `expire_non_ticking_checked` and also prunes expired Cleanse immunities.
-- Carrier patterns on the PR's `control_loss` field read `lifecycle.control_loss` after
-  COND-1c's boxing.
 - Creature health drain keeps both the PR's companion invisibility removal and `main`'s
   death cleanup of committed creature conditions.
 - `main`'s Bestiary projection denies unknown Creature index fields; it now accepts the
   PR's `spell_imports` overlay descriptors as an ignored array.
-- `CleansePlan::conflict_key` is test-only once `condition.rs` is mounted under `foundation`.
 - D325 (control plane, option a): migration 0053 re-issues
   `game_character_progression_consistency_guard` as the union of the 0032 proficiency and
   0033 familiar bodies and restores its search_path pin; 0033..0052 stay byte-identical.
@@ -116,10 +113,9 @@ No new gameplay, no change to SQL bodies, no review trigger, auto-merge or Jira 
 ### Follow-ups (control plane)
 
 - ITEM-KEY-R25-1 (CP 1c 2c): `item_key_references.py` reports 608 NON_CANONICAL
-  `oteryn:item.source.canary.id<N>` keys in the r25 source world (emitted by
-  `build_source_world.py`, required by `native_spell_world.rs` as `source-map-r3`) and the
-  dangling `oteryn:item.tibia.i40450` (spell native profiles and the r25 test pack). Move
-  the aliases to canonical `oteryn:item.tibia.i<N>` keys and author the i40450 Item record.
+  `oteryn:item.source.canary.id<N>` keys in the r25 source world (`build_source_world.py`)
+  and a dangling `oteryn:item.tibia.i40450`. Move the aliases to canonical
+  `oteryn:item.tibia.i<N>` keys and author the i40450 Item record.
 - PARTY-DECLINE (CP 1a): a Decline that removes the last invitation closes a leader-only
   party (`declining_the_last_invitation_closes_the_leader_only_inviting_party`).
 
@@ -127,15 +123,12 @@ No new gameplay, no change to SQL bodies, no review trigger, auto-merge or Jira 
 
 ### Focused
 
-- command/run: cargo fmt --all --check; cargo clippy -p oteryn-game-server -p
-  oteryn-protocol-oteryn --all-targets -D warnings; governance validator and
-  tools/agents tests; repository policy validator
+- command/run: fmt; clippy -D warnings; governance and repository policy validators
 - result: PASS
 
 ### Component/integration
 
-- command/run: cargo test -p oteryn-game-server (local PostgreSQL 17.6 configured) and
-  -p oteryn-protocol-oteryn
+- command/run: cargo test -p oteryn-game-server (local PostgreSQL 17.6)
 - result: PASS
 
 ### E2E
@@ -250,3 +243,8 @@ the PR's `tick_vitals` respawns; a dead player's step is refused. Main's session
 store replaces this PR's unsolicited-vitals reader; the harness keeps casts on top of it.
 Later merges: item pins re-cascade from this PR's `reference_playable.rs`; harness adds loot;
 DEATH-2b respawn reads `NativeStaticCellLookup`; main's 0071 (BANK-1) leaves the guard alone.
+Leased 0075 (CP review): 0058/0071 re-issued the item guard, change, entry-removal, placement and
+mint proofs from main's bodies; 0075 puts this PR's arms ahead of main's latest body (the guard is
+0050's plus 0058's TRANSFORM, ignoring the incremented state_revision) and pins 0048's field policy
+guard with pg_temp last (`a_spell_item_mint_and_a_timed_expiry_share_the_0075_item_guards`, RED
+without 0075).
