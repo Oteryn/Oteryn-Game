@@ -45,10 +45,13 @@ These chains run in parallel, each with one writer:
 1. **Retention:** BANK-RET-0 (#1733 §2.3), then BANK-1. In parallel, ECON-RET-0 (§2.1), then
    GUILD-1 (#1743 §2.2, which also needs PREM-WIRE-1) and later MARKET-1.
 2. **Party and PvP:** CHAT-1b-2b, then CHAT-2 (§2.4), then PARTY-1 (§2.5), then PVP-1.
-3. **House entry:** SCOPE-HANDOFF-1 (§2.3), then HOUSE-RUNTIME-1 (after HOUSE-1 for owned houses).
+3. **House entry:** SCOPE-HANDOFF-1 (§2.3), then HOUSE-RUNTIME-1, tested on HOUSE-RUNTIME-0
+   §10's operator-owned test house. It does not wait on HOUSE-1 (#1738 P1 4177048585).
 4. **Beds:** BED-CONTENT-1 (§2.2), in the content lane.
 5. **House ownership:** the map packets, then DEPOT-WIRE-1, DEPOT-1, INBOX-1, BANK-1, and then
-   HOUSE-1.
+   HOUSE-1, which also waits on HOUSE-RUNTIME-1 from chain 3 (HOUSE-OWN-0 brief; HOUSE-CUSTODY-0
+   §4). Owned-house admission, through HOUSE-1's owner rows and HOUSE-ACL-1, is tested when those
+   children land, not before.
 
 Ruling (playable-first): SCOPE-HANDOFF-1 is allocated ahead of its playable caller. It is the
 longest hard step in chain 3, and HOUSE-RUNTIME-0 builds it so that the later Channel change can
@@ -164,7 +167,7 @@ Builds, from HOUSE-RUNTIME-0 §4:
 - its typed refusals (`NO_ACCESS`, `IN_COMBAT`, `BUSY`, `HOUSE_CLOSED`, `NO_ROOM`).
 
 The admission commit re-reads the property row under FOR SHARE. The packet admits nobody into a
-real house: with no HOUSE-1 there is no owner, so §5's operator test is the only entry, and
+real house: with no HOUSE-1 there is no owner, so HOUSE-RUNTIME-0 §10's operator test is the only entry, and
 tests use it.
 
 Acceptance tests, each with a crash point:
@@ -242,8 +245,9 @@ World) is allocatable, since DEATH-1 is merged.
 |---|---|---|
 | BANK-1 | BANK-RET-0 | #1733 §2.3 |
 | INBOX-1 | DEPOT-1, which waits on DEPOT-WIRE-1, MAP-LOAD-1 and MAP-WIRE-1 | the map packets |
-| HOUSE-1, HOUSE-ACL-1, HOUSE-WIRE-1 | BANK-1; INBOX-1; SCOPE-HANDOFF-1 for the runtime child | chains 1, 3 and 5 of §1.1 |
-| HOUSE-RUNTIME-1, HOUSE-VIEW-1, HOUSE-ITEM-WIRE-1 | SCOPE-HANDOFF-1; HOUSE-1; the MAP-WIRE-1 children; a wire decision for the last | §2.3, then HOUSE-1 |
+| HOUSE-1, HOUSE-ACL-1, HOUSE-WIRE-1 | BANK-1; INBOX-1; HOUSE-RUNTIME-1 | chains 1, 3 and 5 of §1.1 |
+| HOUSE-RUNTIME-1 | SCOPE-HANDOFF-1 (HOUSE-CUSTODY-1 is merged); not HOUSE-1, since it is tested on HOUSE-RUNTIME-0 §10's operator-owned test house | §2.3 |
+| HOUSE-VIEW-1, HOUSE-ITEM-WIRE-1 | HOUSE-RUNTIME-1; the MAP-WIRE-1 children; for the last, HOUSE-VIEW-1, ITEM-MOVE-WIRE-1 and its own wire decision | §2.3 and the map packets |
 | BED-1, BED-REGEN-1 | OFFLINE-1, STATUE-1, HOUSE-RUNTIME-1, HOUSE-VIEW-1, WORLDINT-WIRE-1; DUR-02 | their roots |
 | GUILD-BANK-1, GUILDHALL-1, GUILD-WIRE-1 | BANK-1; HOUSE-1, HOUSE-ACL-1; HOUSE-WIRE-1 | chains 1 and 5 |
 | GUILD-CHAT-1, PARTY-CHAT-1 | CHAT-2 (and GUILD-1 or PARTY-1) | §2.4 |
@@ -255,6 +259,8 @@ World) is allocatable, since DEATH-1 is merged.
 
 - **One retention decision per child.** Three profiles of one shape go through one privacy review
   instead of three (AGENTS.md batching).
+- **HOUSE-RUNTIME-1 waiting on HOUSE-1.** HOUSE-1 already waits on the runtime child (HOUSE-OWN-0
+  brief), so the two would hold each other forever (#1738 P1 4177048585).
 - **Starting HOUSE-1 against a stub bank or inbox.** That would build durable value on a
   placeholder custody path.
 

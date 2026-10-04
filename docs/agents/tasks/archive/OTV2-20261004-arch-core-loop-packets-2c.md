@@ -49,6 +49,9 @@ external_repositories: []
   2. ADMIT-0 acceptance.
   3. Relay key authority.
 - #1738 P2 4176947456: the five mandatory decision answers are in §6.
+- #1738 P1 4177048585: HOUSE-RUNTIME-1 comes before HOUSE-1 and is tested on HOUSE-RUNTIME-0
+  §10's operator-owned test house; HOUSE-1 waits on it (§1.1, §3, §4). The P2s are deferred
+  (D493).
 - No code, contract, wire or migration change.
 
 ## Validation
