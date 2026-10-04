@@ -1,33 +1,13 @@
 #![allow(clippy::expect_used, clippy::unwrap_used)]
-// Dedicated PostgreSQL 17.6 qualification for GOLD-FEE-2 (migration 0072): the bank part of a
-// gold fee (BANK-FEE-0 §3-§5) and the type-2 `(1, V1)` / `(2, V2)` readiness of
-// ARCH-BATCH-ROOT-PACKETS-V1 §1.7 phase 1. Ordinary workspace runs report PRE-ROUTING/NONCANONICAL
-// when the routed database is absent.
+// Shared GOLD-FEE-2 cases (migration 0072): the bank part of a gold fee (BANK-FEE-0 §3-§5) and the
+// type-2 `(1, V1)` / `(2, V2)` readiness of ARCH-BATCH-ROOT-PACKETS-V1 §1.7 phase 1, run by the
+// CI-run `character_authority_postgres` target. Ordinary workspace runs report
+// PRE-ROUTING/NONCANONICAL when the routed database is absent.
 //
 // The fee source of CHARM-6 does not exist yet, so the composed Character change is the exact SQL
 // of a CHARM-3 unlock, issued in the same runtime-role transaction as the fee writer (as the
 // GOLD-FEE-1a/1b cases do). The bank path is driven with `(2, V2)` explicitly; production code
 // emits `(1, V1)` in phase 1.
-extern crate oteryn_game_server as production_server;
-extern crate self as oteryn_game_server;
-
-pub use production_server::admission_evidence;
-#[allow(dead_code, unused_imports)]
-#[path = "../src/character_bootstrap_intent.rs"]
-pub mod character_bootstrap_intent;
-#[allow(dead_code, unused_imports)]
-#[path = "../src/character_recovery_fence.rs"]
-pub mod character_recovery_fence;
-pub use production_server::domain;
-#[allow(dead_code, unused_imports)]
-#[path = "../src/durability/mod.rs"]
-mod durability;
-#[allow(dead_code, unused_imports)]
-#[path = "../src/foundation/mod.rs"]
-pub mod foundation;
-#[allow(dead_code, unused_imports)]
-#[path = "../src/native_admission_source/mod.rs"]
-pub mod native_admission_source;
 
 use crate::domain::charm::CharmKey;
 use crate::domain::currency::Coin;
