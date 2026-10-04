@@ -8598,6 +8598,28 @@
         "ATTACK-1b: the game-server dispatch of command type 12 enforces the window"
       ],
       "notes": "ATTACK-0 \u00a73 and ARCH-CORE-LOOP-PACKETS-2 \u00a72.1. The value is Canary's own bound: config.lua.dist maxPacketsPerSecond = 25 caps every client packet of one connection, and ProtocolGame::parseAttack (0xA1) and parseFightModes (0xA0) have no tighter per-action limit, so no Canary-faithful client sends more. The oteryn-protocol-oteryn test attack::tests::the_registries_bind_the_attack_constants binds this row to the constant; the enforcement test lands with ATTACK-1b. Registered by OTV2-20261004-attack-wire-1."
+    },
+    {
+      "id": "ITEMUSE0-RL-03",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_ITEM_USE0_USING_ITEMS_DECISION_2026-09-30.md",
+      "resource": "USE_INTENT payload under ITEM_USE_V1 (fields 4 and 5 included)",
+      "unit": "bytes",
+      "hard_maximum": 529,
+      "configurable_range": {
+        "minimum": 529,
+        "maximum": 529
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Capability 15 does not raise the USE_INTENT bound: the largest intent with field 4 and field 2 or 5 is 44 bytes, far below the existing 529-byte payload limit, and the decoder refuses any larger payload before parsing.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=529: a 529-byte USE_INTENT is accepted with capability 15 selected",
+        "max+1=530: a 530-byte USE_INTENT is refused with capability 15 selected"
+      ],
+      "consumers": [
+        "USE_INTENT command (ITEM-USE-WIRE-1, capability 15 ITEM_USE_V1)"
+      ],
+      "notes": "Registered by ITEM-USE-WIRE-1 under ARCH-BATCH-ROOT-PACKETS-V1 \u00a72.2 (D485). Mirrors max_payload_bytes of command type 2."
     }
   ]
 }

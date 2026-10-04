@@ -145,7 +145,7 @@ fn fight_modes_round_trip_at_their_byte_bound_and_fail_closed() {
             "{payload:?}"
         );
     };
-    // Empty, a missing or zero or unknown enum, an explicit false, doubled and unknown fields.
+    // Empty, a missing or zero or unknown enum, a bool above 1, doubled and unknown fields.
     refused(&[]);
     refused(&[0x10, 0x01]);
     refused(&[0x08, 0x01]);
@@ -153,11 +153,19 @@ fn fight_modes_round_trip_at_their_byte_bound_and_fail_closed() {
     refused(&[0x08, 0x02, 0x10, 0x00]);
     refused(&[0x08, 0x04, 0x10, 0x01]);
     refused(&[0x08, 0x02, 0x10, 0x03]);
-    refused(&[0x08, 0x02, 0x10, 0x01, 0x18, 0x00]);
     refused(&[0x08, 0x02, 0x10, 0x01, 0x18, 0x02]);
     refused(&[0x08, 0x02, 0x08, 0x02, 0x10, 0x01]);
     refused(&[0x08, 0x02, 0x10, 0x01, 0x20, 0x01]);
     refused(&[0x0A, 0x00, 0x10, 0x01]);
+    // An explicitly encoded false is false.
+    assert_eq!(
+        decode_fight_modes_intent(&[0x08, 0x02, 0x10, 0x01, 0x18, 0x00]),
+        Ok(FightModes {
+            fight_mode: FightMode::Balanced,
+            chase: ChaseMode::Stand,
+            secure: false,
+        })
+    );
     assert_eq!(
         decode_fight_modes_intent(&[0x08, 0x02, 0x10, 0x01, 0x18, 0x01, 0x00]),
         Err(AttackWireError::LimitExceeded)
@@ -222,8 +230,9 @@ fn the_combat_state_round_trips_at_its_byte_bound_and_fails_closed() {
     refused(&zero_generation);
     refused(&[0x10, 0x00, 0x18, 0x01]);
     refused(&[0x10, 0x02, 0x18, 0x00]);
-    refused(&[0x10, 0x02, 0x18, 0x01, 0x20, 0x00]);
-    refused(&[0x10, 0x02, 0x18, 0x01, 0x28, 0x00]);
+    refused(&[0x10, 0x02, 0x18, 0x01, 0x20, 0x02]);
+    refused(&[0x10, 0x02, 0x18, 0x01, 0x28, 0x02]);
+    refused(&[0x10, 0x02, 0x18, 0x01, 0x28, 0x00, 0x28, 0x00]);
     refused(&[0x10, 0x02, 0x18, 0x01, 0x28, 0x01, 0x28, 0x01]);
     refused(&[0x10, 0x02, 0x10, 0x02, 0x18, 0x01]);
     refused(&[0x10, 0x02, 0x18, 0x01, 0x30, 0x01]);
@@ -234,6 +243,19 @@ fn the_combat_state_round_trips_at_its_byte_bound_and_fails_closed() {
     assert_eq!(
         decode_actor_combat_state(&doubled_target),
         Err(AttackWireError::LimitExceeded)
+    );
+    // Explicitly encoded falses are false.
+    assert_eq!(
+        decode_actor_combat_state(&[0x10, 0x02, 0x18, 0x01, 0x20, 0x00, 0x28, 0x00]),
+        Ok(ActorCombatState {
+            target: None,
+            modes: FightModes {
+                fight_mode: FightMode::Balanced,
+                chase: ChaseMode::Stand,
+                secure: false,
+            },
+            in_fight: false,
+        })
     );
     let mut over = worst.clone();
     over.push(0);

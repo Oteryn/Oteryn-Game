@@ -9,7 +9,7 @@ import lower_item_description_packet as strict
 ROOT = strict.ROOT
 COMPILER = "tools/content-schema/item-authoring/lower_item_description_wiki_packet.py"
 PROOF = "docs/agents/evidence/OTV2-20261002-item-description-wiki-source-qualification-v1.json"
-PROOF_SHA = "b295897c25694590672e7c69130ef81412ab2b503180dd78d1436f1ad1b98343"
+PROOF_SHA = "20519675b14aeb8eaa96d0872cb089d240cdfcf23375d738f53c311243d60b10"
 OUTPUT = (
     ROOT / "docs/agents/evidence/OTV2-20261002-item-description-wiki-promotion-v1.json"
 )

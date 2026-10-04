@@ -14,7 +14,7 @@ COMPILER = "tools/content-schema/item-authoring/lower_item_description_packet.py
 PROOF = (
     "docs/agents/evidence/OTV2-20261002-item-description-source-qualification-v1.json"
 )
-PROOF_SHA = "5bfd667737017475b13d475f7d087969c134646ef12bdc72a3cb835b770d9156"
+PROOF_SHA = "fa29b9e4702e81ee8e7365ed6f46b6cd3818b0dfebe6983504c86e3dc19c4727"
 OUTPUT = ROOT / "docs/agents/evidence/OTV2-20261002-item-description-promotion-v1.json"
 HEADERS = ("kind", "client_projection", "materializable", "stack_class")
 # D316: main's quest-reward admission overlay reaches content/items after promotion, so the

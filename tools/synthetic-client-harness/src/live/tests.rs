@@ -8,13 +8,15 @@ use super::cli::{
 use super::controller::LiveController;
 use super::input::LiveInput;
 use super::model::{
-    DOOR_PLACEMENT, DOOR_STATE_CLOSED, DOOR_STATE_OPEN, DOOR_TILE, DoorState, DoorView,
+    ChatPane, DOOR_PLACEMENT, DOOR_STATE_CLOSED, DOOR_STATE_OPEN, DOOR_TILE, DoorState, DoorView,
     LiveCommand, Notice, RenderModel, Tile, Viewport, command_for_click, render_text,
     step_direction_for_action, tile_at_pixel, tile_centre_pixel,
 };
 use oteryn_dev_client::{
-    AppliedDelta, CommandOutcome, JoinRequest, JoinSnapshot, SessionEvent, StepOutcome, UseOutcome,
-    connect_session,
+    AppliedDelta, ChatDisposition, ChatIntent, ChatLine, ChatOutcome, ChatRoom, ChatRoomSet,
+    ChatSpeaker, ChatSpeechMode, CommandOutcome, EntityDetail, EntityKind, EntityRef, JoinRequest,
+    JoinSnapshot, MAX_CHAT_LOG_LINES, MAX_CHAT_TEXT_BYTES, SessionEvent, StepOutcome, UseOutcome,
+    WorldSpatialEntitiesDelta, WorldSpatialEntity, connect_session,
 };
 use oteryn_input_actions::{ButtonState, KeyCode, Modifiers, NormalizedInputEvent};
 use oteryn_protocol_oteryn::actor_spell::{self, ActorVitals};
@@ -33,6 +35,7 @@ use oteryn_protocol_oteryn::{
     encode_single_chunk_snapshot, encode_state_delta,
 };
 use rustls::pki_types::{CertificateDer, PrivatePkcs8KeyDer};
+use std::collections::BTreeMap;
 use std::error::Error;
 use std::sync::Arc;
 use std::time::Duration;
@@ -66,6 +69,10 @@ fn model(actor: (i32, i32), door: DoorState, revision: u64) -> RenderModel {
         }),
         overlay_revision: revision,
         vitals: None,
+        entities: BTreeMap::new(),
+        own_identity: None,
+        selected: None,
+        chat: ChatPane::default(),
         notice: Notice::Joined,
     }
 }
@@ -297,12 +304,236 @@ fn click_on_the_door_tile_is_use_under_the_mirror_revision() {
             expected_revision: 9
         })
     );
-    assert_eq!(command_for_click(view(), &current, px + 32, py), None);
+    // a neighbouring tile selects (its top entity, or nothing); off the grid does nothing
+    assert_eq!(
+        command_for_click(view(), &current, px + 32, py),
+        Some(LiveCommand::Select(Tile {
+            x: DOOR_TILE.x + 1,
+            y: DOOR_TILE.y,
+            floor: 0
+        }))
+    );
+    assert_eq!(command_for_click(view(), &current, -1, py), None);
     let no_door = RenderModel {
         door: None,
         ..current
     };
-    assert_eq!(command_for_click(view(), &no_door, px, py), None);
+    assert_eq!(
+        command_for_click(view(), &no_door, px, py),
+        Some(LiveCommand::Select(DOOR_TILE))
+    );
+}
+
+const OWN_IDENTITY: [u8; 16] = [0xa0; 16];
+
+fn position(x: i32, y: i32) -> ActorPosition {
+    ActorPosition { x, y, floor: 0 }
+}
+
+fn actor_entity(kind: EntityKind, marker: u8, at: ActorPosition) -> WorldSpatialEntity {
+    WorldSpatialEntity {
+        kind,
+        entity: EntityRef {
+            identity: if kind == EntityKind::Player && marker == 0 {
+                OWN_IDENTITY
+            } else {
+                [marker; 16]
+            },
+            generation: 1,
+        },
+        position: at,
+        detail: EntityDetail::Actor {
+            direction: StepDirection::South,
+            appearance_ref: 1,
+            health_percent: 100,
+        },
+    }
+}
+
+fn object_entity(kind: EntityKind, marker: u8, at: ActorPosition) -> WorldSpatialEntity {
+    WorldSpatialEntity {
+        kind,
+        entity: EntityRef {
+            identity: [marker; 16],
+            generation: 0,
+        },
+        position: at,
+        detail: EntityDetail::Object {
+            item_definition_ref: 9,
+            quantity: 1,
+            item_handle: None,
+        },
+    }
+}
+
+fn entities_event(
+    revision: u64,
+    actor: ActorPosition,
+    enter: Vec<WorldSpatialEntity>,
+    update: Vec<WorldSpatialEntity>,
+    leave: Vec<EntityRef>,
+) -> SessionEvent {
+    SessionEvent::WorldSpatialEntities(AppliedDelta {
+        server_sequence: 50 + revision,
+        base_revision: revision - 1,
+        new_revision: revision,
+        value: WorldSpatialEntitiesDelta {
+            content_generation: CONTENT_GENERATION,
+            actor_position: actor,
+            enter,
+            update,
+            leave,
+        },
+    })
+}
+
+fn entity_model() -> RenderModel {
+    let mut current = model((0, 0), DoorState::Closed, 2);
+    current.own_identity = Some(OWN_IDENTITY);
+    let own = actor_entity(EntityKind::Player, 0, position(0, 0));
+    current.entities.insert(own.entity, own);
+    current
+}
+
+#[test]
+fn an_entity_appears_moves_and_disappears_through_pushed_deltas() {
+    let walker = actor_entity(EntityKind::Creature, 1, position(2, 0));
+    let appeared = entity_model().apply_events(&[entities_event(
+        6,
+        position(0, 0),
+        vec![walker],
+        vec![],
+        vec![],
+    )]);
+    assert!(
+        render_text(view(), &appeared)
+            .lines()
+            .any(|line| line.contains("@.C"))
+    );
+    let moved = actor_entity(EntityKind::Creature, 1, position(2, 1));
+    let after_move = appeared.apply_events(&[entities_event(
+        7,
+        position(0, 0),
+        vec![],
+        vec![moved],
+        vec![],
+    )]);
+    assert!(
+        !render_text(view(), &after_move)
+            .lines()
+            .any(|line| line.contains("@.C"))
+    );
+    assert_eq!(
+        after_move.top_entity_at(Tile {
+            x: 2,
+            y: 1,
+            floor: 0
+        }),
+        Some(&moved)
+    );
+    let gone = after_move.apply_events(&[entities_event(
+        8,
+        position(0, 0),
+        vec![],
+        vec![],
+        vec![moved.entity],
+    )]);
+    assert!(!render_text(view(), &gone).contains('C'));
+    assert_eq!(gone.entities.len(), 1);
+}
+
+#[test]
+fn each_kind_has_its_own_glyph_and_the_own_actor_stays_an_at_sign() {
+    let drawn = entity_model().apply_events(&[entities_event(
+        6,
+        position(0, 0),
+        vec![
+            actor_entity(EntityKind::Player, 1, position(1, 0)),
+            actor_entity(EntityKind::Creature, 2, position(2, 0)),
+            object_entity(EntityKind::Corpse, 3, position(3, 0)),
+            object_entity(EntityKind::GroundItem, 4, position(4, 0)),
+        ],
+        vec![],
+        vec![],
+    )]);
+    let text = render_text(view(), &drawn);
+    assert!(text.lines().any(|line| line.contains("@PCxi")), "{text}");
+    assert_eq!(text.matches('@').count(), 1);
+}
+
+#[test]
+fn a_click_selects_the_top_entity_creature_then_player_then_corpse_then_item() {
+    let at = position(1, 0);
+    let tile = Tile {
+        x: 1,
+        y: 0,
+        floor: 0,
+    };
+    let stacked = vec![
+        object_entity(EntityKind::GroundItem, 4, at),
+        object_entity(EntityKind::Corpse, 3, at),
+        actor_entity(EntityKind::Player, 1, at),
+        actor_entity(EntityKind::Creature, 2, at),
+    ];
+    let mut current = entity_model().apply_events(&[entities_event(
+        6,
+        position(0, 0),
+        stacked.clone(),
+        vec![],
+        vec![],
+    )]);
+    for expected in [
+        EntityKind::Creature,
+        EntityKind::Player,
+        EntityKind::Corpse,
+        EntityKind::GroundItem,
+    ] {
+        let top = current.top_entity_at(tile).copied();
+        assert_eq!(top.map(|entity| entity.kind), Some(expected));
+        let selected = current.select_at(tile);
+        assert_eq!(selected.selected, top.map(|entity| entity.entity));
+        assert!(render_text(view(), &selected).contains("| selected "));
+        // remove the top one and the next kind is on top
+        let leave = top.map(|entity| entity.entity).into_iter().collect();
+        current = selected.apply_events(&[entities_event(
+            6 + 1 + u64::from(expected as u8),
+            position(0, 0),
+            vec![],
+            vec![],
+            leave,
+        )]);
+        assert_eq!(
+            current.selected, None,
+            "a selected entity that leaves is cleared"
+        );
+    }
+    assert_eq!(current.top_entity_at(tile), None);
+    assert_eq!(current.select_at(tile).selected, None);
+}
+
+#[test]
+fn the_own_actor_is_not_selectable_and_a_move_recentres_the_view() {
+    let current = entity_model();
+    assert_eq!(
+        current.top_entity_at(Tile {
+            x: 0,
+            y: 0,
+            floor: 0
+        }),
+        None
+    );
+    let own = actor_entity(EntityKind::Player, 0, position(1, 0));
+    let moved =
+        current.apply_events(&[entities_event(6, position(1, 0), vec![], vec![own], vec![])]);
+    assert_eq!(
+        moved.actor,
+        Tile {
+            x: 1,
+            y: 0,
+            floor: 0
+        }
+    );
+    assert!(!render_text(view(), &moved).contains('P'));
 }
 
 #[test]
@@ -759,4 +990,236 @@ fn grant_material_strips_trailing_line_endings_only() {
     assert_eq!(grant_material(b"a.b.c\r\n".to_vec()), b"a.b.c".to_vec());
     assert_eq!(grant_material(b"a.b.c".to_vec()), b"a.b.c".to_vec());
     assert_eq!(grant_material(b" a.b.c ".to_vec()), b" a.b.c ".to_vec());
+}
+
+// --- CHAT-CLIENT-1: the chat pane, the chat input lines and the viewport edge.
+
+fn chat_event(line: ChatLine, revision: u64) -> SessionEvent {
+    SessionEvent::ChatLine(AppliedDelta {
+        server_sequence: 50 + revision,
+        base_revision: revision,
+        new_revision: revision + 1,
+        value: line,
+    })
+}
+
+fn room_line(text: &str) -> ChatLine {
+    ChatLine::Room {
+        room: ChatRoom::Help,
+        speaker_name: "Ada".to_owned(),
+        text: text.to_owned(),
+    }
+}
+
+fn chat_outcome(disposition: ChatDisposition, wait_seconds: u32) -> ChatOutcome {
+    ChatOutcome {
+        command_id: 9,
+        status: CommandStatus::Accepted,
+        disposition,
+        wait_seconds,
+        result_server_sequence: 60,
+    }
+}
+
+#[test]
+fn chat_input_lines_map_to_every_intent() {
+    let say = |mode, text: &str| {
+        Some(LineCommand::Chat(ChatIntent::Say {
+            mode,
+            text: text.to_owned(),
+        }))
+    };
+    assert_eq!(
+        parse_line("say hello  there \n"),
+        say(ChatSpeechMode::Say, "hello  there")
+    );
+    assert_eq!(parse_line("yell HEY"), say(ChatSpeechMode::Yell, "HEY"));
+    assert_eq!(
+        parse_line("whisper psst"),
+        say(ChatSpeechMode::Whisper, "psst")
+    );
+    assert_eq!(
+        parse_line("pm Bob how are you"),
+        Some(LineCommand::Chat(ChatIntent::Private {
+            recipient_name: "Bob".to_owned(),
+            text: "how are you".to_owned(),
+        }))
+    );
+    assert_eq!(
+        parse_line("room 3 anyone?"),
+        Some(LineCommand::Chat(ChatIntent::Room {
+            room: ChatRoom::Help,
+            text: "anyone?".to_owned(),
+        }))
+    );
+    assert_eq!(
+        parse_line("open 1"),
+        Some(LineCommand::Chat(ChatIntent::OpenRoom(ChatRoom::World)))
+    );
+    assert_eq!(
+        parse_line("close 4"),
+        Some(LineCommand::Chat(ChatIntent::CloseRoom(
+            ChatRoom::Advertising
+        )))
+    );
+    for rejected in [
+        "say",
+        "say   ",
+        "pm Bob",
+        "room 5 x",
+        "room x y",
+        "open",
+        "open 9",
+        "close 1 2",
+    ] {
+        assert_eq!(parse_line(rejected), None, "{rejected}");
+    }
+    let at_bound = format!("say {}", "x".repeat(MAX_CHAT_TEXT_BYTES));
+    assert!(matches!(parse_line(&at_bound), Some(LineCommand::Chat(_))));
+    assert_eq!(parse_line(&format!("{at_bound}x")), None);
+    // Chat is not an input event.
+    assert!(
+        events_for(
+            LineCommand::Chat(ChatIntent::OpenRoom(ChatRoom::World)),
+            view(),
+            &model((0, 0), DoorState::Closed, 2)
+        )
+        .is_ok_and(|events| events.is_empty())
+    );
+}
+
+#[test]
+fn every_line_kind_renders_in_the_pane_with_the_dropped_marker() {
+    let speaker = ChatSpeaker {
+        identity: [9; 16],
+        generation: std::num::NonZeroU64::MIN,
+    };
+    let local = |mode| ChatLine::Local {
+        speaker,
+        speaker_name: "Bob".to_owned(),
+        mode,
+        text: "hi".to_owned(),
+        position: ActorPosition {
+            x: 1,
+            y: 1,
+            floor: 0,
+        },
+    };
+    let events = [
+        chat_event(local(ChatSpeechMode::Say), 0),
+        chat_event(local(ChatSpeechMode::Whisper), 1),
+        chat_event(local(ChatSpeechMode::Yell), 2),
+        chat_event(
+            ChatLine::Private {
+                speaker_name: "Cy".to_owned(),
+                text: "psst".to_owned(),
+            },
+            3,
+        ),
+        chat_event(room_line("anyone?"), 4),
+        chat_event(ChatLine::Dropped, 5),
+        SessionEvent::ChatRooms(AppliedDelta {
+            server_sequence: 70,
+            base_revision: 6,
+            new_revision: 7,
+            value: {
+                let mut set = ChatRoomSet::default();
+                set.insert(ChatRoom::World);
+                set.insert(ChatRoom::Help);
+                set
+            },
+        }),
+    ];
+    let start = model((0, 0), DoorState::Closed, 2);
+    let after = start.apply_events(&events);
+    // Applied while idle: the notice is kept, the pane changed.
+    assert_eq!(after.notice, Notice::Joined);
+    let text = render_text(view(), &after);
+    let pane: Vec<&str> = text
+        .lines()
+        .skip_while(|line| !line.starts_with("chat ["))
+        .collect();
+    assert_eq!(
+        pane,
+        [
+            "chat [World, Help]",
+            "Bob says: hi",
+            "Bob whispers: hi",
+            "Bob yells: hi",
+            "Cy (private): psst",
+            "[Help] Ada: anyone?",
+            "-- DROPPED: chat lines were lost --",
+        ]
+    );
+    // Without capability 7 there is no pane at all.
+    assert!(!render_text(view(), &start).contains("chat"));
+}
+
+#[test]
+fn the_pane_keeps_the_last_64_lines() {
+    let events: Vec<SessionEvent> = (0..=MAX_CHAT_LOG_LINES)
+        .map(|index| chat_event(room_line(&format!("line {index}")), index as u64))
+        .collect();
+    let after = model((0, 0), DoorState::Closed, 2).apply_events(&events);
+    assert_eq!(after.chat.lines.len(), MAX_CHAT_LOG_LINES);
+    assert_eq!(after.chat.lines.first(), Some(&room_line("line 1")));
+    assert_eq!(
+        after.chat.lines.last(),
+        Some(&room_line(&format!("line {MAX_CHAT_LOG_LINES}")))
+    );
+}
+
+#[test]
+fn muted_and_exhausted_show_their_wait_and_change_nothing_else() {
+    let start = model((0, 0), DoorState::Closed, 2).apply_events(&[chat_event(room_line("x"), 0)]);
+    for (disposition, wait, text) in [
+        (ChatDisposition::Muted, 30, "muted, wait 30 s"),
+        (
+            ChatDisposition::Exhausted,
+            1_280,
+            "chat exhausted, wait 1280 s",
+        ),
+    ] {
+        let after = start.apply_chat(&chat_outcome(disposition, wait));
+        assert_eq!(after.notice.text(), text);
+        assert_eq!(
+            RenderModel {
+                notice: Notice::Joined,
+                ..after
+            },
+            start
+        );
+    }
+    assert_eq!(
+        start
+            .apply_chat(&chat_outcome(ChatDisposition::Ok, 0))
+            .notice,
+        Notice::ChatSent
+    );
+    assert_eq!(
+        start
+            .apply_chat(&chat_outcome(ChatDisposition::RoomNotOpen, 0))
+            .notice,
+        Notice::ChatRefused
+    );
+    assert_eq!(ChatPane::default().lines.len(), 0);
+}
+
+#[test]
+fn cells_beyond_the_i32_world_alias_no_real_tile() {
+    // The actor stands at the maximum x: the cells to its east are off the world, and the entity
+    // at x = i32::MAX must be drawn once (under the actor's column), not repeated eastwards.
+    let mut edge = model((i32::MAX, 0), DoorState::Closed, 2);
+    let corpse = object_entity(
+        EntityKind::Corpse,
+        7,
+        ActorPosition {
+            x: i32::MAX,
+            y: -1,
+            floor: 0,
+        },
+    );
+    edge.entities.insert(corpse.entity, corpse);
+    let text = render_text(view(), &edge);
+    assert_eq!(text.matches('x').count(), 1, "{text}");
 }

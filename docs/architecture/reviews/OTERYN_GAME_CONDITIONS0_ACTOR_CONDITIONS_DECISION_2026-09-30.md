@@ -79,6 +79,7 @@ and show?
 - Player base speed = vocation base (110) + level − 1 (`player.cpp:7331-7339`); effective speed is
   clamped to at least 10 (`creature.cpp:1643`); monster speed is drawn once between half and all of
   its content speed (`monsters.cpp:153-154`).
+  **Amendment (pending on acceptance of CREATURE-MOVE-1-PACKET-1; `reviews/OTERYN_GAME_CREATURE_MOVE1_STEPS_PATHS_AND_GOALS_PACKET_2026-10-04.md` §1.2).** No spawn speed draw exists in Canary; a creature's base speed is its content `speed`, and `MONSTER_SPEED_DRAW` is retired.
 - Step duration: `floor(1000 × ground speed / step speed)` with
   `step speed = floor(857.36 × ln(speed + 261.29) − 4795.01 + 0.5)` (`creature.hpp:76-78,
   1061-1067`), rounded up to `SERVER_BEAT` (50 ms); × 3 for a diagonal step; × 2 for a monster
@@ -161,6 +162,7 @@ exists per conflict key.
 
 - **Draws** use named SIM RNG purposes: `COND_SPEED_DRAW`, `COND_DOT_TOTAL_DRAW`,
   `COND_CLEANSE_PICK`, and `MONSTER_SPEED_DRAW` at spawn (SPEED-1 with the AI-2 spawn owner).
+  **Amendment (pending on acceptance of CREATURE-MOVE-1-PACKET-1; `reviews/OTERYN_GAME_CREATURE_MOVE1_STEPS_PATHS_AND_GOALS_PACKET_2026-10-04.md` §1.2).** No spawn speed draw exists in Canary; a creature's base speed is its content `speed`, and `MONSTER_SPEED_DRAW` is retired.
 - **Tick order.** Ticks due in one simulation tick run in the key `(due tick, actor id, instance
   sequence)`, where the instance sequence is a per-actor monotonic u32 assigned at creation.
 - **Overload.** At most `COND0-RL-03` damage ticks per actor per simulation tick; later ones run in

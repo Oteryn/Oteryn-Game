@@ -22,7 +22,7 @@ from item_navigation_source_supplement import (
 from item_wiki_family_capture import split_template_params
 
 PATH = "imports/tibiawiki/facts/items-external-family18-20261001.json"
-SHA = "8c20a37b14b772ce63541dbd3894de3fc3dba3cd3222b07b9693de107e3680d6"
+SHA = "87813e341e88d8d46f28a1826a0536654e6a7894d5d98fdf43ff515032f36329"
 IDS = frozenset(
     {
         51443,

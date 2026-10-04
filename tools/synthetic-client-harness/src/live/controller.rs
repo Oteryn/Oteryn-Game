@@ -20,6 +20,12 @@ impl LiveController {
     pub fn new(session: DevClientSession, view: Viewport, input: LiveInput) -> Self {
         let mut model = RenderModel::from_snapshot(session.join_snapshot());
         model.vitals = session.actor_vitals().copied();
+        if let Some(store) = session.world_entities() {
+            model = model.with_entities(store);
+        }
+        if let Some(log) = session.chat_log() {
+            model.chat = super::model::ChatPane::from_log(log);
+        }
         Self {
             session,
             model,
@@ -74,6 +80,11 @@ impl LiveController {
                     .use_object(super::model::DOOR_PLACEMENT, expected_revision)
                     .await?;
                 self.model.apply_use(&outcome)
+            }
+            LiveCommand::Select(tile) => self.model.select_at(tile),
+            LiveCommand::Chat(intent) => {
+                let outcome = self.session.chat(&intent).await?;
+                self.model.apply_chat(&outcome)
             }
         };
         self.drain_events();
