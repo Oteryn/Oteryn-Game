@@ -491,7 +491,7 @@ pub(super) fn apply(
     }
     let before = CanonicalProjectDocuments::from_v2_draft(draft.clone(), limits())?;
     if document_tree_digest(&before) != predecessor_sha256 {
-        return Err(format!("enrichment complete predecessor drifted DIAG tree {predecessor_sha256} {}", document_tree_digest(&before)).into());
+        return Err("enrichment complete predecessor drifted".into());
     }
     let packet: Packet = serde_json::from_slice(bytes)?;
     if packet.schema != "OTERYN_NPC_BULK_ENRICHMENT/v1"

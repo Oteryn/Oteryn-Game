@@ -221,14 +221,14 @@ const NPC_APPEARANCE_INVISIBLE: &[u8] = include_bytes!(
 const NPC_APPEARANCE_INVISIBLE_SHA256: &str =
     "94ce471059d576dc4cadc3d06df22f395482b75443d061d5ef821515ac5bf3ca";
 const NPC_APPEARANCE_INVISIBLE_PREDECESSOR: &str =
-    "5a45ac77c95a5b2d92e35f5a3d5b710c24f5d8e4f83331f37da7e5d667f18409";
+    "5061dd31551721ad24d721a46063a719764797ee7c80142b732e8d4b082abfdd";
 const NPC_QUEST_DIALOGUE: &[u8] = include_bytes!(
     "../../../docs/agents/evidence/OTV2-20261002-npc-enrichment-r28/native-enrichment.json"
 );
 const NPC_QUEST_DIALOGUE_SHA256: &str =
     "4dfa43f6fda9a58dcf9f7e83da21203f63d1f7b66f0e6136f34848ee5ccd6d47";
 const NPC_QUEST_DIALOGUE_PREDECESSOR: &str =
-    "78de975bef145dfce764eba857e2936fceb3e9a5f70cf565f0f6ce6e63c44fbb";
+    "b5ff42ba4492c5533c057fb70af45c4b75c8d16191a2a08091b214682c5d8f05";
 fn quest_dialogue_provisional(
     draft: ProjectV2Draft,
 ) -> Result<ProjectV2Draft, Box<dyn std::error::Error>> {
