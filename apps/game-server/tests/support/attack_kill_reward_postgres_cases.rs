@@ -8,10 +8,9 @@
 
 use crate::character_recovery_fence::CharacterRecoveryStore;
 use crate::combat::{
-    CombatDeathRewardLootError, CombatDeathRewardXpError, CreatureDeathRewardInput,
-    DeathGroundContext, DurabilitySession, LootDefinitionRef, LootSelectionAlgorithm,
-    LootTableDefinition, LootTableEntry, RewardPrincipal, RewardProgressionBinding,
-    settle_creature_death_rewards,
+    CreatureDeathRewardInput, DeathGroundContext, DurabilitySession, LootDefinitionRef,
+    LootSelectionAlgorithm, LootTableDefinition, LootTableEntry, RewardPrincipal,
+    RewardProgressionBinding, settle_creature_death_rewards,
 };
 use crate::domain::CharacterId;
 use crate::domain::progression::{
@@ -20,13 +19,10 @@ use crate::domain::progression::{
 use crate::durability::DurabilityRoot;
 use crate::durability::admission_authority_guards::GuardPublicationDisposition;
 use crate::durability::character_progression::{
-    CharacterProgressionError, CurrentCharacterGameplayFence, ExperienceCommitOutcome,
+    CurrentCharacterGameplayFence, ExperienceCommitOutcome,
 };
 use crate::durability::character_revision_sequencer::CharacterRevisionSequencer;
-use crate::durability::item_mint::{
-    CORPSE_MATERIALIZATION_PURPOSE_KEY, GroundPlacement, ItemMintCause, ItemMintError,
-    ItemMintRequest, TypedDefinitionRef,
-};
+use crate::durability::item_mint::CORPSE_MATERIALIZATION_PURPOSE_KEY;
 use crate::durability::runtime_scope_assignment::{
     AssignmentCommand, AssignmentOutcome, AssignmentRequest, BootstrapSecret, ControlActor,
     LaunchBinding, NodeIncarnationProof, OperationKey, RuntimeScopeAssignmentWriter,

@@ -315,6 +315,10 @@ pub(crate) fn commit_exact_owner_damage(
 /// [`commit_exact_owner_damage`], committed under the swing identity `(lineage, swing_ordinal)`
 /// of [`crate::foundation::CurrentOwnerExactActorCommit::commit_swing_damage_for_bound_attacker`].
 /// The plan's own sub-occurrence must be 0: a swing plan has exactly one effect.
+#[allow(
+    dead_code,
+    reason = "tests/ability_engine.rs path-loads Ability without the Channel owner attack drain"
+)]
 pub(crate) fn commit_exact_owner_swing_damage(
     owner: &mut crate::foundation::CurrentOwnerExactActorCommit<'_>,
     resolved: &super::exact_actor_resolution::ResolvedExactActor,
