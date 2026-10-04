@@ -178,7 +178,7 @@ const NPC_ENRICH: &[u8] = include_bytes!(
 );
 const NPC_ENRICH_SHA256: &str = "fa06c44b10b6081b8389eb8cc3750b40dcc1fcb89dad71ab2e31807a6c0e2117";
 const NPC_ENRICH_PREDECESSOR: &str =
-    "cc23f63d16a32072b8b21d0a2fd9d1ea05d1ed0e7113b460919a5c8c3daac7bf";
+    "d509863e69ce5e1782c26c7dfbf1c60459cd7bf5a92ddf529597e25d1540bcc7";
 const NPC_ENRICH_MORE: &[u8] = include_bytes!(
     "../../../docs/agents/evidence/OTV2-20261002-npc-enrichment-r22/native-enrichment.json"
 );
