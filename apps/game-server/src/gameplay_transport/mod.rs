@@ -584,7 +584,8 @@ const QUEST_OBLIGATION_RETRY: Duration = Duration::from_secs(60);
 const QUEST_RETRY_CADENCE: Duration = Duration::from_secs(10);
 
 /// The write-fence token of one transition (CHARM-DESC-FENCE-LEASE §3 item 2): the lost epoch
-/// for grace expiry, otherwise a transition id the Channel owner minted.
+/// for grace expiry and the D449 capability-mismatch release, otherwise a transition id the
+/// Channel owner minted.
 #[derive(Clone, Copy)]
 enum TransitionFence {
     GraceExpiry(u64),
@@ -649,6 +650,22 @@ enum TerminalRelease {
     /// D449: a lost session whose otherwise valid resume lacked a selected capability, at the
     /// exact loss epoch the resume verified.
     CapabilityMismatch(ControlLossEpochRefV1),
+}
+
+impl TerminalRelease {
+    /// The write-fence token of the release. The mismatch release fences with its lost epoch,
+    /// as grace expiry does: its own retry and grace expiry join that fence instead of waiting
+    /// on it, a resume of the epoch that wins the race lifts it (`restore_control`), and once
+    /// control is restored no mismatch attempt can fence the slot again. An abandoned resumed
+    /// session has no loss mark, so its release mints a transition id.
+    fn fence(self, runtime: &mut ChannelRuntimeV1) -> Result<TransitionFence, CarrierError> {
+        match self {
+            Self::Abandoned(_) => runtime
+                .mint_transition_fence()
+                .map(TransitionFence::Transition),
+            Self::CapabilityMismatch(epoch) => Ok(TransitionFence::GraceExpiry(epoch.get())),
+        }
+    }
 }
 
 /// Step (c) of a transition whose durable attempt did not end the hold.
@@ -962,13 +979,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let session = admitted.game_session_id;
         let store = FreshAdmissionStore::from_root(self.root.clone());
         let account_id = canonical_uuid(&controller.account_id);
-        let Ok(token) = self
-            .runtime
-            .lock()
-            .await
-            .mint_transition_fence()
-            .map(TransitionFence::Transition)
-        else {
+        let Ok(token) = release.fence(&mut *self.runtime.lock().await) else {
             return GraceExpiryResult::Unknown;
         };
         let mut backoff = RECONCILE_BACKOFF;
@@ -3606,6 +3617,87 @@ mod tests {
                 "{label}"
             );
         }
+    }
+
+    /// D449 (#1708 Codex P1 4175882774): the capability-mismatch release fences with the lost
+    /// epoch. Its retry and grace expiry join that fence, a compatible resume that wins the race
+    /// lifts it when it restores control, and no mismatch attempt can fence the slot again
+    /// afterwards, so an unproven mismatch release never leaves a fence behind a resumed session.
+    #[test]
+    fn capability_mismatch_fence_is_lifted_by_a_winning_resume() {
+        use crate::foundation::{ChannelContentPin, CharacterLease, NodeId};
+        let world_id = WorldId::decode(&uuid_v7(0x60)).expect("world");
+        let mut runtime = ChannelRuntimeV1::from_committed_assignment(
+            world_id,
+            ChannelId::decode(&uuid_v7(0x61)).expect("channel"),
+            NodeId::decode(&uuid_v7(0x62)).expect("node"),
+            1,
+            1,
+            1,
+            "runtime-scope-assignment:1",
+            2,
+            ChannelContentPin::test(world_id),
+        )
+        .expect("channel runtime");
+        let session = GameSessionId::decode(&uuid_v7(0x63)).expect("session");
+        let reservation = runtime.reserve_fresh_session(session).expect("reserve");
+        let actor = runtime.commit_fresh_session(reservation).expect("commit");
+        let character = CharacterId::decode(&CHARACTER).expect("character");
+        runtime
+            .bind_attacker_lease(
+                actor,
+                session,
+                CharacterLease::new(character, 1).expect("lease"),
+            )
+            .expect("bind lease");
+        runtime
+            .record_control_loss(
+                actor,
+                session,
+                ControlLossMark {
+                    epoch: 1,
+                    grace_deadline: 160,
+                },
+            )
+            .expect("loss");
+        let epoch = ControlLossEpochRefV1::new(1).expect("epoch");
+        let mismatch = TerminalRelease::CapabilityMismatch(epoch)
+            .fence(&mut runtime)
+            .expect("mismatch token");
+        mismatch
+            .fence(&mut runtime, actor, session)
+            .expect("mismatch fences");
+        // A retry of the mismatch release and grace expiry of the same epoch join the fence.
+        let retry = TerminalRelease::CapabilityMismatch(epoch)
+            .fence(&mut runtime)
+            .expect("retry token");
+        assert_eq!(retry.fence(&mut runtime, actor, session), Ok(()));
+        assert_eq!(
+            TransitionFence::GraceExpiry(1).fence(&mut runtime, actor, session),
+            Ok(())
+        );
+        // Any other transition waits on it.
+        let other = TerminalRelease::Abandoned(
+            AuthenticatedTransportRefV1::decode(&[7; 16]).expect("transport"),
+        )
+        .fence(&mut runtime)
+        .expect("other token");
+        assert_eq!(
+            other.fence(&mut runtime, actor, session),
+            Err(CarrierError::WriteFenceBusy)
+        );
+        // The compatible resume wins: restoring control of the epoch lifts the mismatch fence,
+        // with no durable read and no lost entry needed.
+        assert_eq!(runtime.restore_control(actor, session, 1), Ok(()));
+        assert_eq!(mismatch.lift(&mut runtime, actor, session), Ok(false));
+        assert_eq!(other.fence(&mut runtime, actor, session), Ok(()));
+        assert_eq!(other.lift(&mut runtime, actor, session), Ok(true));
+        // A late mismatch attempt can no longer fence the resumed slot.
+        assert_eq!(
+            retry.fence(&mut runtime, actor, session),
+            Err(CarrierError::ControlLossConflict)
+        );
+        assert_eq!(other.fence(&mut runtime, actor, session), Ok(()));
     }
 
     #[test]
