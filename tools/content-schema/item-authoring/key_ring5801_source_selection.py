@@ -9,7 +9,7 @@ SCOPE = frozenset({"physical.weight", "container.capacity"})
 MANIFEST = (
     "docs/agents/evidence/OTV2-20261001-item5801-temporal-source-qualification-v1.json"
 )
-MANIFEST_SHA256 = "07713ba72db6cb4106fc6f5b28bd27af93f3e9367676ccd6942dd6b8dc607898"
+MANIFEST_SHA256 = "17914d3393dbfbba7babd417dbd98246500b04d19c8aeb5bf0afc341561d42ea"
 
 
 def require(condition, reason):

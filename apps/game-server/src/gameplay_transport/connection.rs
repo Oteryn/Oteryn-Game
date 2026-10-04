@@ -31,7 +31,7 @@ use super::tcp_tls::{FrameReader, read_frame, write_frame};
 use super::world_object::{
     COMMAND_TYPE_USE_INTENT, DELTA_TYPE_WORLD_OBJECT_OVERLAY_V1,
     SNAPSHOT_TYPE_WORLD_OBJECT_OVERLAY_V1, STATE_DOMAIN_WORLD_OBJECT_OVERLAY, UseDisposition,
-    UseTarget, WorldObjectOverlayEntry, decode_use_intent_target, encode_use_result,
+    UseIntent, UseTarget, WorldObjectOverlayEntry, decode_use_intent_target, encode_use_result,
     encode_world_object_overlay_delta, encode_world_object_overlay_snapshot,
 };
 use super::world_spatial::{
@@ -1368,9 +1368,22 @@ where
                 admitted.continuity.selected_capabilities.as_slice(),
                 command.payload,
             ) {
+                // ITEM-USE-WIRE-1: fields 4 and 5 decode only under capability 15. Until ITEM-USE-1
+                // no item is usable on a creature or by its definition, so a use_with fails closed
+                // and a use by definition finds nothing to use.
+                Ok(UseIntent {
+                    use_with: Some(_), ..
+                }) => Dispatch::Use(UseOutcome::rejected()),
+                Ok(UseIntent {
+                    target: UseTarget::ItemByDefinition(_),
+                    use_with: None,
+                }) => Dispatch::UseItem(OpenDecision::NothingToUse, None),
                 // ITEM-VIEW-1b §4.3: a handle that is not live is STALE before any authority
                 // call; opening writes nothing.
-                Ok(UseTarget::Item(handle)) => {
+                Ok(UseIntent {
+                    target: UseTarget::Item(handle),
+                    use_with: None,
+                }) => {
                     let key = item_view.as_ref().and_then(|view| view.resolve(handle));
                     // BAGS-WIRE-1: with capability 14 a container in reach opens in a new view,
                     // and one out of reach is TOO_FAR; anything else takes the corpse path.
@@ -1424,7 +1437,10 @@ where
                         _ => Dispatch::UseItem(OpenDecision::StaleState, None),
                     }
                 }
-                Ok(UseTarget::WorldObject(target)) => Dispatch::Use(
+                Ok(UseIntent {
+                    target: UseTarget::WorldObject(target),
+                    use_with: None,
+                }) => Dispatch::Use(
                     authority
                         .use_object(
                             actor,

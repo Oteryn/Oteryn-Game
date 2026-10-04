@@ -11,7 +11,7 @@ base = names.base
 ROOT = base.ROOT
 COMPILER = "tools/content-schema/item-authoring/lower_item_hit_magic_packet.py"
 PROOF = "docs/agents/evidence/OTV2-20261002-item-hit-magic-source-qualification-v1.json"
-PROOF_SHA = "8ed86b84d85133be623b6e2faabbe636c0a517a48511c7b2c64d6c6374187e52"
+PROOF_SHA = "b5504e03b776c771e36b2ab63b6104abad0c730e7ecaba68d0ef1c2fef766c8c"
 OUTPUT = ROOT / "docs/agents/evidence/OTV2-20261002-item-hit-magic-promotion-v1.json"
 
 

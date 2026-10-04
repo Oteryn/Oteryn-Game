@@ -88,6 +88,7 @@ deterministic without ever blocking the channel writer?
   "target choice stays with GAME-AI-01"; a protection zone and re-entry protection refuse attacks.
   CONDITIONS-0 §4: step duration, × 2 near the target, creature base speed drawn at spawn
   (`MONSTER_SPEED_DRAW`), and a requested GAME-AI-01 cadence amendment (§4.3).
+  **Amendment (pending on acceptance of CREATURE-MOVE-1-PACKET-1; `reviews/OTERYN_GAME_CREATURE_MOVE1_STEPS_PATHS_AND_GOALS_PACKET_2026-10-04.md` §1.2).** No spawn speed draw exists in Canary; a creature's base speed is its content `speed`, and `MONSTER_SPEED_DRAW` is retired.
 - Content (`content/creatures/definitions/`, 1,503 creatures; `content/behaviors/`, 2,605
   profiles): `targeting {hostile, can_target, target_distance_tiles, static_attack_chance_ppm,
   flee_health, sense_invisible, change_target {interval_ms, chance_ppm}, strategy_weights
@@ -352,6 +353,7 @@ Every draw uses a SIM purpose seeded by (creature `ExactActorRef`, think sequenc
 - At channel activation the owner realizes every active point of the active bundle in canonical order
   (source key, point ordinal), at most `RL-14` per window, each as a fresh actor-local generation
   with its speed drawn (`MONSTER_SPEED_DRAW`), before the channel admits players (`RL-15`).
+  **Amendment (pending on acceptance of CREATURE-MOVE-1-PACKET-1; `reviews/OTERYN_GAME_CREATURE_MOVE1_STEPS_PATHS_AND_GOALS_PACKET_2026-10-04.md` §1.2).** No spawn speed draw exists in Canary; a creature's base speed is its content `speed`, and `MONSTER_SPEED_DRAW` is retired.
 - One live or pending creature per point, ever.
 - A point is **active** when its period is `All`. A point with another period is compiled and
   listed in the parity report but is outside the activation set and `RL-15`, and is never

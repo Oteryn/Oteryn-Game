@@ -313,6 +313,12 @@ impl RenderModel {
             UseDisposition::StaleState => Notice::DoorStale,
             UseDisposition::TooFar => Notice::DoorTooFar,
             UseDisposition::Rejected => Notice::DoorRejected,
+            // ITEM-USE-WIRE-1: item-use dispositions; the harness selects no capability 15, so they
+            // never decode.
+            UseDisposition::RequirementNotMet
+            | UseDisposition::Exhausted
+            | UseDisposition::Full
+            | UseDisposition::NoTarget => Notice::DoorRejected,
         };
         next
     }
