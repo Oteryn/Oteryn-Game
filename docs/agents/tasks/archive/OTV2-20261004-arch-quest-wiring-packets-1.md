@@ -36,6 +36,11 @@ external_repositories: []
   existing refusal (§1.2).
 - Chest bindings are generated from exact claim-marker to track-key matches only, and boot checks
   that each one exists in the catalogue (§1.4).
+- **#1789 round 1, 4179178967, 4179178971, 4179178983 and 4179178977:**
+  - the `canary:quest-progress/` normalization has test vectors (§1.4);
+  - the binding is proven on the served path, and serving imported chests stays undecided (§1.5);
+  - the mandatory decision test has been added (§4);
+  - the count accessor is in the QUEST-CAT-BOOT-1 owned paths (§1.1, §2.1).
 - No code, contract or wire change.
 
 ## Validation
