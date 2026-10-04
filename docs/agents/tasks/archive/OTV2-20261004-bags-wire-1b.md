@@ -9,6 +9,7 @@ repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/bags-wire-1b-20261004
 issue: 1622
+pr: 1730
 origin: Codex P2 on PR #1720 (head 9f00472), deferred under D245 to this follow-up
 migration_lease: none
 owned_paths:
@@ -37,6 +38,9 @@ owned_paths:
 
 ## Validation
 
-- `cargo test --locked -p oteryn-game-server --quiet`
-- `cargo fmt --check`, `cargo clippy --locked --all-targets -- -D warnings`
-- `python3 tools/agents/validate_governance.py`; `git diff --check`
+- `cargo test --locked -p oteryn-game-server --quiet`: pass
+- `cargo fmt --check`: pass
+- `cargo clippy --locked -p oteryn-game-server --all-targets -- -D warnings`: pass
+- `python tools/agents/validate_governance.py`: pass
+- `python -m unittest discover -s tools/agents/tests`: OK
+- `git diff --check`: pass
