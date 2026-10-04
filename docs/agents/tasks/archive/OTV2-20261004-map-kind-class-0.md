@@ -28,15 +28,18 @@ external_repositories: []
 
 ## Outcome
 
-- The 50 records have no bank, clip or bottom flag, so they are tile overlays and not ground,
-  border, wall, field or roof (packet §2).
-- R1: an id with a Terrain route by `primarytype_world_object` and no `terrain_kind` is rerouted to
-  WorldObject (`tile_primarytype_overlay`). Its kind is `teleport`, `object` or `decoration` by the
-  existing rule. That gives 19 decoration, 29 object and 2 teleport records, with no hold (packet
-  §3).
-- Palette keys, format v2 and the compiler stay unchanged (packet §3).
-- Follow-up: MAP-KIND-CLASS-1 implements R1, with its acceptance criteria and its stop condition,
-  before MAP-CUTOVER-1 (packet §4).
+- The 50 records have no bank, clip or bottom flag, so they are not ground. 342 tiles have one of
+  them as their first item, and none of those tiles has a ground item (packet §2).
+- R1: no identity migration. All 65 records keep their Terrain route and key (WO-0 §4.1).
+- R2: a last `terrain_kind` rule makes an unmatched `artificial tiles` or `natural tiles` record a
+  `border`. Format v2, the compiler and the reader stay unchanged (packet §3).
+- R4: the 342 first-item tiles stay groundless, not walkable and at speed 0
+  (MAP-LOAD-PACKET-1 §1.3). The 9 walkable-flagged tiles are listed, and there is no hold
+  (packet §2.2, §3).
+- #1756 P1 4177405497 (the stop condition fired) and P1 4177405504 (no family move) are answered
+  by R1-R4 and the restated acceptance in packet §4.
+- Follow-up: MAP-KIND-CLASS-1, before MAP-CUTOVER-1. Its parity target is border 3503,
+  `unknown_kind` 0, with every other count unchanged (packet §4).
 - No code, contract or wire change.
 
 ## Validation
