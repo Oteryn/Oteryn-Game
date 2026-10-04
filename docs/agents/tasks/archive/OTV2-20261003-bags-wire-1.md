@@ -37,9 +37,6 @@ owned_paths:
 - D469 2a: the row `ITEMV0-RL-03-CONTAINER-TREE` = 637 with max and max+1 tests.
 - D470 2a: `BAGS0-RL-04` is 10 view commands per second on a sliding window; an over-rate command is
   `REJECTED` with an empty payload.
-- Review round 1 (Codex P2 on 9f00472): the `BAGS0-RL-04` window is per GameSession. It moved from
-  the connection's `ContainerViewState` into `ItemViewContinuity`, so a reconnect, resume or
-  transfer no longer resets it.
 
 ## Outcome
 
