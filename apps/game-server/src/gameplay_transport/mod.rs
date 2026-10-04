@@ -1040,7 +1040,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 Ok(ExpiredLossReleaseV1::NotApplicable) => {
                     match self.settle_unended(&store, actor, hold).await {
                         UnendedSettle::Lifted => return GraceExpiryResult::NotApplicable,
-                        UnendedSettle::Terminal => return self.retire(session, actor).await,
+                        UnendedSettle::Terminal => {
+                            return self
+                                .retire_reconciled(controller.account_id, session, actor)
+                                .await;
+                        }
                         UnendedSettle::Unknown => next_backoff(),
                     }
                 }
@@ -1050,7 +1054,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             Duration::from_secs(u64::try_from(deadline - now).unwrap_or(0))
                                 .saturating_add(EXPIRY_SLACK)
                         }
-                        UnendedSettle::Terminal => return self.retire(session, actor).await,
+                        UnendedSettle::Terminal => {
+                            return self
+                                .retire_reconciled(controller.account_id, session, actor)
+                                .await;
+                        }
                         UnendedSettle::Unknown => next_backoff(),
                     }
                 }
@@ -1126,6 +1134,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             Err(_) => GraceExpiryResult::Unknown,
         }
+    }
+
+    /// PREM-1b (D476, #1722 Codex P2 4176492358): a release whose durable attempt did not end
+    /// the session, but whose reconciliation found it TERMINAL, retires it and stops its Premium
+    /// pulls like a proven release does.
+    async fn retire_reconciled(
+        &self,
+        account_id: [u8; 16],
+        session: GameSessionId,
+        actor: ExactActorRef,
+    ) -> GraceExpiryResult {
+        self.release_premium(account_id, session);
+        self.retire(session, actor).await
     }
 
     /// PREM-1b: start (or wake) the account's Premium pulls for `session`.
@@ -1212,7 +1233,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     ExpiredLossReleaseV1::NotApplicable | ExpiredLossReleaseV1::NotExpired { .. },
                 ) => match self.settle_unended(&store, actor, &mut hold).await {
                     UnendedSettle::Lifted => return GraceExpiryResult::NotApplicable,
-                    UnendedSettle::Terminal => return self.retire(session, actor).await,
+                    UnendedSettle::Terminal => {
+                        return self
+                            .retire_reconciled(controller.account_id, session, actor)
+                            .await;
+                    }
                     UnendedSettle::Unknown => next_backoff(),
                 },
                 Ok(ExpiredLossReleaseV1::Released { .. } | ExpiredLossReleaseV1::Terminal) => {
@@ -1230,8 +1255,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             // retry can repeat the release.
             return match self.settle_unended(&store, actor, &mut hold).await {
                 UnendedSettle::Terminal => {
-                    self.release_premium(controller.account_id, session);
-                    self.retire(session, actor).await
+                    self.retire_reconciled(controller.account_id, session, actor)
+                        .await
                 }
                 UnendedSettle::Lifted | UnendedSettle::Unknown => GraceExpiryResult::Unknown,
             };
@@ -3888,6 +3913,26 @@ mod tests {
         // Grace expiry or a mismatch release of a sole session stops them at once.
         sessions.admit(account, old);
         assert!(sessions.release(account, old));
+    }
+
+    /// PREM-1b (D476, #1722 Codex P2 4176492358): a reconciled TERMINAL settle releases the
+    /// session's registration like a proven release. When a joined release of the same session
+    /// already released it, the second release is a no-op and a successor keeps its pulls.
+    #[test]
+    fn a_reconciled_terminal_release_stops_premium_once() {
+        let account = [7; 16];
+        let lost = GameSessionId::decode(&uuid_v7(0x72)).expect("lost");
+        let successor = GameSessionId::decode(&uuid_v7(0x73)).expect("successor");
+        let mut sessions = PremiumSessions::default();
+        sessions.admit(account, lost);
+        // The abandoned release's attempt is unended; its reconciliation finds TERMINAL.
+        assert!(sessions.release(account, lost));
+        // Grace expiry of the same session, joined on its fence, reconciles TERMINAL too.
+        assert!(!sessions.release(account, lost));
+        // A successor admitted afterwards is untouched by any later reconciliation.
+        sessions.admit(account, successor);
+        assert!(!sessions.release(account, lost));
+        assert!(sessions.release(account, successor));
     }
 
     /// D449 (#1708 Codex P1 4175882774): the capability-mismatch release fences with the lost
