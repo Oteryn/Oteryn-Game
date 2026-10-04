@@ -154,10 +154,21 @@ It then gets the entry's compiler `placement_key` and cell.
   - none for any other key.
 - `appearance_tibia_id` stays source evidence, and some chest appearances are not Items
   (`tools/content-schema/reward-claim-authoring/README.md`). The rule compares two appearance
-  ids, so a chest whose appearance is not an Item still binds. Appearances 28827 and 28828 are
-  provisional donor keys in today's palette and bind this way.
-- A provisional key stays under the ADR-0021 §4.5 production gate of the bundle itself. The
-  binding adds no gate of its own for it.
+  ids, so a chest whose appearance is not an Item still binds, once the bundle keeps its entry.
+- **Provisional chest entries are not in the bundle yet.** The compiler leaves out every
+  provisional entry: a non-production build skips it, and a production build is refused
+  (`tools/world-bundle-compiler/src/compile.rs`, ADR-0021 §4.5). So a chest whose palette key
+  is provisional has no entry in `WorldBase`.
+  - Today these are the 2 ready claims on appearances 28827 and 28828, out of 219, with
+    2 of the 234 placements.
+  - They are **not ready to serve until admission.** On the non-production pin they are
+    unbound with `NO_ENTRY`, left out and counted (§1.5). They are listed by claim key as
+    expected `NO_ENTRY` in the CHEST-PLACE-BIND-1 task record. A production pin cannot exist
+    while the bundle has provisional keys, so they never reach the production boot gate.
+  - **Admission:** CHEST-APPEARANCE-ADMIT-1, a content-lane packet allocated by the control
+    plane after this batch and outside its DAG. It admits the two donor keys as Oteryn
+    definitions under ADR-0021 §4.5, so the compiler keeps their entries. The two claims then
+    bind under this rule with no change here.
 
 Otherwise it is **unbound**, with exactly one reason:
 
@@ -191,6 +202,7 @@ placements are bound.
     function in `apps/game-server/src/content/world_activation.rs` (WORLD-CONTENT-SERVE-1). It
     is the domain tag `oteryn:world-activation/server/v1`, followed by:
     - the bundle digest and the pin's `content_revision`;
+    - the pin's `entry_start`, as native `(x, y, floor)`;
     - each served claim, in canonical `PlacementKey` order, with its bound cell and bundle
       `placement_key` and its quest transition (CHEST-QUEST-BIND-1);
     - the canonical projection of every runtime definition the served path reads: the
@@ -199,6 +211,8 @@ placements are bound.
     - the digest of the quest catalogue the World loads (QUEST-CAT-BOOT-1).
   - Changing any of these changes the bytes and so the digest. A semantic change to a referenced
     Item therefore gives a new activation, even when the claims and the bundle are unchanged.
+  - `entry_start` is in the artifact because the node places first logins there (§2.4). A
+    change to it alone is a new activation.
   - **Client artifact.** `WorldActivationClientV1` is `oteryn:world-activation/client/v1`
     followed by the bundle digest, because the client reads nothing beyond the bundle-bound
     view.
@@ -410,8 +424,12 @@ validation:
   - the palette appearance id is `<id>` for an `oteryn:item.tibia.i<id>` and an
     `oteryn:terrain.tibia.i<id>` key, `source_item_id` for a provisional donor key, and `None`
     for any other key;
-  - a chest whose appearance is not an Item binds through a provisional donor key, as 28827 and
-    28828 do in today's palette.
+  - a fixture chest whose appearance is not an Item, under an admitted Item or Terrain key,
+    binds;
+  - a fixture chest under a provisional donor key has no entry in a non-production fixture
+    bundle, and is `NO_ENTRY`;
+  - over the real non-production bundle, exactly the two claims on 28827 and 28828 are
+    `NO_ENTRY` for that reason, listed in the task record.
 - **Not in scope:** calling it from the node (§2.4), quest bindings (#1789), a compiler or
   format change, and any `map/` change beyond the `unique` table.
 
@@ -465,8 +483,11 @@ validation:
   - A stale session generation or item fence is refused, and nothing is written.
   - On a production pin, one unbound candidate refuses boot with `ContentActivation`. On a
     non-production pin it is left out and counted.
-  - Changing the bundle digest, the served claim set, one reward Item's stack class or the quest
-    catalogue changes `server_artifact_digest`.
+  - Changing the bundle digest, the served claim set, one reward Item's stack class, the quest
+    catalogue or `entry_start` changes `server_artifact_digest`.
+  - Issuer and node: an issuance made for a pin, followed by a change to only that pin's
+    `entry_start`, refuses boot with `ContentActivation("digest")`. A fresh issuance for the
+    changed pin boots.
   - A bundle World becomes active only through `stage_primary` and `activate`: activation
     without an issuance, or under a non-quiescent guard, is refused, and the controller's
     active generation has the World artifact's identity.

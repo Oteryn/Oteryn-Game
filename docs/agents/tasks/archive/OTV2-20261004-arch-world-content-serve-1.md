@@ -65,6 +65,13 @@ external_repositories: []
     calls `activate`, which yields a non-Clone `WorldBundleContentPin`. WORLD-CONTENT-SERVE-1
     owns `activate_world_bundle` in `content/activation.rs` and the staging branch in
     `content/production.rs` (§0.2, §1.5, §2.4).
+- #1792 Codex round 3 (CP D617):
+  - P1 4179378371: the compiler drops provisional entries, so the 2 ready claims on 28827 and
+    28828 are not ready to serve until admission. On the non-production pin they are
+    `NO_ENTRY`, left out and counted. CHEST-APPEARANCE-ADMIT-1, a control-plane-allocated
+    content packet, admits them (§1.4).
+  - P1 4179378375: `entry_start` is part of `WorldActivationServerV1`. An issuer and node test
+    shows that a change to it alone refuses the prior issuance (§1.5, §2.4).
 - Durable rows keep canonical identities; the bundle `placement_key` stays in memory. No
   migration, wire or contract change (§1.6-§1.8).
 
