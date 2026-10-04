@@ -40,6 +40,9 @@ external_repositories: []
 - Five probes show a nonzero TibiaPal minimum and a low-skill maximum gap (§1.3). A failure to fit
   a closed form goes to the control plane as a QUESTION (§1.4).
 - No code, contract or wire change.
+- #1768 P1 4178014589: the gate asserts the mean as well as min and max. A uniform draw cannot
+  match TibiaPal's average, so those rows stay `PARITY_PENDING` with a checked-in residual list,
+  and the distribution goes to ATTACK-DIST-0.
 
 ## Validation
 

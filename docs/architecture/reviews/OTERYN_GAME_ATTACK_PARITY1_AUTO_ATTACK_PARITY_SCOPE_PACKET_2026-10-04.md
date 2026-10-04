@@ -103,16 +103,28 @@ ATTACK-0 §5 resolves divergences toward TibiaPal. So ATTACK-PARITY-1b:
 
 No new engine is built.
 
-The distribution between min and max is out of scope: the engine draws uniformly. The `avg`
-column is recorded but not asserted.
+**The average is part of the gate (#1768 P1 4178014589).** The engine draws uniformly between
+min and max, so its mean is `(min + max) / 2`. TibiaPal does not. For knight 100, 100 the uniform
+mean is 56.5, while TibiaPal reports 49. So a row that matches min and max can still differ in
+average damage, and matching min and max alone is not parity.
+
+1b computes the engine's exact mean for every row and asserts it against `raw.avg`. It does not
+change the draw distribution. The distribution is a separate decision, ATTACK-DIST-0: what
+TibiaPal's distribution is, and whether the formula engine needs a non-uniform draw. The control
+plane allocates it from 1b's residual report (§1.4).
 
 ### 1.4 Passing and failing
 
-A row passes when Oteryn's min and max each equal TibiaPal's, within the calculator's rounding
-(±1).
+A row passes when Oteryn's min, max and mean each equal TibiaPal's `raw.min`, `raw.max` and
+`raw.avg`, within the calculator's rounding (±1).
 
 - **Every row passes:** 1b sets `parity` to `MATCHED_TIBIAPAL` for the attack values only. The
   other values stay `PARITY_PENDING` (§1.1).
+- **Min and max pass, the mean does not:** this is the expected case under a uniform draw. The
+  attack values stay `PARITY_PENDING`, and no row or value is labelled `MATCHED_TIBIAPAL`. 1b
+  keeps its min and max corrections and asserts them. The test records each row's mean residual
+  as an expected failure list in the fixture comparison, not as a pass. 1b reports the residuals
+  on #162, and the control plane allocates ATTACK-DIST-0 (§1.3).
 - **No closed form fits every row:** 1b does not fit a lookup table. It matches what it can and
   reports the failing rows on #162. It sends the control plane a QUESTION with:
   - (a) keep the closest closed form and record the residual;
@@ -179,9 +191,12 @@ Acceptance:
 - `parity_tests.rs` loads the fixture and asserts min and max for every row, within ±1, under
   `FightMode::Offensive`. It first asserts that the Offensive `attack_factor` is 1.0 and that no
   row is monk (§1.1).
-- The constants file states its parity per value: `MATCHED_TIBIAPAL` for the Offensive attack
-  values of the four vocations, and `PARITY_PENDING` for the rest, including the Balanced and
-  Defensive factors and monk melee.
+- It also computes the engine's exact mean for every row and compares it with `raw.avg` (±1).
+  Rows whose mean differs are listed by key in a checked-in residual list. The test fails if a
+  row passes but is still listed, or fails but is not listed, so the list cannot go stale.
+- The constants file states its parity per value. It says `MATCHED_TIBIAPAL` for the Offensive
+  attack values of the four vocations only when every row passes min, max and mean (§1.4). Every
+  other value is `PARITY_PENDING`, including the Balanced and Defensive factors and monk melee.
 - The existing ATTACK-1a and 1b tests still pass. Any changed expected value is listed in the
   record with its fixture row.
 - If the rows do not all pass, follow §1.4.
@@ -189,6 +204,7 @@ Acceptance:
   - the Balanced and Defensive factors, monk melee, defence, armor, block and creature melee
     (§1.1);
   - distance weapons (RANGED-PARITY-1);
+  - changing the draw distribution (ATTACK-DIST-0, §1.3);
   - critical hits and charms.
 
 ## 3. Rejected options
@@ -196,6 +212,10 @@ Acceptance:
 - **Scraping the calculator page.** The page calls a JSON API, and the API is the stable surface.
 - **Live API calls in CI.** These are non-deterministic and depend on the network. The fixtures are
   captured once.
+- **Asserting min and max only.** A uniform 34-79 draw averages 56.5 against TibiaPal's 49. That
+  is a 15 % higher damage output under a `MATCHED_TIBIAPAL` label (#1768 P1 4178014589).
+- **Changing the distribution in 1b.** It may need a new draw shape in the engine. That needs its
+  own decision (ATTACK-DIST-0).
 - **A lookup table instead of formulas.** It hides the formula and grows with every level band. It
   is only option (b) of §1.4.
 - **Waiting for ATTACK-1b to capture.** The capture owns no shared path.
