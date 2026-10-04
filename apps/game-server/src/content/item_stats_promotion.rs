@@ -7,6 +7,8 @@
 //! switch: each row sets its field to the wiki value, replacing whatever an earlier promotion
 //! put there. A field the wiki is silent on is left as it is.
 //! Equipment rows contain one source-qualified pattern; absent restrictions remain Unknown.
+//! ITEM-SEM-2b-2 adds the non-quiver left-hand group and keeps the Extra slot free of
+//! equip requirements; promoted vocations are matched by the equip rule, not here.
 //! They do not grant materialization or a legal destination, and the main backpack retains
 //! its separately qualified starter admission. Declared charges and duration do not infer
 //! consumption, decay, activation, materialization or any other temporal behavior.
@@ -33,8 +35,8 @@ use std::collections::{BTreeMap, BTreeSet};
 pub const ITEM_STATS_PROMOTION_V2_PACKET: &[u8] =
     include_bytes!("../../../../docs/agents/evidence/OTV2-20260930-item-stats-promotion-v2.json");
 pub const ITEM_STATS_PROMOTION_V2_PACKET_SHA256: &str =
-    "3de9b9619c29c5a6e59f1eeafd74f9b1cb8471b2f2fcaec8f6d7c9dc5f0065a9";
-pub const ITEM_STATS_PROMOTION_V2_FIELD_COUNT: usize = 13_298;
+    "91d95020a1fe2b39f39210ea7fc7c05f85d2815fdeb85491cecf267c3757b9d0";
+pub const ITEM_STATS_PROMOTION_V2_FIELD_COUNT: usize = 13_304;
 pub const ITEM_STATS_PROMOTION_V2_ITEM_COUNT: usize = 6_533;
 const SCHEMA: &str = "OTERYN_ITEM_STATS_PROMOTION/v2";
 
@@ -457,29 +459,49 @@ fn set_field(
     })
 }
 
-// This packet lowers one observed equip pattern, never an arbitrary grammar.
+/// The one occupancy group of `domain/equipment.rs` the packet may name (ITEM-SEM-2b-2).
+pub const NON_QUIVER_LEFT_HAND_GROUP: &str = "oteryn:equipment-group.non_quiver_left_hand";
+
+// This packet lowers one observed equip pattern, never an arbitrary grammar (ITEM-SEM-2b-2 §2):
+// a two-handed weapon reserves the shield slot or, for a distance weapon, the non-quiver
+// left-hand group, which shields and spellbooks reserve too. The Extra slot carries no equip
+// requirement, and level 0 is no requirement.
 fn qualified_equipment_pattern(pattern: &ReferenceEquipmentPattern) -> bool {
+    use ReferenceEquipmentSlot::{Extra, Shield, Weapon};
     use ReferenceItemField::{Known, Unknown};
     let Known(primary) = pattern.primary_slot else {
         return false;
     };
+    let reserves_shield = match &pattern.additional_reserved_slots {
+        Unknown => false,
+        Known(slots) if slots.is_empty() => false,
+        Known(slots) if primary == Weapon && slots.as_slice() == [Shield] => true,
+        _ => return false,
+    };
+    let groups_qualified = match &pattern.mutually_exclusive_groups {
+        Unknown => true,
+        Known(groups) => {
+            groups.is_empty()
+                || (groups.len() == 1
+                    && groups[0].as_str() == NON_QUIVER_LEFT_HAND_GROUP
+                    && matches!(primary, Weapon | Shield)
+                    && !reserves_shield)
+        }
+        _ => false,
+    };
     pattern.pattern_id == 1
-        && matches!(pattern.mutually_exclusive_groups, Unknown)
+        && groups_qualified
         && matches!(pattern.compatibility_rule, Unknown)
-        && matches!(pattern.level, Known(_) | Unknown)
-        && match &pattern.additional_reserved_slots {
+        && match pattern.level {
             Unknown => true,
-            Known(slots) => {
-                slots.is_empty()
-                    || (primary == ReferenceEquipmentSlot::Weapon
-                        && slots.as_slice() == [ReferenceEquipmentSlot::Shield])
-            }
+            Known(level) => level > 0 && primary != Extra,
             _ => false,
         }
         && match &pattern.vocations {
             Unknown => true,
             Known(values) => {
-                !values.is_empty()
+                primary != Extra
+                    && !values.is_empty()
                     && values.len() <= 5
                     && values.windows(2).all(|pair| pair[0] < pair[1])
             }
@@ -705,11 +727,49 @@ mod tests {
                 "compatibility_rule",
                 serde_json::json!({"state": "KNOWN", "value": null}),
             ),
+            ("level", serde_json::json!({"state": "KNOWN", "value": 0})),
+            (
+                "mutually_exclusive_groups",
+                serde_json::json!({"state": "KNOWN", "value": [NON_QUIVER_LEFT_HAND_GROUP]}),
+            ),
+            (
+                "mutually_exclusive_groups",
+                serde_json::json!({"state": "KNOWN", "value": ["oteryn:equipment-group.other"]}),
+            ),
         ] {
             let mut invalid = pattern.clone();
             invalid[field] = bad;
             assert!(apply_pattern(invalid).is_err(), "{field}");
         }
+        // ITEM-SEM-2b-2: a two-handed bow and a shield reserve the non-quiver left-hand group.
+        let group = serde_json::json!({"state": "KNOWN", "value": [NON_QUIVER_LEFT_HAND_GROUP]});
+        let mut bow = pattern.clone();
+        bow["additional_reserved_slots"] = serde_json::json!({"state": "KNOWN", "value": []});
+        bow["mutually_exclusive_groups"] = group.clone();
+        assert!(apply_pattern(bow).is_ok());
+        let mut shield = pattern.clone();
+        shield["primary_slot"] = serde_json::json!({"state": "KNOWN", "value": "SHIELD"});
+        shield["additional_reserved_slots"] = serde_json::json!({"state": "KNOWN", "value": []});
+        shield["mutually_exclusive_groups"] = group.clone();
+        assert!(apply_pattern(shield.clone()).is_ok());
+        let mut helmet = shield;
+        helmet["primary_slot"] = serde_json::json!({"state": "KNOWN", "value": "HEAD"});
+        assert!(apply_pattern(helmet).is_err(), "group outside the hands");
+        // The Extra slot runs no level or vocation check.
+        let mut extra = pattern.clone();
+        extra["primary_slot"] = serde_json::json!({"state": "KNOWN", "value": "EXTRA"});
+        extra["additional_reserved_slots"] = serde_json::json!({"state": "KNOWN", "value": []});
+        assert!(
+            apply_pattern(extra.clone()).is_err(),
+            "extra with requirements"
+        );
+        extra["level"] = serde_json::json!({"state": "UNKNOWN"});
+        assert!(
+            apply_pattern(extra.clone()).is_err(),
+            "extra with vocations"
+        );
+        extra["vocations"] = serde_json::json!({"state": "UNKNOWN"});
+        assert!(apply_pattern(extra).is_ok());
     }
 
     #[test]
