@@ -40,6 +40,11 @@ fn transition_key(name: &str) -> String {
 /// The rats quest with XP-bearing transitions: `begin` (50), `again` (10, from any stage),
 /// `huge` (past the policy's terminal experience) and `plain` (none).
 fn catalogue() -> TestResult<Arc<QuestStateCatalogue>> {
+    catalogue_with_again(10)
+}
+
+/// [`catalogue`] with `again` awarding `again` experience.
+fn catalogue_with_again(again: i64) -> TestResult<Arc<QuestStateCatalogue>> {
     let transition = |name: &str, from, experience| QuestTransition {
         key: transition_key(name),
         quest: QUEST.into(),
@@ -63,7 +68,7 @@ fn catalogue() -> TestResult<Arc<QuestStateCatalogue>> {
             }],
             vec![
                 transition("begin", QuestComparison::Eq(-1), Some(50)),
-                transition("again", QuestComparison::Any, Some(10)),
+                transition("again", QuestComparison::Any, Some(again)),
                 transition("huge", QuestComparison::Any, Some(300)),
                 transition("plain", QuestComparison::Any, None),
             ],
@@ -704,6 +709,51 @@ fn quest_xp_guards_reject_rows_without_their_receipts() -> TestResult {
         expect_rejected(pool, "seventeenth obligation", &script, XP_CAPACITY).await?;
         drop(authority);
         drop(seal);
+        Ok(())
+    })
+}
+
+#[test]
+fn a_reward_edit_is_a_revision_mismatch_for_a_quest_in_progress() -> TestResult {
+    run("quest_xp_reward_edit", async |harness| {
+        let pool = &harness.pool;
+        let seal = harness.recovery.seal_current().map_err(debug)?;
+        let authority = harness
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        // `plain` pins the quest at content-1.
+        committed(transition(harness, &authority, 1, request("plain", 1)?).await?)?;
+        let before = snapshot(pool).await?;
+        // A catalogue that changes only `again`'s reward (QUEST-STATE-0 §6, QUEST-XP-1b): the
+        // definition hash differs, so the pinned Character is refused and no obligation is written
+        // with the new amount under the old pin.
+        let edited = catalogue_with_again(20)?;
+        assert_ne!(
+            edited.definition_hash(QUEST),
+            catalogue()?.definition_hash(QUEST)
+        );
+        let outcome = harness
+            .root
+            .commit_character_quest_transition(
+                &authority,
+                &harness.node,
+                fence(2)?,
+                request("again", 2)?,
+                edited,
+            )
+            .await
+            .map_err(debug)?;
+        assert_eq!(
+            outcome,
+            QuestTransitionOutcome::Refused(QuestRefusal::RevisionMismatch)
+        );
+        assert_eq!(snapshot(pool).await?, before);
+        assert!(obligations(pool).await?.is_empty());
+        // The pinned definition still commits and owes its reward, 10.
+        let receipt = committed(transition(harness, &authority, 2, request("again", 3)?).await?)?;
+        assert_eq!(obligation_of(&receipt)?.amount, 10);
         Ok(())
     })
 }
