@@ -541,7 +541,9 @@ async fn establish_custody(
 
 /// QUEST-CAT-BOOT-1 (ARCH-QUEST-WIRING-PACKETS-1 §1.1): the quest state catalogue `load`s for
 /// `content_revision` or refuses readiness; an empty or partial catalogue is no fallback.
-/// Transitions with a `Computed` effect load and refuse `NOT_SUPPORTED` (§1.3).
+/// Boot passes the node's declared served revision, `readiness.content_revision` (D634; §1.2's
+/// `REVISIONS[0]` is no valid quest or Character revision). Transitions with a `Computed` effect
+/// load and refuse `NOT_SUPPORTED` (§1.3).
 pub(crate) fn load_quest_catalogue(
     load: impl FnOnce(
         &str,
@@ -1190,7 +1192,7 @@ async fn boot_and_serve(
     }
     let (quest_catalogue, quest_event) = load_quest_catalogue(
         crate::durability::quest_state::quest::loader::load_embedded_quest_state,
-        crate::content::accepted::REVISIONS[0],
+        &config.readiness.content_revision,
     )?;
     event(&quest_event);
     // #162 5868482467 (M2b): bind the entry room's one door `LocalObjectRuntime` once, at

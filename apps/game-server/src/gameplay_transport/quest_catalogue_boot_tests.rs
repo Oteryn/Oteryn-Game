@@ -9,16 +9,16 @@ use std::sync::Arc;
 
 use crate::durability::quest_state::quest::loader::{load_embedded_quest_state, parse_quest_state};
 use crate::durability::quest_state::quest::{QuestRefusal, QuestStateCatalogue};
-use crate::interaction_chest_use::entry_chest;
 use crate::node::serve::{BootError, load_quest_catalogue};
 
 type TestResult = Result<(), Box<dyn Error>>;
 
 const DOCUMENT: &str = include_str!("../../../../content/quests/missions/quest-state.json");
 
-/// The served content revision the boot loads the catalogue for (§1.2).
+/// A served content revision as `readiness.content_revision` declares it; boot loads the
+/// catalogue for the node's declared revision (D634), here the WP5 qualification's.
 fn served_revision() -> &'static str {
-    crate::content::accepted::REVISIONS[0]
+    "content-s3b-1"
 }
 
 /// The catalogue and event line exactly as `boot_and_serve` loads them.
@@ -91,10 +91,23 @@ fn a_malformed_quest_document_refuses_boot() {
 fn the_boot_catalogue_is_the_served_content_revision() -> TestResult {
     let (catalogue, line) = boot_catalogue()?;
     assert_eq!(catalogue.content_revision(), served_revision());
-    assert_eq!(catalogue.content_revision(), entry_chest::CONTENT_REVISION);
     assert!(line.starts_with("event=quest_catalogue state=loaded "));
     assert!(line.contains(&format!("content_revision={} ", served_revision())));
     Ok(())
+}
+
+#[test]
+fn the_accepted_package_revision_is_no_quest_revision() {
+    // §1.2 named `content::accepted::REVISIONS[0]`; its `/` is no valid quest or Character
+    // revision, so boot binds the declared served revision instead (D634).
+    let refused = load_quest_catalogue(
+        load_embedded_quest_state,
+        crate::content::accepted::REVISIONS[0],
+    );
+    assert!(matches!(
+        refused,
+        Err(BootError::ContentActivation("quest state catalogue"))
+    ));
 }
 
 #[test]

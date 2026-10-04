@@ -1549,6 +1549,12 @@ async fn seam_flow(accounts: &[String; 2], key_id: &str, signing: &SigningKey) -
     let listener = TcpListener::bind("127.0.0.1:0").await?;
     let address = listener.local_addr()?;
     let shutdown = CancellationToken::new();
+    let quest_catalogue = std::sync::Arc::new(
+        crate::durability::quest_state::quest::loader::load_embedded_quest_state("content-s3b-1")
+            .map_err(|error| format!("quest catalogue: {error:?}"))?
+            .catalogue()
+            .clone(),
+    );
     let serve = serve_gameplay(
         &listener,
         GameplayListenerConfig {
@@ -1577,6 +1583,7 @@ async fn seam_flow(accounts: &[String; 2], key_id: &str, signing: &SigningKey) -
             qualified_room: spell_input.as_ref().map(|_| &room),
             achievements: &achievements,
             imported_charms: &imported_charms,
+            quest_catalogue: &quest_catalogue,
         },
         &shutdown,
     );
