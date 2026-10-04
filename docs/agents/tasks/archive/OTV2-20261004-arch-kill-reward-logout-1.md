@@ -44,6 +44,16 @@ external_repositories: []
   with `retry_after_ms` and `BUSY`; an accepted logout runs `TerminalRelease::Logout` at once,
   with no grace and no PvE re-entry protection; the client binds Ctrl+L and Ctrl+Q.
 - No code, registry or contract change.
+- #1802 Codex round 1 (CP D659), on `cce35f04`:
+  - 4179801655 (P1): the pin carries a `creature_loot` binding per creature, so a `loot: null`
+    creature is told apart from a referenced table missing from the pin (§1.1).
+  - 4179801659 (P1): the principal's session, lease generation and actor ref are captured under
+    the lock by a new `top_damage_contributor` accessor; the carrier scope is widened (§1.3,
+    §2.1).
+  - 4179801661 (P1): `tools/content-schema/native-gameplay/**` (the manifest producer and its
+    tests) is added to KILL-REWARD-COMP-1 owned paths and validation (§2.1).
+  - 4179801664 (P2): a replayed receipt (`applied = false`) enqueues nothing, and the queue is
+    unique per death key (§1.3, §1.4).
 
 ## Validation
 

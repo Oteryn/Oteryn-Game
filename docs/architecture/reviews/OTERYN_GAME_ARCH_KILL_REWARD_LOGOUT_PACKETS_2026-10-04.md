@@ -77,9 +77,17 @@
   `OTERYN_NATIVE_LOOT_TABLES/v1`. It is a bounded list of `{identity, algorithm, entries}`
   records, copied from `content/loot/loot-*.json`. Its digest is bound into the native gameplay
   pin like every other section.
-- The section holds exactly the tables that the pinned creature profiles reference through
-  `definition.loot`, and no others. The existing native gameplay staging tool writes it.
-- An existing pin without the section stays valid: it decodes to no loot tables (serde default).
+- **Per-creature binding.** The section also holds one `creature_loot` row per pinned creature
+  profile: `{creature, loot}`, where `creature` is the creature definition reference and `loot`
+  is the creature's `definition.loot` reference copied as is, or an explicit `null` when the
+  creature has no loot. A pinned creature with no `creature_loot` row, or a row for a creature
+  that is not pinned, refuses the manifest at decode. The runtime never derives a loot key from
+  the creature slug.
+- The section holds exactly the tables that the `creature_loot` rows reference, and no others.
+  The native gameplay manifest producer (`tools/content-schema/native-gameplay/`) writes it,
+  and the node boot staging copies it like the other sections.
+- An existing pin without the section stays valid: it decodes to no loot tables and no
+  bindings (serde default), and every creature row is then `NoSettlement(no_loot_binding)`.
 - At generation activation, a pure function builds one immutable `CreatureRewardTable` per
   active generation, keyed by the creature definition reference that the runtime already uses
   for its creature policies (`creature_policies`). Each row holds:
@@ -88,25 +96,30 @@
   - `corpse_item`: the `LootDefinitionRef` of `details.corpse_item`, resolved through the D3-7
     `i00005801` alias. It must be an admitted, materializable container Item with capacity of
     at least 1 and at most `GAMEITEM01-CORPSE-CONTAINER-ENTRIES` (16).
-  - `loot`: the `LootTableDefinition` and its reference, or none.
+  - `loot`: the `LootTableDefinition` and its reference when the pinned binding names one;
+    none when the pinned binding is `null`.
   - `race`: the Bestiary race from `content/project/bestiary.rs`, or none.
-- **Fail closed per creature.** A missing or inadmissible corpse item, a loot reference without
-  its pinned table, or a table entry naming an Item that is not admitted and materializable
+- **Fail closed per creature.** A missing or inadmissible corpse item, a missing binding row
+  (`no_loot_binding`), a bound loot reference without its pinned table (`loot_table_missing`),
+  or a table entry naming an Item that is not admitted and materializable
   gives the row `NoSettlement(reason)`. The generation still activates. A kill of that creature
   settles nothing and logs one `kill_reward_refused` event line with the reason and the
   creature key.
 - `experience: 0` (or absent) settles loot with no XP descendant. A table that rolls no item
-  still mints the corpse.
+  still mints the corpse. A pinned `loot: null` binding mints the corpse with no loot; it is
+  not a refusal.
 
 ### 1.2 Facts are read under the lock; durable writes run after it is released
 
 - KILL-REWARD-COMP-1 changes the two settle functions so that they no longer take
   `&mut CurrentOwnerCombatDeath`. They take an owned `ProjectedCreatureDeathFacts` value:
   - `death` and `corpse`, from `projected_death(actor)`;
-  - `top_damage_character`, from `top_damage_character(actor)`;
+  - the reward principal (§1.3), from the new `top_damage_contributor(actor)`;
   - the XP and Bestiary occurrence bytes for the reward principal, from
     `reward_occurrence(actor, principal)`.
   These are the same owner reads the functions make today, made earlier at the same projection.
+  `top_damage_contributor` returns what `top_damage_character` returns today plus the winning
+  contributor's stored high-water identity, so the settled principal is the same Character.
   The descendants keep their bindings, so a replay of a fixture death keys exactly as before.
 - The caller captures these facts in the same owner turn that projects the death, while the
   runtime lock is held. It then releases every channel guard (`runtime`, `spell_states`,
@@ -120,20 +133,38 @@
 - `drain_auto_attacks` runs in each session's serve loop, but it swings for every attacker in
   the Channel. A `ComposedFreshAdmission` holds the `ReconciledCharacterAuthority` of its own
   Character only, so it cannot settle another Character's kill.
-- **Reward principal.** The principal is `top_damage_character` at the projection. With no
+- **Reward principal.** The principal is the top-damage contributor at the projection. With no
   tracked contributor, it is the attacker whose hit was lethal. This matches the current
   fallback in `settle_creature_death_rewards` and `COMBAT01-REWARD-PRINCIPALS` = 1.
+- **Principal identity is captured under the lock.** The principal's identity is
+  `(CharacterId, character_lease_generation, GameSessionId, ExactActorRef)`, all read in the
+  owner turn that projects the death:
+  - For the top-damage contributor, `runtime_actor_carrier.rs` gains the accessor
+    `top_damage_contributor(actor)`. It returns the winner's `CharacterId` with the
+    `(character_lease_generation, GameSessionId)` of its stored D141 high-water mark, and the
+    `ExactActorRef` of the committed actor slot of that Character in the same carrier. A
+    contributor whose slot is gone, or whose slot belongs to another session or lease
+    generation, gives no principal: the death is projected with no entry and logs
+    `reason=principal_gone`.
+  - For the lethal-attacker fallback, the identity is the attacker's own, from its current
+    command and fence.
+  - Nothing looks the principal up by `CharacterId` after the guards are released. A successor
+    session of the same Character never matches the captured session and lease generation.
 - **Queue.** A lethal hit appends one `PendingKillSettlement` to a per-Channel queue: the
-  principal's `(ExactActorRef, GameSessionId, CharacterId)`, the creature definition reference,
-  the `ProjectedCreatureDeathFacts`, and the `DeathGroundContext`. The queue lives with the
-  attack state behind the existing `attack` mutex.
+  principal identity above, the creature definition reference, the
+  `ProjectedCreatureDeathFacts`, and the `DeathGroundContext`. The queue lives with the attack
+  state behind the existing `attack` mutex.
+- **One entry per death.** The queue is unique by the death key of the projected death. An
+  append whose death key is already queued or in flight is a no-op and consumes no capacity.
 - **Bound.** The queue holds at most `KILLRW-RL-01` = 64 entries per Channel, the same as
   `COMBAT01-INFLIGHT-LOOT-MINTS-PER-SCOPE`. A death that finds the queue full is projected
   without a reward entry and logs `kill_reward_refused reason=queue_full`.
   `inflight_loot_mints_before_this_death` is the count of queued and in-flight corpse and loot
   MINTs of that scope, read when the entry is taken from the queue.
 - **Drain.** After `drain_auto_attacks` and after each committed spell cast return, the session
-  takes the entries whose principal is its own Character and current session, one at a time. A
+  takes the entries whose captured `GameSessionId` and lease generation are its own, one at a
+  time. It settles under its own `ReconciledCharacterAuthority`, whose fence carries the same
+  lease generation. A
   settle that returns an unknown durable outcome is retried with the same facts on the next
   drain. The descendants are idempotent per `(death, character)`.
 - **Session end.** Before its terminal release, a session drains its own entries, as it already
@@ -144,8 +175,10 @@
 
 ### 1.4 Spell kills use the same path
 
-- After `prepared.commit(...)` in `native_combat_cast.rs`, the caster's owner turn walks the
-  `CombatBatchReceipt.effects`. For each `EffectReceipt` whose `health` result is lethal on a
+- After `prepared.commit(...)` in `native_combat_cast.rs`, the caster's owner turn reads the
+  `CombatBatchReceipt`. A receipt with `applied = false` is an idempotent replay of an earlier
+  commit: it projects and enqueues nothing, because the first commit already did. For an
+  applied receipt, the turn walks `CombatBatchReceipt.effects`. For each `EffectReceipt` whose `health` result is lethal on a
   creature target, it runs `project_fixed_one_creature_death`, captures the facts (§1.2) and
   appends a queue entry (§1.3), under the guards it already holds.
 - The same applies to the due and delayed spell paths that commit creature damage
@@ -215,10 +248,11 @@ owned_paths:
   - apps/game-server/src/content/creature_reward_tests.rs  # new
   - apps/game-server/src/content/native_gameplay.rs        # the optional loot_tables section and its pin only
   - apps/game-server/src/content/mod.rs                    # the module line only
+  - tools/content-schema/native-gameplay/**                # the manifest producer: loot_tables and creature_loot, and its tests
   - tools/qualification/node_boot/**                       # the loot_tables staging only
   - apps/game-server/src/combat.rs                         # drop the "no production caller" allows that become used
   - apps/game-server/src/combat/death_reward.rs            # ProjectedCreatureDeathFacts (§1.2)
-  - apps/game-server/src/foundation/runtime_actor_carrier.rs  # the top_damage_character allow only
+  - apps/game-server/src/foundation/runtime_actor_carrier.rs  # the top_damage_contributor accessor (§1.3) and the allow removal only
   - apps/game-server/src/gameplay_transport/kill_reward.rs    # new: the queue, the drain, the settle call
   - apps/game-server/src/gameplay_transport/kill_reward_tests.rs
   - apps/game-server/src/gameplay_transport/attack.rs      # the lethal arm of drain_auto_attacks only
@@ -235,12 +269,14 @@ validation:
   - cargo clippy --locked --workspace --all-targets -- -D warnings
   - cargo test --locked -p oteryn-game-server
   - the combat_death_reward_postgres suite against PostgreSQL (repository CI service)
+  - python3 -m unittest discover -s tools/content-schema/native-gameplay -p 'test_*.py'
   - python tools/agents/validate_governance.py
   - git diff --check
 ```
 
 - **Builds:**
-  - the `loot_tables` pinned section, its staging from `content/loot`, and the
+  - the `loot_tables` pinned section with its `creature_loot` bindings, written by the native
+    gameplay manifest producer and its tests, its staging from `content/loot`, and the
     `CreatureRewardTable` with its fail-closed rows (§1.1);
   - `ProjectedCreatureDeathFacts`, and the two settle functions taking it instead of the owner
     borrow (§1.2). The existing PG cases move to the new signature with their assertions
@@ -252,7 +288,15 @@ validation:
   - the progression and Bestiary bindings from the active World (§1.5);
   - removal of the `allow(unused...)` attributes that the live caller makes unnecessary.
 - **Acceptance:**
-  - A unit test per fail-closed reason of §1.1, and one for `experience: 0`.
+  - A unit test per fail-closed reason of §1.1, one for `experience: 0`, and one that tells a
+    pinned `loot: null` (corpse, no loot) from a bound table that is absent from the pin
+    (`loot_table_missing`). A decode test refuses a pinned creature with no binding row.
+  - A producer test that the native gameplay manifest carries the rat binding and the rat loot
+    table, and nothing for a creature with `loot: null` beyond its `null` binding.
+  - A carrier test that `top_damage_contributor` returns the winner's session, lease generation
+    and actor ref, and gives no principal when the winner's slot belongs to a successor session.
+  - A queue test that a replayed spell receipt (`applied = false`) enqueues nothing, and that a
+    second append of the same death key is a no-op.
   - A unit test that no `RevisionSlot` is acquired and no durable call is made while `runtime`,
     `spell_states` or `attack` is locked. It uses a test sequencer that fails if a channel guard
     is held.
