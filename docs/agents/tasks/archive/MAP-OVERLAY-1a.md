@@ -64,3 +64,7 @@ The persistence review runs on the final frozen head; the control plane requests
 Round 1 (Codex P1 on 7dd47744): removals refunded entries whose `Vec` and table slots stayed
 allocated. Removal, unhide and expiry now shrink capacity back within its charge, checked by
 `capacity_within_charge` and a churn test.
+
+Round 2 (Codex P1 on 7329fb43): expiry removed a crowded tile's entries one `Vec::remove` at a
+time, quadratic in the tile. It now drains the due keys and retains each tile once, keeping the
+survivors' order; a 100,000-entry tile with a shared decay second is tested.

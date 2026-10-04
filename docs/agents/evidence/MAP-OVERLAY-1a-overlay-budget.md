@@ -58,7 +58,8 @@ removals `used_bytes` still bounds what the overlay retains, not only its peak.
 `cargo test --locked -p oteryn-game-server map_overlay` covers the packet acceptance: two
 channels share one base with separate overlays; hide and add up to ordinal 63, ordinal 64 refused,
 a 65th base entry refused at load; no merge with a base stack; expiry within 1 s of the decay and
-never before; atomic volatile refusal at the budget; capacity given back when a hidden tile is filled to
+never before, and a crowded tile of 100,000 entries sharing a decay second expired in one pass
+per tile with its survivors in order; atomic volatile refusal at the budget; capacity given back when a hidden tile is filled to
 the budget and emptied tile after tile, and when tile records are released; durable admission over it with the alarm;
 the Ground rebuild of every item, failing closed on a `map_revision` mismatch, another World or
 Channel, a bad or unmapped position, or a duplicate.

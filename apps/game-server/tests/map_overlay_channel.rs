@@ -388,6 +388,47 @@ fn map_overlay_expiry_removes_a_volatile_item_within_1_s_of_its_decay() -> TestR
 }
 
 #[test]
+fn map_overlay_expires_a_crowded_tile_sharing_a_decay_second_in_one_pass() -> TestResult {
+    let base = base()?;
+    let mut overlay = ChannelOverlay::new(Arc::clone(&base), world()?, channel(2)?);
+    let mut twin = ChannelOverlay::new(Arc::clone(&base), world()?, channel(2)?);
+    // 100,000 entries on one tile, every other one decaying in the same second: removed one by
+    // one, each removal would shift the rest, about 10^10 entry moves in all.
+    let mut decaying = Vec::new();
+    let mut kept = Vec::new();
+    for n in 0..100_000_u32 {
+        if n % 2 == 0 {
+            decaying.push(overlay.add_volatile(POS, coin(1), Some(5_000))?);
+        } else {
+            kept.push(overlay.add_volatile(POS, coin(2), None)?);
+            twin.add_volatile(POS, coin(2), None)?;
+        }
+    }
+    let started = std::time::Instant::now();
+    let expired = overlay.expire(5_000);
+    assert!(started.elapsed() < std::time::Duration::from_secs(10));
+    // In entry order, and what stays keeps its presentation order.
+    assert_eq!(expired.len(), decaying.len());
+    assert!(expired.iter().all(|(pos, _)| *pos == POS));
+    let mut expected = decaying;
+    expected.sort();
+    let ids: Vec<EntryId> = expired.into_iter().map(|(_, id)| id).collect();
+    assert_eq!(ids, expected);
+    let stays: Vec<EntryId> = overlay
+        .tile(POS)
+        .ok_or("tile")?
+        .added()
+        .iter()
+        .map(|entry| entry.id())
+        .collect();
+    assert_eq!(stays, kept);
+    assert!(overlay.capacity_within_charge());
+    // Refunded exactly: the tile now costs what its survivors alone do.
+    assert_eq!(overlay.used_bytes(), twin.used_bytes());
+    Ok(())
+}
+
+#[test]
 fn map_overlay_refuses_a_volatile_entry_over_the_budget_atomically() -> TestResult {
     let base = base()?;
     let probe = ChannelOverlay::new(Arc::clone(&base), world()?, channel(2)?);

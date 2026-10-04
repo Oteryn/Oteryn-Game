@@ -20,7 +20,7 @@ use super::WorldBase;
 use crate::durability::item_mint::GroundItemInstance;
 use crate::durability::spell_items_abi::decode_ground_cell;
 use crate::foundation::{ChannelId, WorldId};
-use std::collections::{BTreeSet, HashMap};
+use std::collections::{BTreeSet, HashMap, HashSet};
 use std::fmt;
 use std::mem::size_of;
 use std::sync::Arc;
@@ -254,6 +254,13 @@ fn item_cost(item: &AddedItem) -> usize {
 /// minimum 4 in `TILE_COST` and 2 per entry in `item_cost`.
 fn added_within_charge(added: &Vec<AddedEntry>) -> bool {
     added.capacity() <= 4 + 2 * added.len()
+}
+
+/// Gives back the slots a removal freed from a tile's added entries beyond their charges.
+fn trim_added(added: &mut Vec<AddedEntry>) {
+    if !added_within_charge(added) {
+        added.shrink_to(added.len().max(4));
+    }
 }
 
 /// Whether a hash table holds no more slots than its `table_slot` charges cover; the small-table
@@ -556,10 +563,7 @@ impl ChannelOverlay {
         let entry = tile.added.remove(at);
         // The refund covers the entry's slots only, so a tile kept by its hides or other entries
         // gives back the slots the removal freed rather than holding them uncharged.
-        if !added_within_charge(&tile.added) {
-            let keep = tile.added.len().max(4);
-            tile.added.shrink_to(keep);
-        }
+        trim_added(&mut tile.added);
         self.used -= entry.cost;
         match &entry.item {
             AddedItem::Volatile {
@@ -584,18 +588,38 @@ impl ChannelOverlay {
     /// never before it.
     pub fn expire(&mut self, now_ms: u64) -> Vec<(TilePos, EntryId)> {
         let now_second = now_ms / 1000;
+        let mut due: HashMap<TilePos, HashSet<EntryId>> = HashMap::new();
         let mut expired = Vec::new();
         while let Some(&(second, id, pos)) = self.expiry.first() {
             if second > now_second {
                 break;
             }
-            // The entry's own removal also drops its expiry key.
-            if self.remove(pos, id).is_err() {
-                self.expiry.pop_first();
-                continue;
-            }
+            self.expiry.pop_first();
+            due.entry(pos).or_default().insert(id);
             expired.push((pos, id));
         }
+        // One pass per tile, so a crowded tile expires in linear time and what stays keeps its
+        // presentation order.
+        let mut removed = HashSet::new();
+        for (pos, ids) in due {
+            let Some(tile) = self.tiles.get_mut(&pos) else {
+                continue;
+            };
+            let mut refund = 0;
+            tile.added.retain(|entry| {
+                let due =
+                    ids.contains(&entry.id) && matches!(entry.item, AddedItem::Volatile { .. });
+                if due {
+                    refund += entry.cost;
+                    removed.insert(entry.id);
+                }
+                !due
+            });
+            trim_added(&mut tile.added);
+            self.used -= refund;
+            self.release_tile(pos);
+        }
+        expired.retain(|(_, id)| removed.contains(id));
         expired
     }
 }
