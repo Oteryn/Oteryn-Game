@@ -105,7 +105,9 @@ fn actor_kind(kind: EntityKind) -> bool {
 fn validate_entity(entity: &WorldSpatialEntity) -> Result<(), WorldSpatialError> {
     match entity.detail {
         EntityDetail::Actor { health_percent, .. }
-            if actor_kind(entity.kind) && health_percent <= MAX_HEALTH_PERCENT =>
+            if actor_kind(entity.kind)
+                && health_percent <= MAX_HEALTH_PERCENT
+                && (entity.kind != EntityKind::Npc || health_percent == MAX_HEALTH_PERCENT) =>
         {
             Ok(())
         }
@@ -757,13 +759,39 @@ mod tests {
         assert!(encode_entity(&object_npc, false).is_err());
         object_npc.detail = npc.detail;
         assert!(encode_entity(&object_npc, false).is_ok());
-        let mut over = actor(EntityKind::Npc, 9);
-        over.detail = EntityDetail::Actor {
-            direction: StepDirection::West,
-            appearance_ref: 1,
-            health_percent: 101,
+        for health_percent in [0, 99, 101] {
+            let mut bad = actor(EntityKind::Npc, 9);
+            bad.detail = EntityDetail::Actor {
+                direction: StepDirection::West,
+                appearance_ref: 1,
+                health_percent,
+            };
+            assert!(encode_entity(&bad, false).is_err(), "{health_percent}");
+        }
+        // Decode: field 7 below 100 or omitted is rejected; a creature still accepts below 100.
+        let wire = |health: Option<u8>, kind: EntityKind| {
+            let mut e = actor(kind, 9);
+            e.detail = EntityDetail::Actor {
+                direction: StepDirection::West,
+                appearance_ref: 1,
+                health_percent: 100,
+            };
+            let mut bytes = encode_entity(&e, false).expect("entry");
+            let at = bytes
+                .windows(2)
+                .position(|w| w == [0x38, 100])
+                .expect("health");
+            bytes.drain(at..at + 2);
+            if let Some(h) = health {
+                bytes.extend_from_slice(&[0x38, h]);
+            }
+            bytes
         };
-        assert!(encode_entity(&over, false).is_err());
+        for health in [Some(99), Some(0), None] {
+            assert!(decode_entity(&wire(health, EntityKind::Npc), false).is_err());
+        }
+        assert!(decode_entity(&wire(Some(100), EntityKind::Npc), false).is_ok());
+        assert!(decode_entity(&wire(Some(99), EntityKind::Creature), false).is_ok());
     }
 
     #[test]
