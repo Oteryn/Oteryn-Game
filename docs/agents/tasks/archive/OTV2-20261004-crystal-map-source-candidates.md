@@ -8,7 +8,7 @@ status: implementing
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: codex/crystal-map-source-candidates-20261004
-pr: null
+pr: 1791
 base_sha: 69f171fcbe3bf8f320dd4ea69b0e3bc4501a6f39
 head_sha: null
 final_head_sha: null
@@ -70,12 +70,12 @@ they are not relabelled as validation of this source-only PR.
 ## Validation
 
 - `python3 tools/content-schema/map-content-linking/fill_links.py --check`:
-  exact input/output reproduction; result bound in the PR after commit freeze.
+  PASS, exact input/output reproduction; final SHA bound in the PR.
 - `python3 -m unittest discover -s tools/content-schema/map-content-linking -v`:
   PASS, 6 boundary tests.
 - `python3 -m ruff check tools/content-schema/map-content-linking`: PASS.
 - `python3 -m ruff format --check tools/content-schema/map-content-linking`: PASS.
-- `python tools/agents/validate_governance.py`: PASS after final authoring;
+- `python tools/agents/validate_governance.py`: PASS;
   remote CI and review results remain pending.
 - `python -m unittest discover -s tools/agents/tests`: PASS, 54 tests.
 - `python3 tools/content-census/item_key_references.py`: FAIL, exactly two
