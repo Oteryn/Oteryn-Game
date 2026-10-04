@@ -73,6 +73,8 @@ enum EntityKind {
   ENTITY_KIND_CREATURE = 2;
   ENTITY_KIND_CORPSE = 3;
   ENTITY_KIND_GROUND_ITEM = 4;
+  // An NPC actor: an actor entry like a creature (direction, appearance, health percentage 100).
+  ENTITY_KIND_NPC = 5;
 }
 
 // Identity of an entity that leaves. Same field numbers as the identity fields of the entry.
@@ -83,7 +85,7 @@ message EntityRefV1 {
   uint64 generation = 2;
 }
 
-// At most 128 encoded bytes. Players and creatures carry fields 5-7 and no fields 8-10; corpses and
+// At most 128 encoded bytes. Players, creatures and NPCs carry fields 5-7 and no fields 8-10; corpses and
 // ground items carry fields 8-9 (and 10 under capability 4) and no fields 3, 5-7.
 message WorldSpatialEntityV1 {
   EntityKind kind = 1;

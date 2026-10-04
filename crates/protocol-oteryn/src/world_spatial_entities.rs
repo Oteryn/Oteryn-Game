@@ -42,6 +42,7 @@ pub enum EntityKind {
     Creature = 2,
     Corpse = 3,
     GroundItem = 4,
+    Npc = 5,
 }
 
 /// Runtime identity: the interest index identity bytes plus the actor generation (0 for objects).
@@ -53,7 +54,7 @@ pub struct EntityRef {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum EntityDetail {
-    /// Players and creatures.
+    /// Players, creatures and NPCs.
     Actor {
         direction: StepDirection,
         appearance_ref: u32,
@@ -95,7 +96,10 @@ pub struct WorldSpatialEntitiesDelta {
 }
 
 fn actor_kind(kind: EntityKind) -> bool {
-    matches!(kind, EntityKind::Player | EntityKind::Creature)
+    matches!(
+        kind,
+        EntityKind::Player | EntityKind::Creature | EntityKind::Npc
+    )
 }
 
 fn validate_entity(entity: &WorldSpatialEntity) -> Result<(), WorldSpatialError> {
@@ -263,6 +267,7 @@ fn decode_entity(
         Some(2) => EntityKind::Creature,
         Some(3) => EntityKind::Corpse,
         Some(4) => EntityKind::GroundItem,
+        Some(5) => EntityKind::Npc,
         _ => return Err(WorldSpatialError::Malformed),
     };
     let detail = if actor_kind(kind) {
@@ -744,12 +749,31 @@ mod tests {
     }
 
     #[test]
+    fn npc_is_an_actor_entry_within_the_entry_bound_and_never_an_object() {
+        let npc = actor(EntityKind::Npc, 9);
+        let entry = encode_entity(&npc, false).expect("entry");
+        assert!(entry.len() <= MAX_ENTITY_ENTRY_BYTES);
+        let mut object_npc = object(EntityKind::Npc, 9);
+        assert!(encode_entity(&object_npc, false).is_err());
+        object_npc.detail = npc.detail;
+        assert!(encode_entity(&object_npc, false).is_ok());
+        let mut over = actor(EntityKind::Npc, 9);
+        over.detail = EntityDetail::Actor {
+            direction: StepDirection::West,
+            appearance_ref: 1,
+            health_percent: 101,
+        };
+        assert!(encode_entity(&over, false).is_err());
+    }
+
+    #[test]
     fn snapshot_round_trips_every_kind_and_256_maximum_entries_fit_the_bound() {
         let mixed = snapshot(vec![
             own(),
             actor(EntityKind::Creature, 1),
             object(EntityKind::Corpse, 2),
             object(EntityKind::GroundItem, 3),
+            actor(EntityKind::Npc, 4),
         ]);
         let bytes = encode_world_spatial_entities_snapshot(&mixed).expect("encode");
         assert_eq!(decode_world_spatial_entities_snapshot(&bytes), Ok(mixed));
@@ -859,7 +883,7 @@ mod tests {
             with(&valid, &[0x50, 0x01]),          // unknown field
             with(&valid, &[0x40, 0x01]),          // item field on an actor
             with(&item, &[0x28, 0x01]),           // direction on an object
-            vec![0x08, 0x05],                     // unknown kind
+            vec![0x08, 0x06],                     // unknown kind
             vec![0x08, 0x00],                     // zero kind
             [&valid[..], &[0x38, 0x65]].concat(), // health 101 after 100: repeated
             valid[..valid.len() - 1].to_vec(),    // truncated
