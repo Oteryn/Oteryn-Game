@@ -428,6 +428,7 @@ pub async fn serve_gameplay(
         quest_catalogue: None,
         quest_sessions: std::sync::Mutex::default(),
         premium: premium_refresher(owners.root),
+        premium_sessions: std::sync::Mutex::default(),
         fence_holders: FenceHolders::default(),
     };
     // QUEST-STATE-0 §5.4: the owner cadence requests failed quest obligations again, whether or
@@ -565,6 +566,9 @@ pub(crate) struct ComposedFreshAdmission<'a, 'f, 's> {
     /// PREM-1b: the account's Premium pulls, started at fresh admission and reconnect without
     /// waiting on them, and cancelled when the session is released.
     pub(crate) premium: crate::premium::refresh::PremiumRefresher,
+    /// PREM-1b (D476): the sessions holding each account's Premium registration, so a late
+    /// release of one session never cancels another's pulls.
+    pub(crate) premium_sessions: std::sync::Mutex<PremiumSessions>,
     /// The releases holding each write fence of the slot (CHARM-DESC-FENCE-LEASE step c).
     pub(crate) fence_holders: FenceHolders,
 }
@@ -654,6 +658,31 @@ fn ends_session<E>(outcome: &Result<ExpiredLossReleaseV1, E>) -> bool {
         outcome,
         Ok(ExpiredLossReleaseV1::Released { .. } | ExpiredLossReleaseV1::Terminal)
     )
+}
+
+/// PREM-1b (D476): the sessions of this node holding each account's Premium registration.
+#[derive(Default)]
+pub(crate) struct PremiumSessions(
+    std::collections::HashMap<[u8; 16], std::collections::HashSet<GameSessionId>>,
+);
+
+impl PremiumSessions {
+    fn admit(&mut self, account_id: [u8; 16], session: GameSessionId) {
+        self.0.entry(account_id).or_default().insert(session);
+    }
+
+    /// Drops `session`'s registration. True only when it held one and was the account's last,
+    /// so a repeated release, or one racing a successor's admission, stops no pulls.
+    fn release(&mut self, account_id: [u8; 16], session: GameSessionId) -> bool {
+        let Some(sessions) = self.0.get_mut(&account_id) else {
+            return false;
+        };
+        if !sessions.remove(&session) || !sessions.is_empty() {
+            return false;
+        }
+        self.0.remove(&account_id);
+        true
+    }
 }
 
 /// The durable terminal release a connection decides.
@@ -1023,7 +1052,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 }
                 Ok(ExpiredLossReleaseV1::Released { .. } | ExpiredLossReleaseV1::Terminal) => {
                     // PREM-1b: the session is over; its Premium pulls stop.
-                    self.premium.release(controller.account_id);
+                    self.release_premium(controller.account_id, session);
                     return self.retire(session, actor).await;
                 }
                 // Unknown outcome: keep the fence; the retry reconciles from the durable row.
@@ -1095,6 +1124,29 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
     }
 
+    /// PREM-1b: start (or wake) the account's Premium pulls for `session`.
+    fn admit_premium(&self, account_id: [u8; 16], session: GameSessionId) {
+        let mut sessions = self
+            .premium_sessions
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        sessions.admit(account_id, session);
+        self.premium.admit(account_id);
+    }
+
+    /// PREM-1b (D476): `session` is over; the account's Premium pulls stop only when no other
+    /// session of the account holds them. Decided under the same lock as admission, so a
+    /// successor admitted before a late release keeps its pulls.
+    fn release_premium(&self, account_id: [u8; 16], session: GameSessionId) {
+        let mut sessions = self
+            .premium_sessions
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        if sessions.release(account_id, session) {
+            self.premium.release(account_id);
+        }
+    }
+
     /// The fence, monk save, durable commit and settle steps of a terminal release that a
     /// connection decides (abandoned resume, capability mismatch), under one transition token
     /// minted for it. The actor leaves the Channel only after the durable TERMINAL fact.
@@ -1149,7 +1201,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             if ends_session(&outcome) {
                 // PREM-1b (D476): the session is over, whether abandoned or mismatched; its
                 // Premium pulls stop, as at grace expiry.
-                self.premium.release(controller.account_id);
+                self.release_premium(controller.account_id, session);
             }
             let pause = match outcome {
                 Ok(
@@ -1174,7 +1226,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             // retry can repeat the release.
             return match self.settle_unended(&store, actor, &mut hold).await {
                 UnendedSettle::Terminal => {
-                    self.premium.release(controller.account_id);
+                    self.release_premium(controller.account_id, session);
                     self.retire(session, actor).await
                 }
                 UnendedSettle::Lifted | UnendedSettle::Unknown => GraceExpiryResult::Unknown,
@@ -1748,7 +1800,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         let admitted = self.resume_lost(attempt).await?;
         // PREM-1b: a reconnect pulls Premium again before any Premium read, without waiting.
         if let Some(controller) = admitted.controller {
-            self.premium.admit(controller.account_id);
+            self.admit_premium(controller.account_id, admitted.game_session_id);
         }
         self.admit_quest_session(&admitted).await;
         Ok(admitted)
@@ -1954,7 +2006,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             .initialize_first_entry(&request, attempt.game_session_id, attempt.transport, actor)
             .await;
         // PREM-1b: pull Premium before any Premium read; admission does not wait on it.
-        self.premium.admit(*record.account_id.as_bytes());
+        self.admit_premium(*record.account_id.as_bytes(), attempt.game_session_id);
         let admitted = AdmittedSession {
             game_session_id: attempt.game_session_id,
             world_id: self.world_id,
@@ -3768,6 +3820,31 @@ mod tests {
             now: 1
         })));
         assert!(!ends_session(&Err::<ExpiredLossReleaseV1, ()>(())));
+    }
+
+    /// PREM-1b (D476, #1722 Codex P1 4176449967): a late or repeated terminal release of a
+    /// session never stops the pulls of a same-account successor admitted before it lands.
+    #[test]
+    fn a_late_release_keeps_a_successor_session_premium() {
+        let account = [9; 16];
+        let old = GameSessionId::decode(&uuid_v7(0x70)).expect("old");
+        let successor = GameSessionId::decode(&uuid_v7(0x71)).expect("successor");
+        let mut sessions = PremiumSessions::default();
+        sessions.admit(account, old);
+        // A resume of the same session registers once.
+        sessions.admit(account, old);
+        sessions.admit(account, successor);
+        // The old session's Terminal outcome lands after the successor's admission.
+        assert!(!sessions.release(account, old));
+        // A retry of that release, and a release never admitted, stop nothing.
+        assert!(!sessions.release(account, old));
+        assert!(!sessions.release([8; 16], old));
+        // The successor's own release is the account's last: its pulls stop.
+        assert!(sessions.release(account, successor));
+        assert!(!sessions.release(account, successor));
+        // Grace expiry or a mismatch release of a sole session stops them at once.
+        sessions.admit(account, old);
+        assert!(sessions.release(account, old));
     }
 
     /// D449 (#1708 Codex P1 4175882774): the capability-mismatch release fences with the lost
