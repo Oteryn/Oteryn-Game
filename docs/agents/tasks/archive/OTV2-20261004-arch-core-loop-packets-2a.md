@@ -41,8 +41,9 @@ external_repositories: []
 - Packets: ATTACK-WIRE-1, ATTACK-1a, ATTACK-1b, CHAT-1b-2a, CHAT-1b-2b, SPAWN-CONTENT-1 and SPAWN-1a
   (§2). Shared-file order (§0.3).
 - Brief amendments in ATTACK-0, CHAT-0 and CREATURE-AI-0.
-- #1735 P1 4176889390: SPAWN-1a realizes the committed fixture's single rat
-  (`population_limit: 1`), not the test helper's two (§1.4).
+- #1735 P1 4176889390: SPAWN-1a realizes the committed content spawn, not the carrier's test
+  helper (§1.4). D116 stays one spawn of 2 rats; room revision 2 (#1745 §1.1) gives the content
+  spawn two den cells and population 2.
 - #1735 P1 4176889394: SPAWN-1a owns the real boot path. The spawn source travels in the
   activated `NativeEntryContentPin` to `ChannelRuntimeV1::from_committed_assignment` in
   `node/serve.rs`, and realizes before the listener binds. `world_runtime.rs` drops out (§2.7).
@@ -57,8 +58,9 @@ external_repositories: []
 - #1735 P1 4176975932: the revision-2 spawn record carries `respawn_delay_ms` 60,000 and
   `occupancy_retry_interval_ms` 5,000, and the qualifier refuses missing or out-of-range values
   (first-creature §4.3, §4.8; §1.4, §2.7).
-- #1735 P2 4176975942: CREATURE-AI-0 §6.1 and its amendment say one rat, and the two-rat spawn
-  is named as a test helper.
+- #1735 P2 4176975942: CREATURE-AI-0's amendment names the carrier's `d116_definition()` as a
+  test helper and points to the content spawn in #1745 §1.1. §6.1 keeps D116 (one spawn, 2 rats),
+  restored after #1745 P1 4177068268 (control plane, option a).
 - Control plane D492 (owner 7a): room revision 2, the spawn inputs, the activation seam, the
   SPAWN-1a packet and the bindings amendment moved to SPAWN-1A-PACKET-1 (#1745), with #1735
   P1 4177035356 (r2 package and lock identities), P1 4177035359 (`qualification.rs`) and

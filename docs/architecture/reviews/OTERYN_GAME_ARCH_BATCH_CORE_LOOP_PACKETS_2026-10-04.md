@@ -129,10 +129,11 @@ MAP-LOAD-1 has merged first; otherwise SPAWN-1b adds it.
 ### 1.4 SPAWN-1 splits: the D116 fixture spawn first, the map after MAP-LOAD-1
 
 AI-2 (merged) built `realize_spawn` and the respawn timer in the runtime actor carrier, and they
-admit the D116 fixture spawn. In the committed fixture (`native_entry_room.json`, spawn
-`oteryn:spawn/entry-rat`) that is one source with one rat (`population_limit: 1`). The two-rat
-spawn in `runtime_actor_carrier.rs` is a test helper, not content, and SPAWN-1a does not use it
-(#1735 P1 4176889390). No production path
+admit the D116 fixture spawn: one spawn of 2 rats (CREATURE-AI-0 §6.1). The committed fixture
+(`native_entry_room.json`, spawn `oteryn:spawn/entry-rat`) has one cell and
+`population_limit: 1`, short of D116, so room revision 2 gives it two den cells and population 2
+(SPAWN-1A-PACKET-1, #1745, §1.1). SPAWN-1a realizes that content spawn, not the carrier's
+`d116_definition()` test helper (#1735 P1 4176889390). No production path
 calls them: a running channel has no creatures today.
 
 **The rat's cell and the spawn inputs.** Room revision 2 (the `entry-den` cell, the bounds, the

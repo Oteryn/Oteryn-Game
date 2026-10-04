@@ -41,9 +41,9 @@ MAP-BUNDLE-1 (merged) and admitted creature definitions, not on MAP-OVERLAY-1 or
 spawns are a base bundle family. SPAWN-1 splits into SPAWN-1a (realization and respawn of the D116
 fixture spawn through a spawn-source seam, before MAP-LOAD-1) and SPAWN-1b (the bundle spawn
 family through MAP-LOAD-1's reader, and the `RL-15` and `RL-16` measurements). The D116 fixture
-spawn is the committed one: `oteryn:spawn/entry-rat`, one rat (`population_limit: 1`), on
-`entry-den` from room revision 2 (SPAWN-1A-PACKET-1, #1745). The two-rat spawn of AI-1 to AI-4 is a test helper in
-`runtime_actor_carrier.rs`, not content (#1735 P2 4176975942).
+spawn stays one spawn of 2 rats. Its content is `oteryn:spawn/entry-rat`, on the two den cells
+of room revision 2 with population 2 (SPAWN-1A-PACKET-1, #1745, §1.1). The carrier's
+`d116_definition()` is the test helper of AI-1 to AI-4, not content (#1735 P2 4176975942).
 
 Order: SPAWN-CONTENT-1 and CREATURE-AI-1 first; SPAWN-1 can realize the map before
 CREATURE-MOVE-1 lands (creatures then stand). Later, each with its own decision: creatures pushing
@@ -345,8 +345,7 @@ Every draw uses a SIM purpose seeded by (creature `ExactActorRef`, think sequenc
   production bundles, listed in the parity report (the ADR-0021 §4.5 pattern).
 - A point whose creature has a `bosstiary` block or `reward_boss` is a boss spawn and belongs to
   BOSS-RAID-0 §5. Encounter-bound creatures are never realized by a spawn (E3).
-- The fixture World keeps D116: one spawn of one rat, the committed `oteryn:spawn/entry-rat`
-  (amended 2026-10-04; the two-rat spawn is a test helper).
+- The fixture World keeps D116 (one spawn, 2 rats).
 
 ### 6.2 Realization
 
