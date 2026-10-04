@@ -13,7 +13,7 @@ head_sha: "exact frozen head in the FREEZE_SHA entry"
 final_head_sha: "exact frozen head in the FREEZE_SHA entry"
 owner: claude-code-session-01FZCPgXLttJ2W3fpZVncuKJ (hard worker)
 created_at: 2026-10-03
-updated_at: 2026-10-03
+updated_at: 2026-10-04
 execution_policy: continuous_progress
 migration_lease: "0060"
 owned_paths:
@@ -21,6 +21,8 @@ owned_paths:
   - apps/game-server/src/durability/character_proficiency_modification.rs
   - apps/game-server/src/durability/character_proficiency.rs
   - apps/game-server/tests/support/character_proficiency_modification_postgres_cases.rs
+  # Added by the MQ 37165988723 repair: the 0060 pairing guard breaks this file's bare spends.
+  - apps/game-server/tests/support/character_forge_dust_postgres_cases.rs
   - docs/contracts/RESOURCE_LIMITS_REGISTRY.json
   - docs/architecture/DUR-03_ITEM_TRANSACTION_AND_ANTI_DUPLICATION_CONTRACT.md
   - docs/architecture/reviews/OTERYN_GAME_IMBUE_FORGE0_IMBUEMENTS_AND_EXALTATION_FORGE_DECISION_2026-09-30.md
