@@ -19,6 +19,8 @@ execution_policy: continuous_progress
 owned_paths:
   - docs/architecture/reviews/OTERYN_GAME_SPAWN1A_FIXTURE_SPAWN_ROOM_R2_DECISION_2026-10-04.md
   - docs/architecture/reviews/OTERYN_GAME_NATIVE_ENTRY_ROOM_PRODUCT_BINDINGS_DECISION_2026-09-26.md
+  - docs/architecture/OTERYN_GAME_FIRST_PRODUCTION_CONTENT_PROFILE_DECISION_2026-09-09_AMENDMENT_04.md
+  - docs/architecture/OTERYN_WORLD_PROJECT_SOURCE_PROFILE_V2_NATIVE_ENTRY_QUALIFICATION_AMENDMENT_02.md
   - docs/agents/tasks/archive/OTV2-20261004-spawn-1a-packet-1.md
 public_contracts: []
 depends_on: []
@@ -43,6 +45,12 @@ external_repositories: []
   the rats' slots at (2, 0, 0) and (2, -1, 0) (§2.1).
 - #1745 P1 4177068268: D116 is one spawn of 2 rats. Revision 2 adds two non-proof den cells, an
   ordered `cell_keys` list and population 2, and the boot test requires both rats (§1.1, §2.1).
+- #1745 P1 4177087017 and P1 4177087019: the owning profiles are amended in this PR.
+  - FirstProduction Amendment 04: population 1..=2 and aggregate 2, `cell_keys`, a spawn-cell
+    record and eight recomputed registry maxima.
+  - Native source Amendment 02: five room cells, six placements, `cell_keys` and the spawn inputs.
+  - SPAWN-1a owns `production.rs`, the registry rows and the governance registry test, with max
+    and max+1 tests (§1.4, §2.1).
 - No code, contract or wire change.
 
 ## Validation

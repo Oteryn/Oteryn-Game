@@ -7,7 +7,10 @@
   part A (#1735, `OTERYN_GAME_ARCH_BATCH_CORE_LOOP_PACKETS_2026-10-04.md` §1.4 and §2.7), with the
   three open #1735 findings: P1 4177035356, P1 4177035359 and P1 4177035362. #1735 keeps the
   SPAWN-1 split itself (1a here, 1b after MAP-LOAD-1).
-- Amends, in this PR: NATIVE-ENTRY-ROOM-PRODUCT-BINDINGS-V1 ("Amendment 2026-10-04").
+- Amends, in this PR:
+  - NATIVE-ENTRY-ROOM-PRODUCT-BINDINGS-V1 ("Amendment 2026-10-04");
+  - `FIRST_PRODUCTION_CONTENT_PROFILE/v1` (Amendment 04, one spawn of two placement cells);
+  - `NATIVE_ENTRY_SOURCE_QUALIFICATION_V1` (Amendment 02, the revision-2 overlay and lowering).
 - Runtime, migration and production authority: NONE. The packet needs its #162 allocation.
 - `MERGE_AUTHORITY: WORK_COORDINATOR_ONLY`
 
@@ -18,7 +21,7 @@ SPAWN-1a stays in the runtime lane of #1735 §0.2: after CREATURE-AI-1, before C
 | File | Writers, in order |
 |---|---|
 | `apps/game-server/src/foundation/runtime_actor_carrier.rs` | DEATH-2, ATTACK-1b, CREATURE-AI-1, SPAWN-1a (#1735 §0.3) |
-| `docs/contracts/RESOURCE_LIMITS_REGISTRY.json` | each writer edits only its own rows; SPAWN-1a's are `CREATUREAI0-RL-12`, `-14` |
+| `docs/contracts/RESOURCE_LIMITS_REGISTRY.json` | each writer edits only its own rows; SPAWN-1a's are `CREATUREAI0-RL-12`, `-14` and the eight FirstProduction rows of Amendment 04 §4 |
 | `apps/game-server/src/gameplay_transport/qualification.rs` | SESSION-PUSH-1 (#1736, door-USE expectations), SPAWN-1a (the activation-parts consumer); whichever is allocated second starts from `main` after the first merges |
 
 ## 1. Rulings
@@ -42,8 +45,8 @@ It changes only these things:
 - the spawn's single `cell_key` becomes an ordered `cell_keys` list,
   [`entry-den`, `entry-den-north`], with `population_limit` 2, and `accepted::SPAWN_CELL` becomes
   `accepted::SPAWN_CELLS` with the same two keys. The revision-2 qualifier refuses a list that is
-  empty, longer than `AI01-SPAWN-PLACEMENT-CELLS` (4), has a duplicate, names a cell that is not
-  Walkable or is a proof cell (start, east, north, the door), or whose length differs from
+  empty, longer than 2 (FirstProduction Amendment 04, §1.5), has a duplicate, names a cell that is
+  not Walkable or is a proof cell (start, east, north, the door), or whose length differs from
   `population_limit`;
 - `oteryn:map/entry-r1` becomes `oteryn:map/entry-r2`, and `oteryn:content/entry-r1` becomes
   `oteryn:content/entry-r2`; the package and lock identities become r2 (§1.2);
@@ -98,7 +101,35 @@ source enters the runtime through one additive constructor, or a builder step, n
 other call sites therefore compile unchanged and build a runtime with no spawn source, as today:
 `monster_lab.rs`, `movement.rs` and the carrier's tests.
 
-### 1.4 SPAWN-1a scope
+### 1.4 The owning profiles admit two placement cells (#1745 P1 4177087017, P1 4177087019)
+
+Two accepted profiles fix one cell and one rat, and the room needs two of each:
+
+- FirstProduction caps population at 1 per spawn and per scope (`production.rs`
+  `FIRST_PRODUCTION_MAX_SPAWN_POPULATION`, the aggregate check; the registry rows), and
+  `FirstProductionSpawn` has a single `cell_key`;
+- the native source overlay has exactly three cells and a singular spawn `cell_key` (Amendment 01 §3).
+
+This PR amends both owners:
+
+- **FirstProduction Amendment 04**
+  (`docs/architecture/OTERYN_GAME_FIRST_PRODUCTION_CONTENT_PROFILE_DECISION_2026-09-09_AMENDMENT_04.md`):
+  - still one spawn, with a population of 1 or 2 and at most 2 per scope;
+  - `cell_keys` replaces `cell_key`, whose length equals the population;
+  - a new three-field spawn-cell record, because the eight-field record limit leaves no room in the
+    spawn record;
+  - the mechanically recomputed maxima of eight registry rows.
+- **Native source Amendment 02**
+  (`docs/architecture/OTERYN_WORLD_PROJECT_SOURCE_PROFILE_V2_NATIVE_ENTRY_QUALIFICATION_AMENDMENT_02.md`):
+  - five room cells and six Terrain placements (five room cells and the door);
+  - the envelope [0,3) × [-1,1);
+  - the spawn's ordered `cell_keys` and the two spawn inputs;
+  - in-order lowering to the spawn-cell records.
+
+The room has five room cells, not four: start, east, north and the two dens. SPAWN-1a owns the
+implementation paths of both (§2.1).
+
+### 1.5 SPAWN-1a scope
 
 - **SPAWN-1a** (hard, performance review). It works from the fixture World's spawn source, read
   through one spawn-source seam that SPAWN-1b later feeds from the bundle. It builds:
@@ -116,7 +147,7 @@ other call sites therefore compile unchanged and build a runtime with no spawn s
 
 ```yaml
 task_id: OTV2-20261004-spawn-1a
-decision: CREATURE-AI-0 §6.2, §6.3; this decision §1.1-§1.4; ARCH-CORE-LOOP-PACKETS-2 §1.4 (#1735)
+decision: CREATURE-AI-0 §6.2, §6.3; this decision §1.1-§1.5; ARCH-CORE-LOOP-PACKETS-2 §1.4 (#1735)
 worker: oteryn-hard-worker
 review: performance and determinism review (Codex, final frozen head)
 branch: claude/spawn-1a-20261004
@@ -125,7 +156,11 @@ owned_paths:
   - apps/game-server/src/foundation/runtime_actor_carrier.rs
   - apps/game-server/src/ai/spawn*.rs                   # new: spawn-source seam, respawn chain
   - apps/game-server/src/ai/mod.rs
-  - apps/game-server/src/content/project/native_entry.rs  # the activated spawn source in the content pin parts; accepted pins, package and lock identities for room revision 2 (§1.1, §1.2)
+  - apps/game-server/src/content/production.rs  # FirstProduction Amendment 04: population 1..=2, aggregate 2, cell_keys, RECORD_SPAWN_CELL, the recomputed maxima and their max/max+1 tests
+  - apps/game-server/src/content/mod.rs  # re-exports of the changed FirstProduction items only
+  - apps/game-server/tests/content_first_production.rs  # Amendment 04 boundary tests and regenerated goldens
+  - tools/agents/tests/test_governance_lifecycle_first_production_content_registry.py  # Amendment 04 final values
+  - apps/game-server/src/content/project/native_entry.rs  # native source Amendment 02 overlay parsing and lowering (five room cells, cell_keys, spawn inputs); the activated spawn source in the content pin parts; accepted pins, package and lock identities for room revision 2 (§1.1, §1.2)
   - apps/game-server/src/content/project/native_entry_room.json  # room revision 2: the two den cells, the bounds, the spawn cells and population 2, map, content and package r2 (§1.1, §1.2)
   - apps/game-server/src/content/activation.rs  # NativeEntryContentPin, into_channel_parts, activate_native_entry_room (#1735 P1 4176940094)
   - apps/game-server/src/interaction/chest_use.rs  # entry_chest::CONTENT_REVISION and MAP_REVISION only, which gameplay_transport/mod.rs checks against accepted::REVISIONS (#1735 P1 4176975924)
@@ -134,7 +169,7 @@ owned_paths:
   - tools/monster-lab/arena_map.py  # only if it pins the room's cells or revisions
   - tools/monster-lab/test_arena_map.py  # the r2 export: six cells, the rats' slots at (2,0,0) and (2,-1,0) (#1735 P1 4177035362)
   - apps/game-server/src/node/serve.rs                  # boot composition only: pass the spawn source to the runtime constructor
-  - docs/contracts/RESOURCE_LIMITS_REGISTRY.json       # CREATUREAI0-RL-12, -14
+  - docs/contracts/RESOURCE_LIMITS_REGISTRY.json       # CREATUREAI0-RL-12, -14; the eight Amendment 04 §4 rows
   - docs/agents/tasks/archive/OTV2-20261004-spawn-1a.md
 validation:
   - cargo fmt --all -- --check
@@ -163,7 +198,7 @@ Acceptance:
 - Room revision 2 (§1.1, §1.2):
   - two rats are realized, one on `entry-den` and one on `entry-den-north`, and no proof cell
     holds a creature;
-  - a revision-2 spawn whose `cell_keys` list is empty, has five entries, has a duplicate, names
+  - a revision-2 spawn whose `cell_keys` list is empty, has three entries, has a duplicate, names
     a proof cell, or differs in length from `population_limit` is refused;
   - the start/east step-and-return proof and the door tests pass unchanged;
   - a revision-2 source with the spawn on `entry-east` or `entry-start` is refused;
@@ -173,6 +208,16 @@ Acceptance:
   - `test_arena_map.py` expects six cells and the rats' slots at (2, 0, 0) and (2, -1, 0);
   - every committed digest and golden is regenerated with the repository tooling, never by hand,
     and the monster-lab tests pass.
+- FirstProduction Amendment 04 (§1.4):
+  - population 2 and an aggregate of 2 are accepted;
+  - population 0 and 3, and an aggregate of 3, are refused before lowering;
+  - each of the eight Amendment 04 §4 rows has a max-accepted test and a max+1-refused test in
+    `production.rs`, and the governance registry test pins the new values;
+  - a spawn-cell record that is missing, extra, duplicate, out of order or dangling is refused;
+  - a decoded artifact round-trips the two cells in order.
+- Native source Amendment 02 (§1.4):
+  - a revision-2 overlay with four or six room cells, or a singular `cell_key`, is refused;
+  - a revision-1 overlay with `cell_keys` is refused.
 - The spawn inputs (§1.1): the realized point uses the source's `respawn_delay_ms` and
   `occupancy_retry_interval_ms`, with no runtime constant. A source missing either, a delay of
   999 ms or 86,400,001 ms, and a retry interval of 0 are each refused by the qualifier.
@@ -188,6 +233,10 @@ Acceptance:
 - **Keep the r1 package identity for r2.** Two contents under one immutable revision (§1.2).
 - **Bump every definition to `oteryn:rev/entry-r2`.** An unchanged definition would gain a second
   identity for the same bytes; revisions follow bytes.
+- **Two spawn records of one rat each.** D116 is one spawn of 2 rats, and FirstProduction admits
+  exactly one spawn. Two spawn records would widen the spawn count instead of the population.
+- **A ninth field in the spawn record.** That would raise the eight-field record maximum, and with it
+  every byte maximum of every record; the spawn-cell record changes only the spawn rows.
 - **Change `from_committed_assignment`'s signature.** It would touch every test call site for no
   behaviour change (§1.3).
 - **Keep the rat on `entry-east`.** The bindings forbid an activated spawn on a proof cell.
@@ -199,7 +248,9 @@ Acceptance:
 - **Must decide now:** YES. SPAWN-1a is the next runtime-lane packet after CREATURE-AI-1, and
   creatures appear on the playable path only through it.
 - **Minimum sufficient:** two cells, one bounds change, the D116 cell list and population, two
-  spawn inputs and the r2 identities the immutability rule requires. No new definition and no migration.
+  spawn inputs and the r2 identities the immutability rule requires. It also needs the two owning
+  profile amendments without which they cannot qualify, and one record kind. No new definition and
+  no migration.
 - **Superseding evidence:** a merged packet that already realizes the fixture spawn; a content
   decision that replaces the entry room.
 - **Deliberately not decided:** SPAWN-1b and the bundle spawn family (#1735 §1.4, §2.8).
