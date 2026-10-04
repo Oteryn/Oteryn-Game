@@ -90,7 +90,18 @@ const SHARED_DIRECTORY_SUCCESSOR_SHARDS: [&str; 1] = ["worlds/worlds-00000-00000
 /// locator, so legacy locator lookups scan no additional directory entries, except for the
 /// single explicit `SHARED_DIRECTORY_SUCCESSOR_SHARDS` entry.
 fn is_successor_shard(locator: &str) -> bool {
-    SHARED_DIRECTORY_SUCCESSOR_SHARDS.contains(&locator) || is_unshared_successor_shard(locator)
+    SHARED_DIRECTORY_SUCCESSOR_SHARDS.contains(&locator)
+        || is_unshared_successor_shard(locator)
+        || is_spawn_family_file(locator)
+}
+/// The `Spawn.Source` family (SPAWN-CONTENT-1; CREATURE-AI-0 section 6.1): its index and shards
+/// sit in `spawns/`, a successor directory that is not a contract tree node and holds no legacy
+/// locator. `convert_spawns.py --check` pins their bytes and
+/// `validate_materialized_game_tree.py` pins the index against the files on disk.
+fn is_spawn_family_file(locator: &str) -> bool {
+    locator.strip_prefix("spawns/").is_some_and(|name| {
+        name == "index.json" || (name.starts_with("spawns-") && name.ends_with(".json"))
+    })
 }
 fn is_unshared_successor_shard(locator: &str) -> bool {
     SUCCESSOR_TREE_MARKERS.iter().any(|marker| {
@@ -172,8 +183,11 @@ fn filesystem_limits() -> ProjectFilesystemLimits {
         // The 10 successor world markers add 5 siblings to the package root (seen by
         // each of the 11 locator lookups) plus 1 entry in worlds/: exactly 56 more. The
         // World family adds one shard beside worlds/world.json, which the single
-        // `worlds/world.json` lookup scans once: exactly 1 more (144 + 56 + 1).
-        max_total_directory_entries_scanned: 144 + 56 + 1,
+        // `worlds/world.json` lookup scans once: exactly 1 more (144 + 56 + 1). The `spawns/`
+        // family directory adds one more sibling to the package root, which the capture
+        // scans: 4 more entries scanned in total, measured (144 + 56 + 1 + 4). Beside this
+        // branch's spell imports the capture scans that sibling twice more: 2 more, measured.
+        max_total_directory_entries_scanned: 144 + 56 + 1 + 4 + 2,
     }
 }
 
