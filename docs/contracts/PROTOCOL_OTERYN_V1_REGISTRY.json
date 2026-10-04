@@ -53,6 +53,17 @@
       "offer_gate": "D170: the server does not offer this capability before CHARM-6 (unassign and reset) ships. Without it selected, domains 4 and 5 are never sent and command types 4 and 5 are refused as unsupported."
     },
     {
+      "id": 4,
+      "name": "ITEM_VIEW_MOVE_V1",
+      "owner_decision": "ITEM-MOVE-WIRE-0 ITEM-MOVE-WIRE0-ITEM-VIEW-AND-MOVE-V1 §4 and §5 (docs/architecture/reviews/OTERYN_GAME_ITEM_MOVE_WIRE0_ITEM_VIEW_AND_MOVE_DECISION_2026-09-30.md, owner D212); numbers assigned by D212 and registered by ITEM-VIEW-1a (#1622 control plane)",
+      "owner": "current ChannelRuntime (views and handles); Item durability (the TRANSFER behind command type 9)",
+      "requires": [6],
+      "command_types": [9],
+      "state_domains": [9, 11],
+      "offered": false,
+      "offer_gate": "ITEM-MOVE-1: the server does not offer this capability before command type 9 loots a corpse entry (ARCH-BATCH-ITEM-EQUIP-PACKETS §1.1). Without it selected, domains 9 and 11 are never sent, command type 9 is refused as unsupported, a USE intent with the item target (field 2) fails closed and the D85 entry carries no item handle (field 10)."
+    },
+    {
       "id": 6,
       "name": "WORLD_SPATIAL_ENTITIES",
       "owner_decision": "MOVE-RL-11-VISIBILITY-V1 (D84-D87, #162 comment 5875312123), VIS-2",
@@ -141,6 +152,16 @@
       "payload_schema": "docs/contracts/protocol-oteryn/v1/charm_bestiary_v1.proto#CharmAssignIntentV1",
       "result_schema": "docs/contracts/protocol-oteryn/v1/charm_bestiary_v1.proto#CharmAssignResultV1",
       "max_payload_bytes": 8,
+      "max_result_payload_bytes": 4
+    },
+    {
+      "id": 9,
+      "name": "ITEM_MOVE_INTENT",
+      "owner_decision": "ITEM-MOVE-WIRE-0 ITEM-MOVE-WIRE0-ITEM-VIEW-AND-MOVE-V1 §4 and §5 (docs/architecture/reviews/OTERYN_GAME_ITEM_MOVE_WIRE0_ITEM_VIEW_AND_MOVE_DECISION_2026-09-30.md, owner D212); numbers assigned by D212 and registered by ITEM-VIEW-1a (#1622 control plane)",
+      "capability": 4,
+      "payload_schema": "docs/contracts/protocol-oteryn/v1/item_view_v1.proto#ItemMoveIntentV1",
+      "result_schema": "docs/contracts/protocol-oteryn/v1/item_view_v1.proto#ItemMoveResultV1",
+      "max_payload_bytes": 13,
       "max_result_payload_bytes": 4
     },
     {
@@ -289,6 +310,54 @@
           "name": "CHARACTER_CHARMS_SNAPSHOT_V1",
           "payload_schema": "docs/contracts/protocol-oteryn/v1/charm_bestiary_v1.proto#CharmViewV1",
           "max_payload_bytes": 554
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "name": "CHARACTER_INVENTORY",
+      "owner_decision": "ITEM-MOVE-WIRE-0 ITEM-MOVE-WIRE0-ITEM-VIEW-AND-MOVE-V1 §4 and §5 (docs/architecture/reviews/OTERYN_GAME_ITEM_MOVE_WIRE0_ITEM_VIEW_AND_MOVE_DECISION_2026-09-30.md, owner D212); numbers assigned by D212 and registered by ITEM-VIEW-1a (#1622 control plane)",
+      "owner": "current ChannelRuntime",
+      "capability": 4,
+      "revision": "per GameSessionId, monotonic and never reused (FND-02 §15), carried in resume state across reconnect, resume and channel transfer; every admission, reconnect and transfer sends a snapshot above any revision the session has seen; a delta carries the whole view and is emitted only after the durable commit that changed it",
+      "delta_types": [
+        {
+          "id": 1,
+          "name": "CHARACTER_INVENTORY_DELTA_V1",
+          "payload_schema": "docs/contracts/protocol-oteryn/v1/item_view_v1.proto#CharacterInventoryV1",
+          "max_payload_bytes": 930
+        }
+      ],
+      "snapshot_types": [
+        {
+          "id": 1,
+          "name": "CHARACTER_INVENTORY_SNAPSHOT_V1",
+          "payload_schema": "docs/contracts/protocol-oteryn/v1/item_view_v1.proto#CharacterInventoryV1",
+          "max_payload_bytes": 930
+        }
+      ]
+    },
+    {
+      "id": 11,
+      "name": "OPEN_CONTAINER",
+      "owner_decision": "ITEM-MOVE-WIRE-0 ITEM-MOVE-WIRE0-ITEM-VIEW-AND-MOVE-V1 §4 and §5 (docs/architecture/reviews/OTERYN_GAME_ITEM_MOVE_WIRE0_ITEM_VIEW_AND_MOVE_DECISION_2026-09-30.md, owner D212); numbers assigned by D212 and registered by ITEM-VIEW-1a (#1622 control plane)",
+      "owner": "current ChannelRuntime",
+      "capability": 4,
+      "revision": "per GameSessionId, monotonic and never reused (FND-02 §15), carried in resume state across reconnect, resume and channel transfer; every admission, reconnect and transfer sends a snapshot above any revision the session has seen; a delta carries the whole view and is emitted only after the durable commit that changed it",
+      "delta_types": [
+        {
+          "id": 1,
+          "name": "OPEN_CONTAINER_DELTA_V1",
+          "payload_schema": "docs/contracts/protocol-oteryn/v1/item_view_v1.proto#OpenContainerV1",
+          "max_payload_bytes": 507
+        }
+      ],
+      "snapshot_types": [
+        {
+          "id": 1,
+          "name": "OPEN_CONTAINER_SNAPSHOT_V1",
+          "payload_schema": "docs/contracts/protocol-oteryn/v1/item_view_v1.proto#OpenContainerV1",
+          "max_payload_bytes": 507
         }
       ]
     },

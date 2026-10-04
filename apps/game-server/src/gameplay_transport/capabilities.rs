@@ -20,6 +20,10 @@ use oteryn_protocol_oteryn::charm::{
 use oteryn_protocol_oteryn::chat::{
     CAPABILITY_CHAT_V1, COMMAND_TYPE_CHAT_INTENT, STATE_DOMAIN_CHAT,
 };
+use oteryn_protocol_oteryn::item_view::{
+    CAPABILITY_ITEM_VIEW_MOVE_V1, COMMAND_TYPE_ITEM_MOVE_INTENT, STATE_DOMAIN_CHARACTER_INVENTORY,
+    STATE_DOMAIN_OPEN_CONTAINER,
+};
 
 /// One capability the server offers, with the capabilities that must also be selected for it
 /// (the registry entry's `requires`, empty when the entry has none).
@@ -48,6 +52,14 @@ const GATED: &[(u32, &[u32], &[u32])] = &[
         &[
             STATE_DOMAIN_CHARACTER_BESTIARY,
             STATE_DOMAIN_CHARACTER_CHARMS,
+        ],
+    ),
+    (
+        CAPABILITY_ITEM_VIEW_MOVE_V1,
+        &[COMMAND_TYPE_ITEM_MOVE_INTENT],
+        &[
+            STATE_DOMAIN_CHARACTER_INVENTORY,
+            STATE_DOMAIN_OPEN_CONTAINER,
         ],
     ),
     (

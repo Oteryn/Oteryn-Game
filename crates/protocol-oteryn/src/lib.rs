@@ -164,13 +164,14 @@ pub const MAX_SNAPSHOT_CHUNK_BYTES: usize = 524_288;
 pub const MAX_SNAPSHOT_ASSEMBLED_BYTES: u64 = 16_777_216;
 
 // The optional capabilities PROTOCOL_OTERYN_V1_REGISTRY.json registers: 1 BESTIARY_CHARMS_V1
-// (CHARM-5, not offered before CHARM-6), 6 WORLD_SPATIAL_ENTITIES (VIS-2, not offered before the
+// (CHARM-5, not offered before CHARM-6), 4 ITEM_VIEW_MOVE_V1 (ITEM-VIEW-1a, not offered before
+// ITEM-MOVE-1), 6 WORLD_SPATIAL_ENTITIES (VIS-2, not offered before the
 // server composes it), 7 CHAT_V1 (CHAT-1, not offered before CHAT-1b-2 composes it), 8
 // ACHIEVEMENT_NOTICES_V1 (ACH-NOTIFY-1, not offered before capability negotiation is composed) and
 // 10 ANALYSER_V1 (ANALYSER-WIRE-1, not offered before ANALYSER-EMIT-1). Registered is not offered:
 // the server selects none today.
 // Keep this sorted when a later owning gate allocates an additive capability ID.
-const REGISTERED_CAPABILITY_IDS_V1: &[u32] = &[1, 6, 7, 8, 10];
+const REGISTERED_CAPABILITY_IDS_V1: &[u32] = &[1, 4, 6, 7, 8, 10];
 
 fn decode_uuid_v7(input: &[u8]) -> Result<[u8; 16], FoundationProtocolError> {
     let value: [u8; 16] = input
@@ -2243,6 +2244,7 @@ pub mod charm;
 mod charm_wire;
 pub mod chat;
 pub mod damage_element;
+pub mod item_view;
 pub mod world_object;
 pub mod world_spatial;
 pub mod world_spatial_entities;
@@ -2995,16 +2997,17 @@ mod tests {
             ))
             .is_ok()
         );
-        // 1 BESTIARY_CHARMS_V1, 6 WORLD_SPATIAL_ENTITIES, 7 CHAT_V1, 8 ACHIEVEMENT_NOTICES_V1 and
-        // 10 ANALYSER_V1 are registered; 2 is reserved for PROF-WIRE-1 and 1000 is unallocated: a
-        // selected capability this build does not know fails.
+        // 1 BESTIARY_CHARMS_V1, 4 ITEM_VIEW_MOVE_V1, 6 WORLD_SPATIAL_ENTITIES, 7 CHAT_V1, 8
+        // ACHIEVEMENT_NOTICES_V1 and 10 ANALYSER_V1 are registered; 2 is reserved for PROF-WIRE-1
+        // and 1000 is unallocated: a selected capability this build does not know fails.
         for selected in [
             &[6_usize][..],
             &[1, 6][..],
+            &[4, 6][..],
             &[7][..],
             &[8][..],
             &[10][..],
-            &[1, 6, 7, 8, 10][..],
+            &[1, 4, 6, 7, 8, 10][..],
         ] {
             assert!(
                 decode_wire_envelope(&test_envelope(
