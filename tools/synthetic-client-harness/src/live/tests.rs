@@ -8,14 +8,15 @@ use super::cli::{
 use super::controller::LiveController;
 use super::input::LiveInput;
 use super::model::{
-    DOOR_PLACEMENT, DOOR_STATE_CLOSED, DOOR_STATE_OPEN, DOOR_TILE, DoorState, DoorView,
+    ChatPane, DOOR_PLACEMENT, DOOR_STATE_CLOSED, DOOR_STATE_OPEN, DOOR_TILE, DoorState, DoorView,
     LiveCommand, Notice, RenderModel, Tile, Viewport, command_for_click, render_text,
     step_direction_for_action, tile_at_pixel, tile_centre_pixel,
 };
 use oteryn_dev_client::{
-    AppliedDelta, CommandOutcome, EntityDetail, EntityKind, EntityRef, JoinRequest, JoinSnapshot,
-    SessionEvent, StepOutcome, UseOutcome, WorldSpatialEntitiesDelta, WorldSpatialEntity,
-    connect_session,
+    AppliedDelta, ChatDisposition, ChatIntent, ChatLine, ChatOutcome, ChatRoom, ChatRoomSet,
+    ChatSpeaker, ChatSpeechMode, CommandOutcome, EntityDetail, EntityKind, EntityRef, JoinRequest,
+    JoinSnapshot, MAX_CHAT_LOG_LINES, MAX_CHAT_TEXT_BYTES, SessionEvent, StepOutcome, UseOutcome,
+    WorldSpatialEntitiesDelta, WorldSpatialEntity, connect_session,
 };
 use oteryn_input_actions::{ButtonState, KeyCode, Modifiers, NormalizedInputEvent};
 use oteryn_protocol_oteryn::actor_spell::{self, ActorVitals};
@@ -71,6 +72,7 @@ fn model(actor: (i32, i32), door: DoorState, revision: u64) -> RenderModel {
         entities: BTreeMap::new(),
         own_identity: None,
         selected: None,
+        chat: ChatPane::default(),
         notice: Notice::Joined,
     }
 }
@@ -988,4 +990,236 @@ fn grant_material_strips_trailing_line_endings_only() {
     assert_eq!(grant_material(b"a.b.c\r\n".to_vec()), b"a.b.c".to_vec());
     assert_eq!(grant_material(b"a.b.c".to_vec()), b"a.b.c".to_vec());
     assert_eq!(grant_material(b" a.b.c ".to_vec()), b" a.b.c ".to_vec());
+}
+
+// --- CHAT-CLIENT-1: the chat pane, the chat input lines and the viewport edge.
+
+fn chat_event(line: ChatLine, revision: u64) -> SessionEvent {
+    SessionEvent::ChatLine(AppliedDelta {
+        server_sequence: 50 + revision,
+        base_revision: revision,
+        new_revision: revision + 1,
+        value: line,
+    })
+}
+
+fn room_line(text: &str) -> ChatLine {
+    ChatLine::Room {
+        room: ChatRoom::Help,
+        speaker_name: "Ada".to_owned(),
+        text: text.to_owned(),
+    }
+}
+
+fn chat_outcome(disposition: ChatDisposition, wait_seconds: u32) -> ChatOutcome {
+    ChatOutcome {
+        command_id: 9,
+        status: CommandStatus::Accepted,
+        disposition,
+        wait_seconds,
+        result_server_sequence: 60,
+    }
+}
+
+#[test]
+fn chat_input_lines_map_to_every_intent() {
+    let say = |mode, text: &str| {
+        Some(LineCommand::Chat(ChatIntent::Say {
+            mode,
+            text: text.to_owned(),
+        }))
+    };
+    assert_eq!(
+        parse_line("say hello  there \n"),
+        say(ChatSpeechMode::Say, "hello  there")
+    );
+    assert_eq!(parse_line("yell HEY"), say(ChatSpeechMode::Yell, "HEY"));
+    assert_eq!(
+        parse_line("whisper psst"),
+        say(ChatSpeechMode::Whisper, "psst")
+    );
+    assert_eq!(
+        parse_line("pm Bob how are you"),
+        Some(LineCommand::Chat(ChatIntent::Private {
+            recipient_name: "Bob".to_owned(),
+            text: "how are you".to_owned(),
+        }))
+    );
+    assert_eq!(
+        parse_line("room 3 anyone?"),
+        Some(LineCommand::Chat(ChatIntent::Room {
+            room: ChatRoom::Help,
+            text: "anyone?".to_owned(),
+        }))
+    );
+    assert_eq!(
+        parse_line("open 1"),
+        Some(LineCommand::Chat(ChatIntent::OpenRoom(ChatRoom::World)))
+    );
+    assert_eq!(
+        parse_line("close 4"),
+        Some(LineCommand::Chat(ChatIntent::CloseRoom(
+            ChatRoom::Advertising
+        )))
+    );
+    for rejected in [
+        "say",
+        "say   ",
+        "pm Bob",
+        "room 5 x",
+        "room x y",
+        "open",
+        "open 9",
+        "close 1 2",
+    ] {
+        assert_eq!(parse_line(rejected), None, "{rejected}");
+    }
+    let at_bound = format!("say {}", "x".repeat(MAX_CHAT_TEXT_BYTES));
+    assert!(matches!(parse_line(&at_bound), Some(LineCommand::Chat(_))));
+    assert_eq!(parse_line(&format!("{at_bound}x")), None);
+    // Chat is not an input event.
+    assert!(
+        events_for(
+            LineCommand::Chat(ChatIntent::OpenRoom(ChatRoom::World)),
+            view(),
+            &model((0, 0), DoorState::Closed, 2)
+        )
+        .is_ok_and(|events| events.is_empty())
+    );
+}
+
+#[test]
+fn every_line_kind_renders_in_the_pane_with_the_dropped_marker() {
+    let speaker = ChatSpeaker {
+        identity: [9; 16],
+        generation: std::num::NonZeroU64::MIN,
+    };
+    let local = |mode| ChatLine::Local {
+        speaker,
+        speaker_name: "Bob".to_owned(),
+        mode,
+        text: "hi".to_owned(),
+        position: ActorPosition {
+            x: 1,
+            y: 1,
+            floor: 0,
+        },
+    };
+    let events = [
+        chat_event(local(ChatSpeechMode::Say), 0),
+        chat_event(local(ChatSpeechMode::Whisper), 1),
+        chat_event(local(ChatSpeechMode::Yell), 2),
+        chat_event(
+            ChatLine::Private {
+                speaker_name: "Cy".to_owned(),
+                text: "psst".to_owned(),
+            },
+            3,
+        ),
+        chat_event(room_line("anyone?"), 4),
+        chat_event(ChatLine::Dropped, 5),
+        SessionEvent::ChatRooms(AppliedDelta {
+            server_sequence: 70,
+            base_revision: 6,
+            new_revision: 7,
+            value: {
+                let mut set = ChatRoomSet::default();
+                set.insert(ChatRoom::World);
+                set.insert(ChatRoom::Help);
+                set
+            },
+        }),
+    ];
+    let start = model((0, 0), DoorState::Closed, 2);
+    let after = start.apply_events(&events);
+    // Applied while idle: the notice is kept, the pane changed.
+    assert_eq!(after.notice, Notice::Joined);
+    let text = render_text(view(), &after);
+    let pane: Vec<&str> = text
+        .lines()
+        .skip_while(|line| !line.starts_with("chat ["))
+        .collect();
+    assert_eq!(
+        pane,
+        [
+            "chat [World, Help]",
+            "Bob says: hi",
+            "Bob whispers: hi",
+            "Bob yells: hi",
+            "Cy (private): psst",
+            "[Help] Ada: anyone?",
+            "-- DROPPED: chat lines were lost --",
+        ]
+    );
+    // Without capability 7 there is no pane at all.
+    assert!(!render_text(view(), &start).contains("chat"));
+}
+
+#[test]
+fn the_pane_keeps_the_last_64_lines() {
+    let events: Vec<SessionEvent> = (0..=MAX_CHAT_LOG_LINES)
+        .map(|index| chat_event(room_line(&format!("line {index}")), index as u64))
+        .collect();
+    let after = model((0, 0), DoorState::Closed, 2).apply_events(&events);
+    assert_eq!(after.chat.lines.len(), MAX_CHAT_LOG_LINES);
+    assert_eq!(after.chat.lines.first(), Some(&room_line("line 1")));
+    assert_eq!(
+        after.chat.lines.last(),
+        Some(&room_line(&format!("line {MAX_CHAT_LOG_LINES}")))
+    );
+}
+
+#[test]
+fn muted_and_exhausted_show_their_wait_and_change_nothing_else() {
+    let start = model((0, 0), DoorState::Closed, 2).apply_events(&[chat_event(room_line("x"), 0)]);
+    for (disposition, wait, text) in [
+        (ChatDisposition::Muted, 30, "muted, wait 30 s"),
+        (
+            ChatDisposition::Exhausted,
+            1_280,
+            "chat exhausted, wait 1280 s",
+        ),
+    ] {
+        let after = start.apply_chat(&chat_outcome(disposition, wait));
+        assert_eq!(after.notice.text(), text);
+        assert_eq!(
+            RenderModel {
+                notice: Notice::Joined,
+                ..after
+            },
+            start
+        );
+    }
+    assert_eq!(
+        start
+            .apply_chat(&chat_outcome(ChatDisposition::Ok, 0))
+            .notice,
+        Notice::ChatSent
+    );
+    assert_eq!(
+        start
+            .apply_chat(&chat_outcome(ChatDisposition::RoomNotOpen, 0))
+            .notice,
+        Notice::ChatRefused
+    );
+    assert_eq!(ChatPane::default().lines.len(), 0);
+}
+
+#[test]
+fn cells_beyond_the_i32_world_alias_no_real_tile() {
+    // The actor stands at the maximum x: the cells to its east are off the world, and the entity
+    // at x = i32::MAX must be drawn once (under the actor's column), not repeated eastwards.
+    let mut edge = model((i32::MAX, 0), DoorState::Closed, 2);
+    let corpse = object_entity(
+        EntityKind::Corpse,
+        7,
+        ActorPosition {
+            x: i32::MAX,
+            y: -1,
+            floor: 0,
+        },
+    );
+    edge.entities.insert(corpse.entity, corpse);
+    let text = render_text(view(), &edge);
+    assert_eq!(text.matches('x').count(), 1, "{text}");
 }
