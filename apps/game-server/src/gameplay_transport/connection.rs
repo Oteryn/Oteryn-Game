@@ -139,6 +139,8 @@ pub(crate) struct SessionContinuity {
     /// Channel-global, so this field is written from the live value actually sent, not trusted
     /// to already match it — see `serve_admitted`.
     pub(crate) overlay_revision: u64,
+    /// Last complete own-actor vitals state actually transmitted.
+    pub(crate) vitals_revision: u64,
     /// `ACCOUNT_ACHIEVEMENT_NOTICES` (domain 13, ACHIEVEMENT-0 §5): `None` when the session did
     /// not select capability 8, which production never does before capability negotiation is
     /// composed. Otherwise the domain's revision: 0 at the session's first snapshot, plus 1 for
@@ -165,6 +167,7 @@ impl SessionContinuity {
         server_sequence: 0,
         spatial_revision: 1,
         overlay_revision: 0,
+        vitals_revision: 0,
         achievement_notice_revision: None,
         selected_capabilities: SelectedCapabilities::NONE,
         item_view: ItemViewContinuity {
@@ -384,6 +387,18 @@ pub(crate) trait FreshAdmissionAuthority {
         _intent: SpellCastIntent,
     ) -> impl Future<Output = SpellCastOutcome> {
         async { SpellCastOutcome::rejected() }
+    }
+
+    /// None keeps an ambiguously committed original spell outstanding. It is
+    /// never encoded as a terminal rejection or advanced to the next CommandId.
+    fn cast_spell_completion(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        command_id: u64,
+        intent: SpellCastIntent,
+    ) -> impl Future<Output = Option<SpellCastOutcome>> {
+        async move { Some(self.cast_spell(actor, session, command_id, intent).await) }
     }
 
     /// One `ACCOUNT_ACHIEVEMENTS_QUERY` page of the request's account's earned facts (display
@@ -847,7 +862,11 @@ where
     // `WORLD_OBJECT_OVERLAY`, the same code path a reconnect resumes through, so a resumed
     // connection gets the door's current overlay exactly as a fresh join does.
     let overlay = authority.observe_world_object_overlay().await;
-    let overlay_payload;
+    // Absence qualifies the initial empty domain, not a reset of an overlay
+    // revision already delivered on this session. Refuse an unavailable owner.
+    if overlay.is_none() && admitted.continuity.overlay_revision != 0 {
+        return ConnectionEnd::AdmittedThenDisconnected(admitted);
+    }
     // Spell cast §3/§4: the own actor's `ACTOR_VITALS`, when it has them, in the same snapshot.
     let vitals = authority
         .observe_vitals(actor, admitted.game_session_id)
@@ -884,18 +903,20 @@ where
             ))
         }
     };
-    if let Some(entry) = &overlay {
-        let Ok(bytes) = encode_world_object_overlay_snapshot(std::slice::from_ref(entry)) else {
-            return ConnectionEnd::AdmittedThenDisconnected(admitted);
-        };
-        overlay_payload = bytes;
-        domains.push(DomainSnapshot {
-            domain_id: STATE_DOMAIN_WORLD_OBJECT_OVERLAY,
-            revision: entry.revision,
-            snapshot_type: SNAPSHOT_TYPE_WORLD_OBJECT_OVERLAY_V1,
-            payload: &overlay_payload,
-        });
-    }
+    // An empty overlay is still the registered domain's complete snapshot.
+    // Source-qualified maps have no legacy entry-room door; publish no invented
+    // placement, while allowing the client to distinguish empty from missing.
+    let entries = overlay.as_slice();
+    let Ok(overlay_payload) = encode_world_object_overlay_snapshot(entries) else {
+        return ConnectionEnd::AdmittedThenDisconnected(admitted);
+    };
+    let overlay_revision = overlay.as_ref().map_or(0, |entry| entry.revision);
+    domains.push(DomainSnapshot {
+        domain_id: STATE_DOMAIN_WORLD_OBJECT_OVERLAY,
+        revision: overlay_revision,
+        snapshot_type: SNAPSHOT_TYPE_WORLD_OBJECT_OVERLAY_V1,
+        payload: &overlay_payload,
+    });
     if let Some((vitals_revision, value)) = &vitals {
         let Ok(bytes) = encode_actor_vitals(value) else {
             return ConnectionEnd::AdmittedThenDisconnected(admitted);
@@ -1026,8 +1047,9 @@ where
     // `spatial_revision`, this actor's own counter), so the reconnect fence (`resume.rs`,
     // r4122215795) must record what was actually confirmed delivered, never a value written
     // before transmission could still fail partway through.
-    if let Some(entry) = &overlay {
-        admitted.continuity.overlay_revision = entry.revision;
+    admitted.continuity.overlay_revision = overlay_revision;
+    if let Some((vitals_revision, _)) = &vitals {
+        admitted.continuity.vitals_revision = *vitals_revision;
     }
     let mut sequence = admitted.continuity.server_sequence;
     let mut next_command = admitted.continuity.next_command_id;
@@ -1137,13 +1159,24 @@ where
             },
             Next::Held(frame) => (frame, true),
             Next::Serene => {
-                let Some((to, value)) =
-                    authority.tick_vitals(actor, admitted.game_session_id).await
+                let changed = authority.tick_vitals(actor, admitted.game_session_id).await;
+                let current = authority
+                    .observe_vitals(actor, admitted.game_session_id)
+                    .await;
+                let Some((to, value)) = current
+                    .filter(|(revision, _)| *revision > admitted.continuity.vitals_revision)
+                    .or(changed
+                        .filter(|(revision, _)| *revision > admitted.continuity.vitals_revision))
                 else {
                     continue;
                 };
-                let Some((delta_sequence, delta)) = vitals_delta(generation, sequence, to, &value)
-                else {
+                let Some((delta_sequence, delta)) = vitals_delta(
+                    generation,
+                    sequence,
+                    admitted.continuity.vitals_revision,
+                    to,
+                    &value,
+                ) else {
                     return ConnectionEnd::AdmittedThenDisconnected(admitted);
                 };
                 sequence = delta_sequence;
@@ -1151,6 +1184,7 @@ where
                 if write_frame(stream, &delta).await.is_err() {
                     return ConnectionEnd::AdmittedThenDisconnected(admitted);
                 }
+                admitted.continuity.vitals_revision = to;
                 continue;
             }
             Next::QuestLog => {
@@ -1423,11 +1457,20 @@ where
             }
         } else if command.command_type == COMMAND_TYPE_WORLD_ACTOR_SPELL_CAST_INTENT {
             match decode_spell_cast_intent(command.payload) {
-                Ok(intent) => Dispatch::Spell(
-                    authority
-                        .cast_spell(actor, admitted.game_session_id, command.command_id, intent)
-                        .await,
-                ),
+                Ok(intent) => match authority
+                    .cast_spell_completion(
+                        actor,
+                        admitted.game_session_id,
+                        command.command_id,
+                        intent,
+                    )
+                    .await
+                {
+                    Some(outcome) => Dispatch::Spell(outcome),
+                    // Preserve continuity's original next command and no terminal
+                    // outcome; reconnect/reconciliation cannot pay or reroll twice.
+                    None => return ConnectionEnd::AdmittedThenDisconnected(admitted),
+                },
                 Err(_) => Dispatch::Spell(SpellCastOutcome::rejected()),
             }
         } else if command.command_type == COMMAND_TYPE_CONTAINER_VIEW_INTENT {
@@ -1755,10 +1798,22 @@ where
             Dispatch::Spell(outcome) => {
                 // ACTOR_VITALS (domain 3, delta type 1) carries the owner's own per-actor
                 // revision: a committed cast advances it by exactly one.
-                if let Some((to, value)) = outcome.vitals {
-                    let Some((delta_sequence, delta)) =
-                        vitals_delta(generation, sequence, to, &value)
-                    else {
+                let observed = authority
+                    .observe_vitals(actor, admitted.game_session_id)
+                    .await;
+                if let Some((to, value)) = observed
+                    .filter(|(revision, _)| *revision > admitted.continuity.vitals_revision)
+                    .or(outcome
+                        .vitals
+                        .filter(|(revision, _)| *revision > admitted.continuity.vitals_revision))
+                {
+                    let Some((delta_sequence, delta)) = vitals_delta(
+                        generation,
+                        sequence,
+                        admitted.continuity.vitals_revision,
+                        to,
+                        &value,
+                    ) else {
                         return ConnectionEnd::AdmittedThenDisconnected(admitted);
                     };
                     sequence = delta_sequence;
@@ -1766,6 +1821,7 @@ where
                     if write_frame(stream, &delta).await.is_err() {
                         return ConnectionEnd::AdmittedThenDisconnected(admitted);
                     }
+                    admitted.continuity.vitals_revision = to;
                 }
             }
             Dispatch::UseItem(_, Some(delta)) | Dispatch::ContainerView(_, Some(delta)) => {
@@ -1798,16 +1854,20 @@ where
     }
 }
 
-/// The `ACTOR_VITALS` delta (domain 3, delta type 1) from revision `to - 1` to `to`, at the
-/// sequence after `sequence`; `None` on an encoding fault.
+/// The `ACTOR_VITALS` delta (domain 3, delta type 1) from the last transmitted revision to `to`, at the
+/// sequence after `sequence`; `None` on an encoding fault. The complete value
+/// may coalesce multiple actual owner changes from the last transmitted revision.
 fn vitals_delta(
     generation: u64,
     sequence: u64,
+    from: u64,
     to: u64,
     value: &ActorVitals,
 ) -> Option<(u64, Vec<u8>)> {
     let delta_sequence = sequence.checked_add(1)?;
-    let from = to.checked_sub(1)?;
+    if from == 0 || to <= from {
+        return None;
+    }
     let payload = encode_actor_vitals(value).ok()?;
     let delta = encode_state_delta(
         generation,
@@ -1905,6 +1965,106 @@ mod tests {
     const SESSION: [u8; 16] = uuid_v7(0x22);
     const WORLD: [u8; 16] = uuid_v7(0x33);
     const CHANNEL: [u8; 16] = uuid_v7(0x44);
+
+    #[test]
+    fn vitals_publication_coalesces_real_changes_from_last_transmitted_revision()
+    -> Result<(), Box<dyn Error>> {
+        let (sequence, wire) = vitals_delta(2, 11, 40, 43, &SERENE_VITALS).ok_or("delta")?;
+        let envelope = oteryn_protocol_oteryn::decode_wire_envelope(&wire)?;
+        let delta = oteryn_protocol_oteryn::decode_state_delta(envelope.payload())?;
+        assert_eq!(
+            (sequence, delta.base_revision, delta.new_revision),
+            (12, 40, 43)
+        );
+        assert_eq!(
+            delta.payload,
+            encode_actor_vitals(&SERENE_VITALS).map_err(|_| "vitals")?
+        );
+        assert!(vitals_delta(2, 11, 0, 43, &SERENE_VITALS).is_none());
+        assert!(vitals_delta(2, 11, 43, 43, &SERENE_VITALS).is_none());
+        assert!(vitals_delta(2, 11, 44, 43, &SERENE_VITALS).is_none());
+        Ok(())
+    }
+
+    struct PendingSpellAuthority;
+    impl FreshAdmissionAuthority for PendingSpellAuthority {
+        async fn admit(
+            &self,
+            _: FreshAdmissionAttempt<'_>,
+        ) -> Result<AdmittedSession, AdmissionRefusal> {
+            Err(AdmissionRefusal::Rejected)
+        }
+        async fn observe(&self, _: ExactActorRef) -> Option<WorldSpatialObservation> {
+            Some(at(0))
+        }
+        async fn observe_vitals(
+            &self,
+            _: ExactActorRef,
+            _: GameSessionId,
+        ) -> Option<(u64, ActorVitals)> {
+            Some((1, SERENE_VITALS))
+        }
+        async fn cast_spell_completion(
+            &self,
+            _: ExactActorRef,
+            _: GameSessionId,
+            _: u64,
+            _: SpellCastIntent,
+        ) -> Option<SpellCastOutcome> {
+            None
+        }
+    }
+
+    #[test]
+    fn unknown_spell_commit_preserves_original_command_and_emits_no_terminal_result()
+    -> Result<(), Box<dyn Error>> {
+        use super::super::actor_spell::tests as spell;
+        run(async {
+            let (_, actor, session) = spell::runtime_with_player(0x73);
+            let admitted = AdmittedSession {
+                game_session_id: session,
+                world_id: WorldId::decode(&uuid_v7(0x60))?,
+                channel_id: ChannelId::decode(&uuid_v7(0x61))?,
+                runtime_actor: Some(actor),
+                first_entry: FirstEntryOutcome::Positioned,
+                controller: None,
+                continuity: SessionContinuity::FRESH,
+                item_fence: None,
+            };
+            let intent = SpellCastIntent {
+                spell: std::num::NonZeroU32::new(1).ok_or("index")?,
+                target: oteryn_protocol_oteryn::actor_spell::SpellTarget::None,
+                aim_at_target: false,
+            };
+            let payload = super::super::actor_spell::encode_spell_cast_intent(&intent);
+            let (mut server, mut client) = tokio::io::duplex(1 << 16);
+            write_frame(&mut client, &cast_command(1, &payload)).await?;
+            let end =
+                serve_admitted(&mut server, admitted, &PendingSpellAuthority, IDLE_LIVENESS).await;
+            let ConnectionEnd::AdmittedThenDisconnected(retained) = end else {
+                return Err("unexpected end".into());
+            };
+            assert_eq!(retained.continuity.next_command_id, 1);
+            assert_eq!(retained.continuity.server_sequence, 0);
+            assert_eq!(retained.continuity.vitals_revision, 1);
+            drop(server);
+            let mut bytes = Vec::new();
+            client.read_to_end(&mut bytes).await?;
+            let mut remaining = bytes.as_slice();
+            while !remaining.is_empty() {
+                let prefix: [u8; 4] = remaining.get(..4).ok_or("prefix")?.try_into()?;
+                let length = usize::try_from(u32::from_be_bytes(prefix))?;
+                let wire = remaining.get(4..4 + length).ok_or("frame")?;
+                let envelope = oteryn_protocol_oteryn::decode_wire_envelope(wire)?;
+                assert_ne!(
+                    envelope.message_type(),
+                    oteryn_protocol_oteryn::MessageType::CommandResult
+                );
+                remaining = remaining.get(4 + length..).ok_or("tail")?;
+            }
+            Ok(())
+        })
+    }
 
     const fn uuid_v7(tag: u8) -> [u8; 16] {
         let mut bytes = [tag; 16];
@@ -2219,17 +2379,31 @@ mod tests {
         Ok((end, frames))
     }
 
+    // V1 encodes the empty entry list as an empty payload, while retaining
+    // the registered domain, snapshot type and initial revision in the envelope.
+    fn empty_overlay_snapshot() -> DomainSnapshot<'static> {
+        DomainSnapshot {
+            domain_id: STATE_DOMAIN_WORLD_OBJECT_OVERLAY,
+            revision: 0,
+            snapshot_type: SNAPSHOT_TYPE_WORLD_OBJECT_OVERLAY_V1,
+            payload: &[],
+        }
+    }
+
     fn baseline() -> Vec<Vec<u8>> {
         encode_single_chunk_snapshot(
             ADMITTED_GENERATION,
             1,
             0,
-            &[DomainSnapshot {
-                domain_id: STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
-                revision: 1,
-                snapshot_type: SNAPSHOT_TYPE_WORLD_SPATIAL_V1,
-                payload: &encode_world_spatial(&at(0)),
-            }],
+            &[
+                DomainSnapshot {
+                    domain_id: STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
+                    revision: 1,
+                    snapshot_type: SNAPSHOT_TYPE_WORLD_SPATIAL_V1,
+                    payload: &encode_world_spatial(&at(0)),
+                },
+                empty_overlay_snapshot(),
+            ],
         )
         .expect("snapshot")
         .into()
@@ -2545,6 +2719,7 @@ mod tests {
                     server_sequence: 4,
                     spatial_revision: 2,
                     overlay_revision: 0,
+                    vitals_revision: 0,
                     achievement_notice_revision: None,
                     selected_capabilities: SelectedCapabilities::NONE,
                     item_view: ItemViewContinuity::default(),
@@ -3167,6 +3342,65 @@ mod tests {
     /// calls have gone through the inner stream, then fails every call after. Reads are
     /// unaffected. Used to prove a specific frame's transmission fails, without racing a real
     /// duplex's buffering/timing.
+    #[test]
+    fn admitted_empty_overlay_is_present_and_records_its_delivered_revision()
+    -> Result<(), Box<dyn Error>> {
+        run(async {
+            let authority = UseAuthority {
+                uses: RefCell::new(Vec::new()),
+                commands: RefCell::new(Vec::new()),
+                overlay: None,
+                watermark: None,
+                outcome: UseOutcome::rejected(),
+            };
+            let world_id = WorldId::decode(&WORLD)?;
+            let channel_id = ChannelId::decode(&CHANNEL)?;
+            let mut admitted = AdmittedSession {
+                game_session_id: GameSessionId::decode(&SESSION)?,
+                world_id,
+                channel_id,
+                runtime_actor: Some(ExactActorRef::transport_fixture(world_id, channel_id)),
+                first_entry: FirstEntryOutcome::Positioned,
+                controller: None,
+                continuity: SessionContinuity::FRESH,
+                item_fence: None,
+            };
+            let (end, frames) = drive_session(&authority, admitted, &[]).await?;
+            let chunk = oteryn_protocol_oteryn::decode_wire_envelope(
+                frames.get(1).ok_or("missing snapshot chunk")?,
+            )?;
+            let (_, domains) = oteryn_protocol_oteryn::decode_snapshot_chunk(chunk.payload())?;
+            let overlay = domains
+                .iter()
+                .find(|domain| domain.domain_id == STATE_DOMAIN_WORLD_OBJECT_OVERLAY)
+                .ok_or("empty overlay domain was omitted")?;
+            assert_eq!(overlay.revision, 0);
+            assert_eq!(overlay.snapshot_type, SNAPSHOT_TYPE_WORLD_OBJECT_OVERLAY_V1);
+            assert!(
+                oteryn_protocol_oteryn::world_object::decode_world_object_overlay_snapshot(
+                    overlay.payload
+                )
+                .map_err(|error| format!("empty overlay decode: {error:?}"))?
+                .is_empty()
+            );
+            let ConnectionEnd::AdmittedThenDisconnected(ended) = end else {
+                return Err(format!("unexpected end {end:?}").into());
+            };
+            assert_eq!(ended.continuity.overlay_revision, 0);
+            admitted.continuity.overlay_revision = 7;
+            let (end, frames) = drive_session(&authority, admitted, &[]).await?;
+            assert!(
+                frames.is_empty(),
+                "an unavailable previous overlay must not publish empty"
+            );
+            let ConnectionEnd::AdmittedThenDisconnected(ended) = end else {
+                return Err(format!("unexpected end {end:?}").into());
+            };
+            assert_eq!(ended.continuity.overlay_revision, 7);
+            Ok(())
+        })
+    }
+
     struct FailNthWrite<S> {
         inner: S,
         ok_writes: usize,
@@ -3391,12 +3625,15 @@ mod tests {
                 ADMITTED_GENERATION,
                 1,
                 0,
-                &[DomainSnapshot {
-                    domain_id: STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
-                    revision: 1,
-                    snapshot_type: SNAPSHOT_TYPE_WORLD_SPATIAL_V1,
-                    payload: &encode_world_spatial(&at(0)),
-                }],
+                &[
+                    DomainSnapshot {
+                        domain_id: STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
+                        revision: 1,
+                        snapshot_type: SNAPSHOT_TYPE_WORLD_SPATIAL_V1,
+                        payload: &encode_world_spatial(&at(0)),
+                    },
+                    empty_overlay_snapshot(),
+                ],
             )?
             .into();
             expected.extend([
@@ -3567,6 +3804,7 @@ mod tests {
                         snapshot_type: SNAPSHOT_TYPE_WORLD_SPATIAL_V1,
                         payload: &encode_world_spatial(&at(0)),
                     },
+                    empty_overlay_snapshot(),
                     DomainSnapshot {
                         domain_id: STATE_DOMAIN_ACTOR_VITALS,
                         revision: 1,
@@ -3697,6 +3935,7 @@ mod tests {
                         snapshot_type: SNAPSHOT_TYPE_WORLD_SPATIAL_V1,
                         payload: &encode_world_spatial(&at(0)),
                     },
+                    empty_overlay_snapshot(),
                     DomainSnapshot {
                         domain_id: STATE_DOMAIN_ACTOR_VITALS,
                         revision: 1,
@@ -3846,6 +4085,7 @@ mod tests {
                         snapshot_type: SNAPSHOT_TYPE_WORLD_SPATIAL_V1,
                         payload: &encode_world_spatial(&at(0)),
                     },
+                    empty_overlay_snapshot(),
                     DomainSnapshot {
                         domain_id: STATE_DOMAIN_ACTOR_VITALS,
                         revision: 2,
@@ -4089,6 +4329,7 @@ mod tests {
                     snapshot_type: SNAPSHOT_TYPE_WORLD_SPATIAL_V1,
                     payload: &encode_world_spatial(&at(0)),
                 },
+                empty_overlay_snapshot(),
                 DomainSnapshot {
                     domain_id: STATE_DOMAIN_ACCOUNT_ACHIEVEMENT_NOTICES,
                     revision,

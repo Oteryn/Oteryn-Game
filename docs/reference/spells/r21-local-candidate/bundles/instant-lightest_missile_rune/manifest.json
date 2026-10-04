@@ -1,0 +1,377 @@
+{
+  "sources": [
+    {
+      "repository": "opentibiabr/canary",
+      "revision": "99902524e052f37574194466c2949c576e4ab269"
+    },
+    {
+      "repository": "zimbadev/crystalserver",
+      "revision": "ff7ede593c69d4c658b382c97443e8155926924a"
+    },
+    {
+      "kind": "mediawiki",
+      "api": "https://www.tibiawiki.com.br/api.php",
+      "title": "Lightest Missile Rune",
+      "page_id": 34176,
+      "revision_id": 435702,
+      "content_sha256": "a0138e79d056df3e869211d85cd342f900387f6d916cb46aef1f0d4f3ab8198c"
+    }
+  ],
+  "entries": [
+    {
+      "source_index": 0,
+      "source_file": "data/scripts/spells/conjuring/lightest_missile_rune.lua",
+      "source_line": 1,
+      "source_field": "spell",
+      "kind": "script",
+      "status": "unresolved_semantics",
+      "resolution": "S25 (owner, 2026-09-28): the conjuring spell is absent from the official spell library (TibiaData /v4/spells, 193 entries) and Fandom marks it deprecated (Dawnport); the removal patch is not known. The rune item stays. (https://www.tibia.com/library/?subtopic=spells)"
+    },
+    {
+      "source_index": 0,
+      "source_file": "data/scripts/spells/conjuring/lightest_missile_rune.lua",
+      "source_line": 8,
+      "source_field": "words",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/words",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 1,
+      "source_file": "data/scripts/spells/conjuring/lightest_missile_rune.lua",
+      "source_line": 8,
+      "source_field": "words",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/words",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 2,
+      "source_file": "Lightest Missile Rune",
+      "source_line": 1,
+      "source_field": "voc",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/requirements/vocations",
+      "resolution": "S3: the wiki states the base vocations; S8 adds each promoted vocation."
+    },
+    {
+      "source_index": 2,
+      "source_file": "Lightest Missile Rune",
+      "source_line": 1,
+      "source_field": "levelrequired",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/requirements/level",
+      "resolution": "S3: the wiki states this value."
+    },
+    {
+      "source_index": 2,
+      "source_file": "Lightest Missile Rune",
+      "source_line": 1,
+      "source_field": "premium",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/requirements/premium",
+      "resolution": "S3: the wiki states this value."
+    },
+    {
+      "source_index": 2,
+      "source_file": "Lightest Missile Rune",
+      "source_line": 1,
+      "source_field": "mana",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/costs/mana",
+      "resolution": "S3: the wiki states this value."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data/scripts/spells/conjuring/lightest_missile_rune.lua",
+      "source_line": 14,
+      "source_field": "mana",
+      "kind": "field",
+      "status": "approved_omission",
+      "resolution": "S3: superseded by the wiki value 0 (source 6)."
+    },
+    {
+      "source_index": 1,
+      "source_file": "data/scripts/spells/conjuring/lightest_missile_rune.lua",
+      "source_line": 14,
+      "source_field": "mana",
+      "kind": "field",
+      "status": "approved_omission",
+      "resolution": "S3: superseded by the wiki value 0 (source 6)."
+    },
+    {
+      "source_index": 2,
+      "source_file": "Lightest Missile Rune",
+      "source_line": 1,
+      "source_field": "soul",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/costs/soul",
+      "resolution": "S3: the wiki states this value."
+    },
+    {
+      "source_index": 2,
+      "source_file": "Lightest Missile Rune",
+      "source_line": 1,
+      "source_field": "cooldown",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/cooldown_ms",
+      "resolution": "S3: the wiki states this value."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data/scripts/spells/conjuring/lightest_missile_rune.lua",
+      "source_line": 9,
+      "source_field": "group",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/groups/0/group",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 1,
+      "source_file": "data/scripts/spells/conjuring/lightest_missile_rune.lua",
+      "source_line": 9,
+      "source_field": "group",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/groups/0/group",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 2,
+      "source_file": "Lightest Missile Rune",
+      "source_line": 1,
+      "source_field": "cooldowngroup",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/groups/0/cooldown_ms",
+      "resolution": "S3: the wiki states this value."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data/scripts/spells/conjuring/lightest_missile_rune.lua",
+      "source_line": 16,
+      "source_field": "isAggressive",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/aggressive",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 1,
+      "source_file": "data/scripts/spells/conjuring/lightest_missile_rune.lua",
+      "source_line": 16,
+      "source_field": "isAggressive",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/aggressive",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data/scripts/spells/conjuring/lightest_missile_rune.lua",
+      "source_line": 1,
+      "source_field": "isSelfTarget",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/self_target",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 1,
+      "source_file": "data/scripts/spells/conjuring/lightest_missile_rune.lua",
+      "source_line": 1,
+      "source_field": "isSelfTarget",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/self_target",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data/scripts/spells/conjuring/lightest_missile_rune.lua",
+      "source_line": 1,
+      "source_field": "needTarget",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/needs_target",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 1,
+      "source_file": "data/scripts/spells/conjuring/lightest_missile_rune.lua",
+      "source_line": 1,
+      "source_field": "needTarget",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/needs_target",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data/scripts/spells/conjuring/lightest_missile_rune.lua",
+      "source_line": 1,
+      "source_field": "needDirection",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/needs_direction",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 1,
+      "source_file": "data/scripts/spells/conjuring/lightest_missile_rune.lua",
+      "source_line": 1,
+      "source_field": "needDirection",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/needs_direction",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data/scripts/spells/conjuring/lightest_missile_rune.lua",
+      "source_line": 1,
+      "source_field": "needCasterTargetOrDirection",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/target_or_direction",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 1,
+      "source_file": "data/scripts/spells/conjuring/lightest_missile_rune.lua",
+      "source_line": 1,
+      "source_field": "needCasterTargetOrDirection",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/target_or_direction",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data/scripts/spells/conjuring/lightest_missile_rune.lua",
+      "source_line": 1,
+      "source_field": "blockWalls",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/block_walls",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 1,
+      "source_file": "data/scripts/spells/conjuring/lightest_missile_rune.lua",
+      "source_line": 1,
+      "source_field": "blockWalls",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/block_walls",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data/scripts/spells/conjuring/lightest_missile_rune.lua",
+      "source_line": 1,
+      "source_field": "allowOnSelf",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/allow_on_self",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 1,
+      "source_file": "data/scripts/spells/conjuring/lightest_missile_rune.lua",
+      "source_line": 1,
+      "source_field": "allowOnSelf",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/allow_on_self",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data/scripts/spells/conjuring/lightest_missile_rune.lua",
+      "source_line": 1,
+      "source_field": "checkFloor",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/check_floor",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 1,
+      "source_file": "data/scripts/spells/conjuring/lightest_missile_rune.lua",
+      "source_line": 1,
+      "source_field": "checkFloor",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/check_floor",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data/scripts/spells/conjuring/lightest_missile_rune.lua",
+      "source_line": 1,
+      "source_field": "setPzLocked",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/pz_locks_caster",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 1,
+      "source_file": "data/scripts/spells/conjuring/lightest_missile_rune.lua",
+      "source_line": 1,
+      "source_field": "setPzLocked",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/pz_locks_caster",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data/scripts/spells/conjuring/lightest_missile_rune.lua",
+      "source_line": 1,
+      "source_field": "needWeapon",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/needs_weapon",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 1,
+      "source_file": "data/scripts/spells/conjuring/lightest_missile_rune.lua",
+      "source_line": 1,
+      "source_field": "needWeapon",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/needs_weapon",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data/scripts/spells/conjuring/lightest_missile_rune.lua",
+      "source_line": 1,
+      "source_field": "conjureItem",
+      "kind": "script",
+      "status": "approved_omission",
+      "resolution": "S3: the wiki amount 0 supersedes 10."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data/scripts/spells/conjuring/lightest_missile_rune.lua",
+      "source_line": 1,
+      "source_field": "conjureItem",
+      "kind": "script",
+      "status": "unresolved_semantics",
+      "resolution": "conjure arguments are not literal item ids."
+    }
+  ]
+}

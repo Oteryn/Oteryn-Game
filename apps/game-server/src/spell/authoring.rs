@@ -14,8 +14,8 @@ use super::formula::{Binary, Expression, Extremum, Formula, Input, MAX_EXPRESSIO
 use super::party::{PartyBuffSpec, PartyMana};
 use super::target::AllowedTargets;
 use super::{
-    Carrier, CooldownGroup, Execution, HarmonyRole, ManaCost, SpellDefinition, SpellEffect,
-    Vocation,
+    AbilityVariant, Carrier, CooldownGroup, Execution, HarmonyRole, ManaCost, SpellDefinition,
+    SpellEffect, Vocation,
 };
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -84,12 +84,10 @@ pub(crate) fn spell_from_bundle(
     bundle: &Value,
     dependencies: &Value,
 ) -> Result<SpellDefinition, AuthoringError> {
+    let authored = super::executable_catalog::profile_from_bundle(bundle, dependencies)
+        .map_err(|error| AuthoringError(error.0))?;
     let spell = field(bundle, "spell")?;
     let requirements = field(spell, "requirements")?;
-    // S6/S16: a Wheel of Destiny revelation spell stays uncastable until a Wheel owner exists (fails closed).
-    if requirements.get("wheel_unlock").is_some() && flag(requirements, "wheel_unlock")? {
-        return fail("the spell is unlocked by the Wheel of Destiny, which has no owner yet");
-    }
     // S26: the monk Harmony role; the runtime actor's `MonkState` owns Harmony (SPELL-D8 §8.2).
     let harmony_role = match spell.get("harmony_role") {
         None => None,
@@ -101,12 +99,6 @@ pub(crate) fn spell_from_bundle(
     };
     let costs = field(spell, "costs")?;
     let targeting = field(spell, "targeting")?;
-    // S20: a cast at a chosen position needs a position cast intent, which the cast wire does not carry yet.
-    if targeting.get("cast_at_position").is_some() && flag(targeting, "cast_at_position")? {
-        return fail(
-            "the spell is cast at a chosen position, which the cast wire does not carry yet",
-        );
-    }
     let carrier = match text(spell, "carrier")? {
         "instant" => Carrier::Instant {
             words: text(spell, "words")?.to_owned(),
@@ -169,17 +161,59 @@ pub(crate) fn spell_from_bundle(
         .transpose()?;
     let execution = field(spell, "execution")?;
     let mut chain = None;
-    let execution = if let Some(conjure) = execution.get("conjure") {
+    let requires_native_profile = execution
+        .get("native_behavior")
+        .is_some_and(|behavior| behavior["key"] != "party_buff")
+        || authored
+            .dependencies
+            .effects
+            .iter()
+            .any(|effect| effect.pvp_safe_item.is_some());
+    let execution = if requires_native_profile {
+        Execution::NativeProfile(
+            super::native::spell_from_bundle(bundle, dependencies).map_err(|error| {
+                AuthoringError(format!(
+                    "native behaviour {} (S7): {}",
+                    execution["native_behavior"]["key"]
+                        .as_str()
+                        .unwrap_or("qualified_effect"),
+                    error.0,
+                ))
+            })?,
+        )
+    } else if let Some(conjure) = execution.get("conjure") {
         Execution::Conjure {
             reagent: conjure.get("reagent").map(item_id).transpose()?,
             result: item_id(field(conjure, "result")?)?,
             count: number(conjure, "count")?,
         }
     } else if let Some(ability) = execution.get("ability") {
-        let (effects, ability_chain) =
-            ability_effects(reference_key(ability, "Ability")?, dependencies)?;
-        chain = ability_chain;
-        Execution::Effects(effects)
+        let key = reference_key(ability, "Ability")?;
+        let profile = find(field(dependencies, "abilities")?, key)?;
+        if let Some(variants) = profile.get("variants") {
+            let variants = variants
+                .as_array()
+                .ok_or_else(|| AuthoringError("variants is not an array".into()))?
+                .iter()
+                .map(|reference| {
+                    let (effects, variant_chain) =
+                        ability_effects(reference_key(reference, "Ability")?, dependencies)?;
+                    if variant_chain.is_some() {
+                        return fail("a variant cannot add a chain without the chain owner");
+                    }
+                    Ok(AbilityVariant {
+                        reference: serde_json::from_value(reference.clone())
+                            .map_err(|error| AuthoringError(error.to_string()))?,
+                        effects,
+                    })
+                })
+                .collect::<Result<Vec<_>, AuthoringError>>()?;
+            Execution::AbilityVariants(variants)
+        } else {
+            let (effects, ability_chain) = ability_effects(key, dependencies)?;
+            chain = ability_chain;
+            Execution::Effects(effects)
+        }
     } else if let Some(native) = execution.get("native_behavior") {
         match text(native, "key")? {
             "party_buff" => {
@@ -236,6 +270,7 @@ pub(crate) fn spell_from_bundle(
         return fail("a formula reads shield_defense but the spell does not need a shield");
     }
     Ok(SpellDefinition {
+        authored: Some(std::sync::Arc::new(authored)),
         key: text(field(spell, "identity")?, "key")?.to_owned(),
         name: text(spell, "name")?.to_owned(),
         carrier,
@@ -265,14 +300,22 @@ pub(crate) fn spell_from_bundle(
 
 /// The damage and heal formulas an execution evaluates.
 fn formulas(execution: &Execution) -> impl Iterator<Item = &Formula> {
-    let effects = match execution {
-        Execution::Effects(effects) => effects.as_slice(),
-        Execution::PartyBuff(buff) => buff.effects.as_slice(),
-        Execution::Conjure { .. } => &[],
+    let effects: Vec<&SpellEffect> = match execution {
+        Execution::Effects(effects) => effects.iter().collect(),
+        Execution::PartyBuff(buff) => buff.effects.iter().collect(),
+        Execution::AbilityVariants(variants) => variants
+            .iter()
+            .flat_map(|variant| variant.effects.iter())
+            .collect(),
+        Execution::Conjure { .. } | Execution::ActorFocus { .. } | Execution::NativeProfile(_) => {
+            Vec::new()
+        }
     };
-    effects.iter().filter_map(|effect| match effect {
+    effects.into_iter().filter_map(|effect| match effect {
         SpellEffect::Damage { formula, .. } | SpellEffect::Heal { formula } => Some(formula),
-        SpellEffect::RemoveCondition { .. } | SpellEffect::Other { .. } => None,
+        SpellEffect::RemoveCondition { .. }
+        | SpellEffect::Other { .. }
+        | SpellEffect::ResolvedOther { .. } => None,
     })
 }
 
@@ -311,9 +354,11 @@ fn spell_effect(reference: &Value, dependencies: &Value) -> Result<SpellEffect, 
         "remove_condition" => SpellEffect::RemoveCondition {
             condition: text(effect, "removed_condition")?.to_owned(),
         },
-        other => SpellEffect::Other {
-            operation: other.to_owned(),
-            effect: key.to_owned(),
+        _ => SpellEffect::ResolvedOther {
+            profile: serde_json::from_value(effect.clone())
+                .map_err(|error| AuthoringError(error.to_string()))?,
+            dependencies: serde_json::from_value(dependencies.clone())
+                .map_err(|error| AuthoringError(error.to_string()))?,
         },
     })
 }
@@ -524,7 +569,7 @@ fn effect_formula(effect: &Value, dependencies: &Value) -> Result<Formula, Autho
     })
 }
 
-fn expression(value: &Value, depth: usize) -> Result<Expression, AuthoringError> {
+pub(crate) fn expression(value: &Value, depth: usize) -> Result<Expression, AuthoringError> {
     if depth > MAX_EXPRESSION_DEPTH {
         return fail("formula expression is too deep");
     }

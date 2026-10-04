@@ -1,0 +1,24 @@
+{
+  "definitions": [
+    {
+      "family": "Item",
+      "key": "canary:item/10293",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Item",
+      "key": "canary:item/2886",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Item",
+      "key": "canary:item/3577",
+      "revision": "canary-47dfd51f"
+    }
+  ],
+  "assets": [
+    "canary.appearance:effect/magic_red",
+    "canary.appearance:object/43771",
+    "canary.appearance:outfit/1649"
+  ]
+}

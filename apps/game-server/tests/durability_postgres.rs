@@ -10,6 +10,7 @@ pub mod character_bootstrap_intent;
 #[path = "../src/character_recovery_fence.rs"]
 pub mod character_recovery_fence;
 pub use production_server::domain;
+#[allow(dead_code, unused_imports)]
 #[path = "../src/foundation/mod.rs"]
 pub mod foundation;
 #[allow(dead_code, unused_imports)]
@@ -29,6 +30,7 @@ mod character_forge_dust_postgres_cases;
 mod character_proficiency_modification_postgres_cases;
 #[path = "support/character_revision_sequencer_postgres_cases.rs"]
 mod character_revision_sequencer_postgres_cases;
+#[allow(dead_code, unused_imports)]
 #[path = "../src/durability/mod.rs"]
 mod durability;
 #[path = "support/item_timed_state_postgres_cases.rs"]
@@ -5891,6 +5893,7 @@ fn complete_reconnect_resumes_an_owning_loss_session_exactly_once()
     if !postgres_e2e_is_configured()? {
         return Ok(());
     }
+    // The whole reconnect scenario is one large future; keep it off the test-thread stack.
     tokio::runtime::Builder::new_current_thread().enable_all().build()?.block_on(Box::pin(async {
         let database = postgres::IsolatedPostgres::create("complete_reconnect").await?;
         let result = async {

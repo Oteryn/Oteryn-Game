@@ -2303,6 +2303,12 @@ mod premium_fence_postgres_cases;
 #[path = "support/character_build_postgres_cases.rs"]
 mod character_build_postgres_cases;
 
+#[path = "support/character_stance_writer_postgres_cases.rs"]
+mod character_stance_writer_postgres_cases;
+
+#[path = "support/character_familiar_writer_postgres_cases.rs"]
+mod character_familiar_writer_postgres_cases;
+
 // QUEST-STATE-1 quest tracks, states and receipts (migration 0056) and their writer, on the
 // CHARM-2 harness included above.
 #[path = "support/quest_state_postgres_cases.rs"]

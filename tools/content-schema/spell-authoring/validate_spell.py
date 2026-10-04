@@ -171,6 +171,15 @@ def check_formula(formula, base_power, label, errors, needs_shield=False):
             return
 
 
+def check_matrix(rows, label, errors, hit_centre=False):
+    if len({len(row) for row in rows}) != 1:
+        errors.append(label + ': rows must have equal length')
+    if sum(row.count('c') + row.count('C') for row in rows) != 1:
+        errors.append(label + ': exactly one centre cell required')
+    if hit_centre and any('c' in row for row in rows):
+        errors.append(label + ': party_buff centre must be hit (C, not c)')
+
+
 def validate(bundle, deps, catalog=None, manifest=None):
     errors = structural('spell.schema.json', bundle) + structural('spell-dependencies.schema.json', deps)
     if manifest is not None:
@@ -226,6 +235,40 @@ def validate(bundle, deps, catalog=None, manifest=None):
     effects = {ident('Effect', e['identity']): e for e in deps['effects']}
     formulas = {ident('Formula', f['identity']): f for f in deps['formulas']}
     reached = set()
+    for effect in deps['effects']:
+        if 'duration_range_ms' in effect:
+            duration = effect['duration_range_ms']
+            if duration['maximum'] < duration['minimum']:
+                errors.append('create_item duration range is reversed')
+            if any(value % 1000 for value in duration.values()):
+                errors.append('create_item integer-second duration requires whole seconds')
+    for ability in deps['abilities']:
+        label = 'ability ' + ability['identity']['key']
+        for reference in ability.get('variants', []):
+            variant = abilities.get(ident('Ability', reference))
+            if variant is None:
+                errors.append(label + '/variants: variant needs a local Ability payload')
+            elif 'variants' in variant:
+                errors.append(label + '/variants: a variant cannot have variants')
+        if 'windup' in ability and (not ability['needs_target'] or
+                                   any(k in ability for k in ('area', 'variants', 'chain', 'encounter'))):
+            errors.append(label + '/windup: only on a single-target Ability without area, variants, chain or encounter')
+        for orientation, rows in ability.get('area', {}).get('matrix', {}).items():
+            check_matrix(rows, label + '/area/matrix/' + orientation, errors)
+    native = execution.get('native_behavior', {})
+    if native.get('key') == 'party_buff':
+        parameters = native['parameters']
+        check_matrix(parameters['area'], 'spell/execution/native_behavior/parameters/area', errors, hit_centre=True)
+        mana = parameters['mana']
+        if mana['mode'] == 'scaled':
+            percent = mana['falloff'] * 100
+            if not math.isfinite(percent) or abs(percent - round(percent)) > 1e-9:
+                errors.append('party_buff mana falloff must be a whole percent in (0, 1]')
+        effect = effects.get(ident('Effect', parameters['effect']))
+        if effect is None:
+            errors.append('party_buff effect needs a local Effect payload')
+        elif 'formula' in effect:
+            reached.add(ident('Formula', effect['formula']))
     if 'ability' in execution:
         ability = abilities.get(ident('Ability', execution['ability']))
         if ability is None:

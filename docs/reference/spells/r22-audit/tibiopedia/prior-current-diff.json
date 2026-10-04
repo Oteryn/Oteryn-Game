@@ -1,0 +1,32 @@
+{
+  "schema": "OTERYN_TIBIOPEDIA_CAPTURE_DIFF/v1",
+  "prior_cut": "2026-09-28",
+  "current_cut": "2026-10-02",
+  "prior_rows": 232,
+  "current_rows": 237,
+  "added": [
+    {
+      "url": "https://tibiopedia.pl/spells/Conjure_Bolt",
+      "template": "Infobox Spell"
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Conjure_Piercing_Bolt",
+      "template": "Infobox Spell"
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Conjure_Poisoned_Arrow",
+      "template": "Infobox Spell"
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Conjure_Power_Bolt",
+      "template": "Infobox Spell"
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Conjure_Sniper_Arrow",
+      "template": "Infobox Spell"
+    }
+  ],
+  "removed": [],
+  "field_changes": [],
+  "changed_content_rows": 232
+}

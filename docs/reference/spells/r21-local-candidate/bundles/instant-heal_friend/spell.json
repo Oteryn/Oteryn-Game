@@ -1,0 +1,58 @@
+{
+  "spell": {
+    "identity": {
+      "key": "candidate:spell/heal_friend",
+      "revision": "spell-p2-r20"
+    },
+    "name": "Heal Friend",
+    "carrier": "instant",
+    "words": "exura sio",
+    "reference_spell_id": 84,
+    "library_text": "Heal Friend is an instant spell that allows a caster to magically heal other characters. When cast it causes powerful healing magic to be infused into the target, quickly closing wounds and stopping bleedings. Needless to say, this is a very useful spell to be used during combat, and a strong fighter who is supported by a druid casting this spell is very difficult to overcome indeed. However, keep in mind that the caster must not move too far away from the designated target for the spell to work. Moreover, only druids are capable of performing the complex channelling ritual that is required to transfer the healing energy into living targets.",
+    "requirements": {
+      "vocations": [
+        "druid",
+        "elder_druid"
+      ],
+      "level": 18,
+      "premium": true,
+      "learning_required": false
+    },
+    "costs": {
+      "mana": 120,
+      "soul": 0
+    },
+    "cooldown_ms": 1000,
+    "groups": [
+      {
+        "group": "healing",
+        "cooldown_ms": 1000
+      }
+    ],
+    "targeting": {
+      "aggressive": false,
+      "self_target": false,
+      "needs_target": true,
+      "needs_direction": false,
+      "target_or_direction": false,
+      "block_walls": true,
+      "allow_on_self": false,
+      "check_floor": true,
+      "range_tiles": 7,
+      "parameter": "player_name"
+    },
+    "pz_locks_caster": false,
+    "needs_weapon": false,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_heal_friend"
+    },
+    "base_power": 260,
+    "execution": {
+      "ability": {
+        "family": "Ability",
+        "key": "candidate:ability/spell/heal_friend",
+        "revision": "spell-p2-r20"
+      }
+    }
+  }
+}

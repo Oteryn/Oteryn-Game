@@ -14,7 +14,18 @@ use oteryn_simulation_determinism::{
     DecisionOccurrenceId, GameplayDecisionRoot, deterministic_decision_u64,
 };
 
-use super::occurrence::valid_atom;
+fn valid_atom(value: &str) -> bool {
+    !value.is_empty()
+        && value.is_ascii()
+        && value.len() <= 4_096
+        && value.bytes().all(|byte| {
+            byte.is_ascii_alphanumeric() || matches!(byte, b':' | b'.' | b'_' | b'-' | b'/')
+        })
+}
+
+#[path = "condition_spell.rs"]
+mod spell;
+pub(crate) use spell::{SkillAdjustments, SpellSpeedError};
 
 /// `COND0-RL-01`: instances per actor.
 pub(crate) const COND0_RL_01_INSTANCES_PER_ACTOR: usize = 16;
@@ -49,7 +60,8 @@ pub(crate) enum DotElement {
     Cursed,
 }
 
-/// §3: at most one instance exists per conflict key; 13 keys today, under `COND0-RL-01`.
+/// At most one instance exists per conflict key. Source spell subids extend the
+/// candidate key vocabulary; the actual per-actor instance cap remains 16.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub(crate) enum ConflictKey {
     Speed,
@@ -58,6 +70,11 @@ pub(crate) enum ConflictKey {
     Recovery,
     ManaShield,
     Light,
+    Attributes,
+    SpellSkills(u8),
+    SpellRegeneration(u8),
+    Invisible,
+    Outfit,
 }
 
 /// The closed condition types. A creature's content immunities name these; haste and paralysis
@@ -71,6 +88,11 @@ pub(crate) enum ConditionType {
     Recovery,
     ManaShield,
     Light,
+    Attributes,
+    SpellSkills(u8),
+    SpellRegeneration(u8),
+    Invisible,
+    Outfit,
 }
 
 impl ConditionType {
@@ -82,6 +104,11 @@ impl ConditionType {
             Self::Recovery => ConflictKey::Recovery,
             Self::ManaShield => ConflictKey::ManaShield,
             Self::Light => ConflictKey::Light,
+            Self::Attributes => ConflictKey::Attributes,
+            Self::SpellSkills(id) => ConflictKey::SpellSkills(id),
+            Self::SpellRegeneration(id) => ConflictKey::SpellRegeneration(id),
+            Self::Invisible => ConflictKey::Invisible,
+            Self::Outfit => ConflictKey::Outfit,
         }
     }
 
@@ -100,9 +127,24 @@ pub(crate) struct SpeedRange {
     pub(crate) a_max: i32,
     pub(crate) b_max: i32,
 }
+/// Ordered field ramp groups; source XML is compiled into at most this many
+/// distinct consecutive amounts, with repetitions preserving every source tick.
+/// Bounded source-spell candidate cap: Curse needs 17 captured sequence groups.
+/// The accepted per-pass tick cap remains `COND0-RL-03`.
+pub(crate) const MAX_DOT_SEQUENCE_STEPS: usize = 32;
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub(crate) struct DotSequenceStep {
+    pub(crate) amount: u32,
+    pub(crate) interval_ms: u32,
+    pub(crate) repetitions: u32,
+}
 
 /// The content values of one definition (§3: values come from content, never from code).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[allow(
+    clippy::large_enum_variant,
+    reason = "transient owner result; boxing would add an allocation to the owner turn"
+)]
 pub(crate) enum ConditionValues {
     Speed {
         paralysis: bool,
@@ -116,6 +158,12 @@ pub(crate) enum ConditionValues {
         per_tick: u32,
         interval_ms: u32,
         /// `false`: the first tick is dealt at once on application.
+        delayed: bool,
+    },
+    DamageSequence {
+        element: DotElement,
+        steps: [DotSequenceStep; MAX_DOT_SEQUENCE_STEPS],
+        len: u8,
         delayed: bool,
     },
     FoodRegeneration {
@@ -133,6 +181,70 @@ pub(crate) enum ConditionValues {
         level: u8,
         duration_ms: u32,
     },
+    SpellLight {
+        level: u8,
+        color: u8,
+        duration_ms: u32,
+    },
+    SpellRegeneration {
+        duration_ms: u32,
+        sub_id: u8,
+        health_gain: u32,
+        health_interval_ms: u32,
+        mana_gain: u32,
+        mana_interval_ms: u32,
+    },
+    Attributes {
+        duration_ms: u32,
+        critical_chance_percent: u32,
+        critical_extra_percentage_points: u32,
+        damage_dealt_percent: u32,
+        incoming_reduction_percent: u32,
+    },
+    Invisible {
+        duration_ms: u32,
+    },
+    SpellSkills {
+        duration_ms: u32,
+        sub_id: u8,
+        magic_level: i32,
+        fist: i32,
+        melee: i32,
+        distance: i32,
+        shielding: i32,
+    },
+    Outfit {
+        duration_ms: u32,
+        look_type: u32,
+    },
+    ItemOutfit {
+        duration_ms: u32,
+    },
+}
+
+/// An item appearance retains the exact activated Item identity and generation.
+/// These historical selection bytes do not grant an Outfit unlock or ownership.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct TemporaryItemAppearance {
+    definition_key: String,
+    revision_ref: String,
+    artifact_digest: [u8; 32],
+}
+impl TemporaryItemAppearance {
+    pub(crate) fn definition_key(&self) -> &str {
+        &self.definition_key
+    }
+    pub(crate) fn revision_ref(&self) -> &str {
+        &self.revision_ref
+    }
+    pub(crate) fn artifact_digest(&self) -> [u8; 32] {
+        self.artifact_digest
+    }
+}
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum TemporaryDisplayedAppearance<'a> {
+    Outfit(&'a crate::domain::appearance::AppearanceSelection<String>),
+    Item(&'a TemporaryItemAppearance),
 }
 
 /// A versioned `ConditionDefinition` (GAME-ABILITY-01), built by the content loader.
@@ -141,6 +253,8 @@ pub(crate) struct ConditionDefinition {
     key: String,
     revision: u32,
     values: ConditionValues,
+    appearance_selection: Option<crate::domain::appearance::AppearanceSelection<String>>,
+    item_appearance: Option<TemporaryItemAppearance>,
 }
 
 impl ConditionDefinition {
@@ -152,7 +266,50 @@ impl ConditionDefinition {
             && match values {
                 ConditionValues::Speed { duration_ms, .. }
                 | ConditionValues::ManaShield { duration_ms }
-                | ConditionValues::Light { duration_ms, .. } => duration_ms > 0,
+                | ConditionValues::Light { duration_ms, .. }
+                | ConditionValues::SpellLight { duration_ms, .. }
+                | ConditionValues::Invisible { duration_ms }
+                | ConditionValues::ItemOutfit { duration_ms }
+                | ConditionValues::Outfit { duration_ms, .. } => duration_ms > 0,
+                ConditionValues::SpellSkills {
+                    duration_ms,
+                    sub_id,
+                    magic_level,
+                    fist,
+                    melee,
+                    distance,
+                    shielding,
+                } => {
+                    duration_ms > 0
+                        && sub_id <= 3
+                        && [magic_level, fist, melee, distance, shielding]
+                            .iter()
+                            .all(|v| (-65535..=65535).contains(v))
+                }
+                ConditionValues::Attributes {
+                    duration_ms,
+                    critical_chance_percent,
+                    incoming_reduction_percent,
+                    ..
+                } => {
+                    duration_ms > 0
+                        && critical_chance_percent <= 100
+                        && incoming_reduction_percent <= 100
+                }
+                ConditionValues::SpellRegeneration {
+                    duration_ms,
+                    health_gain,
+                    health_interval_ms,
+                    mana_gain,
+                    mana_interval_ms,
+                    sub_id,
+                } => {
+                    duration_ms > 0
+                        && sub_id <= 1
+                        && (health_gain > 0 || mana_gain > 0)
+                        && interval_ok(health_interval_ms)
+                        && interval_ok(mana_interval_ms)
+                }
                 ConditionValues::DamageOverTime {
                     total_min,
                     total_max,
@@ -164,6 +321,19 @@ impl ConditionDefinition {
                         && total_min <= total_max
                         && per_tick > 0
                         && interval_ok(interval_ms)
+                }
+                ConditionValues::DamageSequence { steps, len, .. } => {
+                    let count = usize::from(len);
+                    count > 0
+                        && count <= MAX_DOT_SEQUENCE_STEPS
+                        && steps[..count].iter().all(|s| {
+                            s.amount > 0 && s.repetitions > 0 && interval_ok(s.interval_ms)
+                        })
+                        && steps[count..]
+                            .iter()
+                            .all(|s| *s == DotSequenceStep::default())
+                        && sequence_total(&steps[..count]).is_some()
+                        && sequence_duration(&steps[..count]).is_some()
                 }
                 ConditionValues::FoodRegeneration {
                     added_ms,
@@ -178,9 +348,46 @@ impl ConditionDefinition {
             key: key.to_owned(),
             revision,
             values,
+            appearance_selection: None,
+            item_appearance: None,
         })
     }
 
+    /// The caller resolves and qualifies this appearance against the active content pin.
+    pub(crate) fn with_appearance(
+        mut self,
+        selection: crate::domain::appearance::AppearanceSelection<String>,
+    ) -> Option<Self> {
+        if !matches!(self.values, ConditionValues::Outfit { .. }) || selection.outfit_key.is_empty()
+        {
+            return None;
+        }
+        self.appearance_selection = Some(selection);
+        Some(self)
+    }
+
+    /// The owner resolves this exact production Item in the independently
+    /// active artifact before constructing and before applying this definition.
+    pub(crate) fn with_item_appearance(
+        mut self,
+        key: &str,
+        revision: &str,
+        digest: [u8; 32],
+    ) -> Option<Self> {
+        if !matches!(self.values, ConditionValues::ItemOutfit { .. })
+            || !valid_atom(key)
+            || !valid_atom(revision)
+            || digest == [0; 32]
+        {
+            return None;
+        }
+        self.item_appearance = Some(TemporaryItemAppearance {
+            definition_key: key.into(),
+            revision_ref: revision.into(),
+            artifact_digest: digest,
+        });
+        Some(self)
+    }
     pub(crate) fn key(&self) -> &str {
         &self.key
     }
@@ -202,10 +409,25 @@ impl ConditionDefinition {
             ConditionValues::DamageOverTime { element, .. } => {
                 ConditionType::DamageOverTime(element)
             }
+            ConditionValues::DamageSequence { element, .. } => {
+                ConditionType::DamageOverTime(element)
+            }
             ConditionValues::FoodRegeneration { .. } => ConditionType::FoodRegeneration,
-            ConditionValues::Recovery { .. } => ConditionType::Recovery,
+            ConditionValues::Recovery { .. }
+            | ConditionValues::SpellRegeneration { sub_id: 0, .. } => ConditionType::Recovery,
+            ConditionValues::SpellRegeneration { sub_id, .. } => {
+                ConditionType::SpellRegeneration(sub_id)
+            }
             ConditionValues::ManaShield { .. } => ConditionType::ManaShield,
-            ConditionValues::Light { .. } => ConditionType::Light,
+            ConditionValues::Light { .. } | ConditionValues::SpellLight { .. } => {
+                ConditionType::Light
+            }
+            ConditionValues::Attributes { .. } => ConditionType::Attributes,
+            ConditionValues::SpellSkills { sub_id, .. } => ConditionType::SpellSkills(sub_id),
+            ConditionValues::Invisible { .. } => ConditionType::Invisible,
+            ConditionValues::Outfit { .. } | ConditionValues::ItemOutfit { .. } => {
+                ConditionType::Outfit
+            }
         }
     }
 }
@@ -228,6 +450,20 @@ pub(crate) struct ConditionProvenance<S> {
     pub(crate) source_kind: ConditionSourceKind,
     pub(crate) definition_key: String,
     pub(crate) definition_revision: u32,
+    /// Historical application lineage, never refreshed from a tick command.
+    pub(crate) lineage: Option<ConditionLineage>,
+}
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct ConditionLineage {
+    pub(crate) source_character: [u8; 16],
+    pub(crate) source_session: [u8; 16],
+    pub(crate) source_lease_generation: u64,
+    pub(crate) source_actor_placement: [u8; 16],
+    pub(crate) source_scope_generation: u64,
+    pub(crate) source_content_digest: [u8; 32],
+    pub(crate) source_catalog_digest: [u8; 32],
+    /// Real original creation command, not a manufactured periodic command.
+    pub(crate) source_creation_command: u64,
 }
 
 /// One live instance of a definition on one actor.
@@ -247,6 +483,8 @@ pub(crate) struct ConditionInstance<S> {
     started_at: u64,
     /// The remaining damage total of a damage over time.
     remaining_total: u32,
+    sequence_step: u8,
+    sequence_repetition: u32,
     /// The speed delta fixed at application.
     speed_delta: i64,
     mana_shield_capacity: u32,
@@ -268,6 +506,15 @@ impl<S> ConditionInstance<S> {
 
     pub(crate) const fn speed_delta(&self) -> i64 {
         self.speed_delta
+    }
+
+    /// Remaining lifetime of the actual instance, for a source-qualified native
+    /// snapshot. `-1` represents the owner's infinite instance; expired is zero.
+    pub(crate) fn remaining_duration_ms(&self, now: u64) -> Option<i32> {
+        match self.ends_at {
+            None => Some(-1),
+            Some(end) => i32::try_from(end.saturating_sub(now) / MICROS_PER_MS).ok(),
+        }
     }
 
     pub(crate) const fn remaining_total(&self) -> u32 {
@@ -325,6 +572,7 @@ pub(crate) enum ConditionRefusal {
     /// `COND0-RL-01`.
     InstanceLimit,
     DrawFailed,
+    ArithmeticBounds,
     /// A prepared Cleanse deadline cannot be represented; no instance is removed.
     TimeOverflow,
     /// No instance identity is reused after exhausting the actor's sequence space.
@@ -359,6 +607,11 @@ pub(crate) enum TickKind {
     },
     /// A regeneration tick (FOOD-REGEN-1, Recovery); `suppressed` regenerates nothing.
     Regeneration { key: ConflictKey, suppressed: bool },
+    SpellRegeneration {
+        health_gain: u32,
+        mana_gain: u32,
+        suppressed: bool,
+    },
 }
 
 /// The owner facts read with a tick pass, in the same work item.
@@ -379,6 +632,7 @@ pub(crate) struct CleansePlan {
 }
 
 impl CleansePlan {
+    #[cfg(test)]
     pub(crate) const fn conflict_key(self) -> ConflictKey {
         self.key
     }
@@ -416,6 +670,39 @@ impl<S> Default for ConditionStore<S> {
 }
 
 impl<S: Clone> ConditionStore<S> {
+    /// The real application owner supplies historical field receipt lineage.
+    /// Primitive lineage data is evidence only; it never grants tick authority.
+    pub(crate) fn apply_with_lineage(
+        &mut self,
+        definition: &ConditionDefinition,
+        source: Option<S>,
+        source_kind: ConditionSourceKind,
+        immunities: &[ConditionType],
+        facts: &ApplicationFacts<'_>,
+        lineage: &ConditionLineage,
+    ) -> Result<Applied, ConditionRefusal> {
+        if lineage.source_lease_generation == 0
+            || lineage.source_scope_generation == 0
+            || lineage.source_creation_command == 0
+            || lineage.source_character == [0; 16]
+            || lineage.source_session == [0; 16]
+            || lineage.source_actor_placement == [0; 16]
+            || lineage.source_content_digest == [0; 32]
+            || lineage.source_catalog_digest == [0; 32]
+        {
+            return Err(ConditionRefusal::ArithmeticBounds);
+        }
+        let mut staged = self.clone();
+        let applied = staged.apply(definition, source, source_kind, immunities, facts)?;
+        let instance = staged
+            .instances
+            .iter_mut()
+            .find(|i| i.sequence == applied.sequence)
+            .ok_or(ConditionRefusal::ArithmeticBounds)?;
+        instance.provenance.lineage = Some(lineage.clone());
+        *self = staged;
+        Ok(applied)
+    }
     /// §6.2 fresh admission: no instances (food time is restored by COND-DUR-1).
     pub(crate) fn new() -> Self {
         Self::default()
@@ -472,9 +759,45 @@ impl<S: Clone> ConditionStore<S> {
         facts: &ApplicationFacts<'_>,
     ) -> Result<Applied, ConditionRefusal> {
         let now = facts.now;
+        if matches!(definition.values, ConditionValues::ItemOutfit { .. })
+            && definition.item_appearance.is_none()
+        {
+            return Err(ConditionRefusal::ArithmeticBounds);
+        }
+        if now < self.pass_at || self.instances.iter().any(|v| v.started_at > now) {
+            return Err(ConditionRefusal::ArithmeticBounds);
+        }
+        // Bound this definition's real duration/next interval before mutation.
+        let bound_ms = match definition.values {
+            ConditionValues::DamageSequence { steps, len, .. } => {
+                sequence_duration(&steps[..usize::from(len)])
+                    .ok_or(ConditionRefusal::ArithmeticBounds)?
+            }
+            ConditionValues::Speed { duration_ms, .. }
+            | ConditionValues::Recovery { duration_ms, .. }
+            | ConditionValues::SpellRegeneration { duration_ms, .. }
+            | ConditionValues::ManaShield { duration_ms }
+            | ConditionValues::Light { duration_ms, .. }
+            | ConditionValues::SpellLight { duration_ms, .. }
+            | ConditionValues::Attributes { duration_ms, .. }
+            | ConditionValues::SpellSkills { duration_ms, .. }
+            | ConditionValues::Invisible { duration_ms }
+            | ConditionValues::ItemOutfit { duration_ms }
+            | ConditionValues::Outfit { duration_ms, .. } => duration_ms,
+            ConditionValues::DamageOverTime { interval_ms, .. } => interval_ms,
+            ConditionValues::FoodRegeneration { .. } => FOOD_REGENERATION_CAP_MS,
+        };
+        now.checked_add(u64::from(bound_ms) * MICROS_PER_MS)
+            .ok_or(ConditionRefusal::ArithmeticBounds)?;
         let condition_type = definition.condition_type();
         let key = condition_type.conflict_key();
-        if immunities.contains(&condition_type) || self.cleanse_immunity_remaining(key, now) > 0 {
+        if immunities.contains(&condition_type)
+            || matches!(condition_type, ConditionType::SpellSkills(_))
+                && immunities.contains(&ConditionType::Attributes)
+            || matches!(condition_type, ConditionType::SpellRegeneration(_))
+                && immunities.contains(&ConditionType::Recovery)
+            || self.cleanse_immunity_remaining(key, now) > 0
+        {
             return Err(ConditionRefusal::Immune);
         }
         let pve_source_blocked = source_kind == ConditionSourceKind::Player
@@ -511,6 +834,7 @@ impl<S: Clone> ConditionStore<S> {
                 source_kind,
                 definition_key: definition.key.clone(),
                 definition_revision: definition.revision,
+                lineage: None,
             },
             sequence: self.next_sequence,
             ends_at: None,
@@ -518,6 +842,8 @@ impl<S: Clone> ConditionStore<S> {
             immediate_due: None,
             started_at: now,
             remaining_total: 0,
+            sequence_step: 0,
+            sequence_repetition: 0,
             speed_delta: 0,
             mana_shield_capacity: 0,
             mana_shield_remaining: 0,
@@ -550,6 +876,23 @@ impl<S: Clone> ConditionStore<S> {
                 instance.next_tick_at = Some(keep_timing(interval_ms));
                 instance.immediate_due = (!delayed).then_some(now);
             }
+            ConditionValues::DamageSequence {
+                steps,
+                len,
+                delayed,
+                ..
+            } => {
+                let total = sequence_total(&steps[..usize::from(len)])
+                    .ok_or(ConditionRefusal::ArithmeticBounds)?;
+                if existing.is_some_and(|old| {
+                    source_kind != ConditionSourceKind::Field && total <= old.remaining_total
+                }) {
+                    return Err(ConditionRefusal::KeptCurrent);
+                }
+                instance.remaining_total = total;
+                instance.next_tick_at = Some(keep_timing(steps[0].interval_ms));
+                instance.immediate_due = (!delayed).then_some(now);
+            }
             ConditionValues::FoodRegeneration {
                 added_ms,
                 interval_ms,
@@ -574,7 +917,36 @@ impl<S: Clone> ConditionStore<S> {
                 instance.mana_shield_capacity = facts.mana_shield_capacity;
                 instance.mana_shield_remaining = facts.mana_shield_capacity;
             }
-            ConditionValues::Light { duration_ms, .. } => {
+            ConditionValues::SpellRegeneration {
+                duration_ms,
+                health_interval_ms,
+                mana_interval_ms,
+                ..
+            } => {
+                instance.ends_at = Some(now + ms(duration_ms));
+                instance.next_tick_at = Some(now + ms(health_interval_ms.min(mana_interval_ms)));
+            }
+            ConditionValues::Attributes { duration_ms, .. }
+            | ConditionValues::SpellSkills { duration_ms, .. }
+            | ConditionValues::Invisible { duration_ms } => {
+                if existing
+                    .is_some_and(|v| v.ends_at.is_none() || ms(duration_ms) < v.remaining_at(now))
+                {
+                    return Err(ConditionRefusal::KeptCurrent);
+                }
+                instance.ends_at = Some(now + ms(duration_ms));
+            }
+            ConditionValues::ItemOutfit { duration_ms }
+            | ConditionValues::Outfit { duration_ms, .. } => {
+                if existing
+                    .is_some_and(|v| v.ends_at.is_none() || ms(duration_ms) < v.remaining_at(now))
+                {
+                    return Err(ConditionRefusal::KeptCurrent);
+                }
+                instance.ends_at = Some(now + ms(duration_ms));
+            }
+            ConditionValues::Light { duration_ms, .. }
+            | ConditionValues::SpellLight { duration_ms, .. } => {
                 if existing.is_some_and(|existing| ms(duration_ms) < existing.remaining_at(now)) {
                     return Err(ConditionRefusal::KeptCurrent);
                 }
@@ -670,6 +1042,22 @@ impl<S: Clone> ConditionStore<S> {
     /// due, in order, for the next simulation tick (`RUN_EACH_BOUNDED`), and none is dropped.
     /// Instances whose time is over and whose ticks are all dealt end here.
     pub(crate) fn take_due(&mut self, now: u64, facts: TickFacts) -> Vec<ConditionTick<S>> {
+        self.take_due_matching(now, facts, true)
+    }
+    /// Independent qualified regeneration must not drain unknown combat ticks.
+    pub(crate) fn take_due_non_damage(
+        &mut self,
+        now: u64,
+        facts: TickFacts,
+    ) -> Vec<ConditionTick<S>> {
+        self.take_due_matching(now, facts, false)
+    }
+    fn take_due_matching(
+        &mut self,
+        now: u64,
+        facts: TickFacts,
+        damage: bool,
+    ) -> Vec<ConditionTick<S>> {
         self.cleanse_immunities
             .retain(|immunity| immunity.until > now);
         if self.pass_at != now {
@@ -683,6 +1071,14 @@ impl<S: Clone> ConditionStore<S> {
                 .iter()
                 .enumerate()
                 .filter_map(|(index, instance)| {
+                    if !damage
+                        && matches!(
+                            instance.definition.condition_type(),
+                            ConditionType::DamageOverTime(_)
+                        )
+                    {
+                        return None;
+                    }
                     let scheduled = instance
                         .next_tick_at
                         .filter(|&due| instance.ends_at.is_none_or(|end| due <= end));
@@ -696,6 +1092,45 @@ impl<S: Clone> ConditionStore<S> {
             let Some((due, _, index)) = next else { break };
             let instance = &mut self.instances[index];
             let kind = match instance.definition.values {
+                ConditionValues::DamageSequence {
+                    element,
+                    steps,
+                    len,
+                    ..
+                } => {
+                    let step = steps[usize::from(instance.sequence_step)];
+                    let amount = step.amount.min(instance.remaining_total);
+                    let immediate = instance.immediate_due == Some(due);
+                    if immediate {
+                        instance.immediate_due = None;
+                    }
+                    // Source getNextDamage pops the application tick even on
+                    // its own field; only later field-standing ticks retain it.
+                    if immediate
+                        || facts.standing_on_field != Some(element)
+                        || facts.in_protection_zone
+                    {
+                        instance.remaining_total -= amount;
+                        instance.sequence_repetition += 1;
+                        if instance.sequence_repetition >= step.repetitions {
+                            instance.sequence_repetition = 0;
+                            instance.sequence_step += 1;
+                        }
+                    }
+                    instance.next_tick_at = if instance.sequence_step < len {
+                        Some(
+                            due + u64::from(steps[usize::from(instance.sequence_step)].interval_ms)
+                                * MICROS_PER_MS,
+                        )
+                    } else {
+                        None
+                    };
+                    TickKind::Damage {
+                        element,
+                        amount,
+                        refused: facts.in_protection_zone,
+                    }
+                }
                 ConditionValues::DamageOverTime {
                     element,
                     per_tick,
@@ -727,6 +1162,40 @@ impl<S: Clone> ConditionStore<S> {
                             && key == ConflictKey::FoodRegeneration,
                     }
                 }
+                ConditionValues::SpellRegeneration {
+                    health_gain,
+                    health_interval_ms,
+                    mana_gain,
+                    mana_interval_ms,
+                    ..
+                } => {
+                    let elapsed = due - instance.started_at;
+                    let h = u64::from(health_interval_ms) * MICROS_PER_MS;
+                    let m = u64::from(mana_interval_ms) * MICROS_PER_MS;
+                    let next_h = (elapsed / h + 1)
+                        .checked_mul(h)
+                        .and_then(|v| instance.started_at.checked_add(v));
+                    let next_m = (elapsed / m + 1)
+                        .checked_mul(m)
+                        .and_then(|v| instance.started_at.checked_add(v));
+                    instance.next_tick_at = match (next_h, next_m) {
+                        (Some(a), Some(b)) => Some(a.min(b)),
+                        (a, b) => a.or(b),
+                    };
+                    TickKind::SpellRegeneration {
+                        health_gain: if elapsed.is_multiple_of(h) {
+                            health_gain
+                        } else {
+                            0
+                        },
+                        mana_gain: if elapsed.is_multiple_of(m) {
+                            mana_gain
+                        } else {
+                            0
+                        },
+                        suppressed: facts.in_protection_zone,
+                    }
+                }
                 // Speed, mana shield and light never schedule a tick.
                 _ => {
                     instance.next_tick_at = None;
@@ -753,6 +1222,17 @@ impl<S: Clone> ConditionStore<S> {
         self.instances.clear();
         self.cleanse_immunities.clear();
     }
+}
+
+fn sequence_total(steps: &[DotSequenceStep]) -> Option<u32> {
+    steps.iter().try_fold(0u32, |sum, s| {
+        sum.checked_add(s.amount.checked_mul(s.repetitions)?)
+    })
+}
+fn sequence_duration(steps: &[DotSequenceStep]) -> Option<u32> {
+    steps.iter().try_fold(0u32, |sum, s| {
+        sum.checked_add(s.interval_ms.checked_mul(s.repetitions)?)
+    })
 }
 
 /// §3.4: merges each actor's due ticks into the channel order `(due, actor, sequence)`.

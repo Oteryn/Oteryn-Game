@@ -1,0 +1,201 @@
+{
+  "schema": "OTERYN_R25_EXISTING_MECHANIC_OWNER_AUDIT/v1",
+  "sources": [
+    {
+      "repository": "opentibiabr/canary",
+      "revision": "99902524e052f37574194466c2949c576e4ab269",
+      "path": "data/scripts/spells/healing/light_healing.lua",
+      "sha256": "dd3daa24a0c690982e6447a3a4ddcdb78856f841879137f6d1a6a4161ef6dada",
+      "method": "local Git checkout of accepted pinned public source",
+      "paralysis_dispel": true
+    },
+    {
+      "repository": "zimbadev/crystalserver",
+      "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+      "path": "data/scripts/spells/healing/light_healing.lua",
+      "sha256": "4a406c0ba980a707be46f6f24615512eba7747a27c62e8969f9b47f5ee441371",
+      "method": "local Git checkout of accepted pinned public source",
+      "paralysis_dispel": true
+    }
+  ],
+  "wiki": {
+    "url": "https://www.tibiawiki.com.br/wiki/Light_Healing",
+    "method": "existing r24 receipt: Remote Desktop plus Chrome/CDP DOM, research only",
+    "fact": "Cura o efeito de paralisia.",
+    "fresh_read_by_this_lane": false
+  },
+  "healing_dispel": {
+    "status": "already_implemented_owner_path_now_regression_qualified",
+    "path": [
+      "ordinary resolved RemoveCondition or native CombatPlan.dispel_paralysis_targets",
+      "combat_batch::lower_native",
+      "OwnerCombatChange::DispelParalysis",
+      "actor_spell_commit::stage_player_batch",
+      "actor_conditions::apply_combat_change",
+      "commit_owner_batch"
+    ],
+    "new_production_behavior": false,
+    "tests": [
+      "healing_dispels_actual_paralysis_atomically_and_replay_preserves_successor",
+      "refused_healing_preserves_paralysis_hp_and_payment"
+    ],
+    "test_scope": "real ChannelRuntimeV1 and PlayerSpellState owners with synthetic creature fixture; not a client end-to-end Exura cast",
+    "red_green": "No production defect was identified: newly added regressions test an existing behavior; no invented RED/fix claim."
+  },
+  "unresolved_runtime_composition": [
+    {
+      "identity": {
+        "key": "candidate:spell/creature_illusion",
+        "revision": "spell-p2-r20"
+      },
+      "name": "Creature Illusion",
+      "mechanic": "creature_appearance",
+      "route_status": "missing_runtime_composition",
+      "reason": "No Channel dispatcher for creature-name appearance acquisition/installation."
+    },
+    {
+      "identity": {
+        "key": "candidate:spell/death_echo",
+        "revision": "spell-p2-r20"
+      },
+      "name": "Death Echo",
+      "mechanic": "delayed_strike",
+      "route_status": "missing_runtime_composition",
+      "reason": "No Channel dispatcher installs this profile's initial delayed strike; timer infrastructure alone is insufficient."
+    },
+    {
+      "identity": {
+        "key": "candidate:spell/divine_empowerment",
+        "revision": "spell-p2-r20"
+      },
+      "name": "Divine Empowerment",
+      "mechanic": "owned_field_buff",
+      "route_status": "missing_runtime_composition",
+      "reason": "No Channel dispatcher for owned field buff installation and ownership."
+    },
+    {
+      "identity": {
+        "key": "candidate:spell/divine_grenade",
+        "revision": "spell-p2-r20"
+      },
+      "name": "Divine Grenade",
+      "mechanic": "delayed_strike",
+      "route_status": "missing_runtime_composition",
+      "reason": "No Channel dispatcher installs this profile's initial delayed strike; timer infrastructure alone is insufficient."
+    },
+    {
+      "identity": {
+        "key": "candidate:spell/find_fiend",
+        "revision": "spell-p2-r20"
+      },
+      "name": "Find Fiend",
+      "mechanic": "locate_message",
+      "route_status": "missing_runtime_composition",
+      "reason": "Find Fiend nearest_fiendish owner reader/dispatcher is absent; Find Person route does not implement it."
+    },
+    {
+      "identity": {
+        "key": "candidate:spell/flurry_of_blows",
+        "revision": "spell-p2-r20"
+      },
+      "name": "Flurry of Blows",
+      "mechanic": "equipment_attack",
+      "route_status": "missing_runtime_composition",
+      "reason": "No Channel dispatcher for this qualified native profile; equipment planner is data/component-only."
+    },
+    {
+      "identity": {
+        "key": "candidate:spell/shield_bash",
+        "revision": "spell-p2-r20"
+      },
+      "name": "Shield Bash",
+      "mechanic": "equipment_attack",
+      "route_status": "missing_runtime_composition",
+      "reason": "No Channel dispatcher for this qualified native profile; equipment planner is data/component-only."
+    },
+    {
+      "identity": {
+        "key": "candidate:spell/shield_slam",
+        "revision": "spell-p2-r20"
+      },
+      "name": "Shield Slam",
+      "mechanic": "equipment_attack",
+      "route_status": "missing_runtime_composition",
+      "reason": "No Channel dispatcher for this qualified native profile; equipment planner is data/component-only."
+    },
+    {
+      "identity": {
+        "key": "candidate:spell/spiritual_outburst",
+        "revision": "spell-p2-r20"
+      },
+      "name": "Spiritual Outburst",
+      "mechanic": "delayed_strike",
+      "route_status": "missing_runtime_composition",
+      "reason": "No Channel dispatcher installs this profile's initial delayed strike; timer infrastructure alone is insufficient."
+    },
+    {
+      "identity": {
+        "key": "candidate:spell/sweeping_takedown",
+        "revision": "spell-p2-r20"
+      },
+      "name": "Sweeping Takedown",
+      "mechanic": "equipment_attack",
+      "route_status": "missing_runtime_composition",
+      "reason": "No Channel dispatcher for this qualified native profile; equipment planner is data/component-only."
+    }
+  ],
+  "scope": "No new protocol, teleport, timer actor, fiend truth reader, equipment state owner or entitlement authority fabricated. Existing planner/data completeness does not qualify Channel execution.",
+  "validation": {
+    "command": "CARGO_TARGET_DIR=/workspace/Oteryn-Game/target CARGO_INCREMENTAL=0 RUST_MIN_STACK=16777216 cargo test -p oteryn-game-server --lib gameplay_transport::actor_spell::owner_commit::tests -- --nocapture",
+    "exit_code": 0,
+    "passed": 7,
+    "failed": 0,
+    "filtered": 1592,
+    "log_sha256": "5430a93b8d56bfbb730376ba46114ca50bf3bffe389203d8c3a4cf883df7e8ef",
+    "log_bytes": 44703,
+    "test_file_sha256": "edc860d6263e8b5bb49513e7f3827d8808dd4804084967f47188e545cb5057ba",
+    "initial_filter_correction": "Initial nonexistent namespace matched zero tests; corrected module path ran all seven owner tests. No zero-test invocation counted as validation.",
+    "lint_hygiene": "New helper and both added tests return Result and propagate failures with ok_or/map_err; no added expect/unwrap or lint suppression. Existing fixture remains unchanged.",
+    "post_lint_cleanup_revalidation": "PASS: all seven owner tests after Result-only cleanup, 1592 filtered"
+  },
+  "r25_research": {
+    "path": "docs/reference/spells/r25-candidate/research/source-access-and-effect-findings.json",
+    "sha256": "9d5ed7eb3c3ed962281c6e1e9e19546cda7e672f54aa374686ebe13085c817e0",
+    "observed_date": "2026-10-02",
+    "wiki_page_count": 8,
+    "method": "Research subagent: ordinary HTTP first; blocked pages read using existing Chrome/CDP through Remote Desktop for public web research only."
+  },
+  "source_parity_flags": [
+    {
+      "id": "GRENADE_BUFF_SNAPSHOT",
+      "decision": "Wiki says buffs acquired after plant do not change damage. Pinned upstream formula callback runs at explosion, so snapshot/re-evaluation parity must be explicit; do not claim exact equivalence.",
+      "runtime_disposition": "No silent mechanic change; retain selected pinned upstream policy and explicit parity flag."
+    },
+    {
+      "id": "DEATH_ECHO_CONFLICT",
+      "decision": "Wiki claims larger second area and 150% initial damage; accepted Canary uses same AREA_CIRCLE2X2 and multiplier0.5. Keep exact chosen source policy and explicit conflict flag; do not blend conflicting formulas.",
+      "runtime_disposition": "No silent mechanic change; retain selected pinned upstream policy and explicit parity flag."
+    },
+    {
+      "id": "SPIRITUAL_OUTBURST_CHAIN_CONFLICT",
+      "decision": "Wiki jumpdistance2 and up to8; acceptedCanary callback returns7,4,false. Root-target counting semantics need engine validation. Retain selected source geometry and flag uncertainty.",
+      "runtime_disposition": "No silent mechanic change; retain selected pinned upstream policy and explicit parity flag."
+    },
+    {
+      "id": "EMPOWERMENT_STAGE_COOLDOWNS",
+      "decision": "Resolved by native accepted Canary player_wheel.cpp: stage2 adds4000ms cooldown reduction and stage3 adds another4000ms, yielding32/28/24s. checkDivineEmpowerment requires standing on own ownerGUID field item and applies8/10/12% stage damage. Lua-only import omits these native Wheel rules.",
+      "runtime_disposition": "Source rule is resolved and native Wheel stage reductions are already represented; the missing field-owner dispatcher remains an independent runtime integration gap."
+    }
+  ],
+  "runtime_composition_summary": {
+    "missing_dispatcher_count": 10,
+    "families": {
+      "equipment_dependent_combat": 4,
+      "initial_delayed_strike": 3,
+      "creature_name_illusion": 1,
+      "owned_empowerment_field": 1,
+      "nearest_fiendish_reader": 1
+    },
+    "independent_of_data": "Fresh source/wiki facts enrich definitions and parity flags, but do not create these missing Channel dispatchers or their current owner facts. No dispatcher is claimed complete by this source audit."
+  }
+}

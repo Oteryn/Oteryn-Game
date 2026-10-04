@@ -29,6 +29,19 @@ pub const NATIVE_ENTRY_SOURCE_PROFILE: &str =
     "OTERYN_WORLD_PROJECT_SOURCE_PROFILE/v2-native-entry-qualification-1";
 pub const NATIVE_ENTRY_DECLARATIONS_SCHEMA: &str =
     "OTERYN_WORLD_PROJECT_DECLARATIONS/v2-native-entry-qualification-1";
+/// Explicit candidate ground/source-metadata admission, preserving entry-r1 geometry.
+pub const NATIVE_SPELL_ENTRY_SOURCE_PROFILE: &str =
+    "OTERYN_WORLD_PROJECT_SOURCE_PROFILE/v2-native-spell-entry-qualification-2";
+pub const NATIVE_SPELL_ENTRY_DECLARATIONS_SCHEMA: &str =
+    "OTERYN_WORLD_PROJECT_DECLARATIONS/v2-native-spell-entry-qualification-2";
+pub const NATIVE_GROUND_SOURCE_REVISION: &str = "99902524e052f37574194466c2949c576e4ab269";
+pub const NATIVE_GROUND_PROOF_SHA256: &str =
+    "dbd056f27908b7172cb2a46a4df4fe849acca5acfce02f129c71145c6c646a95";
+pub const NATIVE_GROUND_SOURCE_KEY: &str = "oteryn:source/canary-native-stone-ground";
+pub const fn native_spell_entry_candidate_limits() -> ProjectFilesystemLimits {
+    native_entry_first_slice_limits()
+}
+
 /// Licensing metadata required by #940 §3.
 pub const NATIVE_ENTRY_LICENSING: &str = "oteryn-original-preproduction";
 pub const NATIVE_ENTRY_COORDINATE_PROFILE: &str = "oteryn-world-spatial-v1";
@@ -71,6 +84,12 @@ pub struct NativeFirstEntryDocument {
     pub revisions: NativeEntryRevisions,
     pub region: NativeEntryKey,
     pub cells: Vec<NativeEntryCell>,
+    /// Absent retains unknown spell semantics. Existing accepted entry-r1 bytes
+    /// remain unchanged; explicit metadata is hashed in the native overlay.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub spell_tiles: Option<NativeSpellTileDocument>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub house_tiles: Option<super::NativeHouseTileDocument>,
     /// The one entry-room door (#162 A4-a): exactly one element, or qualification refuses.
     pub doors: Vec<NativeEntryDoor>,
     pub relocation: NativeEntryRelocation,
@@ -275,6 +294,8 @@ pub struct NativeEntryProject {
     project: WorldProject,
     source: FirstProductionContentSource,
     frame: NativeEntryFrame,
+    spell_tiles: Option<NativeSpellTileDocument>,
+    house_tiles: Option<super::NativeHouseTileDocument>,
     door: CanonicalReferencePlayableContent,
 }
 
@@ -311,17 +332,42 @@ impl NativeEntryProject {
         project: WorldProject,
         overlay: NativeFirstEntryDocument,
     ) -> Result<Self, ProjectError> {
-        let (source, door) = lower(&project, &overlay)?;
-        require_accepted_bindings(&project, &source, &door)?;
+        Self::qualify_for(project, overlay, false)
+    }
+
+    pub(super) fn qualify_candidate(
+        project: WorldProject,
+        overlay: NativeFirstEntryDocument,
+    ) -> Result<Self, ProjectError> {
+        Self::qualify_for(project, overlay, true)
+    }
+
+    fn qualify_for(
+        project: WorldProject,
+        overlay: NativeFirstEntryDocument,
+        candidate: bool,
+    ) -> Result<Self, ProjectError> {
+        let (source, door) = lower(&project, &overlay, candidate)?;
+        require_accepted_bindings(&project, &source, &door, candidate)?;
+        if candidate {
+            qualify_candidate_ground(&project, &overlay)?;
+        }
         // The existing FirstProduction validators (cardinality, key uniqueness, population,
         // references) apply before a source counts as qualified (#937 §4).
-        compile_first_production(&source, FirstProductionCompileTarget::OrdinaryRelease)?;
-        Ok(Self {
+        let compiled =
+            compile_first_production(&source, FirstProductionCompileTarget::OrdinaryRelease)?;
+        let qualified = Self {
             project,
             source,
             frame: overlay.frame,
+            spell_tiles: overlay.spell_tiles,
+            house_tiles: overlay.house_tiles,
             door,
-        })
+        };
+        // The lookup carrier can be reconstructed later, but its complete source
+        // metadata must already qualify under the same compiled generation here.
+        qualified.movement_cells(compiled.server_digest())?;
+        Ok(qualified)
     }
 
     /// The qualified cells as a Movement lookup index bound to `server_generation`.
@@ -368,7 +414,24 @@ impl NativeEntryProject {
             .collect();
         let index = EngineeringStaticCellIndex::from_claims(claims)
             .map_err(|_| ProjectError::InvalidProject("native entry movement cell index"))?;
-        Ok(NativeEntryMovementCells { index, scope })
+        let spell_tiles = QualifiedSpellTiles::qualify(
+            &self.project,
+            &self.source.cells,
+            scope.clone(),
+            self.spell_tiles.as_ref(),
+        )?;
+        let house_tiles = super::QualifiedHouseTiles::qualify(
+            &self.project,
+            &self.source.cells,
+            scope.clone(),
+            self.house_tiles.as_ref(),
+        )?;
+        Ok(NativeEntryMovementCells {
+            house_tiles,
+            index: crate::content::native_cell_lookup::NativeMovementCollisionIndex::Entry(index),
+            scope,
+            spell_tiles,
+        })
     }
 
     /// The qualified start cell of this project (#935). It must exist in the qualified source and
@@ -389,6 +452,35 @@ impl NativeEntryProject {
             .ok_or(ProjectError::InvalidProject(
                 "native entry start cell is missing or not walkable",
             ))
+    }
+
+    fn room_with_compiled(
+        &self,
+        compiled: crate::content::CompiledFirstProductionContent,
+    ) -> Result<QualifiedNativeEntryRoom, ProjectError> {
+        let movement_cells = self.movement_cells(compiled.server_digest())?;
+        Ok(QualifiedNativeEntryRoom {
+            compiled,
+            frame_binding: self.frame_binding(),
+            entry_start: self.entry_start()?,
+            movement_cells,
+            map_revision_digest: crate::content::digest::sha256(
+                self.source.revisions.map.as_str().as_bytes(),
+            ),
+            door: self.door.clone(),
+        })
+    }
+
+    /// Explicit candidate opt-in. Both the collision index and source-qualified
+    /// spell tiles are reconstructed under the enriched artifact's outer digest.
+    pub(crate) fn qualify_gameplay_room(
+        &self,
+        input: &crate::content::native_gameplay::NativeGameplayInput,
+    ) -> Result<QualifiedNativeEntryRoom, ProjectError> {
+        let classic =
+            compile_first_production(&self.source, FirstProductionCompileTarget::OrdinaryRelease)?;
+        let compiled = crate::content::native_gameplay::compile_native_gameplay(&classic, input)?;
+        self.room_with_compiled(compiled)
     }
 
     /// The source-qualified native frame binding of this project (#935): the qualified frame and
@@ -466,15 +558,28 @@ pub struct QualifiedNativeEntryRoom {
 /// cells"). The index grants no active status; the Channel's pin supplies the current scope.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct NativeEntryMovementCells {
-    index: crate::content::static_cell_engine::EngineeringStaticCellIndex,
+    spell_tiles: QualifiedSpellTiles,
+    house_tiles: super::QualifiedHouseTiles,
+    index: crate::content::native_cell_lookup::NativeMovementCollisionIndex,
     scope: crate::content::static_cell_engine::EngineeringStaticCellScope,
 }
 
 impl NativeEntryMovementCells {
+    pub(crate) const fn house_tiles(&self) -> &super::QualifiedHouseTiles {
+        &self.house_tiles
+    }
+    pub(crate) const fn spell_tiles(&self) -> &QualifiedSpellTiles {
+        &self.spell_tiles
+    }
     pub(crate) const fn index(
         &self,
-    ) -> &crate::content::static_cell_engine::EngineeringStaticCellIndex {
+    ) -> &crate::content::native_cell_lookup::NativeMovementCollisionIndex {
         &self.index
+    }
+    pub(crate) fn source_world(
+        &self,
+    ) -> Option<&super::native_spell_world::QualifiedNativeSpellWorld> {
+        self.index.source_world()
     }
 
     pub(crate) const fn scope(
@@ -494,6 +599,11 @@ pub struct NativeEntryStart {
 }
 
 impl QualifiedNativeEntryRoom {
+    pub(crate) fn source_world(
+        &self,
+    ) -> Option<&super::native_spell_world::QualifiedNativeSpellWorld> {
+        self.movement_cells.source_world()
+    }
     pub fn compiled(&self) -> &crate::content::CompiledFirstProductionContent {
         &self.compiled
     }
@@ -543,18 +653,57 @@ pub fn qualify_native_entry_room(
         project.source(),
         FirstProductionCompileTarget::OrdinaryRelease,
     )?;
-    let movement_cells = project.movement_cells(compiled.server_digest())?;
-    let door = project.door().clone();
-    Ok(QualifiedNativeEntryRoom {
-        compiled,
-        frame_binding: project.frame_binding(),
-        entry_start: project.entry_start()?,
-        movement_cells,
-        map_revision_digest: crate::content::digest::sha256(
-            project.source().revisions.map.as_str().as_bytes(),
-        ),
-        door,
-    })
+    project.room_with_compiled(compiled)
+}
+
+/// Qualifies the exact pinned gameplay manifest selected by the operator and node.
+/// This computes content identity only; it grants no activation authority.
+pub fn qualify_native_entry_room_from_gameplay_manifest(
+    world_id: crate::foundation::WorldId,
+    manifest: &std::path::Path,
+) -> Result<QualifiedNativeEntryRoom, ProjectError> {
+    let input = crate::content::native_gameplay::NativeGameplayInput::from_manifest(manifest)?;
+    qualify_selected_native_gameplay_room(world_id, &input)
+}
+
+/// Shared selection for operator issuance and node activation.
+pub(crate) fn qualify_selected_native_gameplay_room(
+    world_id: crate::foundation::WorldId,
+    input: &crate::content::native_gameplay::NativeGameplayInput,
+) -> Result<QualifiedNativeEntryRoom, ProjectError> {
+    match input.source_world.as_ref() {
+        Some(source) => {
+            qualify_native_source_spell_world_with_gameplay(world_id, input, &source.bytes)
+        }
+        None => match input.native_map_profile {
+            crate::content::native_gameplay::NativeGameplayMapProfile::AcceptedEntryR1 => {
+                qualify_native_entry_room_with_gameplay(world_id, input)
+            }
+            crate::content::native_gameplay::NativeGameplayMapProfile::SourceQualifiedSpellEntryR2 => {
+                qualify_native_spell_entry_room_with_gameplay(world_id, input)
+            }
+        },
+    }
+}
+
+/// Qualify the same genuine native source with an explicitly supplied, pinned
+/// candidate gameplay envelope. This never loads a global/embedded catalogue.
+pub(crate) fn qualify_native_entry_room_with_gameplay(
+    world_id: crate::foundation::WorldId,
+    input: &crate::content::native_gameplay::NativeGameplayInput,
+) -> Result<QualifiedNativeEntryRoom, ProjectError> {
+    let documents = native_entry_room_documents(world_id)?;
+    let snapshot = ProjectSnapshot::new(
+        documents.documents().clone(),
+        native_entry_first_slice_limits().project,
+    )?;
+    let project = snapshot.parse_native_entry()?;
+    if project.source().world_id != world_id {
+        return Err(ProjectError::InvalidProject(
+            "native entry room WorldId does not match its binding",
+        ));
+    }
+    project.qualify_gameplay_room(input)
 }
 
 /// Committed native entry-room source (#822 path). It deliberately carries no WorldId: the
@@ -573,6 +722,12 @@ struct NativeEntryRoomSource {
     world: serde_json::Map<String, serde_json::Value>,
     placements: Vec<ProjectV2Placement>,
     native_first_entry: NativeFirstEntryDocument,
+    #[serde(default)]
+    imports: Vec<ImportBatch>,
+    #[serde(default)]
+    sources: Vec<ProjectV2Source>,
+    #[serde(default)]
+    source_identity_bindings: Vec<ProjectV2SourceIdentityBinding>,
 }
 
 /// Binds the committed entry-room source to one issued canonical WorldId and writes the native
@@ -581,9 +736,29 @@ struct NativeEntryRoomSource {
 pub fn native_entry_room_documents(
     world_id: crate::foundation::WorldId,
 ) -> Result<CanonicalProjectDocuments, ProjectError> {
-    let source: NativeEntryRoomSource = serde_json::from_slice(NATIVE_ENTRY_ROOM_SOURCE)
+    native_room_documents_for(world_id, NATIVE_ENTRY_ROOM_SOURCE, false)
+}
+pub const NATIVE_SPELL_ENTRY_ROOM_SOURCE: &[u8] = include_bytes!("native_spell_entry_room.json");
+pub const NATIVE_SPELL_ENTRY_ROOM_SOURCE_SCHEMA: &str = "OTERYN_NATIVE_SPELL_ENTRY_ROOM_SOURCE/v2";
+
+pub fn native_spell_entry_room_documents(
+    world_id: crate::foundation::WorldId,
+) -> Result<CanonicalProjectDocuments, ProjectError> {
+    native_room_documents_for(world_id, NATIVE_SPELL_ENTRY_ROOM_SOURCE, true)
+}
+fn native_room_documents_for(
+    world_id: crate::foundation::WorldId,
+    bytes: &[u8],
+    candidate: bool,
+) -> Result<CanonicalProjectDocuments, ProjectError> {
+    let source: NativeEntryRoomSource = serde_json::from_slice(bytes)
         .map_err(|error| ProjectError::InvalidJson(error.to_string()))?;
-    if source.schema != NATIVE_ENTRY_ROOM_SOURCE_SCHEMA {
+    let expected_schema = if candidate {
+        NATIVE_SPELL_ENTRY_ROOM_SOURCE_SCHEMA
+    } else {
+        NATIVE_ENTRY_ROOM_SOURCE_SCHEMA
+    };
+    if source.schema != expected_schema {
         return Err(ProjectError::InvalidProject(
             "native entry-room source schema mismatch",
         ));
@@ -612,7 +787,7 @@ pub fn native_entry_room_documents(
             world_id,
             coordinate_frame: world.coordinate_frame.clone(),
             records: source.records,
-            imports: vec![],
+            imports: source.imports,
             metadata: vec![],
         },
         state: ProjectV2State {
@@ -623,12 +798,16 @@ pub fn native_entry_room_documents(
             placements: source.placements,
             appearance_bindings: vec![],
             assets: vec![],
-            sources: vec![],
-            source_identity_bindings: vec![],
+            sources: source.sources,
+            source_identity_bindings: source.source_identity_bindings,
             editor: vec![],
         },
     };
-    CanonicalProjectDocuments::from_native_entry_draft(draft, source.native_first_entry)
+    if candidate {
+        CanonicalProjectDocuments::from_native_spell_entry_draft(draft, source.native_first_entry)
+    } else {
+        CanonicalProjectDocuments::from_native_entry_draft(draft, source.native_first_entry)
+    }
 }
 
 /// Owner-accepted values of `NATIVE-ENTRY-ROOM-PRODUCT-BINDINGS-V1` (#940 §1–§3) and the authored
@@ -722,6 +901,7 @@ fn require_accepted_bindings(
     project: &WorldProject,
     source: &FirstProductionContentSource,
     door: &CanonicalReferencePlayableContent,
+    candidate: bool,
 ) -> Result<(), ProjectError> {
     use accepted as a;
     let manifest = &source.package_manifest;
@@ -747,7 +927,15 @@ fn require_accepted_bindings(
         revisions
             .iter()
             .zip(a::REVISIONS)
-            .all(|(actual, expected)| actual.as_str() == expected),
+            .enumerate()
+            .all(|(index, (actual, expected))| {
+                actual.as_str()
+                    == if candidate && index == 1 {
+                        "oteryn:map/entry-spell-r2"
+                    } else {
+                        expected
+                    }
+            }),
         "native entry revision set is not the accepted binding",
     )?;
     pin(
@@ -941,6 +1129,7 @@ fn in_bounds(bounds: &ProjectV2Bounds, floors: &[i16], x: i32, y: i32, floor: i1
 fn lower(
     project: &WorldProject,
     overlay: &NativeFirstEntryDocument,
+    candidate: bool,
 ) -> Result<
     (
         FirstProductionContentSource,
@@ -962,7 +1151,7 @@ fn lower(
         .batches
         .iter()
         .any(|batch| !batch.candidates.is_empty() || !batch.reimport_states.is_empty())
-        || !project.imports.batches.is_empty()
+        || (!candidate && !project.imports.batches.is_empty())
     {
         return refuse("native entry admits no import candidates or reimport states");
     }
@@ -1624,4 +1813,251 @@ mod tests {
             crate::content::ClientProjectionClass::ClientSafe
         );
     }
+}
+
+/// Bounded source import closure for the explicitly authored four-cell spell map.
+/// Source data supplies ground class/speed/blocking; placement and PZ/floor flags
+/// are explicit original Oteryn design, not attributed to source OTBM coordinates.
+fn qualify_candidate_ground(
+    project: &WorldProject,
+    overlay: &NativeFirstEntryDocument,
+) -> Result<(), ProjectError> {
+    let invalid =
+        || ProjectError::InvalidProject("native spell entry source ground proof mismatch");
+    let state = project.v2().ok_or_else(invalid)?;
+    let [batch] = project.imports.batches.as_slice() else {
+        return Err(invalid());
+    };
+    if batch.batch_id != "native-canary-ground-416-r1"
+        || batch.source_repository != "https://github.com/opentibiabr/canary"
+        || batch.source_revision != NATIVE_GROUND_SOURCE_REVISION
+        || batch.source_artifact_sha256 != NATIVE_GROUND_PROOF_SHA256
+        || batch.access_disposition != "REFERENCE_ONLY"
+        || batch.source_generation_profile != "native-ground-source-proof-r1"
+        || batch.importer != "canary-ground-source-proof-r1"
+        || batch.mapper != "tools/content-schema/native-gameplay/build_ground_source.py"
+        || batch.mapper_revision != "r1"
+        || batch.mapper_sha256 != "eaa431e3530bc0b79579d681bd9cb35f88a4dc4c5f010e4988a7cb053886299e"
+        || !batch.candidates.is_empty()
+        || !batch.reimport_states.is_empty()
+    {
+        return Err(invalid());
+    }
+    let [source] = state.sources.as_slice() else {
+        return Err(invalid());
+    };
+    if source.key != NATIVE_GROUND_SOURCE_KEY
+        || source.revision != NATIVE_GROUND_SOURCE_REVISION
+        || source.import_batch_id != batch.batch_id
+        || source.sha256 != NATIVE_GROUND_PROOF_SHA256
+        || source.evidence != ProjectV2EvidenceClass::Proven
+    {
+        return Err(invalid());
+    }
+    let [binding] = state.source_identity_bindings.as_slice() else {
+        return Err(invalid());
+    };
+    if binding.source_key != source.key
+        || binding.source_revision != source.revision
+        || binding.identity_namespace != "ots/item_server_id"
+        || binding.external_id != "416"
+        || binding.target.family != ProjectV2Family::Terrain
+        || binding.target.key != "oteryn:terrain/stone-floor"
+        || binding.target.revision != "oteryn:rev/entry-r1"
+        || binding.disposition != ProjectV2SourceIdentityDisposition::AcceptedAlias
+    {
+        return Err(invalid());
+    }
+    let tiles = overlay.spell_tiles.as_ref().ok_or_else(invalid)?;
+    if tiles.schema != NATIVE_SPELL_TILE_SCHEMA || tiles.tiles.len() != 4 {
+        return Err(invalid());
+    }
+    for tile in &tiles.tiles {
+        let ground = tile.ground.as_ref().ok_or_else(invalid)?;
+        let obstacle = tile.cell_key == "oteryn:cell/entry-north";
+        if ground.terrain_key != binding.target.key
+            || ground.source_binding.as_ref() != Some(binding)
+            || tile.ground_speed != Some(100)
+            || !tile.top_items.is_empty()
+            || tile.flags
+                != (NativeSpellTileFlags {
+                    block_solid: obstacle,
+                    block_projectile: obstacle,
+                    immovable_block_solid: obstacle,
+                    immovable_block_item: false,
+                    immovable_nonfield_block_item: false,
+                    floor_change: false,
+                    protection_zone: false,
+                })
+        {
+            return Err(invalid());
+        }
+    }
+    Ok(())
+}
+
+/// Candidate only: exact source-provenance ground semantics on the four original
+/// cells, enriched under the explicitly supplied gameplay envelope outer digest.
+pub(crate) fn qualify_native_spell_entry_room_with_gameplay(
+    world_id: crate::foundation::WorldId,
+    input: &crate::content::native_gameplay::NativeGameplayInput,
+) -> Result<QualifiedNativeEntryRoom, ProjectError> {
+    let documents = native_spell_entry_room_documents(world_id)?;
+    let snapshot = ProjectSnapshot::new(
+        documents.documents().clone(),
+        native_spell_entry_candidate_limits().project,
+    )?;
+    let project = snapshot.parse_native_spell_entry()?;
+    if project.source().world_id != world_id {
+        return Err(ProjectError::InvalidProject(
+            "candidate spell room World binding mismatch",
+        ));
+    }
+    project.qualify_gameplay_room(input)
+}
+
+#[cfg(test)]
+mod spell_entry_candidate_tests {
+    #![allow(clippy::unwrap_used)]
+    use super::*;
+    fn world() -> crate::foundation::WorldId {
+        crate::foundation::WorldId::decode(&[
+            0x01, 0x9a, 0, 0, 0, 0, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 9,
+        ])
+        .unwrap()
+    }
+    #[test]
+    fn candidate_ground_is_qualified_and_accepted_parser_stays_closed() {
+        let documents = native_spell_entry_room_documents(world()).unwrap();
+        let snapshot = ProjectSnapshot::new(
+            documents.documents().clone(),
+            native_spell_entry_candidate_limits().project,
+        )
+        .unwrap();
+        assert!(snapshot.parse_native_entry().is_err());
+        assert!(
+            snapshot
+                .parse(native_spell_entry_candidate_limits().project)
+                .is_err()
+        );
+        let candidate = snapshot.parse_native_spell_entry().unwrap();
+        let compiled = compile_first_production(
+            candidate.source(),
+            FirstProductionCompileTarget::OrdinaryRelease,
+        )
+        .unwrap();
+        let room = candidate.room_with_compiled(compiled).unwrap();
+        let start = room.entry_start();
+        let cells = room.movement_cells();
+        let tile = cells
+            .spell_tiles()
+            .lookup(
+                cells.scope(),
+                crate::content::LogicalCell {
+                    x: start.x,
+                    y: start.y,
+                    z: i32::from(start.floor),
+                },
+            )
+            .unwrap();
+        assert_eq!(tile.ground_source_id(), Some(416));
+        assert_eq!(tile.ground_speed(), Some(100));
+        assert!(tile.ground_present());
+        let accepted = qualify_native_entry_room(world()).unwrap();
+        assert_ne!(
+            room.compiled().server_digest(),
+            accepted.compiled().server_digest()
+        );
+        assert_eq!(room.entry_start(), accepted.entry_start());
+        assert_ne!(room.map_revision_digest(), accepted.map_revision_digest());
+    }
+    #[test]
+    fn source_policy_rejects_tampered_speed_flags_and_provenance() {
+        let source: NativeEntryRoomSource =
+            serde_json::from_slice(NATIVE_SPELL_ENTRY_ROOM_SOURCE).unwrap();
+        let docs = native_spell_entry_room_documents(world()).unwrap();
+        let snapshot = ProjectSnapshot::new(
+            docs.documents().clone(),
+            native_spell_entry_candidate_limits().project,
+        )
+        .unwrap();
+        let candidate = snapshot.parse_native_spell_entry().unwrap();
+        let mut overlay = source.native_first_entry;
+        overlay.spell_tiles.as_mut().unwrap().tiles[0].ground_speed = Some(150);
+        assert!(qualify_candidate_ground(candidate.project(), &overlay).is_err());
+        overlay.spell_tiles.as_mut().unwrap().tiles[0].ground_speed = Some(100);
+        overlay.spell_tiles.as_mut().unwrap().tiles[0]
+            .flags
+            .protection_zone = true;
+        assert!(qualify_candidate_ground(candidate.project(), &overlay).is_err());
+        overlay.spell_tiles.as_mut().unwrap().tiles[0]
+            .flags
+            .protection_zone = false;
+        overlay.spell_tiles.as_mut().unwrap().tiles[0]
+            .ground
+            .as_mut()
+            .unwrap()
+            .source_binding
+            .as_mut()
+            .unwrap()
+            .external_id = "418".into();
+        assert!(qualify_candidate_ground(candidate.project(), &overlay).is_err());
+    }
+}
+
+/// Explicit profile3 qualification. This wraps the actual source-safe client map
+/// and server source closure together; it never changes the original entry APIs.
+pub(crate) fn qualify_native_source_spell_world_with_gameplay(
+    world: crate::foundation::WorldId,
+    input: &crate::content::native_gameplay::NativeGameplayInput,
+    source: &[u8],
+) -> Result<QualifiedNativeEntryRoom, ProjectError> {
+    let base = qualify_native_entry_room_with_gameplay(world, input)?;
+    let pair = crate::content::native_source_world_carrier::compile(base.compiled(), source)?;
+    let compiled = base
+        .compiled()
+        .with_native_artifact_pair(pair.server, pair.client);
+    let mut scope = base.movement_cells().scope().clone();
+    scope.coordinate_frame =
+        crate::content::CoordinateFrameRef::new(super::native_spell_world::SOURCE_WORLD_FRAME)
+            .map_err(|_| ProjectError::InvalidProject("source map frame"))?;
+    scope.map_revision =
+        crate::content::MapRevisionRef::new(super::native_spell_world::SOURCE_WORLD_MAP)
+            .map_err(|_| ProjectError::InvalidProject("source map revision"))?;
+    scope.generation_digest = compiled.server_digest();
+    let map = super::native_spell_world::qualify(source, scope.clone())?;
+    let spell_tiles = map.spell_tiles();
+    let entry_start = map.entry_start();
+    let house_tiles = super::QualifiedHouseTiles::from_source_world(&map);
+    let mut frame = base.frame_binding.frame.clone();
+    frame.coordinate_frame = super::native_spell_world::SOURCE_WORLD_FRAME.into();
+    let mut binding = b"OTERYN_NATIVE_SOURCE_WORLD_FRAME_BINDING/v1;axes=east,south,up\0".to_vec();
+    binding.extend_from_slice(world.as_bytes());
+    binding.extend_from_slice(&crate::content::digest::sha256(source));
+    binding.extend_from_slice(
+        &serde_json::to_vec(&frame)
+            .map_err(|_| ProjectError::InvalidProject("source map frame encoding"))?,
+    );
+    let frame_binding = NativeEntryFrameBinding {
+        frame,
+        digest: crate::content::digest::sha256(&binding),
+    };
+    Ok(QualifiedNativeEntryRoom {
+        compiled,
+        frame_binding,
+        entry_start,
+        map_revision_digest: crate::content::digest::sha256(
+            super::native_spell_world::SOURCE_WORLD_MAP.as_bytes(),
+        ),
+        movement_cells: NativeEntryMovementCells {
+            scope,
+            index: crate::content::native_cell_lookup::NativeMovementCollisionIndex::Source(map),
+            spell_tiles,
+            house_tiles,
+        },
+        // Original definitions remain the baseline dependency. Their old physical
+        // door placement is never admitted into this source map. Consumers must
+        // select the source-world static owner instead of this baseline door.
+        door: base.door,
+    })
 }

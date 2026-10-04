@@ -6,6 +6,9 @@ use super::super::connection::{
     SessionContinuity, StepOutcome, admit_frame, serve_admitted,
 };
 use super::super::item_view::{InventoryItems, ItemKey, ItemTargetObservation, ViewItem};
+use super::super::world_object::{
+    SNAPSHOT_TYPE_WORLD_OBJECT_OVERLAY_V1, STATE_DOMAIN_WORLD_OBJECT_OVERLAY,
+};
 use super::super::world_spatial::{
     ActorPosition, CAPABILITY_WORLD_SPATIAL_ENTITIES, SNAPSHOT_TYPE_WORLD_SPATIAL_V1,
     STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY, StepDirection, StepDisposition, WorldSpatialObservation,
@@ -693,6 +696,13 @@ fn an_unselected_domain_is_never_sent() -> Result<(), Box<dyn Error>> {
             snapshot_type: SNAPSHOT_TYPE_WORLD_SPATIAL_V1,
             payload: &spatial,
         }];
+        // The registered overlay domain is always sent, empty at revision 0.
+        domains.push(DomainSnapshot {
+            domain_id: STATE_DOMAIN_WORLD_OBJECT_OVERLAY,
+            revision: 0,
+            snapshot_type: SNAPSHOT_TYPE_WORLD_OBJECT_OVERLAY_V1,
+            payload: &[],
+        });
         let core: Vec<Vec<u8>> = encode_single_chunk_snapshot(1, 1, 0, &domains)?.into();
         domains.push(DomainSnapshot {
             domain_id: STATE_DOMAIN_ACCOUNT_ACHIEVEMENT_NOTICES,

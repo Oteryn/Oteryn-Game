@@ -1,0 +1,18 @@
+[
+  {
+    "engine_key": [
+      "instant",
+      "###2"
+    ],
+    "registrations": [
+      "canary-main-current/data-canary/scripts/spells/monster/fury_skill_reducer.lua#1",
+      "canary-main-current/data-otservbr-global/scripts/spells/monster/djinn_electrify.lua#1"
+    ],
+    "distinct_source_sha256": 2,
+    "default_config_conflict": false,
+    "default_config_registrations": [
+      "canary-main-current/data-otservbr-global/scripts/spells/monster/djinn_electrify.lua#1"
+    ],
+    "winner": "not_assumed"
+  }
+]

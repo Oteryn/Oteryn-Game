@@ -6,6 +6,7 @@ from Crystal Server ff7ede5) and checks that each mutation is rejected for the i
 import copy
 import json
 import sys
+import unittest
 from pathlib import Path
 
 from validate_spell import level_base_damage_healing, validate
@@ -153,7 +154,9 @@ REGENERATION = {'type': 'regeneration', 'lifetime': 'fixed_duration', 'buff_spel
                 'regeneration': {'health_gain': 20, 'health_interval_ms': 3000}}
 VALID_MUTATIONS = {'light condition': condition_effect(LIGHT), 'regeneration condition': condition_effect(REGENERATION),
                    'library text': case('light_healing', 'spell', ('library_text',), 'A basic healing spell.', None),
-                   'harmony role': case('light_healing', 'spell', ('harmony_role',), 'builder', None),
+                   'harmony role': mutate('light_healing', lambda spell, deps: (
+                       spell.update(harmony_role='builder'),
+                       spell['requirements'].update(vocations=['exalted_monk', 'monk'])), None),
                    'cast at position': case('light_healing', 'spell', ('targeting', 'cast_at_position'), True, None),
                    'aim at target': mutate('light_healing', lambda spell, deps: spell['targeting'].update(
                        needs_direction=True, aim_at_target=True), None)}
@@ -316,7 +319,12 @@ def main():
     print(f'{len(report) - len(failures)} of {len(report)} cases passed')
     for failure in failures:
         print('FAIL', failure)
-    return 1 if failures else 0
+    regressions = unittest.defaultTestLoader.discover(str(ROOT), pattern='test_*.py')
+    if regressions.countTestCases() == 0:
+        print('FAIL: spell regression suite is missing')
+        return 1
+    result = unittest.TextTestRunner().run(regressions)
+    return 1 if failures or not result.wasSuccessful() else 0
 
 
 if __name__ == '__main__':

@@ -1,0 +1,39 @@
+{
+  "definitions": [
+    {
+      "family": "Item",
+      "key": "candidate:item/3577",
+      "revision": "spell-p2-r21"
+    },
+    {
+      "family": "Item",
+      "key": "candidate:item/3582",
+      "revision": "spell-p2-r21"
+    },
+    {
+      "family": "Item",
+      "key": "candidate:item/3585",
+      "revision": "spell-p2-r21"
+    },
+    {
+      "family": "Item",
+      "key": "candidate:item/3592",
+      "revision": "spell-p2-r21"
+    },
+    {
+      "family": "Item",
+      "key": "candidate:item/3600",
+      "revision": "spell-p2-r21"
+    },
+    {
+      "family": "Item",
+      "key": "candidate:item/3601",
+      "revision": "spell-p2-r21"
+    },
+    {
+      "family": "Item",
+      "key": "candidate:item/3607",
+      "revision": "spell-p2-r21"
+    }
+  ]
+}

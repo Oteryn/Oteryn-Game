@@ -1,0 +1,169 @@
+{
+  "schema": "OTERYN_NATIVE_SOURCE_ITEM_PROFILE_IMPORT/v1",
+  "classification": "Explicit local source candidate; not production activation",
+  "sources": [
+    {
+      "server": "canary",
+      "revision": "99902524e052f37574194466c2949c576e4ab269",
+      "path": "data/items/items.xml",
+      "sha256": "bf773d2c8f1d2767b31a20749fd5278ae48f2ed5b05757a678e3788e2a70bf85"
+    },
+    {
+      "server": "crystal",
+      "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+      "path": "data/items/items.xml",
+      "sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb"
+    }
+  ],
+  "loader_sources": [
+    {
+      "path": "data/items/appearances.dat",
+      "revision": "99902524e052f37574194466c2949c576e4ab269",
+      "sha256": "17a72b30b5c3c9ca8c1283cfb2febd2a93a145ff8ab66916f7a412d0f1dee5a1"
+    },
+    {
+      "path": "data/items/items.xml",
+      "revision": "99902524e052f37574194466c2949c576e4ab269",
+      "sha256": "bf773d2c8f1d2767b31a20749fd5278ae48f2ed5b05757a678e3788e2a70bf85"
+    },
+    {
+      "path": "src/items/items.hpp",
+      "revision": "99902524e052f37574194466c2949c576e4ab269",
+      "sha256": "b8c12f45122eeb575ad548719c5fb178a96460d8a41ad882d0d88b2e66d797e6"
+    },
+    {
+      "path": "src/items/items.cpp",
+      "revision": "99902524e052f37574194466c2949c576e4ab269",
+      "sha256": "f695ed647e111923cf8e4d487c4a0706f19e7edbfb7896655c20494d6d927fd7"
+    },
+    {
+      "path": "src/items/item.cpp",
+      "revision": "99902524e052f37574194466c2949c576e4ab269",
+      "sha256": "9bbf46dbecd43748737a2636eb2200f39f5a35d7fa524a800adabaa10473b3bb"
+    },
+    {
+      "path": "src/items/functions/item/item_parse.cpp",
+      "revision": "99902524e052f37574194466c2949c576e4ab269",
+      "sha256": "1c92c9c0716d83d4d79d81ffeab099ef526eea2473e984b85436b291ce90d07c"
+    },
+    {
+      "path": "src/items/functions/item/item_parse.hpp",
+      "revision": "99902524e052f37574194466c2949c576e4ab269",
+      "sha256": "06221b5fc0a6e744df143eb6c91c1abe83689a438fb5f64d2dba28b0baae17ef"
+    },
+    {
+      "path": "src/utils/const.hpp",
+      "revision": "99902524e052f37574194466c2949c576e4ab269",
+      "sha256": "054253324a9535160c6c849deb1364217c3b958e7ec9f911392ee25dac260914"
+    },
+    {
+      "path": "src/creatures/combat/spells.cpp",
+      "revision": "99902524e052f37574194466c2949c576e4ab269",
+      "sha256": "933cb7e46f2c83dc9ca03221b2db713655e24cbde21c7bd66d903fd0babf4fe8"
+    },
+    {
+      "path": "src/creatures/combat/combat.cpp",
+      "revision": "99902524e052f37574194466c2949c576e4ab269",
+      "sha256": "3dc306b44b9ea0c04a48cb6dcdca63b3982a4ee74484cb6a9da40265ecc7fc49"
+    },
+    {
+      "path": "src/items/tile.cpp",
+      "revision": "99902524e052f37574194466c2949c576e4ab269",
+      "sha256": "62e4a7068f7440826e6de0542d342b787cd3cfcba4319df3cda01ae7ea5b617b"
+    },
+    {
+      "path": "src/utils/utils_definitions.hpp",
+      "revision": "99902524e052f37574194466c2949c576e4ab269",
+      "sha256": "b66a1389bfecfe11d93338208f7e2e3f8efc14fb0941d6d12dc0d9e62ed4abac"
+    },
+    {
+      "path": "config.lua.dist",
+      "revision": "99902524e052f37574194466c2949c576e4ab269",
+      "sha256": "099939f439c755171c18d8dadd23d82f50bd3ebd219099248e847481fd84cd15"
+    }
+  ],
+  "output_sha256": "50f89d14b6a02ffd0eaefdc22254517715c983567543f09114e5da027a06b9c7",
+  "records": 118,
+  "excluded_zero_count_bundles": [
+    {
+      "bundle": "instant-lightest_missile_rune",
+      "spell_sha256": "aefb6c617f11e13abbcf0bb973d5e144ca46d923f90288cf6b8b677e99a16f27",
+      "reason": "Explicit excluded removed spell; wiki amount0 source precedence proof",
+      "removed_source_proof": [
+        {
+          "source_index": 0,
+          "source_file": "data/scripts/spells/conjuring/lightest_missile_rune.lua",
+          "source_line": 1,
+          "source_field": "conjureItem",
+          "kind": "script",
+          "status": "approved_omission",
+          "resolution": "S3: the wiki amount 0 supersedes 10."
+        }
+      ]
+    },
+    {
+      "bundle": "instant-light_stone_shower_rune",
+      "spell_sha256": "4ad5a1753ead99114c220daeb19e8ae5a96e37142befe6bc22fc9877c41993ac",
+      "reason": "Explicit excluded removed spell; wiki amount0 source precedence proof",
+      "removed_source_proof": [
+        {
+          "source_index": 0,
+          "source_file": "data/scripts/spells/conjuring/light_stone_shower_rune.lua",
+          "source_line": 1,
+          "source_field": "conjureItem",
+          "kind": "script",
+          "status": "approved_omission",
+          "resolution": "S3: the wiki amount 0 supersedes 4."
+        }
+      ]
+    }
+  ],
+  "map_ids": [
+    1949,
+    2338,
+    2429,
+    2430,
+    2433,
+    2441,
+    2454,
+    2471,
+    2472,
+    2480,
+    2487,
+    2488,
+    2493,
+    2494,
+    2983,
+    2985,
+    2988,
+    3277,
+    3287,
+    3349,
+    3350,
+    3446,
+    3447,
+    3449,
+    3450,
+    3655,
+    7363,
+    7364,
+    7365,
+    7366,
+    7368,
+    7378,
+    9552,
+    9561,
+    9573,
+    9574,
+    15320
+  ],
+  "starter_ids": {
+    "backpack": 2854,
+    "sword": 3264,
+    "wooden_shield": 3412
+  },
+  "rune_consumption_policy": "Explicit activated ItemCountOne; pinned config REMOVE_RUNE_CHARGES=true and RuneSpell::executeUse same-ID ItemCount decrement, no separate charge counter.",
+  "temporal_policy": "Explicit candidate DurableAbsoluteDeadline for known non-stopping source decay; source duration/target unchanged. Offline overdue entries retain their deadline until an eligible current owner pass.",
+  "limitations": "Unsupported XML systems remain UNKNOWN; no ItemDocument authoring operations fabricated. Equipment modifiers requiring source-specialized parser remain unavailable.",
+  "complete_source_proof_sha256": "d557f5ea5db8766973c82e53da55993da65f4b460ca684c5e37ce2abc93faa79"
+}
