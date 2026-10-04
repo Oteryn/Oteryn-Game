@@ -140,7 +140,12 @@ conversations?
   CREATURE-AI-0 §5.2's creature tile bans do not apply: the Movement owner checks the NPC actor
   class (shop NPCs stand in protection zones). Movement occurrences (VSL-MOVE-01 §5): a step is
   (NPC `ExactActorRef`, think sequence, `NPC_STEP`), a relocation (NPC ref, think sequence,
-  `NPC_RELOCATE`), a turn (the opening conversation's CommandRef, `NPC_TURN`).
+  `NPC_RELOCATE`), a turn (NPC ref, focus sequence, `NPC_TURN`). The focus sequence is a per-NPC-actor
+  counter that GAME-AI advances on every change of the newest customer it reads (§7: a customer
+  queued, or the tail removed and the NPC turning to the remaining tail), so each turn, a
+  focus-restoration turn included, has its own occurrence and never replays an earlier turn's
+  result (#1733 P2 4176849291). The counter starts at 0 when the actor is created and is not
+  durable, like the think sequence.
 - **Out of range:** on every committed move or relocation of the NPC (the only ways it can leave its
   range; Canary checks on each think, which is equivalent), an NPC more than 50 tiles from its placement
   or 2 floors away (Canary `deSpawnRadius`, `deSpawnRange`) is moved back to its placement by one

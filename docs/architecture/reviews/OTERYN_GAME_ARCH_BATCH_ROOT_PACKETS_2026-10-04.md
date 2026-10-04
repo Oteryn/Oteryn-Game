@@ -37,7 +37,7 @@ Leased by the control plane (#1733, 2026-10-04). A worker that needs another num
 |---|---|---|
 | MAP-LOAD-1 | none | none |
 | ITEM-USE-WIRE-1 | none | capability 15 `ITEM_USE_V1` (leased; `offered: false`, `requires: [4]`); no new command type (USE stays command type 2) |
-| BANK-RET-0 | none | retention profile `ECONOMY_LEDGER_RETENTION_V1` (purpose `ECONOMY_LEDGER`) |
+| BANK-RET-0 | none | retention profiles `ECONOMY_LEDGER_RETENTION_V1` (purpose `ECONOMY_LEDGER`, event type 3) and `DUR03_ONE_ITEM_DURABLE_AUDIT_RETENTION_V2` (successor for event type 2, future admission only; §1.7) |
 | BANK-1 | 0071 | game event type 3 `BANK_OPERATION` |
 | GOLD-FEE-2 | 0072 | none (the fee event stays event type 2) |
 
@@ -186,11 +186,19 @@ analytics, public history, detector or AI use), privacy class `RESTRICTED_PLAYER
 finite ceiling no longer than P90D unless the privacy review records why, and the same legal-hold
 and deletion rules as the DUR-03 profile.
 
-A fee event that carries a `FEE_DEBIT` value line (GOLD-FEE-2) stays event type 2, whose profile
-is fixed per event type. BANK-RET-0 therefore also decides, in the same review, whether event type
-2's profile gains a revision that admits the bank part of a fee, or whether a fee with a bank
-part needs its own event type. The architect's recommendation is the revision: one fee event per
-fee, as BANK-FEE-0 §4.3 requires, under a profile that names that purpose.
+A fee event that carries a `FEE_DEBIT` value line (GOLD-FEE-2) stays event type 2, one fee event
+per fee (BANK-FEE-0 §4.3). The registry makes a profile's identity immutable once an event is
+admitted under it (`retention_policy`: `in_place_policy_change_after_admission: FORBIDDEN`,
+`successor_policy_requirement: NEW_IMMUTABLE_PROFILE_ID_WITH_POSITIVE_POLICY_REVISION`), so
+`DUR03_ONE_ITEM_DURABLE_AUDIT_RETENTION_V1` is never revised (#1733 P1 4176849286). BANK-RET-0
+instead registers a successor profile, `DUR03_ONE_ITEM_DURABLE_AUDIT_RETENTION_V2`, with a positive
+`policy_revision` and a purpose that adds the bank part of a fee (the `FEE_DEBIT` value line) to
+the V1 purpose, with no other change unless the privacy review records why. It applies to event
+type 2 for future admission only, after a reviewed activation boundary
+(`successor_rollout_scope: FUTURE_ADMISSION_ONLY_AFTER_REVIEWED_ACTIVATION_BOUNDARY`); every event
+already admitted keeps V1 (`existing_envelope_binding: ORIGINAL_RETENTION_PROFILE_ID`), and no
+existing event is migrated. GOLD-FEE-2 admits a fee event with a bank part only after that
+boundary: until it, `T < F` is refused as in stage 1, with a test.
 
 The ledger, balance, operation and coin-line tables are authoritative game state, not event
 retention. They are never deleted by retention (BANK-0 §3 grants no DELETE).
@@ -347,7 +355,7 @@ base: main
 migration_lease: none
 depends_on: [BANK-0]
 owned_paths:
-  - docs/contracts/GAME_EVENT_FOUNDATION_REGISTRY.json   # ECONOMY_LEDGER_RETENTION_V1; event type 2 profile revision (or the alternative of §1.7)
+  - docs/contracts/GAME_EVENT_FOUNDATION_REGISTRY.json   # ECONOMY_LEDGER_RETENTION_V1; successor DUR03_ONE_ITEM_DURABLE_AUDIT_RETENTION_V2 for event type 2 (§1.7); V1 unchanged
   - tools/agents/tests/** (only if a registry test must name the new profile)
 validation:
   - python3 tools/agents/validate_governance.py
@@ -355,9 +363,11 @@ validation:
   - the registry's own tests (tools/agents/tests)
 ```
 
-Builds the profile of §1.7 with every `required_profile_fields` entry, and records the event
-type 2 choice. Acceptance: the privacy review on the PR; the registry validates; no event type is
-added (BANK-1 adds type 3).
+Builds the two profiles of §1.7 with every `required_profile_fields` entry, and records the
+reviewed activation boundary from which event type 2 admits under V2. Acceptance: the privacy
+review on the PR; the registry validates; V1 and every admitted event are unchanged (a test or
+validator check that V1's fields are byte-identical to `main`); no event type is added (BANK-1
+adds type 3).
 
 ### 2.4 BANK-1
 
@@ -456,7 +466,9 @@ Tests:
   refused;
 - replay and crash: the bank part is an outcome, recalculated after a known abort and returned by
   the occurrence replay after an ambiguous commit;
-- a junior payer with `T < F` is refused as in stage 1.
+- a junior payer with `T < F` is refused as in stage 1;
+- before event type 2's V2 activation boundary (§1.7), `T < F` is refused as in stage 1 and no
+  fee event with a bank part is admitted.
 
 Acceptance: the tests above; the persistence review on the PR; the migration merge condition.
 

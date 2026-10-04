@@ -34,7 +34,13 @@ external_repositories: []
   review), BANK-RET-0 (control plane, privacy review), BANK-1 (hard, persistence review) and
   GOLD-FEE-2 (hard, persistence review), in that dependency order (§0.2, §2).
 - Leases (control plane): capability 15 `ITEM_USE_V1`; migrations 0071 (BANK-1) and 0072 (GOLD-FEE-2);
-  event type 3 `BANK_OPERATION`; profile `ECONOMY_LEDGER_RETENTION_V1` (§0.1).
+  event type 3 `BANK_OPERATION`; profiles `ECONOMY_LEDGER_RETENTION_V1` and the successor
+  `DUR03_ONE_ITEM_DURABLE_AUDIT_RETENTION_V2` (§0.1).
+- #1733 P1 4176849286: profile identity is immutable, so event type 2's fee events with a bank part
+  get a successor profile for future admission only; V1 is never revised; GOLD-FEE-2 admits a bank
+  part only after the reviewed activation boundary (§1.7, §2.3, §2.5).
+- #1733 P2 4176849291: each NPC turn, a focus restoration included, has a unique occurrence
+  (NPC ref, focus sequence, `NPC_TURN`) (NPC-BEHAVIOUR-0 §5).
 - Owner answers 2026-10-04: BANK-0 Q1 = b, recorded in BANK-0; batch scope 2a (§1.1).
 - Bundle staging: CI-built artifact pinned by digest, the server refuses any other (§1.2).
 - NPC-BEHAVIOUR-0 accepted when this merges, with its Amends line (§1.5).
