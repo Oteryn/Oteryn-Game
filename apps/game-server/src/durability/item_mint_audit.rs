@@ -18,6 +18,12 @@ pub const EVENT_TYPE_ID: u32 = 2;
 pub const EVENT_SCHEMA_REVISION: u32 = 1;
 pub const INTERPRETATION_REVISION: u32 = 1;
 pub const RETENTION_PROFILE_ID: &str = "DUR03_ONE_ITEM_DURABLE_AUDIT_RETENTION_V1";
+/// The successor tuple of event type 2 (ARCH-BATCH-ROOT-PACKETS-V1 §1.7): revision 2 under
+/// `DUR03_ONE_ITEM_DURABLE_AUDIT_RETENTION_V2`, whose purpose adds the bank part of a fee.
+/// Phase 1 (GOLD-FEE-2) reads and verifies it; every production writer still emits
+/// [`EVENT_SCHEMA_REVISION`] and [`RETENTION_PROFILE_ID`] until GOLD-FEE-ACT-2.
+pub const EVENT_SCHEMA_REVISION_V2: u32 = 2;
+pub const RETENTION_PROFILE_ID_V2: &str = "DUR03_ONE_ITEM_DURABLE_AUDIT_RETENTION_V2";
 /// DUR03-AUDIT-RETENTION-S (P90D) in milliseconds; expiry = occurred_at + this.
 pub const AUDIT_RETENTION_P90D_MS: i64 = 7_776_000_000;
 /// Typed cause of a loot-output MINT (the registered B4 binding value).
@@ -53,6 +59,39 @@ pub const RL07_PAYLOAD_SHA256_BYTES: usize = 32;
 pub const RL08_RETRY_WORK_UNITS_MAX: u8 = 3;
 // Inherited ANL-01 ceilings; the lower DUR-03 rows apply conjunctively.
 const ANL_ENVELOPE_STRING_MAX: usize = 128;
+
+/// The admitted `(schema_revision, retention_profile_id)` tuples of event type 2: `(1, V1)` or
+/// `(2, V2)`, never a mix (ARCH-BATCH-ROOT-PACKETS-V1 §1.7). Every event is judged by the tuple in
+/// its own envelope.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Type2EventTuple {
+    V1,
+    V2,
+}
+
+impl Type2EventTuple {
+    pub const fn schema_revision(self) -> u32 {
+        match self {
+            Self::V1 => EVENT_SCHEMA_REVISION,
+            Self::V2 => EVENT_SCHEMA_REVISION_V2,
+        }
+    }
+
+    pub const fn retention_profile_id(self) -> &'static str {
+        match self {
+            Self::V1 => RETENTION_PROFILE_ID,
+            Self::V2 => RETENTION_PROFILE_ID_V2,
+        }
+    }
+
+    /// The tuple of a stored or received envelope; `None` for any other pair.
+    pub fn of(schema_revision: u32, retention_profile_id: &str) -> Option<Self> {
+        [Self::V1, Self::V2].into_iter().find(|tuple| {
+            tuple.schema_revision() == schema_revision
+                && tuple.retention_profile_id() == retention_profile_id
+        })
+    }
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum AuditError {
@@ -530,8 +569,9 @@ fn mint_scope(mint: &OneItemMintV1) -> Result<(Vec<u8>, Vec<u8>), AuditError> {
 }
 
 /// Operation-independent RL-07 envelope gate shared by MINT and TRANSFER:
-/// size before decode, canonical round trip, registered event binding,
-/// identity and digest widths and one-event membership.
+/// size before decode, canonical round trip, registered event binding (either
+/// admitted [`Type2EventTuple`]), identity and digest widths and one-event
+/// membership.
 pub(super) fn decode_common_envelope(wire: &[u8]) -> Result<EventEnvelopeV1, AuditError> {
     decode_common_envelope_within(wire, RL07_ENVELOPE_BYTES_MAX)
 }
@@ -564,10 +604,9 @@ pub(super) fn decode_common_envelope_within(
         || value.payload_sha256 != Sha256::digest(&value.payload).as_slice()
         || value.envelope_revision != ENVELOPE_REVISION
         || value.event_type_id != EVENT_TYPE_ID
-        || value.event_schema_revision != EVENT_SCHEMA_REVISION
+        || Type2EventTuple::of(value.event_schema_revision, &value.retention_profile_id).is_none()
         || value.durability_class != DURABLE_AUDIT
         || !(RESTRICTED_PLAYER_LINKED..=SECURITY_SENSITIVE).contains(&value.privacy_class)
-        || value.retention_profile_id != RETENTION_PROFILE_ID
         || value.occurred_at_unix_ms <= 0
         || membership.ordinal != 1
         || membership.count != 1
@@ -634,6 +673,314 @@ pub fn encode_mint_event(
         return Err(AuditError::InvalidInput);
     }
     Ok(wire)
+}
+
+/// Golden type-2 envelopes for the GOLD-FEE-2 compatibility qualification (test builds only).
+#[cfg(test)]
+pub mod golden {
+    #![allow(clippy::unwrap_used, clippy::panic)]
+    use super::{AuditError, EventEnvelopeV1, decode_envelope};
+
+    /// Revision-1 envelopes of every type-2 shape, encoded by the `main` codec before GOLD-FEE-2
+    /// (the modules' own round-trip fixtures).
+    pub const TYPE2_GOLDEN_V1: &[(&str, &str)] = &[
+        (
+            "mint",
+            concat!(
+                "080112100000000000017000800000000000001e18022001280230033a2944555230335f4f4e455f4954454d",
+                "5f44555241424c455f41554449545f524554454e54494f4e5f56314080d8c1a28c344a100000000000017000",
+                "80000000000000015210000000000001700080000000000000029201160a1000000000000170008000000000",
+                "00002810011801ca01176f746572796e2d67616d652d7365727665722f74657374d201ca02080112c5020a4c",
+                "0a10000000000001700080000000000000091210000000000001700080000000000000011a220a084974656d",
+                "54797065120d666978747572653a616c7068611a077265762d612f312001280112610a100000000000017000",
+                "80000000000000011210000000000001700080000000000000021a0301020322100000000000017000800000",
+                "00000000032a056d61702d313209636f6e74656e742d313a100000000000017000800000000000000640011a",
+                "8f010a096c6f6f745f6d696e74122a0a10000000000001700080000000000000011210000000000001700080",
+                "000000000000021801200728011a210a094c6f6f745461626c65120c666978747572653a6c6f6f741a066c6f",
+                "6f742d312214666978747572653a707572706f73652e64726f7028013209636f6e74656e742d313a0972756c",
+                "657365742d31420573696d2d312001da01205fb4057867e3df1164eaa9d904690ba5eb3da6a97e7728254db0",
+                "46493dab4b45",
+            ),
+        ),
+        (
+            "corpse_mint",
+            concat!(
+                "080112100000000000017000800000000000001e18022001280230033a2944555230335f4f4e455f4954454d",
+                "5f44555241424c455f41554449545f524554454e54494f4e5f56314080d8c1a28c344a100000000000017000",
+                "80000000000000015210000000000001700080000000000000029201160a1000000000000170008000000000",
+                "00002810011801ca01176f746572796e2d67616d652d7365727665722f74657374d201fd01080112f8010a4c",
+                "0a10000000000001700080000000000000091210000000000001700080000000000000011a220a084974656d",
+                "54797065120d666978747572653a616c7068611a077265762d612f31200128011a8f010a096c6f6f745f6d69",
+                "6e74122a0a100000000000017000800000000000000112100000000000017000800000000000000218012007",
+                "28011a210a094c6f6f745461626c65120c666978747572653a6c6f6f741a066c6f6f742d3122146669787475",
+                "72653a707572706f73652e64726f7028013209636f6e74656e742d313a0972756c657365742d31420573696d",
+                "2d3120012a140a100000000000017000800000000000000a1003da0120bdae96843b80a5382a60c55dd9a350",
+                "27893096f723b72d638191c630b49333fd",
+            ),
+        ),
+        (
+            "transfer_ContainerSlot",
+            concat!(
+                "080112100000000000017000800000000000001e18022001280230033a2944555230335f4f4e455f4954454d",
+                "5f44555241424c455f41554449545f524554454e54494f4e5f56314080d8c1a28c344a100000000000017000",
+                "80000000000000015210000000000001700080000000000000026a1000000000000170008000000000000032",
+                "70018001079201160a100000000000017000800000000000002810011801a2011612140a1000000000000170",
+                "0080000000000000321007ca01176f746572796e2d67616d652d7365727665722f74657374d201850308011a",
+                "80030a500a10000000000001700080000000000000091210000000000001700080000000000000011a260a04",
+                "4974656d120f666978747572653a62332e636f696e1a0d646566696e6974696f6e2d7231201e280112500a10",
+                "000000000001700080000000000000091210000000000001700080000000000000011a260a044974656d120f",
+                "666978747572653a62332e636f696e1a0d646566696e6974696f6e2d7231201e28011a610a10000000000001",
+                "700080000000000000011210000000000001700080000000000000021a030102032210000000000001700080",
+                "000000000000032a056d61702d313209636f6e74656e742d313a100000000000017000800000000000000640",
+                "01222a0a10000000000001700080000000000000291801221000000000000170008000000000000032280138",
+                "012a4b0a1667726f756e645f7069636b75705f7472616e736665723209636f6e74656e742d313a0972756c65",
+                "7365742d31420573696d2d314a140a10000000000001700080000000000000321007da01205c41d2c5df0c00",
+                "70203a4e564a1b87584861f479446ab4ef826b63f529de47c7",
+            ),
+        ),
+        (
+            "transfer_NewEntry",
+            concat!(
+                "080112100000000000017000800000000000001e18022001280230033a2944555230335f4f4e455f4954454d",
+                "5f44555241424c455f41554449545f524554454e54494f4e5f56314080d8c1a28c344a100000000000017000",
+                "80000000000000015210000000000001700080000000000000026a1000000000000170008000000000000032",
+                "70018001079201160a100000000000017000800000000000002810011801a2011612140a1000000000000170",
+                "0080000000000000321007ca01176f746572796e2d67616d652d7365727665722f74657374d201990308011a",
+                "94030a500a10000000000001700080000000000000091210000000000001700080000000000000011a260a04",
+                "4974656d120f666978747572653a62332e636f696e1a0d646566696e6974696f6e2d7231201e280112500a10",
+                "000000000001700080000000000000091210000000000001700080000000000000011a260a044974656d120f",
+                "666978747572653a62332e636f696e1a0d646566696e6974696f6e2d7231201e28011a610a10000000000001",
+                "700080000000000000011210000000000001700080000000000000021a030102032210000000000001700080",
+                "000000000000032a056d61702d313209636f6e74656e742d313a100000000000017000800000000000000640",
+                "01223e0a10000000000001700080000000000000291801221000000000000170008000000000000032280132",
+                "140a100000000000017000800000000000001410032a4b0a1667726f756e645f7069636b75705f7472616e73",
+                "6665723209636f6e74656e742d313a0972756c657365742d31420573696d2d314a140a100000000000017000",
+                "80000000000000321007da0120e454b467588a7011e96d7dd5f16468da1915b0604867e74a49ae2a7500acba",
+                "f5",
+            ),
+        ),
+        (
+            "transfer_FullMerge",
+            concat!(
+                "080112100000000000017000800000000000001e18022001280230033a2944555230335f4f4e455f4954454d",
+                "5f44555241424c455f41554449545f524554454e54494f4e5f56314080d8c1a28c344a100000000000017000",
+                "80000000000000015210000000000001700080000000000000026a1000000000000170008000000000000032",
+                "70018001079201160a100000000000017000800000000000002810011801a2011612140a1000000000000170",
+                "0080000000000000321007ca01176f746572796e2d67616d652d7365727665722f74657374d201af0308011a",
+                "aa030a500a10000000000001700080000000000000091210000000000001700080000000000000011a260a04",
+                "4974656d120f666978747572653a62332e636f696e1a0d646566696e6974696f6e2d7231201e2801124e0a10",
+                "000000000001700080000000000000091210000000000001700080000000000000011a260a044974656d120f",
+                "666978747572653a62332e636f696e1a0d646566696e6974696f6e2d723128021a610a100000000000017000",
+                "80000000000000011210000000000001700080000000000000021a0301020322100000000000017000800000",
+                "00000000032a056d61702d313209636f6e74656e742d313a1000000000000170008000000000000006400122",
+                "280a1000000000000170008000000000000029180122100000000000017000800000000000003228012a4b0a",
+                "1667726f756e645f7069636b75705f7472616e736665723209636f6e74656e742d313a0972756c657365742d",
+                "31420573696d2d314a140a10000000000001700080000000000000321007322c0a1000000000000170008000",
+                "00000000000a12140a10000000000001700080000000000000141002183c205ada01201313c9360d517b8ef7",
+                "4c193a9f07f6ab1769abf72741090d3aa3263ae573d0f7",
+            ),
+        ),
+        (
+            "transfer_TopUp",
+            concat!(
+                "080112100000000000017000800000000000001e18022001280230033a2944555230335f4f4e455f4954454d",
+                "5f44555241424c455f41554449545f524554454e54494f4e5f56314080d8c1a28c344a100000000000017000",
+                "80000000000000015210000000000001700080000000000000026a1000000000000170008000000000000032",
+                "70018001079201160a100000000000017000800000000000002810011801a2011612140a1000000000000170",
+                "0080000000000000321007ca01176f746572796e2d67616d652d7365727665722f74657374d201c70308011a",
+                "c2030a500a10000000000001700080000000000000091210000000000001700080000000000000011a260a04",
+                "4974656d120f666978747572653a62332e636f696e1a0d646566696e6974696f6e2d7231201e280112500a10",
+                "000000000001700080000000000000091210000000000001700080000000000000011a260a044974656d120f",
+                "666978747572653a62332e636f696e1a0d646566696e6974696f6e2d7231201428011a610a10000000000001",
+                "700080000000000000011210000000000001700080000000000000021a030102032210000000000001700080",
+                "000000000000032a056d61702d313209636f6e74656e742d313a100000000000017000800000000000000640",
+                "01223e0a10000000000001700080000000000000291801221000000000000170008000000000000032280132",
+                "140a100000000000017000800000000000001410032a4b0a1667726f756e645f7069636b75705f7472616e73",
+                "6665723209636f6e74656e742d313a0972756c657365742d31420573696d2d314a140a100000000000017000",
+                "80000000000000321007322c0a100000000000017000800000000000000a12140a1000000000000170008000",
+                "0000000000141002185a2064da01201d5f77161a23651e249f15171d44f998f54b3f09b4d4c2beb5844597c3",
+                "304d05",
+            ),
+        ),
+        (
+            "transfer_corpse",
+            concat!(
+                "080112100000000000017000800000000000001e18022001280230033a2944555230335f4f4e455f4954454d",
+                "5f44555241424c455f41554449545f524554454e54494f4e5f56314080d8c1a28c344a100000000000017000",
+                "80000000000000015210000000000001700080000000000000026a1000000000000170008000000000000032",
+                "70018001079201160a100000000000017000800000000000002810011801a2011612140a1000000000000170",
+                "0080000000000000321007ca01176f746572796e2d67616d652d7365727665722f74657374d201af0308011a",
+                "aa030a500a10000000000001700080000000000000091210000000000001700080000000000000011a260a04",
+                "4974656d120f666978747572653a62332e636f696e1a0d646566696e6974696f6e2d7231201e280112500a10",
+                "000000000001700080000000000000091210000000000001700080000000000000011a260a044974656d120f",
+                "666978747572653a62332e636f696e1a0d646566696e6974696f6e2d7231201e2801223e0a10000000000001",
+                "700080000000000000291801221000000000000170008000000000000032280132140a100000000000017000",
+                "800000000000001410032a4b0a1667726f756e645f7069636b75705f7472616e736665723209636f6e74656e",
+                "742d313a0972756c657365742d31420573696d2d314a140a100000000000017000800000000000003210073a",
+                "770a100000000000017000800000000000003c10041a610a1000000000000170008000000000000001121000",
+                "0000000001700080000000000000021a030102032210000000000001700080000000000000032a056d61702d",
+                "313209636f6e74656e742d313a10000000000001700080000000000000064001da01204a92790e385163ab02",
+                "6a5b75a9a559f93e5d0ff73b3d523f0d1ce0669aef1b4e",
+            ),
+        ),
+        (
+            "reward",
+            concat!(
+                "080112100000000000017000800000000000001e18022001280230033a2944555230335f4f4e455f4954454d",
+                "5f44555241424c455f41554449545f524554454e54494f4e5f56314080d095ffbc314a100000000000017000",
+                "80000000000000015210000000000001700080000000000000026a1000000000000170008000000000000032",
+                "70018001079201160a100000000000017000800000000000001f10011801a2011612140a1000000000000170",
+                "0080000000000000321007ca010a746573742d6275696c64d201970208012292020a530a1000000000000170",
+                "0080000000000000091210000000000001700080000000000000011a290a044974656d121266697874757265",
+                "3a63686573742e636f696e1a0d646566696e6974696f6e2d7231201e2801123e0a1000000000000170008000",
+                "0000000000291801221000000000000170008000000000000032280132140a10000000000001700080000000",
+                "0000001410031a790a117265776172645f636c61696d5f6d696e743209636f6e74656e742d313a0972756c65",
+                "7365742d31420573696d2d314a140a1000000000000170008000000000000032100752310a0b526577617264",
+                "436c61696d1213666978747572653a63686573742e636c61696d1a0d646566696e6974696f6e2d72312001da",
+                "0120d6ad7befc668cdb853aaf3028400fe1ad34484037b6a936ca3b5a061e378036d",
+            ),
+        ),
+        (
+            "decay_entry",
+            concat!(
+                "080112100000000000017000800000000000001e18022001280230033a2944555230335f4f4e455f4954454d",
+                "5f44555241424c455f41554449545f524554454e54494f4e5f563140e0acc5a28c344a100000000000017000",
+                "80000000000000015210000000000001700080000000000000029201160a1000000000000170008000000000",
+                "00002810011801ca01176f746572796e2d67616d652d7365727665722f74657374d201bd0208012ab8020a50",
+                "0a10000000000001700080000000000000091210000000000001700080000000000000011a260a084974656d",
+                "547970651213666978747572653a636f727073652d6c6f6f741a057265762d3120032801124e0a1000000000",
+                "0001700080000000000000091210000000000001700080000000000000011a260a084974656d547970651213",
+                "666978747572653a636f727073652d6c6f6f741a057265762d31280222770a10000000000001700080000000",
+                "0000003c10041a610a1000000000000170008000000000000001121000000000000170008000000000000002",
+                "1a030909002210000000000001700080000000000000032a056d61702d313209636f6e74656e742d313a1000",
+                "00000000017000800000000000000640012a190a100000000000017000800000000000003c10e0acc5a28c34",
+                "3002da0120a8f69f520cd9716dcb86bfcf37176f20872d12c56e4206d41c37365ea9833d3f",
+            ),
+        ),
+        (
+            "decay_corpse",
+            concat!(
+                "080112100000000000017000800000000000001e18022001280230033a2944555230335f4f4e455f4954454d",
+                "5f44555241424c455f41554449545f524554454e54494f4e5f563140e0acc5a28c344a100000000000017000",
+                "80000000000000015210000000000001700080000000000000029201160a1000000000000170008000000000",
+                "00002810011801ca01176f746572796e2d67616d652d7365727665722f74657374d201a70208012aa2020a50",
+                "0a100000000000017000800000000000003c1210000000000001700080000000000000011a260a084974656d",
+                "547970651213666978747572653a636f727073652d6c6f6f741a057265762d3120012801124e0a1000000000",
+                "00017000800000000000003c1210000000000001700080000000000000011a260a084974656d547970651213",
+                "666978747572653a636f727073652d6c6f6f741a057265762d3128021a610a10000000000001700080000000",
+                "000000011210000000000001700080000000000000021a030909002210000000000001700080000000000000",
+                "032a056d61702d313209636f6e74656e742d313a100000000000017000800000000000000640012a190a1000",
+                "00000000017000800000000000003c10e0acc5a28c343002da0120cd52a081a12bad5e4b355eec0426f64dc2",
+                "c65eaadda4cb552575eb395d705bd1",
+            ),
+        ),
+        (
+            "fee_partial",
+            concat!(
+                "080112100000000000017000800000000000005018022001280230033a2944555230335f4f4e455f4954454d",
+                "5f44555241424c455f41554449545f524554454e54494f4e5f56314080d8c1a28c344a100000000000017000",
+                "80000000000000015210000000000001700080000000000000029201160a1000000000000170008000000000",
+                "00005110011801ca01176f746572796e2d67616d652d7365727665722d74657374d201cf03080132ca030a28",
+                "0a260a126f746572796e3a636861726d2e776f756e6412100000000000017000800000000000004610231823",
+                "22100000000000017000800000000000002928023210000000000001700080000000000000013a1000000000",
+                "00017000800000000000000240014a100000000000017000800000000000003252a4010a500a100000000000",
+                "017000800000000000000a1210000000000001700080000000000000011a260a044974656d12176f74657279",
+                "6e3a6974656d2e74696269612e69333033311a057265762d31201e2801124e0a100000000000017000800000",
+                "000000000a1210000000000001700080000000000000011a260a044974656d12176f746572796e3a6974656d",
+                "2e74696269612e69333033311a057265762d312802180752a6010a500a100000000000017000800000000000",
+                "000b1210000000000001700080000000000000011a260a044974656d12176f746572796e3a6974656d2e7469",
+                "6269612e69333033311a057265762d312032280112500a100000000000017000800000000000000b12100000",
+                "00000001700080000000000000011a260a044974656d12176f746572796e3a6974656d2e74696269612e6933",
+                "3033311a057265762d31202d28011803da0120f9710f46113c5b44dc1293e3668225b221a55ae941f24bcac8",
+                "381d1f70e44ade",
+            ),
+        ),
+        (
+            "fee_change",
+            concat!(
+                "080112100000000000017000800000000000005018022001280230033a2944555230335f4f4e455f4954454d",
+                "5f44555241424c455f41554449545f524554454e54494f4e5f56314080d8c1a28c344a100000000000017000",
+                "80000000000000015210000000000001700080000000000000029201160a1000000000000170008000000000",
+                "00005110011801ca01176f746572796e2d67616d652d7365727665722d74657374d201e604080132e1040a28",
+                "0a260a126f746572796e3a636861726d2e776f756e6412100000000000017000800000000000004610ae1218",
+                "9a4e22100000000000017000800000000000002928023210000000000001700080000000000000013a100000",
+                "000000017000800000000000000240014a1000000000000170008000000000000032529c010a4c0a10000000",
+                "0000017000800000000000000a1210000000000001700080000000000000011a220a044974656d12176f7465",
+                "72796e3a6974656d2e74696269612e69333033311a0172200a2801124a0a1000000000000170008000000000",
+                "00000a1210000000000001700080000000000000011a220a044974656d12176f746572796e3a6974656d2e74",
+                "696269612e69333033311a017228021801529c010a4c0a100000000000017000800000000000000b12100000",
+                "00000001700080000000000000011a220a044974656d12176f746572796e3a6974656d2e74696269612e6933",
+                "3034331a017220012801124a0a100000000000017000800000000000000b1210000000000001700080000000",
+                "000000011a220a044974656d12176f746572796e3a6974656d2e74696269612e69333034331a017228021802",
+                "58ec3b62500a4c0a10000000000001700080000000000000141210000000000001700080000000000000011a",
+                "220a044974656d12176f746572796e3a6974656d2e74696269612e69333033351a0172204c2801100362500a",
+                "4c0a10000000000001700080000000000000151210000000000001700080000000000000011a220a04497465",
+                "6d12176f746572796e3a6974656d2e74696269612e69333033311a0172203c28011004da0120ecb009ecd50c",
+                "fbf9c02695c75d550ad10749f4d1510f662614980f3741a8bbdb",
+            ),
+        ),
+        (
+            "timed_transform",
+            concat!(
+                "080112100000000000017000800000000000005018022001280230033a2944555230335f4f4e455f4954454d",
+                "5f44555241424c455f41554449545f524554454e54494f4e5f56314080d8c1a28c344a100000000000017000",
+                "80000000000000015210000000000001700080000000000000029201160a1000000000000170008000000000",
+                "00005110011801ca01176f746572796e2d67616d652d7365727665722d74657374d201e40108013adf010a47",
+                "0a10000000000001700080000000000000091210000000000001700080000000000000011a1d0a084974656d",
+                "54797065120a736f66742d626f6f74731a057265762d3120012801124c0a1000000000000170008000000000",
+                "0000091210000000000001700080000000000000011a220a084974656d54797065120f776f726e2d736f6674",
+                "2d626f6f74731a057265762d31200128011a1000000000000170008000000000000003221000000000000170",
+                "0080000000000000012a1000000000000170008000000000000002300140014801520610e0d40318045a0218",
+                "05da012046b187694a2a6f1b6818b6ca082faf072ad5ec17c241830857ce6a08d5902758",
+            ),
+        ),
+        (
+            "timed_burn",
+            concat!(
+                "080112100000000000017000800000000000005018022001280230033a2944555230335f4f4e455f4954454d",
+                "5f44555241424c455f41554449545f524554454e54494f4e5f56314080d8c1a28c344a100000000000017000",
+                "80000000000000015210000000000001700080000000000000029201160a1000000000000170008000000000",
+                "00005110011801ca01176f746572796e2d67616d652d7365727665722d74657374d201e10108013adc010a41",
+                "0a10000000000001700080000000000000091210000000000001700080000000000000011a170a084974656d",
+                "54797065120472696e671a057265762d3120012801123f0a1000000000000170008000000000000009121000",
+                "0000000001700080000000000000011a170a084974656d54797065120472696e671a057265762d3128021a10",
+                "000000000001700080000000000000032210000000000001700080000000000000012a100000000000017000",
+                "800000000000000230013a140a100000000000017000800000000000000710034802520208055a020805da01",
+                "204e361918a5dcd940f44cc273ae7e5752f1f458daf7ebf940fc5bdd81e3089a19",
+            ),
+        ),
+    ];
+
+    pub fn unhex(text: &str) -> Vec<u8> {
+        (0..text.len())
+            .step_by(2)
+            .map(|at| u8::from_str_radix(&text[at..at + 2], 16).unwrap())
+            .collect()
+    }
+
+    /// The shape's own envelope gate.
+    pub fn verify_type2_shape(shape: &str, wire: &[u8]) -> Result<EventEnvelopeV1, AuditError> {
+        use super::super::{
+            item_decay_retire_audit, item_fee_burn_audit, item_timed_state_audit,
+            item_transfer_audit, reward_claim_mint_audit,
+        };
+        match shape.split('_').next().unwrap() {
+            "mint" | "corpse" => decode_envelope(wire).map(|(envelope, _)| envelope),
+            "transfer" => {
+                item_transfer_audit::decode_transfer_envelope(wire).map(|(envelope, _)| envelope)
+            }
+            "reward" => reward_claim_mint_audit::decode_reward_claim_mint_envelope(wire)
+                .map(|(envelope, _)| envelope),
+            "decay" => item_decay_retire_audit::decode_decay_retire_envelope(wire)
+                .map(|(envelope, _)| envelope),
+            "fee" => {
+                item_fee_burn_audit::decode_fee_burn_envelope(wire).map(|(envelope, _)| envelope)
+            }
+            "timed" => item_timed_state_audit::decode_timed_expiry_envelope(wire)
+                .map(|(envelope, _)| envelope),
+            other => panic!("unknown shape {other}"),
+        }
+    }
 }
 
 #[cfg(test)]
@@ -1227,6 +1574,187 @@ pub(super) mod tests {
         assert_eq!(
             OneItemMintV1::decode(corpse_mint(3).encode_to_vec().as_slice()).unwrap(),
             corpse_mint(3)
+        );
+    }
+
+    use super::golden::{TYPE2_GOLDEN_V1 as GOLDEN_V1, unhex, verify_type2_shape as verify};
+
+    #[test]
+    fn every_revision_one_shape_verifies_unchanged_under_the_new_codec() {
+        for (shape, hex) in GOLDEN_V1 {
+            let wire = unhex(hex);
+            let verified = verify(shape, &wire);
+            assert!(verified.is_ok(), "{shape}: {verified:?}");
+            let envelope = verified.unwrap();
+            assert_eq!(
+                Type2EventTuple::of(
+                    envelope.event_schema_revision,
+                    &envelope.retention_profile_id
+                ),
+                Some(Type2EventTuple::V1),
+                "{shape}"
+            );
+            assert_eq!(envelope.encode_to_vec(), wire, "{shape} is canonical");
+        }
+    }
+
+    #[test]
+    fn every_shape_verifies_under_v1_or_v2_and_never_a_mixed_tuple() {
+        assert_eq!(
+            Type2EventTuple::of(1, RETENTION_PROFILE_ID),
+            Some(Type2EventTuple::V1)
+        );
+        assert_eq!(
+            Type2EventTuple::of(2, RETENTION_PROFILE_ID_V2),
+            Some(Type2EventTuple::V2)
+        );
+        for (shape, hex) in GOLDEN_V1 {
+            let base = EventEnvelopeV1::decode(unhex(hex).as_slice()).unwrap();
+            let with = |revision: u32, profile: &str| {
+                let mut envelope = base.clone();
+                envelope.event_schema_revision = revision;
+                envelope.retention_profile_id = profile.into();
+                envelope.encode_to_vec()
+            };
+            let verified = verify(shape, &with(2, RETENTION_PROFILE_ID_V2));
+            assert!(verified.is_ok(), "{shape} under (2, V2): {verified:?}");
+            let v2 = verified.unwrap();
+            assert_eq!(
+                Type2EventTuple::of(v2.event_schema_revision, &v2.retention_profile_id),
+                Some(Type2EventTuple::V2)
+            );
+            for (case, revision, profile) in [
+                ("(1, V2)", 1, RETENTION_PROFILE_ID_V2),
+                ("(2, V1)", 2, RETENTION_PROFILE_ID),
+                ("revision 3", 3, RETENTION_PROFILE_ID_V2),
+                ("revision 0", 0, RETENTION_PROFILE_ID),
+                (
+                    "another profile",
+                    2,
+                    "DUR03_ONE_ITEM_DURABLE_AUDIT_RETENTION_V3",
+                ),
+                ("the bank profile", 1, "ECONOMY_LEDGER_RETENTION_V1"),
+            ] {
+                assert_eq!(
+                    verify(shape, &with(revision, profile)),
+                    Err(AuditError::InvalidInput),
+                    "{shape} {case}"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn the_v2_tuple_is_the_registered_successor_profile() {
+        let registry: Value = serde_json::from_str(EVENT_REGISTRY).unwrap();
+        let profile = |id: &str| {
+            registry["retention_profiles"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .find(|profile| profile["id"] == id)
+                .cloned()
+                .expect("retention profile registered")
+        };
+        let (v1, v2) = (
+            profile(RETENTION_PROFILE_ID),
+            profile(RETENTION_PROFILE_ID_V2),
+        );
+        assert_eq!(v2["privacy_class"], v1["privacy_class"]);
+        assert!(v2["policy_revision"].as_u64().unwrap() > v1["policy_revision"].as_u64().unwrap());
+        // Phase 1: event type 2 stays bound to (1, V1) until GOLD-FEE-ACT-2.
+        let event = registry["event_types"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|event| event["id"] == EVENT_TYPE_ID)
+            .unwrap();
+        assert_eq!(event["current_schema_revision"], EVENT_SCHEMA_REVISION);
+        assert_eq!(event["retention_profile_id"], RETENTION_PROFILE_ID);
+    }
+
+    #[test]
+    fn the_bank_value_line_is_refused_on_every_non_fee_operation() {
+        use super::super::item_fee_burn_audit::OneItemFeeBankDebitV1;
+        let line = OneItemFeeBankDebitV1 {
+            entry_id: uuid(90),
+            asset: "gold".into(),
+            account_id: uuid(91),
+            world_id: uuid(1),
+            kind: 5,
+            line_class: 3,
+            debit_gold_units: 1,
+            balance_before_gold_units: 1,
+            balance_after_gold_units: 0,
+        }
+        .encode_to_vec();
+        // Field 13 (length-delimited) appended to the MINT message is an unknown field.
+        let mut operation = mint().encode_to_vec();
+        operation.push(13 << 3 | 2);
+        prost::encoding::encode_varint(line.len() as u64, &mut operation);
+        operation.extend_from_slice(&line);
+        let mut wire = OneItemTransactionV1 {
+            interpretation_revision: INTERPRETATION_REVISION,
+            operation: None,
+        }
+        .encode_to_vec();
+        wire.push(2 << 3 | 2);
+        prost::encoding::encode_varint(operation.len() as u64, &mut wire);
+        wire.extend_from_slice(&operation);
+        assert_eq!(decode_payload(&wire), Err(AuditError::InvalidInput));
+        // The same bytes without field 13 are the canonical MINT.
+        let canonical = OneItemTransactionV1 {
+            interpretation_revision: INTERPRETATION_REVISION,
+            operation: Some(OneItemOperationV1::Mint(mint())),
+        }
+        .encode_to_vec();
+        assert_eq!(decode_payload(&canonical).unwrap(), mint());
+    }
+
+    /// The production part of a source file: everything before its test module.
+    fn production(path: &str) -> String {
+        let source =
+            std::fs::read_to_string(std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join(path))
+                .unwrap();
+        let cut = source.find("\n#[cfg(test)]\nmod ").unwrap_or(source.len());
+        source[..cut].to_owned()
+    }
+
+    #[test]
+    fn every_type2_producer_still_emits_v1_in_phase_one() {
+        // §1.7 phase 1: mint, transfer, reward claim, decay retire and timed expiry bind the
+        // (1, V1) constants; only GOLD-FEE-ACT-1 routes a tuple through them.
+        for path in [
+            "src/durability/item_mint.rs",
+            "src/durability/item_transfer.rs",
+            "src/durability/reward_claim_mint.rs",
+            "src/durability/item_decay_retire.rs",
+            "src/durability/item_timed_state.rs",
+        ] {
+            let source = production(path);
+            assert!(source.contains("RETENTION_PROFILE_ID"), "{path}");
+            assert!(
+                !source.contains("_V2") && !source.contains("Type2EventTuple"),
+                "{path} emits another tuple"
+            );
+        }
+        // The fee writer's production entry passes (1, V1); the tuple-taking entry is test-only.
+        let fee = production("src/durability/item_fee_burn.rs");
+        assert!(fee.contains("burn_fee(connection, fence, request, Type2EventTuple::V1)"));
+        assert_eq!(
+            fee.matches("burn_fee(connection, fence, request,").count(),
+            2
+        );
+        assert!(
+            fee.contains("#[cfg(test)]\n#[allow(dead_code)]")
+                && fee.contains("\npub async fn burn_fee_in_transaction_under(")
+                && fee.find("#[cfg(test)]\n#[allow(dead_code)]")
+                    < fee.find("\npub async fn burn_fee_in_transaction_under("),
+            "the (2, V2) fee entry is test-only in phase 1"
+        );
+        assert_eq!(
+            (EVENT_SCHEMA_REVISION, RETENTION_PROFILE_ID),
+            (1, "DUR03_ONE_ITEM_DURABLE_AUDIT_RETENTION_V1")
         );
     }
 }

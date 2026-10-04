@@ -1,5 +1,5 @@
 [package]
-name = "oteryn-world-bundle-compiler"
+name = "oteryn-world-bundle"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
@@ -8,11 +8,10 @@ repository.workspace = true
 publish.workspace = true
 
 [package.metadata.oteryn]
-category = "tool"
-release-role = "tool-only"
+category = "world-bundle"
+release-role = "production"
 
 [dependencies]
-oteryn-world-bundle = { version = "=0.1.0", path = "../../crates/world-bundle" }
 serde = { workspace = true, features = ["derive"] }
 serde_json.workspace = true
 sha2.workspace = true

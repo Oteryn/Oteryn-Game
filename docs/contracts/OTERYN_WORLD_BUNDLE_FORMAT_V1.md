@@ -10,7 +10,8 @@
   the Item, Terrain and WorldObject registries and the end-to-end compile of the real map).
 - Implementation: `tools/world-bundle-compiler` (writer, reader, compiler, key resolver and
   the `parity` and `compile` commands).
-- Runtime reader: none yet (MAP-LOAD-1).
+- Runtime reader: `crates/world-bundle` (`oteryn-world-bundle`, MAP-LOAD-1): the layout, the
+  reader and its caps, shared by the compiler and the game server's `WorldBase` loader.
 - Governing: ADR-0021 §4.2-§4.6 and §4.8 (D188-D196); ADR-0005 §3; DUR-04 §9;
   `OTERYN_CRYSTALSERVER_LEGACY_SPATIAL_IMPORT_PROFILE_V1`; `OTERYN_WORLD_SPATIAL_COORDINATE_PROFILE_V1`.
 
@@ -320,6 +321,11 @@ and closes OPEN-4; MAP-BUNDLE-1b-2 implements OPEN-1 and OPEN-2 (key resolution)
 
 (Superseded by §13: v2 is retired. The text below is the v2 change that v3 keeps.)
 
+Amended by MAP-KIND-CLASS-0 (R2, `docs/architecture/reviews/OTERYN_GAME_MAP_KIND_CLASS0_TERRAIN_KIND_CLASSIFICATION_PACKET_2026-10-04.md`):
+the closed kind set gains `common`, a tile-layer item that is never the tile's ground (both members
+`null`). No bundle was published, so `format_version`, `min_reader_version` and the digest domain
+stay at 3.
+
 `OTERYN_WORLD_BUNDLE/v2` has `format_version` 2 and `min_reader_version` 2. It changes one thing
 against v1: each `palette` entry gains the required member `terrain`. The layout, the payload
 grammar, the digest rule (its domain string now names v2) and every v1 limit are unchanged. The
@@ -333,13 +339,13 @@ The compiler routes each palette entry with the OPEN-1 rules (§10) and writes `
   and its record's fields are not read.
 - `{"kind", "walkable", "ground_speed"}` for a Terrain route (a `terrain` key, or an `item` key
   whose one catalogue record is a Terrain record). `kind` is one of `ground`, `border`, `wall`,
-  `roof` and `field`. For `ground`, `walkable` is a boolean and `ground_speed` is an integer in
+  `roof`, `field` and `common`. For `ground`, `walkable` is a boolean and `ground_speed` is an integer in
   `0..=1000`; a walkable ground has a speed of at least 1, and a non-walkable ground may have any
   speed in `0..=1000`, 0 included. For every other kind both members are `null`. All three
   members are always present.
 
 The compiler fails closed: it stops on a placed Terrain-routed record whose `kind` is UNKNOWN (or
-not one of the five), on a `ground` record whose `walkable` or `ground_speed` is UNKNOWN, on a
+not one of the six), on a `ground` record whose `walkable` or `ground_speed` is UNKNOWN, on a
 speed outside `0..=1000`, and on speed 0 with `walkable` true. A WorldObject or plain-Item route
 is never checked for a Terrain kind. The `parity` command adds a `terrain` object: placed entries
 per kind, the Terrain-routed entries with an UNKNOWN kind (`unknown_kind`) and those the compiler

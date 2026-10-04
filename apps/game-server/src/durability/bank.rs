@@ -1084,6 +1084,120 @@ async fn insert_entry(
     Ok(())
 }
 
+/// Whether a fee payer is junior (BANK-0 §4.4, Q1 b): a junior payer keeps stage 1 and never
+/// pays a fee from the bank (BANK-FEE-0 §3).
+pub(super) fn fee_payer_is_junior(character: CharacterId) -> bool {
+    is_junior(starter_island_fact(character))
+}
+
+/// The payer's balance row, locked for a fee's bank part (GOLD-FEE-2).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(super) struct FeeDebitBalance {
+    pub(super) balance: u64,
+    last_entry_id: Option<[u8; 16]>,
+}
+
+/// The `FEE_DEBIT` entry of one fee, as written.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(super) struct FeeDebitEntry {
+    pub(super) entry_id: [u8; 16],
+    pub(super) amount: u64,
+    pub(super) balance_before: u64,
+    pub(super) balance_after: u64,
+}
+
+/// The balance step of a fee's bank part (BANK-0 §4.1, BANK-FEE-0 §4.2): after the fee
+/// transaction locked the payer root, the backpack and its coin entries, upsert the value-neutral
+/// zero row of the payer's (Account, World) and lock it.
+pub(super) async fn lock_fee_debit_balance(
+    connection: &mut PgConnection,
+    world_id: WorldId,
+    account_id: [u8; 16],
+) -> std::result::Result<FeeDebitBalance, DurabilityError> {
+    match lock_balances(connection, world_id, &[account_id]).await {
+        Ok(locked) => locked
+            .first()
+            .map(|balance| FeeDebitBalance {
+                balance: balance.balance,
+                last_entry_id: balance.last_entry_id,
+            })
+            .ok_or(DurabilityError::InvalidStoredState),
+        Err(BankError::Unavailable(error)) => Err(error),
+        Err(_) => Err(DurabilityError::InvalidStoredState),
+    }
+}
+
+/// The `FEE_DEBIT` entry writer (GOLD-FEE-2, BANK-FEE-0 §4.2): one entry of `amount` that
+/// references the fee record `fee_transaction_id` instead of a bank operation, chained from the
+/// locked `balance`, and the balance row moved to it. The caller has checked the amount against
+/// the balance; it writes no operation, coin line or bank event.
+pub(super) async fn insert_fee_debit_entry(
+    connection: &mut PgConnection,
+    fee_transaction_id: &[u8; 16],
+    world_id: WorldId,
+    account_id: [u8; 16],
+    payer: CharacterId,
+    balance: &FeeDebitBalance,
+    amount: u64,
+) -> std::result::Result<FeeDebitEntry, DurabilityError> {
+    let balance_after = balance
+        .balance
+        .checked_sub(amount)
+        .filter(|_| amount > 0)
+        .ok_or(DurabilityError::InvalidStoredState)?;
+    let entry = FeeDebitEntry {
+        entry_id: new_entry_id(connection)
+            .await
+            .map_err(|error| match error {
+                BankError::Unavailable(error) => error,
+                _ => DurabilityError::InvalidStoredState,
+            })?,
+        amount,
+        balance_before: balance.balance,
+        balance_after,
+    };
+    let gold = |value: u64| i64::try_from(value).map_err(|_| DurabilityError::InvalidStoredState);
+    sqlx::query(
+        "INSERT INTO game_account_bank_entries(entry_id, fee_transaction_id, account_id, \
+           world_id, kind, amount, balance_before, balance_after, previous_entry_id, \
+           acting_character_id) \
+         VALUES (encode($1,'hex')::uuid, encode($2,'hex')::uuid, encode($3,'hex')::uuid, \
+           encode($4,'hex')::uuid, $5, $6, $7, $8, encode($9,'hex')::uuid, \
+           encode($10,'hex')::uuid)",
+    )
+    .bind(entry.entry_id.as_slice())
+    .bind(fee_transaction_id.as_slice())
+    .bind(account_id.as_slice())
+    .bind(world_id.as_bytes().as_slice())
+    .bind(
+        i16::try_from(super::item_fee_burn_audit::LEDGER_FEE_DEBIT)
+            .map_err(|_| DurabilityError::InvalidStoredState)?,
+    )
+    .bind(gold(amount)?)
+    .bind(gold(entry.balance_before)?)
+    .bind(gold(entry.balance_after)?)
+    .bind(balance.last_entry_id.map(|id| id.to_vec()))
+    .bind(payer.as_bytes().as_slice())
+    .execute(&mut *connection)
+    .await?;
+    let moved = sqlx::query(
+        "UPDATE game_account_bank_balances SET balance = $3, last_entry_id = encode($4,'hex')::uuid \
+          WHERE account_id = encode($1,'hex')::uuid AND world_id = encode($2,'hex')::uuid \
+            AND balance = $5",
+    )
+    .bind(account_id.as_slice())
+    .bind(world_id.as_bytes().as_slice())
+    .bind(gold(entry.balance_after)?)
+    .bind(entry.entry_id.as_slice())
+    .bind(gold(entry.balance_before)?)
+    .execute(&mut *connection)
+    .await?;
+    if moved.rows_affected() != 1 {
+        return Err(DurabilityError::InvalidStoredState);
+    }
+    Ok(entry)
+}
+
 /// Insert the coin lines and apply them to the items: inputs change (a whole input retires and
 /// its entry ends), outputs are created in new entries.
 async fn apply_coin_lines(
