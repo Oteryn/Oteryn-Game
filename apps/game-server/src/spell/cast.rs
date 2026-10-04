@@ -46,16 +46,11 @@ macro_rules! starter {
 }
 
 /// The V1 castable set of §6 among the candidate starter bundles: self heal and condition removal
-/// (`exana pox`, `exura gran`, `exura`), plus the free self-heal spells the same
-/// shape covers (`exura infir`, `exura infir ico`, `exura ico`, `exura vita`).
-const V1_BUNDLES: [(&str, &str); 7] = [
+/// (`exana pox`, `exura gran`, `exura`).
+const V1_BUNDLES: [(&str, &str); 3] = [
     starter!("instant-cure_poison"),
     starter!("instant-intense_healing"),
     starter!("instant-light_healing"),
-    starter!("instant-magic_patch"),
-    starter!("instant-bruise_bane"),
-    starter!("instant-wound_cleansing"),
-    starter!("instant-ultimate_healing"),
 ];
 
 /// The V1 spell book, in the canonical SPELL-D1 order. Any bundle that does not load fails the
