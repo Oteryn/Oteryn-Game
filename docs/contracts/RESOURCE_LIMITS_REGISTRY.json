@@ -7172,6 +7172,140 @@
       "notes": "ANALYSERS-0 \u00a76 (the pending-facts row, unnumbered in the decision). Registered by OTV2-20261003-analyser-wire1."
     },
     {
+      "id": "PROF1-RL-01",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_PROFICIENCY1B_PERK_MODIFICATION_VALUE_SHAPES_DECISION_2026-10-03.md",
+      "resource": "Perk modification slots per Weapon Proficiency track",
+      "unit": "slots per track",
+      "hard_maximum": 2,
+      "configurable_range": {
+        "minimum": 2,
+        "maximum": 2
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Primary key (character_id, item_key, slot) with CHECK slot IN (1, 2): at most two rows per track; a command for another slot is refused before any read.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=2: slots 1 and 2 are stored and slot 2 unlocks at Mastery",
+        "max+1=3: slot 3 is refused by the command constructor and the slot CHECK"
+      ],
+      "consumers": [
+        "apps/game-server/src/domain/weapon_proficiency.rs PROFICIENCY_MODIFICATION_SLOTS",
+        "apps/game-server/migrations/0055_character_proficiency_modification.sql"
+      ],
+      "notes": "PROFICIENCY-1B \u00a74.1 and \u00a712; tests: weapon_proficiency::modification_tests::limits_hold_at_max_and_refuse_max_plus_one, modify_checks_unlock_occupancy_selection_level_and_pool. Registered by OTV2-20261003-prof-shape-1."
+    },
+    {
+      "id": "PROF1-RL-02",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_PROFICIENCY1B_PERK_MODIFICATION_VALUE_SHAPES_DECISION_2026-10-03.md",
+      "resource": "Rank of a modified perk",
+      "unit": "rank",
+      "hard_maximum": 10,
+      "configurable_range": {
+        "minimum": 10,
+        "maximum": 10
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "SMALLINT CHECK rank BETWEEN 1 AND 10; RANK_UP and ORB_RANK refuse at rank 10 (RANK_MAX).",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=10: ORB_RANK reaches rank 10 and a rank-10 row is well formed",
+        "max+1=11: RANK_UP at rank 10 is RANK_MAX and rank 11 is not well formed"
+      ],
+      "consumers": [
+        "apps/game-server/src/domain/weapon_proficiency.rs PROFICIENCY_MODIFICATION_RANK_MAX"
+      ],
+      "notes": "PROFICIENCY-1B \u00a74.1 and \u00a712; tests: weapon_proficiency::modification_tests::limits_hold_at_max_and_refuse_max_plus_one, rank_operations_refuse_max_offer_and_outdated_revisions. Registered by OTV2-20261003-prof-shape-1."
+    },
+    {
+      "id": "PROF1B-RL-02",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_PROFICIENCY1B_PERK_MODIFICATION_VALUE_SHAPES_DECISION_2026-10-03.md",
+      "resource": "Entries of a pending reshape offer",
+      "unit": "entries per offer",
+      "hard_maximum": 3,
+      "configurable_range": {
+        "minimum": 3,
+        "maximum": 3
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "A fixed [u8; 3] in memory and a SMALLINT[] with cardinality 3 in storage; an offer is drawn only when 3 entries other than the current one exist.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=3: an offer stores 3 distinct entries other than the current one",
+        "max+1: a 4th entry cannot be stored (cardinality CHECK); a pool with 2 others is POOL_TOO_SMALL"
+      ],
+      "consumers": [
+        "apps/game-server/src/domain/weapon_proficiency.rs PROFICIENCY_RESHAPE_OFFER_SIZE"
+      ],
+      "notes": "PROFICIENCY-1B \u00a75 and \u00a712; tests: offers_are_three_distinct_others_and_choices_keep_the_rank. Registered by OTV2-20261003-prof-shape-1."
+    },
+    {
+      "id": "PROF1B-RL-03",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_PROFICIENCY1B_PERK_MODIFICATION_VALUE_SHAPES_DECISION_2026-10-03.md",
+      "resource": "New perk modification occurrences per character",
+      "unit": "occurrences per second",
+      "hard_maximum": 2,
+      "configurable_range": {
+        "minimum": 2,
+        "maximum": 2
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "A per-character window of at most 2 reservation instants, charged only for an unseen occurrence after the replay lookup.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=2: two reservations in one second are charged",
+        "max+1=3: a third reservation in the same second is RATE_LIMITED; one a second later is charged"
+      ],
+      "consumers": [
+        "apps/game-server/src/domain/weapon_proficiency.rs ProficiencyModificationRateCap"
+      ],
+      "notes": "PROFICIENCY-1B \u00a75 and \u00a712; test: weapon_proficiency::modification_tests::limits_hold_at_max_and_refuse_max_plus_one. Registered by OTV2-20261003-prof-shape-1."
+    },
+    {
+      "id": "PROF1B-RL-04",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_PROFICIENCY1B_PERK_MODIFICATION_VALUE_SHAPES_DECISION_2026-10-03.md",
+      "resource": "Pool entries per ProficiencyShaping definition",
+      "unit": "entries",
+      "hard_maximum": 64,
+      "configurable_range": {
+        "minimum": 64,
+        "maximum": 64
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "A shaping revision with more entries is not well formed and is never active; entry indexes are SMALLINT 0..63.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=64: a 64-entry pool is well formed",
+        "max+1=65: a 65-entry pool is refused"
+      ],
+      "consumers": [
+        "apps/game-server/src/domain/weapon_proficiency.rs PROFICIENCY_SHAPING_POOL_MAX",
+        "tools/content-schema/proficiency-authoring/shaping_authoring.py MAX_POOL"
+      ],
+      "notes": "PROFICIENCY-1B \u00a712; test: weapon_proficiency::modification_tests::limits_hold_at_max_and_refuse_max_plus_one. Registered by OTV2-20261003-prof-shape-1."
+    },
+    {
+      "id": "PROF1B-RL-05",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_PROFICIENCY1B_PERK_MODIFICATION_VALUE_SHAPES_DECISION_2026-10-03.md",
+      "resource": "Ambiguous perk modification commit before a reconciliation hold",
+      "unit": "milliseconds",
+      "hard_maximum": 2000,
+      "configurable_range": {
+        "minimum": 2000,
+        "maximum": 2000
+      },
+      "failure_category": "UNAVAILABLE",
+      "allocation_impact": "No allocation; an occurrence whose commit outcome is unknown after 2,000 ms is held until reconciliation reads its receipt or terminal record.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=2000: an outcome unknown for 2,000 ms is not yet held",
+        "max+1=2001: at 2,001 ms the occurrence needs reconciliation"
+      ],
+      "consumers": [
+        "apps/game-server/src/domain/weapon_proficiency.rs proficiency_modification_needs_reconciliation"
+      ],
+      "notes": "PROFICIENCY-1B \u00a76.3 and \u00a712; test: weapon_proficiency::modification_tests::limits_hold_at_max_and_refuse_max_plus_one. Registered by OTV2-20261003-prof-shape-1."
+    },
+    {
       "allocation_impact": "A live item's changed charges and time are checkpointed at most this long apart (A13 \u00a74.5); unchanged values write nothing.",
       "boundary_tests": [
         "max=60000: no checkpoint is issued 59,999 ms after the last one",
@@ -7258,6 +7392,96 @@
       "owner_contract": "../architecture/reviews/OTERYN_GAME_TIMED_ITEM0B_RUNTIME_CHARGES_AND_DURATION_DECISION_2026-10-03.md",
       "resource": "Timed writes in flight per item lane",
       "unit": "writes"
+    },
+    {
+      "id": "IMBFORGE0-RL-08",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_IMBUE_FORGE0_IMBUEMENTS_AND_EXALTATION_FORGE_DECISION_2026-09-30.md",
+      "resource": "Forge dust limit of one Character (the balance is 0 to the limit)",
+      "unit": "forge dust",
+      "hard_maximum": 225,
+      "configurable_range": {
+        "minimum": 100,
+        "maximum": 225
+      },
+      "failure_category": "INVALID_INPUT",
+      "allocation_impact": "The limit starts at 100 and is a SMALLINT within 100-225; a gain above the limit credits up to it and records the lost part, and a spend above the balance is refused before any write.",
+      "client_visible": false,
+      "boundary_tests": [
+        "min=100 and max=225: accepted by the dust_limit CHECK",
+        "min-1=99 and max+1=226: rejected by the dust_limit CHECK (game_character_forge_dust_limit_range)"
+      ],
+      "consumers": [
+        "apps/game-server/migrations/0059_character_forge_dust.sql game_character_forge_dust_limit_range",
+        "apps/game-server/src/domain/forge_dust.rs DUST_LIMIT_MIN, DUST_LIMIT_MAX"
+      ],
+      "notes": "IMBUE-FORGE-0 \u00a79 and \u00a715. Raising the limit costs (limit - 75) dust (Canary, PARITY_PENDING) and is FORGE-1b's DustLimit operation. Registered by OTV2-20261003-forge-1a."
+    },
+    {
+      "id": "ITEMV0-RL-01",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_ITEM_MOVE_WIRE0_ITEM_VIEW_AND_MOVE_DECISION_2026-09-30.md",
+      "resource": "Items in one CHARACTER_INVENTORY view (domain 9 snapshot type 1 or delta type 1), the main backpack slot included",
+      "unit": "items per view",
+      "hard_maximum": 30,
+      "configurable_range": {
+        "minimum": 30,
+        "maximum": 30
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "The decoder refuses the 30th direct entry (31st item) before decoding it and any payload over 930 bytes (30 entries of at most 31 bytes) before reading it; the encoder refuses the same view before emitting a byte.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=30: the main backpack and 29 entries round-trip within 930 bytes",
+        "max+1=31: 31 items are refused in both directions"
+      ],
+      "consumers": [
+        "crates/protocol-oteryn/src/item_view.rs MAX_CHARACTER_INVENTORY_ITEMS, MAX_CHARACTER_INVENTORY_BYTES"
+      ],
+      "notes": "ITEM-MOVE-WIRE-0 \u00a74.4; the value 30 is ITEM-MOVE-WIRE-1 \u00a76.3 (the main backpack, 20 entries and later the nine equipment slots), superseding WIRE-0's 21. Within FND02-STATE-DELTA-PAYLOAD-BYTES and FND02-SNAPSHOT-CHUNK-BYTES. Registered by OTV2-20261003-item-view-1a."
+    },
+    {
+      "id": "ITEMV0-RL-02",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_ITEM_MOVE_WIRE0_ITEM_VIEW_AND_MOVE_DECISION_2026-09-30.md",
+      "resource": "Entries in one OPEN_CONTAINER view (domain 11 snapshot type 1 or delta type 1)",
+      "unit": "entries per view",
+      "hard_maximum": 16,
+      "configurable_range": {
+        "minimum": 16,
+        "maximum": 16
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "The decoder refuses a 17th entry before decoding it and any payload over 507 bytes (the container handle and 16 entries of at most 31 bytes) before reading it; the encoder refuses the same view before emitting a byte.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=16: a corpse with 16 entries round-trips within 507 bytes",
+        "max+1=17: 17 entries are refused in both directions"
+      ],
+      "consumers": [
+        "crates/protocol-oteryn/src/item_view.rs MAX_OPEN_CONTAINER_ENTRIES, MAX_OPEN_CONTAINER_BYTES"
+      ],
+      "notes": "ITEM-MOVE-WIRE-0 \u00a74.4: the corpse container capacity, equal to GAMEITEM01-CORPSE-CONTAINER-ENTRIES-MAX. Within FND02-STATE-DELTA-PAYLOAD-BYTES and FND02-SNAPSHOT-CHUNK-BYTES. Registered by OTV2-20261003-item-view-1a."
+    },
+    {
+      "id": "ITEMV0-RL-03",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_ITEM_MOVE_WIRE0_ITEM_VIEW_AND_MOVE_DECISION_2026-09-30.md",
+      "resource": "Live item handles of one GameSession (items in at least one of the session's views)",
+      "unit": "handles per GameSession",
+      "hard_maximum": 301,
+      "configurable_range": {
+        "minimum": 301,
+        "maximum": 301
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Measured as the sum of the view bounds: 255 domain-1 objects (MOVE-RL-11 less the own player), 30 domain-9 items (ITEMV0-RL-01) and 16 domain-11 entries (ITEMV0-RL-02); the open corpse keeps its domain-1 handle. The handle table (ITEM-VIEW-1b) is bounded by this value before inserting; a handle leaving every view is dropped, and the table never grows past the views it serves.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=301: the views at their bounds hold 301 live handles",
+        "max+1=302: the table refuses a handle beyond the views' bounds"
+      ],
+      "consumers": [
+        "crates/protocol-oteryn/src/item_view.rs MAX_LIVE_ITEM_HANDLES",
+        "the ITEM-VIEW-1b session handle table"
+      ],
+      "notes": "ITEM-MOVE-WIRE-0 \u00a74.1 and \u00a74.4. The codec test binds the derivation; the table enforcing it is ITEM-VIEW-1b's. Registered by OTV2-20261003-item-view-1a."
     }
   ]
 }

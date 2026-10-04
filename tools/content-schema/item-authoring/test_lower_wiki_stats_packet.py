@@ -1,4 +1,4 @@
-"""No-network checks for `lower_wiki_stats_packet.py` (ITEM-SEM-2b-1).
+"""No-network checks for `lower_wiki_stats_packet.py` (ITEM-SEM-2b-1, 2b-2).
 
 Synthetic snapshots cover parsing, agreement between pages, the malformed and conflict
 reports, the content-Item filter, weight in hundredths of an ounce and weapon typing; the
@@ -111,6 +111,7 @@ def test_committed_packet_rebuilds():
     ).hexdigest()
     rebuilt = lower.packet_bytes(snap, lower.content_item_ids(), compiler_sha256)
     assert rebuilt == committed, "committed packet drifted"
+    assert lower.record_bytes(rebuilt) == lower.RECORD.read_bytes(), "record drifted"
     packet = json.loads(committed)
     assert packet["source"]["snapshot_sha256"] == snap["snapshot_sha256"]
     # ITEM-ADD-1 (owner 2a): appearance-only Items (no source binding) take no stats.
@@ -136,7 +137,7 @@ def test_equipment_requirements_and_holds():
     assert pattern["additional_reserved_slots"] == lower.known(["SHIELD"])
     assert pattern["level"] == lower.known(400)
     assert pattern["vocations"] == lower.known(["KNIGHT", "PALADIN"])
-    assert pattern["mutually_exclusive_groups"] == {"state": "UNKNOWN"}
+    assert pattern["mutually_exclusive_groups"] == lower.known([])
     assert not report["malformed"]
     _, missing = lower.equipment({"slot": "Head"})
     assert missing["value"][0]["vocations"] == {"state": "UNKNOWN"}
@@ -145,17 +146,15 @@ def test_equipment_requirements_and_holds():
         None,
         None,
     )
-    assert lower.equipment({"primarytype": "Ammunition", "slot": "Extra Slot"}) == (
-        None,
-        None,
-    )
     for override in (
         {"hands": "One"},
         {"vocrequired": "without"},
         {"vocrequired": "knights and without"},
+        {"vocrequired": "paladins and without"},
         {"levelrequired": "65536"},
     ):
         assert lower.equipment(fields | override)[1] == "MALFORMED"
+    assert lower.equipment({"slot": "Weapon Hand", "hands": "Two"})[1] == "MALFORMED"
     rows, report, _ = lower.build(
         snapshot(
             {
@@ -177,6 +176,142 @@ def test_equipment_requirements_and_holds():
             } == {1, 2}
         _, report, _ = lower.build(snapshot({1: [(2, excluded)]}), {1})
         assert not report["equipment_holds"]
+
+
+def pattern_of(fields):
+    _raw, typed = lower.equipment(fields)
+    return typed["value"][0]
+
+
+def test_slot_mappings():
+    unknown = {"state": "UNKNOWN"}
+    for slot, expected in lower.EQUIPMENT_SLOTS.items():
+        assert pattern_of({"slot": slot})["primary_slot"] == lower.known(expected), slot
+    assert {
+        "Head": "HEAD",
+        "Neck": "AMULET",
+        "Body": "TORSO",
+        "Torso": "TORSO",
+        "Legs": "LEGS",
+        "Feet": "FEET",
+        "Finger": "RING",
+        "Container": "CONTAINER",
+        "Weapon Hand": "WEAPON",
+        "Both Hands": "WEAPON",
+        "Shield Hand": "SHIELD",
+        "Shield": "SHIELD",
+        "Extra Slot": "EXTRA",
+    } == lower.EQUIPMENT_SLOTS
+    assert lower.equipment({"slot": "Tail"})[1] == "MALFORMED"
+    assert lower.equipment({"primarytype": "Valuables"}) == (None, None)
+    group = lower.known([lower.NON_QUIVER_LEFT_HAND])
+    # A two-handed bow takes the group; a two-handed sword reserves the shield slot.
+    bow = pattern_of(
+        {"slot": "Both Hands", "hands": "Two", "primarytype": "Distance Weapons"}
+    )
+    assert bow["mutually_exclusive_groups"] == group
+    assert bow["additional_reserved_slots"] == lower.known([])
+    sword = pattern_of({"slot": "Both Hands", "primarytype": "Sword Weapons"})
+    assert sword["additional_reserved_slots"] == lower.known(["SHIELD"])
+    assert sword["mutually_exclusive_groups"] == lower.known([])
+    for primary in ("Shields", "Spellbooks"):
+        assert (
+            pattern_of({"slot": "Shield Hand", "primarytype": primary})[
+                "mutually_exclusive_groups"
+            ]
+            == group
+        )
+    quiver = pattern_of({"slot": "Shield Hand", "primarytype": "Quivers"})
+    assert quiver["mutually_exclusive_groups"] == lower.known([])
+    # A bow and a quiver stay legal together: neither claims what the other holds.
+    bow_claims = set(bow["additional_reserved_slots"]["value"]) | {"WEAPON"}
+    quiver_claims = set(quiver["additional_reserved_slots"]["value"]) | {"SHIELD"}
+    assert not bow_claims & quiver_claims
+    assert not set(bow["mutually_exclusive_groups"]["value"]) & set(
+        quiver["mutually_exclusive_groups"]["value"]
+    )
+    other = pattern_of({"slot": "Shield Hand", "primarytype": "Valuables"})
+    assert other["mutually_exclusive_groups"] == unknown
+    one_hand = pattern_of({"slot": "Weapon Hand", "primarytype": "Distance Weapons"})
+    assert one_hand["mutually_exclusive_groups"] == lower.known([])
+    # Ammunition keeps no equipment block; its slot and requirements wait for 2b-3.
+    for ammo in (
+        {"primarytype": "Ammunition", "levelrequired": "20"},
+        {"primarytype": "Ammunition", "slot": "Extra Slot"},
+    ):
+        assert lower.equipment(ammo) == (None, None)
+    extra = pattern_of({"slot": "Extra Slot", "hands": "One", "vocrequired": "knights"})
+    assert extra["vocations"] == unknown and extra["level"] == unknown
+
+
+def test_vocations_and_levels():
+    unknown = {"state": "UNKNOWN"}
+    for raw, expected in (
+        ("Knights", ["KNIGHT"]),
+        ("sorcerer", ["SORCERER"]),
+        ("Sorcerers and Druids", ["DRUID", "SORCERER"]),
+        ("knights, paladins and monks", ["KNIGHT", "MONK", "PALADIN"]),
+        (
+            "monks, druids, sorcerers, paladins, knights",
+            ["DRUID", "KNIGHT", "MONK", "PALADIN", "SORCERER"],
+        ),
+    ):
+        assert pattern_of({"slot": "Head", "vocrequired": raw})["vocations"] == (
+            lower.known(expected)
+        ), raw
+    # `None` is no restriction; `without` waits for the `none` key (ITEM-SEM-2b-3).
+    assert pattern_of({"slot": "Head", "vocrequired": "None"})["vocations"] == unknown
+    assert (
+        lower.equipment({"slot": "Finger", "vocrequired": "without"})[1] == "MALFORMED"
+    )
+    assert pattern_of({"slot": "Head", "levelrequired": "0"})["level"] == unknown
+    assert pattern_of({"slot": "Head", "levelrequired": "8"})["level"] == lower.known(8)
+    rows, report, _ = lower.build(
+        snapshot(
+            {
+                1: [(1, {"slot": "Finger", "vocrequired": "without"})],
+                2: [
+                    (
+                        2,
+                        {
+                            "slot": "Shield Hand",
+                            "primarytype": "Quivers",
+                            "hands": "Two",
+                        },
+                    )
+                ],
+                3: [(3, {"primarytype": "Attack Runes", "levelrequired": "0"})],
+                4: [
+                    (
+                        4,
+                        {
+                            "primarytype": "Healing Runes",
+                            "levelrequired": "24",
+                            "mlrequired": "4",
+                        },
+                    )
+                ],
+                5: [(5, {"primarytype": "Ammunition", "levelrequired": "20"})],
+            }
+        ),
+        {1, 2, 3, 4, 5},
+    )
+    assert {
+        hold["item_key"][-2:]: hold["reason"] for hold in report["equipment_holds"]
+    } == {
+        "i1": "VOCATION_WITHOUT_HELD_FOR_ITEM_SEM_2B3",
+        "i2": "SLOT_HANDS_DISAGREE",
+    }
+    assert [
+        (hold["item_key"][-2:], hold["sources"][0]["values"])
+        for hold in report["requirement_holds"]
+    ] == [
+        ("i4", {"levelrequired": "24", "mlrequired": "4"}),
+        ("i5", {"levelrequired": "20"}),
+    ]
+    got = rows_by(rows)
+    assert ("oteryn:item.tibia.i4", "equipment.patterns") not in got
+    assert ("oteryn:item.tibia.i5", "equipment.patterns") not in got
 
 
 def test_charges_and_duration_qualification():
@@ -283,6 +418,8 @@ def main():
     test_lowering_types_values()
     test_disagreement_malformed_and_non_items()
     test_equipment_requirements_and_holds()
+    test_slot_mappings()
+    test_vocations_and_levels()
     test_charges_and_duration_qualification()
     counts = test_committed_packet_rebuilds()
     print(

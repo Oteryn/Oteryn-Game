@@ -1,0 +1,82 @@
+// ITEM-MOVE-WIRE-0 §4 and §5 (ITEM-MOVE-WIRE0-ITEM-VIEW-AND-MOVE-V1, owner D212, docs/architecture/
+// reviews/OTERYN_GAME_ITEM_MOVE_WIRE0_ITEM_VIEW_AND_MOVE_DECISION_2026-09-30.md): typed payloads of
+// capability 4 ITEM_VIEW_MOVE_V1 (requires capability 6 WORLD_SPATIAL_ENTITIES), state domains 9
+// CHARACTER_INVENTORY and 11 OPEN_CONTAINER (snapshot type 1, delta type 1 each) and command type 9
+// ITEM_MOVE_INTENT. The same capability gates the USE item target (world_object_v1.proto, UseIntentV1
+// field 2) and the item handle of the D85 item entry (world_spatial_v1.proto, WorldSpatialEntityV1
+// field 10). Registered by ITEM-VIEW-1a; the server does not offer the capability before ITEM-MOVE-1.
+//
+// FND-02 envelopes own CommandRef, the domain ID and revisions; these payloads never duplicate them.
+// Unknown fields, repeated singular fields, an empty oneof, zero and unknown enum values, a zero
+// handle, item definition or count, and counts and bytes over their registered bounds fail closed.
+syntax = "proto3";
+
+package oteryn.protocol.v1.item_view;
+
+// An item the client sees, by its server-assigned handle (§4.1): a uint64, never zero, monotonic per
+// GameSession and never reused. A handle never exposes an ItemInstanceId, a placement key or a
+// database row. A handle that no longer resolves is STALE.
+message ItemTargetV1 {
+  uint64 handle = 1;
+}
+
+// One item in a view. At most 29 encoded bytes (handle 11, definition 6, count 6, sub-type 6).
+message ItemEntryV1 {
+  // Non-zero.
+  uint64 handle = 1;
+  // Non-zero.
+  uint32 item_definition_ref = 2;
+  // At least 1; the whole stack.
+  uint32 count = 3;
+  // The item's sub-type (for example a fluid); absent (0) when it has none.
+  uint32 sub_type = 4;
+}
+
+// StateDomainSnapshot.payload of domain 9, snapshot type 1, and StateDelta.payload of domain 9, delta
+// type 1. A delta carries the whole view after the durable commit that changed it. The main backpack
+// slot and its direct entries in display order; no backpack equipped is an absent main_backpack and no
+// entries. At most 30 items in all (ITEMV0-RL-01) and 930 bytes.
+message CharacterInventoryV1 {
+  ItemEntryV1 main_backpack = 1;
+  repeated ItemEntryV1 entries = 2;
+}
+
+// StateDomainSnapshot.payload of domain 11, snapshot type 1, and StateDelta.payload of domain 11,
+// delta type 1. A delta carries the whole view. The one open corpse, by the handle it has in domain 1,
+// and its entries in display order; an empty payload means nothing is open. At most 16 entries
+// (ITEMV0-RL-02) and 507 bytes.
+message OpenContainerV1 {
+  uint64 container_handle = 1;
+  repeated ItemEntryV1 entries = 2;
+}
+
+// The only destination of this slice: the server picks the main backpack slot or a main backpack
+// entry by the B3 rule (D80). ITEM-EQUIP-WIRE-1 adds its destinations to the oneof under its own
+// capability.
+message MainBackpackDestinationV1 {}
+
+// ClientCommand.payload of command type 9. The whole item moves. At most 13 bytes.
+message ItemMoveIntentV1 {
+  uint64 source_handle = 1;
+  oneof destination {
+    MainBackpackDestinationV1 main_backpack = 2;
+  }
+}
+
+enum ItemMoveOutcomeV1 {
+  ITEM_MOVE_OUTCOME_UNSPECIFIED = 0;
+  ITEM_MOVE_OUTCOME_MOVED = 1;
+  ITEM_MOVE_OUTCOME_STALE = 2;
+  ITEM_MOVE_OUTCOME_TOO_FAR = 3;
+  ITEM_MOVE_OUTCOME_NO_BACKPACK = 4;
+  ITEM_MOVE_OUTCOME_NO_ROOM = 5;
+  ITEM_MOVE_OUTCOME_NOT_OWNER = 6;
+  ITEM_MOVE_OUTCOME_NOT_PICKUPABLE = 7;
+  ITEM_MOVE_OUTCOME_NOT_SUPPORTED = 8;
+  ITEM_MOVE_OUTCOME_REJECTED = 9;
+}
+
+// CommandResult.payload of command type 9: outcome only, never state. At most 4 bytes.
+message ItemMoveResultV1 {
+  ItemMoveOutcomeV1 outcome = 1;
+}

@@ -269,6 +269,12 @@ entry on another Account. They are DUR-03 value records keyed by the bank operat
 receipts, and advance no `CharacterRevision`. Rule 4's lock order is extended: after
 `character_root`, the main backpack, its coin entries, then the balance rows in `account_id` order.
 
+**Amendment (FORGE-1a, 2026-10-03; IMBUE-FORGE-0 §9).** Rule 1 also covers forge dust ledger
+entries and the dust balance row of the acting character (migration 0059). They are DUR-03 value
+records written inside the transaction of the cause that admits them, not Character receipts, and
+advance no `CharacterRevision` of their own. Rule 4's lock order is extended: after
+`character_root`, the character's dust row.
+
 **Quest obligation amendment (pending on acceptance of QUEST-STATE-0, #1373;
 `OTERYN_GAME_QUEST_STATE0_QUEST_PROGRESS_STORE_DECISION_2026-09-30.md` §5.4).** Rule 1 also covers a
 `game_character_quest_obligations` row written by a reward-claim transaction: an obligation outside

@@ -125,6 +125,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let (Some(actor), Some(controller)) = (lost.runtime_actor, lost.controller) else {
             return Err(Rejected);
         };
+        // CAP-NEG-1: the resumed session keeps its original selection and never widens it; a
+        // client that no longer supports a selected capability falls back to fresh admission.
+        if !lost
+            .continuity
+            .selected_capabilities
+            .resumable_with(attempt.supported_capabilities)
+        {
+            return Err(Rejected);
+        }
         // The client can only resume from what the server already sent.
         if attempt.last_applied_server_sequence > lost.continuity.server_sequence {
             return Err(Rejected);
@@ -258,7 +267,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         ];
         // ACHIEVEMENT-0 §5: with capability 8, the cumulative notice revision the resumed
         // connection's snapshot carries (domain 13, after domains 1 and 2).
-        if let Some(revision) = lost.continuity.achievement_notice_revision {
+        if let Some(revision) = lost.continuity.achievement_notice_revision.filter(|_| {
+            lost.continuity
+                .selected_capabilities
+                .domain_selected(STATE_DOMAIN_ACCOUNT_ACHIEVEMENT_NOTICES)
+        }) {
             domains.push(
                 StateDomainRevisionV1::new(STATE_DOMAIN_ACCOUNT_ACHIEVEMENT_NOTICES, revision)
                     .map_err(|_| Unavailable)?,

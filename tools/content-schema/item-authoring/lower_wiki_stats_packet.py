@@ -14,9 +14,11 @@ ids that are Items in content (`content/items/index.json`) get rows.
 Fields (2b-1): attack, defense, defense modifier, armor, range, weapon type, elemental
 attacks, imbuement slots, equipment patterns, weight, positive charge counts and explicit
 durations. Charges/durations require a single-ID source page, preserve known conflicts
-and blocked states, and do not admit behavior or materialization. Equipment requires an explicit
-wiki slot; absent requirements remain UNKNOWN and unsupported vocations/hand claims
-hold the complete pattern. Weight is in hundredths of an ounce, as in Tibia
+and blocked states, and do not admit behavior or materialization. Equipment (2b-2) follows
+the wiki slot (runes and ammunition wait for 2b-3); absent requirements remain
+UNKNOWN, and unsupported vocations or hand claims hold the complete pattern. Use
+requirements are reported for 2b-3, and the record of written counts and held rows is
+written next to the packet. Weight is in hundredths of an ounce, as in Tibia
 (owner decision 2026-09-30: 41.00 oz = 4100).
 
 `--check` rebuilds the packet in memory and fails on any byte difference.
@@ -53,7 +55,15 @@ MODIFIER_SOURCE_HOLD = (
 MODIFIER_SOURCE_HOLD_SHA256 = (
     "7d2a7f2d35c6099066677d7c4728d9bb832926b686b19901ff5cce1e55f4ed07"
 )
+RECORD = (
+    ROOT
+    / "docs"
+    / "agents"
+    / "evidence"
+    / "OTV2-20261003-item-equipment-requirements-v1.json"
+)
 SCHEMA = "OTERYN_ITEM_STATS_PROMOTION/v2"
+RECORD_SCHEMA = "OTERYN_ITEM_EQUIPMENT_REQUIREMENTS_RECORD/v1"
 ITEM_KEY = "oteryn:item.tibia.i{}"
 
 INTEGER = re.compile(r"^[+-]?[0-9]+$")
@@ -118,19 +128,56 @@ def known(value):
     return {"state": "KNOWN", "value": value}
 
 
-def equipment(fields):
-    """Equip-only requirements: explicit slot, closed vocations, complete hand claims.
+# ITEM-SEM-2b-2: the occupancy group of `domain/equipment.rs` (manual §3.4.1). Shields,
+# spellbooks and two-handed distance weapons reserve it, so only a quiver may share the left
+# hand with them.
+NON_QUIVER_LEFT_HAND = "oteryn:equipment-group.non_quiver_left_hand"
+HAND_SLOTS = ("Weapon Hand", "Both Hands", "Shield Hand", "Shield")
+# 2b-2 holds these for ITEM-SEM-2b-3 (the `none` vocation and the use-requirements group).
+REQUIREMENT_FIELDS = ("levelrequired", "vocrequired", "mlrequired")
 
-    Rune use levels and ammunition have no accepted equipment lowering here. Missing
-    requirements remain UNKNOWN; a vague vocation or contradictory hand claim holds
-    the pattern rather than silently removing that restriction.
+
+def vocations(raw):
+    """Base vocation keys, or None for an unsupported token (`without` until 2b-3).
+
+    `None` is no restriction: the vocation list stays UNKNOWN. A promoted vocation is
+    matched against its base key by the equip rule (ITEM-MOVE-2a), not here.
+    """
+    if raw.strip() == "None":
+        return []
+    parts = re.split(r",\s*|\s+and\s+", raw.strip().lower())
+    values = [VOCATIONS.get(part.rstrip("s")) for part in parts]
+    if None in values or len(set(values)) != len(values):
+        return None
+    return sorted(values, key=VOCATION_ORDER.index)
+
+
+def use_requirements(fields):
+    """Requirement facts that bind use, not equip (ITEM-SEM-2b-2 §2.4): runes, ammunition,
+    the Extra slot and slotless Items. 2b-2 reports them; 2b-3 lowers them."""
+    slot = fields.get("slot")
+    if slot is not None and slot != "Extra Slot" and "mlrequired" not in fields:
+        return None
+    raw = {
+        name: fields[name]
+        for name in REQUIREMENT_FIELDS
+        if name in fields and not (name == "levelrequired" and fields[name] == "0")
+    }
+    return raw or None
+
+
+def equipment(fields):
+    """One compact equip pattern from the wiki slot (ITEM-SEM-2b-2 §2).
+
+    The slot fixes the hands and the occupancy of `domain/equipment.rs`. Level and
+    vocations are equip requirements only outside the Extra slot; there they bind use and
+    are held for 2b-3, as are runes and ammunition (no equipment block, as before 2b-2). Missing requirements remain UNKNOWN; a vocation token
+    that is not a base vocation or a slot/hands disagreement holds the whole pattern.
     """
     slot = fields.get("slot")
-    if (
-        slot is None
-        or "Rune" in fields.get("primarytype", "")
-        or fields.get("primarytype") == "Ammunition"
-    ):
+    primary = fields.get("primarytype", "")
+    # Runes and ammunition bind use, not equip; ITEM-SEM-2b-3 lowers them.
+    if slot is None or "Rune" in primary or primary == "Ammunition":
         return None, None
     raw = {
         name: fields[name]
@@ -143,37 +190,46 @@ def equipment(fields):
     pattern = {
         "pattern_id": 1,
         "primary_slot": known(EQUIPMENT_SLOTS[slot]),
-        "additional_reserved_slots": unknown,
-        "mutually_exclusive_groups": unknown,
+        "additional_reserved_slots": known([]),
+        "mutually_exclusive_groups": known([]),
         "vocations": unknown,
         "level": unknown,
         "compatibility_rule": unknown,
     }
     hands = fields.get("hands")
-    if hands is not None and (
-        hands not in ("One", "Two")
-        or slot not in ("Weapon Hand", "Both Hands", "Shield Hand", "Shield")
-    ):
+    if slot in HAND_SLOTS:
+        if hands is not None and (
+            hands not in ("One", "Two") or (hands == "Two") != (slot == "Both Hands")
+        ):
+            return raw, "MALFORMED"
+        if slot == "Both Hands" and primary == "Distance Weapons":
+            pattern["mutually_exclusive_groups"] = known([NON_QUIVER_LEFT_HAND])
+        elif slot == "Both Hands":
+            pattern["additional_reserved_slots"] = known(["SHIELD"])
+        elif slot != "Weapon Hand":
+            if primary in ("Shields", "Spellbooks"):
+                pattern["mutually_exclusive_groups"] = known([NON_QUIVER_LEFT_HAND])
+            elif primary != "Quivers":
+                # The left-hand occupancy of anything but a shield, spellbook or quiver
+                # is not fixed by `domain/equipment.rs`.
+                pattern["mutually_exclusive_groups"] = unknown
+    elif hands is not None and slot != "Extra Slot":
         return raw, "MALFORMED"
-    if slot == "Both Hands":
-        if hands == "One":
-            return raw, "MALFORMED"
-        pattern["additional_reserved_slots"] = known(["SHIELD"])
-    elif slot in ("Weapon Hand", "Shield Hand", "Shield") and hands is not None:
-        if hands == "Two":
-            return raw, "MALFORMED"
-        pattern["additional_reserved_slots"] = known([])
+    if slot == "Extra Slot":
+        # The Extra slot runs no level or vocation check (ITEM-MOVE-WIRE-1 §4).
+        return raw, {"kind": "EQUIPMENT_PATTERNS", "value": [pattern]}
     if "levelrequired" in fields:
         level = unsigned(fields["levelrequired"], 65535)
         if level is None:
             return raw, "MALFORMED"
-        pattern["level"] = known(level)
+        if level:
+            pattern["level"] = known(level)
     if "vocrequired" in fields:
-        parts = re.split(r",\s*|\s+and\s+", fields["vocrequired"].strip().lower())
-        values = [VOCATIONS.get(part.rstrip("s")) for part in parts]
-        if None in values or len(set(values)) != len(values):
+        values = vocations(fields["vocrequired"])
+        if values is None:
             return raw, "MALFORMED"
-        pattern["vocations"] = known(sorted(values, key=VOCATION_ORDER.index))
+        if values:
+            pattern["vocations"] = known(values)
     return raw, {"kind": "EQUIPMENT_PATTERNS", "value": [pattern]}
 
 
@@ -528,6 +584,7 @@ def build(snapshot, item_ids, definitions=None, routed_keys=(), temporal_context
         "examples": defaultdict(list),
         "equipment_holds": [],
         "physical_field_holds": [],
+        "requirement_holds": [],
     }
     # Records are keyed by Item key or, without an Item record, by the bare Tibia id (#1325).
     for record in sorted(
@@ -644,9 +701,13 @@ def build(snapshot, item_ids, definitions=None, routed_keys=(), temporal_context
                 if field_path == "equipment.patterns":
                     conflict = any(
                         res[0].get("hands") == "Two"
-                        and res[0]["slot"] != "Both Hands"
+                        and res[0].get("slot") != "Both Hands"
                         or res[0].get("hands") == "One"
-                        and res[0]["slot"] == "Both Hands"
+                        and res[0].get("slot") == "Both Hands"
+                        for _obs, res in present
+                    )
+                    without = any(
+                        "without" in res[0].get("vocrequired", "")
                         for _obs, res in present
                     )
                     report["equipment_holds"].append(
@@ -655,6 +716,8 @@ def build(snapshot, item_ids, definitions=None, routed_keys=(), temporal_context
                             "classification": "CONFLICT" if conflict else "UNKNOWN",
                             "reason": "SLOT_HANDS_DISAGREE"
                             if conflict
+                            else "VOCATION_WITHOUT_HELD_FOR_ITEM_SEM_2B3"
+                            if without
                             else "UNSUPPORTED_OR_MALFORMED_EQUIPMENT_FACTS",
                             "sources": [
                                 {
@@ -723,6 +786,27 @@ def build(snapshot, item_ids, definitions=None, routed_keys=(), temporal_context
                     "typed_value": typed[0],
                 }
             )
+        held = [
+            (obs, use_requirements(obs["fields"]))
+            for obs in observations
+            if use_requirements(obs["fields"])
+        ]
+        if held:
+            report["requirement_holds"].append(
+                {
+                    "item_key": ITEM_KEY.format(record["item_id"]),
+                    "classification": "UNKNOWN",
+                    "reason": "USE_REQUIREMENT_HELD_FOR_ITEM_SEM_2B3",
+                    "sources": [
+                        {
+                            "page_id": obs["page_id"],
+                            "revision_id": obs["revision_id"],
+                            "values": values,
+                        }
+                        for obs, values in held
+                    ],
+                }
+            )
         for name in UNSUPPORTED_PARAMS:
             if any(name in row["fields"] for row in observations):
                 report["unsupported"][name] += 1
@@ -762,6 +846,7 @@ def packet_bytes(snapshot, item_ids, compiler_sha256):
         "report": {
             "equipment_holds": report["equipment_holds"],
             "physical_field_holds": report["physical_field_holds"],
+            "requirement_holds": report["requirement_holds"],
             "conflict": dict(sorted(report["conflict"].items())),
             "malformed": dict(sorted(report["malformed"].items())),
             "unsupported": dict(sorted(report["unsupported"].items())),
@@ -798,21 +883,64 @@ def packet_bytes(snapshot, item_ids, compiler_sha256):
     ).encode("utf-8")
 
 
+def record_bytes(packet_data):
+    """The ITEM-SEM-2b-2 record: written equipment counts and every reported row."""
+    packet = json.loads(packet_data)
+    counts = Counter()
+    for row in packet["promotions"]:
+        if row["field_path"] != "equipment.patterns":
+            continue
+        pattern = row["typed_value"]["value"][0]
+        counts["patterns"] += 1
+        counts[f"slot:{pattern['primary_slot']['value']}"] += 1
+        for name in ("level", "vocations"):
+            if pattern[name]["state"] == "KNOWN":
+                counts[f"with_{name}"] += 1
+        if pattern["additional_reserved_slots"].get("value"):
+            counts["reserved:SHIELD"] += 1
+        if pattern["mutually_exclusive_groups"].get("value"):
+            counts["group:non_quiver_left_hand"] += 1
+    report = packet["report"]
+    return (
+        json.dumps(
+            {
+                "schema": RECORD_SCHEMA,
+                "packet": {
+                    "path": str(OUTPUT.relative_to(ROOT)),
+                    "sha256": hashlib.sha256(packet_data).hexdigest(),
+                },
+                "written": dict(sorted(counts.items())),
+                "reported": {
+                    "equipment_holds": report["equipment_holds"],
+                    "requirement_holds": report["requirement_holds"],
+                },
+            },
+            sort_keys=True,
+            ensure_ascii=False,
+            indent=1,
+        )
+        + "\n"
+    ).encode("utf-8")
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--check", action="store_true")
     parser.add_argument("--output", type=Path, default=OUTPUT)
+    parser.add_argument("--record", type=Path, default=RECORD)
     args = parser.parse_args(argv)
     snapshot = json.loads(SNAPSHOT.read_text(encoding="utf-8"))
     compiler_sha256 = hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
     data = packet_bytes(snapshot, content_item_ids(), compiler_sha256)
+    record = record_bytes(data)
     if args.check:
-        if args.output.read_bytes() != data:
+        if args.output.read_bytes() != data or args.record.read_bytes() != record:
             print(f"packet drift against {args.output}", file=sys.stderr)
             return 1
         print(json.dumps({"check": "PASS", "bytes": len(data)}))
         return 0
     args.output.write_bytes(data)
+    args.record.write_bytes(record)
     packet = json.loads(data)
     print(
         json.dumps(
