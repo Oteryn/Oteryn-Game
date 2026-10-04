@@ -44,9 +44,10 @@ The map wire (MAP-WIRE-1, MAP-WIRE-2, MAP-CLIENT-1) is outside this batch (§1.8
 | `content/world/spawns/**` | SPAWN-ADMIT-1 | none |
 | `.github/workflows/world-bundle.yml` | WORLD-BUNDLE-CI-1 (new) | none |
 | `content/world/pins/**` | WORLD-BUNDLE-CI-1 (new), then SPAWN-ADMIT-1: the pin refresh only (§1.2) | WORLD-CONTENT-SERVE-1 reads it and does not write it |
-| `apps/game-server/src/map/mod.rs` | CHEST-PLACE-BIND-1: the sparse `unique` table and its accessor only (§2.3) | not at the same time as MAP-OVERLAY-1a or MAP-CUTOVER-1 if they touch it; the control plane serializes them |
+| `apps/game-server/src/map/mod.rs` | CHEST-PLACE-BIND-1: the sparse `unique` table, with each entry's palette appearance id, and its accessor only (§2.3) | not at the same time as MAP-OVERLAY-1a or MAP-CUTOVER-1 if they touch it; the control plane serializes them |
 | `apps/game-server/src/content/world_reward_claims.rs` | CHEST-PLACE-BIND-1 (new) | WORLD-CONTENT-SERVE-1 calls it and does not change it |
 | `apps/game-server/src/content/mod.rs` | CHEST-PLACE-BIND-1, then WORLD-CONTENT-SERVE-1: each its `mod` line and re-export only | none at the same time |
+| `apps/game-server/src/content/activation.rs`, `src/content/production.rs` | WORLD-CONTENT-SERVE-1: `activate_world_bundle`, `WorldBundleContentPin` and the World-artifact staging branch only (§1.5) | none at the same time |
 | `apps/game-server/src/bin/oteryn-game-ops.rs` | WORLD-CONTENT-SERVE-1: the bundle-World mode of `content activate` only (§1.5) | none at the same time |
 | `apps/game-server/src/node/serve.rs` | QUEST-CAT-BOOT-1 and CHEST-QUEST-BIND-1 first, then WORLD-CONTENT-SERVE-1 | none at the same time |
 | `apps/game-server/src/interaction/chest_use.rs` | CHEST-QUEST-BIND-1 first, then WORLD-CONTENT-SERVE-1 | none at the same time |
@@ -100,15 +101,22 @@ No packet here takes a migration lease (§1.7) or changes a protocol registry ro
     exists;
   - the World Project commit the bundle was built from.
 - The workflow `world-bundle.yml` builds the bundle from `content/world/` with the compiler and
-  uploads it as an artifact named by its digest. It runs on changes to `content/world/**`,
-  the compiler or the pins.
+  uploads it as an artifact named by its digest. It runs on a change to any compiler input
+  (`tools/world-bundle-compiler/src/main.rs` `project` and `registry`):
+  - `content/world/**`: placements and their shards, terrain, objects, transitions, spawns,
+    Worlds and the pins;
+  - `content/houses/**`;
+  - `content/creatures/definitions/**`;
+  - `content/items/definitions/**`;
+  - the compiler and its format crate: `tools/world-bundle-compiler/**`,
+    `crates/world-bundle/**` and `Cargo.lock`.
 - It fails when:
   - a rebuild from the same commit gives another digest (the compiler must be deterministic);
   - a pin names a digest that the pinned commit does not reproduce;
   - a production pin names a `non-production` build (ADR-0021 §4.2).
-- **Pin refresh.** A PR that changes the imported World's digest refreshes its pin in the same PR:
-  `content/world/**`, the compiler or the format. The job fails on a pin that its commit does not
-  reproduce. SPAWN-ADMIT-1 is the first such PR (§0.3).
+- **Pin refresh.** A PR that changes the imported World's digest refreshes its pin in the same
+  PR. Any change to a path in the list above can do so. The job runs on every such PR and fails
+  on a pin that its commit does not reproduce. SPAWN-ADMIT-1 is the first such PR (§0.3).
 - A pin changes only by a reviewed PR. Activating a changed pin on a running World still needs
   the planned reset (ADR-0021 §4.7, MAP-OVERLAY-1c). A different digest at boot outside a reset
   refuses boot (MAP-CUTOVER-1).
@@ -136,8 +144,20 @@ For each placement of a served claim (§1.5), the binding takes:
 - the id: the `unique_id` of its `crystalserver` entry in `legacy_unique_ids`.
 
 The placement is **bound** when exactly one top-level base entry on that cell has the `unique`
-attribute equal to the id and its palette resolves to the Item of `appearance_tibia_id`. It
-then gets the entry's compiler `placement_key` and cell.
+attribute equal to the id, and the entry's palette appearance id equals `appearance_tibia_id`.
+It then gets the entry's compiler `placement_key` and cell.
+
+- **The palette appearance id** comes from the entry's palette key, not from an Item:
+  - `<id>` of `oteryn:item.tibia.i<id>` or `oteryn:terrain.tibia.i<id>`;
+  - `source_item_id` of a provisional `donor:crystalserver@<rev>:item/<id>` key, which is the
+    client appearance id in the 15.x CrystalServer source;
+  - none for any other key.
+- `appearance_tibia_id` stays source evidence, and some chest appearances are not Items
+  (`tools/content-schema/reward-claim-authoring/README.md`). The rule compares two appearance
+  ids, so a chest whose appearance is not an Item still binds. Appearances 28827 and 28828 are
+  provisional donor keys in today's palette and bind this way.
+- A provisional key stays under the ADR-0021 §4.5 production gate of the bundle itself. The
+  binding adds no gate of its own for it.
 
 Otherwise it is **unbound**, with exactly one reason:
 
@@ -145,7 +165,7 @@ Otherwise it is **unbound**, with exactly one reason:
 - `CELL_OUT_OF_BOUNDS`;
 - `NO_ENTRY`;
 - `AMBIGUOUS_ENTRY`: two or more entries match;
-- `APPEARANCE_MISMATCH`.
+- `APPEARANCE_MISMATCH`: the entry's palette appearance id is absent or differs.
 
 The rule is exact, so the binding is never inferred. A claim is bound only when all its
 placements are bound.
@@ -164,28 +184,53 @@ placements are bound.
   - On a non-production pin, unbound candidates are left out, and one event line counts them
     by reason.
   - This is the provisional-key gate of ADR-0021 §4.5, applied to chests.
-- **Activation digest.** The `server_artifact_digest` that the node records in
-  `game_content_activations` (migration 0008) covers the bundle digest and the digest of the
-  served claim set with their bindings. Changing either gives a new activation. No column is
-  added.
-  - One function computes the three digests of a bundle World, in
-    `apps/game-server/src/content/world_activation.rs` (WORLD-CONTENT-SERVE-1):
-    - the server digest is SHA-256 over the domain tag `oteryn:world-activation/server/v1`, the
-      bundle digest and the claim-set digest;
-    - the claim-set digest is SHA-256 over the served claims and their bound cells and keys,
-      in canonical `PlacementKey` order;
-    - the client digest is SHA-256 over `oteryn:world-activation/client/v1` and the bundle
-      digest, because the client reads no artifact beyond the bundle-bound view;
-    - the frame-binding digest is SHA-256 over `oteryn:world-activation/frame/v1` and the
-      bundle's frame id (`global-target-2026-09-27`).
+- **Activation artifact.** A bundle World activates one stageable server artifact through the
+  existing controller. Its digest is the `server_artifact_digest` that the node records in
+  `game_content_activations` (migration 0008). No column is added.
+  - **Server artifact.** `WorldActivationServerV1` is one canonical byte sequence, built by one
+    function in `apps/game-server/src/content/world_activation.rs` (WORLD-CONTENT-SERVE-1). It
+    is the domain tag `oteryn:world-activation/server/v1`, followed by:
+    - the bundle digest and the pin's `content_revision`;
+    - each served claim, in canonical `PlacementKey` order, with its bound cell and bundle
+      `placement_key` and its quest transition (CHEST-QUEST-BIND-1);
+    - the canonical projection of every runtime definition the served path reads: the
+      `ItemDefinitionFacts` (definition, stack class, container capacity, container-slot
+      pattern) of each reward Item and backpack, ascending by definition;
+    - the digest of the quest catalogue the World loads (QUEST-CAT-BOOT-1).
+  - Changing any of these changes the bytes and so the digest. A semantic change to a referenced
+    Item therefore gives a new activation, even when the claims and the bundle are unchanged.
+  - **Client artifact.** `WorldActivationClientV1` is `oteryn:world-activation/client/v1`
+    followed by the bundle digest, because the client reads nothing beyond the bundle-bound
+    view.
+  - **Frame binding.** The digest is SHA-256 over `oteryn:world-activation/frame/v1` and the
+    bundle's frame id (`global-target-2026-09-27`).
+  - **Limits.** The server artifact is at most 1 MiB, checked with the existing
+    `FirstProductionLimits` check (234 placements and their definitions are a few KiB).
+  - **Staging.** `StagedGeneration::stage` recognizes the server artifact by its tag, as it
+    recognizes the native source-world carrier. It:
+    - checks both SHA-256 values against the expectation before decoding;
+    - decodes the artifact and checks it canonically;
+    - returns a `GenerationIdentity` with the pin's revisions.
+  - **Activation.** `activate_world_bundle(controller, quiescence, world, issuance, inputs)`
+    builds both artifacts from the loaded bundle and the served claims. It calls `stage_primary`,
+    then `activate` with the boot quiescence guard, as `activate_native_entry_room` does. It
+    returns a `WorldBundleContentPin`, which holds:
+    - the identity and the activation sequence;
+    - the frame binding and `entry_start`;
+    - the served claims.
+  - The pin is not `Clone`, and only this function produces it, as for
+    `NativeEntryContentPin`. Nothing bypasses the controller's authorization.
   - **Issuer.** `oteryn-game-ops content activate` gets a bundle-World mode, `--world-pin <file>
-    --bundle <path>`. It loads and verifies the bundle against the pin, computes the binding
-    report and issues these three digests. It never issues the native room digests for a
-    bundle World. The native mode is unchanged.
-  - **Node.** At boot, the node recomputes the digests with the same function and compares them
-    with its scope's recorded issuance. A mismatch refuses boot with
-    `BootError::ContentActivation("digest")`, as for the native room (`serve.rs`
-    `activate_content`).
+    --bundle <path>`. It:
+    - loads and verifies the bundle against the pin;
+    - computes the binding report;
+    - builds the two artifacts with the same function and issues their digests and the frame
+      digest.
+  - The issuer never issues the native room digests for a bundle World. The native mode is
+    unchanged.
+  - **Node.** At boot, `activate_world_bundle` stages the bytes it built against the scope's
+    recorded issuance. A mismatch refuses boot with `BootError::ContentActivation("digest")`,
+    as for the native room (`serve.rs` `activate_content`).
 
 ### 1.6 Identities: canonical in durable rows, digest-bound only in memory
 
@@ -342,8 +387,10 @@ validation:
   drops the bundle's `unique` attribute when it pushes a tile (`map/mod.rs`). This packet keeps
   it:
   - a sparse table, ascending by entry index, holds the `unique` value of each top-level entry
-    that has one;
-  - an accessor `TileView::unique(ordinal) -> Option<u16>` reads it;
+    that has one, with that entry's palette appearance id (§1.4), derived from its palette key
+    at load;
+  - an accessor `TileView::unique(ordinal) -> Option<UniqueEntry>` reads it, where
+    `UniqueEntry` is `{ unique: u16, appearance: Option<u16> }`;
   - nothing else in `map/` changes. The table costs memory only for entries with a unique id,
     and it is measured on the reference bundle and recorded in the task record.
 - **Builds:** a pure function from a `WorldBase`, the reward-claim shards and the admitted Item
@@ -359,7 +406,12 @@ validation:
   - variants and non-ready claims are filtered out;
   - a reward item without an admitted definition makes its claim not served;
   - a loaded fixture bundle returns each top-level entry's `unique` exactly as the compiler wrote
-    it, `None` for an entry without one, and the existing `map/` tests pass unchanged.
+    it, `None` for an entry without one, and the existing `map/` tests pass unchanged;
+  - the palette appearance id is `<id>` for an `oteryn:item.tibia.i<id>` and an
+    `oteryn:terrain.tibia.i<id>` key, `source_item_id` for a provisional donor key, and `None`
+    for any other key;
+  - a chest whose appearance is not an Item binds through a provisional donor key, as 28827 and
+    28828 do in today's palette.
 - **Not in scope:** calling it from the node (§2.4), quest bindings (#1789), a compiler or
   format change, and any `map/` change beyond the `unique` table.
 
@@ -379,7 +431,9 @@ owned_paths:
   - apps/game-server/src/interaction/chest_use.rs        # resolving served claims; revisions from the World
   - apps/game-server/src/gameplay_transport/mod.rs       # the chest target lookup, reach from the bound cell, revision source, the test mod line
   - apps/game-server/src/gameplay_transport/world_content_serve_tests.rs  # new
-  - apps/game-server/src/content/world_activation.rs     # new: the bundle-World activation digests (§1.5)
+  - apps/game-server/src/content/world_activation.rs     # new: the bundle-World activation artifacts (§1.5)
+  - apps/game-server/src/content/activation.rs           # activate_world_bundle and WorldBundleContentPin only
+  - apps/game-server/src/content/production.rs           # the StagedGeneration::stage branch for the World activation artifact only
   - apps/game-server/src/content/mod.rs                  # the mod line and re-export only
   - apps/game-server/src/bin/oteryn-game-ops.rs          # the bundle-World mode of `content activate` only
   - docs/agents/tasks/archive/OTV2-20261004-world-content-serve-1.md
@@ -396,8 +450,9 @@ validation:
   - per-World content selection from the pin (§1.3);
   - the served claims composed over the booted base (§1.5);
   - the boot gate and its event line;
-  - the activation digests that cover the bundle and the claim set, with their issuer in
-    `oteryn-game-ops content activate` and the node's boot check (§1.5);
+  - the activation artifacts over the bundle, the served claims, their Item definitions and the
+    quest catalogue; their staging and activation through `ContentActivationController`; their
+    issuer in `oteryn-game-ops content activate` (§1.5);
   - the quest catalogue loaded with the World's revision;
   - chest `USE` resolution and reach from the binding, with revisions taken from the World
     (§1.6).
@@ -410,7 +465,12 @@ validation:
   - A stale session generation or item fence is refused, and nothing is written.
   - On a production pin, one unbound candidate refuses boot with `ContentActivation`. On a
     non-production pin it is left out and counted.
-  - Changing the bundle digest or the served claim set changes `server_artifact_digest`.
+  - Changing the bundle digest, the served claim set, one reward Item's stack class or the quest
+    catalogue changes `server_artifact_digest`.
+  - A bundle World becomes active only through `stage_primary` and `activate`: activation
+    without an issuance, or under a non-quiescent guard, is refused, and the controller's
+    active generation has the World artifact's identity.
+  - A World artifact with a changed byte, a non-canonical order or over 1 MiB fails staging.
   - `content activate --world-pin --bundle` issues digests that the node's boot check accepts.
     An issuance from the native mode, or from another bundle or claim set, refuses boot with
     `ContentActivation("digest")`. Replaying a request file reissues the same digests.
@@ -433,6 +493,11 @@ validation:
 - **Binding by cell alone, or by unique id alone.** A cell can hold several containers, and
   unique ids are not bound to cells in the Canary and CrystalServer sources. Requiring both, plus
   the appearance, is exact.
+- **Requiring the chest appearance to resolve to an Item.** `appearance_tibia_id` is source
+  evidence, and some chest appearances are not Items. The production gate would then refuse
+  every pin. The rule compares palette appearance ids instead (§1.4).
+- **Digesting only the bundle and the claims.** A semantic change to a reward Item would keep
+  the digest, so two different behaviours would share one activation (§1.5).
 - **The bundle `placement_key` as the durable source placement.** It changes with every
   bundle, so a claim audit would name a key that no longer exists (ADR-0021 §4.2).
 - **Merging the Canary and CrystalServer spawn sets.** It needs a per-point source choice, and

@@ -48,6 +48,23 @@ external_repositories: []
   - P1 4179282483: WORLD-CONTENT-SERVE-1 owns `content/world_activation.rs` (the three bundle-World
     digests) and the bundle-World mode of `oteryn-game-ops content activate`. The node checks the
     same digests at boot (§1.5, §2.4).
+- #1792 Codex round 2:
+  - P1 4179322261: the binding compares the entry's palette appearance id (from the
+    `oteryn:{item,terrain}.tibia.i<id>` key, or `source_item_id` of a provisional donor key)
+    with `appearance_tibia_id`. It does not resolve an Item, so non-Item chest appearances
+    such as 28827 and 28828 bind (§1.4, §2.3).
+  - P1 4179322266: `world-bundle.yml` and the pin refresh cover every compiler input:
+    `content/world/**`, `content/houses/**`, `content/creatures/definitions/**`,
+    `content/items/definitions/**`, the compiler, `crates/world-bundle/**` and `Cargo.lock`
+    (§1.2).
+  - P1 4179322271: the server activation artifact includes the served claims' quest
+    transitions, the `ItemDefinitionFacts` of each reward Item and backpack, and the quest
+    catalogue digest (§1.5).
+  - P1 4179322272: a bundle World is activated through `ContentActivationController`. It
+    stages a canonical `WorldActivationServerV1` artifact through `stage_primary`, then
+    calls `activate`, which yields a non-Clone `WorldBundleContentPin`. WORLD-CONTENT-SERVE-1
+    owns `activate_world_bundle` in `content/activation.rs` and the staging branch in
+    `content/production.rs` (§0.2, §1.5, §2.4).
 - Durable rows keep canonical identities; the bundle `placement_key` stays in memory. No
   migration, wire or contract change (§1.6-§1.8).
 
