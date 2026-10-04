@@ -3016,6 +3016,8 @@ mod item_fee_burn_postgres_cases;
 // standalone target through the same protected lane, on the Bestiary harness.
 #[path = "support/bank_postgres_cases.rs"]
 mod bank_postgres_cases;
+#[path = "support/gold_fee_bank_postgres_cases.rs"]
+mod gold_fee_bank_postgres_cases;
 
 // PG-COVERAGE-1: fails when a standalone `*_postgres.rs` target has cases that
 // no CI-run PostgreSQL target includes. Runs without a database.

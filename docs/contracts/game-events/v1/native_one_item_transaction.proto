@@ -5,7 +5,12 @@ package oteryn.events.v1;
 // DUR-03 §39.3 native one-item transaction durable-audit payload.
 // Registered as GAME_EVENT_FOUNDATION_REGISTRY.json event type 2
 // (DUR03_NATIVE_ONE_ITEM_TRANSACTION), payload message OneItemTransactionV1,
-// retention profile DUR03_ONE_ITEM_DURABLE_AUDIT_RETENTION_V1 (P90D).
+// retention profile DUR03_ONE_ITEM_DURABLE_AUDIT_RETENTION_V1 (P90D). An
+// envelope carries exactly one of two (schema revision, retention profile)
+// tuples: (1, V1), or its successor (2, DUR03_ONE_ITEM_DURABLE_AUDIT_RETENTION_V2,
+// P90D), which readers verify from GOLD-FEE-2 on and the registry binds at
+// GOLD-FEE-ACT-2 (ARCH-BATCH-ROOT-PACKETS-V1 §1.7). (1, V2) and (2, V1) are
+// refused.
 // The payload is carried as EventEnvelope.payload (foundation.proto); event,
 // transaction, session and command identities stay owned by EventEnvelope.
 //
@@ -17,7 +22,10 @@ package oteryn.events.v1;
 //
 // Excluded fail-closed (no field exists; an unknown field rejects by canonical
 // round trip): item free text, value lines, transform inputs/outputs,
-// container expansion and the direct-root inventory typed_position.
+// container expansion and the direct-root inventory typed_position. The one
+// admitted value line is the bank part of a fee, OneItemFeeBankDebitV1
+// (OneItemFeeBurnV1 field 13, GOLD-FEE-2); every other value line stays
+// excluded, on every operation.
 // TRANSFER is admitted only for the B3 destinations
 // (reviews/OTERYN_GAME_B3_INVENTORY_DESTINATION_CAPACITY_AND_STACKS_DECISION_2026-09-28.md
 // §4): the CharacterEquipment `container` slot, direct entries of the equipped
@@ -46,7 +54,17 @@ package oteryn.events.v1;
 // own rows DUR03-RL-01/-02/-06/-07-FEE-BURN (payload <= 25,398 B, EventEnvelope
 // <= 25,712 B). GOLD-FEE-1b adds platinum and crystal inputs and the additive
 // change fields 11-12 (at most a platinum and a gold change MINT); a GOLD-FEE-1a
-// event decodes with change 0 and no change line.
+// event decodes with change 0 and no change line. GOLD-FEE-2 (BANK-FEE-0 §3-§4,
+// ARCH-BATCH-ROOT-PACKETS-V1 §1.7) adds the bank part, field 13: when the
+// eligible coins are worth less than the fee, every one is burned whole, no
+// change is minted and the rest is one FEE_DEBIT value line on the payer's
+// (Account, World) bank balance (DUR03-RL-03-FEE = 1; 0 without a bank part).
+// The conservation is burned - change + bank_debit = fee; the coin part stays
+// at most 20,000,000 and the fee at most that plus 999,999,999,999. A fee paid
+// wholly from the bank has no line. Field 13 is admitted only in an envelope
+// at schema revision 2 under DUR03_ONE_ITEM_DURABLE_AUDIT_RETENTION_V2;
+// revision-1 bytes (DUR03_ONE_ITEM_DURABLE_AUDIT_RETENTION_V1) never carry it
+// and mean what they meant before. interpretation_revision stays 1.
 // The timed expiry (operation tag 7, TIMED-RT-1b; DUR-03 §39.3 timed-item
 // amendment, decision TIMEDITEM0B-RUNTIME-CHARGES-AND-DURATION-V1 §8/§12) is one
 // server-originated event per expiry of one held timed item: an expiry
@@ -284,23 +302,44 @@ message OneItemFeeChangeMintV1 {
   uint64 placement_ordinal = 2; // its new entry, non-zero
 }
 
-// Coin fee BURN transaction (GOLD-FEE-1a/1b). Lines are in burn order: worth
+// The bank part of a fee (GOLD-FEE-2): BANK-0 §5's closed value line for this
+// one shape. Its Account and World are those of the FEE_DEBIT ledger entry it
+// names (a commit guard checks the entry against the payer and the fee record).
+message OneItemFeeBankDebitV1 {
+  bytes entry_id = 1;    // the FEE_DEBIT ledger entry, 16-byte UUIDv7
+  string asset = 2;      // exactly "gold"
+  bytes account_id = 3;  // the payer's historical AccountId, 16 bytes, resolved
+                         // under the fee transaction's lock and never re-read
+  bytes world_id = 4;    // equal to the fee's World
+  uint32 kind = 5;       // 5 = FEE_DEBIT
+  uint32 line_class = 6; // 3 = BURN (DUR-03 §17)
+  uint64 debit_gold_units = 7;          // 1..999,999,999,999
+  uint64 balance_before_gold_units = 8; // 0..999,999,999,999
+  uint64 balance_after_gold_units = 9;  // before - debit
+}
+
+// Coin fee BURN transaction (GOLD-FEE-1a/1b/2). Lines are in burn order: worth
 // ascending, then display order (highest placement ordinal first).
 message OneItemFeeBurnV1 {
   OneItemFeeBurnCauseV1 cause = 1;
-  uint64 fee_gold_units = 2;    // 1..20,000,000
-  uint64 burned_gold_units = 3; // conservation summary: fee + change
+  uint64 fee_gold_units = 2;    // 1..20,000,000 + 999,999,999,999 (bank part)
+  uint64 burned_gold_units = 3; // conservation summary: fee + change - bank_debit
   bytes character_id = 4;       // 16-byte UUIDv7
   uint64 committed_character_revision = 5; // the fee source's committed revision (>= 2)
   bytes world_id = 6;
   bytes channel_id = 7;
   uint64 runtime_scope_ownership_generation = 8; // non-zero
-  bytes backpack_item_instance_id = 9; // parent of every line's entry
-  repeated OneItemFeeBurnLineV1 lines = 10; // 1..20
+  // Parent of every line's entry; empty only for a fee paid wholly from the
+  // bank by a payer with no backpack.
+  bytes backpack_item_instance_id = 9;
+  repeated OneItemFeeBurnLineV1 lines = 10; // 1..20; 0 only with a bank part
   uint64 change_gold_units = 11; // burned - fee, below the last line's coin worth
   // change / 100 platinum, then change % 100 gold, each only when positive, in
   // consecutive new entries after the burn lines.
   repeated OneItemFeeChangeMintV1 change = 12; // 0..2
+  // Present exactly when the bank part is positive; then every line is whole,
+  // change is 0 and no change MINT exists.
+  optional OneItemFeeBankDebitV1 bank_debit = 13;
 }
 
 // One side of the timed row: absent values are a spent row (a transform to a
