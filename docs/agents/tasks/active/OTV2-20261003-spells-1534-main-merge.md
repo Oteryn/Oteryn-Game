@@ -249,3 +249,7 @@ G4 `item_key_references` stays deferred to ITEM-KEY-R25-1.
 DEATH-2 (main 44f79d7f): the PR's creature bite path is lethal and records main's player death;
 the PR's `tick_vitals` respawns; a dead player's step is refused. Main's session pushed-delta
 store replaces this PR's unsolicited-vitals reader; the harness keeps casts on top of it.
+Later merges (c938306d, 46669726, ba8b8dfa): item pins re-cascade onto main's re-keyed digests
+from this PR's `reference_playable.rs`; the harness adds main's loot and capability-gated help;
+DEATH-2b's respawn admissibility reads the movement index through `NativeStaticCellLookup`;
+main's 0071 is BANK-1 and does not touch the progression guard.

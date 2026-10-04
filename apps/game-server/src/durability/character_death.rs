@@ -112,7 +112,7 @@ pub enum CharacterDeathOutcome {
     AlreadyCommitted(CommittedCharacterDeath),
 }
 
-/// The pending respawn one consumption deleted (DEATH-0 §3.4).
+/// A pending respawn (DEATH-0 §3.4): the one a read found, or the one a consumption deleted.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ConsumedRespawn {
     pub occurrence: PlayerDeathOccurrence,
@@ -416,6 +416,32 @@ impl DurabilityRoot {
         fence: CurrentCharacterGameplayFence,
         occurrence: Option<PlayerDeathOccurrence>,
     ) -> Result<Option<ConsumedRespawn>> {
+        self.pending_respawn_under_fence(authority, node, fence, occurrence, true)
+            .await
+    }
+
+    /// Read the Character's pending respawn (DEATH-0 §3.4) under the same
+    /// fences as [`Self::consume_pending_respawn`], deleting nothing, so an
+    /// admission places the actor at its recorded position before the
+    /// obligation is consumed.
+    pub async fn pending_respawn(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+    ) -> Result<Option<ConsumedRespawn>> {
+        self.pending_respawn_under_fence(authority, node, fence, None, false)
+            .await
+    }
+
+    async fn pending_respawn_under_fence(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        occurrence: Option<PlayerDeathOccurrence>,
+        consume: bool,
+    ) -> Result<Option<ConsumedRespawn>> {
         if fence.character_lease_generation == 0
             || !matches!(fence.runtime_scope, RuntimeScopeRefV1::Channel { .. })
         {
@@ -435,13 +461,19 @@ impl DurabilityRoot {
                     if let Err(error) = assert_gameplay_fence(&mut tx, &fence, &node).await? {
                         return Ok(Err(error));
                     }
-                    let row = sqlx::query(
+                    let row = sqlx::query(if consume {
                         "DELETE FROM game_character_pending_respawns \
                           WHERE character_id = encode($1,'hex')::uuid \
                             AND ($2::bytea IS NULL \
                                  OR death_occurrence_id = encode($2,'hex')::uuid) \
-                         RETURNING death_occurrence_id::text, respawn_position",
-                    )
+                         RETURNING death_occurrence_id::text, respawn_position"
+                    } else {
+                        "SELECT death_occurrence_id::text, respawn_position \
+                           FROM game_character_pending_respawns \
+                          WHERE character_id = encode($1,'hex')::uuid \
+                            AND ($2::bytea IS NULL \
+                                 OR death_occurrence_id = encode($2,'hex')::uuid)"
+                    })
                     .bind(fence.character_id.as_bytes().as_slice())
                     .bind(occurrence.map(|occurrence| occurrence.0.to_vec()))
                     .fetch_optional(&mut *tx)
@@ -758,6 +790,7 @@ mod tests {
     fn respawn_consumption_api_is_linked() {
         let _ = std::mem::size_of::<ConsumedRespawn>();
         let _ = DurabilityRoot::consume_pending_respawn;
+        let _ = DurabilityRoot::pending_respawn;
         let _ = DurabilityRoot::settle_player_death::<2>;
     }
 

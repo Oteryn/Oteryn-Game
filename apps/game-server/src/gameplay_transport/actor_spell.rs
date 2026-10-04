@@ -542,7 +542,8 @@ impl ChannelSpellStates {
 
     /// DEATH-2 §4.5 (D63): the respawn of `occurrence` in one owner step, after the caller placed
     /// the actor at its respawn position. Health and mana are refilled to their maxima under one
-    /// new `ACTOR_VITALS` revision and the death record ends; the new revision and value are
+    /// new `ACTOR_VITALS` revision, a monk's Harmony and forced Serene are reset with its Serene
+    /// evaluation initialized at `now`, and the death record ends; the new revision and value are
     /// returned for the owner to publish. `None` changes nothing: the actor is not this death's
     /// committed player.
     pub(crate) fn respawn(
@@ -551,11 +552,12 @@ impl ChannelSpellStates {
         actor: ExactActorRef,
         game_session_id: GameSessionId,
         occurrence: PlayerDeathOccurrence,
+        now: SemanticTimeMicros,
     ) -> Option<(u64, ActorVitals)> {
         let death = self.deaths.iter().position(|(dead, session, death)| {
             *dead == actor && *session == game_session_id && death.occurrence == occurrence
         })?;
-        let next = self.get(runtime, actor, game_session_id)?.respawned()?;
+        let next = self.get(runtime, actor, game_session_id)?.respawned(now)?;
         let vitals = (next.revision(), next.vitals());
         if !self.commit(runtime, actor, game_session_id, next) {
             return None;
@@ -1519,6 +1521,22 @@ pub(crate) mod tests {
         GameSessionId,
         ExactActorRef,
     ) {
+        bitten_actor(tag, health, FACTS, (0, 0))
+    }
+
+    /// [`bitten_player`] with the actor's cast facts and durable monk values.
+    fn bitten_actor(
+        tag: u8,
+        health: u32,
+        facts: CharacterCastFacts,
+        monk: (u8, u64),
+    ) -> (
+        ChannelRuntimeV1,
+        ChannelSpellStates,
+        ExactActorRef,
+        GameSessionId,
+        ExactActorRef,
+    ) {
         use crate::foundation::MovementLocalPosition;
         let (mut runtime, actor, session) = runtime_with_player(tag);
         let at = |x, y| MovementLocalPosition { x, y, floor: 7 };
@@ -1528,7 +1546,7 @@ pub(crate) mod tests {
         let creature = runtime.admit_test_creature(at(11, 10)).expect("creature");
         let mut states = ChannelSpellStates::default();
         states
-            .initialize(&runtime, actor, session, FACTS, (0, 0), now(0))
+            .initialize(&runtime, actor, session, facts, monk, now(0))
             .expect("vitals");
         wound(&mut states, actor, session, health);
         (runtime, states, actor, session, creature)
@@ -1651,14 +1669,23 @@ pub(crate) mod tests {
             .player_death(&runtime, actor, session)
             .expect("death");
         let other = PlayerDeathOccurrence::from_bytes(uuid_v7(0x77)).expect("occurrence");
-        assert_eq!(states.respawn(&runtime, actor, session, other), None);
+        assert_eq!(
+            states.respawn(&runtime, actor, session, other, now(0)),
+            None
+        );
         let (_, other_actor, other_session) = runtime_with_player(0x33);
         assert_eq!(
-            states.respawn(&runtime, other_actor, other_session, death.occurrence),
+            states.respawn(
+                &runtime,
+                other_actor,
+                other_session,
+                death.occurrence,
+                now(0)
+            ),
             None
         );
         let (revision, vitals) = states
-            .respawn(&runtime, actor, session, death.occurrence)
+            .respawn(&runtime, actor, session, death.occurrence, now(0))
             .expect("respawned");
         assert_eq!(revision, 4);
         assert_eq!(
@@ -1669,11 +1696,56 @@ pub(crate) mod tests {
         assert_eq!(states.player_death(&runtime, actor, session), None);
         // The respawn happens once; the living actor takes commands again.
         assert_eq!(
-            states.respawn(&runtime, actor, session, death.occurrence),
+            states.respawn(&runtime, actor, session, death.occurrence, now(0)),
             None
         );
         assert_eq!(
             cast_at(&runtime, &mut states, actor, session, 8, 10_000).disposition,
+            SpellCastDisposition::Cast
+        );
+    }
+
+    /// DEATH-2 §4.5 with SPELL-D8 §8.2: a monk respawns with Harmony and forced Serene reset, as
+    /// the death commit writes them, and its Serene evaluation initialized again, so a monk that
+    /// lost control while dead is playable after the respawn.
+    #[test]
+    fn a_monk_respawns_with_harmony_and_forced_serene_reset_and_initialized() {
+        use crate::ability::creature_bite::CreatureBiteLedger;
+
+        let monk = CharacterCastFacts {
+            vocation: Vocation::Monk,
+            ..FACTS
+        };
+        let (runtime, mut states, actor, session, creature) =
+            bitten_actor(0x35, 8, monk, (3, 4_000_000));
+        bite_at(
+            &runtime,
+            &mut states,
+            &mut CreatureBiteLedger::default(),
+            (creature, actor, session),
+            0,
+            0,
+        )
+        .expect("lethal bite");
+        let death = states
+            .player_death(&runtime, actor, session)
+            .expect("death");
+        assert_eq!(
+            states.monk_save_values(&runtime, actor, session, now(1000)),
+            Some((3, 3_000_000))
+        );
+        // Control loss detaches the dead monk; only the respawn initializes it again.
+        states.detach(&runtime, actor, session);
+        let (_, vitals) = states
+            .respawn(&runtime, actor, session, death.occurrence, now(2000))
+            .expect("respawned");
+        assert_eq!((vitals.harmony, vitals.serene), (0, true));
+        assert_eq!(
+            states.monk_save_values(&runtime, actor, session, now(2000)),
+            Some((0, 0))
+        );
+        assert_eq!(
+            cast_at(&runtime, &mut states, actor, session, 1, 2000).disposition,
             SpellCastDisposition::Cast
         );
     }
