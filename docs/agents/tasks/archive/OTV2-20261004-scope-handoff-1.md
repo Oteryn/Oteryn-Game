@@ -73,6 +73,11 @@ external_repositories: []
   key and origin Channel (0074 `BEFORE INSERT` trigger keyed by the replacement receipt), so it
   stays in house occupancy; a session of a house instance id without them is refused (`23514`).
   Revoking a house scope that is not assigned is `NotAssigned`, like the Channel writer.
+- **Codex round 3 (owner-approved extra P1 round).** Commit re-reads the origin Channel
+  assignment `FOR SHARE` at the source session's generation and holder before terminalizing the
+  source; a replaced or revoked origin is `AuthorityRejected`. The bare-session refusal derives
+  house instance ids from the house assignments (expression index
+  `game_runtime_scope_house_instances`), so it holds for the first session of an assigned house.
 
 ## Tests
 
@@ -86,7 +91,9 @@ external_repositories: []
   and committed-row immutability; a house assignment key reused for a Channel revoke is an
   operation conflict, and with the Channel revoked and the house still assigned bootstrap is
   refused; a replaced house session keeps its house and origin and stays in occupancy; a
-  revoked house scope revoked again is `NotAssigned`.
+  revoked house scope revoked again is `NotAssigned`; an origin Channel revoked after prepare
+  fails the commit with the source session live; a bare first session of an assigned house is
+  refused (`23514`).
 
 ## Validation
 

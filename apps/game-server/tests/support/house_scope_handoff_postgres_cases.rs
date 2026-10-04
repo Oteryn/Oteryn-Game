@@ -451,6 +451,101 @@ fn a_replaced_house_session_keeps_its_house_and_origin() -> TestResult {
 }
 
 #[test]
+fn a_revoked_origin_channel_fails_the_commit() -> TestResult {
+    run("hsh_origin_revoked", async |harness| {
+        use crate::durability::runtime_scope_assignment::{
+            AssignmentCommand, AssignmentOutcome, AssignmentRequest,
+        };
+        prepare(harness, &harness.root, HANDOFF).await?;
+        let predecessor = harness
+            .root
+            .read_runtime_scope_predecessor(scope()?)
+            .await
+            .map_err(debug)?
+            .ok_or("origin Channel assignment")?;
+        let outcome = harness
+            .writer
+            .submit(&AssignmentRequest {
+                operation_key: OperationKey::from_bytes([12; 32]),
+                actor: ControlActor::new("oteryn_test_admin").map_err(debug)?,
+                command: AssignmentCommand::Revoke {
+                    scope: scope()?,
+                    predecessor,
+                },
+            })
+            .await
+            .map_err(debug)?;
+        assert!(
+            matches!(outcome, AssignmentOutcome::Committed(_)),
+            "{outcome:?}"
+        );
+        let seal = harness.recovery.seal_current().map_err(debug)?;
+        let authority = harness
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        assert!(matches!(
+            harness
+                .root
+                .commit_house_entry(&authority, &harness.node, commit(HANDOFF)?)
+                .await,
+            Err(HouseHandoffError::AuthorityRejected)
+        ));
+        // The source session stays live, no house session exists and the handoff stays PREPARED.
+        let (source, live, handoffs) = state(harness).await?;
+        assert_eq!((source, live, handoffs), (1, vec![id(SESSION).to_vec()], 1));
+        Ok(())
+    })
+}
+
+#[test]
+fn a_bare_first_session_of_an_assigned_house_is_refused() -> TestResult {
+    run("hsh_bare_first", async |harness| {
+        // No house session has ever existed; the house is assigned (seed).
+        let error = sqlx::query(
+            "INSERT INTO game_durability_reconnect_sessions (\
+                game_session_id, account_id, character_id, world_id, runtime_scope_kind, \
+                runtime_scope_world_id, runtime_scope_channel_id, runtime_scope_instance_id, \
+                control_loss_epoch, original_grace_deadline, predecessor_generation, \
+                character_lease_generation, scope_ownership_generation, current_generation, \
+                attempt_count, session_state) \
+             SELECT encode($2,'hex')::uuid, account_id, character_id, world_id, 2, \
+                    runtime_scope_world_id, NULL, \
+                    game_house_scope_instance_id(runtime_scope_world_id, $3), \
+                    1, 500, current_generation, character_lease_generation, 1, \
+                    current_generation, 0, 3 \
+               FROM game_durability_reconnect_sessions \
+              WHERE game_session_id = encode($1,'hex')::uuid",
+        )
+        .bind(id(SESSION).as_slice())
+        .bind(id(65).as_slice())
+        .bind(HOUSE_KEY)
+        .execute(&harness.pool)
+        .await
+        .err()
+        .ok_or("bare first house session admitted")?;
+        assert_eq!(
+            error
+                .as_database_error()
+                .and_then(|error| error.code())
+                .as_deref(),
+            Some("23514")
+        );
+        assert!(error.to_string().contains("must name its house"), "{error}");
+        assert_eq!(
+            harness_count(
+                &harness.pool,
+                "SELECT count(*) FROM game_durability_reconnect_sessions WHERE runtime_scope_kind = 2"
+            )
+            .await?,
+            0
+        );
+        Ok(())
+    })
+}
+
+#[test]
 fn revocation_committed_first_refuses_the_admission() -> TestResult {
     run("hsh_revoke_first", async |harness| {
         prepare(harness, &harness.root, HANDOFF).await?;

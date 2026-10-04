@@ -803,21 +803,14 @@ pub(crate) async fn prepare_house_entry_in_transaction(
     };
     let account: String = source.try_get("account")?;
     // The source Channel is held by the proving node at the session's generation.
-    let fact = node.fact();
-    let held: bool = sqlx::query_scalar(
-        "SELECT EXISTS (SELECT 1 FROM game_runtime_scope_assignments \
-          WHERE scope_key = $1 AND scope_kind = 1 AND state = 1 \
-            AND ownership_generation = $2::text::numeric(20,0) \
-            AND holder_node_id = encode($3,'hex')::uuid \
-            AND holder_registration_revision = $4::text::numeric(20,0) FOR SHARE)",
+    if !origin_channel_held(
+        tx,
+        &channel_scope_key(world_id, channel_id),
+        request.source_scope_ownership_generation,
+        node,
     )
-    .bind(channel_scope_key(world_id, channel_id).as_slice())
-    .bind(request.source_scope_ownership_generation.to_string())
-    .bind(fact.node_id().as_bytes().as_slice())
-    .bind(fact.registration_revision().to_string())
-    .fetch_one(&mut **tx)
-    .await?;
-    if !held || !prove_current_incarnation(tx, node).await? {
+    .await?
+    {
         return Err(HouseHandoffError::AuthorityRejected);
     }
     if !house_assigned(
@@ -956,6 +949,14 @@ pub(crate) async fn commit_house_entry_in_transaction(
 
     // The proving node holds the house scope at the prepared generation.
     if !house_assigned(tx, &record.house, house_generation, Some(node)).await? {
+        return Err(HouseHandoffError::AuthorityRejected);
+    }
+    // The origin Channel is still held by the proving node at the source session's generation:
+    // a replaced or revoked origin assignment fails the handoff.
+    let mut origin_key = vec![1_u8];
+    origin_key.extend_from_slice(record.house.world_id.as_bytes());
+    origin_key.extend_from_slice(&origin);
+    if !origin_channel_held(tx, &origin_key, parse_u64(&source_scope)?, node).await? {
         return Err(HouseHandoffError::AuthorityRejected);
     }
     // The source session is still exactly the prepared one.
@@ -1174,6 +1175,32 @@ async fn delete_prepared(tx: &mut Transaction<'_, Postgres>, handoff_id: [u8; 16
         return Err(DurabilityError::InvalidStoredState.into());
     }
     Ok(())
+}
+
+/// The Channel scope `scope_key` is ASSIGNED at `generation` to the proving node. Holds the
+/// assignment row `FOR SHARE` until the transaction ends.
+async fn origin_channel_held(
+    tx: &mut Transaction<'_, Postgres>,
+    scope_key: &[u8],
+    generation: u64,
+    node: &NodeIncarnationProof,
+) -> std::result::Result<bool, DurabilityError> {
+    let fact = node.fact();
+    let held = sqlx::query(
+        "SELECT 1 FROM game_runtime_scope_assignments \
+          WHERE scope_key = $1 AND scope_kind = 1 AND state = 1 \
+            AND ownership_generation = $2::text::numeric(20,0) \
+            AND holder_node_id = encode($3,'hex')::uuid \
+            AND holder_registration_revision = $4::text::numeric(20,0) FOR SHARE",
+    )
+    .bind(scope_key)
+    .bind(generation.to_string())
+    .bind(fact.node_id().as_bytes().as_slice())
+    .bind(fact.registration_revision().to_string())
+    .fetch_optional(&mut **tx)
+    .await?
+    .is_some();
+    Ok(held && prove_current_incarnation(tx, node).await?)
 }
 
 /// The house scope is ASSIGNED at `generation` (to the proving node when `node` is given).
