@@ -57,7 +57,8 @@ no cycle: HOUSE-RUNTIME-1, then HOUSE-1a, then HOUSE-ACL-1 and HOUSE-1b.
 
 **Amendment (`OTERYN_GAME_HOUSE_RT_INBOX_PACKETS_2026-10-04.md` §1.1, §1.2, §1.6).** HOUSE-RUNTIME-1
 is split into 1a, 1b and 1c, and INBOX-1 into 1a and 1b. HOUSE-1a waits on all three halves, as
-HOUSE-CUSTODY-0 §4 and HOUSE-OWN-0 order it; MAP-OVERLAY-1c waits on HOUSE-RUNTIME-1a only;
+HOUSE-CUSTODY-0 §4 and HOUSE-OWN-0 order it, and for 1b and 1c on their acceptance with the
+exit gate lifted, not only their merge (`ARCH-HOUSE-RT-INBOX-FIX-1`, that file's §1.5); MAP-OVERLAY-1c waits on HOUSE-RUNTIME-1a only;
 HOUSE-1b waits on INBOX-1a only. HOUSE-1a also replaces the bodies of `game_house_access` (final:
 owner, then the grant and fence parts) and `game_house_access_tile` (its `game_house_tiles`) in
 its own migration, and creates the stubs `game_house_access_grant` and `game_house_access_fence`.
@@ -492,7 +493,7 @@ candidate_bases: [D3 (item order)]
 worker: oteryn-hard-worker
 review: hard, persistence and security review (Codex, final frozen head)
 branch: allocated by the control plane
-base: main after BANK-1, HOUSE-RUNTIME-1a, 1b and 1c, and PREM-WIRE-1 merge
+base: main after BANK-1, HOUSE-RUNTIME-1a, 1b and 1c, and PREM-WIRE-1 merge, and after HOUSE-RUNTIME-1b and 1c are accepted with their exit-dependent items met
 migration_lease: one number from the control plane at allocation
 event_type_lease: one number from the control plane at allocation
 depends_on: [OTV2-20261004-house-runtime-1a, OTV2-20261004-house-runtime-1b, OTV2-20261004-house-runtime-1c, BANK-1, PREM-WIRE-1]
