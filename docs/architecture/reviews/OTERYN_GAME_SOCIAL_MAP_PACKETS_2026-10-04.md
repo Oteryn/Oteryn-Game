@@ -61,8 +61,10 @@ no cycle: HOUSE-RUNTIME-1, then HOUSE-1a, then HOUSE-ACL-1 and HOUSE-1b.
   `0072`. Each packet with a migration takes one number from the control plane at allocation. A
   packet merges only after every lower leased number is merged or released.
 - **Event types.** GUILD-1 (the guild event, GUILD-0 §4.4) and HOUSE-1a (the house operation
-  event) each take one `GAME_EVENT_FOUNDATION_REGISTRY.json` event type at allocation. The
-  registry already holds type 3 (`BANK_OPERATION`).
+  event) each take one `GAME_EVENT_FOUNDATION_REGISTRY.json` event type at allocation. Type 3
+  (`BANK_OPERATION`) is leased to BANK-1. Each new entry carries every
+  `required_event_type_fields` entry, including `payload_schema` and `payload_message`, with
+  the schema file of §1.12.
 - **One-item operation tags.** MAP-OVERLAY-1b takes the next free `OneItemTransactionV1`
   operation tag at allocation (tag 8 if still free; §1.11). MAP-OVERLAY-1c adds fields to
   operation tag 5 and takes no tag.
@@ -72,12 +74,17 @@ no cycle: HOUSE-RUNTIME-1, then HOUSE-1a, then HOUSE-ACL-1 and HOUSE-1b.
 
 | File | Writers |
 |---|---|
-| `docs/contracts/RESOURCE_LIMITS_REGISTRY.json` | each packet edits only its own rows, in merge order |
-| `docs/contracts/GAME_EVENT_FOUNDATION_REGISTRY.json` | GUILD-1, HOUSE-1a: one entry each |
+| `docs/contracts/RESOURCE_LIMITS_REGISTRY.json` | each packet edits only its own rows, in merge order; MAP-OVERLAY-1b and -1c also add their consumer line and new worst-case boundary test to the `DUR03-RL-07-*` rows |
+| `docs/contracts/GAME_EVENT_FOUNDATION_REGISTRY.json` | GUILD-1, HOUSE-1a: one entry each; HOUSE-1b: one notes clause for the house event |
 | `apps/game-server/src/durability/mod.rs` | each persistence packet: its `mod` lines only |
+| `apps/game-server/src/domain/mod.rs` | PARTY-1, GUILD-1, HOUSE-1a, HOUSE-1b: their `mod` lines only |
 | `apps/game-server/src/lib.rs` | PARTY-1 (`mod party`); MAP-OVERLAY-1a adds nothing, since `map` is MAP-LOAD-1's |
 | `apps/game-server/tests/character_authority_postgres.rs` | each persistence packet: its `#[path = "support/<x>_postgres_cases.rs"] mod` lines only |
-| `apps/game-server/src/map/mod.rs` | MAP-LOAD-1, then MAP-OVERLAY-1a, -1b, -1c: their `mod` lines only |
+| `apps/game-server/src/map/mod.rs` | MAP-LOAD-1, then MAP-OVERLAY-1a (`mod overlay`) and MAP-CUTOVER-1 (`mod boot`): their `mod` lines only |
+| `apps/game-server/src/map/overlay.rs` | MAP-OVERLAY-1a, then MAP-OVERLAY-1b: the `mod pickup` line only |
+| `apps/game-server/src/durability/item_mint_audit.rs` | MAP-OVERLAY-1b: the new `OneItemOperationV1` arm and the oneof tag list only |
+| `apps/game-server/src/durability/bank.rs` | HOUSE-1a: the house ledger kinds and the `HOUSEOWN0-RL-15` term of the credit headroom check only (§1.12) |
+| `docs/contracts/game-events/v2/house_operation.proto` | HOUSE-1a (new), then HOUSE-1b (additive operation kinds and lines; no existing field changes) |
 | `docs/contracts/game-events/v1/native_one_item_transaction.proto` | MAP-OVERLAY-1b (new operation), then MAP-OVERLAY-1c (additive fields of tag 5); no existing field changes |
 | `docs/contracts/GAME_EVENT_FOUNDATION_REGISTRY.json` (type 2 text) | MAP-OVERLAY-1b, then MAP-OVERLAY-1c: one clause each |
 
@@ -137,7 +144,7 @@ split:
   - the Premium consumer row (§1.4).
 - **HOUSE-1b, tenancy:**
   - rent collection and grace of §5, from the second period on;
-  - the login warning for an unpaid rent;
+  - the warning for an unpaid rent, as a function the login path of HOUSE-WIRE-1 calls (§1.12);
   - the eviction ban;
   - move-out of §6;
   - the disposition fence and steps of §7, to the CharacterInbox;
@@ -300,16 +307,50 @@ schema and the event registry. Both map packets therefore own their schema chang
   a new operation `map_item_mint` (`OneItemMapItemMintV1`) with the closed cause
   `OneItemMapItemMaterializationV1 {world, channel, base bundle digest, placement_key, reset
   epoch}` and a Ground destination. It has its own audit module, and the registry type 2 text
-  gets one clause. No existing field changes.
+  gets one clause. No existing field changes. `OneItemOperationV1` and its oneof tag list live in
+  `item_mint_audit.rs`, so MAP-OVERLAY-1b owns that file for the new arm and tag 8 only
+  (#1773 P1 4178117645).
 - **MAP-OVERLAY-1c (#1773 P1 4178085303).** `OneItemDecayRetireV1` gains additive fields:
-  - `OneItemWorldResetV1 world_reset = 7` (`{world, reset epoch}`). Exactly one of it and the
-    existing `cause` = 5 is set;
+  - `OneItemWorldResetV1 world_reset = 7` (`{world_id, reset_epoch, item_instance_id}`, the
+    full `WorldReset` key of ADR-0021 §4.7 step 3 and DUR-03 "Map items and world reset";
+    #1773 P1 4178117650). Its `item_instance_id` equals the retired item's. Exactly one of it and
+    the existing `cause` = 5 is set;
   - `OneItemGroundContainerEntryV1 ground_container_entry = 8`, for an entry of any live Ground
     container, carrying the container's live Ground as scope authority, as `corpse_entry` does.
     It is only valid with `world_reset`;
   - the `deadline_unix_ms` of the corpse cause does not apply to `world_reset`.
 
   The registry type 2 text gets one clause, and no existing field changes.
+- Both packets keep the type 2 payload within `DUR03-RL-07-PAYLOAD-BYTES` and
+  `DUR03-RL-07-ENVELOPE-BYTES`: each measures its new worst case and adds it as a boundary test
+  and consumer line on those rows.
+
+### 1.12 Event schemas and owned paths (#1773 P1 4178117654)
+
+- **Payload schemas.** Following BANK-1's `game-events/v2/bank_operation.proto`:
+  - GUILD-1 adds `docs/contracts/game-events/v2/guild_event.proto` with
+    `oteryn.events.v2.GuildEventV1`: the GUILD-0 §4.4 event and its activity entry messages;
+  - HOUSE-1a adds `docs/contracts/game-events/v2/house_operation.proto` with
+    `oteryn.events.v2.HouseOperationV1`: the HOUSE-OWN-0 §9 evidence, its operation kinds and
+    its value lines;
+  - HOUSE-1b adds its operation kinds (rent, grace, move-out, eviction, disposition step,
+    release) and the disposition item `TRANSFER` line to that file, additively, and one notes
+    clause to the registry. No existing field changes.
+
+  Each registry entry names its file and message in `payload_schema` and `payload_message`.
+- **House burns.** Price and rent burn no item, so their `BURN` lines are value lines of the
+  house event under its own house variants of `FeeBurnCause` (`HOUSE_PRICE`, `HOUSE_RENT`). The
+  one-item `FeeBurnCauseV1` of event type 2 is unchanged.
+- **The `HOUSEOWN0-RL-15` credit check.** Every credit reads its headroom through BANK-1's one
+  credit headroom check in `bank.rs`. HOUSE-1a adds the escrow term there, so a credit is refused
+  `BALANCE_LIMIT` before any write and never by a deferred guard abort. If a credit path on
+  `main` does not use that check, HOUSE-1a stops and asks the architect.
+- **The Inbox delivery.** HOUSE-1b delivers through INBOX-1's delivery function for an unreserved
+  delivery. If INBOX-1 merges without one, HOUSE-1b stops and asks the architect.
+- **No runtime wiring.** The jobs of PARTY-1, GUILD-1, HOUSE-1a and HOUSE-1b are pass functions
+  tested directly. The PartyView admission read and the HOUSE-1b rent warning are functions.
+  Calling them from the channel loop, admission or login belongs to each family's wire child,
+  so none of these packets edits `world_runtime.rs`, admission or session code.
 
 ## 2. Packets
 
@@ -328,6 +369,7 @@ depends_on: [CHAT-2]
 owned_paths:
   - apps/game-server/migrations/NNNN_parties.sql             # §3 tables: parties, members, invitations, social blocks, social settings
   - apps/game-server/src/domain/party.rs                     # pure rules: invite, accept, succession, limits
+  - apps/game-server/src/domain/mod.rs                       # the mod line only
   - apps/game-server/src/durability/party.rs                 # the §4.1 transactions and lock order
   - apps/game-server/src/durability/mod.rs                   # the mod line only
   - apps/game-server/src/party/**                            # the PartyView cache, full refresh, revision check, presence record, cleanup job
@@ -389,14 +431,16 @@ depends_on: [BANK-1, PREM-WIRE-1]
 owned_paths:
   - apps/game-server/migrations/NNNN_guilds.sql              # GUILD-0 §3.1 tables, leadership, disband claims
   - apps/game-server/src/domain/guild.rs                     # pure rules: names, ranks, state and deadline gates
+  - apps/game-server/src/domain/mod.rs                       # the mod line only
   - apps/game-server/src/durability/guild.rs                 # §3.2 operations, §3.3 jobs, §3.4 disband steps, lock order GUILD0-LO-01
   - apps/game-server/src/durability/guild_audit.rs           # the §4.4 guild event and activity log
   - apps/game-server/src/durability/mod.rs                   # the mod lines only
   - apps/game-server/tests/guild_postgres.rs
   - apps/game-server/tests/support/guild_postgres_cases.rs
   - apps/game-server/tests/character_authority_postgres.rs   # the path-mod line only
-  - docs/contracts/RESOURCE_LIMITS_REGISTRY.json             # the §1.2 rows
-  - docs/contracts/GAME_EVENT_FOUNDATION_REGISTRY.json       # the leased guild event type
+  - docs/contracts/RESOURCE_LIMITS_REGISTRY.json             # the §1.2 rows; the measured envelope and payload rows of the guild event
+  - docs/contracts/GAME_EVENT_FOUNDATION_REGISTRY.json       # the leased guild event type, with payload_schema and payload_message (§1.12)
+  - docs/contracts/game-events/v2/guild_event.proto          # GuildEventV1 and its activity entry messages (§1.12)
   - docs/agents/tasks/archive/OTV2-20261004-guild-1.md
 validation:
   - cargo fmt --all -- --check
@@ -446,14 +490,17 @@ depends_on: [BANK-1, HOUSE-RUNTIME-1, PREM-WIRE-1]
 owned_paths:
   - apps/game-server/migrations/NNNN_house_ownership.sql     # properties, tiles, housing slots, operations, bids and escrow
   - apps/game-server/src/domain/house_auction.rs             # pure rules: proxy price, anti-sniping, eligibility
+  - apps/game-server/src/domain/mod.rs                       # the mod line only
   - apps/game-server/src/durability/house_ownership.rs       # bid, settlement, release steps, §8 guard, §9 job
   - apps/game-server/src/durability/house_ownership_audit.rs # the house operation event
+  - apps/game-server/src/durability/bank.rs                  # the house ledger kinds and the HOUSEOWN0-RL-15 headroom term only (§1.12)
   - apps/game-server/src/durability/mod.rs                   # the mod lines only
   - apps/game-server/tests/house_ownership_postgres.rs
   - apps/game-server/tests/support/house_ownership_postgres_cases.rs
   - apps/game-server/tests/character_authority_postgres.rs   # the path-mod line only
-  - docs/contracts/RESOURCE_LIMITS_REGISTRY.json             # HOUSEOWN0-RL-01 to -06, -11, -13, -15, DUR03-RL-03-HOUSE
-  - docs/contracts/GAME_EVENT_FOUNDATION_REGISTRY.json       # the leased house event type
+  - docs/contracts/RESOURCE_LIMITS_REGISTRY.json             # HOUSEOWN0-RL-01 to -06, -11, -13, -15, DUR03-RL-03-HOUSE; the measured envelope and payload rows of the house event
+  - docs/contracts/GAME_EVENT_FOUNDATION_REGISTRY.json       # the leased house event type, with payload_schema and payload_message (§1.12)
+  - docs/contracts/game-events/v2/house_operation.proto      # HouseOperationV1, its kinds and value lines, the house FeeBurnCause variants (§1.12)
   - docs/agents/tasks/archive/OTV2-20261004-house-1a.md
 validation:
   - cargo fmt --all -- --check
@@ -505,14 +552,17 @@ depends_on: [OTV2-20261004-house-1a, INBOX-1, MAP-OVERLAY-1c]
 owned_paths:
   - apps/game-server/migrations/NNNN_house_tenancy.sql       # rent due, grace, bans, dispositions, catalogue revisions
   - apps/game-server/src/domain/house_tenancy.rs             # pure rules: rent period, grace, notice
+  - apps/game-server/src/domain/mod.rs                       # the mod line only
   - apps/game-server/src/durability/house_tenancy.rs         # rent, grace, move-out, eviction, disposition steps
   - apps/game-server/src/durability/house_ownership_audit.rs # the new operation kinds only
+  - docs/contracts/game-events/v2/house_operation.proto      # the additive operation kinds and the disposition TRANSFER line only (§1.12)
+  - docs/contracts/GAME_EVENT_FOUNDATION_REGISTRY.json       # one notes clause for the house event only
   - apps/game-server/src/durability/world_reset.rs           # the two catalogue revision calls only (§1.8)
   - apps/game-server/src/durability/mod.rs                   # the mod line only
   - apps/game-server/tests/house_tenancy_postgres.rs
   - apps/game-server/tests/support/house_tenancy_postgres_cases.rs
   - apps/game-server/tests/character_authority_postgres.rs   # the path-mod line only
-  - docs/contracts/RESOURCE_LIMITS_REGISTRY.json             # HOUSEOWN0-RL-07 to -10, -14
+  - docs/contracts/RESOURCE_LIMITS_REGISTRY.json             # HOUSEOWN0-RL-07 to -10, -14; the house event rows re-measured for the new kinds
   - docs/agents/tasks/archive/OTV2-20261004-house-1b.md
 validation:
   - cargo fmt --all -- --check
@@ -525,7 +575,8 @@ Acceptance tests:
 
 - rent is charged 30 days in advance with `HOUSE_RENT`; a missed charge starts the 7 day grace,
   retried daily and at its end;
-- the owner sees the login warning while rent is unpaid;
+- the rent warning function returns the warning for the owner while rent is unpaid (showing it at
+  login is HOUSE-WIRE-1's, §1.12);
 - grace end evicts and bans the Account on that World for 30 days;
 - move-out with 1 to 30 days notice; outside that range it is refused;
 - the disposition fence stops every interior change, then moves the interior to the owner's
@@ -601,6 +652,9 @@ owned_paths:
   - docs/contracts/game-events/v1/native_one_item_transaction.proto # the new operation and its messages only
   - docs/contracts/GAME_EVENT_FOUNDATION_REGISTRY.json       # one type 2 clause only
   - apps/game-server/src/map/overlay/pickup.rs               # eligibility, hide at freeze, re-hide at rebuild
+  - apps/game-server/src/map/overlay.rs                      # the mod pickup line only
+  - apps/game-server/src/durability/item_mint_audit.rs       # the new OneItemOperationV1 arm and tag 8 in the oneof tag list only (§1.11)
+  - docs/contracts/RESOURCE_LIMITS_REGISTRY.json             # DUR03-RL-07-* consumer line and the new worst-case boundary test only
   - apps/game-server/tests/map_item_mint_postgres.rs
   - apps/game-server/tests/support/map_item_mint_postgres_cases.rs
   - apps/game-server/tests/character_authority_postgres.rs   # the path-mod line only
@@ -619,6 +673,7 @@ Acceptance tests:
   of §4.4 stays in place;
 - the `map_item_mint` event round-trips with its full cause, and the audit refuses it with a
   missing or extra cause field; the existing `loot_mint` and reward-claim tests still pass;
+- the worst-case `map_item_mint` payload and envelope fit `DUR03-RL-07-*`;
 - the same entry is taken once per channel and reset epoch; a second channel can take it too;
 - a retried MINT returns the existing item and still checks reach before the TRANSFER;
 - the origin hides at freeze and unhides only on proven non-commit;
@@ -650,7 +705,7 @@ owned_paths:
   - apps/game-server/tests/world_reset_postgres.rs
   - apps/game-server/tests/support/world_reset_postgres_cases.rs
   - apps/game-server/tests/character_authority_postgres.rs   # the path-mod line only
-  - docs/contracts/RESOURCE_LIMITS_REGISTRY.json             # MAP01-RESET-RETIRE-MS: measured value and evidence
+  - docs/contracts/RESOURCE_LIMITS_REGISTRY.json             # MAP01-RESET-RETIRE-MS: measured value and evidence; DUR03-RL-07-* consumer line and new worst case
   - docs/agents/evidence/MAP-OVERLAY-1c-*.md
   - docs/agents/tasks/archive/MAP-OVERLAY-1c.md
 validation:
@@ -671,8 +726,9 @@ Acceptance tests:
 - an item with a `CorpseDecay` reservation of the old generation gets a fresh `WORLD_RESET`
   reservation under the new generation; the old row cannot commit, and no item has two receipts;
 - the retirement event round-trips with `world_reset` and with `ground_container_entry`; one with
-  both causes, neither cause, or a Ground container entry under the corpse cause is refused; every
-  existing `CorpseDecay` event still decodes and validates unchanged;
+  both causes, neither cause, a Ground container entry under the corpse cause, or a `world_reset`
+  whose `item_instance_id` differs from the retired item is refused; every existing
+  `CorpseDecay` event still decodes and validates unchanged; the worst case fits `DUR03-RL-07-*`;
 - existing `0015` rows read as `CORPSE_DECAY` after the migration and keep their CHECKs;
 - the preflight refuses a target bundle that fails HOUSE-CUSTODY-0 §3.6, before step 1, and,
   until HOUSE-1b, one that changes the house catalogue on a World with property rows (§1.8);
@@ -698,6 +754,7 @@ depends_on: [MAP-OVERLAY-1c]
 owned_paths:
   - apps/game-server/src/world_runtime.rs                    # boot from the pinned bundle; overlay wiring into the channel loop
   - apps/game-server/src/map/boot.rs                         # first boot runs the reset
+  - apps/game-server/src/map/mod.rs                          # the mod boot line only
   - apps/game-server/tests/map_cutover_*.rs
   - docs/agents/tasks/archive/MAP-CUTOVER-1.md
 validation:
@@ -741,7 +798,7 @@ production World is separate authority.
 1. **What does this decide?** The detailed packets for PARTY-1, GUILD-1, HOUSE-1a, HOUSE-1b,
    MAP-OVERLAY-1a, -1b, -1c and MAP-CUTOVER-1; the HOUSE-1 and MAP-OVERLAY-1 splits; the step-4
    recheck lock; the private house escrow headroom; the first rent gap; catalogue revisions inside the reset; the shared retirement uniqueness; one Premium consumer row; the GUILD-1
-   dependency correction.
+   dependency correction; the guild and house event schemas and the owned-path sweep (§1.12).
 2. **What does it not decide?** No candidate base is accepted. No code, migration, registry row,
    event type or wire is added by this PR.
 3. **What is unblocked?** Each packet becomes allocatable when its §0.1 dependencies merge.

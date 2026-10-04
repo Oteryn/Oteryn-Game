@@ -43,6 +43,10 @@ external_repositories: []
   - 4178085295: the HOUSE-RUNTIME-1 cycle is broken (§1.10). HOUSE-RUNTIME-0's row is amended, and an owned house admits its owner only until HOUSE-ACL-1.
   - 4178085301 and 4178085303: the map packets own their audit schema, proto and registry changes (§1.11).
   - 4178085304: stale CorpseDecay reservations are replaced under the new generation (§1.7).
+- #1773 round 2 (3 P1):
+  - 4178117645: MAP-OVERLAY-1b owns `item_mint_audit.rs` for the new arm and tag 8 (§1.11).
+  - 4178117650: `OneItemWorldResetV1` carries `{world_id, reset_epoch, item_instance_id}` (§1.11).
+  - 4178117654: guild and house payload schemas, registry fields and an owned-path sweep of every packet (§1.12).
 - PREMIUM-ACTIVATION-0 §1.3 gains the house acquisition consumer row.
 - Candidate bases are named per packet; none is accepted here.
 - No code, migration, registry, event type or wire change.
