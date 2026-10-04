@@ -9,7 +9,7 @@ repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: agent/map-sprite-1-20261004
 decision: ARCH-MAP-WIRE-1 section 2.2 (docs/architecture/reviews/OTERYN_GAME_ARCH_MAP_WIRE_PACKETS_2026-10-04.md)
-pr: null
+pr: 1797
 owned_paths:
   - crates/client-assets/**
   - crates/renderer/src/batch.rs
@@ -32,3 +32,12 @@ Limits and notes:
 
 - `scene_gpu.rs` is Windows-only and could not be built or run here (no Windows target). It gained a `write_cell` sub-rectangle upload; `windows.rs` is not owned, so wiring `SpriteFrame` and multi-batch draws into the frame loop is left to its owner.
 - `workspace-boundaries.toml` gained only the `oteryn-client-assets` entries (CP D635 option a).
+
+## Validation
+
+- `cargo fmt --all --check`: pass.
+- `cargo clippy --locked --workspace --all-targets -- -D warnings`: pass.
+- `cargo test --locked -p oteryn-client-assets`: pass.
+- `cargo test --locked -p oteryn-renderer`: pass.
+- `python tools/agents/validate_governance.py`: pass.
+- `python -m unittest discover -s tools/agents/tests`: pass (54 tests).
