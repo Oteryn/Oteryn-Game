@@ -12,6 +12,10 @@ use oteryn_protocol_oteryn::achievement_notices::{
     CAPABILITY_ACHIEVEMENT_NOTICES_V1, STATE_DOMAIN_ACCOUNT_ACHIEVEMENT_NOTICES,
 };
 use oteryn_protocol_oteryn::analyser::{CAPABILITY_ANALYSER_V1, STATE_DOMAIN_ACTOR_ANALYSER};
+use oteryn_protocol_oteryn::attack::{
+    CAPABILITY_ATTACK_V1, COMMAND_TYPE_ATTACK_TARGET_INTENT, COMMAND_TYPE_FIGHT_MODES_INTENT,
+    STATE_DOMAIN_ACTOR_COMBAT_STATE,
+};
 use oteryn_protocol_oteryn::bestiary::STATE_DOMAIN_CHARACTER_BESTIARY;
 use oteryn_protocol_oteryn::charm::{
     CAPABILITY_BESTIARY_CHARMS_V1, COMMAND_TYPE_CHARM_ASSIGN_INTENT,
@@ -97,6 +101,14 @@ const GATED: &[(u32, &[u32], &[u32])] = &[
         CAPABILITY_QUEST_LOG_V1,
         &[COMMAND_TYPE_QUEST_LOG_QUERY],
         &[STATE_DOMAIN_QUEST_LOG],
+    ),
+    (
+        CAPABILITY_ATTACK_V1,
+        &[
+            COMMAND_TYPE_ATTACK_TARGET_INTENT,
+            COMMAND_TYPE_FIGHT_MODES_INTENT,
+        ],
+        &[STATE_DOMAIN_ACTOR_COMBAT_STATE],
     ),
 ];
 
