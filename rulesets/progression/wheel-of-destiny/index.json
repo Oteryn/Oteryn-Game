@@ -1,10 +1,10 @@
 {
   "contract": "docs/architecture/OTERYN_FULL_GAME_CONTENT_AND_RULESET_TREE_V1.md",
   "kind": "ruleset",
-  "notes": "Wheel graph/perks/promotion-point rules; current allocation durable.",
+  "notes": "wheel.json and gems.json contain the qualified reference catalogue; import-manifest.json binds source and files. POPULATED means data imported, runtime_admitted:false. No native effects or Character writes are activated.",
   "owner": "Character progression",
   "path": "rulesets/progression/wheel-of-destiny/",
-  "population_state": "READY_UNPOPULATED",
+  "population_state": "POPULATED",
   "repository": "Oteryn/Oteryn-Game",
   "schema": "OTERYN_GAME_TREE_DIRECTORY/v1",
   "spell_imports": [

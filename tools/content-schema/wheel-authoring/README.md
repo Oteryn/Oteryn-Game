@@ -365,3 +365,13 @@ owning decision before native admission; this authoring repair admits no runtime
 The owner additionally confirms this12M/15 value from Global. Classification:
 OWNER_CONFIRMED_GLOBAL_VALUE; no independent worker observation of the transaction
 is claimed. This confirms the one price row, not all Global RNG/runtime behavior.
+
+## Data-only server import
+
+import_server_data.py validates the exact candidate/evidence and losslessly splits
+all prepared Wheel/Gem data into rulesets/progression/wheel-of-destiny/wheel.json
+and gems.json; import-manifest.json binds both files to the source hash/revision.
+Run the importer with --check to reject drift without rewriting files. The server
+embeds and reads the data on Content boot, with runtime_admitted:false retained.
+No Wheel stages, effects or paid Atelier operation are enabled by importing data.
+See the ruleset README for coverage and remaining native owner work.

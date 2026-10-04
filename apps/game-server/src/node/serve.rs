@@ -1137,6 +1137,11 @@ async fn boot_and_serve(
         charm_index.len() + charm_shard.len(),
         hex(&imported_charms.source_digest()),
     ));
+    // Data import only: retain the qualified reference catalogue for this boot. Loading
+    // it does not admit Wheel stages, effects, paid Atelier operations or Item definitions.
+    let _wheel_gem_data = crate::wheel_gem_data::WheelGemData::embedded()
+        .map_err(|_| BootError::ContentActivation("Wheel/Gem reference data"))?;
+    event("event=wheel_gem_data state=loaded runtime_admitted=false");
     // ACHIEVEMENT: the Achievement catalogue loads with the Content activation as well; a
     // malformed catalogue, or activated Content whose RewardClaim names an achievement the
     // catalogue lacks (contract §3.3), refuses readiness. The gameplay seam takes it for the

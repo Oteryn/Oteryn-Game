@@ -328,7 +328,12 @@ async fn apply_world_party_command_inner(
             }
         }
         PartyAction::Decline { party: requested } => {
-            sqlx::query("DELETE FROM game_party_invitations WHERE party_id=encode($1,'hex')::uuid AND invitee=encode($2,'hex')::uuid").bind(requested.as_slice()).bind(character.as_slice()).execute(&mut **tx).await?;
+            // Lock the inviting party first: closing it requires the caller to hold its row.
+            let locked:Option<String>=sqlx::query_scalar("SELECT party_id::text FROM game_parties WHERE party_id=encode($1,'hex')::uuid FOR UPDATE").bind(requested.as_slice()).fetch_optional(&mut **tx).await?;
+            let removed=sqlx::query("DELETE FROM game_party_invitations WHERE party_id=encode($1,'hex')::uuid AND invitee=encode($2,'hex')::uuid").bind(requested.as_slice()).bind(character.as_slice()).execute(&mut **tx).await?.rows_affected();
+            if locked.is_some() && removed != 0 {
+                close_leader_only_party_without_invitations(tx, requested).await?;
+            }
         }
         PartyAction::Revoke { target } => {
             if snapshot.leader != Some(character) {

@@ -120,6 +120,22 @@ No new gameplay, no change to SQL bodies, no review trigger, auto-merge or Jira 
   policy as evidence tampering; r25 source-world non-canonical Canary item keys and two
   dangling Item keys need a content decision. world-metadata (35600), Item+Mount
   TAXONOMY_SOURCE_COVERAGE and the 14 retired taxonomy keys fail on main itself.
+- Main merges after D357 (no rebase): encounter domain taken from `main` (#1599 carrier);
+  `forge_dust` modules and the populated Wheel catalogue unioned with the PR's
+  `spell_imports` overlay on `rulesets/progression/wheel-of-destiny/index.json`.
+
+### Follow-ups (control plane)
+
+- ITEM-KEY-R25-1 (CP 1c 2c): `item_key_references.py` reports 608 NON_CANONICAL
+  `oteryn:item.source.canary.id<N>` keys in the r25 source world (emitted by
+  `build_source_world.py`, required by `native_spell_world.rs` as `source-map-r3`) and the
+  dangling `oteryn:item.tibia.i40450` (spell native profiles and the r25 test pack). Move
+  the aliases to canonical `oteryn:item.tibia.i<N>` keys and author the i40450 Item record.
+- PARTY-DECLINE (CP 1a, supersedes the D245 deferral; Codex P2 on `world_party.rs`
+  Decline): Decline locks the requested party row, and a decline that removed an
+  invitation closes that party when it is leader-only with no invitations left.
+  `declining_the_last_invitation_closes_the_leader_only_inviting_party` covers the sole,
+  shared and repeated declines.
 
 ## Validation
 

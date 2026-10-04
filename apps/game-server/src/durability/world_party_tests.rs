@@ -256,6 +256,48 @@ fn expired_invitation_refuses_accept_and_explicit_decline_removes_only_own_row()
 }
 
 #[test]
+fn declining_the_last_invitation_closes_the_leader_only_inviting_party() -> TestResult {
+    run("party_decline_close", async |h| {
+        let now = sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint")
+            .fetch_one(&h.pool)
+            .await?;
+        let mut characters = Vec::new();
+        for (character, account, session) in [(60, 62, 70), (61, 63, 71), (64, 65, 72)] {
+            let current = committed_fresh_player(h, character, account, session, now).await?;
+            characters.push(*current.current_character_lease().character_id().as_bytes());
+        }
+        let [shared_leader, sole_leader, other_invitee] =
+            [characters[0], characters[1], characters[2]];
+        let mut tx = h.pool.begin().await?;
+        for (party, leader) in [(80, shared_leader), (82, sole_leader)] {
+            sqlx::query("INSERT INTO game_parties(party_id,world_id,leader_character_id,revision,next_seq) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,1,2)")
+                .bind(id(party).as_slice()).bind(id(WORLD).as_slice()).bind(leader.as_slice()).execute(&mut *tx).await?;
+            sqlx::query("INSERT INTO game_party_members(character_id,party_id,seq,presence_state,presence_channel_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,1,encode($3,'hex')::uuid)")
+                .bind(leader.as_slice()).bind(id(party).as_slice()).bind(id(CHANNEL).as_slice()).execute(&mut *tx).await?;
+        }
+        sqlx::query("INSERT INTO game_party_invitations(party_id,invitee,seq,expires_at) VALUES(encode($1,'hex')::uuid,encode($3,'hex')::uuid,2,clock_timestamp()+interval '300 seconds'),(encode($1,'hex')::uuid,encode($4,'hex')::uuid,3,clock_timestamp()+interval '300 seconds'),(encode($2,'hex')::uuid,encode($3,'hex')::uuid,2,clock_timestamp()+interval '300 seconds')")
+            .bind(id(80).as_slice()).bind(id(82).as_slice()).bind(id(CHARACTER).as_slice()).bind(other_invitee.as_slice()).execute(&mut *tx).await?;
+        tx.commit().await?;
+        assert_eq!(footprint(h).await?, (2, 2, 3, 0, 0));
+        let sole = apply(h, 1, PartyAction::Decline { party: id(82) }).await?;
+        assert_eq!(sole.disposition, "APPLIED");
+        let parties: Vec<Vec<u8>> =
+            sqlx::query_scalar("SELECT uuid_send(party_id) FROM game_parties")
+                .fetch_all(&h.pool)
+                .await?;
+        assert_eq!(parties, vec![id(80).to_vec()]);
+        assert_eq!(footprint(h).await?, (1, 1, 2, 1, 1));
+        let shared = apply(h, 2, PartyAction::Decline { party: id(80) }).await?;
+        assert_eq!(shared.disposition, "APPLIED");
+        assert_eq!(footprint(h).await?, (1, 1, 1, 2, 2));
+        let repeated = apply(h, 3, PartyAction::Decline { party: id(80) }).await?;
+        assert_eq!(repeated.disposition, "APPLIED");
+        assert_eq!(footprint(h).await?, (1, 1, 1, 3, 3));
+        Ok(())
+    })
+}
+
+#[test]
 fn durable_world_read_observes_remote_channel_members_and_new_revision() -> TestResult {
     run("party_strong_world_read", async |h| {
         let now = sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint")
