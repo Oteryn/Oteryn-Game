@@ -859,14 +859,18 @@ fn attach_spatial_handles(
     }
 }
 
-/// VIS-3: the frames of one visibility refresh after `sequence` and domain 1 `revision`, with the
-/// sequence and revision they leave: a sequenced delta to the next revision, or a resync snapshot
-/// (MOVE-RL-11 §4.3) at the next revision with the next snapshot id. `None` fails closed.
+/// VIS-3: the frame of one visibility refresh after `sequence` and domain 1 `revision`, with the
+/// sequence and revision it leaves: a sequenced delta to the next revision, or nothing.
+///
+/// A change above the delta ceiling (MOVE-RL-11 §4.3 resync) returns `None`, and the caller ends
+/// the connection with its continuity at the last delivered sequence and revision. An admitted
+/// client accepts no `SnapshotBegin` after its join (`oteryn-session` reads only `StateDelta`,
+/// `CommandResult` and `LivenessProbe` there), so the resync snapshot is the one the resume of
+/// that continuity sends from the interest set. `None` also fails closed on an encoding error.
 fn visibility_frames(
     generation: u64,
     sequence: u64,
     revision: u64,
-    snapshot_id: &mut u64,
     selected: &[u32],
     update: &VisibilityUpdate,
 ) -> Option<(Vec<Vec<u8>>, u64, u64)> {
@@ -888,24 +892,7 @@ fn visibility_frames(
             .ok()?;
             Some((vec![frame], delta_sequence, new_revision))
         }
-        VisibilityUpdate::Snapshot(snapshot) => {
-            let (next_id, new_revision) = (snapshot_id.checked_add(1)?, revision.checked_add(1)?);
-            let (snapshot_type, payload) = encode_visibility_snapshot(selected, snapshot).ok()?;
-            let frames = encode_single_chunk_snapshot(
-                generation,
-                next_id,
-                sequence,
-                &[DomainSnapshot {
-                    domain_id: STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
-                    revision: new_revision,
-                    snapshot_type,
-                    payload: &payload,
-                }],
-            )
-            .ok()?;
-            *snapshot_id = next_id;
-            Some((frames.to_vec(), sequence, new_revision))
-        }
+        VisibilityUpdate::Snapshot(_) => None,
     }
 }
 
@@ -1161,8 +1148,6 @@ where
     }
     let mut sequence = admitted.continuity.server_sequence;
     let mut next_command = admitted.continuity.next_command_id;
-    // VIS-3: the last snapshot id of this connection; a resync snapshot takes the next.
-    let mut snapshot_id = 1_u64;
     let mut frames = FrameReader::default();
     let mut liveness = Liveness::new(policy);
     let mut cadence = tokio::time::interval_at(
@@ -1350,7 +1335,6 @@ where
                         generation,
                         sequence,
                         revision,
-                        &mut snapshot_id,
                         selected_capabilities.as_slice(),
                         &update,
                     )
@@ -1783,8 +1767,8 @@ where
         match dispatch {
             Dispatch::Step(outcome) => {
                 if let Some(observation) = outcome.moved_to {
-                    // VIS-3: with capability 6 the step's delta is the interest set's change (or
-                    // a resync snapshot); without it, the v1 own-actor delta.
+                    // VIS-3: with capability 6 the step's delta is the interest set's change (a
+                    // resync ends the connection); without it, the v1 own-actor delta.
                     let (frames_out, delta_sequence, new_revision) =
                         if let Some(view) = visibility.as_mut() {
                             let Some(mut channel) = authority.observe_visible_entities(actor).await
@@ -1811,7 +1795,6 @@ where
                                     generation,
                                     sequence,
                                     revision,
-                                    &mut snapshot_id,
                                     selected_capabilities.as_slice(),
                                     &update,
                                 )
@@ -4854,10 +4837,17 @@ mod visibility_tests {
     }
 
     #[test]
-    fn others_moving_send_a_delta_and_a_change_above_256_a_new_snapshot() -> TestResult {
+    fn others_moving_send_a_delta_and_a_change_above_256_a_resync_on_resume() -> TestResult {
         run(async {
             let selected = [CAPABILITY_WORLD_SPATIAL_ENTITIES];
             let channel = Channel::new(vec![creature([9; 16], at(102, 100), 0)]);
+            let crowd: Vec<[u8; 16]> = (0..257_u16)
+                .map(|n| {
+                    let mut identity = [0x40; 16];
+                    identity[14..].copy_from_slice(&n.to_be_bytes());
+                    identity
+                })
+                .collect();
             let (mut server, mut client) = tokio::io::duplex(1 << 20);
             let admitted = session(&selected, SessionContinuity::FRESH);
             let serving = serve_admitted(&mut server, admitted, &channel, IDLE_LIVENESS);
@@ -4930,54 +4920,78 @@ mod visibility_tests {
                     delta_frame(2, 2, &selected, &entered)
                 );
                 // 257 others replace those: 200 leave and the nearest 255 enter, more than 256
-                // changes, so a new snapshot (id 2, revision 4, at the current sequence 2) with
-                // the own actor and the 255 lowest identities (the degrade disposition).
-                let crowd = identities(0x40, 257);
+                // changes, so a resync: no mid-session snapshot (the admitted client accepts
+                // none), the connection ends at the last delivered sequence and revision.
                 *channel.others.borrow_mut() = crowd
                     .iter()
                     .map(|identity| creature(*identity, at(99, 100), 0))
                     .collect();
-                let mut resync = Vec::new();
-                for _ in 0..3 {
-                    resync.push(read_one(&mut client).await?);
-                }
-                let mut nearest = vec![own(at(100, 100))];
-                nearest.extend(
-                    crowd[..255]
-                        .iter()
-                        .map(|identity| wire(EntityKind::Creature, *identity, at(99, 100))),
-                );
-                assert_eq!(resync, snapshot_frames(1, 2, 2, 4, &selected, nearest));
-                drop(client);
                 Ok::<_, Box<dyn Error>>(())
             };
-            let (mut serving, mut observing) = (std::pin::pin!(serving), std::pin::pin!(observing));
-            let (mut end, mut observed) = (None, None);
-            std::future::poll_fn(|context| {
-                if end.is_none()
-                    && let std::task::Poll::Ready(done) = serving.as_mut().poll(context)
-                {
-                    end = Some(done);
-                }
-                if observed.is_none()
-                    && let std::task::Poll::Ready(done) = observing.as_mut().poll(context)
-                {
-                    observed = Some(done);
-                }
-                if end.is_some() && observed.is_some() {
-                    std::task::Poll::Ready(())
-                } else {
-                    std::task::Poll::Pending
-                }
-            })
-            .await;
+            let (end, observed) = {
+                let (mut serving, mut observing) =
+                    (std::pin::pin!(serving), std::pin::pin!(observing));
+                let (mut end, mut observed) = (None, None);
+                std::future::poll_fn(|context| {
+                    if end.is_none()
+                        && let std::task::Poll::Ready(done) = serving.as_mut().poll(context)
+                    {
+                        end = Some(done);
+                    }
+                    if observed.is_none()
+                        && let std::task::Poll::Ready(done) = observing.as_mut().poll(context)
+                    {
+                        observed = Some(done);
+                    }
+                    if end.is_some() && observed.is_some() {
+                        std::task::Poll::Ready(())
+                    } else {
+                        std::task::Poll::Pending
+                    }
+                })
+                .await;
+                (end, observed)
+            };
             observed.ok_or("observed")??;
             let end = end.ok_or("ended")?;
+            drop(server);
+            assert!(
+                read_one(&mut client).await.is_err(),
+                "nothing after the last delta"
+            );
             let ConnectionEnd::AdmittedThenDisconnected(ended) = end else {
                 return Err(format!("unexpected end {end:?}").into());
             };
-            assert_eq!(ended.continuity.spatial_revision, 4);
+            assert_eq!(ended.continuity.spatial_revision, 3);
             assert_eq!(ended.continuity.server_sequence, 2);
+            // The resume of that continuity is the resync: a snapshot of the own actor and the
+            // 255 lowest identities (the degrade disposition) at sequence 2 and revision 3.
+            let resumed = SessionContinuity {
+                connection_generation: 2,
+                ..ended.continuity.clone()
+            };
+            let (mut server, mut client) = tokio::io::duplex(1 << 20);
+            client.shutdown().await?;
+            let end = serve_admitted(
+                &mut server,
+                session(&selected, resumed),
+                &channel,
+                IDLE_LIVENESS,
+            )
+            .await;
+            drop(server);
+            let mut frames = Vec::new();
+            while let Ok(frame) = read_one(&mut client).await {
+                frames.push(frame);
+            }
+            let mut nearest = vec![own(at(100, 100))];
+            nearest.extend(
+                crowd[..255]
+                    .iter()
+                    .map(|identity| wire(EntityKind::Creature, *identity, at(99, 100))),
+            );
+            assert_eq!(frames, snapshot_frames(2, 1, 2, 3, &selected, nearest));
+            assert!(matches!(end, ConnectionEnd::AdmittedThenDisconnected(_)));
             Ok(())
         })
     }
