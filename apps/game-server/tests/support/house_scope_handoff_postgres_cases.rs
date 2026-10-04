@@ -5,7 +5,8 @@
 // (HOUSE-RUNTIME-0 §10 test house). Every wrapper provides the same path-loaded crate root.
 
 use crate::bestiary_postgres_harness::{
-    CHARACTER, Harness, SESSION, TestResult, WORLD, configured_admin, debug, id, runtime, scope,
+    CHARACTER, Harness, SESSION, TestResult, WORLD, configured_admin, debug, id, register, runtime,
+    scope,
 };
 use crate::durability::DurabilityRoot;
 use crate::durability::house_scope_handoff::{
@@ -196,6 +197,105 @@ async fn prepare(harness: &Harness, root: &DurabilityRoot, handoff: u8) -> TestR
     Ok(())
 }
 
+/// A replacement candidate copying its predecessor's runtime scope, without house columns.
+const CANDIDATE: &str = "INSERT INTO game_durability_reconnect_sessions (\
+        game_session_id, account_id, character_id, world_id, runtime_scope_kind, \
+        runtime_scope_world_id, runtime_scope_channel_id, runtime_scope_instance_id, \
+        control_loss_epoch, original_grace_deadline, predecessor_generation, \
+        character_lease_generation, scope_ownership_generation, current_generation, \
+        attempt_count, session_state) \
+     SELECT encode($2,'hex')::uuid, account_id, character_id, world_id, runtime_scope_kind, \
+            runtime_scope_world_id, runtime_scope_channel_id, runtime_scope_instance_id, \
+            1, 500, current_generation, character_lease_generation, \
+            scope_ownership_generation, current_generation, 0, 1 \
+       FROM game_durability_reconnect_sessions \
+      WHERE game_session_id = encode($1,'hex')::uuid";
+
+/// The terminal replacement path: terminalize the predecessor, write the replacement receipt,
+/// then insert the candidate with the runtime scope and no house columns.
+async fn replace_session(
+    tx: &mut sqlx::PgConnection,
+    predecessor: u8,
+    candidate: u8,
+) -> Result<(), sqlx::Error> {
+    sqlx::query(
+        "UPDATE game_durability_reconnect_sessions SET session_state = 3 \
+          WHERE game_session_id = encode($1,'hex')::uuid",
+    )
+    .bind(id(predecessor).as_slice())
+    .execute(&mut *tx)
+    .await?;
+    sqlx::query(
+        "INSERT INTO game_durability_session_replacements \
+         SELECT character_id, game_session_id, encode($2,'hex')::uuid, '\\x0101010101010101', \
+                current_generation, character_lease_generation, scope_ownership_generation \
+           FROM game_durability_reconnect_sessions \
+          WHERE game_session_id = encode($1,'hex')::uuid",
+    )
+    .bind(id(predecessor).as_slice())
+    .bind(id(candidate).as_slice())
+    .execute(&mut *tx)
+    .await?;
+    sqlx::query(CANDIDATE)
+        .bind(id(predecessor).as_slice())
+        .bind(id(candidate).as_slice())
+        .execute(&mut *tx)
+        .await?;
+    Ok(())
+}
+
+/// Prepares and commits the entry: Character 41 is inside on house session 61.
+async fn admit(harness: &Harness) -> TestResult {
+    prepare(harness, &harness.root, HANDOFF).await?;
+    let seal = harness.recovery.seal_current().map_err(debug)?;
+    let authority = harness
+        .root
+        .open_character_authority(&seal)
+        .await
+        .map_err(debug)?;
+    let outcome = harness
+        .root
+        .commit_house_entry(&authority, &harness.node, commit(HANDOFF)?)
+        .await
+        .map_err(debug)?;
+    assert!(matches!(outcome, HouseCommitOutcome::Committed(_)));
+    Ok(())
+}
+
+/// Replaces the house scope (generation 1) onto node 2: the house is at generation 2.
+async fn replace_house_onto_node_2(harness: &Harness) -> TestResult {
+    let other = register(&harness.root, 2).await?;
+    let outcome = harness
+        .root
+        .assign_house_scope(house_request(
+            12,
+            HouseScopeAssignmentCommand::Replace {
+                house: house()?,
+                predecessor: HouseScopePredecessor {
+                    ownership_generation: 1,
+                    source_revision: 2,
+                },
+                target: other.fact(),
+            },
+        )?)
+        .await
+        .map_err(debug)?;
+    let HouseScopeAssignmentOutcome::Committed(replaced) = outcome else {
+        return Err(format!("unexpected house replace: {outcome:?}").into());
+    };
+    assert_eq!(replaced.ownership_generation, 2);
+    Ok(())
+}
+
+fn refused_replacement(error: &sqlx::Error) -> bool {
+    error.as_database_error().is_some_and(|error| {
+        error.code().as_deref() == Some("23514")
+            && error
+                .message()
+                .contains("requires its current house assignment")
+    })
+}
+
 #[test]
 fn crash_after_prepare_recovers_the_source_session() -> TestResult {
     run("hsh_prepare_crash", async |harness| {
@@ -345,57 +445,9 @@ fn crash_after_commit_admits_once_with_a_fresh_session() -> TestResult {
 #[test]
 fn a_replaced_house_session_keeps_its_house_and_origin() -> TestResult {
     run("hsh_replace_keeps_house", async |harness| {
-        prepare(harness, &harness.root, HANDOFF).await?;
-        let seal = harness.recovery.seal_current().map_err(debug)?;
-        let authority = harness
-            .root
-            .open_character_authority(&seal)
-            .await
-            .map_err(debug)?;
-        let outcome = harness
-            .root
-            .commit_house_entry(&authority, &harness.node, commit(HANDOFF)?)
-            .await
-            .map_err(debug)?;
-        assert!(matches!(outcome, HouseCommitOutcome::Committed(_)));
-        // The terminal replacement path: terminalize the predecessor, write the replacement
-        // receipt, then insert the candidate with the runtime scope and no house columns.
+        admit(harness).await?;
         let mut tx = harness.pool.begin().await?;
-        sqlx::query(
-            "UPDATE game_durability_reconnect_sessions SET session_state = 3 \
-              WHERE game_session_id = encode($1,'hex')::uuid",
-        )
-        .bind(id(DESTINATION).as_slice())
-        .execute(&mut *tx)
-        .await?;
-        sqlx::query(
-            "INSERT INTO game_durability_session_replacements \
-             SELECT character_id, game_session_id, encode($2,'hex')::uuid, '\\x0101010101010101', \
-                    current_generation, character_lease_generation, scope_ownership_generation \
-               FROM game_durability_reconnect_sessions \
-              WHERE game_session_id = encode($1,'hex')::uuid",
-        )
-        .bind(id(DESTINATION).as_slice())
-        .bind(id(63).as_slice())
-        .execute(&mut *tx)
-        .await?;
-        let candidate = "INSERT INTO game_durability_reconnect_sessions (\
-                game_session_id, account_id, character_id, world_id, runtime_scope_kind, \
-                runtime_scope_world_id, runtime_scope_channel_id, runtime_scope_instance_id, \
-                control_loss_epoch, original_grace_deadline, predecessor_generation, \
-                character_lease_generation, scope_ownership_generation, current_generation, \
-                attempt_count, session_state) \
-             SELECT encode($2,'hex')::uuid, account_id, character_id, world_id, runtime_scope_kind, \
-                    runtime_scope_world_id, runtime_scope_channel_id, runtime_scope_instance_id, \
-                    1, 500, current_generation, character_lease_generation, \
-                    scope_ownership_generation, current_generation, 0, 1 \
-               FROM game_durability_reconnect_sessions \
-              WHERE game_session_id = encode($1,'hex')::uuid";
-        sqlx::query(candidate)
-            .bind(id(DESTINATION).as_slice())
-            .bind(id(63).as_slice())
-            .execute(&mut *tx)
-            .await?;
+        replace_session(&mut tx, DESTINATION, 63).await?;
         tx.commit().await?;
         let replacement = sqlx::query(
             "SELECT runtime_scope_house_key, uuid_send(origin_channel_id) AS origin \
@@ -432,7 +484,7 @@ fn a_replaced_house_session_keeps_its_house_and_origin() -> TestResult {
         .bind(id(63).as_slice())
         .execute(&harness.pool)
         .await?;
-        let error = sqlx::query(candidate)
+        let error = sqlx::query(CANDIDATE)
             .bind(id(63).as_slice())
             .bind(id(64).as_slice())
             .execute(&harness.pool)
@@ -446,6 +498,113 @@ fn a_replaced_house_session_keeps_its_house_and_origin() -> TestResult {
                 .as_deref(),
             Some("23514")
         );
+        Ok(())
+    })
+}
+
+#[test]
+fn a_house_held_by_another_node_is_busy() -> TestResult {
+    run("hsh_cross_node_busy", async |harness| {
+        replace_house_onto_node_2(harness).await?;
+        let seal = harness.recovery.seal_current().map_err(debug)?;
+        let authority = harness
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        let mut cross = request(HANDOFF)?;
+        cross.house_scope_ownership_generation = 2;
+        assert_eq!(
+            harness
+                .root
+                .prepare_house_entry(&authority, &harness.node, cross)
+                .await
+                .map_err(debug)?,
+            HousePrepareOutcome::Refused(HouseEntryRefusal::Busy)
+        );
+        // No handoff row, so no tile reservation.
+        let (source, live, handoffs) = state(harness).await?;
+        assert_eq!((source, live, handoffs), (1, vec![id(SESSION).to_vec()], 0));
+        Ok(())
+    })
+}
+
+#[test]
+fn a_replacement_after_a_house_replace_is_refused() -> TestResult {
+    run("hsh_replace_after_house_replace", async |harness| {
+        admit(harness).await?;
+        replace_house_onto_node_2(harness).await?;
+        let mut tx = harness.pool.begin().await?;
+        let error = replace_session(&mut tx, DESTINATION, 63)
+            .await
+            .err()
+            .ok_or("replacement at a replaced house generation admitted")?;
+        assert!(refused_replacement(&error), "{error:?}");
+        tx.rollback().await?;
+        let (_, live, _) = state(harness).await?;
+        assert_eq!(live, vec![id(DESTINATION).to_vec()]);
+        Ok(())
+    })
+}
+
+#[test]
+fn a_replacement_serializes_with_a_house_revoke_and_is_refused_after_it() -> TestResult {
+    run("hsh_replace_revoke", async |harness| {
+        admit(harness).await?;
+        // At the current generation the replacement inherits the house and holds the
+        // assignment FOR SHARE: a concurrent revoke waits for it.
+        let mut tx = harness.pool.begin().await?;
+        replace_session(&mut tx, DESTINATION, 63).await?;
+        let root = harness.root.clone();
+        let request = house_request(
+            13,
+            HouseScopeAssignmentCommand::Revoke {
+                house: house()?,
+                predecessor: HouseScopePredecessor {
+                    ownership_generation: 1,
+                    source_revision: 2,
+                },
+            },
+        )?;
+        let revoke = tokio::spawn(async move { root.assign_house_scope(request).await });
+        let mut waiting = false;
+        for _ in 0..200 {
+            waiting = sqlx::query_scalar(
+                "SELECT EXISTS (SELECT 1 FROM pg_stat_activity WHERE wait_event_type = 'Lock' \
+                  AND datname = current_database())",
+            )
+            .fetch_one(&harness.pool)
+            .await?;
+            if waiting {
+                break;
+            }
+            tokio::time::sleep(std::time::Duration::from_millis(25)).await;
+        }
+        assert!(waiting, "the revoke must wait for the replacement");
+        tx.commit().await?;
+        let revoked = revoke.await?.map_err(debug)?;
+        let HouseScopeAssignmentOutcome::Committed(revoked) = revoked else {
+            return Err(format!("unexpected revoke: {revoked:?}").into());
+        };
+        assert!(!revoked.assigned);
+        let inherited: String = sqlx::query_scalar(
+            "SELECT runtime_scope_house_key FROM game_durability_reconnect_sessions \
+              WHERE game_session_id = encode($1,'hex')::uuid",
+        )
+        .bind(id(63).as_slice())
+        .fetch_one(&harness.pool)
+        .await?;
+        assert_eq!(inherited, HOUSE_KEY);
+        // After the revoke no replacement inherits the house.
+        let mut tx = harness.pool.begin().await?;
+        let error = replace_session(&mut tx, 63, 64)
+            .await
+            .err()
+            .ok_or("replacement of a revoked house admitted")?;
+        assert!(refused_replacement(&error), "{error:?}");
+        tx.rollback().await?;
+        let (_, live, _) = state(harness).await?;
+        assert_eq!(live, vec![id(63).to_vec()]);
         Ok(())
     })
 }

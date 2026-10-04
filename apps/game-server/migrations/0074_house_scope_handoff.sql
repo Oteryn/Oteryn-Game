@@ -13,7 +13,8 @@
 --     origin Channel (`origin_channel_id`); the instance id of a house session is derived from
 --     the HouseId by `game_house_scope_instance_id`, so one house has one instance id; a
 --     terminal replacement of a house session inherits its predecessor's house and origin
---     Channel, and no other session may take the instance id of an assigned house without them;
+--     Channel only while that house is ASSIGNED at the replacement's generation, and no other
+--     session may take the instance id of an assigned house without them;
 --   * `game_house_scope_handoffs`: one row per entry handoff, PREPARED (1) while the source
 --     session stays live, COMMITTED (2) in the transaction that makes the source terminal and
 --     admits the house session. Abort deletes a PREPARED row and its tile reservation; a
@@ -193,6 +194,22 @@ BEGIN
            AND p.runtime_scope_world_id = NEW.runtime_scope_world_id
            AND p.runtime_scope_instance_id = NEW.runtime_scope_instance_id
            AND p.runtime_scope_house_key IS NOT NULL;
+        -- An inherited house must still be ASSIGNED at the session's generation; replace and
+        -- revoke always raise the generation, so this also names the current holder. The
+        -- FOR SHARE lock serializes the replacement with a concurrent replace or revoke.
+        IF NEW.runtime_scope_house_key IS NOT NULL THEN
+            PERFORM 1 FROM game_runtime_scope_assignments a
+             WHERE a.scope_kind = 2
+               AND a.world_id = NEW.runtime_scope_world_id
+               AND a.house_key = NEW.runtime_scope_house_key
+               AND a.state = 1
+               AND a.ownership_generation = NEW.scope_ownership_generation
+               FOR SHARE;
+            IF NOT FOUND THEN
+                RAISE EXCEPTION 'a house scope session replacement requires its current house assignment'
+                    USING ERRCODE = '23514';
+            END IF;
+        END IF;
         IF NEW.runtime_scope_house_key IS NULL AND EXISTS (
                 SELECT 1 FROM game_runtime_scope_assignments a
                 WHERE a.scope_kind = 2

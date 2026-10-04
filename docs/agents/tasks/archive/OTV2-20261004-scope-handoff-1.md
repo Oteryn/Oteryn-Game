@@ -78,6 +78,18 @@ external_repositories: []
   source; a replaced or revoked origin is `AuthorityRejected`. The bare-session refusal derives
   house instance ids from the house assignments (expression index
   `game_runtime_scope_house_instances`), so it holds for the first session of an assigned house.
+- **Codex round 4 (architect ruling, D573).** Entry is same-node only: prepare requires the
+  house scope held by the proving node, and a house assigned to another node is `BUSY` before
+  anything is written (`HOUSE_CLOSED` stays for a house not assigned at the generation); commit
+  keeps both same-node proofs. A replacement inheriting a house requires that house ASSIGNED at
+  the replacement's scope generation and locks the assignment `FOR SHARE` (else `23514`); a
+  refused replacement falls back to HOUSE-RUNTIME-0 §4.3 recovery.
+
+## Not in scope
+
+- **Cross-node entry (SCOPE-HANDOFF-2).** Entering a house held by a node other than the
+  origin Channel's needs a connection transfer/redirect contract that no contract owns yet.
+  The "any node" fallback is deferred to the follow-up child SCOPE-HANDOFF-2.
 
 ## Tests
 
@@ -93,13 +105,16 @@ external_repositories: []
   refused; a replaced house session keeps its house and origin and stays in occupancy; a
   revoked house scope revoked again is `NotAssigned`; an origin Channel revoked after prepare
   fails the commit with the source session live; a bare first session of an assigned house is
-  refused (`23514`).
+  refused (`23514`); a house assigned to another node is `BUSY` at prepare with no handoff row
+  or reservation; a replacement after a house replace or a revoke is refused (`23514`), and a
+  replacement at the current generation inherits the house while a concurrent revoke waits on
+  its `FOR SHARE` lock.
 
 ## Validation
 
 - `cargo fmt --all --check`: pass
 - `cargo clippy --locked -p oteryn-game-server --all-targets -- -D warnings`: pass
-- `cargo test --locked -p oteryn-game-server` with PostgreSQL 17.6: pass (24426 passed, 0 failed, merged with main at 69f171fc)
+- `cargo test --locked -p oteryn-game-server` with PostgreSQL 17.6: pass (24429 passed, 0 failed, merged with main at 69f171fc)
 - `python tools/agents/validate_governance.py`: pass
 - `python -m unittest discover -s tools/agents/tests`: pass (54 tests)
 

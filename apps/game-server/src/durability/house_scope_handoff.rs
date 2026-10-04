@@ -823,6 +823,17 @@ pub(crate) async fn prepare_house_entry_in_transaction(
     {
         return Ok(HousePrepareOutcome::Refused(HouseEntryRefusal::HouseClosed));
     }
+    // SCOPE-HANDOFF-1 admits same-node entry only: a house held by another node is busy.
+    if !house_assigned(
+        tx,
+        &request.house,
+        request.house_scope_ownership_generation,
+        Some(node),
+    )
+    .await?
+    {
+        return Ok(HousePrepareOutcome::Refused(HouseEntryRefusal::Busy));
+    }
     let open: bool = sqlx::query_scalar(
         "SELECT EXISTS (SELECT 1 FROM game_house_scope_handoffs \
           WHERE character_id = encode($1,'hex')::uuid AND state = 1)",
