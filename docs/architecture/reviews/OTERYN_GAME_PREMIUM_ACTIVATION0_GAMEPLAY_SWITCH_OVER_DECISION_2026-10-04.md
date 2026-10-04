@@ -133,11 +133,18 @@
   read after the latch commit sees the row. No bypass applies after the durable switch-over.
   The gate (above) is the only way to obtain `NotActivated`, so no caller sees it outside such a
   transaction.
-- **One global lock order (#1743 P1 4177137790).** Every transaction that takes the gate's shared
-  lock takes it first, as the gate's first statement after `BEGIN`. The order is:
+- **One global lock order (#1743 P1 4177137790, P1 4177189808).** Every transaction that takes the
+  gate's shared lock takes it first, as the gate's first statement after `BEGIN`. The order is:
   1. the gate's shared advisory lock;
-  2. guild rows, in ascending guild id;
-  3. character and account rows, in ascending id.
+  2. then the order the transaction already follows, unchanged. For a guild command or a guild World
+     job that is GUILD-0 §4.1 (`GUILD0-LO-01`): the operation occurrence, the Character roots in
+     CharacterId order, the guild rows by `GuildId`, and then its later positions (member,
+     invitation and leadership rows, through the bank balance rows). A World job that takes no
+     Character root, such as the §3.3 daily job, starts at the guild rows, as GUILD-0 §4.1 says. For
+     the Wheel spell exception it is the cast's existing composition order.
+
+  This decision adds only position 1 in front of each order. It does not amend GUILD-0 or any
+  other order.
 
   No closure takes a row lock before the gate, and a closure never opens a second gate. A
   transaction that needs several Accounts' status uses the batch form,
@@ -332,6 +339,9 @@ Acceptance tests:
   A, the latch and B all complete with no deadlock error, in that order. B holds no guild row
   while it waits. A source test checks that the batch gate is the job transaction's first
   statement, and that no gated closure opens a second gate.
+  A founding gated command (occurrence, then the actor's Character root, then the guild row) runs
+  against the same queued latch and the daily job on that guild. All complete, and the founding
+  takes its Character root before the guild row, as GUILD-0 §4.1 requires (#1743 P1 4177189808).
 - Configuration rollback (#1738 P1 4176993801): with a row in the table, a runtime built with
   activation `None`, or with a different id or `S`, reads `NotCurrent` for every account, and
   never `NotActivated`.
@@ -379,7 +389,8 @@ Builds GUILD-0 §3 and §4:
 Acceptance tests: found and rank-to-vice under each of the three statuses; the job under
 `NotActivated` writes nothing; after the switch-over a Free leader is handled per §3.3; a lapse
 keeps the rank. The transactions run inside the §1.2 gate and follow its lock order: the gate
-first, then the guild rows, then the character and account rows. Under `NotActivated` they write in
+first, then GUILD-0 §4.1 unchanged (the occurrence, the Character roots, the guild rows, then the
+later positions). Under `NotActivated` they write in
 the gate's `tx`, so a founding commits before any latch. Under `Current` or `NotCurrent`, `tx` is
 `None` and the closure opens its own transaction. Tests use a fixed gate. With a latch request
 queued, a founding and the daily job on the same guild both complete with no deadlock, as in §2.1.
@@ -420,6 +431,9 @@ GUILD-1 can still start now, because GUILD-0 says it does not wait for houses.
   connection, but two nodes that both hold the shared lock and upgrade together deadlock. Postgres
   then aborts one only after `deadlock_timeout`. Releasing first and latching in a fresh
   transaction has no such cycle.
+- **A gate-specific row order** (guild rows before Character roots). It would reverse GUILD-0
+  §4.1 for founding and rank commands, so a gated command and an ungated guild or house job could
+  take a Character root and a guild row in opposite orders (#1743 P1 4177189808).
 - **A per-account gate inside the daily job, after the guild row lock.** With an exclusive request
   queued, the job's shared request waits behind it while holding the guild row, which a gated
   founding is waiting for. That is a cycle (#1743 P1 4177137790).

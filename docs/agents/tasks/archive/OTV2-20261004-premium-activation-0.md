@@ -64,6 +64,10 @@ external_repositories: []
   is an acceptance test with an exclusive latch queued between the steps (§1.2, §2.1, §2.2, §4).
 - #1743 P2 4177137792, folded in: under `Current` or `NotCurrent` a durable consumer opens its own
   transaction inside the closure (§1.2, §2.2).
+- #1743 P1 4177189808 (owner D500 2a): the gate is position 1, and after it each transaction keeps
+  its existing order. For guild work that is GUILD-0 §4.1 unchanged: occurrence, then Character roots,
+  then guild rows. This decision does not amend GUILD-0. A test runs a founding against a queued
+  latch (§1.2, §2.1, §2.2, §4).
 - No code, contract, wire or migration change.
 
 ## Validation
