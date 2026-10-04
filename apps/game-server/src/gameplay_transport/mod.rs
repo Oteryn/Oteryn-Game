@@ -646,6 +646,16 @@ enum FenceStep {
     Refused(CarrierError),
 }
 
+/// PREM-1b (D476): whether a terminal release outcome proves the session over, so the
+/// account's Premium pulls stop. Only a durable `Released` or `Terminal` outcome does; an
+/// unended session and an unknown outcome keep them.
+fn ends_session<E>(outcome: &Result<ExpiredLossReleaseV1, E>) -> bool {
+    matches!(
+        outcome,
+        Ok(ExpiredLossReleaseV1::Released { .. } | ExpiredLossReleaseV1::Terminal)
+    )
+}
+
 /// The durable terminal release a connection decides.
 #[derive(Clone, Copy)]
 enum TerminalRelease {
@@ -1136,6 +1146,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         .await
                 }
             };
+            if ends_session(&outcome) {
+                // PREM-1b (D476): the session is over, whether abandoned or mismatched; its
+                // Premium pulls stop, as at grace expiry.
+                self.premium.release(controller.account_id);
+            }
             let pause = match outcome {
                 Ok(
                     ExpiredLossReleaseV1::NotApplicable | ExpiredLossReleaseV1::NotExpired { .. },
@@ -1145,11 +1160,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     UnendedSettle::Unknown => next_backoff(),
                 },
                 Ok(ExpiredLossReleaseV1::Released { .. } | ExpiredLossReleaseV1::Terminal) => {
-                    if matches!(release, TerminalRelease::CapabilityMismatch(_)) {
-                        // PREM-1b: the lost session is over; its Premium pulls stop, as at
-                        // grace expiry.
-                        self.premium.release(controller.account_id);
-                    }
                     return self.retire(session, actor).await;
                 }
                 // Unknown outcome: keep the fence; the retry reconciles from the durable row.
@@ -3739,6 +3749,25 @@ mod tests {
                 "{label}"
             );
         }
+    }
+
+    /// PREM-1b (D476): every terminal release, abandoned or mismatched, stops the account's
+    /// Premium pulls on a proven `Released` or `Terminal` outcome, as grace expiry does, and
+    /// never on an unended or unknown one.
+    #[test]
+    fn only_a_proven_terminal_release_stops_premium() {
+        assert!(ends_session::<()>(&Ok(ExpiredLossReleaseV1::Released {
+            decided_at: 1
+        })));
+        assert!(ends_session::<()>(&Ok(ExpiredLossReleaseV1::Terminal)));
+        assert!(!ends_session::<()>(&Ok(
+            ExpiredLossReleaseV1::NotApplicable
+        )));
+        assert!(!ends_session::<()>(&Ok(ExpiredLossReleaseV1::NotExpired {
+            deadline: 2,
+            now: 1
+        })));
+        assert!(!ends_session(&Err::<ExpiredLossReleaseV1, ()>(())));
     }
 
     /// D449 (#1708 Codex P1 4175882774): the capability-mismatch release fences with the lost
