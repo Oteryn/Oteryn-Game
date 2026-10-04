@@ -1,0 +1,617 @@
+{
+  "sources": [
+    {
+      "kind": "official_capture",
+      "url": "https://www.tibia.com/library/?subtopic=spells",
+      "title": "Mystic Repulse",
+      "captured": "2026-09-28",
+      "content_sha256": "c4800d7d0fac37238a9101afbc2060a3afcf8ddc76b9e71286fd5feb628b70f2"
+    },
+    {
+      "kind": "mediawiki",
+      "api": "https://tibia.fandom.com/api.php",
+      "title": "Mystic Repulse",
+      "page_id": 107928,
+      "revision_id": 1206171,
+      "content_sha256": "39e802b2faab91ea9dc09bba66558e291d4cd16c03bef8a0f37e36651fc6354f"
+    },
+    {
+      "kind": "mediawiki",
+      "api": "https://www.tibiawiki.com.br/api.php",
+      "title": "Mystic Repulse",
+      "page_id": 64165,
+      "revision_id": 443773,
+      "content_sha256": "2ec96a95c3a7c54b2feac4ddd081bccdd4e3967c6ab8695107b1847e319854ae"
+    },
+    {
+      "repository": "opentibiabr/canary",
+      "revision": "99902524e052f37574194466c2949c576e4ab269"
+    },
+    {
+      "repository": "zimbadev/crystalserver",
+      "revision": "ff7ede593c69d4c658b382c97443e8155926924a"
+    },
+    {
+      "repository": "kik-tibia/tibiatools",
+      "revision": "eeed345c86a76eb00f5ff7b2f0e0b49927799bf1"
+    }
+  ],
+  "entries": [
+    {
+      "source_index": 0,
+      "source_file": "Mystic Repulse",
+      "source_line": 1,
+      "source_field": "words",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/words",
+      "resolution": "S15: the official tibia.com spell library states this value."
+    },
+    {
+      "source_index": 1,
+      "source_file": "Mystic Repulse",
+      "source_line": 1,
+      "source_field": "spellid",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/reference_spell_id",
+      "resolution": "S3: the wiki states this value."
+    },
+    {
+      "source_index": 1,
+      "source_file": "Mystic Repulse",
+      "source_line": 1,
+      "source_field": "librarytext",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/library_text",
+      "resolution": "S3: the wiki states this value."
+    },
+    {
+      "source_index": 1,
+      "source_file": "Mystic Repulse",
+      "source_line": 1,
+      "source_field": "voc",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/requirements/vocations",
+      "resolution": "S3: the wiki states the base vocations; S8 adds each promoted vocation."
+    },
+    {
+      "source_index": 2,
+      "source_file": "Mystic Repulse",
+      "source_line": 1,
+      "source_field": "voc",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/requirements/vocations",
+      "resolution": "S3: the wiki states the base vocations; S8 adds each promoted vocation."
+    },
+    {
+      "source_index": 3,
+      "source_file": "data/scripts/spells/attack/mystic_repulse.lua",
+      "source_line": 42,
+      "source_field": "needLearn",
+      "kind": "field",
+      "status": "approved_omission",
+      "resolution": "S16: since patch 15.22 (27 January 2026) spells unlock automatically and free at their level; trainers no longer teach spells (https://tibiopedia.pl/updates/15.22.c93366). learning_required is false; the source needLearn only marks Wheel spells (wheel_unlock)."
+    },
+    {
+      "source_index": 1,
+      "source_file": "Mystic Repulse",
+      "source_line": 1,
+      "source_field": "wheelspell",
+      "kind": "field",
+      "status": "approved_omission",
+      "resolution": "S15: tibia.com states level 30, so the spell unlocks at its level; the Fandom wheelspell marking (BR states none) is superseded."
+    },
+    {
+      "source_index": 0,
+      "source_file": "Mystic Repulse",
+      "source_line": 1,
+      "source_field": "levelrequired",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/requirements/level",
+      "resolution": "S15: the official tibia.com spell library states this value."
+    },
+    {
+      "source_index": 0,
+      "source_file": "Mystic Repulse",
+      "source_line": 1,
+      "source_field": "premium",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/requirements/premium",
+      "resolution": "S15: the official tibia.com spell library states this value."
+    },
+    {
+      "source_index": 0,
+      "source_file": "Mystic Repulse",
+      "source_line": 1,
+      "source_field": "mana",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/costs/mana",
+      "resolution": "S15: the official tibia.com spell library states this value."
+    },
+    {
+      "source_index": 3,
+      "source_file": "data/scripts/spells/attack/mystic_repulse.lua",
+      "source_line": 1,
+      "source_field": "soul",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/costs/soul",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 4,
+      "source_file": "data/scripts/spells/attack/mystic_repulse.lua",
+      "source_line": 1,
+      "source_field": "soul",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/costs/soul",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 1,
+      "source_file": "Mystic Repulse",
+      "source_line": 1,
+      "source_field": "cooldown",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/cooldown_ms",
+      "resolution": "S24: the official change of 2026-09-01 decides regardless of wiki agreement (Monk Adjustments: Mystic Repulse cooldown 12 -> 8 seconds; https://tibiopedia.pl/forum/t/32869)."
+    },
+    {
+      "source_index": 2,
+      "source_file": "Mystic Repulse",
+      "source_line": 1,
+      "source_field": "cooldown",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/cooldown_ms",
+      "resolution": "S24: the official change of 2026-09-01 decides regardless of wiki agreement (Monk Adjustments: Mystic Repulse cooldown 12 -> 8 seconds; https://tibiopedia.pl/forum/t/32869)."
+    },
+    {
+      "source_index": 3,
+      "source_file": "data/scripts/spells/attack/mystic_repulse.lua",
+      "source_line": 40,
+      "source_field": "cooldown",
+      "kind": "field",
+      "status": "approved_omission",
+      "resolution": "S24: superseded by the official change value 8000 (source 12000)."
+    },
+    {
+      "source_index": 4,
+      "source_file": "data/scripts/spells/attack/mystic_repulse.lua",
+      "source_line": 69,
+      "source_field": "cooldown",
+      "kind": "field",
+      "status": "approved_omission",
+      "resolution": "S24: superseded by the official change value 8000 (source 12000)."
+    },
+    {
+      "source_index": 0,
+      "source_file": "Mystic Repulse",
+      "source_line": 1,
+      "source_field": "subclass",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/groups/0/group",
+      "resolution": "S15: the official tibia.com spell library states this value."
+    },
+    {
+      "source_index": 1,
+      "source_file": "Mystic Repulse",
+      "source_line": 1,
+      "source_field": "cooldowngroup",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/groups/0/cooldown_ms",
+      "resolution": "S3: the wiki states this value."
+    },
+    {
+      "source_index": 2,
+      "source_file": "Mystic Repulse",
+      "source_line": 1,
+      "source_field": "cooldowngroup",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/groups/0/cooldown_ms",
+      "resolution": "S3: the wiki states this value."
+    },
+    {
+      "source_index": 3,
+      "source_file": "data/scripts/spells/attack/mystic_repulse.lua",
+      "source_line": 43,
+      "source_field": "monkSpellType",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/harmony_role",
+      "resolution": "S4: source value."
+    },
+    {
+      "source_index": 3,
+      "source_file": "data/scripts/spells/attack/mystic_repulse.lua",
+      "source_line": 1,
+      "source_field": "isAggressive",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/aggressive",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 4,
+      "source_file": "data/scripts/spells/attack/mystic_repulse.lua",
+      "source_line": 1,
+      "source_field": "isAggressive",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/aggressive",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 3,
+      "source_file": "data/scripts/spells/attack/mystic_repulse.lua",
+      "source_line": 1,
+      "source_field": "isSelfTarget",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/self_target",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 4,
+      "source_file": "data/scripts/spells/attack/mystic_repulse.lua",
+      "source_line": 1,
+      "source_field": "isSelfTarget",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/self_target",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 3,
+      "source_file": "data/scripts/spells/attack/mystic_repulse.lua",
+      "source_line": 38,
+      "source_field": "needTarget",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/needs_target",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 4,
+      "source_file": "data/scripts/spells/attack/mystic_repulse.lua",
+      "source_line": 66,
+      "source_field": "needTarget",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/needs_target",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 3,
+      "source_file": "data/scripts/spells/attack/mystic_repulse.lua",
+      "source_line": 1,
+      "source_field": "needDirection",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/needs_direction",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 4,
+      "source_file": "data/scripts/spells/attack/mystic_repulse.lua",
+      "source_line": 1,
+      "source_field": "needDirection",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/needs_direction",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 3,
+      "source_file": "data/scripts/spells/attack/mystic_repulse.lua",
+      "source_line": 1,
+      "source_field": "needCasterTargetOrDirection",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/target_or_direction",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 4,
+      "source_file": "data/scripts/spells/attack/mystic_repulse.lua",
+      "source_line": 1,
+      "source_field": "needCasterTargetOrDirection",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/target_or_direction",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 3,
+      "source_file": "data/scripts/spells/attack/mystic_repulse.lua",
+      "source_line": 39,
+      "source_field": "blockWalls",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/block_walls",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 4,
+      "source_file": "data/scripts/spells/attack/mystic_repulse.lua",
+      "source_line": 67,
+      "source_field": "blockWalls",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/block_walls",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 3,
+      "source_file": "data/scripts/spells/attack/mystic_repulse.lua",
+      "source_line": 1,
+      "source_field": "allowOnSelf",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/allow_on_self",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 4,
+      "source_file": "data/scripts/spells/attack/mystic_repulse.lua",
+      "source_line": 1,
+      "source_field": "allowOnSelf",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/allow_on_self",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 3,
+      "source_file": "data/scripts/spells/attack/mystic_repulse.lua",
+      "source_line": 1,
+      "source_field": "checkFloor",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/check_floor",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 4,
+      "source_file": "data/scripts/spells/attack/mystic_repulse.lua",
+      "source_line": 1,
+      "source_field": "checkFloor",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/check_floor",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 2,
+      "source_file": "Mystic Repulse",
+      "source_line": 1,
+      "source_field": "spellrange",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/range_tiles",
+      "resolution": "S3: the wiki states this value."
+    },
+    {
+      "source_index": 3,
+      "source_file": "data/scripts/spells/attack/mystic_repulse.lua",
+      "source_line": 1,
+      "source_field": "setPzLocked",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/pz_locks_caster",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 4,
+      "source_file": "data/scripts/spells/attack/mystic_repulse.lua",
+      "source_line": 1,
+      "source_field": "setPzLocked",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/pz_locks_caster",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 3,
+      "source_file": "data/scripts/spells/attack/mystic_repulse.lua",
+      "source_line": 1,
+      "source_field": "needWeapon",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/needs_weapon",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 4,
+      "source_file": "data/scripts/spells/attack/mystic_repulse.lua",
+      "source_line": 68,
+      "source_field": "needWeapon",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/needs_weapon",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 4,
+      "source_file": "data/scripts/spells/attack/mystic_repulse.lua",
+      "source_line": 60,
+      "source_field": "castSound",
+      "kind": "field",
+      "status": "approved_omission",
+      "resolution": "S18: SOUND_EFFECT_TYPE_SPELL_MYSTIC_REPULSE is not a registered SoundEffect_t constant, so Lua reads nil and the engine plays no sound."
+    },
+    {
+      "source_index": 3,
+      "source_file": "data/scripts/spells/attack/mystic_repulse.lua",
+      "source_line": 32,
+      "source_field": "castSound",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/presentation/cast_cue",
+      "resolution": "S18: sound cue named by its SoundEffect_t member."
+    },
+    {
+      "source_index": 3,
+      "source_file": "data/scripts/spells/attack/mystic_repulse.lua",
+      "source_line": 33,
+      "source_field": "impactSound",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/presentation/impact_cue",
+      "resolution": "S18: sound cue named by its SoundEffect_t member."
+    },
+    {
+      "source_index": 2,
+      "source_file": "Mystic Repulse",
+      "source_line": 1,
+      "source_field": "basepower",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/base_power",
+      "resolution": "S24: the official change of 2026-06-16 decides regardless of wiki agreement (15.25: Mystic Repulse base power 72 -> 85; https://tibia.fandom.com/wiki/Updates/15.25.3a4a52)."
+    },
+    {
+      "source_index": 4,
+      "source_file": "data/scripts/spells/attack/mystic_repulse.lua",
+      "source_line": 63,
+      "source_field": "basePower",
+      "kind": "field",
+      "status": "approved_omission",
+      "resolution": "S24: superseded by the official change value 85 (source 72)."
+    },
+    {
+      "source_index": 4,
+      "source_file": "data/scripts/spells/attack/mystic_repulse.lua",
+      "source_line": 1,
+      "source_field": "onCastSpell",
+      "kind": "script",
+      "status": "approved_omission",
+      "resolution": "crystal runs custom logic here (custom); the plain combat of the other source is used (S4)."
+    },
+    {
+      "source_index": 5,
+      "source_file": "src/data/spells.json",
+      "source_line": 1,
+      "source_field": "formula_repair/monk",
+      "kind": "script",
+      "status": "resolved_native_behavior",
+      "destination": "/dependencies/formulas",
+      "resolution": "Offline neutral reference-model proposal; not accepted Game truth. Monk builder center corrected to F + round((P/1000)*skill*weapon_attack + P/4); F is the S5 world level curve and stays outside rounding."
+    },
+    {
+      "source_index": 5,
+      "source_file": "src/data/spells.json",
+      "source_line": 1,
+      "source_field": "formula_repair/monk",
+      "kind": "script",
+      "status": "resolved_native_behavior",
+      "destination": "/dependencies/formulas",
+      "resolution": "Offline neutral reference-model proposal; not accepted Game truth. Average model independently checked against genuine TibiaTools backend eeed345c86a76eb00f5ff7b2f0e0b49927799bf1; power agrees with the current wiki/official resolution used by the candidate."
+    },
+    {
+      "source_index": 5,
+      "source_file": "src/data/spells.json",
+      "source_line": 1,
+      "source_field": "formula_repair/monk",
+      "kind": "script",
+      "status": "resolved_native_behavior",
+      "destination": "/dependencies/formulas",
+      "resolution": "Offline neutral reference-model proposal; not accepted Game truth. The callback 0.9/1.1 spread is retained from pinned Canary/Crystal; calculator buckets=0 omits bounds and does not prove deterministic damage or its RNG mean."
+    },
+    {
+      "source_index": 5,
+      "source_file": "src/data/spells.json",
+      "source_line": 1,
+      "source_field": "formula_repair/monk",
+      "kind": "script",
+      "status": "resolved_native_behavior",
+      "destination": "/dependencies/formulas",
+      "resolution": "Offline neutral reference-model proposal; not accepted Game truth. No Harmony is applied here: builder accumulation remains owned by the runtime actor after successful cast commit; failed casts do not gain charges."
+    },
+    {
+      "source_index": 3,
+      "source_file": "data/scripts/spells/attack/mystic_repulse.lua",
+      "source_line": 20,
+      "source_field": "onCastSpell",
+      "kind": "script",
+      "status": "resolved_native_behavior",
+      "destination": "/spell/spell/execution/ability",
+      "resolution": "Plain combat converted with the monster combat_ability rules (canary)."
+    },
+    {
+      "source_index": 3,
+      "source_file": "data/scripts/spells/attack/mystic_repulse.lua",
+      "source_line": 1,
+      "source_field": "note",
+      "kind": "field",
+      "status": "metadata_only",
+      "resolution": "Average model independently checked against genuine TibiaTools backend eeed345c86a76eb00f5ff7b2f0e0b49927799bf1; power agrees with the current wiki/official resolution used by the candidate."
+    },
+    {
+      "source_index": 3,
+      "source_file": "data/scripts/spells/attack/mystic_repulse.lua",
+      "source_line": 1,
+      "source_field": "note",
+      "kind": "field",
+      "status": "metadata_only",
+      "resolution": "COMBAT_PARAM_USECHARGES only consumes player weapon charges."
+    },
+    {
+      "source_index": 3,
+      "source_file": "data/scripts/spells/attack/mystic_repulse.lua",
+      "source_line": 1,
+      "source_field": "note",
+      "kind": "field",
+      "status": "metadata_only",
+      "resolution": "Monk builder center corrected to F + round((P/1000)*skill*weapon_attack + P/4); F is the S5 world level curve and stays outside rounding."
+    },
+    {
+      "source_index": 3,
+      "source_file": "data/scripts/spells/attack/mystic_repulse.lua",
+      "source_line": 1,
+      "source_field": "note",
+      "kind": "field",
+      "status": "metadata_only",
+      "resolution": "No Harmony is applied here: builder accumulation remains owned by the runtime actor after successful cast commit; failed casts do not gain charges."
+    },
+    {
+      "source_index": 3,
+      "source_file": "data/scripts/spells/attack/mystic_repulse.lua",
+      "source_line": 1,
+      "source_field": "note",
+      "kind": "field",
+      "status": "metadata_only",
+      "resolution": "S5: Canary Player::calculateFlatDamageHealing (defective above level 1100) is replaced by the world curve level_base_damage_healing."
+    },
+    {
+      "source_index": 3,
+      "source_file": "data/scripts/spells/attack/mystic_repulse.lua",
+      "source_line": 1,
+      "source_field": "note",
+      "kind": "field",
+      "status": "metadata_only",
+      "resolution": "The callback 0.9/1.1 spread is retained from pinned Canary/Crystal; calculator buckets=0 omits bounds and does not prove deterministic damage or its RNG mean."
+    },
+    {
+      "source_index": 3,
+      "source_file": "data/scripts/spells/attack/mystic_repulse.lua",
+      "source_line": 1,
+      "source_field": "note",
+      "kind": "field",
+      "status": "metadata_only",
+      "resolution": "src/creatures/combat/combat.cpp Combat::setParam maps COMBAT_PARAM_BLOCKARMOR/BLOCKSHIELD to blockedByArmor/blockedByShield, which Creature::blockHit applies (mitigated_by)."
+    }
+  ]
+}

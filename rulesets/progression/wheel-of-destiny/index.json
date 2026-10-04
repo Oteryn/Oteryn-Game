@@ -1,10 +1,24 @@
 {
-  "schema": "OTERYN_GAME_TREE_DIRECTORY/v1",
-  "path": "rulesets/progression/wheel-of-destiny/",
-  "kind": "ruleset",
-  "owner": "Character progression",
-  "repository": "Oteryn/Oteryn-Game",
-  "population_state": "POPULATED",
   "contract": "docs/architecture/OTERYN_FULL_GAME_CONTENT_AND_RULESET_TREE_V1.md",
-  "notes": "wheel.json and gems.json contain the qualified reference catalogue; import-manifest.json binds source and files. POPULATED means data imported, runtime_admitted:false. No native effects or Character writes are activated."
+  "kind": "ruleset",
+  "notes": "wheel.json and gems.json contain the qualified reference catalogue; import-manifest.json binds source and files. POPULATED means data imported, runtime_admitted:false. No native effects or Character writes are activated.",
+  "owner": "Character progression",
+  "path": "rulesets/progression/wheel-of-destiny/",
+  "population_state": "POPULATED",
+  "repository": "Oteryn/Oteryn-Game",
+  "schema": "OTERYN_GAME_TREE_DIRECTORY/v1",
+  "spell_imports": [
+    {
+      "creates_canonical_identities": false,
+      "path": "rulesets/progression/wheel-of-destiny/spell-profile.json",
+      "representation": "native_profile_overlay",
+      "runtime_activation": false,
+      "schema": "OTERYN_WHEEL_SOURCE_PROFILE/v1",
+      "schema_contract": {
+        "kind": "rust_serde",
+        "path": "apps/game-server/src/content/spell_wheel_profile.rs"
+      },
+      "sha256": "6daabc530ae7fc296358a4810706844e2b709a1f38d458bd63bb4a49f6a47beb"
+    }
+  ]
 }

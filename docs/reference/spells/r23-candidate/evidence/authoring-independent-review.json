@@ -1,0 +1,68 @@
+{
+  "schema": "OTERYN_SPELLS_R23_AUTHORING_REVIEW/v1",
+  "created_utc": "2026-10-02T11:40:06.512185+00:00",
+  "classification": "Independent source inspection of authoring delta, not frozen-head external review or merge qualification",
+  "source_files_sha256": {
+    "apps/game-server/src/gameplay_transport/actor_spell.rs": "866bbd2e8ef15caea5cd993c08e574fad80e0c9e055db3924cbd966d7b7e002b",
+    "apps/game-server/src/gameplay_transport/monster_ai_cycle.rs": "abef174aa7110b3d4c13ac22716e6870b2abda58fa99c5beeb89f24870117166",
+    "apps/game-server/src/gameplay_transport/qualification.rs": "e0365264d346c9056dfbb02775d646af32a775838b22edbc23fe998996abca1f",
+    "apps/game-server/src/gameplay_transport/qualification_wild_spawn.rs": "c425ab627d8062996253ab6b0fe30cd635297727cf71e3b8ed05f293f02a27fd",
+    "apps/game-server/src/foundation/runtime_actor_carrier.rs": "24af59483329878b5e1eb276c2947e880f6223deaac7f972509d1cb5b978f39c",
+    "apps/game-server/src/durability/spell_item_transaction.rs": "3e00eeb3755628cff807a7720a40525036d43ad607a5408cf8b32c10c2241ed0",
+    "apps/game-server/src/content/native_gameplay.rs": "41393a5a445e5d689a92db7b9206dd1a5018f868ab4a4e70bbf6b532f7bb8da9",
+    "tools/content-schema/native-gameplay/build_monster_melee_profiles.py": "833e34fd72bc66c9a2c846c4b02caa4d9ded3a3f89d95f31eb0d11170352f74d",
+    "tools/content-schema/native-gameplay/build_canonical_monster_profiles.py": "a9c77e21970ad0e588d52040a8dbca725adef73747b9e6e8fdf0823a75d5460f",
+    "crates/session/src/lib.rs": "87f2e3b0097ad2f65be6043d451e4041736f3674f24326ebd2da0bfc12d6b218"
+  },
+  "reviews": [
+    {
+      "reviewer": "spell_harness_tests",
+      "scope": "Baseline magnitude, melee tick, canonical profiles, SQL adoption, declarative Soul War",
+      "finding": "P1 creature damage could invalidate pending native cast",
+      "disposition": "fixed: authoritative mutation and perception reject logical pending or physical reservation; meaningful actual-owner regression tests added"
+    },
+    {
+      "reviewer": "test_character_spell_setup",
+      "scope": "Independent review of repaired pending-cast protection and Game-owned qualification spawn",
+      "result": "no open P0/P1",
+      "findings": [
+        {
+          "priority": "P2",
+          "finding": "Read-only SQL COMMIT failure after physical spawn",
+          "disposition": "accepted: abort and discard disposable fixture; no SQL atomic rollback claim"
+        },
+        {
+          "priority": "P2",
+          "finding": "Shared scenario damage label contradicted measured target HP",
+          "disposition": "fixed: actual_owner only for measured position-target scenario"
+        }
+      ]
+    },
+    {
+      "reviewer": "spell_node_boot_integration",
+      "scope": "All 1231 enabled melee rows, formula order and exact engine/file pins",
+      "result": "no material findings",
+      "counts": {
+        "ordinary_approximation": 1071,
+        "secondary_conditions_omitted": 160,
+        "range_formula": 1065,
+        "attack_skill_formula": 166,
+        "disabled": 277
+      },
+      "finding_disposition": "binary64 ceil source order preserved; regression attack61/skill30 yields123"
+    },
+    {
+      "reviewer": "spell_node_boot_integration",
+      "scope": "Asynchronous session ActorVitals consumer",
+      "result": "no material blocker",
+      "validation": "RED reproduced idle/command failures; GREEN7 tests and scoped Clippy PASS; 16 negative cases preserve all observations and poison session; explicit idle deadline; mandatory cast delta retained"
+    },
+    {
+      "reviewer": "test_character_spell_setup",
+      "scope": "Real Rat wound before ordinary Exura; type-only test pin snapshots",
+      "result": "no open findings; physical6 required before runtime pass claim"
+    }
+  ],
+  "runtime_claims": "New physical scenario remains unqualified until actual execution; independent source inspection is not E2E",
+  "external_review": "Final frozen-head repository review and required checks pending"
+}

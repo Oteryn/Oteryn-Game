@@ -31,6 +31,10 @@ impl KeyResolver for Resolver {
     fn terrain(&self, _: &str) -> Result<Option<Terrain>, Error> {
         Ok(None)
     }
+
+    fn floor_change(&self, _: &str) -> bool {
+        false
+    }
 }
 
 fn keys() -> Vec<String> {
@@ -170,12 +174,12 @@ fn zero_destination_teleports_are_dropped_and_keyed() -> TestResult {
     let mut manifest = read.manifest.clone();
     manifest.dropped_teleports = vec![bundle::placement_key(-7, 3, 1, 1).ok_or("key")?];
     assert!(matches!(
-        bundle::write(&manifest, &read.sectors),
+        bundle::write(&manifest, &read.sectors, &read.spawns),
         Err(Error::Format(_))
     ));
     manifest.dropped_teleports = expected.iter().rev().copied().collect();
     assert!(matches!(
-        bundle::write(&manifest, &read.sectors),
+        bundle::write(&manifest, &read.sectors, &read.spawns),
         Err(Error::Format(_))
     ));
     Ok(())
@@ -333,6 +337,10 @@ fn a_compiled_bundle_is_equivalent_to_its_source_tile_by_tile() -> TestResult {
         fn terrain(&self, _: &str) -> Result<Option<Terrain>, Error> {
             Ok(None)
         }
+
+        fn floor_change(&self, _: &str) -> bool {
+            false
+        }
     }
     assert!(
         prove(
@@ -348,7 +356,7 @@ fn a_compiled_bundle_is_equivalent_to_its_source_tile_by_tile() -> TestResult {
     let read = bundle::read(&compiled.bytes)?;
     let mut manifest = read.manifest.clone();
     manifest.skipped_provisional_keys.push("donor:x".into());
-    let claimed = bundle::write(&manifest, &read.sectors)?;
+    let claimed = bundle::write(&manifest, &read.sectors, &read.spawns)?;
     assert!(
         prove(
             &regions,
@@ -364,7 +372,7 @@ fn a_compiled_bundle_is_equivalent_to_its_source_tile_by_tile() -> TestResult {
     // materialized.
     let mut manifest = read.manifest.clone();
     manifest.dropped_teleports.pop();
-    let omitted = bundle::write(&manifest, &read.sectors)?;
+    let omitted = bundle::write(&manifest, &read.sectors, &read.spawns)?;
     assert!(
         prove(
             &regions,
@@ -464,7 +472,7 @@ fn a_compiled_bundle_is_equivalent_to_its_source_tile_by_tile() -> TestResult {
         id: 3,
         terrain: None,
     });
-    let unused = bundle::write(&manifest, &read.sectors)?;
+    let unused = bundle::write(&manifest, &read.sectors, &read.spawns)?;
     let exact = input(&regions, &palette, &families, &world());
     assert!(fails_manifest(&exact, &unused, "palette"));
     equivalence(&exact, &Resolver, &compiled.bytes)?;

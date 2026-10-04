@@ -1,0 +1,462 @@
+{
+  "sources": [
+    {
+      "kind": "official_capture",
+      "url": "https://www.tibia.com/library/?subtopic=spells",
+      "title": "Mass Spirit Mend",
+      "captured": "2026-09-28",
+      "content_sha256": "c4800d7d0fac37238a9101afbc2060a3afcf8ddc76b9e71286fd5feb628b70f2"
+    },
+    {
+      "kind": "mediawiki",
+      "api": "https://tibia.fandom.com/api.php",
+      "title": "Mass Spirit Mend",
+      "page_id": 107897,
+      "revision_id": 1182871,
+      "content_sha256": "7eb25055c4a267a0cee21ac4a81e0b41f9c8757e50c4d5971bb00ee23c7fe89e"
+    },
+    {
+      "kind": "mediawiki",
+      "api": "https://www.tibiawiki.com.br/api.php",
+      "title": "Mass Spirit Mend",
+      "page_id": 64160,
+      "revision_id": 440351,
+      "content_sha256": "cc7811b0026a9ce0cc7858c91dbfed0a68508fe4be955081ff73c0ef5f606f12"
+    },
+    {
+      "repository": "zimbadev/crystalserver",
+      "revision": "ff7ede593c69d4c658b382c97443e8155926924a"
+    },
+    {
+      "repository": "opentibiabr/canary",
+      "revision": "99902524e052f37574194466c2949c576e4ab269"
+    }
+  ],
+  "entries": [
+    {
+      "source_index": 0,
+      "source_file": "Mass Spirit Mend",
+      "source_line": 1,
+      "source_field": "words",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/words",
+      "resolution": "S15: the official tibia.com spell library states this value."
+    },
+    {
+      "source_index": 1,
+      "source_file": "Mass Spirit Mend",
+      "source_line": 1,
+      "source_field": "spellid",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/reference_spell_id",
+      "resolution": "S3: the wiki states this value."
+    },
+    {
+      "source_index": 1,
+      "source_file": "Mass Spirit Mend",
+      "source_line": 1,
+      "source_field": "librarytext",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/library_text",
+      "resolution": "S3: the wiki states this value."
+    },
+    {
+      "source_index": 1,
+      "source_file": "Mass Spirit Mend",
+      "source_line": 1,
+      "source_field": "voc",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/requirements/vocations",
+      "resolution": "S3: the wiki states the base vocations; S8 adds each promoted vocation."
+    },
+    {
+      "source_index": 2,
+      "source_file": "Mass Spirit Mend",
+      "source_line": 1,
+      "source_field": "voc",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/requirements/vocations",
+      "resolution": "S3: the wiki states the base vocations; S8 adds each promoted vocation."
+    },
+    {
+      "source_index": 0,
+      "source_file": "Mass Spirit Mend",
+      "source_line": 1,
+      "source_field": "levelrequired",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/requirements/level",
+      "resolution": "S15: the official tibia.com spell library states this value."
+    },
+    {
+      "source_index": 0,
+      "source_file": "Mass Spirit Mend",
+      "source_line": 1,
+      "source_field": "premium",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/requirements/premium",
+      "resolution": "S15: the official tibia.com spell library states this value."
+    },
+    {
+      "source_index": 0,
+      "source_file": "Mass Spirit Mend",
+      "source_line": 1,
+      "source_field": "mana",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/costs/mana",
+      "resolution": "S15: the official tibia.com spell library states this value."
+    },
+    {
+      "source_index": 3,
+      "source_file": "data/scripts/spells/healing/mass_spirit_mend.lua",
+      "source_line": 77,
+      "source_field": "mana",
+      "kind": "field",
+      "status": "approved_omission",
+      "resolution": "S15: superseded by the official tibia.com value 400 (source 250)."
+    },
+    {
+      "source_index": 4,
+      "source_file": "data/scripts/spells/healing/mass_spirit_mend.lua",
+      "source_line": 1,
+      "source_field": "soul",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/costs/soul",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 3,
+      "source_file": "data/scripts/spells/healing/mass_spirit_mend.lua",
+      "source_line": 1,
+      "source_field": "soul",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/costs/soul",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 2,
+      "source_file": "Mass Spirit Mend",
+      "source_line": 1,
+      "source_field": "cooldown",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/cooldown_ms",
+      "resolution": "S13/S14a: BR 12000 and Fandom 8000 disagree and no official change is recorded; tibiopedia.pl (https://tibiopedia.pl/spells/Mass_Spirit_Mend) and the Canary 15.30 branch side with br over fandom (votes 3:1)."
+    },
+    {
+      "source_index": 0,
+      "source_file": "Mass Spirit Mend",
+      "source_line": 1,
+      "source_field": "subclass",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/groups/0/group",
+      "resolution": "S15: the official tibia.com spell library states this value."
+    },
+    {
+      "source_index": 2,
+      "source_file": "Mass Spirit Mend",
+      "source_line": 1,
+      "source_field": "cooldowngroup",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/groups/0/cooldown_ms",
+      "resolution": "S13/S14a: BR 1000 and Fandom 2000 disagree and no official change is recorded; the Canary 15.30 branch side with br over fandom (votes 2:2)."
+    },
+    {
+      "source_index": 3,
+      "source_file": "data/scripts/spells/healing/mass_spirit_mend.lua",
+      "source_line": 75,
+      "source_field": "groupCooldown",
+      "kind": "field",
+      "status": "approved_omission",
+      "resolution": "S3: superseded by the wiki value 1000 (source 2000)."
+    },
+    {
+      "source_index": 4,
+      "source_file": "data/scripts/spells/healing/mass_spirit_mend.lua",
+      "source_line": 69,
+      "source_field": "isAggressive",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/aggressive",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 3,
+      "source_file": "data/scripts/spells/healing/mass_spirit_mend.lua",
+      "source_line": 80,
+      "source_field": "isAggressive",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/aggressive",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 4,
+      "source_file": "data/scripts/spells/healing/mass_spirit_mend.lua",
+      "source_line": 1,
+      "source_field": "isSelfTarget",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/self_target",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 3,
+      "source_file": "data/scripts/spells/healing/mass_spirit_mend.lua",
+      "source_line": 1,
+      "source_field": "isSelfTarget",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/self_target",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 4,
+      "source_file": "data/scripts/spells/healing/mass_spirit_mend.lua",
+      "source_line": 1,
+      "source_field": "needTarget",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/needs_target",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 3,
+      "source_file": "data/scripts/spells/healing/mass_spirit_mend.lua",
+      "source_line": 1,
+      "source_field": "needTarget",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/needs_target",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 4,
+      "source_file": "data/scripts/spells/healing/mass_spirit_mend.lua",
+      "source_line": 1,
+      "source_field": "needDirection",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/needs_direction",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 3,
+      "source_file": "data/scripts/spells/healing/mass_spirit_mend.lua",
+      "source_line": 1,
+      "source_field": "needDirection",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/needs_direction",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 4,
+      "source_file": "data/scripts/spells/healing/mass_spirit_mend.lua",
+      "source_line": 1,
+      "source_field": "needCasterTargetOrDirection",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/target_or_direction",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 3,
+      "source_file": "data/scripts/spells/healing/mass_spirit_mend.lua",
+      "source_line": 1,
+      "source_field": "needCasterTargetOrDirection",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/target_or_direction",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 4,
+      "source_file": "data/scripts/spells/healing/mass_spirit_mend.lua",
+      "source_line": 1,
+      "source_field": "blockWalls",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/block_walls",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 3,
+      "source_file": "data/scripts/spells/healing/mass_spirit_mend.lua",
+      "source_line": 1,
+      "source_field": "blockWalls",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/block_walls",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 4,
+      "source_file": "data/scripts/spells/healing/mass_spirit_mend.lua",
+      "source_line": 1,
+      "source_field": "allowOnSelf",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/allow_on_self",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 3,
+      "source_file": "data/scripts/spells/healing/mass_spirit_mend.lua",
+      "source_line": 1,
+      "source_field": "allowOnSelf",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/allow_on_self",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 4,
+      "source_file": "data/scripts/spells/healing/mass_spirit_mend.lua",
+      "source_line": 1,
+      "source_field": "checkFloor",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/check_floor",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 3,
+      "source_file": "data/scripts/spells/healing/mass_spirit_mend.lua",
+      "source_line": 1,
+      "source_field": "checkFloor",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/check_floor",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 2,
+      "source_file": "Mass Spirit Mend",
+      "source_line": 1,
+      "source_field": "spellrange",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/range_tiles",
+      "resolution": "S3: the wiki states this value."
+    },
+    {
+      "source_index": 4,
+      "source_file": "data/scripts/spells/healing/mass_spirit_mend.lua",
+      "source_line": 1,
+      "source_field": "setPzLocked",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/pz_locks_caster",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 3,
+      "source_file": "data/scripts/spells/healing/mass_spirit_mend.lua",
+      "source_line": 1,
+      "source_field": "setPzLocked",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/pz_locks_caster",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 4,
+      "source_file": "data/scripts/spells/healing/mass_spirit_mend.lua",
+      "source_line": 1,
+      "source_field": "needWeapon",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/needs_weapon",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 3,
+      "source_file": "data/scripts/spells/healing/mass_spirit_mend.lua",
+      "source_line": 1,
+      "source_field": "needWeapon",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/needs_weapon",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 3,
+      "source_file": "data/scripts/spells/healing/mass_spirit_mend.lua",
+      "source_line": 81,
+      "source_field": "castSound",
+      "kind": "field",
+      "status": "approved_omission",
+      "resolution": "S18: SOUND_EFFECT_TYPE_SPELL_MASS_SPIRIT_MEND is not a registered SoundEffect_t constant, so Lua reads nil and the engine plays no sound."
+    },
+    {
+      "source_index": 4,
+      "source_file": "data/scripts/spells/healing/mass_spirit_mend.lua",
+      "source_line": 71,
+      "source_field": "castSound",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/presentation/cast_cue",
+      "resolution": "S18: sound cue named by its SoundEffect_t member."
+    },
+    {
+      "source_index": 2,
+      "source_file": "Mass Spirit Mend",
+      "source_line": 1,
+      "source_field": "basepower",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/base_power",
+      "resolution": "S13: BR 800 and Fandom 90 disagree and no official change is recorded; tibiopedia.pl (https://tibiopedia.pl/spells/Mass_Spirit_Mend) side with br over fandom (votes 2:1)."
+    },
+    {
+      "source_index": 3,
+      "source_file": "data/scripts/spells/healing/mass_spirit_mend.lua",
+      "source_line": 78,
+      "source_field": "basePower",
+      "kind": "field",
+      "status": "approved_omission",
+      "resolution": "S3: superseded by the wiki value 800 (source 90)."
+    },
+    {
+      "source_index": 4,
+      "source_file": "data/scripts/spells/healing/mass_spirit_mend.lua",
+      "source_line": 1,
+      "source_field": "onCastSpell",
+      "kind": "script",
+      "status": "resolved_native_behavior",
+      "destination": "/spell/spell/execution/native_behavior",
+      "resolution": "Complete source-qualified native mechanic: mass_spirit_mend; typed parameters validated by its closed family schema. Runtime/domain-owner admission remains separate."
+    },
+    {
+      "source_index": 3,
+      "source_file": "data/scripts/spells/healing/mass_spirit_mend.lua",
+      "source_line": 1,
+      "source_field": "onCastSpell",
+      "kind": "script",
+      "status": "resolved_native_behavior",
+      "destination": "/spell/spell/execution/native_behavior",
+      "resolution": "Complete source-qualified native mechanic: mass_spirit_mend; typed parameters validated by its closed family schema. Runtime/domain-owner admission remains separate."
+    },
+    {
+      "source_index": 4,
+      "source_file": "data/scripts/spells/healing/mass_spirit_mend.lua",
+      "source_line": 1,
+      "source_field": "note",
+      "kind": "field",
+      "status": "metadata_only",
+      "resolution": "Native source qualification: {\"family_module\": \"native_combat\", \"observations\": {\"accepted_reference_evidence\": [{\"authority\": \"AcceptedAuthoringReference\", \"path\": \"tools/content-schema/spell-authoring/wheel-augments.json\", \"sha256\": \"fc1680a45bf0d28a71b7f16b700146a4e804119f39a771cf9cf8af93addf673c\", \"target_date\": \"2026-09-27\"}, {\"authority\": \"AcceptedAuthoringReference\", \"path\": \"tools/content-schema/spell-authoring/official-changes.json\", \"sha256\": \"76338a738f8d08aaa809e718b7761415fa436c6f449bacd3c21200a09b5971d1\", \"target_date\": \"2026-09-27\"}], \"attributed_conflicts\": [{\"alternative\": \"BR describes4sqm; Crystal older expanded-area augment\", \"authority\": \"S21 hypothesis\", \"field\": \"area\", \"selected\": \"Canary rounded11x11 matrix\"}, {\"alternative\": \"older references90,250,Harmonyspender\", \"authority\": \"official:8833; Fandom; Canary99902524\", \"field\": \"base_power_mana_spender\", \"selected\": \"800,400,notHarmonyspender\"}], \"authoring_complete\": true, \"formula_reference_evidence\": [], \"runtime_admission\": \"rejected_until_native_contract_and_owner_integration\", \"selection_rule\": \"S24 official/wiki accepted target-date facts; S21 pinned Canary fallback hypotheses; S5 level normalization\", \"source_evidence\": [{\"authority\": \"OtsHypothesisOnly\", \"blob\": \"1211f0cb4e9d6624cd6c000c1b8cbec07e19a5d9\", \"path\": \"data/scripts/spells/healing/mass_spirit_mend.lua\", \"revision\": \"99902524e052f37574194466c2949c576e4ab269\", \"sha256\": \"2a3641a911fe3e1e674fce5fe918c6079c9d9a43c9af41d044f9758b448e8292\", \"source\": \"canary\"}, {\"authority\": \"OtsHypothesisOnly\", \"blob\": \"5bda833b123ed3ccb9491f2b6b8ac46bc0befe61\", \"path\": \"data/scripts/spells/healing/mass_spirit_mend.lua\", \"revision\": \"ff7ede593c69d4c658b382c97443e8155926924a\", \"sha256\": \"7f5ebbd86e6f2b18979f6dd26ce2147d758d4e51667c38553553bdb8b0d02a78\", \"source\": \"crystal\"}, {\"authority\": \"OtsHypothesisOnly\", \"path\": \"data/scripts/lib/register_spells.lua\", \"revision\": \"99902524e052f37574194466c2949c576e4ab269\", \"sha256\": \"a0a6ff2bdfcd82bc4c36978fc57061eab9f1537e8ca966c51300471e3d3313ae\", \"source\": \"canary\"}, {\"authority\": \"OtsHypothesisOnly\", \"path\": \"src/creatures/combat/combat.cpp\", \"revision\": \"99902524e052f37574194466c2949c576e4ab269\", \"sha256\": \"3dc306b44b9ea0c04a48cb6dcdca63b3982a4ee74484cb6a9da40265ecc7fc49\", \"source\": \"canary\"}, {\"authority\": \"OtsHypothesisOnly\", \"path\": \"src/creatures/monsters/monster.cpp\", \"revision\": \"99902524e052f37574194466c2949c576e4ab269\", \"sha256\": \"d6d80082007a8852c8f22c2ed1d7a4f345b2000298b5b8468270dfa2a70ad177\", \"source\": \"canary\"}, {\"authority\": \"OtsHypothesisOnly\", \"path\": \"src/creatures/players/components/wheel/player_wheel.cpp\", \"revision\": \"99902524e052f37574194466c2949c576e4ab269\", \"sha256\": \"e1eef362cce79252cae9f9d469b57ccb5a1b1658e848ed8c8d1881f5c8650717\", \"source\": \"canary\"}, {\"authority\": \"OtsHypothesisOnly\", \"path\": \"src/io/io_wheel.cpp\", \"revision\": \"99902524e052f37574194466c2949c576e4ab269\", \"sha256\": \"1afc184459f84153749214f804a628d8a1fe9fe6ac9b9f8a8b60077c3c0cbd95\", \"source\": \"canary\"}, {\"authority\": \"OtsHypothesisOnly\", \"path\": \"src/lua/functions/core/game/global_functions.cpp\", \"revision\": \"99902524e052f37574194466c2949c576e4ab269\", \"sha256\": \"29016a1c1edbcd597e9bd6d51f34edce2f616b9d4abb762e76a6e99537e30c02\", \"source\": \"canary\"}, {\"authority\": \"OtsHypothesisOnly\", \"path\": \"src/map/map_const.hpp\", \"revision\": \"99902524e052f37574194466c2949c576e4ab269\", \"sha256\": \"a5539ed369bf40ba8d4442b90f5a121895cf8e8a5f786853478628d25be47a1a\", \"source\": \"canary\"}], \"unresolved_decisions\": [\"Native domain executor and owner integration remain unadmitted.\", \"Wheel stage snapshot and cooldown mutation authority require owner integration.\", \"Formula inputs must be bound by accepted Formula input authority; source skill is not client input.\", \"Damage/heal percentage modifiers use pinned source full-magnitude semantics; official base-damage wording does not establish a different multiplier phase.\", \"Healing filter and paralysis dispel target-set split uses Canary callback ordering hypothesis.\", \"Literal ravennous hunger boss name is preserved; canonical typo correction requires evidence.\"]}}"
+    }
+  ]
+}

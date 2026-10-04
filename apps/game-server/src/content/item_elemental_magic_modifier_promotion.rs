@@ -10,7 +10,7 @@ pub const ITEM_ELEMENTAL_MAGIC_MODIFIER_PACKET: &[u8] = include_bytes!(
     "../../../../docs/agents/evidence/OTV2-20261002-item-elemental-magic-modifier-promotion-v1.json"
 );
 pub const ITEM_ELEMENTAL_MAGIC_MODIFIER_PACKET_SHA256: &str =
-    "bcb8410d40202d7fa4676c8dfa04e3e6a5a514c7294cd34277d754d82b446c70";
+    "565ccf5413a417edf24935a03d6f348f04df602d598535efbf9906b467181be0";
 
 fn validate_targets<'a>(
     bytes: &[u8],

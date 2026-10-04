@@ -1,0 +1,19 @@
+{
+  "schema": "OTERYN_NATIVE_PRESENTATION_PROFILES/v1",
+  "records": [
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "canary:presentation/skeleton",
+        "revision": "canary-47dfd51f"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "light_level": 0,
+          "asset_binding": "canary.appearance:outfit/33"
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,160 @@
+{
+  "changed_native_headers": 13,
+  "changes": [
+    {
+      "identity": {
+        "key": "candidate:spell/avatar_of_balance",
+        "revision": "spell-p2-r20"
+      },
+      "before": null,
+      "after": {
+        "cast_cue": "canary.sound:spell_or_rune"
+      }
+    },
+    {
+      "identity": {
+        "key": "candidate:spell/avatar_of_light",
+        "revision": "spell-p2-r20"
+      },
+      "before": null,
+      "after": {
+        "cast_cue": "canary.sound:spell_or_rune"
+      }
+    },
+    {
+      "identity": {
+        "key": "candidate:spell/avatar_of_nature",
+        "revision": "spell-p2-r20"
+      },
+      "before": null,
+      "after": {
+        "cast_cue": "canary.sound:spell_or_rune"
+      }
+    },
+    {
+      "identity": {
+        "key": "candidate:spell/avatar_of_steel",
+        "revision": "spell-p2-r20"
+      },
+      "before": null,
+      "after": {
+        "cast_cue": "canary.sound:spell_or_rune"
+      }
+    },
+    {
+      "identity": {
+        "key": "candidate:spell/avatar_of_storm",
+        "revision": "spell-p2-r20"
+      },
+      "before": null,
+      "after": {
+        "cast_cue": "canary.sound:spell_or_rune"
+      }
+    },
+    {
+      "identity": {
+        "key": "candidate:spell/death_echo",
+        "revision": "spell-p2-r20"
+      },
+      "before": null,
+      "after": {
+        "cast_cue": "canary.sound:spell_or_rune"
+      }
+    },
+    {
+      "identity": {
+        "key": "candidate:spell/divine_empowerment",
+        "revision": "spell-p2-r20"
+      },
+      "before": null,
+      "after": {
+        "cast_cue": "canary.sound:spell_or_rune"
+      }
+    },
+    {
+      "identity": {
+        "key": "candidate:spell/divine_grenade",
+        "revision": "spell-p2-r20"
+      },
+      "before": null,
+      "after": {
+        "cast_cue": "canary.sound:spell_or_rune"
+      }
+    },
+    {
+      "identity": {
+        "key": "candidate:spell/executioner_s_throw",
+        "revision": "spell-p2-r20"
+      },
+      "before": null,
+      "after": {
+        "cast_cue": "canary.sound:spell_or_rune"
+      }
+    },
+    {
+      "identity": {
+        "key": "candidate:spell/find_fiend",
+        "revision": "spell-p2-r20"
+      },
+      "before": null,
+      "after": {
+        "cast_cue": "canary.sound:spell_or_rune"
+      }
+    },
+    {
+      "identity": {
+        "key": "candidate:spell/shield_bash",
+        "revision": "spell-p2-r20"
+      },
+      "before": {
+        "cast_cue": "canary.sound:spell_brutal_strike"
+      },
+      "after": {
+        "cast_cue": "canary.sound:spell_or_rune"
+      }
+    },
+    {
+      "identity": {
+        "key": "candidate:spell/shield_slam",
+        "revision": "spell-p2-r20"
+      },
+      "before": {
+        "cast_cue": "canary.sound:spell_groundshaker"
+      },
+      "after": {
+        "cast_cue": "canary.sound:spell_or_rune"
+      }
+    },
+    {
+      "identity": {
+        "key": "candidate:spell/spiritual_outburst",
+        "revision": "spell-p2-r20"
+      },
+      "before": null,
+      "after": {
+        "cast_cue": "canary.sound:spell_or_rune"
+      }
+    }
+  ],
+  "scope": "presentation-only; all nonpresentation spell fields and dependencies exact equal; existing assemble validator enforced",
+  "validation": {
+    "native_presentation_sync_tests": 4,
+    "native_profiles_tests": 9,
+    "executable_catalog_tests": 8,
+    "failed": 0
+  },
+  "generated_files": [
+    {
+      "path": "tools/content-schema/spell-authoring/samples/native-spell-profiles.json",
+      "sha256": "9d5390775ac9eb70614c21aa52ba0ad33f9187899e801b1d47d8c3501f03cd11"
+    },
+    {
+      "path": "tools/content-schema/spell-authoring/samples/executable-spell-catalog.json",
+      "sha256": "4473bff08e8d7754b253eae1294d3736bc6a28719288f2758e0c1807eb5ea4d6"
+    },
+    {
+      "path": "tools/content-schema/spell-authoring/samples/executable-spell-source-selection.json",
+      "sha256": "3a99203ff3d771e2d169decb8142f0bad85e1518d7238399db85be9665c8eb1f"
+    }
+  ]
+}

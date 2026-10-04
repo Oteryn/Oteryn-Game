@@ -17691,8 +17691,8 @@
   },
   "stats_packet": {
    "path": "docs/agents/evidence/OTV2-20260930-item-stats-promotion-v2.json",
-   "sha256": "194e3dd3f0e001449eeff3da60506bec7955b39815f058355a4b25b994b3ba5f"
+   "sha256": "4982f299ff4371b2fb925cc5308b00aa39d683f4482968a58b0db7fffaf0c559"
   },
-  "wiki_snapshot_sha256": "5fc20ff76f65ab8e0a6bb8f52bc366a0bc0b0b617aaaf3bc8b1c987604a2a2d6"
+  "wiki_snapshot_sha256": "2e6e083d041f7d0901556bcdcee1b1975a1bcb961828bbfbd782ecb0a3dfee91"
  }
 }

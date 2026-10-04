@@ -1,0 +1,108 @@
+{
+  "spell": {
+    "identity": {
+      "key": "candidate:spell/divine_dazzle",
+      "revision": "spell-p2-r20"
+    },
+    "name": "Divine Dazzle",
+    "carrier": "instant",
+    "words": "exana amp res",
+    "reference_spell_id": 238,
+    "library_text": "This spell is the result of somewhat of a reverse engineering of the knights spell with similar effects. Elane managed to mimic the effects with the application of holy power. Whereas the knights version of the spell forces the opponent into close combat, the paladin version attacks their senses. It doesn't affect any sensory organs but directly affects the processing of such information in the mind of the targeted creature. The now, so to say, short-sighted creatures have to engage in close combat, to be able to hit their enemy at all. To this end ironically principles are applied that were observed in botched healing spells of novice paladins. Technically holy energy is sent to the enemy and then just released, but in a controlled way. Another irony is, that this faked botch needs a high amount of experience and skill.",
+    "requirements": {
+      "vocations": [
+        "paladin",
+        "royal_paladin"
+      ],
+      "level": 250,
+      "premium": true,
+      "learning_required": false,
+      "wheel_unlock": false
+    },
+    "costs": {
+      "mana": 80,
+      "soul": 0
+    },
+    "cooldown_ms": 16000,
+    "groups": [
+      {
+        "group": "support",
+        "cooldown_ms": 2000
+      }
+    ],
+    "targeting": {
+      "aggressive": false,
+      "self_target": false,
+      "needs_target": false,
+      "needs_direction": false,
+      "target_or_direction": false,
+      "block_walls": true,
+      "allow_on_self": true,
+      "check_floor": true,
+      "range_tiles": 7,
+      "parameter": "none"
+    },
+    "pz_locks_caster": false,
+    "needs_weapon": false,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_divine_dazzle"
+    },
+    "execution": {
+      "native_behavior": {
+        "key": "monster_ai_override",
+        "parameters": {
+          "target_filter": "masterless_ranged_non_reward_monsters",
+          "recast": "replace_deadline",
+          "same_floor": true,
+          "combat_legality_required": true,
+          "effect_asset_binding": "appearance:effect/divine_dazzle",
+          "on_empty": "reject_before_costs",
+          "chain": {
+            "further_targets": {
+              "0": 2,
+              "1": 4,
+              "2": 4
+            },
+            "jump_radius": 7,
+            "radius_metric": "square",
+            "next_target_metric": "euclidean",
+            "tie_order": "source_spectator_iteration",
+            "first_target": "attacked_valid_target_else_nearest_valid_target",
+            "same_floor": true,
+            "clear_sight": true,
+            "combat_legality_required": true,
+            "exclude_caster": true,
+            "repeat_targets": false
+          },
+          "reward_boss_cast_refusal": {
+            "dx_min": -11,
+            "dx_max": 11,
+            "dy_min": -11,
+            "dy_max": 11,
+            "same_floor": true
+          },
+          "force_distance": 1,
+          "forced_melee_ms": {
+            "0": 8000,
+            "1": 8000,
+            "2": 12000
+          },
+          "cooldown_ms": {
+            "0": 16000,
+            "1": 16000,
+            "2": 8000
+          },
+          "wheel": {
+            "owner": "wheel_of_destiny",
+            "perk": "Divine Dazzle",
+            "stage_kind": "augment",
+            "stage_min": 0,
+            "stage_max": 2,
+            "stage_zero": "base_cast",
+            "snapshot": "cast_start"
+          }
+        }
+      }
+    }
+  }
+}

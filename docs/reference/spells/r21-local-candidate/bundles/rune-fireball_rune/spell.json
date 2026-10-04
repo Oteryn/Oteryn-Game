@@ -1,0 +1,80 @@
+{
+  "spell": {
+    "identity": {
+      "key": "candidate:spell/rune/fireball_rune",
+      "revision": "spell-p2-r20"
+    },
+    "name": "fireball rune",
+    "carrier": "rune",
+    "reference_spell_id": 15,
+    "library_text": "Without any doubt Fireball is one of the most common attack runes there are in Tibia. Ever since its spell was developed, this reliable rune has proven its worth in countless battles. When it is used a massive fiery ball is released which hits the aimed foe with immense power. It is especially effective against opponents of the element earth. On the other hand, opponents that resist fire well can easily shake off the spell's effects. Today, the Fireball spell has somewhat lost in attractiveness since an improved version, the Great Fireball, was released. However, the traditional Fireball spell is still common due to its lower mana and magic level requirements.",
+    "requirements": {
+      "vocations": [
+        "druid",
+        "elder_druid",
+        "elite_knight",
+        "exalted_monk",
+        "knight",
+        "master_sorcerer",
+        "monk",
+        "paladin",
+        "royal_paladin",
+        "sorcerer"
+      ],
+      "level": 27,
+      "premium": false,
+      "learning_required": false
+    },
+    "costs": {
+      "mana": 0,
+      "soul": 0
+    },
+    "cooldown_ms": 2000,
+    "groups": [
+      {
+        "group": "attack",
+        "cooldown_ms": 2000
+      }
+    ],
+    "targeting": {
+      "aggressive": true,
+      "self_target": false,
+      "needs_target": true,
+      "needs_direction": false,
+      "target_or_direction": false,
+      "block_walls": true,
+      "allow_on_self": true,
+      "check_floor": true,
+      "range_tiles": 7,
+      "parameter": "none"
+    },
+    "pz_locks_caster": false,
+    "needs_weapon": false,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_or_rune",
+      "impact_cue": "canary.sound:spell_fireball_rune"
+    },
+    "base_power": 60,
+    "rune": {
+      "item": {
+        "family": "Item",
+        "key": "candidate:item/3189",
+        "revision": "spell-p2-r21"
+      },
+      "charges": 5,
+      "magic_level": 4,
+      "allow_far_use": true,
+      "blocking": {
+        "solid": true,
+        "creature": false
+      }
+    },
+    "execution": {
+      "ability": {
+        "family": "Ability",
+        "key": "candidate:ability/spell/rune/fireball_rune",
+        "revision": "spell-p2-r20"
+      }
+    }
+  }
+}

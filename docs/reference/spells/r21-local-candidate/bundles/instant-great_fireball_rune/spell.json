@@ -1,0 +1,62 @@
+{
+  "spell": {
+    "identity": {
+      "key": "candidate:spell/great_fireball_rune",
+      "revision": "spell-p2-r20"
+    },
+    "name": "Great Fireball Rune",
+    "carrier": "instant",
+    "words": "adori mas flam",
+    "reference_spell_id": 16,
+    "library_text": "As may be taken from the title, the Great Fireball is basically an enlarged version of the trusty Fireball rune. In contrast to the single shot of a Fireball rune, the Great Fireball affects a huge area, up to 37 square metres! This way any average sized room is easily filled with the searing blaze, scorching all creatures that are in it except for the rune user himself. It stands to reason that the Great Fireball is a favourite of most Tibians, as it is well suited both to hit whole crowds of monsters and individual targets that are difficult to hit because they are fast or hard to spot. There are few adventurers who do not cherish those moments of silent glory when they have just brought down a whole crowd of enemies with a single Great Fireball. Still, due to the large blast radius the users are well advised not to be too trigger happy with this rune to make sure no friend is near when it is used.",
+    "requirements": {
+      "vocations": [
+        "master_sorcerer",
+        "sorcerer"
+      ],
+      "level": 30,
+      "premium": false,
+      "learning_required": false
+    },
+    "costs": {
+      "mana": 530,
+      "soul": 3
+    },
+    "cooldown_ms": 2000,
+    "groups": [
+      {
+        "group": "support",
+        "cooldown_ms": 2000
+      }
+    ],
+    "targeting": {
+      "aggressive": false,
+      "self_target": false,
+      "needs_target": false,
+      "needs_direction": false,
+      "target_or_direction": false,
+      "block_walls": true,
+      "allow_on_self": true,
+      "check_floor": true,
+      "parameter": "none"
+    },
+    "pz_locks_caster": false,
+    "needs_weapon": false,
+    "execution": {
+      "conjure": {
+        "result": {
+          "family": "Item",
+          "key": "candidate:item/3191",
+          "revision": "spell-p2-r21"
+        },
+        "count": 4,
+        "effect_asset_binding": "canary.appearance:effect/magic_red",
+        "reagent": {
+          "family": "Item",
+          "key": "candidate:item/3147",
+          "revision": "spell-p2-r21"
+        }
+      }
+    }
+  }
+}

@@ -1,7 +1,9 @@
 //! PREM-1b: the Premium snapshot client (PREMIUM-DELIVERY-0 §3 and §3.1; §11 scope items 1-2).
 //!
-//! One `POST /v1/premium/snapshot` over mutual TLS to Platform's private endpoint: the client
-//! identity and the Platform CA come from environment configuration and nothing else is trusted;
+//! One `POST /internal/v1/products-entitlements/premium-snapshots/read` (Platform PREM-P §4.1;
+//! PREMIUM-DELIVERY-0 §12) over mutual TLS 1.3 (PREM-P §4.2) to Platform's private endpoint: the
+//! client identity and the Platform CA come from environment configuration and nothing else is
+//! trusted;
 //! HTTPS only, no proxy, redirects never followed, a 5-second total timeout (`PREMDEL0-RL-03`)
 //! and the body read capped at 1,024 bytes (`PREMDEL0-RL-01`) before parsing. Only a 200 with
 //! `application/json` returns a body; anything else is a [`PullFailure`] (§3.1 "anything else is
@@ -12,7 +14,7 @@ use super::snapshot::{MAX_SNAPSHOT_BYTES, canonical_uuid, rfc3339_utc_micros};
 use std::ffi::OsString;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
-pub const SNAPSHOT_PATH: &str = "/v1/premium/snapshot";
+pub const SNAPSHOT_PATH: &str = "/internal/v1/products-entitlements/premium-snapshots/read";
 pub const REQUEST_SCHEMA: &str = "oteryn.premium_snapshot_request.v1";
 /// `PREMDEL0-RL-02`.
 pub const MAX_REQUEST_BYTES: usize = 256;
@@ -149,6 +151,7 @@ impl PremiumSnapshotClient {
             .ok_or(ClientConfigError::Invalid(PLATFORM_CA_VAR))?;
         let http = reqwest::Client::builder()
             .https_only(true)
+            .min_tls_version(reqwest::tls::Version::TLS_1_3)
             .tls_certs_only(roots)
             .identity(identity)
             .redirect(reqwest::redirect::Policy::none())

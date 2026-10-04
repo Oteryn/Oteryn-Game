@@ -440,7 +440,8 @@ mod connection {
         StepOutcome, UseCommand, UseOutcome, serve_admitted,
     };
     use super::super::super::world_object::{
-        COMMAND_TYPE_USE_INTENT, UseDisposition, WorldObjectTarget, encode_use_intent,
+        COMMAND_TYPE_USE_INTENT, SNAPSHOT_TYPE_WORLD_OBJECT_OVERLAY_V1,
+        STATE_DOMAIN_WORLD_OBJECT_OVERLAY, UseDisposition, WorldObjectTarget, encode_use_intent,
         encode_use_item_intent, encode_use_result,
     };
     use super::super::super::world_spatial::{
@@ -711,7 +712,8 @@ mod connection {
         }
     }
 
-    /// The join snapshot the connection must send: domain 1, then 9 and 11 from `mirror`. With
+    /// The join snapshot the connection must send: domain 1, the empty overlay, then 9 and 11
+    /// from `mirror`. With
     /// capability 4 (and so 6) domain 1 is the entity revision (VIS-3).
     fn snapshot(item_domains: Option<&[ItemViewSnapshotDomain; 2]>) -> Vec<Vec<u8>> {
         let (snapshot_type, spatial) = if item_domains.is_some() {
@@ -738,6 +740,12 @@ mod connection {
             snapshot_type,
             payload: &spatial,
         }];
+        domains.push(DomainSnapshot {
+            domain_id: STATE_DOMAIN_WORLD_OBJECT_OVERLAY,
+            revision: 0,
+            snapshot_type: SNAPSHOT_TYPE_WORLD_OBJECT_OVERLAY_V1,
+            payload: &[],
+        });
         for domain in item_domains.into_iter().flatten() {
             domains.push(DomainSnapshot {
                 domain_id: domain.domain_id,

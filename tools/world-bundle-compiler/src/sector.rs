@@ -84,7 +84,7 @@ impl Budget {
     }
 }
 
-fn put(out: &mut Vec<u8>, mut value: u64) {
+pub(crate) fn put(out: &mut Vec<u8>, mut value: u64) {
     while value >= 0x80 {
         out.push((value & 0x7F) as u8 | 0x80);
         value >>= 7;
@@ -92,7 +92,7 @@ fn put(out: &mut Vec<u8>, mut value: u64) {
     out.push(value as u8);
 }
 
-fn put_text(out: &mut Vec<u8>, text: &str) {
+pub(crate) fn put_text(out: &mut Vec<u8>, text: &str) {
     put(out, text.len() as u64);
     out.extend_from_slice(text.as_bytes());
 }
@@ -179,19 +179,19 @@ pub fn encode(tiles: &[Tile]) -> Result<Vec<u8>, Error> {
     Ok(out)
 }
 
-struct Reader<'a> {
-    buf: &'a [u8],
-    pos: usize,
+pub(crate) struct Reader<'a> {
+    pub(crate) buf: &'a [u8],
+    pub(crate) pos: usize,
 }
 
 impl Reader<'_> {
-    fn byte(&mut self) -> Result<u8, Error> {
+    pub(crate) fn byte(&mut self) -> Result<u8, Error> {
         let byte = *self.buf.get(self.pos).ok_or_else(truncated)?;
         self.pos += 1;
         Ok(byte)
     }
 
-    fn varint(&mut self) -> Result<u64, Error> {
+    pub(crate) fn varint(&mut self) -> Result<u64, Error> {
         let (mut value, mut shift) = (0u64, 0u32);
         loop {
             let byte = self.byte()?;
@@ -207,7 +207,7 @@ impl Reader<'_> {
         }
     }
 
-    fn bounded(&mut self, max: u64, what: &str) -> Result<u64, Error> {
+    pub(crate) fn bounded(&mut self, max: u64, what: &str) -> Result<u64, Error> {
         let value = self.varint()?;
         if value > max {
             return Err(Error::Format(format!("{what} {value} out of range")));
@@ -215,11 +215,11 @@ impl Reader<'_> {
         Ok(value)
     }
 
-    fn u16(&mut self, what: &str) -> Result<u16, Error> {
+    pub(crate) fn u16(&mut self, what: &str) -> Result<u16, Error> {
         Ok(self.bounded(0xFFFF, what)? as u16)
     }
 
-    fn text(&mut self, limits: TileLimits) -> Result<String, Error> {
+    pub(crate) fn text(&mut self, limits: TileLimits) -> Result<String, Error> {
         let length = self.varint()?;
         if length > limits.max_text_bytes as u64 {
             return Err(Error::Limit(format!("text of {length} bytes")));
@@ -238,7 +238,7 @@ impl Reader<'_> {
     }
 }
 
-fn truncated() -> Error {
+pub(crate) fn truncated() -> Error {
     Error::Format("sector payload is truncated".into())
 }
 

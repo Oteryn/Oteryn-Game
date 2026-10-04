@@ -7,7 +7,9 @@
 //! mutation durably under its validated state directory before submitting it.
 
 use oteryn_game_server::character_recovery_fence::CharacterRecoveryStore;
-use oteryn_game_server::content::qualify_native_entry_room;
+use oteryn_game_server::content::{
+    qualify_native_entry_room, qualify_native_entry_room_from_gameplay_manifest,
+};
 use oteryn_game_server::durability::DurabilityRoot;
 use oteryn_game_server::durability::content_activation::ContentActivationRequest;
 use oteryn_game_server::durability::native_admission_source::{
@@ -743,7 +745,8 @@ async fn assignment(operator: &Operator, mut arguments: Arguments) -> Outcome {
 
 /// #935 activation issuer: `content activate --world <uuid> --channel <uuid> --sequence <n>
 /// --previous empty|<n> --request <file>`. The digests and frame binding are computed from the
-/// committed native entry room qualified for the World. An existing request file is replayed
+/// selected native room qualified for the World (`OTERYN_NATIVE_GAMEPLAY_MANIFEST`, if set).
+/// An existing request file is replayed
 /// exactly (its recorded issuance succeeds again; anything else rejects).
 async fn content(operator: &Operator, mut arguments: Arguments) -> Outcome {
     if arguments.words.get(1).map(String::as_str) != Some("activate") {
@@ -772,8 +775,14 @@ async fn content(operator: &Operator, mut arguments: Arguments) -> Outcome {
             if world_text == channel_text {
                 return Err(Failure::Input("world and channel must differ".into()));
             }
-            let room = qualify_native_entry_room(world)
-                .map_err(|error| Failure::Input(format!("native entry room: {error}")))?;
+            let room = match std::env::var_os("OTERYN_NATIVE_GAMEPLAY_MANIFEST") {
+                Some(path) => qualify_native_entry_room_from_gameplay_manifest(
+                    world,
+                    std::path::Path::new(&path),
+                ),
+                None => qualify_native_entry_room(world),
+            }
+            .map_err(|error| Failure::Input(format!("native entry room: {error}")))?;
             let file = ContentActivationRequestFile {
                 version: FILE_VERSION,
                 world_id: world_text,

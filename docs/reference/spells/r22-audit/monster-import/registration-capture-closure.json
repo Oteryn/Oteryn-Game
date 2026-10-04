@@ -1,0 +1,662 @@
+{
+  "source_registration_audit_inputs": [
+    {
+      "source": "canary",
+      "path": "/workspace/spells-r22-source-audit/canary-registered-spells.json",
+      "sha256": "01d2713a2beae552c6f3a942ac20b9c06aa49a5af695c96b37a82e319597dec5",
+      "captured_registrations": 850
+    },
+    {
+      "source": "crystal",
+      "path": "/workspace/spells-r22-source-audit/crystal-registered-spells.json",
+      "sha256": "4f0287af7452fa1a38c097dd74ca21e174e493dc653a267c67b8e14e97a499d1",
+      "captured_registrations": 1505
+    }
+  ],
+  "lexical_declarations": 2372,
+  "declaration_capture_status": {
+    "CAPTURED_SOURCE_REGISTRATION": 2369,
+    "LEXICAL_DECLARATION_NOT_CAPTURED": 3
+  },
+  "lexical_not_captured": [
+    {
+      "source": "canary",
+      "name": "exploding cask",
+      "kind": "instant",
+      "provenance": {
+        "repository": "opentibiabr/canary",
+        "revision": "99902524e052f37574194466c2949c576e4ab269",
+        "path": "data-otservbr-global/scripts/spells/monster/exploding_cask.lua",
+        "git_blob": "4af10ce98a9ecebfdd469dc3c51370c8367a6a68",
+        "sha256": "9ce2a2556b3e979c55a418aa9b3d51086522ad1955d5e0c2d8639ee9c098efa2",
+        "bytes": 2404,
+        "url": "https://github.com/opentibiabr/canary/blob/99902524e052f37574194466c2949c576e4ab269/data-otservbr-global/scripts/spells/monster/exploding_cask.lua",
+        "read_method": "normal Git/HTTP source snapshot"
+      }
+    },
+    {
+      "source": "canary",
+      "name": "megalomania blue",
+      "kind": "instant",
+      "provenance": {
+        "repository": "opentibiabr/canary",
+        "revision": "99902524e052f37574194466c2949c576e4ab269",
+        "path": "data-otservbr-global/scripts/quests/soul_war/spell-megalomania_blue.lua",
+        "git_blob": "d8a9c8e987551cc2cad5b7aaa5b6463fa6807172",
+        "sha256": "fb972b25a4deb0070827f395199e8b4194ae57d5f219b244ef645a3d07444910",
+        "bytes": 1861,
+        "url": "https://github.com/opentibiabr/canary/blob/99902524e052f37574194466c2949c576e4ab269/data-otservbr-global/scripts/quests/soul_war/spell-megalomania_blue.lua",
+        "read_method": "normal Git/HTTP source snapshot"
+      }
+    },
+    {
+      "source": "crystal",
+      "name": "megalomania blue",
+      "kind": "instant",
+      "provenance": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "path": "data-global/scripts/quests/soul_war/spell-megalomania_blue.lua",
+        "git_blob": "d8a9c8e987551cc2cad5b7aaa5b6463fa6807172",
+        "sha256": "fb972b25a4deb0070827f395199e8b4194ae57d5f219b244ef645a3d07444910",
+        "bytes": 1861,
+        "url": "https://github.com/zimbadev/crystalserver/blob/ff7ede593c69d4c658b382c97443e8155926924a/data-global/scripts/quests/soul_war/spell-megalomania_blue.lua",
+        "read_method": "normal Git/HTTP source snapshot"
+      }
+    }
+  ],
+  "captured_not_lexically_indexed": [
+    {
+      "registration_key": "canary/data/scripts/spells/#example.lua#1",
+      "logical_key": [
+        "@spell_rune",
+        "test rune"
+      ],
+      "catalog_match": "missing_from_player_catalog",
+      "sha256": "a89e47f57e26108ef6b05b58312538e34809b38caa6a241ecd5cf45debb69a25",
+      "engine_enabled_path": false,
+      "extraction": "original_player_census_sandbox",
+      "record": {
+        "source": "canary",
+        "file": "data/scripts/spells/#example.lua",
+        "blob": "46b410ff05e896d63f48813f392a6c2abaef652a",
+        "spell_type": "@spell_rune",
+        "name": "test rune",
+        "registrar": {
+          "name": "test rune",
+          "runeId": 3162,
+          "id": 220,
+          "level": 20,
+          "magicLevel": 5,
+          "needTarget": true,
+          "isAggressive": false,
+          "allowFarUse": true,
+          "charges": 25,
+          "vocation": [
+            "sorcerer;true",
+            "master sorcerer;true"
+          ]
+        },
+        "cast": {
+          "tier": "plain_combat",
+          "executed_combats": [
+            1
+          ]
+        },
+        "combats": [
+          {
+            "parameters": {
+              "COMBAT_PARAM_TYPE": "COMBAT_HEALING",
+              "COMBAT_PARAM_EFFECT": "CONST_ME_MAGIC_BLUE",
+              "COMBAT_PARAM_DISPEL": "CONDITION_PARALYZE",
+              "COMBAT_PARAM_TARGETCASTERORTOPMOST": true,
+              "COMBAT_PARAM_AGGRESSIVE": false
+            },
+            "callbacks": [
+              {
+                "kind": "CALLBACK_PARAM_LEVELMAGICVALUE",
+                "function": "onGetFormulaValues",
+                "formula": {
+                  "status": "resolved",
+                  "inputs": [
+                    "level",
+                    "magic_level"
+                  ],
+                  "minimum": {
+                    "op": "add",
+                    "args": [
+                      {
+                        "op": "add",
+                        "args": [
+                          {
+                            "op": "div",
+                            "args": [
+                              {
+                                "var": "level"
+                              },
+                              {
+                                "const": "5"
+                              }
+                            ]
+                          },
+                          {
+                            "op": "mul",
+                            "args": [
+                              {
+                                "var": "magic_level"
+                              },
+                              {
+                                "const": "3.2"
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "const": "20"
+                      }
+                    ]
+                  },
+                  "maximum": {
+                    "op": "add",
+                    "args": [
+                      {
+                        "op": "add",
+                        "args": [
+                          {
+                            "op": "div",
+                            "args": [
+                              {
+                                "var": "level"
+                              },
+                              {
+                                "const": "5"
+                              }
+                            ]
+                          },
+                          {
+                            "op": "mul",
+                            "args": [
+                              {
+                                "var": "magic_level"
+                              },
+                              {
+                                "const": "5.4"
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "const": "40"
+                      }
+                    ]
+                  },
+                  "functions": []
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "source_classification": "disabled_example_or_test_fixture",
+      "default_config_scope": true,
+      "candidate_identity_matches": [],
+      "removed_decision": null,
+      "catalog_match_basis": "case-insensitive name plus carrier; recorded provenance alone does not prove every source variant or every parameter was imported",
+      "referenced_monster_slot_count": 0,
+      "same_logical_key_other_registrations": [],
+      "same_engine_key_other_registrations": [],
+      "duplicate_policy": "preserved all variants; alternate datapack copies are not loaded together by default; same-scope duplicate words/runeId need loader-order qualification, no fabricated winner"
+    },
+    {
+      "registration_key": "canary/data/scripts/spells/#example.lua#2",
+      "logical_key": [
+        "@spell_instant",
+        "test"
+      ],
+      "catalog_match": "missing_from_player_catalog",
+      "sha256": "a89e47f57e26108ef6b05b58312538e34809b38caa6a241ecd5cf45debb69a25",
+      "engine_enabled_path": false,
+      "extraction": "original_player_census_sandbox",
+      "record": {
+        "source": "canary",
+        "file": "data/scripts/spells/#example.lua",
+        "blob": "46b410ff05e896d63f48813f392a6c2abaef652a",
+        "spell_type": "@spell_instant",
+        "name": "Test",
+        "registrar": {
+          "name": "Test",
+          "id": 221,
+          "words": "adori mas test",
+          "level": 30,
+          "mana": 530,
+          "group": "support",
+          "soul": 3,
+          "isAggressive": false,
+          "cooldown": 2000,
+          "groupCooldown": 2000,
+          "needLearn": false,
+          "vocation": [
+            "sorcerer",
+            "master sorcerer;true"
+          ]
+        },
+        "cast": {
+          "tier": "conjure",
+          "conjure": {
+            "reagent_item_id": 3147,
+            "result_item_id": 3162,
+            "count": 25
+          },
+          "player_calls": [
+            "conjureItem"
+          ]
+        },
+        "combats": [
+          {
+            "parameters": {
+              "COMBAT_PARAM_TYPE": "COMBAT_HEALING",
+              "COMBAT_PARAM_EFFECT": "CONST_ME_MAGIC_BLUE",
+              "COMBAT_PARAM_DISPEL": "CONDITION_PARALYZE",
+              "COMBAT_PARAM_TARGETCASTERORTOPMOST": true,
+              "COMBAT_PARAM_AGGRESSIVE": false
+            },
+            "callbacks": [
+              {
+                "kind": "CALLBACK_PARAM_LEVELMAGICVALUE",
+                "function": "onGetFormulaValues",
+                "formula": {
+                  "status": "resolved",
+                  "inputs": [
+                    "level",
+                    "magic_level"
+                  ],
+                  "minimum": {
+                    "op": "add",
+                    "args": [
+                      {
+                        "op": "add",
+                        "args": [
+                          {
+                            "op": "div",
+                            "args": [
+                              {
+                                "var": "level"
+                              },
+                              {
+                                "const": "5"
+                              }
+                            ]
+                          },
+                          {
+                            "op": "mul",
+                            "args": [
+                              {
+                                "var": "magic_level"
+                              },
+                              {
+                                "const": "3.2"
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "const": "20"
+                      }
+                    ]
+                  },
+                  "maximum": {
+                    "op": "add",
+                    "args": [
+                      {
+                        "op": "add",
+                        "args": [
+                          {
+                            "op": "div",
+                            "args": [
+                              {
+                                "var": "level"
+                              },
+                              {
+                                "const": "5"
+                              }
+                            ]
+                          },
+                          {
+                            "op": "mul",
+                            "args": [
+                              {
+                                "var": "magic_level"
+                              },
+                              {
+                                "const": "5.4"
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "const": "40"
+                      }
+                    ]
+                  },
+                  "functions": []
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "source_classification": "disabled_example_or_test_fixture",
+      "default_config_scope": true,
+      "candidate_identity_matches": [],
+      "removed_decision": null,
+      "catalog_match_basis": "case-insensitive name plus carrier; recorded provenance alone does not prove every source variant or every parameter was imported",
+      "referenced_monster_slot_count": 0,
+      "same_logical_key_other_registrations": [],
+      "same_engine_key_other_registrations": [],
+      "duplicate_policy": "preserved all variants; alternate datapack copies are not loaded together by default; same-scope duplicate words/runeId need loader-order qualification, no fabricated winner"
+    },
+    {
+      "registration_key": "crystal/data/scripts/spells/#example.lua#1",
+      "logical_key": [
+        "@spell_rune",
+        "test rune"
+      ],
+      "catalog_match": "missing_from_player_catalog",
+      "sha256": "a89e47f57e26108ef6b05b58312538e34809b38caa6a241ecd5cf45debb69a25",
+      "engine_enabled_path": false,
+      "extraction": "original_player_census_sandbox",
+      "record": {
+        "source": "crystal",
+        "file": "data/scripts/spells/#example.lua",
+        "blob": "46b410ff05e896d63f48813f392a6c2abaef652a",
+        "spell_type": "@spell_rune",
+        "name": "test rune",
+        "registrar": {
+          "name": "test rune",
+          "runeId": 3162,
+          "id": 220,
+          "level": 20,
+          "magicLevel": 5,
+          "needTarget": true,
+          "isAggressive": false,
+          "allowFarUse": true,
+          "charges": 25,
+          "vocation": [
+            "sorcerer;true",
+            "master sorcerer;true"
+          ]
+        },
+        "cast": {
+          "tier": "plain_combat",
+          "executed_combats": [
+            1
+          ]
+        },
+        "combats": [
+          {
+            "parameters": {
+              "COMBAT_PARAM_TYPE": "COMBAT_HEALING",
+              "COMBAT_PARAM_EFFECT": "CONST_ME_MAGIC_BLUE",
+              "COMBAT_PARAM_DISPEL": "CONDITION_PARALYZE",
+              "COMBAT_PARAM_TARGETCASTERORTOPMOST": true,
+              "COMBAT_PARAM_AGGRESSIVE": false
+            },
+            "callbacks": [
+              {
+                "kind": "CALLBACK_PARAM_LEVELMAGICVALUE",
+                "function": "onGetFormulaValues",
+                "formula": {
+                  "status": "resolved",
+                  "inputs": [
+                    "level",
+                    "magic_level"
+                  ],
+                  "minimum": {
+                    "op": "add",
+                    "args": [
+                      {
+                        "op": "add",
+                        "args": [
+                          {
+                            "op": "div",
+                            "args": [
+                              {
+                                "var": "level"
+                              },
+                              {
+                                "const": "5"
+                              }
+                            ]
+                          },
+                          {
+                            "op": "mul",
+                            "args": [
+                              {
+                                "var": "magic_level"
+                              },
+                              {
+                                "const": "3.2"
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "const": "20"
+                      }
+                    ]
+                  },
+                  "maximum": {
+                    "op": "add",
+                    "args": [
+                      {
+                        "op": "add",
+                        "args": [
+                          {
+                            "op": "div",
+                            "args": [
+                              {
+                                "var": "level"
+                              },
+                              {
+                                "const": "5"
+                              }
+                            ]
+                          },
+                          {
+                            "op": "mul",
+                            "args": [
+                              {
+                                "var": "magic_level"
+                              },
+                              {
+                                "const": "5.4"
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "const": "40"
+                      }
+                    ]
+                  },
+                  "functions": []
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "source_classification": "disabled_example_or_test_fixture",
+      "default_config_scope": true,
+      "candidate_identity_matches": [],
+      "removed_decision": null,
+      "catalog_match_basis": "case-insensitive name plus carrier; recorded provenance alone does not prove every source variant or every parameter was imported",
+      "referenced_monster_slot_count": 0,
+      "same_logical_key_other_registrations": [],
+      "same_engine_key_other_registrations": [],
+      "duplicate_policy": "preserved all variants; alternate datapack copies are not loaded together by default; same-scope duplicate words/runeId need loader-order qualification, no fabricated winner"
+    },
+    {
+      "registration_key": "crystal/data/scripts/spells/#example.lua#2",
+      "logical_key": [
+        "@spell_instant",
+        "test"
+      ],
+      "catalog_match": "missing_from_player_catalog",
+      "sha256": "a89e47f57e26108ef6b05b58312538e34809b38caa6a241ecd5cf45debb69a25",
+      "engine_enabled_path": false,
+      "extraction": "original_player_census_sandbox",
+      "record": {
+        "source": "crystal",
+        "file": "data/scripts/spells/#example.lua",
+        "blob": "46b410ff05e896d63f48813f392a6c2abaef652a",
+        "spell_type": "@spell_instant",
+        "name": "Test",
+        "registrar": {
+          "name": "Test",
+          "id": 221,
+          "words": "adori mas test",
+          "level": 30,
+          "mana": 530,
+          "group": "support",
+          "soul": 3,
+          "isAggressive": false,
+          "cooldown": 2000,
+          "groupCooldown": 2000,
+          "needLearn": false,
+          "vocation": [
+            "sorcerer",
+            "master sorcerer;true"
+          ]
+        },
+        "cast": {
+          "tier": "conjure",
+          "conjure": {
+            "reagent_item_id": 3147,
+            "result_item_id": 3162,
+            "count": 25
+          },
+          "player_calls": [
+            "conjureItem"
+          ]
+        },
+        "combats": [
+          {
+            "parameters": {
+              "COMBAT_PARAM_TYPE": "COMBAT_HEALING",
+              "COMBAT_PARAM_EFFECT": "CONST_ME_MAGIC_BLUE",
+              "COMBAT_PARAM_DISPEL": "CONDITION_PARALYZE",
+              "COMBAT_PARAM_TARGETCASTERORTOPMOST": true,
+              "COMBAT_PARAM_AGGRESSIVE": false
+            },
+            "callbacks": [
+              {
+                "kind": "CALLBACK_PARAM_LEVELMAGICVALUE",
+                "function": "onGetFormulaValues",
+                "formula": {
+                  "status": "resolved",
+                  "inputs": [
+                    "level",
+                    "magic_level"
+                  ],
+                  "minimum": {
+                    "op": "add",
+                    "args": [
+                      {
+                        "op": "add",
+                        "args": [
+                          {
+                            "op": "div",
+                            "args": [
+                              {
+                                "var": "level"
+                              },
+                              {
+                                "const": "5"
+                              }
+                            ]
+                          },
+                          {
+                            "op": "mul",
+                            "args": [
+                              {
+                                "var": "magic_level"
+                              },
+                              {
+                                "const": "3.2"
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "const": "20"
+                      }
+                    ]
+                  },
+                  "maximum": {
+                    "op": "add",
+                    "args": [
+                      {
+                        "op": "add",
+                        "args": [
+                          {
+                            "op": "div",
+                            "args": [
+                              {
+                                "var": "level"
+                              },
+                              {
+                                "const": "5"
+                              }
+                            ]
+                          },
+                          {
+                            "op": "mul",
+                            "args": [
+                              {
+                                "var": "magic_level"
+                              },
+                              {
+                                "const": "5.4"
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "const": "40"
+                      }
+                    ]
+                  },
+                  "functions": []
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "source_classification": "disabled_example_or_test_fixture",
+      "default_config_scope": true,
+      "candidate_identity_matches": [],
+      "removed_decision": null,
+      "catalog_match_basis": "case-insensitive name plus carrier; recorded provenance alone does not prove every source variant or every parameter was imported",
+      "referenced_monster_slot_count": 0,
+      "same_logical_key_other_registrations": [],
+      "same_engine_key_other_registrations": [],
+      "duplicate_policy": "preserved all variants; alternate datapack copies are not loaded together by default; same-scope duplicate words/runeId need loader-order qualification, no fabricated winner"
+    }
+  ],
+  "captured_source_records_total": 2355,
+  "limits": [
+    "Counts of lexical declarations and captured source registrations are distinct.",
+    "Source-disabled #example registrations are retained as source evidence, never active abilities.",
+    "Opaque custom registrations remain explicitly unresolved."
+  ]
+}

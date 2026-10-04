@@ -216,7 +216,9 @@ pub struct FiredTimer<Family, Occurrence> {
 
 /// One Channel owner's timer lane for one exact scope and `ScopeOwnershipGeneration`
 /// (FND-03 §10).
-#[derive(Debug)]
+// Cloning preserves immutable scheduling evidence only. Every schedule/drain still
+// requires the independently current, non-Clone ScopeRuntimeFence.
+#[derive(Debug, Clone)]
 pub struct OwnerTimerLane<Family, Occurrence> {
     scope: RuntimeScopeRefV1,
     generation: ScopeOwnershipGeneration,

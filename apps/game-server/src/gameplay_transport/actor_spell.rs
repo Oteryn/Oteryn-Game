@@ -5,6 +5,39 @@
 
 pub(crate) use oteryn_protocol_oteryn::actor_spell::*;
 
+#[path = "actor_movement.rs"]
+mod actor_movement;
+#[path = "familiar_cast.rs"]
+mod familiar_cast;
+#[path = "movement_equipment.rs"]
+mod movement_equipment;
+pub(in crate::gameplay_transport) use familiar_cast::FamiliarLogoutSave;
+#[path = "familiar_defense.rs"]
+mod familiar_defense;
+#[path = "field_step_ingress.rs"]
+mod field_step_ingress;
+#[path = "native_combat_cast.rs"]
+mod native_combat_cast;
+#[path = "parameter_cast.rs"]
+mod parameter_cast;
+#[path = "spell_timer_callbacks.rs"]
+mod spell_timer_callbacks;
+#[path = "world_item_cast.rs"]
+mod world_item_cast;
+pub(in crate::gameplay_transport) use native_combat_cast::NativeCastDispatch;
+pub(in crate::gameplay_transport) use native_combat_cast::ordinary_combat::due_chain_presentations as prepare_ordinary_due_presentations;
+pub(in crate::gameplay_transport) use native_combat_cast::ordinary_combat::prepare_due as prepare_ordinary_due_from_owners;
+#[path = "spell_periodic.rs"]
+mod spell_periodic;
+#[path = "training_save.rs"]
+mod training_save;
+pub(in crate::gameplay_transport) use training_save::TrainingSave;
+#[path = "actor_spell_commit.rs"]
+mod owner_commit;
+#[path = "stance_cast.rs"]
+mod stance_cast;
+pub(crate) use owner_commit::{PlayerBatchPreflight, commit_owner_batch, stage_player_batch};
+
 use oteryn_simulation_determinism::{
     DecisionOccurrenceId, GameplayDecisionRoot, SemanticTimeMicros, deterministic_decision_u64,
 };
@@ -30,7 +63,27 @@ use crate::spell::cast::{CastContext, CharacterCastFacts, PlayerSpellState, cast
 /// command, no damage and no credit, and its death record goes with its entry.
 #[derive(Debug)]
 pub(crate) struct ChannelSpellStates {
+    pub(in crate::gameplay_transport) owner_wake: std::sync::Arc<tokio::sync::Notify>,
     actors: Vec<(ExactActorRef, GameSessionId, PlayerSpellState)>,
+    /// One real Channel-owner lane; no timer is restored from client intent.
+    pub(crate) spell_timers: Option<crate::spell::delayed_execution::SpellTimerOwner>,
+    pub(crate) pending_familiars: Vec<familiar_cast::PreparedFamiliarCast>,
+    pub(crate) pending_familiar_lifecycle: Vec<familiar_cast::PreparedFamiliarLifecycle>,
+    pub(crate) pending_familiar_logouts: Vec<familiar_cast::PreparedFamiliarLogout>,
+    pub(crate) pending_native: Vec<native_combat_cast::PendingNativeCast>,
+    pub(crate) pending_world_items: Vec<world_item_cast::PreparedWorldItemCast>,
+    pub(crate) pending_parameters: Vec<parameter_cast::PreparedParameterCast>,
+    pub(crate) presentations: Option<super::spell_presentations::SpellPresentationOwner>,
+    /// One bounded Channel pass per second, shared by all present actors.
+    pub(in crate::gameplay_transport) next_item_deadline_pass_us: u64,
+    pub(in crate::gameplay_transport) source_map_initialized:
+        Option<crate::durability::native_map_items_abi::NativeMapOwnerBinding>,
+    pub(in crate::gameplay_transport) next_map_initialization_pass_us: u64,
+    pub(in crate::gameplay_transport) next_party_deadline_pass_us: u64,
+    pub(in crate::gameplay_transport) monster_melee: crate::ai_monster_melee::MonsterMeleeOwner,
+    pub(in crate::gameplay_transport) next_monster_ai_pass_us: u64,
+    pub(in crate::gameplay_transport) monster_ai_sequence: u64,
+    pub(in crate::gameplay_transport) monster_ai_cursor: usize,
     deaths: Vec<(ExactActorRef, GameSessionId, PlayerDeath)>,
     mint_death: fn() -> Option<PlayerDeathOccurrence>,
 }
@@ -38,7 +91,24 @@ pub(crate) struct ChannelSpellStates {
 impl Default for ChannelSpellStates {
     fn default() -> Self {
         Self {
+            owner_wake: Default::default(),
             actors: Vec::new(),
+            spell_timers: Default::default(),
+            pending_familiars: Default::default(),
+            pending_familiar_lifecycle: Default::default(),
+            pending_familiar_logouts: Default::default(),
+            pending_native: Default::default(),
+            pending_world_items: Default::default(),
+            pending_parameters: Default::default(),
+            presentations: Default::default(),
+            next_item_deadline_pass_us: Default::default(),
+            source_map_initialized: Default::default(),
+            next_map_initialization_pass_us: Default::default(),
+            next_party_deadline_pass_us: Default::default(),
+            monster_melee: Default::default(),
+            next_monster_ai_pass_us: Default::default(),
+            monster_ai_sequence: Default::default(),
+            monster_ai_cursor: Default::default(),
             deaths: Vec::new(),
             mint_death: mint_player_death_occurrence,
         }
@@ -75,6 +145,131 @@ fn mint_player_death_occurrence() -> Option<PlayerDeathOccurrence> {
 }
 
 impl ChannelSpellStates {
+    /// Unknown durable outcomes retain their original prepared owner state.
+    pub(crate) fn has_pending_spell_commit(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+    ) -> bool {
+        self.has_pending_native(actor, session)
+            || self.has_pending_world_items(actor, session)
+            || self.has_pending_parameters(actor, session)
+            || self.has_pending_familiar(actor, session)
+            || self.actors.iter().any(|(a, s, state)| {
+                *a == actor
+                    && *s == session
+                    && (state.pending_stance().is_some()
+                        || state.pending_training_checkpoint().is_some())
+            })
+    }
+    /// Account evidence is only data. Resolve the actual present controlled actor
+    /// and exact current player revision independently before applying its transition.
+    pub(crate) fn apply_current_premium(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        facts: &crate::spell::owned_cast_facts::OwnedCastFacts,
+        now_micros: u64,
+    ) -> Result<bool, SpellCastDisposition> {
+        if runtime.owner_fence().is_err()
+            || facts.binding().actor != actor
+            || facts.binding().session != session
+            || runtime.player_control_facts(actor, session).is_err()
+        {
+            return Err(SpellCastDisposition::Rejected);
+        }
+        let state = self
+            .get_mut(runtime, actor, session)
+            .ok_or(SpellCastDisposition::Rejected)?;
+        if state.revision() != facts.binding().player_revision {
+            return Err(SpellCastDisposition::Rejected);
+        }
+        let projection = facts.current_premium(now_micros);
+        state.apply_owner_premium_transition(
+            projection.is_some_and(|value| value.value),
+            projection
+                .filter(|value| value.value)
+                .map(|value| value.valid_until_micros),
+        )
+    }
+
+    /// Drains the one actor-owned lane from an actual current owner cycle.
+    /// Callback receives the real current player states read-only; no awaited
+    /// service or detached fence may cross this uninterrupted owner turn.
+    pub(crate) fn drain_spell_timers(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        now: SemanticTimeMicros,
+        mut build: impl FnMut(
+            &ChannelRuntimeV1,
+            &ChannelSpellStates,
+            &crate::spell::delayed_execution::TimerPayload,
+            crate::spell::delayed_execution::SpellTimerOccurrence,
+            crate::foundation::owner_timer::SemanticTimeMicros,
+            crate::foundation::RuntimeWorkStamp,
+        ) -> Result<
+            crate::spell::combat_batch::OwnerCombatBatch,
+            crate::spell::delayed_execution::Error,
+        >,
+    ) -> Result<crate::spell::delayed_execution::FireReport, crate::spell::delayed_execution::Error>
+    {
+        use crate::spell::delayed_execution::Error;
+        let Some(timer) = self.spell_timers.as_ref() else {
+            return Ok(Default::default());
+        };
+        let binding = runtime.binding();
+        if timer.scope()
+            != crate::foundation::RuntimeScopeRefV1::channel(
+                binding.world_id(),
+                binding.channel_id(),
+            )
+            || timer.generation() != binding.scope_generation()
+        {
+            return Err(Error::StaleOwner);
+        }
+        let stamp = runtime.issue_owner_work().map_err(|_| Error::StaleOwner)?;
+        let Some(mut timer) = self.spell_timers.take() else {
+            return Err(Error::StaleOwner);
+        };
+        struct Clock(crate::foundation::owner_timer::SemanticTimeMicros);
+        impl crate::foundation::owner_timer::OwnerClock for Clock {
+            fn now(&self) -> crate::foundation::owner_timer::SemanticTimeMicros {
+                self.0
+            }
+        }
+        let result = timer.fire_due_current(
+            runtime,
+            &Clock(crate::foundation::owner_timer::SemanticTimeMicros::from_micros(now.get())),
+            stamp,
+            |runtime, payload, occurrence, due, stamp| {
+                build(runtime, self, payload, occurrence, due, stamp)
+            },
+        );
+        self.spell_timers = Some(timer);
+        result
+    }
+    pub(crate) fn load_owned_build(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        build: &crate::durability::character_build::DurableBuildState,
+    ) -> bool {
+        self.get_mut(runtime, actor, session)
+            .is_some_and(|state| state.load_owned_build(build).is_ok())
+    }
+    pub(crate) fn load_owned_stance(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        stance: &crate::durability::character_stance::DurableCharacterStance,
+        book: &SpellBook,
+    ) -> bool {
+        self.get_mut(runtime, actor, session)
+            .is_some_and(|state| state.load_owned_stance(stance, book).is_ok())
+    }
     /// Create the actor's vitals at its maxima and empty cooldowns in the owner step that makes
     /// it playable, with the durable monk values `(harmony, serene_forced_micros)` the Character
     /// owner loaded (SPELL-D8 §8.2), and run the Serene initialization evaluation at `now` before
@@ -92,6 +287,34 @@ impl ChannelSpellStates {
         now: SemanticTimeMicros,
     ) -> Option<&PlayerSpellState> {
         runtime.player_control_facts(actor, game_session_id).ok()?;
+        let binding = runtime.binding();
+        if self.spell_timers.as_ref().is_some_and(|timers| {
+            timers.scope()
+                != crate::foundation::RuntimeScopeRefV1::channel(
+                    binding.world_id(),
+                    binding.channel_id(),
+                )
+                || timers.generation() != binding.scope_generation()
+        }) {
+            return None;
+        }
+        if self.spell_timers.is_none() {
+            self.spell_timers = Some(
+                crate::spell::delayed_execution::SpellTimerOwner::new(
+                    crate::foundation::RuntimeScopeRefV1::channel(
+                        binding.world_id(),
+                        binding.channel_id(),
+                    ),
+                    binding.scope_generation(),
+                )
+                .ok()?,
+            );
+        }
+        if self.presentations.is_none() {
+            self.presentations = Some(super::spell_presentations::SpellPresentationOwner::new(
+                runtime,
+            ));
+        }
         self.actors.retain(|(present, session, _)| {
             runtime.player_control_facts(*present, *session).is_ok()
         });
@@ -144,6 +367,10 @@ impl ChannelSpellStates {
 
     /// The periodic 1000 ms Serene evaluation of the actor (§8.2): the new `ACTOR_VITALS`
     /// revision and value when Serene changed, which the owner publishes.
+    #[allow(
+        dead_code,
+        reason = "the periodic Serene owner caller is not wired on this branch"
+    )]
     pub(crate) fn tick(
         &mut self,
         runtime: &ChannelRuntimeV1,
@@ -154,12 +381,77 @@ impl ChannelSpellStates {
         if self.is_dead(actor) {
             return None;
         }
+        if self.has_pending_spell_commit(actor, game_session_id) {
+            return None;
+        }
+        self.get_mut(runtime, actor, game_session_id)?
+            .expire_owner_premium(now.get())
+            .ok()?;
         let state = self.get_mut(runtime, actor, game_session_id)?;
-        state
-            .tick(now)
-            .ok()
-            .filter(|changed| *changed)
-            .map(|_| (state.revision(), state.vitals()))
+        let cycle = crate::spell::actor_conditions::stage_owner_cycle(state, now, None).ok()??;
+        if !cycle.combat_ticks.is_empty() {
+            return None;
+        }
+        let publish = cycle.publish_vitals;
+        *state = cycle.next;
+        publish.then(|| (state.revision(), state.vitals()))
+    }
+
+    /// Current authored PZ metadata belongs to the active map and the real
+    /// movement snapshot. Missing metadata still permits non-ticking expiry.
+    /// Outside a PZ, DOT additionally needs the actual dynamic field/source
+    /// legality owners; this path deliberately leaves those ticks pending.
+    pub(crate) fn tick_in_environment(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        cells: &crate::content::NativeEntryMovementCells,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        now: SemanticTimeMicros,
+    ) -> Option<(u64, ActorVitals)> {
+        use crate::ability::condition::{TickFacts, TickKind};
+        if self.has_pending_spell_commit(actor, session) {
+            return None;
+        }
+        self.get_mut(runtime, actor, session)?
+            .expire_owner_premium(now.get())
+            .ok()?;
+        let controls = runtime.player_control_facts(actor, session).ok()?;
+        if controls.control_loss.is_some() {
+            return None;
+        }
+        let in_pz = qualified_protection_zone(runtime, cells, actor);
+        let state = self.get_mut(runtime, actor, session)?;
+        let has_dot = crate::spell::actor_conditions::has_periodic_damage(state);
+        let facts = in_pz.map(|in_protection_zone| TickFacts {
+            in_protection_zone,
+            // Dynamic field cannot suppress a non-damage tick. PZ DOT is
+            // consumed without damage, independent of standing-field facts.
+            standing_on_field: None,
+        });
+        let cycle = if has_dot && facts.is_some_and(|facts| !facts.in_protection_zone) {
+            crate::spell::actor_conditions::stage_source_owner_cycle_without_damage(
+                state, now, facts?, None,
+            )
+        } else {
+            crate::spell::actor_conditions::stage_source_owner_cycle(state, now, facts, None)
+        }
+        .ok()??;
+        if cycle.combat_ticks.iter().any(|tick| {
+            !matches!(
+                tick.kind,
+                TickKind::Damage { refused: true, .. }
+                    | TickKind::Regeneration {
+                        suppressed: true,
+                        ..
+                    }
+            )
+        }) {
+            return None;
+        }
+        let publish = cycle.publish_vitals;
+        *state = cycle.next;
+        publish.then(|| (state.revision(), state.vitals()))
     }
 
     /// The monk values the actor-end save writes (§8.2), or `None` when the actor has no spell
@@ -250,7 +542,8 @@ impl ChannelSpellStates {
 
     /// DEATH-2 §4.5 (D63): the respawn of `occurrence` in one owner step, after the caller placed
     /// the actor at its respawn position. Health and mana are refilled to their maxima under one
-    /// new `ACTOR_VITALS` revision and the death record ends; the new revision and value are
+    /// new `ACTOR_VITALS` revision, a monk's Harmony and forced Serene are reset with its Serene
+    /// evaluation initialized at `now`, and the death record ends; the new revision and value are
     /// returned for the owner to publish. `None` changes nothing: the actor is not this death's
     /// committed player.
     pub(crate) fn respawn(
@@ -259,11 +552,12 @@ impl ChannelSpellStates {
         actor: ExactActorRef,
         game_session_id: GameSessionId,
         occurrence: PlayerDeathOccurrence,
+        now: SemanticTimeMicros,
     ) -> Option<(u64, ActorVitals)> {
         let death = self.deaths.iter().position(|(dead, session, death)| {
             *dead == actor && *session == game_session_id && death.occurrence == occurrence
         })?;
-        let next = self.get(runtime, actor, game_session_id)?.respawned()?;
+        let next = self.get(runtime, actor, game_session_id)?.respawned(now)?;
         let vitals = (next.revision(), next.vitals());
         if !self.commit(runtime, actor, game_session_id, next) {
             return None;
@@ -272,18 +566,19 @@ impl ChannelSpellStates {
         Some(vitals)
     }
 
-    fn get_mut(
+    pub(in crate::gameplay_transport) fn get_mut(
         &mut self,
         runtime: &ChannelRuntimeV1,
         actor: ExactActorRef,
         game_session_id: GameSessionId,
     ) -> Option<&mut PlayerSpellState> {
+        runtime.assert_actor_spell_unreserved(actor).ok()?;
         runtime.player_control_facts(actor, game_session_id).ok()?;
         let index = self.index(actor, game_session_id)?;
         self.actors.get_mut(index).map(|(_, _, state)| state)
     }
 
-    fn get(
+    pub(in crate::gameplay_transport) fn get(
         &self,
         runtime: &ChannelRuntimeV1,
         actor: ExactActorRef,
@@ -327,6 +622,37 @@ impl ChannelSpellStates {
     }
 }
 
+fn qualified_protection_zone(
+    runtime: &mut ChannelRuntimeV1,
+    cells: &crate::content::NativeEntryMovementCells,
+    actor: ExactActorRef,
+) -> Option<bool> {
+    let scope = cells.scope();
+    if scope.world_id != runtime.binding().world_id()
+        || scope.world_id != runtime.content_pin().world_id()
+        || scope.generation_digest != runtime.content_pin().server_artifact_digest()
+    {
+        return None;
+    }
+    let position = runtime.borrow_movement_position().read(actor).ok()?;
+    if position.context() != runtime.pinned_movement_context() {
+        return None;
+    }
+    let position = position.position();
+    let tile = cells
+        .spell_tiles()
+        .lookup(
+            scope,
+            crate::content::LogicalCell {
+                x: position.x,
+                y: position.y,
+                z: i32::from(position.floor),
+            },
+        )
+        .ok()?;
+    Some(tile.flags().protection_zone)
+}
+
 /// GAME-AI-01 slice §4.6/§4.7: the vitals owner's side of a creature bite. One hit is one
 /// compare-committed vitals revision. DEATH-2 (§4.1, §4.2): a hit to 0 is lethal; the death
 /// occurrence is minted and the death recorded with the cell in the same write, and a dead
@@ -338,12 +664,26 @@ impl CreatureBiteVitals for ChannelSpellStates {
         target: ExactActorRef,
         target_session: GameSessionId,
         magnitude: u32,
+        now: crate::foundation::owner_timer::SemanticTimeMicros,
     ) -> Option<CreatureHit> {
-        if self.is_dead(target) {
+        // Durable unknown outcomes retain their exact player before-state. A bite
+        // must not invalidate that state, including another caster's reserved target.
+        if self.is_dead(target)
+            || self.has_pending_spell_commit(target, target_session)
+            || runtime.assert_actor_spell_unreserved(target).is_err()
+        {
             return None;
         }
         let state = self.get(runtime, target, target_session)?;
-        let (next, damage) = state.after_creature_damage(magnitude)?;
+        let (next, damage) =
+            crate::spell::actor_conditions::stage_creature_hit(state, magnitude, now.get()).ok()?;
+        if next.revision() == state.revision() {
+            return Some(CreatureHit {
+                damage,
+                vitals_revision: state.revision(),
+                death: None,
+            });
+        }
         let death = if damage.health_after == 0 {
             let cell = runtime.read_actor_position(target).ok()?.position();
             self.deaths.try_reserve(1).ok()?;
@@ -944,11 +1284,252 @@ pub(crate) mod tests {
         );
     }
 
+    #[test]
+    fn creature_damage_preserves_actual_logical_stance_reservation() {
+        use crate::domain::{CharacterId, CharacterRevision};
+        use crate::durability::character_progression::CurrentCharacterGameplayFence;
+        use crate::foundation::{ConnectionGeneration, RuntimeScopeRefV1};
+        use crate::spell::stance_execution::PreparedStance;
+        let (runtime, actor, session) = runtime_with_player(0x35);
+        let mut states = ChannelSpellStates::default();
+        states
+            .initialize(
+                &runtime,
+                actor,
+                session,
+                CharacterCastFacts {
+                    vocation: Vocation::EliteKnight,
+                    level: 50,
+                    magic_level: 0,
+                    max_health: 500,
+                    max_mana: 600,
+                    max_soul: 100,
+                },
+                (0, 0),
+                now(0),
+            )
+            .expect("state");
+        let document: serde_json::Value = serde_json::from_str(include_str!(
+            "../../../../tools/content-schema/spell-authoring/samples/native-spell-profiles.json"
+        ))
+        .expect("profiles");
+        let profile = document["profiles"]
+            .as_array()
+            .expect("profiles")
+            .iter()
+            .find(|r| r["name"] == "Protector")
+            .expect("Protector");
+        let mut spell = crate::spell::authoring::spell_from_bundle(
+            &serde_json::json!({"spell":profile["spell"]}),
+            &profile["dependencies"],
+        )
+        .expect("source stance");
+        // Header-only unit fixture: no commercial proof or durable receipt is fabricated.
+        spell.premium = false;
+        let state = states.get_mut(&runtime, actor, session).expect("state");
+        let operational = crate::spell::OperationalCastFacts {
+            caster_position: crate::spell::chain::TilePosition {
+                x: 0,
+                y: 0,
+                floor: 7,
+            },
+            target_position: None,
+            target: None,
+            line_of_sight_clear: None,
+            direction_available: false,
+            wheel_unlocked: None,
+            in_protection_zone: false,
+            target_tile_solid: None,
+            target_tile_creature: None,
+        };
+        let paid = crate::spell::cast::prepare_native_owner_cast(
+            state,
+            &spell,
+            &operational,
+            crate::spell::native::Facts::Stance {
+                active: None,
+                vocation: Vocation::EliteKnight,
+            },
+            now(0),
+            &mut |_, _| 0,
+        )
+        .expect("prepare real stance plan");
+        let binding = runtime.binding();
+        let prepared = PreparedStance::new(
+            state,
+            paid,
+            &spell,
+            actor,
+            session,
+            1,
+            NonZeroU32::new(1).expect("spell"),
+            CurrentCharacterGameplayFence {
+                character_id: CharacterId::from_bytes(uuid_v7(0x36)).expect("character"),
+                game_session_id: session,
+                connection_generation: ConnectionGeneration::new(1).expect("connection"),
+                character_lease_generation: 1,
+                runtime_scope: RuntimeScopeRefV1::channel(binding.world_id(), binding.channel_id()),
+                scope_ownership_generation: binding.scope_generation(),
+                expected_character_revision: CharacterRevision::new(1).expect("revision"),
+            },
+            "content:1".into(),
+            "policy:1".into(),
+            now(0),
+        )
+        .expect("retained stance");
+        state
+            .reserve_stance(prepared.clone())
+            .expect("actual logical reservation");
+        assert!(!runtime.actor_spell_reserved(actor));
+        assert!(states.has_pending_spell_commit(actor, session));
+        let before = states
+            .get(&runtime, actor, session)
+            .expect("before")
+            .clone();
+        assert_eq!(
+            states.apply_creature_damage(
+                &runtime,
+                actor,
+                session,
+                8,
+                crate::foundation::owner_timer::SemanticTimeMicros::from_micros(0),
+            ),
+            None
+        );
+        assert_eq!(states.get(&runtime, actor, session), Some(&before));
+        assert!(
+            states
+                .get_mut(&runtime, actor, session)
+                .expect("state")
+                .cancel_stance(&prepared)
+        );
+        let hit = states
+            .apply_creature_damage(
+                &runtime,
+                actor,
+                session,
+                8,
+                crate::foundation::owner_timer::SemanticTimeMicros::from_micros(0),
+            )
+            .expect("unreserved positive control");
+        assert_eq!(
+            (
+                hit.damage.applied,
+                hit.damage.health_after,
+                hit.vitals_revision,
+                hit.death
+            ),
+            (8, 492, 2, None)
+        );
+    }
+
+    #[test]
+    fn creature_damage_preserves_both_caster_and_target_physical_reservations() {
+        use crate::foundation::runtime_actor_spell_types::{
+            OwnerCombatBatch, OwnerCombatChange, OwnerCombatEffect, SpellAnchor,
+            SpellOccurrenceBinding,
+        };
+        use crate::foundation::{CharacterId, CommandId, CommandRef, MovementLocalPosition};
+
+        let (mut runtime, caster, caster_session) = runtime_with_player(0x32);
+        let target_session = GameSessionId::decode(&uuid_v7(0x33)).expect("target session");
+        let target = runtime
+            .reserve_fresh_session(target_session)
+            .expect("reserve target");
+        let target = runtime.commit_fresh_session(target).expect("commit target");
+        for (actor, x) in [(caster, 10), (target, 11)] {
+            runtime
+                .initialize_movement_test_position(
+                    actor,
+                    MovementLocalPosition { x, y: 10, floor: 7 },
+                )
+                .expect("position");
+        }
+        let mut states = ChannelSpellStates::default();
+        for (actor, session) in [(caster, caster_session), (target, target_session)] {
+            states
+                .initialize(&runtime, actor, session, FACTS, (0, 0), now(0))
+                .expect("vitals");
+        }
+        let batch = OwnerCombatBatch {
+            caster,
+            attacker: CharacterId::decode(&uuid_v7(0x34)).expect("character"),
+            current_lease_generation: 1,
+            command: CommandRef::new(caster_session, CommandId::new(1).expect("command")),
+            occurrence: SpellOccurrenceBinding {
+                id: "spell:retained".into(),
+                revisions: ["rules:1", "content:1", "world:1", "formula:1", "sim:1"]
+                    .map(str::to_owned),
+            },
+            binding: b"retained-owner-reservation".to_vec(),
+            anchor: Some(SpellAnchor {
+                expected_revision: 1,
+                next_revision: 2,
+                paid_mana: 0,
+                paid_soul: 0,
+                cooldown_deadlines: vec![],
+            }),
+            now_ms: 0,
+            effects: vec![OwnerCombatEffect {
+                target,
+                sub_ordinal: 0,
+                change: OwnerCombatChange::ManaShield(
+                    crate::foundation::runtime_actor_spell_types::ManaShieldState {
+                        capacity: 50,
+                        expires_ms: 1_000,
+                    },
+                ),
+            }],
+            deferred: None,
+        };
+        let mut staged = runtime.stage_spell_batch(&batch).expect("stage real batch");
+        runtime
+            .reserve_spell_batch(&mut staged)
+            .expect("reserve actual slots");
+        for (actor, session) in [(caster, caster_session), (target, target_session)] {
+            assert!(runtime.actor_spell_reserved(actor));
+            // The target has no own pending intent: another caster's reservation
+            // independently prevents a hit from invalidating its exact before-state.
+            assert!(!states.has_pending_spell_commit(actor, session));
+            let before = states.get(&runtime, actor, session).expect("state").clone();
+            assert_eq!(
+                states.apply_creature_damage(
+                    &runtime,
+                    actor,
+                    session,
+                    8,
+                    crate::foundation::owner_timer::SemanticTimeMicros::from_micros(0),
+                ),
+                None
+            );
+            assert_eq!(states.get(&runtime, actor, session), Some(&before));
+        }
+        runtime
+            .validate_staged_spell_batch(&staged)
+            .expect("retained physical proof unchanged");
+    }
+
     /// A runtime with one positioned player at (10, 10), its vitals at a wounded `health`, and one
     /// live creature beside it.
     fn bitten_player(
         tag: u8,
         health: u32,
+    ) -> (
+        ChannelRuntimeV1,
+        ChannelSpellStates,
+        ExactActorRef,
+        GameSessionId,
+        ExactActorRef,
+    ) {
+        bitten_actor(tag, health, FACTS, (0, 0))
+    }
+
+    /// [`bitten_player`] with the actor's cast facts and durable monk values.
+    fn bitten_actor(
+        tag: u8,
+        health: u32,
+        facts: CharacterCastFacts,
+        monk: (u8, u64),
     ) -> (
         ChannelRuntimeV1,
         ChannelSpellStates,
@@ -965,7 +1546,7 @@ pub(crate) mod tests {
         let creature = runtime.admit_test_creature(at(11, 10)).expect("creature");
         let mut states = ChannelSpellStates::default();
         states
-            .initialize(&runtime, actor, session, FACTS, (0, 0), now(0))
+            .initialize(&runtime, actor, session, facts, monk, now(0))
             .expect("vitals");
         wound(&mut states, actor, session, health);
         (runtime, states, actor, session, creature)
@@ -1088,14 +1669,23 @@ pub(crate) mod tests {
             .player_death(&runtime, actor, session)
             .expect("death");
         let other = PlayerDeathOccurrence::from_bytes(uuid_v7(0x77)).expect("occurrence");
-        assert_eq!(states.respawn(&runtime, actor, session, other), None);
+        assert_eq!(
+            states.respawn(&runtime, actor, session, other, now(0)),
+            None
+        );
         let (_, other_actor, other_session) = runtime_with_player(0x33);
         assert_eq!(
-            states.respawn(&runtime, other_actor, other_session, death.occurrence),
+            states.respawn(
+                &runtime,
+                other_actor,
+                other_session,
+                death.occurrence,
+                now(0)
+            ),
             None
         );
         let (revision, vitals) = states
-            .respawn(&runtime, actor, session, death.occurrence)
+            .respawn(&runtime, actor, session, death.occurrence, now(0))
             .expect("respawned");
         assert_eq!(revision, 4);
         assert_eq!(
@@ -1106,11 +1696,56 @@ pub(crate) mod tests {
         assert_eq!(states.player_death(&runtime, actor, session), None);
         // The respawn happens once; the living actor takes commands again.
         assert_eq!(
-            states.respawn(&runtime, actor, session, death.occurrence),
+            states.respawn(&runtime, actor, session, death.occurrence, now(0)),
             None
         );
         assert_eq!(
             cast_at(&runtime, &mut states, actor, session, 8, 10_000).disposition,
+            SpellCastDisposition::Cast
+        );
+    }
+
+    /// DEATH-2 §4.5 with SPELL-D8 §8.2: a monk respawns with Harmony and forced Serene reset, as
+    /// the death commit writes them, and its Serene evaluation initialized again, so a monk that
+    /// lost control while dead is playable after the respawn.
+    #[test]
+    fn a_monk_respawns_with_harmony_and_forced_serene_reset_and_initialized() {
+        use crate::ability::creature_bite::CreatureBiteLedger;
+
+        let monk = CharacterCastFacts {
+            vocation: Vocation::Monk,
+            ..FACTS
+        };
+        let (runtime, mut states, actor, session, creature) =
+            bitten_actor(0x35, 8, monk, (3, 4_000_000));
+        bite_at(
+            &runtime,
+            &mut states,
+            &mut CreatureBiteLedger::default(),
+            (creature, actor, session),
+            0,
+            0,
+        )
+        .expect("lethal bite");
+        let death = states
+            .player_death(&runtime, actor, session)
+            .expect("death");
+        assert_eq!(
+            states.monk_save_values(&runtime, actor, session, now(1000)),
+            Some((3, 3_000_000))
+        );
+        // Control loss detaches the dead monk; only the respawn initializes it again.
+        states.detach(&runtime, actor, session);
+        let (_, vitals) = states
+            .respawn(&runtime, actor, session, death.occurrence, now(2000))
+            .expect("respawned");
+        assert_eq!((vitals.harmony, vitals.serene), (0, true));
+        assert_eq!(
+            states.monk_save_values(&runtime, actor, session, now(2000)),
+            Some((0, 0))
+        );
+        assert_eq!(
+            cast_at(&runtime, &mut states, actor, session, 1, 2000).disposition,
             SpellCastDisposition::Cast
         );
     }

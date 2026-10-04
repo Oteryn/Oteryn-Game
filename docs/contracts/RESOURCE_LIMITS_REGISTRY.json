@@ -8458,6 +8458,102 @@
       "notes": "QUEST-GATE-0 \u00a77 and \u00a79 (the BAGS-WIRE-1b per-GameSession window); test: gameplay_transport::connection::quest_log::tests::queries_are_limited_to_2_per_second_per_game_session. Registered by OTV2-20261004-quest-log-wire-1."
     },
     {
+      "allocation_impact": "Checked from the count before anything is reserved for it (compiler, writer and reader share spawn::validate); the reader also needs one byte per element.",
+      "boundary_tests": [
+        "a table of 2,048 sources of 64 points (131,072 points) validates, encodes inside the raw cap and decodes equal",
+        "one more point is refused as Limit by validate and by decode; the reference map holds 83,286"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "maximum": 131072,
+        "minimum": 131072
+      },
+      "consumers": [
+        "world bundle compiler",
+        "game server World runtime (MAP-LOAD-1)",
+        "game server creature spawn runtime (SPAWN-1b)"
+      ],
+      "failure_category": "INVALID_INPUT",
+      "hard_maximum": 131072,
+      "id": "CREATUREAI0-RL-01",
+      "notes": "SPAWN-CONTENT-1; CREATURE-AI-0 \u00a76.1; format document \u00a713. Test: tools/world-bundle-compiler/tests/spawns.rs.",
+      "owner_contract": "OTERYN_WORLD_BUNDLE_FORMAT_V1.md",
+      "resource": "Spawn points of one World map in the spawn family of a bundle",
+      "unit": "points"
+    },
+    {
+      "allocation_impact": "Checked from the count before anything is reserved for it (compiler, writer and reader share spawn::validate); the reader also needs one byte per element.",
+      "boundary_tests": [
+        "a table of 65,536 sources validates",
+        "65,537 sources are refused as Limit; the reference map holds 51,896"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "maximum": 65536,
+        "minimum": 65536
+      },
+      "consumers": [
+        "world bundle compiler",
+        "game server World runtime (MAP-LOAD-1)",
+        "game server creature spawn runtime (SPAWN-1b)"
+      ],
+      "failure_category": "INVALID_INPUT",
+      "hard_maximum": 65536,
+      "id": "CREATUREAI0-RL-02",
+      "notes": "SPAWN-CONTENT-1; CREATURE-AI-0 \u00a76.1; format document \u00a713. Test: tools/world-bundle-compiler/tests/spawns.rs.",
+      "owner_contract": "OTERYN_WORLD_BUNDLE_FORMAT_V1.md",
+      "resource": "Spawn sources of one World map in the spawn family of a bundle",
+      "unit": "sources"
+    },
+    {
+      "allocation_impact": "Checked from the count before anything is reserved for it (compiler, writer and reader share spawn::validate); the reader also needs one byte per element.",
+      "boundary_tests": [
+        "a source of 64 points validates and a shard of 64 points is accepted",
+        "65 points are refused as Limit by validate and by the Spawn.Source shard parse; the reference map's largest source holds 55"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "maximum": 64,
+        "minimum": 64
+      },
+      "consumers": [
+        "world bundle compiler",
+        "game server World runtime (MAP-LOAD-1)",
+        "game server creature spawn runtime (SPAWN-1b)"
+      ],
+      "failure_category": "INVALID_INPUT",
+      "hard_maximum": 64,
+      "id": "CREATUREAI0-RL-03",
+      "notes": "SPAWN-CONTENT-1; CREATURE-AI-0 \u00a76.1; format document \u00a713. Test: tools/world-bundle-compiler/tests/spawns.rs.",
+      "owner_contract": "OTERYN_WORLD_BUNDLE_FORMAT_V1.md",
+      "resource": "Points of one spawn source",
+      "unit": "points"
+    },
+    {
+      "allocation_impact": "A value check on a point; it reserves nothing.",
+      "boundary_tests": [
+        "1,000 ms and 86,400,000 ms validate (and 1,000 ms is accepted by the shard parse)",
+        "999 ms and 86,400,001 ms are refused as Limit by validate and by the shard parse; the reference map spans 5 s to 54,784 s"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "maximum": 86400000,
+        "minimum": 1000
+      },
+      "consumers": [
+        "world bundle compiler",
+        "game server World runtime (MAP-LOAD-1)",
+        "game server creature spawn runtime (SPAWN-1b)"
+      ],
+      "failure_category": "INVALID_INPUT",
+      "hard_maximum": 86400000,
+      "id": "CREATUREAI0-RL-13",
+      "notes": "SPAWN-CONTENT-1; CREATURE-AI-0 \u00a76.1; format document \u00a713. Test: tools/world-bundle-compiler/tests/spawns.rs.",
+      "owner_contract": "OTERYN_WORLD_BUNDLE_FORMAT_V1.md",
+      "resource": "Respawn delay of one spawn point",
+      "unit": "milliseconds"
+    },
+    {
       "id": "ATTACK0-RL-01",
       "owner_contract": "../architecture/reviews/OTERYN_GAME_ATTACK0_ATTACK_TARGET_AND_AUTO_ATTACK_DECISION_2026-09-30.md",
       "resource": "ATTACK_TARGET_INTENT commands (command type 11) of one GameSession",
@@ -8524,6 +8620,221 @@
         "USE_INTENT command (ITEM-USE-WIRE-1, capability 15 ITEM_USE_V1)"
       ],
       "notes": "Registered by ITEM-USE-WIRE-1 under ARCH-BATCH-ROOT-PACKETS-V1 \u00a72.2 (D485). Mirrors max_payload_bytes of command type 2."
+    },
+    {
+      "id": "BANK0-RL-01",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_BANK0_ACCOUNT_BANK_BALANCE_DECISION_2026-09-30.md",
+      "resource": "One Account bank balance of one World (BANK-0 \u00a73)",
+      "unit": "gold pieces",
+      "hard_maximum": 999999999999,
+      "configurable_range": {
+        "minimum": 999999999999,
+        "maximum": 999999999999
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Checked under the balance row lock before any write: a deposit's credit above it is the typed BALANCE_LIMIT and a transfer's credit above it on the recipient is RECIPIENT_CANNOT_RECEIVE_TRANSFERS, never a CHECK abort; migration 0071 bounds the balance and every entry's before and after.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=999,999,999,999: a deposit reaching it commits",
+        "max+1: a deposit of one more is refused BALANCE_LIMIT with no entry, coin line, event or balance change",
+        "a transfer credit above it is refused RECIPIENT_CANNOT_RECEIVE_TRANSFERS"
+      ],
+      "consumers": [
+        "apps/game-server/src/durability/bank_audit.rs",
+        "apps/game-server/src/durability/bank.rs (bank writer: checked before any ledger entry, coin line, balance change or event; a typed refusal or error writes no value)",
+        "apps/game-server/migrations/0071_account_bank.sql"
+      ],
+      "notes": "BANK-0 \u00a78 (owner answers 1b and Q1 b; ARCH-BATCH-ROOT-PACKETS-V1 \u00a71.8 and \u00a72.4); registered by BANK-1 before the code that relies on it."
+    },
+    {
+      "id": "BANK0-RL-02-DEPOSIT",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_BANK0_ACCOUNT_BANK_BALANCE_DECISION_2026-09-30.md",
+      "resource": "Gold of one bank deposit (BANK-0 \u00a74.2): at most 20 input stacks and 2 change stacks",
+      "unit": "gold pieces",
+      "hard_maximum": 20000000,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 20000000
+      },
+      "failure_category": "INVALID_INPUT",
+      "allocation_impact": "Checked before any read: an amount outside 1..=20,000,000 is INVALID_INPUT and writes nothing (the dialogue refuses it at the prompt). A plan that needs a 21st input stack is CAPACITY_EXCEEDED before any write; the change is at most a platinum and a gold stack (DUR03-RL-01-BANK).",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=20,000,000 from 20 stacks of 100 crystal coins commits",
+        "max+1 is refused before any write",
+        "a plan needing 21 input stacks is refused (CAPACITY_EXCEEDED) before any write"
+      ],
+      "consumers": [
+        "apps/game-server/src/durability/bank_audit.rs",
+        "apps/game-server/src/durability/bank.rs (bank writer: checked before any ledger entry, coin line, balance change or event; a typed refusal or error writes no value)",
+        "apps/game-server/migrations/0071_account_bank.sql"
+      ],
+      "notes": "BANK-0 \u00a78 (owner answers 1b and Q1 b; ARCH-BATCH-ROOT-PACKETS-V1 \u00a71.8 and \u00a72.4); registered by BANK-1 before the code that relies on it."
+    },
+    {
+      "id": "BANK0-RL-02-WITHDRAW",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_BANK0_ACCOUNT_BANK_BALANCE_DECISION_2026-09-30.md",
+      "resource": "Gold of one bank withdrawal (BANK-0 \u00a74.2): at most 3 output stacks",
+      "unit": "gold pieces",
+      "hard_maximum": 1009999,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 1009999
+      },
+      "failure_category": "INVALID_INPUT",
+      "allocation_impact": "Checked before any read: an amount outside 1..=1,009,999 is INVALID_INPUT and writes nothing. The coins are the canonical split (crystal, platinum, gold, each at most 100), at most 3 new stacks; no room refuses the whole withdrawal (NO_ROOM).",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=1,009,999 withdraws 100 crystal, 99 platinum and 99 gold",
+        "max+1 is refused before any write"
+      ],
+      "consumers": [
+        "apps/game-server/src/durability/bank_audit.rs",
+        "apps/game-server/src/durability/bank.rs (bank writer: checked before any ledger entry, coin line, balance change or event; a typed refusal or error writes no value)",
+        "apps/game-server/migrations/0071_account_bank.sql"
+      ],
+      "notes": "BANK-0 \u00a78 (owner answers 1b and Q1 b; ARCH-BATCH-ROOT-PACKETS-V1 \u00a71.8 and \u00a72.4); registered by BANK-1 before the code that relies on it."
+    },
+    {
+      "id": "BANK0-RL-02-TRANSFER",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_BANK0_ACCOUNT_BANK_BALANCE_DECISION_2026-09-30.md",
+      "resource": "Gold of one bank transfer (BANK-0 \u00a74.3)",
+      "unit": "gold pieces",
+      "hard_maximum": 999999999999,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 999999999999
+      },
+      "failure_category": "INVALID_INPUT",
+      "allocation_impact": "Checked before any read: an amount outside 1..=999,999,999,999 is INVALID_INPUT and writes nothing; an amount above the sender's balance is the typed INSUFFICIENT_BALANCE.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=999,999,999,999 transfers a full balance",
+        "max+1 is refused before any write"
+      ],
+      "consumers": [
+        "apps/game-server/src/durability/bank_audit.rs",
+        "apps/game-server/src/durability/bank.rs (bank writer: checked before any ledger entry, coin line, balance change or event; a typed refusal or error writes no value)",
+        "apps/game-server/migrations/0071_account_bank.sql"
+      ],
+      "notes": "BANK-0 \u00a78 (owner answers 1b and Q1 b; ARCH-BATCH-ROOT-PACKETS-V1 \u00a71.8 and \u00a72.4); registered by BANK-1 before the code that relies on it."
+    },
+    {
+      "id": "BANK0-RL-03",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_BANK0_ACCOUNT_BANK_BALANCE_DECISION_2026-09-30.md",
+      "resource": "Ledger entries of one bank operation (BANK-0 \u00a78)",
+      "unit": "ledger entries per operation",
+      "hard_maximum": 2,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 2
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "A deposit or withdrawal writes 1 entry, a transfer 2; migration 0071's operation guard refuses any other count at commit.",
+      "client_visible": false,
+      "boundary_tests": [
+        "a transfer commits exactly 2 entries",
+        "an operation with another count is refused at commit"
+      ],
+      "consumers": [
+        "apps/game-server/src/durability/bank_audit.rs",
+        "apps/game-server/src/durability/bank.rs (bank writer: checked before any ledger entry, coin line, balance change or event; a typed refusal or error writes no value)",
+        "apps/game-server/migrations/0071_account_bank.sql"
+      ],
+      "notes": "BANK-0 \u00a78 (owner answers 1b and Q1 b; ARCH-BATCH-ROOT-PACKETS-V1 \u00a71.8 and \u00a72.4); registered by BANK-1 before the code that relies on it. BANK0-RL-04 (the confirmation timeout, as NPC0-RL-06) is BANK-NPC-1's: this packet has no dialogue."
+    },
+    {
+      "id": "DUR03-RL-01-BANK",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_BANK0_ACCOUNT_BANK_BALANCE_DECISION_2026-09-30.md",
+      "resource": "ItemInstances touched by one bank operation (BANK-0 \u00a75, \u00a78)",
+      "unit": "ItemInstances per logical transaction",
+      "hard_maximum": 22,
+      "configurable_range": {
+        "minimum": 0,
+        "maximum": 22
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "22 for a deposit (20 inputs and 2 change outputs), 3 for a withdrawal, 0 for a transfer; checked before any write and in the payload gate, never truncated. The one-item DUR03-RL-01 row is unchanged.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=22: a 20-input deposit with 2 change outputs encodes",
+        "max+1=23 coin lines are rejected (CAPACITY_EXCEEDED) before encoding"
+      ],
+      "consumers": [
+        "apps/game-server/src/durability/bank_audit.rs",
+        "apps/game-server/src/durability/bank.rs (bank writer: checked before any ledger entry, coin line, balance change or event; a typed refusal or error writes no value)"
+      ],
+      "notes": "BANK-0 \u00a78 (owner answers 1b and Q1 b; ARCH-BATCH-ROOT-PACKETS-V1 \u00a71.8 and \u00a72.4); registered by BANK-1 before the code that relies on it."
+    },
+    {
+      "id": "DUR03-RL-03-BANK",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_BANK0_ACCOUNT_BANK_BALANCE_DECISION_2026-09-30.md",
+      "resource": "Value lines of one bank operation (BANK-0 \u00a75, \u00a78)",
+      "unit": "value lines per logical transaction",
+      "hard_maximum": 2,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 2
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "1 CONVERSION value line for a deposit or withdrawal, 2 TRANSFER value lines for a transfer; checked in the payload gate. DUR03-RL-03 stays 0 for every existing shape.",
+      "client_visible": false,
+      "boundary_tests": [
+        "a transfer carries exactly 2 value lines",
+        "3 value lines are rejected (CAPACITY_EXCEEDED)"
+      ],
+      "consumers": [
+        "apps/game-server/src/durability/bank_audit.rs",
+        "apps/game-server/src/durability/bank.rs (bank writer: checked before any ledger entry, coin line, balance change or event; a typed refusal or error writes no value)"
+      ],
+      "notes": "BANK-0 \u00a78 (owner answers 1b and Q1 b; ARCH-BATCH-ROOT-PACKETS-V1 \u00a71.8 and \u00a72.4); registered by BANK-1 before the code that relies on it."
+    },
+    {
+      "id": "DUR03-RL-07-BANK-PAYLOAD-BYTES",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_BANK0_ACCOUNT_BANK_BALANCE_DECISION_2026-09-30.md",
+      "resource": "One encoded oteryn.events.v2.BankOperationV1 payload (event type 3)",
+      "unit": "bytes",
+      "hard_maximum": 25419,
+      "configurable_range": {
+        "minimum": 25419,
+        "maximum": 25419
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Check the payload length before decoding; encode only after encoded_len passed. Measured worst case: a 20-input deposit of whole crystal stacks with a 99 platinum and 99 gold change, 512-byte revisions and maximal integers.",
+      "client_visible": false,
+      "boundary_tests": [
+        "the measured worst-case payload is exactly 25,419 B and accepted",
+        "25,420 bytes rejected before decode"
+      ],
+      "consumers": [
+        "apps/game-server/src/durability/bank_audit.rs",
+        "apps/game-server/src/durability/bank.rs (bank writer: checked before any ledger entry, coin line, balance change or event; a typed refusal or error writes no value)"
+      ],
+      "notes": "BANK-0 \u00a78 (owner answers 1b and Q1 b; ARCH-BATCH-ROOT-PACKETS-V1 \u00a71.8 and \u00a72.4); registered by BANK-1 before the code that relies on it."
+    },
+    {
+      "id": "DUR03-RL-07-BANK-ENVELOPE-BYTES",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_BANK0_ACCOUNT_BANK_BALANCE_DECISION_2026-09-30.md",
+      "resource": "One encoded normative ANL-01 EventEnvelope carrying event type 3 BANK_OPERATION, including payload",
+      "unit": "bytes",
+      "hard_maximum": 25719,
+      "configurable_range": {
+        "minimum": 25719,
+        "maximum": 25719
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Check the encoded or borrowed envelope length before retaining, decoding, batching or publishing; ANL01-EVENT-ENVELOPE-BYTES (262,144 B) still applies on top. Migration 0071 sets the stored bank outbox ceiling to this row.",
+      "client_visible": false,
+      "boundary_tests": [
+        "the measured worst-case envelope (128-byte build id) is exactly 25,719 B and accepted",
+        "25,720 bytes rejected before decode"
+      ],
+      "consumers": [
+        "apps/game-server/src/durability/bank_audit.rs",
+        "apps/game-server/src/durability/bank.rs (bank writer: checked before any ledger entry, coin line, balance change or event; a typed refusal or error writes no value)",
+        "apps/game-server/migrations/0071_account_bank.sql"
+      ],
+      "notes": "BANK-0 \u00a78 (owner answers 1b and Q1 b; ARCH-BATCH-ROOT-PACKETS-V1 \u00a71.8 and \u00a72.4); registered by BANK-1 before the code that relies on it."
     }
   ]
 }

@@ -44,6 +44,8 @@
         "max_search_tiles": null,
         "clear_sight": null
       },
+      "target_selection": null,
+      "zero_damage_health_path": null,
       "windup": {
         "delay_ms": null,
         "caster_asset_binding": null
@@ -160,6 +162,19 @@
         "key": null,
         "revision": null
       },
+      "pvp_safe_item": {
+        "family": null,
+        "key": null,
+        "revision": null
+      },
+      "duration_range_ms": {
+        "minimum": null,
+        "maximum": null
+      },
+      "duration_selection": null,
+      "safe_world_type": null,
+      "refuse_on": null,
+      "description_template": null,
       "affects": {
         "kind": null,
         "creatures": [
@@ -201,6 +216,8 @@
       "presentation": {
         "impact_asset_binding": null,
         "projectile_asset_binding": null,
+        "caster_effect_asset_binding": null,
+        "caster_effect_timing": null,
         "path_asset_binding": null
       }
     }
