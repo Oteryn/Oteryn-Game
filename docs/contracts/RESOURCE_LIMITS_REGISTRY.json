@@ -7635,6 +7635,73 @@
       "owner_contract": "../architecture/reviews/OTERYN_GAME_TIMED_ITEM0B_RUNTIME_CHARGES_AND_DURATION_DECISION_2026-10-03.md",
       "resource": "Retry work units of one timed transaction",
       "unit": "work units"
+    },
+    {
+      "id": "ITEMV0-RL-01",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_ITEM_MOVE_WIRE0_ITEM_VIEW_AND_MOVE_DECISION_2026-09-30.md",
+      "resource": "Items in one CHARACTER_INVENTORY view (domain 9 snapshot type 1 or delta type 1), the main backpack slot included",
+      "unit": "items per view",
+      "hard_maximum": 30,
+      "configurable_range": {
+        "minimum": 30,
+        "maximum": 30
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "The decoder refuses the 30th direct entry (31st item) before decoding it and any payload over 930 bytes (30 entries of at most 31 bytes) before reading it; the encoder refuses the same view before emitting a byte.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=30: the main backpack and 29 entries round-trip within 930 bytes",
+        "max+1=31: 31 items are refused in both directions"
+      ],
+      "consumers": [
+        "crates/protocol-oteryn/src/item_view.rs MAX_CHARACTER_INVENTORY_ITEMS, MAX_CHARACTER_INVENTORY_BYTES"
+      ],
+      "notes": "ITEM-MOVE-WIRE-0 \u00a74.4; the value 30 is ITEM-MOVE-WIRE-1 \u00a76.3 (the main backpack, 20 entries and later the nine equipment slots), superseding WIRE-0's 21. Within FND02-STATE-DELTA-PAYLOAD-BYTES and FND02-SNAPSHOT-CHUNK-BYTES. Registered by OTV2-20261003-item-view-1a."
+    },
+    {
+      "id": "ITEMV0-RL-02",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_ITEM_MOVE_WIRE0_ITEM_VIEW_AND_MOVE_DECISION_2026-09-30.md",
+      "resource": "Entries in one OPEN_CONTAINER view (domain 11 snapshot type 1 or delta type 1)",
+      "unit": "entries per view",
+      "hard_maximum": 16,
+      "configurable_range": {
+        "minimum": 16,
+        "maximum": 16
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "The decoder refuses a 17th entry before decoding it and any payload over 507 bytes (the container handle and 16 entries of at most 31 bytes) before reading it; the encoder refuses the same view before emitting a byte.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=16: a corpse with 16 entries round-trips within 507 bytes",
+        "max+1=17: 17 entries are refused in both directions"
+      ],
+      "consumers": [
+        "crates/protocol-oteryn/src/item_view.rs MAX_OPEN_CONTAINER_ENTRIES, MAX_OPEN_CONTAINER_BYTES"
+      ],
+      "notes": "ITEM-MOVE-WIRE-0 \u00a74.4: the corpse container capacity, equal to GAMEITEM01-CORPSE-CONTAINER-ENTRIES-MAX. Within FND02-STATE-DELTA-PAYLOAD-BYTES and FND02-SNAPSHOT-CHUNK-BYTES. Registered by OTV2-20261003-item-view-1a."
+    },
+    {
+      "id": "ITEMV0-RL-03",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_ITEM_MOVE_WIRE0_ITEM_VIEW_AND_MOVE_DECISION_2026-09-30.md",
+      "resource": "Live item handles of one GameSession (items in at least one of the session's views)",
+      "unit": "handles per GameSession",
+      "hard_maximum": 301,
+      "configurable_range": {
+        "minimum": 301,
+        "maximum": 301
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Measured as the sum of the view bounds: 255 domain-1 objects (MOVE-RL-11 less the own player), 30 domain-9 items (ITEMV0-RL-01) and 16 domain-11 entries (ITEMV0-RL-02); the open corpse keeps its domain-1 handle. The handle table (ITEM-VIEW-1b) is bounded by this value before inserting; a handle leaving every view is dropped, and the table never grows past the views it serves.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=301: the views at their bounds hold 301 live handles",
+        "max+1=302: the table refuses a handle beyond the views' bounds"
+      ],
+      "consumers": [
+        "crates/protocol-oteryn/src/item_view.rs MAX_LIVE_ITEM_HANDLES",
+        "the ITEM-VIEW-1b session handle table"
+      ],
+      "notes": "ITEM-MOVE-WIRE-0 \u00a74.1 and \u00a74.4. The codec test binds the derivation; the table enforcing it is ITEM-VIEW-1b's. Registered by OTV2-20261003-item-view-1a."
     }
   ]
 }

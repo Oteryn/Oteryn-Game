@@ -19,16 +19,16 @@
   "historical_source": {
     "native_definition_digests_historical_only": true,
     "path": "docs/agents/evidence/OTV2-20261002-item-name15-historical-source-v1.json",
-    "sha256": "294760f3f064da10cdb5b1c38398706b1a6db471af2027d317de840a939cfeb0"
+    "sha256": "bdca769f08d5f449bca96c91c60225a2e40b52f64935ed11066cdd29c981092c"
   },
   "independent_source_peer": {
     "path": "/workspace/audit-continuation/family-name15-br3-independent-source-proposal-peer.json",
     "sha256": "20cc6407be8d811348c151c5fcd4814d858dfef5f11a5cdf0f18be43fe27b179"
   },
   "input_digests": {
-    "apps/game-server/src/content/item_name_promotion.rs": "0e35a7d6f83f98aadbd1672775e558d254629b8919727f58a8ef6f12b21927fb",
+    "apps/game-server/src/content/item_name_promotion.rs": "299788140ec74e3c6fbc9849d348ebbdecb9f27b2c9a5e75cffdf4f707b41e9f",
     "content/items/aliases.json": "128bc354816199702c26f83120e6fb7846fb2608fb5ee1c16085f63268e592f2",
-    "docs/agents/evidence/OTV2-20261002-item-name-promotion-v1.json": "df202253ef9b0a4817eba98dcacb5a65960828e022e34b9590efdb96952f4383",
+    "docs/agents/evidence/OTV2-20261002-item-name-promotion-v1.json": "cf01b5ddc3955bb5a46194d7edbd3cd4744acba269233ef0f2c3ba64b465eed8",
     "docs/agents/evidence/OTV2-20261002-item-name-source-qualification-v1.json": "9a22bb2e4238c42ebcbd5714d6c6f08c39f5a140ae67ee61c78223d7952ca7fc",
     "imports/crystalserver/bindings/items.json": "1d19709c28a649d8a9f32bf53e5bf43ad847d7901d6c6254833f456154d2de5a",
     "imports/official/appearance-membership/admitted.json": "19f99b709d9a28c1730632e27672adb0a03ef11bf7d1f4b2647a4090f3df0718",

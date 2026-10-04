@@ -20,9 +20,11 @@ def test_single_shield_hand():
         assert pattern["level"] == lower.known(350)
         assert pattern["vocations"] == lower.known([vocation[:-1].upper()])
         assert lower.equipment(fields | {"hands": "Two"})[1] == "MALFORMED"
-        assert lower.equipment(fields | {"slot": "Extra Slot"})[1] == "MALFORMED"
+        extra = lower.equipment(fields | {"slot": "Extra Slot"})[1]["value"][0]
+        assert extra["primary_slot"] == lower.known("EXTRA")
+        assert extra["level"] == extra["vocations"] == {"state": "UNKNOWN"}
     _, absent = lower.equipment({"primarytype": "Spellbooks", "slot": "Shield Hand"})
-    assert absent["value"][0]["additional_reserved_slots"] == {"state": "UNKNOWN"}
+    assert absent["value"][0]["additional_reserved_slots"] == lower.known([])
 
 
 if __name__ == "__main__":
