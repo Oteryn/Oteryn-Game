@@ -19,6 +19,7 @@ pub mod character_proficiency;
 pub mod character_proficiency_modification;
 pub mod character_progression;
 pub mod character_revision_sequencer;
+pub mod character_wheel;
 pub mod charm_state;
 pub mod content_activation;
 mod db;
@@ -252,6 +253,37 @@ mod monk_state_linkage {
         let _ = DurabilityRoot::commit_character_monk_state_save;
         let _ = DurabilityRoot::reconcile_character_monk_state_save;
         let _ = DurabilityRoot::read_character_monk_state;
+    }
+}
+
+#[cfg(test)]
+mod character_wheel_linkage {
+    use super::DurabilityRoot;
+    use super::character_wheel::{
+        CommittedWheelChange, TEMPLE_REMOVAL_RADIUS, WheelAllocation, WheelChangeFacts,
+        WheelChangeRequest, WheelCommitOutcome, WheelIneligibility, WheelOccurrence,
+        WheelResetOutcome, WheelRuleset, WheelSlots, WheelStages, admit_character_wheel,
+    };
+
+    #[test]
+    fn character_wheel_api_is_linked() {
+        let _ = std::mem::size_of::<CommittedWheelChange>();
+        let _ = std::mem::size_of::<WheelAllocation>();
+        let _ = std::mem::size_of::<WheelChangeFacts>();
+        let _ = std::mem::size_of::<WheelChangeRequest>();
+        let _ = std::mem::size_of::<WheelCommitOutcome>();
+        let _ = std::mem::size_of::<WheelResetOutcome>();
+        let _ = WheelIneligibility::NotPremium;
+        let _ = TEMPLE_REMOVAL_RADIUS;
+        let _ = WheelSlots::points;
+        let _ = WheelOccurrence::as_bytes;
+        let _ = WheelRuleset::from_catalogue;
+        let _ = WheelStages::derive;
+        let _ = DurabilityRoot::commit_character_wheel;
+        let _ = DurabilityRoot::reset_character_wheel;
+        let _ = DurabilityRoot::reconcile_character_wheel;
+        let _ = DurabilityRoot::read_character_wheel;
+        let _ = admit_character_wheel;
     }
 }
 
