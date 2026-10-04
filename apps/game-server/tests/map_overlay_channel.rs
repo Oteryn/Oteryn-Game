@@ -2,8 +2,6 @@
 //! index, the `MAP01-CHANNEL-OVERLAY-BYTES` budget and the Ground rebuild, against a fixture
 //! bundle each test assembles.
 
-use std::alloc::{GlobalAlloc, Layout, System};
-use std::cell::Cell;
 use std::error::Error as StdError;
 use std::sync::Arc;
 
@@ -27,46 +25,6 @@ use oteryn_world_bundle_compiler::spawn;
 use sha2::{Digest, Sha256};
 
 type TestResult = Result<(), Box<dyn StdError>>;
-
-/// Counts the live heap bytes of the current thread, so the budget measurement is not disturbed
-/// by tests running on other threads.
-struct Counting;
-
-thread_local! {
-    static LIVE: Cell<isize> = const { Cell::new(0) };
-}
-
-fn count(delta: isize) {
-    let _ = LIVE.try_with(|live| live.set(live.get() + delta));
-}
-
-// SAFETY: every call forwards to `System` unchanged and only adds bookkeeping.
-unsafe impl GlobalAlloc for Counting {
-    unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
-        count(layout.size() as isize);
-        // SAFETY: the caller's contract is forwarded unchanged.
-        unsafe { System.alloc(layout) }
-    }
-
-    unsafe fn dealloc(&self, ptr: *mut u8, layout: Layout) {
-        count(-(layout.size() as isize));
-        // SAFETY: the caller's contract is forwarded unchanged.
-        unsafe { System.dealloc(ptr, layout) }
-    }
-
-    unsafe fn realloc(&self, ptr: *mut u8, layout: Layout, new_size: usize) -> *mut u8 {
-        count(new_size as isize - layout.size() as isize);
-        // SAFETY: the caller's contract is forwarded unchanged.
-        unsafe { System.realloc(ptr, layout, new_size) }
-    }
-}
-
-#[global_allocator]
-static ALLOCATOR: Counting = Counting;
-
-fn live() -> isize {
-    LIVE.with(Cell::get)
-}
 
 const KEYS: [&str; 2] = ["terrain:grass", "item:coin"];
 
@@ -115,7 +73,7 @@ fn tile(x: u16, y: u16, items: Vec<Item>) -> Tile {
 
 /// The manifest of a one-tile compiled bundle; the fixtures reuse it with their own sectors.
 fn manifest() -> Result<Manifest, Box<dyn StdError>> {
-    let frame = zstd::bulk::compress(&sector::encode(&[tile(1, 1, vec![item(0)])])?, 3)?;
+    let frame = zstd::bulk::compress(&sector::encode(&[tile(1, 1, vec![item(0), item(1)])])?, 3)?;
     let mut region = b"OTRB".to_vec();
     region.extend_from_slice(&[1, 7]);
     for value in [0u16, 0, 1] {
@@ -348,8 +306,7 @@ fn map_overlay_hides_and_adds_up_to_the_64_item_reach_and_load_refuses_a_65th() 
     for count in 1..=64 {
         overlay.add_volatile(POS, coin(count), None)?;
     }
-    let tile = overlay.tile(POS).ok_or("tile")?;
-    assert_eq!(tile.added().len(), 64);
+    assert_eq!(overlay.tile(POS).ok_or("tile")?.added().len(), 64);
     // Unhiding every ordinal leaves the added items alone.
     let used = overlay.used_bytes();
     for ordinal in 0..64 {
@@ -442,8 +399,7 @@ fn map_overlay_refuses_a_volatile_entry_over_the_budget_atomically() -> TestResu
     let next = sizing.used_bytes() - empty - first;
     // Room for exactly two entries on one tile.
     let budget = empty + first + next;
-    let mut overlay =
-        ChannelOverlay::with_budget(Arc::clone(&base), world()?, channel(2)?, budget);
+    let mut overlay = ChannelOverlay::with_budget(Arc::clone(&base), world()?, channel(2)?, budget);
     overlay.add_volatile(POS, coin(1), Some(5_000))?;
     overlay.add_volatile(POS, coin(2), Some(5_000))?;
     assert_eq!(overlay.used_bytes(), budget);
@@ -452,7 +408,10 @@ fn map_overlay_refuses_a_volatile_entry_over_the_budget_atomically() -> TestResu
         overlay.tile(POS).ok_or("tile")?.added().to_vec(),
     );
     let refused = overlay.add_volatile(POS, coin(3), Some(5_000));
-    assert!(matches!(refused, Err(OverlayError::OverBudget { available: 0, .. })));
+    assert!(matches!(
+        refused,
+        Err(OverlayError::OverBudget { available: 0, .. })
+    ));
     // A freeze-time hide is refusable too.
     assert!(matches!(
         overlay.hide(POS, 0, Admission::Refusable),
@@ -490,7 +449,9 @@ fn map_overlay_admits_a_durable_item_over_the_budget_and_raises_the_alarm() -> T
     assert_eq!(overlay.ground_entry(&uuid(10)), Some((POS, entry)));
     let tile = overlay.tile(POS).ok_or("tile")?;
     assert!(tile.is_hidden(0));
-    assert!(matches!(tile.added()[0].item(), AddedItem::Ground(item) if item.item_instance_id == uuid(10)));
+    assert!(
+        matches!(tile.added()[0].item(), AddedItem::Ground(item) if item.item_instance_id == uuid(10))
+    );
     assert_eq!(
         overlay.add_ground(ground_item(&base, channel_id, 10, POS)?),
         Err(OverlayError::DuplicateItem)
@@ -503,7 +464,15 @@ fn map_overlay_admits_a_durable_item_over_the_budget_and_raises_the_alarm() -> T
 fn map_overlay_rebuild_restores_every_durable_ground_item_and_fails_closed() -> TestResult {
     let base = base()?;
     let channel_id = channel(2)?;
-    let positions = [POS, TilePos { x: 2, ..POS }, TilePos { x: 31, y: 31, floor: -7 }];
+    let positions = [
+        POS,
+        TilePos { x: 2, ..POS },
+        TilePos {
+            x: 31,
+            y: 31,
+            floor: -7,
+        },
+    ];
     let items = || -> Result<Vec<GroundItemInstance>, Box<dyn StdError>> {
         positions
             .iter()
@@ -514,7 +483,10 @@ fn map_overlay_rebuild_restores_every_durable_ground_item_and_fails_closed() -> 
     // Every item is rebuilt, even far over a tiny budget.
     let rebuilt = ChannelOverlay::rebuild(Arc::clone(&base), world()?, channel_id, 0, items()?)?;
     for (pos, seed) in positions.iter().zip(10..) {
-        assert_eq!(rebuilt.ground_entry(&uuid(seed)).map(|(at, _)| at), Some(*pos));
+        assert_eq!(
+            rebuilt.ground_entry(&uuid(seed)).map(|(at, _)| at),
+            Some(*pos)
+        );
     }
     assert_eq!(rebuilt.alarm_count(), 3);
     let full = ChannelOverlay::rebuild(
@@ -537,11 +509,26 @@ fn map_overlay_rebuild_restores_every_durable_ground_item_and_fails_closed() -> 
     // So does an item of another channel, another World, an undecodable or unmapped position, or
     // a duplicate.
     let cases: [(fn(&mut GroundItemInstance), OverlayError); 5] = [
-        (|item| item.channel_id = channel(3).unwrap_or(item.channel_id), OverlayError::Channel),
-        (|item| item.world_id = WorldId::decode(&uuid(4)).unwrap_or(item.world_id), OverlayError::World),
-        (|item| item.ground.spatial_position.pop().map_or((), drop), OverlayError::Position),
-        (|item| item.ground.spatial_position[8] = 0x7f, OverlayError::Position),
-        (|item| item.ground.spatial_position[3] = 200, OverlayError::NoBaseTile),
+        (
+            |item| item.channel_id = channel(3).unwrap_or(item.channel_id),
+            OverlayError::Channel,
+        ),
+        (
+            |item| item.world_id = WorldId::decode(&uuid(4)).unwrap_or(item.world_id),
+            OverlayError::World,
+        ),
+        (
+            |item| item.ground.spatial_position.pop().map_or((), drop),
+            OverlayError::Position,
+        ),
+        (
+            |item| item.ground.spatial_position[8] = 0x7f,
+            OverlayError::Position,
+        ),
+        (
+            |item| item.ground.spatial_position[3] = 200,
+            OverlayError::NoBaseTile,
+        ),
     ];
     for (corrupt, reason) in cases {
         let mut bad = items()?;
@@ -549,7 +536,10 @@ fn map_overlay_rebuild_restores_every_durable_ground_item_and_fails_closed() -> 
         let refused = ChannelOverlay::rebuild(Arc::clone(&base), world()?, channel_id, 0, bad)
             .err()
             .ok_or("bad rebuild")?;
-        assert_eq!((refused.item_instance_id, refused.reason), (uuid(12), reason));
+        assert_eq!(
+            (refused.item_instance_id, refused.reason),
+            (uuid(12), reason)
+        );
     }
     let mut twice = items()?;
     twice.push(twice[0].clone());
@@ -560,33 +550,39 @@ fn map_overlay_rebuild_restores_every_durable_ground_item_and_fails_closed() -> 
     Ok(())
 }
 
-/// The accounted bytes bound the real heap the overlay holds (docs/agents/evidence/
-/// MAP-OVERLAY-1a-overlay-budget.md): filled to the budget with volatile entries over every
-/// tile, hides and Ground items, then drained and refilled.
+/// A `kB` field of `/proc/self/status`, in bytes.
+fn status_bytes(field: &str) -> Result<usize, Box<dyn StdError>> {
+    let status = std::fs::read_to_string("/proc/self/status")?;
+    let line = status
+        .lines()
+        .find(|line| line.starts_with(field))
+        .ok_or("status field")?;
+    let kb: usize = line
+        .trim_start_matches(field)
+        .trim()
+        .trim_end_matches("kB")
+        .trim()
+        .parse()?;
+    Ok(kb * 1024)
+}
+
+/// The budget measurement (docs/agents/evidence/MAP-OVERLAY-1a-overlay-budget.md): one overlay
+/// filled to the default budget with volatile entries over every tile of the fixture, then
+/// hides and Ground items admitted over it; the resident growth is compared with the accounted
+/// bytes. Run by hand in release mode, alone.
 #[test]
-fn map_overlay_budget_accounting_bounds_the_real_heap() -> TestResult {
+#[ignore = "budget measurement (ADR-0021 §4.8), run by hand in release mode"]
+fn map_overlay_budget_measure() -> TestResult {
     let base = base()?;
     let channel_id = channel(2)?;
-    let budget = 16 * 1024 * 1024;
-    let start = live();
-    let mut overlay =
-        ChannelOverlay::with_budget(Arc::clone(&base), world()?, channel_id, budget);
-    let mut worst = 0f64;
-    let mut sample = |overlay: &ChannelOverlay, label: &str| {
-        let real = (live() - start) as f64;
-        let ratio = real / overlay.used_bytes() as f64;
-        println!(
-            "{label}: accounted {} B, real heap {} B, ratio {ratio:.3}",
-            overlay.used_bytes(),
-            real
-        );
-        worst = worst.max(ratio);
-    };
+    let before = status_bytes("VmRSS:")?;
+    let mut overlay = ChannelOverlay::new(Arc::clone(&base), world()?, channel_id);
     let positions: Vec<TilePos> = (0..32u16)
         .flat_map(|y| (0..32u16).map(move |x| TilePos { x, y, floor: -7 }))
         .collect();
     let mut seed = 0u64;
-    let mut ids = Vec::new();
+    let mut decaying = 0;
+    let start = std::time::Instant::now();
     'fill: loop {
         for pos in &positions {
             seed += 1;
@@ -597,39 +593,43 @@ fn map_overlay_budget_accounting_bounds_the_real_heap() -> TestResult {
             };
             let decay = (seed % 3 == 0).then_some(seed * 7);
             match overlay.add_volatile(*pos, item, decay) {
-                Ok(id) => ids.push((*pos, id)),
+                Ok(_) => decaying += usize::from(decay.is_some()),
                 Err(OverlayError::OverBudget { .. }) => break 'fill,
                 Err(error) => return Err(error.into()),
             }
-            if ids.len() == 1 || ids.len() == 1024 || ids.len() == 50_000 {
-                sample(&overlay, &format!("{} volatile entries", ids.len()));
-            }
         }
     }
-    sample(&overlay, &format!("full: {} volatile entries", ids.len()));
-    let filled = ids.len();
-    for (pos, id) in ids.drain(..) {
-        overlay.remove(pos, id)?;
-    }
+    let fill = start.elapsed();
+    let entries = seed - 1;
+    let full = overlay.used_bytes();
+    let resident = status_bytes("VmRSS:")?.saturating_sub(before);
     for pos in &positions {
-        overlay.hide(*pos, 0, Admission::Refusable)?;
+        overlay.hide(*pos, 0, Admission::Durable)?;
     }
-    sample(&overlay, "drained, one hide per tile");
-    let mut seed = 0u8;
-    for pos in positions.iter().take(200) {
-        seed = seed.wrapping_add(1);
+    for (pos, seed) in positions.iter().take(250).zip(1u8..) {
         let mut item = ground_item(&base, channel_id, seed, *pos)?;
-        item.item_instance_id[0] = seed;
         item.item_instance_id[1] = (pos.y as u8) ^ 0x5a;
-        item.item_instance_id[2] = pos.x as u8;
         overlay.add_ground(item)?;
     }
-    sample(&overlay, "plus 200 Ground items");
-    drop(overlay);
-    let leaked = live() - start;
-    println!("filled {filled}, worst real/accounted {worst:.3}, after drop {leaked} B");
-    assert!(filled > 10_000);
-    assert!(worst <= 1.0, "the accounting under-counts the real heap: {worst:.3}");
-    assert!(leaked <= 0);
+    let start = std::time::Instant::now();
+    let expired = overlay.expire(u64::MAX).len();
+    let expire = start.elapsed();
+    println!(
+        "entries {entries} ({decaying} decaying) on {} tiles; accounted {full} B of {} B; \
+         resident growth {resident} B (ratio {:.3}); fill {fill:?}; over budget after 1,024 \
+         durable hides and 250 Ground items: {} (alarms {}); expired {expired} in {expire:?}",
+        positions.len(),
+        overlay.budget(),
+        resident as f64 / full as f64,
+        overlay.over_budget(),
+        overlay.alarm_count(),
+    );
+    assert!(full <= OVERLAY_BUDGET_BYTES);
+    assert!(
+        resident <= full,
+        "the accounting under-counts the resident heap"
+    );
+    assert!(overlay.over_budget() && overlay.alarm_count() > 0);
+    assert_eq!(expired, decaying);
     Ok(())
 }

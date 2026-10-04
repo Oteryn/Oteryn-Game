@@ -227,7 +227,12 @@ fn item_cost(item: &AddedItem) -> usize {
     2 * ENTRY_SLOT
         + match item {
             AddedItem::Volatile { item, decays_at_ms } => {
-                item.attributes.capacity() + if decays_at_ms.is_some() { EXPIRY_COST } else { 0 }
+                item.attributes.capacity()
+                    + if decays_at_ms.is_some() {
+                        EXPIRY_COST
+                    } else {
+                        0
+                    }
             }
             AddedItem::Ground(ground) => {
                 size_of::<GroundItemInstance>()
@@ -317,12 +322,10 @@ impl ChannelOverlay {
         let mut overlay = Self::with_budget(base, world_id, channel_id, budget);
         for item in items {
             let item_instance_id = item.item_instance_id;
-            overlay
-                .add_ground(item)
-                .map_err(|reason| RebuildError {
-                    item_instance_id,
-                    reason,
-                })?;
+            overlay.add_ground(item).map_err(|reason| RebuildError {
+                item_instance_id,
+                reason,
+            })?;
         }
         Ok(overlay)
     }
@@ -477,8 +480,8 @@ impl ChannelOverlay {
         if item.ground.map_revision != self.map_revision {
             return Err(OverlayError::MapRevision);
         }
-        let cell =
-            decode_ground_cell(&item.ground.spatial_position).map_err(|_| OverlayError::Position)?;
+        let cell = decode_ground_cell(&item.ground.spatial_position)
+            .map_err(|_| OverlayError::Position)?;
         let pos = match (
             u16::try_from(cell.x),
             u16::try_from(cell.y),
@@ -526,7 +529,8 @@ impl ChannelOverlay {
                 decays_at_ms: Some(decays_at_ms),
                 ..
             } => {
-                self.expiry.remove(&(deadline_second(*decays_at_ms), id, pos));
+                self.expiry
+                    .remove(&(deadline_second(*decays_at_ms), id, pos));
             }
             AddedItem::Volatile { .. } => {}
             AddedItem::Ground(ground) => {
