@@ -240,3 +240,5 @@ Main 04cd6fa2 (#1720, #1722, #1725) merged without textual conflicts; `release_t
 main's premium release and session end next to this PR's familiar and spell-training saves.
 Main's container-view join-snapshot test expectations include the always-sent empty overlay
 domain. Main eaa40100 (#1723..#1729) merged cleanly; its 0069 does not touch the 0068 guard.
+Main 83c4e94a (#1597 imbuements): `content/manifest.json` and the lock regenerated with
+`regenerate_content.py --resolve`; every check but the known ITEM-KEY-R25-1 passes.

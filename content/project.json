@@ -30,6 +30,9 @@
     "House",
     "WorldObject"
   ],
+  "populated_rulesets": [
+    "Imbuements"
+  ],
   "project_revision": "tree-npc-reviewed-definitions-r1",
   "runtime_source": "legacy_until_separately_qualified",
   "schema": "OTERYN_GAME_CONTENT_TREE_PROJECT/v1"
