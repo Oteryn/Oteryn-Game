@@ -1,0 +1,53 @@
+{
+  "abilities": [
+    {
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "candidate:spell/source/canary-main-current/5368814810bc9a58/ability/effect-item",
+          "revision": "source-player-r28"
+        },
+        {
+          "family": "Effect",
+          "key": "candidate:spell/source/canary-main-current/5368814810bc9a58/ability/effect-source-presentation",
+          "revision": "source-player-r28"
+        }
+      ],
+      "identity": {
+        "key": "candidate:spell/source/canary-main-current/5368814810bc9a58/ability",
+        "revision": "source-player-r28"
+      },
+      "kind": "spell",
+      "needs_direction": false,
+      "needs_target": false,
+      "range_tiles": 0,
+      "zero_damage_health_path": true
+    }
+  ],
+  "effects": [
+    {
+      "created_item": {
+        "family": "Item",
+        "key": "candidate:spell/source/canary-main-current/5368814810bc9a58/item/2118",
+        "revision": "source-player-r28"
+      },
+      "identity": {
+        "key": "candidate:spell/source/canary-main-current/5368814810bc9a58/ability/effect-item",
+        "revision": "source-player-r28"
+      },
+      "operation": "create_item"
+    },
+    {
+      "identity": {
+        "key": "candidate:spell/source/canary-main-current/5368814810bc9a58/ability/effect-source-presentation",
+        "revision": "source-player-r28"
+      },
+      "operation": "presentation_only",
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/hitbyfire",
+        "projectile_asset_binding": "canary.appearance:missile/fire"
+      }
+    }
+  ],
+  "formulas": []
+}

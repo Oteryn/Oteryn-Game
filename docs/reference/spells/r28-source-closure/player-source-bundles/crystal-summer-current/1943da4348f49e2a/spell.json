@@ -1,0 +1,65 @@
+{
+  "spell": {
+    "base_power": 10,
+    "carrier": "instant",
+    "cooldown_ms": 4000,
+    "costs": {
+      "mana": 8,
+      "soul": 0
+    },
+    "execution": {
+      "ability": {
+        "family": "Ability",
+        "key": "candidate:spell/source/crystal-summer-current/1943da4348f49e2a/ability",
+        "revision": "source-player-r28"
+      }
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "attack"
+      }
+    ],
+    "identity": {
+      "key": "candidate:spell/source/crystal-summer-current/1943da4348f49e2a",
+      "revision": "source-player-r28"
+    },
+    "name": "Chill Out",
+    "needs_weapon": false,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_chill_out"
+    },
+    "pz_locks_caster": false,
+    "reference_spell_id": 173,
+    "requirements": {
+      "learning_required": false,
+      "level": 1,
+      "premium": false,
+      "vocation_display_flags": [
+        {
+          "show_in_description": true,
+          "vocation": "druid"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "elder_druid"
+        }
+      ],
+      "vocations": [
+        "druid",
+        "elder_druid"
+      ]
+    },
+    "targeting": {
+      "aggressive": true,
+      "block_walls": true,
+      "needs_direction": true,
+      "needs_target": false,
+      "parameter": "none",
+      "range_tiles": 1,
+      "self_target": false,
+      "target_or_direction": false
+    },
+    "words": "exevo infir frigo hur"
+  }
+}

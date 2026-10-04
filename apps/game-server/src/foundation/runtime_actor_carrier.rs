@@ -878,6 +878,23 @@ impl RuntimeCorpseProjection {
     }
 }
 
+/// VIS-3: one actor of [`ChannelRuntimeV1::visible_entities`]; `revision` is the position
+/// revision.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) struct VisibleRuntimeActor {
+    pub(crate) actor: ExactActorRef,
+    pub(crate) generation: u64,
+    pub(crate) position: MovementLocalPosition,
+    pub(crate) revision: u64,
+}
+
+/// VIS-3: the entities of [`ChannelRuntimeV1::visible_entities`], by kind.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub(crate) struct VisibleRuntimeEntities {
+    pub(crate) players: Vec<VisibleRuntimeActor>,
+    pub(crate) creatures: Vec<VisibleRuntimeActor>,
+}
+
 /// Opaque, single-use handoff from the owner commit record to Combat. It is
 /// deliberately neither Clone nor Copy and has no caller-visible constructor.
 #[derive(Debug, PartialEq, Eq)]
@@ -1254,6 +1271,12 @@ struct ChannelActorCarrier {
     /// slot index and that slot's generation. At most one entry per slot: `remove` prunes it, so
     /// it is bounded by `slots.len()` and never outlives its actor.
     attackers: Vec<PlayerAttackerEntry>,
+    /// VIS-3 (Codex 4178196302): the index of every slot off the free list (`Occupied`,
+    /// `CreatureOccupied` or a companion's `CreatureReserved`), in no particular order, so a
+    /// census of the actors present costs their number, not the capacity. Its capacity is
+    /// reserved at bootstrap for every slot, so taking a slot never reallocates it; `remove`, the
+    /// companion rollback and the spawn rollbacks keep it equal to those slots (Codex 4178855592).
+    occupied: Vec<u32>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -1751,6 +1774,56 @@ impl ChannelRuntimeV1 {
             .collect()
     }
 
+    /// VIS-3 (MOVE-RL-11 §4.2, D524): every entity this Channel shows in
+    /// `WORLD_SPATIAL_VISIBILITY` under the pinned Movement context, read in one owner work item:
+    /// committed present players and live creatures. Corpses wait on their item binding (D3-7).
+    /// Read-only: a value snapshot of the existing `slots`, never an authority token.
+    pub(crate) fn visible_entities(&self) -> VisibleRuntimeEntities {
+        let context = self.pinned_position_context();
+        let carrier = &self.carrier;
+        let actor = |version: &VersionedPosition| VisibleRuntimeActor {
+            actor: ExactActorRef(ActorRef {
+                world_id: carrier.world_id,
+                channel_id: carrier.channel_id,
+                scope_generation: carrier.scope_generation,
+                actor_local_id: version.actor_local_id,
+                actor_local_generation: version.actor_local_generation,
+            }),
+            generation: version.actor_local_generation.0,
+            position: MovementLocalPosition {
+                x: version.position.x,
+                y: version.position.y,
+                floor: version.position.floor,
+            },
+            revision: version.revision,
+        };
+        let mut visible = VisibleRuntimeEntities::default();
+        // Only the occupied slots (Codex 4178196302): never a scan of the whole capacity.
+        let occupied = carrier
+            .occupied
+            .iter()
+            .filter_map(|index| carrier.slots.get(usize::try_from(*index).ok()?));
+        for slot in occupied {
+            match slot {
+                Slot::Occupied {
+                    game_session_id: Some(_),
+                    committed: true,
+                    position: Some(version),
+                    ..
+                } if version.context == context => visible.players.push(actor(version)),
+                Slot::CreatureOccupied {
+                    health,
+                    position: Some(version),
+                    ..
+                } if *health > 0 && version.context == context => {
+                    visible.creatures.push(actor(version));
+                }
+                _ => {}
+            }
+        }
+        visible
+    }
+
     /// AI-4 (GAME-AI-01 slice §4.6): true only while `actor` names a live (`health > 0`)
     /// creature generation of this runtime. A player, a stale or dead generation, a vacant slot
     /// or another scope is false.
@@ -2136,6 +2209,7 @@ impl ChannelRuntimeV1 {
         )?;
         let slots_before = self.carrier.slots.clone();
         let free_before = self.carrier.free_head;
+        let occupied_before = self.carrier.occupied.clone();
         let spawns_before = self.carrier.spawns.clone();
         let result = (|| {
             self.carrier.realize_spawn(
@@ -2155,6 +2229,7 @@ impl ChannelRuntimeV1 {
         if result.is_err() {
             self.carrier.slots = slots_before;
             self.carrier.free_head = free_before;
+            self.carrier.occupied = occupied_before;
             self.carrier.spawns = spawns_before;
         }
         result
@@ -2543,6 +2618,10 @@ impl ChannelActorCarrier {
         // commit until every fallible construction step has succeeded.
         continuity.ensure_current_generation_unclaimed()?;
         let slots = allocate_slots(explicit_capacity)?;
+        let mut occupied = Vec::new();
+        occupied
+            .try_reserve_exact(explicit_capacity)
+            .map_err(|_| CarrierError::AllocationFailed)?;
 
         // Claim only after every fallible construction step has succeeded.
         continuity.claim_current_generation()?;
@@ -2558,6 +2637,7 @@ impl ChannelActorCarrier {
             spawns: Vec::new(),
             fence_transitions: 0,
             attackers: Vec::new(),
+            occupied,
         })
     }
 
@@ -2781,6 +2861,8 @@ impl ChannelActorCarrier {
             }
         };
         self.free_head = next_free;
+        // Within the capacity reserved at bootstrap: one entry per occupied slot.
+        self.occupied.push(free_head);
         Ok(actor_ref)
     }
 
@@ -2828,6 +2910,13 @@ impl ChannelActorCarrier {
         }
     }
 
+    /// Drops `index` from the occupied-slot index when its slot returns to the free list.
+    fn unindex_occupied(&mut self, index: u32) {
+        if let Some(at) = self.occupied.iter().position(|entry| *entry == index) {
+            self.occupied.swap_remove(at);
+        }
+    }
+
     fn remove(
         &mut self,
         continuity: &NamespaceContinuityGuard,
@@ -2855,6 +2944,7 @@ impl ChannelActorCarrier {
             next_free: self.free_head,
         };
         self.free_head = Some(free_index);
+        self.unindex_occupied(free_index);
         // A2: the slot's bound lease and fence go with it.
         self.attackers.retain(|entry| entry.index != index);
         if removed_creature {
@@ -3917,6 +4007,7 @@ impl ChannelActorCarrier {
 
         let slots_before = self.slots.clone();
         let free_head_before = self.free_head;
+        let occupied_before = self.occupied.clone();
         let mut cells = Vec::with_capacity(definition.placement_cells.len());
         for cell in &definition.placement_cells {
             let actor = match self.admit_creature(
@@ -3929,6 +4020,7 @@ impl ChannelActorCarrier {
                 Err(error) => {
                     self.slots = slots_before;
                     self.free_head = free_head_before;
+                    self.occupied = occupied_before;
                     return Err(error);
                 }
             };
@@ -3936,6 +4028,7 @@ impl ChannelActorCarrier {
             {
                 self.slots = slots_before;
                 self.free_head = free_head_before;
+                self.occupied = occupied_before;
                 return Err(error);
             }
             cells.push(SpawnCellState {
@@ -4071,6 +4164,7 @@ impl ChannelActorCarrier {
 
         let slots_before = self.slots.clone();
         let free_head_before = self.free_head;
+        let occupied_before = self.occupied.clone();
         if let Some(dead_actor) = self.spawns[spawn_index].cells[cell_index].live {
             // Best effort: an already-removed actor (e.g. a repeated call) is not an error here.
             let _ = self.remove(continuity, dead_actor.0);
@@ -4090,12 +4184,14 @@ impl ChannelActorCarrier {
             Err(error) => {
                 self.slots = slots_before;
                 self.free_head = free_head_before;
+                self.occupied = occupied_before;
                 return Err(error);
             }
         };
         if let Err(error) = self.initialize_position(continuity, actor, position_context, cell) {
             self.slots = slots_before;
             self.free_head = free_head_before;
+            self.occupied = occupied_before;
             return Err(error);
         }
         let state = &mut self.spawns[spawn_index].cells[cell_index];
@@ -5598,6 +5694,56 @@ mod tests {
         dead
     }
 
+    /// VIS-3 (Codex 4178196302): the occupied index names exactly the occupied slots after
+    /// admissions, removals, slot reuse, a spawn and a respawn, and holds no more than them.
+    #[test]
+    fn the_occupied_index_is_exactly_the_occupied_slots() {
+        let by_scan = |carrier: &ChannelActorCarrier| -> Vec<u32> {
+            (0_u32..)
+                .zip(carrier.slots.iter())
+                .filter(|(_, slot)| {
+                    matches!(
+                        slot,
+                        Slot::Occupied { .. }
+                            | Slot::CreatureOccupied { .. }
+                            | Slot::CreatureReserved { .. }
+                    )
+                })
+                .map(|(index, _)| index)
+                .collect()
+        };
+        let indexed = |carrier: &ChannelActorCarrier| -> Vec<u32> {
+            let mut occupied = carrier.occupied.clone();
+            occupied.sort_unstable();
+            occupied
+        };
+        let (continuity, mut carrier) = carrier(16);
+        assert!(carrier.occupied.is_empty());
+        assert!(carrier.occupied.capacity() >= 16);
+        let first = carrier.admit(&continuity, ActorState(1)).expect("admit");
+        let second = carrier.admit(&continuity, ActorState(2)).expect("admit");
+        carrier.admit(&continuity, ActorState(3)).expect("admit");
+        assert_eq!(indexed(&carrier), [0, 1, 2]);
+        carrier.remove(&continuity, second).expect("remove");
+        assert_eq!(indexed(&carrier), by_scan(&carrier));
+        assert_eq!(indexed(&carrier), [0, 2]);
+        // The freed slot is reused, and listed once.
+        carrier.admit(&continuity, ActorState(4)).expect("admit");
+        assert_eq!(indexed(&carrier), [0, 1, 2]);
+        carrier.remove(&continuity, first).expect("remove");
+        let context = spawn_position_context(&continuity);
+        carrier
+            .realize_spawn(&continuity, SpawnSourceId(1), d116_definition(), context)
+            .expect("D116 realizes");
+        assert_eq!(indexed(&carrier), by_scan(&carrier));
+        kill_spawn_cell(&continuity, &mut carrier, SpawnSourceId(1), 0);
+        carrier
+            .resolve_respawn_timer(&continuity, SpawnSourceId(1), 0, context)
+            .expect("resolves");
+        assert_eq!(indexed(&carrier), by_scan(&carrier));
+        assert!(carrier.occupied.len() < carrier.slots.len());
+    }
+
     #[test]
     fn respawn_admits_a_fresh_generation_when_the_cell_is_free() {
         let (continuity, mut carrier) = carrier(4);
@@ -5970,6 +6116,84 @@ mod tests {
             ChannelActorCarrier::bootstrap_pre_production(&mut continuity, 1),
             Err(CarrierError::NamespaceAlreadyClaimed)
         );
+    }
+
+    /// VIS-3: `visible_entities` reads committed positioned players and live creatures under the
+    /// pinned context, and nothing else; it changes nothing.
+    #[test]
+    fn visible_entities_are_the_pinned_players_and_live_creatures() {
+        let mut runtime = runtime(6);
+        let at = |x: i32| MovementLocalPosition { x, y: 5, floor: 7 };
+        let player = |runtime: &mut ChannelRuntimeV1, raw: u64, x: i32| {
+            let reservation = runtime
+                .reserve_fresh_session(session(raw))
+                .expect("reserve");
+            let actor = runtime.commit_fresh_session(reservation).expect("commit");
+            runtime
+                .initialize_movement_test_position(actor, at(x))
+                .expect("position");
+            actor
+        };
+        let shown = player(&mut runtime, 30, 1);
+        // Positioned under another context: never shown.
+        let other_context = player(&mut runtime, 31, 2);
+        // Reserved but not committed: never shown.
+        runtime.reserve_fresh_session(session(32)).expect("reserve");
+        let live = runtime.admit_test_creature(at(3)).expect("creature");
+        // Dead: never shown.
+        runtime.admit_test_creature(at(4)).expect("creature");
+        let pinned = runtime.pinned_position_context();
+        for slot in runtime.carrier.slots.iter_mut() {
+            match slot {
+                Slot::Occupied {
+                    position: Some(version),
+                    ..
+                }
+                | Slot::CreatureOccupied {
+                    position: Some(version),
+                    ..
+                } if version.position.x != 2 => version.context = pinned,
+                _ => {}
+            }
+            if let Slot::CreatureOccupied {
+                health,
+                position: Some(version),
+                ..
+            } = slot
+                && version.position.x == 4
+            {
+                *health = 0;
+            }
+        }
+        let before = runtime.carrier.slots.clone();
+
+        let visible = runtime.visible_entities();
+        assert_eq!(
+            visible
+                .players
+                .iter()
+                .map(|entry| entry.actor)
+                .collect::<Vec<_>>(),
+            [shown]
+        );
+        assert_ne!(shown, other_context);
+        assert_eq!(visible.players[0].position, at(1));
+        assert_eq!(
+            visible.players[0].generation,
+            shown.0.actor_local_generation.0
+        );
+        assert_eq!(
+            visible
+                .creatures
+                .iter()
+                .map(|entry| entry.actor)
+                .collect::<Vec<_>>(),
+            [live]
+        );
+        assert_eq!(visible.creatures[0].position, at(3));
+        // Read-only.
+        assert_eq!(runtime.carrier.slots, before);
+        assert_eq!(runtime.visible_entities(), visible);
     }
 }
 

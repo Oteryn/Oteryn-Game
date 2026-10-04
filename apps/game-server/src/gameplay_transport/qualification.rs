@@ -3243,6 +3243,7 @@ async fn seam_clients(clients: SeamClients<'_>) -> TestResult {
             &step_east,
             &moved(1, 1, spatial_baseline, 1, 0),
         )?;
+        dev_client_step_event(&mut dev_client, "step east", &step_east)?;
         // cmd2: USE the door open (expected revision = the joined door revision).
         let use_open = dev_client
             .use_object(&door_placement, door_revision)
@@ -3271,6 +3272,7 @@ async fn seam_clients(clients: SeamClients<'_>) -> TestResult {
             &step_through,
             &moved(3, 5, spatial_baseline + 1, 1, -1),
         )?;
+        dev_client_step_event(&mut dev_client, "step through", &step_through)?;
         // cmd4: south (1,-1) -> (1,0), out of the doorway.
         let step_out = dev_client
             .step(StepDirection::South)
@@ -3281,6 +3283,7 @@ async fn seam_clients(clients: SeamClients<'_>) -> TestResult {
             &step_out,
             &moved(4, 7, spatial_baseline + 2, 1, 0),
         )?;
+        dev_client_step_event(&mut dev_client, "step out", &step_out)?;
         // cmd5: USE the door closed (expected revision = the revision the open delta reported).
         let use_close = dev_client
             .use_object(&door_placement, door_revision + 1)
@@ -3411,6 +3414,42 @@ fn dev_client_expect<T: PartialEq + std::fmt::Debug + ?Sized>(
 
 /// Reads the idle session until a pushed delta is queued (bounded, 5s) and returns the queued
 /// events: a `COMMITTED` use returns at its result, so the door delta behind it is read here.
+/// VIS-3: with capability 6 selected, an own step's entity delta is also queued as an event (the
+/// outcome carries only its observation, `crates/session`); it is drained after each step so the
+/// door reads see only domain 2. Without capability 6 a step queues nothing.
+fn dev_client_step_event(
+    session: &mut oteryn_dev_client::DevClientSession,
+    label: &str,
+    step: &oteryn_dev_client::StepOutcome,
+) -> TestResult {
+    use oteryn_dev_client::SessionEvent;
+    let events = session.take_events();
+    let entities = session.selected_capabilities().contains(
+        &oteryn_protocol_oteryn::world_spatial_entities::CAPABILITY_WORLD_SPATIAL_ENTITIES,
+    );
+    let own = match (entities, &step.world_spatial_delta, events.as_slice()) {
+        (false, _, []) => true,
+        (true, Some(observed), [SessionEvent::WorldSpatialEntities(delta)]) => {
+            delta.server_sequence == observed.server_sequence
+                && delta.base_revision == observed.base_revision
+                && delta.new_revision == observed.new_revision
+                && delta.value.content_generation == observed.value.content_generation
+                && delta.value.actor_position == observed.value.actor_position
+        }
+        _ => false,
+    };
+    if own {
+        Ok(())
+    } else {
+        Err(format!(
+            "dev client {label} events: {events:?} (expected only the step's own entity delta \
+             {:?}, capability 6 selected={entities})",
+            step.world_spatial_delta
+        )
+        .into())
+    }
+}
+
 async fn dev_client_door_events(
     session: &mut oteryn_dev_client::DevClientSession,
 ) -> TestResult<Vec<oteryn_dev_client::SessionEvent>> {

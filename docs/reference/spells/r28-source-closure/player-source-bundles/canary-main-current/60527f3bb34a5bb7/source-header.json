@@ -1,0 +1,43 @@
+{
+  "spell": {
+    "carrier": "instant",
+    "cooldown_ms": 6000,
+    "costs": {
+      "mana": 200
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "attack"
+      }
+    ],
+    "name": "Front Sweep",
+    "needs_weapon": true,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_front_sweep"
+    },
+    "reference_spell_id": 59,
+    "requirements": {
+      "level": 70,
+      "premium": true,
+      "vocation_display_flags": [
+        {
+          "show_in_description": true,
+          "vocation": "knight"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "elite_knight"
+        }
+      ],
+      "vocations": [
+        "elite_knight",
+        "knight"
+      ]
+    },
+    "targeting": {
+      "needs_direction": true
+    },
+    "words": "exori min"
+  }
+}

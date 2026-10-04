@@ -1,0 +1,43 @@
+{
+  "spell": {
+    "base_power": 200,
+    "carrier": "instant",
+    "cooldown_ms": 2000,
+    "costs": {
+      "mana": 150
+    },
+    "groups": [
+      {
+        "cooldown_ms": 1000,
+        "group": "healing"
+      }
+    ],
+    "name": "Mass Healing",
+    "presentation": {
+      "cast_cue": "canary.sound:spell_mass_healing"
+    },
+    "reference_spell_id": 82,
+    "requirements": {
+      "level": 36,
+      "premium": true,
+      "vocation_display_flags": [
+        {
+          "show_in_description": true,
+          "vocation": "druid"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "elder_druid"
+        }
+      ],
+      "vocations": [
+        "druid",
+        "elder_druid"
+      ]
+    },
+    "targeting": {
+      "aggressive": false
+    },
+    "words": "exura gran mas res"
+  }
+}

@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "status": "ACTIVE",
-  "updated_at": "2026-09-30T00:00:00+00:00",
+  "updated_at": "2026-10-04T00:00:00+00:00",
   "unit_policy": "Every limit declares an unambiguous unit and absolute hard maximum.",
   "required_entry_fields": [
     "id",
@@ -5136,6 +5136,199 @@
       ]
     },
     {
+      "id": "DUR04-REFERENCE-ITEM-PROFILE-V3-SERVER-GROUPS-PER-RECORD",
+      "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V3.md",
+      "resource": "Present typed capability groups in one artifact v6 server-authoritative Item body",
+      "unit": "groups",
+      "hard_maximum": 18,
+      "configurable_range": {
+        "minimum": 0,
+        "maximum": 18
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Reject group count before group-vector allocation; reject duplicates, noncanonical order and unknown critical groups (ids 1-18).",
+      "client_visible": false,
+      "boundary_tests": [
+        "18 known ordered unique groups accepted",
+        "19 groups rejected before allocation",
+        "group id 19, duplicate or unsorted group rejected"
+      ],
+      "notes": "v5 keeps 17 under the V2 row and refuses group 18 (ITEM-SEM-USE-1)."
+    },
+    {
+      "id": "DUR04-REFERENCE-ITEM-PROFILE-V3-CLIENT-GROUPS-PER-RECORD",
+      "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V3.md",
+      "resource": "Present typed capability groups in one artifact v6 client-safe Item body",
+      "unit": "groups",
+      "hard_maximum": 12,
+      "configurable_range": {
+        "minimum": 0,
+        "maximum": 12
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Reject group count before group-vector allocation; reject any group outside the client allowlist, including server-only group 18.",
+      "client_visible": true,
+      "boundary_tests": [
+        "12 allowlisted ordered unique groups accepted",
+        "13 groups rejected before allocation",
+        "server-only group 18 rejected in a client record"
+      ],
+      "notes": "The client allowlist is unchanged from v5."
+    },
+    {
+      "id": "DUR04-REFERENCE-ITEM-PROFILE-V3-POTION-RESTORES",
+      "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V3.md",
+      "resource": "Restore entries in one artifact v6 consumption Potion (group 18)",
+      "unit": "entries",
+      "hard_maximum": 2,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 2
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Reject the restore count before restore-vector allocation; one entry per resource, Health before Mana; 1 <= min <= max <= 10,000.",
+      "client_visible": false,
+      "boundary_tests": [
+        "2 restores (Health, Mana) accepted",
+        "3rd entry rejected before allocation",
+        "0 entries, a duplicate resource or Mana before Health rejected"
+      ],
+      "notes": "Food regeneration seconds are 1-1,199. The empty flask is KNOWN (an Item ordinal that must resolve) or NOT_APPLICABLE. ITEM-USE-1 executes both restores."
+    },
+    {
+      "id": "DUR04-REFERENCE-ITEM-PROFILE-V3-SERVER-RECORD-BYTES",
+      "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V3.md",
+      "resource": "One artifact v6 typed server-authoritative Item body record",
+      "unit": "bytes",
+      "hard_maximum": 3598,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 3598
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Reject declared record length before slicing, copying or field decode.",
+      "client_visible": false,
+      "boundary_tests": [
+        "3,598-byte semantically valid record accepted",
+        "3,599 bytes rejected before record allocation",
+        "truncated record rejected"
+      ]
+    },
+    {
+      "id": "DUR04-REFERENCE-ITEM-PROFILE-V3-CLIENT-RECORD-BYTES",
+      "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V3.md",
+      "resource": "One artifact v6 typed client-safe Item body record",
+      "unit": "bytes",
+      "hard_maximum": 3454,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 3454
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Reject declared record length before slicing, copying or field decode.",
+      "client_visible": true,
+      "boundary_tests": [
+        "3,454-byte semantically valid record accepted",
+        "3,455 bytes rejected before record allocation",
+        "truncated record rejected"
+      ]
+    },
+    {
+      "id": "DUR04-REFERENCE-ITEM-PROFILE-V3-SERVER-BODY-BYTES",
+      "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V3.md",
+      "resource": "Artifact v6 server-authoritative Item body section",
+      "unit": "bytes",
+      "hard_maximum": 137288886,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 137288886
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Use checked multiplication and addition; reject the section length before body allocation.",
+      "client_visible": false,
+      "boundary_tests": [
+        "137,288,886 bytes accepted",
+        "137,288,887 bytes rejected before allocation",
+        "checked arithmetic overflow rejected"
+      ]
+    },
+    {
+      "id": "DUR04-REFERENCE-ITEM-PROFILE-V3-CLIENT-BODY-BYTES",
+      "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V3.md",
+      "resource": "Artifact v6 client-safe Item body section",
+      "unit": "bytes",
+      "hard_maximum": 131794278,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 131794278
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Use checked multiplication and addition; reject the section length before body allocation.",
+      "client_visible": true,
+      "boundary_tests": [
+        "131,794,278 bytes accepted",
+        "131,794,279 bytes rejected before allocation",
+        "checked arithmetic overflow rejected"
+      ]
+    },
+    {
+      "id": "DUR04-REFERENCE-ITEM-PROFILE-V3-SERVER-ARTIFACT-BYTES",
+      "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V3.md",
+      "resource": "One encoded artifact v6 server-authoritative Reference Item artifact",
+      "unit": "bytes",
+      "hard_maximum": 178086423,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 178086423
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Reject the artifact length before section parsing, copying or digest work beyond the header.",
+      "client_visible": false,
+      "boundary_tests": [
+        "178,086,423 bytes accepted",
+        "178,086,424 bytes rejected before parsing",
+        "checked arithmetic overflow rejected"
+      ]
+    },
+    {
+      "id": "DUR04-REFERENCE-ITEM-PROFILE-V3-CLIENT-ARTIFACT-BYTES",
+      "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V3.md",
+      "resource": "One encoded artifact v6 client-safe Reference Item artifact",
+      "unit": "bytes",
+      "hard_maximum": 172591815,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 172591815
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Reject the artifact length before section parsing, copying or digest work beyond the header.",
+      "client_visible": true,
+      "boundary_tests": [
+        "172,591,815 bytes accepted",
+        "172,591,816 bytes rejected before parsing",
+        "checked arithmetic overflow rejected"
+      ]
+    },
+    {
+      "id": "DUR04-REFERENCE-ITEM-PROFILE-V3-GENERATION-PAIR-BYTES",
+      "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V3.md",
+      "resource": "Combined encoded artifact v6 server and client-safe Reference Item artifacts in one generation",
+      "unit": "bytes",
+      "hard_maximum": 350678238,
+      "configurable_range": {
+        "minimum": 2,
+        "maximum": 350678238
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Use checked addition and validate both projection maxima before staging either artifact as a pair.",
+      "client_visible": false,
+      "boundary_tests": [
+        "350,678,238 cumulative bytes accepted only when both projection maxima pass",
+        "350,678,239 bytes rejected before pair staging",
+        "checked-add overflow rejects the generation without partial publication"
+      ]
+    },
+    {
       "id": "MOVE-RL-03",
       "owner_contract": "OTERYN_V2_STAGE_C_VSL_OWNER_ACCEPTANCE_20260816.md",
       "resource": "Attempted adjacent destination candidates in one isolated Movement local-step decision",
@@ -6020,6 +6213,31 @@
       "notes": "CHARACTER-GOLD-FEE-BOUNDARY-V1 \u00a74.6 (D174-D178 and the \u00a72 at-most-2-change-outputs interpretation); fee shape only, the one-item DUR03-RL-01..08 rows are unchanged; registered by OTV2-20260930-gold-fee-1a. GOLD-FEE-1a burns gold coins only (no change output yet); GOLD-FEE-1b adds platinum/crystal and the change MINTs within these rows and re-measures the RL-07 byte rows."
     },
     {
+      "id": "DUR03-RL-03-FEE",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_BANK_FEE0_FEES_FROM_THE_BANK_DECISION_2026-09-30.md",
+      "resource": "Value lines in one DUR-03 fee BURN transaction (the bank part of a fee)",
+      "unit": "value lines per logical transaction",
+      "hard_maximum": 1,
+      "configurable_range": {
+        "minimum": 0,
+        "maximum": 1
+      },
+      "failure_category": "INVALID_INPUT",
+      "allocation_impact": "Checked in the payload gate and before any write; never truncated. 1 when the eligible coins are worth less than the fee and the rest is debited from the payer's (Account, World) bank balance (one FEE_DEBIT value line, class BURN, OneItemFeeBurnV1 field 13); 0 for a coin-only fee. Admitted only under the (2, DUR03_ONE_ITEM_DURABLE_AUDIT_RETENTION_V2) tuple.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=1: a fee with a bank part carries exactly one value line and is accepted",
+        "0: a coin-only fee carries none",
+        "max+1=2 rejected (INVALID_INPUT)",
+        "a (1, V1) event carrying the value line is rejected (INVALID_INPUT)"
+      ],
+      "consumers": [
+        "apps/game-server/src/durability/item_fee_burn_audit.rs",
+        "apps/game-server/src/durability/item_fee_burn.rs (in-transaction fee BURN with its bank part; migration 0072 proves the one FEE_DEBIT entry at commit)"
+      ],
+      "notes": "BANK-FEE-0 \u00a74.3 and ARCH-BATCH-ROOT-PACKETS-V1 \u00a72.5 (GOLD-FEE-2); fee shape only: DUR03-RL-03 stays 0 for every one-item shape and for coin-only fees (D174 stage 1 text). Registered by GOLD-FEE-2."
+    },
+    {
       "id": "DUR03-RL-06-FEE-BURN-PARTICIPANTS",
       "owner_contract": "../architecture/reviews/OTERYN_GAME_CHARACTER_GOLD_FEE_BOUNDARY_DECISION_2026-09-30.md",
       "resource": "Plan participants in one DUR-03 fee BURN transaction",
@@ -6110,7 +6328,7 @@
         "apps/game-server/src/durability/item_fee_burn_audit.rs",
         "apps/game-server/src/durability/item_fee_burn.rs (in-transaction fee BURN: plan and usage checked before any write; migration 0023 re-proves the lines at commit)"
       ],
-      "notes": "CHARACTER-GOLD-FEE-BOUNDARY-V1 \u00a74.6 (D174-D178 and the \u00a72 at-most-2-change-outputs interpretation); fee shape only, the one-item DUR03-RL-01..08 rows are unchanged; registered by OTV2-20260930-gold-fee-1a. GOLD-FEE-1b (OTV2-20260930-gold-fee-1b) admits platinum/crystal and the change MINTs within these rows and re-measured this RL-07 byte row (was 24,181 / 24,495 B for gold only)."
+      "notes": "CHARACTER-GOLD-FEE-BOUNDARY-V1 \u00a74.6 (D174-D178 and the \u00a72 at-most-2-change-outputs interpretation); fee shape only, the one-item DUR03-RL-01..08 rows are unchanged; registered by OTV2-20260930-gold-fee-1a. GOLD-FEE-1b (OTV2-20260930-gold-fee-1b) admits platinum/crystal and the change MINTs within these rows and re-measured this RL-07 byte row (was 24,181 / 24,495 B for gold only). GOLD-FEE-2 re-measured it with the bank value line (field 13): the largest bank-part event (20 whole crystal burns, the FEE_DEBIT line at BANK0-RL-01) is 24,267 B payload / 24,581 B envelope, below the change-MINT worst case, so the row is unchanged."
     },
     {
       "id": "DUR03-RL-07-FEE-BURN-ENVELOPE-BYTES",
@@ -6135,7 +6353,7 @@
         "apps/game-server/migrations/0023_character_gold_fee_burn.sql (stored envelope ceiling)",
         "apps/game-server/migrations/0031_character_gold_fee_change_mint.sql (stored envelope ceiling, re-measured)"
       ],
-      "notes": "CHARACTER-GOLD-FEE-BOUNDARY-V1 \u00a74.6 (D174-D178 and the \u00a72 at-most-2-change-outputs interpretation); fee shape only, the one-item DUR03-RL-01..08 rows are unchanged; registered by OTV2-20260930-gold-fee-1a. GOLD-FEE-1b (OTV2-20260930-gold-fee-1b) admits platinum/crystal and the change MINTs within these rows and re-measured this RL-07 byte row (was 24,181 / 24,495 B for gold only)."
+      "notes": "CHARACTER-GOLD-FEE-BOUNDARY-V1 \u00a74.6 (D174-D178 and the \u00a72 at-most-2-change-outputs interpretation); fee shape only, the one-item DUR03-RL-01..08 rows are unchanged; registered by OTV2-20260930-gold-fee-1a. GOLD-FEE-1b (OTV2-20260930-gold-fee-1b) admits platinum/crystal and the change MINTs within these rows and re-measured this RL-07 byte row (was 24,181 / 24,495 B for gold only). GOLD-FEE-2 re-measured it with the bank value line (field 13): the largest bank-part event (20 whole crystal burns, the FEE_DEBIT line at BANK0-RL-01) is 24,267 B payload / 24,581 B envelope, below the change-MINT worst case, so the row is unchanged."
     },
     {
       "id": "DUR03-RL-03-PROF",
@@ -6769,7 +6987,7 @@
       "failure_category": "CAPACITY_EXCEEDED",
       "hard_maximum": 5000,
       "id": "MAP01-BASE-LOAD-MS",
-      "notes": "Owner answer 8a (2026-09-30); initial gate confirmed or revised by the first compact-model measurement (ADR-0021 \u00a74.8).",
+      "notes": "Owner answer 8a (2026-09-30); initial gate confirmed or revised by the first compact-model measurement (ADR-0021 \u00a74.8). MAP-LOAD-1 (2026-10-04): confirmed; real map (19,373,519 tiles, 24,983,331 entries) loads in 3,426-4,006 ms on a 4 vCPU / 15.7 GiB node; docs/agents/evidence/MAP-LOAD-1-base-budgets.md.",
       "owner_contract": "ADR-0021-world-map-runtime-loading.md",
       "resource": "Full decode of one World's server World Bundle into the compact base model at node start",
       "unit": "milliseconds"
@@ -6791,7 +7009,7 @@
       "failure_category": "CAPACITY_EXCEEDED",
       "hard_maximum": 1073741824,
       "id": "MAP01-BASE-RSS-BYTES",
-      "notes": "Owner answer 8a; ADR-0021 \u00a74.1 and \u00a74.8.",
+      "notes": "Owner answer 8a; ADR-0021 \u00a74.1 and \u00a74.8. MAP-LOAD-1 (2026-10-04): confirmed; real-map base delta about 375 MB (358 MiB), peak 431 MB; docs/agents/evidence/MAP-LOAD-1-base-budgets.md.",
       "owner_contract": "ADR-0021-world-map-runtime-loading.md",
       "resource": "Resident memory of one World's shared read-only base model",
       "unit": "bytes"
@@ -6836,7 +7054,7 @@
       "failure_category": "CAPACITY_EXCEEDED",
       "hard_maximum": 100,
       "id": "MAP01-VIEWPORT-US",
-      "notes": "Owner answer 8a; ADR-0021 \u00a74.8.",
+      "notes": "Owner answer 8a; ADR-0021 \u00a74.8. MAP-LOAD-1 (2026-10-04): confirmed; real-map p99 72-83 us for 18x14 over native floors -7..=0 (20,000 seeded viewports); docs/agents/evidence/MAP-LOAD-1-base-budgets.md.",
       "owner_contract": "ADR-0021-world-map-runtime-loading.md",
       "resource": "Server cost of assembling one 18x14 viewport from base and overlay, over every floor the client sees",
       "unit": "microseconds"
