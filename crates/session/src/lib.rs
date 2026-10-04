@@ -24,7 +24,7 @@ use oteryn_protocol_oteryn::world_object::{
     self, UseDisposition, WorldObjectOverlayEntry, WorldObjectTarget,
 };
 use oteryn_protocol_oteryn::world_spatial::{
-    self, StepDirection, StepDisposition, WorldSpatialObservation,
+    self, CAPABILITY_PACED_MOVEMENT_V1, StepDirection, StepDisposition, WorldSpatialObservation,
 };
 use oteryn_protocol_oteryn::{
     CharacterId, ClientBootstrapValue, ClientCommandValue, CommandStatus, Direction,
@@ -32,6 +32,26 @@ use oteryn_protocol_oteryn::{
     decode_liveness_probe, decode_server_accepted, decode_snapshot_begin, decode_snapshot_body,
     decode_snapshot_chunk_framing, decode_snapshot_id, decode_state_delta, decode_wire_envelope,
     encode_client_bootstrap, encode_client_command, encode_liveness_ack,
+};
+use oteryn_protocol_oteryn::{
+    achievement_notices::{
+        CAPABILITY_ACHIEVEMENT_NOTICES_V1, STATE_DOMAIN_ACCOUNT_ACHIEVEMENT_NOTICES,
+    },
+    analyser::{CAPABILITY_ANALYSER_V1, STATE_DOMAIN_ACTOR_ANALYSER},
+    bestiary::STATE_DOMAIN_CHARACTER_BESTIARY,
+    charm::{
+        CAPABILITY_BESTIARY_CHARMS_V1, COMMAND_TYPE_CHARM_ASSIGN_INTENT,
+        COMMAND_TYPE_CHARM_UNLOCK_STAGE_INTENT, STATE_DOMAIN_CHARACTER_CHARMS,
+    },
+    chat::{CAPABILITY_CHAT_V1, COMMAND_TYPE_CHAT_INTENT, STATE_DOMAIN_CHAT},
+    container_tree::{
+        CAPABILITY_CONTAINER_TREE_V1, COMMAND_TYPE_CONTAINER_VIEW_INTENT,
+        STATE_DOMAIN_CONTAINER_VIEWS,
+    },
+    item_view::{
+        CAPABILITY_ITEM_VIEW_MOVE_V1, COMMAND_TYPE_ITEM_MOVE_INTENT,
+        STATE_DOMAIN_CHARACTER_INVENTORY, STATE_DOMAIN_OPEN_CONTAINER,
+    },
 };
 /// CHARM-5 view and command types (registered under capability 1 `BESTIARY_CHARMS_V1`, not yet
 /// routed by this crate), re-exported for the client views the same way.
@@ -62,6 +82,101 @@ pub trait SessionStream: AsyncRead + AsyncWrite + Unpin {}
 
 impl<T: AsyncRead + AsyncWrite + Unpin> SessionStream for T {}
 
+/// The capabilities this client implements and advertises by default: 13 `PACED_MOVEMENT_V1`
+/// (the step result `TOO_EARLY`). Add an ID here only together with its routing.
+pub const CLIENT_SUPPORTED_CAPABILITIES: &[u32] = &[CAPABILITY_PACED_MOVEMENT_V1];
+
+/// Capability-owned command types and state domains (`PROTOCOL_OTERYN_V1_REGISTRY.json`;
+/// mirrors the server's gate table). Capabilities 6, 12 and 13 own none: they extend the core
+/// domain 1 and command types 1 and 9, whose codecs gate the extension on the selected set.
+const GATED_ROUTES: &[(u32, &[u32], &[u32])] = &[
+    (
+        CAPABILITY_BESTIARY_CHARMS_V1,
+        &[
+            COMMAND_TYPE_CHARM_UNLOCK_STAGE_INTENT,
+            COMMAND_TYPE_CHARM_ASSIGN_INTENT,
+        ],
+        &[
+            STATE_DOMAIN_CHARACTER_BESTIARY,
+            STATE_DOMAIN_CHARACTER_CHARMS,
+        ],
+    ),
+    (
+        CAPABILITY_ITEM_VIEW_MOVE_V1,
+        &[COMMAND_TYPE_ITEM_MOVE_INTENT],
+        &[
+            STATE_DOMAIN_CHARACTER_INVENTORY,
+            STATE_DOMAIN_OPEN_CONTAINER,
+        ],
+    ),
+    (
+        CAPABILITY_CHAT_V1,
+        &[COMMAND_TYPE_CHAT_INTENT],
+        &[STATE_DOMAIN_CHAT],
+    ),
+    (
+        CAPABILITY_ACHIEVEMENT_NOTICES_V1,
+        &[],
+        &[STATE_DOMAIN_ACCOUNT_ACHIEVEMENT_NOTICES],
+    ),
+    (CAPABILITY_ANALYSER_V1, &[], &[STATE_DOMAIN_ACTOR_ANALYSER]),
+    (
+        CAPABILITY_CONTAINER_TREE_V1,
+        &[COMMAND_TYPE_CONTAINER_VIEW_INTENT],
+        &[STATE_DOMAIN_CONTAINER_VIEWS],
+    ),
+];
+
+fn capability_of_domain(domain_id: u32) -> Option<u32> {
+    GATED_ROUTES
+        .iter()
+        .find(|(_, _, domains)| domains.contains(&domain_id))
+        .map(|(capability, _, _)| *capability)
+}
+
+/// Total `step_retrying` attempts and the first backoff (doubled after each `TOO_EARLY`).
+pub const STEP_RETRY_ATTEMPTS: u32 = 4;
+pub const STEP_RETRY_INITIAL_BACKOFF: Duration = Duration::from_millis(100);
+
+/// CAP-NEG-1: a resume keeps the original selected set and never widens it. The client calls
+/// this with the set it holds and the set a `ServerResumeAccepted` carries; a mismatch means the
+/// resume must be abandoned for a fresh admission.
+pub fn check_resume_selection(original: &[u32], resumed: &[u32]) -> Result<(), SessionError> {
+    let same = original.len() == resumed.len() && resumed.iter().all(|id| original.contains(id));
+    if same {
+        Ok(())
+    } else {
+        Err(SessionError::ResumeSelectionChanged)
+    }
+}
+
+/// A state domain of a selected capability from the join snapshot, payload undecoded.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct GatedSnapshot {
+    pub domain_id: u32,
+    pub snapshot_type: u32,
+    pub revision: u64,
+    pub payload: Vec<u8>,
+}
+
+/// A `CommandResult` of a capability-gated command, payload undecoded.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct GatedCommandResult {
+    pub command_id: u64,
+    pub status: CommandStatus,
+    pub server_sequence: u64,
+    pub payload: Vec<u8>,
+}
+
+/// A `StateDelta` of a selected capability's domain, payload undecoded; its revision is applied.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct GatedDelta {
+    pub server_sequence: u64,
+    pub base_revision: u64,
+    pub new_revision: u64,
+    pub payload: Vec<u8>,
+}
+
 /// Everything [`Session::admit`] needs to admit with one grant and read its join snapshot.
 #[derive(Debug, Clone, Copy)]
 pub struct Admission<'a> {
@@ -71,6 +186,10 @@ pub struct Admission<'a> {
     /// The signed admission grant, as the wire's `admission_material` bytes.
     pub admission_material: &'a [u8],
     pub client_build_id: &'a str,
+    /// FND-02 `supported_capability_id`s this client sends in `ClientBootstrap` (CAP-NEG-1). The
+    /// server selects the ones it offers; the session keeps only that selection.
+    /// [`CLIENT_SUPPORTED_CAPABILITIES`] is the client's default.
+    pub supported_capabilities: &'a [u32],
     /// Bounds each individual frame read of the join sequence (`ServerAccepted`, `SnapshotBegin`,
     /// `SnapshotChunk`, `SnapshotCommit`) and every later per-frame read and write. A stalled
     /// server fails with `SessionError::Timeout` naming the stage, rather than hanging.
@@ -206,6 +325,19 @@ pub enum SessionError {
     DuplicateForUnsentCommand {
         command_id: u64,
     },
+    /// `ServerAccepted` selected a capability this client did not advertise.
+    CapabilityNotRequested(u32),
+    /// A resume carried a selected set different from the session's original one.
+    ResumeSelectionChanged,
+    /// A gated command or domain of a capability this session did not select, or one the
+    /// registry does not assign to that capability.
+    CapabilityNotSelected {
+        capability: u32,
+    },
+    /// The server sent a state domain whose capability the session did not select.
+    UnselectedDomain {
+        domain_id: u32,
+    },
 }
 
 impl fmt::Display for SessionError {
@@ -313,6 +445,20 @@ impl fmt::Display for SessionError {
             Self::DuplicateForUnsentCommand { command_id } => write!(
                 formatter,
                 "duplicate result for command {command_id}, which this session never sent"
+            ),
+            Self::CapabilityNotRequested(capability) => write!(
+                formatter,
+                "server selected capability {capability}, which this client did not advertise"
+            ),
+            Self::ResumeSelectionChanged => {
+                write!(formatter, "resume changed the selected capability set")
+            }
+            Self::CapabilityNotSelected { capability } => {
+                write!(formatter, "capability {capability} is not selected")
+            }
+            Self::UnselectedDomain { domain_id } => write!(
+                formatter,
+                "server sent domain {domain_id} of an unselected capability"
             ),
         }
     }
@@ -435,6 +581,9 @@ pub struct Session<S> {
     first_command_id: u64,
     duplicates: Vec<DuplicateOutcome>,
     last_probe_id: u64,
+    selected_capabilities: Vec<u32>,
+    gated_snapshots: Vec<GatedSnapshot>,
+    gated_revisions: Vec<(u32, u64)>,
 }
 
 /// A duplicate-status `CommandResult` (FND-02 §13.2) for an earlier `CommandId` of this session:
@@ -480,7 +629,7 @@ impl<S: SessionStream> Session<S> {
             character_id: admission.character_id,
             admission_material: admission.admission_material,
             client_build_id: admission.client_build_id,
-            supported_capabilities: &[],
+            supported_capabilities: admission.supported_capabilities,
         })?;
         write_frame(&mut stream, &bootstrap).await?;
 
@@ -500,6 +649,15 @@ impl<S: SessionStream> Session<S> {
         }
         let accepted_fields = decode_server_accepted(accepted_envelope.payload())?;
         let session_generation = accepted_fields.connection_generation;
+        // CAP-NEG-1: the server selects only from the advertised set; anything else is a violation.
+        if let Some(&capability) = accepted_fields
+            .selected_capabilities
+            .iter()
+            .find(|id| !admission.supported_capabilities.contains(id))
+        {
+            return Err(SessionError::CapabilityNotRequested(capability));
+        }
+        let selected_capabilities = accepted_fields.selected_capabilities.clone();
 
         // SnapshotBegin's full declaration: every chunk read below, and the commit that follows
         // them, is checked against it before being trusted.
@@ -611,6 +769,8 @@ impl<S: SessionStream> Session<S> {
         let mut world_object_overlay = None;
         let mut actor_vitals = None;
         let (mut spatial_revision, mut overlay_revision, mut vitals_revision) = (0, 0, 0);
+        let mut gated_snapshots = Vec::new();
+        let mut gated_revisions = Vec::new();
         for domain in decode_snapshot_body(&assembled_body)? {
             match (domain.domain_id, domain.snapshot_type) {
                 (
@@ -651,7 +811,21 @@ impl<S: SessionStream> Session<S> {
                         snapshot_type,
                     });
                 }
-                _ => {}
+                // A gated domain is kept raw for its capability's own packet. Unselected is a server
+                // violation; an unregistered domain is ignored.
+                (domain_id, snapshot_type) => match capability_of_domain(domain_id) {
+                    Some(capability) if selected_capabilities.contains(&capability) => {
+                        gated_revisions.push((domain_id, domain.revision));
+                        gated_snapshots.push(GatedSnapshot {
+                            domain_id,
+                            snapshot_type,
+                            revision: domain.revision,
+                            payload: domain.payload.to_vec(),
+                        });
+                    }
+                    Some(_) => return Err(SessionError::UnselectedDomain { domain_id }),
+                    None => {}
+                },
             }
         }
 
@@ -683,6 +857,88 @@ impl<S: SessionStream> Session<S> {
             unusable: false,
             duplicates: Vec::new(),
             last_probe_id: 0,
+            selected_capabilities,
+            gated_snapshots,
+            gated_revisions,
+        })
+    }
+
+    /// The capabilities the server selected at admission (never widened by a resume).
+    pub fn selected_capabilities(&self) -> &[u32] {
+        &self.selected_capabilities
+    }
+
+    pub fn is_selected(&self, capability: u32) -> bool {
+        self.selected_capabilities.contains(&capability)
+    }
+
+    /// The join snapshot of a selected capability's `domain_id`, if the server sent it.
+    pub fn gated_snapshot(&self, domain_id: u32) -> Option<&GatedSnapshot> {
+        self.gated_snapshots
+            .iter()
+            .find(|snapshot| snapshot.domain_id == domain_id)
+    }
+
+    /// Sends a command type owned by `capability` and returns its raw `CommandResult`. Refused
+    /// before anything is sent when the capability is not selected or does not own the type.
+    pub async fn gated_command(
+        &mut self,
+        capability: u32,
+        command_type: u32,
+        payload: &[u8],
+    ) -> Result<GatedCommandResult, SessionError> {
+        self.ensure_usable()?;
+        let owned = GATED_ROUTES
+            .iter()
+            .any(|(id, commands, _)| *id == capability && commands.contains(&command_type));
+        if !owned || !self.is_selected(capability) {
+            return Err(SessionError::CapabilityNotSelected { capability });
+        }
+        let outcome = self.send_and_read_result(command_type, payload).await;
+        let result = self.poison_on_error(outcome)?;
+        Ok(GatedCommandResult {
+            command_id: result.command_id,
+            status: result.status,
+            server_sequence: result.server_sequence,
+            payload: result.payload,
+        })
+    }
+
+    /// Reads the next `StateDelta` of the selected capability's `domain_id`/`delta_type`, checks
+    /// it is based on the applied revision, and advances that revision; the caller decodes the
+    /// payload.
+    pub async fn read_gated_delta(
+        &mut self,
+        domain_id: u32,
+        delta_type: u32,
+    ) -> Result<GatedDelta, SessionError> {
+        self.ensure_usable()?;
+        let capability = capability_of_domain(domain_id)
+            .filter(|capability| self.is_selected(*capability))
+            .ok_or(SessionError::CapabilityNotSelected {
+                capability: capability_of_domain(domain_id).unwrap_or(0),
+            })?;
+        debug_assert!(self.is_selected(capability));
+        let applied = self
+            .gated_revisions
+            .iter()
+            .find(|(id, _)| *id == domain_id)
+            .map_or(0, |(_, revision)| *revision);
+        let outcome = self.read_delta(domain_id, delta_type, applied).await;
+        let delta = self.poison_on_error(outcome)?;
+        match self
+            .gated_revisions
+            .iter_mut()
+            .find(|(id, _)| *id == domain_id)
+        {
+            Some(entry) => entry.1 = delta.new_revision,
+            None => self.gated_revisions.push((domain_id, delta.new_revision)),
+        }
+        Ok(GatedDelta {
+            server_sequence: delta.server_sequence,
+            base_revision: delta.base_revision,
+            new_revision: delta.new_revision,
+            payload: delta.payload,
         })
     }
 
@@ -813,6 +1069,25 @@ impl<S: SessionStream> Session<S> {
         self.poison_on_error(outcome)
     }
 
+    /// `step`, retried with doubling backoff while the server answers `TooEarly` (capability 13),
+    /// at most [`STEP_RETRY_ATTEMPTS`] sends; returns the last outcome.
+    pub async fn step_retrying(
+        &mut self,
+        direction: StepDirection,
+    ) -> Result<StepOutcome, SessionError> {
+        let mut backoff = STEP_RETRY_INITIAL_BACKOFF;
+        let mut attempt = 1;
+        loop {
+            let outcome = self.step(direction).await?;
+            if outcome.disposition != StepDisposition::TooEarly || attempt >= STEP_RETRY_ATTEMPTS {
+                return Ok(outcome);
+            }
+            tokio::time::sleep(backoff).await;
+            backoff = backoff.saturating_mul(2);
+            attempt += 1;
+        }
+    }
+
     /// Sends the FND-02 `ClientCommand` type 2 `USE_INTENT` (USE-WIRE-V1) for the object at
     /// `placement`, naming the overlay revision this client believes current
     /// (`expected_revision`), and decodes its `CommandResult` and, when `Committed`, the one
@@ -869,11 +1144,17 @@ impl<S: SessionStream> Session<S> {
         let result = self
             .send_and_read_result(world_spatial::COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT, payload)
             .await?;
-        let disposition = world_spatial::decode_step_result(&result.payload)?;
+        let disposition = world_spatial::decode_step_result_paced(
+            &result.payload,
+            self.is_selected(CAPABILITY_PACED_MOVEMENT_V1),
+        )?;
         check_status_pairing(
             result.command_id,
             result.status,
-            disposition == StepDisposition::Rejected,
+            matches!(
+                disposition,
+                StepDisposition::Rejected | StepDisposition::TooEarly
+            ),
         )?;
         let world_spatial_delta =
             if result.status == CommandStatus::Accepted && disposition == StepDisposition::Moved {
@@ -1447,6 +1728,7 @@ mod tests {
             character_id: CharacterId::decode(&uuid_v7(4))?,
             admission_material: b"grant",
             client_build_id: "oteryn-session-test",
+            supported_capabilities: CLIENT_SUPPORTED_CAPABILITIES,
             deadline: DEADLINE,
         })
     }
@@ -1636,5 +1918,280 @@ mod tests {
             assert!(matches!(result, Err(SessionError::Io(_))));
             Ok(())
         })?
+    }
+    const CHAT_DOMAIN: u32 = STATE_DOMAIN_CHAT;
+    const CHAT_COMMAND: u32 = COMMAND_TYPE_CHAT_INTENT;
+
+    /// Reads the bootstrap (asserting the advertised set), admits with `selected`, and sends a
+    /// join snapshot carrying the two core domains plus `extra` (domain, revision) payload `b"snap"`.
+    async fn join_peer(
+        stream: &mut DuplexStream,
+        advertised: &[u32],
+        selected: &[u32],
+        extra: &[(u32, u64)],
+    ) -> Result<(), BoxError> {
+        let bootstrap = read_frame(stream).await?;
+        assert_eq!(
+            decode_wire_envelope(&bootstrap)?
+                .client_bootstrap()?
+                .supported_capabilities,
+            advertised
+        );
+        write_frame(
+            stream,
+            &encode_server_accepted(&ServerAcceptedValue {
+                game_session_id: GameSessionId::decode(&uuid_v7(1))?,
+                world_id: WorldId::decode(&uuid_v7(2))?,
+                channel_id: ChannelId::decode(&uuid_v7(3))?,
+                connection_generation: 1,
+                current_server_sequence: 0,
+                next_command_id: 7,
+                schema_revision: 1,
+                selected_capabilities: selected,
+            })?,
+        )
+        .await?;
+        let spatial_payload = spatial(0);
+        let overlay_payload = encode_world_object_overlay_snapshot(&[])
+            .map_err(|error| format!("overlay snapshot: {error:?}"))?;
+        let mut domains = vec![
+            DomainSnapshot {
+                domain_id: STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
+                revision: 5,
+                snapshot_type: SNAPSHOT_TYPE_WORLD_SPATIAL_V1,
+                payload: &spatial_payload,
+            },
+            DomainSnapshot {
+                domain_id: STATE_DOMAIN_WORLD_OBJECT_OVERLAY,
+                revision: 2,
+                snapshot_type: SNAPSHOT_TYPE_WORLD_OBJECT_OVERLAY_V1,
+                payload: &overlay_payload,
+            },
+        ];
+        for &(domain_id, revision) in extra {
+            domains.push(DomainSnapshot {
+                domain_id,
+                revision,
+                snapshot_type: 1,
+                payload: b"snap",
+            });
+        }
+        for frame in encode_single_chunk_snapshot(1, 1, 40, &domains)? {
+            write_frame(stream, &frame).await?;
+        }
+        Ok(())
+    }
+
+    fn admission_with(supported: &'static [u32]) -> Result<Admission<'static>, BoxError> {
+        Ok(Admission {
+            supported_capabilities: supported,
+            ..admission()?
+        })
+    }
+
+    #[test]
+    fn a_too_early_step_is_retried_with_backoff_and_needs_capability_13() -> Result<(), BoxError> {
+        block_on(async {
+            let (client, mut server) = tokio::io::duplex(64 * 1024);
+            let peer = tokio::spawn(async move {
+                join_peer(&mut server, &[13], &[13], &[]).await?;
+                for (id, sequence) in [(7, 41), (8, 42)] {
+                    let command = read_frame(&mut server).await?;
+                    assert_eq!(
+                        decode_wire_envelope(&command)?
+                            .client_command(1)?
+                            .command_id,
+                        id
+                    );
+                    write_frame(
+                        &mut server,
+                        &encode_command_result(
+                            1,
+                            sequence,
+                            id,
+                            CommandStatus::Rejected,
+                            &encode_step_result(StepDisposition::TooEarly),
+                        )?,
+                    )
+                    .await?;
+                }
+                read_frame(&mut server).await?;
+                write_frame(
+                    &mut server,
+                    &encode_command_result(
+                        1,
+                        43,
+                        9,
+                        CommandStatus::Accepted,
+                        &encode_step_result(StepDisposition::Blocked),
+                    )?,
+                )
+                .await?;
+                Ok::<(), BoxError>(())
+            });
+            let mut session = Session::admit(client, admission()?).await?;
+            assert_eq!(session.selected_capabilities(), &[13]);
+            let started = std::time::Instant::now();
+            let outcome = session.step_retrying(StepDirection::East).await?;
+            peer.await??;
+            assert_eq!(outcome.disposition, StepDisposition::Blocked);
+            assert_eq!(outcome.command_id, 9);
+            assert!(started.elapsed() >= STEP_RETRY_INITIAL_BACKOFF * 3);
+            Ok(())
+        })?
+    }
+
+    #[test]
+    fn too_early_without_capability_13_fails_closed() -> Result<(), BoxError> {
+        block_on(async {
+            let (client, mut server) = tokio::io::duplex(64 * 1024);
+            let peer = tokio::spawn(async move {
+                join_peer(&mut server, &[13], &[], &[]).await?;
+                read_frame(&mut server).await?;
+                write_frame(
+                    &mut server,
+                    &encode_command_result(
+                        1,
+                        41,
+                        7,
+                        CommandStatus::Rejected,
+                        &encode_step_result(StepDisposition::TooEarly),
+                    )?,
+                )
+                .await?;
+                Ok::<(), BoxError>(())
+            });
+            let mut session = Session::admit(client, admission()?).await?;
+            assert!(session.selected_capabilities().is_empty());
+            assert!(matches!(
+                session.step(StepDirection::East).await,
+                Err(SessionError::WorldSpatial(_))
+            ));
+            peer.await??;
+            Ok(())
+        })?
+    }
+
+    #[test]
+    fn a_selection_outside_the_advertised_set_is_refused() -> Result<(), BoxError> {
+        block_on(async {
+            let (client, mut server) = tokio::io::duplex(64 * 1024);
+            let peer = tokio::spawn(async move { join_peer(&mut server, &[13], &[7], &[]).await });
+            let result = Session::admit(client, admission()?).await;
+            let _ = peer.await?;
+            assert!(matches!(
+                result,
+                Err(SessionError::CapabilityNotRequested(7))
+            ));
+            Ok(())
+        })?
+    }
+
+    #[test]
+    fn gated_domains_and_commands_route_by_selected_capability() -> Result<(), BoxError> {
+        block_on(async {
+            let (client, mut server) = tokio::io::duplex(64 * 1024);
+            let peer = tokio::spawn(async move {
+                join_peer(
+                    &mut server,
+                    &[7, 13],
+                    &[7, 13],
+                    &[(CHAT_DOMAIN, 3), (4242, 1)],
+                )
+                .await?;
+                let command = read_frame(&mut server).await?;
+                assert_eq!(
+                    decode_wire_envelope(&command)?
+                        .client_command(1)?
+                        .command_type,
+                    CHAT_COMMAND
+                );
+                write_frame(
+                    &mut server,
+                    &encode_command_result(1, 41, 7, CommandStatus::Accepted, b"ok")?,
+                )
+                .await?;
+                write_frame(
+                    &mut server,
+                    &encode_state_delta(1, 42, CHAT_DOMAIN, 3, 4, 1, b"delta")?,
+                )
+                .await?;
+                Ok::<(), BoxError>(())
+            });
+            let mut session = Session::admit(client, admission_with(&[7, 13])?).await?;
+            // The unregistered domain 4242 is ignored; the selected chat domain is kept raw.
+            let snapshot = session.gated_snapshot(CHAT_DOMAIN).ok_or("chat snapshot")?;
+            assert_eq!(
+                (snapshot.revision, snapshot.payload.as_slice()),
+                (3, &b"snap"[..])
+            );
+            assert!(session.gated_snapshot(4242).is_none());
+            // A command another capability owns is refused before anything is sent.
+            assert!(matches!(
+                session.gated_command(13, CHAT_COMMAND, b"x").await,
+                Err(SessionError::CapabilityNotSelected { capability: 13 })
+            ));
+            let result = session.gated_command(7, CHAT_COMMAND, b"x").await?;
+            assert_eq!(
+                (result.command_id, result.payload.as_slice()),
+                (7, &b"ok"[..])
+            );
+            let delta = session.read_gated_delta(CHAT_DOMAIN, 1).await?;
+            peer.await??;
+            assert_eq!((delta.base_revision, delta.new_revision), (3, 4));
+            assert_eq!(delta.payload, b"delta");
+            Ok(())
+        })?
+    }
+
+    #[test]
+    fn unselected_gated_commands_and_domains_are_refused() -> Result<(), BoxError> {
+        block_on(async {
+            let (client, mut server) = tokio::io::duplex(64 * 1024);
+            let peer = tokio::spawn(async move {
+                join_peer(&mut server, &[13], &[13], &[]).await?;
+                Ok::<(), BoxError>(())
+            });
+            let mut session = Session::admit(client, admission()?).await?;
+            peer.await??;
+            assert!(matches!(
+                session.gated_command(7, CHAT_COMMAND, b"x").await,
+                Err(SessionError::CapabilityNotSelected { capability: 7 })
+            ));
+            assert!(matches!(
+                session.read_gated_delta(CHAT_DOMAIN, 1).await,
+                Err(SessionError::CapabilityNotSelected { capability: 7 })
+            ));
+            // Nothing was sent, so the session stays usable.
+            assert_eq!(session.next_command_id(), 7);
+
+            let (client, mut server) = tokio::io::duplex(64 * 1024);
+            let peer = tokio::spawn(async move {
+                join_peer(&mut server, &[13], &[13], &[(CHAT_DOMAIN, 3)]).await
+            });
+            let result = Session::admit(client, admission()?).await;
+            let _ = peer.await?;
+            assert!(matches!(
+                result,
+                Err(SessionError::UnselectedDomain {
+                    domain_id: CHAT_DOMAIN
+                })
+            ));
+            Ok(())
+        })?
+    }
+
+    #[test]
+    fn a_resume_never_changes_the_selected_set() {
+        assert!(check_resume_selection(&[7, 13], &[13, 7]).is_ok());
+        assert!(check_resume_selection(&[], &[]).is_ok());
+        assert!(matches!(
+            check_resume_selection(&[13], &[7, 13]),
+            Err(SessionError::ResumeSelectionChanged)
+        ));
+        assert!(matches!(
+            check_resume_selection(&[7, 13], &[13]),
+            Err(SessionError::ResumeSelectionChanged)
+        ));
     }
 }

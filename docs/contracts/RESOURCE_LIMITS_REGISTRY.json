@@ -8095,6 +8095,186 @@
       "notes": "BAGS-0 \u00a75 and \u00a710 (ITEMV0-RL-03 re-measured; D469 2a keeps ITEMV0-RL-03 at 301 for sessions without capability 14). Tests: container_tree::tests::live_handle_bound_adds_16_views_of_21_items, container_view::tests::the_container_tree_bound_holds_637_handles_and_refuses_638. Registered by OTV2-20261003-bags-wire-1."
     },
     {
+      "id": "WHEEL0-RL-01",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_WHEEL0_WHEEL_OF_DESTINY_DELIVERY_DECISION_2026-09-30.md",
+      "resource": "Wheel of Destiny slots of one Character",
+      "unit": "slots per Character",
+      "hard_maximum": 36,
+      "configurable_range": {
+        "minimum": 36,
+        "maximum": 36
+      },
+      "failure_category": "INVALID_INPUT",
+      "allocation_impact": "A fixed [u16; 36] in memory; slot rows CHECK slot BETWEEN 1 AND 36 and receipt vectors have cardinality 36; a slot is at most its capacity (50..200), so a Character holds at most 4 x 1000 = 4000 points (allocated_total CHECK).",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=36: slots 1..36 are stored and the ruleset reader requires exactly 36 topology slots",
+        "max+1=37: slot 37 fails the slot CHECK and an adjacency entry naming slot 37 refuses the ruleset"
+      ],
+      "consumers": [
+        "apps/game-server/src/durability/character_wheel.rs WHEEL_SLOTS, WheelSlots, WheelRuleset::from_catalogue",
+        "apps/game-server/migrations/0070_character_wheel_allocation.sql"
+      ],
+      "notes": "WHEEL-0 \u00a74 and \u00a78; tests: character_wheel::tests::a_malformed_catalogue_is_refused, slots_and_occurrences_are_bounded. Registered by WHEEL-W1."
+    },
+    {
+      "id": "WHEEL0-RL-02",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_WHEEL0_WHEEL_OF_DESTINY_DELIVERY_DECISION_2026-09-30.md",
+      "resource": "Domain points of the highest revelation stage",
+      "unit": "domain points",
+      "hard_maximum": 1000,
+      "configurable_range": {
+        "minimum": 1000,
+        "maximum": 1000
+      },
+      "failure_category": "INVALID_INPUT",
+      "allocation_impact": "No allocation; revelation stages 1, 2 and 3 start at 250, 500 and 1000 points in one domain, and a domain holds at most 1000 points (nine slots).",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=1000: 999 points give stage 2 and 1000 give stage 3",
+        "max+1: a domain cannot hold 1001 points (its capacities sum to 1000)"
+      ],
+      "consumers": [
+        "apps/game-server/src/durability/character_wheel.rs REVELATION_THRESHOLDS, WheelStages::derive"
+      ],
+      "notes": "WHEEL-0 \u00a72 and \u00a78 (thresholds 250/500/1000); test: character_wheel::tests::revelation_stages_follow_the_thresholds. Registered by WHEEL-W1."
+    },
+    {
+      "id": "WHEEL0-RL-03",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_WHEEL0_WHEEL_OF_DESTINY_DELIVERY_DECISION_2026-09-30.md",
+      "resource": "Augment stage of one Wheel augment perk",
+      "unit": "stage",
+      "hard_maximum": 2,
+      "configurable_range": {
+        "minimum": 2,
+        "maximum": 2
+      },
+      "failure_category": "INVALID_INPUT",
+      "allocation_impact": "No allocation; the stage counts the full slots whose conviction perk names the augment, capped at 2.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=2: two full slots of one augment give stage 2",
+        "max+1: a third copy still gives stage 2"
+      ],
+      "consumers": [
+        "apps/game-server/src/durability/character_wheel.rs MAX_AUGMENT_STAGE, WheelStages::derive"
+      ],
+      "notes": "WHEEL-0 \u00a73 and \u00a78; test: character_wheel::tests::augments_count_full_slots_only. Registered by WHEEL-W1."
+    },
+    {
+      "id": "WHEEL0-RL-04",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_WHEEL0_WHEEL_OF_DESTINY_DELIVERY_DECISION_2026-09-30.md",
+      "resource": "Level above which the Wheel opens",
+      "unit": "levels",
+      "hard_maximum": 50,
+      "configurable_range": {
+        "minimum": 50,
+        "maximum": 50
+      },
+      "failure_category": "INVALID_INPUT",
+      "allocation_impact": "No allocation; available points are max(0, level - 50) plus extra points (0 until their owners exist), one per level.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=50: level 50 is not eligible and has 0 points",
+        "max+1=51: level 51 is eligible with 1 point"
+      ],
+      "consumers": [
+        "apps/game-server/src/durability/character_wheel.rs WHEEL_LEVEL_OFFSET, available_points, eligibility"
+      ],
+      "notes": "WHEEL-0 \u00a76.1, \u00a76.3 and \u00a78; tests: character_wheel::tests::validation_applies_each_rule, an_ineligible_or_not_current_allocation_derives_zero. Registered by WHEEL-W1."
+    },
+    {
+      "id": "WHEEL0-RL-05",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_WHEEL0_WHEEL_OF_DESTINY_DELIVERY_DECISION_2026-09-30.md",
+      "resource": "Distance from a town temple position at which Wheel points may be removed",
+      "unit": "tiles",
+      "hard_maximum": 10,
+      "configurable_range": {
+        "minimum": 10,
+        "maximum": 10
+      },
+      "failure_category": "INVALID_INPUT",
+      "allocation_impact": "No allocation; a change that lowers any slot is refused (REMOVAL_NOT_AT_TEMPLE) unless the caller's at_temple fact holds: a protection zone within 10 tiles of a temple position of the active bundle.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=10: a removal at the temple is admitted",
+        "max+1=11: a removal away from the temple is REMOVAL_NOT_AT_TEMPLE"
+      ],
+      "consumers": [
+        "apps/game-server/src/durability/character_wheel.rs TEMPLE_REMOVAL_RADIUS, WheelChangeFacts::at_temple, WheelRuleset::validate"
+      ],
+      "notes": "WHEEL-0 \u00a77.3 and \u00a78; the position check is the W-2 caller's; tests: character_wheel::tests::validation_applies_each_rule, character_wheel_postgres_cases::wheel_changes_commit_replay_and_refuse_writing_nothing. Registered by WHEEL-W1."
+    },
+    {
+      "id": "WHEEL0-RL-06",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_WHEEL0_WHEEL_OF_DESTINY_DELIVERY_DECISION_2026-09-30.md",
+      "resource": "Slot values in one Wheel receipt",
+      "unit": "small integers per receipt",
+      "hard_maximum": 72,
+      "configurable_range": {
+        "minimum": 72,
+        "maximum": 72
+      },
+      "failure_category": "INVALID_INPUT",
+      "allocation_impact": "Two SMALLINT[] vectors of cardinality 36 (before and after) plus fixed fields; the vectors CHECK cardinality 36, one dimension and 0..200 per value.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=72: a receipt stores both 36-slot vectors",
+        "max+1: a 37-value vector fails the receipt vector CHECK"
+      ],
+      "consumers": [
+        "apps/game-server/migrations/0070_character_wheel_allocation.sql game_character_wheel_receipt_vectors",
+        "apps/game-server/src/durability/character_wheel.rs WheelSlots::stored"
+      ],
+      "notes": "WHEEL-0 \u00a78; test: character_wheel::tests::slots_and_occurrences_are_bounded. Registered by WHEEL-W1."
+    },
+    {
+      "id": "WHEEL0-RL-07-CHANGE",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_WHEEL0_WHEEL_OF_DESTINY_DELIVERY_DECISION_2026-09-30.md",
+      "resource": "CharacterRevisions and receipts of one Wheel allocation change",
+      "unit": "receipts per change",
+      "hard_maximum": 1,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 1
+      },
+      "failure_category": "INVALID_INPUT",
+      "allocation_impact": "One change writes 1 CharacterRevision and 1 ALLOCATION receipt, 0 items and 0 value lines; a refused or unchanged replacement (NO_CHANGE) writes nothing.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=1: a change commits one receipt at one CharacterRevision",
+        "max+1: no second receipt; the replay of the occurrence returns the first"
+      ],
+      "consumers": [
+        "apps/game-server/src/durability/character_wheel.rs DurabilityRoot::commit_character_wheel",
+        "apps/game-server/migrations/0070_character_wheel_allocation.sql"
+      ],
+      "notes": "WHEEL-0 \u00a78 row 'Allocation change' (unnumbered in the decision); test: character_wheel_postgres_cases::wheel_changes_commit_replay_and_refuse_writing_nothing. Registered by WHEEL-W1."
+    },
+    {
+      "id": "WHEEL0-RL-08-RESET",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_WHEEL0_WHEEL_OF_DESTINY_DELIVERY_DECISION_2026-09-30.md",
+      "resource": "Wheel reset receipts of one Character per reset revision",
+      "unit": "receipts per Character per reset revision",
+      "hard_maximum": 1,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 1
+      },
+      "failure_category": "INVALID_INPUT",
+      "allocation_impact": "A reset writes 1 CharacterRevision and 1 RULESET_RESET receipt, 0 items and 0 value lines, once per Character per reset revision; its occurrence is derived from the Character and both revisions, so a replay writes nothing.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=1: the admission reset commits once",
+        "max+1: a second admission finds the stored revision active and writes nothing"
+      ],
+      "consumers": [
+        "apps/game-server/src/durability/character_wheel.rs DurabilityRoot::reset_character_wheel, admit_character_wheel",
+        "apps/game-server/migrations/0070_character_wheel_allocation.sql"
+      ],
+      "notes": "WHEEL-0 \u00a78 row 'Wheel reset (WHEEL0-RST-1)' (unnumbered in the decision); test: character_wheel_postgres_cases::the_admission_reset_clears_a_stale_allocation_once. Registered by WHEEL-W1."
+    },
+    {
       "id": "QUESTGATE0-RL-06",
       "owner_contract": "../architecture/reviews/OTERYN_GAME_QUEST_GATE0_QUEST_GATES_AND_NPC_QUESTS_DECISION_2026-09-30.md",
       "resource": "Tracked quests of one GameSession (domain 16 QUEST_LOG tracker)",

@@ -6,6 +6,8 @@ from __future__ import annotations
 import hashlib
 import json
 import re
+import subprocess
+import sys
 from pathlib import Path
 from collections import Counter
 from typing import Any
@@ -621,6 +623,11 @@ def main() -> int:
             if family not in quest_families],
     })
     print(f"PASS items={len(item_records)} creatures={creature_counts['Creature']} creature_records={sum(creature_counts.values())} creature_profiles={len(profiles)} item_shards={len(item_shards)} mounts={len(mount_rows)} authoring={len(authoring_by_target)} taxonomy={len(taxonomy_rows)} relation_sources={len(relation_rows)} relations={sum(len(row['relations']) for row in relation_rows)} npcs={len(npc_rows)} encounters={len(encounter_rows)} npc_bindings={len(npc_bindings)} dialogues={len(dialogue_rows)} service_trade={service_counts['Service.Trade']} service_travel={service_counts['Service.Travel']}")
+    # Static rulesets are outside the legacy DefinitionFamily registry. Restore
+    # their separately qualified registration after rebuilding the legacy tree.
+    subprocess.run([sys.executable,
+                    str(ROOT / "tools/content-schema/imbuement-authoring/imbuement_content.py"),
+                    "content"], cwd=ROOT, check=True)
     return 0
 
 if __name__ == "__main__":
