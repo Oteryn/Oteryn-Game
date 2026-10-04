@@ -170,10 +170,11 @@ pub const MAX_SNAPSHOT_ASSEMBLED_BYTES: u64 = 16_777_216;
 // ACHIEVEMENT_NOTICES_V1 (ACH-NOTIFY-1, not offered before capability negotiation is composed) and
 // 10 ANALYSER_V1 (ANALYSER-WIRE-1, not offered before ANALYSER-EMIT-1) and 12 ITEM_EQUIP_DROP_V1
 // (ITEM-EQUIP-WIRE-1, not offered before ITEM-MOVE-2a) and 14 CONTAINER_TREE_V1 (BAGS-WIRE-1, not
-// offered before BAGS-1). Registered is not offered. 13
+// offered before BAGS-1) and 16 QUEST_LOG_V1 (QUEST-LOG-WIRE-1, not offered before the quest log
+// content and the production session copy are composed). Registered is not offered. 13
 // PACED_MOVEMENT_V1 (SPEED-1) is offered: it adds the step result TOO_EARLY.
 // Keep this sorted when a later owning gate allocates an additive capability ID.
-const REGISTERED_CAPABILITY_IDS_V1: &[u32] = &[1, 4, 6, 7, 8, 10, 12, 13, 14];
+const REGISTERED_CAPABILITY_IDS_V1: &[u32] = &[1, 4, 6, 7, 8, 10, 12, 13, 14, 16];
 
 fn decode_uuid_v7(input: &[u8]) -> Result<[u8; 16], FoundationProtocolError> {
     let value: [u8; 16] = input
@@ -2275,6 +2276,7 @@ pub mod chat;
 pub mod container_tree;
 pub mod damage_element;
 pub mod item_view;
+pub mod quest_log;
 pub mod world_object;
 pub mod world_spatial;
 pub mod world_spatial_entities;
