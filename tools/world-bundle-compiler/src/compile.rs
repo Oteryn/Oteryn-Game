@@ -11,8 +11,9 @@ use crate::b3::{self, Region};
 use crate::bundle::{
     self, BuildClass, Extent, Family, Identity, Manifest, PaletteEntry, Sector, Terrain,
 };
-use crate::project::{Families, LegacyPosition};
+use crate::project::{CreatureFacts, Families, LegacyPosition};
 use crate::sector::{Item, Tile};
+use crate::spawn;
 
 /// What a palette key of the World Project resolves to in the pinned content revision.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -30,6 +31,10 @@ pub trait KeyResolver {
     /// record, `None` for a WorldObject route or a plain Item. Fails closed when a Terrain
     /// record is not classified well enough to write.
     fn terrain(&self, key: &str) -> Result<Option<Terrain>, Error>;
+
+    /// Whether the key is a floor-change object (stairs, ramps, holes): a catalogue
+    /// `floor_change` that is KNOWN and not `none`. UNKNOWN is not a floor change.
+    fn floor_change(&self, key: &str) -> bool;
 }
 
 pub struct Input<'a> {
@@ -59,6 +64,7 @@ pub struct Compiled {
     pub diagnostics: Vec<Diagnostic>,
     /// Zero-destination teleport attributes dropped (ADR-0021 §4.5), at native positions.
     pub dropped_teleports: Vec<(u16, u16, i8)>,
+    pub spawns: SpawnReport,
 }
 
 /// How a map `teleport` attribute compares with the Transition.Teleport family (ADR-0021 §4.5,
@@ -170,6 +176,259 @@ pub fn placed_palette(regions: &[Vec<u8>]) -> Result<BTreeSet<u32>, Error> {
         }
     }
     Ok(placed)
+}
+
+/// Why a spawn point is not written to the bundle.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, serde::Serialize)]
+pub enum SpawnReason {
+    /// The creature key is not an admitted creature definition.
+    UnboundCreature,
+    /// A boss or reward boss: BOSS-RAID-0's, never realized by a spawn.
+    Boss,
+    /// Bound to an Encounter (E3): never realized by a spawn.
+    EncounterBound,
+    /// The cell is outside the World.
+    OutsideWorld,
+    /// No tile at the cell.
+    NoTile,
+    /// A tile without a walkable ground.
+    NoGround,
+    NotWalkable,
+    ProtectionZone,
+    FloorChange,
+    Teleport,
+    /// The ground's terrain record is not classified yet (content lane).
+    UnclassifiedTerrain,
+}
+
+/// One point that is not written, at its project-frame cell.
+#[derive(Clone, Debug, PartialEq, Eq, serde::Serialize)]
+pub struct DroppedPoint {
+    pub source: String,
+    pub creature: String,
+    pub cell: LegacyPosition,
+    pub reason: SpawnReason,
+}
+
+/// The spawn part of the parity report (CREATURE-AI-0 §6.1): what the family held, what the
+/// bundle realizes, and every point left out with its reason.
+#[derive(Clone, Debug, Default, PartialEq, Eq, serde::Serialize)]
+pub struct SpawnReport {
+    pub sources: usize,
+    pub points: usize,
+    pub realized_sources: usize,
+    pub realized_points: usize,
+    /// Realized points of a creature whose period is not `All`: compiled, outside the
+    /// activation set.
+    pub inactive_points: usize,
+    pub dropped: Vec<DroppedPoint>,
+}
+
+impl SpawnReport {
+    pub fn count(&self, reason: SpawnReason) -> usize {
+        self.dropped.iter().filter(|d| d.reason == reason).count()
+    }
+}
+
+/// What the compiler knows of one cell of a spawn point.
+#[derive(Clone, Copy, Debug, Default)]
+struct CellFacts {
+    tile: bool,
+    ground: Option<bool>,
+    pz: bool,
+    floor_change: bool,
+    teleport: bool,
+    unclassified: bool,
+}
+
+/// OTBM `TILESTATE_PROTECTIONZONE`.
+const FLAG_PROTECTION_ZONE: u32 = 1;
+
+/// Facts of every wanted project-frame cell, from the regions and the key resolver. A terrain
+/// record that is not classified yet marks its cell `unclassified` instead of failing, so the
+/// parity report can list it; [`compile`] fails on it before this point.
+fn cell_facts(
+    input: &Input<'_>,
+    resolver: &dyn KeyResolver,
+    wanted: &BTreeSet<LegacyPosition>,
+) -> Result<BTreeMap<LegacyPosition, CellFacts>, Error> {
+    let (mut facts, mut budget) = (BTreeMap::new(), bundle::BUNDLE_BUDGET);
+    if wanted.is_empty() {
+        return Ok(facts);
+    }
+    let kinds: Vec<_> = input
+        .palette
+        .iter()
+        .map(|key| match resolver.resolve(key) {
+            Resolution::Resolved(..) => Some((resolver.terrain(key), resolver.floor_change(key))),
+            _ => None,
+        })
+        .collect();
+    for data in input.regions {
+        let region = b3::decode_region(data, bundle::TILE_LIMITS, &mut budget)?;
+        for tile in region.sectors.iter().flat_map(|(_, _, tiles)| tiles) {
+            let at = (tile.x, tile.y, region.z);
+            if !wanted.contains(&at) {
+                continue;
+            }
+            let mut cell = CellFacts {
+                tile: true,
+                pz: tile.flags & FLAG_PROTECTION_ZONE != 0,
+                teleport: input.families.teleports.contains_key(&at),
+                ..CellFacts::default()
+            };
+            for item in &tile.items {
+                if matches!(item.attrs.teleport, Some(to) if to != (0, 0, 0)) {
+                    cell.teleport = true;
+                }
+                let Some(Some((terrain, change))) = kinds.get(item.palette as usize) else {
+                    continue;
+                };
+                cell.floor_change |= *change;
+                match terrain {
+                    Err(_) => cell.unclassified = true,
+                    Ok(Some(terrain)) if terrain.kind == bundle::TerrainKind::Ground => {
+                        let walkable = terrain.walkable == Some(true);
+                        cell.ground = Some(cell.ground.unwrap_or(false) | walkable);
+                    }
+                    Ok(_) => {}
+                }
+            }
+            facts.insert(at, cell);
+        }
+    }
+    Ok(facts)
+}
+
+/// Realizes the spawn family against the cells it stands on: the table the bundle holds and
+/// the report of every point left out.
+pub fn realize_spawns(
+    input: &Input<'_>,
+    resolver: &dyn KeyResolver,
+) -> Result<(spawn::Table, SpawnReport), Error> {
+    let families = input.families;
+    let wanted: BTreeSet<LegacyPosition> = families
+        .spawns
+        .iter()
+        .flat_map(|source| source.points.iter().map(|point| point.cell))
+        .collect();
+    let facts = cell_facts(input, resolver, &wanted)?;
+    let mut report = SpawnReport {
+        sources: families.spawns.len(),
+        points: families.spawns.iter().map(|s| s.points.len()).sum(),
+        ..SpawnReport::default()
+    };
+    // Kept points per source key, and the creature definitions they use.
+    let mut kept: BTreeMap<
+        &str,
+        (
+            &crate::project::SpawnSource,
+            Vec<&crate::project::SpawnPoint>,
+        ),
+    > = BTreeMap::new();
+    let mut creatures: BTreeMap<&str, &CreatureFacts> = BTreeMap::new();
+    let mut keys = BTreeSet::new();
+    for source in &families.spawns {
+        if !keys.insert(source.key.as_str()) {
+            return Err(Error::Format(format!(
+                "spawn source key {} given twice",
+                source.key
+            )));
+        }
+        let mut points = Vec::with_capacity(source.points.len());
+        for point in &source.points {
+            let (x, y, z) = point.cell;
+            let reason = match families.creatures.get(&point.creature) {
+                None => Some(SpawnReason::UnboundCreature),
+                Some(creature) if creature.boss => Some(SpawnReason::Boss),
+                Some(creature) if creature.encounter_bound => Some(SpawnReason::EncounterBound),
+                Some(creature) => {
+                    let cell = facts.get(&point.cell).copied().unwrap_or_default();
+                    let reason = if !input.world.contains(x, y, native_floor(z)?) {
+                        Some(SpawnReason::OutsideWorld)
+                    } else if !cell.tile {
+                        Some(SpawnReason::NoTile)
+                    } else if cell.unclassified {
+                        Some(SpawnReason::UnclassifiedTerrain)
+                    } else if cell.ground.is_none() {
+                        Some(SpawnReason::NoGround)
+                    } else if cell.ground == Some(false) {
+                        Some(SpawnReason::NotWalkable)
+                    } else if cell.pz {
+                        Some(SpawnReason::ProtectionZone)
+                    } else if cell.floor_change {
+                        Some(SpawnReason::FloorChange)
+                    } else if cell.teleport {
+                        Some(SpawnReason::Teleport)
+                    } else {
+                        None
+                    };
+                    if reason.is_none() {
+                        creatures.insert(point.creature.as_str(), creature);
+                    }
+                    reason
+                }
+            };
+            match reason {
+                Some(reason) => report.dropped.push(DroppedPoint {
+                    source: source.key.clone(),
+                    creature: point.creature.clone(),
+                    cell: point.cell,
+                    reason,
+                }),
+                None => points.push(point),
+            }
+        }
+        if !points.is_empty() {
+            kept.insert(source.key.as_str(), (source, points));
+        }
+    }
+    let index: BTreeMap<&str, u32> = creatures.keys().copied().zip(0u32..).collect();
+    let mut table = spawn::Table {
+        creatures: creatures
+            .iter()
+            .map(|(key, facts)| {
+                let period = match facts.period.as_str() {
+                    "All" => Ok(spawn::Period::All),
+                    "Night" => Ok(spawn::Period::Night),
+                    other => Err(Error::Format(format!("spawn period `{other}` of {key}"))),
+                };
+                Ok(spawn::Creature {
+                    key: (*key).to_owned(),
+                    period: period?,
+                })
+            })
+            .collect::<Result<_, Error>>()?,
+        sources: Vec::with_capacity(kept.len()),
+    };
+    for (key, (source, points)) in kept {
+        let (cx, cy, cz) = source.centre;
+        let floor = native_floor(cz)?;
+        let mut list = Vec::with_capacity(points.len());
+        for point in points {
+            if creatures[point.creature.as_str()].period != "All" {
+                report.inactive_points += 1;
+            }
+            list.push(spawn::Point {
+                creature: index[point.creature.as_str()],
+                x: point.cell.0,
+                y: point.cell.1,
+                direction: point.direction,
+                respawn_ms: point.respawn_ms,
+            });
+        }
+        report.realized_points += list.len();
+        table.sources.push(spawn::Source {
+            key: key.to_owned(),
+            floor,
+            x: cx,
+            y: cy,
+            points: list,
+        });
+    }
+    report.realized_sources = table.sources.len();
+    spawn::validate(&table, &input.world)?;
+    Ok((table, report))
 }
 
 /// The CrystalServer import profile: `native.floor = -legacy.z`, checked.
@@ -364,6 +623,7 @@ pub fn compile(input: &Input<'_>, resolver: &dyn KeyResolver) -> Result<Compiled
             }
         })
         .collect();
+    let (spawns, spawn_report) = realize_spawns(input, resolver)?;
     let skipped: BTreeSet<String> = state.diagnostics.iter().map(|d| d.key.clone()).collect();
     let manifest = Manifest {
         format: bundle::FORMAT.into(),
@@ -379,8 +639,12 @@ pub fn compile(input: &Input<'_>, resolver: &dyn KeyResolver) -> Result<Compiled
             .collect(),
         skipped_provisional_keys: skipped.into_iter().collect(),
         dropped_teleports: state.dropped_keys.into_iter().collect(),
+        spawns: bundle::SpawnCounts {
+            sources: spawns.sources.len() as u32,
+            points: spawns.point_count() as u32,
+        },
     };
-    let bytes = bundle::write(&manifest, &sectors)?;
+    let bytes = bundle::write(&manifest, &sectors, &spawns)?;
     let mut digest = [0; 32];
     digest.copy_from_slice(&bytes[bytes.len() - 32..]);
     Ok(Compiled {
@@ -388,6 +652,7 @@ pub fn compile(input: &Input<'_>, resolver: &dyn KeyResolver) -> Result<Compiled
         digest,
         diagnostics: state.diagnostics,
         dropped_teleports: state.dropped,
+        spawns: spawn_report,
     })
 }
 
@@ -491,6 +756,10 @@ pub fn equivalence(
     if records_met.len() != families.teleports.len() {
         return differs("a Transition record meets no teleport attribute".into());
     }
+    let (spawns, _) = realize_spawns(input, resolver)?;
+    if read.spawns != spawns {
+        return differs("spawn family is not the one derived from the input".into());
+    }
     let palette = used
         .into_iter()
         .map(|at| match resolver.resolve(&palette[at as usize]) {
@@ -519,6 +788,10 @@ pub fn equivalence(
             .collect(),
         skipped_provisional_keys: provisional.into_iter().cloned().collect(),
         dropped_teleports: dropped.into_iter().collect(),
+        spawns: bundle::SpawnCounts {
+            sources: spawns.sources.len() as u32,
+            points: spawns.point_count() as u32,
+        },
     };
     let got = &read.manifest;
     for (field, same) in [
@@ -548,6 +821,7 @@ pub fn equivalence(
             "dropped_teleports",
             expected.dropped_teleports == got.dropped_teleports,
         ),
+        ("spawns", expected.spawns == got.spawns),
     ] {
         if !same {
             return differs(format!(

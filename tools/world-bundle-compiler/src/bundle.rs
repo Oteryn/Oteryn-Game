@@ -1,20 +1,24 @@
-//! `OTERYN_WORLD_BUNDLE/v2`: writer and fail-closed reader.
+//! `OTERYN_WORLD_BUNDLE/v3`: writer and fail-closed reader.
 //!
 //! Layout (little endian), specified in `docs/contracts/OTERYN_WORLD_BUNDLE_FORMAT_V1.md`:
 //! header `"OTWB" | version u16 | reserved u16 | manifest_length u32 | sector_count u32`,
-//! canonical JSON manifest, sector table (50-byte rows), zstd frames, 32-byte digest trailer.
+//! canonical JSON manifest, sector table (50-byte rows), spawn row (44 bytes), zstd frames (the
+//! sector frames, then the spawn frame), 32-byte digest trailer.
 
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 
 use crate::Error;
 use crate::sector::{self, Budget, SECTOR_SIZE, Tile, TileLimits};
+use crate::spawn;
 
-pub const FORMAT: &str = "OTERYN_WORLD_BUNDLE/v2";
-pub const VERSION: u16 = 2;
+pub const FORMAT: &str = "OTERYN_WORLD_BUNDLE/v3";
+pub const VERSION: u16 = 3;
 const MAGIC: &[u8; 4] = b"OTWB";
 const HEADER: usize = 16;
 const ENTRY: usize = 50;
+/// `offset u32 | compressed_length u32 | raw_length u32 | SHA-256 of the frame`.
+const SPAWN_ROW: usize = 44;
 const DIGEST: usize = 32;
 const ZSTD_LEVEL: i32 = 3;
 
@@ -204,6 +208,16 @@ pub struct Manifest {
     /// Placement keys of the top-level entries whose zero-destination teleport attribute was
     /// dropped (ADR-0021 §4.5); they are never materialized (§4.4). Ascending and unique.
     pub dropped_teleports: Vec<u64>,
+    /// The counts of the spawn family (format v3); the spawn frame must hold exactly these.
+    pub spawns: SpawnCounts,
+}
+
+/// Spawn sources and points the bundle carries (format v3).
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct SpawnCounts {
+    pub sources: u32,
+    pub points: u32,
 }
 
 impl Manifest {
@@ -224,6 +238,7 @@ pub struct Sector {
 pub struct Bundle {
     pub manifest: Manifest,
     pub sectors: Vec<Sector>,
+    pub spawns: spawn::Table,
     pub digest: [u8; 32],
 }
 
@@ -343,6 +358,15 @@ fn validate_manifest(m: &Manifest) -> Result<(), Error> {
     Ok(())
 }
 
+fn validate_spawns(m: &Manifest, table: &spawn::Table) -> Result<(), Error> {
+    spawn::validate(table, &m.world)?;
+    check(
+        m.spawns.sources as usize == table.sources.len()
+            && m.spawns.points as usize == table.point_count(),
+        "manifest spawn counts differ from the spawn frame",
+    )
+}
+
 fn validate_sector(m: &Manifest, s: &Sector) -> Result<(), Error> {
     check(!s.tiles.is_empty(), "empty sector")?;
     check(
@@ -380,8 +404,13 @@ fn u32_of(value: usize) -> [u8; 4] {
 }
 
 /// Writes a bundle. `sectors` must be strictly ascending by `(floor, sy, sx)`.
-pub fn write(manifest: &Manifest, sectors: &[Sector]) -> Result<Vec<u8>, Error> {
+pub fn write(
+    manifest: &Manifest,
+    sectors: &[Sector],
+    spawns: &spawn::Table,
+) -> Result<Vec<u8>, Error> {
     validate_manifest(manifest)?;
+    validate_spawns(manifest, spawns)?;
     let json = serde_json::to_vec(manifest).map_err(|e| Error::Format(e.to_string()))?;
     limit(json.len() <= MAX_MANIFEST_BYTES, "manifest too large")?;
     limit(sectors.len() <= MAX_SECTORS, "too many sectors")?;
@@ -412,6 +441,22 @@ pub fn write(manifest: &Manifest, sectors: &[Sector]) -> Result<Vec<u8>, Error> 
         total_raw += raw.len();
         frames.push((raw.len(), frame));
     }
+    // The spawn frame is written like a sector frame and read back before it is accepted.
+    let spawn_raw = spawn::encode(spawns);
+    limit(
+        spawn_raw.len() <= spawn::MAX_RAW_BYTES,
+        "spawn payload too large",
+    )?;
+    check(
+        spawn::decode(&spawn_raw, &manifest.world)? == *spawns,
+        "spawn family does not round-trip",
+    )?;
+    let spawn_frame = compressor.compress(&spawn_raw).map_err(zstd_error)?;
+    limit(
+        spawn_raw.len() <= spawn_frame.len().saturating_mul(MAX_SECTOR_RATIO),
+        "spawn ratio too high",
+    )?;
+    total_raw += spawn_raw.len();
     limit(total_raw <= MAX_TOTAL_RAW_BYTES, "bundle payload too large")?;
     for key in &manifest.dropped_teleports {
         check(
@@ -426,7 +471,7 @@ pub fn write(manifest: &Manifest, sectors: &[Sector]) -> Result<Vec<u8>, Error> 
     out.extend_from_slice(&u32_of(json.len()));
     out.extend_from_slice(&u32_of(sectors.len()));
     out.extend_from_slice(&json);
-    let mut offset = out.len() + ENTRY * sectors.len();
+    let mut offset = out.len() + ENTRY * sectors.len() + SPAWN_ROW;
     for (sector, (raw_length, frame)) in sectors.iter().zip(&frames) {
         out.extend_from_slice(&[sector.floor as u8, 0]);
         out.extend_from_slice(&sector.sx.to_le_bytes());
@@ -437,9 +482,14 @@ pub fn write(manifest: &Manifest, sectors: &[Sector]) -> Result<Vec<u8>, Error> 
         out.extend_from_slice(&Sha256::digest(frame));
         offset += frame.len();
     }
+    out.extend_from_slice(&u32_of(offset));
+    out.extend_from_slice(&u32_of(spawn_frame.len()));
+    out.extend_from_slice(&u32_of(spawn_raw.len()));
+    out.extend_from_slice(&Sha256::digest(&spawn_frame));
     frames
         .iter()
         .for_each(|(_, frame)| out.extend_from_slice(frame));
+    out.extend_from_slice(&spawn_frame);
     let digest = digest_of(&out);
     out.extend_from_slice(&digest);
     limit(out.len() <= MAX_FILE_BYTES, "bundle file too large")?;
@@ -502,7 +552,7 @@ pub fn read_with(data: &[u8], caps: ReadCaps) -> Result<Bundle, Error> {
     )?;
     check(
         &data[..4] == MAGIC && le16(data, 4) == VERSION,
-        "not an OTERYN_WORLD_BUNDLE/v2",
+        "not an OTERYN_WORLD_BUNDLE/v3",
     )?;
     check(le16(data, 6) == 0, "reserved header bytes are not zero")?;
     let (body, trailer) = data.split_at(data.len() - DIGEST);
@@ -512,7 +562,8 @@ pub fn read_with(data: &[u8], caps: ReadCaps) -> Result<Bundle, Error> {
     limit(manifest_length <= MAX_MANIFEST_BYTES, "manifest too large")?;
     limit(count <= caps.sectors, "too many sectors")?;
     let table = HEADER + manifest_length;
-    let mut expected = table + ENTRY * count;
+    let spawn_row = table + ENTRY * count;
+    let mut expected = spawn_row + SPAWN_ROW;
     check(
         expected <= body.len(),
         "sector table runs past the payloads",
@@ -583,7 +634,47 @@ pub fn read_with(data: &[u8], caps: ReadCaps) -> Result<Bundle, Error> {
         sectors.push(sector);
         expected += length;
     }
-    check(expected == body.len(), "bytes after the last sector frame")?;
+    let (offset, length, raw_length) = (
+        le32(data, spawn_row),
+        le32(data, spawn_row + 4),
+        le32(data, spawn_row + 8),
+    );
+    check(
+        offset == expected && length > 0,
+        "the spawn frame must follow the sector frames",
+    )?;
+    check(
+        body.len() - offset >= length,
+        "spawn frame runs past the payloads",
+    )?;
+    limit(
+        raw_length <= spawn::MAX_RAW_BYTES,
+        "spawn payload too large",
+    )?;
+    limit(
+        raw_length <= length.saturating_mul(MAX_SECTOR_RATIO),
+        "spawn ratio too high",
+    )?;
+    total_raw += raw_length;
+    limit(
+        total_raw <= caps.total_raw_bytes,
+        "bundle payload too large",
+    )?;
+    let frame = &data[offset..offset + length];
+    check(
+        Sha256::digest(frame).as_slice() == &data[spawn_row + 12..spawn_row + SPAWN_ROW],
+        "spawn checksum",
+    )?;
+    check(
+        canonical_frame(frame, raw_length),
+        "spawn is not one canonical zstd frame",
+    )?;
+    let raw = zstd::bulk::decompress(frame, raw_length).map_err(zstd_error)?;
+    check(raw.len() == raw_length, "spawn length differs from its row")?;
+    let spawns = spawn::decode(&raw, &manifest.world)?;
+    validate_spawns(&manifest, &spawns)?;
+    expected += length;
+    check(expected == body.len(), "bytes after the spawn frame")?;
     for key in &manifest.dropped_teleports {
         check(
             names_entry(&sectors, *key),
@@ -593,6 +684,7 @@ pub fn read_with(data: &[u8], caps: ReadCaps) -> Result<Bundle, Error> {
     Ok(Bundle {
         manifest,
         sectors,
+        spawns,
         digest,
     })
 }
