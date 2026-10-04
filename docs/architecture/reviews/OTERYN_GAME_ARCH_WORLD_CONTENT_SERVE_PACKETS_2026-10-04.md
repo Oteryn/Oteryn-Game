@@ -128,14 +128,26 @@ No packet here takes a migration lease (§1.7) or changes a protocol registry ro
     value lacks; a format `VERSION` bump alone does not raise it, and it never goes down. The
     reader (`validate_manifest`) refuses a bundle whose `min_runtime_version` is not a decimal
     or exceeds the node's own `RUNTIME_VERSION`, so an older node refuses boot on it;
-  - `ruleset_compatibility`: the ruleset revision the World runs, as a one-element list. Until a
-    World ruleset is decided, a bundle World runs the node's one accepted ruleset and sim
-    revision, `oteryn:ruleset/entry-r1` and the entry room's sim revision
-    (`native_entry::REVISIONS[2]` and `[6]`), because the binary has one rule set;
+  - `ruleset_compatibility`: `ruleset_compatibility` of the committed file
+    `content/world/pins/<world slug>.ruleset.json`, a one-element list, sorted and unique. The
+    file is a compiler input, so the lane and `inputs_digest` cover it; the compiler does not
+    read Rust source. Until a World ruleset is decided, it holds the node's one accepted ruleset
+    revision, `["oteryn:ruleset/entry-r1"]` (`native_entry::REVISIONS[2]`), because the binary has
+    one rule set. The node's constant is checked against the file, not copied from it: the node
+    refuses boot on a bundle whose `ruleset_compatibility` does not contain its own
+    `native_entry::REVISIONS[2]` (WORLD-CONTENT-SERVE-1), and a game-server unit test fails when
+    the file and the constant differ, so a change to `native_entry.rs` alone fails its own PR;
   - `provenance_summary`: `revision_digest_token` of `content/world/content.lock.json` as stored
     (it already carries the `lock:` prefix, as in `lock:g4-npc-wave-a-r9`, and no second prefix is
     added), followed by `/<package_provenance_digest>` for each `content.lock.json` entry, in file
     order.
+  - **Source sweep.** Every source above is under a compiler input path: `project.json`,
+    `manifest.json`, `content.lock.json` and the `.ruleset.json` file under `content/world/**`,
+    and `RUNTIME_VERSION` under `crates/world-bundle/**`. No identity field is sourced from a
+    path outside the list below. The pin's own fields are its reviewed values: `digest`,
+    `inputs_digest` and the `BundlePins` revisions are checked against the tree, and the pin is
+    under `content/world/**`, so the lane runs on a pin change; only the pin file is left out of
+    `inputs_digest`.
   - A `derive-identity` mode of the compiler writes the file from these sources. The
     `world_bundle` job derives it again and fails on any difference. A source that is missing or
     does not have this shape fails the job; WORLD-BUNDLE-CI-1 then returns `BLOCKER` and does not
@@ -467,7 +479,7 @@ validation:
   - the pin schema;
   - one non-production pin for the imported World, with its digest, revisions, `entry_start`
     and `inputs_digest`;
-  - its identity file and the compiler's `derive-identity` mode (§1.2);
+  - its identity file, its `.ruleset.json` file and the compiler's `derive-identity` mode (§1.2);
   - `world_bundle::RUNTIME_VERSION` and the reader's refusal of a higher `min_runtime_version`;
   - the pin check.
 - **Acceptance:**
@@ -479,6 +491,8 @@ validation:
   - each identity field equals its §1.2 source; a hand-edited field, or a `content_lock_sha256`
     that is not the SHA-256 of `content.lock.json`, fails the job;
   - a production pin on a `non-production` build fails the job;
+  - `ruleset_compatibility` equals the `.ruleset.json` file, and changing only that file changes
+    `inputs_digest` and requires the lane;
   - `min_runtime_version` equals `RUNTIME_VERSION`, and the reader refuses a bundle whose
     `min_runtime_version` is `RUNTIME_VERSION + 1` or not a decimal;
   - `entry_start` must be a walkable, non-blocking base cell inside the World bounds;
@@ -595,7 +609,8 @@ validation:
 - **Builds:**
   - per-World content selection from the pin (§1.3);
   - the served claims composed over the booted base (§1.5);
-  - the boot gate and its event line;
+  - the boot gate and its event line, with the ruleset check against `native_entry::REVISIONS[2]`
+    (§1.2);
   - the activation artifacts over the bundle, the served claims, their Item definitions and the
     quest catalogue; their staging and activation through `ContentActivationController`; their
     issuer in `oteryn-game-ops content activate` (§1.5);
@@ -636,6 +651,10 @@ validation:
   - The fixture World still serves the entry chest, D116 and `oteryn:content/entry-r1`, and its
     existing tests pass unchanged.
   - A first login on the imported World is placed at its pinned `entry_start`.
+  - A bundle whose `ruleset_compatibility` does not contain `native_entry::REVISIONS[2]` refuses
+    boot with `ContentActivation("ruleset")`, and a unit test in
+    `world_content_serve_tests.rs` fails when `content/world/pins/<world slug>.ruleset.json`
+    and `native_entry::REVISIONS[2]` differ.
 - **Not in scope:**
   - spawns (SPAWN-1b), the map wire (§1.8), doors and other legacy-id bindings;
   - a production pin or deployment;
