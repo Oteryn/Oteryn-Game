@@ -56,6 +56,8 @@ entries per snapshot). The `WORLD_SPATIAL_VISIBILITY` v2 entities carry at most 
 - **Delta.**
   - A one-step move sends the newly visible tiles, at most 31 per floor and 248 in all
     (`MAPW-RL-03`), with the new window origin. The client drops the tiles that left the window.
+    When every newly visible tile is empty, the delta carries only the new origin, with no tile
+    and no cleared entry.
   - A change to a tile in view resends that whole tile.
   - A delta over `MAPW-RL-03` tiles is sent as a snapshot instead, never truncated.
 
@@ -86,11 +88,12 @@ message MapItemV1 {
   uint32 count = 2;               // 1..=100 for stackables, else 1
   uint32 sub_type = 3;            // fluid or charge subtype, 0 if none
   oneof origin {
-    uint32 base_ordinal = 4;      // 0..63: an unhidden base entry; its key is derived (§4)
-    uint64 item_handle = 5;       // non-zero: an overlay-added or Ground item within the handle budget
-    bool display_only = 6;        // true: an overlay-added or Ground item beyond the handle budget (§3)
+    uint32 base_ordinal = 4;      // 0..63: an unhidden base entry with no handle; its key is derived (§4)
+    uint64 item_handle = 5;       // non-zero: a handle-bearing entry within the handle budget (§3)
+    bool display_only = 6;        // true: a handle-bearing entry beyond the handle budget (§3)
   }
   uint32 appearance_id = 7;       // 0..=65535: the 15.30 appearance object id, 0 if none (§3)
+  uint64 object_revision = 9;     // base_ordinal entries only: the entry's overlay revision, 0 if none (§3)
 }
 
 message MapTileV1 {
@@ -106,10 +109,11 @@ message WorldMapViewSnapshotV1 {
 }
 
 message WorldMapViewDeltaV1 {
-  MapViewHeaderV1 header = 1;     // digest and epoch must equal the snapshot's
+  MapViewHeaderV1 header = 1;     // generation, digest and epoch equal the snapshot's; origin is the new window origin (§3)
   repeated MapTileV1 tiles = 2;   // changed or newly visible tiles
   repeated ActorPositionV1 cleared = 3; // tiles in view that became empty
-  // tiles and cleared together: 1..=248 (MAPW-RL-03), disjoint, each strictly ascending
+  // tiles and cleared together: 0..=248 (MAPW-RL-03), disjoint, each strictly ascending;
+  // 0 only when the origin moved (an origin-only move delta)
 }
 ```
 
@@ -119,12 +123,18 @@ message WorldMapViewDeltaV1 {
   - unsorted or duplicate tiles;
   - a `base_ordinal` of 64 or more;
   - a zero handle, a `display_only` that is not `true`, or not exactly one origin;
+  - an `object_revision` on an entry whose origin is not `base_ordinal`;
   - not exactly one definition reference, or a zero one;
   - a count outside its range;
   - a `ground_speed` above 1000;
-  - an `appearance_id` above 65,535.
+  - an `appearance_id` above 65,535;
+  - a delta whose origin is not the view's origin or one step from it on the same floor (§3
+    Generation match);
+  - a delta with no tile and no cleared entry whose origin is the view's origin.
 - **Bounds.**
-  - `MapItemV1` encodes in at most 32 bytes, and `MapTileV1` in at most 360 bytes.
+  - `MapItemV1` encodes in at most 32 bytes, and `MapTileV1` in at most 360 bytes. The largest
+    item is a `base_ordinal` entry with an `object_revision`: definition 6, count 2, sub-type 6,
+    ordinal 2, appearance 4 and revision 11 bytes, 31 in all. A handle entry is at most 29.
   - A snapshot payload is at most 2,016 x 360 + 128 = 725,888 bytes. It is streamed in two
     chunks under `FND02-SNAPSHOT-CHUNK-BYTES` (524,288) and stays far under
     `FND02-SNAPSHOT-ASSEMBLED-BYTES` (16 MiB).
@@ -132,8 +142,9 @@ message WorldMapViewDeltaV1 {
     `FND02-STATE-DELTA-PAYLOAD-BYTES` (262,144).
   - MAP-WIRE-2 registers `MAPW-RL-01` to `-04`, `ITEMV0-RL-03-MAP-VIEW` and the payload maxima
     computed from its codec.
-- **Handle budget.** Base entries carry no handle; they are named by their ordinal (§4). Only
-  overlay-added and Ground items carry an `item_handle`.
+- **Handle budget.** The handle-bearing entries are overlay-added items, Ground items and
+  movable base entries (§3 Move source). Every other base entry carries no handle; it is named by
+  its ordinal (§4).
   - `MAPW-RL-04` = 1,024 handle-bearing entries in one map view. The server gives handles in a
     fixed order: the actor's floor first, then by floor distance; within a floor, by Chebyshev
     distance to the actor, then `(y, x)`, then stack order. An entry past the budget is sent as
@@ -147,6 +158,35 @@ message WorldMapViewDeltaV1 {
     `MAPW-RL-03`, a snapshot is sent instead.
   - Reach for `USE` and move is at most a few tiles, so every reachable item is within the budget
     unless more than 1,024 handle-bearing entries lie nearer to the actor.
+- **Move source.** `ItemMoveIntentV1` (command 9) names its source only by `source_handle`, so a
+  base entry that can be moved carries a handle.
+  - A movable base entry is one eligible for pickup under ADR-0021 §4.4: pickupable, not on a
+    house tile, with no action, unique, door, depot or teleport binding, no contents and no
+    unrepresentable attribute. The server decides eligibility from the bundle and the content
+    generation; the client never does.
+  - It is sent with an `item_handle` within the handle budget, else `display_only`. It never
+    carries `base_ordinal` or `object_revision`.
+  - The server binds the handle to `(bundle_digest, placement_key, reset_epoch)`, never to an
+    ItemInstance. A move or `USE` with it resolves the base entry and checks that the overlay does
+    not hide it, else `STALE`.
+  - A move of it is the §4.4 pickup: a MINT into Ground at its tile with the
+    `MapItemMaterialization` cause, then the ordinary TRANSFER to the intent's destination. Its
+    reach and destination checks are the existing ones. After the MINT, the origin is hidden and
+    its tile is resent, so the handle no longer resolves to the base entry.
+  - Every other base entry cannot be moved from the map in this contract (§5); it has no handle,
+    so no command 9 can name it.
+- **Object revision.** A base entry with state (a door, lever or other transform) is fenced by its
+  overlay revision.
+  - `object_revision` is the overlay revision of the entry's bundle placement key in the current
+    reset epoch, 0 while the overlay holds no state for it. Only `base_ordinal` entries carry it.
+  - Every transition raises the revision and resends the tile, so the client always holds the
+    current value.
+  - A `USE` on the entry sends it as `WorldObjectTargetV1.expected_revision`. The server compares
+    it with the current revision after the digest and hide checks. A different value is `STALE`
+    and changes nothing, and the client's next `USE` from the resent tile carries the new value.
+  - A reset-epoch change sends a snapshot, so a revision of another epoch never reaches a
+    command.
+  - The field adds at most 11 bytes to an entry with no handle, so the per-item bound holds.
 - **Definition reference.** Item ids and Terrain catalogue ids are separate spaces, so an entry
   names its family.
   - A base entry whose palette entry has family `item`, and every overlay-added or Ground item,
@@ -169,9 +209,19 @@ message WorldMapViewDeltaV1 {
     never trusted for a command.
   - The field adds at most 4 bytes, so the per-item and per-tile bounds hold.
 - **Generation match.** The client binds the view to `(content_generation, bundle_digest,
-  reset_epoch)`. A delta whose header differs from the snapshot's is a `STATE_REVISION_MISMATCH`.
-  The client sends the existing `ResyncRequest` and draws nothing from that delta. The server
-  never sends a delta across a digest or epoch change; it sends a snapshot.
+  reset_epoch)`. A delta whose binding differs from the snapshot's is a
+  `STATE_REVISION_MISMATCH`. The client sends the existing `ResyncRequest` and draws nothing from
+  that delta. The server never sends a delta across a digest or epoch change; it sends a snapshot.
+- **Origin.** The header's `origin` is not part of the binding. It is the window origin after the
+  payload.
+  - A snapshot sets the view's origin.
+  - A delta's origin is either the view's origin (a tile change) or one step from it on the same
+    floor, a Chebyshev distance of 1 (a one-step move). Any other origin fails closed, and the
+    client resyncs.
+  - The client applies a delta in this order: it moves the window to the new origin and drops the
+    tiles that left it, then applies the tiles and cleared entries, which must all lie in the new
+    window.
+  - A delta with no tile and no cleared entry is valid only when its origin moved.
 - **Ground speed.** Each tile carries its ground speed, so the client times a step with the
   same value as the server (ADR-0021 MAP-LOAD-1 amendment, SPEED-1). A bundle World uses the
   tile's ground speed on both sides; the 150 default stays only for the fixture World.
@@ -189,9 +239,10 @@ message WorldMapViewDeltaV1 {
 
 - **Decision.** The client names a map entry by its bundle placement key (format §7), not by a
   canonical `PlacementKey`:
-  - an unhidden base entry: `placement_key = x << 32 | y << 16 | (-floor) << 8 | base_ordinal`,
-    derived from the tile position and the ordinal it was sent with;
-  - an added or Ground item: its `item_handle`, as today (`ItemTargetV1`).
+  - an unhidden base entry with no handle: `placement_key = x << 32 | y << 16 | (-floor) << 8 |
+    base_ordinal`, derived from the tile position and the ordinal it was sent with;
+  - a movable base entry, an added or a Ground item: its `item_handle`, as today
+    (`ItemTargetV1`), and as the `source_handle` of command 9 (§3 Move source).
 - **Carriage.** A `USE` on a base entry sends `WorldObjectTargetV1.placement` as the 8-byte
   big-endian placement key, prefixed by the 32-byte bundle digest it was drawn from: 40 bytes in
   all, under the 512-byte bound. This adds no command type and no field. A bundle World accepts
@@ -200,6 +251,7 @@ message WorldMapViewDeltaV1 {
   - A digest that is not the active bundle digest is refused as stale (`STATE_REVISION_MISMATCH`),
     so a key never names an entry of another bundle.
   - The server reads the key's entry from the base and checks that the overlay does not hide it.
+  - It checks `expected_revision` against the entry's overlay revision (§3 Object revision).
   - When the entry is bound to a RewardClaim placement (ARCH-WORLD-CONTENT-SERVE-1 §1.4), the
     server looks up the canonical `PlacementKey` through that binding. The canonical key is the
     `source_placement` of the MINT and audit, as today.
@@ -217,6 +269,8 @@ message WorldMapViewDeltaV1 {
 - Animation, outfit and effect sprites. Static appearance sprites are decided (owner #1793
   Q5b; packets §2.2 MAP-SPRITE-1).
 - Light, weather, minimap and tile flags beyond the item stack.
+- Moving a base entry that is not eligible for pickup under ADR-0021 §4.4 (furniture, bound
+  items). It needs a durable move model for map-authored entries.
 - Creatures on tiles: they stay domain-1 actors.
 - Houses: the World-scoped house interior runtime serves owned house tiles (ADR-0021 §4.4), and
   its wire is a later child.

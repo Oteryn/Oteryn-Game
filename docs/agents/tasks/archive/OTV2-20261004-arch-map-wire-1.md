@@ -60,6 +60,17 @@ external_repositories: []
   - P2 4179361859: a Ground or overlay item takes its appearance from its item content
     definition key; a donor key uses its `source_item_id`.
   - P2 4179361866: the depth pattern uses `z = -floor`, with a floor -7 example and test.
+- #1793 Codex round 3 (CP D618):
+  - P1 4179407519: a base entry eligible for pickup (ADR-0021 §4.4) carries an `item_handle`
+    bound to `(bundle_digest, placement_key, reset_epoch)`; command 9 from it is the §4.4 MINT
+    then TRANSFER.
+  - P1 4179407524: `base_ordinal` entries carry `object_revision` (9), the overlay revision; a
+    `USE` sends it as `expected_revision`, and each transition resends the tile.
+  - P1 4179407527: the header origin is not part of the binding; a delta's origin is the view's
+    origin or one step from it on the same floor, else it fails closed.
+  - P2 4179407529: an origin-only move delta (no tile, no cleared entry) is valid.
+  - P2 4179407531: sprites draw in bounded batches of 81,920 quads, with `MAX_ENTRY_CELLS`
+    measured and at least 16.
 - No code or registry change.
 
 ## Validation

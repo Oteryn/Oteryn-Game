@@ -79,6 +79,9 @@ client.
 - A delta with another header is a `STATE_REVISION_MISMATCH`, and the client resyncs.
 - The server sends a snapshot, never a delta, across a digest or epoch change. This is the
   client `content_generation` matched to the active bundle that ADR-0021 requires.
+- The header's `origin` is not part of that binding. A delta's origin is the new window origin:
+  the view's origin or one step from it on the same floor. A move whose newly visible tiles are
+  all empty sends an origin-only delta (contract §3 Origin).
 
 ### 1.4 The wire target is the bundle placement key, resolved through the binding
 
@@ -90,6 +93,13 @@ client.
   the canonical `PlacementKey` through the in-memory binding of ARCH-WORLD-CONTENT-SERVE-1 §1.4.
 - **Durable rows.** They keep canonical keys (§1.6 there). Nothing new is written.
 - **Added and Ground items.** They keep `item_handle` targets.
+- **Movable base entries.** A base entry eligible for pickup under ADR-0021 §4.4 carries an
+  `item_handle`, bound to its digest, placement key and reset epoch. Command 9 names it by that
+  handle, and the move is the §4.4 MINT then TRANSFER. No command field is added (contract §3
+  Move source).
+- **Stateful base entries.** Every other base entry carries its overlay `object_revision`. A
+  `USE` sends it as `expected_revision`, and a stale value is `STALE`. Each transition resends the
+  tile with the new revision (contract §3 Object revision).
 - **What this settles.** It is the #1792 §1.8 question: the target becomes the bundle key, and
   the canonical-key lookup is added here.
 
@@ -162,6 +172,12 @@ validation:
   - the move of Ground items and corpses out of domain 1 under capability 18;
   - the map-view handle budget (`MAPW-RL-04`, nearest-first, `display_only` beyond it) and the
     session handle table bounded by `ITEMV0-RL-03-MAP-VIEW` (contract §3);
+  - handles for movable base entries (ADR-0021 §4.4 eligibility), bound to `(bundle_digest,
+    placement_key, reset_epoch)`, and command 9 from such a handle as the §4.4 MINT then
+    TRANSFER (contract §3 Move source);
+  - each `base_ordinal` entry's `object_revision`, and the `expected_revision` check of a 40-byte
+    `USE` (contract §3 Object revision);
+  - the delta origin rule and origin-only move deltas (contract §3 Origin);
   - each entry's family-tagged definition reference: `item_definition_ref` for Items,
     `terrain_definition_ref` for Terrain palette entries (contract §3);
   - each entry's `appearance_id`, taken from its palette key, or for an overlay-added or Ground
@@ -195,6 +211,31 @@ validation:
     matches a fresh snapshot;
   - a teleport, a floor change and a reset-epoch change each send a snapshot;
   - a delta with another digest or epoch is refused by the decoder's header check;
+  - origin (contract §3 Origin):
+    - a one-step move delta whose origin is one step from the view's origin is applied, and the
+      client window then matches a fresh snapshot at that origin;
+    - a delta whose origin is two steps away, or on another floor, fails closed and the client
+      resyncs;
+    - a step into an area whose newly visible tiles are all empty sends a delta with the new
+      origin and no tile or cleared entry, and the client window moves;
+    - a delta with no tile, no cleared entry and an unchanged origin fails closed;
+  - move source (contract §3 Move source):
+    - a pickupable, unbound base entry is sent with an `item_handle` and no `base_ordinal`;
+    - command 9 from that handle to the backpack MINTs with the `MapItemMaterialization` cause
+      and TRANSFERs, hides the origin and resends its tile;
+    - a second command 9 with the same handle is `STALE`, and in another channel the same entry
+      can still be taken once;
+    - a door, a bound chest and a furniture entry are sent with `base_ordinal` and no handle;
+    - a movable base entry beyond the budget is `display_only`, and counts against
+      `MAPW-RL-04`;
+  - object revision (contract §3 Object revision):
+    - a door with no overlay state is sent with `object_revision` 0, and a `USE` with 0 opens
+      it;
+    - the open resends its tile with revision 1, and a `USE` with 1 closes it;
+    - a second `USE` with the old revision 0 is `STALE` and changes nothing;
+    - an `object_revision` on a handle or `display_only` entry fails closed;
+    - a 10-entry tile of `base_ordinal` entries with the largest revision values is at most
+      360 bytes;
   - a 40-byte target with the active digest resolves; a stale digest is refused, and a hidden
     entry gives `NOTHING_TO_USE`;
   - a bound chest resolves to its canonical `PlacementKey`, and the MINT `source_placement` is the
@@ -285,8 +326,14 @@ validation:
     RGBA).
     - When a frame needs more cells than the page holds, the excess entries are drawn with the
       placeholder cell and counted in a diagnostic counter. The frame does not fail.
-  - `MAX_BATCH_QUADS` rises from 16,384 to 81,920, which covers 2,016 tiles x 10 entries x 4
-    cells, with a test on the instance buffer size.
+  - A drawn entry has at most `MAX_ENTRY_CELLS` cells. It is the measured maximum over the
+    pinned 15.30 appearances, frame group 0 and phase 0, all layers, and at least 16 (a 4x4-cell
+    object, such as a 2x2-tile object of 64x64 sprites). The value is recorded in the task record.
+    An entry that would resolve to more draws the placeholder cell and is counted.
+  - Quads are drawn in bounded batches. `MAX_BATCH_QUADS` rises from 16,384 to 81,920, and a frame
+    that needs more quads issues further batches of at most that size, in draw order. A frame is
+    never truncated. The worst case is 2,016 tiles x 10 entries x `MAX_ENTRY_CELLS`; with 16
+    cells, that is 322,560 quads in 4 batches.
   - No derived cache is written to disk; decoding happens in memory, on demand.
 - **Acceptance (over the real `content/assets/files/`):**
   - the pinned catalogue and appearances load, with 43,516 objects and a maximum id of 55,117;
@@ -299,11 +346,20 @@ validation:
     - a ground with a 4x4 position pattern resolves to different cells at `(0,0)` and `(1,0)`;
     - a stackable resolves to different cells at counts 1, 5 and 100;
     - a 64x64 object resolves to 4 cells with their offsets;
+    - appearance 104, a 4x4-cell object, resolves to 16 cells with their offsets;
   - an unknown id, id 0 and id 65,536 return an error, not a panic;
   - the sheet cache holds 64 sheets and evicts the least recently used one on the 65th;
   - the atlas page evicts least recently drawn cells, and a frame with 4,097 distinct cells
     draws one placeholder cell and counts it;
-  - a sheet decode stays under a measured bound, recorded in the task record.
+  - a sheet decode stays under a measured bound, recorded in the task record;
+  - batches:
+    - a test over every pinned appearance asserts that none resolves to more than
+      `MAX_ENTRY_CELLS` cells;
+    - an entry built to resolve to `MAX_ENTRY_CELLS` + 1 cells draws the placeholder and is
+      counted;
+    - a frame of 2,016 tiles x 10 entries of 16 cells is drawn in 4 batches of at most
+      81,920 quads, and the drawn quad count equals 322,560;
+    - a frame of exactly 81,920 quads uses one batch, and 81,921 uses two.
 - **Not in scope:**
   - animation, outfits, creatures, effects, missiles and light;
   - inventory and container sprites;
@@ -393,6 +449,15 @@ validation:
 - **One definition reference for Items and Terrain.** The Item and Terrain catalogue compact
   ids overlap, so an untagged reference would be ambiguous. A bundle palette index alone cannot
   name overlay-added or Ground items, which are not in the palette.
+- **A handle for every base entry.** A full view holds up to 20,160 entries, far past the
+  1,024 handle budget and the session handle table. Only movable base entries need a handle,
+  because command 9 names its source only by handle.
+- **A new placement-key source field in command 9.** It would amend `ItemMoveIntentV1` and its
+  bounds. A handle bound to the bundle key reuses the accepted command as it is.
+- **No revision on base entries.** A `USE` would then have no `expected_revision` to send, so
+  either every `USE` after a transition would be stale or no stale check would hold.
+- **A single fixed sprite batch.** 2,016 tiles x 10 entries x 16 cells is 322,560 quads. One
+  buffer of that size wastes memory on every frame, and a truncated batch would drop entries.
 - **Trusting the hash token in a sheet's file name.** Renaming a file would bypass the check.
   The manifest `sha256` is the pin.
 - **A prepared on-disk sprite cache, as in the experiment.** On-demand decoding in memory is
