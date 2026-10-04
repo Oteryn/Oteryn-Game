@@ -89,6 +89,16 @@
 - Login always succeeds (§4.1). Admission reads no Premium.
 - When no Platform entitlement source is configured, every account reads Free. This is the
   current production state, and the packet does not change it.
+- **Activation gate (PREMIUM-DELIVERY-0 §10.3, #1738 P1 4176929764).** A configured snapshot
+  source alone grants nothing. The runtime takes an `Option<PremiumActivation>` at construction,
+  holding the activation record's id and its switch-over instant. `premium_current` is false for
+  every account when either of these holds:
+  - the activation is `None`, which is the default and the production composition;
+  - the trusted clock reads `None` or a time before the switch-over.
+  Only then does it ask `PremiumConsumer`. PREM-WIRE-1 builds only the gate. Setting a
+  production activation needs PREM-1's activation record: PREM-1b merged, PREM-P live, the
+  cross-repository end-to-end test and the `PROD-ENTITLEMENTS-01` §6.6 rollout evidence. It also
+  needs separate owner authority, so no packet in this batch sets it.
 
 ### 1.3 Who wires each Premium consumer
 
@@ -163,7 +173,8 @@ acceptance: none beyond §1.5
 Builds:
 
 - `TrustedClock` with the system and fixed implementations (§1.1).
-- The runtime seam `premium_current(account_id)` (§1.2).
+- The runtime seam `premium_current(account_id)` (§1.2), behind the `PremiumActivation` gate.
+  Production composition passes `None`.
 - `cast_spell` takes the admitted account. `CasterState.premium` is the seam's value, read once
   at cast time, and the SPELL-D5 note is removed.
 
@@ -179,6 +190,10 @@ Acceptance tests:
 - A Premium fixture spell is refused for a Free account (`NotAvailable`).
 - The same spell is cast when the consumer reads current under a fixed synced clock.
 - It is refused when the clock reads `None`.
+- With a configured snapshot source whose consumer reads current, the spell is still refused
+  when the activation is `None`, and when the clock reads 1 µs before the switch-over. It is cast
+  at the switch-over instant.
+- The production composition test asserts that the activation is `None`.
 - An uncertainty of 5,000,000 µs is current; 5,000,001 µs is not.
 - `STA_UNSYNC` and `TIME_ERROR` map to `None`; this is a unit test of the decoding function over
   a `timex` value, so no kernel state is needed.

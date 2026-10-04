@@ -45,6 +45,9 @@ external_repositories: []
   2. ADMIT-0 acceptance.
   3. PREM-5 together with PREM-2b.
   4. Relay key authority.
+- **#1738 P1 4176929764:** the Premium seam is gated on `PremiumActivation`, which defaults to
+  `None` in production. A configured snapshot source cannot make `premium_current` true before
+  PREM-1's activation record and separate owner authority (PREMIUM-DELIVERY-0 §10.3) (§1.2, §2.1).
 - No code, contract, wire or migration change.
 
 ## Validation
