@@ -20,7 +20,9 @@ use super::actor_spell::{
 use super::capabilities::{
     OfferedCapability, PRODUCTION_OFFERED_CAPABILITIES, SelectedCapabilities,
 };
-use super::container_view::{ContainerObservation, ContainerPlan, ContainerViewState, PendingOpen};
+use super::container_view::{
+    ContainerObservation, ContainerPlan, ContainerViewState, PendingOpen, ViewCommandWindow,
+};
 use super::item_view::{
     CloseTrigger, InventoryItems, ItemKey, ItemTargetObservation, ItemViewContinuity,
     ItemViewDelta, OpenDecision, SessionItemView,
@@ -157,6 +159,7 @@ impl SessionContinuity {
             container_revision: 0,
             open_corpse: None,
             views_revision: 0,
+            view_commands: ViewCommandWindow::EMPTY,
         },
     };
 }
@@ -1312,9 +1315,15 @@ where
         } else if command.command_type == COMMAND_TYPE_CONTAINER_VIEW_INTENT {
             // BAGS-WIRE-1: non-durable view command. Over BAGS0-RL-04 (10 per second, sliding
             // window) it is REJECTED with an empty payload before decoding, as is a malformed one.
-            let admitted_rate = container_views
-                .as_mut()
-                .is_some_and(|views| views.admit(tokio::time::Instant::now()));
+            // The window is per GameSession and travels in the continuity.
+            let admitted_rate = match (&container_views, item_view.as_mut()) {
+                (Some(_), Some(view)) => {
+                    let admitted_rate = view.admit_view_command(tokio::time::Instant::now());
+                    admitted.continuity.item_view = view.continuity();
+                    admitted_rate
+                }
+                _ => false,
+            };
             match (
                 container_views.as_mut().filter(|_| admitted_rate),
                 item_view.as_mut(),

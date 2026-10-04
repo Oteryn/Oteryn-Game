@@ -29,6 +29,7 @@
 #[path = "../interaction/corpse_open.rs"]
 pub(crate) mod corpse_open;
 
+use super::container_view::ViewCommandWindow;
 use super::world_spatial::{
     ActorPosition, ENTITY_IDENTITY_BYTES, EntityDetail, WorldSpatialEntity,
 };
@@ -47,6 +48,7 @@ use oteryn_protocol_oteryn::item_view::{
 };
 use std::collections::{BTreeMap, BTreeSet};
 use std::num::NonZeroU32;
+use tokio::time::Instant;
 
 /// The server-internal identity of one viewed item. Never on the wire.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -123,6 +125,8 @@ pub(crate) struct ItemViewContinuity {
     /// The highest domain 14 revision the session may have seen (capability 14). The views
     /// themselves close on every reconnect and transfer.
     pub(crate) views_revision: u64,
+    /// `BAGS0-RL-04`: the GameSession's recent view commands (capability 14).
+    pub(crate) view_commands: ViewCommandWindow,
 }
 
 impl ItemViewContinuity {
@@ -285,6 +289,7 @@ pub(crate) struct SessionItemView {
     inventory_revision: u64,
     container_revision: u64,
     views_revision: u64,
+    view_commands: ViewCommandWindow,
     inventory: InventoryItems,
     open: Option<OpenCorpse>,
     open_entries: Vec<ViewItem>,
@@ -300,6 +305,7 @@ impl SessionItemView {
             inventory_revision: continuity.inventory_revision,
             container_revision: continuity.container_revision,
             views_revision: continuity.views_revision,
+            view_commands: continuity.view_commands,
             inventory: InventoryItems::default(),
             open: None,
             open_entries: Vec::new(),
@@ -314,7 +320,13 @@ impl SessionItemView {
             container_revision: self.container_revision,
             open_corpse: self.open.map(|open| open.key).or(self.carried_open),
             views_revision: self.views_revision,
+            view_commands: self.view_commands,
         }
+    }
+
+    /// `BAGS0-RL-04`: whether one more view command of this GameSession fits the window.
+    pub(crate) fn admit_view_command(&mut self, now: Instant) -> bool {
+        self.view_commands.admit(now)
     }
 
     /// Capability 14 is selected: the handle bound becomes `ITEMV0-RL-03-CONTAINER-TREE`.
