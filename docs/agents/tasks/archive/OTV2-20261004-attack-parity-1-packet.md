@@ -37,12 +37,18 @@ external_repositories: []
 - ATTACK-PARITY-1a captures the ATTACK-0 §6 grid into a checked-in fixture, now and in parallel
   with ATTACK-1b. ATTACK-PARITY-1b asserts it and corrects the formulas after ATTACK-1b
   (§1.2, §2).
-- Five probes show a nonzero TibiaPal minimum and a low-skill maximum gap (§1.3). A failure to fit
-  a closed form goes to the control plane as a QUESTION (§1.4).
+- Five probes show a nonzero TibiaPal minimum and a low-skill maximum gap (§1.3). Fixtures that
+  disagree with the pinned source go to the control plane as a QUESTION (§1.4).
 - No code, contract or wire change.
 - #1768 P1 4178014589: the gate asserts the mean as well as min and max. A uniform draw cannot
   match TibiaPal's average, so those rows stay `PARITY_PENDING` with a checked-in residual list,
   and the distribution goes to ATTACK-DIST-0.
+- #1768 P1 4178032396: each weapon row's TibiaTools attack must equal the Oteryn KNOWN attack
+  before any check. Mismatches go to a checked-in list.
+- #1768 P1 4178079948: the TibiaTools source expression is pinned at commit `a1d36890`, including
+  the `floor(6 * attack / 5)` step. It reproduces all five probes exactly. 1b implements it instead
+  of fitting, and checks it offline over every attack value. The grid covers each attack residue
+  mod 5, and min and max must match exactly.
 
 ## Validation
 

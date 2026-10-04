@@ -70,7 +70,10 @@ The fixtures cover ATTACK-0 §6:
 - the vocations knight, paladin, sorcerer and druid (no monk, §1.1);
 - levels 8, 50, 100, 300, 600 and 1000;
 - skills 10, 50, 100 and 120;
-- fists, plus one weapon for each melee class (axe, club and sword).
+- fists, plus weapons of each melee class (axe, club and sword) whose attack values cover every
+  residue of the attack value mod 5, one weapon per residue and class where the TibiaTools
+  catalogue has one. This exposes the `floor(6 * attack / 5)` step of §1.3 (#1768 P1 4178079948).
+  Missing residues are listed in the record.
 
 The weapons are named by their TibiaTools id and name, and mapped to Oteryn item keys in the
 fixture.
@@ -107,15 +110,42 @@ On 2026-10-04, five probe requests with fists (knight, sorcerer):
 The maximum matches at higher skills, including the official level curve at level 1000. It
 differs at skill 10. The minimum is never 0 in TibiaPal.
 
-ATTACK-0 §5 resolves divergences toward TibiaPal. So ATTACK-PARITY-1b:
-- derives a minimum term;
-- derives the low-skill maximum correction from the grid;
-- expresses both as `player_expression` trees on the existing formula engine.
+ATTACK-0 §5 resolves divergences toward TibiaPal.
 
-No new engine is built.
+**The upstream expression is pinned, not fitted (#1768 P1 4178079948).** TibiaTools publishes
+its calculator source. At commit `a1d368906caa8ae98bcb7123f2431733d318d710` of
+`github.com/kik-tibia/tibiatools`, the auto-attack branch of `computeRaw`
+(`src/lib/damage-calc/damage.ts` lines 13-25) and the level term
+(`src/lib/damage-calc/character-state.ts` lines 73-75) are:
+
+```text
+step   = floor((sqrt(2 * level + 2025) + 5) / 10)
+flat   = step * 100 - 450 + floor((level + 1000) / step - 50 * step)
+attack = weapon attack + ammunition attack            (fists: 7)
+v      = floor(6 * attack / 5) * (skill + 4) / 28     (no monk factor, §1.1)
+min    = floor(flat + v / 2)
+avg    = floor(flat + v)
+max    = floor(flat + 2 * v)
+```
+
+This reproduces all five probes above exactly. So ATTACK-PARITY-1b:
+- implements this expression as `player_expression` trees on the existing formula engine,
+  including the `floor(6 * attack / 5)` step before the skill scaling. It does not fit a new
+  expression to the grid;
+- records the commit, file and lines in the constants file and the record;
+- checks it offline, without the network, against a test oracle that transcribes the same
+  lines. The check covers every attack value from 0 to the highest melee attack in
+  `content/items/definitions/`, skills 10 to 130 and the §1.2 levels, so weapons that were not
+  sampled are covered too;
+- checks it against the captured fixtures, which are the evidence that the pinned source is what
+  the API serves.
+
+If the fixtures disagree with the pinned source, 1b changes no formula. It reports the rows on
+#162 and asks the control plane for a recapture or a newer pinned commit. No new engine is built.
 
 **The average is part of the gate (#1768 P1 4178014589).** The engine draws uniformly between
-min and max, so its mean is `(min + max) / 2`. TibiaPal does not. For knight 100, 100 the uniform
+min and max, so its mean is `(min + max) / 2`, that is `flat + 1.25 v`. TibiaPal's `avg` is
+`flat + v`. For knight 100, 100 the uniform
 mean is 56.5, while TibiaPal reports 49. So a row that matches min and max can still differ in
 average damage, and matching min and max alone is not parity.
 
@@ -127,7 +157,8 @@ plane allocates it from 1b's residual report (§1.4).
 ### 1.4 Passing and failing
 
 A row passes when Oteryn's min, max and mean each equal TibiaPal's `raw.min`, `raw.max` and
-`raw.avg`, within the calculator's rounding (±1).
+`raw.avg`. Min and max must be exactly equal, since both sides use the same pinned integer
+expression. The mean is compared after the same `floor`.
 
 - **Every row passes:** 1b sets `parity` to `MATCHED_TIBIAPAL` for the attack values only. The
   other values stay `PARITY_PENDING` (§1.1).
@@ -141,10 +172,10 @@ A row passes when Oteryn's min, max and mean each equal TibiaPal's `raw.min`, `r
   mismatch list, which the test keeps exact in both directions. The melee values of that weapon
   class stay `PARITY_PENDING`, and the row is never used to change a formula. 1b reports the list
   on #162, and the content lane corrects the item data through the control plane.
-- **No closed form fits every row:** 1b does not fit a lookup table. It matches what it can and
-  reports the failing rows on #162. It sends the control plane a QUESTION with:
-  - (a) keep the closest closed form and record the residual;
-  - (b) a level-band table;
+- **The fixtures disagree with the pinned source:** 1b does not fit a formula or a lookup table.
+  It reports the failing rows on #162. It sends the control plane a QUESTION with:
+  - (a) recapture the fixtures;
+  - (b) pin a newer TibiaTools commit;
   - (c) keep Canary.
 
 ## 2. Packets
@@ -178,6 +209,8 @@ Acceptance:
 - The tool reproduces the request bodies offline from the grid definition (test). A live rerun is
   documented, not run in CI.
 - The weapon mapping names one Oteryn item key per TibiaTools weapon.
+- For each melee class, the fixture covers every attack value residue mod 5 that the catalogue
+  has (§1.2). The record lists any missing residues.
 - Every weapon row records `tibiatools_attack` from the capture-time weapon catalogue. A weapon
   row without it fails the test. Fist rows have none.
 - Not in scope: any Rust change or comparison.
@@ -210,10 +243,15 @@ Acceptance:
   that its `weapon.attack` is `KNOWN` and equal to `tibiatools_attack`. Rows that fail go to the
   attack mismatch list (§1.4). The test fails if a listed row now matches or an unlisted row
   differs. No listed row takes part in a fit, a pass count or a parity label.
-- `parity_tests.rs` loads the fixture and asserts min and max for every row, within ±1, under
-  `FightMode::Offensive`. It first asserts that the Offensive `attack_factor` is 1.0 and that no
+- The formulas implement the pinned expression of §1.3, `floor(6 * attack / 5)` step included.
+  `parity_tests.rs` compares the engine with the transcribed oracle over the whole offline range
+  of §1.3: every attack value, skills 10 to 130 and the §1.2 levels. Min and max must be exactly
+  equal.
+- `parity_tests.rs` loads the fixture and asserts that min and max are exactly equal for every
+  row under `FightMode::Offensive`. It first asserts that the Offensive `attack_factor` is 1.0 and that no
   row is monk (§1.1).
-- It also computes the engine's exact mean for every row and compares it with `raw.avg` (±1).
+- It also computes the engine's exact mean for every row and compares it with `raw.avg` after the
+  same `floor`.
   Rows whose mean differs are listed by key in a checked-in residual list. The test fails if a
   row passes but is still listed, or fails but is not listed, so the list cannot go stale.
 - The constants file states its parity per value. It says `MATCHED_TIBIAPAL` for the Offensive
@@ -240,6 +278,10 @@ Acceptance:
   would be fitted into the shared melee formula and corrupt every weapon (#1768 P1 4178032396).
 - **Changing the distribution in 1b.** It may need a new draw shape in the engine. That needs its
   own decision (ATTACK-DIST-0).
+- **Fitting a formula to the sampled weapons.** Three weapons cannot expose the
+  `floor(6 * attack / 5)` step, so a fitted formula could pass the grid and still be wrong for
+  weapons that were not sampled. The upstream expression is pinned and checked over every attack
+  value instead (#1768 P1 4178079948).
 - **A lookup table instead of formulas.** It hides the formula and grows with every level band. It
   is only option (b) of §1.4.
 - **Waiting for ATTACK-1b to capture.** The capture owns no shared path.
@@ -248,7 +290,7 @@ Acceptance:
 
 - **Must decide now:** YES. Every attack value is `PARITY_PENDING`, and the probes in §1.3 show
   that the minimum damage is wrong today.
-- **Smallest sufficient:** one capture tool, one fixture file, one test module, and formula
-  corrections only where the fixtures disagree.
-- **Superseding evidence:** an official formula, or a TibiaTools revision. The latter means a
-  recapture by rerunning the tool.
+- **Smallest sufficient:** one capture tool, one fixture file, one test module, and the pinned
+  upstream expression in place of the current formulas.
+- **Superseding evidence:** an official formula, or a TibiaTools revision. A revision means a new
+  pinned commit and a recapture by rerunning the tool.
