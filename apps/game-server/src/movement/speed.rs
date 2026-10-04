@@ -8,6 +8,8 @@
 //! for every tile) until MAP-CLIENT-1 switches it to the map source (ARCH-BATCH-ITEM-EQUIP §1.11).
 
 use crate::content::LogicalCell;
+use crate::foundation::{ChannelRuntimeV1, ExactActorRef, GameSessionId};
+use oteryn_simulation_determinism::SemanticTimeMicros;
 use sha2::{Digest, Sha256};
 use std::sync::OnceLock;
 use std::time::Duration;
@@ -111,6 +113,22 @@ pub(crate) fn player_effective_speed(level: u32, speed_delta: i64, equipment_spe
         .saturating_add(equipment_speed)
         .clamp(i64::from(SPEED_MIN), i64::from(SPEED_MAX));
     u16::try_from(speed).unwrap_or(SPEED_MIN)
+}
+
+/// The effective speed of the player `actor` of `session` at the owner time `now`: the level
+/// term and the actor's active `SPEED` condition delta from the Channel runtime's condition
+/// owner (§4.1). `None` when that delta cannot be read; the step is then refused.
+pub(crate) fn runtime_player_speed(
+    runtime: &ChannelRuntimeV1,
+    actor: ExactActorRef,
+    session: GameSessionId,
+    level: u32,
+    now: SemanticTimeMicros,
+) -> Option<u16> {
+    let speed_delta = runtime
+        .actor_active_speed_delta(actor, Some(session), now)
+        .ok()?;
+    Some(player_effective_speed(level, speed_delta, 0))
 }
 
 /// The duration of a player step at `speed` onto `onto`, with the ground speed `source` gives that
@@ -262,5 +280,97 @@ mod tests {
         ] {
             assert_eq!(EngineeringGroundSpeed.ground_speed(cell), 150);
         }
+    }
+
+    /// A charm's speed condition from the authored rows, as the condition owner tests load it.
+    fn charm(name: &str) -> crate::foundation::ConditionDefinition {
+        use crate::foundation::{ConditionDefinition, ConditionValues, SpeedRange};
+        let rows: serde_json::Value = serde_json::from_str(include_str!(
+            "../../../../tools/content-schema/condition-authoring/authored-conditions.json"
+        ))
+        .expect("authored conditions");
+        let row = rows["rows"]
+            .as_array()
+            .and_then(|rows| {
+                rows.iter()
+                    .find(|row| row["key"] == format!("charm.{name}"))
+            })
+            .expect("charm row");
+        let values = &row["speed"];
+        let n = |key: &str| i32::try_from(values[key].as_i64().expect("i64")).expect("i32");
+        ConditionDefinition::new(
+            &format!("oteryn:condition.charm.{name}"),
+            1,
+            ConditionValues::Speed {
+                paralysis: values["kind"] == "paralysis",
+                range: SpeedRange {
+                    a_min: n("a_min"),
+                    b_min: n("b_min"),
+                    a_max: n("a_max"),
+                    b_max: n("b_max"),
+                },
+                duration_ms: u32::try_from(values["duration_ms"].as_u64().expect("u64"))
+                    .expect("u32"),
+            },
+        )
+        .expect("definition")
+    }
+
+    /// The step duration of the player after `name` (if any) was applied to them at time 0.
+    fn duration_with(name: Option<&str>, tag: u8) -> Option<Duration> {
+        use crate::foundation::{
+            ActorConditionTransition, ApplicationFacts, ConditionSource, ConditionSourceKind,
+        };
+        use oteryn_simulation_determinism::{DecisionOccurrenceId, GameplayDecisionRoot};
+        let (mut runtime, actor, session) =
+            crate::gameplay_transport::actor_spell::tests::runtime_with_player(tag);
+        let at = SemanticTimeMicros::from_micros;
+        if let Some(name) = name {
+            let definition = charm(name);
+            let root = GameplayDecisionRoot::from_bytes([7; 32]);
+            let plan = runtime
+                .prepare_actor_condition(
+                    actor,
+                    Some(session),
+                    ActorConditionTransition::Apply {
+                        definition: &definition,
+                        source: ConditionSource {
+                            actor,
+                            session: Some(session),
+                            kind: ConditionSourceKind::SelfUse,
+                        },
+                        immunities: &[],
+                        facts: ApplicationFacts {
+                            now: 0,
+                            base_speed: player_effective_speed(1, 0, 0),
+                            mana_shield_capacity: 0,
+                            target_reentry_protected: false,
+                            source_reentry_protected: false,
+                            target_is_player: true,
+                            decision_root: &root,
+                            occurrence: DecisionOccurrenceId::from_bytes([1; 16]),
+                        },
+                    },
+                    at(0),
+                )
+                .expect("prepared");
+            assert_eq!(runtime.commit_actor_condition(&plan, at(0)), Ok(true));
+        }
+        let speed = runtime_player_speed(&runtime, actor, session, 1, at(1))?;
+        player_step_duration(
+            &EngineeringGroundSpeed,
+            LogicalCell { x: 0, y: 0, z: 7 },
+            speed,
+        )
+    }
+
+    #[test]
+    fn haste_and_paralysis_on_the_runtime_actor_change_the_step_duration() {
+        let plain = duration_with(None, 0x81).expect("plain");
+        assert_eq!(plain, Duration::from_millis(550));
+        let haste = duration_with(Some("adrenaline_burst"), 0x82).expect("haste");
+        let paralysis = duration_with(Some("cripple"), 0x83).expect("paralysis");
+        assert!(haste < plain, "{haste:?} < {plain:?}");
+        assert!(paralysis > plain, "{paralysis:?} > {plain:?}");
     }
 }

@@ -261,6 +261,7 @@ pub(crate) trait FreshAdmissionAuthority {
     fn paced_step(
         &self,
         actor: ExactActorRef,
+        _session: GameSessionId,
         direction: StepDirection,
     ) -> impl Future<Output = (StepOutcome, Option<std::time::Duration>)> {
         async move { (self.step(actor, direction).await, None) }
@@ -1089,8 +1090,12 @@ where
                         buffered = Some(BufferedStep { frame, due });
                         continue;
                     }
-                    let (outcome, duration) = authority.paced_step(actor, direction).await;
-                    pacer.record(now, duration);
+                    let (outcome, duration) = authority
+                        .paced_step(actor, admitted.game_session_id, direction)
+                        .await;
+                    // The clock starts when the step committed, so a slow owner turn never
+                    // shortens the next step's wait.
+                    pacer.record(tokio::time::Instant::now(), duration);
                     Dispatch::Step(outcome)
                 }
             }
@@ -2053,9 +2058,11 @@ mod tests {
     }
 
     /// SPEED-1: an East step moves and paces the next step by `PACE`; every other direction is
-    /// blocked and leaves the clock unchanged. Each executed step is recorded with its instant.
+    /// blocked and leaves the clock unchanged. Each executed step is recorded with its instant;
+    /// it then takes `turn` before it commits, as a contended owner turn would.
     struct PacedAuthority {
         steps: RefCell<Vec<(StepDirection, tokio::time::Instant)>>,
+        turn: std::time::Duration,
     }
 
     const PACE: std::time::Duration = std::time::Duration::from_millis(80);
@@ -2075,11 +2082,13 @@ mod tests {
         async fn paced_step(
             &self,
             _actor: ExactActorRef,
+            _session: GameSessionId,
             direction: StepDirection,
         ) -> (StepOutcome, Option<std::time::Duration>) {
             self.steps
                 .borrow_mut()
                 .push((direction, tokio::time::Instant::now()));
+            tokio::time::sleep(self.turn).await;
             if direction == StepDirection::East {
                 let moved = StepOutcome {
                     disposition: StepDisposition::Moved,
@@ -2183,6 +2192,7 @@ mod tests {
             ] {
                 let authority = PacedAuthority {
                     steps: RefCell::new(Vec::new()),
+                    turn: std::time::Duration::ZERO,
                 };
                 let (end, frames) = drive_open(
                     &authority,
@@ -2227,12 +2237,47 @@ mod tests {
     }
 
     #[test]
+    fn a_slow_owner_turn_does_not_shorten_the_wait_for_the_next_step() -> Result<(), Box<dyn Error>>
+    {
+        run(async {
+            let step = u64::from(COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT);
+            // The owner turn takes a whole step duration: the next step still waits a full
+            // duration after the first one committed, never running back to back.
+            let authority = PacedAuthority {
+                steps: RefCell::new(Vec::new()),
+                turn: PACE,
+            };
+            let (_, frames) = drive_open(
+                &authority,
+                paced_session(&[13])?,
+                &[
+                    command(1, 1, step, StepDirection::East),
+                    command(1, 2, step, StepDirection::East),
+                ],
+                4,
+            )
+            .await?;
+            assert_eq!(frames.len(), baseline().len() + 4);
+            let steps = authority.steps.borrow();
+            assert_eq!(steps.len(), 2);
+            let committed = steps[0].1 + PACE;
+            let waited = steps[1].1.duration_since(committed);
+            assert!(
+                waited >= PACE - std::time::Duration::from_millis(5),
+                "{waited:?}"
+            );
+            Ok(())
+        })
+    }
+
+    #[test]
     fn a_step_after_the_duration_runs_at_once_and_a_blocked_step_does_not_pace()
     -> Result<(), Box<dyn Error>> {
         run(async {
             let step = u64::from(COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT);
             let authority = PacedAuthority {
                 steps: RefCell::new(Vec::new()),
+                turn: std::time::Duration::ZERO,
             };
             // Blocked, blocked, then a move: none waits, because only a moved step paces.
             let (_, frames) = drive_open(
@@ -2261,6 +2306,7 @@ mod tests {
             let step = u64::from(COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT);
             let authority = PacedAuthority {
                 steps: RefCell::new(Vec::new()),
+                turn: std::time::Duration::ZERO,
             };
             // The client closes while the second step waits in the buffer.
             let (end, frames) = drive_session(

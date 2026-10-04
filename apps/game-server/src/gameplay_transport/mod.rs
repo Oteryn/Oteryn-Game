@@ -1451,21 +1451,21 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
     /// direct lookup in the active generation's qualified cells (`MOVE-RL-03` = 1) and the
     /// owner's compare-commit. A blocked or out-of-room destination is `Blocked`; any stale,
     /// unpositioned or mismatched binding is `Rejected`. Nothing moves unless the step commits.
-    async fn step(&self, actor: ExactActorRef, direction: StepDirection) -> StepOutcome {
-        self.paced_step(actor, direction).await.0
-    }
-
-    /// SPEED-1: the step, paced by the step duration onto its destination (CONDITIONS-0 §4.2):
-    /// the player's effective speed and the destination's ground speed from the §1.11 seam,
+    ///
+    /// SPEED-1: the step is paced by the step duration onto its destination (CONDITIONS-0 §4.2):
+    /// the player's effective speed, with the actor's active `SPEED` condition delta for
+    /// `session` at the owner's time, and the destination's ground speed from the §1.11 seam,
     /// which on the engineering map is 150 for every tile. A destination whose duration cannot
-    /// be computed (ground speed 0) is refused before anything moves.
+    /// be computed (ground speed 0, or no readable condition delta) is refused before anything
+    /// moves.
     async fn paced_step(
         &self,
         actor: ExactActorRef,
+        session: GameSessionId,
         direction: StepDirection,
     ) -> (StepOutcome, Option<Duration>) {
         use crate::movement::speed::{
-            EngineeringGroundSpeed, player_effective_speed, player_step_duration,
+            EngineeringGroundSpeed, player_step_duration, runtime_player_speed,
         };
         use crate::movement::{
             CardinalStep, MovementEngineeringSelection, MovementError, MovementOwnerTurn,
@@ -1520,10 +1520,16 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
                         None,
                     );
                 }
-                // No Character progression or player condition owner is composed yet, so the
-                // speed is the level 1 base with no `SPEED` delta and no equipment term.
-                let speed = player_effective_speed(PLAYER_LEVEL_UNTIL_PROGRESSION_OWNER, 0, 0);
-                duration = player_step_duration(&EngineeringGroundSpeed, target, speed);
+                // No Character progression owner is composed yet, so the speed is the level 1
+                // base with the actor's active `SPEED` delta and no equipment term.
+                duration = runtime_player_speed(
+                    &runtime,
+                    actor,
+                    session,
+                    PLAYER_LEVEL_UNTIL_PROGRESSION_OWNER,
+                    self.owner_now(),
+                )
+                .and_then(|speed| player_step_duration(&EngineeringGroundSpeed, target, speed));
             }
         }
         // A step whose destination or duration cannot be computed never runs unpaced.
