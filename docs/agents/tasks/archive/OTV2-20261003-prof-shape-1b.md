@@ -45,6 +45,9 @@ BURN is not, and orb ranks stay `NOT_ADMITTED`.
   `InsufficientDust` before any write, and the spend (deterministic entry and transaction ids per
   occurrence) commits with the receipt; replay pays once. `ProficiencyModificationUsage` checks the
   registered maxima before any write. History verification also proves the line and its entries.
+- Merge Queue run 37163256159 (#1704): the 0060 guard named both tables' NEW fields in one CASE,
+  which PL/pgSQL resolves for every row, so every dust entry insert failed; each branch now reads
+  only its own table's fields.
 - Carry-overs from #1685: P2 4174729829 (reconciliation takes the occurrence lock, shared) and P2
   4174729831 (PROF-1 commit and reconciliation return `ConflictingOccurrence` for an occurrence
   with a modification terminal) fixed.

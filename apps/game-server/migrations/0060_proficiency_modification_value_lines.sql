@@ -34,6 +34,8 @@ DECLARE
     v_entries INTEGER;
     v_entry_amount BIGINT;
 BEGIN
+    -- Each table's fields are read only in its own branch: PL/pgSQL resolves every NEW field an
+    -- executed expression names, so one CASE over both tables fails on either.
     IF TG_TABLE_NAME = 'game_character_forge_dust_entries' THEN
         IF NEW.cause <> 'proficiency' THEN
             RETURN NULL;
@@ -41,11 +43,11 @@ BEGIN
         IF NEW.kind <> 'SPEND' THEN
             RAISE EXCEPTION 'proficiency forge dust entry must be a SPEND' USING ERRCODE = '23514';
         END IF;
+        v_occurrence_id := NEW.cause_occurrence_id;
+    ELSE
+        v_occurrence_id := NEW.proficiency_occurrence_id;
     END IF;
     v_character_id := NEW.character_id;
-    v_occurrence_id := CASE TG_TABLE_NAME
-        WHEN 'game_character_forge_dust_entries' THEN NEW.cause_occurrence_id
-        ELSE NEW.proficiency_occurrence_id END;
 
     -- One receipt has at most one modification line per slot; a dust cost is spent once per
     -- receipt, so a receipt with dust carries exactly one line.
