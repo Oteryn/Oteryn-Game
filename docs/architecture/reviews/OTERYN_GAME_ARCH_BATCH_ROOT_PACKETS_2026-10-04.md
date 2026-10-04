@@ -41,6 +41,7 @@ Leased by the control plane (#1733, 2026-10-04). A worker that needs another num
 | BANK-RET-0 | none | retention profiles `ECONOMY_LEDGER_RETENTION_V1` (purpose `ECONOMY_LEDGER`, event type 3) and `DUR03_ONE_ITEM_DURABLE_AUDIT_RETENTION_V2` (successor for event type 2, future admission only; §1.7) |
 | BANK-1 | 0071 | game event type 3 `BANK_OPERATION` |
 | GOLD-FEE-2 | 0072 | none (the fee event stays event type 2) |
+| GOLD-FEE-ACT-1 (held) | the next free number when allocated | none; it flips event type 2 to V2 (§1.7) |
 
 Migrations 0061-0067 are leased to FORGE-1b, TIMED-RT-1c, ITEM-MOVE-2a, BAGS-1, ITEM-MOVE-2b,
 EXERCISE-1 and (conditionally) CAP-NEG-RESUME-FALLBACK-1; 0068 is leased to #1534 (D451), `main`
@@ -64,6 +65,7 @@ TIMED_ITEMS). The control plane leased 15 to `ITEM_USE_V1`; QUEST-LOG-WIRE-1 mov
 | 1 | BANK-RET-0 | control plane routes; privacy review | this batch merges |
 | 2 | BANK-1 | hard, persistence review | BANK-RET-0 has merged |
 | 3 | GOLD-FEE-2 | hard, persistence review | BANK-1 has merged |
+| 4 | GOLD-FEE-ACT-1 | hard, persistence review | GOLD-FEE-2 has merged and every node runs its code (§1.7) |
 
 The two step-1 packets touch disjoint files. ITEM-USE-WIRE-1 adds ITEMUSE0-RL-03 to
 `RESOURCE_LIMITS_REGISTRY.json`, where MAP-LOAD-1 (#1744) changes MAP01 rows. They are separate
@@ -74,7 +76,7 @@ rows; the second to merge takes `main` in with a merge commit and keeps both.
 | File | Packets | Rule |
 |---|---|---|
 | `docs/contracts/RESOURCE_LIMITS_REGISTRY.json` | ITEM-USE-WIRE-1, BANK-1, GOLD-FEE-2 (and MAP-LOAD-1, #1744) | each edits only its own rows |
-| `docs/contracts/GAME_EVENT_FOUNDATION_REGISTRY.json` | BANK-RET-0, BANK-1, GOLD-FEE-2 | BANK-RET-0 the profiles, BANK-1 event type 3, GOLD-FEE-2 nothing unless §2.5 says so |
+| `docs/contracts/GAME_EVENT_FOUNDATION_REGISTRY.json` | BANK-RET-0, BANK-1, GOLD-FEE-ACT-1 | BANK-RET-0 the profiles, BANK-1 event type 3, GOLD-FEE-ACT-1 the event type 2 binding and schema revision; GOLD-FEE-2 does not edit it |
 | `apps/game-server/src/durability/mod.rs` | BANK-1, GOLD-FEE-2 | module lines and re-exports only |
 
 ## 1. Rulings
@@ -162,12 +164,40 @@ registers V2; event type 2 stays bound to V1 until the activation boundary below
 event type to one `retention_profile_id`. So V2 cannot apply to fee events only. Because V2's
 purpose is V1's plus the bank part, it covers every type-2 shape, and all type-2 producers move to
 V2 together. Every producer (mint, transfer, reward claim, decay retire, timed expiry and fee
-burn) already writes the one shared constant `item_mint_audit::RETENTION_PROFILE_ID`. The boundary
-is GOLD-FEE-2's merge and deploy. In that one change:
+burn) already writes the one shared constant `item_mint_audit::RETENTION_PROFILE_ID`.
 
-- the event type 2 `retention_profile_id` in the registry becomes V2;
-- the shared constant becomes V2, so every type-2 producer writes V2 from the same build;
-- migration `0072` replaces the `0010` outbox's two single-value CHECKs, `schema_revision = 1`
+The activation has two phases, so that a rolling deploy never mixes V1 and V2 emission across the
+boundary (#1733 P1 4177057911):
+
+1. **Phase 1, readiness (GOLD-FEE-2).** Every node built from it reads, verifies and accepts both
+   `(1, V1)` and `(2, V2)`, and still emits `(1, V1)`. The registry keeps type 2 bound to V1 and
+   `current_schema_revision` 1. Before activation a fee with `T < F` is refused as in stage 1,
+   because a V1 event cannot carry the bank value line.
+2. **Phase 2, the switch (GOLD-FEE-ACT-1).** This is one reviewed change and the only boundary. It
+   inserts the single activation row and, in the same PR, sets the registry's type-2 binding to
+   V2 and `current_schema_revision` to 2. From the row's commit every insert emits `(2, V2)`, and
+   bank-backed fees open.
+   - **Rollout precondition.** Every node of the deployment runs phase-1 code, recorded in the
+     PR's deploy evidence, with no pre-phase-1 node alive. The activation is applied only after
+     that.
+
+The emission mode is a runtime fact, not a build constant, so no phase-1 node emits V1 after the
+boundary:
+
+- `0072` adds a singleton table `type2_audit_activation` (`id SMALLINT PRIMARY KEY CHECK (id =
+  1)`, insert-only, no UPDATE or DELETE grant).
+- It also adds a `BEFORE INSERT` trigger on the `0010` outbox. The trigger refuses `(1, V1)` once
+  the row exists and `(2, V2)` while it does not. Under READ COMMITTED it sees the row committed
+  at statement time.
+- Each type-2 producer reads the row in its own transaction and picks its tuple. A producer that
+  read "absent" before a racing activation commit is refused by the trigger. It aborts with no
+  effect and retries once as V2.
+- So every event's tuple matches the activation state when it was inserted, with no window
+  either way.
+
+In phase 1, `0072` also:
+
+- replaces the `0010` outbox's two single-value CHECKs, `schema_revision = 1`
   and `retention_profile_id = V1`, with one tuple CHECK: `(schema_revision,
   retention_profile_id)` is `(1, V1)` or `(2, V2)` (#1733 P1 4176934053). Stored rows are
   `(1, V1)` and stay valid. New rows are `(2, V2)`. `(1, V2)` and `(2, V1)` are refused;
@@ -175,7 +205,7 @@ is GOLD-FEE-2's merge and deploy. In that one change:
   own envelope.
 
 Every event already admitted keeps V1 (`existing_envelope_binding: ORIGINAL_RETENTION_PROFILE_ID`),
-including events a not-yet-upgraded node writes during the rollout. No existing event is
+including every event written before the activation row commits. No existing event is
 migrated, and V1 is never revised (`successor_rollout_scope:
 FUTURE_ADMISSION_ONLY_AFTER_REVIEWED_ACTIVATION_BOUNDARY`). A separate event type for fee events
 is rejected: it would need a new payload contract, outbox type and verifier for one shape, where
@@ -278,8 +308,8 @@ validation:
 ```
 
 Builds the two profiles of §1.7 with every `required_profile_fields` entry, and records the
-activation boundary of §1.7 (GOLD-FEE-2's merge and deploy). It does not change event type 2's
-binding, which stays V1 until GOLD-FEE-2. Acceptance: the privacy
+activation boundary of §1.7 (GOLD-FEE-ACT-1's activation row). It does not change event type 2's
+binding, which stays V1 until GOLD-FEE-ACT-1. Acceptance: the privacy
 review on the PR; the registry validates; V1 and every admitted event are unchanged (a test or
 validator check that V1's fields are byte-identical to `main`); no event type is added (BANK-1
 adds type 3).
@@ -345,14 +375,13 @@ base: main (BANK-1 merged)
 migration_lease: 0072 (merge condition of §0.1)
 depends_on: [BANK-1, BANK-RET-0, GOLD-FEE-1b]
 owned_paths:
-  - apps/game-server/migrations/0072_character_gold_fee_bank_debit.sql  # 0023 and 0010 widening; FEE_DEBIT kind and fee reference on the ledger
+  - apps/game-server/migrations/0072_character_gold_fee_bank_debit.sql  # 0023 and 0010 widening; FEE_DEBIT kind and fee reference on the ledger; type2_audit_activation and the outbox trigger (§1.7)
   - apps/game-server/src/durability/item_fee_burn.rs
   - apps/game-server/src/durability/item_fee_burn_audit.rs
-  - apps/game-server/src/durability/item_mint_audit.rs  # RETENTION_PROFILE_ID to V2; verifier admits V1 or V2; the fee bank-debit codec
+  - apps/game-server/src/durability/item_mint_audit.rs  # the emission tuple read from the activation row; verifier admits V1 or V2; the fee bank-debit codec
   - apps/game-server/examples/dur03_native_one_item_audit.rs  # the same constant and codec
   - apps/game-server/src/durability/bank.rs        # the FEE_DEBIT entry writer only
   - docs/contracts/game-events/v1/native_one_item_transaction.proto  # OneItemFeeBankDebitV1, OneItemFeeBurnV1 field 13; header text
-  - docs/contracts/GAME_EVENT_FOUNDATION_REGISTRY.json  # event type 2: retention_profile_id V2, current_schema_revision 2 (§1.7)
   - apps/game-server/tests/item_fee_burn_*.rs
   - apps/game-server/tests/gold_fee_bank_*.rs
   - docs/contracts/RESOURCE_LIMITS_REGISTRY.json   # DUR03-RL-03-FEE; the re-measured DUR03-RL-07 envelope with the value line
@@ -394,7 +423,7 @@ GOLD-FEE-2 changes it in the same PR:
   excluded;
 - `fee_gold_units` widens from the 20,000,000 cap to `T` plus 999,999,999,999, and
   `burned - change + bank_debit = fee` holds;
-- the registry's `current_schema_revision` for event type 2 becomes 2. `interpretation_revision`
+- revision 2 is the schema the registry names at GOLD-FEE-ACT-1 (§1.7). `interpretation_revision`
   stays 1, since revision-1 bytes mean the same thing.
 
 Compatibility and codec qualification:
@@ -424,13 +453,30 @@ Tests:
 - replay and crash: the bank part is an outcome, recalculated after a known abort and returned by
   the occurrence replay after an ambiguous commit;
 - a junior payer with `T < F` is refused as in stage 1;
-- the activation boundary (§1.7): the registry's type-2 binding equals the shared constant, both
-  V2; every type-2 producer (mint, transfer, reward claim, decay retire, timed expiry, fee burn)
-  writes V2. A stored `(1, V1)` row of each shape still passes the CHECK after `0072` and
+- phase 1 (§1.7): the registry still binds type 2 to V1. With no activation row, every type-2
+  producer (mint, transfer, reward claim, decay retire, timed expiry, fee burn) writes `(1, V1)`
+  and a fee with `T < F` is refused as in stage 1. A test inserts the row, and then every
+  producer writes `(2, V2)` and the bank tests above pass;
+- the trigger: `(1, V1)` after the row and `(2, V2)` before it are each refused. A producer
+  paused by a test hook after reading "absent" hits the trigger when the row commits, aborts
+  with no effect and retries as `(2, V2)`. Nothing is written as V1 after the row's commit;
+- the qualification: a node pair on one database, one before the row and one after, verifies
+  each other's events; the row cannot be updated or deleted;
+- the tuples: a stored `(1, V1)` row of each shape still passes the CHECK after `0072` and
   verifies as V1. A new `(2, V2)` row passes and verifies as V2. `(1, V2)`, `(2, V1)`, revision 3
   and a profile id that is neither V1 nor V2 are each refused by the CHECK and the verifier.
 
 Acceptance: the tests above; the persistence review on the PR; the migration merge condition.
+
+GOLD-FEE-ACT-1 (held after GOLD-FEE-2) is the phase 2 switch of §1.7. It is a hard worker with a
+persistence review and a migration lease from the control plane. That migration inserts the
+`type2_audit_activation` row. In the same PR the registry's type-2 entry gets
+`retention_profile_id` V2 and `current_schema_revision` 2. Its precondition is the deploy evidence
+that every node runs GOLD-FEE-2 code, and applying it needs no other code change. Its tests:
+- the registry binding and the row agree;
+- applying the migration twice is a no-op;
+- a pre-phase-1 binary against the migrated schema is refused by the trigger rather than writing
+  V1.
 
 ## 3. What this unblocks
 
@@ -448,6 +494,9 @@ Acceptance: the tests above; the persistence review on the PR; the migration mer
   `WorldBase` shape for MAP-OVERLAY-1; it comes in the next batch.
 - **One migration for BANK-1 and GOLD-FEE-2.** The persistence reviews are separate and BANK-1 is
   useful on its own (BANK-NPC-1, STASH-1).
+- **One build that switches type 2 to V2 at deploy.** In a rolling deploy, upgraded nodes would
+  emit V2 while old nodes still emit V1, so no single boundary fits both populations (#1733 P1
+  4177057911). A drain-and-cutover was rejected too, because it needs a full outage.
 - **Reuse the DUR-03 retention profile for the bank event.** Its purpose excludes the economy
   (§1.7).
 
