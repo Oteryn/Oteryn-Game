@@ -99,7 +99,7 @@ external_repositories: []
 
 - `cargo fmt --all --check`: pass
 - `cargo clippy --locked -p oteryn-game-server --all-targets -- -D warnings`: pass
-- `cargo test --locked -p oteryn-game-server` with PostgreSQL 17.6: pass (21985 passed, 0 failed)
+- `cargo test --locked -p oteryn-game-server` with PostgreSQL 17.6: pass (24426 passed, 0 failed, merged with main at 69f171fc)
 - `python tools/agents/validate_governance.py`: pass
 - `python -m unittest discover -s tools/agents/tests`: pass (54 tests)
 
