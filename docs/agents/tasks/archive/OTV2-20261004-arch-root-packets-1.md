@@ -62,6 +62,10 @@ external_repositories: []
   reader crate, the ground speed source, the Terrain catalogue input (with the P1 4176957737
   fix) and the packet. The open P1 4177026515 and P2 4177026518 moved with it and are answered
   there. §1.2-§1.4 and §2.1 stay here as pointers.
+- #1733 P1 4177057911: type-2 audit activation has two phases. In phase 1, GOLD-FEE-2 reads (1,V1)
+  and (2,V2) and still emits (1,V1). In phase 2, GOLD-FEE-ACT-1 is the single reviewed switch: an
+  activation row plus an outbox trigger, applied only once every node runs phase-1 code, so no V1
+  is emitted after the boundary. Qualification tests are listed (§0, §1.7, §2.5, §4).
 - No code, contract or wire change.
 
 ## Validation
