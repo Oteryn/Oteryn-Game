@@ -27,6 +27,9 @@ use oteryn_protocol_oteryn::item_view::{
     CAPABILITY_ITEM_EQUIP_DROP_V1, CAPABILITY_ITEM_VIEW_MOVE_V1, COMMAND_TYPE_ITEM_MOVE_INTENT,
     STATE_DOMAIN_CHARACTER_INVENTORY, STATE_DOMAIN_OPEN_CONTAINER,
 };
+use oteryn_protocol_oteryn::quest_log::{
+    CAPABILITY_QUEST_LOG_V1, COMMAND_TYPE_QUEST_LOG_QUERY, STATE_DOMAIN_QUEST_LOG,
+};
 use oteryn_protocol_oteryn::world_spatial::CAPABILITY_PACED_MOVEMENT_V1;
 
 /// One capability the server offers, with the capabilities that must also be selected for it
@@ -89,6 +92,11 @@ const GATED: &[(u32, &[u32], &[u32])] = &[
         CAPABILITY_CONTAINER_TREE_V1,
         &[COMMAND_TYPE_CONTAINER_VIEW_INTENT],
         &[STATE_DOMAIN_CONTAINER_VIEWS],
+    ),
+    (
+        CAPABILITY_QUEST_LOG_V1,
+        &[COMMAND_TYPE_QUEST_LOG_QUERY],
+        &[STATE_DOMAIN_QUEST_LOG],
     ),
 ];
 

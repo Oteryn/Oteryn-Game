@@ -61,6 +61,17 @@ use oteryn_protocol_oteryn::container_tree::{
 };
 use oteryn_protocol_oteryn::encode_command_error_result;
 use oteryn_protocol_oteryn::item_view::STATE_DOMAIN_CHARACTER_INVENTORY;
+use oteryn_protocol_oteryn::quest_log::{
+    COMMAND_TYPE_QUEST_LOG_QUERY, DELTA_TYPE_QUEST_LOG_V1, SNAPSHOT_TYPE_QUEST_LOG_V1,
+    STATE_DOMAIN_QUEST_LOG, decode_quest_log_query,
+};
+use quest_log::{
+    QUEST_LOG_REFRESH, QuestLogContinuity, QuestLogDomain, QuestLogObservation, QuestLogState,
+};
+
+// QUEST-LOG-WIRE-1: domain 16 and command type 22, a child of the connection that serves them.
+#[path = "quest_log.rs"]
+pub(crate) mod quest_log;
 
 /// Foundation schema revision served by this build (FND-02 v1 contract).
 pub(crate) const SERVER_SCHEMA_REVISION: u32 = 1;
@@ -141,6 +152,9 @@ pub(crate) struct SessionContinuity {
     /// ITEM-VIEW-1b: the item handle counter, the domain 9 and 11 high-water revisions and the
     /// open corpse. Used only with capability 4; a resume or channel transfer carries it.
     pub(crate) item_view: ItemViewContinuity,
+    /// QUEST-LOG-WIRE-1: the domain 16 revision, the tracked quests and the query window. Used
+    /// only with capability 16; a resume or channel transfer carries it.
+    pub(crate) quest_log: QuestLogContinuity,
 }
 
 impl SessionContinuity {
@@ -164,6 +178,7 @@ impl SessionContinuity {
             views_revision: 0,
             view_commands: ViewCommandWindow::EMPTY,
         },
+        quest_log: QuestLogContinuity::FRESH,
     };
 }
 
@@ -338,6 +353,18 @@ pub(crate) trait FreshAdmissionAuthority {
         _target: ItemKey,
     ) -> impl Future<Output = Option<ContainerObservation>> {
         async { None }
+    }
+
+    /// QUEST-LOG-WIRE-1: the session's quest copy with the quest log content, unless the copy
+    /// still has version `since` (`Unchanged`). `Unavailable` while the copy is not loaded: the
+    /// domain then shows nothing new and every query is `REJECTED`.
+    fn observe_quest_log(
+        &self,
+        _actor: ExactActorRef,
+        _session: GameSessionId,
+        _since: Option<u64>,
+    ) -> impl Future<Output = QuestLogObservation> {
+        async { QuestLogObservation::Unavailable }
     }
 
     /// The admitted actor's current `ACTOR_VITALS` revision and value for the initial snapshot,
@@ -978,6 +1005,33 @@ where
         });
         container_views = Some(ContainerViewState::default());
     }
+    // QUEST-LOG-WIRE-1: with capability 16, domain 16 with no view and the tracked quests, above
+    // every revision the session has seen; the requested view closes on every reconnect and
+    // transfer.
+    let mut quest_log = None;
+    let quest_log_snapshot: QuestLogDomain;
+    if admitted
+        .continuity
+        .selected_capabilities
+        .domain_selected(STATE_DOMAIN_QUEST_LOG)
+    {
+        let observation = authority
+            .observe_quest_log(actor, admitted.game_session_id, None)
+            .await;
+        let Ok((state, domain)) =
+            QuestLogState::snapshot(&mut admitted.continuity.quest_log, observation)
+        else {
+            return ConnectionEnd::AdmittedThenDisconnected(admitted);
+        };
+        quest_log_snapshot = domain;
+        domains.push(DomainSnapshot {
+            domain_id: STATE_DOMAIN_QUEST_LOG,
+            revision: quest_log_snapshot.to,
+            snapshot_type: SNAPSHOT_TYPE_QUEST_LOG_V1,
+            payload: &quest_log_snapshot.payload,
+        });
+        quest_log = Some(state);
+    }
     let snapshot =
         encode_single_chunk_snapshot(generation, 1, admitted.continuity.server_sequence, &domains);
     let Ok(snapshot) = snapshot else {
@@ -1015,6 +1069,15 @@ where
         serene.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
         serene
     });
+    // QUEST-LOG-WIRE-1: only a session with domain 16 looks for a changed quest copy.
+    let mut quest_log_refresh = quest_log.is_some().then(|| {
+        let mut refresh = tokio::time::interval_at(
+            tokio::time::Instant::now() + QUEST_LOG_REFRESH,
+            QUEST_LOG_REFRESH,
+        );
+        refresh.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
+        refresh
+    });
     // SPEED-1 (CONDITIONS-0 §4.3): this connection's pacing clock, its one-step buffer and the
     // frames read while a step waits in it. Those frames run, in order, only after the buffered
     // step's result, because results commit in CommandId order (FND-02 §13); a step among them
@@ -1032,6 +1095,7 @@ where
             StepDue,
             Probe,
             Serene,
+            QuestLog,
         }
         // All futures are cancel-safe: the frame reader keeps partial bytes and a dropped
         // interval tick is not consumed. The ticks are polled first so a client that keeps
@@ -1060,12 +1124,21 @@ where
                     None => std::future::pending().await,
                 }
             });
+            let mut quest_log_tick = std::pin::pin!(async {
+                match quest_log_refresh.as_mut() {
+                    Some(refresh) => refresh.tick().await,
+                    None => std::future::pending().await,
+                }
+            });
             std::future::poll_fn(|context| {
                 if tick.as_mut().poll(context).is_ready() {
                     return std::task::Poll::Ready(Next::Probe);
                 }
                 if serene_tick.as_mut().poll(context).is_ready() {
                     return std::task::Poll::Ready(Next::Serene);
+                }
+                if quest_log_tick.as_mut().poll(context).is_ready() {
+                    return std::task::Poll::Ready(Next::QuestLog);
                 }
                 if step_due.as_mut().poll(context).is_ready() {
                     return std::task::Poll::Ready(Next::StepDue);
@@ -1112,6 +1185,33 @@ where
                     return ConnectionEnd::AdmittedThenDisconnected(admitted);
                 }
                 admitted.continuity.vitals_revision = to;
+                continue;
+            }
+            Next::QuestLog => {
+                // QUEST-LOG-WIRE-1: a committed receipt that changes what domain 16 shows sends
+                // a delta; an unchanged or unavailable copy sends nothing.
+                let Some(state) = quest_log.as_mut() else {
+                    continue;
+                };
+                let observation = authority
+                    .observe_quest_log(actor, admitted.game_session_id, state.version())
+                    .await;
+                let Ok(changed) = state.refresh(&mut admitted.continuity.quest_log, observation)
+                else {
+                    return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                };
+                let Some(domain) = changed else {
+                    continue;
+                };
+                let Some((delta_sequence, frame)) = quest_log_delta(generation, sequence, &domain)
+                else {
+                    return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                };
+                sequence = delta_sequence;
+                admitted.continuity.server_sequence = sequence;
+                if write_frame(stream, &frame).await.is_err() {
+                    return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                }
                 continue;
             }
             Next::Frame(Ok(frame)) if buffered.is_some() => {
@@ -1229,6 +1329,8 @@ where
             UseItem(OpenDecision, Option<ItemViewDelta>),
             /// BAGS-WIRE-1: command 21; the domain 14 delta follows the result.
             ContainerView(ContainerViewOutcome, Option<ItemViewDelta>),
+            /// QUEST-LOG-WIRE-1: an accepted command 22; the domain 16 delta follows the result.
+            QuestLog(QuestLogDomain),
             Unregistered,
         }
         // CAP-NEG-1: a command type owned by a capability the session did not select is refused
@@ -1390,6 +1492,33 @@ where
                 }
                 _ => Dispatch::Unregistered,
             }
+        } else if command.command_type == COMMAND_TYPE_QUEST_LOG_QUERY {
+            // QUEST-LOG-WIRE-1: a read of the session's own quest copy. Over QUESTGATE0-RL-09 (2
+            // per second per GameSession, sliding window) it is REJECTED with an empty payload
+            // before decoding, as is a malformed query, one naming a quest that is not listed,
+            // and any query while the copy is not loaded.
+            let admitted_rate = quest_log.is_some()
+                && admitted
+                    .continuity
+                    .quest_log
+                    .queries
+                    .admit(tokio::time::Instant::now());
+            match (
+                quest_log.as_mut().filter(|_| admitted_rate),
+                decode_quest_log_query(command.payload),
+            ) {
+                (Some(state), Ok(query)) => {
+                    let observation = authority
+                        .observe_quest_log(actor, admitted.game_session_id, None)
+                        .await;
+                    match state.query(&mut admitted.continuity.quest_log, &query, observation) {
+                        Some(Ok(domain)) => Dispatch::QuestLog(domain),
+                        Some(Err(_)) => return ConnectionEnd::AdmittedThenDisconnected(admitted),
+                        None => Dispatch::Unregistered,
+                    }
+                }
+                _ => Dispatch::Unregistered,
+            }
         } else if command.command_type == COMMAND_TYPE_ACCOUNT_ACHIEVEMENTS_QUERY {
             match (
                 decode_account_achievements_query(command.payload),
@@ -1460,6 +1589,7 @@ where
                 CommandStatus::Accepted,
                 encode_container_view_result(*outcome),
             ),
+            Dispatch::QuestLog(_) => (CommandStatus::Accepted, Vec::new()),
             Dispatch::Achievements(AccountAchievementsReply::Page(payload)) => {
                 // The page is written once; move it out instead of copying up to 32 KiB.
                 (CommandStatus::Accepted, std::mem::take(payload))
@@ -1689,6 +1819,17 @@ where
                     return ConnectionEnd::AdmittedThenDisconnected(admitted);
                 }
             }
+            Dispatch::QuestLog(domain) => {
+                let Some((delta_sequence, frame)) = quest_log_delta(generation, sequence, &domain)
+                else {
+                    return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                };
+                sequence = delta_sequence;
+                admitted.continuity.server_sequence = sequence;
+                if write_frame(stream, &frame).await.is_err() {
+                    return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                }
+            }
             Dispatch::UseItem(_, None)
             | Dispatch::ContainerView(_, None)
             | Dispatch::Achievements(_)
@@ -1741,6 +1882,27 @@ fn item_view_delta(
         delta.to,
         delta.delta_type,
         &delta.payload,
+    )
+    .ok()?;
+    Some((delta_sequence, frame))
+}
+
+/// The whole-domain 16 delta to `domain.to` at the sequence after `sequence`; `None` on an
+/// encoding fault.
+fn quest_log_delta(
+    generation: u64,
+    sequence: u64,
+    domain: &QuestLogDomain,
+) -> Option<(u64, Vec<u8>)> {
+    let delta_sequence = sequence.checked_add(1)?;
+    let frame = encode_state_delta(
+        generation,
+        delta_sequence,
+        STATE_DOMAIN_QUEST_LOG,
+        domain.to.checked_sub(1)?,
+        domain.to,
+        DELTA_TYPE_QUEST_LOG_V1,
+        &domain.payload,
     )
     .ok()?;
     Some((delta_sequence, frame))
@@ -2545,6 +2707,7 @@ mod tests {
                     achievement_notice_revision: None,
                     selected_capabilities: SelectedCapabilities::NONE,
                     item_view: ItemViewContinuity::default(),
+                    quest_log: QuestLogContinuity::FRESH,
                 }
             );
             // The unregistered type and the replayed ID never reached Movement.

@@ -136,6 +136,16 @@
       "state_domains": [14],
       "offered": false,
       "offer_gate": "BAGS-1: the server does not offer this capability before command type 9 moves an item within the container tree. Without it selected, domain 14 is never sent, command type 21 is refused as unsupported, the CONTAINER destination of command type 9 (field 5) fails closed and USE field 2 on a container handle keeps its capability 4 meaning. Views are not durable: domain 14 is empty after every admission, reconnect, resume and channel transfer, and views close on death and logout."
+    },
+    {
+      "id": 16,
+      "name": "QUEST_LOG_V1",
+      "owner_decision": "QUEST-GATE-0 \u00a77 (docs/architecture/reviews/OTERYN_GAME_QUEST_GATE0_QUEST_GATES_AND_NPC_QUESTS_DECISION_2026-09-30.md); numbers allocated by the #1622 control plane (D485) and registered by QUEST-LOG-WIRE-1",
+      "owner": "current ChannelRuntime (the projection of the session's quest copy)",
+      "command_types": [22],
+      "state_domains": [16],
+      "offered": false,
+      "offer_gate": "QUEST-LOG-WIRE-1: the server does not offer this capability before the quest log content (missions, journal text and hide_when_completed, QUEST-CONTENT-2) and the production session copy source are composed. Without it selected, domain 16 is never sent and command type 22 is refused as unsupported. The domain is computed from the session's quest copy and never stored; a copy that is not loaded shows nothing and refuses every query."
     }
   ],
   "command_types": [
@@ -224,6 +234,16 @@
       "result_schema": "docs/contracts/protocol-oteryn/v1/container_tree_v1.proto#ContainerViewResultV1",
       "max_payload_bytes": 15,
       "max_result_payload_bytes": 4
+    },
+    {
+      "id": 22,
+      "name": "QUEST_LOG_QUERY",
+      "owner_decision": "QUEST-GATE-0 \u00a77 (docs/architecture/reviews/OTERYN_GAME_QUEST_GATE0_QUEST_GATES_AND_NPC_QUESTS_DECISION_2026-09-30.md); numbers allocated by the #1622 control plane (D485) and registered by QUEST-LOG-WIRE-1",
+      "capability": 16,
+      "payload_schema": "docs/contracts/protocol-oteryn/v1/quest_log_v1.proto#QuestLogQueryV1",
+      "result_schema": "none: an accepted query has an empty result payload and its domain 16 delta follows; an empty oneof, an unknown or unlisted quest index, a copy that is not loaded and a query over QUESTGATE0-RL-09 are REJECTED with an empty payload",
+      "max_payload_bytes": 62,
+      "max_result_payload_bytes": 0
     }
   ],
   "state_domains": [
@@ -502,6 +522,30 @@
           "name": "ANALYSER_SNAPSHOT_V1",
           "payload_schema": "docs/contracts/protocol-oteryn/v1/analyser_v1.proto#AnalyserSnapshotV1",
           "max_payload_bytes": 0
+        }
+      ]
+    },
+    {
+      "id": 16,
+      "name": "QUEST_LOG",
+      "owner_decision": "QUEST-GATE-0 \u00a77 (docs/architecture/reviews/OTERYN_GAME_QUEST_GATE0_QUEST_GATES_AND_NPC_QUESTS_DECISION_2026-09-30.md); numbers allocated by the #1622 control plane (D485) and registered by QUEST-LOG-WIRE-1",
+      "owner": "current ChannelRuntime",
+      "capability": 16,
+      "revision": "per GameSessionId, monotonic and never reused (FND-02 \u00a715), carried in the session continuity across reconnect, resume and channel transfer; every admission, reconnect, resume and transfer sends a snapshot above any revision the session has seen, with no view and the tracked quests (the NPC-0 \u00a74 pattern); a delta carries the whole domain after each accepted query and after each committed receipt that changes the view or a tracked quest",
+      "delta_types": [
+        {
+          "id": 1,
+          "name": "QUEST_LOG_DELTA_V1",
+          "payload_schema": "docs/contracts/protocol-oteryn/v1/quest_log_v1.proto#QuestLogV1",
+          "max_payload_bytes": 180268
+        }
+      ],
+      "snapshot_types": [
+        {
+          "id": 1,
+          "name": "QUEST_LOG_SNAPSHOT_V1",
+          "payload_schema": "docs/contracts/protocol-oteryn/v1/quest_log_v1.proto#QuestLogV1",
+          "max_payload_bytes": 180268
         }
       ]
     }
