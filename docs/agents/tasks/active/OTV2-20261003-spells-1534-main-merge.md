@@ -136,6 +136,12 @@ No new gameplay, no change to SQL bodies, no review trigger, auto-merge or Jira 
   `proficiency_familiar_and_quest_writes_share_the_0068_progression_guard` interleaves
   familiar, proficiency, quest and familiar writes on one Character (revision 5) and
   re-verifies from a fresh authority.
+- Main 2a5ce70c merge (CAP-NEG-1 #1705, ITEM-SEM-2b-2 #1706, union only): the six content
+  `index.json` files take main's `legacy_source` blob (fe0d845b, matching the merged world
+  `reference.json`) and keep the PR's `spell_imports`; main's `capabilities_tests` stub of
+  `FreshAdmissionAuthority::step` takes the PR's session and command parameters, and its
+  domain-selection expectation includes the always-sent empty overlay domain. No main
+  migration touches the progression guard.
 
 ### Follow-ups (control plane)
 

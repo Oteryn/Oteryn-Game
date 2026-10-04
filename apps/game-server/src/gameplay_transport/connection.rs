@@ -17,6 +17,9 @@ use super::actor_spell::{
     SpellCastIntent, SpellCastOutcome, decode_spell_cast_intent, encode_actor_vitals,
     encode_spell_cast_result,
 };
+use super::capabilities::{
+    OfferedCapability, PRODUCTION_OFFERED_CAPABILITIES, SelectedCapabilities,
+};
 use super::tcp_tls::{FrameReader, read_frame, write_frame};
 use super::world_object::{
     COMMAND_TYPE_USE_INTENT, DELTA_TYPE_WORLD_OBJECT_OVERLAY_V1,
@@ -39,9 +42,10 @@ use oteryn_protocol_oteryn::account_achievements::{
     COMMAND_TYPE_ACCOUNT_ACHIEVEMENTS_QUERY, decode_account_achievements_query,
 };
 use oteryn_protocol_oteryn::achievement_notices::{
-    AchievementEarned, AchievementWatermark, DELTA_TYPE_ACHIEVEMENT_EARNED_V1,
-    SNAPSHOT_TYPE_ACHIEVEMENT_NOTICES_V1, STATE_DOMAIN_ACCOUNT_ACHIEVEMENT_NOTICES,
-    encode_achievement_earned, encode_achievement_notices_snapshot,
+    AchievementEarned, AchievementWatermark, CAPABILITY_ACHIEVEMENT_NOTICES_V1,
+    DELTA_TYPE_ACHIEVEMENT_EARNED_V1, SNAPSHOT_TYPE_ACHIEVEMENT_NOTICES_V1,
+    STATE_DOMAIN_ACCOUNT_ACHIEVEMENT_NOTICES, encode_achievement_earned,
+    encode_achievement_notices_snapshot,
 };
 use oteryn_protocol_oteryn::encode_command_error_result;
 
@@ -64,6 +68,9 @@ pub(crate) struct ResumeAttempt<'a> {
     pub(crate) recovery_material: &'a [u8],
     pub(crate) transport: AuthenticatedTransportRefV1,
     pub(crate) last_applied_server_sequence: u64,
+    /// The resuming client's supported capabilities: a resume that lacks one the session
+    /// selected is refused (CAP-NEG-1).
+    pub(crate) supported_capabilities: &'a [u32],
 }
 
 /// Authority-committed admission: the only state that lets a transport claim a
@@ -115,6 +122,9 @@ pub(crate) struct SessionContinuity {
     /// composed. Otherwise the domain's revision: 0 at the session's first snapshot, plus 1 for
     /// each delta. It is cumulative per GameSession: a resume carries it and never resets it.
     pub(crate) achievement_notice_revision: Option<u64>,
+    /// CAP-NEG-1: the capabilities selected at this GameSession's fresh admission. A resume or
+    /// channel transfer carries them unchanged and never widens them.
+    pub(crate) selected_capabilities: SelectedCapabilities,
 }
 
 impl SessionContinuity {
@@ -129,6 +139,7 @@ impl SessionContinuity {
         overlay_revision: 0,
         vitals_revision: 0,
         achievement_notice_revision: None,
+        selected_capabilities: SelectedCapabilities::NONE,
     };
 }
 
@@ -210,6 +221,12 @@ pub(crate) trait FreshAdmissionAuthority {
         _attempt: ResumeAttempt<'_>,
     ) -> impl Future<Output = Result<AdmittedSession, AdmissionRefusal>> {
         async { Err(AdmissionRefusal::Unavailable) }
+    }
+
+    /// The capabilities this server offers at fresh admission (CAP-NEG-1). Production offers
+    /// the registry's offered set; tests inject theirs.
+    fn offered_capabilities(&self) -> &'static [OfferedCapability] {
+        PRODUCTION_OFFERED_CAPABILITIES
     }
 
     /// The admitted actor's current own-actor observation for the initial snapshot, or `None`
@@ -581,17 +598,26 @@ where
                     recovery_material: resume.reconnect_material,
                     transport,
                     last_applied_server_sequence: resume.last_applied_server_sequence,
+                    supported_capabilities: resume.supported_capabilities,
                 })
                 .await
                 .map_err(|_| ConnectionEnd::ResumeUnavailable)?;
             let continuity = resumed.continuity;
+            // CAP-NEG-1: the resumed session keeps its original selection. The owning authority
+            // refuses a resume that cannot keep it before committing; this never acknowledges one.
+            if !continuity
+                .selected_capabilities
+                .resumable_with(resume.supported_capabilities)
+            {
+                return Err(ConnectionEnd::AdmittedThenDisconnected(resumed));
+            }
             let accepted = encode_server_resume_accepted(&ServerResumeAcceptedValue {
                 game_session_id: resumed.game_session_id,
                 connection_generation: continuity.connection_generation,
                 current_server_sequence: continuity.server_sequence,
                 next_command_id: continuity.next_command_id,
                 schema_revision: SERVER_SCHEMA_REVISION,
-                selected_capabilities: &[],
+                selected_capabilities: continuity.selected_capabilities.as_slice(),
             })
             .map_err(|_| ConnectionEnd::AdmittedThenDisconnected(resumed))?;
             write_frame(stream, &accepted)
@@ -612,16 +638,30 @@ where
             AdmissionRefusal::Unavailable,
         ));
     };
+    // CAP-NEG-1: the client's supported capabilities the server offers, with their `requires`.
+    let Some(selected) = SelectedCapabilities::select(
+        authority.offered_capabilities(),
+        bootstrap.supported_capabilities,
+    ) else {
+        return Err(ConnectionEnd::AdmissionRefused(
+            AdmissionRefusal::Unavailable,
+        ));
+    };
     let attempt = FreshAdmissionAttempt {
         character_id: bootstrap.character_id,
         admission_material: bootstrap.admission_material,
         game_session_id,
         transport,
     };
-    let admitted = authority
+    let mut admitted = authority
         .admit(attempt)
         .await
         .map_err(ConnectionEnd::AdmissionRefused)?;
+    admitted.continuity.selected_capabilities = selected;
+    // ACHIEVEMENT-0 §5: a session that selected capability 8 starts domain 13 at revision 0.
+    admitted.continuity.achievement_notice_revision = selected
+        .contains(CAPABILITY_ACHIEVEMENT_NOTICES_V1)
+        .then_some(0);
     let accepted = encode_server_accepted(&crate::foundation::ServerAcceptedValue {
         game_session_id: admitted.game_session_id,
         world_id: admitted.world_id,
@@ -630,7 +670,7 @@ where
         current_server_sequence: 0,
         next_command_id: 1,
         schema_revision: SERVER_SCHEMA_REVISION,
-        selected_capabilities: &[],
+        selected_capabilities: selected.as_slice(),
     })
     .map_err(|_| ConnectionEnd::AdmittedThenDisconnected(admitted))?;
     write_frame(stream, &accepted)
@@ -719,7 +759,15 @@ where
     // ACHIEVEMENT-0 §5: with capability 8, the account's watermark at the current revision. A
     // join, resync or reconnect sends this snapshot and never re-sends a delta. A selected
     // domain whose watermark cannot be read fails closed.
-    let notices = match admitted.continuity.achievement_notice_revision {
+    let notices_selected = admitted
+        .continuity
+        .selected_capabilities
+        .domain_selected(STATE_DOMAIN_ACCOUNT_ACHIEVEMENT_NOTICES);
+    let notices = match admitted
+        .continuity
+        .achievement_notice_revision
+        .filter(|_| notices_selected)
+    {
         None => None,
         Some(notice_revision) => {
             let watermark = match admitted.controller {
@@ -965,7 +1013,15 @@ where
             Achievements(AccountAchievementsReply),
             Unregistered,
         }
-        let mut dispatch = if command.command_type == COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT {
+        // CAP-NEG-1: a command type owned by a capability the session did not select is refused
+        // like an unregistered one, before any decode or authority call.
+        let mut dispatch = if !admitted
+            .continuity
+            .selected_capabilities
+            .command_selected(command.command_type)
+        {
+            Dispatch::Unregistered
+        } else if command.command_type == COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT {
             match decode_step_intent(command.payload) {
                 Ok(direction) => Dispatch::Step(
                     authority
@@ -1167,7 +1223,10 @@ where
                 // that may have reached the client is never reused, even if the write fails.
                 // ACH-NOTIFY-2: an `Unknown` notice with capability 8 fails closed after the
                 // result; the resumed connection's snapshot restores the watermark.
-                let notice_revision = admitted.continuity.achievement_notice_revision;
+                let notice_revision = admitted
+                    .continuity
+                    .achievement_notice_revision
+                    .filter(|_| notices_selected);
                 if notice_revision.is_some() && outcome.earned == EarnedNotice::Unknown {
                     return ConnectionEnd::AdmittedThenDisconnected(admitted);
                 }
@@ -2065,6 +2124,7 @@ mod tests {
                     overlay_revision: 0,
                     vitals_revision: 0,
                     achievement_notice_revision: None,
+                    selected_capabilities: SelectedCapabilities::NONE,
                 }
             );
             // The unregistered type and the replayed ID never reached Movement.
@@ -3341,9 +3401,18 @@ mod tests {
         })
     }
 
+    /// A session that selected capability 8, at notice `revision`.
     fn with_notices(revision: u64) -> SessionContinuity {
         SessionContinuity {
             achievement_notice_revision: Some(revision),
+            selected_capabilities: SelectedCapabilities::select(
+                &[OfferedCapability {
+                    id: CAPABILITY_ACHIEVEMENT_NOTICES_V1,
+                    requires: &[],
+                }],
+                &[CAPABILITY_ACHIEVEMENT_NOTICES_V1],
+            )
+            .expect("selection"),
             ..SessionContinuity::FRESH
         }
     }
