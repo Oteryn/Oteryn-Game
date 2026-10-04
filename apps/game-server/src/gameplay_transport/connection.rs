@@ -4968,7 +4968,7 @@ mod visibility_tests {
             // 255 lowest identities (the degrade disposition) at sequence 2 and revision 3.
             let resumed = SessionContinuity {
                 connection_generation: 2,
-                ..ended.continuity.clone()
+                ..ended.continuity
             };
             let (mut server, mut client) = tokio::io::duplex(1 << 20);
             client.shutdown().await?;
