@@ -20,6 +20,7 @@ use super::actor_spell::{
 use super::capabilities::{
     OfferedCapability, PRODUCTION_OFFERED_CAPABILITIES, SelectedCapabilities,
 };
+use super::container_view::{ContainerObservation, ContainerPlan, ContainerViewState, PendingOpen};
 use super::item_view::{
     CloseTrigger, InventoryItems, ItemKey, ItemTargetObservation, ItemViewContinuity,
     ItemViewDelta, OpenDecision, SessionItemView,
@@ -51,6 +52,10 @@ use oteryn_protocol_oteryn::achievement_notices::{
     DELTA_TYPE_ACHIEVEMENT_EARNED_V1, SNAPSHOT_TYPE_ACHIEVEMENT_NOTICES_V1,
     STATE_DOMAIN_ACCOUNT_ACHIEVEMENT_NOTICES, encode_achievement_earned,
     encode_achievement_notices_snapshot,
+};
+use oteryn_protocol_oteryn::container_tree::{
+    COMMAND_TYPE_CONTAINER_VIEW_INTENT, ContainerViewOutcome, STATE_DOMAIN_CONTAINER_VIEWS,
+    decode_container_view_intent, encode_container_view_result,
 };
 use oteryn_protocol_oteryn::encode_command_error_result;
 use oteryn_protocol_oteryn::item_view::STATE_DOMAIN_CHARACTER_INVENTORY;
@@ -151,6 +156,7 @@ impl SessionContinuity {
             inventory_revision: 0,
             container_revision: 0,
             open_corpse: None,
+            views_revision: 0,
         },
     };
 }
@@ -314,6 +320,17 @@ pub(crate) trait FreshAdmissionAuthority {
         _actor: ExactActorRef,
         _target: ItemKey,
     ) -> impl Future<Output = Option<ItemTargetObservation>> {
+        async { None }
+    }
+
+    /// BAGS-WIRE-1: the Channel owner's view of the container a view command or `USE` names,
+    /// with reach decided against the actor's position. `None` when it cannot be observed
+    /// (`STALE`); a `USE` then takes the corpse path.
+    fn observe_container(
+        &self,
+        _actor: ExactActorRef,
+        _target: ItemKey,
+    ) -> impl Future<Output = Option<ContainerObservation>> {
         async { None }
     }
 
@@ -872,6 +889,13 @@ where
         .domain_selected(STATE_DOMAIN_CHARACTER_INVENTORY)
     {
         let mut view = SessionItemView::resume(admitted.continuity.item_view);
+        if admitted
+            .continuity
+            .selected_capabilities
+            .domain_selected(STATE_DOMAIN_CONTAINER_VIEWS)
+        {
+            view = view.with_container_tree();
+        }
         let Some(inventory) = authority
             .observe_character_inventory(actor, admitted.game_session_id)
             .await
@@ -905,6 +929,30 @@ where
             snapshot_type: SNAPSHOT_TYPE_ACHIEVEMENT_NOTICES_V1,
             payload,
         });
+    }
+    // BAGS-WIRE-1: with capability 14 (which requires 4), domain 14 with no open view above
+    // every revision the session has seen; views close on every reconnect and transfer.
+    let mut container_views = None;
+    let views_snapshot;
+    if let Some(view) = item_view.as_mut().filter(|_| {
+        admitted
+            .continuity
+            .selected_capabilities
+            .domain_selected(STATE_DOMAIN_CONTAINER_VIEWS)
+    }) {
+        let snapshot = view.views_snapshot();
+        admitted.continuity.item_view = view.continuity();
+        let Ok(snapshot) = snapshot else {
+            return ConnectionEnd::AdmittedThenDisconnected(admitted);
+        };
+        views_snapshot = snapshot;
+        domains.push(DomainSnapshot {
+            domain_id: views_snapshot.domain_id,
+            revision: views_snapshot.revision,
+            snapshot_type: views_snapshot.snapshot_type,
+            payload: &views_snapshot.payload,
+        });
+        container_views = Some(ContainerViewState::default());
     }
     let snapshot =
         encode_single_chunk_snapshot(generation, 1, admitted.continuity.server_sequence, &domains);
@@ -1142,6 +1190,8 @@ where
             Achievements(AccountAchievementsReply),
             /// ITEM-VIEW-1b: `USE` with an item target; the domain 11 delta follows the result.
             UseItem(OpenDecision, Option<ItemViewDelta>),
+            /// BAGS-WIRE-1: command 21; the domain 14 delta follows the result.
+            ContainerView(ContainerViewOutcome, Option<ItemViewDelta>),
             Unregistered,
         }
         // CAP-NEG-1: a command type owned by a capability the session did not select is refused
@@ -1183,11 +1233,47 @@ where
                 // call; opening writes nothing.
                 Ok(UseTarget::Item(handle)) => {
                     let key = item_view.as_ref().and_then(|view| view.resolve(handle));
-                    let observation = match key {
+                    // BAGS-WIRE-1: with capability 14 a container in reach opens in a new view,
+                    // and one out of reach is TOO_FAR; anything else takes the corpse path.
+                    let container = match (key, &container_views) {
+                        (Some(key), Some(_)) => authority.observe_container(actor, key).await,
+                        _ => None,
+                    };
+                    let container = container.filter(|observation| {
+                        matches!(
+                            observation,
+                            ContainerObservation::Container { .. } | ContainerObservation::TooFar
+                        )
+                    });
+                    let observation = match key.filter(|_| container.is_none()) {
                         Some(key) => authority.observe_item_target(actor, key).await,
                         None => None,
                     };
                     match (item_view.as_mut(), key, observation) {
+                        (Some(view), Some(key), _) if container.is_some() => {
+                            let Some(views) = container_views.as_mut() else {
+                                return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                            };
+                            let opened = views.apply(view, PendingOpen::new_view(key), container);
+                            admitted.continuity.item_view = view.continuity();
+                            let Ok((outcome, delta)) = opened else {
+                                return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                            };
+                            Dispatch::UseItem(
+                                match outcome {
+                                    ContainerViewOutcome::Opened => OpenDecision::Open,
+                                    ContainerViewOutcome::TooFar => OpenDecision::TooFar,
+                                    ContainerViewOutcome::Stale | ContainerViewOutcome::Closed => {
+                                        OpenDecision::StaleState
+                                    }
+                                    ContainerViewOutcome::NotAContainer
+                                    | ContainerViewOutcome::TooManyViews => {
+                                        OpenDecision::NothingToUse
+                                    }
+                                },
+                                delta,
+                            )
+                        }
                         (Some(view), Some(key), Some(observation)) => {
                             let opened = view.open(key, observation);
                             admitted.continuity.item_view = view.continuity();
@@ -1222,6 +1308,35 @@ where
                         .await,
                 ),
                 Err(_) => Dispatch::Spell(SpellCastOutcome::rejected()),
+            }
+        } else if command.command_type == COMMAND_TYPE_CONTAINER_VIEW_INTENT {
+            // BAGS-WIRE-1: non-durable view command. Over BAGS0-RL-04 (10 per second, sliding
+            // window) it is REJECTED with an empty payload before decoding, as is a malformed one.
+            let admitted_rate = container_views
+                .as_mut()
+                .is_some_and(|views| views.admit(tokio::time::Instant::now()));
+            match (
+                container_views.as_mut().filter(|_| admitted_rate),
+                item_view.as_mut(),
+                decode_container_view_intent(command.payload),
+            ) {
+                (Some(views), Some(view), Ok(intent)) => {
+                    let decided = match views.plan(view, intent) {
+                        Ok(ContainerPlan::Decided(outcome, delta)) => Ok((outcome, delta)),
+                        Ok(ContainerPlan::Observe(pending)) => {
+                            let observation =
+                                authority.observe_container(actor, pending.key()).await;
+                            views.apply(view, pending, observation)
+                        }
+                        Err(error) => Err(error),
+                    };
+                    admitted.continuity.item_view = view.continuity();
+                    let Ok((outcome, delta)) = decided else {
+                        return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                    };
+                    Dispatch::ContainerView(outcome, delta)
+                }
+                _ => Dispatch::Unregistered,
             }
         } else if command.command_type == COMMAND_TYPE_ACCOUNT_ACHIEVEMENTS_QUERY {
             match (
@@ -1288,6 +1403,10 @@ where
                     OpenDecision::StaleState => UseDisposition::StaleState,
                     OpenDecision::NothingToUse => UseDisposition::NothingToUse,
                 }),
+            ),
+            Dispatch::ContainerView(outcome, _) => (
+                CommandStatus::Accepted,
+                encode_container_view_result(*outcome),
             ),
             Dispatch::Achievements(AccountAchievementsReply::Page(payload)) => {
                 // The page is written once; move it out instead of copying up to 32 KiB.
@@ -1494,7 +1613,7 @@ where
                     }
                 }
             }
-            Dispatch::UseItem(_, Some(delta)) => {
+            Dispatch::UseItem(_, Some(delta)) | Dispatch::ContainerView(_, Some(delta)) => {
                 let Some((delta_sequence, frame)) = item_view_delta(generation, sequence, &delta)
                 else {
                     return ConnectionEnd::AdmittedThenDisconnected(admitted);
@@ -1505,7 +1624,10 @@ where
                     return ConnectionEnd::AdmittedThenDisconnected(admitted);
                 }
             }
-            Dispatch::UseItem(_, None) | Dispatch::Achievements(_) | Dispatch::Unregistered => {}
+            Dispatch::UseItem(_, None)
+            | Dispatch::ContainerView(_, None)
+            | Dispatch::Achievements(_)
+            | Dispatch::Unregistered => {}
         }
     }
 }
