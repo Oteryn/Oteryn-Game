@@ -2,6 +2,10 @@
 
 Zapis kompletnej lokalnej paczki NPC-COMPLETE-LOCAL-20261004 na osobnej gałęzi. Nie stosuje patchy do kodu produktu, nie aktywuje NPC i nie tworzy PR.
 
+## Status (SPELL-NPC-MAP-0 §9)
+
+Paczka jest wyłącznie materiałem referencyjnym (reference evidence only), wstrzymanym (held) i niczego nie aktywuje: żaden NPC, usługa, Dialogue ani Quest nie trafia do runtime ani do produktu. Przyjęcie pojedynczych modeli wymaga osobnych tasków właścicieli zgodnie z §1 decyzji `docs/architecture/reviews/OTERYN_GAME_SPELL_NPC_MAP0_SPELL_AND_NPC_HANDOFF_MAPPING_DECISION_2026-10-04.md`.
+
 ## Zawartość
 
 - `npc-completion-packet.tar.xz`: cały projekt (106 plików, bez Python cache/binariów), dwie pełne kanoniczne kopie WorldProject oraz dowody poprzedniego importu i końcowe logi walidacji.
