@@ -4905,6 +4905,237 @@
       ]
     },
     {
+      "id": "DUR04-REFERENCE-ITEM-PROFILE-V2-SERVER-GROUPS-PER-RECORD",
+      "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V2.md",
+      "resource": "Present typed capability groups in one artifact v5 server-authoritative Item body",
+      "unit": "groups",
+      "hard_maximum": 17,
+      "configurable_range": {
+        "minimum": 0,
+        "maximum": 17
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Reject group count before group-vector allocation; reject duplicates, noncanonical order and unknown critical groups (ids 1-17).",
+      "client_visible": false,
+      "boundary_tests": [
+        "17 known ordered unique groups accepted",
+        "18 groups rejected before allocation",
+        "group id 18, duplicate or unsorted group rejected"
+      ],
+      "notes": "v4 keeps 16 under the V1 row (ITEM-SEM-2b-3, D448)."
+    },
+    {
+      "id": "DUR04-REFERENCE-ITEM-PROFILE-V2-CLIENT-GROUPS-PER-RECORD",
+      "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V2.md",
+      "resource": "Present typed capability groups in one artifact v5 client-safe Item body",
+      "unit": "groups",
+      "hard_maximum": 12,
+      "configurable_range": {
+        "minimum": 0,
+        "maximum": 12
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Reject group count before allocation and reject every server-only group through the v5 projection allowlist (v4 allowlist plus UseRequirements).",
+      "client_visible": true,
+      "boundary_tests": [
+        "12 allowlisted ordered unique groups accepted",
+        "13 groups rejected before allocation",
+        "each server-only group rejected independently"
+      ],
+      "notes": "v4 keeps 11 under the V1 row."
+    },
+    {
+      "id": "DUR04-REFERENCE-ITEM-PROFILE-V2-EQUIPMENT-VOCATIONS",
+      "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V2.md",
+      "resource": "Vocation allow-set entries per artifact v5 Equipment pattern",
+      "unit": "vocations",
+      "hard_maximum": 6,
+      "configurable_range": {
+        "minimum": 0,
+        "maximum": 6
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Check count before allocation; require sorted unique members from the closed six-value domain (five base vocations and None).",
+      "client_visible": true,
+      "boundary_tests": [
+        "6 unique vocations including None accepted",
+        "7th entry rejected before allocation",
+        "duplicate or unknown vocation (wire 7) rejected"
+      ]
+    },
+    {
+      "id": "DUR04-REFERENCE-ITEM-PROFILE-V2-TRADE-VOCATIONS",
+      "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V2.md",
+      "resource": "Vocation entries per artifact v5 TradeRestrictions record",
+      "unit": "vocations",
+      "hard_maximum": 6,
+      "configurable_range": {
+        "minimum": 0,
+        "maximum": 6
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Check count before allocation; require sorted unique members from the closed six-value domain.",
+      "client_visible": false,
+      "boundary_tests": [
+        "6 unique vocations accepted",
+        "7th entry rejected before allocation",
+        "duplicate or unknown vocation rejected"
+      ]
+    },
+    {
+      "id": "DUR04-REFERENCE-ITEM-PROFILE-V2-USE-REQUIREMENT-VOCATIONS",
+      "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V2.md",
+      "resource": "Vocation entries per artifact v5 use-requirements group",
+      "unit": "vocations",
+      "hard_maximum": 6,
+      "configurable_range": {
+        "minimum": 0,
+        "maximum": 6
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Check count before allocation; require sorted unique members from the closed six-value domain.",
+      "client_visible": true,
+      "boundary_tests": [
+        "6 unique vocations accepted",
+        "7th entry rejected before allocation",
+        "duplicate or unknown vocation rejected"
+      ],
+      "notes": "Group 17; enforcement_mode admits ON_USE only. Enforcement belongs to RUNE-USE-0 and RANGED-0."
+    },
+    {
+      "id": "DUR04-REFERENCE-ITEM-PROFILE-V2-SERVER-RECORD-BYTES",
+      "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V2.md",
+      "resource": "One artifact v5 typed server-authoritative Item body record",
+      "unit": "bytes",
+      "hard_maximum": 3577,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 3577
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Reject declared record length before slicing, copying or field decode.",
+      "client_visible": false,
+      "boundary_tests": [
+        "3,577-byte semantically valid record accepted",
+        "3,578 bytes rejected before record allocation",
+        "truncated record rejected"
+      ]
+    },
+    {
+      "id": "DUR04-REFERENCE-ITEM-PROFILE-V2-CLIENT-RECORD-BYTES",
+      "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V2.md",
+      "resource": "One artifact v5 typed client-safe Item body record",
+      "unit": "bytes",
+      "hard_maximum": 3454,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 3454
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Reject declared record length before slicing, copying or field decode.",
+      "client_visible": true,
+      "boundary_tests": [
+        "3,454-byte semantically valid record accepted",
+        "3,455 bytes rejected before record allocation",
+        "truncated record rejected"
+      ]
+    },
+    {
+      "id": "DUR04-REFERENCE-ITEM-PROFILE-V2-SERVER-BODY-BYTES",
+      "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V2.md",
+      "resource": "Artifact v5 server-authoritative Item body section",
+      "unit": "bytes",
+      "hard_maximum": 136487589,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 136487589
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Use checked multiplication and addition; reject the section length before body allocation.",
+      "client_visible": false,
+      "boundary_tests": [
+        "136,487,589 bytes accepted",
+        "136,487,590 bytes rejected before allocation",
+        "checked arithmetic overflow rejected"
+      ]
+    },
+    {
+      "id": "DUR04-REFERENCE-ITEM-PROFILE-V2-CLIENT-BODY-BYTES",
+      "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V2.md",
+      "resource": "Artifact v5 client-safe Item body section",
+      "unit": "bytes",
+      "hard_maximum": 131794278,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 131794278
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Use checked multiplication and addition; reject the section length before body allocation.",
+      "client_visible": true,
+      "boundary_tests": [
+        "131,794,278 bytes accepted",
+        "131,794,279 bytes rejected before allocation",
+        "checked arithmetic overflow rejected"
+      ]
+    },
+    {
+      "id": "DUR04-REFERENCE-ITEM-PROFILE-V2-SERVER-ARTIFACT-BYTES",
+      "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V2.md",
+      "resource": "One encoded artifact v5 server-authoritative Reference Item artifact",
+      "unit": "bytes",
+      "hard_maximum": 177285126,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 177285126
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Reject the artifact length before section parsing, copying or digest work beyond the header.",
+      "client_visible": false,
+      "boundary_tests": [
+        "177,285,126 bytes accepted",
+        "177,285,127 bytes rejected before parsing",
+        "checked arithmetic overflow rejected"
+      ]
+    },
+    {
+      "id": "DUR04-REFERENCE-ITEM-PROFILE-V2-CLIENT-ARTIFACT-BYTES",
+      "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V2.md",
+      "resource": "One encoded artifact v5 client-safe Reference Item artifact",
+      "unit": "bytes",
+      "hard_maximum": 172591815,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 172591815
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Reject the artifact length before section parsing, copying or digest work beyond the header.",
+      "client_visible": true,
+      "boundary_tests": [
+        "172,591,815 bytes accepted",
+        "172,591,816 bytes rejected before parsing",
+        "checked arithmetic overflow rejected"
+      ]
+    },
+    {
+      "id": "DUR04-REFERENCE-ITEM-PROFILE-V2-GENERATION-PAIR-BYTES",
+      "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V2.md",
+      "resource": "Combined encoded artifact v5 server and client-safe Reference Item artifacts in one generation",
+      "unit": "bytes",
+      "hard_maximum": 349876941,
+      "configurable_range": {
+        "minimum": 2,
+        "maximum": 349876941
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Use checked addition and validate both projection maxima before staging either artifact as a pair.",
+      "client_visible": false,
+      "boundary_tests": [
+        "349,876,941 cumulative bytes accepted only when both projection maxima pass",
+        "349,876,942 bytes rejected before pair staging",
+        "checked-add overflow rejects the generation without partial publication"
+      ]
+    },
+    {
       "id": "MOVE-RL-03",
       "owner_contract": "OTERYN_V2_STAGE_C_VSL_OWNER_ACCEPTANCE_20260816.md",
       "resource": "Attempted adjacent destination candidates in one isolated Movement local-step decision",
