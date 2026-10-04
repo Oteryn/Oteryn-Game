@@ -169,10 +169,10 @@ pub const MAX_SNAPSHOT_ASSEMBLED_BYTES: u64 = 16_777_216;
 // server composes it), 7 CHAT_V1 (CHAT-1, not offered before CHAT-1b-2 composes it), 8
 // ACHIEVEMENT_NOTICES_V1 (ACH-NOTIFY-1, not offered before capability negotiation is composed) and
 // 10 ANALYSER_V1 (ANALYSER-WIRE-1, not offered before ANALYSER-EMIT-1) and 12 ITEM_EQUIP_DROP_V1
-// (ITEM-EQUIP-WIRE-1, not offered before ITEM-MOVE-2a). Registered is not offered: the server
-// selects none today.
+// (ITEM-EQUIP-WIRE-1, not offered before ITEM-MOVE-2a). Registered is not offered. 13
+// PACED_MOVEMENT_V1 (SPEED-1) is offered: it adds the step result TOO_EARLY.
 // Keep this sorted when a later owning gate allocates an additive capability ID.
-const REGISTERED_CAPABILITY_IDS_V1: &[u32] = &[1, 4, 6, 7, 8, 10, 12];
+const REGISTERED_CAPABILITY_IDS_V1: &[u32] = &[1, 4, 6, 7, 8, 10, 12, 13];
 
 fn decode_uuid_v7(input: &[u8]) -> Result<[u8; 16], FoundationProtocolError> {
     let value: [u8; 16] = input

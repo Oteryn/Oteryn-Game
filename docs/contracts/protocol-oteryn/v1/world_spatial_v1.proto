@@ -26,6 +26,11 @@ enum StepDisposition {
   STEP_DISPOSITION_BLOCKED = 2;
   // The actor is not eligible or the binding is stale.
   STEP_DISPOSITION_REJECTED = 3;
+  // A second step requested while one already waits in the one-step pacing buffer (CONDITIONS-0
+  // §4.3). Sent only to a session that selected capability 13 PACED_MOVEMENT_V1; without it the
+  // same request is STEP_DISPOSITION_REJECTED. Either way the CommandResult status is REJECTED
+  // and nothing moves.
+  STEP_DISPOSITION_TOO_EARLY = 4;
 }
 
 // CommandResult.payload of command type 1: outcome only, never state. At most 4 bytes.
