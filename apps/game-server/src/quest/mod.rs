@@ -4,15 +4,17 @@
 //! owner quest, initial value, `[min, max]`) and transitions (key, quest, at most
 //! [`QUESTSTATE0_RL_02`] effects on that quest's own tracks, `completes`), and each quest's
 //! `definition_hash` over its tracks and transitions only, never its journal text (§6). Tests
-//! build it in code; QUEST-LOWER-1 adds the content loader.
+//! build it in code; [`loader`] loads the lowered quest content into it (QUEST-LOWER-1).
 //!
 //! [`QuestStateCatalogue::evaluate`] is the pure §4 validation of one transition against the
 //! values the writer read under lock: the closed `from` comparisons, then `SET`, checked `ADD`
 //! and `SET_NOW` (database transaction time, never a node clock), each within the track's
 //! bounds. It writes nothing; `durability::quest_state` owns the transaction.
 //!
-//! This module depends on `std` and `sha2` only, so every crate that path-loads `durability`
-//! also compiles it unchanged.
+//! This module depends on `std` and `sha2` only, and [`loader`] on `serde` and `serde_json`, so
+//! every crate of this package that path-loads `durability` also compiles it unchanged.
+
+pub mod loader;
 
 use std::collections::{BTreeMap, BTreeSet};
 
