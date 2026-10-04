@@ -224,9 +224,11 @@ def timed(definition):
     semantics = definition.get("semantics", {})
     for group, leaf in (("charges", "count"), ("temporal", "duration")):
         source = semantics.get(group, {})
-        if source.get("state") == "KNOWN":
-            if source["value"].get(leaf, {}).get("state") == "KNOWN":
-                return True
+        if (
+            source.get("state") == "KNOWN"
+            and source["value"].get(leaf, {}).get("state") == "KNOWN"
+        ):
+            return True
     return False
 
 

@@ -753,7 +753,7 @@ mod connection {
                 inventory_revision: 3,
                 container_revision: 2,
                 open_corpse: Some(corpse(7)),
-                views_revision: 0,
+                ..ItemViewContinuity::default()
             };
             let near = observe(HERE, at(11, 10, 7), &[5]);
             let far = observe(at(13, 10, 7), at(11, 10, 7), &[5]);

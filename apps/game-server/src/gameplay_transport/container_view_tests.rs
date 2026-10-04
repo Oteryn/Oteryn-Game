@@ -374,19 +374,35 @@ fn a_seventeenth_open_is_too_many_views() {
 
 #[test]
 fn view_commands_are_limited_to_10_per_second() {
-    let mut state = ContainerViewState::default();
+    let mut window = ViewCommandWindow::EMPTY;
     let start = Instant::now();
     // max = 10 within one second.
     for n in 0..MAX_VIEW_COMMANDS_PER_WINDOW as u64 {
-        assert!(state.admit(start + Duration::from_millis(n * 10)));
+        assert!(window.admit(start + Duration::from_millis(n * 10)));
     }
     // max + 1 within the window is refused, up to its last instant.
-    assert!(!state.admit(start + Duration::from_millis(100)));
-    assert!(!state.admit(start + VIEW_COMMAND_WINDOW - Duration::from_millis(1)));
+    assert!(!window.admit(start + Duration::from_millis(100)));
+    assert!(!window.admit(start + VIEW_COMMAND_WINDOW - Duration::from_millis(1)));
     // The window slides: the first command leaves it after one second, freeing one place.
-    assert!(state.admit(start + VIEW_COMMAND_WINDOW));
-    assert!(!state.admit(start + VIEW_COMMAND_WINDOW));
-    assert!(state.admit(start + VIEW_COMMAND_WINDOW + Duration::from_millis(10)));
+    assert!(window.admit(start + VIEW_COMMAND_WINDOW));
+    assert!(!window.admit(start + VIEW_COMMAND_WINDOW));
+    assert!(window.admit(start + VIEW_COMMAND_WINDOW + Duration::from_millis(10)));
+}
+
+#[test]
+fn the_view_command_window_is_carried_across_reconnect_and_transfer() {
+    let start = Instant::now();
+    let mut view = SessionItemView::resume(ItemViewContinuity::default()).with_container_tree();
+    for _ in 0..MAX_VIEW_COMMANDS_PER_WINDOW {
+        assert!(view.admit_view_command(start));
+    }
+    let carried = view.continuity();
+    // A reconnect or resume, and a channel transfer, keep the full window.
+    for continuity in [carried, carried.across_channel_transfer()] {
+        let mut next = SessionItemView::resume(continuity).with_container_tree();
+        assert!(!next.admit_view_command(start + Duration::from_millis(10)));
+        assert!(next.admit_view_command(start + VIEW_COMMAND_WINDOW));
+    }
 }
 
 #[test]
@@ -781,7 +797,16 @@ mod connection {
                 *authority.container_reads.borrow(),
                 [instance(1), instance(2)]
             );
-            assert_eq!(ended(end)?.item_view, view.continuity());
+            // The session also carries the four view commands in its rate window.
+            let carried = ended(end)?.item_view;
+            assert_eq!(carried.view_commands.0.iter().flatten().count(), 4);
+            assert_eq!(
+                ItemViewContinuity {
+                    view_commands: ViewCommandWindow::EMPTY,
+                    ..carried
+                },
+                view.continuity()
+            );
             Ok(())
         })
     }
@@ -807,6 +832,31 @@ mod connection {
             }
             expected.push(result(11, 11, CommandStatus::Rejected, &[]));
             assert_eq!(output, expected);
+            Ok(())
+        })
+    }
+
+    #[test]
+    fn the_view_command_rate_is_per_game_session_across_a_reconnect() -> TestResult {
+        run(async {
+            let authority = TreeAuthority::new(Vec::new());
+            let close = ContainerViewIntent::Close { view_id: 0 };
+            let frames: Vec<Vec<u8>> = (1..=10)
+                .map(|id| view_command(id, close))
+                .collect::<Result<_, _>>()?;
+            let (end, _) = serve(&authority, session(&[4, 6, 12, 14])?, &frames).await?;
+            let carried = ended(end)?;
+            // The next connection of the same GameSession inside the second: max + 1 is
+            // REJECTED although the connection is new.
+            let reconnected = AdmittedSession {
+                continuity: carried,
+                ..session(&[4, 6, 12, 14])?
+            };
+            let (_, output) = serve(&authority, reconnected, &[view_command(11, close)?]).await?;
+            assert_eq!(
+                output.last(),
+                Some(&result(11, 11, CommandStatus::Rejected, &[]))
+            );
             Ok(())
         })
     }
