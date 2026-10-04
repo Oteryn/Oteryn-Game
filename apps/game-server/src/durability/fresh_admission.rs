@@ -1933,6 +1933,34 @@ impl FreshAdmissionStore {
         self.release_current_claims(current, now, account_id).await
     }
 
+    /// D449 (ARCH-BATCH-ITEM-EQUIP-PACKETS §1.13): terminal release, with no successor, of a
+    /// RECONNECTABLE session whose resume passed every check but the capability check. The
+    /// client gave up the same-session path by changing its supported set, so its fresh
+    /// admission must find the character free at once, not after the reconnect window. Only
+    /// the exact loss `epoch` the resume verified, still within its original grace deadline,
+    /// is released; a resumed, newer or expired loss is not this release's. A replay after
+    /// the commit returns `Terminal`, never a second commit.
+    pub async fn release_capability_mismatch(
+        &self,
+        session: GameSessionId,
+        account_id: &str,
+        epoch: ControlLossEpochRefV1,
+    ) -> Result<ExpiredLossReleaseV1> {
+        let (current, now) = self.current_session_at(session).await?;
+        if current.session_state() == GameSessionState::Terminal {
+            return Ok(ExpiredLossReleaseV1::Terminal);
+        }
+        if current.session_state() != GameSessionState::Reconnectable
+            || current.current_control_loss_epoch() != Some(epoch)
+            || current
+                .current_original_grace_deadline()
+                .is_none_or(|deadline| now >= deadline)
+        {
+            return Ok(ExpiredLossReleaseV1::NotApplicable);
+        }
+        self.release_current_claims(current, now, account_id).await
+    }
+
     /// Prepare the FND-04B terminal release of `current` from the current claim rows at the
     /// durable time `now` and commit it through the exact fenced [`Self::release`].
     async fn release_current_claims(

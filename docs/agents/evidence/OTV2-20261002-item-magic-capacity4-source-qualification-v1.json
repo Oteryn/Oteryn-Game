@@ -112,7 +112,7 @@
   },
   "native37_parameter_witness": {
     "file": "/workspace/pr1437-resistances/apps/game-server/src/content/reference_playable.rs",
-    "sha256": "e50682b67ca36431f9a6b9eb018a8cb17a08cf7e4fdc66c33a5831dc83f4e3ad",
+    "sha256": "5424c687ef3b43815dbcd75f0fd739d95a8c8aa66aa74986c8ed870514268d6c",
     "kind_ids": {
       "MagicShieldCapacityFlat": 20,
       "MagicShieldCapacityPercent": 21

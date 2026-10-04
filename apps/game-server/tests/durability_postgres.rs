@@ -299,7 +299,7 @@ fn owning_fresh_loss_is_atomic_and_raw_prepare_does_not_supply_authority()
         return Ok(());
     }
     tokio::runtime::Builder::new_current_thread().enable_all().build()?.block_on(async {
-        for scenario in 0..6 {
+        for scenario in 0..7 {
         let not_entitled = scenario == 1;
         let database = postgres::IsolatedPostgres::create("owning_fresh_loss").await?;
         let result = async {
@@ -373,6 +373,82 @@ fn owning_fresh_loss_is_atomic_and_raw_prepare_does_not_supply_authority()
                 let publication = authority_matrix::checked(AdmissionAuthorityPublicationV1::prepare(&owner, now))?;
                 assert_eq!(guards.publish(&publication).await?, durability::admission_authority_guards::GuardPublicationDisposition::Applied);
             }
+            if scenario == 6 {
+                // D449: a resume refused only for a capability mismatch ends the
+                // RECONNECTABLE session in a terminal release with no successor,
+                // and the next fresh admission needs no reconnect-window wait.
+                use durability::fresh_admission::ExpiredLossReleaseV1;
+                let account = "00000000-0000-4000-8000-000000000001";
+                let id = session.commit().game_session_id();
+                let epoch = authority_matrix::checked(ControlLossEpochRefV1::new(1))?;
+                // ACTIVE (no committed loss) releases nothing.
+                assert_eq!(store.release_capability_mismatch(id, account, epoch).await?, ExpiredLossReleaseV1::NotApplicable);
+                assert!(matches!(store.commit_fresh_loss(loss.clone(), source.clone()).await?, ControlLossOutcomeV1::Committed { .. }));
+                // Another loss epoch or another account releases nothing.
+                let other_epoch = authority_matrix::checked(ControlLossEpochRefV1::new(2))?;
+                assert_eq!(store.release_capability_mismatch(id, account, other_epoch).await?, ExpiredLossReleaseV1::NotApplicable);
+                assert_eq!(store.release_capability_mismatch(id, "00000000-0000-4000-8000-000000000099", epoch).await.ok(), None);
+                assert_eq!(store.current_session_at(id).await?.0.session_state(), GameSessionState::Reconnectable);
+                let receipts = || sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_durability_admission_lifecycle_receipts").fetch_one(&pool);
+                let ledger = || sqlx::query_scalar::<_, String>("SELECT revision::text FROM game_durability_session_use_ledgers").fetch_one(&pool);
+                let before_receipts = receipts().await?;
+                let before_ledger: u64 = ledger().await?.parse()?;
+                // A crash inside the release transaction leaves the session
+                // RECONNECTABLE with its claims, so the release may be retried.
+                sqlx::query("CREATE FUNCTION reject_test_release_receipt() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'release receipt test rollback' USING ERRCODE = '23514'; END; $$").execute(&pool).await?;
+                sqlx::query("CREATE TRIGGER reject_test_release_receipt BEFORE INSERT ON game_durability_admission_lifecycle_receipts FOR EACH ROW EXECUTE FUNCTION reject_test_release_receipt()").execute(&pool).await?;
+                assert!(store.release_capability_mismatch(id, account, epoch).await.is_err());
+                sqlx::query("DROP TRIGGER reject_test_release_receipt ON game_durability_admission_lifecycle_receipts").execute(&pool).await?;
+                let reloaded = FreshAdmissionStore::connect_runtime(&url, 65536, 8192).await?;
+                assert_eq!(reloaded.current_session_at(id).await?.0.session_state(), GameSessionState::Reconnectable);
+                assert_eq!(receipts().await?, before_receipts);
+                let keys = vec![
+                    AdmissionAuthorityGuardKeyV1::Account { account_id: account.into() },
+                    AdmissionAuthorityGuardKeyV1::Character(session.commit().character_id()),
+                ];
+                let rows = guards.load(&keys).await?;
+                assert!(matches!(rows[0].as_ref().map(|row| &row.state), Some(AdmissionAuthorityGuardStateV1::Account { presence: Some(_), .. })));
+                let ExpiredLossReleaseV1::Released { .. } = reloaded.release_capability_mismatch(id, account, epoch).await? else { return Err("capability mismatch was not released".into()); };
+                // Terminal, with no replacement: the session id is unchanged and
+                // the claims are free, while the lease generation is kept.
+                let (released, _) = store.current_session_at(id).await?;
+                assert_eq!(released.session_state(), GameSessionState::Terminal);
+                assert_eq!(released.commit().game_session_id(), id);
+                assert_eq!(released.current_character_lease(), session.current_character_lease());
+                let rows = guards.load(&keys).await?;
+                assert!(matches!(rows[0].as_ref().map(|row| &row.state), Some(AdmissionAuthorityGuardStateV1::Account { presence: None, .. })));
+                assert!(matches!(rows[1].as_ref().map(|row| &row.state), Some(AdmissionAuthorityGuardStateV1::Character { holder: None, .. })));
+                let released_receipts = receipts().await?;
+                assert!(released_receipts > before_receipts);
+                // A replay, also after a restart, returns terminal without a second commit.
+                assert_eq!(store.release_capability_mismatch(id, account, epoch).await?, ExpiredLossReleaseV1::Terminal);
+                let restarted = FreshAdmissionStore::connect_runtime(&url, 65536, 8192).await?;
+                assert_eq!(restarted.release_capability_mismatch(id, account, epoch).await?, ExpiredLossReleaseV1::Terminal);
+                assert_eq!(restarted.current_session_at(id).await?.0.session_state(), GameSessionState::Terminal);
+                assert_eq!(receipts().await?, released_receipts);
+                // The next fresh admission succeeds at once, under a new id,
+                // inside the original reconnect window.
+                let mut current_keys = keys.clone();
+                current_keys.extend(postgres::fresh::Source::new(now)?.rows.iter().filter(|row| matches!(row.key, AdmissionAuthorityGuardKeyV1::Runtime(_) | AdmissionAuthorityGuardKeyV1::SigningTrust { .. })).map(|row| row.key.clone()));
+                let current_rows = guards.load(&current_keys).await?.into_iter().collect::<Option<Vec<_>>>().ok_or("missing current rows")?;
+                let readmit_now = postgres_clock(&pool).await?;
+                assert!(readmit_now < now + 120);
+                let next = readmit::Source::new(readmit_now, owner.current.clone(), current_rows, authority_matrix::session(10)?)?;
+                let next_request = next.request(8)?;
+                restarted.commit(&next_request).await?;
+                let FreshReconciliation::Committed(admitted) = restarted.reconcile(next_request.operation()).await? else { return Err("re-admission was not committed".into()); };
+                let next_id = admitted.current_session.commit().game_session_id();
+                // The released id is never reused: it stays TERMINAL under its own id.
+                assert_ne!(next_id, id);
+                assert_eq!(admitted.current_session.session_state(), GameSessionState::Active);
+                assert!(admitted.current_session.current_character_lease().generation() > session.current_character_lease().generation());
+                assert_eq!(restarted.current_session_at(id).await?.0.session_state(), GameSessionState::Terminal);
+                let after_ledger: u64 = ledger().await?.parse()?;
+                assert!(after_ledger > before_ledger);
+                assert_eq!(restarted.current_session_at(id).await?.0.session_state(), GameSessionState::Terminal);
+                pool.close().await;
+                return Ok(());
+            }
             if scenario == 5 {
                 // Grace expiry: the loss commits, is not released before its
                 // deadline, then releases from the *current* (refreshed) rows.
@@ -383,6 +459,8 @@ fn owning_fresh_loss_is_atomic_and_raw_prepare_does_not_supply_authority()
                 tokio::time::sleep(std::time::Duration::from_millis(3100)).await;
                 // Another account has no claim rows naming this session.
                 assert_eq!(store.release_expired_loss(id, "00000000-0000-4000-8000-000000000099").await.ok(), None);
+                // D449 never releases once the original deadline has passed.
+                assert_eq!(store.release_capability_mismatch(id, account, authority_matrix::checked(ControlLossEpochRefV1::new(1))?).await?, durability::fresh_admission::ExpiredLossReleaseV1::NotApplicable);
                 let durability::fresh_admission::ExpiredLossReleaseV1::Released { decided_at } = store.release_expired_loss(id, account).await? else { return Err("expired loss was not released".into()); };
                 assert!(decided_at >= now + 2);
                 let (released, _) = store.current_session_at(id).await?;
@@ -5684,6 +5762,50 @@ fn content_activation_floor_is_monotonic_predecessor_bound_and_immutable()
         })
 }
 
+/// D449 regression: an operation relabelled as an early terminal replacement is
+/// never encoded, so the adapter cannot store it. Kept off the test future's
+/// stack because the operation clone is large.
+#[inline(never)]
+fn assert_early_terminal_replacement_refused(
+    operation: &foundation::CompleteReconnectDurabilityOperationV1,
+) {
+    let mut replacement = Box::new(operation.clone());
+    replacement.recovery.mode = foundation::CompleteReconnectModeV1::EarlyTerminalReplacement;
+    assert!(durability::fresh_admission::encode_complete_reconnect(&replacement).is_err());
+}
+
+#[inline(never)]
+fn assert_exhausted_budget_refused<S: foundation::CompleteReconnectSourceV1>(
+    source: impl FnOnce(foundation::RetainedRecoveryBudgetV1) -> Box<S>,
+    identity: foundation::ReconnectIdentityV1,
+    proof: foundation::CompleteReconnectProofV1,
+    now: i64,
+) -> Result<(), Box<dyn std::error::Error>> {
+    use foundation::*;
+    let mut entries = Vec::new();
+    for attempt in 30..38u8 {
+        entries.push(RetainedRecoveryAttemptV1 {
+            attempt: authority_matrix::checked(ReconnectAttemptRef::new(u64::from(attempt)))?,
+            transport: authority_matrix::checked(AuthenticatedTransportRefV1::decode(
+                &[attempt; 16],
+            ))?,
+            disposition: RetainedRecoveryAttemptDispositionV1::Terminal,
+        });
+    }
+    let budget = authority_matrix::checked(RetainedRecoveryBudgetV1::restore(
+        authority_matrix::checked(ControlLossEpochRefV1::new(1))?,
+        RecoveryEpochStateV1::Open,
+        true,
+        entries,
+    ))?;
+    let source = source(budget);
+    assert_eq!(
+        CompleteReconnectAuthorizationV1::authorize(source.as_ref(), identity, proof, now).err(),
+        Some(ReconnectDurabilityErrorV1::AttemptCapacityExceeded)
+    );
+    Ok(())
+}
+
 #[test]
 fn complete_reconnect_resumes_an_owning_loss_session_exactly_once()
 -> Result<(), Box<dyn std::error::Error>> {
@@ -5955,10 +6077,34 @@ fn complete_reconnect_resumes_an_owning_loss_session_exactly_once()
                 let reservations: i64 = sqlx::query_scalar("SELECT count(*) FROM game_durability_transport_ref_reservations WHERE transport_ref = $1").bind([0x61u8; 16].as_slice()).fetch_one(&pool).await?;
                 assert_eq!(reservations, 0);
             }
+            {
+                // D449 (#1708 Codex P1): an exhausted attempt budget refuses the complete
+                // authorization itself. `resume_lost` checks the capability only after this
+                // authorization passed, so a capability mismatch on an exhausted budget is refused
+                // like any other and releases nothing: the session stays RECONNECTABLE.
+                let verified = verify_recovery_grant_durability_v2(&token, now, &RecoveryDurabilityTrustContextV2::from_owning_source(&security), &recovery)
+                    .map_err(|error| format!("verify: {error:?}"))?;
+                let current = source.current.lock().map_err(|_| "owner lock")?.clone();
+                let security = security.clone();
+                assert_exhausted_budget_refused(
+                    move |budget| {
+                        let mut current = current;
+                        current.snapshot.budget = budget;
+                        Box::new(Owner { current: std::sync::Mutex::new(current), security })
+                    },
+                    identity.clone(),
+                    CompleteReconnectProofV1::V2(Box::new(verified)),
+                    now,
+                )?;
+                let (current, _) = store.current_session_at(lost.commit().game_session_id()).await?;
+                assert_eq!(current.session_state(), GameSessionState::Reconnectable);
+            }
             let mut flow = CompleteReconnectFlowV1::begin(authorization, None).map_err(|e| format!("begin: {e:?}"))?;
             let prepare = std::sync::Arc::new(flow.take_request(CompleteReconnectRequestKindV1::Prepare).map_err(|e| format!("take prepare: {e:?}"))?);
             let prepared = store.apply_complete_reconnect(prepare.clone(), source.clone()).await?;
             assert!(matches!(prepared, CompleteReconnectOutcomeV1::Prepared { .. }), "{prepared:?}");
+            // A capability mismatch never takes the early-replacement route.
+            assert_early_terminal_replacement_refused(flow.operation());
             {
                 // Only one attempt may be prepared at a time.
                 let other = source.current.lock().map_err(|_| "owner lock")?.clone();
@@ -6508,4 +6654,244 @@ fn resumed_session_loss_opens_the_next_epoch_and_resumes_again()
         database.cleanup().await?;
         result
     })
+}
+
+/// D449 re-admission source: the fixed fresh fixture again, but read from the
+/// *current* guard rows a terminal release left behind, with a new session id
+/// and grant nonce. It proves the next fresh admission needs no reconnect wait.
+mod readmit {
+    use crate::authority_matrix::{TestResult, checked};
+    use crate::foundation::admission_authority_publication::*;
+    use crate::foundation::fnd04_verifier::*;
+    use crate::foundation::fresh_admission_durability::*;
+    use crate::foundation::*;
+    use base64::Engine;
+    use ed25519_dalek::{Signer, SigningKey};
+
+    pub struct Source {
+        pub now: i64,
+        pub current: FreshCurrentEvidence,
+        pub rows: Vec<AdmissionAuthorityPublicationChangeV1>,
+        pub session: GameSessionId,
+        key: SigningKey,
+    }
+    impl fresh_source_sealed::Sealed for Source {}
+
+    impl Source {
+        /// `rows` are the current Account, Character, Runtime and SigningTrust rows.
+        pub fn new(
+            now: i64,
+            mut current: FreshCurrentEvidence,
+            rows: Vec<AdmissionAuthorityPublicationChangeV1>,
+            session: GameSessionId,
+        ) -> TestResult<Self> {
+            let Some(AdmissionAuthorityGuardStateV1::Character {
+                lease_generation, ..
+            }) = rows.get(1).map(|row| &row.state)
+            else {
+                return Err("missing current character row".into());
+            };
+            current.character_lease_generation = *lease_generation;
+            Ok(Self {
+                now,
+                current,
+                rows,
+                session,
+                key: SigningKey::from_bytes(&[31; 32]),
+            })
+        }
+        fn revision(&self, index: usize) -> u64 {
+            self.rows[index].publication_revision
+        }
+        pub fn request(&self, nonce: u8) -> TestResult<FreshAdmissionCommitRequestV1> {
+            let header = r#"{"alg":"Ed25519","kid":"fresh-1","typ":"oteryn-admission+jwt"}"#;
+            let jti = base64::engine::general_purpose::URL_SAFE_NO_PAD.encode([nonce; 32]);
+            let now = self.now;
+            let payload = format!(
+                r#"{{"iss":"urn:oteryn:platform:game-admission","aud":"urn:oteryn:game:admission","iat":{now},"nbf":{now},"exp":{},"jti":"{jti}","profile":"oteryn-pre-admission-v1","purpose":"fresh_entry","attempt_ref":"00000000-0000-7000-8000-0000000000{nonce:02x}","account_id":"00000000-0000-4000-8000-000000000001","character_id":"00000000-0000-7000-8000-000000000002","world_id":"00000000-0000-7000-8000-000000000003","channel_id":"00000000-0000-7000-8000-000000000004","account_security_generation":"1","route_revision":"route-1","runtime_observation_revision":"runtime-1","scope_ownership_generation":"1","protocol_major":1,"transport_profile":1,"ruleset_revision":"rules-1","content_revision":"content-1","map_revision":"map-1","world_policy_revision":"policy-1","offer_revision":"offer-1"}}"#,
+                now + 10
+            );
+            let encode =
+                |bytes: &[u8]| base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(bytes);
+            let input = format!(
+                "{}.{}",
+                encode(header.as_bytes()),
+                encode(payload.as_bytes())
+            );
+            let token = format!(
+                "{input}.{}",
+                encode(&self.key.sign(input.as_bytes()).to_bytes())
+            );
+            let facts = verify_fresh_grant_durability_v1(
+                &token,
+                now,
+                &FreshDurabilityTrustContext::from_owning_source(self),
+                &FreshDurabilityCurrentAuthorityV1::from_owning_source(self),
+            )
+            .map_err(|error| format!("verify: {error:?}"))?;
+            let authorization = FreshAdmissionCommitAuthorizationV1::new(
+                &facts,
+                self.session,
+                crate::authority_matrix::transport(nonce)?,
+                self,
+                now,
+            )
+            .map_err(|error| format!("authorize: {error:?}"))?;
+            let transition = FreshAdmissionClaimTransitionV1::prepare(self, &authorization, now)
+                .map_err(|error| format!("transition: {error:?}"))?;
+            let mut flow = checked(FreshAdmissionDurabilityFlowV1::begin(
+                authorization,
+                transition,
+            ))?;
+            let mut capture = Capture(None);
+            checked(flow.submit(&mut capture))?;
+            capture
+                .0
+                .ok_or_else(|| "re-admission did not submit".into())
+        }
+    }
+    impl FreshDurabilityEvidenceSourceV1 for Source {
+        fn signing_trust(
+            &self,
+            key_id: &str,
+            _now: i64,
+        ) -> Result<FreshSigningTrustObservationV1, Fnd04EvidenceError> {
+            let (Some(row), "fresh-1") = (self.rows.get(3), key_id) else {
+                return Err(Fnd04EvidenceError::ExplicitlyDenied);
+            };
+            Ok(FreshSigningTrustObservationV1 {
+                key_id: key_id.into(),
+                public_key: self.key.verifying_key().to_bytes(),
+                trusted: true,
+                provenance: FreshEvidenceProvenanceV1 {
+                    source_authority: row.source.authority.clone(),
+                    purpose: FreshEvidencePurposeV1::SigningTrust,
+                    scope: Fnd04EvidenceScope::FreshAdmission,
+                    source_revision: row.source.source_revision,
+                    accepted_source_revision: row.source.source_revision,
+                    decision_identity: row.source.decision_identity.clone(),
+                    accepted_decision_identity: row.source.decision_identity.clone(),
+                    source_observed_at: row.source.source_observed_at,
+                    clock_uncertainty_seconds: row.source.clock_uncertainty_seconds,
+                    publication_revision: row.publication_revision,
+                },
+            })
+        }
+        fn account_security(
+            &self,
+            account_id: &str,
+            _now: i64,
+        ) -> Result<FreshAccountSecurityObservationV1, Fnd04EvidenceError> {
+            match self.rows.first().map(|row| &row.state) {
+                Some(AdmissionAuthorityGuardStateV1::Account { security, .. })
+                    if account_id == self.current.account_id =>
+                {
+                    Ok(security.clone())
+                }
+                _ => Err(Fnd04EvidenceError::ExplicitlyDenied),
+            }
+        }
+    }
+    impl FreshDurabilityCurrentSourceV1 for Source {
+        fn current(
+            &self,
+            account_id: &str,
+            character_id: CharacterId,
+            _now: i64,
+        ) -> Result<FreshPublishedCurrentObservationV1, Fnd04ConsumerError> {
+            if account_id != self.current.account_id || character_id != self.current.character_id {
+                return Err(Fnd04ConsumerError::FreshAccountCharacterConflict);
+            }
+            Ok(FreshPublishedCurrentObservationV1 {
+                facts: self.current.clone(),
+                account_publication_revision: self.revision(0),
+                character_publication_revision: self.revision(1),
+                runtime_publication_revision: self.revision(2),
+                expected_lease_generation: self.current.character_lease_generation,
+                proposed_lease_generation: self.current.character_lease_generation + 1,
+                account_presence_available: true,
+                character_eligible: true,
+                runtime_ready: true,
+            })
+        }
+    }
+    impl AdmissionAuthorityPublicationCurrentSourceV1 for Source {
+        fn current_publications(
+            &self,
+            keys: &[AdmissionAuthorityGuardKeyV1],
+        ) -> Result<
+            Vec<Option<AdmissionAuthorityPublicationChangeV1>>,
+            AdmissionAuthorityPublicationErrorV1,
+        > {
+            Ok(keys
+                .iter()
+                .map(|key| self.rows.iter().find(|row| &row.key == key).cloned())
+                .collect())
+        }
+    }
+    impl AdmissionAuthorityOwningPublisherV1 for Source {
+        fn resolve_publication(
+            &self,
+            _now: i64,
+        ) -> Result<Vec<AdmissionAuthorityPublicationChangeV1>, AdmissionAuthorityPublicationErrorV1>
+        {
+            Ok(self.rows.clone())
+        }
+    }
+    impl AdmissionClaimOwningSourceV1 for Source {
+        fn prepare_fresh_claim(
+            &self,
+            binding: &FreshAdmissionAuditBindingV1,
+            now: i64,
+        ) -> Result<AdmissionClaimTransitionEvidenceV1, AdmissionAuthorityPublicationErrorV1>
+        {
+            let predecessors = self.rows[..2].to_vec();
+            let mut successors = predecessors.clone();
+            for row in &mut successors {
+                row.precondition = AdmissionPublicationPreconditionV1::CompareAndSet {
+                    expected_publication_revision: row.publication_revision,
+                };
+                row.publication_revision += 1;
+                row.source.source_revision += 1;
+                row.source.decision_identity = "game-reacquire".into();
+                row.source.source_observed_at = now;
+                match &mut row.state {
+                    AdmissionAuthorityGuardStateV1::Account { security, presence } => {
+                        security.provenance.publication_revision = row.publication_revision;
+                        *presence = Some((self.current.character_id, binding.candidate_session));
+                    }
+                    AdmissionAuthorityGuardStateV1::Character {
+                        lease_generation,
+                        holder,
+                        ..
+                    } => {
+                        *lease_generation += 1;
+                        *holder = Some(binding.candidate_session);
+                    }
+                    _ => return Err(AdmissionAuthorityPublicationErrorV1::Invalid),
+                }
+            }
+            Ok(AdmissionClaimTransitionEvidenceV1 {
+                predecessors,
+                successors,
+                prepared_at: now,
+            })
+        }
+    }
+    struct Capture(Option<FreshAdmissionCommitRequestV1>);
+    impl FreshAdmissionDurabilityPortV1 for Capture {
+        fn submit(
+            &mut self,
+            request: &FreshAdmissionCommitRequestV1,
+        ) -> FreshAdmissionSubmissionV1 {
+            if self.0.is_some() {
+                return FreshAdmissionSubmissionV1::Unavailable;
+            }
+            self.0 = Some(request.clone());
+            FreshAdmissionSubmissionV1::Accepted
+        }
+        fn reconcile(&mut self, _: &FreshAdmissionOperationV1) -> FreshAdmissionSubmissionV1 {
+            FreshAdmissionSubmissionV1::Unavailable
+        }
+    }
 }
