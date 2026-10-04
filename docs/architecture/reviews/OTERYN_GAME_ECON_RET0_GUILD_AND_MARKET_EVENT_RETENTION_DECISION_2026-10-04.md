@@ -15,20 +15,23 @@
 ## 1. Profiles registered
 
 All four are new immutable ids with every `required_profile_fields` entry. Each has privacy class
-`RESTRICTED_PLAYER_LINKED`, a **P90D** finite ceiling (7,776,000 elapsed seconds from the
-immutable trusted-server envelope timestamp, never recomputed), the legal hold as an explicit
+`RESTRICTED_PLAYER_LINKED`, a finite ceiling counted in elapsed seconds from the immutable
+trusted-server envelope timestamp and never recomputed (**P30D** = 2,592,000 s for the bank,
+market and guild profiles; V2 keeps V1's P90D, see §2), the legal hold as an explicit
 case-scoped exception that returns to the original expiry without resetting the clock, deletion at
 expiry with no indefinite anonymized or pseudonymous copy, and case-scoped redacted export that
-does not extend retention. None needs an owner answer: no duration exceeds the 90-day ordinary
-ceiling and no purpose goes beyond proof, reconciliation and bounded support and security
-investigation.
+does not extend retention. Owner decision D503 5a: each profile gets the shortest duration backed
+by an accepted requirement. BANK-0, BANK-FEE-0 and MARKET-0 state no retention duration longer
+than 30 days (BANK-0 and BANK-FEE-0 only defer retention to BANK-RET-0; MARKET-0 states 30-day
+offers and leaves the event to MARKET-RET-0), so none exceeds 30 days. No purpose goes beyond
+proof, reconciliation and bounded support and security investigation.
 
 | Profile id | Packet | Purpose | Notes |
 |---|---|---|---|
-| `ECONOMY_LEDGER_RETENTION_V1` | BANK-RET-0 | `ECONOMY_LEDGER`: bank balances, ledger entries and coin lines | for BANK-1's event type 3; no market analytics, public history, detector or AI use |
-| `DUR03_ONE_ITEM_DURABLE_AUDIT_RETENTION_V2` | BANK-RET-0 | the V1 purpose plus the bank part of a fee (the `FEE_DEBIT` value line) | `policy_revision` 2; every other field is V1's; see §2 |
-| `MARKET_ECONOMY_LEDGER_RETENTION_V1` | MARKET-RET-0 | `ECONOMY_LEDGER`: market operations, escrow, matching, fees, Inbox delivery | for MARKET-1's market event; no market analytics, public price or trade history, balancing, detector or AI use |
-| `GUILD_ACTIVITY_RETENTION_V1` | GUILD-RET-0 | `GUILD_ACTIVITY`: the member activity log (read by current members of that guild only, per-guild isolated, within 30 days), plus proof and reconciliation of membership, rank, guild bank and guildhall operations | the P90D ceiling is above the 30-day member read window (`GUILD0-RL-10`); a guild bank entry is also within `ECONOMY_LEDGER` for proof only |
+| `ECONOMY_LEDGER_RETENTION_V1` | BANK-RET-0 | `ECONOMY_LEDGER`: bank balances, ledger entries and coin lines (P30D) | for BANK-1's event type 3; no market analytics, public history, detector or AI use |
+| `DUR03_ONE_ITEM_DURABLE_AUDIT_RETENTION_V2` | BANK-RET-0 | the V1 purpose plus the bank part of a fee (the `FEE_DEBIT` value line) | `policy_revision` 2; every other field, P90D included, is V1's; see §2 |
+| `MARKET_ECONOMY_LEDGER_RETENTION_V1` | MARKET-RET-0 | `ECONOMY_LEDGER`: market operations, escrow, matching, fees, Inbox delivery (P30D) | for MARKET-1's market event; no market analytics, public price or trade history, balancing, detector or AI use |
+| `GUILD_ACTIVITY_RETENTION_V1` | GUILD-RET-0 | `GUILD_ACTIVITY`: the member activity log (read by current members of that guild only, per-guild isolated, within 30 days; P30D), plus proof and reconciliation of membership, rank, guild bank and guildhall operations | P30D equals the member log window (`GUILD0-RL-10`); a guild bank entry is also within `ECONOMY_LEDGER` for proof only |
 
 The authoritative bank, ledger, operation, coin-line, offer, escrow and guild tables are game
 state, not event retention, and are never deleted by these profiles.
@@ -47,15 +50,15 @@ state, not event retention, and are never deleted by these profiles.
 
 ## 3. Options considered
 
-Common trade-off: a longer ceiling helps support and reconciliation but holds player-linked data
-longer; a shorter one cuts privacy exposure but may expire the proof before a dispute or
-reconciliation closes.
+Common trade-off: a longer ceiling holds player-linked data longer; a shorter one cuts privacy
+exposure but expires the proof sooner. Owner decision D503 5a picks the shortest duration backed
+by an accepted requirement.
 
 | Question | Option | Verdict |
 |---|---|---|
-| Duration | **P90D**, the repository's ordinary ceiling (Character and DUR-03 profiles) | **Chosen** for all four. No owner answer needed. |
-| Duration | P30D, matching the guild member window | Rejected: it would drop proof of a bank, market or guild-bank dispute within the support window, and it would blur the member read window with retention. |
-| Duration | More than P90D, or unbounded | Rejected: it needs an owner answer and a recorded privacy reason; none exists, and unbounded retention is forbidden (`ordinary_unbounded_retention_forbidden`). |
+| Duration | **P30D** for the bank, market and guild profiles | **Chosen** (D503 5a), justified per profile in §4. |
+| Duration | P90D, the repository's ordinary ceiling (Character and DUR-03 profiles) | Rejected for these three: no accepted requirement in BANK-0, BANK-FEE-0 or MARKET-0 needs more than 30 days. V2 keeps P90D only because it is V1's value and a successor changes nothing but the purpose. |
+| Duration | More than P90D, or unbounded | Rejected: unbounded retention is forbidden (`ordinary_unbounded_retention_forbidden`) and no requirement asks for it. |
 | Bank | Reuse the DUR-03 V1 profile | Rejected: its purpose excludes the economy, so a bank event would be admitted outside its purpose. |
 | Bank | Revise V1 in place | Rejected: a profile is immutable after first admission (`in_place_policy_change_after_admission: FORBIDDEN`). V2 is a new id with `policy_revision` 2, registered only; V1 and every admitted event keep V1. |
 | Bank, market | One shared economy profile | Rejected: the purposes differ (balances and coin lines against offers, escrow and matching), and one id would force a joint change later. |
@@ -65,14 +68,31 @@ reconciliation closes.
 
 Risks and mitigations:
 
-- **A duration or purpose that is too narrow.** A new immutable id with a positive revision
-  corrects it for future admission only. Existing events keep their original id.
+- **A duration or purpose that is too narrow.** A requirement found later that needs a longer
+  duration is met by a new immutable id with a positive revision, for future admission only.
+  Existing events keep their original id and are not extended.
 - **A member reader that leaks another guild's entry.** The reader rule is in the profile and is
   GUILD-1's acceptance test.
 - **V2 registered but not active.** Type 2 stays bound to V1 until GOLD-FEE-ACT-2 (#1746), so a
   rolling deploy never mixes profiles.
 
-## 4. Why each profile must be decided now
+## 4. Why each profile must be decided now, and why its duration
+
+Each duration is justified separately.
+
+- **Bank, P30D.** BANK-0 §5 and BANK-FEE-0 §4.3 only defer the bank event's retention to BANK-RET-0
+  and state no duration. The authoritative balance, ledger, operation and coin-line tables are
+  never deleted (BANK-0 §3), so the event is a proof copy, not the record. No accepted
+  requirement needs more than 30 days, so the shortest backed duration applies.
+- **DUR-03 V2, P90D (unchanged).** V2 is V1 plus the bank part of a fee. Its duration is V1's by
+  the successor rule and is not re-decided here; shortening it is a separate reviewed profile.
+- **Market, P30D.** MARKET-0 fixes the offer lifetime at 30 days (`MARKET0-RL-05`) and bounds
+  ended offers (`MARKET0-RL-07`); it names the event's retention as MARKET-RET-0 and states no
+  longer need.
+- **Guild, P30D.** GUILD-0 §4.4 and `GUILD0-RL-10` state a 30-day member log. That is the only
+  accepted requirement, so retention equals the read window.
+
+Why each must be decided now:
 
 - `ECONOMY_LEDGER_RETENTION_V1`: BANK-1 cannot register event type 3 without it, and the production
   rule requires a registered profile (`production_requires_registered_profile`).
@@ -100,8 +120,9 @@ cheapest point.
 ## 7. Evidence that permits supersession
 
 - A privacy review that refuses a profile, a purpose, a duration or a reader set.
-- A legal or support requirement that needs a duration above P90D or a purpose beyond proof,
-  reconciliation and bounded investigation, with an owner answer (a new profile id).
+- A cited line of BANK-0, BANK-FEE-0, MARKET-0 or GUILD-0 that states a concrete longer need.
+- A requirement that needs a duration above P30D, or a purpose beyond proof, reconciliation and
+  bounded investigation, with an owner answer (a new profile id).
 - A measured need from BANK-1, MARKET-1 or GUILD-1 (for example a reader the guild log requires).
 - A different activation boundary for type 2 decided in GOLD-FEE-ACT-PACKET-1 (#1746).
 

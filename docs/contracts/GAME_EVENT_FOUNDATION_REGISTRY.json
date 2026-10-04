@@ -76,7 +76,7 @@
       "id": "ECONOMY_LEDGER_RETENTION_V1",
       "purpose": "Prove and reconcile bank balances, ledger entries and coin lines and support bounded bank operations, support and security investigation; no market analytics, public history, detector or AI-use purpose.",
       "privacy_class": "RESTRICTED_PLAYER_LINKED",
-      "finite_retention_duration_or_ceiling": "P90D = 7,776,000 elapsed seconds from the immutable trusted-server timestamp in the event's ANL envelope; lifetime [start, expiry), never recomputed or refreshed",
+      "finite_retention_duration_or_ceiling": "P30D = 2,592,000 elapsed seconds from the immutable trusted-server timestamp in the event's ANL envelope; lifetime [start, expiry), never recomputed or refreshed",
       "permitted_roles": [
         "authorized bank operations",
         "authorized support",
@@ -106,7 +106,7 @@
       "id": "MARKET_ECONOMY_LEDGER_RETENTION_V1",
       "purpose": "ECONOMY_LEDGER: prove and reconcile World Market operations (offers, escrow, matching, fees and Inbox delivery) and support bounded market operations, support and security investigation; no market analytics, public price or trade history, balancing, detector or AI-use purpose.",
       "privacy_class": "RESTRICTED_PLAYER_LINKED",
-      "finite_retention_duration_or_ceiling": "P90D = 7,776,000 elapsed seconds from the immutable trusted-server timestamp in the event's ANL envelope; lifetime [start, expiry), never recomputed or refreshed",
+      "finite_retention_duration_or_ceiling": "P30D = 2,592,000 elapsed seconds from the immutable trusted-server timestamp in the event's ANL envelope; lifetime [start, expiry), never recomputed or refreshed",
       "permitted_roles": [
         "authorized market operations",
         "authorized support",
@@ -121,7 +121,7 @@
       "id": "GUILD_ACTIVITY_RETENTION_V1",
       "purpose": "GUILD_ACTIVITY: serve the member-visible guild activity log (GUILD0-RL-10, 30 days) and prove and reconcile guild membership, rank, guild-bank and guildhall operations; a guild bank entry is also within ECONOMY_LEDGER for proof and reconciliation only; support bounded guild, support and security investigation; no public history, analytics, detector or AI-use purpose.",
       "privacy_class": "RESTRICTED_PLAYER_LINKED",
-      "finite_retention_duration_or_ceiling": "P90D = 7,776,000 elapsed seconds from the immutable trusted-server timestamp in the event's ANL envelope; lifetime [start, expiry), never recomputed or refreshed; this is a ceiling above the 30-day member read window (GUILD0-RL-10), which is a read bound and not a retention duration",
+      "finite_retention_duration_or_ceiling": "P30D = 2,592,000 elapsed seconds from the immutable trusted-server timestamp in the event's ANL envelope; lifetime [start, expiry), never recomputed or refreshed; equal to the 30-day member log window (GUILD0-RL-10)",
       "permitted_roles": [
         "current members of the guild, reading only that guild's own entries within the 30-day member window (GUILD0-RL-10), isolated per guild for an event that holds entries for several guilds",
         "authorized guild operations",
