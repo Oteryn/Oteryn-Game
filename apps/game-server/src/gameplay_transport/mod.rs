@@ -421,16 +421,39 @@ pub async fn serve_gameplay(
         lost: std::sync::Mutex::default(),
         revision_sequencer:
             crate::durability::character_revision_sequencer::CharacterRevisionSequencer::new(),
+        // QUEST-STATE-1: no quest content is loaded yet (QUEST-LOWER-1 adds the loader), so
+        // admission loads each copy and leaves its obligations pending.
+        quest_catalogue: None,
+        quest_sessions: std::sync::Mutex::default(),
         premium: premium_refresher(owners.root),
     };
-    serve_listener(
-        listener,
-        &tls,
-        limits,
-        &authority,
-        &SecureIdentifiers,
-        &(),
-        shutdown,
+    // QUEST-STATE-0 §5.4: the owner cadence requests failed quest obligations again, whether or
+    // not the session's connection runs any other cadence. It never ends on its own.
+    let quest_retries = async {
+        loop {
+            if first(
+                tokio::time::sleep(QUEST_RETRY_CADENCE),
+                shutdown.cancelled(),
+            )
+            .await
+            .is_none()
+            {
+                std::future::pending::<()>().await;
+            }
+            authority.refresh_due_quest_sessions().await;
+        }
+    };
+    first(
+        serve_listener(
+            listener,
+            &tls,
+            limits,
+            &authority,
+            &SecureIdentifiers,
+            &(),
+            shutdown,
+        ),
+        quest_retries,
     )
     .await;
     Ok(())
@@ -528,10 +551,36 @@ pub(crate) struct ComposedFreshAdmission<'a, 'f, 's> {
     /// while `runtime` is locked.
     pub(crate) revision_sequencer:
         crate::durability::character_revision_sequencer::CharacterRevisionSequencer,
+    /// The quest catalogue of the served content revision (QUEST-STATE-0 §4); `None` while no
+    /// quest content is loaded.
+    pub(crate) quest_catalogue:
+        Option<std::sync::Arc<crate::durability::quest_state::quest::QuestStateCatalogue>>,
+    /// The quest copy of each admitted session (QUEST-STATE-0 §7), loaded at fresh admission
+    /// and resume. Never held across an await.
+    pub(crate) quest_sessions:
+        std::sync::Mutex<std::collections::HashMap<GameSessionId, QuestSession>>,
     /// PREM-1b: the account's Premium pulls, started at fresh admission and reconnect without
     /// waiting on them, and cancelled when the session is released.
     pub(crate) premium: crate::premium::refresh::PremiumRefresher,
 }
+
+/// One admitted session's quest state (QUEST-STATE-0 §5.4, §7).
+#[derive(Debug)]
+pub(crate) struct QuestSession {
+    /// `None`: the load failed or exceeded a bound; quest actions fail closed.
+    #[allow(
+        dead_code,
+        reason = "the session copy is read by QUEST-PRED-1's predicates"
+    )]
+    pub(crate) copy: Option<crate::durability::quest_state::QuestStateCopy>,
+    /// When the pending obligations may be requested again after a failed attempt.
+    pub(crate) retry_at: Option<std::time::Instant>,
+}
+
+/// The backoff before pending obligations are requested again (QUEST-STATE-0 §5.4).
+const QUEST_OBLIGATION_RETRY: Duration = Duration::from_secs(60);
+/// How often the owner looks for sessions whose quest backoff has passed.
+const QUEST_RETRY_CADENCE: Duration = Duration::from_secs(10);
 
 /// The write-fence token of one transition (CHARM-DESC-FENCE-LEASE §3 item 2): the lost epoch
 /// for grace expiry, otherwise a transition id the Channel owner minted.
@@ -599,6 +648,130 @@ enum UnendedSettle {
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {
+    /// QUEST-STATE-0 §7 and §5.4: load the admitted session's quest copy and request its
+    /// pending obligations again, in the Character's revision slot. A failed load fails the
+    /// session's quest actions closed, never the login.
+    async fn admit_quest_session(&self, admitted: &AdmittedSession) {
+        self.refresh_quest_session(admitted.game_session_id, true)
+            .await;
+    }
+
+    /// Reload the quest copy of `session` from the store and request its pending obligations
+    /// again. A failed load or an attempt without an outcome is tried again after
+    /// [`QUEST_OBLIGATION_RETRY`] on the owner cadence. `insert` is false for a refresh of a
+    /// session that may have ended meanwhile: it then updates only a session still present.
+    async fn refresh_quest_session(&self, session: GameSessionId, insert: bool) {
+        let fence = self.current_quest_fence(session).await;
+        let (copy, retry) = match fence {
+            Ok(Some(fence)) => {
+                let admission = crate::durability::quest_state::admit_character_quest_state(
+                    &self.revision_sequencer,
+                    self.root,
+                    self.character,
+                    self.holder,
+                    fence,
+                    self.quest_catalogue.as_ref(),
+                )
+                .await;
+                let retry = admission.retry || admission.copy.is_none();
+                (Some(admission.copy), retry)
+            }
+            // A proven terminal session: no quest action and nothing to retry.
+            Ok(None) => (Some(None), false),
+            // A failed read proves nothing: keep the current copy and try again.
+            Err(()) => (None, true),
+        };
+        let retry_at = retry.then(|| std::time::Instant::now() + QUEST_OBLIGATION_RETRY);
+        if let Ok(mut sessions) = self.quest_sessions.lock() {
+            match (copy, sessions.get_mut(&session)) {
+                (Some(copy), Some(entry)) => *entry = QuestSession { copy, retry_at },
+                (Some(copy), None) if insert => {
+                    sessions.insert(session, QuestSession { copy, retry_at });
+                }
+                (None, Some(entry)) => entry.retry_at = retry_at,
+                (None, None) if insert => {
+                    sessions.insert(
+                        session,
+                        QuestSession {
+                            copy: None,
+                            retry_at,
+                        },
+                    );
+                }
+                _ => {}
+            }
+        }
+    }
+
+    /// The owner cadence: refresh every session whose backoff has passed. The map lock is
+    /// never held across an await.
+    async fn refresh_due_quest_sessions(&self) {
+        let now = std::time::Instant::now();
+        let due: Vec<GameSessionId> = match self.quest_sessions.lock() {
+            Ok(mut sessions) => sessions
+                .iter_mut()
+                .filter(|(_, entry)| entry.retry_at.is_some_and(|at| at <= now))
+                .map(|(session, entry)| {
+                    entry.retry_at = None;
+                    *session
+                })
+                .collect(),
+            Err(_) => return,
+        };
+        for session in due {
+            self.refresh_quest_session(session, false).await;
+        }
+    }
+
+    /// Refresh `session` on the owner cadence after the backoff.
+    fn schedule_quest_refresh(&self, session: GameSessionId) {
+        if let Ok(mut sessions) = self.quest_sessions.lock()
+            && let Some(entry) = sessions.get_mut(&session)
+        {
+            entry.retry_at = Some(std::time::Instant::now() + QUEST_OBLIGATION_RETRY);
+        }
+    }
+
+    fn forget_quest_session(&self, session: GameSessionId) {
+        if let Ok(mut sessions) = self.quest_sessions.lock() {
+            sessions.remove(&session);
+        }
+    }
+
+    /// The gameplay fence of `session` from current durable reads; its expected revision is
+    /// replaced by the revision slot's cursor at commit. `Ok(None)` when the session is proven
+    /// terminal; `Err` when a read failed, which proves nothing.
+    async fn current_quest_fence(
+        &self,
+        session: GameSessionId,
+    ) -> Result<Option<crate::durability::character_progression::CurrentCharacterGameplayFence>, ()>
+    {
+        let store = FreshAdmissionStore::from_root(self.root.clone());
+        let (current, _) = store.current_session_at(session).await.map_err(|_| ())?;
+        if current.session_state() == crate::foundation::GameSessionState::Terminal {
+            return Ok(None);
+        }
+        let character_id =
+            domain::CharacterId::from_bytes(*current.commit().character_id().as_bytes())
+                .map_err(|_| ())?;
+        let record = self
+            .root
+            .read_current_character(self.character, character_id)
+            .await
+            .map_err(|_| ())?;
+        Ok(Some(
+            crate::durability::character_progression::CurrentCharacterGameplayFence {
+                character_id,
+                game_session_id: session,
+                connection_generation: current.current_connection_generation(),
+                character_lease_generation: current.current_character_lease().generation(),
+                runtime_scope: current.current_runtime_scope(),
+                scope_ownership_generation: current.current_scope_generation(),
+                expected_character_revision: record.revision,
+            },
+        ))
+    }
+
     /// Drop the lost entry of `session` only if it is still the one that ended at
     /// `generation`; a later resumed and lost again connection keeps its own entry.
     fn forget_lost(&self, session: GameSessionId, generation: u64) {
@@ -756,7 +929,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .await
             .remove_terminal_session(session, actor)
         {
-            Ok(()) => GraceExpiryResult::Released,
+            Ok(()) => {
+                self.forget_quest_session(session);
+                GraceExpiryResult::Released
+            }
             Err(_) => GraceExpiryResult::Unknown,
         }
     }
@@ -866,6 +1042,23 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             request,
         )
         .await;
+        // QUEST-STATE-0 §5.4: a chest that advances a quest left a PENDING obligation with its
+        // claim; request it in this session. An outcome that is not proven is picked up by the
+        // owner cadence after the backoff.
+        if crate::interaction_chest_use::resolve_chest(self.chest, &chest.key)
+            .is_ok_and(|resolved| resolved.quest_transition.is_some())
+        {
+            match disposition {
+                world_object::UseDisposition::Committed => {
+                    self.refresh_quest_session(command.game_session_id, false)
+                        .await;
+                }
+                world_object::UseDisposition::Rejected => {
+                    self.schedule_quest_refresh(command.game_session_id);
+                }
+                _ => {}
+            }
+        }
         UseOutcome {
             disposition,
             committed: None,
@@ -1288,12 +1481,13 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         &self,
         attempt: connection::ResumeAttempt<'_>,
     ) -> Result<AdmittedSession, AdmissionRefusal> {
-        let resumed = self.resume_lost(attempt).await?;
+        let admitted = self.resume_lost(attempt).await?;
         // PREM-1b: a reconnect pulls Premium again before any Premium read, without waiting.
-        if let Some(controller) = resumed.controller {
+        if let Some(controller) = admitted.controller {
             self.premium.admit(controller.account_id);
         }
-        Ok(resumed)
+        self.admit_quest_session(&admitted).await;
+        Ok(admitted)
     }
 
     /// The abandoned-session release follows the same fence, commit and settle steps as grace
@@ -1548,7 +1742,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             .await;
         // PREM-1b: pull Premium before any Premium read; admission does not wait on it.
         self.premium.admit(*record.account_id.as_bytes());
-        Ok(AdmittedSession {
+        let admitted = AdmittedSession {
             game_session_id: attempt.game_session_id,
             world_id: self.world_id,
             channel_id: self.channel_id,
@@ -1560,7 +1754,9 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             }),
             continuity: SessionContinuity::FRESH,
             item_fence,
-        })
+        };
+        self.admit_quest_session(&admitted).await;
+        Ok(admitted)
     }
 }
 

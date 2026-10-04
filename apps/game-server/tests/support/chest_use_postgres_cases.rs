@@ -562,6 +562,14 @@ fn chest_use_mints_the_reward_once_and_replays_the_first_outcome() -> TestResult
         assert_ne!(other.child, first.child);
         assert_eq!(backpack_entries(&harness, &authority).await?, 2);
         assert_eq!(claim_rows(&harness).await?, 2);
+        // QUEST-STATE-1: Content declares no chest quest transition until QUEST-LOWER-1, so the
+        // chest resolves none and its claims record no quest obligation.
+        assert_eq!(resolved.quest_transition, None);
+        let obligations: i64 =
+            sqlx::query_scalar("SELECT count(*) FROM game_character_quest_obligations")
+                .fetch_one(&harness.pool)
+                .await?;
+        assert_eq!(obligations, 0);
 
         drop(authority);
         drop(seal);

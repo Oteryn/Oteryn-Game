@@ -26,6 +26,13 @@
 | MAP-WIRE-2 | hard (protocol), protocol and security review | capability `MAP_STATE_V1`, domain `MAP_TILES` (§4-§7), the `map_item_handle` (§6), the bounds and their measurement (§8) | MAP-LOAD-1; MAP-OVERLAY-1; VIS-2 |
 | MAP-CLIENT-1 | client lane | the native client's decoder and renderer for `MAP_TILES`, drawing the combined tile order (§5) | MAP-WIRE-2 |
 
+**Amendment (ARCH-ITEM-PACKETS-AMEND-1; `reviews/OTERYN_GAME_ARCH_BATCH_ITEM_EQUIP_PACKETS_2026-10-03.md`
+§1.11), pending on acceptance of MAP-WIRE-1.** MAP-WIRE-2 carries each described tile's ground
+speed in `MAP_TILES`, omitted when 150, with max and absent codec tests. MAP-CLIENT-1 paces client
+steps from it and switches SPEED-1's server seam to MAP-LOAD-1's map source in the same PR, as a
+merge condition, with a production-path test on a tile whose ground speed is not 150. The field
+joins the §3 allowlist and the §8 bounds as amended there (#1702 P2 4175398450).
+
 ## 1. Question
 
 How does a client learn what lies on the map it sees: the base map, the base items the channel
@@ -66,7 +73,10 @@ overlay hides or moves, and the items players leave on the ground?
 - The server describes each tile of the observer's interest area from the active bundle and the
   channel overlay: the base entries the overlay does not hide, where the overlay currently places
   them. The client holds no map file and sees only the area it is in, as in Tibia.
-- **Allowlist** (DUR-04 §8). Per tile: its position (implicit, §7). Per base item:
+- **Allowlist** (DUR-04 §8). Per tile: its position (implicit, §7) and, under the amendment of the
+  Implementation brief, its ground speed: a varint in 1..=1,000 (the content maximum is 850),
+  omitted when 150 or when the ground item has none; a value outside the range fails the encode.
+  Per base item:
   - the client item type (the appearance id already in the client artifact);
   - count or subtype, only where the appearance needs it (stackables, fluids);
   - its stack position (§5);
@@ -166,13 +176,16 @@ overlay hides or moves, and the items players leave on the ground?
 Worst case per encoded item 22 bytes (type 4, count 4, stack position 3, handle 11 with its tag;
 positions are implicit in the per-floor lists); per tile at most 10 items, 10 × 22 = 220 bytes plus
 6 bytes of tile framing (226); the largest configurable area is 36 × 28 (MOVE-RL-11).
+*Amended (ground speed, pending on acceptance of MAP-WIRE-1):* the tile framing adds at most
+3 bytes for ground speed (a 1-byte tag and a 2-byte varint), so 9 bytes and 229 per tile; the rows
+below use 229.
 
 | Row | Value |
 |---|---|
 | `MAPW1-RL-01` items described per tile | 10 (Tibia's per-tile cap) |
 | `MAPW1-RL-02` tiles per floor list | 36 × 28 = 1,008, under FND-02's 4,096 |
-| `MAPW1-RL-03` snapshot | 8 floors × 1,008 × 226 bytes ≈ 1.82 MB worst, in 4 chunks, under 16 MiB with the other domains |
-| `MAPW1-RL-04` `AREA_ENTER` | a diagonal step at 36 × 28: 63 × 8 tiles × 226 bytes ≈ 114 KB, under 256 KiB |
+| `MAPW1-RL-03` snapshot | 8 floors × 1,008 × 229 bytes ≈ 1.85 MB worst, in 4 chunks, under 16 MiB with the other domains |
+| `MAPW1-RL-04` `AREA_ENTER` | a diagonal step at 36 × 28: 63 × 8 tiles × 229 bytes ≈ 115 KB, under 256 KiB |
 | `MAPW1-RL-05` snapshots per session | 4 per 10 s, one in flight, coalesced |
 | `MAPW1-RL-06` `TILE_SET` per sync unit | 1,024 |
 | `MAPW1-RL-07` live map handles per session | 80,640 (the described area), separate from `ITEMV0-RL-03` |
