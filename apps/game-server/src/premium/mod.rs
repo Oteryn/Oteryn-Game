@@ -75,11 +75,14 @@ pub const fn surface_policy(surface: Surface) -> SurfacePolicy {
     }
 }
 
-/// Consumer classifications (consumer contract §8.3). `STALE_WITHIN_BOUND` cannot occur: the
-/// product policy permits no stale use (§5). `NoEntitlement` is a `NONE` snapshot.
+/// Consumer classifications (consumer contract §8.3). `NoEntitlement` is a `NONE` snapshot.
+/// `StaleWithinBound` is kept evidence from its `refresh_after` until `authority_valid_until`;
+/// the product policy permits no stale use, so it denies benefit like every class but
+/// `CurrentAuthority` (Platform PREM-P §3, §8.2; PREMIUM-DELIVERY-0 §12).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum PremiumClass {
     CurrentAuthority,
+    StaleWithinBound,
     NotYetEffective,
     Expired,
     Revoked,
@@ -366,6 +369,10 @@ fn classify(view: Option<&AccountView>, now: Option<TrustedNow>) -> PremiumClass
     }
     if e.state == EntitlementState::NotYetEffective {
         return PremiumClass::NotYetEffective;
+    }
+    // Benefit ends at `refresh_after` without newer accepted evidence (PREM-P §8.2).
+    if now.is_some_and(|now| now.upper_us >= e.refresh_after_us) {
+        return PremiumClass::StaleWithinBound;
     }
     // A failed pull denies at once, even inside the kept interval (§3.1).
     if now.is_none() || !view.proven || view.unavailable {
