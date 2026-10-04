@@ -1,0 +1,381 @@
+# ARCH-KILL-REWARD-LOGOUT-1: live kill rewards and the logout command
+
+- Decision id: ARCH-KILL-REWARD-LOGOUT-1.
+- Status: the §1 rulings and the §2 packets are accepted on merge. They allocate no number: the
+  command type, capability and limit ids in §1.6 are proposals for the control plane to lease.
+- Origin:
+  - ATTACK-1b #1798: its task record names the follow-ups KILL-REWARD-COMP-1 and LOGOUT-WIRE-1.
+    The live kill settlement was cut out of it under CP D655, after Codex 4179744870.
+  - ATTACK-0 §4 (the in-fight logout block, `ATTACK0-RL-03`).
+  - VSL-COMBAT-01 (`docs/architecture/VSL-COMBAT-01_MINIMAL_COMBAT_DEATH_LOOT_CONTRACT_CANDIDATE.md`)
+    and D3 (`OTERYN_GAME_D3_CORPSE_CONTAINER_LOOT_WINDOW_DECAY_DECISION_2026-09-29.md`, D3-2).
+  - D3-7 (`OTERYN_GAME_D3_7_CORPSE_ITEM_ADMISSION_PACKET_2026-10-04.md`, corpse `i00005801`).
+  - SPELL-LOCK-1 #1796: channel guards are released before durable I/O.
+  - `DISCONNECT_REENTRY_PVE_PROTECTION_OWNER_DECISION.md` (a graceful logout creates no
+    protection window) and CHAR-POSITION-0 §3.2 (the final position write in the terminal
+    release).
+
+## 0. Gaps and order
+
+### 0.1 What is missing on `main` (and on the #1798 head)
+
+- **No live caller settles a creature death.**
+  - `settle_creature_death_rewards` and `settle_creature_death_rewards_with_bestiary`
+    (`combat/death_reward.rs`) have only fixture callers
+    (`tests/support/combat_death_reward_postgres_cases.rs`). `combat.rs` re-exports them under
+    `allow(unused_imports, reason = "no production caller yet")`.
+  - `top_damage_character` (`foundation/runtime_actor_carrier.rs`) is marked "D3-2 wires this
+    into settle_creature_death_rewards".
+- **Auto-attack projects the death and drops it.** In the #1798 `drain_auto_attacks`
+  (`gameplay_transport/attack.rs`), a lethal hit runs
+  `let _ = project_fixed_one_creature_death(...)` and clears the target. No loot, XP or
+  Bestiary write follows.
+- **A spell kill projects nothing.** `native_combat_cast.rs` discards the `CombatBatchReceipt`
+  of `prepared.commit(...)`. A creature whose `EffectReceipt.health` reaches 0 is never
+  projected as a death.
+- **No content binds a creature to its rewards at runtime.**
+  - Every `LootTableDefinition` in use is a test fixture.
+  - The creature records in `content/creatures/definitions/*.json` carry
+    `authoring.profile.experience`, `authoring.profile.details.corpse_item` and
+    `definition.loot`, which is a `{family Loot, key oteryn:loot.creature.<slug>, revision}`
+    reference. The loot records live in `content/loot/loot-*.json`.
+  - The native gameplay pin (`content/native_gameplay.rs`) carries the creature profiles
+    (`CreatureProfileRecord.profile`), and with them the experience and corpse item. It carries
+    no loot table.
+- **The settlement holds the runtime borrow across durable I/O.** Both settle functions take
+  `owner: &mut CurrentOwnerCombatDeath<'_>` and await the loot, XP and Bestiary commits while
+  holding it. `owner` borrows the locked `ChannelRuntimeV1`. Its only uses are reads:
+  `projected_death`, `top_damage_character` and `reward_occurrence`. The
+  `ComposedFreshAdmission.revision_sequencer` is documented as "never awaited while `runtime` is
+  locked", and SPELL-LOCK-1 releases channel guards before durable I/O.
+- **No logout command exists.** `docs/contracts/protocol-oteryn/v1` has no logout message, and
+  neither the server nor the client has one. A session ends only through transport loss, then
+  grace expiry (`TerminalRelease::Abandoned`) or a capability mismatch
+  (`TerminalRelease::CapabilityMismatch`). #1798 adds the in-fight hold
+  (`hold_while_in_fight`) to both paths.
+
+### 0.2 Shared files
+
+| File | Packets | Rule |
+| --- | --- | --- |
+| `apps/game-server/src/gameplay_transport/attack.rs` | KILL-REWARD-COMP-1: the lethal arm of the drain only | LOGOUT-WIRE-1 only reads `in_fight_until` |
+| `apps/game-server/src/gameplay_transport/mod.rs` | KILL-REWARD-COMP-1: the settlement call after each drain, and the drain of the session's own queue before its terminal release. LOGOUT-WIRE-1: the `TerminalRelease::Logout` variant and its release path | the two packets touch disjoint functions; the second to merge merges `main` first |
+| `docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json`, `RESOURCE_LIMITS_REGISTRY.json` | LOGOUT-WIRE-1: the command and capability rows. KILL-REWARD-COMP-1: the `KILLRW-RL-01` row | numbers leased by the control plane |
+
+### 0.3 Order
+
+- KILL-REWARD-COMP-1 runs after ATTACK-1b #1798 and D3-7 merge.
+- LOGOUT-WIRE-1 runs after ATTACK-1b #1798 merges. It does not depend on KILL-REWARD-COMP-1 or
+  on CHAR-POSITION-1.
+- The two packets run in parallel, on the disjoint functions of §0.2.
+
+## 1. Rulings
+
+### 1.1 The reward binding is pinned with the native gameplay content
+
+- The native gameplay manifest gains one optional pinned section, `loot_tables`, with schema
+  `OTERYN_NATIVE_LOOT_TABLES/v1`. It is a bounded list of `{identity, algorithm, entries}`
+  records, copied from `content/loot/loot-*.json`. Its digest is bound into the native gameplay
+  pin like every other section.
+- The section holds exactly the tables that the pinned creature profiles reference through
+  `definition.loot`, and no others. The existing native gameplay staging tool writes it.
+- An existing pin without the section stays valid: it decodes to no loot tables (serde default).
+- At generation activation, a pure function builds one immutable `CreatureRewardTable` per
+  active generation, keyed by the creature definition reference that the runtime already uses
+  for its creature policies (`creature_policies`). Each row holds:
+  - `xp_amount`: `profile.experience`, converted to `ExactI64`. A value above `i64::MAX` is
+    refused when the row is built.
+  - `corpse_item`: the `LootDefinitionRef` of `details.corpse_item`, resolved through the D3-7
+    `i00005801` alias. It must be an admitted, materializable container Item with capacity of
+    at least 1 and at most `GAMEITEM01-CORPSE-CONTAINER-ENTRIES` (16).
+  - `loot`: the `LootTableDefinition` and its reference, or none.
+  - `race`: the Bestiary race from `content/project/bestiary.rs`, or none.
+- **Fail closed per creature.** A missing or inadmissible corpse item, a loot reference without
+  its pinned table, or a table entry naming an Item that is not admitted and materializable
+  gives the row `NoSettlement(reason)`. The generation still activates. A kill of that creature
+  settles nothing and logs one `kill_reward_refused` event line with the reason and the
+  creature key.
+- `experience: 0` (or absent) settles loot with no XP descendant. A table that rolls no item
+  still mints the corpse.
+
+### 1.2 Facts are read under the lock; durable writes run after it is released
+
+- KILL-REWARD-COMP-1 changes the two settle functions so that they no longer take
+  `&mut CurrentOwnerCombatDeath`. They take an owned `ProjectedCreatureDeathFacts` value:
+  - `death` and `corpse`, from `projected_death(actor)`;
+  - `top_damage_character`, from `top_damage_character(actor)`;
+  - the XP and Bestiary occurrence bytes for the reward principal, from
+    `reward_occurrence(actor, principal)`.
+  These are the same owner reads the functions make today, made earlier at the same projection.
+  The descendants keep their bindings, so a replay of a fixture death keys exactly as before.
+- The caller captures these facts in the same owner turn that projects the death, while the
+  runtime lock is held. It then releases every channel guard (`runtime`, `spell_states`,
+  `attack`) before any `RevisionSlot` is acquired or any durable call is awaited.
+- `settle_*` callers acquire the slot with `revision_sequencer.acquire(character_id)` after the
+  guards are released. The slot is held across the whole loot, XP and Bestiary chain of one
+  death, as today.
+
+### 1.3 One bounded settlement queue per Channel, drained by the principal's own session
+
+- `drain_auto_attacks` runs in each session's serve loop, but it swings for every attacker in
+  the Channel. A `ComposedFreshAdmission` holds the `ReconciledCharacterAuthority` of its own
+  Character only, so it cannot settle another Character's kill.
+- **Reward principal.** The principal is `top_damage_character` at the projection. With no
+  tracked contributor, it is the attacker whose hit was lethal. This matches the current
+  fallback in `settle_creature_death_rewards` and `COMBAT01-REWARD-PRINCIPALS` = 1.
+- **Queue.** A lethal hit appends one `PendingKillSettlement` to a per-Channel queue: the
+  principal's `(ExactActorRef, GameSessionId, CharacterId)`, the creature definition reference,
+  the `ProjectedCreatureDeathFacts`, and the `DeathGroundContext`. The queue lives with the
+  attack state behind the existing `attack` mutex.
+- **Bound.** The queue holds at most `KILLRW-RL-01` = 64 entries per Channel, the same as
+  `COMBAT01-INFLIGHT-LOOT-MINTS-PER-SCOPE`. A death that finds the queue full is projected
+  without a reward entry and logs `kill_reward_refused reason=queue_full`.
+  `inflight_loot_mints_before_this_death` is the count of queued and in-flight corpse and loot
+  MINTs of that scope, read when the entry is taken from the queue.
+- **Drain.** After `drain_auto_attacks` and after each committed spell cast return, the session
+  takes the entries whose principal is its own Character and current session, one at a time. A
+  settle that returns an unknown durable outcome is retried with the same facts on the next
+  drain. The descendants are idempotent per `(death, character)`.
+- **Session end.** Before its terminal release, a session drains its own entries, as it already
+  saves familiar and spell training at actor end. If the principal's session no longer exists
+  when an entry is taken, the entry is dropped and logged `reason=principal_gone`.
+- A node crash loses unsettled entries. The creature's death and health are runtime state, so no
+  durable record is left half-written. Rejected alternative: §3.
+
+### 1.4 Spell kills use the same path
+
+- After `prepared.commit(...)` in `native_combat_cast.rs`, the caster's owner turn walks the
+  `CombatBatchReceipt.effects`. For each `EffectReceipt` whose `health` result is lethal on a
+  creature target, it runs `project_fixed_one_creature_death`, captures the facts (§1.2) and
+  appends a queue entry (§1.3), under the guards it already holds.
+- The same applies to the due and delayed spell paths that commit creature damage
+  (`ordinary_combat::prepare_due` and the delayed execution commit). The worker lists each site.
+  Any site that commits creature health without a receipt the caller can read is reported as a
+  `BLOCKER`, not rebuilt.
+- Familiar deaths (`familiar_cast_dispatch.rs`) and player deaths (`actor_spell.rs`,
+  `apply_creature_damage`) are not creature kills and are unchanged.
+
+### 1.5 Progression binding
+
+- `RewardProgressionBinding` is composed from the active World's progression revisions (the
+  `ProgressionRevisionContext`, policy and reward revisions and the finite policy). These are the
+  same revisions the session's Character admission already pinned.
+- The Bestiary binding uses the active `BestiaryProgressionBinding` of the same generation.
+- A missing binding is a configuration error at activation, not at the kill. The session then
+  settles loot only and logs `kill_reward_refused reason=no_progression_binding` for XP.
+
+### 1.6 The logout command
+
+- **Command** `LOGOUT_INTENT`, proposed command type 23, with an empty body. It is sent on the
+  ordinary command path, under capability `LOGOUT_V1` (proposed id 19). A server that offers the
+  capability answers every logout command with one `LogoutResultV1`:
+  - `LOGOUT_RESULT_ACCEPTED` (1);
+  - `LOGOUT_RESULT_IN_FIGHT` (2), with `retry_after_ms`, the remaining in-fight time from
+    `in_fight_until`, rounded up and at most `ATTACK0-RL-03` (60,000);
+  - `LOGOUT_RESULT_BUSY` (3), while the session has a pending durable spell commit or an
+    unsettled kill entry of its own (§1.3). The client may retry.
+  - 0 is invalid. Codes are append-only.
+- **Rate.** At most one logout command is outstanding per session (`LOGOUT-RL-01` = 1). A second
+  one before the first result is a protocol error, as for other single-flight commands.
+- **Accepted.** The server sends the result, stops reading commands from the session, and runs
+  the terminal release as a new `TerminalRelease::Logout(transport)`. It runs at once, with no
+  grace period, on the same path as `Abandoned`:
+  - the actor-end saves (familiar, spell training) and the own kill queue drain;
+  - the terminal release transaction, which writes `session_state = 3`. Once CHAR-POSITION-1
+    merges, its final position write runs there, as CHAR-POSITION-0 §3.2 requires. LOGOUT-WIRE-1
+    does not build it.
+  - then the server closes the transport cleanly.
+- **No protection window.** A graceful logout is not an unexpected loss of control. The next
+  login is an ordinary admission with no PvE re-entry protection interval
+  (`DISCONNECT_REENTRY_PVE_PROTECTION_OWNER_DECISION.md`). The release marks the session ended
+  by logout, so the recovery path cannot resume it.
+- **In fight.** The refusal leaves the session and the actor unchanged. Closing the client
+  instead keeps today's #1798 behaviour: the actor stays until the deadline ends.
+- **PZ.** The accepted room has no protection-zone tiles. The PZ block and the 15-minute kill
+  block belong to PARTY-PVP-0 and append their own result codes.
+- **Client.** `apps/client` sends the command on the Tibia binding (Ctrl+L, Ctrl+Q). It shows the
+  in-fight refusal as a status line with the remaining seconds, and on acceptance returns to the
+  character list without a reconnect attempt.
+
+## 2. Packets
+
+### 2.1 KILL-REWARD-COMP-1 (live loot and XP settlement for a creature kill)
+
+```yaml
+task_id: OTV2-20261004-kill-reward-comp-1
+decision: ARCH-KILL-REWARD-LOGOUT-1 §1.1-§1.5; VSL-COMBAT-01; D3-2
+depends_on: [ATTACK-1b #1798, D3-7]
+worker: oteryn-hard-worker
+review: persistence (Codex), on the frozen head
+branch: allocated by the control plane
+base: main
+migration_lease: none
+owned_paths:
+  - apps/game-server/src/content/creature_reward.rs        # new: CreatureRewardTable (§1.1)
+  - apps/game-server/src/content/creature_reward_tests.rs  # new
+  - apps/game-server/src/content/native_gameplay.rs        # the optional loot_tables section and its pin only
+  - apps/game-server/src/content/mod.rs                    # the module line only
+  - tools/qualification/node_boot/**                       # the loot_tables staging only
+  - apps/game-server/src/combat.rs                         # drop the "no production caller" allows that become used
+  - apps/game-server/src/combat/death_reward.rs            # ProjectedCreatureDeathFacts (§1.2)
+  - apps/game-server/src/foundation/runtime_actor_carrier.rs  # the top_damage_character allow only
+  - apps/game-server/src/gameplay_transport/kill_reward.rs    # new: the queue, the drain, the settle call
+  - apps/game-server/src/gameplay_transport/kill_reward_tests.rs
+  - apps/game-server/src/gameplay_transport/attack.rs      # the lethal arm of drain_auto_attacks only
+  - apps/game-server/src/gameplay_transport/native_combat_cast.rs  # the receipt walk after commit only
+  - apps/game-server/src/gameplay_transport/ordinary_combat.rs  # the due path receipt walk only, if it commits creature health
+  - apps/game-server/src/gameplay_transport/mod.rs         # module line, the drain after each drain or cast, the drain before terminal release
+  - apps/game-server/tests/support/combat_death_reward_postgres_cases.rs  # the new settle signature
+  - apps/game-server/tests/support/kill_reward_live_postgres_cases.rs     # new
+  - apps/game-server/tests/combat_death_reward_postgres.rs                # registration only
+  - docs/contracts/RESOURCE_LIMITS_REGISTRY.json           # KILLRW-RL-01
+  - docs/agents/tasks/archive/OTV2-20261004-kill-reward-comp-1.md
+validation:
+  - cargo fmt --check
+  - cargo clippy --locked --workspace --all-targets -- -D warnings
+  - cargo test --locked -p oteryn-game-server
+  - the combat_death_reward_postgres suite against PostgreSQL (repository CI service)
+  - python tools/agents/validate_governance.py
+  - git diff --check
+```
+
+- **Builds:**
+  - the `loot_tables` pinned section, its staging from `content/loot`, and the
+    `CreatureRewardTable` with its fail-closed rows (§1.1);
+  - `ProjectedCreatureDeathFacts`, and the two settle functions taking it instead of the owner
+    borrow (§1.2). The existing PG cases move to the new signature with their assertions
+    unchanged;
+  - the per-Channel queue, its `KILLRW-RL-01` bound, the principal rule and the session drain
+    (§1.3);
+  - the auto-attack lethal arm: project, capture the facts, enqueue, clear the target;
+  - the spell receipt walk (§1.4);
+  - the progression and Bestiary bindings from the active World (§1.5);
+  - removal of the `allow(unused...)` attributes that the live caller makes unnecessary.
+- **Acceptance:**
+  - A unit test per fail-closed reason of §1.1, and one for `experience: 0`.
+  - A unit test that no `RevisionSlot` is acquired and no durable call is made while `runtime`,
+    `spell_states` or `attack` is locked. It uses a test sequencer that fails if a channel guard
+    is held.
+  - A queue test at 64 entries and at 65 (the 65th death is projected with no entry and logs
+    `queue_full`).
+  - A live-path PG test (`kill_reward_live_postgres_cases.rs`) on a composed admission with the
+    pinned rat profile and the rat loot table:
+    1. An auto-attack kill mints the corpse `i00005801` and the rolled loot inside it, awards
+       XP 5 once and records the Bestiary kill once.
+    2. A spell kill (an area damage spell next to the creature) does the same.
+    3. Re-running the drain with the same entry (an unknown outcome retried) adds no item, XP or
+       kill.
+    4. A kill whose principal is another session's Character is settled by that session, not by
+       the attacker's.
+    5. A session that logs out or is released with an unsettled entry of its own settles it
+       before `session_state = 3`.
+  - The loot roll is the existing `plan_creature_loot` with the death key. No new RNG.
+- **Not in scope:** the loot window and corpse opening (D3-3), corpse decay (D3-4), party and
+  multi-principal sharing, PvP kills, charm kill hooks beyond the existing Bestiary call, and a
+  durable kill journal (§3).
+
+### 2.2 LOGOUT-WIRE-1 (the logout command)
+
+```yaml
+task_id: OTV2-20261004-logout-wire-1
+decision: ARCH-KILL-REWARD-LOGOUT-1 §1.6; ATTACK-0 §4; DISCONNECT_REENTRY_PVE_PROTECTION_OWNER_DECISION
+depends_on: [ATTACK-1b #1798]
+worker: oteryn-hard-worker
+review: protocol (Codex), on the frozen head
+branch: allocated by the control plane
+base: main
+migration_lease: none
+owned_paths:
+  - docs/contracts/protocol-oteryn/v1/logout_v1.proto      # new: LogoutIntentV1, LogoutResultV1
+  - docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json        # the command and capability rows, as leased
+  - docs/contracts/RESOURCE_LIMITS_REGISTRY.json           # LOGOUT-RL-01
+  - crates/protocol-oteryn/src/logout.rs                   # new codec
+  - crates/protocol-oteryn/src/logout_tests.rs             # new
+  - crates/protocol-oteryn/src/lib.rs                      # the module line only
+  - crates/session/src/lib.rs                              # the logout command and result only
+  - apps/game-server/src/gameplay_transport/logout.rs      # new: the command handler and dispositions
+  - apps/game-server/src/gameplay_transport/logout_tests.rs
+  - apps/game-server/src/gameplay_transport/mod.rs         # module line, TerminalRelease::Logout and its release path only
+  - apps/game-server/src/gameplay_transport/connection.rs  # the command dispatch arm only
+  - apps/game-server/src/gameplay_transport/capabilities.rs
+  - apps/game-server/src/gameplay_transport/capabilities_tests.rs
+  - apps/game-server/src/durability/fresh_admission.rs     # the logout end marker in the terminal release only
+  - apps/client/src/input.rs                               # the Ctrl+L and Ctrl+Q binding
+  - apps/client/src/**                                     # the refusal status line and the return to the character list only
+  - docs/agents/tasks/archive/OTV2-20261004-logout-wire-1.md
+validation:
+  - cargo fmt --check
+  - cargo clippy --locked --workspace --all-targets -- -D warnings
+  - cargo test --locked -p oteryn-protocol-oteryn
+  - cargo test --locked -p oteryn-session
+  - cargo test --locked -p oteryn-game-server
+  - cargo test --locked -p oteryn-client
+  - python tools/agents/validate_governance.py
+  - git diff --check
+```
+
+- **Builds:**
+  - the schema, the strict codec and the registry rows (§1.6), with the result codes
+    append-only;
+  - the server handler: the in-fight refusal with `retry_after_ms`, the busy refusal, the
+    single-flight rule, and on acceptance the result, the end of command reading and
+    `TerminalRelease::Logout`;
+  - the logout end marker in the terminal release, which the recovery path reads to refuse a
+    resume and which grants no protection interval;
+  - the session crate command and result, and the client binding and its two presentations.
+- **Acceptance:**
+  - A codec test per result code, and refusals for code 0 and a non-empty intent body.
+  - A server test of a logout while in fight: `IN_FIGHT`, `retry_after_ms` within 1 ms of the
+    remaining deadline, the actor still in the Channel and the session still reading commands.
+  - A server test of a logout after the deadline: `ACCEPTED`, `session_state = 3`, the transport
+    closed, and no grace period.
+  - A server test that a login after an accepted logout is an ordinary admission with no
+    protection interval, and that the recovery path refuses to resume the ended session.
+  - A server test of `BUSY` with a pending durable spell commit.
+  - A second logout command before the first result is a protocol error.
+  - A capability test: without `LOGOUT_V1`, the command is refused as an unknown command.
+- **Not in scope:** the CHAR-POSITION-1 position write, the PZ and PvP kill blocks
+  (PARTY-PVP-0), a server-initiated kick, and a logout during a pending respawn (DEATH-2).
+
+## 3. Rejected options
+
+- **Settle inside the drain, holding the runtime lock.** This awaits durable writes while
+  `runtime` is locked, stalls every other session of the Channel for each kill, and breaks the
+  sequencer rule and SPELL-LOCK-1.
+- **Acquire every possible principal's slot before the drain.** The drain does not know which
+  swings will be lethal, and it may cover many Characters. Taking all their slots would
+  serialize unrelated Characters on every tick.
+- **Let the attacker's session settle another Character's kill.** That session holds no
+  authority for the other Character and cannot fence its writes.
+- **A durable kill journal.** It would add a migration and a replay path for state whose source,
+  the creature's death, is itself runtime state. A crash loses the creature and its pending
+  reward together. This can be revisited if a measured loss rate or a player-facing promise
+  needs it.
+- **Read loot tables from the full content project at runtime.** The live node runs from the
+  pinned native gameplay content. A second unpinned source would let rewards drift from the
+  pinned digest.
+- **Treat a missing loot table as an empty table.** That would silently mint a corpse with no
+  loot for a content error. Fail closed makes the error visible.
+- **Logout as transport close.** A close cannot carry a refusal, so the client cannot learn it is
+  in fight. It also cannot be told apart from an unexpected loss, which would wrongly grant the
+  protection window.
+- **Queue the logout until the in-fight deadline ends.** The ATTACK-0 §4 rule is a refusal. A
+  queued logout would also hide the remaining time from the player.
+
+## 4. Decision test
+
+1. **Must it be decided now?** Yes. ATTACK-1b makes creatures killable live, and every kill
+   until KILL-REWARD-COMP-1 merges gives nothing. The in-fight block has no player-facing
+   command until LOGOUT-WIRE-1.
+2. **What is blocked?** Live loot and XP, the corpse loot window (D3-3) and decay (D3-4), and a
+   clean logout for the client.
+3. **What becomes harder later?**
+   - The `loot_tables` section is part of the native gameplay pin format.
+   - The single-principal queue is replaced by party sharing when PARTY-PVP-0 needs it.
+   - The logout result codes are wire codes and can only be appended.
+4. **What would justify superseding it?**
+   - A measured loss of settlements from crashes or from `KILLRW-RL-01`.
+   - A shared reward or party rule.
+   - A content pipeline that pins loot outside the native gameplay manifest.
+5. **What is deliberately not decided?** The loot window, decay, party loot, PvP kills, the PZ
+   logout block, and the final position write (CHAR-POSITION-1).
