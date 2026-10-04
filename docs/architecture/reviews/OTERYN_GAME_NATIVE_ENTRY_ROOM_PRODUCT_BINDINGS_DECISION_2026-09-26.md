@@ -88,21 +88,6 @@ Package and lock identities: package_key `oteryn:package/native-entry-room`, pac
 
 **Formula boundary.** `oteryn:formula/entry-melee-r1` is an accepted product identity only. It does not select damage or XP mathematics. No consumer may evaluate it until a separate owner decision accepts its mathematics; until then Ability/combat and XP consumers of this room stay unactivated and any evaluation attempt refuses. The one shared profile serves both Effect and XP because FirstProduction admits exactly one formula profile.
 
-### Amendment 2026-10-04 (room revision 2, in effect when SPAWN-1a merges)
-
-ARCH-CORE-LOOP-PACKETS-2 §1.4 (#1735 P1 4176940109): activating the spawn must not occupy a
-proof cell, so revision 2 moves it.
-
-- A fifth cell, `oteryn:cell/entry-den` (2,0,0), is Walkable and joins the same region, area and
-  terrain.
-- The bounds become (0, -1, 3, 1).
-- Spawn `oteryn:spawn/entry-rat` goes to cell `oteryn:cell/entry-den`.
-- Map becomes `oteryn:map/entry-r2` and content becomes `oteryn:content/entry-r2`. Every other
-  identity, revision and §4 bound is unchanged.
-
-The start, east, north and door cells and the relocation stay as above. Until SPAWN-1a merges,
-revision 1 above is the accepted room.
-
 ## 2. Spawn classes
 
 | Field | Value | Reason |

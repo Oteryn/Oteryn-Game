@@ -42,7 +42,7 @@ spawns are a base bundle family. SPAWN-1 splits into SPAWN-1a (realization and r
 fixture spawn through a spawn-source seam, before MAP-LOAD-1) and SPAWN-1b (the bundle spawn
 family through MAP-LOAD-1's reader, and the `RL-15` and `RL-16` measurements). The D116 fixture
 spawn is the committed one: `oteryn:spawn/entry-rat`, one rat (`population_limit: 1`), on
-`entry-den` from room revision 2. The two-rat spawn of AI-1 to AI-4 is a test helper in
+`entry-den` from room revision 2 (SPAWN-1A-PACKET-1, #1745). The two-rat spawn of AI-1 to AI-4 is a test helper in
 `runtime_actor_carrier.rs`, not content (#1735 P2 4176975942).
 
 Order: SPAWN-CONTENT-1 and CREATURE-AI-1 first; SPAWN-1 can realize the map before

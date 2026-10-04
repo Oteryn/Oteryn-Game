@@ -21,7 +21,6 @@ owned_paths:
   - docs/architecture/reviews/OTERYN_GAME_ATTACK0_ATTACK_TARGET_AND_AUTO_ATTACK_DECISION_2026-09-30.md
   - docs/architecture/reviews/OTERYN_GAME_CHAT0_PLAYER_CHAT_DECISION_2026-09-30.md
   - docs/architecture/reviews/OTERYN_GAME_CREATURE_AI0_CREATURE_AI_SPAWNS_AND_SUMMONS_DECISION_2026-10-01.md
-  - docs/architecture/reviews/OTERYN_GAME_NATIVE_ENTRY_ROOM_PRODUCT_BINDINGS_DECISION_2026-09-26.md
   - docs/agents/tasks/archive/OTV2-20261004-arch-core-loop-packets-2a.md
 public_contracts: []
 depends_on: []
@@ -52,7 +51,7 @@ external_repositories: []
 - #1735 P1 4176940094: SPAWN-1a owns `content/activation.rs`.
 - #1735 P1 4176940109: SPAWN-1a ships room revision 2, which moves the rat to a new non-proof
   cell `entry-den` with map and content r2. The amendment is recorded in the product bindings
-  decision and takes effect on SPAWN-1a's merge (§1.4, §2.7).
+  decision and takes effect on SPAWN-1a's merge (now SPAWN-1A-PACKET-1, #1745).
 - #1735 P1 4176975924: SPAWN-1a owns `entry_chest::CONTENT_REVISION` and
   `tests/content_native_entry.rs`, both room-r2 consumers (§2.7).
 - #1735 P1 4176975932: the revision-2 spawn record carries `respawn_delay_ms` 60,000 and
@@ -60,6 +59,11 @@ external_repositories: []
   (first-creature §4.3, §4.8; §1.4, §2.7).
 - #1735 P2 4176975942: CREATURE-AI-0 §6.1 and its amendment say one rat, and the two-rat spawn
   is named as a test helper.
+- Control plane D492 (owner 7a): room revision 2, the spawn inputs, the activation seam, the
+  SPAWN-1a packet and the bindings amendment moved to SPAWN-1A-PACKET-1 (#1745), with #1735
+  P1 4177035356 (r2 package and lock identities), P1 4177035359 (`qualification.rs`) and
+  P1 4177035362 (`test_arena_map.py`). This PR keeps the SPAWN-1a/1b split ruling (§1.4, §2.7
+  stub) and SPAWN-1b.
 - No code, contract or wire change in this PR.
 
 ## Validation

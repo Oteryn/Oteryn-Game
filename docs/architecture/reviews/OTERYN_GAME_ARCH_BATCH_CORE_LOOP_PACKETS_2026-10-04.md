@@ -135,39 +135,16 @@ spawn in `runtime_actor_carrier.rs` is a test helper, not content, and SPAWN-1a 
 (#1735 P1 4176889390). No production path
 calls them: a running channel has no creatures today.
 
-**The rat's cell (#1735 P1 4176940109).** The committed spawn sits on `oteryn:cell/entry-east`,
-which is a step-and-return proof cell. The product bindings (NATIVE-ENTRY-ROOM-PRODUCT-BINDINGS
-§1, after the joins) forbid an activated spawn there. The room fills its bounds (start, east,
-north and door), so SPAWN-1a ships room revision 2, which changes only these things:
-
-- a fifth cell `oteryn:cell/entry-den` at (2, 0, 0): Walkable, same terrain, region and area,
-  `CandidateOnly`;
-- bounds become (0, -1, 3, 1);
-- the spawn's `cell_key`, and `accepted::SPAWN_CELL`, become `entry-den`;
-- `oteryn:map/entry-r1` becomes `oteryn:map/entry-r2`, and `oteryn:content/entry-r1` becomes
-  `oteryn:content/entry-r2`. No other revision changes;
-- the spawn record, and `NativeEntrySpawn`, gain the two content inputs that first-creature §4.3
-  and §4.8 require (#1735 P1 4176975932): `respawn_delay_ms` 60,000 and
-  `occupancy_retry_interval_ms` 5,000, the D115 values that today live only in the test helper.
-  The revision-2 qualifier refuses a spawn record that lacks either, a delay outside
-  `CREATUREAI0-RL-13` (1,000 ms to 86,400,000 ms), and a retry interval of 0 or above the delay.
-  The retry count stays 3 (first-creature §4.3).
-
-Start, east, north, the door and the relocation are unchanged. The den is adjacent only to
-east, and it is not a proof cell. The bindings amendment (that document, "Amendment 2026-10-04")
-records revision 2. It takes effect when SPAWN-1a merges.
+**The rat's cell and the spawn inputs.** Room revision 2 (the `entry-den` cell, the bounds, the
+r2 map, content, package and lock identities) and the two spawn inputs moved to SPAWN-1A-PACKET-1
+(`OTERYN_GAME_SPAWN1A_FIXTURE_SPAWN_ROOM_R2_DECISION_2026-10-04.md`, #1745, §1.1-§1.3) under
+control plane D492 item 7. That PR also carries the bindings amendment.
 
 **Ruling.** SPAWN-1 may realize the D116 fixture spawn before MAP-LOAD-1. It splits as follows.
 
 - **SPAWN-1a** (hard, performance review). It works from the fixture World's spawn source, read
-  through one spawn-source seam that SPAWN-1b later feeds from the bundle. It builds:
-  - realization at channel activation, in canonical order and windows, before the channel
-    admits players (CREATURE-AI-0 §6.2);
-  - the §6.3 respawn: blocking by player interest, the 4,200 ms warning, the Occupied chain and
-    at most one pending occurrence per point;
-  - the point link;
-  - the `CREATUREAI0-RL-12` and `-14` rows.
-  Creatures stand until CREATURE-MOVE-1 and fight once ATTACK-1b and CREATURE-AI-1 have merged.
+  through one spawn-source seam that SPAWN-1b later feeds from the bundle. Its scope and packet
+  are SPAWN-1A-PACKET-1 (#1745, §1.4, §2.1).
 - **SPAWN-1b** (hard, performance review). It feeds the seam from the active bundle's spawn
   family through MAP-LOAD-1's reader. It measures `CREATUREAI0-RL-15` and `-16` at the reference
   map. It depends on MAP-LOAD-1 and SPAWN-CONTENT-1.
@@ -421,63 +398,9 @@ control plane serializes the two.
 
 ### 2.7 SPAWN-1a
 
-```yaml
-task_id: OTV2-20261004-spawn-1a
-decision: CREATURE-AI-0 §6.2, §6.3 (with this batch §1.4)
-worker: oteryn-hard-worker
-review: performance and determinism review (Codex, final frozen head)
-branch: claude/spawn-1a-20261004
-base: main after CREATURE-AI-1 merges (the carrier is serialized, §0.3)
-owned_paths:
-  - apps/game-server/src/foundation/runtime_actor_carrier.rs
-  - apps/game-server/src/ai/spawn*.rs                   # new: spawn-source seam, respawn chain
-  - apps/game-server/src/ai/mod.rs
-  - apps/game-server/src/content/project/native_entry.rs  # the activated spawn source in the content pin parts; accepted pins for room revision 2 (§1.4)
-  - apps/game-server/src/content/project/native_entry_room.json  # room revision 2: the entry-den cell, the bounds, the spawn cell, map and content r2 (§1.4)
-  - apps/game-server/src/content/activation.rs  # NativeEntryContentPin, into_channel_parts, activate_native_entry_room (#1735 P1 4176940094)
-  - apps/game-server/src/interaction/chest_use.rs  # entry_chest::CONTENT_REVISION and MAP_REVISION only, which gameplay_transport/mod.rs checks against accepted::REVISIONS (#1735 P1 4176975924)
-  - apps/game-server/tests/content_native_entry.rs  # the qualification fixture: r2 revisions, bounds, entry-den, spawn inputs (#1735 P1 4176975924)
-  - tools/monster-lab/arena_map.py  # only if it pins the room's cells or revisions
-  - apps/game-server/src/node/serve.rs                  # boot composition only: pass the spawn source to the runtime constructor
-  - docs/contracts/RESOURCE_LIMITS_REGISTRY.json       # CREATUREAI0-RL-12, -14
-  - docs/agents/tasks/archive/OTV2-20261004-spawn-1a.md
-validation:
-  - cargo fmt --all -- --check
-  - cargo clippy -p oteryn-game-server --all-targets -- -D warnings
-  - cargo test --locked -p oteryn-game-server
-  - python tools/agents/validate_governance.py
-  - git diff --check
-```
-
-Acceptance:
-
-- The production boot path realizes the fixture rat before the first admission
-  (#1735 P1 4176889394):
-  - `activate_native_entry_room` keeps the qualified room's spawn record in its
-    `NativeEntryContentPin`;
-  - `into_channel_parts` hands it out as the spawn-source input;
-  - `node/serve.rs` passes it to `ChannelRuntimeV1::from_committed_assignment`, which realizes it
-    before the gameplay listener is bound.
-
-  The spawn source therefore comes from the same activated generation as the content pin, never
-  from a second read. A boot test drives that path and finds one rat before readiness.
-  `world_runtime.rs` is not on this path and is not touched.
-- Room revision 2 (§1.4):
-  - the rat is realized on `entry-den`, and no proof cell holds a creature;
-  - the start/east step-and-return proof and the door tests pass unchanged;
-  - a revision-2 source with the spawn on `entry-east` or `entry-start` is refused;
-  - a revision-1 pin is refused by the revision-2 qualifier;
-  - every committed digest and golden is regenerated with the repository tooling, never by hand,
-    and the monster-lab tests pass.
-- The spawn inputs (§1.4): the realized point uses the source's `respawn_delay_ms` and
-  `occupancy_retry_interval_ms`, with no runtime constant. A source missing either, a delay of
-  999 ms or 86,400,001 ms, and a retry interval of 0 are each refused by the qualifier.
-- A dead rat respawns one full delay later.
-- A player's interest blocks a blockable point, and the successor is a full delay later.
-- The warning precedes admission by 4,200 ms.
-- An occupied cell retries 3 times every 5,000 ms, then skips.
-- There is never more than one pending occurrence per point.
-- A restart realizes the same set.
+Moved to SPAWN-1A-PACKET-1 (`OTERYN_GAME_SPAWN1A_FIXTURE_SPAWN_ROOM_R2_DECISION_2026-10-04.md`,
+#1745, §2.1) under control plane D492 item 7, with #1735 P1 4177035356, P1 4177035359 and
+P1 4177035362.
 
 ### 2.8 SPAWN-1b
 
