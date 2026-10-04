@@ -32,7 +32,7 @@
 ### 1.1 Which Item
 
 D3 names `oteryn:item.registry.i00005801`. In `content/items/aliases.json` that key is an alias of
-`oteryn:item.tibia.i5964`, the dead rat (Crystal and Canary id 5964). `oteryn:creature.rat`
+`oteryn:item.tibia.i5964`, the dead rat (Canary id 5964). `oteryn:creature.rat`
 already binds `corpse_item` to `oteryn:item.tibia.i5964`, and that binding does not change (D137).
 The admission therefore names the canonical key `oteryn:item.tibia.i5964`. The record is
 identity-only today: `materializable: false`, `stack_class: Unknown`, no semantics.
@@ -70,12 +70,40 @@ The admitted shape (D137):
 
 ### 1.3 Evidence and divergence
 
-The packet records evidence like v1: `canary`, `crystalserver` and `tibiawiki`, each with path,
-revision, sha256, lines and attributes. Canary `04b83b51` `data/items/items.xml` line 16141 has
-`containersize 10`, `duration 10` and `decayTo 3994` for id 5964. Those values are recorded and
-marked `DIVERGES_BY_DECISION D113/D137`. They are not used. Oteryn keeps 16 entries (the accepted
-loot-plan ceiling) and 60 s with no decay successor. The worker records the Crystal and TibiaWiki
-values the same way. A source that does not list the item is recorded as `ABSENT`, not left out.
+The packet records one evidence source, Canary, pinned from the checked-in import
+`imports/canary/items-xml/` (D384, `OTERYN_IMPORT_PINNED_SOURCE/v1`):
+
+```json
+"evidence": {
+  "canary": {
+    "repository": "opentibiabr/canary",
+    "path": "data/items/items.xml",
+    "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+    "sha256": "1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2",
+    "lines": "16141-16146",
+    "attributes": {
+      "containersize": "10",
+      "decayTo": "3994",
+      "duration": "10",
+      "fluidsource": "blood"
+    },
+    "disposition": "DIVERGES_BY_DECISION D113/D137"
+  }
+}
+```
+
+The sha256 is the import's `manifest.json` digest of `items.xml`, and a test recomputes it from
+the import file. The values are recorded, not used: Oteryn keeps 16 entries (the accepted
+loot-plan ceiling, D3 §4.2) and 60 s with no decay successor (D113, D137).
+
+CrystalServer and TibiaWiki are not evidence for this admission (#1770 P1 4178022290):
+- the repository has no pinned CrystalServer `items.xml`;
+- the checked-in TibiaWiki snapshots have no record of item 5964 (the `5964` entries in
+  `imports/tibiawiki/` are MediaWiki page ids of other pages).
+
+The v2 schema therefore needs only `canary`. The shape comes from the owner decisions, not from a
+source agreement, so v1's `ALL_SOURCES_AGREE_ELSE_NO_ADMISSION` policy is replaced in v2 by
+`DECISION_SHAPE_WITH_PINNED_EVIDENCE`. The worker adds no other source.
 
 ### 1.4 Digests
 
@@ -141,7 +169,9 @@ Acceptance:
 - The new `reference.json`, manifest and lock digests are pinned, and the record names them.
 - Every file in the diff is either a hand-written owned path or a tool output. The record lists
   each tool output file, and a rerun of the tools on the frozen head gives no diff.
-- The evidence packet lists the three sources with the §1.3 divergence marks.
+- The evidence packet holds exactly the §1.3 `canary` block and the v2 policy. A test recomputes
+  the `sha256` from `imports/canary/items-xml/items.xml` and checks lines 16141-16146 and their
+  four attributes. A packet with any other source is refused.
 
 Not in scope:
 

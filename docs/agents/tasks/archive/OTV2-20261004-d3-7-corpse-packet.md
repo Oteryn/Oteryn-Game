@@ -40,6 +40,9 @@ external_repositories: []
 - Owned paths list every output of the regeneration (#1770 P1 4177992199):
   `content/content.lock.json` and the seven Ability, Behavior, Creature, Loot and Presentation
   indexes that embed the reference blob SHA. All are tool outputs only.
+- #1770 P1 4178022290: the evidence is Canary only, pinned with repository, path, revision,
+  sha256, lines and attributes from `imports/canary/items-xml/`. CrystalServer and TibiaWiki are
+  dropped: neither has a pinned record of item 5964.
 
 ## Validation
 
