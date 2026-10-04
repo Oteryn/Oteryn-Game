@@ -59,6 +59,9 @@ struct CatalogueRecord {
     walkable: Option<Field>,
     #[serde(default)]
     ground_speed: Option<Field>,
+    // Both families; read for the spawn admission check (format v3).
+    #[serde(default)]
+    floor_change: Option<Field>,
 }
 
 /// A catalogue field `{state, value}`; only `KNOWN` carries a value.
@@ -97,6 +100,8 @@ pub struct Registry {
     items: BTreeMap<String, (Reference, Option<Reference>)>,
     /// Terrain key to whether its record points at an Item.
     terrain: BTreeMap<String, bool>,
+    /// Catalogue record key to whether its `floor_change` is KNOWN and not `none`.
+    floor_changes: BTreeMap<String, bool>,
     /// Terrain key to the fields format v2 carries.
     classified: BTreeMap<String, Classified>,
     /// Item key to the `item_pointer` naming it and the catalogue record that holds it.
@@ -155,6 +160,10 @@ impl Registry {
                 return Err(format(format!("{family} key {} given twice", identity.key)));
             }
             let pointer = record.provenance.item_pointer;
+            let changes = Field::known(record.floor_change)
+                .and_then(|value| value.as_str().map(|value| value != "none"))
+                .unwrap_or(false);
+            self.floor_changes.insert(identity.key.clone(), changes);
             if family == "Terrain" {
                 self.terrain.insert(identity.key.clone(), pointer.is_some());
                 self.classified.insert(
@@ -319,6 +328,18 @@ impl Registry {
         counts
     }
 
+    /// Whether the record a palette key routes to carries a KNOWN floor change. An UNKNOWN
+    /// `floor_change` is not one: the content lane classifies it, and the spawn admission
+    /// check (format v3) cannot see what the catalogue does not say.
+    pub fn floor_change_of(&self, key: &str) -> bool {
+        let record = match self.ids.get(key) {
+            Some((Family::Terrain, _)) => Some(key),
+            Some((Family::Item, _)) => self.route(key).map(|record| record.key.as_str()),
+            None => None,
+        };
+        record.is_some_and(|record| self.floor_changes.get(record).copied().unwrap_or(false))
+    }
+
     /// The catalogue record an Item key routes to, if any.
     pub fn route(&self, item: &str) -> Option<&Reference> {
         self.routes.get(item).map(|(_, record)| record)
@@ -351,5 +372,9 @@ impl KeyResolver for Registry {
 
     fn terrain(&self, key: &str) -> Result<Option<Terrain>, Error> {
         self.terrain_of(key)
+    }
+
+    fn floor_change(&self, key: &str) -> bool {
+        self.floor_change_of(key)
     }
 }

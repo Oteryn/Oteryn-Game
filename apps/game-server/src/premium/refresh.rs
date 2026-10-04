@@ -1,10 +1,12 @@
 //! PREM-1b: the Premium pull schedule (PREMIUM-DELIVERY-0 §3, §3.1; §11 scope item 4).
 //!
 //! [`PremiumRefresher::admit`] starts, or wakes, one task per online account: it loads the
-//! durable fence, pulls at once (fresh admission or reconnect), then pulls again at each
-//! snapshot's `refresh_after`, never sooner than [`MIN_REFRESH_INTERVAL`] after the last
-//! successful pull. A failed pull is retried with capped exponential backoff and jitter; a 429 or
-//! 503 `Retry-After` is honoured within the cap. The one task per account is the only puller, so
+//! durable fence, pulls at once (fresh admission or reconnect), then pulls again
+//! [`REFRESH_LEAD`] before each snapshot's `refresh_after`, never sooner than
+//! [`MIN_REFRESH_INTERVAL`] after the last successful pull. Benefit ends at `refresh_after`
+//! without newer evidence (Platform PREM-P §8.2, §8.5), so the lead leaves room for retries
+//! before it. A failed pull is retried with capped exponential backoff and jitter; a 429 or 503
+//! `Retry-After` is honoured within the cap. The one task per account is the only puller, so
 //! at most one request is in flight per account. Admission never waits on a pull: until one
 //! succeeds the account reads as not current. [`PremiumRefresher::release`] cancels the
 //! schedule and drops the in-memory view.
@@ -21,13 +23,23 @@ use tokio::task::JoinHandle;
 /// The floor between a successful pull and the next scheduled one (§10.2), so an authenticated
 /// producer cannot drive a request loop.
 pub const MIN_REFRESH_INTERVAL: Duration = Duration::from_secs(60);
+/// How long before `refresh_after` the scheduled pull starts (PREM-P §8.5): several capped
+/// retries fit in it.
+pub const REFRESH_LEAD: Duration = Duration::from_secs(5 * 60);
 pub const RETRY_BASE: Duration = Duration::from_secs(1);
 /// The backoff cap, which also bounds an honoured `Retry-After`.
 pub const RETRY_CAP: Duration = Duration::from_secs(60);
 
-/// The delay after a successful pull: until `refresh_after`, at least [`MIN_REFRESH_INTERVAL`].
+/// The delay after a successful pull: until [`REFRESH_LEAD`] before `refresh_after`, at least
+/// [`MIN_REFRESH_INTERVAL`].
 pub fn after_success(refresh_after_us: i64, now_us: i64) -> Duration {
-    let until = u64::try_from(refresh_after_us.saturating_sub(now_us)).unwrap_or(0);
+    let lead_us = i64::try_from(REFRESH_LEAD.as_micros()).unwrap_or(i64::MAX);
+    let until = u64::try_from(
+        refresh_after_us
+            .saturating_sub(lead_us)
+            .saturating_sub(now_us),
+    )
+    .unwrap_or(0);
     Duration::from_micros(until).max(MIN_REFRESH_INTERVAL)
 }
 

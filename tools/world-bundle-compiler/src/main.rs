@@ -10,8 +10,10 @@ use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 
 use oteryn_world_bundle_compiler::Error;
-use oteryn_world_bundle_compiler::bundle::{BuildClass, Identity};
-use oteryn_world_bundle_compiler::compile::{self, Input, equivalence, parity, placed_palette};
+use oteryn_world_bundle_compiler::bundle::{BuildClass, Extent, Identity};
+use oteryn_world_bundle_compiler::compile::{
+    self, Input, SpawnReport, equivalence, parity, placed_palette,
+};
 use oteryn_world_bundle_compiler::project::{self, Families};
 use oteryn_world_bundle_compiler::resolve::Registry;
 use serde_json::{Value, json};
@@ -72,6 +74,12 @@ fn project(root: &Path) -> Result<Project, Error> {
     for shard in shards(&root.join("content/houses"), "houses-")? {
         families.add_houses(&shard)?;
     }
+    for shard in shards(&root.join("content/creatures/definitions"), "creatures-")? {
+        families.add_creatures(&shard)?;
+    }
+    for shard in shards(&root.join("content/world/spawns"), "spawns-")? {
+        families.add_spawns(&shard)?;
+    }
     Ok(Project {
         index,
         regions,
@@ -110,6 +118,28 @@ fn registry(root: &Path, project: &Project) -> Result<(Registry, Vec<String>), E
     Ok((registry, palette))
 }
 
+/// The World shard of `root`.
+fn world_extent(root: &Path) -> Result<Extent, Error> {
+    let worlds = shards(&root.join("content/world/worlds"), "worlds-")?;
+    let [world] = worlds.as_slice() else {
+        return Err(Error::Format(
+            "the World Project must hold one World shard".into(),
+        ));
+    };
+    project::world_extent(world)
+}
+
+/// The spawn report as JSON: totals, the count per reason and every point left out.
+fn spawn_report(report: &SpawnReport) -> Result<Value, Error> {
+    let mut value = serde_json::to_value(report).map_err(|e| Error::Format(e.to_string()))?;
+    let mut reasons = std::collections::BTreeMap::<String, usize>::new();
+    for dropped in &report.dropped {
+        *reasons.entry(format!("{:?}", dropped.reason)).or_default() += 1;
+    }
+    value["dropped_by_reason"] = json!(reasons);
+    Ok(value)
+}
+
 fn run_parity(root: &Path) -> Result<Value, Error> {
     let project = project(root)?;
     let mut report = serde_json::to_value(parity(&project.regions, &project.families)?)
@@ -123,6 +153,18 @@ fn run_parity(root: &Path) -> Result<Value, Error> {
         .filter_map(|at| palette.get(*at as usize).map(String::as_str));
     report["terrain"] = serde_json::to_value(registry.terrain_counts(keys))
         .map_err(|e| Error::Format(e.to_string()))?;
+    // The spawn family against the cells it stands on (CREATURE-AI-0 §6.1). A terrain record
+    // that is not classified yet is reported per point, not a failure here.
+    let input = Input {
+        regions: &project.regions,
+        palette: &palette,
+        identity: Identity::default(),
+        world: world_extent(root)?,
+        build_class: BuildClass::NonProduction,
+        draft_areas: Vec::new(),
+        families: &project.families,
+    };
+    report["spawns"] = spawn_report(&compile::realize_spawns(&input, &registry)?.1)?;
     Ok(report)
 }
 
@@ -136,17 +178,11 @@ fn run_compile(root: &Path, identity: &Path, out: &Path, class: &str) -> Result<
         .map_err(|e| Error::Format(format!("identity: {e}")))?;
     let project = project(root)?;
     let (registry, palette) = registry(root, &project)?;
-    let worlds = shards(&root.join("content/world/worlds"), "worlds-")?;
-    let [world] = worlds.as_slice() else {
-        return Err(Error::Format(
-            "the World Project must hold one World shard".into(),
-        ));
-    };
     let input = Input {
         regions: &project.regions,
         palette: &palette,
         identity,
-        world: project::world_extent(world)?,
+        world: world_extent(root)?,
         build_class,
         draft_areas: project::draft_areas(&project.index)?,
         families: &project.families,
@@ -161,6 +197,7 @@ fn run_compile(root: &Path, identity: &Path, out: &Path, class: &str) -> Result<
         "bytes": compiled.bytes.len(),
         "skipped_provisional_entries": compiled.diagnostics.len(),
         "dropped_teleports": compiled.dropped_teleports.len(),
+        "spawns": spawn_report(&compiled.spawns)?,
         "equivalence": proof,
     }))
 }
