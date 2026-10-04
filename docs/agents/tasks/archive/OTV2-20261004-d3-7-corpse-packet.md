@@ -37,6 +37,9 @@ external_repositories: []
   (§1.3).
 - The packet starts after #1753 and regenerates `content/world/**` only with the tools (§0, §2).
 - No code, contract or wire change.
+- Owned paths list every output of the regeneration (#1770 P1 4177992199):
+  `content/content.lock.json` and the seven Ability, Behavior, Creature, Loot and Presentation
+  indexes that embed the reference blob SHA. All are tool outputs only.
 
 ## Validation
 
