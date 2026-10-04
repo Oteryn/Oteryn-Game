@@ -156,7 +156,7 @@ fn limits() -> ProjectEvidenceLimits {
         max_locator_bytes: 160,
         max_locator_segments: 8,
         max_reference_records: CW2_B1_FULL_ITEM_FAMILY_COUNT + CREATURE_RECORDS + NPC_RECORDS,
-        max_import_records: 24,
+        max_import_records: 25,
         max_reimport_states: ENCOUNTERS + 296,
     }
 }

@@ -419,7 +419,7 @@ fn limits() -> ProjectEvidenceLimits {
             + NPC_RECORDS
             + 62
             + (NPC_BULK_COUNT + NPC_BULK_MORE_COUNT) * 2,
-        max_import_records: 24,
+        max_import_records: 25,
         max_reimport_states: ENCOUNTER_COUNT + item_fx_audio_raw_import::STATE_COUNT,
     }
 }
