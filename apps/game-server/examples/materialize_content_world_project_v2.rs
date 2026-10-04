@@ -168,7 +168,7 @@ const NPC_BULK_MORE: &[u8] = include_bytes!(
 const NPC_BULK_MORE_SHA256: &str =
     "d2eb94b904b0405705d5dd044370c44f2c7cac12a112627750d980bc1c6dff24";
 const NPC_BULK_MORE_PREDECESSOR: &str =
-    "92faa0e8052c16593811a1841476de3cc9897469b2a77bc83247653ecea0ed1c";
+    "889a94d8b083389f9d20db0b79a3592a2ed72213701ad3491a0d83cb891fa8c8";
 const NPC_BULK_MORE_COUNT: usize = 88;
 #[path = "npc_materializer/bulk_enrichment.rs"]
 mod npc_bulk_enrichment;
