@@ -87,6 +87,7 @@ message MapItemV1 {
     uint64 item_handle = 5;       // non-zero: an overlay-added or Ground item within the handle budget
     bool display_only = 6;        // true: an overlay-added or Ground item beyond the handle budget (§3)
   }
+  uint32 appearance_id = 7;       // 0..=65535: the 15.30 appearance object id, 0 if none (§3)
 }
 
 message MapTileV1 {
@@ -116,7 +117,8 @@ message WorldMapViewDeltaV1 {
   - a `base_ordinal` of 64 or more;
   - a zero handle, a `display_only` that is not `true`, or not exactly one origin;
   - a count outside its range;
-  - a `ground_speed` above 1000.
+  - a `ground_speed` above 1000;
+  - an `appearance_id` above 65,535.
 - **Bounds.**
   - `MapItemV1` encodes in at most 32 bytes, and `MapTileV1` in at most 360 bytes.
   - A snapshot payload is at most 2,016 x 360 + 128 = 725,888 bytes. It is streamed in two
@@ -141,6 +143,12 @@ message WorldMapViewDeltaV1 {
     `MAPW-RL-03`, a snapshot is sent instead.
   - Reach for `USE` and move is at most a few tiles, so every reachable item is within the budget
     unless more than 1,024 handle-bearing entries lie nearer to the actor.
+- **Appearance.** `appearance_id` names the 15.30 client appearance object the client draws
+  (owner #1793 Q5b). The server takes it from the entry's bundle palette key: `<id>` of
+  `oteryn:item.tibia.i<id>` or `oteryn:terrain.tibia.i<id>`. Any other key sends 0, and the
+  client draws a placeholder. `item_definition_ref` stays the item identity; `appearance_id` is
+  only for drawing and is never trusted for a command. The field adds at most 4 bytes, so the
+  per-item and per-tile bounds hold.
 - **Generation match.** The client binds the view to `(content_generation, bundle_digest,
   reset_epoch)`. A delta whose header differs from the snapshot's is a `STATE_REVISION_MISMATCH`.
   The client sends the existing `ResyncRequest` and draws nothing from that delta. The server
@@ -187,8 +195,8 @@ message WorldMapViewDeltaV1 {
 
 ## 5. Not decided here
 
-- Client sprites and appearance assets: which appearance set the client draws (MAP-CLIENT-1
-  §2.3).
+- Animation, outfit and effect sprites. Static appearance sprites are decided (owner #1793
+  Q5b; packets §2.2 MAP-SPRITE-1).
 - Light, weather, minimap and tile flags beyond the item stack.
 - Creatures on tiles: they stay domain-1 actors.
 - Houses: the World-scoped house interior runtime serves owned house tiles (ADR-0021 §4.4), and

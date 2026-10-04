@@ -5,11 +5,15 @@
   - The §1 rulings and the §2 packets are accepted on merge.
   - The MAP-WIRE-1 contract
     (`docs/contracts/protocol-oteryn/candidates/MAP_WIRE_1_WORLD_MAP_VIEW_CANDIDATE_V1.md`) is a
-    candidate. It binds only after owner acceptance, and both packets wait for that acceptance.
+    candidate. The owner accepted it (#1793 Q1a), effective once Codex review of the fixed head
+    is clean. Every packet waits for that.
+  - Owner decisions on #1793: Q1a accepted; Q2a the digest plus placement key target; Q3a 10
+    entries plus `more`; Q4a a server-streamed viewport; Q5b real 15.30 sprites, with the
+    client assets distributed to the client.
 - Origin:
   - ADR-0021 §5 (MAP-WIRE-1, MAP-CLIENT-1, the SPEED-1 amendment to MAP-LOAD-1);
   - ARCH-WORLD-CONTENT-SERVE-1 §1.6 and §1.8 (#1792);
-  - owner `1a` for this batch.
+  - owner `1a` for this batch, and the #1793 decisions Q1a-Q5b.
 
 ## 0. Gaps and order
 
@@ -38,11 +42,13 @@
 | `apps/game-server/src/gameplay_transport/connection.rs` | MAP-WIRE-2: the domain-17 join snapshot and delta hook | MAP-CLIENT-1 does not touch it |
 | `apps/game-server/src/movement/speed.rs` | MAP-CLIENT-1: the ground-speed source switch for a bundle World | MAP-WIRE-2 only reads the ground speed through `WorldBase` |
 | `apps/game-server/src/gameplay_transport/item_view.rs`, `crates/protocol-oteryn/src/item_view.rs` | MAP-WIRE-2: the map-view handle bound | MAP-CLIENT-1 does not touch them |
+| `Cargo.toml`, `Cargo.lock`, `crates/renderer/**` | MAP-SPRITE-1 only | MAP-WIRE-2 and MAP-CLIENT-1 do not touch them |
 | `docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json`, `RESOURCE_LIMITS_REGISTRY.json` | MAP-WIRE-2 only | numbers leased by the control plane |
 
 ### 0.3 Order
 
-The order is: owner accepts MAP-WIRE-1, then MAP-WIRE-2, then MAP-CLIENT-1.
+The order is: owner accepts MAP-WIRE-1. MAP-WIRE-2 and MAP-SPRITE-1 then run in parallel, on
+disjoint paths. MAP-CLIENT-1 runs after both merge.
 
 - MAP-WIRE-2 also needs MAP-OVERLAY-1a (the per-channel overlay with hidden and added entries).
 - Offering capability 18 on a live node needs MAP-CUTOVER-1, which boots a World from a bundle.
@@ -156,6 +162,7 @@ validation:
   - the move of Ground items and corpses out of domain 1 under capability 18;
   - the map-view handle budget (`MAPW-RL-04`, nearest-first, `display_only` beyond it) and the
     session handle table bounded by `ITEMV0-RL-03-MAP-VIEW` (contract §3);
+  - each entry's `appearance_id`, taken from its palette key (contract §3);
   - the admission refusal without capability 18 on a bundle World;
   - the 40-byte target resolution, with the binding lookup to the canonical `PlacementKey`.
 - **Acceptance:**
@@ -166,6 +173,9 @@ validation:
   - the handle table holds 1,325 handles with capability 18 (1,661 with 14 and 18) and refuses
     one more;
   - capability 18 without capability 4 is refused at negotiation;
+  - an `oteryn:item.tibia.i<id>` or `oteryn:terrain.tibia.i<id>` entry is sent with
+    `appearance_id` = `<id>`, any other key with 0, and an `appearance_id` above 65,535 fails
+    closed;
   - encoded-size tests at the bounds: a 10-entry tile with the largest values is at most 360 bytes;
     a full 2,016-tile snapshot is at most 725,888 bytes, in at most two chunks; a 248-tile delta
     is at most 93,376 bytes;
@@ -187,22 +197,122 @@ validation:
 - **Not in scope:** offering capability 18 on a live node (MAP-CUTOVER-1), the client
   (MAP-CLIENT-1), the ground-speed switch, houses, light and minimap.
 
-### 2.2 MAP-CLIENT-1 (the client draws the imported map)
+### 2.2 MAP-SPRITE-1 (the 15.30 appearance and sprite pipeline)
+
+Owner Q5b: the client draws real appearance sprites from the in-repository 15.30 client assets
+(`content/assets/files/`, D154 and the 2026-09-29 redistribution supersession), not placeholder
+atlas cells. The pipeline is its own packet, so MAP-CLIENT-1 stays an implementation slice. It
+reads no map and no wire, so it runs in parallel with MAP-WIRE-2.
+
+```yaml
+task_id: OTV2-20261004-map-sprite-1
+decision: ARCH-MAP-WIRE-1 §2.2; owner #1793 Q5b
+depends_on: [owner acceptance of MAP-WIRE-1]
+worker: oteryn-impl-worker
+review: Codex, on the frozen head
+branch: agent/map-sprite-1-20261004
+base: main
+owned_paths:
+  - crates/client-assets/**                  # new crate oteryn-client-assets
+  - crates/renderer/src/batch.rs             # the sprite atlas page and the quad bound
+  - crates/renderer/src/scene_gpu.rs         # sub-rectangle cell upload
+  - crates/renderer/src/lib.rs               # re-exports only
+  - Cargo.toml                               # the workspace member and `lzma-rs`
+  - Cargo.lock
+  - docs/agents/tasks/archive/OTV2-20261004-map-sprite-1.md
+validation:
+  - cargo fmt --check
+  - cargo clippy --locked --workspace --all-targets -- -D warnings
+  - cargo test --locked -p oteryn-client-assets
+  - cargo test --locked -p oteryn-renderer
+  - git diff --check
+```
+
+- **Source and pin.**
+  - The asset directory is `content/assets/files/`.
+  - `catalog-content.json` must match the SHA-256 recorded in
+    `imports/official/client-assets/15.30/manifest.json`, and so must the `appearances` file it
+    names. Each sprite sheet must match the SHA-256 in its own file name, checked when the sheet
+    is first loaded.
+  - A mismatch or a missing file fails closed for that file. The loader returns an error, and
+    the caller draws the placeholder cell. Nothing panics.
+- **Upstream first.**
+  - Appearances are decoded with the workspace `prost` (`=0.14.4`) derive, on hand-written
+    messages. They carry only the fields this packet reads, with the field numbers of the
+    upstream `appearances.proto`: Canary's `src/protobuf/appearances.proto` at the
+    15.30-capable pin of
+    `docs/agents/programs/OTERYN_GAME_VERSION_1530_AND_OTS_BRANCHES_DECISION_20260928.md`.
+    Unknown fields are skipped, and no build script or generated code is added.
+  - Sheets are decoded with `lzma-rs` `=0.3.0`, the version the World VFX experiment already
+    qualified. The decoder strips the 32-byte CIP header and reads the BMP as 384x384 RGBA, with
+    magenta as transparent.
+  - The decoder is ported from `experiments/world-vfx-real-content/src/content.rs`. The
+    experiment stays unchanged as evidence.
+- **Builds:**
+  - `AppearanceIndex`: object id to frame group 0, with pattern sizes, layers, sprite ids,
+    displacement, elevation and the draw-order flags (ground, ground border, on-bottom,
+    on-top). Animation phases are kept, but only phase 0 is drawn in this packet.
+  - `SpriteSheets`: maps a sprite id to its sheet and layout (catalog `spritetype` 0-3: 32x32,
+    32x64, 64x32, 64x64). It decodes sheets on demand.
+  - `resolve(appearance_id, count, sub_type, x, y, floor)`: returns the 32x32 cells to draw,
+    each with its pixel offset. The pattern is chosen as the Tibia client does:
+    - position patterns `x % pattern_width`, `y % pattern_height`, `floor % pattern_depth`;
+    - the stackable count pattern from the count thresholds 1, 2, 3, 4, 5, 10, 25, 50;
+    - fluid and splash sub-types.
+  - In the renderer, a sprite atlas page of 32-pixel cells. Cells are written by sub-rectangle
+    upload, and a cell is evicted when it was least recently drawn in a frame.
+- **Limits.** They are constants of the crate, with a test at each bound. They are
+  client-local and register no wire or server limit.
+  - `appearances` file: at most 8 MiB (the 15.30 file is 5,017,996 bytes).
+  - `catalog-content.json`: at most 2 MiB (1,042,224 bytes).
+  - A compressed sheet: at most 2 MiB. A decompressed sheet: at most 384 x 384 x 4 + 65,536
+    bytes.
+  - `appearance_id`: 1..=65,535 (the 15.30 maximum is 55,117).
+  - Decoded sheets in memory: at most 64, least recently used first out, about 37 MiB.
+  - The GPU sprite atlas page: 2,048 x 2,048, which holds 4,096 cells of 32 pixels (16 MiB
+    RGBA).
+    - When a frame needs more cells than the page holds, the excess entries are drawn with the
+      placeholder cell and counted in a diagnostic counter. The frame does not fail.
+  - `MAX_BATCH_QUADS` rises from 16,384 to 81,920, which covers 2,016 tiles x 10 entries x 4
+    cells, with a test on the instance buffer size.
+  - No derived cache is written to disk; decoding happens in memory, on demand.
+- **Acceptance (over the real `content/assets/files/`):**
+  - the pinned catalogue and appearances load, with 43,516 objects and a maximum id of 55,117;
+  - a corrupted byte in a sheet, the catalogue or the appearances file fails closed with an
+    error, and the test asserts the error;
+  - known ids decode to their recorded frame size and first-pixel colour:
+    - a ground with a 4x4 position pattern resolves to different cells at `(0,0)` and `(1,0)`;
+    - a stackable resolves to different cells at counts 1, 5 and 100;
+    - a 64x64 object resolves to 4 cells with their offsets;
+  - an unknown id, id 0 and id 65,536 return an error, not a panic;
+  - the sheet cache holds 64 sheets and evicts the least recently used one on the 65th;
+  - the atlas page evicts least recently drawn cells, and a frame with 4,097 distinct cells
+    draws one placeholder cell and counts it;
+  - a sheet decode stays under a measured bound, recorded in the task record.
+- **Not in scope:**
+  - animation, outfits, creatures, effects, missiles and light;
+  - inventory and container sprites;
+  - a disk cache;
+  - packaging the assets in an installer.
+
+### 2.3 MAP-CLIENT-1 (the client draws the imported map)
 
 ```yaml
 task_id: OTV2-20261004-map-client-1
 decision: ARCH-MAP-WIRE-1 §1.1-§1.6; MAP-WIRE-1 contract (accepted)
-depends_on: [OTV2-20261004-map-wire-2]
+depends_on: [OTV2-20261004-map-wire-2, OTV2-20261004-map-sprite-1]
 worker: oteryn-impl-worker
 review: Codex, on the frozen head
 branch: agent/map-client-1-20261004
-base: main, after MAP-WIRE-2 merges
+base: main, after MAP-WIRE-2 and MAP-SPRITE-1 merge
 owned_paths:
   - crates/session/src/lib.rs                # select capability 18, decode domain 17, re-export the view types
   - apps/client/src/map_view.rs              # new: client view state (snapshot, deltas, window, resync)
+  - apps/client/src/map_draw.rs              # new: tile stacks to sprite quads through oteryn-client-assets
   - apps/client/src/scene.rs                 # draw the map view instead of the fixture cells when present
   - apps/client/src/input.rs                 # step timing from the tile ground speed
-  - apps/client/src/lib.rs                   # the module line only
+  - apps/client/src/lib.rs                   # module lines and the asset directory option
+  - apps/client/Cargo.toml                   # the oteryn-client-assets dependency
   - apps/game-server/src/movement/speed.rs   # the bundle ground-speed source for a bundle World
   - docs/agents/tasks/archive/OTV2-20261004-map-client-1.md
 validation:
@@ -218,26 +328,36 @@ validation:
   - the session selects capability 18 and decodes domain-17 snapshots and deltas;
   - the client view state: it applies deltas, drops tiles that leave the window, and resyncs on a
     header mismatch;
-  - the scene draws each tile's stack bottom-up, with floors above the actor's drawn in
-    perspective;
+  - drawing (`map_draw.rs`):
+    - each tile's stack is drawn bottom-up by its `appearance_id` through MAP-SPRITE-1, with
+      displacement, elevation and the draw-order flags;
+    - floors above the actor's are drawn in perspective;
+    - an `appearance_id` of 0, or one that fails to resolve, is drawn with the placeholder cell
+      for its `item_definition_ref`;
+  - the asset directory is `content/assets/files/` by default, or `--assets <dir>`. When the
+    pinned catalogue is missing or does not match, the client logs it once and draws
+    placeholders;
   - a click on a base entry builds the 40-byte target;
   - the joint ground-speed switch (§1.6).
-- **Drawing assets.** Each `item_definition_ref` maps deterministically to a cell of the existing
-  placeholder atlas (`crates/placeholder-assets`), with the ground layer drawn as terrain. Real
-  appearance sprites are not in this packet (owner question 5).
 - **Acceptance:**
   - a session test over a recorded domain-17 snapshot and delta stream reproduces the server's
     window tile by tile;
   - a header mismatch triggers `ResyncRequest` and draws nothing from that delta;
-  - a scene test draws a known tile stack in the right order and floors in perspective;
+  - a draw test turns a known tile stack into quads in stack order:
+    - with real cells for known appearance ids;
+    - with the placeholder cell for id 0 and for an unknown id;
+    - with floors in perspective;
+  - with the asset directory missing, the client still draws the map with placeholders;
   - a `USE` click on a base entry sends the 40-byte target that MAP-WIRE-2 resolves, and an added
     or Ground item sends its handle;
   - on a bundle World, a step onto a tile with a non-150 ground speed takes the same duration on
     the client and the server, and the fixture World still uses 150 on both;
   - the end-to-end harness (`oteryn-synthetic-client-harness`) walks a step on a test bundle with
     the client view matching the server.
-- **Not in scope:** real sprites and appearance assets, light, minimap, house interiors, and
-  offering capability 18 on a live node.
+- **Not in scope:**
+  - animation, light and minimap;
+  - house interiors;
+  - offering capability 18 on a live node.
 
 ## 3. Rejected options
 
@@ -251,6 +371,12 @@ validation:
 - **All 64 base entries per tile.** A tile would grow to about 2 KiB, and a step delta would pass
   the 262,144-byte delta limit. Tibia shows 10.
 - **Ground items in both domains.** The client would draw them twice.
+- **Placeholder atlas cells only.** The owner chose real 15.30 sprites (Q5b).
+- **A client-side table from `item_definition_ref` to appearance.** The reference is a compact
+  id of one content revision (format §3), so the table would need versioned distribution. The
+  server already holds the palette key, which names the appearance, so it sends `appearance_id`.
+- **A prepared on-disk sprite cache, as in the experiment.** On-demand decoding in memory is
+  enough for the viewport, and a disk cache adds invalidation for no measured need.
 
 ## 4. Decision test
 
@@ -277,7 +403,7 @@ validation:
    - A requirement for offline or client-side map rendering, such as a full minimap.
    - A client that must see more than 10 entries per tile.
 5. **What is deliberately not decided?**
-   - Real sprites and appearance assets.
+   - Animation, outfits and effects sprites.
    - Light, weather and minimap.
    - The house interior wire.
    - Creatures on tiles (they stay in domain 1).
@@ -286,10 +412,11 @@ validation:
 **Risks and trade-offs.**
 - A streamed view costs bandwidth on every step, which the client file would avoid. In return
   there is no client map distribution and no version skew.
-- Placeholder drawing makes the map navigable but not faithful until the sprite question is
-  decided.
+- Real sprites make the client depend on the 15.30 asset files. A missing or mismatched file
+  falls back to placeholders, so the map stays navigable.
 - The capability-18 refusal on bundle Worlds strands older clients by design.
 
 **Proof conditions.**
 - The MAP-WIRE-2 size and viewport measurements are within the stated bounds.
+- MAP-SPRITE-1 decodes the pinned 15.30 assets and fails closed on a corrupted file.
 - MAP-CLIENT-1's end-to-end window match holds.

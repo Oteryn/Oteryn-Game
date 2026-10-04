@@ -22,7 +22,7 @@ owned_paths:
   - docs/agents/tasks/archive/OTV2-20261004-arch-map-wire-1.md
 public_contracts: []
 depends_on: []
-blocks: [MAP-WIRE-2, MAP-CLIENT-1]
+blocks: [MAP-WIRE-2, MAP-SPRITE-1, MAP-CLIENT-1]
 cross_repository_coordination_id: null
 external_repositories: []
 ```
@@ -37,16 +37,22 @@ external_repositories: []
 - Wire target (#1792 §1.8): the 32-byte bundle digest plus the 8-byte bundle placement key in
   `WorldObjectTargetV1.placement`, resolved to the canonical `PlacementKey` through the
   RewardClaim binding. No durable change.
-- Packets: MAP-WIRE-2 (hard, protocol review) and MAP-CLIENT-1 (impl, with the joint ground-speed
-  switch of the ADR-0021 MAP-LOAD-1 amendment), in that order after owner acceptance and
-  MAP-OVERLAY-1a.
+- Packets: MAP-WIRE-2 (hard, protocol review), MAP-SPRITE-1 (impl, the 15.30 sprite pipeline)
+  and MAP-CLIENT-1 (impl, with the joint ground-speed switch of the ADR-0021 MAP-LOAD-1
+  amendment), after owner acceptance and MAP-OVERLAY-1a.
 - #1793 Codex round 1:
   - P1 4179313297: capability 18 requires 6 and 4 (handles and `ItemTargetV1`).
   - P1 4179313303: the map-view handle budget is `MAPW-RL-04` = 1,024, given nearest-first,
     with a `display_only` origin beyond it. The session bound is `ITEMV0-RL-03-MAP-VIEW` = 1,325,
     or 1,661 with capability 14.
   - P2 4179313306: `ground_speed` is bounded to `0..=1000`, with tests at 1000, absent and 1001.
-- No code, registry or wire change.
+- Owner decisions on #1793: Q1a MAP-WIRE-1 accepted, effective once Codex review of the fixed
+  head is clean; Q2a digest plus placement key; Q3a 10 entries plus `more`; Q4a server-streamed
+  viewport; Q5b real 15.30 appearance sprites, with the client assets distributed.
+- Q5b adds `MapItemV1.appearance_id` (from the palette key, 0..=65,535) to the candidate and
+  splits the sprite pipeline into MAP-SPRITE-1, parallel to MAP-WIRE-2. MAP-CLIENT-1 depends on
+  both.
+- No code or registry change.
 
 ## Validation
 
