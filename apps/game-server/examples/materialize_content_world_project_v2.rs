@@ -207,7 +207,7 @@ const NPC_APPEARANCE_VISUAL: &[u8] = include_bytes!(
 const NPC_APPEARANCE_VISUAL_SHA256: &str =
     "c99f2328ece4d00437e38cc1e712baac58d5c065ca466589a87f388348d44641";
 const NPC_APPEARANCE_VISUAL_PREDECESSOR: &str =
-    "f3d92f1730b428b4eab390e824cd22c96d54fdce0305710b7eee8e347cdeec8d";
+    "665f9035420e54e0651246b8709e72bbacfdae6616bb6fc49297dfb1f30de541";
 const NPC_APPEARANCE_FOLLOWUP: &[u8] = include_bytes!(
     "../../../docs/agents/evidence/OTV2-20261002-npc-appearance-r26/native-enrichment.json"
 );
