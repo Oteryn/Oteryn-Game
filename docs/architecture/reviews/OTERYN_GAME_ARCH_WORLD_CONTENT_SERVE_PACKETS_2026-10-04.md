@@ -320,7 +320,12 @@ placements are bound.
       Each value must pass its `ProductionKey`, `ProductionAtom` or `Sha256HexDigest` check, or
       activation refuses. Nothing in `GenerationIdentity` comes from outside this block, the
       `WorldId` above and the two artifact digests;
-    - the bundle digest, the pin's `inputs_digest` (§1.2) and the pin's `content_revision`;
+    - every `BundlePins` field of the pin, in that struct's field order: `digest` (the bundle
+      digest), `project_format_version`, `world_schema_version`, `content_revision` and
+      `production`, the last as one byte (`0` non-production, `1` production). A production and
+      a non-production pin over the same bundle therefore give two digests, and an issuance made
+      for one never boots the other;
+    - the pin's `inputs_digest` (§1.2);
     - the World's `ruleset_revision` and `sim_revision`, which the chest `USE` occurrence binds
       (§1.6), and the bundle's whole `Identity` (§1.2);
     - the pin's `entry_start`, as native `(x, y, floor)`;
@@ -704,6 +709,11 @@ validation:
     - the `WorldId` alone, with the same bundle and claims (this also changes
       `client_artifact_digest`);
     - the pin's `inputs_digest`;
+    - the pin's `production` flag alone (`false` to `true`), with every other pin field, the
+      bundle and the claims unchanged: a non-production issuance then refuses boot with
+      `ContentActivation("digest")`, and the production boot gate (§1.5) runs on a fresh
+      issuance;
+    - the pin's `project_format_version` or `world_schema_version`;
     - one non-period fact of a creature the spawn frame names, for example its speed, in the
       embedded definitions, with the bundle unchanged;
     - the `ruleset_revision` or `sim_revision`;

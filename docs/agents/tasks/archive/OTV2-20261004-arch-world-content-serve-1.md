@@ -131,6 +131,10 @@ external_repositories: []
   - Self-audit against `StagedGeneration::stage`, `GenerationIdentity`,
     `ProductionArtifactMetadata`, `verify_expected`, `resolve_chest`, `prepare_chest_use`, the
     MINT commit, the reward-claim field census and the bestiary loader.
+- #1792 Codex round 10 (CP D668), on `9e929c71`:
+  - P1 4179633729: the server artifact encodes every `BundlePins` field, `production`
+    included, so flipping only `production` changes the digest and a non-production issuance
+    cannot boot a production pin (§1.5, §2.4).
 - Durable rows keep canonical identities; the bundle `placement_key` stays in memory. No
   migration, wire or contract change (§1.6-§1.8).
 
