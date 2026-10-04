@@ -227,7 +227,7 @@ const NPC_QUEST_DIALOGUE: &[u8] = include_bytes!(
 const NPC_QUEST_DIALOGUE_SHA256: &str =
     "4dfa43f6fda9a58dcf9f7e83da21203f63d1f7b66f0e6136f34848ee5ccd6d47";
 const NPC_QUEST_DIALOGUE_PREDECESSOR: &str =
-    "28a2c3140b89792f7c5cf9d1d74aa85b0fea06878388174bd93c270528089c1f";
+    "78de975bef145dfce764eba857e2936fceb3e9a5f70cf565f0f6ce6e63c44fbb";
 fn quest_dialogue_provisional(
     draft: ProjectV2Draft,
 ) -> Result<ProjectV2Draft, Box<dyn std::error::Error>> {
