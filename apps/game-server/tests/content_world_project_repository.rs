@@ -11,58 +11,58 @@ use std::path::{Path, PathBuf};
 const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "assets/catalog.json",
-        0,
-        "0000000000000000000000000000000000000000000000000000000000000000",
+        56,
+        "fa61df1076ef66e8c69b6182db1b13fe2ccb92653ab16a148d1fbaf773adb344",
     ),
     (
         "content.lock.json",
-        0,
-        "0000000000000000000000000000000000000000000000000000000000000000",
+        415,
+        "b2470a5ccf485dc979aeb572af9ef4c2469fd1a9d66f4a772112736f2ef550f9",
     ),
     (
         "definitions/declarations.json",
-        0,
-        "0000000000000000000000000000000000000000000000000000000000000000",
+        26_680_637,
+        "575311f1ed260850b4d5c343f6f6fba5b0d77861230147d251f171cd029c0059",
     ),
     (
         "definitions/reference.json",
-        0,
-        "0000000000000000000000000000000000000000000000000000000000000000",
+        26_660_311,
+        "50ddaa646c5fc55ad2c81d6c029efc8d515d1f952633ce9f93150be282e16243",
     ),
     (
         "editor/author.json",
-        0,
-        "0000000000000000000000000000000000000000000000000000000000000000",
+        120_557,
+        "14c6e3163baf17096545daa897a866df0b5ee23721c26312867ffa73447bbfdb",
     ),
     (
         "manifest.json",
-        0,
-        "0000000000000000000000000000000000000000000000000000000000000000",
+        1956,
+        "7f850e308982d7e7ffc8db05ec2d43606967147d8afcca1e2c0b40e04b79fd7b",
     ),
     (
         "presentations/bindings.json",
-        0,
-        "0000000000000000000000000000000000000000000000000000000000000000",
+        73,
+        "b7d27b2d7fde6370b7ae56c2c60412f2b213a4a5e92e7db82dd4b59a64359cd7",
     ),
     (
         "project.json",
-        0,
-        "0000000000000000000000000000000000000000000000000000000000000000",
+        407,
+        "e5410bdbfa3efa88a3e596a7af98ae5970b2a37cdc408ba47b3dc8ed0d480a91",
     ),
     (
         "provenance/imports.json",
-        0,
-        "0000000000000000000000000000000000000000000000000000000000000000",
+        6_766_415,
+        "3441d726bc99c0f43c1821342bc5d3383cc364e3a8d095b14376fe39f1bde4c9",
     ),
     (
         "provenance/sources.json",
-        0,
-        "0000000000000000000000000000000000000000000000000000000000000000",
+        1_619_723,
+        "51c07abc535935424fe636039927f29f0676327743cebb86c412125f1ffe3f1f",
     ),
     (
         "worlds/world.json",
-        0,
-        "0000000000000000000000000000000000000000000000000000000000000000",
+        72,
+        "0dcc223c4a904834a58b3ad2b1c7882636cc66c9123aafdb25bb69a1d4670dfa",
     ),
 ];
 /// Successor authoring-tree directory markers that coexist under the legacy package root.
@@ -114,7 +114,7 @@ const WORLD_CATALOGUE_SHARDS: [(&str, &str); 4] = [
 const TREE_CONTRACT: &str =
     "docs/agents/evidence/OTV2-20260925-full-game-content-ruleset-tree-v1.json";
 const TREE_DIRECTORY_NODES: usize = 97;
-const TREE_SHA256: &str = "0000000000000000000000000000000000000000000000000000000000000000";
+const TREE_SHA256: &str = "ab5b6aea72976b0533cc5476aa08e4d6d9076da84be70a6e1f975d4632af36b9";
 /// A12 (ITEM-ID-1b): the protected Item family less the 4,590 D149 records, on Tibia keys,
 /// plus the 404 donor epoch-2 records and the 60 appearance-only records (ITEM-ADD-1).
 const ITEMS: usize = 34_031;
