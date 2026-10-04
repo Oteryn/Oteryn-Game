@@ -73,8 +73,15 @@
   `PremiumConsumer` directly. `premium_current(account_id)` is a gate whose closure returns
   `status == Current`; it never acts on `NotActivated`.
   - While no latch row is held, the gate opens a transaction, takes the shared lock, reads the
-    table, decides the status, runs the closure with that transaction as `tx`, and commits only
-    after the closure returns. While a row is held, it decides from memory and `tx` is `None`.
+    table and decides the status. If the status is `NotActivated`, it runs the closure with that
+    transaction as `tx` and commits only after the closure returns. For any other status it ends
+    that transaction before the closure, and `tx` is `None`. While a row is held, it decides from
+    memory and `tx` is `None`.
+  - The gate decides the status before it runs the closure, and runs the closure once. When the
+    decision needs a latch write (step 6 below), the gate first ends its shared transaction. No
+    closure has run and nothing was written, so it rolls back. Only then does it latch. After the
+    latch the row is held, so the closure runs with `tx = None`. A connection that holds the
+    shared lock therefore never waits for the exclusive one (#1743 P1 4177096277).
   - `PreDelivery<'g>` is neither `Copy` nor `Clone` and borrows the gate, so the type system
     keeps `NotActivated` from leaving the closure. A bypass takes `&PreDelivery` as an argument:
     the Wheel exception's `cast_spell` path and GUILD-1's founding and rank writes cannot apply
@@ -82,8 +89,6 @@
   - `NotActivated`: Premium has not started, so a consumer whose rule has a pre-delivery
     behaviour (GUILD-0 §3.2 and §3.3, owner answer G1 a; WHEEL-0 §6.2) applies it inside the
     closure.
-  - `NotActivated`: Premium has not started, so a consumer whose rule has a pre-delivery
-    behaviour (GUILD-0 §3.2 and §3.3, owner answer G1 a) applies it.
   - `Current` and `NotCurrent`: Premium has started, and the rule is enforced.
 - The account is the admitted controller's `account_id`, which the connection already holds. It
   is passed down with the command, never looked up from the actor.
@@ -147,10 +152,15 @@
   5. **The table is empty, an activation exists and `upper < S`,** so the switch-over has
      certainly not happened: `NotActivated`.
   6. **The table is empty, an activation exists and `upper >= S`,** so the switch-over may have
-     happened. The caller's shared transaction gives no bypass. A separate transaction takes
-     the exclusive lock and inserts the row; the returned row, or the winner's on conflict, is
-     held, and step 1 applies. If the write fails, the status is `NotCurrent` and nothing is
-     held.
+     happened, and no bypass applies. The gate latches in three steps (#1743 P1 4177096277):
+     - It rolls back its shared transaction, which releases the shared lock.
+     - It opens a new transaction, sets `lock_timeout` to 5 s, takes the exclusive lock and runs
+       the insert. That transaction waits only for other connections' in-flight bypasses, each of
+       which lasts one command, and never for its own caller.
+     - It holds the returned row, or the winner's row on conflict, and step 1 applies.
+
+     A lock timeout or a failed write gives `NotCurrent` and holds nothing. The next command
+     retries from step 2.
   Once any row exists, nothing returns `NotActivated` again on any node: not a clock rollback, a
   VM restore, a restart, a larger uncertainty, a node that booted before `S`, nor a deployment
   that drops or changes the activation.
@@ -280,6 +290,17 @@ Acceptance tests:
   pauses it). A's insert commits only after B's cast is applied and B's gate commits. A cast
   that B starts after A's commit reads `NotCurrent` and is refused. `NotActivated` cannot be
   stored outside the closure; a compile-fail test shows it.
+- Activation does not hang (#1743 P1 4177096277), on a real Postgres connection pool:
+  - The first command with `upper >= S` on a node with an empty table latches the row and
+    returns `Current` or `NotCurrent` within a 10 s `tokio::time::timeout`.
+  - Its shared transaction has ended before the exclusive request; a test hook records the order.
+  - Two nodes' first post-`S` commands, started together, both return within the same timeout.
+    Exactly one insert wins, and neither gets a deadlock error.
+  - With another connection's bypass paused while holding the shared lock, the latch waits. It
+    completes once that bypass commits.
+  - When the bypass is paused for longer than the 5 s `lock_timeout`, the command returns
+    `NotCurrent`, holds nothing and writes no row. The next command after the bypass commits
+    latches.
 - Configuration rollback (#1738 P1 4176993801): with a row in the table, a runtime built with
   activation `None`, or with a different id or `S`, reads `NotCurrent` for every account, and
   never `NotActivated`.
@@ -358,6 +379,13 @@ GUILD-1 can still start now, because GUILD-0 says it does not wait for houses.
 - **Re-reading the latch without a fence.** A latch committed between the read and the bypass
   would let the bypass apply after the switch-over (#1743 P1 4177047054). A seeded row locked
   `FOR SHARE` needs an UPDATE grant on the latch, and the advisory lock does not.
+- **Taking the exclusive lock in a second transaction while the caller's shared transaction is
+  open.** The second transaction runs on another connection, so it waits for the caller, and the
+  caller waits for it: the first post-`S` command hangs (#1743 P1 4177096277).
+- **Upgrading the shared lock to exclusive in the caller's transaction.** This needs no second
+  connection, but two nodes that both hold the shared lock and upgrade together deadlock. Postgres
+  then aborts one only after `deadlock_timeout`. Releasing first and latching in a fresh
+  transaction has no such cycle.
 - **A latch read only at boot.** A node that booted before `S` would never see another node's
   row (#1738 P1 4176993795).
 - **Keying the delivered state on the configured activation.** A deployment that drops the

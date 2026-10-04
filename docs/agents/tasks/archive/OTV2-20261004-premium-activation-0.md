@@ -51,6 +51,13 @@ external_repositories: []
   `NotActivated(PreDelivery<'g>)` cannot leave the closure. The Wheel cast and GUILD-1's writes
   apply their bypass inside it, under the shared lock; there is a test where the latch commits
   between read and cast (§1.2, §2.1, §2.2, §4).
+- #1743 P1 4177096277 (owner D494): the latch no longer deadlocks against the caller's shared lock.
+  - The gate decides first.
+  - On `upper >= S` it rolls back its shared transaction, then latches in a fresh transaction under
+    a 5 s `lock_timeout`; a timeout gives `NotCurrent`.
+  - The closure then runs with the row held.
+  - Bounded-timeout acceptance tests cover one node, two concurrent nodes and a paused bypass.
+  - The same-transaction upgrade is rejected (§1.2, §2.1, §4).
 - No code, contract, wire or migration change.
 
 ## Validation
