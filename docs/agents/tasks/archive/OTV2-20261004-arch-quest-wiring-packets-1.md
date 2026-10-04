@@ -44,6 +44,12 @@ external_repositories: []
 - **#1789 round 2, 4179210229:** `ots_chests.py` preserves each chest's storage expression and
   written value in `samples/chests/`, which joins the owned paths, and `quest_state_lowering.py`
   constructs one bounded `SET` transition per exact match (§1.4, §2.2).
+- **#1789 round 3 (owner `1a`), 4179239530 and 4179239532:**
+  - `quest_content.schema.json` admits `progress_write` on a claim and `quest_transition` on a
+    placement, and it joins the CHEST-QUEST-BIND-1 owned paths with `verify_quest_schema.py`
+    (§1.4, §2.2);
+  - the refused count is 387 transitions, with 168 explicit `COMPUTED` and 221 inexact effects
+    reported separately and 2 in both (§1.1, §1.3, §2.1, §4).
 - No code, contract or wire change.
 
 ## Validation

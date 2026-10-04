@@ -45,7 +45,8 @@ obligation path in `durability/reward_claim_mint.rs` and the drain in
 - `node/serve.rs` calls it next to the charm and achievement catalogues. An error returns
   `BootError::ContentActivation("quest state catalogue")`, so the node never becomes ready. An
   empty or partial catalogue is not a fallback.
-- One event line reports the quest, transition and not-supported counts. Those counts need a
+- One event line reports the quest, transition and not-supported counts. The not-supported count
+  is the §1.3 number of refused transitions, with its explicit and inexact categories. Those counts need a
   read-only accessor on `QuestStateCatalogue` (`quest/mod.rs`) or `LoweredQuestState`
   (`quest/loader.rs`). The accessor is the only change allowed in those files.
 - The catalogue reaches gameplay as an `Arc<QuestStateCatalogue>` through a new
@@ -63,15 +64,33 @@ obligation path in `durability/reward_claim_mint.rs` and the drain in
 - A Character pinned to another revision keeps the existing refusal. This batch adds no migration
   between revisions.
 
-### 1.3 Inexact effects stay refused
+### 1.3 Computed transitions stay refused
 
-The 221 effects that load as `Computed` keep refusing their transitions with `NOT_SUPPORTED`. Boot
-does not fail for them; they are counted in the event line.
+`quest/loader.rs` loads an effect as `Computed` in two cases: the source effect is an explicit
+`COMPUTED`, or its `from` was not lowered exactly (`from_exact: false`). In the committed catalogue
+of `origin/main` 69f171fc there are 168 explicit `COMPUTED` effects and 221 inexact effects, and 2
+effects are both. Each sits in its own transition, so 387 transitions (168 + 221 - 2) refuse with
+`NOT_SUPPORTED`. Boot does not fail for them. The event line reports the 387 refused transitions,
+and also the two categories separately: 168 explicit, 221 inexact. The acceptance test takes all
+three numbers from the loaded catalogue, not from constants.
 
 ### 1.4 Chest bindings are generated from exact matches only
 
 - A reward-claim placement gains an optional `quest_transition`, following the `achievement`
   precedent. A value must carry the `oteryn:quest-transition/` prefix, or content activation fails.
+- **The schema admits both new fields.** In `quest_content.schema.json`, both `$defs/claim` and
+  `$defs/placement` use `additionalProperties: false`, so `validate_quest_content.py` rejects the
+  regenerated `samples/chests/claims.json` until the schema names them:
+  - `$defs/placement` gains an optional `quest_transition`: a string with the pattern
+    `^oteryn:quest-transition/`.
+  - `$defs/claim` gains an optional `progress_write`, an object with `additionalProperties: false`.
+    It requires `marker` (a string), `expression` (a string), `value` (an integer or `null`) and
+    `source` (an object with `additionalProperties: false` that requires `script`, a string, and
+    `line`, an integer of at least 1). It allows `reason`, a string, which is required when
+    `value` is `null` and forbidden otherwise.
+  - Neither field is added to `required`, so existing documents stay valid.
+  - `verify_quest_schema.py` gains positive and negative cases for both fields: a valid record, a
+    wrong prefix, an unknown key in `progress_write`, and a `null` value without a `reason`.
 - **Key normalization before the exact comparison.** `ots_chests.py` `marker()` returns the
   storage path without a namespace: the slugged parts of the storage expression after its root,
   joined by `/`, for example `quest/u8_4/...`. A lowered track `source_key` is
@@ -175,7 +194,8 @@ validation:
   - with the catalogue present, a quest transition applies and a pending obligation is drained
     once;
   - a Character on another content revision is refused with `ProgressionContextMismatch`;
-  - `Computed` transitions still refuse with `NOT_SUPPORTED`.
+  - `Computed` transitions still refuse with `NOT_SUPPORTED`, and the event line's refused count
+    and categories equal the §1.3 numbers computed from the loaded catalogue.
 - **Not in scope:** chest bindings (§2.2), new quest content, a revision migration, any change to
   the quest loader or the lowering generator other than the count accessor.
 
@@ -193,6 +213,8 @@ owned_paths:
   - tools/content-schema/quest-authoring/ots_chests.py
   - tools/content-schema/quest-authoring/samples/chests/        # regenerated with progress_write
   - tools/content-schema/quest-authoring/quest_state_lowering.py
+  - tools/content-schema/quest-authoring/quest_content.schema.json  # the §1.4 fields only
+  - tools/content-schema/quest-authoring/verify_quest_schema.py     # their §1.4 cases
   - tools/content-schema/reward-claim-authoring/
   - content/interactions/reward_claims/
   - content/quests/missions/quest-state.json
@@ -203,18 +225,22 @@ owned_paths:
   - docs/agents/tasks/archive/OTV2-20261004-chest-quest-bind-1.md
 validation:
   - the generators' own tests, and regeneration with no diff
+  - python tools/content-schema/quest-authoring/run_checks.py
   - cargo fmt --check
   - cargo clippy -p oteryn-game-server --all-targets -- -D warnings
   - cargo test -p oteryn-game-server
   - git diff --check
 ```
 
-- **Builds:** the `progress_write` preservation in `ots_chests.py`, the constructed chest
+- **Builds:** the `progress_write` preservation in `ots_chests.py`, the schema entries for
+  `progress_write` and `quest_transition` with their cases (§1.4), the constructed chest
   transitions in `quest_state_lowering.py`, the placement field and prefix check, generation from
   exact matches with the §1.4 normalization, the reader in `RewardClaimPlacement`, `resolve_chest` reading it, the boot check
   over the served content, and regenerated content.
 - **Acceptance:**
   - the §1.4 positive and negative vectors, and the golden match count of two;
+  - the regenerated `samples/chests/claims.json` passes `validate_quest_content.py`, and the
+    §1.4 schema cases pass;
   - the two constructed transition keys, each with its `SET` value taken from `progress_write`;
   - a `null` or out-of-bounds value gives no binding;
   - on the §1.5 served path, the Beregar chest records its transition as a pending obligation
@@ -266,7 +292,7 @@ validation:
 5. **What is deliberately not decided?**
    - Serving imported placements and the imported map on a node (§1.5).
    - Revision migration.
-   - Lowering of the 221 `Computed` effects.
+   - Lowering of the 387 transitions that load as `Computed` (§1.3).
    - Quest triggers other than chests, such as doors, NPC dialogue and kills.
    - Curated (`chest_quest_links.json`) or inferred bindings.
 
