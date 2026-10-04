@@ -1,0 +1,923 @@
+{
+ "counts": {
+  "fields": 32,
+  "items": 27
+ },
+ "facts": [
+  {
+   "field_path": "skill_modifiers.modifiers",
+   "item_key": "oteryn:item.tibia.i3087",
+   "value": [
+    {
+     "evaluation_phase": {
+      "state": "UNKNOWN"
+     },
+     "kind": "SKILL_FIST",
+     "parameter": {
+      "state": "KNOWN",
+      "value": {
+       "kind": "SIGNED_POINTS",
+       "value": 6
+      }
+     },
+     "priority": {
+      "state": "UNKNOWN"
+     },
+     "target_domain": {
+      "state": "UNKNOWN"
+     }
+    }
+   ]
+  },
+  {
+   "field_path": "skill_modifiers.modifiers",
+   "item_key": "oteryn:item.tibia.i3090",
+   "value": [
+    {
+     "evaluation_phase": {
+      "state": "UNKNOWN"
+     },
+     "kind": "SPEED",
+     "parameter": {
+      "state": "KNOWN",
+      "value": {
+       "kind": "SIGNED_POINTS",
+       "value": 30
+      }
+     },
+     "priority": {
+      "state": "UNKNOWN"
+     },
+     "target_domain": {
+      "state": "UNKNOWN"
+     }
+    }
+   ]
+  },
+  {
+   "field_path": "skill_modifiers.modifiers",
+   "item_key": "oteryn:item.tibia.i3094",
+   "value": [
+    {
+     "evaluation_phase": {
+      "state": "UNKNOWN"
+     },
+     "kind": "SKILL_SWORD",
+     "parameter": {
+      "state": "KNOWN",
+      "value": {
+       "kind": "SIGNED_POINTS",
+       "value": 4
+      }
+     },
+     "priority": {
+      "state": "UNKNOWN"
+     },
+     "target_domain": {
+      "state": "UNKNOWN"
+     }
+    }
+   ]
+  },
+  {
+   "field_path": "skill_modifiers.modifiers",
+   "item_key": "oteryn:item.tibia.i3095",
+   "value": [
+    {
+     "evaluation_phase": {
+      "state": "UNKNOWN"
+     },
+     "kind": "SKILL_AXE",
+     "parameter": {
+      "state": "KNOWN",
+      "value": {
+       "kind": "SIGNED_POINTS",
+       "value": 4
+      }
+     },
+     "priority": {
+      "state": "UNKNOWN"
+     },
+     "target_domain": {
+      "state": "UNKNOWN"
+     }
+    }
+   ]
+  },
+  {
+   "field_path": "skill_modifiers.modifiers",
+   "item_key": "oteryn:item.tibia.i3096",
+   "value": [
+    {
+     "evaluation_phase": {
+      "state": "UNKNOWN"
+     },
+     "kind": "SKILL_CLUB",
+     "parameter": {
+      "state": "KNOWN",
+      "value": {
+       "kind": "SIGNED_POINTS",
+       "value": 4
+      }
+     },
+     "priority": {
+      "state": "UNKNOWN"
+     },
+     "target_domain": {
+      "state": "UNKNOWN"
+     }
+    }
+   ]
+  },
+  {
+   "field_path": "skill_modifiers.modifiers",
+   "item_key": "oteryn:item.tibia.i3099",
+   "value": [
+    {
+     "evaluation_phase": {
+      "state": "UNKNOWN"
+     },
+     "kind": "SUPPRESS_DRUNK",
+     "parameter": {
+      "state": "KNOWN",
+      "value": {
+       "kind": "BOOLEAN",
+       "value": true
+      }
+     },
+     "priority": {
+      "state": "UNKNOWN"
+     },
+     "target_domain": {
+      "state": "UNKNOWN"
+     }
+    }
+   ]
+  },
+  {
+   "field_path": "skill_modifiers.modifiers",
+   "item_key": "oteryn:item.tibia.i6300",
+   "value": [
+    {
+     "evaluation_phase": {
+      "state": "UNKNOWN"
+     },
+     "kind": "SKILL_SHIELD",
+     "parameter": {
+      "state": "KNOWN",
+      "value": {
+       "kind": "SIGNED_POINTS",
+       "value": -10
+      }
+     },
+     "priority": {
+      "state": "UNKNOWN"
+     },
+     "target_domain": {
+      "state": "UNKNOWN"
+     }
+    }
+   ]
+  },
+  {
+   "field_path": "protection.resistances",
+   "item_key": "oteryn:item.tibia.i6300",
+   "value": [
+    {
+     "kind": "DEATH",
+     "percent": {
+      "state": "KNOWN",
+      "value": {
+       "denominator": 1,
+       "numerator": 5
+      }
+     }
+    }
+   ]
+  },
+  {
+   "field_path": "protection.resistances",
+   "item_key": "oteryn:item.tibia.i9018",
+   "value": [
+    {
+     "kind": "FIRE_FIELD",
+     "percent": {
+      "state": "KNOWN",
+      "value": {
+       "denominator": 1,
+       "numerator": 90
+      }
+     }
+    }
+   ]
+  },
+  {
+   "field_path": "skill_modifiers.modifiers",
+   "item_key": "oteryn:item.tibia.i11585",
+   "value": [
+    {
+     "evaluation_phase": {
+      "state": "UNKNOWN"
+     },
+     "kind": "SPEED",
+     "parameter": {
+      "state": "KNOWN",
+      "value": {
+       "kind": "SIGNED_POINTS",
+       "value": 300
+      }
+     },
+     "priority": {
+      "state": "UNKNOWN"
+     },
+     "target_domain": {
+      "state": "UNKNOWN"
+     }
+    },
+    {
+     "evaluation_phase": {
+      "state": "UNKNOWN"
+     },
+     "kind": "SUPPRESS_DROWN",
+     "parameter": {
+      "state": "KNOWN",
+      "value": {
+       "kind": "BOOLEAN",
+       "value": true
+      }
+     },
+     "priority": {
+      "state": "UNKNOWN"
+     },
+     "target_domain": {
+      "state": "UNKNOWN"
+     }
+    }
+   ]
+  },
+  {
+   "field_path": "skill_modifiers.modifiers",
+   "item_key": "oteryn:item.tibia.i16096",
+   "value": [
+    {
+     "evaluation_phase": {
+      "state": "UNKNOWN"
+     },
+     "kind": "MAGIC_LEVEL_POINTS",
+     "parameter": {
+      "state": "KNOWN",
+      "value": {
+       "kind": "SIGNED_POINTS",
+       "value": 1
+      }
+     },
+     "priority": {
+      "state": "UNKNOWN"
+     },
+     "target_domain": {
+      "state": "UNKNOWN"
+     }
+    }
+   ]
+  },
+  {
+   "field_path": "skill_modifiers.modifiers",
+   "item_key": "oteryn:item.tibia.i16115",
+   "value": [
+    {
+     "evaluation_phase": {
+      "state": "UNKNOWN"
+     },
+     "kind": "MAGIC_LEVEL_POINTS",
+     "parameter": {
+      "state": "KNOWN",
+      "value": {
+       "kind": "SIGNED_POINTS",
+       "value": 1
+      }
+     },
+     "priority": {
+      "state": "UNKNOWN"
+     },
+     "target_domain": {
+      "state": "UNKNOWN"
+     }
+    }
+   ]
+  },
+  {
+   "field_path": "protection.resistances",
+   "item_key": "oteryn:item.tibia.i16264",
+   "value": [
+    {
+     "kind": "ENERGY",
+     "percent": {
+      "state": "KNOWN",
+      "value": {
+       "denominator": 1,
+       "numerator": 8
+      }
+     }
+    },
+    {
+     "kind": "PHYSICAL",
+     "percent": {
+      "state": "KNOWN",
+      "value": {
+       "denominator": 1,
+       "numerator": 10
+      }
+     }
+    }
+   ]
+  },
+  {
+   "field_path": "skill_modifiers.modifiers",
+   "item_key": "oteryn:item.tibia.i22766",
+   "value": [
+    {
+     "evaluation_phase": {
+      "state": "UNKNOWN"
+     },
+     "kind": "MAGIC_LEVEL_POINTS",
+     "parameter": {
+      "state": "KNOWN",
+      "value": {
+       "kind": "SIGNED_POINTS",
+       "value": 1
+      }
+     },
+     "priority": {
+      "state": "UNKNOWN"
+     },
+     "target_domain": {
+      "state": "UNKNOWN"
+     }
+    }
+   ]
+  },
+  {
+   "field_path": "skill_modifiers.modifiers",
+   "item_key": "oteryn:item.tibia.i23528",
+   "value": [
+    {
+     "evaluation_phase": {
+      "state": "UNKNOWN"
+     },
+     "kind": "SKILL_AXE",
+     "parameter": {
+      "state": "KNOWN",
+      "value": {
+       "kind": "SIGNED_POINTS",
+       "value": 4
+      }
+     },
+     "priority": {
+      "state": "UNKNOWN"
+     },
+     "target_domain": {
+      "state": "UNKNOWN"
+     }
+    },
+    {
+     "evaluation_phase": {
+      "state": "UNKNOWN"
+     },
+     "kind": "SKILL_CLUB",
+     "parameter": {
+      "state": "KNOWN",
+      "value": {
+       "kind": "SIGNED_POINTS",
+       "value": 4
+      }
+     },
+     "priority": {
+      "state": "UNKNOWN"
+     },
+     "target_domain": {
+      "state": "UNKNOWN"
+     }
+    },
+    {
+     "evaluation_phase": {
+      "state": "UNKNOWN"
+     },
+     "kind": "SKILL_SWORD",
+     "parameter": {
+      "state": "KNOWN",
+      "value": {
+       "kind": "SIGNED_POINTS",
+       "value": 4
+      }
+     },
+     "priority": {
+      "state": "UNKNOWN"
+     },
+     "target_domain": {
+      "state": "UNKNOWN"
+     }
+    }
+   ]
+  },
+  {
+   "field_path": "protection.resistances",
+   "item_key": "oteryn:item.tibia.i23528",
+   "value": [
+    {
+     "kind": "PHYSICAL",
+     "percent": {
+      "state": "KNOWN",
+      "value": {
+       "denominator": 1,
+       "numerator": 5
+      }
+     }
+    }
+   ]
+  },
+  {
+   "field_path": "skill_modifiers.modifiers",
+   "item_key": "oteryn:item.tibia.i25700",
+   "value": [
+    {
+     "evaluation_phase": {
+      "state": "UNKNOWN"
+     },
+     "kind": "MAGIC_LEVEL_POINTS",
+     "parameter": {
+      "state": "KNOWN",
+      "value": {
+       "kind": "SIGNED_POINTS",
+       "value": 1
+      }
+     },
+     "priority": {
+      "state": "UNKNOWN"
+     },
+     "target_domain": {
+      "state": "UNKNOWN"
+     }
+    }
+   ]
+  },
+  {
+   "field_path": "skill_modifiers.modifiers",
+   "item_key": "oteryn:item.tibia.i27457",
+   "value": [
+    {
+     "evaluation_phase": {
+      "state": "UNKNOWN"
+     },
+     "kind": "MAGIC_LEVEL_POINTS",
+     "parameter": {
+      "state": "KNOWN",
+      "value": {
+       "kind": "SIGNED_POINTS",
+       "value": 1
+      }
+     },
+     "priority": {
+      "state": "UNKNOWN"
+     },
+     "target_domain": {
+      "state": "UNKNOWN"
+     }
+    }
+   ]
+  },
+  {
+   "field_path": "skill_modifiers.modifiers",
+   "item_key": "oteryn:item.tibia.i27458",
+   "value": [
+    {
+     "evaluation_phase": {
+      "state": "UNKNOWN"
+     },
+     "kind": "MAGIC_LEVEL_POINTS",
+     "parameter": {
+      "state": "KNOWN",
+      "value": {
+       "kind": "SIGNED_POINTS",
+       "value": 1
+      }
+     },
+     "priority": {
+      "state": "UNKNOWN"
+     },
+     "target_domain": {
+      "state": "UNKNOWN"
+     }
+    }
+   ]
+  },
+  {
+   "field_path": "protection.resistances",
+   "item_key": "oteryn:item.tibia.i32635",
+   "value": [
+    {
+     "kind": "LIFE_DRAIN",
+     "percent": {
+      "state": "KNOWN",
+      "value": {
+       "denominator": 1,
+       "numerator": 10
+      }
+     }
+    },
+    {
+     "kind": "PHYSICAL",
+     "percent": {
+      "state": "KNOWN",
+      "value": {
+       "denominator": 1,
+       "numerator": 2
+      }
+     }
+    }
+   ]
+  },
+  {
+   "field_path": "skill_modifiers.modifiers",
+   "item_key": "oteryn:item.tibia.i35521",
+   "value": [
+    {
+     "evaluation_phase": {
+      "state": "UNKNOWN"
+     },
+     "kind": "MAGIC_LEVEL_POINTS",
+     "parameter": {
+      "state": "KNOWN",
+      "value": {
+       "kind": "SIGNED_POINTS",
+       "value": 1
+      }
+     },
+     "priority": {
+      "state": "UNKNOWN"
+     },
+     "target_domain": {
+      "state": "UNKNOWN"
+     }
+    }
+   ]
+  },
+  {
+   "field_path": "skill_modifiers.modifiers",
+   "item_key": "oteryn:item.tibia.i39234",
+   "value": [
+    {
+     "evaluation_phase": {
+      "state": "UNKNOWN"
+     },
+     "kind": "SKILL_AXE",
+     "parameter": {
+      "state": "KNOWN",
+      "value": {
+       "kind": "SIGNED_POINTS",
+       "value": 3
+      }
+     },
+     "priority": {
+      "state": "UNKNOWN"
+     },
+     "target_domain": {
+      "state": "UNKNOWN"
+     }
+    },
+    {
+     "evaluation_phase": {
+      "state": "UNKNOWN"
+     },
+     "kind": "SKILL_CLUB",
+     "parameter": {
+      "state": "KNOWN",
+      "value": {
+       "kind": "SIGNED_POINTS",
+       "value": 3
+      }
+     },
+     "priority": {
+      "state": "UNKNOWN"
+     },
+     "target_domain": {
+      "state": "UNKNOWN"
+     }
+    },
+    {
+     "evaluation_phase": {
+      "state": "UNKNOWN"
+     },
+     "kind": "SKILL_SWORD",
+     "parameter": {
+      "state": "KNOWN",
+      "value": {
+       "kind": "SIGNED_POINTS",
+       "value": 3
+      }
+     },
+     "priority": {
+      "state": "UNKNOWN"
+     },
+     "target_domain": {
+      "state": "UNKNOWN"
+     }
+    }
+   ]
+  },
+  {
+   "field_path": "protection.resistances",
+   "item_key": "oteryn:item.tibia.i39234",
+   "value": [
+    {
+     "kind": "ICE",
+     "percent": {
+      "state": "KNOWN",
+      "value": {
+       "denominator": 1,
+       "numerator": 15
+      }
+     }
+    },
+    {
+     "kind": "PHYSICAL",
+     "percent": {
+      "state": "KNOWN",
+      "value": {
+       "denominator": 1,
+       "numerator": 7
+      }
+     }
+    }
+   ]
+  },
+  {
+   "field_path": "protection.resistances",
+   "item_key": "oteryn:item.tibia.i50148",
+   "value": [
+    {
+     "kind": "EARTH",
+     "percent": {
+      "state": "KNOWN",
+      "value": {
+       "denominator": 1,
+       "numerator": 4
+      }
+     }
+    },
+    {
+     "kind": "ENERGY",
+     "percent": {
+      "state": "KNOWN",
+      "value": {
+       "denominator": 1,
+       "numerator": 4
+      }
+     }
+    },
+    {
+     "kind": "FIRE",
+     "percent": {
+      "state": "KNOWN",
+      "value": {
+       "denominator": 1,
+       "numerator": 4
+      }
+     }
+    },
+    {
+     "kind": "ICE",
+     "percent": {
+      "state": "KNOWN",
+      "value": {
+       "denominator": 1,
+       "numerator": 4
+      }
+     }
+    },
+    {
+     "kind": "PHYSICAL",
+     "percent": {
+      "state": "KNOWN",
+      "value": {
+       "denominator": 1,
+       "numerator": 4
+      }
+     }
+    }
+   ]
+  },
+  {
+   "field_path": "skill_modifiers.modifiers",
+   "item_key": "oteryn:item.tibia.i50151",
+   "value": [
+    {
+     "evaluation_phase": {
+      "state": "UNKNOWN"
+     },
+     "kind": "MAGIC_LEVEL_POINTS",
+     "parameter": {
+      "state": "KNOWN",
+      "value": {
+       "kind": "SIGNED_POINTS",
+       "value": 1
+      }
+     },
+     "priority": {
+      "state": "UNKNOWN"
+     },
+     "target_domain": {
+      "state": "UNKNOWN"
+     }
+    },
+    {
+     "evaluation_phase": {
+      "state": "UNKNOWN"
+     },
+     "kind": "SKILL_FIST",
+     "parameter": {
+      "state": "KNOWN",
+      "value": {
+       "kind": "SIGNED_POINTS",
+       "value": 3
+      }
+     },
+     "priority": {
+      "state": "UNKNOWN"
+     },
+     "target_domain": {
+      "state": "UNKNOWN"
+     }
+    }
+   ]
+  },
+  {
+   "field_path": "protection.resistances",
+   "item_key": "oteryn:item.tibia.i50151",
+   "value": [
+    {
+     "kind": "PHYSICAL",
+     "percent": {
+      "state": "KNOWN",
+      "value": {
+       "denominator": 1,
+       "numerator": 2
+      }
+     }
+    }
+   ]
+  },
+  {
+   "field_path": "skill_modifiers.modifiers",
+   "item_key": "oteryn:item.tibia.i50153",
+   "value": [
+    {
+     "evaluation_phase": {
+      "state": "UNKNOWN"
+     },
+     "kind": "MAGIC_LEVEL_POINTS",
+     "parameter": {
+      "state": "KNOWN",
+      "value": {
+       "kind": "SIGNED_POINTS",
+       "value": 2
+      }
+     },
+     "priority": {
+      "state": "UNKNOWN"
+     },
+     "target_domain": {
+      "state": "UNKNOWN"
+     }
+    },
+    {
+     "evaluation_phase": {
+      "state": "UNKNOWN"
+     },
+     "kind": "SKILL_FIST",
+     "parameter": {
+      "state": "KNOWN",
+      "value": {
+       "kind": "SIGNED_POINTS",
+       "value": 4
+      }
+     },
+     "priority": {
+      "state": "UNKNOWN"
+     },
+     "target_domain": {
+      "state": "UNKNOWN"
+     }
+    }
+   ]
+  },
+  {
+   "field_path": "protection.resistances",
+   "item_key": "oteryn:item.tibia.i50155",
+   "value": [
+    {
+     "kind": "FIRE",
+     "percent": {
+      "state": "KNOWN",
+      "value": {
+       "denominator": 1,
+       "numerator": 15
+      }
+     }
+    },
+    {
+     "kind": "PHYSICAL",
+     "percent": {
+      "state": "KNOWN",
+      "value": {
+       "denominator": 1,
+       "numerator": 4
+      }
+     }
+    }
+   ]
+  },
+  {
+   "field_path": "skill_modifiers.modifiers",
+   "item_key": "oteryn:item.tibia.i50192",
+   "value": [
+    {
+     "evaluation_phase": {
+      "state": "UNKNOWN"
+     },
+     "kind": "SKILL_FIST",
+     "parameter": {
+      "state": "KNOWN",
+      "value": {
+       "kind": "SIGNED_POINTS",
+       "value": 1
+      }
+     },
+     "priority": {
+      "state": "UNKNOWN"
+     },
+     "target_domain": {
+      "state": "UNKNOWN"
+     }
+    }
+   ]
+  },
+  {
+   "field_path": "protection.resistances",
+   "item_key": "oteryn:item.tibia.i50192",
+   "value": [
+    {
+     "kind": "PHYSICAL",
+     "percent": {
+      "state": "KNOWN",
+      "value": {
+       "denominator": 1,
+       "numerator": 4
+      }
+     }
+    }
+   ]
+  },
+  {
+   "field_path": "protection.resistances",
+   "item_key": "oteryn:item.tibia.i50269",
+   "value": [
+    {
+     "kind": "EARTH",
+     "percent": {
+      "state": "KNOWN",
+      "value": {
+       "denominator": 1,
+       "numerator": 3
+      }
+     }
+    }
+   ]
+  },
+  {
+   "field_path": "skill_modifiers.modifiers",
+   "item_key": "oteryn:item.tibia.i51260",
+   "value": [
+    {
+     "evaluation_phase": {
+      "state": "UNKNOWN"
+     },
+     "kind": "SKILL_DISTANCE",
+     "parameter": {
+      "state": "KNOWN",
+      "value": {
+       "kind": "SIGNED_POINTS",
+       "value": 2
+      }
+     },
+     "priority": {
+      "state": "UNKNOWN"
+     },
+     "target_domain": {
+      "state": "UNKNOWN"
+     }
+    }
+   ]
+  }
+ ],
+ "schema": "OTERYN_EQUIP_ABILITY_FACTS/v1"
+}
